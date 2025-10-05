@@ -2,14 +2,14 @@
  * \file CNSSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,7 +51,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Read farfield conditions from config ---*/
 
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-  Prandtl_Lam     = config->GetPrandtl_Lam();
   Prandtl_Turb    = config->GetPrandtl_Turb();
   Tke_Inf         = config->GetTke_FreeStreamND();
 
@@ -488,7 +487,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
     /*--- If it is a customizable patch, retrieve the specified wall heat flux. ---*/
 
     if (config->GetMarker_All_PyCustom(val_marker))
-      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex);
+      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex) / config->GetHeat_Flux_Ref();
     else if (kind_boundary == HEAT_TRANSFER) {
       const su2double Twall = nodes->GetTemperature(iPoint);
       Wall_HeatFlux = Transfer_Coefficient * (Tinfinity - Twall);
@@ -844,10 +843,8 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const su2double Temperature_Ref = config->GetTemperature_Ref();
-  const su2double Prandtl_Lam = config->GetPrandtl_Lam();
   const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
   /*--- Identify the boundary and retrieve the specified wall temperature from
    the config (for non-CHT problems) as well as the wall function treatment. ---*/
@@ -897,33 +894,30 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
     const auto Coord_i = geometry->nodes->GetCoord(iPoint);
     const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
-
-    su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+    const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord_i, Coord_j);
 
     /*--- Store the corrected velocity at the wall which will
      be zero (v = 0), unless there is grid motion (v = u_wall)---*/
 
     if (dynamic_grid) {
       nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
-    }
-    else {
+    } else {
       su2double zero[MAXNDIM] = {0.0};
       nodes->SetVelocity_Old(iPoint, zero);
     }
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      LinSysRes(iPoint, iDim+1) = 0.0;
+    for (auto iDim = 0u; iDim < nDim; iDim++) LinSysRes(iPoint, iDim+1) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Get transport coefficients ---*/
 
-    su2double laminar_viscosity    = nodes->GetLaminarViscosity(iPoint);
+    su2double Cp = nodes->GetSpecificHeatCp(iPoint);
     su2double eddy_viscosity       = nodes->GetEddyViscosity(iPoint);
-    su2double thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
+    su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint) + Cp * eddy_viscosity / Prandtl_Turb;
 
     // work in progress on real-gases...
     //thermal_conductivity = nodes->GetThermalConductivity(iPoint);
-    //Cp = nodes->GetSpecificHeatCp(iPoint);
+    Cp = nodes->GetSpecificHeatCp(iPoint);
     //thermal_conductivity += Cp*eddy_viscosity/Prandtl_Turb;
 
     /*--- If it is a customizable or CHT patch, retrieve the specified wall temperature. ---*/
@@ -933,9 +927,8 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
     if (cht_mode) {
       Twall = GetCHTWallTemperature(config, val_marker, iVertex, dist_ij,
                                     thermal_conductivity, There, Temperature_Ref);
-    }
-    else if (config->GetMarker_All_PyCustom(val_marker)) {
-      Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex);
+    } else if (config->GetMarker_All_PyCustom(val_marker)) {
+      Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / Temperature_Ref;
     }
 
     /*--- Compute the normal gradient in temperature using Twall ---*/
@@ -1234,11 +1227,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
       const su2double VelTangMod = GeometryToolbox::Norm(int(MAXNDIM), VelTang);
 
       /*--- Compute normal distance of the interior point from the wall ---*/
-
-      su2double WallDist[MAXNDIM] = {0.0};
-      GeometryToolbox::Distance(nDim, Coord, Coord_Normal, WallDist);
-
-      const su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
+      const su2double WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
 
       su2double T_Wall = nodes->GetTemperature(iPoint);
       const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);

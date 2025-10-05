@@ -1,15 +1,15 @@
 /*!
- *  file CUserDefinedSolution.cpp
- *  brief Implementations of the member functions of CUserDefinedSolution.
- *  author T. Economon, E. van der Weide
- *  version 7.5.1 "Blackbird"
+ * \file CUserDefinedSolution.cpp
+ * \brief Implementations of the member functions of CUserDefinedSolution.
+ * \author T. Economon, E. van der Weide
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -496,7 +496,7 @@ void CUserDefinedSolution::GetMMSSourceTerm(const su2double *val_coords, const s
                     pow(w0 + wy*cos((awy*Pi*y)/L) +
                           wz*cos((awz*Pi*z)/L) + wx*sin((awx*Pi*x)/L) +
                           wxyz*sin((awxyz*Pi*x*y*z)/pow(L,3)),2);
-    
+
     val_source[nDim+1] = ((awxyz*Pi*wxyz*x*y*cos((awxyz*Pi*x*y*z)/pow(L,3)))/
                           pow(L,3) - (awz*Pi*wz*sin((awz*Pi*z)/L))/L)*
                          ((g*(p0 + px*cos((apx*Pi*x)/L) +

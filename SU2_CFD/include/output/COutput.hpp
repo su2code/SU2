@@ -2,14 +2,14 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,7 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "tools/CWindowingTools.hpp"
 #include "../../../Common/include/option_structure.hpp"
+#include "CTurboOutput.hpp"
 
 /*--- AD workaround for a cmath function not defined in CoDi. ---*/
 namespace mel {
@@ -54,6 +55,7 @@ class CSolver;
 class CFileWriter;
 class CParallelDataSorter;
 class CConfig;
+class CHeatOutput;
 
 using namespace std;
 
@@ -64,6 +66,7 @@ using namespace std;
  */
 class COutput {
 protected:
+  friend class CHeatOutput;
 
   /*----------------------------- General ----------------------------*/
 
@@ -223,6 +226,10 @@ protected:
      We store pointers to the required outputs to speed-up access. ---*/
     std::vector<const su2double*> otherOutputs;
 
+    /*--- For discrete adjoint we may need to skip some expressions because there is one output class
+     for the primal solver and one for the discrete adjoint (each with different variables). ---*/
+    bool skip = false;
+
     /*--- For evaluation, "vars" is a functor (i.e. has operator()) that returns the value of a variable at a given
      point. For example, it can be a wrapper to the primitives pointer, in which case varIndices needs to be setup
      with primitive indices. ---*/
@@ -236,15 +243,16 @@ protected:
 
   /*----------------------------- Volume output ----------------------------*/
 
-  CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
-  CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
+  CParallelDataSorter* volumeDataSorter;        //!< Volume data sorter.
+  CParallelDataSorter* volumeDataSorterCompact; //!< Volume data sorter for compact files.
+  CParallelDataSorter* surfaceDataSorter;       //!< Surface data sorter.
 
-  vector<string> volumeFieldNames;     //!< Vector containing the volume field names
-  unsigned short nVolumeFields;        //!< Number of fields in the volume output
+  vector<string> volumeFieldNames;          //!< Vector containing the volume field names.
+  vector<string> requiredVolumeFieldNames;  //!< Vector containing the minimum required volume field names.
 
-  string volumeFilename,               //!< Volume output filename
-  surfaceFilename,                     //!< Surface output filename
-  restartFilename;                     //!< Restart output filename
+  string volumeFilename,               //!< Volume output filename.
+  surfaceFilename,                     //!< Surface output filename.
+  restartFilename;                     //!< Restart output filename.
 
   /** \brief Structure to store information for a volume output field.
    *
@@ -254,39 +262,47 @@ protected:
     /*! \brief The name of the field, i.e. the name that is printed in the file header.*/
     string fieldName;
     /*! \brief This value identifies the position of the values of this field at each node in the ::Local_Data array. */
-    short  offset;
+    short offset = -1;
+    /*! \brief This offset is used for the compact formulation. */
+    short offsetCompact = -1;
     /*! \brief The group this field belongs to. */
     string outputGroup;
-    /*! \brief String containing the description of the field */
+    /*! \brief String containing the description of the field. */
     string description;
     /*! \brief Default constructor. */
-    VolumeOutputField () {}
+    VolumeOutputField() = default;
     /*! \brief Constructor to initialize all members. */
-    VolumeOutputField(string fieldName_, int offset_, string volumeOutputGroup_, string description_):
-      fieldName(std::move(fieldName_)), offset(std::move(offset_)),
-      outputGroup(std::move(volumeOutputGroup_)), description(std::move(description_)){}
+    VolumeOutputField(string fieldName_, string volumeOutputGroup_, string description_):
+      fieldName(std::move(fieldName_)),
+      outputGroup(std::move(volumeOutputGroup_)),
+      description(std::move(description_)) {}
   };
 
   /*! \brief Associative map to access data stored in the volume output fields by a string identifier. */
-  std::map<string, VolumeOutputField >          volumeOutput_Map;
+  std::map<string, VolumeOutputField > volumeOutput_Map;
   /*! \brief Vector that contains the keys of the ::volumeOutput_Map in the order of their insertion. */
-  std::vector<string>                           volumeOutput_List;
+  std::vector<string> volumeOutput_List;
 
-  /*! \brief Vector to cache the positions of the field in the data array */
-  std::vector<short>                            fieldIndexCache;
-  /*! \brief Current value of the cache index */
-  unsigned short                                cachePosition;
-  /*! \brief Boolean to store whether the field index cache should be build. */
-  bool                                          buildFieldIndexCache;
-  /*! \brief Vector to cache the positions of the field in the data array */
-  std::vector<short>                            fieldGetIndexCache;
-  /*! \brief Current value of the cache index */
-  unsigned short                                curGetFieldIndex;
+  /*! \brief Whether the field index caches should be build. */
+  bool buildFieldIndexCache;
+
+  /*! \brief Vectors to cache the positions of the fields in the data array. */
+  std::vector<short> fieldIndexCache, fieldIndexCacheCompact;
+  /*! \brief Current value of the cache indices. */
+  unsigned short cachePosition;
+
+  /*! \brief Vector to cache the positions of the field in the data array. */
+  std::vector<short> fieldGetIndexCache;
+  /*! \brief Current value of the cache index. */
+  unsigned short curGetFieldIndex;
 
   /*! \brief Requested volume field names in the config file. */
   std::vector<string> requestedVolumeFields;
   /*! \brief Number of requested volume field names in the config file. */
   unsigned short nRequestedVolumeFields;
+
+  /*! \brief Minimum required volume fields for restart file. */
+  const std::vector<string> restartVolumeFields = {"COORDINATES", "SOLUTION", "SENSITIVITY", "GRID_VELOCITY"};
 
   /*----------------------------- Convergence monitoring ----------------------------*/
 
@@ -321,7 +337,6 @@ protected:
   bool TimeConvergence;   /*!< \brief To indicate, if the windowed time average of the time loop has converged*/
 
 public:
-
   /*----------------------------- Public member functions ----------------------------*/
 
   /*!
@@ -371,7 +386,6 @@ public:
    */
   void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter);
-
   /*!
    * \brief Collects history data from the solvers and monitors the convergence. Does not write to screen or file.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -381,9 +395,23 @@ public:
   void SetHistoryOutput(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
+   * \brief Collects history data from the solvers, monitors the convergence and writes to screen and history file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] TimeIter - Value of the time iteration index
+   * \param[in] OuterIter - Value of outer iteration index
+   * \param[in] InnerIter - Value of the inner iteration index
+   * \param[in] val_iInst - Index of the instance layer
+   */
+  void SetHistoryOutput(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+                         std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf,
+                         std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone,
+                         unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst);
+
+  /*!
    *  Collects history data from the individual output per zone,
    *  monitors the convergence and writes to screen and history file.
-
    * \param[in] output - Container holding the output instances per zone.
    * \param[in] config - Definition of the particular problem per zone.
    * \param[in] driver_config - Base definition of the particular problem.
@@ -625,7 +653,7 @@ protected:
    */
   inline void AddHistoryOutput(string name, string field_name, ScreenOutputFormat format,
                                string groupname, string description,
-                               HistoryFieldType field_type = HistoryFieldType::DEFAULT ){
+                               HistoryFieldType field_type = HistoryFieldType::DEFAULT) {
     historyOutput_Map[name] = HistoryOutputField(field_name, format, groupname, field_type, description);
     historyOutput_List.push_back(name);
   }
@@ -719,8 +747,9 @@ protected:
    * \param[in] groupname - The name of the group this field belongs to.
    * \param[in] description - Description of the volume field.
    */
-  inline void AddVolumeOutput(string name, string field_name, string groupname, string description){
-    volumeOutput_Map[name] = VolumeOutputField(field_name, -1, groupname, description);
+  inline void AddVolumeOutput(const string& name, const string& field_name,
+                              const string& group_name, const string& description) {
+    volumeOutput_Map[name] = VolumeOutputField(field_name, group_name, description);
     volumeOutput_List.push_back(name);
   }
 
@@ -750,7 +779,7 @@ protected:
   /*!
    * \brief CheckHistoryOutput
    */
-  void CheckHistoryOutput();
+  void CheckHistoryOutput(unsigned short nZone);
 
   /*!
    * \brief Open the history file and write the header.
@@ -803,9 +832,22 @@ protected:
   void SetCommonHistoryFields();
 
   /*!
+   * \brief Request the history fields common for all solvers.
+   */
+  void RequestCommonHistory(bool dynamic);
+
+  /*!
    * \brief Parses user-defined outputs.
    */
   void SetCustomOutputs(const CConfig *config);
+
+  /*!
+   * \brief Evaluates function-type custom outputs.
+   * Derived classes can use this to compute simple expressions of other outputs if they
+   * do not implement surface averages. This should be called just before evaluating the
+   * custom objective function.
+   */
+  void ComputeSimpleCustomOutputs(const CConfig *config);
 
   /*!
    * \brief Load values of the history fields common for all solvers.
@@ -912,7 +954,6 @@ protected:
    */
   inline virtual void SetVolumeOutputFields(CConfig *config){}
 
-
   /*!
    * \brief Load the history output field values
    * \param[in] config - Definition of the particular problem.
@@ -927,6 +968,42 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void LoadMultizoneHistoryData(const COutput* const* output, const CConfig* const* config) {}
+
+  /*!
+   * \brief Sets the turboperformance screen output
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] config - Definition of the particular problem
+   * \param[in] TimeIter - Index of the current time-step
+   * \param[in] OuterIter - Index of current outer iteration
+   * \param[in] InnerIter - Index of current inner iteration
+   */
+  inline virtual void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {}
+
+  /*!
+   * \brief Sets the multizone turboperformacne screen output
+   * \param[in] TurboStagePerf - Stage turboperformance class
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] config - Definition of the particular problem
+   */
+  inline virtual void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
+
+  /*!
+   * \brief Loads the turboperformacne history data
+   * \param[in] TurboStagePerf - Stage turboperformance class
+   * \param[in] TurboPerf - Turboperformance class
+   * \param[in] config - Definition of the particular problem
+   */
+  inline virtual void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
+
+  /*!
+   * \brief Write the kinematic and thermodynamic variables at each spanwise division
+   * \param[in] solver - The container hold all solution data
+   * \param[in] geometry - Geometrical definiton of the problem
+   * \param[in] config - Descripiton of the particular problem
+   * \param[in] val_iZone - Idientifier of current zone
+  */
+  inline virtual void WriteTurboSpanwisePerformance(std::shared_ptr<CTurboOutput> TurboPerf, CGeometry *geometry, CConfig **config,
+                                       unsigned short val_iZone) {};
 
   /*!
    * \brief Set the available history output fields

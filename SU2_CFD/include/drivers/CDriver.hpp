@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,7 +37,6 @@
 
 using namespace std;
 
-class COutputLegacy;
 class CInterpolator;
 class CIteration;
 class COutput;
@@ -51,7 +50,6 @@ class COutput;
 
 class CDriver : public CDriverBase {
  protected:
-  char runtime_file_name[MAX_STRING_SIZE];
   su2double
       UsedTimeOutput; /*!< \brief Elapsed time between Start and Stop point of the timer for tracking output phase.*/
 
@@ -65,9 +63,6 @@ class CDriver : public CDriverBase {
       MpointsDomain; /*!< \brief Total number of grid points in millions in the calculation (excluding ghost points).*/
   su2double MDOFs;   /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
   su2double MDOFsDomain; /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
-
-  ofstream** ConvHist_file; /*!< \brief Convergence history file.*/
-  ofstream FSIHist_file;    /*!< \brief FSI convergence history file.*/
 
   bool StopCalc,   /*!< \brief Stop computation flag.*/
       mixingplane, /*!< \brief mixing-plane simulation flag.*/
@@ -295,9 +290,17 @@ class CDriver : public CDriverBase {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] interface - Class defining the physical transfer of information.
+   * \param[in] dummy - Definition of dummy driver
    */
   void PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
-                                    CInterface*** interface);
+                                    CInterface*** interface, bool dummy);
+
+  /*!
+   * \brief Ramp some simulation settings for turbomachinery problems.
+   * \param[in] iter - Iteration for the ramp (can be outer or time depending on type of simulation).
+   * \note TODO This is not compatible with inner iterations because they are delegated to the iteration class.
+   */
+  void RampTurbomachineryValues(unsigned long iter);
 
   /*!
    * \brief A virtual member.
@@ -502,9 +505,68 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Set the direction of the inlet.
    * \param[in] iMarker - Marker index.
-   * \param[in] alpha - Angle (Zpos).
+   * \param[in] alpha - Angle around z axis.
    */
   void SetInletAngle(unsigned short iMarker, passivedouble alpha);
+
+  /*!
+   * \brief Set the angle of attack of the farfield.
+   * \param[in] alpha - Angle (degree).
+   */
+  void SetFarFieldAoA(passivedouble alpha);
+
+  /*!
+   * \brief Set the angle of sideslip of the farfield.
+   * \param[in] beta - Angle (degree).
+   */
+  void SetFarFieldAoS(passivedouble beta);
+
+  /*!
+   * \brief Set the dynamic mesh translation rates.
+   * \param[in] xDot - Value of translational velocity in x-direction.
+   * \param[in] yDot - Value of translational velocity in y-direction.
+   * \param[in] zDot - Value of translational velocity in z-direction.
+   */
+  void SetTranslationRate(passivedouble xDot, passivedouble yDot, passivedouble zDot);
+
+  /*!
+   * \brief Set the dynamic mesh rotation rates.
+   * \param[in] rot_x - Value of Angular velocity about x-axes.
+   * \param[in] rot_y - Value of Angular velocity about y-axes.
+   * \param[in] rot_z - Value of Angular velocity about z-axes.
+   */
+  void SetRotationRate(passivedouble rot_x, passivedouble rot_y, passivedouble rot_z);
+
+  /*!
+   * \brief Set the moving wall marker rotation rates.
+   * \param[in] iMaker - Index of moving wall marker.
+   * \param[in] rot_x - Value of Angular velocity about x-axes.
+   * \param[in] rot_y - Value of Angular velocity about y-axes.
+   * \param[in] rot_z - Value of Angular velocity about z-axes.
+   */
+  void SetMarkerRotationRate(unsigned short iMarker, passivedouble rot_x, passivedouble rot_y, passivedouble rot_z);
+
+  /*!
+   * \brief Set the moving wall marker translation rates.
+   * \param[in] iMaker - Index of moving wall marker.
+   * \param[in] vel_x - Value of velocity along x-axis.
+   * \param[in] vel_y - Value of velocity along y-axis.
+   * \param[in] vel_z - Value of velocity along z-axis.
+   */
+  void SetMarkerTranslationRate(unsigned short iMarker, passivedouble vel_x, passivedouble vel_y, passivedouble vel_z);
+
+  /*!
+   * \brief Get the Freestream Density for nondimensionalization
+   * \return Freestream Density
+   */
+  passivedouble GetDensityFreeStreamND() const;
+
+  /*!
+   * \brief Get the reference Body force for nondimensionalization
+   * \return reference Body Force
+   */
+  passivedouble GetForceRef() const;
+
 
 /// \}
 };
@@ -576,52 +638,6 @@ class CFluidDriver : public CDriver {
 };
 
 /*!
- * \class CTurbomachineryDriver
- * \ingroup Drivers
- * \brief Class for driving an iteration for turbomachinery flow analysis.
- * \author S. Vitale
- */
-class CTurbomachineryDriver : public CFluidDriver {
- private:
-  COutputLegacy* output_legacy;
-
-  /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetMixingPlane(unsigned short iZone);
-
-  /*!
-   * \brief Set Mixing Plane interface within multiple zones.
-   */
-  void SetTurboPerformance(unsigned short targetZone);
-
- public:
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] confFile - Configuration file name.
-   * \param[in] val_nZone - Total number of zones.
-   * \param[in] MPICommunicator - MPI communicator for SU2.
-   */
-  CTurbomachineryDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CTurbomachineryDriver(void) override;
-
-  /*!
-   * \brief Run a single iteration of the physics within multiple zones.
-   */
-
-  void Run() override;
-
-  /*!
-   * \brief Monitor the computation.
-   */
-  bool Monitor(unsigned long TimeIter) override;
-};
-
-/*!
  * \class CHBDriver
  * \ingroup Drivers
  * \brief Class for driving an iteration of Harmonic Balance (HB) method problem using multiple time zones.
@@ -629,7 +645,6 @@ class CTurbomachineryDriver : public CFluidDriver {
  */
 class CHBDriver : public CFluidDriver {
  private:
-  COutputLegacy* output_legacy;
   unsigned short nInstHB;
   su2double** D; /*!< \brief Harmonic Balance operator. */
 

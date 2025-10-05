@@ -1,14 +1,14 @@
 /*!
  * \file geometry_toolbox.hpp
  * \brief Collection of common lightweight geometry-oriented methods.
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -79,37 +79,12 @@ inline T Norm(Int nDim, const T* a) {
   return sqrt(SquaredNorm(nDim, a));
 }
 
+/*! \brief dn = max(abs(n.(a-b)), 0.05 * ||a-b|| */
 template <class T, typename Int>
-inline void TangentVector(Int nDim, const T* unitNormal, T* tangent) {
-
-  switch (nDim) {
-    case 2: {
-      tangent[0] = -unitNormal[1];
-      tangent[1] = unitNormal[0];
-      break;
-    }
-    case 3: {
-      /*--- n = ai + bj + ck, if |b| > |c| ---*/
-      if (abs(unitNormal[1]) > abs(unitNormal[2])) {
-        /*--- t = bi + (c-a)j - bk  ---*/
-        tangent[0] = unitNormal[1];
-        tangent[1] = unitNormal[2] - unitNormal[0];
-        tangent[2] = -unitNormal[1];
-      } else {
-        /*--- t = ci - cj + (b-a)k  ---*/
-        tangent[0] = unitNormal[2];
-        tangent[1] = -unitNormal[2];
-        tangent[2] = unitNormal[1] - unitNormal[0];
-      }
-      /*--- Make it a unit vector. ---*/
-      const T TangentialNorm = Norm(nDim, tangent);
-      tangent[0] = tangent[0] / TangentialNorm;
-      tangent[1] = tangent[1] / TangentialNorm;
-      tangent[2] = tangent[2] / TangentialNorm;
-      break;
-    }
-  }
-
+inline T NormalDistance(Int nDim, const T* n, const T* a, const T* b) {
+  T d[3] = {0};
+  Distance(nDim, a, b, d);
+  return fmax(fabs(DotProduct(nDim, n, d)), 0.05 * Norm(nDim, d));
 }
 
 /*! \brief c = a x b */
@@ -181,6 +156,15 @@ inline void QuadrilateralNormal(const T& coords, U* normal) {
   normal[0] *= 0.5;
   normal[1] *= 0.5;
   normal[2] *= 0.5;
+}
+
+/*! \brief Signed distance from a point to a plane defined by 3 coordinates. */
+template <class T, class U>
+inline U PointToPlaneDistance(const T& coords, const U* point) {
+  U normal[3], distance[3];
+  TriangleNormal(coords, normal);
+  Distance(3, point, coords[0], distance);
+  return DotProduct(3, distance, normal) / Norm(3, normal);
 }
 
 /*!

@@ -24,3 +24,9 @@
 [submodule "externals/mel"]
 	path = externals/mel
 	url = https://github.com/pcarruscag/MEL.git
+[submodule "subprojects/MLPCpp"]
+	path = subprojects/MLPCpp
+	url = https://github.com/EvertBunschoten/MLPCpp.git
+[submodule "externals/FADO"]
+	path = externals/FADO
+	url = https://github.com/pcarruscag/FADO.git

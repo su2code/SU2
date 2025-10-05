@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to transfer average variables
  *        needed for MixingPlane computation from a generic zone into another one.
  * \author S. Vitale
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -80,14 +80,6 @@ public:
    * \param[in] donorZone       - counter of the donor solution
    */
   void SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone) override;
-
-  /*!
-   * \brief Store all the turboperformance in the solver in ZONE_0.
-   * \param[in] donor_geometry  - Solution from the donor mesh.
-   * \param[in] target_geometry - Solution from the target mesh.
-   * \param[in] donorZone       - counter of the donor solution
-   */
-  void SetAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone) override;
 
 
 

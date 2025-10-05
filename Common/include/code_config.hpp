@@ -2,14 +2,14 @@
  * \file code_config.hpp
  * \brief Header file for collecting common macros, definitions and type configurations.
  * \author T. Albring, P. Gomes, J. Blühdorn
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -96,22 +96,34 @@ FORCEINLINE Out su2staticcast_p(In ptr) {
 #include "codi/tools/data/externalFunctionUserData.hpp"
 
 #if defined(HAVE_OMP)
-using su2double = codi::RealReverseIndexOpenMP;
+using su2double = codi::RealReverseIndexOpenMPGen<double, double>;
 #else
-#if defined(CODI_INDEX_TAPE)
-using su2double = codi::RealReverseIndex;
-// #elif defined(CODI_PRIMAL_TAPE)
-// using su2double = codi::RealReversePrimal;
-// #elif defined(CODI_PRIMAL_INDEX_TAPE)
-// using su2double = codi::RealReversePrimalIndex;
-#else
+#if defined(CODI_JACOBIAN_LINEAR_TAPE)
 using su2double = codi::RealReverse;
+#elif defined(CODI_JACOBIAN_REUSE_TAPE)
+using su2double = codi::RealReverseIndexGen<double, double, codi::ReuseIndexManager<int> >;
+#elif defined(CODI_JACOBIAN_MULTIUSE_TAPE)
+using su2double = codi::RealReverseIndex;
+#elif defined(CODI_PRIMAL_LINEAR_TAPE)
+using su2double = codi::RealReversePrimal;
+#elif defined(CODI_PRIMAL_REUSE_TAPE)
+using su2double = codi::RealReversePrimalIndexGen<double, double, codi::ReuseIndexManager<int> >;
+#elif defined(CODI_PRIMAL_MULTIUSE_TAPE)
+using su2double = codi::RealReversePrimalIndex;
+#elif defined(CODI_TAG_TAPE)
+using su2double = codi::RealReverseTag;
+#else
+#error "Please define a CoDiPack tape."
 #endif
+#endif
+
+#if defined(HAVE_OMP) || defined(CODI_JACOBIAN_REUSE_TAPE) || defined(CODI_JACOBIAN_MULTIUSE_TAPE) || \
+    defined(CODI_PRIMAL_REUSE_TAPE) || defined(CODI_PRIMAL_MULTIUSE_TAPE)
+#define CODI_INDEX_REUSE
 #endif
 #elif defined(CODI_FORWARD_TYPE)  // forward mode AD
 #include "codi.hpp"
 using su2double = codi::RealForward;
-
 #else  // primal / direct / no AD
 using su2double = double;
 #endif

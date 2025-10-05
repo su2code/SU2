@@ -1,14 +1,14 @@
 # \file config_options.py
 #  \brief python package for config
 #  \author T. Lukaczyk, F. Palacios
-#  \version 7.5.1 "Blackbird"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -72,7 +72,6 @@ class DEFINITION_DV(ordered_bunch):
        -FFD_CONTROL_POINT_2D (  19, Scale | Mark. List | FFD_BoxTag, i_Ind, j_Ind, x_Mov, y_Mov )
        -FFD_CAMBER_2D 	 (  20, Scale | Mark. List | FFD_BoxTag, i_Ind )
        -FFD_THICKNESS_2D 	 (  21, Scale | Mark. List | FFD_BoxTag, i_Ind )
-       -FFD_TWIST_2D    	 (  22, Scale | Mark. List | FFD_BoxTag, x_Orig, y_Orig )
        -HICKS_HENNE 	 (  30, Scale | Mark. List | Lower(0)/Upper(1) side, x_Loc )
        -ANGLE_OF_ATTACK	 ( 101, Scale | Mark. List | 1.0 )
 
@@ -128,7 +127,6 @@ class DV_KIND(ordered_bunch):
        -FFD_CONTROL_POINT_2D (  19, Scale | Mark. List | FFD_BoxTag, i_Ind, j_Ind, x_Mov, y_Mov )
        -FFD_CAMBER_2D 	 (  20, Scale | Mark. List | FFD_BoxTag, i_Ind )
        -FFD_THICKNESS_2D 	 (  21, Scale | Mark. List | FFD_BoxTag, i_Ind )
-       -FFD_TWIST_2D    	 (  22, Scale | Mark. List | FFD_BoxTag, x_Orig, y_Orig )
        -HICKS_HENNE 	 (  30, Scale | Mark. List | Lower(0)/Upper(1) side, x_Loc )
        -ANGLE_OF_ATTACK	 ( 101, Scale | Mark. List | 1.0 )
 

@@ -69,8 +69,10 @@ Daumantas Kavolis
 Dave Taflin
 Eduardo Molina
 Edwin van der Weide
+Eitan Aberman
 Ethan Alan Hereth
 Florian Dittmann
+Filip Hahs
 Francesco Poli
 Francisco D. Palacios
 Gaurav Bansal
@@ -92,11 +94,14 @@ Jessie Lauzon
 João Loureiro
 Johannes Blühdorn
 JonathanSmith1936
+Joseph Signorelli
+Joshua A. Kelly
 Josy P. Pullockara
 Kedar Naik
 Kürşat Yurt
 LaSerpe
 Lennaert Tol
+Liang Cheng
 Lisa Kusch
 Matteo Pini
 Max Aehle
@@ -105,6 +110,7 @@ Max Sagebaum
 Michele Gaffuri
 Mickael Philit
 Mladen Banovic
+Mor
 Nat-1
 Nicola Fonzi
 Nijso Beishuizen
@@ -131,10 +137,14 @@ Thomas D. Economon
 Tim Albring
 TobiKattmann
 Trent Lukaczyk
+Vikram Bharadwaj
+Vinzenz Götz
 VivaanKhatri
 Wally Maier
+Yair Mor-Yossef
 Y. Chandukrishna
 Zan Xu
+Zcaic
 aaronyicongfu
 aeroamit
 anilvar

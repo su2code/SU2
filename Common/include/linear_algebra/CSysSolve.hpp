@@ -3,14 +3,14 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -168,6 +168,7 @@ class CSysSolve {
    * \brief Modified Gram-Schmidt orthogonalization
    * \author Based on Kesheng John Wu's mgsro subroutine in Saad's SPARSKIT
    *
+   * \param[in] shared_hsbg - if the Hessenberg matrix is shared by multiple threads
    * \param[in] i - index indicating which vector in w is being orthogonalized
    * \param[in,out] Hsbg - the upper Hessenberg begin updated
    * \param[in,out] w - the (i+1)th vector of w is orthogonalized against the
@@ -181,7 +182,7 @@ class CSysSolve {
    * vector is kept in nrm0 and updated after operating with each vector
    *
    */
-  void ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg, std::vector<VectorType>& w) const;
+  void ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg, std::vector<VectorType>& w) const;
 
   /*!
    * \brief writes header information for a CSysSolve residual history

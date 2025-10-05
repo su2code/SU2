@@ -2,14 +2,14 @@
  * \file CDriverBase.hpp
  * \brief Base class template for all drivers.
  * \author H. Patel, A. Gastaldi
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser/ General Public
@@ -391,14 +391,14 @@ vector<passivedouble> CDriverBase::GetMarkerVertexNormals(unsigned short iMarker
 }
 
 void CDriverBase::CommunicateMeshDisplacements() {
-  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->InitiateComms(main_geometry, main_config, MESH_DISPLACEMENTS);
-  solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->CompleteComms(main_geometry, main_config, MESH_DISPLACEMENTS);
+  solver_container[selected_zone][INST_0][MESH_0][MESH_SOL]->InitiateComms(main_geometry, main_config, MPI_QUANTITIES::MESH_DISPLACEMENTS);
+  solver_container[selected_zone][INST_0][MESH_0][MESH_SOL]->CompleteComms(main_geometry, main_config, MPI_QUANTITIES::MESH_DISPLACEMENTS);
 }
 
 map<string, unsigned short> CDriverBase::GetSolverIndices() const {
   map<string, unsigned short> indexMap;
   for (auto iSol = 0u; iSol < MAX_SOLS; iSol++) {
-    const auto* solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+    const auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSol];
     if (solver != nullptr) {
       if (solver->GetSolverName().empty()) SU2_MPI::Error("Solver name was not defined.", CURRENT_FUNCTION);
       indexMap[solver->GetSolverName()] = iSol;
@@ -408,7 +408,7 @@ map<string, unsigned short> CDriverBase::GetSolverIndices() const {
 }
 
 std::map<string, unsigned short> CDriverBase::GetFEASolutionIndices() const {
-  if (solver_container[ZONE_0][INST_0][MESH_0][FEA_SOL] == nullptr) {
+  if (solver_container[selected_zone][INST_0][MESH_0][FEA_SOL] == nullptr) {
     SU2_MPI::Error("The FEA solver does not exist.", CURRENT_FUNCTION);
   }
   const auto nDim = main_geometry->GetnDim();
@@ -429,7 +429,7 @@ std::map<string, unsigned short> CDriverBase::GetFEASolutionIndices() const {
 }
 
 map<string, unsigned short> CDriverBase::GetPrimitiveIndices() const {
-  if (solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL] == nullptr) {
+  if (solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL] == nullptr) {
     SU2_MPI::Error("The flow solver does not exist.", CURRENT_FUNCTION);
   }
   return PrimitiveNameToIndexMap(CPrimitiveIndices<unsigned short>(

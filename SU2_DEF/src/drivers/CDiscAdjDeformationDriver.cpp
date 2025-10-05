@@ -2,14 +2,14 @@
  * \file CDiscAdjDeformationDriver.cpp
  * \brief Main subroutines for driving the projection of sensitivities.
  * \author T. Economon, H. Kline, R. Sanchez, A. Gastaldi, H. Patel
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,7 @@
 
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
-#include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
+#include "../../../Common/include/grid_movement/CVolumetricMovementFactory.hpp"
 #include "../../../SU2_CFD/include/numerics/CGradSmoothing.hpp"
 #include "../../../SU2_CFD/include/output/CBaselineOutput.hpp"
 #include "../../../SU2_CFD/include/solvers/CBaselineSolver.hpp"
@@ -285,8 +285,8 @@ void CDiscAdjDeformationDriver::Preprocess() {
       unsigned short nInst_Zone = nInst[iZone];
 
       grid_movement[iZone] = new CVolumetricMovement*[nInst_Zone]();
-      grid_movement[iZone][INST_0] =
-          new CVolumetricMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+      grid_movement[iZone][INST_0] = CVolumetricMovementFactory::CreateCVolumetricMovement(
+          geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
 
       /*--- Read in sensitivities from file. ---*/
 
@@ -426,10 +426,10 @@ void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* c
 
     if ((config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT_2D) ||
         (config->GetDesign_Variable(iDV) == FFD_CAMBER_2D) || (config->GetDesign_Variable(iDV) == FFD_THICKNESS_2D) ||
-        (config->GetDesign_Variable(iDV) == FFD_TWIST_2D) || (config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) ||
-        (config->GetDesign_Variable(iDV) == FFD_NACELLE) || (config->GetDesign_Variable(iDV) == FFD_GULL) ||
-        (config->GetDesign_Variable(iDV) == FFD_TWIST) || (config->GetDesign_Variable(iDV) == FFD_ROTATION) ||
-        (config->GetDesign_Variable(iDV) == FFD_CAMBER) || (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ||
+        (config->GetDesign_Variable(iDV) == FFD_CONTROL_POINT) || (config->GetDesign_Variable(iDV) == FFD_NACELLE) ||
+        (config->GetDesign_Variable(iDV) == FFD_GULL) || (config->GetDesign_Variable(iDV) == FFD_TWIST) ||
+        (config->GetDesign_Variable(iDV) == FFD_ROTATION) || (config->GetDesign_Variable(iDV) == FFD_CAMBER) ||
+        (config->GetDesign_Variable(iDV) == FFD_THICKNESS) ||
         (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK)) {
       /*--- Read the FFD information in the first iteration. ---*/
 
@@ -481,9 +481,6 @@ void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* c
           case FFD_THICKNESS_2D:
             Local_MoveSurface =
                 surface_movement->SetFFDThickness_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true);
-            break;
-          case FFD_TWIST_2D:
-            Local_MoveSurface = surface_movement->SetFFDTwist_2D(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true);
             break;
           case FFD_CONTROL_POINT:
             Local_MoveSurface = surface_movement->SetFFDCPChange(geometry, config, FFDBox[iFFDBox], FFDBox, iDV, true);
@@ -564,6 +561,10 @@ void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* c
 
     else if (config->GetDesign_Variable(iDV) == ROTATION) {
       surface_movement->SetRotation(geometry, config, iDV, true);
+    }
+
+    else if (config->GetDesign_Variable(iDV) == HICKS_HENNE_CAMBER) {
+      surface_movement->SetHicksHenneCamber(geometry, config);
     }
 
     /*--- NACA_4Digits design variable. ---*/

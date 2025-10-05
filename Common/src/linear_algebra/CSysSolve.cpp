@@ -2,14 +2,14 @@
  * \file CSysSolve.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -109,8 +109,19 @@ void CSysSolve<ScalarType>::SolveReduced(int n, const su2matrix<ScalarType>& Hsb
 }
 
 template <class ScalarType>
-void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
+void CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg,
                                            vector<CSysVector<ScalarType> >& w) const {
+  const auto thread = omp_get_thread_num();
+
+  /*--- If Hsbg is shared by multiple threads calling this function, only one
+   * thread can write into it. If Hsbg is private, all threads need to write. ---*/
+
+  auto SetHsbg = [&](int row, int col, const ScalarType& value) {
+    if (!shared_hsbg || thread == 0) {
+      Hsbg(row, col) = value;
+    }
+  };
+
   /*--- Parameter for reorthonormalization ---*/
 
   const ScalarType reorth = 0.98;
@@ -132,20 +143,21 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
 
   for (int k = 0; k < i + 1; k++) {
     ScalarType prod = w[i + 1].dot(w[k]);
-    Hsbg(k, i) = prod;
+    ScalarType h_ki = prod;
     w[i + 1] -= prod * w[k];
 
     /*--- Check if reorthogonalization is necessary ---*/
 
     if (prod * prod > thr) {
       prod = w[i + 1].dot(w[k]);
-      Hsbg(k, i) += prod;
+      h_ki += prod;
       w[i + 1] -= prod * w[k];
     }
+    SetHsbg(k, i, h_ki);
 
     /*--- Update the norm and check its size ---*/
 
-    nrm -= pow(Hsbg(k, i), 2);
+    nrm -= pow(h_ki, 2);
     nrm = max<ScalarType>(nrm, 0.0);
     thr = nrm * reorth;
   }
@@ -153,7 +165,7 @@ void CSysSolve<ScalarType>::ModGramSchmidt(int i, su2matrix<ScalarType>& Hsbg,
   /*--- Test the resulting vector ---*/
 
   nrm = w[i + 1].norm();
-  Hsbg(i + 1, i) = nrm;
+  SetHsbg(i + 1, i, nrm);
 
   /*--- Scale the resulting vector ---*/
 
@@ -192,7 +204,7 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType>& 
                                                   const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                   unsigned long m, ScalarType& residual, bool monitoring,
                                                   const CConfig* config) const {
-  const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
+  const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   ScalarType norm_r = 0.0, norm0 = 0.0;
   unsigned long i = 0;
 
@@ -241,16 +253,22 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType>& 
     if (tol_type == LinearToleranceType::RELATIVE) norm0 = norm_r;
 
     if ((norm_r < tol * norm0) || (norm_r < eps)) {
-      if (master && (lin_sol_mode != LINEAR_SOLVER_MODE::MESH_DEFORM))
+      if (masterRank && (lin_sol_mode != LINEAR_SOLVER_MODE::MESH_DEFORM)) {
+        SU2_OMP_MASTER
         cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
+        END_SU2_OMP_MASTER
+      }
       return 0;
     }
 
     /*--- Output header information including initial residual ---*/
 
-    if (monitoring && master) {
-      WriteHeader("CG", tol, norm_r);
-      WriteHistory(i, norm_r / norm0);
+    if (monitoring && masterRank) {
+      SU2_OMP_MASTER {
+        WriteHeader("CG", tol, norm_r);
+        WriteHistory(i, norm_r / norm0);
+      }
+      END_SU2_OMP_MASTER
     }
   }
 
@@ -281,7 +299,11 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType>& 
 
       norm_r = r.norm();
       if (norm_r < tol * norm0) break;
-      if (((monitoring) && (master)) && ((i + 1) % monitorFreq == 0)) WriteHistory(i + 1, norm_r / norm0);
+      if (((monitoring) && (masterRank)) && ((i + 1) % monitorFreq == 0)) {
+        SU2_OMP_MASTER
+        WriteHistory(i + 1, norm_r / norm0);
+        END_SU2_OMP_MASTER
+      }
     }
 
     precond(r, z);
@@ -300,7 +322,11 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType>& 
   /*--- Recalculate final residual (this should be optional) ---*/
 
   if ((monitoring) && (config->GetComm_Level() == COMM_FULL)) {
-    if (master) WriteFinalResidual("CG", i, norm_r / norm0);
+    if (masterRank) {
+      SU2_OMP_MASTER
+      WriteFinalResidual("CG", i, norm_r / norm0);
+      END_SU2_OMP_MASTER
+    }
 
     if (recomputeRes) {
       mat_vec(x, A_x);
@@ -308,8 +334,10 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType>& 
       ScalarType true_res = r.norm();
 
       if (fabs(true_res - norm_r) > tol * 10.0) {
-        if (master) {
+        if (masterRank) {
+          SU2_OMP_MASTER
           WriteWarning(norm_r, true_res, tol);
+          END_SU2_OMP_MASTER
         }
       }
     }
@@ -325,8 +353,11 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
                                                       const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                       unsigned long m, ScalarType& residual, bool monitoring,
                                                       const CConfig* config) const {
-  const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
+  const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   const bool flexible = !precond.IsIdentity();
+  /*--- If we call the solver outside of a parallel region, but the number of threads allows,
+   * we still want to parallelize some of the expensive operations. ---*/
+  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
 
   /*---  Check the subspace size ---*/
 
@@ -386,7 +417,11 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   if ((beta < tol * norm0) || (beta < eps)) {
     /*--- System is already solved ---*/
 
-    if (master) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+    if (masterRank) {
+      SU2_OMP_MASTER
+      cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+      END_SU2_OMP_MASTER
+    }
     residual = beta;
     return 0;
   }
@@ -403,9 +438,12 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   /*--- Output header information including initial residual ---*/
 
   unsigned long i = 0;
-  if ((monitoring) && (master)) {
-    WriteHeader("FGMRES", tol, beta);
-    WriteHistory(i, beta / norm0);
+  if ((monitoring) && (masterRank)) {
+    SU2_OMP_MASTER {
+      WriteHeader("FGMRES", tol, beta);
+      WriteHistory(i, beta / norm0);
+    }
+    END_SU2_OMP_MASTER
   }
 
   /*---  Loop over all search directions ---*/
@@ -429,7 +467,14 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     /*---  Modified Gram-Schmidt orthogonalization ---*/
 
-    ModGramSchmidt(i, H, W);
+    if (nestedParallel) {
+      /*--- "omp parallel if" does not work well here ---*/
+      SU2_OMP_PARALLEL
+      ModGramSchmidt(true, i, H, W);
+      END_SU2_OMP_PARALLEL
+    } else {
+      ModGramSchmidt(false, i, H, W);
+    }
 
     /*---  Apply old Givens rotations to new column of the Hessenberg matrix then generate the
      new Givens rotation matrix and apply it to the last two elements of H[:][i] and g ---*/
@@ -444,7 +489,11 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     /*---  Output the relative residual if necessary ---*/
 
-    if ((((monitoring) && (master)) && ((i + 1) % monitorFreq == 0)) && (master)) WriteHistory(i + 1, beta / norm0);
+    if ((((monitoring) && (masterRank)) && ((i + 1) % monitorFreq == 0))) {
+      SU2_OMP_MASTER
+      WriteHistory(i + 1, beta / norm0);
+      END_SU2_OMP_MASTER
+    }
   }
 
   /*---  Solve the least-squares system and update solution ---*/
@@ -453,14 +502,22 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   const auto& basis = flexible ? Z : W;
 
-  for (unsigned long k = 0; k < i; k++) {
-    x += y[k] * basis[k];
+  if (nestedParallel) {
+    SU2_OMP_PARALLEL
+    for (unsigned long k = 0; k < i; k++) x += y[k] * basis[k];
+    END_SU2_OMP_PARALLEL
+  } else {
+    for (unsigned long k = 0; k < i; k++) x += y[k] * basis[k];
   }
 
   /*---  Recalculate final (neg.) residual (this should be optional) ---*/
 
   if ((monitoring) && (config->GetComm_Level() == COMM_FULL)) {
-    if (master) WriteFinalResidual("FGMRES", i, beta / norm0);
+    if (masterRank) {
+      SU2_OMP_MASTER
+      WriteFinalResidual("FGMRES", i, beta / norm0);
+      END_SU2_OMP_MASTER
+    }
 
     if (recomputeRes) {
       mat_vec(x, W[0]);
@@ -468,8 +525,10 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
       ScalarType res = W[0].norm();
 
       if (fabs(res - beta) > tol * 10) {
-        if (master) {
+        if (masterRank) {
+          SU2_OMP_MASTER
           WriteWarning(beta, res, tol);
+          END_SU2_OMP_MASTER
         }
       }
     }
@@ -511,7 +570,7 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
                                                        const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                        unsigned long m, ScalarType& residual, bool monitoring,
                                                        const CConfig* config) const {
-  const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
+  const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   ScalarType norm_r = 0.0, norm0 = 0.0;
   unsigned long i = 0;
 
@@ -561,15 +620,22 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
     if (tol_type == LinearToleranceType::RELATIVE) norm0 = norm_r;
 
     if ((norm_r < tol * norm0) || (norm_r < eps)) {
-      if (master) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
+      if (masterRank) {
+        SU2_OMP_MASTER
+        cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
+        END_SU2_OMP_MASTER
+      }
       return 0;
     }
 
     /*--- Output header information including initial residual ---*/
 
-    if ((monitoring) && (master)) {
-      WriteHeader("BCGSTAB", tol, norm_r);
-      WriteHistory(i, norm_r / norm0);
+    if ((monitoring) && (masterRank)) {
+      SU2_OMP_MASTER {
+        WriteHeader("BCGSTAB", tol, norm_r);
+        WriteHistory(i, norm_r / norm0);
+      }
+      END_SU2_OMP_MASTER
     }
   }
 
@@ -637,22 +703,32 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
       norm_r = r.norm();
       if (norm_r < tol * norm0) break;
-      if (((monitoring) && (master)) && ((i + 1) % monitorFreq == 0) && (master)) WriteHistory(i + 1, norm_r / norm0);
+      if (((monitoring) && (masterRank)) && ((i + 1) % monitorFreq == 0)) {
+        SU2_OMP_MASTER
+        WriteHistory(i + 1, norm_r / norm0);
+        END_SU2_OMP_MASTER
+      }
     }
   }
 
   /*--- Recalculate final residual (this should be optional) ---*/
 
   if ((monitoring) && (config->GetComm_Level() == COMM_FULL)) {
-    if (master) WriteFinalResidual("BCGSTAB", i, norm_r / norm0);
+    if (masterRank) {
+      SU2_OMP_MASTER
+      WriteFinalResidual("BCGSTAB", i, norm_r / norm0);
+      END_SU2_OMP_MASTER
+    }
 
     if (recomputeRes) {
       mat_vec(x, A_x);
       r = b - A_x;
       ScalarType true_res = r.norm();
 
-      if ((fabs(true_res - norm_r) > tol * 10.0) && (master)) {
+      if ((fabs(true_res - norm_r) > tol * 10.0) && (masterRank)) {
+        SU2_OMP_MASTER
         WriteWarning(norm_r, true_res, tol);
+        END_SU2_OMP_MASTER
       }
     }
   }
@@ -667,7 +743,7 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
                                                         const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                         unsigned long m, ScalarType& residual, bool monitoring,
                                                         const CConfig* config) const {
-  const bool master = (SU2_MPI::GetRank() == MASTER_NODE) && (omp_get_thread_num() == 0);
+  const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   const bool fix_iter_mode = tol < eps;
   ScalarType norm_r = 0.0, norm0 = 0.0;
   unsigned long i = 0;
@@ -717,15 +793,22 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
     if (tol_type == LinearToleranceType::RELATIVE) norm0 = norm_r;
 
     if ((norm_r < tol * norm0) || (norm_r < eps)) {
-      if (master) cout << "CSysSolve::Smoother_LinSolver(): system solved by initial guess." << endl;
+      if (masterRank) {
+        SU2_OMP_MASTER
+        cout << "CSysSolve::Smoother_LinSolver(): system solved by initial guess." << endl;
+        END_SU2_OMP_MASTER
+      }
       return 0;
     }
 
     /*--- Output header information including initial residual. ---*/
 
-    if ((monitoring) && (master)) {
-      WriteHeader("Smoother", tol, norm_r);
-      WriteHistory(i, norm_r / norm0);
+    if ((monitoring) && (masterRank)) {
+      SU2_OMP_MASTER {
+        WriteHeader("Smoother", tol, norm_r);
+        WriteHistory(i, norm_r / norm0);
+      }
+      END_SU2_OMP_MASTER
     }
   }
 
@@ -759,14 +842,20 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
     if (!fix_iter_mode && config->GetComm_Level() == COMM_FULL) {
       norm_r = r.norm();
       if (norm_r < tol * norm0) break;
-      if (((monitoring) && (master)) && ((i + 1) % monitorFreq == 0)) WriteHistory(i + 1, norm_r / norm0);
+      if (((monitoring) && (masterRank)) && ((i + 1) % monitorFreq == 0)) {
+        SU2_OMP_MASTER
+        WriteHistory(i + 1, norm_r / norm0);
+        END_SU2_OMP_MASTER
+      }
     }
   }
 
   if (fix_iter_mode) norm_r = r.norm();
 
-  if ((monitoring) && (master) && (config->GetComm_Level() == COMM_FULL)) {
+  if ((monitoring) && (masterRank) && (config->GetComm_Level() == COMM_FULL)) {
+    SU2_OMP_MASTER
     WriteFinalResidual("Smoother", i, norm_r / norm0);
+    END_SU2_OMP_MASTER
   }
 
   residual = norm_r / norm0;

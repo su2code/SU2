@@ -2,14 +2,14 @@
  * \file CFEAIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,6 +48,13 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
   CIntegration* feaIntegration = integration[val_iZone][val_iInst][FEA_SOL];
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
+  /*--- Add heat solver integration step. ---*/
+  if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::HEAT_EQUATION, RUNTIME_HEAT_SYS);
+    integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                      RUNTIME_HEAT_SYS, val_iZone, val_iInst);
+  }
+
   /*--- FEA equations ---*/
   config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_ELASTICITY, RUNTIME_FEA_SYS);
 
@@ -69,8 +76,8 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
   } else if (nonlinear && !incremental_load) {
     /*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
 
-    /*--- Keep the current inner iter, we need to restore it in discrete adjoint cases as file output depends on it
-     * ---*/
+    /*--- Keep the current inner iter, we need to restore it in discrete adjoint cases
+     * because file output depends on it. ---*/
     const auto CurIter = config[val_iZone]->GetInnerIter();
 
     /*--- Newton-Raphson subiterations ---*/
@@ -84,11 +91,11 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
       if (disc_adj_fem) {
         config[val_iZone]->SetInnerIter(CurIter);
         break;
-      }         StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
-                           FFDBox, val_iZone, INST_0);
+      }
+      StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
+                         FFDBox, val_iZone, INST_0);
 
-        if (StopCalc && (IntIter > 0)) break;
-     
+      if (StopCalc && (IntIter > 0)) break;
     }
 
   } else {
@@ -101,13 +108,16 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
 
     /*--- Run two nonlinear iterations to check if incremental loading can be skipped ---*/
 
-    for (IntIter = 0; IntIter < 2; ++IntIter) {
+    auto Iterate = [&](unsigned long IntIter) {
       config[val_iZone]->SetInnerIter(IntIter);
-
       feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
 
       StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
                          FFDBox, val_iZone, INST_0);
+    };
+
+    for (IntIter = 0; IntIter < 2; ++IntIter) {
+      Iterate(IntIter);
     }
 
     /*--- Early return if we already meet the convergence criteria. ---*/
@@ -125,13 +135,7 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
       /*--- Newton-Raphson subiterations ---*/
 
       for (IntIter = 2; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
-        config[val_iZone]->SetInnerIter(IntIter);
-
-        feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
-
-        StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
-                           FFDBox, val_iZone, INST_0);
-
+        Iterate(IntIter);
         if (StopCalc) break;
       }
 
@@ -162,14 +166,7 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
         /*--- Newton-Raphson subiterations ---*/
 
         for (IntIter = 0; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
-          config[val_iZone]->SetInnerIter(IntIter);
-
-          feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_FEA_SYS, val_iZone,
-                                               val_iInst);
-
-          StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
-                             FFDBox, val_iZone, INST_0);
-
+          Iterate(IntIter);
           if (StopCalc && (IntIter > 0)) break;
         }
       }
@@ -183,21 +180,16 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
                            CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                            CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                            unsigned short val_iInst) {
-  const bool dynamic = (config[val_iZone]->GetTime_Domain());
-  const bool fsi = config[val_iZone]->GetFSI_Simulation();
-
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
   /*----------------- Update structural solver ----------------------*/
 
-  if (dynamic) {
-    integration[val_iZone][val_iInst][FEA_SOL]->SetDualTime_Solver(
-        geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0][FEA_SOL], config[val_iZone],
-        MESH_0);
-
-  } else if (fsi) {
-    /*--- For FSI problems, output the relaxed result, which is the one transferred into the fluid domain (for restart
-     * purposes) ---*/
+  if (config[val_iZone]->GetTime_Domain()) {
+    integration[val_iZone][val_iInst][FEA_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][MESH_0], feaSolver,
+                                                                   config[val_iZone], MESH_0);
+  } else if (config[val_iZone]->GetFSI_Simulation() && config[val_iZone]->GetRelaxation()) {
+    /*--- For FSI problems with relaxation, output the relaxed result, which is the one transferred into the fluid
+     * domain (for consistent restart purposes). ---*/
     if (config[val_iZone]->GetKind_TimeIntScheme_FEA() == STRUCT_TIME_INT::NEWMARK_IMPLICIT) {
       feaSolver->ImplicitNewmark_Relaxation(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
     }
@@ -239,11 +231,9 @@ bool CFEAIteration::Monitor(COutput* output, CIntegration**** integration, CGeom
 
   UsedTime = StopTime - StartTime;
 
-  if (config[val_iZone]->GetMultizone_Problem() || config[val_iZone]->GetSinglezone_Driver()) {
-    output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
-                              config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
-                              config[val_iZone]->GetInnerIter());
-  }
+  output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
+                           config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
+                           config[val_iZone]->GetInnerIter());
 
   return output->GetConvergence();
 }

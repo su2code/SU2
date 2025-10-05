@@ -2,14 +2,14 @@
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@ CUpwRoeBase_Flow::CUpwRoeBase_Flow(unsigned short val_nDim, unsigned short val_n
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
-  kappa = config->GetRoe_Kappa(); // 1 is unstable
+  kappa = config->GetRoe_Kappa();
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -110,7 +110,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
     AD::SetPreaccIn(Dissipation_i); AD::SetPreaccIn(Dissipation_j);
   }
 
-  /*--- Face area (norm or the normal vector) and unit normal ---*/
+  /*--- Face area (norm of the normal vector) and unit normal ---*/
 
   Area = GeometryToolbox::Norm(nDim, Normal);
 
@@ -690,7 +690,7 @@ CUpwGeneralRoe_Flow::CUpwGeneralRoe_Flow(unsigned short val_nDim, unsigned short
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   /* A grid is defined as dynamic if there's rigid grid movement or grid deformation AND the problem is time domain */
   dynamic_grid = config->GetDynamic_Grid();
-  kappa = config->GetRoe_Kappa(); // 1 is unstable
+  kappa = config->GetRoe_Kappa();
 
 
   Flux = new su2double [nVar];

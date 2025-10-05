@@ -2,14 +2,14 @@
  * \file CTurbSolver.cpp
  * \brief Main subroutines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -104,15 +104,17 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
                               bool val_update_geo) {
   /*--- Restart the solution from file information ---*/
 
-  const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  string restart_filename = config->GetSolution_FileName();
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
     if (config->GetRead_Binary_Restart()) {
+      restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
       Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
     } else {
+      restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 
@@ -129,8 +131,9 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
     const bool energy = config->GetEnergy_Equation();
     const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+    const bool flamelet = (config->GetKind_FluidModel() == FLUID_FLAMELET);
 
-    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+    if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) skipVars--;
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -166,8 +169,8 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 
   /*--- MPI solution and compute the eddy viscosity ---*/
 
-  solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
 
   /*--- For turbulent+species simulations the solver Pre-/Postprocessing is done by the species solver. ---*/
   if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE && config->GetKind_Trans_Model() == TURB_TRANS_MODEL::NONE) {
@@ -181,8 +184,8 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
     MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][TURB_SOL]->GetNodes()->GetSolution(),
                          *geometry[iMesh], solver[iMesh][TURB_SOL]->GetNodes()->GetSolution());
-    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
+    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
 
     if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
@@ -195,10 +198,8 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     /*--- Delete the class memory that is used to load the restart. ---*/
 
-    delete[] Restart_Vars;
-    Restart_Vars = nullptr;
-    delete[] Restart_Data;
-    Restart_Data = nullptr;
+    Restart_Vars = decltype(Restart_Vars){};
+    Restart_Data = decltype(Restart_Data){};
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -236,4 +237,47 @@ void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *
     END_SU2_OMP_FOR
   }
 
+}
+
+unsigned long CTurbSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
+
+  /*--- Register muT as input/output of a RANS iteration. ---*/
+  nodes->RegisterEddyViscosity(input);
+
+  /*--- We don't need to save adjoint values for muT. ---*/
+  return 0;
+}
+
+void CTurbSolver::ComputeUnderRelaxationFactorHelper(su2double allowableRatio) {
+
+  /* Loop over the solution update given by relaxing the linear
+   system for this nonlinear iteration. */
+  
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    su2double localUnderRelaxation = 1.0;
+
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      const unsigned long index = iPoint * nVar + iVar;
+      su2double ratio = fabs(LinSysSol[index])/(fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
+
+      /* We impose a limit on the maximum percentage that the
+      turbulence variables can change over a nonlinear iteration. */
+      if (ratio > allowableRatio) {
+        localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+      
+      }
+    }
+
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+    
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+    
+    /* Store the under-relaxation factor for this point. */
+
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+  }
+  END_SU2_OMP_FOR
 }

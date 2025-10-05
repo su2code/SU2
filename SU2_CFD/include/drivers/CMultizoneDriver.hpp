@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@
  * \ingroup Drivers
  * \brief Class for driving zone-specific iterations.
  * \author R. Sanchez, O. Burghardt
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  */
 class CMultizoneDriver : public CDriver {
 protected:
@@ -83,6 +83,15 @@ protected:
    */
   bool TransferData(unsigned short donorZone, unsigned short targetZone);
 
+
+  /*!
+   * \brief Transfer the local turboperfomance quantities (for each blade row) from all the donorZones to the
+   * targetZone (ZONE_0).
+   * \note IMPORTANT: This approach of multi-zone performances rely upon the fact that turbomachinery markers follow
+   * the natural (stator-rotor) development of the real machine.
+   */
+  void SetTurboPerformance();
+
   /*!
    * \brief Check the convergence at the outer level.
    */
@@ -109,7 +118,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CMultizoneDriver(void) override;
+  ~CMultizoneDriver() override;
 
   /*!
    * \brief [Overload] Launch the computation for multizone problems.
@@ -117,9 +126,25 @@ public:
   void StartSolver() override;
 
   /*!
-   * \brief Preprocess the multizone iteration
+   * \brief Preprocess the multizone iteration.
    */
   void Preprocess(unsigned long TimeIter) override;
+
+  /*!
+   * \brief Solves one time iteration.
+   */
+  void Run() override {
+    switch (driver_config->GetKind_MZSolver()){
+      case ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL: RunGaussSeidel(); break;  // Block Gauss-Seidel iteration
+      case ENUM_MULTIZONE::MZ_BLOCK_JACOBI: RunJacobi(); break;             // Block-Jacobi iteration
+    }
+  }
+
+  /*!
+   * \brief Placeholder for post processing operations to make the interface
+   * of this driver identical to CSinglezoneDriver.
+   */
+  void Postprocess() {}
 
   /*!
    * \brief Update the dual-time solution within multiple zones.

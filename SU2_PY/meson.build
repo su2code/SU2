@@ -4,12 +4,10 @@ install_data(['continuous_adjoint.py',
 	     'mesh_deformation.py',
 	     'parallel_computation.py',
 	     'parallel_computation_fsi.py',
-	     'package_tests.py',
 	     'shape_optimization.py',
 	     'merge_solution.py',
 	     'set_ffd_design_var.py',
 	     'compute_polar.py',
-	     'compute_multipoint.py',
 	     'discrete_adjoint.py',
 	     'direct_differentiation.py',
 	     'fsi_computation.py',
@@ -72,3 +70,5 @@ install_data(['FSI_tools/__init__.py',
 install_data(['SU2_Nastran/__init__.py',
               'SU2_Nastran/pysu2_nastran.py'],
         install_dir: join_paths(get_option('bindir'), 'SU2_Nastran'))
+
+install_subdir(['../externals/FADO'], install_dir: get_option('bindir'))

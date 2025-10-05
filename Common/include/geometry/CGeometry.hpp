@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,7 +60,6 @@ extern "C" {
 #include "dual_grid/CTurboVertex.hpp"
 
 #include "../CConfig.hpp"
-#include "../fem/geometry_structure_fem_part.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
 #include "../adt/CADTElemClass.hpp"
 
@@ -240,8 +239,12 @@ class CGeometry {
   unsigned long* nVertex{nullptr};     /*!< \brief Number of vertex for each marker. */
   unsigned long* nElem_Bound{nullptr}; /*!< \brief Number of elements of the boundary. */
   string* Tag_to_Marker{nullptr};      /*!< \brief Names of boundary markers. */
-  vector<bool>
-      bound_is_straight; /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+
+  /*!< \brief Corrected normals on nodes with shared symmetry markers. */
+  vector<std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>>> symmetryNormals;
+
+  /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+  vector<bool> boundIsStraight;
   vector<su2double> SurfaceAreaCfgFile; /*!< \brief Total Surface area for all markers. */
 
   /*--- Partitioning-specific variables ---*/
@@ -426,7 +429,7 @@ class CGeometry {
    * \param[out] COUNT_PER_POINT - Number of communicated variables per point.
    * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
    */
-  void GetCommCountAndType(const CConfig* config, unsigned short commType, unsigned short& COUNT_PER_POINT,
+  void GetCommCountAndType(const CConfig* config, MPI_QUANTITIES commType, unsigned short& COUNT_PER_POINT,
                            unsigned short& MPI_TYPE) const;
 
   /*!
@@ -436,14 +439,14 @@ class CGeometry {
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
-  void InitiateComms(CGeometry* geometry, const CConfig* config, unsigned short commType) const;
+  void InitiateComms(CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType) const;
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the
    * data into the geometry class. \param[in] geometry - Geometrical definition of the problem. \param[in] config   -
    * Definition of the particular problem. \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
-  void CompleteComms(CGeometry* geometry, const CConfig* config, unsigned short commType);
+  void CompleteComms(CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType);
 
   /*!
    * \brief Get number of coordinates.
@@ -594,17 +597,6 @@ class CGeometry {
   inline bool CheckEdge(unsigned long first_point, unsigned long second_point) const {
     return FindEdge(first_point, second_point, false) >= 0;
   }
-
-  /*!
-   * \brief Get the distance between a plane (defined by three point) and a point.
-   * \param[in] Coord - Coordinates of the point.
-   * \param[in] iCoord - Coordinates of the first point that defines the plane.
-   * \param[in] jCoord - Coordinates of the second point that defines the plane.
-   * \param[in] kCoord - Coordinates of the third point that defines the plane.
-   * \return Signed distance.
-   */
-  su2double Point2Plane_Distance(const su2double* Coord, const su2double* iCoord, const su2double* jCoord,
-                                 const su2double* kCoord);
 
   /*!
    * \brief Create a file for testing the geometry.
@@ -784,6 +776,15 @@ class CGeometry {
   inline virtual void GatherInOutAverageValues(CConfig* config, bool allocate) {}
 
   /*!
+   * \brief Store all the turboperformance in the solver in ZONE_0.
+   * \param[in] donor_geometry  - Solution from the donor mesh.
+   * \param[in] target_geometry - Solution from the target mesh.
+   * \param[in] donorZone       - counter of the donor solution
+   */
+  inline virtual void SetAvgTurboGeoValues(const CConfig* donor_config, CGeometry* donor_geometry,
+                                           unsigned short donorZone){};
+
+  /*!
    * \brief Set max length.
    * \param[in] config - Definition of the particular problem.
    */
@@ -821,6 +822,12 @@ class CGeometry {
    */
   inline virtual void SetBoundControlVolume(const CConfig* config, unsigned short action) {}
   inline virtual void SetBoundCVCoeffs(const CConfig* config, unsigned short action) {}
+
+  /*!
+   * \brief Computes modified normals at intersecting symmetry planes.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeModifiedSymmetryNormals(const CConfig* config);
 
   /*!
    * \brief A virtual member.
@@ -910,14 +917,6 @@ class CGeometry {
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_nSmooth - Number of smoothing iterations.
-   * \param[in] val_smooth_coeff - Relaxation factor.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetCoord_Smoothing(unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig* config) {}
-
-  /*!
-   * \brief A virtual member.
    * \param[in] fine_grid - Geometrical definition of the child grid (for multigrid).
    */
   inline virtual void SetPoint_Connectivity(const CGeometry* fine_grid) {}
@@ -939,9 +938,10 @@ class CGeometry {
   /*!
    * \brief A virtual member.
    * \param[in] fine_grid - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void SetBoundControlVolume(const CGeometry* fine_grid, unsigned short action) {}
+  inline virtual void SetBoundControlVolume(const CGeometry* fine_grid, const CConfig* config, unsigned short action) {}
 
   /*!
    * \brief A virtual member.
@@ -954,6 +954,19 @@ class CGeometry {
    * \param[in] config - Definition of the particular problem.
    */
   void SetCustomBoundary(CConfig* config);
+
+  /*!
+   * \brief General interface for setting the velocity in the geometry during motion ramps
+   * \param[in] config - config class
+   * \param[in] ramp_flag - flag for type of ramp
+   * \param[in] print - bool to print update to screen
+   */
+  void SetVelocity(CConfig* config, bool print) {
+    if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::ROTATING_FRAME)
+      SetRotationalVelocity(config, print);
+    else if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::STEADY_TRANSLATION)
+      SetTranslationalVelocity(config, print);
+  };
 
   /*!
    * \brief Set cartesian grid velocity based on rotational speed and axis.
@@ -1010,12 +1023,12 @@ class CGeometry {
 
   /*!
    * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
-   *        only and store the information in bound_is_straight. For all other boundary types
+   *        only and store the information in boundIsStraight. For all other boundary types
    *        this will return false and could therfore be wrong. Used ultimately for BC_Slip_Wall.
    * \param[in] config - Definition of the particular problem.
    * \param[in] print_on_screen - Boolean whether to print result on screen.
    */
-  void ComputeSurf_Straightness(CConfig* config, bool print_on_screen);
+  void ComputeSurfStraightness(const CConfig* config, bool print_on_screen);
 
   /*!
    * \brief Find and store all vertices on a sharp corner in the geometry.
@@ -1643,6 +1656,50 @@ class CGeometry {
   }
 
   /*!
+   * \brief Set a representative wall value of the agglomerated control volumes on a particular boundary marker.
+   * \param[in] fine_grid - Geometrical definition of the problem.
+   * \param[in] val_marker - Index of the boundary marker.
+   * \param[in] wall_quantity - Object with methods Get(iVertex_fine) and Set(iVertex_coarse, val).
+   */
+  template <class T>
+  void SetMultiGridMarkerQuantity(const CGeometry* fine_grid, unsigned short val_marker, T& wall_quantity) {
+    for (auto iVertex = 0ul; iVertex < nVertex[val_marker]; iVertex++) {
+      const auto Point_Coarse = vertex[val_marker][iVertex]->GetNode();
+
+      if (!nodes->GetDomain(Point_Coarse)) continue;
+
+      su2double Area_Parent = 0.0;
+
+      /*--- Compute area parent by taking into account only volumes that are on the marker. ---*/
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+        const auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
+        const auto isVertex =
+            fine_grid->nodes->GetDomain(Point_Fine) && (fine_grid->nodes->GetVertex(Point_Fine, val_marker) != -1);
+        if (isVertex) {
+          Area_Parent += fine_grid->nodes->GetVolume(Point_Fine);
+        }
+      }
+
+      su2double Quantity_Coarse = 0.0;
+
+      /*--- Loop again to average coarser value. ---*/
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+        const auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
+        const auto isVertex =
+            fine_grid->nodes->GetDomain(Point_Fine) && (fine_grid->nodes->GetVertex(Point_Fine, val_marker) != -1);
+        if (isVertex) {
+          const auto Vertex_Fine = fine_grid->nodes->GetVertex(Point_Fine, val_marker);
+          const auto Area_Children = fine_grid->nodes->GetVolume(Point_Fine);
+          Quantity_Coarse += wall_quantity.Get(Vertex_Fine) * Area_Children / Area_Parent;
+        }
+      }
+
+      /*--- Set the value at the coarse level. ---*/
+      wall_quantity.Set(iVertex, Quantity_Coarse);
+    }
+  }
+
+  /*!
    * \brief Filter values given at the element CG by performing a weighted average over a radial neighbourhood.
    * \param[in] filter_radius - Parameter defining the size of the neighbourhood.
    * \param[in] kernels - Kernel types and respective parameter, size of vector defines number of filter recursions.
@@ -1732,10 +1789,14 @@ class CGeometry {
   /*!
    * \brief Get the edge coloring.
    * \note This method computes the coloring if that has not been done yet.
+   * \note Can be instructed to determine and use the maximum edge color group size between 1 and
+   * CGeometry::edgeColorGroupSize that yields a coloring that is at least as efficient as #COLORING_EFF_THRESH.
    * \param[out] efficiency - optional output of the coloring efficiency.
+   * \param[in] maximizeEdgeColorGroupSize - use the maximum edge color group size that gives an efficient coloring.
    * \return Reference to the coloring.
    */
-  const CCompressedSparsePatternUL& GetEdgeColoring(su2double* efficiency = nullptr);
+  const CCompressedSparsePatternUL& GetEdgeColoring(su2double* efficiency = nullptr,
+                                                    bool maximizeEdgeColorGroupSize = false);
 
   /*!
    * \brief Force the natural (sequential) edge coloring.

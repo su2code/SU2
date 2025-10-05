@@ -2,14 +2,14 @@
  * \file COutput.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,10 +25,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <iostream>
+#include <csignal>
+
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
 #include "../../include/output/COutput.hpp"
+#include "../../include/output/CTurboOutput.hpp"
 #include "../../include/output/filewriter/CFVMDataSorter.hpp"
 #include "../../include/output/filewriter/CFEMDataSorter.hpp"
 #include "../../include/output/filewriter/CCGNSFileWriter.hpp"
@@ -45,6 +49,15 @@
 #include "../../include/output/filewriter/CSU2FileWriter.hpp"
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
+
+namespace {
+volatile sig_atomic_t STOP;
+
+void signalHandler(int signum) {
+   std::cout << "Interrupt signal (" << signum << ") received, saving files and exiting.\n";
+   STOP = 1;
+}
+}
 
 COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   rank(SU2_MPI::GetRank()),
@@ -69,24 +82,9 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   volumeFilename  = "volume";
   restartFilename = "restart";
 
-  /*--- Retrieve the history filename ---*/
+  /*--- Retrieve the history filename, including extension ---*/
 
-  historyFilename = config->GetConv_FileName();
-
-  /*--- Add the correct file extension depending on the file format ---*/
-
-  string hist_ext = ".csv";
-  if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) hist_ext = ".dat";
-
-  /*--- Append the zone ID ---*/
-
-  historyFilename = config->GetMultizone_HistoryFileName(historyFilename, config->GetiZone(), hist_ext);
-
-  /*--- Append the restart iteration ---*/
-
-  if (config->GetTime_Domain() && config->GetRestart()) {
-    historyFilename = config->GetUnsteady_FileName(historyFilename, config->GetRestart_Iter(), hist_ext);
-  }
+  historyFilename = config->GetHistory_FileName();
 
   historySep = ",";
 
@@ -160,16 +158,19 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   convergence        = false;
 
   buildFieldIndexCache = false;
-
   curInnerIter = 0;
   curOuterIter = 0;
   curTimeIter  = 0;
 
   volumeDataSorter = nullptr;
+  volumeDataSorterCompact = nullptr;
   surfaceDataSorter = nullptr;
 
   headerNeeded = false;
 
+  /*--- Setup a signal handler for SIGTERM. ---*/
+
+  signal(SIGTERM, signalHandler);
 }
 
 COutput::~COutput() {
@@ -179,6 +180,7 @@ COutput::~COutput() {
   delete fileWritingTable;
   delete historyFileTable;
   delete volumeDataSorter;
+  delete volumeDataSorterCompact;
   delete surfaceDataSorter;
 
 }
@@ -189,9 +191,8 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
                                   unsigned long TimeIter,
                                   unsigned long OuterIter,
                                   unsigned long InnerIter) {
-
-  curTimeIter  = TimeIter;
-  curAbsTimeIter = TimeIter - config->GetRestart_Iter();
+  curTimeIter = TimeIter;
+  curAbsTimeIter = max(TimeIter, config->GetStartWindowIteration()) - config->GetStartWindowIteration();
   curOuterIter = OuterIter;
   curInnerIter = InnerIter;
 
@@ -227,10 +228,37 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
 
 }
 
+void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CConfig **config, std::shared_ptr<CTurbomachineryStagePerformance>(TurboStagePerf), std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst){
+
+  unsigned long Iter= InnerIter;
+
+  if (config[ZONE_0]->GetMultizone_Problem())
+    Iter = OuterIter;
+
+  /*--- Turbomachinery Performance Screen summary output---*/
+  if (Iter%100 == 0 && rank == MASTER_NODE) {
+    SetTurboPerformance_Output(TurboPerf, config[val_iZone], TimeIter, OuterIter, InnerIter);
+    SetTurboMultiZonePerformance_Output(TurboStagePerf, TurboPerf, config[val_iZone]);
+  }
+
+  for (int iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone ++){
+    if (rank == MASTER_NODE) {
+      WriteTurboSpanwisePerformance(TurboPerf, geometry[iZone][val_iInst][MESH_0], config, iZone);
+    }
+  }
+
+  /*--- Update turboperformance history file*/
+  if (rank == MASTER_NODE){
+    LoadTurboHistoryData(TurboStagePerf, TurboPerf, config[val_iZone]);
+  }
+
+}
+
+
 void COutput::SetMultizoneHistoryOutput(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
 
-  curTimeIter  = TimeIter;
-  curAbsTimeIter = TimeIter - driver_config->GetRestart_Iter();
+  curTimeIter = TimeIter;
+  curAbsTimeIter = max(TimeIter, driver_config->GetStartWindowIteration()) - driver_config->GetStartWindowIteration();
   curOuterIter = OuterIter;
 
   /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
@@ -263,7 +291,6 @@ void COutput::OutputScreenAndHistory(CConfig *config) {
 }
 
 void COutput::SetupCustomHistoryOutput(const std::string& expression, CustomHistoryOutput& output) const {
-
   std::vector<std::string> symbols;
   output.expression = mel::Parse<passivedouble>(expression, symbols);
 
@@ -301,6 +328,9 @@ void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){
     if (volumeDataSorter == nullptr)
       volumeDataSorter = new CFEMDataSorter(config, geometry, volumeFieldNames);
 
+    if (config->GetWrt_Restart_Compact() && volumeDataSorterCompact == nullptr)
+      volumeDataSorterCompact = new CFEMDataSorter(config, geometry, requiredVolumeFieldNames);
+
     if (surfaceDataSorter == nullptr)
       surfaceDataSorter = new CSurfaceFEMDataSorter(config, geometry,
                                                   dynamic_cast<CFEMDataSorter*>(volumeDataSorter));
@@ -309,6 +339,9 @@ void COutput::AllocateDataSorters(CConfig *config, CGeometry *geometry){
 
     if (volumeDataSorter == nullptr)
       volumeDataSorter = new CFVMDataSorter(config, geometry, volumeFieldNames);
+
+    if (config->GetWrt_Restart_Compact() && volumeDataSorterCompact == nullptr)
+      volumeDataSorterCompact = new CFVMDataSorter(config, geometry, requiredVolumeFieldNames);
 
     if (surfaceDataSorter == nullptr)
       surfaceDataSorter = new CSurfaceFVMDataSorter(config, geometry,
@@ -331,18 +364,30 @@ void COutput::LoadData(CGeometry *geometry, CConfig *config, CSolver** solver_co
   /*--- Partition and sort the volume output data -- */
 
   volumeDataSorter->SortOutputData();
+  if (volumeDataSorterCompact != nullptr) volumeDataSorterCompact->SortOutputData();
 
 }
 
-void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName){
+void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName) {
 
+  /*--- File writer that will later be used to write the file to disk. Created below in the "switch" ---*/
   CFileWriter *fileWriter = nullptr;
 
-  /*--- if it is still present, strip the extension (suffix) from the filename ---*/
-  unsigned short lastindex = fileName.find_last_of('.');
-  fileName = fileName.substr(0, lastindex);
+  /*--- Set current time iter even if history file is not written ---*/
+  curTimeIter = config->GetTimeIter();
 
+  /*--- If the filename with appended iteration is set (depending on the WRT_*_OVERWRITE options)
+   *    two files are writen, the normal one and a copy to avoid overwriting previous outputs. ---*/
   string filename_iter, extension;
+
+  /*--- Write output information to screen ---*/
+
+  auto LogOutputFiles = [&](const std::string& message) {
+    if (rank == MASTER_NODE) {
+      (*fileWritingTable) << message << fileName + extension;
+      if (!filename_iter.empty()) (*fileWritingTable) << message + " + iter" << filename_iter + extension;
+    }
+  };
 
   /*--- Write files depending on the format --- */
 
@@ -356,18 +401,16 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
+
+      /*--- If we have compact restarts, we use only the required fields. ---*/
+      if (config->GetWrt_Restart_Compact())
+        surfaceDataSorter->SetRequiredFieldNames(requiredVolumeFieldNames);
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "CSV file" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "CSV file + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("CSV file");
       fileWriter = new CSU2FileWriter(surfaceDataSorter);
 
       break;
@@ -380,16 +423,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
 
       if (!config->GetWrt_Restart_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
+      /*--- If we have compact restarts, we use only the required fields. ---*/
+      if (config->GetWrt_Restart_Compact())
+        volumeDataSorter->SetRequiredFieldNames(requiredVolumeFieldNames);
 
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "SU2 ASCII restart" << fileName + extension;
-
-        if (!config->GetWrt_Restart_Overwrite())
-          (*fileWritingTable) << "SU2 ASCII restart + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("SU2 ASCII restart");
       fileWriter = new CSU2FileWriter(volumeDataSorter);
 
       break;
@@ -402,20 +442,16 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(restartFilename, "", curTimeIter);
 
       if (!config->GetWrt_Restart_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
-
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "SU2 binary restart" << fileName + extension;
-
-        if (!config->GetWrt_Restart_Overwrite())
-          (*fileWritingTable) << "SU2 binary restart + iter" << filename_iter + extension;
-
+      LogOutputFiles("SU2 binary restart");
+      if (config->GetWrt_Restart_Compact()) {
+        /*--- If we have compact restarts, we use only the required fields. ---*/
+        volumeDataSorterCompact->SetRequiredFieldNames(requiredVolumeFieldNames);
+        fileWriter = new CSU2BinaryFileWriter(volumeDataSorterCompact);
+      } else {
+        fileWriter = new CSU2BinaryFileWriter(volumeDataSorter);
       }
-
-      fileWriter = new CSU2BinaryFileWriter(volumeDataSorter);
-
-
       break;
 
     case OUTPUT_TYPE::MESH:
@@ -423,26 +459,17 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       extension = CSU2MeshFileWriter::fileExt;
 
       if (fileName.empty())
-        fileName = volumeFilename;
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Set the mesh ASCII format ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "SU2 mesh" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "SU2 mesh + iter" << filename_iter + extension;
-      }
-
-      fileWriter = new CSU2MeshFileWriter(volumeDataSorter,
-                                          config->GetiZone(), config->GetnZone());
-
+      LogOutputFiles("SU2 mesh");
+      fileWriter = new CSU2MeshFileWriter(volumeDataSorter, config->GetiZone(), config->GetnZone());
 
       break;
 
@@ -454,22 +481,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, false);
 
-      /*--- Write tecplot binary ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Tecplot binary" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "Tecplot binary + iter" << filename_iter + extension;
-      }
-
-      fileWriter = new CTecplotBinaryFileWriter(volumeDataSorter,
-                                                curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+      LogOutputFiles("Tecplot binary");
+      fileWriter = new CTecplotBinaryFileWriter(volumeDataSorter, curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
 
@@ -481,22 +500,14 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write tecplot ascii ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Tecplot ASCII" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "Tecplot ASCII + iter" << filename_iter + extension;
-      }
-
-      fileWriter = new CTecplotFileWriter(volumeDataSorter,
-                                          curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+      LogOutputFiles("Tecplot ASCII");
+      fileWriter = new CTecplotFileWriter(volumeDataSorter, curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
 
@@ -508,20 +519,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write paraview binary ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Paraview" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "Paraview + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("Paraview");
       fileWriter = new CParaviewXMLFileWriter(volumeDataSorter);
 
       break;
@@ -534,64 +538,44 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write paraview binary ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Paraview binary (legacy)" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "Paraview binary + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("Paraview binary (legacy)");
       fileWriter = new CParaviewBinaryFileWriter(volumeDataSorter);
 
       break;
 
     case OUTPUT_TYPE::PARAVIEW_MULTIBLOCK:
       {
-
         extension = CParaviewVTMFileWriter::fileExt;
 
         if (fileName.empty())
           fileName = config->GetUnsteady_FileName(volumeFilename, curTimeIter, "");
 
         if (!config->GetWrt_Volume_Overwrite())
-          filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
+          filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
         /*--- Sort volume connectivity ---*/
 
         volumeDataSorter->SortConnectivity(config, geometry, true);
 
-        if (rank == MASTER_NODE) {
-          (*fileWritingTable) << "Paraview Multiblock" << fileName + extension;
-
-          if (!config->GetWrt_Volume_Overwrite())
-            (*fileWritingTable) << "Paraview Multiblock + iter" << filename_iter + extension;
-        }
-
-        /*--- Allocate the vtm file writer (using fileName as the folder name) ---*/
-
-        fileWriter = new CParaviewVTMFileWriter(GetHistoryFieldValue("CUR_TIME"),
-                                                config->GetiZone(), config->GetnZone());
+        LogOutputFiles("Paraview Multiblock");
+        fileWriter = new CParaviewVTMFileWriter(GetHistoryFieldValue("CUR_TIME"), config->GetiZone(), config->GetnZone());
 
         /*--- We cast the pointer to its true type, to avoid virtual functions ---*/
-
         auto* vtmWriter = dynamic_cast<CParaviewVTMFileWriter*>(fileWriter);
 
         /*--- then we write the data into the folder---*/
-        vtmWriter->WriteFolderData(fileName, config, multiZoneHeaderString, volumeDataSorter,surfaceDataSorter, geometry);
+        vtmWriter->WriteFolderData(fileName, config, multiZoneHeaderString, volumeDataSorter, surfaceDataSorter, geometry);
 
         /*--- and we write the data into the folder with the iteration number ---*/
         if (!config->GetWrt_Volume_Overwrite())
-          vtmWriter->WriteFolderData(filename_iter, config, multiZoneHeaderString, volumeDataSorter,surfaceDataSorter, geometry);
-
+          vtmWriter->WriteFolderData(filename_iter, config, multiZoneHeaderString, volumeDataSorter, surfaceDataSorter, geometry);
       }
-
       break;
 
     case OUTPUT_TYPE::PARAVIEW_ASCII:
@@ -602,21 +586,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write paraview ascii ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Paraview ASCII" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "Paraview ASCII + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("Paraview ASCII");
       fileWriter = new CParaviewFileWriter(volumeDataSorter);
 
       break;
@@ -629,50 +605,34 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write surface paraview ascii ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Paraview ASCII surface" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "Paraview ASCII + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("Paraview ASCII surface");
       fileWriter = new CParaviewFileWriter(surfaceDataSorter);
 
       break;
 
     case OUTPUT_TYPE::SURFACE_PARAVIEW_LEGACY_BINARY:
 
-        extension = CParaviewBinaryFileWriter::fileExt;
+      extension = CParaviewBinaryFileWriter::fileExt;
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write surface paraview binary ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Paraview binary surface (legacy)" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "Paraview binary surface + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("Paraview binary surface (legacy)");
       fileWriter = new CParaviewBinaryFileWriter(surfaceDataSorter);
 
       break;
@@ -685,53 +645,35 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write paraview binary ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Paraview surface" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "Paraview surface + iter" << filename_iter + extension;
-      }
-
+      LogOutputFiles("Paraview surface");
       fileWriter = new CParaviewXMLFileWriter(surfaceDataSorter);
 
       break;
 
     case OUTPUT_TYPE::SURFACE_TECPLOT_ASCII:
 
-        extension = CTecplotFileWriter::fileExt;
+      extension = CTecplotFileWriter::fileExt;
 
       if (fileName.empty())
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write surface tecplot ascii ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Tecplot ASCII surface" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "Tecplot ASCII surface + iter" << filename_iter + extension;
-
-      }
-
-      fileWriter = new CTecplotFileWriter(surfaceDataSorter,
-                                          curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+      LogOutputFiles("Tecplot ASCII surface");
+      fileWriter = new CTecplotFileWriter(surfaceDataSorter, curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
 
@@ -743,25 +685,15 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
 
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write surface tecplot binary ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "Tecplot binary surface" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "Tecplot binary surface + iter" << filename_iter + extension;
-
-      }
-
-      fileWriter = new CTecplotBinaryFileWriter(surfaceDataSorter,
-                                                curTimeIter, GetHistoryFieldValue("TIME_STEP"));
+      LogOutputFiles("Tecplot binary surface");
+      fileWriter = new CTecplotBinaryFileWriter(surfaceDataSorter, curTimeIter, GetHistoryFieldValue("TIME_STEP"));
 
       break;
 
@@ -773,23 +705,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
-
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write ASCII STL ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "STL ASCII" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "STL ASCII + iter" << filename_iter + extension;
-
-      }
-
+      LogOutputFiles("STL ASCII");
       fileWriter = new CSTLFileWriter(surfaceDataSorter);
 
       break;
@@ -802,21 +724,12 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
       volumeDataSorter->SortConnectivity(config, geometry, true);
 
-      /*--- Write CGNS ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "CGNS" << fileName + extension;
-
-        if (!config->GetWrt_Volume_Overwrite())
-          (*fileWritingTable) << "CGNS + iter" << filename_iter + extension;
-
-      }
-
+      LogOutputFiles("CGNS");
       fileWriter = new CCGNSFileWriter(volumeDataSorter);
 
       break;
@@ -829,22 +742,13 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
         fileName = config->GetFilename(surfaceFilename, "", curTimeIter);
 
       if (!config->GetWrt_Surface_Overwrite())
-        filename_iter = config->GetFilename_Iter(fileName,curInnerIter, curOuterIter);
-
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
 
       /*--- Load and sort the output data and connectivity. ---*/
       surfaceDataSorter->SortConnectivity(config, geometry);
       surfaceDataSorter->SortOutputData();
 
-      /*--- Write SURFACE_CGNS ---*/
-      if (rank == MASTER_NODE) {
-        (*fileWritingTable) << "CGNS surface" << fileName + extension;
-
-        if (!config->GetWrt_Surface_Overwrite())
-          (*fileWritingTable) << "CGNS surface + iter" << filename_iter + extension;
-
-      }
-
+      LogOutputFiles("CGNS surface");
       fileWriter = new CCGNSFileWriter(surfaceDataSorter, true);
 
       break;
@@ -853,7 +757,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       break;
   }
 
-  if (fileWriter != nullptr){
+  if (fileWriter != nullptr) {
 
     /*--- Write data to file ---*/
 
@@ -861,21 +765,19 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
     su2double BandWidth = fileWriter->GetBandwidth();
 
-    /*--- Write data with iteration number to file ---*/
+    /*--- Write data with iteration number to file if required ---*/
 
-    if (!filename_iter.empty() && !config->GetWrt_Restart_Overwrite()){
+    if (!filename_iter.empty()) {
       fileWriter->WriteData(filename_iter);
 
-      /*--- overwrite bandwidth ---*/
-      BandWidth = fileWriter->GetBandwidth();
-
+      /*--- Average bandwidth ---*/
+      BandWidth = (BandWidth + fileWriter->GetBandwidth()) / 2;
     }
 
+    /*--- Compute and store the bandwidth ---*/
 
-  /*--- Compute and store the bandwidth ---*/
-
-    if (format == OUTPUT_TYPE::RESTART_BINARY){
-      config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg()+BandWidth);
+    if (format == OUTPUT_TYPE::RESTART_BINARY) {
+      config->SetRestart_Bandwidth_Agg(config->GetRestart_Bandwidth_Agg() + BandWidth);
     }
 
     if (config->GetWrt_Performance() && (rank == MASTER_NODE)){
@@ -928,6 +830,7 @@ bool COutput::SetResultFiles(CGeometry *geometry, CConfig *config, CSolver** sol
     /*--- Partition and sort the data --- */
 
     volumeDataSorter->SortOutputData();
+    if (volumeDataSorterCompact != nullptr) volumeDataSorterCompact->SortOutputData();
 
     if (rank == MASTER_NODE && !isFileWrite) {
       fileWritingTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
@@ -1064,9 +967,13 @@ bool COutput::ConvergenceMonitoring(CConfig *config, unsigned long Iteration) {
 
   if (convFields.empty() || Iteration < config->GetStartConv_Iter()) convergence = false;
 
+  /*--- If a SIGTERM signal is sent to one of the processes, we set convergence to true. ---*/
+  if (STOP) convergence = true;
+
   /*--- Apply the same convergence criteria to all processors. ---*/
 
   unsigned short local = convergence, global = 0;
+
   SU2_MPI::Allreduce(&local, &global, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
   convergence = global > 0;
 
@@ -1296,7 +1203,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config, bool wrt){
 
   /*--- Check for consistency and remove fields that are requested but not available --- */
 
-  CheckHistoryOutput();
+  CheckHistoryOutput(config->GetnZone());
 
   if (rank == MASTER_NODE && !noWriting){
 
@@ -1343,7 +1250,7 @@ void COutput::PreprocessMultizoneHistoryOutput(COutput **output, CConfig **confi
 
   /*--- Check for consistency and remove fields that are requested but not available --- */
 
-  CheckHistoryOutput();
+  CheckHistoryOutput(config[ZONE_0]->GetnZone());
 
   if (rank == MASTER_NODE && !noWriting){
 
@@ -1385,7 +1292,7 @@ void COutput::PrepareHistoryFile(CConfig *config){
 
 }
 
-void COutput::CheckHistoryOutput() {
+void COutput::CheckHistoryOutput(unsigned short nZone) {
 
   /*--- Set screen convergence output header and remove unavailable fields ---*/
 
@@ -1462,6 +1369,17 @@ void COutput::CheckHistoryOutput() {
 
   FieldsToRemove.clear();
   vector<bool> FoundField(nRequestedHistoryFields, false);
+
+  /*--- Checks if TURBO_PERF is enabled in config and sets the final zone calculations to be output ---*/
+
+  for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+    if (requestedHistoryFields[iReqField] == "TURBO_PERF" && nZone > 1){
+      std::stringstream reqField;
+      std::string strZones = std::to_string(nZone-1);
+      reqField << "TURBO_PERF[" << strZones << "]";
+      reqField >> requestedHistoryFields[iReqField];
+    }
+  }
 
   for (const auto& fieldReference : historyOutput_List) {
     const auto &field = historyOutput_Map.at(fieldReference);
@@ -1591,58 +1509,64 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
   SetVolumeOutputFields(config);
 
-  /*---Coordinates and solution groups must be always in the output.
-   * If they are not requested, add them here. ---*/
-
-  auto itCoord = std::find(requestedVolumeFields.begin(),
-                                          requestedVolumeFields.end(), "COORDINATES");
-  if (itCoord == requestedVolumeFields.end()){
+  /*--- Coordinates must be always in the output. If they are not requested, add them here. ---*/
+  auto itCoord = std::find(requestedVolumeFields.begin(), requestedVolumeFields.end(), "COORDINATES");
+  if (itCoord == requestedVolumeFields.end()) {
     requestedVolumeFields.emplace_back("COORDINATES");
     nRequestedVolumeFields++;
   }
-  auto itSol = std::find(requestedVolumeFields.begin(),
-                                          requestedVolumeFields.end(), "SOLUTION");
-  if (itSol == requestedVolumeFields.end()){
-    requestedVolumeFields.emplace_back("SOLUTION");
-    nRequestedVolumeFields++;
+
+  /*--- Add the solution if it was not requested for backwards compatibility, unless the COMPACT keyword was used to request exclusively the specified fields. ---*/
+  auto itSol = std::find(requestedVolumeFields.begin(), requestedVolumeFields.end(), "SOLUTION");
+  if (itSol == requestedVolumeFields.end()) {
+    auto itCompact = std::find(requestedVolumeFields.begin(), requestedVolumeFields.end(), "COMPACT");
+    if (itCompact == requestedVolumeFields.end()) {
+      requestedVolumeFields.emplace_back("SOLUTION");
+      nRequestedVolumeFields++;
+     }
   }
 
-  nVolumeFields = 0;
-
-  string RequestedField;
   std::vector<bool> FoundField(nRequestedVolumeFields, false);
   vector<string> FieldsToRemove;
 
-
   /*--- Loop through all fields defined in the corresponding SetVolumeOutputFields().
- * If it is also defined in the config (either as part of a group or a single field), the field
- * object gets an offset so that we know where to find the data in the Local_Data() array.
- *  Note that the default offset is -1. An index !=-1 defines this field as part of the output. ---*/
+   * If it is also defined in the config (either as part of a group or a single field), the field
+   * object gets an offset so that we know where to find the data in the Local_Data() array.
+   * Note that the default offset is -1. An index !=-1 defines this field as part of the output. ---*/
 
-  for (unsigned short iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++){
+  unsigned short nVolumeFields = 0, nVolumeFieldsCompact = 0;
+
+  for (size_t iField_Output = 0; iField_Output < volumeOutput_List.size(); iField_Output++) {
 
     const string &fieldReference = volumeOutput_List[iField_Output];
-    if (volumeOutput_Map.count(fieldReference) > 0){
-      VolumeOutputField &Field = volumeOutput_Map.at(fieldReference);
+    const auto it = volumeOutput_Map.find(fieldReference);
+    if (it != volumeOutput_Map.end()) {
+      VolumeOutputField &Field = it->second;
 
-      /*--- Loop through all fields specified in the config ---*/
+      /*--- Loop through the minimum required fields for restarts. ---*/
 
-      for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
+      for (const auto& RequiredField : restartVolumeFields) {
+        if ((RequiredField == Field.outputGroup || RequiredField == fieldReference) && Field.offsetCompact == -1) {
+          Field.offsetCompact = nVolumeFieldsCompact++;
+          requiredVolumeFieldNames.push_back(Field.fieldName);
+        }
+      }
 
-        RequestedField = requestedVolumeFields[iReqField];
+      /*--- Loop through all fields specified in the config. ---*/
 
-        if (((RequestedField == Field.outputGroup) || (RequestedField == fieldReference)) && (Field.offset == -1)){
-          Field.offset = nVolumeFields;
+      for (size_t iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++) {
+        const auto &RequestedField = requestedVolumeFields[iReqField];
+
+        if ((RequestedField == Field.outputGroup || RequestedField == fieldReference) && Field.offset == -1) {
+          Field.offset = nVolumeFields++;
           volumeFieldNames.push_back(Field.fieldName);
-          nVolumeFields++;
-
           FoundField[iReqField] = true;
         }
       }
     }
   }
 
-  for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
+  for (size_t iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
     if (!FoundField[iReqField]){
       FieldsToRemove.push_back(requestedVolumeFields[iReqField]);
     }
@@ -1650,7 +1574,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
 
   /*--- Remove fields which are not defined --- */
 
-  for (unsigned short iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
+  for (size_t iReqField = 0; iReqField < FieldsToRemove.size(); iReqField++){
     if (rank == MASTER_NODE) {
       if (iReqField == 0){
         cout << "  Info: Ignoring the following volume output fields/groups:" << endl;
@@ -1672,7 +1596,6 @@ void COutput::PreprocessVolumeOutput(CConfig *config){
   if (rank == MASTER_NODE){
     cout <<"Volume output fields: ";
     for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
-      RequestedField = requestedVolumeFields[iReqField];
       cout << requestedVolumeFields[iReqField];
       if (iReqField != nRequestedVolumeFields - 1) cout << ", ";
     }
@@ -1689,10 +1612,11 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
   /*--- Reset the offset cache and index --- */
   cachePosition = 0;
   fieldIndexCache.clear();
+  fieldIndexCacheCompact.clear();
   curGetFieldIndex = 0;
   fieldGetIndexCache.clear();
 
-  if (femOutput){
+  if (femOutput) {
 
     /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
      geometrical information for the FEM DG solver. ---*/
@@ -1706,33 +1630,24 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
     /*--- Access the solution by looping over the owned volume elements. ---*/
 
     for(unsigned long l=0; l<nVolElemOwned; ++l) {
-
       for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
-
         buildFieldIndexCache = fieldIndexCache.empty();
-
         LoadVolumeDataFEM(config, geometry, solver, l, jPoint, j);
-
         jPoint++;
-
       }
     }
 
   } else {
 
     for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-
-      /*--- Load the volume data into the data sorter. --- */
-
       buildFieldIndexCache = fieldIndexCache.empty();
-
       LoadVolumeData(config, geometry, solver, iPoint);
-
     }
 
     /*--- Reset the offset cache and index --- */
     cachePosition = 0;
     fieldIndexCache.clear();
+    fieldIndexCacheCompact.clear();
     curGetFieldIndex = 0;
     fieldGetIndexCache.clear();
 
@@ -1740,19 +1655,16 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
       /*--- We only want to have surface values on solid walls ---*/
 
-      if (config->GetSolid_Wall(iMarker)){
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
+      if (config->GetSolid_Wall(iMarker)) {
+        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
           /*--- Load the surface data into the data sorter. --- */
 
-          if(geometry->nodes->GetDomain(iPoint)){
-
+          if (geometry->nodes->GetDomain(iPoint)) {
             buildFieldIndexCache = fieldIndexCache.empty();
-
             LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
-
           }
         }
       }
@@ -1762,67 +1674,73 @@ void COutput::LoadDataIntoSorter(CConfig* config, CGeometry* geometry, CSolver**
 
 void COutput::SetVolumeOutputValue(const string& name, unsigned long iPoint, su2double value){
 
-  if (buildFieldIndexCache){
-
+  if (buildFieldIndexCache) {
     /*--- Build up the offset cache to speed up subsequent
      * calls of this routine since the order of calls is
-     * the same for every value of iPoint --- */
+     * the same for every value of iPoint. ---*/
 
-    if (volumeOutput_Map.count(name) > 0){
-      const short Offset = volumeOutput_Map.at(name).offset;
+    const auto it = volumeOutput_Map.find(name);
+    if (it != volumeOutput_Map.end()) {
+      const short Offset = it->second.offset;
       fieldIndexCache.push_back(Offset);
-      if (Offset != -1){
+      if (Offset != -1) {
         volumeDataSorter->SetUnsortedData(iPoint, Offset, value);
       }
+      /*--- Note that the compact fields are a subset of the full fields. ---*/
+      const short OffsetCompact = it->second.offsetCompact;
+      fieldIndexCacheCompact.push_back(OffsetCompact);
+      if (volumeDataSorterCompact != nullptr && OffsetCompact != -1) {
+        volumeDataSorterCompact->SetUnsortedData(iPoint, OffsetCompact, value);
+      }
     } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     }
   } else {
-
-    /*--- Use the offset cache for the access ---*/
-
-    const short Offset = fieldIndexCache[cachePosition++];
-    if (Offset != -1){
+    /*--- Use the offset caches for the access. ---*/
+    const short Offset = fieldIndexCache[cachePosition];
+    const short OffsetCompact = fieldIndexCacheCompact[cachePosition++];
+    if (cachePosition == fieldIndexCache.size()) {
+      cachePosition = 0;
+    }
+    if (Offset != -1) {
       volumeDataSorter->SetUnsortedData(iPoint, Offset, value);
     }
-    if (cachePosition == fieldIndexCache.size()){
-      cachePosition = 0;
+    if (volumeDataSorterCompact != nullptr && OffsetCompact != -1) {
+      volumeDataSorterCompact->SetUnsortedData(iPoint, OffsetCompact, value);
     }
   }
 
 }
 
-su2double COutput::GetVolumeOutputValue(const string& name, unsigned long iPoint){
+su2double COutput::GetVolumeOutputValue(const string& name, unsigned long iPoint) {
 
-  if (buildFieldIndexCache){
-
+  if (buildFieldIndexCache) {
     /*--- Build up the offset cache to speed up subsequent
      * calls of this routine since the order of calls is
-     * the same for every value of iPoint --- */
+     * the same for every value of iPoint. ---*/
 
-    if (volumeOutput_Map.count(name) > 0){
-      const short Offset = volumeOutput_Map.at(name).offset;
+    const auto it = volumeOutput_Map.find(name);
+    if (it != volumeOutput_Map.end()) {
+      const short Offset = it->second.offset;
       fieldGetIndexCache.push_back(Offset);
-      if (Offset != -1){
+      if (Offset != -1) {
         return volumeDataSorter->GetUnsortedData(iPoint, Offset);
       }
     } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     }
   } else {
-
-    /*--- Use the offset cache for the access ---*/
+    /*--- Use the offset cache for the access, ---*/
 
     const short Offset = fieldGetIndexCache[curGetFieldIndex++];
 
-    if (curGetFieldIndex == fieldGetIndexCache.size()){
+    if (curGetFieldIndex == fieldGetIndexCache.size()) {
       curGetFieldIndex = 0;
     }
-    if (Offset != -1){
+    if (Offset != -1) {
       return volumeDataSorter->GetUnsortedData(iPoint, Offset);
     }
   }
-
   return 0.0;
 }
 
@@ -1830,38 +1748,39 @@ void COutput::SetAvgVolumeOutputValue(const string& name, unsigned long iPoint, 
 
   const su2double scaling = 1.0 / su2double(curAbsTimeIter + 1);
 
-  if (buildFieldIndexCache){
-
+  if (buildFieldIndexCache) {
     /*--- Build up the offset cache to speed up subsequent
      * calls of this routine since the order of calls is
-     * the same for every value of iPoint --- */
+     * the same for every value of iPoint. ---*/
 
-    if (volumeOutput_Map.count(name) > 0){
-      const short Offset = volumeOutput_Map.at(name).offset;
+    const auto it = volumeOutput_Map.find(name);
+    if (it != volumeOutput_Map.end()) {
+      const short Offset = it->second.offset;
       fieldIndexCache.push_back(Offset);
-      if (Offset != -1){
-
+      /*--- This function is used for time-averaged fields and we know
+       * those are not part of the compact restart fields. ---*/
+      fieldIndexCacheCompact.push_back(-1);
+      if (Offset != -1) {
         const su2double old_value = volumeDataSorter->GetUnsortedData(iPoint, Offset);
-        const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
+        const su2double new_value = value * scaling + old_value * (1.0 - scaling);
 
         volumeDataSorter->SetUnsortedData(iPoint, Offset, new_value);
       }
     } else {
-      SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+      SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
     }
   } else {
 
     /*--- Use the offset cache for the access ---*/
 
     const short Offset = fieldIndexCache[cachePosition++];
-    if (Offset != -1){
-
+    if (Offset != -1) {
       const su2double old_value = volumeDataSorter->GetUnsortedData(iPoint, Offset);
-      const su2double new_value = value * scaling + old_value *( 1.0 - scaling);
+      const su2double new_value = value * scaling + old_value * (1.0 - scaling);
 
       volumeDataSorter->SetUnsortedData(iPoint, Offset, new_value);
     }
-    if (cachePosition == fieldIndexCache.size()){
+    if (cachePosition == fieldIndexCache.size()) {
       cachePosition = 0;
     }
   }
@@ -2135,7 +2054,7 @@ bool COutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_
     return ((Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
   }
       return ((Iter > 0) && (Iter % config->GetVolumeOutputFrequency(iFile) == 0)) || force_writing;
- 
+
 }
 
 void COutput::SetCommonHistoryFields() {
@@ -2160,6 +2079,13 @@ void COutput::SetCommonHistoryFields() {
 
   AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
 
+}
+
+void COutput::RequestCommonHistory(bool dynamic) {
+
+  requestedHistoryFields.emplace_back("ITER");
+  if (dynamic) requestedHistoryFields.emplace_back("CUR_TIME");
+  requestedHistoryFields.emplace_back("RMS_RES");
 }
 
 void COutput::SetCustomOutputs(const CConfig* config) {
@@ -2266,7 +2192,7 @@ void COutput::SetCustomOutputs(const CConfig* config) {
 #endif
 
       if (type == OperationType::FUNCTION) {
-        AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
+        AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output", HistoryFieldType::COEFFICIENT);
         break;
       }
 
@@ -2283,10 +2209,50 @@ void COutput::SetCustomOutputs(const CConfig* config) {
       /*--- Skip the terminating "]". ---*/
       if (it != last) ++it;
 
-      AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output");
+      AddHistoryOutput(output.name, output.name, ScreenOutputFormat::SCIENTIFIC, "CUSTOM", "Custom output", HistoryFieldType::COEFFICIENT);
     }
   }
 
+}
+
+void COutput::ComputeSimpleCustomOutputs(const CConfig *config) {
+  const bool adjoint = config->GetDiscrete_Adjoint();
+
+  for (auto& output : customOutputs) {
+    if (output.type != OperationType::FUNCTION) {
+      if (adjoint) continue;
+      SU2_MPI::Error("The current solver can only use 'Function' custom outputs.", CURRENT_FUNCTION);
+    }
+
+    if (output.varIndices.empty()) {
+      output.varIndices.reserve(output.varSymbols.size());
+      output.otherOutputs.reserve(output.varSymbols.size());
+
+      for (const auto& var : output.varSymbols) {
+        output.varIndices.push_back(output.varIndices.size());
+        output.otherOutputs.push_back(GetPtrToHistoryOutput(var));
+        if (output.otherOutputs.back() == nullptr) {
+          if (!adjoint) {
+            // In primal mode all functions must be valid.
+            SU2_MPI::Error("Invalid history output (" + var + ") used in function " + output.name, CURRENT_FUNCTION);
+          } else {
+            if (rank == MASTER_NODE) {
+              std::cout << "Info: Ignoring function " + output.name + " because it may be used by the primal/adjoint "
+                           "solver.\n      If the function is ignored twice it is invalid." << std::endl;
+            }
+            output.skip = true;
+            break;
+          }
+        }
+      }
+    }
+    if (output.skip) continue;
+
+    auto Functor = [&](unsigned long i) {
+      return *output.otherOutputs[i];
+    };
+    SetHistoryOutputValue(output.name, output.Eval(Functor));
+  }
 }
 
 void COutput::LoadCommonHistoryData(const CConfig *config) {
@@ -2456,7 +2422,7 @@ void COutput::PrintVolumeFields(){
     }
 
     cout << "Available volume output fields for the current configuration in " << multiZoneHeaderString << ":" << endl;
-    cout << "Note: COORDINATES and SOLUTION groups are always in the volume output." << endl;
+    cout << "Note: COORDINATES are always included, and so is SOLUTION unless you add the keyword COMPACT to the list of fields." << endl;
     VolumeFieldTable.AddColumn("Name", NameSize);
     VolumeFieldTable.AddColumn("Group Name", GroupSize);
     VolumeFieldTable.AddColumn("Description", DescrSize);

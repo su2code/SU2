@@ -2,14 +2,14 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -98,6 +98,12 @@ protected:
   bool element_based;          /*!< \brief Bool to determine if an element-based file is used. */
   bool topol_filter_applied;   /*!< \brief True if density filtering has been performed. */
   bool initial_calc = true;    /*!< \brief Becomes false after first call to Preprocessing. */
+  bool body_forces = false;    /*!< \brief Whether any body force is active. */
+
+  /*!
+   * \brief Pointer to the heat solver nodes to access temperature for coupled simulations.
+   */
+  const CVariable* heat_nodes = nullptr;
 
   /*!
    * \brief The highest level in the variable hierarchy this solver can safely use,
@@ -335,14 +341,14 @@ public:
                            const CConfig *config);
 
   /*!
-   * \brief Compute the dead loads.
+   * \brief Compute the inertial loads.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    */
-  void Compute_DeadLoad(CGeometry *geometry,
-                        CNumerics **numerics,
-                        const CConfig *config) final;
+  void Compute_BodyForces(CGeometry *geometry,
+                            CNumerics **numerics,
+                            const CConfig *config) final;
 
   /*!
    * \brief Clamped boundary conditions.
@@ -682,28 +688,9 @@ public:
   inline su2double GetFSI_ConvValue(unsigned short val_index) const final { return FSI_Conv[val_index]; }
 
   /*!
-   * \brief Retrieve the value of the dynamic Aitken relaxation factor.
-   * \return Value of the dynamic Aitken relaxation factor.
+   * \brief Store the value of the last Aitken relaxation factor in the current time step.
    */
-  inline su2double GetWAitken_Dyn(void) const final { return WAitken_Dyn; }
-
-  /*!
-   * \brief Retrieve the value of the last Aitken relaxation factor in the previous time step.
-   * \return Value of the last Aitken relaxation factor in the previous time step.
-   */
-  inline su2double GetWAitken_Dyn_tn1(void) const final { return WAitken_Dyn_tn1; }
-
-  /*!
-   * \brief Set the value of the dynamic Aitken relaxation factor
-   * \param[in] Value of the dynamic Aitken relaxation factor
-   */
-  inline void SetWAitken_Dyn(su2double waitk) final { WAitken_Dyn = waitk; }
-
-  /*!
-   * \brief Set the value of the last Aitken relaxation factor in the current time step.
-   * \param[in] Value of the last Aitken relaxation factor in the current time step.
-   */
-  inline void SetWAitken_Dyn_tn1(su2double waitk_tn1) final { WAitken_Dyn_tn1 = waitk_tn1; }
+  inline void SetWAitken_Dyn_tn1() final { WAitken_Dyn_tn1 = WAitken_Dyn; }
 
   /*!
    * \brief Set the value of the load increment for nonlinear structural analysis

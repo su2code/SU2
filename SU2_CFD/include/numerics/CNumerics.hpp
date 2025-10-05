@@ -3,14 +3,14 @@
  * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,7 +53,6 @@ protected:
   su2double Gamma_Minus_One;  /*!< \brief Fluids's Gamma - 1.0  . */
   su2double Minf;             /*!< \brief Free stream Mach number . */
   su2double Gas_Constant;     /*!< \brief Gas constant. */
-  su2double Prandtl_Lam;      /*!< \brief Laminar Prandtl's number. */
   su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl's number. */
   su2double MassFlux;         /*!< \brief Mass flux across edge. */
   su2double
@@ -173,9 +172,7 @@ protected:
   su2double vel2_inf;     /*!< \brief value of the square of freestream speed. */
   const su2double
   *WindGust_i,  /*!< \brief Wind gust at point i. */
-  *WindGust_j,  /*!< \brief Wind gust at point j. */
-  *WindGustDer_i,  /*!< \brief Wind gust derivatives at point i. */
-  *WindGustDer_j;  /*!< \brief Wind gust derivatives at point j. */
+  *WindGust_j;  /*!< \brief Wind gust at point j. */
   const su2double *Vorticity_i, *Vorticity_j;    /*!< \brief Vorticity. */
   su2double StrainMag_i, StrainMag_j;      /*!< \brief Strain rate magnitude. */
   su2double Dissipation_i, Dissipation_j;  /*!< \brief Dissipation. */
@@ -885,26 +882,6 @@ public:
   }
 
   /*!
-   * \brief Set the wind gust value.
-   * \param[in] val_windgust_i - Wind gust of the point i.
-   * \param[in] val_windgust_j - Wind gust of the point j.
-   */
-  inline void SetWindGust(const su2double *val_windgust_i, const su2double *val_windgust_j) {
-    WindGust_i = val_windgust_i;
-    WindGust_j = val_windgust_j;
-  }
-
-  /*!
-   * \brief Set the wind gust derivatives values.
-   * \param[in] val_windgust_i - Wind gust derivatives of the point i.
-   * \param[in] val_windgust_j - Wind gust derivatives of the point j.
-   */
-  inline void SetWindGustDer(const su2double *val_windgustder_i, const su2double *val_windgustder_j) {
-    WindGustDer_i = val_windgustder_i;
-    WindGustDer_j = val_windgustder_j;
-  }
-
-  /*!
    * \brief Set the value of the pressure.
    * \param[in] val_pressure_i - Value of the pressure at point i.
    * \param[in] val_pressure_j - Value of the pressure at point j.
@@ -1549,10 +1526,10 @@ public:
   inline virtual void Compute_Mass_Matrix(CElement *element_container, const CConfig* config) { }
 
   /*!
-   * \brief A virtual member to compute the residual component due to dead loads
+   * \brief A virtual member to compute the residual component due to body forces.
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  inline virtual void Compute_Dead_Load(CElement *element_container, const CConfig* config) { }
+  inline virtual void Compute_Body_Forces(CElement *element_container, const CConfig* config) { }
 
   /*!
    * \brief A virtual member to compute the averaged nodal stresses

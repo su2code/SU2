@@ -2,14 +2,14 @@
  * \file CCoolProp.hpp
  * \brief Defines the state-of-the-art fluid model from CoolProp library.
  * \author P. Yan, G. Gori, A. Guardone
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -48,6 +48,7 @@ class CCoolProp final : public CFluidModel {
   su2double Temperature_Critical{0.0}; /*!< \brief critical temperature */
   su2double acentric_factor{0.0};      /*!< \brief acentric factor */
   const su2double dp{0.01};            /*!< threshold for pressure */
+  const su2double dt{0.01};            /*!< threshold for temperature */
 #ifdef USE_COOLPROP
   std::unique_ptr<CoolProp::AbstractState> fluid_entity; /*!< \brief fluid entity */
 #endif
@@ -60,6 +61,18 @@ class CCoolProp final : public CFluidModel {
       Pressure = fmax(Pressure, (1 + dp) * Pressure_Critical);
     else
       Pressure = fmin(Pressure, (1 - dp) * Pressure_Critical);
+  }
+
+  /*!
+   * \brief Avoid critical temperature
+   * \param[in,out] Temperature: Modified so that it is not too close to critical temperature to avoid issues in
+   * CoolProp.
+   */
+  void CheckTemperature(su2double& Temperature) const {
+    if (Temperature > Temperature_Critical)
+      Temperature = fmax(Temperature, (1 + dt) * Temperature_Critical);
+    else
+      Temperature = fmin(Temperature, (1 + dt) * Temperature_Critical);
   }
 
  public:

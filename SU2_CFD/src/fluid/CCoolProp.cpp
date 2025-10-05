@@ -2,14 +2,14 @@
  * \file CCoolProp.cpp
  * \brief Source of the fluid model from CoolProp.
  * \author P. Yan, G. Gori, A. Guardone
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,18 +56,12 @@ void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
   dTdrho_e = fluid_entity->first_partial_deriv(CoolProp::iT, CoolProp::iDmass, CoolProp::iUmass);
   dTde_rho = fluid_entity->first_partial_deriv(CoolProp::iT, CoolProp::iUmass, CoolProp::iDmass);
   if (fluid_entity->phase() == CoolProp::iphase_twophase) {
-    // assume it is pure gas
-    fluid_entity->specify_phase(CoolProp::iphase_gas);
+    // impose gas phase
+    Temperature = Temperature + 0.1;
     CheckPressure(Pressure);
+    CheckTemperature(Temperature);
     fluid_entity->update(CoolProp::PT_INPUTS, Pressure, Temperature);
-    if (abs(fluid_entity->rhomass() / Density - 1) < dp) {
-      // origial phase is near saturation gas, then just compute sound speed
-      SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
-    } else {
-      // original phase is not near saturation gas, then specify the phase as gas phase
-      fluid_entity->specify_phase(CoolProp::iphase_gas);
-      SetTDState_PT(Pressure, Temperature);
-    }
+    SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
   } else {
     SoundSpeed2 = pow(fluid_entity->speed_sound(), 2);
   }
@@ -75,6 +69,7 @@ void CCoolProp::SetTDState_rhoe(su2double rho, su2double e) {
 
 void CCoolProp::SetTDState_PT(su2double P, su2double T) {
   CheckPressure(P);
+  CheckTemperature(T);
   fluid_entity->update(CoolProp::PT_INPUTS, P, T);
   su2double rho = fluid_entity->rhomass();
   su2double e = fluid_entity->umass();

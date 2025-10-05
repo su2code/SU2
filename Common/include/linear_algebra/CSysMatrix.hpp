@@ -3,14 +3,14 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -92,7 +92,7 @@ struct CSysMatrixComms {
    */
   template <class T>
   static void Initiate(const CSysVector<T>& x, CGeometry* geometry, const CConfig* config,
-                       unsigned short commType = SOLUTION_MATRIX);
+                       MPI_QUANTITIES commType = MPI_QUANTITIES::SOLUTION_MATRIX);
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by
@@ -104,7 +104,7 @@ struct CSysMatrixComms {
    */
   template <class T>
   static void Complete(CSysVector<T>& x, CGeometry* geometry, const CConfig* config,
-                       unsigned short commType = SOLUTION_MATRIX);
+                       MPI_QUANTITIES commType = MPI_QUANTITIES::SOLUTION_MATRIX);
 };
 
 /*!
@@ -144,6 +144,12 @@ class CSysMatrix {
   const unsigned long* dia_ptr; /*!< \brief Pointers to the diagonal element in each row. */
   const unsigned long* col_ind; /*!< \brief Column index for each of the elements in val(). */
   const unsigned long* col_ptr; /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
+
+  ScalarType* d_matrix;           /*!< \brief Device Pointer to store the matrix values on the GPU. */
+  const unsigned long* d_row_ptr; /*!< \brief Device Pointers to the first element in each row. */
+  const unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
+  bool useCuda;                   /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
+                                     Mainly used to conditionally free GPU memory in the class destructor. */
 
   ScalarType* ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
@@ -392,6 +398,12 @@ class CSysMatrix {
   void SetValDiagonalZero(void);
 
   /*!
+   * \brief Performs the memory copy from host to device.
+   * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
+   */
+  void HtDTransfer(bool trigger = true) const;
+
+  /*!
    * \brief Get a pointer to the start of block "ij"
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
@@ -542,6 +554,22 @@ class CSysMatrix {
   }
 
   /*!
+   * \brief Returns the 4 blocks ii, ij, ji, jj used by "UpdateBlocks".
+   * \note This method assumes an FVM-type sparse pattern.
+   * \param[in] edge - Index of edge that connects iPoint and jPoint.
+   * \param[in] iPoint - Row to which we add the blocks.
+   * \param[in] jPoint - Row from which we subtract the blocks.
+   * \param[out] bii, bij, bji, bjj - Blocks of the matrix.
+   */
+  inline void GetBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, ScalarType*& bii,
+                        ScalarType*& bij, ScalarType*& bji, ScalarType*& bjj) {
+    bii = &matrix[dia_ptr[iPoint] * nVar * nEqn];
+    bjj = &matrix[dia_ptr[jPoint] * nVar * nEqn];
+    bij = &matrix[edge_ptr(iEdge, 0) * nVar * nEqn];
+    bji = &matrix[edge_ptr(iEdge, 1) * nVar * nEqn];
+  }
+
+  /*!
    * \brief Update 4 blocks ii, ij, ji, jj (add to i* sub from j*).
    * \note This method assumes an FVM-type sparse pattern.
    * \param[in] edge - Index of edge that connects iPoint and jPoint.
@@ -554,10 +582,8 @@ class CSysMatrix {
   template <class MatrixType, class OtherType = ScalarType>
   inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, const MatrixType& block_i,
                            const MatrixType& block_j, OtherType scale = 1) {
-    ScalarType* bii = &matrix[dia_ptr[iPoint] * nVar * nEqn];
-    ScalarType* bjj = &matrix[dia_ptr[jPoint] * nVar * nEqn];
-    ScalarType* bij = &matrix[edge_ptr(iEdge, 0) * nVar * nEqn];
-    ScalarType* bji = &matrix[edge_ptr(iEdge, 1) * nVar * nEqn];
+    ScalarType *bii, *bij, *bji, *bjj;
+    GetBlocks(iEdge, iPoint, jPoint, bii, bij, bji, bjj);
 
     unsigned long iVar, jVar, offset = 0;
 
@@ -805,10 +831,10 @@ class CSysMatrix {
   void EnforceSolutionAtNode(unsigned long node_i, const OtherType* x_i, CSysVector<OtherType>& b);
 
   /*!
-   * \brief Version of EnforceSolutionAtNode for a single degree of freedom.
+   * \brief Similar to EnforceSolutionAtNode, but for 0 projection in a given direction.
    */
   template <class OtherType>
-  void EnforceSolutionAtDOF(unsigned long node_i, unsigned long iVar, OtherType x_i, CSysVector<OtherType>& b);
+  void EnforceZeroProjection(unsigned long node_i, const OtherType* n, CSysVector<OtherType>& b);
 
   /*!
    * \brief Sets the diagonal entries of the matrix as the sum of the blocks in the corresponding column.
@@ -837,6 +863,49 @@ class CSysMatrix {
    */
   void MatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                            const CConfig* config) const;
+
+  /*!
+   * \brief Performs the product of a sparse matrix by a CSysVector.
+   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+  void GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                              const CConfig* config) const;
+
+  /*!
+   * \brief Performs first step of the LU_SGS Preconditioner building
+   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+  void GPUFirstSymmetricIteration(ScalarType& vec, ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
+
+  /*!
+   * \brief Performs second step of the LU_SGS Preconditioner building
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+  void GPUSecondSymmetricIteration(ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
+
+  /*!
+   * \brief Performs Gaussian Elimination between diagional blocks of the matrix and the prod vector
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+  void GPUGaussElimination(ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
+
+  /*!
+   * \brief Multiply CSysVector by the preconditioner all of which are stored on the device
+   * \param[in] vec - CSysVector to be multiplied by the preconditioner.
+   * \param[out] prod - Result of the product A*vec.
+   */
+  void GPUComputeLU_SGSPreconditioner(ScalarType& vec, ScalarType& prod, CGeometry* geometry,
+                                      const CConfig* config) const;
 
   /*!
    * \brief Build the Jacobi preconditioner.

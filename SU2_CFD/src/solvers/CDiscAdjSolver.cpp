@@ -2,14 +2,14 @@
  * \file CDiscAdjSolver.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -146,11 +146,6 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
     END_SU2_OMP_FOR
   }
 
-  /*--- Set the Jacobian to zero since this is not done inside the fluid iteration
-   * when running the discrete adjoint solver. ---*/
-
-  direct_solver->Jacobian.SetValZero();
-
   /*--- Set indices to zero ---*/
 
   RegisterVariables(geometry, config, true);
@@ -167,6 +162,7 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   /*--- Boolean true indicates that an input is registered ---*/
   direct_solver->GetNodes()->RegisterSolution(true);
 
+  /*--- Register quantities that are no solver variables but further inputs/outputs of the (outer) iteration. ---*/
   direct_solver->RegisterSolutionExtra(true, config);
 
   if (time_n_needed)
@@ -182,17 +178,21 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   /*--- Register farfield values as input ---*/
 
-  if((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())) {
+  if((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())){
 
     su2double Velocity_Ref = config->GetVelocity_Ref();
     Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
     Beta                   = config->GetAoS()*PI_NUMBER/180.0;
     Mach                   = config->GetMach();
-    Pressure               = config->GetPressure_FreeStreamND();
-    Temperature            = config->GetTemperature_FreeStreamND();
+    /*--- Pressure and Temperature can be registered directly via their config file value
+     * (no further treatment required here). ---*/
+    su2double& Pressure    = config->GetPressure_FreeStreamND();
+    su2double& Temperature = config->GetTemperature_FreeStreamND();
 
     su2double SoundSpeed = 0.0;
 
+    // Treat Velocity_FreeStreamND config value as non-dependent (in debug mode)
+    AD::ClearTagOnVariable(config->GetVelocity_FreeStreamND()[0]);
     if (nDim == 2) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*Mach); }
     if (nDim == 3) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*cos(Beta)*Mach); }
 
@@ -215,11 +215,8 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
       config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
     }
 
-    config->SetTemperature_FreeStreamND(Temperature);
     direct_solver->SetTemperature_Inf(Temperature);
-    config->SetPressure_FreeStreamND(Pressure);
     direct_solver->SetPressure_Inf(Pressure);
-
   }
 
   if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
@@ -322,6 +319,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   if (!config->GetMultizone_Problem()) nodes->Set_OldSolution();
 
+  AD::BeginUseAdjoints();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
@@ -344,6 +343,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
   }
   END_SU2_OMP_FOR
 
+  AD::EndUseAdjoints();
+
   direct_solver->ExtractAdjoint_SolutionExtra(nodes->GetSolutionExtra(), config);
 
   /*--- Residuals and time_n terms are not needed when evaluating multizone cross terms. ---*/
@@ -360,6 +361,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Extract and store the adjoint of the primal solution at time n ---*/
   if (time_n_needed) {
+    AD::BeginUseAdjoints();
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
@@ -367,10 +370,14 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       nodes->Set_Solution_time_n(iPoint,Solution);
     }
     END_SU2_OMP_FOR
+
+    AD::EndUseAdjoints();
   }
 
   /*--- Extract and store the adjoint of the primal solution at time n-1 ---*/
   if (time_n1_needed) {
+    AD::BeginUseAdjoints();
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
@@ -378,6 +385,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
       nodes->Set_Solution_time_n1(iPoint,Solution);
     }
     END_SU2_OMP_FOR
+
+    AD::EndUseAdjoints();
   }
 
 }
@@ -390,6 +399,9 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
   if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
     su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
+
+    su2double& Pressure    = config->GetPressure_FreeStreamND();
+    su2double& Temperature = config->GetTemperature_FreeStreamND();
 
     Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
     Local_Sens_AoA   = SU2_TYPE::GetDerivative(Alpha);
@@ -482,6 +494,8 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) {
 
+  AD::BeginUseAdjoints();
+
   SU2_OMP_PARALLEL {
 
   const bool time_stepping = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
@@ -515,6 +529,8 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
 
   }
   END_SU2_OMP_PARALLEL
+
+  AD::EndUseAdjoints();
 }
 
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {
@@ -608,7 +624,6 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   auto filename = config->GetSolution_AdjFileName();
   auto restart_filename = config->GetObjFunc_Extension(filename);
-  restart_filename = config->GetFilename(restart_filename, "", val_iter);
 
   const bool rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
 
@@ -630,6 +645,14 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   if (KindDirect_Solver == RUNTIME_RADIATION_SYS) {
     skipVars += nDim + 2;
     if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
+  }
+
+  if (config->GetRead_Binary_Restart()) {
+    restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
   BasicLoadRestart(geometry[MESH_0], config, restart_filename, skipVars);

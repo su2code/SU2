@@ -2,14 +2,14 @@
  * \file CFEM_DG_EulerSolver.cpp
  * \brief Main subroutines for solving finite element Euler flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,7 @@
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
+#include "../../include/fluid/CDataDrivenFluid.hpp"
 
 enum {
 SIZE_ARR_NORM = 8
@@ -775,6 +776,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
   Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
+  Thermal_Conductivity_FreeStream = 0.0, SpecificHeat_Cp_FreeStream = 0.0,
   Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0,
   Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0,
   Temperature_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
@@ -782,6 +784,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   Froude = 0.0, Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0,
   Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
+  Thermal_Conductivity_FreeStreamND = 0.0, SpecificHeat_Cp_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
 
@@ -897,6 +900,20 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       }
       break;
 
+    case DATADRIVEN_FLUID:
+      FluidModel = new CDataDrivenFluid(config, false);
+      if (free_stream_temp) {
+        FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+        Density_FreeStream = FluidModel->GetDensity();
+        config->SetDensity_FreeStream(Density_FreeStream);
+      }
+      else {
+        FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+        Temperature_FreeStream = FluidModel->GetTemperature();
+        config->SetTemperature_FreeStream(Temperature_FreeStream);
+      }
+
+      break;
   }
 
   Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
@@ -940,9 +957,14 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
             viscosity, depending on the input option.---*/
 
       FluidModel->SetLaminarViscosityModel(config);
+      FluidModel->SetThermalConductivityModel(config);
 
       Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
+      Thermal_Conductivity_FreeStream = FluidModel->GetThermalConductivity();
+      config->SetThermalConductivity_FreeStream(Thermal_Conductivity_FreeStream);
+      SpecificHeat_Cp_FreeStream = FluidModel->GetCp();
+      config->SetSpecificHeatCp_FreeStream(SpecificHeat_Cp_FreeStream);
 
       Density_FreeStream = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds());
       config->SetDensity_FreeStream(Density_FreeStream);
@@ -958,8 +980,13 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     else {
 
       FluidModel->SetLaminarViscosityModel(config);
+      FluidModel->SetThermalConductivityModel(config);
       Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
+      Thermal_Conductivity_FreeStream = FluidModel->GetThermalConductivity();
+      config->SetThermalConductivity_FreeStream(Thermal_Conductivity_FreeStream);
+      SpecificHeat_Cp_FreeStream = FluidModel->GetCp();
+      config->SetSpecificHeatCp_FreeStream(SpecificHeat_Cp_FreeStream);
       Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
 
     }
@@ -1038,6 +1065,10 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND); config->SetModVel_FreeStreamND(ModVel_FreeStreamND);
 
   Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
+  Thermal_Conductivity_FreeStreamND = Thermal_Conductivity_FreeStream / Conductivity_Ref; 
+  config->SetThermalConductivity_FreeStreamND(Thermal_Conductivity_FreeStreamND);
+  SpecificHeat_Cp_FreeStreamND = SpecificHeat_Cp_FreeStream / Gas_Constant_Ref;
+  config->SetSpecificHeatCp_FreeStreamND(SpecificHeat_Cp_FreeStreamND);
 
   Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStream(Tke_FreeStream);
@@ -1085,6 +1116,11 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       FluidModel = new CCoolProp(config->GetFluid_Name());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
+
+    case DATADRIVEN_FLUID:
+      FluidModel = new CDataDrivenFluid(config);
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      break;
   }
 
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -1092,6 +1128,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   if (viscous) {
     FluidModel->SetLaminarViscosityModel(config);
     FluidModel->SetThermalConductivityModel(config);
+    FluidModel->SetMassDiffusivityModel(config); // nijso: TODO, needs to be tested
   }
 
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
@@ -7557,9 +7594,9 @@ void CFEM_DG_EulerSolver::BoundaryStates_Inlet(CConfig                  *config,
   /*--- Retrieve the specified total conditions for this inlet. ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double P_Total   = config->GetInlet_Ptotal(Marker_Tag);
-  su2double T_Total   = config->GetInlet_Ttotal(Marker_Tag);
-  auto Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+  su2double P_Total   = config->GetInletPtotal(Marker_Tag);
+  su2double T_Total   = config->GetInletTtotal(Marker_Tag);
+  auto Flow_Dir = config->GetInletFlowDir(Marker_Tag);
 
   /*--- Non-dim. the inputs if necessary, and compute the total enthalpy. ---*/
   P_Total /= config->GetPressure_Ref();
@@ -7771,6 +7808,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
 
       /* Compute the total enthalpy and entropy from these values. */
       FluidModel->SetTDState_PT(P_Total, T_Total);
+
       const su2double Enthalpy_e = FluidModel->GetStaticEnergy()
                                  + FluidModel->GetPressure()/FluidModel->GetDensity();
       const su2double Entropy_e  = FluidModel->GetEntropy();
@@ -9452,13 +9490,14 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
-  restart_filename = config->GetFilename(restart_filename, "", val_iter);
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
+    restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
+    restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
@@ -9549,8 +9588,6 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
-
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }

@@ -2,14 +2,14 @@
  * \file CDriverBase.hpp
  * \brief Base class for all drivers.
  * \author H. Patel, A. Gastaldi
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,7 +54,7 @@ class CDriverBase {
       UsedTime;        /*!< \brief Elapsed time between Start and Stop point of the timer. */
 
   unsigned long TimeIter;
-
+  unsigned short selected_zone = ZONE_0; /*!< \brief Selected zone for the driver. Defaults to ZONE_0 */
   unsigned short iMesh,  /*!< \brief Iterator on mesh levels. */
       iZone,             /*!< \brief Iterator on zones. */
       nZone,             /*!< \brief Total number of zones in the problem. */
@@ -227,7 +227,7 @@ class CDriverBase {
       SU2_MPI::Error("Initial coordinates are only available with DEFORM_MESH= YES", CURRENT_FUNCTION);
     }
     auto* coords =
-        const_cast<su2activematrix*>(solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord());
+        const_cast<su2activematrix*>(solver_container[selected_zone][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord());
     return CPyWrapperMatrixView(*coords, "InitialCoordinates", true);
   }
 
@@ -241,7 +241,7 @@ class CDriverBase {
     if (iMarker >= GetNumberMarkers()) SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
 
     auto* coords =
-        const_cast<su2activematrix*>(solver_container[ZONE_0][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord());
+        const_cast<su2activematrix*>(solver_container[selected_zone][INST_0][MESH_0][MESH_SOL]->GetNodes()->GetMesh_Coord());
     return CPyWrapperMarkerMatrixView(*coords, main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
                                       "MarkerInitialCoordinates", true);
   }
@@ -445,6 +445,23 @@ class CDriverBase {
   }
 
   /*!
+   * \brief Get read/write view of the gradients of a solver variable in a point.
+   */
+  inline CPyWrapper3DMatrixView Gradient(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapper3DMatrixView(solver->GetNodes()->GetGradient(), "Gradient of " + solver->GetSolverName(), false);
+  }
+
+  /*!
+   * \brief Get a read/write view of the user defined source on all mesh nodes of a solver.
+   */
+  inline CPyWrapperMatrixView UserDefinedSource(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapperMatrixView(
+      solver->GetNodes()->GetUserDefinedSource(), "User Defined Source of " + solver->GetSolverName(), false);
+  }
+
+  /*!
    * \brief Get a read/write view of the current solution on the mesh nodes of a marker.
    */
   inline CPyWrapperMarkerMatrixView MarkerSolution(unsigned short iSolver, unsigned short iMarker) {
@@ -474,6 +491,25 @@ class CDriverBase {
   }
 
   /*!
+   * \brief Get a read/write view of the solution at time N-1 on all mesh nodes of a solver.
+   */
+  inline CPyWrapperMatrixView SolutionTimeN1(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    return CPyWrapperMatrixView(
+        solver->GetNodes()->GetSolution_time_n1(), "SolutionTimeN1 of " + solver->GetSolverName(), false);
+  }
+
+  /*!
+   * \brief Get a read/write view of the solution at time N-1 on the mesh nodes of a marker.
+   */
+  inline CPyWrapperMarkerMatrixView MarkerSolutionTimeN1(unsigned short iSolver, unsigned short iMarker) {
+    auto* solver = GetSolverAndCheckMarker(iSolver, iMarker);
+    return CPyWrapperMarkerMatrixView(
+        solver->GetNodes()->GetSolution_time_n1(), main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
+        "MarkerSolutionTimeN1 of " + solver->GetSolverName(), false);
+  }
+
+  /*!
    * \brief Get the flow solver primitive variable names with their associated indices.
    * These correspond to the column indices in the matrix returned by Primitives.
    */
@@ -500,6 +536,15 @@ class CDriverBase {
   }
 
   /*!
+   * \brief Get a read-only view of the geometry sensitivity of a discrete adjoint solver.
+   */
+  inline CPyWrapperMatrixView Sensitivity(unsigned short iSolver) {
+    auto* solver = GetSolverAndCheckMarker(iSolver);
+    auto& sensitivity = const_cast<su2activematrix&>(solver->GetNodes()->GetSensitivity());
+    return CPyWrapperMatrixView(sensitivity, "Sensitivity", true);
+  }
+
+  /*!
    * \brief Set the temperature of a vertex on a specified marker (MARKER_PYTHON_CUSTOM).
    * \note This can be the input of a heat or flow solver in a CHT setting.
    * \param[in] iMarker - Marker identifier.
@@ -520,6 +565,22 @@ class CDriverBase {
   inline void SetMarkerCustomNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble WallHeatFlux) {
     main_geometry->SetCustomBoundaryHeatFlux(iMarker, iVertex, WallHeatFlux);
   }
+
+  /*!
+   * \brief Selects zone to be used for python driver operations.
+   * \param[in] iZone - Zone identifier.
+   */
+  inline void SelectZone(unsigned short iZone) {
+    if (iZone >= nZone) SU2_MPI::Error("Zone index out of range", CURRENT_FUNCTION);
+    selected_zone = iZone;
+    main_geometry = geometry_container[selected_zone][INST_0][MESH_0];
+    main_config = config_container[selected_zone];
+  }
+
+  /*!
+   * \brief Returns the index of the zone selected for python driver operations.
+   */
+  inline unsigned short SelectedZone() const { return selected_zone; }
 
   /*!
    * \brief Get the wall normal heat flux at a vertex on a specified marker of the flow or heat solver.
@@ -657,6 +718,39 @@ class CDriverBase {
     }
   }
 
+  /*!
+   * \brief Set the first variable in MARKER_INLET (usually temperature).
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] value - Value of the variable.
+   */
+  void SetMarkerCustomInletFlowVar0(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
+    GetSolverAndCheckMarker(FLOW_SOL, iMarker)->SetInletTtotal(iMarker, iVertex, value);
+  }
+
+  /*!
+   * \brief Set the second variable in MARKER_INLET (usually total pressure).
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] value - Value of the variable.
+   */
+  void SetMarkerCustomInletFlowVar1(unsigned short iMarker, unsigned long iVertex, passivedouble value) {
+    GetSolverAndCheckMarker(FLOW_SOL, iMarker)->SetInletPtotal(iMarker, iVertex, value);
+  }
+
+  /*!
+   * \brief Set the flow direction vector (does not need to be a unit vector).
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] values - Flow direction vector.
+   */
+  void SetMarkerCustomInletFlowDirection(unsigned short iMarker, unsigned long iVertex, std::vector<passivedouble> values) {
+    auto* solver = GetSolverAndCheckMarker(FLOW_SOL, iMarker);
+    for (auto iDim = 0ul; iDim < GetNumberDimensions(); ++iDim) {
+      solver->SetInletFlowDir(iMarker, iVertex, iDim, values[iDim]);
+    }
+  }
+
 /// \}
 
  protected:
@@ -668,7 +762,7 @@ class CDriverBase {
     if (iMarker < std::numeric_limits<unsigned short>::max() && iMarker > GetNumberMarkers()) {
       SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
     }
-    auto* solver = solver_container[ZONE_0][INST_0][MESH_0][iSolver];
+    auto* solver = solver_container[selected_zone][INST_0][MESH_0][iSolver];
     if (solver == nullptr) SU2_MPI::Error("The selected solver does not exist.", CURRENT_FUNCTION);
     return solver;
   }

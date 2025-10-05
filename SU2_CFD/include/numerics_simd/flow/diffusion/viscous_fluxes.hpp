@@ -2,14 +2,14 @@
  * \file viscous_fluxes.hpp
  * \brief Decorator classes for computation of viscous fluxes.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -290,13 +290,11 @@ protected:
 template<size_t NDIM>
 class CCompressibleViscousFlux : public CCompressibleViscousFluxBase<NDIM, CCompressibleViscousFlux<NDIM> > {
 public:
-  static constexpr size_t nPrimVar = NDIM+7;
+  static constexpr size_t nPrimVar = NDIM+9;
   using Base = CCompressibleViscousFluxBase<NDIM, CCompressibleViscousFlux<NDIM> >;
   using Base::gamma;
   using Base::gasConst;
-  using Base::prandtlLam;
   using Base::prandtlTurb;
-  using Base::cp;
 
   /*!
    * \brief Constructor, initialize constants and booleans.
@@ -309,7 +307,7 @@ public:
    */
   template<class PrimitiveType>
   FORCEINLINE Double thermalConductivity(const PrimitiveType& V) const {
-    return cp * (V.laminarVisc()/prandtlLam + V.eddyVisc()/prandtlTurb);
+    return V.thermalCond() + V.cp() * V.eddyVisc() / prandtlTurb;
   }
 
   /*!

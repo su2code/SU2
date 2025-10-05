@@ -2,14 +2,14 @@
  * \file CFlowIncOutput.cpp
  * \brief Main subroutines for incompressible flow output
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   heat = config->GetEnergy_Equation();
 
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+  flamelet = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
 
   streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   streamwisePeriodic_temperature = config->GetStreamwise_Periodic_Temperature();
@@ -45,8 +46,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.emplace_back("ITER");
-    requestedHistoryFields.emplace_back("RMS_RES");
+    RequestCommonHistory(config->GetTime_Domain());
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
 
@@ -70,7 +70,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
     auto notFound = requestedVolumeFields.end();
     if (find(requestedVolumeFields.begin(), notFound, string("GRID_VELOCITY")) == notFound) {
       requestedVolumeFields.emplace_back("GRID_VELOCITY");
-      nRequestedVolumeFields ++;
+      nRequestedVolumeFields++;
     }
   }
 
@@ -211,7 +211,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
   SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
-  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
+  if (nDim == 3) SetHistoryOutputValue("MAX_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
 
   if (multiZone){
     SetHistoryOutputValue("BGS_PRESSURE", log10(flow_solver->GetRes_BGS(0)));
@@ -295,7 +295,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
-  if (heat || weakly_coupled_heat)
+  if (heat || weakly_coupled_heat || flamelet)
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
 
   SetVolumeOutputFieldsScalarSolution(config);
@@ -331,6 +331,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
   }
 
+  SetVolumeOutputFieldsScalarPrimitive(config);
+
   if (config->GetSAParsedOptions().bc) {
     AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY", "Intermittency");
   }
@@ -352,9 +354,15 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_VELOCITY-Y", "Limiter_Velocity_y", "LIMITER", "Limiter value of the y-velocity");
     if (nDim == 3)
       AddVolumeOutput("LIMITER_VELOCITY-Z", "Limiter_Velocity_z", "LIMITER", "Limiter value of the z-velocity");
-    if (heat || weakly_coupled_heat)
+    if (heat || weakly_coupled_heat || flamelet)
       AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
   }
+
+  SetVolumeOutputFieldsScalarLimiter(config);
+
+  SetVolumeOutputFieldsScalarSource(config);
+
+  SetVolumeOutputFieldsScalarLookup(config);
 
   SetVolumeOutputFieldsScalarMisc(config);
 
@@ -366,6 +374,10 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   AddCommonFVMOutputs(config);
+
+  if (config->GetTime_Domain()) {
+    SetTimeAveragedFields();
+  }
 }
 
 void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
@@ -387,7 +399,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (nDim == 3)
     SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
 
-  if (heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
+  if (heat || flamelet) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
 
   // Radiation solver
@@ -435,13 +447,17 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   LoadVolumeDataScalar(config, solver, geometry, iPoint);
 
   // Streamwise Periodicity
-  if(streamwisePeriodic) {
+  if (streamwisePeriodic) {
     SetVolumeOutputValue("RECOVERED_PRESSURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredPressure(iPoint));
     if (heat && streamwisePeriodic_temperature)
       SetVolumeOutputValue("RECOVERED_TEMPERATURE", iPoint, Node_Flow->GetStreamwise_Periodic_RecoveredTemperature(iPoint));
   }
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
+
+  if (config->GetTime_Domain()) {
+    LoadTimeAveragedData(iPoint, Node_Flow);
+  }
 }
 
 bool CFlowIncOutput::SetInitResiduals(const CConfig *config){

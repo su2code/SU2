@@ -3,14 +3,14 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 7.5.1 "Blackbird"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -30,11 +30,14 @@ from __future__ import print_function
 
 import sys
 from TestCase import TestCase
+from TestCase import parse_args
 
 def main():
     '''This program runs SU2 and ensures that the output matches specified values.
        This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
+
+    args = parse_args('Serial Regression AD Tests')
 
     test_list = []
 
@@ -47,15 +50,25 @@ def main():
     discadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     discadj_naca0012.cfg_file  = "inv_NACA0012_discadj.cfg"
     discadj_naca0012.test_iter = 100
-    discadj_naca0012.test_vals = [-3.561506, -8.926634, -0.000000, 0.005587]
+    discadj_naca0012.test_vals = [-3.562611, -8.932639, -0.000000, 0.005608]
     test_list.append(discadj_naca0012)
+
+    # Inviscid NACA0012 (via discadj multizone driver)
+    discadj_naca0012_via_mz = TestCase('discadj_naca0012_via_mz')
+    discadj_naca0012_via_mz.cfg_dir = "cont_adj_euler/naca0012"
+    discadj_naca0012_via_mz.cfg_file = "inv_NACA0012_discadj_multizone.cfg"
+    discadj_naca0012_via_mz.test_iter = 100
+    discadj_naca0012_via_mz.test_vals = [-3.563784, -5.975640, -6.326231, -8.929567]
+    discadj_naca0012_via_mz.enabled_with_tapetests = True
+    discadj_naca0012_via_mz.tapetest_vals = [0]
+    test_list.append(discadj_naca0012_via_mz)
 
     # Inviscid Cylinder 3D (multiple markers)
     discadj_cylinder3D           = TestCase('discadj_cylinder3D')
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.737675, -3.842311, -0.000000, 0.000000]
+    discadj_cylinder3D.test_vals = [-3.702105, -3.895140, -0.000000, 0.000000]
     test_list.append(discadj_cylinder3D)
 
     # Arina nozzle 2D
@@ -63,7 +76,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-3.087863, -3.481496, 6.8879e-02, 0]
+    discadj_arina2k.test_vals    = [-3.254490, -3.495569, 0.052370, 0.000000]
     test_list.append(discadj_arina2k)
 
     #######################################################
@@ -75,7 +88,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.230555, 0.645023, 0.180740, -0.000018, 5.000000, -4.275184, 5.000000, -8.892454] #last 8 columns
+    discadj_rans_naca0012_sa.test_vals = [-2.996961, -0.199169, 0.000004, -0.000000, 5.000000, -3.971752, 5.000000, -10.457920]
     test_list.append(discadj_rans_naca0012_sa)
 
     # Adjoint turbulent NACA0012 SST
@@ -83,7 +96,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.221792, -0.491367, 0.182010, -0.000018]
+    discadj_rans_naca0012_sst.test_vals = [-2.129332, -0.196073, 0.340140, -0.022082]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -95,7 +108,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -4.092007, -2.652750, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -4.091644, -2.655563, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################
@@ -107,28 +120,8 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [20.000000, -2.373367, -2.368305, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [20.000000, -2.386480, -2.408986, 0.000000]
     test_list.append(discadj_incomp_cylinder)
-
-    ######################################
-    ### Disc. adj. incompressible RANS ###
-    ######################################
-
-    # Adjoint Incompressible Turbulent NACA 0012 SA
-    discadj_incomp_turb_NACA0012_sa           = TestCase('discadj_incomp_turb_NACA0012_sa')
-    discadj_incomp_turb_NACA0012_sa.cfg_dir   = "disc_adj_incomp_rans/naca0012"
-    discadj_incomp_turb_NACA0012_sa.cfg_file  = "turb_naca0012_sa.cfg"
-    discadj_incomp_turb_NACA0012_sa.test_iter = 10
-    discadj_incomp_turb_NACA0012_sa.test_vals = [10.000000, -3.845979, -1.031095, 0.000000] #last 4 columns
-    test_list.append(discadj_incomp_turb_NACA0012_sa)
-
-    # Adjoint Incompressible Turbulent NACA 0012 SST
-    discadj_incomp_turb_NACA0012_sst           = TestCase('discadj_incomp_turb_NACA0012_sst')
-    discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
-    discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
-    discadj_incomp_turb_NACA0012_sst.test_iter = 10
-    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.845577, -2.414021, -8.420183, 0.000000] #last 4 columns
-    test_list.append(discadj_incomp_turb_NACA0012_sst)
 
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
@@ -139,7 +132,7 @@ def main():
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder.cfg"
     discadj_cylinder.test_iter = 9
-    discadj_cylinder.test_vals = [3.746909, -1.544883, -0.008321, 0.000014] #last 4 columns
+    discadj_cylinder.test_vals = [1.639372, -2.834285, -0.009538, 0.000020]
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
 
@@ -152,7 +145,7 @@ def main():
     discadj_DT_1ST_cylinder.cfg_dir   = "disc_adj_rans/cylinder_DT_1ST"
     discadj_DT_1ST_cylinder.cfg_file  = "cylinder.cfg"
     discadj_DT_1ST_cylinder.test_iter = 9
-    discadj_DT_1ST_cylinder.test_vals = [3.698168, -1.607050, -0.002159, 0.000028] #last 4 columns
+    discadj_DT_1ST_cylinder.test_vals = [1.196420, -3.339046, -0.006211, 0.000020]
     discadj_DT_1ST_cylinder.unsteady  = True
     test_list.append(discadj_DT_1ST_cylinder)
 
@@ -165,7 +158,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.218846, -1.645199, -0.007645, 0.000013]
+    discadj_pitchingNACA0012.test_vals = [-1.219518, -1.646199, -0.007607, 0.000013]
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
 
@@ -174,7 +167,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform_ad.cfg"
     unst_deforming_naca0012.test_iter = 4
-    unst_deforming_naca0012.test_vals = [-1.958006, -1.841808, 1081.700000, 0.000004]
+    unst_deforming_naca0012.test_vals = [-1.960419, -1.844186, 2970.700000, 0.000004]
     unst_deforming_naca0012.unsteady  = True
     test_list.append(unst_deforming_naca0012)
 
@@ -187,8 +180,8 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
-    discadj_fea.test_vals         = [-2.849844, -3.238713, -3.6413e-04, -8.7087] #last 4 columns
-    discadj_fea.test_vals_aarch64 = [-2.849570, -3.238519, -3.6413e-04, -8.7087] #last 4 columns
+    discadj_fea.test_vals         = [-2.849844, -3.238713, -0.000364, -8.708700]
+    discadj_fea.tol               = 0.00007
     test_list.append(discadj_fea)
 
     ###################################
@@ -200,7 +193,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-2.227518, 0.576043, 0.000000, -7.753900] #last 4 columns
+    discadj_heat.test_vals = [-2.178141, 0.578576, 0.000000, 0.008712]
     test_list.append(discadj_heat)
 
     ###################################
@@ -212,7 +205,7 @@ def main():
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 6
-    discadj_fsi.test_vals = [6.000000, -1.965877, -3.084381, 0.000440, -1.063100] #last 5 columns
+    discadj_fsi.test_vals = [6.000000, -8.929426, -10.024862, 0.000000, -0.000002]
     test_list.append(discadj_fsi)
 
     ###################################
@@ -224,7 +217,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.955506, -3.085551, -3.085518, -3.085513] #last 4 columns
+    discadj_cht.test_vals = [-2.955506, -3.085551, -3.085518, -3.085513]
     test_list.append(discadj_cht)
 
     ######################################
@@ -243,7 +236,7 @@ def main():
         if test.tol == 0.0:
             test.tol = 0.00001
 
-    pass_list = [ test.run_test() for test in test_list ]
+    pass_list = [ test.run_test(args.tsan, args.asan, args.tapetests) for test in test_list ]
 
     ###################################
     ### Coupled RHT-CFD Adjoint     ###
@@ -259,7 +252,8 @@ def main():
     discadj_rht.reference_file = "of_grad_cd.csv.ref"
     discadj_rht.reference_file_aarch64 = "of_grad_cd_aarch64.csv.ref"
     discadj_rht.test_file      = "of_grad_cd.csv"
-    pass_list.append(discadj_rht.run_filediff())
+    discadj_rht.enabled_with_asan = False
+    pass_list.append(discadj_rht.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(discadj_rht)
 
     ######################################
@@ -276,7 +270,8 @@ def main():
     discadj_euler_py.reference_file = "of_grad_cd_disc.dat.ref"
     discadj_euler_py.reference_file_aarch64 = "of_grad_cd_disc_aarch64.dat.ref"
     discadj_euler_py.test_file = "of_grad_cd.dat"
-    pass_list.append(discadj_euler_py.run_filediff())
+    discadj_euler_py.enabled_with_asan = False
+    pass_list.append(discadj_euler_py.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(discadj_euler_py)
 
     # test discrete_adjoint with multiple ffd boxes
@@ -289,7 +284,8 @@ def main():
     discadj_multiple_ffd_py.reference_file = "of_grad_cd.dat.ref"
     discadj_multiple_ffd_py.reference_file_aarch64 = "of_grad_cd_aarch64.dat.ref"
     discadj_multiple_ffd_py.test_file = "of_grad_cd.dat"
-    pass_list.append(discadj_multiple_ffd_py.run_filediff())
+    discadj_multiple_ffd_py.enabled_with_asan = False
+    pass_list.append(discadj_multiple_ffd_py.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(discadj_multiple_ffd_py)
 
     # test direct_differentiation.py
@@ -302,7 +298,8 @@ def main():
     directdiff_euler_py.reference_file = "of_grad_directdiff.dat.ref"
     directdiff_euler_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
     directdiff_euler_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
-    pass_list.append(directdiff_euler_py.run_filediff())
+    directdiff_euler_py.enabled_with_asan = False
+    pass_list.append(directdiff_euler_py.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(directdiff_euler_py)
 
     # test direct_differentiation.py with multiple ffd boxes
@@ -315,7 +312,8 @@ def main():
     directdiff_multiple_ffd_py.reference_file = "of_grad_directdiff.dat.ref"
     directdiff_multiple_ffd_py.reference_file_aarch64 = "of_grad_directdiff_aarch64.dat.ref"
     directdiff_multiple_ffd_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
-    pass_list.append(directdiff_multiple_ffd_py.run_filediff())
+    directdiff_multiple_ffd_py.enabled_with_asan = False
+    pass_list.append(directdiff_multiple_ffd_py.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(directdiff_multiple_ffd_py)
 
     # test continuous_adjoint.py, with multiple objectives
@@ -335,26 +333,28 @@ def main():
     pywrapper_FEA_AD_FlowLoad.cfg_dir       = "py_wrapper/disc_adj_fea/flow_load_sens"
     pywrapper_FEA_AD_FlowLoad.cfg_file      = "configAD_fem.cfg"
     pywrapper_FEA_AD_FlowLoad.test_iter     = 100
-    pywrapper_FEA_AD_FlowLoad.test_vals     = [-0.13945587401579657, -0.585985886606256, -0.00036377840086080753, -0.0031005670174756375] #last 4 columns
+    pywrapper_FEA_AD_FlowLoad.test_vals     = [-0.139456, -0.585986, -0.000364, -0.003101]
     pywrapper_FEA_AD_FlowLoad.command       = TestCase.Command(exec = "python", param = "run_adjoint.py -f")
     pywrapper_FEA_AD_FlowLoad.timeout       = 1600
     pywrapper_FEA_AD_FlowLoad.tol           = 0.000001
     pywrapper_FEA_AD_FlowLoad.new_output    = False
+    pywrapper_FEA_AD_FlowLoad.enabled_with_asan = False
     test_list.append(pywrapper_FEA_AD_FlowLoad)
-    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test())
+    pass_list.append(pywrapper_FEA_AD_FlowLoad.run_test(args.tsan, args.asan, args.tapetests))
 
     # Flow AD Mesh Displacement Sensitivity
     pywrapper_CFD_AD_MeshDisp               = TestCase('pywrapper_CFD_AD_MeshDisp')
     pywrapper_CFD_AD_MeshDisp.cfg_dir       = "py_wrapper/disc_adj_flow/mesh_disp_sens"
     pywrapper_CFD_AD_MeshDisp.cfg_file      = "configAD_flow.cfg"
     pywrapper_CFD_AD_MeshDisp.test_iter     = 1000
-    pywrapper_CFD_AD_MeshDisp.test_vals     = [30.000000, -2.518695, 1.390150, 0.000000] #last 4 columns
+    pywrapper_CFD_AD_MeshDisp.test_vals     = [30.000000, -2.496380, 1.441373, 0.000000]
     pywrapper_CFD_AD_MeshDisp.command       = TestCase.Command(exec = "python", param = "run_adjoint.py -f")
     pywrapper_CFD_AD_MeshDisp.timeout       = 1600
     pywrapper_CFD_AD_MeshDisp.tol           = 0.000001
     pywrapper_CFD_AD_MeshDisp.new_output    = False
+    pywrapper_CFD_AD_MeshDisp.enabled_with_asan = False
     test_list.append(pywrapper_CFD_AD_MeshDisp)
-    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test())
+    pass_list.append(pywrapper_CFD_AD_MeshDisp.run_test(args.tsan, args.asan, args.tapetests))
 
 
     ###################################
@@ -370,7 +370,8 @@ def main():
     grad_smooth_naca0012.reference_file = "of_hess.dat.ref"
     grad_smooth_naca0012.reference_file_aarch64 = "of_hess_aarch64.dat.ref"
     grad_smooth_naca0012.test_file = "of_hess.dat"
-    pass_list.append(grad_smooth_naca0012.run_filediff())
+    grad_smooth_naca0012.enabled_with_asan = False
+    pass_list.append(grad_smooth_naca0012.run_filediff(args.tsan, args.asan, args.tapetests))
     test_list.append(grad_smooth_naca0012)
 
     # Tests summary

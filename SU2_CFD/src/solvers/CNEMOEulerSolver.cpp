@@ -2,14 +2,14 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz, J. Needels
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1618,14 +1618,13 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   Pressure, Density, Energy, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
   alpha, aa, bb, cc, dd, Area, UnitNormal[3] = {0.0};
 
-  const su2double *Flow_Dir;
+  su2double Flow_Dir[MAXNDIM] = {};
   bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   bool dynamic_grid         = config->GetGrid_Movement();
   su2double Two_Gamma_M1    = 2.0/Gamma_Minus_One;
   su2double Gas_Constant    = config->GetGas_ConstantND();
-  INLET_TYPE Kind_Inlet = config->GetKind_Inlet();
-  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
+  INLET_TYPE Kind_Inlet     = config->GetKind_Inlet();
 
   auto *U_domain = new su2double[nVar];      auto *U_inlet = new su2double[nVar];
   auto *V_domain = new su2double[nPrimVar];  auto *V_inlet = new su2double[nPrimVar];
@@ -1659,6 +1658,16 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       for (auto iVar = 0ul; iVar < nVar; iVar++)     U_domain[iVar] = nodes->GetSolution(iPoint, iVar);
       for (auto iVar = 0ul; iVar < nPrimVar; iVar++) V_domain[iVar] = nodes->GetPrimitive(iPoint,iVar);
 
+      const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
+      const su2double mag = GeometryToolbox::Norm(nDim, dir);
+      if (config->GetInletUseNormal()) {
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          Flow_Dir[iDim] = -UnitNormal[iDim];
+      } else {
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          Flow_Dir[iDim] = dir[iDim]/mag;
+      }
+
       /*--- Build the fictitious intlet state based on characteristics ---*/
 
       /*--- Subsonic inflow: there is one outgoing characteristic (u-c),
@@ -1674,9 +1683,8 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       case INLET_TYPE::TOTAL_CONDITIONS:
 
         /*--- Retrieve the specified total conditions for this inlet. ---*/
-        P_Total  = config->GetInlet_Ptotal(Marker_Tag);
-        T_Total  = config->GetInlet_Ttotal(Marker_Tag);
-        Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+        P_Total  = Inlet_Ptotal[val_marker][iVertex];
+        T_Total  = Inlet_Ttotal[val_marker][iVertex];
 
         /*--- Non-dim. the inputs if necessary. ---*/
         P_Total /= config->GetPressure_Ref();
@@ -1773,13 +1781,12 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         break;
 
-        /*--- Mass flow has been specified at the inlet. ---*/
+      /*--- Mass flow has been specified at the inlet. ---*/
       case INLET_TYPE::MASS_FLOW:
 
         /*--- Retrieve the specified mass flow for the inlet. ---*/
-        Density  = config->GetInlet_Ttotal(Marker_Tag);
-        Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag);
-        Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+        Vel_Mag  = Inlet_Ptotal[val_marker][iVertex];
+        Density  = Inlet_Ttotal[val_marker][iVertex];
 
         /*--- Non-dim. the inputs if necessary. ---*/
         Density /= config->GetDensity_Ref();
@@ -2354,7 +2361,7 @@ void CNEMOEulerSolver::SetPressureDiffusionSensor(CGeometry *geometry, CConfig *
 
   /*--- MPI parallelization ---*/
 
-  InitiateComms(geometry, config, SENSOR);
-  CompleteComms(geometry, config, SENSOR);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SENSOR);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SENSOR);
 
 }

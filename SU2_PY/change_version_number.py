@@ -3,14 +3,14 @@
 ## \file change_version_number.py
 #  \brief Python script for updating the version number of the SU2 suite.
 #  \author A. Aranake
-#  \version 7.5.1 "Blackbird"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -55,13 +55,13 @@ parser.add_option(
 if not options.version:
     parser.error("new version number must be provided with -v option")
 
-oldvers = '7.5.1 "Blackbird"'
-oldvers_q = r"7.5.1 \"Blackbird\""
+oldvers = '8.3.0 "Harrier"'
+oldvers_q = r"8.3.0 \"Harrier\""
 newvers = str(options.version) + ' "' + str(options.releasename) + '"'
 newvers_q = str(options.version) + ' \\"' + str(options.releasename) + '\\"'
-# oldvers = 'Copyright 2012-2023, SU2'
+# oldvers = 'Copyright 2012-2025, SU2'
 # oldvers_q = oldvers
-# newvers = 'Copyright 2012-2023, SU2'
+# newvers = 'Copyright 2012-2025, SU2'
 # newvers_q = newvers
 
 if sys.version_info[0] > 2:
@@ -110,11 +110,17 @@ while not yorn.lower() == "y" and not options.yes:
 
 # Loop through and correct all files
 for fname in filelist:
-    s = open(fname, "r").read()
-    s_new = s.replace(oldvers, newvers)
-    s_new = s_new.replace(oldvers_q, newvers_q)
-    f = open(fname, "w")
-    f.write(s_new)
-    f.close()
+    with open(fname, "r") as f:
+        lines = f.readlines()
+    for i, line in enumerate(lines):
+        for old, new in zip((oldvers, oldvers_q), (newvers, newvers_q)):
+            # Avoid breaking the formating of some headers
+            if old + "  " in line:
+                n = len(new) - len(old)
+                lines[i] = line.replace(old + " " * max(0, n), new + " " * max(0, -n))
+            elif old in line:
+                lines[i] = line.replace(old, new)
+    with open(fname, "w") as f:
+        f.writelines(lines)
 
 os.system("rm -rf version.txt")

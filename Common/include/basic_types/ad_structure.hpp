@@ -2,14 +2,14 @@
  * \file ad_structure.hpp
  * \brief Main routines for the algorithmic differentiation (AD) structure.
  * \author T. Albring, J. Blühdorn
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,12 +38,26 @@
  */
 namespace AD {
 #ifndef CODI_REVERSE_TYPE
+
+using Identifier = int;
+
 /*!
  * \brief Start the recording of the operations and involved variables.
  * If called, the computational graph of all operations occuring after the call will be stored,
  * starting with the variables registered with RegisterInput.
  */
 inline void StartRecording() {}
+
+/*!
+ * \brief Pause the recording of the operations and involved variables.
+ * If called, all operations occuring after the call will not be stored on the computational graph.
+ */
+inline bool PauseRecording() { return false; }
+
+/*!
+ * \brief Resume the recording of the operations and variables after the recording had been paused.
+ */
+inline void ResumeRecording(bool wasActive) { (void)wasActive; }
 
 /*!
  * \brief Stops the recording of the operations and variables.
@@ -58,15 +72,19 @@ inline bool TapeActive() { return false; }
 
 /*!
  * \brief Prints out tape statistics.
+ *
+ * Tape statistics are aggregated across OpenMP threads and MPI processes, if applicable.
+ * With MPI, the given communicator is used to reduce data across MPI processes, and the printing behaviour can be set
+ * per rank (usually, only the master rank prints).
  */
-inline void PrintStatistics() {}
+template <typename Comm>
+inline void PrintStatistics(Comm communicator, bool printingRank) {}
 
 /*!
- * \brief Registers the variable as an input and saves internal data (indices). I.e. as a leaf of the computational
- * graph. \param[in] data - The variable to be registered as input. \param[in] push_index - boolean whether we also want
- * to push the index.
+ * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
+ * \param[in] data - The variable to be registered as input.
  */
-inline void RegisterInput(su2double& data, bool push_index = true) {}
+inline void RegisterInput(su2double& data) {}
 
 /*!
  * \brief Registers the variable as an output. I.e. as the root of the computational graph.
@@ -75,18 +93,42 @@ inline void RegisterInput(su2double& data, bool push_index = true) {}
 inline void RegisterOutput(su2double& data) {}
 
 /*!
+ * \brief Resize the adjoint vector, for subsequent access without bounds checking.
+ */
+inline void ResizeAdjoints() {}
+
+/*!
+ * \brief Declare that the adjoints are being used, to protect against resizing.
+ *
+ * Should be used together with AD::EndUseAdjoints() to protect AD::SetDerivative() and AD::GetDerivative() calls,
+ * multiple at once if possible.
+ */
+inline void BeginUseAdjoints() {}
+
+/*!
+ * \brief Declare that the adjoints are no longer being used.
+ */
+inline void EndUseAdjoints() {}
+
+/*!
  * \brief Sets the adjoint value at index to val
  * \param[in] index - Position in the adjoint vector.
  * \param[in] val - adjoint value to be set.
  */
-inline void SetDerivative(int index, const double val) {}
+inline void SetDerivative(Identifier index, const double val) {}
 
 /*!
  * \brief Extracts the adjoint value at index
  * \param[in] index - position in the adjoint vector where the derivative will be extracted.
  * \return Derivative value.
  */
-inline double GetDerivative(int index) { return 0.0; }
+inline double GetDerivative(Identifier index) { return 0.0; }
+
+/*!
+ * \brief Returns the identifier that represents an inactive variable.
+ * \return Passive index.
+ */
+inline Identifier GetPassiveIndex() { return 0; }
 
 /*!
  * \brief Clears the currently stored adjoints but keeps the computational graph.
@@ -237,7 +279,50 @@ inline void SetExtFuncOut(T&& data, const int size_x, const int size_y) {}
  * \param[in] data - variable whose gradient information will be extracted.
  * \param[in] index - where obtained gradient information will be stored.
  */
-inline void SetIndex(int& index, const su2double& data) {}
+inline void SetIndex(Identifier& index, const su2double& data) {}
+
+/*!
+ * \brief Sets the tag tape to a specific tag.
+ * \param[in] tag - the number to which the tag is set.
+ */
+inline void SetTag(int tag) {}
+
+/*!
+ * \brief Sets the tag of a variable to 0.
+ * \param[in] v - the variable whose tag is cleared.
+ */
+inline void ClearTagOnVariable(su2double& v) {}
+
+/*!
+ * \brief Struct to store information about errors during a tag debug run.
+ */
+struct ErrorReport {};
+
+/*!
+ * \brief Set a reference to the output file of an ErrorReport.
+ * \param[in] report - the ErrorReport whose output file is set.
+ * \param[in] output_file - pointer to the output file.
+ */
+inline void SetDebugReportFile(ErrorReport& report, std::ostream* output_file) {}
+
+/*!
+ * \brief Set the ErrorReport to which error information from a tag debug recording is written.
+ * \param[in] report - the ErrorReport to which error information is written.
+ */
+inline void SetTagErrorCallback(ErrorReport& report) {}
+
+/*!
+ * \brief Reset the error counter in an ErrorReport.
+ * \param[in] report - the ErrorReport whose error counter is resetted.
+ */
+inline void ResetErrorCounter(ErrorReport& report) {}
+
+/*!
+ * \brief Get the error count of an ErrorReport.
+ * \param[in] report - the ErrorReport whose pointer to its error counter is returned.
+ * \return Value of the error counter.
+ */
+inline unsigned long GetErrorCount(const ErrorReport& report) { return 0; }
 
 /*!
  * \brief Pushes back the current tape position to the tape position's vector.
@@ -282,6 +367,7 @@ inline void EndNoSharedReading() {}
 using CheckpointHandler = codi::ExternalFunctionUserData;
 
 using Tape = su2double::Tape;
+using Identifier = su2double::Identifier;
 
 #ifdef HAVE_OPDI
 using ExtFuncHelper = codi::OpenMPExternalFunctionHelper<su2double>;
@@ -327,11 +413,95 @@ FORCEINLINE void ResetInput(su2double& data) { data = data.getValue(); }
 
 FORCEINLINE void StartRecording() { AD::getTape().setActive(); }
 
+FORCEINLINE bool PauseRecording() {
+  if (AD::getTape().isActive()) {
+    AD::getTape().setPassive();
+    return true;
+  }
+  return false;
+}
+
+FORCEINLINE void ResumeRecording(bool wasActive) {
+  if (wasActive) {
+    AD::getTape().setActive();
+  }
+}
+
 FORCEINLINE void StopRecording() { AD::getTape().setPassive(); }
 
 FORCEINLINE bool TapeActive() { return AD::getTape().isActive(); }
 
-FORCEINLINE void PrintStatistics() { AD::getTape().printStatistics(); }
+template <typename Comm>
+FORCEINLINE void PrintStatistics(Comm communicator, bool printingRank) {
+  if (printingRank) {
+    std::cout << "-------------------------------------------------------\n";
+    std::cout << "  Serial parts of the tape\n";
+#ifdef HAVE_MPI
+    std::cout << "  (aggregated across MPI processes)\n";
+#endif
+    std::cout << "-------------------------------------------------------\n";
+  }
+
+  codi::TapeValues serialTapeValues = AD::getTape().getTapeValues();
+  serialTapeValues.combineDataMPI(communicator);
+
+  if (printingRank) {
+    serialTapeValues.formatDefault(std::cout);
+  }
+
+  double totalMemoryUsed = serialTapeValues.getUsedMemorySize();
+  double totalMemoryAllocated = serialTapeValues.getAllocatedMemorySize();
+
+#ifdef HAVE_OPDI
+
+  if (printingRank) {
+    std::cout << "-------------------------------------------------------\n";
+    std::cout << "  OpenMP parallel parts of the tape\n";
+    std::cout << "  (aggregated across OpenMP threads)\n";
+#ifdef HAVE_MPI
+    std::cout << "  (aggregated across MPI processes)\n";
+#endif
+    std::cout << "-------------------------------------------------------\n";
+  }
+
+  codi::TapeValues* aggregatedOpenMPTapeValues = nullptr;
+
+  // clang-format off
+
+  SU2_OMP_PARALLEL {
+    if (omp_get_thread_num() == 0) {  // master thread
+      codi::TapeValues masterTapeValues = AD::getTape().getTapeValues();
+      aggregatedOpenMPTapeValues = &masterTapeValues;
+
+      SU2_OMP_BARRIER  // master completes initialization
+      SU2_OMP_BARRIER  // other threads complete adding their data
+
+      aggregatedOpenMPTapeValues->combineDataMPI(communicator);
+      totalMemoryUsed += aggregatedOpenMPTapeValues->getUsedMemorySize();
+      totalMemoryAllocated += aggregatedOpenMPTapeValues->getAllocatedMemorySize();
+      if (printingRank) {
+        aggregatedOpenMPTapeValues->formatDefault(std::cout);
+      }
+      aggregatedOpenMPTapeValues = nullptr;
+    } else {  // other threads
+      SU2_OMP_BARRIER  // master completes initialization
+      SU2_OMP_CRITICAL {
+        aggregatedOpenMPTapeValues->combineData(AD::getTape().getTapeValues());
+      } END_SU2_OMP_CRITICAL
+      SU2_OMP_BARRIER  // other threads complete adding their data
+    }
+  } END_SU2_OMP_PARALLEL
+
+// clang-format on
+#endif
+
+  if (printingRank) {
+    std::cout << "-------------------------------------------------------\n";
+    std::cout << "  Total memory used      :  " << totalMemoryUsed / 1024.0 / 1024.0 << " MB\n";
+    std::cout << "  Total memory allocated :  " << totalMemoryAllocated / 1024.0 / 1024.0 << " MB\n";
+    std::cout << "-------------------------------------------------------\n";
+  }
+}
 
 FORCEINLINE void ClearAdjoints() { AD::getTape().clearAdjoints(); }
 
@@ -340,6 +510,9 @@ FORCEINLINE void ComputeAdjoint() {
   opdi::logic->prepareEvaluate();
 #endif
   AD::getTape().evaluate();
+#if defined(HAVE_OPDI)
+  opdi::logic->postEvaluate();
+#endif
 }
 
 FORCEINLINE void ComputeAdjoint(unsigned short enter, unsigned short leave) {
@@ -369,15 +542,35 @@ FORCEINLINE void Reset() {
   }
 }
 
-FORCEINLINE void SetIndex(int& index, const su2double& data) { index = data.getIdentifier(); }
+FORCEINLINE void ResizeAdjoints() { AD::getTape().resizeAdjointVector(); }
 
-FORCEINLINE void SetDerivative(int index, const double val) { AD::getTape().setGradient(index, val); }
+FORCEINLINE void BeginUseAdjoints() { AD::getTape().beginUseAdjointVector(); }
 
-FORCEINLINE double GetDerivative(int index) { return AD::getTape().getGradient(index); }
+FORCEINLINE void EndUseAdjoints() { AD::getTape().endUseAdjointVector(); }
 
-FORCEINLINE bool IsIdentifierActive(su2double const& value) {
-  return getTape().isIdentifierActive(value.getIdentifier());
+FORCEINLINE void SetIndex(Identifier& index, const su2double& data) { index = data.getIdentifier(); }
+
+// WARNING: For performance reasons, this method does not perform bounds checking.
+// When using it, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
+// This method does not perform locking either.
+// It should be safeguarded by calls to AD::BeginUseAdjoints() and AD::EndUseAdjoints().
+FORCEINLINE void SetDerivative(Identifier index, const double val) {
+  // Allow multiple threads to "set the derivative" of passive variables without causing data races.
+  if (!AD::getTape().isIdentifierActive(index)) return;
+
+  AD::getTape().setGradient(index, val, codi::AdjointsManagement::Manual);
 }
+
+// WARNING: For performance reasons, this method does not perform bounds checking.
+// If called after tape evaluations, the adjoints should exist.
+// Otherwise, please ensure sufficient adjoint vector size by a call to AD::ResizeAdjoints().
+// This method does not perform locking either.
+// It should be safeguarded by calls to AD::BeginUseAdjoints() and AD::EndUseAdjoints().
+FORCEINLINE double GetDerivative(Identifier index) {
+  return AD::getTape().getGradient(index, codi::AdjointsManagement::Manual);
+}
+
+FORCEINLINE Identifier GetPassiveIndex() { return AD::getTape().getPassiveIndex(); }
 
 /*--- Base case for parameter pack expansion. ---*/
 FORCEINLINE void SetPreaccIn() {}
@@ -385,7 +578,7 @@ FORCEINLINE void SetPreaccIn() {}
 template <class T, class... Ts, su2enable_if<std::is_same<T, su2double>::value> = 0>
 FORCEINLINE void SetPreaccIn(const T& data, Ts&&... moreData) {
   if (!PreaccActive) return;
-  if (IsIdentifierActive(data)) PreaccHelper.addInput(data);
+  PreaccHelper.addInput(data);
   SetPreaccIn(moreData...);
 }
 
@@ -398,9 +591,7 @@ template <class T>
 FORCEINLINE void SetPreaccIn(const T& data, const int size) {
   if (PreaccActive) {
     for (int i = 0; i < size; i++) {
-      if (IsIdentifierActive(data[i])) {
-        PreaccHelper.addInput(data[i]);
-      }
+      PreaccHelper.addInput(data[i]);
     }
   }
 }
@@ -410,9 +601,7 @@ FORCEINLINE void SetPreaccIn(const T& data, const int size_x, const int size_y) 
   if (!PreaccActive) return;
   for (int i = 0; i < size_x; i++) {
     for (int j = 0; j < size_y; j++) {
-      if (IsIdentifierActive(data[i][j])) {
-        PreaccHelper.addInput(data[i][j]);
-      }
+      PreaccHelper.addInput(data[i][j]);
     }
   }
 }
@@ -430,7 +619,7 @@ FORCEINLINE void SetPreaccOut() {}
 template <class T, class... Ts, su2enable_if<std::is_same<T, su2double>::value> = 0>
 FORCEINLINE void SetPreaccOut(T& data, Ts&&... moreData) {
   if (!PreaccActive) return;
-  if (IsIdentifierActive(data)) PreaccHelper.addOutput(data);
+  PreaccHelper.addOutput(data);
   SetPreaccOut(moreData...);
 }
 
@@ -438,9 +627,7 @@ template <class T>
 FORCEINLINE void SetPreaccOut(T&& data, const int size) {
   if (PreaccActive) {
     for (int i = 0; i < size; i++) {
-      if (IsIdentifierActive(data[i])) {
-        PreaccHelper.addOutput(data[i]);
-      }
+      PreaccHelper.addOutput(data[i]);
     }
   }
 }
@@ -450,9 +637,7 @@ FORCEINLINE void SetPreaccOut(T&& data, const int size_x, const int size_y) {
   if (!PreaccActive) return;
   for (int i = 0; i < size_x; i++) {
     for (int j = 0; j < size_y; j++) {
-      if (IsIdentifierActive(data[i][j])) {
-        PreaccHelper.addOutput(data[i][j]);
-      }
+      PreaccHelper.addOutput(data[i][j]);
     }
   }
 }
@@ -523,26 +708,14 @@ FORCEINLINE void delete_handler(void* handler) {
 
 FORCEINLINE bool BeginPassive() {
   if (AD::getTape().isActive()) {
-    StopRecording();
+    AD::getTape().setPassive();
     return true;
   }
   return false;
 }
 
 FORCEINLINE void EndPassive(bool wasActive) {
-  if (wasActive) StartRecording();
-}
-
-FORCEINLINE bool PausePreaccumulation() {
-  const auto current = PreaccEnabled;
-  if (!current) return false;
-  SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = false;)
-  return true;
-}
-
-FORCEINLINE void ResumePreaccumulation(bool wasActive) {
-  if (!wasActive) return;
-  SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
+  if (wasActive) AD::getTape().setActive();
 }
 
 FORCEINLINE void StartNoSharedReading() {
@@ -558,6 +731,53 @@ FORCEINLINE void EndNoSharedReading() {
   opdi::logic->addReverseBarrier();
 #endif
 }
+
+FORCEINLINE bool PausePreaccumulation() {
+  const auto current = PreaccEnabled;
+  if (!current) return false;
+  SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = false;)
+  return true;
+}
+
+FORCEINLINE void ResumePreaccumulation(bool wasActive) {
+  if (!wasActive) return;
+  SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
+}
+
+struct ErrorReport {
+  unsigned long ErrorCounter = 0;
+  std::ostream* out = &std::cout;
+};
+
+FORCEINLINE void ResetErrorCounter(ErrorReport& report) { report.ErrorCounter = 0; }
+
+FORCEINLINE void SetDebugReportFile(ErrorReport& report, std::ostream* output_file) { report.out = output_file; }
+
+FORCEINLINE unsigned long GetErrorCount(const ErrorReport& report) { return report.ErrorCounter; }
+
+#ifdef CODI_TAG_TAPE
+
+FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
+FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
+
+static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* userData) {
+  auto* report = static_cast<ErrorReport*>(userData);
+
+  report->ErrorCounter += 1;
+  *(report->out) << "Use of variable with bad tag '" << wrongTag << "', should be '" << correctTag << "'." << std::endl;
+}
+
+FORCEINLINE void SetTagErrorCallback(ErrorReport& report) {
+  AD::getTape().setTagErrorCallback(tagErrorCallback, &report);
+}
+
+#else
+FORCEINLINE void SetTag(int tag) {}
+FORCEINLINE void ClearTagOnVariable(su2double& v) {}
+FORCEINLINE void SetTagErrorCallback(ErrorReport report) {}
+
+#endif  // CODI_TAG_TAPE
+
 #endif  // CODI_REVERSE_TYPE
 
 void Initialize();

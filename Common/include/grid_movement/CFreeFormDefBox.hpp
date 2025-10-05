@@ -2,14 +2,14 @@
  * \file CFreeFormDefBox.hpp
  * \brief Headers of the CFreeFormDefBox class.
  * \author F. Palacios & A. Galdran.
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -642,12 +642,10 @@ class CFreeFormDefBox : public CGridMovement {
   }
 
   /*!
-   * \brief Set, at each vertex, the index of the free form FFDBox that contains the vertex.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iFFDBox - Index of the FFDBox.
+   * \brief Returns true if the point is inside the FFD.
+   * \param[in] coord - Coordinate of the point to check.
    */
-  bool GetPointFFD(CGeometry* geometry, CConfig* config, unsigned long iPoint) const;
+  bool CheckPointInsideFFD(const su2double* coord) const;
 
   /*!
    * \brief Set the zone of the computational domain that is going to be deformed.

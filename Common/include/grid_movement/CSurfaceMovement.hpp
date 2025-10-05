@@ -2,14 +2,14 @@
  * \file CSurfaceMovement.hpp
  * \brief Headers of the CSurfaceMovement class.
  * \author F. Palacios, T. Economon.
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -96,6 +96,13 @@ class CSurfaceMovement : public CGridMovement {
   void SetCST(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef);
 
   /*!
+   * \brief Set a Hicks-Henne deformation bump function on the camberline of an airfoil.
+   * \param[in] boundary - Geometry of the boundary.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHicksHenneCamber(CGeometry* boundary, CConfig* config);
+
+  /*!
    * \brief Set a NACA 4 digits airfoil family for airfoil deformation.
    * \param[in] boundary - Geometry of the boundary.
    * \param[in] config - Definition of the particular problem.
@@ -155,13 +162,6 @@ class CSurfaceMovement : public CGridMovement {
    */
   void SetBoundary_Flutter3D(CGeometry* geometry, CConfig* config, CFreeFormDefBox** FFDBox, unsigned long iter,
                              unsigned short iZone);
-
-  /*!
-   * \brief Set the collective pitch for a blade surface movement.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetCollective_Pitch(CGeometry* geometry, CConfig* config);
 
   /*!
    * \brief Set any surface deformationsbased on an input file.
@@ -335,17 +335,6 @@ class CSurfaceMovement : public CGridMovement {
    */
   bool SetFFDCamber_2D(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
                        unsigned short iDV, bool ResetDef) const;
-
-  /*!
-   * \brief Set a camber deformation of the Free From box using the control point position.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] FFDBox - Array with all the free forms FFDBoxes of the computation.
-   * \param[in] iDV - Index of the design variable.
-   * \param[in] ResetDef - Reset the deformation before starting a new one.
-   */
-  bool SetFFDTwist_2D(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
-                      unsigned short iDV, bool ResetDef);
 
   /*!
    * \brief Set a thickness deformation of the Free From box using the control point position.

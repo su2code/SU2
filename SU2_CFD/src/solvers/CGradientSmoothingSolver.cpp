@@ -2,14 +2,14 @@
  * \file CGradientSmoothing.cpp
  * \brief Main solver routines for the gradient smoothing problem.
  * \author T. Dick
- * \version 7.5.1 "Blackbird"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -287,8 +287,8 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
     /*--- Matrix vector product with the Laplace-Beltrami stiffness matrix. ---*/
     if (config->GetSmoothOnSurface()) {
 
-      CSysMatrixComms::Initiate(helperVecIn, geometry, config, SOLUTION_MATRIX);
-      CSysMatrixComms::Complete(helperVecIn, geometry, config, SOLUTION_MATRIX);
+      CSysMatrixComms::Initiate(helperVecIn, geometry, config, MPI_QUANTITIES::SOLUTION_MATRIX);
+      CSysMatrixComms::Complete(helperVecIn, geometry, config, MPI_QUANTITIES::SOLUTION_MATRIX);
 
       mat_vec(helperVecIn, helperVecAux);
 
@@ -306,8 +306,8 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
       grid_movement->SetVolume_Deformation(geometry, config, false, true, true);
       CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2matvecscalar>(geometry, helperVecIn);
 
-      CSysMatrixComms::Initiate(helperVecIn, geometry, config, SOLUTION_MATRIX);
-      CSysMatrixComms::Complete(helperVecIn, geometry, config, SOLUTION_MATRIX);
+      CSysMatrixComms::Initiate(helperVecIn, geometry, config, MPI_QUANTITIES::SOLUTION_MATRIX);
+      CSysMatrixComms::Complete(helperVecIn, geometry, config, MPI_QUANTITIES::SOLUTION_MATRIX);
 
       mat_vec(helperVecIn, helperVecAux);
 

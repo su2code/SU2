@@ -6,12 +6,14 @@ su2_cfd_src = files(['definition_structure.cpp',
 su2_cfd_src += files(['fluid/CFluidModel.cpp',
                       'fluid/CIdealGas.cpp',
                       'fluid/CFluidScalar.cpp',
+                      'fluid/CFluidFlamelet.cpp',
                       'fluid/CPengRobinson.cpp',
                       'fluid/CVanDerWaalsGas.cpp',
                       'fluid/CCoolProp.cpp',
                       'fluid/CNEMOGas.cpp',
                       'fluid/CMutationTCLib.cpp',
-                      'fluid/CSU2TCLib.cpp'])
+                      'fluid/CSU2TCLib.cpp',
+                      'fluid/CDataDrivenFluid.cpp'])
 
 su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CAdjElasticityOutput.cpp',
@@ -30,9 +32,8 @@ su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CHeatOutput.cpp',
                       'output/CMeshOutput.cpp',
                       'output/CNEMOCompOutput.cpp',
-                      'output/output_physics.cpp',
+                      'output/CTurboOutput.cpp' ,
                       'output/COutput.cpp',
-                      'output/output_structure_legacy.cpp',
                       'output/filewriter/CParallelDataSorter.cpp',
                       'output/filewriter/CFVMDataSorter.cpp',
                       'output/filewriter/CFEMDataSorter.cpp',
@@ -60,6 +61,7 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                       'variables/CTurbVariable.cpp',
                       'variables/CScalarVariable.cpp',
                       'variables/CSpeciesVariable.cpp',
+                      'variables/CSpeciesFlameletVariable.cpp',
                       'variables/CAdjNSVariable.cpp',
                       'variables/CBaselineVariable.cpp',
                       'variables/CDiscAdjFEABoundVariable.cpp',
@@ -109,6 +111,7 @@ su2_cfd_src += files(['solvers/CSolverFactory.cpp',
                       'solvers/CSolver.cpp',
                       'solvers/CTemplateSolver.cpp',
                       'solvers/CSpeciesSolver.cpp',
+                      'solvers/CSpeciesFlameletSolver.cpp',
                       'solvers/CTransLMSolver.cpp',
                       'solvers/CTurbSolver.cpp',
                       'solvers/CTurbSASolver.cpp',
@@ -186,6 +189,11 @@ su2_cfd_src += files(['iteration/CIteration.cpp',
 
 su2_cfd_src += files(['limiters/CLimiterDetails.cpp'])
 
+profiling_args = []
+if get_option('enable-gprof')
+  profiling_args = ['-pg','-no-pie']
+endif
+
 if get_option('enable-normal')
   su2_cfd_lib = static_library('SU2core',
                                su2_cfd_src,
@@ -198,7 +206,8 @@ if get_option('enable-normal')
                        'SU2_CFD.cpp',
                        install : true,
                        dependencies : [su2_cfd_dep, su2_deps, common_dep],
-                       cpp_args:  ['-fPIC'] + [default_warning_flags, su2_cpp_args])
+                       cpp_args:  ['-fPIC'] + [default_warning_flags, su2_cpp_args] + profiling_args,
+                       link_args: profiling_args)
 endif
 
 if get_option('enable-autodiff')
@@ -213,7 +222,8 @@ if get_option('enable-autodiff')
                           'SU2_CFD.cpp',
                           install : true,
                           dependencies : [su2_cfd_dep_ad, su2_deps, codi_dep, commonAD_dep],
-                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args])
+                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_rev_args] + profiling_args,
+                          link_args: profiling_args)
 endif
 
 if get_option('enable-directdiff')
@@ -228,6 +238,7 @@ if get_option('enable-directdiff')
                           'SU2_CFD.cpp',
                           install : true,
                           dependencies : [su2_cfd_dep_dd, su2_deps, codi_dep, commonDD_dep],
-                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args])
+                          cpp_args: ['-fPIC'] + [default_warning_flags, su2_cpp_args, codi_for_args] + profiling_args,
+                          link_args: profiling_args)
 endif
 
