@@ -2,7 +2,7 @@
  * \file CTurbSolver.cpp
  * \brief Main subroutines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -104,15 +104,17 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
                               bool val_update_geo) {
   /*--- Restart the solution from file information ---*/
 
-  const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  string restart_filename = config->GetSolution_FileName();
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
     if (config->GetRead_Binary_Restart()) {
+      restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
       Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
     } else {
+      restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 

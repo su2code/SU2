@@ -2,7 +2,7 @@
 
 ## \file run.py
 #  \brief Channel with wave-like motion on walls (steady state version).
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -81,7 +81,7 @@ CUSTOM_OUTPUTS= 'p_tot : Macro{PRESSURE + 0.5 * DENSITY * (pow(VELOCITY_X, 2) + 
 CUSTOM_OBJFUNC= 'p_drop'
 OBJECTIVE_FUNCTION= CUSTOM_OBJFUNC
 
-SOLUTION_FILENAME= restart.dat
+SOLUTION_FILENAME= restart
 OUTPUT_FILES= RESTART, PARAVIEW_MULTIBLOCK
 OUTPUT_WRT_FREQ= 9999
 SCREEN_WRT_FREQ_INNER= 10

@@ -2,7 +2,7 @@
 
 ## \file topology_optimization.py
 #  \brief Python script to drive SU2 in topology optimization.
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -70,7 +70,7 @@ options = {"disp": True, "maxcor": 10, "ftol": ftol_u, "gtol": 1e-18}
 commands = ["SU2_CFD ", "SU2_CFD_AD "]
 
 # file through which SU2 gets the design densities
-inputFile = "element_properties.dat"
+inputFile = "element_properties"
 
 # names of the output files [objective value, objective gradient, constraint value, ...]
 outputFiles = ["grad_compliance.dat", "grad_vol_frac.dat"]

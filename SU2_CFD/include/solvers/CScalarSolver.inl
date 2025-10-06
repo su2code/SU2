@@ -1,7 +1,7 @@
 /*!
  * \file CScalarSolver.inl
  * \brief Main subroutines of CScalarSolver class
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -831,4 +831,34 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
     AD::EndNoSharedReading();
 
   }  // end dynamic grid
+}
+
+
+template <class VariableType>
+void CScalarSolver<VariableType>::PushSolutionBackInTime(unsigned long TimeIter, bool
+                                                         restart,CSolver*** solver_container,
+                                                         CGeometry** geometry, CConfig* config) {
+  const bool dual_time = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
+                         config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
+  const bool isRestartIter = restart && TimeIter == config->GetRestart_Iter();
+
+  /*--- The value of the solution for the first iteration of the dual time. ---*/
+
+  if (dual_time && (TimeIter == 0 || isRestartIter)) {
+    /*--- Push back the initial condition to previous solution containers
+     for a 1st-order restart or when simply initializing to freestream. ---*/
+
+    nodes->Set_Solution_time_n();
+    nodes->Set_Solution_time_n1();
+
+    if (isRestartIter && config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
+      /*--- Load an additional restart file for a 2nd-order restart ---*/
+
+      LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetRestart_Iter()-1), true);
+
+      /*--- Push back this new solution to time level N. ---*/
+
+      nodes->Set_Solution_time_n();
+    }
+  }
 }

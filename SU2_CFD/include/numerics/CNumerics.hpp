@@ -3,7 +3,7 @@
  * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -53,7 +53,6 @@ protected:
   su2double Gamma_Minus_One;  /*!< \brief Fluids's Gamma - 1.0  . */
   su2double Minf;             /*!< \brief Free stream Mach number . */
   su2double Gas_Constant;     /*!< \brief Gas constant. */
-  su2double Prandtl_Lam;      /*!< \brief Laminar Prandtl's number. */
   su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl's number. */
   su2double MassFlux;         /*!< \brief Mass flux across edge. */
   su2double
