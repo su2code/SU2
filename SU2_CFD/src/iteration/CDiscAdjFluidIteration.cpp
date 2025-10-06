@@ -27,6 +27,7 @@
 
 #include "../../include/iteration/CDiscAdjFluidIteration.hpp"
 #include "../../include/output/COutput.hpp"
+#include "../../../Common/include/tracy_structure.hpp"
 
 void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                         CSolver***** solver, CNumerics****** numerics, CConfig** config,
@@ -399,6 +400,9 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
 
 void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                            unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
+
+  SU2_ZONE_SCOPED_N("RegisterInput_Iter");
+
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
@@ -462,12 +466,17 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                              CConfig** config, CInterface*** interface, unsigned short iZone, unsigned short iInst,
                                              RECORDING kind_recording) {
+  
+  SU2_ZONE_SCOPED_N("SetDependencies");
+  
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
   if ((kind_recording == RECORDING::MESH_COORDS) ||
       (kind_recording == RECORDING::CLEAR_INDICES) ||
-      (kind_recording == RECORDING::SOLUTION_AND_MESH)) {
+      (kind_recording == RECORDING::SOLUTION_AND_MESH) ||
+      (kind_recording == RECORDING::TAG_INIT_SOLVER_AND_MESH) ||
+      (kind_recording == RECORDING::TAG_CHECK_SOLVER_AND_MESH)) {
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
     SU2_OMP_PARALLEL
@@ -491,35 +500,40 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
     solvers0[TURB_SOL]->CompleteComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
   }
   if (config[iZone]->GetBoolTurbomachinery()) {
-    if (iZone == ZONE_0){
-      // Defines geometric dependency in turbo simulations, this is done in ZONE_0 as it requires a loop over all zones first
-      // This step is very similar to the turbo preprocessing in CDriver but it is not recorded to the tape their, hence repeated here
-      // Do this in two parts as solver step is necessary in the middle
-      // for (auto jZone = 0u; jZone < nZone; jZone++){
-      //   SU2_OMP_PARALLEL
-      //   CGeometry::UpdateGeometry(geometry[jZone][iInst], config[jZone]);
-      //   END_SU2_OMP_PARALLEL
-
-      //   CGeometry::ComputeWallDistance(config, geometry);
-      // }
-      geometry[iZone][MESH_0][INST_0]->InitTurboVertexAdj(geometry, config);
-      for (auto jZone = 0u; jZone < nZone; jZone++) {
-        solver[jZone][INST_0][MESH_0][FLOW_SOL]->InitTurboContainers(geometry[jZone][INST_0][MESH_0],config[jZone]);
-      }
-      geometry[iZone][MESH_0][INST_0]->UpdateTurboGeometry(geometry, interface, config);
-    }
+    // if ((config_container[iZone]->GetGrid_Movement())) {
+    //   iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone],
+    //                                                        grid_movement[iZone][INST_0], solver_container[iZone][INST_0],
+    //                                                        config_container[iZone], 0, TimeIter);
+    // }
+    // if (iZone == ZONE_0){
+    // geometry[iZone][MESH_0][INST_0]->InitTurboVertexAdj(geometry, config, iZone);
+    // geometry[iZone][MESH_0][INST_0]->UpdateTurboGeometry(geometry, interface, config, iZone);
+    //   for (auto donorZone = 0; donorZone < nZone; donorZone++) {
+    //     auto nMarkerInt = config[donorZone]->GetnMarker_MixingPlaneInterface()/2;
+    //     for (auto iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
+    //       for (auto targetZone = 0; targetZone < nZone; targetZone++) {
+    //         if (donorZone == targetZone || interface[donorZone][targetZone] == nullptr) continue;
+    //         if (interface[donorZone][targetZone]->GetInterfaceType() == MIXING_PLANE){
+    //           interface[donorZone][targetZone]->PreprocessAverage(geometry[donorZone][INST_0][MESH_0], geometry[targetZone][INST_0][MESH_0],
+    //             config[donorZone], config[targetZone],
+    //             iMarkerInt);
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
+    //solver[iZone][INST_0][MESH_0][FLOW_SOL]->InitTurboContainers(geometry[iZone][INST_0][MESH_0],config, iZone);
+    solvers0[FLOW_SOL]->PreprocessAverage(solvers0, geometry0, config[iZone], INFLOW);
+    solvers0[FLOW_SOL]->PreprocessAverage(solvers0, geometry0, config[iZone], OUTFLOW);
+    // solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], INFLOW);
+    // solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], OUTFLOW);
     if (config[iZone]->GetBoolGiles() && config[iZone]->GetSpatialFourier()){
       auto conv_bound_numerics = numerics[iZone][iInst][MESH_0][FLOW_SOL][CONV_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
       solvers0[FLOW_SOL]->PreprocessBC_Giles(geometry0, config[iZone], conv_bound_numerics, INFLOW);
       solvers0[FLOW_SOL]->PreprocessBC_Giles(geometry0, config[iZone], conv_bound_numerics, OUTFLOW);
     }
-    solvers0[FLOW_SOL]->PreprocessAverage(solvers0, geometry0, config[iZone], INFLOW);
-    solvers0[FLOW_SOL]->PreprocessAverage(solvers0, geometry0, config[iZone], OUTFLOW);
-    solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], INFLOW);
-    solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], OUTFLOW);
-    InitTurboPerformance(geometry0, config, solvers0[FLOW_SOL]->GetFluidModel());
-    solvers0[FLOW_SOL]->GatherInOutAverageValues(config[iZone], geometry0);
-    if (iZone == nZone-1) ComputeTurboPerformance(solver, geometry, config);
+    // solvers0[FLOW_SOL]->GatherInOutAverageValues(config[iZone], geometry0);
+    // solvers0[FLOW_SOL]->ComputeTurboBladePerformance(geometry0, config[iZone], iZone);
   }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     solvers0[SPECIES_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);

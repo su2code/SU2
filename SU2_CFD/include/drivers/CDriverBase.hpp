@@ -60,8 +60,7 @@ class CDriverBase {
       nZone,             /*!< \brief Total number of zones in the problem. */
       nDim,              /*!< \brief Number of dimensions. */
       iInst,             /*!< \brief Iterator on instance levels. */
-      *nInst,            /*!< \brief Total number of instances in the problem (per zone). */
-      **interface_types; /*!< \brief Type of coupling between the distinct (physical) zones. */
+      *nInst;            /*!< \brief Total number of instances in the problem (per zone). */
 
   CConfig* driver_config = nullptr; /*!< \brief Definition of the driver configuration. */
   COutput* driver_output = nullptr; /*!< \brief Definition of the driver output. */

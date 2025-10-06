@@ -31,6 +31,8 @@
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
 
+#include "../../../Common/include/tracy_structure.hpp"
+
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  unsigned short val_nZone,
                                                  SU2_Comm MPICommunicator)
@@ -685,6 +687,8 @@ void CDiscAdjMultizoneDriver::EvaluateSensitivities(unsigned long Iter, bool for
 
 void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape tape_type, unsigned short record_zone) {
 
+  SU2_ZONE_SCOPED_N("SetRecording_driver");
+
   AD::Reset();
 
   /*--- Prepare for recording by resetting the solution to the initial converged solution. ---*/
@@ -801,6 +805,12 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
 
 void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, RECORDING kind_recording) {
 
+  SU2_ZONE_SCOPED_N("DirectIteration");
+
+  // if (config_container[iZone]->GetBoolTurbomachinery()) {
+  //   InitStaticMeshMovement(iZone, false);
+  // }
+
   /*--- Do one iteration of the direct solver ---*/
   direct_iteration[iZone][INST_0]->Preprocess(output_container[iZone], integration_container, geometry_container,
                                               solver_container, numerics_container, config_container,
@@ -811,8 +821,8 @@ void CDiscAdjMultizoneDriver::DirectIteration(unsigned short iZone, RECORDING ki
                                            solver_container, numerics_container, config_container,
                                            surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
-  // /*--- Turbo Specific Post-Procesisng ---*/
-  // if (config_container[iZone]->GetBoolTurbomachinery()){
+  /*--- Turbo Specific Post-Procesisng ---*/
+  // if (config_container[iZone]->GetBoolTurbomachinery()){    
   //   direct_iteration[iZone][INST_0]->Postprocess(output_container[iZone], integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
   // }
 
@@ -841,6 +851,19 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
 
         if(config->GetWeakly_Coupled_Heat()) {
           solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
+        }
+
+        if(config->GetBoolTurbomachinery()){
+          solvers[FLOW_SOL]->TurboAverageProcess(solvers, geometry, config, INFLOW);
+          solvers[FLOW_SOL]->TurboAverageProcess(solvers, geometry, config, OUTFLOW);
+
+          /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
+
+          solvers[FLOW_SOL]->GatherInOutAverageValues(config, geometry);
+
+          /*--- Compute the turboperformance ---*/
+
+          solvers[FLOW_SOL]->ComputeTurboBladePerformance(geometry, config, iZone);
         }
 
         direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
@@ -968,6 +991,8 @@ void CDiscAdjMultizoneDriver::InitializeCrossTerms() {
 }
 
 void CDiscAdjMultizoneDriver::HandleDataTransfer() {
+
+  SU2_ZONE_SCOPED_N("HandleDataTransfer");
 
   for(iZone = 0; iZone < nZone; iZone++) {
 

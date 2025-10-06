@@ -30,11 +30,13 @@
 #include "../../../../Common/include/CConfig.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../include/solvers/CSolver.hpp"
+#include "../../../Common/include/tracy_structure.hpp"
 
 CMixingPlaneInterface::CMixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst){
   nVar = val_nVar;
   Donor_Variable     = new su2double[nVar + 5]();
   Target_Variable    = new su2double[nVar + 5]();
+  InterfaceType      = ENUM_TRANSFER::MIXING_PLANE;
 }
 
 void CMixingPlaneInterface::SetSpanWiseLevels(const CConfig *donor_config, const CConfig *target_config){
@@ -115,6 +117,9 @@ void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeomet
 
 void CMixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
                                              unsigned short donorZone){
+  
+  SU2_ZONE_SCOPED_N("SetAverageValues");
+  
   unsigned short iSpan;
 
   for(iSpan = 0; iSpan<nSpanMaxAllZones +1; iSpan++){

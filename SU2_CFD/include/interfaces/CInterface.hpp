@@ -65,6 +65,8 @@ protected:
   su2double *Target_Variable = nullptr;
   bool valAggregated = false;
 
+  unsigned short InterfaceType; /*!< \brief The type of interface. */
+
   /*--- Mixing Plane interface variable ---*/
   su2double *SpanValueCoeffTarget = nullptr;
   unsigned short *SpanLevelDonor = nullptr;
@@ -224,4 +226,15 @@ public:
    * \param[in] val_contact_resistance - Contact resistance value in m^2/W
    */
   inline virtual void SetContactResistance(su2double val_contact_resistance) {};
+
+  /*!
+   * \brief Set the type of an interface
+   * \param[in] interface_type - The type of interface
+   */
+  void SetInterfaceType(unsigned short interface_type) { InterfaceType = interface_type; }
+
+  /*!
+   * \brief Get the type of an interface
+   */
+  unsigned short GetInterfaceType(void) const { return InterfaceType; }
 };

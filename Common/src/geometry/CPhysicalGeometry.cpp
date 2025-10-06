@@ -50,6 +50,8 @@
 #include "../../include/geometry/primal_grid/CPrism.hpp"
 #include "../../include/geometry/primal_grid/CVertexMPI.hpp"
 
+#include "../../../Common/include/tracy_structure.hpp"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iterator>
@@ -6326,6 +6328,8 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig* config, bool allocate)
 
 void CPhysicalGeometry::SetAvgTurboGeoValues(const CConfig* donor_config, CGeometry* donor_geometry,
                                              unsigned short donorZone) {
+  
+  SU2_ZONE_SCOPED_N("SetAvgTurboGeoValues");
   unsigned short iSpan;
   unsigned short nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
 

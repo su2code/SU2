@@ -30,6 +30,7 @@
 #include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIteration.hpp"
+#include "../../../Common/include/tracy_structure.hpp"
 
 CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) :
                   CDriver(confFile, val_nZone, MPICommunicator, false) {
@@ -532,6 +533,8 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long
 
 bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short targetZone) {
 
+  SU2_ZONE_SCOPED_N("TransferData");
+
   bool UpdateMesh = false;
 
   /*--- Select the transfer method according to the magnitudes being transferred ---*/
@@ -547,7 +550,10 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
       config_container[targetZone]);
   };
 
-  switch (interface_types[donorZone][targetZone]) {
+  // Zones are equal or unconnected
+  if(donorZone == targetZone || interface_container[donorZone][targetZone] == nullptr) return UpdateMesh;
+
+  switch (interface_container[donorZone][targetZone]->GetInterfaceType()) {
 
     case SLIDING_INTERFACE:
       BroadcastData(FLOW_SOL, FLOW_SOL);
@@ -598,17 +604,15 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
       }
 
       /*--- Set average value donorZone->targetZone ---*/
-      interface_container[donorZone][targetZone]->SetAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
+      //interface_container[donorZone][targetZone]->SetAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
       
-      /*--- Set average geometrical properties FROM donorZone IN targetZone ---*/
-      geometry_container[targetZone][INST_0][MESH_0]->SetAvgTurboGeoValues(config_container[iZone],geometry_container[iZone][INST_0][MESH_0], iZone);
-      
+      // /*--- Set average geometrical properties FROM donorZone IN targetZone ---*/
+      // if (donorZone != nZone - 1){
+      //   geometry_container[nZone-1][INST_0][MESH_0]->SetAvgTurboGeoValues(config_container[donorZone],geometry_container[donorZone][INST_0][MESH_0], donorZone);
+      // }
+
       break;
     }
-    case NO_TRANSFER:
-    case ZONES_ARE_EQUAL:
-    case NO_COMMON_INTERFACE:
-      break;
     default:
       if(rank == MASTER_NODE)
         cout << "WARNING: One of the intended interface transfer routines is not "
@@ -617,16 +621,6 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
   }
 
   return UpdateMesh;
-}
-
-
-
-void CMultizoneDriver::SetTurboPerformance() {
-  for (auto donorZone = 1u; donorZone < nZone; donorZone++) {
-    interface_container[donorZone][ZONE_0]->SetAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
-                                                                solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
-                                                                donorZone);
-  }
 }
 
 bool CMultizoneDriver::Monitor(unsigned long TimeIter) {

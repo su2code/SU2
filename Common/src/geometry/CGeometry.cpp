@@ -33,6 +33,8 @@
 #include "../../include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/toolboxes/ndflattener.hpp"
 
+#include "../../../SU2_CFD/include/interfaces/CInterface.hpp"
+
 CGeometry::CGeometry() : size(SU2_MPI::GetSize()), rank(SU2_MPI::GetRank()) {}
 
 CGeometry::~CGeometry() {
@@ -2360,60 +2362,50 @@ void CGeometry::UpdateGeometry(CGeometry** geometry_container, CConfig* config) 
   geometry_container[MESH_0]->ComputeSurfaceAreaCfgFile(config);
 }
 
-void CGeometry::InitTurboVertexAdj(CGeometry**** geometry, CConfig** config){
+void CGeometry::InitTurboVertexAdj(CGeometry**** geometry, CConfig** config, unsigned short iZone){
   auto nSpanMax = 0u; 
   auto nZone = config[ZONE_0]->GetnZone();
 
   /*--- Create turbovertex ---*/
-  for (auto iZone = 0u; iZone < nZone; iZone++){
-    geometry[iZone][INST_0][MESH_0]->ComputeNSpan(config[iZone], iZone, INFLOW, true);
-    geometry[iZone][INST_0][MESH_0]->ComputeNSpan(config[iZone], iZone, OUTFLOW, true);
-    if (config[iZone]->GetnSpanWiseSections() > nSpanMax){
-      nSpanMax = config[iZone]->GetnSpanWiseSections();
-    }
-
-    config[nZone-1]->SetnSpan_iZones(config[iZone]->GetnSpanWiseSections(), iZone);
-
-    geometry[iZone][INST_0][MESH_0]->SetTurboVertex(config[iZone], iZone, INFLOW, true);
-    geometry[iZone][INST_0][MESH_0]->SetTurboVertex(config[iZone], iZone, OUTFLOW, true);
+  geometry[iZone][INST_0][MESH_0]->ComputeNSpan(config[iZone], iZone, INFLOW, true);
+  geometry[iZone][INST_0][MESH_0]->ComputeNSpan(config[iZone], iZone, OUTFLOW, true);
+  if (config[iZone]->GetnSpanWiseSections() > nSpanMax){
+    nSpanMax = config[iZone]->GetnSpanWiseSections();
   }
 
+  config[nZone-1]->SetnSpan_iZones(config[iZone]->GetnSpanWiseSections(), iZone);
+
+  geometry[iZone][INST_0][MESH_0]->SetTurboVertex(config[iZone], iZone, INFLOW, true);
+  geometry[iZone][INST_0][MESH_0]->SetTurboVertex(config[iZone], iZone, OUTFLOW, true);
+
   /*--- Set max span in all zones ---*/
-  for (auto iZone = 0u; iZone < nZone; iZone++){
-    if (config[iZone]->GetBoolTurbomachinery()) {
-      config[iZone]->SetnSpanMaxAllZones(nSpanMax);
-    }
+  if (config[iZone]->GetBoolTurbomachinery()) {
+    config[iZone]->SetnSpanMaxAllZones(nSpanMax);
   }
 }
 
-void CGeometry::UpdateTurboGeometry(CGeometry**** geometry, CInterface*** interface, CConfig** config){
+void CGeometry::UpdateTurboGeometry(CGeometry**** geometry, CInterface*** interface, CConfig** config, unsigned short iZone){
   auto nZone = config[ZONE_0]->GetnZone();
 
-  for (auto iZone = 0u; iZone < nZone; iZone++) {
-    geometry[iZone][INST_0][MESH_0]->SetAvgTurboValue(config[iZone], iZone, INFLOW, true);
-    geometry[iZone][INST_0][MESH_0]->SetAvgTurboValue(config[iZone],iZone, OUTFLOW, true);
-    geometry[iZone][INST_0][MESH_0]->GatherInOutAverageValues(config[iZone], true);
-  }
+  geometry[iZone][INST_0][MESH_0]->SetAvgTurboValue(config[iZone], iZone, INFLOW, true);
+  geometry[iZone][INST_0][MESH_0]->SetAvgTurboValue(config[iZone],iZone, OUTFLOW, true);
+  geometry[iZone][INST_0][MESH_0]->GatherInOutAverageValues(config[iZone], true);
 
-  if(config[ZONE_0]->GetBoolMixingPlaneInterface()){
-    for (auto donorZone = 0u; donorZone < nZone; donorZone++) {
-      for (auto targetZone = 0u; targetZone < nZone; targetZone++) {
-        if (interface[donorZone][targetZone] != nullptr){
-          interface[donorZone][targetZone]->SetSpanWiseLevels(config[donorZone], config[targetZone]);
-        }
-      }
-    }
-  }
+  // if(config[ZONE_0]->GetBoolMixingPlaneInterface()){
+  //   for (auto donorZone = 0u; donorZone < nZone; donorZone++) {
+  //     for (auto targetZone = 0u; targetZone < nZone; targetZone++) {
+  //       if (interface[donorZone][targetZone] != nullptr){
+  //         interface[iZone][targetZone]->SetSpanWiseLevels(config[donorZone], config[targetZone]);
+  //       }
+  //     }
+  //   }
+  // }
 
-  for (auto iZone = 0u; iZone < nZone-1; iZone++) {
-    geometry[nZone-1][INST_0][MESH_0]->SetAvgTurboGeoValues(config[iZone],geometry[iZone][INST_0][MESH_0], iZone);
-  }
+  geometry[nZone-1][INST_0][MESH_0]->SetAvgTurboGeoValues(config[iZone],geometry[iZone][INST_0][MESH_0], iZone);
 
   /*--- Transfer number of blade to ZONE_0 to correctly compute turbo performance---*/
-  for (auto iZone = 1u; iZone < nZone; iZone++) {
-    auto nBlades = config[iZone]->GetnBlades(iZone);
-    config[ZONE_0]->SetnBlades(iZone, nBlades);
-  }
+  auto nBlades = config[iZone]->GetnBlades(iZone);
+  config[ZONE_0]->SetnBlades(iZone, nBlades);
 }
 
 void CGeometry::SetCustomBoundary(CConfig* config) {

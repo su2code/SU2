@@ -1353,9 +1353,9 @@ class CGeometry {
    */
   static void UpdateGeometry(CGeometry** geometry_container, CConfig* config);
 
-  static void UpdateTurboGeometry(CGeometry**** geometry, CInterface*** interface, CConfig** config_container);
+  static void UpdateTurboGeometry(CGeometry**** geometry, CInterface*** interface, CConfig** config_container, unsigned short iZone);
 
-  static void InitTurboVertexAdj(CGeometry**** geometry, CConfig** config);
+  static void InitTurboVertexAdj(CGeometry**** geometry, CConfig** config, unsigned short iZone);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions

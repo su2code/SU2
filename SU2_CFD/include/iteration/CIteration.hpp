@@ -60,9 +60,9 @@ class CIteration {
   su2double StartTime{0.0}, /*!< \brief Tracking wall time. */
       StopTime{0.0}, UsedTime{0.0};
 
-  std::shared_ptr<CTurboOutput> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
+//   std::shared_ptr<CTurboOutput> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
   std::shared_ptr<CTurbomachineryStagePerformance> TurbomachineryStagePerformance;  /*!< \brief turbo stage performance calculator. */
-
+  //std::vector<std::shared_ptr<CTurboOutput>> TurbomachineryBladePerformances; /*!< \brief Vector of turboperformances */
  public:
   /*!
    * \brief Constructor of the class.
@@ -299,6 +299,9 @@ class CIteration {
   virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                               unsigned short iZone, unsigned short iInst) {}
 
+
+    // void ComputeTurboBladePerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned short iBlade);
+
   /*!
    * \brief Computes turboperformance.
    */
@@ -307,5 +310,15 @@ class CIteration {
   /*!
    * \brief Initialises turboperformance classes.
    */
-   void InitTurboPerformance(CGeometry *geometry, CConfig** config, CFluidModel *fluid);
+   void InitTurboPerformance(CGeometry *geometry, CConfig** config, CFluidModel *fluid, unsigned short val_iZone);
+
+   inline vector<std::shared_ptr<CTurboOutput>> GetBladesPerformanceVector(CSolver***** solver, unsigned short nBladeRow){
+    vector<std::shared_ptr<CTurboOutput>> bladePerformances;
+    bladePerformances.reserve(nBladeRow);
+    for (auto iBladeRow = 0u; iBladeRow < nBladeRow; iBladeRow++) {
+        auto const turboPerf = solver[iBladeRow][INST_0][MESH_0][FLOW_SOL]->GetTurboBladePerformance();
+        bladePerformances.push_back(turboPerf);
+    }
+    return bladePerformances;
+  }
 };

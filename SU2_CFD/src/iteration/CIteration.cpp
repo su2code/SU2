@@ -210,55 +210,61 @@ void CIteration::Output(COutput* output, CGeometry**** geometry, CSolver***** so
                           InnerIter);
 }
 
-void CIteration::InitTurboPerformance(CGeometry* geometry, CConfig** config, CFluidModel* fluid) {
-  TurbomachineryPerformance = std::make_shared<CTurboOutput>(config, *geometry, *fluid);
+void CIteration::InitTurboPerformance(CGeometry* geometry, CConfig** config, CFluidModel* fluid, unsigned short val_iZone) {
+  //TurbomachineryPerformance = std::make_shared<CTurboOutput>(config, *geometry, *fluid, val_iZone);
   TurbomachineryStagePerformance = std::make_shared<CTurbomachineryStagePerformance>(*fluid);
+  //TurbomachineryBladePerformances = std::make_shared<std::vector<std::shared_ptr<CTurboOutput>>>();
 }
 
+// void CIteration::ComputeTurboBladePerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned short iBlade) {
+//   // Computes the turboperformance per blade in zone iBlade
+//   const auto nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
+//   const auto nBladesRow = config_container[ZONE_0]->GetnMarker_Turbomachinery();
+//   const auto nZone = config_container[ZONE_0]->GetnZone();
+//   vector<su2double> TurboPrimitiveIn, TurboPrimitiveOut;
+//   if (rank == MASTER_NODE) {
+//     /* Blade Primitive initialized per blade */
+//     std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
+//     auto nSpan = config_container[iBlade]->GetnSpanWiseSections();
+//     for (auto iSpan = 0; iSpan < nSpan + 1; iSpan++) {
+//       TurboPrimitiveIn= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, true);
+//       TurboPrimitiveOut= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, false);
+//       auto spanInletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveIn, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelIn(iBlade, iSpan));
+//       auto spanOutletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveOut, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelOut(iBlade, iSpan));
+//       auto spanCombinedPrimitive = CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive);
+//       bladePrimitives.push_back(spanCombinedPrimitive);
+//     }
+//     TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladePrimitives, iBlade);
+//     solver[iBlade][INST_0][MESH_0][FLOW_SOL]->SetTurboBladePerformance(TurbomachineryPerformance);
+
+//     auto BladePerf = TurbomachineryPerformance->GetBladesPerformances().at(nSpan);
+
+//     solver[iBlade][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::ENTROPY_GENERATION, BladePerf->GetEntropyGen()*100);
+//     solver[iBlade][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::TOTAL_PRESSURE_LOSS, BladePerf->GetTotalPressureLoss());
+//     solver[iBlade][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::KINETIC_ENERGY_LOSS, BladePerf->GetKineticEnergyLoss());
+//   }
+// }
+
 void CIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container) {
+  // Computes the turboperformance per blade in zone iBlade
   const auto nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
   const auto nBladesRow = config_container[ZONE_0]->GetnMarker_Turbomachinery();
   const auto nZone = config_container[ZONE_0]->GetnZone();
-  vector<su2double> TurboPrimitiveIn, TurboPrimitiveOut;
-  std::vector<std::vector<CTurbomachineryCombinedPrimitiveStates>> bladesPrimitives;
 
-  if (rank == MASTER_NODE) {
-      for (auto iBlade = 0u; iBlade < nBladesRow; iBlade++){
-      /* Blade Primitive initialized per blade */
-      std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
-      auto nSpan = config_container[iBlade]->GetnSpanWiseSections();
-      for (auto iSpan = 0; iSpan < nSpan + 1; iSpan++) {
-        TurboPrimitiveIn= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, true);
-        TurboPrimitiveOut= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, false);
-        auto spanInletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveIn, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelIn(iBlade, iSpan));
-        auto spanOutletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveOut, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelOut(iBlade, iSpan));
-        auto spanCombinedPrimitive = CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive);
-        bladePrimitives.push_back(spanCombinedPrimitive);
-      }
-      bladesPrimitives.push_back(bladePrimitives);
-    }
-    TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
-    
-    auto nSpan = config_container[ZONE_0]->GetnSpanWiseSections();
-    auto InState = TurbomachineryPerformance->GetBladesPerformances().at(ZONE_0).at(nSpan)->GetInletState();
-    nSpan = config_container[nZone-1]->GetnSpanWiseSections();
-    auto OutState =  TurbomachineryPerformance->GetBladesPerformances().at(nZone-1).at(nSpan)->GetOutletState();
-    
-    TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[nZone-1]);
+  auto TurbomachineryBladePerformances = GetBladesPerformanceVector(solver, nZone);
 
-    /*--- Set turbomachinery objective function value in each zone ---*/
-    for (auto iBlade = 0u; iBlade < nBladesRow; iBlade++) {
-      // Should we set in ZONE_0 or nZone-1?
-      auto iBladePerf = TurbomachineryPerformance->GetBladesPerformances().at(iBlade).at(nSpan);
-      InState = iBladePerf->GetInletState();
-      OutState = iBladePerf->GetOutletState();
-      solver[iBlade][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::ENTROPY_GENERATION, iBlade, TurbomachineryStagePerformance->GetNormEntropyGen()*100);
-      solver[iBlade][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::TOTAL_PRESSURE_LOSS, iBlade, iBladePerf->GetTotalPressureLoss());
-      solver[iBlade][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::KINETIC_ENERGY_LOSS, iBlade, iBladePerf->GetKineticEnergyLoss());
-    }
-    /*--- Set global turbomachinery objective function (evaluated in final zone as dependent on values from all previous zones ) ---*/
-    solver[nBladesRow-1][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::ENTROPY_GENERATION, nBladesRow, TurbomachineryStagePerformance->GetNormEntropyGen()*100);
-    solver[nBladesRow-1][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::TOTAL_PRESSURE_LOSS, nBladesRow, TurbomachineryStagePerformance->GetTotalPressureLoss());
-    solver[nBladesRow-1][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::KINETIC_ENERGY_LOSS, nBladesRow, TurbomachineryStagePerformance->GetKineticEnergyLoss());
-  }
+  auto nSpan = config_container[ZONE_0]->GetnSpanWiseSections();
+  auto InState = TurbomachineryBladePerformances.at(ZONE_0)->GetBladesPerformances().at(nSpan)->GetInletState();
+  nSpan = config_container[nZone-1]->GetnSpanWiseSections();
+  auto OutState =  TurbomachineryBladePerformances.at(nZone-1)->GetBladesPerformances().at(nSpan)->GetOutletState();
+  
+  TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[nZone-1]);
+
+  // /*--- Set turbomachinery objective function value in each zone ---*/
+  // for (auto iBlade = 0u; iBlade < nBladesRow; iBlade++) {
+  //   /*--- Set global turbomachinery objective functions ---*/
+  //   solver[iBlade][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::ENTROPY_GENERATION, nBladesRow, TurbomachineryStagePerformance->GetNormEntropyGen()*100);
+  //   solver[iBlade][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::TOTAL_PRESSURE_LOSS, nBladesRow, TurbomachineryStagePerformance->GetTotalPressureLoss());
+  //   solver[iBlade][INST_0][MESH_0][FLOW_SOL]->SetTurboObjectiveFunction(ENUM_OBJECTIVE::KINETIC_ENERGY_LOSS, nBladesRow, TurbomachineryStagePerformance->GetKineticEnergyLoss());
+  // }
 }

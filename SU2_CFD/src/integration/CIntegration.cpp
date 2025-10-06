@@ -85,7 +85,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   if (config->GetBoolGiles() && config->GetSpatialFourier()){
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, conv_bound_numerics, INFLOW);
-
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, conv_bound_numerics, OUTFLOW);
   }
 
@@ -196,7 +195,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     else if (config->GetMarker_All_KindBC(iMarker)==EULER_WALL)
         solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
   }
-  //AD::ResumePreaccumulation(pausePreacc);
+  // AD::ResumePreaccumulation(pausePreacc);
 
 }
 

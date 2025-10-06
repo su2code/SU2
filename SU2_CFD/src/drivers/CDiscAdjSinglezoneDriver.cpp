@@ -33,6 +33,8 @@
 #include "../../include/iteration/CTurboIteration.hpp"
 #include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 
+#include "../../../Common/include/tracy_structure.hpp"
+
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
                                                    SU2_Comm MPICommunicator) : CSinglezoneDriver(confFile,
@@ -246,6 +248,8 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 }
 
 void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
+
+  SU2_ZONE_SCOPED_N("SetRecording_SingleZoneDriver");
 
   AD::Reset();
 

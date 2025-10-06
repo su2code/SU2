@@ -159,51 +159,47 @@ void CPropellorBladePerformance::ComputePerformance(const CTurbomachineryCombine
   // TODO: to be implemented
 }
 
-CTurboOutput::CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidModel& fluidModel) {
+CTurboOutput::CTurboOutput(CConfig** config, const CGeometry& geometry, CFluidModel& fluidModel, unsigned short iBladeRow) {
   unsigned short nBladesRow = config[ZONE_0]->GetnMarker_Turbomachinery();
   unsigned short nDim = geometry.GetnDim();
 
-  for (unsigned short iBladeRow = 0; iBladeRow < nBladesRow; iBladeRow++) {
-    vector<shared_ptr<CTurbomachineryBladePerformance>> bladeSpanPerformances;
-    unsigned short nSpan = config[iBladeRow]->GetnSpanWiseSections();
-    for (unsigned short iSpan = 0; iSpan < nSpan + 1; iSpan++) {
-      su2double areaIn = geometry.GetSpanAreaIn(iBladeRow, iSpan);
-      su2double areaOut = geometry.GetSpanAreaOut(iBladeRow, iSpan);
-      su2double radiusIn = geometry.GetTurboRadiusIn(iBladeRow, iSpan);
-      su2double radiusOut = geometry.GetTurboRadiusOut(iBladeRow, iSpan);
+  vector<shared_ptr<CTurbomachineryBladePerformance>> bladeSpanPerformances;
+  unsigned short nSpan = config[iBladeRow]->GetnSpanWiseSections();
+  for (unsigned short iSpan = 0; iSpan < nSpan + 1; iSpan++) {
+    auto areaIn = geometry.GetSpanAreaIn(iBladeRow, iSpan);
+    auto areaOut = geometry.GetSpanAreaOut(iBladeRow, iSpan);
+    auto radiusIn = geometry.GetTurboRadiusIn(iBladeRow, iSpan);
+    auto radiusOut = geometry.GetTurboRadiusOut(iBladeRow, iSpan);
 
-      /* Switch between the Turbomachinery Performance Kind */
-      switch (config[ZONE_0]->GetKind_TurboPerf(iBladeRow)) {
-        case TURBO_PERF_KIND::TURBINE:
-          bladeSpanPerformances.push_back(
-              make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
-          break;
+    /* Switch between the Turbomachinery Performance Kind */
+    switch (config[ZONE_0]->GetKind_TurboPerf(iBladeRow)) {
+      case TURBO_PERF_KIND::TURBINE:
+        bladeSpanPerformances.push_back(
+            make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
+        break;
 
-        case TURBO_PERF_KIND::COMPRESSOR:
-          bladeSpanPerformances.push_back(
-              make_shared<CCompressorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
-          break;
+      case TURBO_PERF_KIND::COMPRESSOR:
+        bladeSpanPerformances.push_back(
+            make_shared<CCompressorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
+        break;
 
-        case TURBO_PERF_KIND::PROPELLOR:
-          bladeSpanPerformances.push_back(
-              make_shared<CPropellorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
-          break;
+      case TURBO_PERF_KIND::PROPELLOR:
+        bladeSpanPerformances.push_back(
+            make_shared<CPropellorBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
+        break;
 
-        default:
-          bladeSpanPerformances.push_back(
-              make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
-          break;
-      }
+      default:
+        bladeSpanPerformances.push_back(
+            make_shared<CTurbineBladePerformance>(fluidModel, nDim, areaIn, radiusIn, areaOut, radiusOut));
+        break;
     }
-    BladesPerformances.push_back(bladeSpanPerformances);
   }
+  BladesPerformances = bladeSpanPerformances;
 }
 
 void CTurboOutput::ComputeTurbomachineryPerformance(
-    vector<vector<CTurbomachineryCombinedPrimitiveStates>> const bladesPrimitives) {
-  for (unsigned i = 0; i < BladesPerformances.size(); ++i) {
-    ComputePerBlade(BladesPerformances[i], bladesPrimitives[i]);
-  }
+    vector<CTurbomachineryCombinedPrimitiveStates> const bladePrimitives, unsigned short iBladeRow) {
+  ComputePerBlade(BladesPerformances, bladePrimitives);
 }
 
 void CTurboOutput::ComputePerBlade(vector<shared_ptr<CTurbomachineryBladePerformance>> const bladePerformances,

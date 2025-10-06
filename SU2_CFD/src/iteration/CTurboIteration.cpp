@@ -28,34 +28,50 @@
 #include "../../include/iteration/CTurboIteration.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/output/CTurboOutput.hpp"
+#include "../../../Common/include/tracy_structure.hpp"
 
 void CTurboIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                  CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-  /*--- Average quantities at the inflow and outflow boundaries ---*/
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
-      solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], INFLOW);
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
-      solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OUTFLOW);
 
-  if (config[val_iZone]->GetBoolTurbomachinery()) {
-    InitTurboPerformance(geometry[val_iZone][INST_0][MESH_0], config,
-                         solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetFluidModel());
-  }
+    SU2_ZONE_SCOPED_N("Preprocess_Turbo");
+
+    // CNumerics* conv_bound_numerics = numerics[val_iZone][val_iInst][MESH_0][FLOW_SOL][CONV_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
+
+    // if (config[val_iZone]->GetBoolGiles() && config[val_iZone]->GetSpatialFourier()){
+    //     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->PreprocessBC_Giles(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], conv_bound_numerics, INFLOW);
+    //     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->PreprocessBC_Giles(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], conv_bound_numerics, OUTFLOW);
+    // }
+
+    /*--- Average quantities at the inflow and outflow boundaries ---*/
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
+        solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], INFLOW);
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
+        solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OUTFLOW);
+    
+    InitTurboPerformance(geometry[val_iZone][val_iInst][MESH_0], config, solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetFluidModel(), val_iZone);
+  
 }
 
 void CTurboIteration::Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                   CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                   CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-  /*--- Average quantities at the inflow and outflow boundaries ---*/
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
-      solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], INFLOW);
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
-      solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OUTFLOW);
+    /*--- Average quantities at the inflow and outflow boundaries ---*/
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
+        solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], INFLOW);
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
+        solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], OUTFLOW);
 
-  /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config[val_iZone],
-                                                                           geometry[val_iZone][val_iInst][MESH_0]);
+    /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
+
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GatherInOutAverageValues(config[val_iZone], geometry[val_iZone][val_iInst][MESH_0]);
+
+    /*--- Compute the turboperformance ---*/
+
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeTurboBladePerformance(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], val_iZone);
+
+    TurboMonitor(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone); // ????
+
 }

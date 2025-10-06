@@ -29,6 +29,7 @@
 
 #include "CFVMFlowSolverBase.hpp"
 #include "../variables/CEulerVariable.hpp"
+#include "../output/CTurboOutput.hpp"
 
 /*!
  * \class CEulerSolver
@@ -155,9 +156,9 @@ protected:
 
   vector<su2matrix<complex<su2double> > > CkInflow, CkOutflow1, CkOutflow2;
 
-  vector<su2double> EntropyGeneration;
-  vector<su2double> TotalPressureLoss;
-  vector<su2double> KineticEnergyLoss;
+  su2double EntropyGeneration;
+  su2double TotalPressureLoss;
+  su2double KineticEnergyLoss;
 
   /*--- End of Turbomachinery Solver Variables ---*/
 
@@ -1041,7 +1042,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void InitTurboContainers(CGeometry *geometry, CConfig *config) final;
+  void InitTurboContainers(CGeometry *geometry, CConfig **config, unsigned short iZone) final;
 
   /*!
    * \brief Get Primal variables for turbo performance computation
@@ -1098,6 +1099,8 @@ public:
                            CConfig *config,
                            unsigned short marker_flag) final;
 
+  void ComputeTurboBladePerformance(CGeometry* geometry, CConfig* config, unsigned short iBlade) final;
+
   /*!
    * \brief it performs a mixed out average of the nodes of a boundary.
    * \param[in] val_init_pressure -  initial pressure value
@@ -1152,31 +1155,33 @@ public:
   inline su2double GetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow) const final { 
     switch (ObjFunc) {
       case ENTROPY_GENERATION:
-        return EntropyGeneration[bladeRow];
+        return EntropyGeneration;
       case TOTAL_PRESSURE_LOSS:
-        return TotalPressureLoss[bladeRow];
+        return TotalPressureLoss;
       case KINETIC_ENERGY_LOSS:
-        return KineticEnergyLoss[bladeRow];
+        return KineticEnergyLoss;
       default:
         return 0.0;
     }
   }
 
-  inline void SetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow, su2double val) final { 
+  inline void SetTurboObjectiveFunction(short unsigned int ObjFunc, su2double val) final { 
     switch (ObjFunc) {
       case ENTROPY_GENERATION:
-        EntropyGeneration[bladeRow] = val;
+        EntropyGeneration = val;
         break;
       case TOTAL_PRESSURE_LOSS:
-        TotalPressureLoss[bladeRow] = val;
+        TotalPressureLoss = val;
         break;
       case KINETIC_ENERGY_LOSS:
-        KineticEnergyLoss[bladeRow] = val;
+        KineticEnergyLoss = val;
         break;
       default:
         break;
     }
   }
+
+  inline std::shared_ptr<CTurboOutput> GetTurboBladePerformance() const final { return TurbomachineryPerformance; }
 
   /*!
    * \brief it take a velocity in the cartesian reference of framework and transform into the turbomachinery frame of reference.

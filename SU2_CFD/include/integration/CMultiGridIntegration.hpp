@@ -119,7 +119,7 @@ private:
    */
   void NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container, CNumerics ****numerics_container,
                                  CConfig *config, unsigned short FinestMesh, unsigned short RunTime_EqSystem,
-                                 su2double *monitor);
+                                 su2double *monitor, unsigned short iZone);
 
   /*!
    * \brief Compute the fine solution from a coarse solution.

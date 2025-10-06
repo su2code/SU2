@@ -36,7 +36,10 @@
 #include "../../include/fluid/CCoolProp.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
 #include "../../include/limiters/CLimiterDetails.hpp"
+#include "../../include/output/COutput.hpp"
 #include "../../include/output/CTurboOutput.hpp"
+
+#include "../../../Common/include/tracy_structure.hpp"
 
 
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
@@ -385,10 +388,11 @@ void CEulerSolver::InstantiateEdgeNumerics(const CSolver* const* solver_containe
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
-void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
+void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig **config_container, unsigned short iZone){
+
+  auto config = config_container[iZone];
 
   /*--- Initialize quantities for the average process for internal flow ---*/
-
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
 
   AverageVelocity.resize(nMarker);
@@ -458,11 +462,7 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- Initialsize turbomachinery objective functions (+1 as value for stage values) ---*/
-  auto nMarker_Turbo = config->GetnMarker_Turbomachinery() + 1;
-  EntropyGeneration.resize(nMarker_Turbo);
-  TotalPressureLoss.resize(nMarker_Turbo);
-  KineticEnergyLoss.resize(nMarker_Turbo);
+  TurbomachineryPerformance = std::make_shared<CTurboOutput>(config_container, *geometry, *GetFluidModel(), iZone);
 }
 
 void CEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) {
@@ -4761,7 +4761,7 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
       break;
     case ENTROPY_GENERATION:
-      Total_ComboObj+=Weight_ObjFunc*GetTurboObjectiveFunction(Kind_ObjFunc, config->GetnMarker_Turbomachinery());
+      Total_ComboObj+=Weight_ObjFunc*EntropyGeneration;
       break;
     default:
       break;
@@ -8932,6 +8932,8 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
 void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
 
+  SU2_ZONE_SCOPED_N("TurboAverageProcess");
+
   const auto average_process = config->GetKind_AverageProcess();
   const auto performance_average_process = config->GetKind_PerformanceAverageProcess();
   const auto iZone     = config->GetiZone();
@@ -9533,5 +9535,33 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       OmegaOut[markerTP -1][iSpan]               = omegaOut;
       NuOut[markerTP -1][iSpan]                  = nuOut;
     }
+  }
+}
+
+void CEulerSolver::ComputeTurboBladePerformance(CGeometry* geometry, CConfig* config, unsigned short iBlade) {
+  // Computes the turboperformance per blade in zone iBlade
+  const auto nDim = geometry->GetnDim();
+  const auto nBladesRow = config->GetnMarker_Turbomachinery();
+  const auto nZone = config->GetnZone();
+  vector<su2double> TurboPrimitiveIn, TurboPrimitiveOut;
+  if (rank == MASTER_NODE) {
+    /* Blade Primitive initialized per blade */
+    std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
+    auto nSpan = config->GetnSpanWiseSections();
+    for (auto iSpan = 0; iSpan < nSpan + 1; iSpan++) {
+      TurboPrimitiveIn= GetTurboPrimitive(iBlade, iSpan, true);
+      TurboPrimitiveOut= GetTurboPrimitive(iBlade, iSpan, false);
+      auto spanInletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveIn, nDim, geometry->GetTangGridVelIn(iBlade, iSpan));
+      auto spanOutletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveOut, nDim, geometry->GetTangGridVelOut(iBlade, iSpan));
+      auto spanCombinedPrimitive = CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive);
+      bladePrimitives.push_back(spanCombinedPrimitive);
+    }
+    TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladePrimitives, iBlade);
+
+    auto BladePerf = TurbomachineryPerformance->GetBladesPerformances().at(nSpan);
+
+    EntropyGeneration = BladePerf->GetEntropyGen();
+    TotalPressureLoss = BladePerf->GetTotalPressureLoss();
+    KineticEnergyLoss = BladePerf->GetKineticEnergyLoss();
   }
 }

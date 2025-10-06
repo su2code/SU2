@@ -57,6 +57,8 @@
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
 #include "../variables/CVariable.hpp"
 
+#include "../output/CTurboOutput.hpp"
+
 #ifdef HAVE_LIBROM
 #include "librom.h"
 #endif
@@ -148,6 +150,8 @@ protected:
 
   vector<su2activematrix> VertexTraction;          /*- Temporary, this will be moved to a new postprocessing structure once in place -*/
   vector<su2activematrix> VertexTractionAdjoint;   /*- Also temporary -*/
+
+  std::shared_ptr<CTurboOutput> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
 
   string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
 
@@ -1089,9 +1093,11 @@ public:
                                CConfig *config,
                                unsigned short val_marker) { }
 
-  inline virtual void SetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow, su2double val)  { }
+  inline virtual void SetTurboObjectiveFunction(short unsigned int ObjFunc, su2double val)  { }
 
   inline virtual su2double GetTurboObjectiveFunction(short unsigned int ObjFunc, int bladeRow) const { return 0.0; }
+
+  inline virtual std::shared_ptr<CTurboOutput> GetTurboBladePerformance() const { return std::shared_ptr<CTurboOutput>(nullptr); }
 
   /*!
    * \brief A virtual member.
@@ -3763,7 +3769,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  inline virtual void InitTurboContainers(CGeometry *geometry, CConfig *config) { }
+  inline virtual void InitTurboContainers(CGeometry *geometry, CConfig **config, unsigned short iZone) { }
 
    /*!
    * \brief Get Primal variables for turbo performance computation
@@ -3802,6 +3808,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   inline virtual void GatherInOutAverageValues(CConfig *config, CGeometry *geometry) { }
+
+  inline virtual void ComputeTurboBladePerformance(CGeometry* geometry, CConfig* config, unsigned short iBlade) { };
 
   /*!
    * \brief A virtual member.
