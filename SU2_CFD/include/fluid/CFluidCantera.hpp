@@ -66,6 +66,7 @@ class CFluidCantera final : public CFluidModel {
   std::array<su2double, ARRAYSIZE> enthalpyFormation;  /*!< \brief Enthalpy of Formation of all species. */
   std::array<su2double, ARRAYSIZE> massFractions;      /*!< \brief Mass fractions of all species. */
   std::array<su2double, ARRAYSIZE> massDiffusivity;    /*!< \brief mass diffusivity of all species. */
+  vector<su2double> enthalpiesSpecies;
 
   /*!
    * \brief Compute mass diffusivity for species.

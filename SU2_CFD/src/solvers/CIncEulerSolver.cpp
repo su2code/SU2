@@ -173,28 +173,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Temperature_Inf = config->GetTemperature_FreeStreamND();
   if (energy_multicomponent) {
     const su2double* scalar_init = config->GetSpecies_Init();
-    CFluidModel* auxFluidModel = nullptr;
-
-    switch (config->GetKind_FluidModel()) {
-      case FLUID_MIXTURE:
-
-        auxFluidModel = new CFluidScalar(config->GetPressure_Thermodynamic(), config);
-        auxFluidModel->SetTDState_T(Temperature_Inf, scalar_init);  // compute total enthalpy from temperature
-        Enthalpy_Inf = auxFluidModel->GetEnthalpy();
-        break;
-
-      case FLUID_CANTERA:
-
-        auxFluidModel = new CFluidCantera(config->GetPressure_Thermodynamic(), config);
-        auxFluidModel->SetTDState_T(Temperature_Inf, scalar_init);  // compute total enthalpy from temperature
-        Enthalpy_Inf = auxFluidModel->GetEnthalpy();
-        break;
-
-      default:
-
-        SU2_MPI::Error("Fluid model not compatible with multicomponent-reacting flows.", CURRENT_FUNCTION);
-        break;
-    }
+    GetFluidModel()->SetTDState_T(Temperature_Inf,scalar_init);
+    Enthalpy_Inf = GetFluidModel()->GetEnthalpy();
   }
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
