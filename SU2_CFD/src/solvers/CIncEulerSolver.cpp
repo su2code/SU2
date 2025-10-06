@@ -168,11 +168,10 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Pressure_Inf    = config->GetPressure_FreeStreamND();
   Velocity_Inf    = config->GetVelocity_FreeStreamND();
   Temperature_Inf = config->GetTemperature_FreeStreamND();
-  if (energy_multicomponent){
-    CFluidModel *auxFluidModel = new CFluidScalar(config->GetPressure_Thermodynamic(), config);
-    const su2double *scalar_init = config->GetSpecies_Init();
-    auxFluidModel->SetTDState_T(Temperature_Inf,scalar_init); // compute total enthalpy from temperature
-    Enthalpy_Inf = auxFluidModel->GetEnthalpy();
+  if (energy_multicomponent) {
+    const su2double* scalar_init = config->GetSpecies_Init();
+    GetFluidModel()->SetTDState_T(Temperature_Inf, scalar_init);
+    Enthalpy_Inf = GetFluidModel()->GetEnthalpy();
   }
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
