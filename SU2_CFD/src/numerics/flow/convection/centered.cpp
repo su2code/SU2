@@ -356,9 +356,6 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
   MeandRhodh = 0.0;
   if (variable_density) {
     MeandRhodh = -MeanDensity/(MeanTemperature*MeanCp);
-    MeanCp = 1.0;
-    Cp_i = 1.0;
-    Cp_j = 1.0;
   }
 
   /*--- Get projected flux tensor ---*/
@@ -410,10 +407,14 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Computes differences between Laplacians and conservative variables ---*/
 
-  for (iVar = 0; iVar < nVar - 1; iVar++) {
+  for (iVar = 0; iVar < nVar; iVar++) {
     Diff_Lapl[iVar] = Und_Lapl_i[iVar]-Und_Lapl_j[iVar];
+    if (iVar == nVar - 1) {
+      Diff_V[iVar] = Enthalpy_i - Enthalpy_j;
+    } else {
+      Diff_V[iVar] = V_i[iVar] - V_j[iVar];
+    }
   }
-  Diff_V[nVar - 1] = Enthalpy_i - Enthalpy_j;
   
 
   /*--- Build the preconditioning matrix using mean values ---*/
