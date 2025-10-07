@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../scalar/scalar_diffusion.hpp"
+#include "../CNumerics.hpp"
 
 /*!
  * \class CAvgGrad_Species
@@ -53,6 +54,29 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
   using Base::Flux;
   using Base::Jacobian_i;
   using Base::Jacobian_j;
+  using Base::Gamma;
+  using Base::Gamma_Minus_One;
+  using Base::Gas_Constant;
+  using Base::Prandtl_Lam;
+  using Base::Prandtl_Turb;
+  using Base::Laminar_Viscosity_i;  
+  using Base::Laminar_Viscosity_j;
+  using Base::nDim;
+  using Base::V_i;       // primitive vars at i
+  using Base::V_j;
+  using Base::PrimVar_Grad_i;
+  using Base::PrimVar_Grad_j;
+  using Base::Coord_i;
+  using Base::Coord_j;
+  using Base::Normal;
+  using Base::correct_gradient;
+  using Base::Thermal_Conductivity_i;
+  using Base::Thermal_Conductivity_j;
+  using Base::Cp_i;
+  using Base::Cp_j;
+
+
+  
 
   const bool turbulence;
 
@@ -62,6 +86,8 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
   void ExtraADPreaccIn(void) override {
     AD::SetPreaccIn(Diffusion_Coeff_i, nVar);
     AD::SetPreaccIn(Diffusion_Coeff_j, nVar);
+    AD::SetPreaccIn(PrimVar_Grad_i, nDim+1, nDim);
+    AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   }
 
   /*!
@@ -71,6 +97,8 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
   void FinishResidualCalc(const CConfig* config) override {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
 
+      switch(iVar)   {
+      case 0:  {
       const su2double Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
 
       su2double Diffusivity_Turb = 0.0;
@@ -92,9 +120,29 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
 
       const su2double proj_on_rhoj = proj_vector_ij / Density_j;
       Jacobian_j[iVar][iVar] = Diffusivity * proj_on_rhoj;
+      break;
+      }
 
-    }  // iVar
+      case 1: {
+
+      
+        /* --- face-averaged thermal conductivity --- */
+        const su2double conductivity = 0.5 * (Thermal_Conductivity_i + Thermal_Conductivity_j);
+      
+        /* --- project mean temperature gradient onto the face normal --- */
+        su2double dT_proj = 0.0;
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          dT_proj += 0.5*(PrimVar_Grad_i[nDim+1][iDim] + PrimVar_Grad_j[nDim+1][iDim]) * Normal[iDim];
+        }    
+        /* --- heat flux contribution --- */
+        Flux[iVar] = conductivity * dT_proj;  
+      
+      break;
+      }
+    // iVar
+    }
   }
+}
 
  public:
   /*!

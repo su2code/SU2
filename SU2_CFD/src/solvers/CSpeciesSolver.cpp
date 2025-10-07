@@ -110,6 +110,8 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
 
   nDim = geometry->GetnDim();
 
+  AllocVectorOfMatrices( nVertex, nVar,CustomBoundaryScalar);
+
   if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
@@ -497,10 +499,10 @@ void CSpeciesSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** s
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
 
-//     if (py_custom) {
-//       WallSpecies[iVar]=GetCustomBoundaryScalar(val_marker,iVertex,iVar);
+       if (py_custom) {
+         WallSpecies[iVar]=GetCustomBoundaryScalar(val_marker,iVertex,iVar);
 //       //cout<<"Enter species custom BC "<<WallSpecies[iVar]<<endl; 
-//     }
+       }
      switch(wallspeciestype[iVar]){
      case 0:
      //Flux Boundary condition

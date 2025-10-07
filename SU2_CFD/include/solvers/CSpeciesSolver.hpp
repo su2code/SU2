@@ -41,6 +41,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   unsigned short Inlet_Position;             /*!< \brief Column index for scalar variables in inlet files. */
   vector<su2activematrix> Inlet_SpeciesVars; /*!< \brief Species variables at inlet profiles. */
   vector<su2activematrix> Wall_SpeciesVars; /*!< \brief Species variables at  profiles. */
+  vector<su2matrix<su2double> >CustomBoundaryScalar;
 
  public:
   /*!
@@ -215,6 +216,28 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), nodes->GetDiffusivity(iPoint));
       },
       geometry, solver_container, conv_numerics, visc_numerics, config);
+  }
+
+  /*!
+   * \brief Get the value of the customized normal scalar values/flux at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   */
+  inline su2double GetCustomBoundaryScalar(unsigned short val_marker, unsigned long val_vertex,unsigned short index) const {
+    return CustomBoundaryScalar[val_marker][val_vertex][index];
+  }
+
+  /*!
+   * \brief Set the value of the customized normal scalar values/flux at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   */
+  inline void SetCustomBoundaryScalar(unsigned short val_marker, unsigned long val_vertex, std::vector<su2double> val_customBoundaryScalar) {
+
+    for (size_t i = 0; i < val_customBoundaryScalar.size(); ++i) {
+      CustomBoundaryScalar[val_marker][val_vertex][i] = val_customBoundaryScalar[i];
+      }
+
   }
 
 };
