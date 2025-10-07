@@ -2098,6 +2098,8 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
 
   if (variable_density) {
     dRhodh = -Density / (Cp * Temperature);
+  } else {
+    dRhodh = 0.0;
   }
 
   /*--- Calculating the inverse of the preconditioning matrix
@@ -2128,8 +2130,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
     }
 
     Preconditioner[0][nDim+1] = dRhodh;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Preconditioner[iDim+1][nDim+1] = Velocity[iDim]*dRhodh;
+    for (iDim = 0; iDim < nDim; iDim++) Preconditioner[iDim+1][nDim+1] = Velocity[iDim] * dRhodh;
 
     if (energy) {
       Preconditioner[nDim+1][nDim+1] = dRhodh * Enthalpy + Density;
