@@ -160,9 +160,6 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
     MeandRhodh = -MeanDensity / (MeanTemperature * MeanCp);
     dRhodh_i = -DensityInc_i / (Temperature_i * Cp_i);
     dRhodh_j = -DensityInc_j / (Temperature_j * Cp_j);
-    MeanCp = 1.0;
-    Cp_i = 1.0;
-    Cp_j = 1.0;
   }
 
   /*--- Compute ProjFlux_i ---*/
@@ -262,8 +259,8 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
           Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
           Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
         }
-        Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
-        Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
+        Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i;
+        Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j;
       }
     }
   }

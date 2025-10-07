@@ -107,10 +107,10 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_VELOCITY-Y", "rms[V]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity y-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the velocity z-component.
   if (nDim == 3) AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat){
-    AddHistoryOutput("RMS_ENTHALPY", "rms[h]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the enthalpy.", HistoryFieldType::RESIDUAL);
-  }
+  /// DESCRIPTION: Root-mean square residual of the temperature.
+  if (weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the enthalpy.
+  if (heat) AddHistoryOutput("RMS_ENTHALPY", "rms[h]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the enthalpy.", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutputFields_ScalarRMS_RES(config);
 
@@ -129,7 +129,10 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3)
     AddHistoryOutput("MAX_VELOCITY-Z", "max[W]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) {
+  if (weakly_coupled_heat)
+    AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
+  /// DESCRIPTION: Maximum residual of the enthalpy.
+  if (heat) {
     AddHistoryOutput("MAX_ENTHALPY", "max[h]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the enthalpy.", HistoryFieldType::RESIDUAL);
   }
 
@@ -147,9 +150,12 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3)
     AddHistoryOutput("BGS_VELOCITY-Z", "bgs[W]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) {
-    AddHistoryOutput("BGS_ENTHALPY", "bgs[h]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the enthalpy.", HistoryFieldType::RESIDUAL);
-  }
+  if (weakly_coupled_heat)
+    AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", HistoryFieldType::RESIDUAL);
+  /// DESCRIPTION: Maximum residual of the Enthalpy.
+  if (heat)
+    AddHistoryOutput("BGS_ENTHALPY", "bgs[h]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the enthalpy.",
+                     HistoryFieldType::RESIDUAL);
 
   AddHistoryOutputFields_ScalarBGS_RES(config);
 
@@ -299,9 +305,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
-  if (heat || weakly_coupled_heat || flamelet){
-    AddVolumeOutput("ENTHALPY", "Enthalpy", "SOLUTION", "Enthalpy");
-  }
+  if (weakly_coupled_heat) AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
+  if (heat || flamelet) AddVolumeOutput("ENTHALPY", "Enthalpy", "SOLUTION", "Enthalpy");
 
   SetVolumeOutputFieldsScalarSolution(config);
 

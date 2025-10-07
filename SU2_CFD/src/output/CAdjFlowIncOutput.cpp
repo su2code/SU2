@@ -111,8 +111,12 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config) {
   if (nDim == 3) {
     AddHistoryOutput("RMS_ADJ_VELOCITY-Z", "rms[A_W]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint Velocity z-component.", HistoryFieldType::RESIDUAL);
   }
-  /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) {
+  /// DESCRIPTION: Root-mean square residual of the adjoint temperature.
+  if (weakly_coupled_heat) {
+    AddHistoryOutput("RMS_ADJ_TEMPERATURE", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  }
+  /// DESCRIPTION: Root-mean square residual of the adjoint enthalpy.
+  if (heat) {
     AddHistoryOutput("RMS_ADJ_ENTHALPY", "rms[A_h]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the enthalpy.", HistoryFieldType::RESIDUAL);
   }
 
@@ -139,8 +143,12 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config) {
   if (nDim == 3) {
     AddHistoryOutput("MAX_ADJ_VELOCITY-Z", "max[A_RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL);
   }
-  /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) {
+  /// DESCRIPTION: Maximum residual of the adjoint temperature.
+  if (weakly_coupled_heat) {
+    AddHistoryOutput("MAX_ADJ_TEMPERATURE", "max[A_T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature.", HistoryFieldType::RESIDUAL);
+  }
+  /// DESCRIPTION: Maximum residual of the adjoint enthalpy.
+  if (heat) {
     AddHistoryOutput("MAX_ADJ_ENTHALPY", "max[A_h]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the enthalpy.", HistoryFieldType::RESIDUAL);
   }
 
@@ -158,9 +166,13 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config) {
   if (nDim == 3) {
     AddHistoryOutput("BGS_ADJ_VELOCITY-Z", "bgs[A_RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL);
   }
-  /// DESCRIPTION: BGS residual of the temperature.
-  if (heat || weakly_coupled_heat) {
+  /// DESCRIPTION: BGS residual of the adjoint temperature.
+  if (weakly_coupled_heat) {
     AddHistoryOutput("BGS_ADJ_TEMPERATURE", "bgs[A_T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  }
+  /// DESCRIPTION: BGS residual of the adjoint enthalpy.
+  if (heat) {
+    AddHistoryOutput("BGS_ADJ_ENTHALPY", "bgs[A_h]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint enthalpy.", HistoryFieldType::RESIDUAL);
   }
 
   AddHistoryOutputFields_AdjScalarBGS_RES(config);
