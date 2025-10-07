@@ -61,6 +61,12 @@ class CIncIdealGas final : public CFluidModel {
     Enthalpy = Cp * Temperature;
   }
 
+  void SetTDState_h(const su2double val_enthalpy, const su2double* val_scalars) {
+    Enthalpy = val_enthalpy;
+    Temperature = Enthalpy / Cp;
+    Density = Pressure / (Temperature * Gas_Constant);
+  }
+
  private:
   su2double Gas_Constant{0.0}; /*!< \brief Gas Constant. */
   su2double Gamma{0.0};        /*!< \brief Heat Capacity Ratio. */

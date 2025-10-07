@@ -83,6 +83,20 @@ class CIncIdealGasPolynomial final : public CFluidModel {
     Enthalpy = Cp * Temperature;
   }
 
+  void SetTDState_h(const su2double val_enthalpy, const su2double* val_scalars) {
+    Enthalpy = val_enthalpy;
+    Temperature = Enthalpy / Cp;
+    Density = Pressure / (Temperature * Gas_Constant);
+    /* Evaluate the new Cp from the coefficients and temperature. */
+    Cp = coeffs_[0];
+    su2double t_i = 1.0;
+    for (int i = 1; i < N; ++i) {
+      t_i *= Temperature;
+      Cp += coeffs_[i] * t_i;
+    }
+    Cv = Cp / Gamma;
+  }
+
  private:
   su2double Gas_Constant{0.0}; /*!< \brief Specific Gas Constant. */
   su2double Gamma{0.0};        /*!< \brief Ratio of specific heats. */

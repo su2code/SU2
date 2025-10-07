@@ -58,4 +58,9 @@ class CConstantDensity final : public CFluidModel {
     Temperature = t;
     Enthalpy = Cp * Temperature;
   }
+
+  void SetTDState_h(const su2double val_enthalpy, const su2double* val_scalars) {
+    Enthalpy = val_enthalpy;
+    Temperature = Enthalpy / Cp;
+  }
 };

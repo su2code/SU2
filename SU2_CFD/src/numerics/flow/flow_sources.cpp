@@ -259,12 +259,11 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
 
     /*--- Set primitive variables at points iPoint. ---*/
 
-    const su2double Temp_i = V_i[nDim+1];
     Pressure_i    = V_i[0];
     DensityInc_i  = V_i[nDim+2];
-    BetaInc2_i    = V_i[nDim+3];
-    Cp_i          = V_i[nDim+7];
-    Enthalpy_i    = V_i[nDim + 9];
+    BetaInc2_i    = V_i[nDim+4];
+    Cp_i          = V_i[nDim+8];
+    Enthalpy_i    = V_i[nDim+3];
 
     for (iDim = 0; iDim < nDim; iDim++)
       Velocity_i[iDim] = V_i[iDim+1];
@@ -296,11 +295,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       jacobian[3][0] = 0.0;
       jacobian[3][1] = 0.0;
       jacobian[3][2] = Enthalpy_i;
-      if (multicomponent && energy) {
-        jacobian[3][3] = (1.0 - Enthalpy_i / (Cp_i * Temp_i)) * Velocity_i[1];
-      } else {
-        jacobian[3][3] = Cp_i * Velocity_i[1];
-      }
+      jacobian[3][3] = Velocity_i[1];
 
       for (iVar=0; iVar < nVar; iVar++)
         for (jVar=0; jVar < nVar; jVar++)
@@ -312,9 +307,9 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
 
     if (viscous) {
 
-      Laminar_Viscosity_i    = V_i[nDim+4];
-      Eddy_Viscosity_i       = V_i[nDim+5];
-      Thermal_Conductivity_i = V_i[nDim+6];
+      Laminar_Viscosity_i    = V_i[nDim+5];
+      Eddy_Viscosity_i       = V_i[nDim+6];
+      Thermal_Conductivity_i = V_i[nDim+7];
 
       su2double total_viscosity;
 
@@ -331,7 +326,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
                              yinv* yinv*2.0*total_viscosity*Velocity_i[1] -
                              TWO3*AuxVar_Grad_i[0][1]);
       residual[3] -= Volume * yinv * Thermal_Conductivity_i * PrimVar_Grad_i[nDim + 1][1];
-      if (multicomponent && energy) {
+      if (multicomponent) {
         residual[3] -= Volume * yinv * HeatFluxDiffusion;
         if (implicit) jacobian[3][3] -= Volume * yinv * JacHeatFluxDiffusion / Cp_i;
       }

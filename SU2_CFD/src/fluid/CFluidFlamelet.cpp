@@ -117,6 +117,10 @@ CFluidFlamelet::~CFluidFlamelet() {
 #endif
 }
 
+void CFluidFlamelet::SetTDState_h(su2double val_enthalpy, const su2double* val_scalars) {
+  SetTDState_T(val_enthalpy, val_scalars);
+}
+
 void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* val_scalars) {
   for (auto iVar = 0u; iVar < n_scalars; iVar++) scalars_vector[iVar] = val_scalars[iVar];
 
