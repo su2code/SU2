@@ -316,6 +316,9 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config) {
     /// DESCRIPTION: Adjoint Velocity z-component.
     AddVolumeOutput("ADJ_VELOCITY-Z", "Adjoint_Velocity_z", "SOLUTION", "z-component of the adjoint velocity vector");
   }
+  /// DESCRIPTION: Adjoint Temperature.
+  AddVolumeOutput("ADJ_TEMPERATURE", "Adjoint_Temperature", "SOLUTION",  "Adjoint temperature");
+  /// DESCRIPTION: Adjoint Enthalpy.
   AddVolumeOutput("ADJ_ENTHALPY", "Adjoint_Enthalpy", "SOLUTION", "Adjoint_Enthalpy");
 
   SetVolumeOutputFieldsAdjScalarSolution(config);
