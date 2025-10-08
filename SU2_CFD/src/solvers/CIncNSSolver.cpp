@@ -275,10 +275,10 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
 
 void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *numerics, CConfig *config) {
-  const bool multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE;
+  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
 
   /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
-  if (multicomponent) {
+  if (energy_multicomponent) {
     const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
     const int n_species = config->GetnSpecies();
     Compute_Enthalpy_Diffusion(iEdge, geometry, solver_container, numerics, n_species, implicit);

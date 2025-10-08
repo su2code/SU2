@@ -554,7 +554,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
-  if (multicomponent) {
+  if (energy_multicomponent) {
     AD::SetPreaccIn(HeatFluxDiffusion);
   }
 
@@ -629,7 +629,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
 
-  if (multicomponent) {
+  if (energy_multicomponent) {
     Proj_Flux_Tensor[nVar - 1] += HeatFluxDiffusion;
   }
 
@@ -660,7 +660,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
       Mean_Heat_Capacity = 0.5 * (V_i[nDim + 8] + V_j[nDim + 8]);
       Jacobian_i[nDim + 1][nDim + 1] = -Mean_Thermal_Conductivity * proj_vector_ij / Mean_Heat_Capacity;
       Jacobian_j[nDim + 1][nDim + 1] = Mean_Thermal_Conductivity * proj_vector_ij / Mean_Heat_Capacity;
-      if (multicomponent){
+      if (energy_multicomponent){
         Jacobian_i[nDim + 1][nDim + 1] -= JacHeatFluxDiffusion / Mean_Heat_Capacity;
         Jacobian_j[nDim + 1][nDim + 1] += JacHeatFluxDiffusion / Mean_Heat_Capacity;
       }

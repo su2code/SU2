@@ -1601,7 +1601,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
         numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
 
-        if(multicomponent){
+        if(multicomponent && energy){
           /*--- retrieve number of species that are solved and set maximum static array ---*/
           int n_species = config->GetnSpecies();
           static constexpr size_t MAXNVAR_SPECIES = 20UL;
