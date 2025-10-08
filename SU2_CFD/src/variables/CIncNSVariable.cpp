@@ -46,6 +46,8 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
     Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
   }
+  Energy = config->GetEnergy_Equation();
+  if(!Energy) TemperatureInc = config->GetInc_Temperature_Init();
 }
 
 bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
@@ -58,9 +60,19 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   SetPressure(iPoint);
 
-  Enthalpy = Solution(iPoint, nDim + 1);
-  FluidModel->SetTDState_h(Enthalpy, scalar);
-  Temperature = FluidModel->GetTemperature();
+  if (Energy) {
+    Enthalpy = Solution(iPoint, nDim + 1);
+    FluidModel->SetTDState_h(Enthalpy, scalar);
+    Temperature = FluidModel->GetTemperature();
+  } else {
+    /*--- When energy equation is switch off, a constant temperature is imposed, and enthalpy is recomputed based on
+     * this temperature. As in the fluid flamelet model, the temperature is retrieved from a look-up table, then the
+     * temperature is obtained directly from the fluidmodel. For the other fluid models, GetTemperature provides the
+     * same value as TemperatureInc ---*/
+    FluidModel->SetTDState_T(TemperatureInc, scalar);
+    Enthalpy = Solution(iPoint, nDim + 1) = FluidModel->GetEnthalpy();
+    Temperature = FluidModel->GetTemperature();
+  }
   auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
   /*--- Set the value of the density ---*/
