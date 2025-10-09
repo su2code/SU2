@@ -58,6 +58,7 @@ protected:
   const su2double gamma;
   const su2double gasConst;
   const su2double entropyFix;
+  const su2double muscl_kappa;
   const bool finestGrid;
   const bool dynamicGrid;
   const bool muscl;
@@ -75,6 +76,7 @@ protected:
     finestGrid(iMesh == MESH_0),
     dynamicGrid(config.GetDynamic_Grid()),
     muscl(finestGrid && config.GetMUSCL_Flow()),
+    muscl_kappa(config.GetMUSCL_Kappa_Flow()),
     typeLimiter(config.GetKind_SlopeLimit_Flow()) {
   }
 
@@ -119,7 +121,7 @@ public:
     V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
 
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-        iEdge, iPoint, jPoint, gamma, gasConst, muscl, typeLimiter, V1st, vector_ij, solution);
+        iEdge, iPoint, jPoint, gamma, gasConst, muscl, muscl_kappa, typeLimiter, V1st, vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 

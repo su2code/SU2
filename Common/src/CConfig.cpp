@@ -8697,13 +8697,14 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
                                     CENTERED val_kind_centered, UPWIND val_kind_upwind,
                                     LIMITER val_kind_slopelimit, bool val_muscl,
-                                    unsigned short val_kind_fem) {
+                                    su2double val_muscl_kappa, unsigned short val_kind_fem) {
   Kind_ConvNumScheme = val_kind_convnumscheme;
   Kind_Centered = val_kind_centered;
   Kind_Upwind = val_kind_upwind;
   Kind_FEM = val_kind_fem;
   Kind_SlopeLimit = val_kind_slopelimit;
   MUSCL = val_muscl;
+  MUSCL_Kappa = val_muscl_kappa;
 
 }
 
@@ -8721,7 +8722,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     if (val_system == RUNTIME_FLOW_SYS) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                             Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                            MUSCL_Flow, NONE);
+                            MUSCL_Flow, MUSCL_Kappa_Flow, NONE);
       SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
     }
   };
@@ -8730,7 +8731,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     if (val_system == RUNTIME_TURB_SYS) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                             Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
-                            MUSCL_Turb, NONE);
+                            MUSCL_Turb, MUSCL_Kappa_Turb, NONE);
       SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
     }
   };
@@ -8738,7 +8739,8 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
   auto SetHeatParam = [&]() {
     if (val_system == RUNTIME_HEAT_SYS) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, Kind_Centered_Heat,
-                            Kind_Upwind_Heat, Kind_SlopeLimit_Heat, MUSCL_Heat, NONE);
+                            Kind_Upwind_Heat, Kind_SlopeLimit_Heat, MUSCL_Heat,
+                            MUSCL_Kappa_Heat, NONE);
       SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
     }
   };
@@ -8747,7 +8749,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     if (val_system == RUNTIME_SPECIES_SYS) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_Species, Kind_Centered_Species,
                             Kind_Upwind_Species, Kind_SlopeLimit_Species,
-                            MUSCL_Species, NONE);
+                            MUSCL_Species, MUSCL_Kappa_Species, NONE);
       SetKind_TimeIntScheme(Kind_TimeIntScheme_Species);
     }
   };
@@ -8756,7 +8758,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     if (val_system == RUNTIME_ADJFLOW_SYS) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
                             Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
-                            MUSCL_AdjFlow, NONE);
+                            MUSCL_AdjFlow, MUSCL_Kappa_AdjFlow, NONE);
       SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
     }
   };
@@ -8782,7 +8784,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       if (val_system == RUNTIME_TRANS_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
-                              MUSCL_Turb, NONE);
+                              MUSCL_Turb, MUSCL_Kappa_Turb, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       break;
@@ -8796,7 +8798,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_FEM_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              MUSCL_Flow, Kind_FEM_Flow);
+                              MUSCL_Flow, MUSCL_Kappa_Flow, Kind_FEM_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_FEM_Flow);
       }
       break;
@@ -8813,14 +8815,14 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       if (val_system == RUNTIME_ADJTURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb,
                               Kind_Upwind_AdjTurb, Kind_SlopeLimit_AdjTurb,
-                              MUSCL_AdjTurb, NONE);
+                              MUSCL_AdjTurb, 0.0, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
       }
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
     case MAIN_SOLVER::DISC_ADJ_HEAT:
       if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
+        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, 0.0, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
@@ -8828,7 +8830,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     case MAIN_SOLVER::FEM_ELASTICITY:
     case MAIN_SOLVER::DISC_ADJ_FEM:
       if (val_system == RUNTIME_FEA_SYS) {
-        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
+        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, 0.0, NONE);
         SetKind_TimeIntScheme(NONE);
       }
       break;

@@ -592,11 +592,12 @@ private:
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
   MUSCL_Species;           /*!< \brief MUSCL scheme for the species equations.*/
-  su2double MUSCL_Kappa_Flow,    /*!< \brief Blending coefficient for MUSCL scheme for the flow equations.*/
-  MUSCL_Kappa_Turb,              /*!< \brief Blending coefficient for MUSCL scheme for the turbulence equations.*/
-  MUSCL_Kappa_Heat,              /*!< \brief Blending coefficient for MUSCL scheme for the (fvm) heat equation.*/
-  MUSCL_Kappa_AdjFlow,           /*!< \brief Blending coefficient for MUSCL scheme for the adj flow equations.*/
-  MUSCL_Kappa_Species;      /*!< \brief MUSCL scheme for the species equations.*/
+  su2double MUSCL_Kappa,   /*!< \brief Blending coefficient for MUSCL scheme. */
+  MUSCL_Kappa_Flow,        /*!< \brief Blending coefficient for MUSCL scheme for the flow equations.*/
+  MUSCL_Kappa_Turb,        /*!< \brief Blending coefficient for MUSCL scheme for the turbulence equations.*/
+  MUSCL_Kappa_Heat,        /*!< \brief Blending coefficient for MUSCL scheme for the (fvm) heat equation.*/
+  MUSCL_Kappa_AdjFlow,     /*!< \brief Blending coefficient for MUSCL scheme for the adj flow equations.*/
+  MUSCL_Kappa_Species;     /*!< \brief Blending coefficient for MUSCL scheme for the species equations.*/
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool Use_Accurate_Turb_Jacobians; /*!< \brief Use numerically computed Jacobians for standard SA turbulence model. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
@@ -2461,11 +2462,12 @@ public:
    * \param[in] val_kind_upwind - If upwind scheme, kind of upwind scheme (Roe, etc.).
    * \param[in] val_kind_slopelimit - If upwind scheme, kind of slope limit.
    * \param[in] val_muscl - Define if we apply a MUSCL scheme or not.
+   * \param[in] val_muscl_kappa - Define the blending coefficient for the MUSCL scheme.
    * \param[in] val_kind_fem - If FEM, what kind of FEM discretization.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, CENTERED val_kind_centered,
                              UPWIND val_kind_upwind, LIMITER val_kind_slopelimit,
-                             bool val_muscl,  unsigned short val_kind_fem);
+                             bool val_muscl, su2double val_muscl_kappa, unsigned short val_kind_fem);
 
   /*!
    * \brief Get the value of limiter coefficient.
