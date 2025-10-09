@@ -7233,7 +7233,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
               if (Kind_Linear_Solver == BCGSTAB)
                 cout << "BCGSTAB is used for solving the linear system." << endl;
               else if (Kind_Linear_Solver == FGMRESandBCGSTAB2)
-                cout << "FGMRES and BCGSTAB is used for solving the linear system." << endl
+                cout << "FGMRES and BCGSTAB is used for solving the linear system." << endl;
               else
                 cout << "FGMRES is used for solving the linear system." << endl;
               switch (Kind_Linear_Solver_Prec) {
