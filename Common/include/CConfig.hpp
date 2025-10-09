@@ -760,7 +760,7 @@ private:
   unsigned short nSST_Options;        /*!< \brief Number of SST options specified. */
   unsigned short nSA_Options;         /*!< \brief Number of SA options specified. */
   unsigned short nLM_Options;         /*!< \brief Number of SA options specified. */
-  unsigned short nROUGHSST_Options;       /*!< \brief Number of rough-wall boundary conditions for SST turbulence model options specified. */ 
+  unsigned short nROUGHSST_Options;       /*!< \brief Number of rough-wall boundary conditions for SST turbulence model options specified. */
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */

@@ -1148,7 +1148,7 @@ inline ROUGH_SST_ParsedOptions ParseROUGHSSTOptions(const ROUGHSST_OPTIONS *ROUG
   ROUGHSSTParsedOptions.wilcox2006 = IsPresent(ROUGHSST_OPTIONS::WILCOX2006);
   ROUGHSSTParsedOptions.limiter_knopp = IsPresent(ROUGHSST_OPTIONS::LIMITER_KNOPP);
   ROUGHSSTParsedOptions.limiter_aupoix = IsPresent(ROUGHSST_OPTIONS::LIMITER_AUPOIX);
-  
+
 
   return ROUGHSSTParsedOptions;
 }
