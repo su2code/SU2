@@ -1984,6 +1984,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
+  /*!\brief MUSCL_KAPPA_FLOW \n DESCRIPTION: Blending coefficient for the MUSCL scheme \ingroup Config*/
+  addDoubleOption("MUSCL_KAPPA_FLOW", MUSCL_Kappa_Flow, 0.0);
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, LIMITER::VENKATAKRISHNAN);
@@ -2005,6 +2007,8 @@ void CConfig::SetConfig_Options() {
   addConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
   /*!\brief MUSCL_ADJFLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_ADJFLOW", MUSCL_AdjFlow, true);
+  /*!\brief MUSCL_KAPPA_ADJFLOW \n DESCRIPTION: Blending coefficient for the MUSCL scheme \ingroup Config*/
+  addDoubleOption("MUSCL_KAPPA_ADJFLOW", MUSCL_Kappa_AdjFlow, 0.0);
   /*!\brief SLOPE_LIMITER_ADJFLOW
      * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, LIMITER::VENKATAKRISHNAN);
@@ -2016,6 +2020,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_TURB \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_TURB", MUSCL_Turb, false);
+  /*!\brief MUSCL_KAPPA_TURB \n DESCRIPTION: Blending coefficient for the MUSCL scheme \ingroup Config*/
+  addDoubleOption("MUSCL_KAPPA_TURB", MUSCL_Kappa_Turb, 0.0);
   /*!\brief SLOPE_LIMITER_TURB
    *  \n DESCRIPTION: Slope limiter  \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, LIMITER::VENKATAKRISHNAN);
@@ -2035,6 +2041,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_SPECIES \n DESCRIPTION: Check if the MUSCL scheme should be used \n DEFAULT false \ingroup Config*/
   addBoolOption("MUSCL_SPECIES", MUSCL_Species, false);
+  /*!\brief MUSCL_KAPPA_SPECIES \n DESCRIPTION: Blending coefficient for the MUSCL scheme \ingroup Config*/
+  addDoubleOption("MUSCL_KAPPA_SPECIES", MUSCL_Kappa_Species, 0.0);
   /*!\brief SLOPE_LIMITER_SPECIES \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NONE \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_SPECIES", Kind_SlopeLimit_Species, Limiter_Map, LIMITER::NONE);
   /*!\brief CONV_NUM_METHOD_SPECIES \n DESCRIPTION: Convective numerical method for species transport \ingroup Config*/
@@ -2042,6 +2050,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_HEAT \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_HEAT", MUSCL_Heat, false);
+  /*!\brief MUSCL_KAPPA_HEAT \n DESCRIPTION: Blending coefficient for the MUSCL scheme \ingroup Config*/
+  addDoubleOption("MUSCL_KAPPA_HEAT", MUSCL_Kappa_Heat, 0.0);
   /*!\brief SLOPE_LIMITER_HEAT \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NONE \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_HEAT", Kind_SlopeLimit_Heat, Limiter_Map, LIMITER::NONE);
   /*!\brief CONV_NUM_METHOD_HEAT \n DESCRIPTION: Convective numerical method */
@@ -5515,6 +5525,23 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (MUSCL_AdjTurb) {
     SU2_MPI::Error("MUSCL_ADJTURB= YES not currently supported.\nPlease select MUSCL_ADJTURB= NO (first-order).",
                    CURRENT_FUNCTION);
+  }
+
+  /* Check MUSCL blending coefficients. */
+  if (MUSCL_Flow && (MUSCL_Kappa_Flow < -1.0 || MUSCL_Kappa_Flow > 1.0)) {
+    SU2_MPI::Error("MUSCL_KAPPA_FLOW should be in range [-1.0, 1.0].", CURRENT_FUNCTION);
+  }
+  if (MUSCL_Turb && (MUSCL_Kappa_Turb < -1.0 || MUSCL_Kappa_Turb > 1.0)) {
+    SU2_MPI::Error("MUSCL_KAPPA_TURB should be in range [-1.0, 1.0].", CURRENT_FUNCTION);
+  }
+  if (MUSCL_Heat && (MUSCL_Kappa_Heat < -1.0 || MUSCL_Kappa_Heat > 1.0)) {
+    SU2_MPI::Error("MUSCL_KAPPA_HEAT should be in range [-1.0, 1.0].", CURRENT_FUNCTION);
+  }
+  if (MUSCL_AdjFlow && (MUSCL_Kappa_AdjFlow < -1.0 || MUSCL_Kappa_AdjFlow > 1.0)) {
+    SU2_MPI::Error("MUSCL_KAPPA_ADJFLOW should be in range [-1.0, 1.0].", CURRENT_FUNCTION);
+  }
+  if (MUSCL_Species && (MUSCL_Kappa_Species < -1.0 || MUSCL_Kappa_Species > 1.0)) {
+    SU2_MPI::Error("MUSCL_KAPPA_SPECIES should be in range [-1.0, 1.0].", CURRENT_FUNCTION);
   }
 
   /* Check for whether we need a second gradient method to calculate

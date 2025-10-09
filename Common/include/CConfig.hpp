@@ -590,8 +590,13 @@ private:
   MUSCL_Turb,              /*!< \brief MUSCL scheme for the turbulence equations.*/
   MUSCL_Heat,              /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
-  MUSCL_AdjTurb;           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
-  bool MUSCL_Species;      /*!< \brief MUSCL scheme for the species equations.*/
+  MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
+  MUSCL_Species;           /*!< \brief MUSCL scheme for the species equations.*/
+  su2double MUSCL_Kappa_Flow,    /*!< \brief Blending coefficient for MUSCL scheme for the flow equations.*/
+  MUSCL_Kappa_Turb,              /*!< \brief Blending coefficient for MUSCL scheme for the turbulence equations.*/
+  MUSCL_Kappa_Heat,              /*!< \brief Blending coefficient for MUSCL scheme for the (fvm) heat equation.*/
+  MUSCL_Kappa_AdjFlow,           /*!< \brief Blending coefficient for MUSCL scheme for the adj flow equations.*/
+  MUSCL_Kappa_Species;      /*!< \brief MUSCL scheme for the species equations.*/
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool Use_Accurate_Turb_Jacobians; /*!< \brief Use numerically computed Jacobians for standard SA turbulence model. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
@@ -4654,6 +4659,36 @@ public:
    * \return MUSCL scheme.
    */
   bool GetMUSCL_AdjTurb(void) const { return MUSCL_AdjTurb; }
+
+  /*!
+   * \brief Get the blending coefficient for the MUSCL scheme.
+   * \return Blending coefficient for the MUSCL scheme.
+   */
+  su2double GetMUSCL_Kappa_Flow(void) const { return MUSCL_Kappa_Flow; }
+
+  /*!
+   * \brief Get the blending coefficient for the MUSCL scheme.
+   * \return Blending coefficient for the MUSCL scheme.
+   */
+  su2double GetMUSCL_Kappa_Heat(void) const { return MUSCL_Kappa_Heat; }
+
+  /*!
+   * \brief Get the blending coefficient for the MUSCL scheme.
+   * \return Blending coefficient for the MUSCL scheme.
+   */
+  su2double GetMUSCL_Kappa_Turb(void) const { return MUSCL_Kappa_Turb; }
+
+  /*!
+   * \brief Get the blending coefficient for the MUSCL scheme.
+   * \return Blending coefficient for the MUSCL scheme.
+   */
+  su2double GetMUSCL_Kappa_Species(void) const { return MUSCL_Kappa_Species; }
+
+  /*!
+   * \brief Get the blending coefficient for the MUSCL scheme.
+   * \return Blending coefficient for the MUSCL scheme.
+   */
+  su2double GetMUSCL_Kappa_AdjFlow(void) const { return MUSCL_Kappa_AdjFlow; }
 
   /*!
    * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).
