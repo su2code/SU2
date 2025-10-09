@@ -306,7 +306,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
   if (weakly_coupled_heat) AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
-  if (heat || flamelet) AddVolumeOutput("ENTHALPY", "Enthalpy", "SOLUTION", "Enthalpy");
+  if (heat) AddVolumeOutput("ENTHALPY", "Enthalpy", "SOLUTION", "Enthalpy");
 
   SetVolumeOutputFieldsScalarSolution(config);
 
@@ -410,7 +410,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (nDim == 3)
     SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
 
-  if (heat || flamelet) {
+  if (heat) {
     SetVolumeOutputValue("ENTHALPY", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
   }
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
