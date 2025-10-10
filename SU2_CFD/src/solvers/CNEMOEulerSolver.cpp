@@ -2,14 +2,14 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz, J. Needels
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -467,6 +467,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
+  const su2double nkRelax     = config->GetNewtonKrylovRelaxation();
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
@@ -521,7 +522,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       /*--- High order reconstruction using MUSCL strategy ---*/
       su2double Vector_ij[MAXNDIM] = {0.0};
       for (auto iDim = 0ul; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+        Vector_ij[iDim] = nkRelax * 0.5 * (Coord_j[iDim] - Coord_i[iDim]);
       }
 
       /*--- Retrieve gradient information ---*/
@@ -933,7 +934,7 @@ void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableRatio = 0.2;
+  const su2double allowableRatio = config->GetMaxUpdateFractionFlow();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
@@ -1660,7 +1661,13 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
       const su2double mag = GeometryToolbox::Norm(nDim, dir);
-      for (auto iDim = 0ul; iDim < nDim; iDim++) Flow_Dir[iDim] = dir[iDim] / mag;
+      if (config->GetInletUseNormal()) {
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          Flow_Dir[iDim] = -UnitNormal[iDim];
+      } else {
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          Flow_Dir[iDim] = dir[iDim]/mag;
+      }
 
       /*--- Build the fictitious intlet state based on characteristics ---*/
 

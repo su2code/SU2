@@ -3,14 +3,14 @@
  * \brief Declaration and inlines of the class to transfer temperature and heatflux
  *        density for conjugate heat interfaces between structure and fluid zones.
  * \author O. Burghardt
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -75,14 +75,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
   if (compressible_flow) {
 
-    const su2double Gamma = donor_config->GetGamma();
-    const su2double Gas_Constant = donor_config->GetGas_ConstantND();
-    const su2double Cp = (Gamma / (Gamma - 1.0)) * Gas_Constant;
-
-    const su2double Prandtl_Lam = donor_config->GetPrandtl_Lam();
-    const su2double laminar_viscosity = donor_solution->GetNodes()->GetLaminarViscosity(Point_Donor); // TDE check for consistency
-
-    const su2double thermal_conductivityND = Cp*(laminar_viscosity/Prandtl_Lam);
+    const su2double thermal_conductivityND = donor_solution->GetNodes()->GetThermalConductivity(Point_Donor);
     heat_flux_density = thermal_conductivityND*dTdn;
 
     if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||

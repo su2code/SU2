@@ -2,14 +2,14 @@
  * \file CNewtonIntegration.cpp
  * \brief Newton-Krylov integration.
  * \author P. Gomes
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -66,13 +66,18 @@ void CNewtonIntegration::Setup() {
   auto iparam = config->GetNewtonKrylovIntParam();
   auto dparam = config->GetNewtonKrylovDblParam();
 
-  startupIters = iparam[0];
+  startupIters = iter = iparam[0];
   startupResidual = dparam[0];
   precondIters = iparam[1];
   precondTol = dparam[1];
   tolRelaxFactor = iparam[2];
   fullTolResidual = dparam[2];
   finDiffStepND = SU2_TYPE::GetValue(dparam[3]);
+  nkRelaxation = fmin(SU2_TYPE::GetValue(dparam[4]), 1);
+  if (nkRelaxation < 0) {
+    autoRelaxation = true;
+    nkRelaxation = 1;
+  }
 
   const auto nVar = solvers[FLOW_SOL]->GetnVar();
   const auto nPoint = geometry->GetnPoint();
@@ -83,6 +88,9 @@ void CNewtonIntegration::Setup() {
   LinSolver.SetxIsZero(true);
 
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  if (autoRelaxation || nkRelaxation < 1) {
+    LinSysResRelax.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  }
 
   if (!std::is_same<Scalar,su2double>::value) {
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, nullptr);
@@ -175,6 +183,17 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   if (!setup) { Setup(); setup = true; }
 
+  // Ramp from 1st to 2nd order during the startup.
+  su2double baseNkRelaxation = 1;
+  if (startupPeriod && startupIters > 0 && !config->GetRestart()) {
+    baseNkRelaxation = su2double(startupIters - iter) / startupIters;
+  }
+  config->SetNewtonKrylovRelaxation(baseNkRelaxation);
+
+  // When using NK relaxation (not fully 2nd order Jacobian products) we need an additional
+  // residual evaluation that is used as the reference for finite differences.
+  LinSysRes0 = (!startupPeriod && nkRelaxation < 1) ? &LinSysResRelax : &LinSysRes;
+
   SU2_OMP_PARALLEL_(if(solvers[FLOW_SOL]->GetHasHybridParallel())) {
 
   /*--- Save the current solution to be able to perturb it. ---*/
@@ -191,10 +210,20 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   if (preconditioner) preconditioner->Build();
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto i = 0ul; i < LinSysRes.GetNElmDomain(); ++i)
-    LinSysRes[i] = SU2_TYPE::GetValue(solvers[FLOW_SOL]->LinSysRes[i]);
-  END_SU2_OMP_FOR
+  auto CopyLinSysRes = [&](int sign, auto& dst) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (auto i = 0ul; i < dst.GetNElmDomain(); ++i)
+      dst[i] = sign * SU2_TYPE::GetValue(solvers[FLOW_SOL]->LinSysRes[i]);
+    END_SU2_OMP_FOR
+  };
+  CopyLinSysRes(1, LinSysRes);
+
+  if (!startupPeriod && nkRelaxation < 1) {
+    SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetNewtonKrylovRelaxation(nkRelaxation);)
+    ComputeResiduals(ResEvalType::EXPLICIT);
+    // Here the sign was not flipped by PrepareImplicitIteration.
+    CopyLinSysRes(-1, LinSysResRelax);
+  }
 
   su2double residual = 0.0;
   for (auto iVar = 0ul; iVar < LinSysRes.GetNVar(); ++iVar)
@@ -207,10 +236,10 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   if (startupPeriod) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       firstResidual = max(firstResidual, residual);
-      if (startupIters) startupIters -= 1;
+      if (iter) iter -= 1;
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
-    endStartup = (startupIters == 0) && (residual - firstResidual < startupResidual);
+    endStartup = (iter == 0) && (residual - firstResidual < startupResidual);
   }
 
   /*--- The NK solves are expensive, the tolerance is relaxed while the residuals are high. ---*/
@@ -232,8 +261,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   if (startupPeriod) {
     iter = Preconditioner_impl(LinSysRes, linSysSol, iter, eps);
-  }
-  else {
+  } else {
     ComputeFinDiffStep();
 
     eps *= toleranceFactor;
@@ -247,6 +275,15 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     solvers[FLOW_SOL]->SetIterLinSolver(iter);
     solvers[FLOW_SOL]->SetResLinSolver(eps);
+
+    if (!startupPeriod && autoRelaxation) {
+      const su2double adaptTol = config->GetCFL_Adapt() ? config->GetCFL_AdaptParam(4) : 0;
+      if (eps > fmax(config->GetLinear_Solver_Error(), adaptTol)) {
+        nkRelaxation *= 0.9;
+      } else if (eps < 0.9 * fmax(config->GetLinear_Solver_Error(), adaptTol)) {
+        nkRelaxation = fmin(nkRelaxation * 1.05, 1);
+      }
+    }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -303,11 +340,11 @@ void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVect
     su2double delta = (geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint)) /
                       max(EPS, solvers[FLOW_SOL]->GetNodes()->GetDelta_Time(iPoint));
     SU2_OMP_SIMD
-    for (auto iVar = 0ul; iVar < LinSysRes.GetNVar(); ++iVar) {
+    for (auto iVar = 0ul; iVar < LinSysRes0->GetNVar(); ++iVar) {
       Scalar perturbRes = SU2_TYPE::GetValue(solvers[FLOW_SOL]->LinSysRes(iPoint,iVar));
 
       /*--- The global residual had its sign flipped, so we add to get the difference. ---*/
-      v(iPoint,iVar) = (perturbRes + LinSysRes(iPoint,iVar)) * factor;
+      v(iPoint,iVar) = (perturbRes + (*LinSysRes0)(iPoint,iVar)) * factor;
 
       /*--- Pseudotime term of the true Jacobian. ---*/
       v(iPoint,iVar) += SU2_TYPE::GetValue(delta) * u(iPoint,iVar);

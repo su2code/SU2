@@ -2,14 +2,14 @@
  * \file CHeatSolver.hpp
  * \brief Headers of the CHeatSolver class
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@
  * \class CHeatSolver
  * \brief Main class for defining the finite-volume heat solver.
  * \author O. Burghardt
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  */
 class CHeatSolver final : public CScalarSolver<CHeatVariable> {
 protected:
@@ -42,7 +42,6 @@ protected:
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
 
   const bool flow; /*!< \brief Use solver as a scalar transport equation of Temperature for the inc solver. */
-  const bool heat_equation; /*!< \brief use solver for heat conduction in solids. */
 
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0;
 
@@ -68,7 +67,6 @@ protected:
     if (!geometry->nodes->GetDomain(iPoint)) return;
 
     const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
-    const su2double prandtl_lam = config->GetPrandtl_Lam();
     const su2double const_diffusivity = config->GetThermalDiffusivity();
 
     const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
@@ -84,7 +82,8 @@ protected:
 
     su2double thermal_diffusivity = const_diffusivity;
     if (flow) {
-      thermal_diffusivity = flow_solver->GetNodes()->GetLaminarViscosity(iPoint) / prandtl_lam;
+      thermal_diffusivity =
+          flow_solver->GetNodes()->GetThermalConductivity(iPoint) / flow_solver->GetNodes()->GetSpecificHeatCp(iPoint);
     }
     LinSysRes(iPoint, 0) -= thermal_diffusivity * dTdn * Area;
 
@@ -108,7 +107,6 @@ protected:
     const CVariable* flow_nodes = flow ? solver_container[FLOW_SOL]->GetNodes() : nullptr;
 
     const su2double const_diffusivity = config->GetThermalDiffusivity();
-    const su2double pr_lam = config->GetPrandtl_Lam();
     const su2double pr_turb = config->GetPrandtl_Turb();
 
     su2double thermal_diffusivity_i{}, thermal_diffusivity_j{};
@@ -116,13 +114,12 @@ protected:
     /*--- Computes the thermal diffusivity to use in the viscous numerics. ---*/
     auto compute_thermal_diffusivity = [&](unsigned long iPoint, unsigned long jPoint) {
       if (flow) {
-        thermal_diffusivity_i = flow_nodes->GetLaminarViscosity(iPoint) / pr_lam +
+        thermal_diffusivity_i = flow_nodes->GetThermalConductivity(iPoint) / flow_nodes->GetSpecificHeatCp(iPoint) +
                                 flow_nodes->GetEddyViscosity(iPoint) / pr_turb;
-        thermal_diffusivity_j = flow_nodes->GetLaminarViscosity(jPoint) / pr_lam +
+        thermal_diffusivity_j = flow_nodes->GetThermalConductivity(jPoint) / flow_nodes->GetSpecificHeatCp(jPoint) +
                                 flow_nodes->GetEddyViscosity(jPoint) / pr_turb;
         numerics->SetDiffusionCoeff(&thermal_diffusivity_i, &thermal_diffusivity_j);
-      }
-      else {
+      } else {
         numerics->SetDiffusionCoeff(&const_diffusivity, &const_diffusivity);
       }
     };

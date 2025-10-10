@@ -2,14 +2,14 @@
  * \file roe.hpp
  * \brief Roe-family of convective schemes.
  * \author P. Gomes, A. Bueno, F. Palacios
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -96,6 +96,7 @@ public:
     AD::StartPreacc();
 
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    const auto nkRelax = config.GetNewtonKrylovRelaxation();
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
 
     const auto iPoint = geometry.edges->GetNode(iEdge,0);
@@ -118,8 +119,13 @@ public:
     V1st.i.all = gatherVariables<nPrimVar>(iPoint, solution.GetPrimitive());
     V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
 
+    VectorDbl<nDim> mod_vector_ij;
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      mod_vector_ij(iDim) = nkRelax * vector_ij(iDim);
+    }
+    /*--- Recompute density and enthalpy instead of reconstructing. ---*/
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-        iEdge, iPoint, jPoint, gamma, gasConst, muscl, typeLimiter, V1st, vector_ij, solution);
+        iEdge, iPoint, jPoint, gamma, gasConst, muscl, typeLimiter, V1st, mod_vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 

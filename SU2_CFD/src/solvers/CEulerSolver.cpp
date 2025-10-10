@@ -2,14 +2,14 @@
  * \file CEulerSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -65,7 +65,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
   const bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
-  const bool centered = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
 
   int Unst_RestartIter = 0;
   unsigned long iPoint, iMarker, counter_local = 0, counter_global = 0;
@@ -122,7 +121,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   nVar = nDim+2;
   nPrimVar = nDim+10; 
   /*--- Centered schemes only need gradients for viscous fluxes (T and v). ---*/
-  nPrimVarGrad = nDim + (centered && !config->GetContinuous_Adjoint() ? 1 : 4);
+  nPrimVarGrad = EulerNPrimVarGrad(config, nDim);
   nSecondaryVar = nSecVar;
   nSecondaryVarGrad = 2;
 
@@ -794,6 +793,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
   Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
+  Thermal_Conductivity_FreeStream = 0.0, SpecificHeat_Cp_FreeStream = 0.0,
   Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0, Re_ThetaT_FreeStream = 0.0,
   Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0,
   Temperature_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
@@ -801,6 +801,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Froude = 0.0, Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0,
   Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0, Specific_Heat_CpND = 0.0, Pressure_ThermodynamicND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
+  Thermal_Conductivity_FreeStreamND = 0.0, SpecificHeat_Cp_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0, TgammaR = 0.0, Heat_Flux_Ref = 0.0;
 
@@ -958,9 +959,15 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
             viscosity, depending on the input option.---*/
 
       auxFluidModel->SetLaminarViscosityModel(config);
+      auxFluidModel->SetThermalConductivityModel(config);
 
       Viscosity_FreeStream = auxFluidModel->GetLaminarViscosity();
+      Thermal_Conductivity_FreeStream = auxFluidModel->GetThermalConductivity();
+      SpecificHeat_Cp_FreeStream = auxFluidModel->GetCp();
+
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
+      config->SetThermalConductivity_FreeStream(Thermal_Conductivity_FreeStream);
+      config->SetSpecificHeatCp_FreeStream(SpecificHeat_Cp_FreeStream);
 
       Density_FreeStream = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds());
       config->SetDensity_FreeStream(Density_FreeStream);
@@ -976,8 +983,13 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     else {
 
       auxFluidModel->SetLaminarViscosityModel(config);
+      auxFluidModel->SetThermalConductivityModel(config);
       Viscosity_FreeStream = auxFluidModel->GetLaminarViscosity();
+      Thermal_Conductivity_FreeStream = auxFluidModel->GetThermalConductivity();
+      SpecificHeat_Cp_FreeStream = auxFluidModel->GetCp();
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
+      config->SetThermalConductivity_FreeStream(Thermal_Conductivity_FreeStream);
+      config->SetSpecificHeatCp_FreeStream(SpecificHeat_Cp_FreeStream);
       Energy_FreeStream = auxFluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
 
       /*--- Compute Reynolds number ---*/
@@ -1063,6 +1075,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND); config->SetModVel_FreeStreamND(ModVel_FreeStreamND);
 
   Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
+  Thermal_Conductivity_FreeStreamND = Thermal_Conductivity_FreeStream / Conductivity_Ref;
+  config->SetThermalConductivity_FreeStreamND(Thermal_Conductivity_FreeStreamND);
+  SpecificHeat_Cp_FreeStreamND = SpecificHeat_Cp_FreeStream / Gas_Constant_Ref;
+  config->SetSpecificHeatCp_FreeStreamND(SpecificHeat_Cp_FreeStreamND);
 
   Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStream(Tke_FreeStream);
@@ -1745,14 +1761,15 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Define an object to compute the viscous eigenvalue. ---*/
   struct LambdaVisc {
-    const su2double gamma, prandtlLam, prandtlTurb;
+    const su2double gamma, prandtlTurb;
 
-    LambdaVisc(su2double g, su2double pl, su2double pt) : gamma(g), prandtlLam(pl), prandtlTurb(pt) {}
+    LambdaVisc(su2double g, su2double pt) : gamma(g), prandtlTurb(pt) {}
 
-    FORCEINLINE su2double lambda(su2double gamma, su2double laminarVisc, su2double eddyVisc, su2double density) const {
-      su2double Lambda_1 = (4.0/3.0)*(laminarVisc + eddyVisc);
+    FORCEINLINE su2double lambda(su2double laminarVisc, su2double eddyVisc, su2double density, su2double cp,
+                                 su2double thermalCond) const {
+      su2double Lambda_1 = (4.0 / 3.0) * (laminarVisc + eddyVisc);
       /// TODO: (REAL_GAS) removing gamma as it cannot work with FLUIDPROP
-      su2double Lambda_2 = (1.0 + (prandtlLam/prandtlTurb)*(eddyVisc/laminarVisc))*(gamma*laminarVisc/prandtlLam);
+      su2double Lambda_2 = (thermalCond / cp + eddyVisc / prandtlTurb) * gamma;
       return (Lambda_1 + Lambda_2) / density;
     }
 
@@ -1760,19 +1777,21 @@ void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       su2double laminarVisc = 0.5*(nodes.GetLaminarViscosity(iPoint) + nodes.GetLaminarViscosity(jPoint));
       su2double eddyVisc = 0.5*(nodes.GetEddyViscosity(iPoint) + nodes.GetEddyViscosity(jPoint));
       su2double density = 0.5*(nodes.GetDensity(iPoint) + nodes.GetDensity(jPoint));
-      su2double gamma = 0.5*(nodes.GetGamma(iPoint)+ nodes.GetGamma(jPoint));
-      return lambda(gamma, laminarVisc, eddyVisc, density);
+      su2double thermalCond = 0.5*(nodes.GetThermalConductivity(iPoint) + nodes.GetThermalConductivity(jPoint));
+      su2double cp = 0.5*(nodes.GetSpecificHeatCp(iPoint) + nodes.GetSpecificHeatCp(jPoint));
+      return lambda(laminarVisc, eddyVisc, density, cp, thermalCond);
     }
 
     FORCEINLINE su2double operator() (const CEulerVariable& nodes, unsigned long iPoint) const {
       su2double laminarVisc = nodes.GetLaminarViscosity(iPoint);
       su2double eddyVisc = nodes.GetEddyViscosity(iPoint);
       su2double density = nodes.GetDensity(iPoint);
-      su2double gamma = nodes.GetGamma(iPoint);
-      return lambda(gamma, laminarVisc, eddyVisc, density);
+      su2double thermalCond = nodes.GetThermalConductivity(iPoint);
+      su2double cp = nodes.GetSpecificHeatCp(iPoint);
+      return lambda(laminarVisc, eddyVisc, density, cp, thermalCond);
     }
 
-  } lambdaVisc(Gamma, Prandtl_Lam, Prandtl_Turb);
+  } lambdaVisc(Gamma, Prandtl_Turb);
 
   /*--- Now instantiate the generic implementation with the two functors above. ---*/
 
@@ -1801,6 +1820,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   }
 
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const su2double nkRelax     = config->GetNewtonKrylovRelaxation();
 
   const bool roe_turkel       = (config->GetKind_Upwind_Flow() == UPWIND::TURKEL);
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
@@ -1880,7 +1900,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       su2double Vector_ij[MAXNDIM] = {0.0};
       for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+        Vector_ij[iDim] = nkRelax * 0.5 * (Coord_j[iDim] - Coord_i[iDim]);
       }
 
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
@@ -2087,15 +2107,12 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
 
-  unsigned short iVar;
-  unsigned long iPoint;
-
   if (body_force) {
 
     /*--- Loop over all points ---*/
     AD::StartNoSharedReading();
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the conservative variables ---*/
       numerics->SetConservative(nodes->GetSolution(iPoint),
@@ -2125,7 +2142,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Loop over all points ---*/
     AD::StartNoSharedReading();
     SU2_OMP_FOR_DYN(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Load the conservative variables ---*/
       numerics->SetConservative(nodes->GetSolution(iPoint),
@@ -2158,7 +2175,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- loop over points ---*/
     AD::StartNoSharedReading();
     SU2_OMP_FOR_DYN(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Set solution  ---*/
       numerics->SetConservative(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
@@ -2211,7 +2228,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- loop over points ---*/
     SU2_OMP_FOR_DYN(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Set solution  ---*/
       numerics->SetConservative(nodes->GetSolution(iPoint), nodes->GetSolution(iPoint));
@@ -2234,13 +2251,13 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- loop over points ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       /*--- Get control volume ---*/
       su2double Volume = geometry->nodes->GetVolume(iPoint);
 
       /*--- Get stored time spectral source term and add to residual ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
+      for (auto iVar = 0ul; iVar < nVar; iVar++) {
         LinSysRes(iPoint,iVar) += Volume * nodes->GetHarmonicBalance_Source(iPoint,iVar);
       }
     }
@@ -2257,7 +2274,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- set vorticity magnitude as auxilliary variable ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       const su2double VorticityMag = max(GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)), 1e-12);
       nodes->SetAuxVar(iPoint, 0, VorticityMag);
     }
@@ -2267,7 +2284,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     SetAuxVar_Gradient_GG(geometry, config);
 
     SU2_OMP_FOR_DYN(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
       second_numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nullptr);
       second_numerics->SetVorticity(nodes->GetVorticity(iPoint), nullptr);
       second_numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
@@ -2294,7 +2311,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Loop over points ---*/
       SU2_OMP_FOR_DYN(omp_chunk_size)
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
         /*--- Get control volume size. ---*/
         su2double Volume = geometry->nodes->GetVolume(iPoint);
@@ -2307,7 +2324,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         VerificationSolution->GetMMSSourceTerm(coor, time, sourceMan.data());
 
         /*--- Compute the residual for this control volume and subtract. ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
+        for (auto iVar = 0ul; iVar < nVar; iVar++) {
           LinSysRes(iPoint,iVar) -= sourceMan[iVar]*Volume;
         }
       }
@@ -2316,6 +2333,12 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   }
 
   AD::EndNoSharedReading();
+
+  /*--- Custom user defined source term (from the python wrapper) ---*/
+  if (config->GetPyCustomSource() ) {
+    CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
+  }
+
 }
 
 void CEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -4149,7 +4172,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
    * Institution: Computational and Theoretical Fluid Dynamics (CTFD),
    *            CSIR - National Aerospace Laboratories, Bangalore
    *            Academy of Scientific and Innovative Research, Ghaziabad
-   * \version 8.1.0 "Harrier"
+   * \version 8.3.0 "Harrier"
    * First release date : September 26 2023
    * modified on:
    *
@@ -7017,8 +7040,17 @@ void CEulerSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNu
         T_Total = Inlet_Ttotal[val_marker][iVertex];
         const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
         const su2double mag = GeometryToolbox::Norm(nDim, dir);
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Flow_Dir[iDim] = dir[iDim] / mag;
+
+        /*--- Store the unit flow direction vector.
+         If requested, use the local boundary normal (negative),
+         instead of the prescribed flow direction in the config. ---*/
+
+        if (config->GetInletUseNormal()) {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = -UnitNormal[iDim];
+        } else {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = dir[iDim]/mag;
         }
 
         /*--- Non-dim. the inputs if necessary. ---*/
@@ -7151,8 +7183,18 @@ void CEulerSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNu
         Vel_Mag = Inlet_Ptotal[val_marker][iVertex];
         const su2double* dir = Inlet_FlowDir[val_marker][iVertex];
         const su2double mag = GeometryToolbox::Norm(nDim, dir);
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Flow_Dir[iDim] = dir[iDim] / mag;
+
+
+        /*--- Store the unit flow direction vector.
+         If requested, use the local boundary normal (negative),
+         instead of the prescribed flow direction in the config. ---*/
+
+        if (config->GetInletUseNormal()) {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = -UnitNormal[iDim];
+        } else {
+          for (iDim = 0; iDim < nDim; iDim++)
+            Flow_Dir[iDim] = dir[iDim]/mag;
         }
 
         for (iDim = 0; iDim < nDim; iDim++) Velocity[iDim] = nodes->GetVelocity(iPoint, iDim);
@@ -7475,10 +7517,9 @@ void CEulerSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNu
     const su2double Velocity2 = GeometryToolbox::SquaredNorm(int(MAXNDIM), Velocity);
     su2double Energy = FluidModel->GetStaticEnergy() + 0.5 * Velocity2;
     if (tkeNeeded) {
-      const su2double* Turb_Properties = config->GetInlet_TurbVal(config->GetMarker_All_TagBound(val_marker));
+      const su2double* Turb_Properties = config->GetInlet_TurbVal(Marker_Tag);
       const su2double Intensity = Turb_Properties[0];
-      const su2double VelMag2 = GeometryToolbox::SquaredNorm(nDim, Velocity);
-      const su2double Tke = 3.0 / 2.0 * (VelMag2 * pow(Intensity, 2));
+      const su2double Tke = 3.0 / 2.0 * (Velocity2 * pow(Intensity, 2));
       Energy += Tke;
     }
 
@@ -9261,7 +9302,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 for (auto iDim = 2; iDim < nDim +1;iDim++)
                   avgVelocity[iDim-1]  = AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
 
-                if (isnan(avgDensity) || isnan(avgPressure) || avgPressure < 0.0 || avgDensity < 0.0 ){
+                if (std::isnan(avgDensity) || std::isnan(avgPressure) || avgPressure < 0.0 || avgDensity < 0.0 ){
                   val_init_pressure = TotalAreaPressure / TotalArea;
                   MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgPressure, avgDensity);
                   avgVelocity[0]          = ( AverageFlux[iMarker][iSpan][1] - avgPressure) / AverageFlux[iMarker][iSpan][0];
@@ -9298,7 +9339,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             }
 
             /* --- check if averaged quantities are correct otherwise reset the old quantities ---*/
-            const bool nanSolution = (isnan(AverageDensity[iMarker][iSpan]) || isnan(AveragePressure[iMarker][iSpan]));
+            const bool nanSolution = (std::isnan(AverageDensity[iMarker][iSpan]) || std::isnan(AveragePressure[iMarker][iSpan]));
             const bool negSolution = (AverageDensity[iMarker][iSpan] < 0.0 || AveragePressure[iMarker][iSpan] < 0.0);
             if (nanSolution || negSolution){
               if (nanSolution)

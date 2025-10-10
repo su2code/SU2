@@ -2,14 +2,14 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,7 @@
 #include "../../include/numerics/elasticity/CFEAElasticity.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/solvers/CHeatSolver.hpp"
 #include <algorithm>
 
 using namespace GeometryToolbox;
@@ -283,9 +284,6 @@ void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {
 
 void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
-  const auto iZone = config->GetiZone();
-  const auto nZone = geometry->GetnZone();
-
   const bool topology_mode = config->GetTopology_Optimization();
 
   element_properties = new CProperty*[nElement];
@@ -294,9 +292,6 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
   auto filename = config->GetFEA_FileName();
 
-  /*--- If multizone, append zone name ---*/
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
   if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
 
@@ -563,6 +558,11 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   const bool disc_adj_fem = (config->GetKind_Solver() == MAIN_SOLVER::DISC_ADJ_FEM);
   const bool topology_mode = config->GetTopology_Optimization();
 
+  /*--- Set the pointer to the heat solver so we can access temperatures. ---*/
+  if (config->GetWeakly_Coupled_Heat()) {
+    heat_nodes = solver_container[HEAT_SOL]->GetNodes();
+  }
+
   /*
    * For topology optimization we apply a filter on the design density field to avoid
    * numerical issues (checkerboards), ensure mesh independence, and impose a length scale.
@@ -646,6 +646,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
   const bool topology_mode = config->GetTopology_Optimization();
   const su2double simp_exponent = config->GetSIMP_Exponent();
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
+  const su2double t_ref = config->GetTemperature_Ref();
 
   /*--- Start OpenMP parallel region. ---*/
 
@@ -687,6 +688,9 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CNumerics **numerics, 
             su2double val_Sol = nodes->GetSolution(indexNode[iNode],iDim) + val_Coord;
             element->SetRef_Coord(iNode, iDim, val_Coord);
             element->SetCurr_Coord(iNode, iDim, val_Sol);
+          }
+          if (heat_nodes) {
+            element->SetTemperature(iNode, heat_nodes->GetSolution(indexNode[iNode], 0) * t_ref);
           }
         }
 
@@ -740,6 +744,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
   const bool topology_mode = config->GetTopology_Optimization();
   const su2double simp_exponent = config->GetSIMP_Exponent();
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
+  const su2double t_ref = config->GetTemperature_Ref();
 
   /*--- Start OpenMP parallel region. ---*/
 
@@ -794,6 +799,9 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CNumeri
               de_elem->SetCurr_Coord(iNode, iDim, val_Sol);
               de_elem->SetRef_Coord(iNode, iDim, val_Coord);
             }
+          }
+          if (heat_nodes) {
+            fea_elem->SetTemperature(iNode, heat_nodes->GetSolution(indexNode[iNode], 0) * t_ref);
           }
         }
 
@@ -878,6 +886,7 @@ void CFEASolver::Compute_MassMatrix(const CGeometry *geometry, CNumerics **numer
 
   const bool topology_mode = config->GetTopology_Optimization();
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
+  const su2double t_ref = config->GetTemperature_Ref();
 
   /*--- Never record this method as the mass matrix is passive (but the mass residual is not). ---*/
   const bool wasActive = AD::BeginPassive();
@@ -917,6 +926,9 @@ void CFEASolver::Compute_MassMatrix(const CGeometry *geometry, CNumerics **numer
           for (iDim = 0; iDim < nDim; iDim++) {
             su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
             element->SetRef_Coord(iNode, iDim, val_Coord);
+          }
+          if (heat_nodes) {
+            element->SetTemperature(iNode, heat_nodes->GetSolution(indexNode[iNode], 0) * t_ref);
           }
         }
 
@@ -965,6 +977,7 @@ void CFEASolver::Compute_MassRes(const CGeometry *geometry, CNumerics **numerics
 
   const bool topology_mode = config->GetTopology_Optimization();
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
+  const su2double t_ref = config->GetTemperature_Ref();
 
   /*--- Clear vector before calculation. ---*/
   TimeRes.SetValZero();
@@ -998,6 +1011,9 @@ void CFEASolver::Compute_MassRes(const CGeometry *geometry, CNumerics **numerics
         for (iDim = 0; iDim < nDim; iDim++) {
           su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
           element->SetRef_Coord(iNode, iDim, val_Coord);
+        }
+        if (heat_nodes) {
+          element->SetTemperature(iNode, heat_nodes->GetSolution(indexNode[iNode], 0) * t_ref);
         }
       }
 
@@ -1044,6 +1060,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
   const bool topology_mode = config->GetTopology_Optimization();
   const su2double simp_exponent = config->GetSIMP_Exponent();
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
+  const su2double t_ref = config->GetTemperature_Ref();
 
   /*--- Start OpenMP parallel region. ---*/
 
@@ -1093,6 +1110,9 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CNumerics **numeric
             element->SetCurr_Coord(iNode, iDim, val_Sol);
             element->SetRef_Coord(iNode, iDim, val_Coord);
           }
+          if (heat_nodes) {
+            element->SetTemperature(iNode, heat_nodes->GetSolution(indexNode[iNode], 0) * t_ref);
+          }
         }
 
         /*--- In topology mode determine the penalty to apply to the stiffness ---*/
@@ -1137,6 +1157,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
   const bool topology_mode = config->GetTopology_Optimization();
   const su2double simp_exponent = config->GetSIMP_Exponent();
   const su2double simp_minstiff = config->GetSIMP_MinStiffness();
+  const su2double t_ref = config->GetTemperature_Ref();
 
   const auto stressParam = config->GetStressPenaltyParam();
   const su2double stress_scale = 1.0 / stressParam[0];
@@ -1208,6 +1229,9 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
             /*--- Set coordinates. ---*/
             element->SetCurr_Coord(iNode, iDim, val_Sol);
             element->SetRef_Coord(iNode, iDim, val_Coord);
+          }
+          if (heat_nodes) {
+            element->SetTemperature(iNode, heat_nodes->GetSolution(indexNode[iNode], 0) * t_ref);
           }
         }
 
@@ -1410,6 +1434,8 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
 void CFEASolver::Compute_BodyForces(CGeometry *geometry, CNumerics **numerics, const CConfig *config) {
 
+  const su2double t_ref = config->GetTemperature_Ref();
+
   /*--- Start OpenMP parallel region. ---*/
 
   SU2_OMP_PARALLEL
@@ -1448,6 +1474,9 @@ void CFEASolver::Compute_BodyForces(CGeometry *geometry, CNumerics **numerics, c
           for (iDim = 0; iDim < nDim; iDim++) {
             su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
             element->SetRef_Coord(iNode, iDim, val_Coord);
+          }
+          if (heat_nodes) {
+            element->SetTemperature(iNode, heat_nodes->GetSolution(indexNode[iNode], 0) * t_ref);
           }
         }
 
@@ -2990,6 +3019,7 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CNumerics **numerics, CC
     PenaltyValue = 0.0;
     return;
   }
+  const su2double t_ref = config->GetTemperature_Ref();
 
   su2double weightedValue = 0.0;
   su2double weightedValue_reduce = 0.0;
@@ -3020,6 +3050,9 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CNumerics **numerics, CC
       for (iDim = 0; iDim < nDim; iDim++) {
         su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
         element->SetRef_Coord(iNode, iDim, val_Coord);
+      }
+      if (heat_nodes) {
+        element->SetTemperature(iNode, heat_nodes->GetSolution(indexNode[iNode], 0) * t_ref);
       }
     }
 
@@ -3076,11 +3109,13 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  string filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  string filename = config->GetSolution_FileName();
 
   if (config->GetRead_Binary_Restart()) {
+    filename = config->GetFilename(filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
   } else {
+    filename = config->GetFilename(filename, ".csv", val_iter);
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
   }
 

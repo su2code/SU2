@@ -2,14 +2,14 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -765,11 +765,13 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  string filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  string filename = config->GetSolution_FileName();
 
   if (config->GetRead_Binary_Restart()) {
+    filename = config->GetFilename(filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
   } else {
+    filename = config->GetFilename(filename, ".csv", val_iter);
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
   }
 
@@ -865,15 +867,6 @@ void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config)
 
   /*--- This function is intended for dual time simulations ---*/
 
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = geometry->GetnZone();
-  string filename = config->GetSolution_FileName();
-
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, "");
-
   /*--- Determine how many files need to be read. ---*/
 
   unsigned short nSteps = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ? 2 : 1;
@@ -901,14 +894,16 @@ void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config)
       }
     }
     else {
-      string filename_n = config->GetUnsteady_FileName(filename, Unst_RestartIter, "");
 
       /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+      string restart_filename = config->GetSolution_FileName();
 
       if (config->GetRead_Binary_Restart()) {
-        Read_SU2_Restart_Binary(geometry, config, filename_n);
+        restart_filename = config->GetFilename(restart_filename, ".dat", Unst_RestartIter);
+        Read_SU2_Restart_Binary(geometry, config, restart_filename);
       } else {
-        Read_SU2_Restart_ASCII(geometry, config, filename_n);
+        restart_filename = config->GetFilename(restart_filename, ".csv", Unst_RestartIter);
+        Read_SU2_Restart_ASCII(geometry, config, restart_filename);
       }
 
       /*--- Load data from the restart into correct containers. ---*/
@@ -948,7 +943,7 @@ void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config)
       /*--- Detect a wrong solution file. ---*/
 
       if (counter != nPointDomain) {
-        SU2_MPI::Error(string("The solution file ") + filename_n + string(" doesn't match with the mesh file!\n") +
+        SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
                        string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
       }
     }

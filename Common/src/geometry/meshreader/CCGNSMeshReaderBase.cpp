@@ -3,14 +3,14 @@
  * \brief Helper class for the reading of a CGNS grid file.
  *        linear partitions across all ranks.
  * \author T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -320,8 +320,38 @@ void CCGNSMeshReaderBase::ReadCGNSSectionMetadata() {
     /* Check for 1D elements in 2D problems, or for 2D elements in
      3D problems. If found, mark the section as a boundary section. */
 
-    if ((dimension == 2) && (elemType == BAR_2 || elemType == BAR_3)) isInterior[s] = false;
-    if ((dimension == 3) && (elemType == TRI_3 || elemType == QUAD_4)) isInterior[s] = false;
+    if (dimension == 2) {
+      switch (elemType) {
+        case BAR_2:
+        case BAR_3:
+        case BAR_4:
+        case BAR_5:
+          isInterior[s] = false;
+          break;
+        default:  // To avoid a compiler warning.
+          break;
+      }
+    } else {
+      switch (elemType) {
+        case TRI_3:
+        case TRI_6:
+        case TRI_9:
+        case TRI_10:
+        case TRI_12:
+        case TRI_15:
+        case QUAD_4:
+        case QUAD_8:
+        case QUAD_9:
+        case QUAD_12:
+        case QUAD_16:
+        case QUAD_P4_16:
+        case QUAD_25:
+          isInterior[s] = false;
+          break;
+        default:  // To avoid a compiler warning.
+          break;
+      }
+    }
 
     /*--- Increment the global element offset for each section
      based on whether or not this is a surface or volume section.

@@ -2,14 +2,14 @@
  * \file datatype_structure.hpp
  * \brief Headers for generalized datatypes, defines an interface for AD types.
  * \author T. Albring
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -89,7 +89,14 @@ void SetDerivative(su2double& data, const passivedouble& val);
 
 FORCEINLINE void SetValue(su2double& data, const passivedouble& val) { data.setValue(val); }
 
+FORCEINLINE passivedouble GetValue(const double& data) { return data; }
+
 FORCEINLINE passivedouble GetValue(const su2double& data) { return data.getValue(); }
+
+template <typename Expr>
+FORCEINLINE passivedouble GetValue(const codi::ExpressionInterface<double, Expr>& data) {
+  return data.cast().getValue();
+}
 
 FORCEINLINE void SetSecondary(su2double& data, const passivedouble& val) { data.setGradient(val); }
 

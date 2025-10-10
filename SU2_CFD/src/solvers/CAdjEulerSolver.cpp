@@ -2,14 +2,14 @@
  * \file CAdjEulerSolver.cpp
  * \brief Main subroutines for solving Euler adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -3814,7 +3814,6 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   filename         = config->GetSolution_AdjFileName();
   restart_filename = config->GetObjFunc_Extension(filename);
-  restart_filename = config->GetFilename(restart_filename, "", val_iter);
 
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -3827,8 +3826,10 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
+    restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
+    restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 

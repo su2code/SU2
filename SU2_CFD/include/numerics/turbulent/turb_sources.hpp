@@ -1,14 +1,14 @@
 /*!
  * \file turb_sources.hpp
  * \brief Numerics classes for integration of source terms in turbulence problems.
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -86,7 +86,7 @@ class CSourceBase_TurbSA : public CNumerics {
    */
   inline void ResidualAxisymmetricDiffusion(su2double sigma) {
     if (Coord_i[1] < EPS) return;
-    
+
     const su2double yinv = 1.0 / Coord_i[1];
     const su2double& nue = ScalarVar_i[0];
 
@@ -243,14 +243,14 @@ class CSourceBase_TurbSA : public CNumerics {
         var.interDestrFactor = 1.0;
       }
 
-      /*--- Compute production, destruction and cross production and jacobian ---*/
-      su2double Production = 0.0, Destruction = 0.0, CrossProduction = 0.0;
-      SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, CrossProduction, Jacobian_i[0]);
+      /*--- Compute production, destruction and jacobian ---*/
+      su2double Production = 0.0, Destruction = 0.0;
+      SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, Jacobian_i[0]);
 
-      Residual = (Production - Destruction + CrossProduction) * Volume;
+      Residual = (Production - Destruction) * Volume;
 
       if (axisymmetric) ResidualAxisymmetricDiffusion(var.sigma);
-      
+
       Jacobian_i[0] *= Volume;
     }
 
@@ -423,13 +423,13 @@ struct Edw {
 };
 
 /*!
- * \brief SA source terms classes: production, destruction and cross-productions term and their derivative.
+ * \brief SA source terms classes: production and destruction term and their derivative.
+ * \note Quadratic diffusion is included in the viscous fluxes.
  * \ingroup SourceDiscr
  * \param[in] nue: SA variable.
  * \param[in] var: Common SA variables struct.
  * \param[out] production: Production term.
  * \param[out] destruction: Destruction term.
- * \param[out] cross_production: CrossProduction term.
  * \param[out] jacobian: Derivative of the combined source term wrt nue.
  */
 struct SourceTerms {
@@ -437,10 +437,9 @@ struct SourceTerms {
 /*! \brief Baseline (Original SA model). */
 struct Bsl {
   static void get(const su2double& nue, const CSAVariables& var, su2double& production, su2double& destruction,
-                  su2double& cross_production, su2double& jacobian) {
+                  su2double& jacobian) {
     ComputeProduction(nue, var, production, jacobian);
     ComputeDestruction(nue, var, destruction, jacobian);
-    ComputeCrossProduction(nue, var, cross_production, jacobian);
   }
 
   static void ComputeProduction(const su2double& nue, const CSAVariables& var, su2double& production,
@@ -458,23 +457,17 @@ struct Bsl {
     jacobian -= var.interDestrFactor * ((var.cw1 * var.d_fw - cb1_k2 * var.d_ft2) * pow(nue, 2) + factor * 2 * nue) / var.dist_i_2;
   }
 
-  static void ComputeCrossProduction(const su2double& nue, const CSAVariables& var, su2double& cross_production,
-                                     su2double&) {
-    cross_production = var.cb2_sigma * var.norm2_Grad;
-    /*--- No contribution to the jacobian. ---*/
-  }
 };
 
 /*! \brief Negative. */
 struct Neg {
   static void get(const su2double& nue, const CSAVariables& var, su2double& production, su2double& destruction,
-                  su2double& cross_production, su2double& jacobian) {
+                  su2double& jacobian) {
     if (nue > 0.0) {
-      Bsl::get(nue, var, production, destruction, cross_production, jacobian);
+      Bsl::get(nue, var, production, destruction, jacobian);
     } else {
       ComputeProduction(nue, var, production, jacobian);
       ComputeDestruction(nue, var, destruction, jacobian);
-      ComputeCrossProduction(nue, var, cross_production, jacobian);
     }
   }
 
@@ -493,10 +486,6 @@ struct Neg {
     jacobian -= 2 * dD_dnu * var.interDestrFactor;
   }
 
-  static void ComputeCrossProduction(const su2double& nue, const CSAVariables& var, su2double& cross_production,
-                                     su2double& jacobian) {
-    Bsl::ComputeCrossProduction(nue, var, cross_production, jacobian);
-  }
 };
 };
 
@@ -562,7 +551,7 @@ class CCompressibilityCorrection final : public ParentClass {
       const su2double v = V_i[idx.Velocity() + 1];
 
       const su2double d_axiCorrection = 2.0 * c5 * nue * pow(v * yinv / sound_speed, 2) * Volume;
-      const su2double axiCorrection = 0.5 * nue * d_axiCorrection; 
+      const su2double axiCorrection = 0.5 * nue * d_axiCorrection;
 
       this->Residual -= axiCorrection;
       this->Jacobian_i[0] -= d_axiCorrection;
@@ -783,7 +772,6 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
     AD::SetPreaccIn(dist_i);
     AD::SetPreaccIn(F1_i);
     AD::SetPreaccIn(F2_i);
-    AD::SetPreaccIn(CDkw_i);
     AD::SetPreaccIn(PrimVar_Grad_i, nDim + idx.Velocity(), nDim);
     AD::SetPreaccIn(Vorticity_i, 3);
     AD::SetPreaccIn(V_i[idx.Density()], V_i[idx.LaminarViscosity()], V_i[idx.EddyViscosity()]);
@@ -922,9 +910,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       Residual[0] -= dk * Volume;
       Residual[1] -= dw * Volume;
 
-      /*--- Cross diffusion ---*/
-
-      Residual[1] += (1.0 - F1_i) * CDkw_i * Volume;
+      /*--- Cross diffusion is included in the viscous fluxes, discretisation in turb_diffusion.hpp ---*/
 
       /*--- Contribution due to 2D axisymmetric formulation ---*/
 

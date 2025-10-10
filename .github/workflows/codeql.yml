@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Packages (cpp)
         if: ${{ matrix.language == 'cpp' }}
@@ -34,7 +34,7 @@ jobs:
 
       - name: Configure (cpp)
         if: ${{ matrix.language == 'cpp' }}
-        run: ./meson.py build --optimization=1
+        run: ./meson.py setup build --optimization=1
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3

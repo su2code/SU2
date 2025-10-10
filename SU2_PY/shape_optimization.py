@@ -3,14 +3,14 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 8.1.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -106,7 +106,7 @@ def main():
         "|    ___ _   _ ___                                                      |\n"
     )
     sys.stdout.write(
-        '|   / __| | | |_  )   Release 8.1.0 "Harrier"                           |\n'
+        '|   / __| | | |_  )   Release 8.3.0 "Harrier"                           |\n'
     )
     sys.stdout.write(
         "|   \\__ \\ |_| |/ /                                                      |\n"
@@ -136,7 +136,7 @@ def main():
         "-------------------------------------------------------------------------\n"
     )
     sys.stdout.write(
-        "| Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)                |\n"
+        "| Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)                |\n"
     )
     sys.stdout.write(
         "|                                                                       |\n"
@@ -245,7 +245,14 @@ def shape_optimization(
         and config.get("RESTART_SOL", "NO") == "YES"
         and gradient != "CONTINUOUS_ADJOINT"
     ):
-        restart_name = config["RESTART_FILENAME"].split(".")[0]
+        # needs to be handled...
+        filename = config["RESTART_FILENAME"].split(".")
+        # join everything except the last extension
+        if filename[-1] == ".dat":
+            restart_name = ".".join(filename[:-1])
+        else:
+            restart_name = config["RESTART_FILENAME"]
+
         restart_filename = (
             restart_name + "_" + str(int(config["RESTART_ITER"]) - 1).zfill(5) + ".dat"
         )

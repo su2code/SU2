@@ -2,14 +2,14 @@
  * \file common.hpp
  * \brief Common convection-related methods.
  * \author P. Gomes, F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -114,7 +114,7 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
                                                       const CPair<PrimVarType>& V1st,
                                                       const VectorDbl<nDim>& vector_ij,
                                                       const VariableType& solution) {
-  static_assert(ReconVarType::nVar <= PrimVarType::nVar,"");
+  static_assert(ReconVarType::nVar <= PrimVarType::nVar);
 
   const auto& gradients = solution.GetGradient_Reconstruction();
   const auto& limiters = solution.GetLimiter_Primitive();
@@ -129,7 +129,6 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
   if (muscl) {
     /*--- Recompute density and enthalpy instead of reconstructing. ---*/
     constexpr auto nVarGrad = ReconVarType::nVar - 2;
-
     switch (limiterType) {
     case LIMITER::NONE:
       musclUnlimited<nVarGrad>(iPoint, vector_ij, 0.5, gradients, V.i.all);

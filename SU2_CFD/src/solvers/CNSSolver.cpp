@@ -2,14 +2,14 @@
  * \file CNSSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,7 +51,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Read farfield conditions from config ---*/
 
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-  Prandtl_Lam     = config->GetPrandtl_Lam();
   Prandtl_Turb    = config->GetPrandtl_Turb();
   Tke_Inf         = config->GetTke_FreeStreamND();
 
@@ -631,6 +630,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const su2double Temperature_Ref = config->GetTemperature_Ref();
+  const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   su2double Gas_Constant = config->GetGas_ConstantND();
 
   /*--- Identify the boundary and retrieve the specified wall temperature from
@@ -698,7 +698,9 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
     /*--- Get transport coefficients ---*/
 
-    su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+    su2double Cp = nodes->GetSpecificHeatCp(iPoint);
+    su2double eddy_viscosity       = nodes->GetEddyViscosity(iPoint);
+    su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint) + Cp * eddy_viscosity / Prandtl_Turb;
 
     // work in progress on real-gases...
     //thermal_conductivity = nodes->GetThermalConductivity(iPoint);
@@ -761,6 +763,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
       su2double Density = nodes->GetDensity(iPoint);
       su2double Gamma = nodes->GetGamma(iPoint);
+
       if (config->GetKind_FluidModel() == FLUID_MIXTURE) {
         Gas_Constant = (Gamma - 1.0) / Gamma * nodes->GetSpecificHeatCp(iPoint) ;
       }
@@ -901,11 +904,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
       const su2double VelTangMod = GeometryToolbox::Norm(int(MAXNDIM), VelTang);
 
       /*--- Compute normal distance of the interior point from the wall ---*/
-
-      su2double WallDist[MAXNDIM] = {0.0};
-      GeometryToolbox::Distance(nDim, Coord, Coord_Normal, WallDist);
-
-      const su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
+      const su2double WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
 
       su2double T_Wall = nodes->GetTemperature(iPoint);
       const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
