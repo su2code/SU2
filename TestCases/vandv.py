@@ -45,8 +45,7 @@ def main():
     p30n30.cfg_dir   = "vandv/rans/30p30n"
     p30n30.cfg_file  = "config.cfg"
     p30n30.test_iter = 5
-    p30n30.test_vals         = [-11.498923, -11.508761, -11.978899, -11.700024, -14.235389, 0.052235, 2.830394, 1.318894, -0.289257]
-    p30n30.test_vals_aarch64 = [-11.498923, -11.508761, -11.978899, -11.700024, -14.235389, 0.052235, 2.830394, 1.318894, -0.289257]
+    p30n30.test_vals = [-11.267106, -11.168215, -11.182822, -10.949673, -14.233489, 0.052235, 2.830394, 1.318894, -1.210648, 1, 1.2763e+01]
     test_list.append(p30n30)
 
     # flat plate - sst-v1994m
@@ -85,7 +84,7 @@ def main():
     swbli_sst.test_vals = [-12.001545, -11.350636, -12.056760, -10.870102, -11.411568, -2.263450, 0.001796, -1.450519, -2.930524, 10.000000]
     test_list.append(swbli_sst)
 
-    # DSMA661 - SA   
+    # DSMA661 - SA
     dsma661_sa            = TestCase('dsma661_sa')
     dsma661_sa.cfg_dir    = "vandv/rans/dsma661"
     dsma661_sa.cfg_file   = "dsma661_sa_config.cfg"
