@@ -467,6 +467,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
+  const su2double nkRelax     = config->GetNewtonKrylovRelaxation();
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
@@ -521,7 +522,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       /*--- High order reconstruction using MUSCL strategy ---*/
       su2double Vector_ij[MAXNDIM] = {0.0};
       for (auto iDim = 0ul; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
+        Vector_ij[iDim] = nkRelax * 0.5 * (Coord_j[iDim] - Coord_i[iDim]);
       }
 
       /*--- Retrieve gradient information ---*/
@@ -933,7 +934,7 @@ void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableRatio = 0.2;
+  const su2double allowableRatio = config->GetMaxUpdateFractionFlow();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
