@@ -1719,7 +1719,8 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
 
   /// DESCRIPTION: Angle of attack
   AddHistoryOutput("AOA", "AoA", ScreenOutputFormat::FIXED, "AOA", "Angle of attack");
-
+  
+  AddHistoryOutput("CUSTOM_OBJFUNC", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Custom obj. function value.", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 }
 
