@@ -71,12 +71,16 @@ template<size_t NDIM, class Derived>
 class CCompressibleViscousFluxBase : public CNumericsSIMD {
 protected:
   static constexpr size_t nDim = NDIM;
-  static constexpr size_t nPrimVarGrad = nDim+1;
+  static constexpr size_t nPrimVarGrad = nDim+3;
+  static constexpr size_t nSeconVar = 8;
 
   const su2double gamma;
   const su2double gasConst;
   const su2double prandtlTurb;
-  const bool correct;
+  //const su2double cp;
+  const bool correct_EN;
+  const bool correct_FT;
+  const bool correct_AD;
   const bool useSA_QCR;
   const bool wallFun;
   const bool uq;
@@ -96,7 +100,9 @@ protected:
     gamma(config.GetGamma()),
     gasConst(config.GetGas_ConstantND()),
     prandtlTurb(config.GetPrandtl_Turb()),
-    correct(iMesh == MESH_0),
+    correct_EN(iMesh == MESH_0 && config.GetKind_ViscousGradCorr() == VISCOUS_GRAD_CORR::EDGE_NORMAL),
+    correct_FT(iMesh == MESH_0 && config.GetKind_ViscousGradCorr() == VISCOUS_GRAD_CORR::FACE_TANGENT),
+    correct_AD(iMesh == MESH_0 && config.GetKind_ViscousGradCorr() == VISCOUS_GRAD_CORR::ALPHA_DAMPING),
     useSA_QCR(config.GetSAParsedOptions().qcr2000),
     wallFun(config.GetWall_Functions()),
     uq(config.GetSSTParsedOptions().uq),
@@ -135,6 +141,7 @@ protected:
 
     const auto& solution = static_cast<const CNSVariable&>(solution_);
     const auto& gradient = solution.GetGradient_Primitive();
+    const auto& secondary = solution.GetSecondary();
 
     /*--- Compute distance and handle zero without "ifs" by making it large. ---*/
 
@@ -145,7 +152,22 @@ protected:
     /*--- Compute the corrected mean gradient. ---*/
 
     auto avgGrad = averageGradient<nPrimVarGrad,nDim>(iPoint, jPoint, gradient);
-    if(correct) correctGradient(V, vector_ij, dist2_ij, avgGrad);
+    auto avgSecond = averageSecondary<nSeconVar>(iPoint, jPoint, secondary);
+
+    Double eDn = dot(vector_ij,unitNormal);
+    mask = eDn < EPS;
+    eDn += mask / (EPS);
+    const Double eDotN = Double(1.0) / eDn;
+    const Double alpha = Double(4.0) / 3.0;
+
+    VectorDbl<nDim> diss;
+
+    if(correct_EN)      for (int iDim = 0; iDim < nDim; ++iDim) diss(iDim) = vector_ij(iDim) / dist2_ij;
+    else if(correct_FT) for (int iDim = 0; iDim < nDim; ++iDim) diss(iDim) = unitNormal(iDim) * eDotN;
+    else if(correct_AD) for (int iDim = 0; iDim < nDim; ++iDim) diss(iDim) = unitNormal(iDim) * alpha * abs(eDotN);
+
+    if (correct_EN || correct_FT || correct_AD)
+        correctGradient(V, vector_ij, diss, avgGrad);
 
     /*--- Stress and heat flux tensors. ---*/
 

@@ -80,7 +80,7 @@ class CAvgGrad_Heat final : public CAvgGrad_Scalar<CNoFlowIndices> {
    * \param[in] config - Definition of the particular problem.
    * \param[in] correct - Whether to correct the gradient.
    */
-  CAvgGrad_Heat(unsigned short val_nDim, const CConfig *config, bool correct)
+  CAvgGrad_Heat(unsigned short val_nDim, const CConfig *config, VISCOUS_GRAD_CORR correct)
     : CAvgGrad_Scalar<CNoFlowIndices>(val_nDim, 1, correct, config) {}
 
  private:
