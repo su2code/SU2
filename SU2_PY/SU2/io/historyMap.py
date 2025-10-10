@@ -298,6 +298,12 @@ history_header_map = {
         "HEADER": "ComboObj",
         "TYPE": "COEFFICIENT",
     },
+    "CUSTOM_OBJFUNC": {
+        "DESCRIPTION": "Custom objective function.",
+        "GROUP": "COMBO",
+        "HEADER": "ComboObj",
+        "TYPE": "COEFFICIENT",
+    },
     "DEFORM_ITER": {
         "DESCRIPTION": "Linear solver iterations for the mesh " "deformation",
         "GROUP": "DEFORM",
@@ -1403,6 +1409,12 @@ history_header_map = {
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_COMBO": {
+        "DESCRIPTION": "weighted time average value",
+        "GROUP": "TAVG_COMBO",
+        "HEADER": "tavg[ComboObj]",
+        "TYPE": "TAVG_COEFFICIENT",
+    },
+    "TAVG_CUSTOM_OBJFUNC": {
         "DESCRIPTION": "weighted time average value",
         "GROUP": "TAVG_COMBO",
         "HEADER": "tavg[ComboObj]",
