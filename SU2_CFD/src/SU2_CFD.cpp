@@ -2,14 +2,14 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,11 +27,6 @@
 
 #include "../include/SU2_CFD.hpp"
 
-/* LIBXSMM include files, if supported. */
-#ifdef HAVE_LIBXSMM
-#include "libxsmm.h"
-#endif
-
 /* Include file, needed for the runtime NaN catching. You also have to include feenableexcept(...) below. */
 //#include <fenv.h>
 
@@ -47,7 +42,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Command line parsing ---*/
 
-  CLI::App app{"SU2 v8.1.0 \"Harrier\", The Open-Source CFD Code"};
+  CLI::App app{"SU2 v8.2.0 \"Harrier\", The Open-Source CFD Code"};
   app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n"
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("-t,--threads", num_threads, "Number of OpenMP threads per MPI rank.");
@@ -76,11 +71,6 @@ int main(int argc, char *argv[]) {
 
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
   // feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO );
-
-  /*--- Initialize libxsmm, if supported. ---*/
-#ifdef HAVE_LIBXSMM
-  libxsmm_init();
-#endif
 
   /*--- Create a pointer to the main SU2 Driver ---*/
 
@@ -153,11 +143,6 @@ int main(int argc, char *argv[]) {
   driver->Finalize();
 
   delete driver;
-
-  /*---Finalize libxsmm, if supported. ---*/
-#ifdef HAVE_LIBXSMM
-  libxsmm_finalize();
-#endif
 
   /*--- Finalize AD. ---*/
   AD::Finalize();

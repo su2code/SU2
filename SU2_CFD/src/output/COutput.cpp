@@ -2,14 +2,14 @@
  * \file COutput.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -206,8 +206,7 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
                                   unsigned long TimeIter,
                                   unsigned long OuterIter,
                                   unsigned long InnerIter) {
-
-  curTimeIter  = TimeIter;
+  curTimeIter = TimeIter;
   curAbsTimeIter = max(TimeIter, config->GetStartWindowIteration()) - config->GetStartWindowIteration();
   curOuterIter = OuterIter;
   curInnerIter = InnerIter;
@@ -273,7 +272,7 @@ void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CCon
 
 void COutput::SetMultizoneHistoryOutput(COutput **output, CConfig **config, CConfig *driver_config, unsigned long TimeIter, unsigned long OuterIter){
 
-  curTimeIter  = TimeIter;
+  curTimeIter = TimeIter;
   curAbsTimeIter = max(TimeIter, driver_config->GetStartWindowIteration()) - driver_config->GetStartWindowIteration();
   curOuterIter = OuterIter;
 
@@ -389,6 +388,9 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
   /*--- File writer that will later be used to write the file to disk. Created below in the "switch" ---*/
   CFileWriter *fileWriter = nullptr;
 
+  /*--- Set current time iter even if history file is not written ---*/
+  curTimeIter = config->GetTimeIter();
+
   /*--- If it is still present, strip the extension (suffix) from the filename ---*/
   const auto lastindex = fileName.find_last_of('.');
   fileName = fileName.substr(0, lastindex);
@@ -476,7 +478,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
       extension = CSU2MeshFileWriter::fileExt;
 
       if (fileName.empty())
-        fileName = volumeFilename;
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
 
       if (!config->GetWrt_Volume_Overwrite())
         filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);

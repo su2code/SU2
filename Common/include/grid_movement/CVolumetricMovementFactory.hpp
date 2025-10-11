@@ -1,9 +1,7 @@
 /*!
- * \file CMeshReaderFVM.cpp
- * \brief Helper class that provides the counts for each rank in a linear
- *        partitioning given the global count as input.
- * \author T. Economon
- * \version 8.1.0 "Harrier"
+ * \file CVolumetricMovementFactory.hpp
+ * \brief Factory to generate volumetric mover objects.
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,7 +24,19 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../../include/geometry/meshreader/CMeshReaderFVM.hpp"
+#pragma once
 
-CMeshReaderFVM::CMeshReaderFVM(const CConfig* val_config, unsigned short val_iZone, unsigned short val_nZone)
-    : rank(SU2_MPI::GetRank()), size(SU2_MPI::GetSize()), config(val_config) {}
+class CConfig;
+class CGeometry;
+class CVolumetricMovement;
+
+namespace CVolumetricMovementFactory {
+/*!
+ * \brief Factory method for CVolumetricMovement objects.
+ * \param[in] geometry_container - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ * \return Pointer to the allocated volumetric mover.
+ */
+
+CVolumetricMovement* CreateCVolumetricMovement(CGeometry* geometry, CConfig* config);
+}  // namespace CVolumetricMovementFactory
