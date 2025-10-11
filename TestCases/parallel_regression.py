@@ -431,7 +431,7 @@ def main():
     turb_oneram6_nk.cfg_dir   = "rans/oneram6"
     turb_oneram6_nk.cfg_file  = "turb_ONERAM6_nk.cfg"
     turb_oneram6_nk.test_iter = 20
-    turb_oneram6_nk.test_vals = [-4.827571, -4.425650, -11.379658, 0.224787, 0.044208, 1.000000, -0.642711, 31.384000]
+    turb_oneram6_nk.test_vals = [-5.262975, -4.885414, -11.509429, 0.218369, 0.067725, 2, -0.772645, 10]
     turb_oneram6_nk.timeout   = 600
     turb_oneram6_nk.tol       = 0.0001
     test_list.append(turb_oneram6_nk)
