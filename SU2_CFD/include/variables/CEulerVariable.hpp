@@ -2,7 +2,7 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,11 @@
 
 #include <limits>
 #include "CFlowVariable.hpp"
+
+/*!
+ * \brief Returns the number of primitive variables for which to compute gradients.
+ */
+unsigned long EulerNPrimVarGrad(const CConfig *config, unsigned long ndim);
 
 /*!
  * \class CEulerVariable

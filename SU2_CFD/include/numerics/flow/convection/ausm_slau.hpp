@@ -3,7 +3,7 @@
  * \brief Declaration of numerics classes for the AUSM family of schemes,
  *        including SLAU. The implementation is in ausm.cpp.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

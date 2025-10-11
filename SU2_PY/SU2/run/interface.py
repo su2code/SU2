@@ -3,7 +3,7 @@
 ## \file interface.py
 #  \brief python package interfacing with the SU2 suite
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -261,7 +261,6 @@ def run_command(Command):
     """runs os command with subprocess
     checks for errors from command
     """
-
     sys.stdout.flush()
 
     proc = subprocess.Popen(

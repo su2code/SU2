@@ -95,6 +95,7 @@ João Loureiro
 Johannes Blühdorn
 JonathanSmith1936
 Joseph Signorelli
+Joshua A. Kelly
 Josy P. Pullockara
 Kedar Naik
 Kürşat Yurt
