@@ -69,7 +69,7 @@ FORCEINLINE void musclUnlimited(Int iPoint,
     const Double delta_upwind_i = grad_proj_i - delta_cent;
     const Double delta_upwind_j = grad_proj_j - delta_cent;
 
-    /*--- Blended difference: dV_ij^kappa = (1-kappa)ΔV_ij^upw + (1+kappa)ΔV_ij^cent ---*/
+    /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
     const Double delta_kappa_i = (1.0 - kappa) * delta_upwind_i + (1.0 + kappa) * delta_cent;
     const Double delta_kappa_j = (1.0 - kappa) * delta_upwind_j + (1.0 + kappa) * delta_cent;
 

@@ -58,10 +58,10 @@ protected:
   const su2double gamma;
   const su2double gasConst;
   const su2double entropyFix;
-  const su2double muscl_kappa;
   const bool finestGrid;
   const bool dynamicGrid;
   const bool muscl;
+  const su2double muscl_kappa;
   const LIMITER typeLimiter;
 
   /*!
