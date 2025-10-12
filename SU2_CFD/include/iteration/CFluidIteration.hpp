@@ -115,7 +115,7 @@ class CFluidIteration : public CIteration {
    * \param[in] iZone - The current zone
    * \param[in] ramp_flag - Flag indicating type of ramp (grid or boundary)
    */
-  void UpdateRamp(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag);
+  void UpdateRamps(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag);
 
   /*!
    * \brief Computes turboperformance.

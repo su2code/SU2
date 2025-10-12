@@ -226,20 +226,20 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
     /*--- Turbomachinery Specific Montior ---*/
   if (config[ZONE_0]->GetBoolTurbomachinery()){
     if (val_iZone == config[ZONE_0]->GetnZone()-1) {
-      ComputeTurboPerformance(solver, geometry, config, config[val_iZone]->GetnInner_Iter());
+      auto TurbomachineryBladePerformances = GetBladesPerformanceVector(solver, config[val_iZone]->GetnZone());
 
-      output->SetHistoryOutput(geometry, solver,
-                           config, TurbomachineryStagePerformance, TurbomachineryPerformance, val_iZone, config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
-                           config[val_iZone]->GetInnerIter(), val_iInst);
+      output->SetHistoryOutput(geometry, solver, config, TurbomachineryStagePerformance, TurbomachineryBladePerformances,
+            val_iZone, config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
+            config[val_iZone]->GetInnerIter(), val_iInst);
     }
     /*--- Update ramps, grid first then outlet boundary ---*/
     if (config[val_iZone]->GetRampMotionFrame())
-      UpdateRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::GRID);
+      UpdateRamps(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::GRID);
   }
 
   // Outside turbo scope as Riemann boundaries can be ramped (pressure only)
   if (config[val_iZone]->GetRampOutflow())
-      UpdateRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::BOUNDARY);
+      UpdateRamps(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::BOUNDARY);
 
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
@@ -257,7 +257,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   return StopCalc;
 }
 
-void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag) {
+void CFluidIteration::UpdateRamps(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag) {
   /*--- Generic function for handling ramps ---*/
   // Grid updates (i.e. rotation/translation) handled seperately to boundary (i.e. pressure/mass flow) updates
   auto* config = config_container[iZone];
