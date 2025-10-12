@@ -6,7 +6,7 @@
 #   - Use the SU2 --dry_run mode for configs of large tests.
 #   - Restart from converged results for medium problems.
 #   - Run small cases (<20s) to convergence.
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -45,8 +45,7 @@ def main():
     p30n30.cfg_dir   = "vandv/rans/30p30n"
     p30n30.cfg_file  = "config.cfg"
     p30n30.test_iter = 5
-    p30n30.test_vals         = [-11.502310, -11.511459, -11.981995, -11.704990, -14.235571, 0.052235, 2.830394, 1.318894, -0.291726]
-    p30n30.test_vals_aarch64 = [-11.502310, -11.511459, -11.981995, -11.704990, -14.235571, 0.052235, 2.830394, 1.318894, -0.291726]
+    p30n30.test_vals = [-11.267106, -11.168215, -11.182822, -10.949673, -14.233489, 0.052235, 2.830394, 1.318894, -1.210648, 1, 1.2763e+01]
     test_list.append(p30n30)
 
     # flat plate - sst-v1994m
@@ -54,7 +53,7 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals         = [-13.026564, -10.051540, -11.143266, -7.973816, -10.256359, -4.776048, 0.002796]
+    flatplate_sst1994m.test_vals         = [-12.541748, -9.912501, -10.889821, -7.100437, -10.256867, -4.777032, 0.002796]
     flatplate_sst1994m.test_vals_aarch64 = [-13.024930, -9.634457, -10.707600, -7.558080, -9.926634, -4.910704, 0.002786]
     test_list.append(flatplate_sst1994m)
 
@@ -63,7 +62,7 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals         = [-13.029401, -10.800439, -10.607178, -7.630108, -10.816234, -5.308533, 0.004911]
+    bump_sst1994m.test_vals         = [-13.032111, -10.802810, -10.617420, -7.634902, -10.816229, -5.308348, 0.004911]
     bump_sst1994m.test_vals_aarch64 = [-13.025265, -10.669816, -10.615338, -7.577125, -10.709448, -5.453868, 0.004903]
     test_list.append(bump_sst1994m)
 
@@ -85,12 +84,12 @@ def main():
     swbli_sst.test_vals = [-12.001545, -11.350636, -12.056760, -10.870102, -11.411568, -2.263450, 0.001796, -1.450519, -2.930524, 10.000000]
     test_list.append(swbli_sst)
 
-    # DSMA661 - SA   
+    # DSMA661 - SA
     dsma661_sa            = TestCase('dsma661_sa')
     dsma661_sa.cfg_dir    = "vandv/rans/dsma661"
     dsma661_sa.cfg_file   = "dsma661_sa_config.cfg"
     dsma661_sa.test_iter  = 5
-    dsma661_sa.test_vals  = [-11.270155, -8.240208, -9.000574, -5.954878, -10.737828, 0.155687, 0.024232]
+    dsma661_sa.test_vals  = [-11.260884, -8.242051, -8.967465, -5.944271, -10.737675, 0.155687, 0.024232]
     test_list.append(dsma661_sa)
 
     # DSMA661 - SST-V2003m
@@ -98,7 +97,7 @@ def main():
     dsma661_sst.cfg_dir   = "vandv/rans/dsma661"
     dsma661_sst.cfg_file  = "dsma661_sst_config.cfg"
     dsma661_sst.test_iter = 5
-    dsma661_sst.test_vals = [-11.013080, -8.429715, -9.140952, -5.983576, -10.551096, -7.960479, 0.155875, 0.023353]
+    dsma661_sst.test_vals = [-10.974691, -8.400072, -8.768317, -5.796986, -10.519552, -7.346213, 0.155875, 0.023353]
     test_list.append(dsma661_sst)
 
     ##########################

@@ -2,7 +2,7 @@
  * \file CIncEulerVariable.hpp
  * \brief Class for defining the variables of the incompressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -71,6 +71,7 @@ public:
 
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
+  su2double TemperatureLimits[2];                      /*!< \brief Temperature limits [K]. */
  public:
   /*!
    * \brief Constructor of the class.
@@ -82,6 +83,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
+
   CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature,
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
@@ -116,9 +118,9 @@ public:
    * \brief Set the value of the temperature for incompressible flows with energy equation.
    * \param[in] iPoint - Point index.
    */
-  inline bool SetTemperature(unsigned long iPoint, su2double val_temperature) final {
+  inline bool SetTemperature(unsigned long iPoint, su2double val_temperature, const su2double *val_temp_limits) {
     Primitive(iPoint, indices.Temperature()) = val_temperature;
-    return val_temperature <= 0.0;
+    return (val_temperature <= val_temp_limits[0]) || (val_temperature >= val_temp_limits[1]);
   }
 
   /*!

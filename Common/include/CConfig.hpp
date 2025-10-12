@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -93,7 +93,7 @@ private:
   bool MG_AdjointFlow;              /*!< \brief MG with the adjoint flow problem */
   su2double *PressureLimits,
   *DensityLimits,
-  *TemperatureLimits;             /*!< \brief Limits for the primitive variables */
+  TemperatureLimits[2];           /*!< \brief Limits for the primitive variables */
   bool ActDisk_DoubleSurface;     /*!< \brief actuator disk double surface  */
   bool Engine_HalfModel;          /*!< \brief only half model is in the computational grid  */
   bool ActDisk_SU2_DEF;           /*!< \brief actuator disk double surface  */
@@ -431,7 +431,8 @@ private:
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
   bool NewtonKrylov;           /*!< \brief Use a coupled Newton method to solve the flow equations. */
   array<unsigned short,3> NK_IntParam{{20, 3, 2}}; /*!< \brief Integer parameters for NK method. */
-  array<su2double,4> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4}}; /*!< \brief Floating-point parameters for NK method. */
+  array<su2double,5> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4, 1.0}}; /*!< \brief Floating-point parameters for NK method. */
+  su2double NK_Relaxation = 1.0;
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -904,6 +905,8 @@ private:
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
   Density_FreeStream,              /*!< \brief Free-stream density of the fluid. */
   Viscosity_FreeStream,            /*!< \brief Free-stream viscosity of the fluid.  */
+  ThermalConductivity_FreeStream,  /*!< \brief Free-stream thermal conductivity of the fluid. */
+  SpecificHeatCp_FreeStream,       /*!< \brief Free-stream specific heat capacity at constant pressure of the fluid.  */
   Tke_FreeStream,                  /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,        /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
   ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
@@ -945,6 +948,8 @@ private:
   Velocity_FreeStreamND[3],   /*!< \brief Farfield velocity values (external flow). */
   Energy_FreeStreamND,        /*!< \brief Farfield energy value (external flow). */
   Viscosity_FreeStreamND,     /*!< \brief Farfield viscosity value (external flow). */
+  ThermalConductivity_FreeStreamND,  /*!< \brief Farfield thermal conductivity value (external flow). */
+  SpecificHeatCp_FreeStreamND,      /*!< \brief Farfield specific heat capacity at constant pressure value (external flow). */
   Tke_FreeStreamND,           /*!< \brief Farfield kinetic energy (external flow). */
   Omega_FreeStreamND,         /*!< \brief Specific dissipation (external flow). */
   Omega_FreeStream;           /*!< \brief Specific dissipation (external flow). */
@@ -1089,12 +1094,19 @@ private:
   unsigned short *nSpan_iZones;     /*!< \brief number of span-wise sections for each zones */
   bool turbMixingPlane;             /*!< \brief option for turbulent mixingplane */
   bool SpatialFourier;              /*!< \brief option for computing the fourier transforms for subsonic non-reflecting BC. */
-  bool RampRotatingFrame;           /*!< \brief option for ramping up or down the Rotating Frame values */
-  bool RampOutletPressure;          /*!< \brief option for ramping up or down the outlet pressure */
+  bool RampMotionFrame;             /*!< \brief option for ramping up or down the motion Frame values */
+  bool RampOutlet;                  /*!< \brief option for ramping up or down the outlet values */
+  bool RampRotatingFrame;           /*!< \brief option for ramping up or down the motion Frame values */
+  bool RampTranslationFrame;        /*!< \brief option for ramping up or down the outlet values */
+  bool RampOutletMassFlow;          /*!< \brief option for ramping up or down the motion Frame values */
+  bool RampOutletPressure;          /*!< \brief option for ramping up or down the outlet values */
   su2double AverageMachLimit;           /*!< \brief option for turbulent mixingplane */
   su2double FinalRotation_Rate_Z;       /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
+  su2double FinalTranslation_Rate_Y;    /*!< \brief Final translation rate Y if Ramp translation frame is activated. */
   su2double FinalOutletPressure;        /*!< \brief Final outlet pressure if Ramp outlet pressure is activated. */
+  su2double FinalOutletMassFlow;        /*!< \brief Final outlet mass flow rate if Ramp outlet mass flow rate is activated */
   su2double MonitorOutletPressure;      /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
+  su2double MonitorOutletMassFlow;  /*!< \brief Monitor outlet mass flow rate if ramp outlet mass flow rate is activated. */
   array<su2double, N_POLY_COEFFS> cp_polycoeffs{{0.0}};  /*!< \brief Array for specific heat polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
@@ -1144,8 +1156,8 @@ private:
   jst_coeff[2],          /*!< \brief artificial dissipation (flow) array for the COption class. */
   ffd_coeff[3],          /*!< \brief artificial dissipation (flow) array for the COption class. */
   mixedout_coeff[3],     /*!< \brief default mixedout algorithm coefficients for the COption class. */
-  rampRotFrame_coeff[3], /*!< \brief ramp rotating frame coefficients for the COption class. */
-  rampOutPres_coeff[3],  /*!< \brief ramp outlet pressure coefficients for the COption class. */
+  rampMotionFrameCoeff[3], /*!< \brief ramp motion frame coefficients for the COption class. */
+  rampOutletCoeff[3],   /*!< \brief ramp outlet value coefficients for the COption class. */
   jst_adj_coeff[2],      /*!< \brief artificial dissipation (adjoint) array for the COption class. */
   mesh_box_length[3],    /*!< \brief mesh box length for the COption class. */
   mesh_box_offset[3],    /*!< \brief mesh box offset for the COption class. */
@@ -1326,9 +1338,9 @@ private:
   template <class Tenum, class Tfield>
   void addEnumListOption(const string name, unsigned short& input_size, Tfield*& option_field, const map<string,Tenum>& enum_map);
 
-  void addDoubleArrayOption(const string& name, const int size, su2double* option_field);
+  void addDoubleArrayOption(const string& name, int size, bool allow_fewer, su2double* option_field);
 
-  void addUShortArrayOption(const string& name, const int size, unsigned short* option_field);
+  void addUShortArrayOption(const string& name, int size, bool allow_fewer, unsigned short* option_field);
 
   void addDoubleListOption(const string& name, unsigned short & size, su2double * & option_field);
 
@@ -1759,6 +1771,18 @@ public:
   su2double GetViscosity_FreeStream(void) const { return Viscosity_FreeStream; }
 
   /*!
+   * \brief Get the value of the freestream thermal conductivity.
+   * \return Freestream thermal conductivity.
+   */
+  su2double GetThermalConductivity_FreeStream(void) const { return ThermalConductivity_FreeStream; }
+
+  /*!
+   * \brief Get the value of the freestream heat capacity at constant pressure.
+   * \return Freestream heat capacity at constant pressure.
+   */
+  su2double GetSpecificHeatCp_FreeStream(void) const { return SpecificHeatCp_FreeStream; }
+
+  /*!
    * \brief Get the value of the freestream density.
    * \return Freestream density.
    */
@@ -1990,6 +2014,18 @@ public:
   su2double GetViscosity_FreeStreamND(void) const { return Viscosity_FreeStreamND; }
 
   /*!
+   * \brief Get the value of the non-dimensionalized freestream thermal conductivity.
+   * \return Non-dimensionalized freestream thermal conductivity.
+   */
+  su2double GetThermalConductivity_FreeStreamND(void) const { return ThermalConductivity_FreeStreamND; }
+
+  /*!
+   * \brief Get the value of the non-dimensionalized freestream heat capacity at constant pressure.
+   * \return Non-dimensionalized freestream heat capacity at constant pressure.
+   */
+  su2double GetSpecificHeatCp_FreeStreamND(void) const { return SpecificHeatCp_FreeStreamND; }
+
+  /*!
    * \brief Get the value of the non-dimensionalized freestream viscosity.
    * \return Non-dimensionalized freestream viscosity.
    */
@@ -2152,6 +2188,12 @@ public:
    * \return Initial temperature for incompressible flows.
    */
   su2double GetInc_Temperature_Init(void) const { return Inc_Temperature_Init; }
+
+  /*!
+   * \brief Get Temperature limits for incompressible flows.
+   * \return Temperature limits minimum and maximum values.
+   */
+  su2double GetTemperatureLimits(int iVar) const { return TemperatureLimits[iVar]; }
 
   /*!
    * \brief Get the flag for activating species transport clipping.
@@ -2609,6 +2651,18 @@ public:
   void SetViscosity_FreeStream(su2double val_viscosity_freestream) { Viscosity_FreeStream = val_viscosity_freestream; }
 
   /*!
+   * \brief Set the freestream thermal conductivity.
+   * \param[in] val_thermalconductivity_freestream - Value of the freestream thermal conductivity.
+   */
+  void SetThermalConductivity_FreeStream(su2double val_thermalconductivity_freestream) { ThermalConductivity_FreeStream = val_thermalconductivity_freestream; }
+
+  /*!
+   * \brief Set the freestream specific heat capacity at constant pressure.
+   * \param[in] val_specificheatCp_freestream - Value of the freestream specific heat capacity at constant pressure.
+   */
+  void SetSpecificHeatCp_FreeStream(su2double val_specificheatCp_freestream) { SpecificHeatCp_FreeStream = val_specificheatCp_freestream; }
+
+  /*!
    * \brief Set the magnitude of the free-stream velocity.
    * \param[in] val_modvel_freestream - Magnitude of the free-stream velocity.
    */
@@ -2669,6 +2723,18 @@ public:
    * \param[in] val_viscosity_freestreamnd - Value of the non-dimensional free-stream viscosity.
    */
   void SetViscosity_FreeStreamND(su2double val_viscosity_freestreamnd) { Viscosity_FreeStreamND = val_viscosity_freestreamnd; }
+
+  /*!
+   * \brief Set the non-dimensional free-stream thermal conductivity.
+   * \param[in] val_thermalconductivity_freestreamnd - Value of the non-dimensional free-stream thermal conductivity.
+   */
+  void SetThermalConductivity_FreeStreamND(su2double val_thermalconductivity_freestreamnd) { ThermalConductivity_FreeStreamND = val_thermalconductivity_freestreamnd; }
+
+  /*!
+   * \brief Set the non-dimensional free-stream specific heat capacity at constant pressure.
+   * \param[in] val_specificheatCp_freestreamnd - Value of the non-dimensional free-stream specific heat capacity at constant pressure.
+   */
+  void SetSpecificHeatCp_FreeStreamND(su2double val_specificheatCp_freestreamnd) { SpecificHeatCp_FreeStreamND = val_specificheatCp_freestreamnd; }
 
   /*!
    * \brief Set the non-dimensional freestream turbulent kinetic energy.
@@ -4315,12 +4381,22 @@ public:
   /*!
    * \brief Get Newton-Krylov integer parameters.
    */
-  array<unsigned short,3> GetNewtonKrylovIntParam(void) const { return NK_IntParam; }
+  array<unsigned short,3> GetNewtonKrylovIntParam() const { return NK_IntParam; }
 
   /*!
    * \brief Get Newton-Krylov floating-point parameters.
    */
-  array<su2double,4> GetNewtonKrylovDblParam(void) const { return NK_DblParam; }
+  array<su2double,5> GetNewtonKrylovDblParam() const { return NK_DblParam; }
+
+  /*!
+   * \brief Get the Newton-Krylov relaxation.
+   */
+  su2double GetNewtonKrylovRelaxation() const { return NK_Relaxation; }
+
+  /*!
+   * \brief Set the Newton-Krylov relaxation.
+   */
+  void SetNewtonKrylovRelaxation(const su2double& relaxation) { NK_Relaxation = relaxation; }
 
   /*!
    * \brief Returns the Roe kappa (multipler of the dissipation term).
@@ -5114,45 +5190,34 @@ public:
   void SetKind_PerformanceAverageProcess(unsigned short new_AverageProcess) { Kind_PerformanceAverageProcess = new_AverageProcess; }
 
   /*!
-   * \brief Get coeff for Rotating Frame Ramp.
-   * \return coeff Ramp Rotating Frame.
+   * \brief Get Motion Frame Ramp option.
+   * \return Ramp Motion Frame option.
    */
-  su2double GetRampRotatingFrame_Coeff(unsigned short iCoeff) const { return rampRotFrame_coeff[iCoeff];}
+  bool GetRampMotionFrame(void) const { return RampMotionFrame; }
 
   /*!
-   * \brief Get Rotating Frame Ramp option.
-   * \return Ramp Rotating Frame option.
+   * \brief Get outflow ramp option.
+   * \return Ramp outflow option.
    */
-  bool GetRampRotatingFrame(void) const { return RampRotatingFrame;}
+  bool GetRampOutflow(void) const { return RampOutlet; }
 
   /*!
-   * \brief Get coeff for Outlet Pressure Ramp.
-   * \return coeff Ramp Outlet Pressure.
-   */
-  su2double GetRampOutletPressure_Coeff(unsigned short iCoeff) const { return rampOutPres_coeff[iCoeff];}
+   * \brief General interface for accessing ramp coefficient information
+   * \return coeff for ramps
+  */
+  su2double GetRampCoeff(RAMP_TYPE ramp_flag, RAMP_COEFF val_coeff) const {
+    if (ramp_flag == RAMP_TYPE::GRID) return rampMotionFrameCoeff[val_coeff];
+    else if (ramp_flag == RAMP_TYPE::BOUNDARY) return rampOutletCoeff[val_coeff];
+    else return 0;
+  };
 
   /*!
-   * \brief Get final Outlet Pressure value for the ramp.
-   * \return final Outlet Pressure value.
+   * \brief Generic interface for setting monitor outlet values for the ramp.
    */
-  su2double GetFinalOutletPressure(void) const { return  FinalOutletPressure; }
-
-  /*!
-   * \brief Get final Outlet Pressure value for the ramp.
-   * \return Monitor Outlet Pressure value.
-   */
-  su2double GetMonitorOutletPressure(void) const { return MonitorOutletPressure; }
-
-  /*!
-   * \brief Set Monitor Outlet Pressure value for the ramp.
-   */
-  void SetMonitorOutletPressure(su2double newMonPres) { MonitorOutletPressure = newMonPres;}
-
-  /*!
-   * \brief Get Outlet Pressure Ramp option.
-   * \return Ramp Outlet pressure option.
-   */
-  bool GetRampOutletPressure(void) const { return RampOutletPressure;}
+  void SetMonitorValue(su2double newMon_val) {
+    if (RampOutletPressure) MonitorOutletPressure = newMon_val;
+    else if (RampOutletMassFlow) MonitorOutletMassFlow = newMon_val;
+  }
 
   /*!
    * \brief Get mixedout coefficients.
@@ -6142,6 +6207,16 @@ public:
   void SetRotation_Rate(unsigned short iDim, su2double val) { Rotation_Rate[iDim] = val;}
 
   /*!
+   * \brief General interface for setting the rate of motion in grid ramps
+   * \param[in] ramp_flag - flag for type of ramp
+   * \param[in] val - new value of rate of motion
+   */
+  void SetRate(su2double val) {
+    if (RampRotatingFrame) Rotation_Rate[2] = val;
+    else if (RampTranslationFrame) Translation_Rate[1] = val;
+  }
+
+  /*!
    * \brief Get the rotation rate of the marker.
    *  \param[in] iMarkerMoving -  Index of the moving marker (as specified in Marker_Moving)
    * \param[in] iDim - spatial component
@@ -6235,16 +6310,16 @@ public:
   su2double GetMarkerPlunging_Ampl(unsigned short iMarkerMoving, unsigned short iDim) const { return MarkerPlunging_Ampl[3*iMarkerMoving + iDim];}
 
   /*!
-   * \brief Get the angular velocity of the mesh about the z-axis.
-   * \return Angular velocity of the mesh about the z-axis.
+   * \brief Generic interface for retrieving final value of a turbomachinery ramp
+   * \return Final value of a specified ramp
    */
-  su2double GetFinalRotation_Rate_Z() const { return FinalRotation_Rate_Z;}
-
-  /*!
-   * \brief Set the angular velocity of the mesh about the z-axis.
-   * \param[in] newRotation_Rate_Z - new rotation rate after computing the ramp value.
-   */
-  void SetRotation_Rate_Z(su2double newRotation_Rate_Z);
+  su2double GetFinalValue(RAMP_TYPE ramp_flag) const {
+    if (ramp_flag == RAMP_TYPE::GRID && RampRotatingFrame) return FinalRotation_Rate_Z;
+    else if (ramp_flag == RAMP_TYPE::GRID && RampTranslationFrame) return FinalTranslation_Rate_Y;
+    else if (ramp_flag == RAMP_TYPE::BOUNDARY && RampOutletPressure) return FinalOutletPressure;
+    else if (ramp_flag == RAMP_TYPE::BOUNDARY && RampOutletMassFlow) return FinalOutletMassFlow;
+    else return 0.0;
+  }
 
   /*!
    * \brief Get the Harmonic Balance frequency pointer.

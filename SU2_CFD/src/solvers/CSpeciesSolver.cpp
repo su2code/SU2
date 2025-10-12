@@ -2,7 +2,7 @@
  * \file CSpeciesSolver.cpp
  * \brief Main subroutines of CSpeciesSolver class
  * \author T. Kattmann
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -427,7 +427,7 @@ su2double CSpeciesSolver::GetInletAtVertex(unsigned short iMarker, unsigned long
 
 void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
   /*--- Find BC string to the numeric-identifier. ---*/
-  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) {
     const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {

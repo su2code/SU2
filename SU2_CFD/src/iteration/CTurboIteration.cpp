@@ -2,7 +2,7 @@
  * \file CTurboIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -64,4 +64,7 @@ void CTurboIteration::Postprocess(COutput* output, CIntegration**** integration,
 
     UpdateRamps(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone);
 
+void CTurboIteration::InitTurboPerformance(CGeometry* geometry, CConfig** config, CFluidModel* fluid) {
+  TurbomachineryPerformance = std::make_shared<CTurboOutput>(config, *geometry, *fluid);
+  TurbomachineryStagePerformance = std::make_shared<CTurbomachineryStagePerformance>(*fluid);
 }
