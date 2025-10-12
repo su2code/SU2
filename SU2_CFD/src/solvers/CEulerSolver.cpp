@@ -9558,8 +9558,6 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
 void CEulerSolver::ComputeTurboBladePerformance(CGeometry* geometry, CConfig* config, unsigned short iBlade) {
   // Computes the turboperformance per blade in zone iBlade
   const auto nDim = geometry->GetnDim();
-  const auto nBladesRow = config->GetnMarker_Turbomachinery();
-  const auto nZone = config->GetnZone();
   vector<su2double> TurboPrimitiveIn, TurboPrimitiveOut;
   if (rank == MASTER_NODE) {
     /* Blade Primitive initialized per blade */
