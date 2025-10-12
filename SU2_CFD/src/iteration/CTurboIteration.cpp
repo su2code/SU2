@@ -28,21 +28,11 @@
 #include "../../include/iteration/CTurboIteration.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/output/CTurboOutput.hpp"
-#include "../../../Common/include/tracy_structure.hpp"
 
 void CTurboIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                  CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-
-    SU2_ZONE_SCOPED_N("Preprocess_Turbo");
-
-    // CNumerics* conv_bound_numerics = numerics[val_iZone][val_iInst][MESH_0][FLOW_SOL][CONV_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
-
-    // if (config[val_iZone]->GetBoolGiles() && config[val_iZone]->GetSpatialFourier()){
-    //     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->PreprocessBC_Giles(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], conv_bound_numerics, INFLOW);
-    //     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->PreprocessBC_Giles(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], conv_bound_numerics, OUTFLOW);
-    // }
 
     /*--- Average quantities at the inflow and outflow boundaries ---*/
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
@@ -72,6 +62,6 @@ void CTurboIteration::Postprocess(COutput* output, CIntegration**** integration,
 
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeTurboBladePerformance(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], val_iZone);
 
-    TurboMonitor(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone); // ????
+    UpdateRamps(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone);
 
 }

@@ -114,7 +114,7 @@ class CFluidIteration : public CIteration {
    * \param[in] ExtIter - The current iteration of the problem
    * \param[in] iZone - The current zone
    */
-  void TurboMonitor(CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter, unsigned short iZone);
+  void UpdateRamps(CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter, unsigned short iZone);
 
   /*!
    * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.

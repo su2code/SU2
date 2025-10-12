@@ -157,7 +157,7 @@ class CDiscAdjFluidIteration final : public CIteration {
    * \param[in] iInst - Index of the zone.
    * \param[in] kind_recording - The kind of recording (geometry or flow).
    */
-  void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config, CInterface*** interface,
+  void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
                        unsigned short iZone, unsigned short iInst, RECORDING kind_recording) override;
 
 };

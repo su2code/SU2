@@ -60,9 +60,7 @@ class CIteration {
   su2double StartTime{0.0}, /*!< \brief Tracking wall time. */
       StopTime{0.0}, UsedTime{0.0};
 
-//   std::shared_ptr<CTurboOutput> TurbomachineryPerformance;  /*!< \brief turbo performance calculator. */
   std::shared_ptr<CTurbomachineryStagePerformance> TurbomachineryStagePerformance;  /*!< \brief turbo stage performance calculator. */
-  //std::vector<std::shared_ptr<CTurboOutput>> TurbomachineryBladePerformances; /*!< \brief Vector of turboperformances */
  public:
   /*!
    * \brief Constructor of the class.
@@ -293,14 +291,8 @@ class CIteration {
   virtual void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config,
                                unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {}
 
-  virtual void SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics, CConfig** config, CInterface*** interface,
-                                unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {} 
-
   virtual void RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                               unsigned short iZone, unsigned short iInst) {}
-
-
-    // void ComputeTurboBladePerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned short iBlade);
 
   /*!
    * \brief Computes turboperformance.

@@ -27,7 +27,6 @@
 
 #include "../../include/iteration/CDiscAdjFluidIteration.hpp"
 #include "../../include/output/COutput.hpp"
-#include "../../../Common/include/tracy_structure.hpp"
 
 void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                         CSolver***** solver, CNumerics****** numerics, CConfig** config,
@@ -401,8 +400,6 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
 void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                            unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
 
-  SU2_ZONE_SCOPED_N("RegisterInput_Iter");
-
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
@@ -464,10 +461,8 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 }
 
 void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
-                                             CConfig** config, CInterface*** interface, unsigned short iZone, unsigned short iInst,
+                                             CConfig** config, unsigned short iZone, unsigned short iInst,
                                              RECORDING kind_recording) {
-  
-  SU2_ZONE_SCOPED_N("SetDependencies");
   
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
@@ -500,40 +495,13 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
     solvers0[TURB_SOL]->CompleteComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
   }
   if (config[iZone]->GetBoolTurbomachinery()) {
-    // if ((config_container[iZone]->GetGrid_Movement())) {
-    //   iteration_container[iZone][INST_0]->SetGrid_Movement(geometry_container[iZone][INST_0],surface_movement[iZone],
-    //                                                        grid_movement[iZone][INST_0], solver_container[iZone][INST_0],
-    //                                                        config_container[iZone], 0, TimeIter);
-    // }
-    // if (iZone == ZONE_0){
-    // geometry[iZone][MESH_0][INST_0]->InitTurboVertexAdj(geometry, config, iZone);
-    // geometry[iZone][MESH_0][INST_0]->UpdateTurboGeometry(geometry, interface, config, iZone);
-    //   for (auto donorZone = 0; donorZone < nZone; donorZone++) {
-    //     auto nMarkerInt = config[donorZone]->GetnMarker_MixingPlaneInterface()/2;
-    //     for (auto iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
-    //       for (auto targetZone = 0; targetZone < nZone; targetZone++) {
-    //         if (donorZone == targetZone || interface[donorZone][targetZone] == nullptr) continue;
-    //         if (interface[donorZone][targetZone]->GetInterfaceType() == MIXING_PLANE){
-    //           interface[donorZone][targetZone]->PreprocessAverage(geometry[donorZone][INST_0][MESH_0], geometry[targetZone][INST_0][MESH_0],
-    //             config[donorZone], config[targetZone],
-    //             iMarkerInt);
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
-    //solver[iZone][INST_0][MESH_0][FLOW_SOL]->InitTurboContainers(geometry[iZone][INST_0][MESH_0],config, iZone);
     solvers0[FLOW_SOL]->PreprocessAverage(solvers0, geometry0, config[iZone], INFLOW);
     solvers0[FLOW_SOL]->PreprocessAverage(solvers0, geometry0, config[iZone], OUTFLOW);
-    // solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], INFLOW);
-    // solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], OUTFLOW);
     if (config[iZone]->GetBoolGiles() && config[iZone]->GetSpatialFourier()){
       auto conv_bound_numerics = numerics[iZone][iInst][MESH_0][FLOW_SOL][CONV_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
       solvers0[FLOW_SOL]->PreprocessBC_Giles(geometry0, config[iZone], conv_bound_numerics, INFLOW);
       solvers0[FLOW_SOL]->PreprocessBC_Giles(geometry0, config[iZone], conv_bound_numerics, OUTFLOW);
     }
-    // solvers0[FLOW_SOL]->GatherInOutAverageValues(config[iZone], geometry0);
-    // solvers0[FLOW_SOL]->ComputeTurboBladePerformance(geometry0, config[iZone], iZone);
   }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     solvers0[SPECIES_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);

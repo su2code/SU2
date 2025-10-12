@@ -39,9 +39,6 @@
 #include "../../include/output/COutput.hpp"
 #include "../../include/output/CTurboOutput.hpp"
 
-#include "../../../Common/include/tracy_structure.hpp"
-
-
 CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
   CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>(*geometry, *config) {
@@ -8931,8 +8928,6 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
 
 void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
-
-  SU2_ZONE_SCOPED_N("TurboAverageProcess");
 
   const auto average_process = config->GetKind_AverageProcess();
   const auto performance_average_process = config->GetKind_PerformanceAverageProcess();

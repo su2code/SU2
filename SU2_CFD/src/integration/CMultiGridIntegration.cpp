@@ -119,7 +119,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   NonDimensional_Parameters(geometry[iZone][iInst], solver_container[iZone][iInst],
                             numerics_container[iZone][iInst], config[iZone],
-                            FinestMesh, RunTime_EqSystem, &monitor, iZone);
+                            FinestMesh, RunTime_EqSystem, &monitor);
 
   }
   END_SU2_OMP_PARALLEL
@@ -656,7 +656,7 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
 void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSolver ***solver_container,
                                                       CNumerics ****numerics_container, CConfig *config,
                                                       unsigned short FinestMesh, unsigned short RunTime_EqSystem,
-                                                      su2double *monitor, unsigned short iZone) {
+                                                      su2double *monitor) {
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   switch (RunTime_EqSystem) {
 
@@ -667,24 +667,6 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       solver_container[FinestMesh][FLOW_SOL]->Pressure_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
-
-      /*--- Calculate the turbo performance ---*/
-      // if (config->GetBoolTurbomachinery()){
-
-      //   /*--- Average quantities at the inflow and outflow boundaries ---*/
-
-      //   solver_container[FinestMesh][FLOW_SOL]->TurboAverageProcess(solver_container[FinestMesh], geometry[FinestMesh], config, INFLOW);
-      //   solver_container[FinestMesh][FLOW_SOL]->TurboAverageProcess(solver_container[FinestMesh], geometry[FinestMesh], config, OUTFLOW);
-
-      //   /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
-
-      //   solver_container[FinestMesh][FLOW_SOL]->GatherInOutAverageValues(config, geometry[FinestMesh]);
-
-      //   /*--- Compute the turboperformance ---*/
-
-      //   solver_container[FinestMesh][FLOW_SOL]->ComputeTurboBladePerformance(geometry[FinestMesh], config, iZone);
-
-      // }
 
       break;
 

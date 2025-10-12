@@ -62,7 +62,6 @@ extern "C" {
 #include "../CConfig.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
 #include "../adt/CADTElemClass.hpp"
-#include "../../../SU2_CFD/include/interfaces/CInterface.hpp"
 
 using namespace std;
 
@@ -1352,10 +1351,6 @@ class CGeometry {
    * \param config - Config
    */
   static void UpdateGeometry(CGeometry** geometry_container, CConfig* config);
-
-  static void UpdateTurboGeometry(CGeometry**** geometry, CInterface*** interface, CConfig** config_container, unsigned short iZone);
-
-  static void InitTurboVertexAdj(CGeometry**** geometry, CConfig** config, unsigned short iZone);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions

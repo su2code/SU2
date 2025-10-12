@@ -2604,59 +2604,6 @@ void CDriver::PreprocessOutput(CConfig **config, CConfig *driver_config, COutput
 
 }
 
-void CDriver::InitStaticMeshMovement(unsigned short iZone, bool print) {
-  unsigned short iMGlevel;
-  unsigned short Kind_Grid_Movement;
-
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement();
-
-  switch (Kind_Grid_Movement) {
-
-  case ROTATING_FRAME:
-
-    /*--- Steadily rotating frame: set the grid velocities just once
-        before the first iteration flow solver. ---*/
-
-    if (rank == MASTER_NODE && print) {
-      cout << endl << " Setting rotating frame grid velocities";
-      cout << " for zone " << iZone << "." << endl;
-    }
-
-    /*--- Set the grid velocities on all multigrid levels for a steadily
-          rotating reference frame. ---*/
-
-    for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
-      geometry_container[iZone][INST_0][MESH_0]->SetRotationalVelocity(config_container[iZone], print);
-      geometry_container[iZone][INST_0][MESH_0]->SetShroudVelocity(config_container[iZone]);
-    }
-
-    break;
-
-  case STEADY_TRANSLATION:
-
-    /*--- Set the translational velocity and hold the grid fixed during
-        the calculation (similar to rotating frame, but there is no extra
-        source term for translation). ---*/
-
-    if (rank == MASTER_NODE && print)
-      cout << endl << " Setting translational grid velocities." << endl;
-
-    /*--- Set the translational velocity on all grid levels. ---*/
-
-    for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++)
-      geometry_container[iZone][INST_0][iMGlevel]->SetTranslationalVelocity(config_container[iZone], iMGlevel == 0);
-
-
-
-    break;
-  }
-}
-
 void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                            CInterface*** interface, CIteration*** iteration, bool dummy){
 

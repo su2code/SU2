@@ -30,7 +30,6 @@
 #include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIteration.hpp"
-#include "../../../Common/include/tracy_structure.hpp"
 
 CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) :
                   CDriver(confFile, val_nZone, MPICommunicator, false) {
@@ -533,8 +532,6 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long
 
 bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short targetZone) {
 
-  SU2_ZONE_SCOPED_N("TransferData");
-
   bool UpdateMesh = false;
 
   /*--- Select the transfer method according to the magnitudes being transferred ---*/
@@ -602,15 +599,6 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
                 geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
                 config_container[donorZone], config_container[targetZone], iMarkerInt );
       }
-
-      /*--- Set average value donorZone->targetZone ---*/
-      //interface_container[donorZone][targetZone]->SetAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
-      
-      // /*--- Set average geometrical properties FROM donorZone IN targetZone ---*/
-      // if (donorZone != nZone - 1){
-      //   geometry_container[nZone-1][INST_0][MESH_0]->SetAvgTurboGeoValues(config_container[donorZone],geometry_container[donorZone][INST_0][MESH_0], donorZone);
-      // }
-
       break;
     }
     default:

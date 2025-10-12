@@ -247,7 +247,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   return StopCalc;
 }
 
-void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone) {
+void CFluidIteration::UpdateRamps(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone) {
   auto* config = config_container[iZone];
 
   if (config_container[ZONE_0]->GetMultizone_Problem())
@@ -317,39 +317,6 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
     }
   }
 }
-
-// void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container) {
-//   unsigned short nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
-//   unsigned short nBladesRow = config_container[ZONE_0]->GetnMarker_Turbomachinery();
-//   unsigned short iBlade=0, iSpan;
-//   vector<su2double> TurboPrimitiveIn, TurboPrimitiveOut;
-//   std::vector<std::vector<CTurbomachineryCombinedPrimitiveStates>> bladesPrimitives;
-
-//   if (rank == MASTER_NODE) {
-//       for (iBlade = 0; iBlade < nBladesRow; iBlade++){
-//       /* Blade Primitive initialized per blade */
-//       std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
-//       auto nSpan = config_container[iBlade]->GetnSpanWiseSections();
-//       for (iSpan = 0; iSpan < nSpan + 1; iSpan++) {
-//         TurboPrimitiveIn= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, true);
-//         TurboPrimitiveOut= solver[iBlade][INST_0][MESH_0][FLOW_SOL]->GetTurboPrimitive(iBlade, iSpan, false);
-//         auto spanInletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveIn, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelIn(iBlade, iSpan));
-//         auto spanOutletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveOut, nDim, geometry_container[iBlade][INST_0][MESH_0]->GetTangGridVelOut(iBlade, iSpan));
-//         auto spanCombinedPrimitive = CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive);
-//         bladePrimitives.push_back(spanCombinedPrimitive);
-//       }
-//       bladesPrimitives.push_back(bladePrimitives);
-//     }
-//     TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
-
-//     auto nSpan = config_container[ZONE_0]->GetnSpanWiseSections();
-//     auto InState = TurbomachineryPerformance->GetBladesPerformances().at(ZONE_0).at(nSpan)->GetInletState();
-//     nSpan = config_container[nZone-1]->GetnSpanWiseSections();
-//     auto OutState =  TurbomachineryPerformance->GetBladesPerformances().at(nZone-1).at(nSpan)->GetOutletState();
-
-//     TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[nZone-1]);
-//   }
-// }
 
 void CFluidIteration::Postprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                   CSolver***** solver, CNumerics****** numerics, CConfig** config,

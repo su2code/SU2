@@ -88,15 +88,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, conv_bound_numerics, OUTFLOW);
   }
 
-  // BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-  //   if (config->GetBoolTurbomachinery()){
-  //       /*--- Average quantities at the inflow and outflow boundaries ---*/
-  //     solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry,config,INFLOW);
-  //     solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry, config, OUTFLOW);
-  //   }
-  // }
-  // END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
   /*--- Weak boundary conditions ---*/
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -195,7 +186,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     else if (config->GetMarker_All_KindBC(iMarker)==EULER_WALL)
         solver_container[MainSolver]->BC_Euler_Wall(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
   }
-  // AD::ResumePreaccumulation(pausePreacc);
+  //AD::ResumePreaccumulation(pausePreacc);
 
 }
 

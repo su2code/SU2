@@ -30,7 +30,6 @@
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
-#include "../../../Common/include/tracy_structure.hpp"
 
 CInterface::CInterface() :
   rank(SU2_MPI::GetRank()),
@@ -205,8 +204,6 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
                                    const CConfig *donor_config, const CConfig *target_config,
                                    unsigned short iMarkerInt){
 
-  SU2_ZONE_SCOPED_N("PreprocessAverage");
-
   unsigned short  nMarkerDonor, nMarkerTarget;    // Number of markers on the interface, donor and target side
   unsigned short  iMarkerDonor, iMarkerTarget;    // Variables for iteration over markers
   unsigned short iSpan,jSpan, tSpan = 0, kSpan = 0, nSpanDonor, nSpanTarget, Donor_Flag = 0, Target_Flag = 0;
@@ -335,8 +332,6 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
 void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solution,
                                   CGeometry *donor_geometry, CGeometry *target_geometry,
                                   const CConfig *donor_config, const CConfig *target_config, unsigned short iMarkerInt){
-  
-  SU2_ZONE_SCOPED_N("AllgatherAverage");
 
   unsigned short  nMarkerDonor, nMarkerTarget;    // Number of markers on the interface, donor and target side
   unsigned short  iMarkerDonor, iMarkerTarget;    // Variables for iteration over markers

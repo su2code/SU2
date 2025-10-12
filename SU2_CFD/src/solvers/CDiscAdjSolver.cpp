@@ -28,7 +28,6 @@
 #include "../../include/solvers/CDiscAdjSolver.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
-#include "../../../Common/include/tracy_structure.hpp"
 
 CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *direct_sol,
                                unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
@@ -116,8 +115,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 CDiscAdjSolver::~CDiscAdjSolver() { delete nodes; }
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
-
-  SU2_ZONE_SCOPED_N("SetRecording_Solver");
 
   const bool time_n1_needed = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
   const bool time_n_needed = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) || time_n1_needed;

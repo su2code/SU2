@@ -286,11 +286,6 @@ class CDriver : public CDriverBase {
 
   /*!
    * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
-   */
-  void InitStaticMeshMovement(unsigned short iZone, bool print);
-
-  /*!
-   * \brief Initiate value for static mesh movement such as the gridVel for the ROTATING frame.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
