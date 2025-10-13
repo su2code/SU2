@@ -1779,19 +1779,24 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Sum the RMS residuals for all equations. */
 
       New_Func = 0.0;
+      unsigned short totalVars = 0;
       for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
         New_Func += log10(solverFlow->GetRes_RMS(iVar));
+        ++totalVars;
       }
       if ((iMesh == MESH_0) && solverTurb) {
         for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
           New_Func += log10(solverTurb->GetRes_RMS(iVar));
+          ++totalVars;
         }
       }
       if ((iMesh == MESH_0) && solverSpecies) {
         for (unsigned short iVar = 0; iVar < solverSpecies->GetnVar(); iVar++) {
           New_Func += log10(solverSpecies->GetRes_RMS(iVar));
+          ++totalVars;
         }
       }
+      New_Func /= totalVars;
 
       /* Compute the difference in the nonlinear residuals between the
        current and previous iterations, taking care with very low initial
