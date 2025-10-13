@@ -209,9 +209,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         const auto Coord_j = geometry->nodes->GetCoord(jPoint);
 
         su2double Vector_ij[MAXNDIM] = {0.0};
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Vector_ij[iDim] = 0.5 * (Coord_j[iDim] - Coord_i[iDim]);
-        }
+        GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Vector_ij);
 
         if (musclFlow && !bounded_scalar) {
           /*--- Reconstruct mean flow primitive variables, note that in bounded scalar mode this is
@@ -231,7 +229,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
 
             if (umusclFlow) {
-              const su2double V_ij = 0.5 * (V_j[iVar] - V_i[iVar]);
+              const su2double V_ij = V_j[iVar] - V_i[iVar];
               Project_Grad_i = LimiterHelpers<>::umusclProjection(Project_Grad_i, V_ij, kappaFlow);
               Project_Grad_j = LimiterHelpers<>::umusclProjection(Project_Grad_j, V_ij, kappaFlow);
             }
@@ -241,8 +239,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
               Project_Grad_j *= Limiter_j[iVar];
             }
 
-            flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
-            flowPrimVar_j[iVar] = V_j[iVar] - Project_Grad_j;
+            flowPrimVar_i[iVar] = V_i[iVar] + 0.5 * Project_Grad_i;
+            flowPrimVar_j[iVar] = V_j[iVar] - 0.5 * Project_Grad_j;
           }
 
           numerics->SetPrimitive(flowPrimVar_i, flowPrimVar_j);
@@ -264,7 +262,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
 
             if (umuscl) {
-              const su2double U_ij = 0.5 * (Scalar_j[iVar] - Scalar_i[iVar]);
+              const su2double U_ij = Scalar_j[iVar] - Scalar_i[iVar];
               Project_Grad_i = LimiterHelpers<>::umusclProjection(Project_Grad_i, U_ij, kappa);
               Project_Grad_j = LimiterHelpers<>::umusclProjection(Project_Grad_j, U_ij, kappa);
             }
@@ -274,8 +272,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
               Project_Grad_j *= Limiter_j[iVar];
             }
 
-            solution_i[iVar] = Scalar_i[iVar] + Project_Grad_i;
-            solution_j[iVar] = Scalar_j[iVar] - Project_Grad_j;
+            solution_i[iVar] = Scalar_i[iVar] + 0.5 * Project_Grad_i;
+            solution_j[iVar] = Scalar_j[iVar] - 0.5 * Project_Grad_j;
           }
 
           numerics->SetScalarVar(solution_i, solution_j);

@@ -123,13 +123,9 @@ public:
     V1st.i.all = gatherVariables<nPrimVar>(iPoint, solution.GetPrimitive());
     V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
 
-    VectorDbl<nDim> mod_vector_ij;
-    for (size_t iDim = 0; iDim < nDim; ++iDim) {
-      mod_vector_ij(iDim) = nkRelax * vector_ij(iDim);
-    }
     /*--- Recompute density and enthalpy instead of reconstructing. ---*/
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umuscl, umusclKappa, typeLimiter, V1st, mod_vector_ij, solution);
+        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umuscl, umusclKappa, nkRelax, typeLimiter, V1st, vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 

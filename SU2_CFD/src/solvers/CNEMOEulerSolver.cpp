@@ -524,9 +524,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
       /*--- High order reconstruction using MUSCL strategy ---*/
       su2double Vector_ij[MAXNDIM] = {0.0};
-      for (auto iDim = 0ul; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = nkRelax * 0.5 * (Coord_j[iDim] - Coord_i[iDim]);
-      }
+      GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Vector_ij);
 
       /*--- Retrieve gradient information ---*/
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
@@ -549,7 +547,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
         su2double V_ij = 0.0;
         if (umuscl || van_albada)
-          V_ij = 0.5 * (V_j[iVar] - V_i[iVar]);
+          V_ij = V_j[iVar] - V_i[iVar];
 
         if (umuscl) {
           Project_Grad_i[iVar] = LimiterHelpers<>::umusclProjection(Project_Grad_i[iVar], V_ij, kappa);
@@ -558,7 +556,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
         if (limiter) {
           if (van_albada) {
-            su2double V_ij = V_j[iVar] - V_i[iVar];
             su2double va_lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i[iVar], V_ij, EPS);
             su2double va_lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j[iVar], V_ij, EPS);
             lim_i = min(lim_i, va_lim_i);
@@ -574,8 +571,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       su2double lim_ij = min(lim_i, lim_j);
 
       for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
-        Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i[iVar];
-        Primitive_j[iVar] = V_j[iVar] - lim_ij*Project_Grad_j[iVar];
+        Primitive_i[iVar] = V_i[iVar] + 0.5 * nkRelax * lim_ij * Project_Grad_i[iVar];
+        Primitive_j[iVar] = V_j[iVar] - 0.5 * nkRelax * lim_ij * Project_Grad_j[iVar];
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
