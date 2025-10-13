@@ -177,8 +177,6 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
     for (auto k = 0ul; k < color.size; ++k) {
       auto iEdge = color.indices[k];
 
-      unsigned short iDim, iVar;
-
       /*--- Points in edge and normal vectors ---*/
 
       auto iPoint = geometry->edges->GetNode(iEdge, 0);
@@ -224,7 +222,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
           }
 
-          for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+          for (auto iVar = 0u; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
             su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim, Gradient_i[iVar], Vector_ij);
             su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
 
@@ -257,7 +255,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             Limiter_j = nodes->GetLimiter(jPoint);
           }
 
-          for (iVar = 0; iVar < nVar; iVar++) {
+          for (auto iVar = 0u; iVar < nVar; iVar++) {
             su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim, Gradient_i[iVar], Vector_ij);
             su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
 

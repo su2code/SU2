@@ -1220,7 +1220,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
 
   unsigned long iPoint, jPoint, counter_local = 0;
-  unsigned short iDim, iVar;
 
   SU2_OMP_MASTER
   ErrorCounter = 0;
@@ -1279,7 +1278,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      for (auto iVar = 0u; iVar < nPrimVarGrad; iVar++) {
         su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim, Gradient_i[iVar], Vector_ij);
         su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
 
@@ -1308,7 +1307,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         Primitive_j[iVar] = V_j[iVar] - 0.5 * nkRelax * lim_j * Project_Grad_j;
       }
 
-      for (iVar = nPrimVarGrad; iVar < nPrimVar; iVar++) {
+      for (auto iVar = nPrimVarGrad; iVar < nPrimVar; iVar++) {
         Primitive_i[iVar] = V_i[iVar];
         Primitive_j[iVar] = V_j[iVar];
       }
@@ -1332,7 +1331,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         counter_local += bad_recon;
 
         if (bad_recon) {
-          for (iVar = 0; iVar < nPrimVar; iVar++) {
+          for (auto iVar = 0u; iVar < nPrimVar; iVar++) {
             Primitive_i[iVar] = V_i[iVar];
             Primitive_j[iVar] = V_j[iVar];
           }
