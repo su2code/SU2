@@ -230,9 +230,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim, Gradient_i[iVar], Vector_ij);
             su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
 
-            const su2double V_ij = (umusclFlow)? 0.5 * (V_j[iVar] - V_i[iVar]) : 0.0;
-
             if (umusclFlow) {
+              const su2double V_ij = 0.5 * (V_j[iVar] - V_i[iVar]);
               Project_Grad_i = LimiterHelpers<>::umusclProjection(Project_Grad_i, V_ij, kappaFlow);
               Project_Grad_j = LimiterHelpers<>::umusclProjection(Project_Grad_j, V_ij, kappaFlow);
             }
@@ -264,9 +263,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim, Gradient_i[iVar], Vector_ij);
             su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
 
-            const su2double U_ij = (umuscl)? 0.5 * (Scalar_j[iVar] - Scalar_i[iVar]) : 0.0;
-
             if (umuscl) {
+              const su2double U_ij = 0.5 * (Scalar_j[iVar] - Scalar_i[iVar]);
               Project_Grad_i = LimiterHelpers<>::umusclProjection(Project_Grad_i, U_ij, kappa);
               Project_Grad_j = LimiterHelpers<>::umusclProjection(Project_Grad_j, U_ij, kappa);
             }

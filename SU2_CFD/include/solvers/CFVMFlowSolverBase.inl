@@ -417,6 +417,8 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, con
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) {
   const auto kindLimiter = config->GetKind_SlopeLimit_Flow();
+  const auto umusclKappa = SU2_TYPE::GetValue(config->GetMUSCL_Kappa_Flow());
+  const auto umuscl = (umusclKappa != 0.0);
   const auto& primitives = nodes->GetPrimitive();
   const auto& gradient = nodes->GetGradient_Reconstruction();
   auto& primMin = nodes->GetSolution_Min();
@@ -424,7 +426,7 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const C
   auto& limiter = nodes->GetLimiter_Primitive();
 
   computeLimiters(kindLimiter, this, MPI_QUANTITIES::PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2, *geometry, *config, 0,
-                  nPrimVarGrad, primitives, gradient, primMin, primMax, limiter);
+                  nPrimVarGrad, umuscl, umusclKappa, primitives, gradient, primMin, primMax, limiter);
 }
 
 template <class V, ENUM_REGIME R>

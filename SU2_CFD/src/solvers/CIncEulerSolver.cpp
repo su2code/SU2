@@ -1285,7 +1285,9 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim, Gradient_i[iVar], Vector_ij);
         su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
 
-        const su2double V_ij = (umuscl || van_albada)? 0.5 * (V_j[iVar] - V_i[iVar]) : 0.0;
+        su2double V_ij = 0.0;
+        if (umuscl || van_albada)
+          V_ij = 0.5 * (V_j[iVar] - V_i[iVar]);
 
         if (umuscl) {
           Project_Grad_i = LimiterHelpers<>::umusclProjection(Project_Grad_i, V_ij, kappa);
@@ -1296,7 +1298,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         su2double lim_j = 1.0;
 
         if (van_albada) {
-          su2double V_ij = V_j[iVar] - V_i[iVar];
           lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
           lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j, V_ij, EPS);
         }
