@@ -33,20 +33,20 @@
 #include "../../../variables/CNSVariable.hpp"
 
 /*!
- * \brief Compute blended difference for MUSCL reconstruction.
+ * \brief Blended difference for U-MUSCL reconstruction.
  * \param[in] grad_proj - Gradient projection at point i: dot(grad_i, vector_ij)
  * \param[in] cent - Centered difference: V_j - V_i
  * \param[in] kappa - Blending parameter
  * \return Blended difference for reconstruction
  */
-FORCEINLINE Double blendedDifference(Double grad_proj,
-                                     Double cent,
-                                     Double kappa) {
+FORCEINLINE Double umusclProjection(Double grad_proj,
+                                    Double cent,
+                                    Double kappa) {
   /*--- Upwind difference: dV_ij^upw = 2 grad(Vi) dot vector_ij - dV_ij^cent ---*/
-  const Double delta_upwind = grad_proj - 0.5 * cent;
+  const Double upw = grad_proj - 0.5 * cent;
 
   /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
-  return (1.0 - kappa) * delta_upwind + (1.0 + kappa) * cent;
+  return (1.0 - kappa) * upw + (1.0 + kappa) * cent;
 }
 
 /*!
@@ -75,8 +75,8 @@ FORCEINLINE void musclUnlimited(Int iPoint,
       const Double cent = V.j.all(iVar) - V.i.all(iVar);
 
       /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
-      proj_i = blendedDifference(proj_i, cent, kappa);
-      proj_j = blendedDifference(proj_j, cent, kappa);
+      proj_i = umusclProjection(proj_i, cent, kappa);
+      proj_j = umusclProjection(proj_j, cent, kappa);
     }
 
     /*--- Apply reconstruction: V_ij = Vi + 0.25 * dV_ij^kappa ---*/
@@ -115,8 +115,8 @@ FORCEINLINE void musclPointLimited(Int iPoint,
       const Double cent = V.j.all(iVar) - V.i.all(iVar);
 
       /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
-      proj_i = blendedDifference(proj_i, cent, kappa);
-      proj_j = blendedDifference(proj_j, cent, kappa);
+      proj_i = umusclProjection(proj_i, cent, kappa);
+      proj_j = umusclProjection(proj_j, cent, kappa);
     }
 
     /*--- Apply reconstruction: V_ij = Vi + 0.25 * lim * dV_ij^kappa ---*/
@@ -152,8 +152,8 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
       const Double cent = V.j.all(iVar) - V.i.all(iVar);
 
       /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
-      proj_i = blendedDifference(proj_i, cent, kappa);
-      proj_j = blendedDifference(proj_j, cent, kappa);
+      proj_i = umusclProjection(proj_i, cent, kappa);
+      proj_j = umusclProjection(proj_j, cent, kappa);
     }
 
     /// TODO: Customize the limiter function.

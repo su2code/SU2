@@ -1804,6 +1804,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
+  const su2double kappa       = config->GetMUSCL_Kappa_Flow();
+  const bool umuscl           = muscl && (kappa != 0.0);
+
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -1882,13 +1885,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim, Gradient_i[iVar], Vector_ij);
+        su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
 
-        su2double Project_Grad_i = 0.0;
-        su2double Project_Grad_j = 0.0;
+        const su2double V_ij = (umuscl || van_albada)? V_j[iVar] - V_i[iVar] : 0.0;
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+        if (umuscl) {
+          Project_Grad_i = LimiterHelpers<>::umusclProjection(Project_Grad_i, V_ij, kappa);
+          Project_Grad_j = LimiterHelpers<>::umusclProjection(Project_Grad_j, V_ij, kappa);
         }
 
         su2double lim_i = 1.0;
@@ -1897,7 +1901,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         if (van_albada) {
           su2double V_ij = V_j[iVar] - V_i[iVar];
           lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
-          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, V_ij, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j, V_ij, EPS);
         }
         else if (limiter) {
           lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
@@ -1905,7 +1909,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         }
 
         Primitive_i[iVar] = V_i[iVar] + lim_i * Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] + lim_j * Project_Grad_j;
+        Primitive_j[iVar] = V_j[iVar] - lim_j * Project_Grad_j;
 
       }
 

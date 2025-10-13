@@ -77,7 +77,7 @@ protected:
     finestGrid(iMesh == MESH_0),
     dynamicGrid(config.GetDynamic_Grid()),
     muscl(finestGrid && config.GetMUSCL_Flow()),
-    umuscl(config.GetMUSCL_Kappa_Flow() != 0.0),
+    umuscl(muscl && config.GetMUSCL_Kappa_Flow() != 0.0),
     umusclKappa(config.GetMUSCL_Kappa_Flow()),
     typeLimiter(config.GetKind_SlopeLimit_Flow()) {
   }

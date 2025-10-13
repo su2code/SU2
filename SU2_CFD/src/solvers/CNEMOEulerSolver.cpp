@@ -469,6 +469,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const su2double nkRelax     = config->GetNewtonKrylovRelaxation();
 
+  const su2double kappa       = config->GetMUSCL_Kappa_Flow();
+  const bool umuscl           = muscl && (kappa != 0.0);
+
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -541,18 +544,21 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       su2double lim_j = 2.0;
 
       for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
-        Project_Grad_i[iVar] = 0.0; Project_Grad_j[iVar] = 0.0;
+        Project_Grad_i[iVar] = GeometryToolbox::DotProduct(nDim, Gradient_i[iVar], Vector_ij);
+        Project_Grad_j[iVar] = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
 
-        for (auto iDim = 0ul; iDim < nDim; iDim++) {
-          Project_Grad_i[iVar] += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j[iVar] -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+        const su2double V_ij = (umuscl || van_albada)? V_j[iVar] - V_i[iVar] : 0.0;
+
+        if (umuscl) {
+          Project_Grad_i[iVar] = LimiterHelpers<>::umusclProjection(Project_Grad_i[iVar], V_ij, kappa);
+          Project_Grad_j[iVar] = LimiterHelpers<>::umusclProjection(Project_Grad_j[iVar], V_ij, kappa);
         }
 
         if (limiter) {
           if (van_albada) {
             su2double V_ij = V_j[iVar] - V_i[iVar];
             su2double va_lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i[iVar], V_ij, EPS);
-            su2double va_lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j[iVar], V_ij, EPS);
+            su2double va_lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j[iVar], V_ij, EPS);
             lim_i = min(lim_i, va_lim_i);
             lim_j = min(lim_j, va_lim_j);
           } else {
@@ -567,7 +573,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
       for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
         Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i[iVar];
-        Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j[iVar];
+        Primitive_j[iVar] = V_j[iVar] - lim_ij*Project_Grad_j[iVar];
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the

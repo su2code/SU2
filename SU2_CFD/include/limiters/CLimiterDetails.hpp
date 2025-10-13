@@ -71,6 +71,15 @@ struct LimiterHelpers
 {
   FORCEINLINE static Type epsilon() {return std::numeric_limits<passivedouble>::epsilon();}
 
+  FORCEINLINE static Type umusclProjection(const Type& grad_proj, const Type& cent, const Type& kappa)
+  {
+    /*--- Upwind difference: dV_ij^upw = 2 grad(Vi) dot vector_ij - dV_ij^cent ---*/
+    const Type upw = grad_proj - 0.5 * cent;
+
+    /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
+    return (1.0 - kappa) * upw + (1.0 + kappa) * cent;
+  }
+
   FORCEINLINE static Type venkatFunction(const Type& proj, const Type& delta, const Type& eps2)
   {
     Type y = delta*(delta+proj) + eps2;

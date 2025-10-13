@@ -1233,6 +1233,9 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool bounded_scalar = config->GetBounded_Scalar();
   const su2double nkRelax = config->GetNewtonKrylovRelaxation();
 
+  const su2double kappa = config->GetMUSCL_Kappa_Flow();
+  const bool umuscl = muscl && (kappa != 0.0);
+
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
   bool pausePreacc = false;
@@ -1279,13 +1282,14 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim, Gradient_i[iVar], Vector_ij);
+        su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
 
-        su2double Project_Grad_i = 0.0;
-        su2double Project_Grad_j = 0.0;
+        const su2double V_ij = (umuscl || van_albada)? V_j[iVar] - V_i[iVar] : 0.0;
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
+        if (umuscl) {
+          Project_Grad_i = LimiterHelpers<>::umusclProjection(Project_Grad_i, V_ij, kappa);
+          Project_Grad_j = LimiterHelpers<>::umusclProjection(Project_Grad_j, V_ij, kappa);
         }
 
         su2double lim_i = 1.0;
@@ -1294,7 +1298,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         if (van_albada) {
           su2double V_ij = V_j[iVar] - V_i[iVar];
           lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
-          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, V_ij, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j, V_ij, EPS);
         }
         else if (limiter) {
           lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
@@ -1302,7 +1306,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         }
 
         Primitive_i[iVar] = V_i[iVar] + lim_i * Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] + lim_j * Project_Grad_j;
+        Primitive_j[iVar] = V_j[iVar] - lim_j * Project_Grad_j;
       }
 
       for (iVar = nPrimVarGrad; iVar < nPrimVar; iVar++) {

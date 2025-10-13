@@ -1984,7 +1984,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
-  /*!\brief MUSCL_KAPPA_FLOW \n DESCRIPTION: Blending coefficient for the MUSCL scheme \ingroup Config*/
+  /*!\brief MUSCL_KAPPA_FLOW \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
   addDoubleOption("MUSCL_KAPPA_FLOW", MUSCL_Kappa_Flow, 0.0);
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
@@ -2007,7 +2007,7 @@ void CConfig::SetConfig_Options() {
   addConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
   /*!\brief MUSCL_ADJFLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_ADJFLOW", MUSCL_AdjFlow, true);
-  /*!\brief MUSCL_KAPPA_ADJFLOW \n DESCRIPTION: Blending coefficient for the MUSCL scheme \ingroup Config*/
+  /*!\brief MUSCL_KAPPA_ADJFLOW \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
   addDoubleOption("MUSCL_KAPPA_ADJFLOW", MUSCL_Kappa_AdjFlow, 0.0);
   /*!\brief SLOPE_LIMITER_ADJFLOW
      * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
@@ -2020,7 +2020,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_TURB \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_TURB", MUSCL_Turb, false);
-  /*!\brief MUSCL_KAPPA_TURB \n DESCRIPTION: Blending coefficient for the MUSCL scheme \ingroup Config*/
+  /*!\brief MUSCL_KAPPA_TURB \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
   addDoubleOption("MUSCL_KAPPA_TURB", MUSCL_Kappa_Turb, 0.0);
   /*!\brief SLOPE_LIMITER_TURB
    *  \n DESCRIPTION: Slope limiter  \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
@@ -2041,7 +2041,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_SPECIES \n DESCRIPTION: Check if the MUSCL scheme should be used \n DEFAULT false \ingroup Config*/
   addBoolOption("MUSCL_SPECIES", MUSCL_Species, false);
-  /*!\brief MUSCL_KAPPA_SPECIES \n DESCRIPTION: Blending coefficient for the MUSCL scheme \ingroup Config*/
+  /*!\brief MUSCL_KAPPA_SPECIES \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
   addDoubleOption("MUSCL_KAPPA_SPECIES", MUSCL_Kappa_Species, 0.0);
   /*!\brief SLOPE_LIMITER_SPECIES \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NONE \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_SPECIES", Kind_SlopeLimit_Species, Limiter_Map, LIMITER::NONE);
@@ -2050,7 +2050,7 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_HEAT \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_HEAT", MUSCL_Heat, false);
-  /*!\brief MUSCL_KAPPA_HEAT \n DESCRIPTION: Blending coefficient for the MUSCL scheme \ingroup Config*/
+  /*!\brief MUSCL_KAPPA_HEAT \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
   addDoubleOption("MUSCL_KAPPA_HEAT", MUSCL_Kappa_Heat, 0.0);
   /*!\brief SLOPE_LIMITER_HEAT \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NONE \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_HEAT", Kind_SlopeLimit_Heat, Limiter_Map, LIMITER::NONE);
