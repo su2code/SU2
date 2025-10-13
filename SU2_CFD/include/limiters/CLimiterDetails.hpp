@@ -88,7 +88,7 @@ struct LimiterHelpers
 
   FORCEINLINE static Type vanAlbadaFunction(const Type& proj, const Type& delta, const Type& eps)
   {
-    return delta * (2*proj + delta) / (4*pow(proj, 2) + pow(delta, 2) + eps);
+    return delta * (proj + delta) / (pow(proj, 2) + pow(delta, 2) + eps);
   }
 
   FORCEINLINE static Type raisedSine(const Type& dist)
