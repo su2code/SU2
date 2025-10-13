@@ -1932,7 +1932,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       su2double R = sqrt(fabs(Primitive_j[prim_idx.Density()]/Primitive_i[prim_idx.Density()]));
       su2double sq_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
         su2double RoeVelocity = (R * Primitive_j[iDim + prim_idx.Velocity()] +
                                  Primitive_i[iDim + prim_idx.Velocity()]) / (R+1);
         sq_vel += pow(RoeVelocity, 2);
