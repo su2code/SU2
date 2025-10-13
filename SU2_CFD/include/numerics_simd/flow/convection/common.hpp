@@ -35,15 +35,24 @@
 /*!
  * \brief Blended difference for U-MUSCL reconstruction.
  * \param[in] grad_proj - Gradient projection at point i: dot(grad_i, vector_ij)
- * \param[in] cent - Centered difference: V_j - V_i
+ * \param[in] delta - Centered difference: V_j - V_i
  * \param[in] kappa - Blending parameter
  * \return Blended difference for reconstruction
  */
 FORCEINLINE Double umusclProjection(Double grad_proj,
-                                    Double cent,
+                                    Double delta,
                                     Double kappa) {
+  /*-------------------------------------------------------------------*/
+  /*--- Reconstruction will be V_L = V_i + 0.25 * dV_ij^kappa.      ---*/
+  /*--- Scale dV_ij^cent  by 0.5 here and return 0.5 * dV_ij^kappa  ---*/
+  /*--- for backward compatibility (i.e. when kappa==0 and this     ---*/
+  /*--- function isn't called, the reconstruction will be           ---*/
+  /*--- V_L = V_i + 0.5 * proj, otherwise V_L = V_i + 0.5 * blend). ---*/
+  /*-------------------------------------------------------------------*/
+  const Double cent = 0.5 * delta;
+
   /*--- Upwind difference: dV_ij^upw = 2 grad(Vi) dot vector_ij - dV_ij^cent ---*/
-  const Double upw = grad_proj - 0.5 * cent;
+  const Double upw = grad_proj - cent;
 
   /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
   return (1.0 - kappa) * upw + (1.0 + kappa) * cent;
@@ -74,7 +83,7 @@ FORCEINLINE void musclUnlimited(Int iPoint,
     Double proj_j = dot(grad_j[iVar], vector_ij);
 
     if (umuscl) {
-      /*--- Centered difference: dV_ij^cent = Vj - Vi ---*/
+      /*--- Centered difference: dV_ij^cent = V_j - V_i ---*/
       const Double cent = V.j.all(iVar) - V.i.all(iVar);
 
       /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
@@ -82,7 +91,7 @@ FORCEINLINE void musclUnlimited(Int iPoint,
       proj_j = umusclProjection(proj_j, cent, kappa);
     }
 
-    /*--- Apply reconstruction: V_ij = Vi + 0.25 * dV_ij^kappa ---*/
+    /*--- Apply reconstruction: V_L = V_i + 0.25 * dV_ij^kappa ---*/
     V.i.all(iVar) += scale * proj_i;
     V.j.all(iVar) -= scale * proj_j;
   }
@@ -125,7 +134,7 @@ FORCEINLINE void musclPointLimited(Int iPoint,
       proj_j = umusclProjection(proj_j, cent, kappa);
     }
 
-    /*--- Apply reconstruction: V_ij = Vi + 0.25 * lim * dV_ij^kappa ---*/
+    /*--- Apply reconstruction: V_L = V_i + 0.25 * lim * dV_ij^kappa ---*/
     V.i.all(iVar) += scale * lim_i(iVar) * proj_i;
     V.j.all(iVar) -= scale * lim_j(iVar) * proj_j;
   }
@@ -157,7 +166,7 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
     const Double delta_ij_2 = pow(delta_ij, 2) + 1e-6;
 
     if (umuscl) {
-      /*--- Centered difference: dV_ij^cent = Vj - Vi ---*/
+      /*--- Centered difference: dV_ij^cent = V_j - V_i ---*/
       const Double cent = V.j.all(iVar) - V.i.all(iVar);
 
       /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
