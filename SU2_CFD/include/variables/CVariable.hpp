@@ -34,6 +34,7 @@
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
+#include <random>
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/containers/container_decorators.hpp"
@@ -51,7 +52,7 @@ class CVariable {
 protected:
   using VectorType = C2DContainer<unsigned long, su2double, StorageType::ColumnMajor, 64, DynamicSize, 1>;
   using MatrixType = C2DContainer<unsigned long, su2double, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
-  using MatrixTypeInt = C2DContainer<unsigned long, unsigned long, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
+  using MatrixTypeGen = C2DContainer<unsigned long, std::mt19937, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
 
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
@@ -429,9 +430,8 @@ public:
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    * \param[in] iDim - Dimension index.
-   * \param[in] val_stochSeed - Seed for Langevin equations.
    */
-  inline virtual su2double GetLangevinSeed(unsigned long iPoint, unsigned short iDim) const {return 0.0;}
+  inline virtual std::mt19937 GetLangevinGen(unsigned long iPoint, unsigned short iDim) const {std::mt19937 gen(123); return gen; }
 
   /*!
    * \brief A virtual member.
@@ -439,7 +439,7 @@ public:
    * \param[in] iDim - Dimension index.
    * \param[in] val_stochSource - Source term for Langevin equations.
    */
-  inline virtual void SetLangevinSeed(unsigned long iPoint, unsigned short iDim, unsigned long val_stochSeed) {}
+  inline virtual void SetLangevinGen(unsigned long iPoint, unsigned short iDim, std::mt19937 val_stochGen) {}
 
   /*!
    * \brief A virtual member.

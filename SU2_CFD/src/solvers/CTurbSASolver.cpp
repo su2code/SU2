@@ -157,10 +157,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   nodes = new CTurbSAVariable(nu_tilde_Inf, muT_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
-  /*--- Set seed for Langevin equations (Stochastic Backscatter Model) ---*/
-
-  if (backscatter) { SetLangevinSeed(geometry); }
-
   /*--- MPI solution ---*/
 
   InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION_EDDY);
@@ -243,7 +239,10 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     bool backscatter = config->GetStochastic_Backscatter();
     unsigned long innerIter = config->GetInnerIter();
 
-    if (backscatter && innerIter==0) SetLangevinSourceTerms(config, geometry);
+    if (backscatter && innerIter==0) {
+      SetLangevinGen(config, geometry);
+      SetLangevinSourceTerms(config, geometry);
+    }
 
   }
 
@@ -1466,6 +1465,11 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         lengthScale = min(distDES,wallDistance);
         lesSensor = (wallDistance<=distDES) ? 0.0 : 1.0;
 
+        if (config->GetDIHT()) {
+          lengthScale = distDES;
+          lesSensor = 1.0;
+        }
+
         break;
       }
       case SA_DDES: {
@@ -1482,6 +1486,11 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         const su2double distDES = constDES * maxDelta;
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
         lesSensor = (wallDistance<=distDES) ? 0.0 : f_d;
+
+        if (config->GetDIHT()) {
+          lengthScale = distDES;
+          lesSensor = 1.0;
+        }
 
         break;
       }
@@ -1523,6 +1532,11 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         const su2double distDES = constDES * maxDelta;
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
         lesSensor = (wallDistance<=distDES) ? 0.0 : f_d;
+
+        if (config->GetDIHT()) {
+          lengthScale = distDES;
+          lesSensor = 1.0;
+        }
 
         break;
       }
@@ -1577,6 +1591,11 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
         lesSensor = (wallDistance<=distDES) ? 0.0 : f_d;
 
+        if (config->GetDIHT()) {
+          lengthScale = distDES;
+          lesSensor = 1.0;
+        }
+
         break;
       }
     }
@@ -1593,9 +1612,9 @@ void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry)
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++){
     for (auto iDim = 0u; iDim < nDim; iDim++){
-      unsigned long seed = nodes->GetLangevinSeed(iPoint, iDim);
+      auto gen = nodes->GetLangevinGen(iPoint, iDim);
       su2double lesSensor = nodes->GetLES_Mode(iPoint);
-      su2double rnd = RandomToolbox::GetRandomNormal(seed);
+      su2double rnd = RandomToolbox::GetRandomNormal(gen);
       rnd *= std::nearbyint(lesSensor);
       nodes->SetLangevinSourceTerms(iPoint, iDim, rnd);
     }
@@ -1604,14 +1623,17 @@ void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry)
 
 }
 
-void CTurbSASolver::SetLangevinSeed(CGeometry* geometry) {
+void CTurbSASolver::SetLangevinGen(CConfig* config, CGeometry* geometry) {
+
+  unsigned long timeStep = config->GetTimeIter();
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++){
     const auto iGlobalPoint = geometry->nodes->GetGlobalIndex(iPoint);
     for (auto iDim = 0u; iDim < nDim; iDim++){
       unsigned long seed = RandomToolbox::GetSeed(iGlobalPoint+1,iDim+1);
-      nodes->SetLangevinSeed(iPoint, iDim, seed);
+      std::mt19937 gen(seed + timeStep);
+      nodes->SetLangevinGen(iPoint, iDim, gen);
     }
   }
   END_SU2_OMP_FOR

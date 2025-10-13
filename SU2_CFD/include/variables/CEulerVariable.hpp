@@ -29,6 +29,7 @@
 
 #include <limits>
 #include "CFlowVariable.hpp"
+#include "../../../Common/include/geometry/CGeometry.hpp"
 
 /*!
  * \brief Returns the number of primitive variables for which to compute gradients.
@@ -344,5 +345,16 @@ class CEulerVariable : public CFlowVariable {
    * \return Number of iterations evaluated by the Newton solver
    */
   inline unsigned long GetNewtonSolverIterations(unsigned long iPoint) const final { return NIterNewtonsolver[iPoint]; }
+
+  /*!
+   * \brief Generate initial random velocity field (Decaying Isotropic Homogeneous Turbulence).
+   * \param[in] npoint - Number of points/nodes/vertices in the domain.
+   * \param[in] ndim - Number of dimensions of the problem.
+   * \param[in] nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetVelDIHT(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config,
+                          const CGeometry *geometry);
+
 
 };

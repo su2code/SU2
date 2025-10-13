@@ -63,14 +63,25 @@ inline unsigned long GetSeed(unsigned long x, unsigned long y) { return HashComb
 
 /*!
  * \brief Generate a standard normally-distributed random number.
- * \param[in] seed Seed for the random number generator.
+ * \param[in] gen Pseudo-random number generator.
  * \param[in] mean Mean of the normal distribution (default 0).
  * \param[in] stddev Standard deviation of the normal distribution (default 1).
  * \return Normally-distributed random number.
  */
-inline double GetRandomNormal(unsigned long seed, double mean = 0.0, double stddev = 1.0) {
-  std::mt19937 gen(seed);
+inline double GetRandomNormal(std::mt19937 gen, double mean = 0.0, double stddev = 1.0) {
   std::normal_distribution<double> rnd(mean, stddev);
+  return rnd(gen);
+}
+
+/*!
+ * \brief Generate a uniformly-distributed random number.
+ * \param[in] gen Pseudo-random number generator.
+ * \param[in] xmin Lower boundary of the interval (default 0).
+ * \param[in] xmax Upper bounary of the interval (default 1).
+ * \return Uniformly-distributed random number.
+ */
+inline double GetRandomUniform(std::mt19937 gen, double xmin = 0.0, double xmax = 1.0) {
+  std::uniform_real_distribution<double> rnd(xmin, xmax);
   return rnd(gen);
 }
 

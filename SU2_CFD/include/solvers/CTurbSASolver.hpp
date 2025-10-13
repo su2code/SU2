@@ -69,7 +69,7 @@ private:
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition.
    */
-  void SetLangevinSeed(CGeometry* geometry);
+  void SetLangevinGen(CConfig* config, CGeometry* geometry);
 
   /*!
    * \brief Compute nu tilde from the wall functions.

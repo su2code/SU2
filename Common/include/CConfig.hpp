@@ -1084,6 +1084,10 @@ private:
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   bool StochasticBackscatter;          /*!< \brief Option to include Stochastic Backscatter Model. */
   su2double SBS_Ctau;                  /*!< \brief Stochastic Backscatter Model timescale coefficient. */
+  bool DIHT;                           /*!< \brief Option to simulate Decaying Isotropic Homogeneous Turbulence (DIHT). */
+  su2double DIHT_DomainLength[3];      /*!< \brief Domain length in each direction (DIHT). */
+  su2double DIHT_nPoint[3];        /*!< \brief Number of points in each direction (DIHT). */
+  unsigned long DIHT_nModes;           /*!< \brief Number of Fourier modes (DIHT). */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
@@ -9542,6 +9546,33 @@ public:
    * \return TRUE if the Stochastic Backscatter Model is activated.
    */
   bool GetStochastic_Backscatter(void) const { return StochasticBackscatter; }
+
+  /*!
+   * \brief Get if the Decaying Isotropic Homogeneous Turbulence (DIHT) must be simulated.
+   * \return TRUE if DIHT is simulated.
+   */
+  bool GetDIHT(void) const { return DIHT; }
+
+  /*!
+   * \brief Get the computational domain length (DIHT).
+   * \param[in] iDim - spatial component
+   * \return Domain length.
+   */
+  su2double GetDIHT_DomainLength(unsigned short iDim) const { return DIHT_DomainLength[iDim]*Length_Ref;}
+
+  /*!
+   * \brief Get the number of grid points in each direction (DIHT).
+   * \param[in] iDim - spatial component
+   * \return Number of grid points.
+   */
+  su2double GetDIHT_nPoint(unsigned short iDim) const { return DIHT_nPoint[iDim];}
+
+  /*!
+   * \brief Get the number of Fourier modes (DIHT).
+   * \param[in] iDim - spatial component
+   * \return Number of Fourier modes.
+   */
+  unsigned long GetDIHT_nModes() const { return DIHT_nModes;}
 
   /*!
    * \brief Get the Kind of Roe Low Dissipation Scheme for Unsteady flows.

@@ -2920,6 +2920,18 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Specify if the Stochastic Backscatter Model must be activated */
   addBoolOption("STOCHASTIC_BACKSCATTER", StochasticBackscatter, false);
 
+  /* DESCRIPTION: Specify if the Decay of Isotropic Homogeneous Turbulence (DIHT) must be simulated */
+  addBoolOption("DIHT", DIHT, false);
+
+  /* DESCRIPTION: Domain length in x, y and z directions (DIHT) */
+  addDoubleArrayOption("DIHT_DOMAIN_LENGTH", 3, DIHT_DomainLength);
+
+  /* DESCRIPTION: Spacing of the grid points in x, y and z directions (DIHT) */
+  addDoubleArrayOption("DIHT_NPOINT", 3, DIHT_nPoint);
+
+  /* DESCRIPTION: Number of Fourier modes (DIHT) */
+  addUnsignedLongOption("DIHT_NUM_MODES", DIHT_nModes, 1000);
+
   /* DESCRIPTION: Roe with low dissipation for unsteady flows */
   addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
 
@@ -6462,6 +6474,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
         if (StochasticBackscatter && Kind_HybridRANSLES == NO_HYBRIDRANSLES)
           SU2_MPI::Error("Stochastic Backscatter can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
+        if (DIHT) {
+          cout << "Decaying Isotropic Homogeneous Turbulence (DIHT): spectrum by Comte-Bellot & Corrsin (1971)." << endl;
+          cout << "WARNING: DIHT algorithm is only compatible with structured grids." << endl;
+          cout << "Computational domain size: " << DIHT_DomainLength[0] << ", " << DIHT_DomainLength[1] << ", " << DIHT_DomainLength[2] << " (L_REF)" << endl;
+          cout << "Number of grid points in x, y and z directions: " << static_cast<int>(DIHT_nPoint[0]) << ", " << static_cast<int>(DIHT_nPoint[1]) << ", " << static_cast<int>(DIHT_nPoint[2]) << endl;
+          cout << "Number of Fourier modes: " << DIHT_nModes << endl;
+          if (Kind_HybridRANSLES == NO_HYBRIDRANSLES)
+            SU2_MPI::Error("DIHT mode can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
+        }
         break;
       case MAIN_SOLVER::NEMO_EULER:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;

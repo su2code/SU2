@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CTurbVariable.hpp"
+#include <random>
 
 /*!
  * \class CTurbSAVariable
@@ -43,7 +44,7 @@ private:
   VectorType LES_Mode;
   MatrixType stochSource;
   VectorType Vortex_Tilting;
-  MatrixTypeInt stochSeed;
+  MatrixTypeGen stochGen;
 
 public:
   /*!
@@ -123,14 +124,14 @@ public:
    * \param[in] iDim - Dimension index.
    * \return Value of the seed for the stochastic equations.
    */
-  inline su2double GetLangevinSeed(unsigned long iPoint, unsigned short iDim) const override { return stochSeed(iPoint, iDim); }
+  inline std::mt19937 GetLangevinGen(unsigned long iPoint, unsigned short iDim) const override { return stochGen(iPoint, iDim); }
 
   /*!
    * \brief Set the seed for the stochastic equations.
    * \param[in] iPoint - Point index.
    * \param[in] iDim - Dimension index.
-   * \param[in] val_stochSeed - Value of the seed for the stochastic equations.
+   * \param[in] val_stochGen - Value of the seed for the stochastic equations.
    */
-  inline void SetLangevinSeed(unsigned long iPoint, unsigned short iDim, unsigned long val_stochSeed) override { stochSeed(iPoint, iDim) = val_stochSeed; }
+  inline void SetLangevinGen(unsigned long iPoint, unsigned short iDim, std::mt19937 val_stochGen) override { stochGen(iPoint, iDim) = val_stochGen; }
 
 };
