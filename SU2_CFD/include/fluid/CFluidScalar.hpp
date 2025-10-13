@@ -45,6 +45,7 @@ class CFluidScalar final : public CFluidModel {
   const su2double Ref_Temperature;        /*!< \brief Reference temperature. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
   const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
+  const su2double Schmidt_Turb_Number;         /*!< \brief Prandlt number.*/
 
   const bool wilke;
   const bool davidson;

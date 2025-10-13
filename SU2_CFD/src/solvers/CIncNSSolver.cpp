@@ -329,6 +329,7 @@ void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* ge
   su2double EnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
   su2double GradEnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
   FluidModel->SetTDState_T(nodes->GetPrimitive(iPoint)[prim_idx.Temperature()], Species_i);
+  FluidModel->SetEddyViscosity(nodes->GetPrimitive(iPoint)[prim_idx.EddyViscosity()]);
   FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion_i);
   if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion_i);
 
@@ -337,6 +338,7 @@ void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* ge
   su2double EnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
   su2double GradEnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
   FluidModel->SetTDState_T(nodes->GetPrimitive(jPoint)[prim_idx.Temperature()], Species_j);
+  FluidModel->SetEddyViscosity(nodes->GetPrimitive(jPoint)[prim_idx.EddyViscosity()]);
   FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion_j);
   if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion_j);
 
