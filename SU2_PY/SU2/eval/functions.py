@@ -179,6 +179,9 @@ def aerodynamics(config, state=None):
     if not "AERO_COEFF" in config["HISTORY_OUTPUT"]:
         config["HISTORY_OUTPUT"].append("AERO_COEFF")
 
+    if not "COMBO" in config["HISTORY_OUTPUT"]:
+        config["HISTORY_OUTPUT"].append("COMBO")
+
     if not "MESH" in state.FILES:
         state.FILES.MESH = config["MESH_FILENAME"]
     special_cases = su2io.get_specialCases(config)
