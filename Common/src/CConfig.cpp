@@ -3579,7 +3579,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Postprocess SST_OPTIONS into structure. ---*/
   if (Kind_Turb_Model == TURB_MODEL::SST) {
     sstParsedOptions = ParseSSTOptions(SST_Options, nSST_Options, rank);
-    roughsstParsedOptions = ParseROUGHSSTOptions(ROUGHSST_Options, nROUGHSST_Options, rank);
+    roughsstParsedOptions = ParseROUGHSSTOptions(ROUGHSST_Options[0]);
   } else if (Kind_Turb_Model == TURB_MODEL::SA) {
     saParsedOptions = ParseSAOptions(SA_Options, nSA_Options, rank);
   }

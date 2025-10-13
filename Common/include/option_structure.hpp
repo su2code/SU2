@@ -1105,9 +1105,9 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
  * \brief SST rough-wall boundary conditions Options
  */
 enum class ROUGHSST_OPTIONS {
-  NONE,                 /*!< \brief No option / default. */
-  WILCOX1998,           /*!< \brief Wilcox 1998 boundary conditions for rough walls  / default. */
-  WILCOX2006,           /*!< \brief Wilcox 2006 boundary conditions for rough walls. */
+  NONE,                 /*!< \brief No option / default no surface roughness applied. */
+  WILCOX1998,           /*!< \brief Wilcox 1998 boundary conditions for rough walls. */
+  WILCOX2006,           /*!< \brief Wilcox 2006 boundary conditions for rough walls / default version if roughness is applied. */
   LIMITER_KNOPP,        /*!< \brief Knopp eddy viscosity limiter. */
   LIMITER_AUPOIX,       /*!< \brief Aupoix eddy viscosity limiter. */
 };
@@ -1135,22 +1135,21 @@ struct ROUGH_SST_ParsedOptions {
  * \param[in] ROUGHSST_Options - Selected SST rough-wall boundary conditions option from config.
  * \param[in] nROUGHSST_Options - Number of options selected.
  * \param[in] rank - MPI rank.
- * \return Struct with SA options.
+ * \return Struct with SST options.
  */
-inline ROUGH_SST_ParsedOptions ParseROUGHSSTOptions(const ROUGHSST_OPTIONS *ROUGHSST_Options, unsigned short nROUGHSST_Options, int rank) {
-  ROUGH_SST_ParsedOptions ROUGHSSTParsedOptions;
+inline ROUGH_SST_ParsedOptions ParseROUGHSSTOptions(ROUGHSST_OPTIONS sstbcs_option) {
+    ROUGH_SST_ParsedOptions opts;
+    opts.version = sstbcs_option;
 
-  auto IsPresent = [&](ROUGHSST_OPTIONS option) {
-    const auto roughsst_options_end = ROUGHSST_Options + nROUGHSST_Options;
-    return std::find(ROUGHSST_Options, roughsst_options_end, option) != roughsst_options_end;
-  };
+    switch(sstbcs_option) {
+        case ROUGHSST_OPTIONS::WILCOX1998: opts.wilcox1998 = true; break;
+        case ROUGHSST_OPTIONS::WILCOX2006: opts.wilcox2006 = true; break;
+        case ROUGHSST_OPTIONS::LIMITER_KNOPP: opts.limiter_knopp = true; break;
+        case ROUGHSST_OPTIONS::LIMITER_AUPOIX: opts.limiter_aupoix = true; break;
+        default: break;
+    }
 
-  ROUGHSSTParsedOptions.wilcox2006 = IsPresent(ROUGHSST_OPTIONS::WILCOX2006);
-  ROUGHSSTParsedOptions.limiter_knopp = IsPresent(ROUGHSST_OPTIONS::LIMITER_KNOPP);
-  ROUGHSSTParsedOptions.limiter_aupoix = IsPresent(ROUGHSST_OPTIONS::LIMITER_AUPOIX);
-
-
-  return ROUGHSSTParsedOptions;
+    return opts;
 }
 
 

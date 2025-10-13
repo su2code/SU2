@@ -444,8 +444,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         su2double kPlus = FrictionVel*Roughness_Height*density/laminar_viscosity;
 
         su2double S_R= 0.0;
- 
-        su2double solution[2];
+        su2double solution[2] = {};
+
         /*--- Modify the omega and k to account for a rough wall. ---*/
 
         /*--- Reference 1 original Wilcox (1998) ---*/
@@ -461,9 +461,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         else if (roughsstParsedOptions.wilcox2006) {
         /*--- Reference 2 from D.C. Wilcox Turbulence Modeling for CFD (2006) ---*/
           if (kPlus <= 5)
-            S_R = (200/(kPlus+EPS))*(200/(kPlus+EPS));
+            S_R = pow(200/(kPlus+EPS),2);
           else
-            S_R = 100/(kPlus+EPS) + ((200/(kPlus+EPS))*(200/(kPlus+EPS)) - 100/(kPlus+EPS))*exp(5-kPlus);
+            S_R = 100/(kPlus+EPS) + (pow(200/(kPlus+EPS),2) - 100/(kPlus+EPS))*exp(5-kPlus);
           
           solution[0] = 0.0;
           solution[1] = FrictionVel*FrictionVel*S_R/(laminar_viscosity/density);
@@ -481,7 +481,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         /*--- Aupoix eddy viscosity limiter ---*/ 
         else if (roughsstParsedOptions.limiter_aupoix) {
           
-          su2double k0Plus = ( 1.0 /sqrt( constants[6])) * tanh(((log((kPlus +EPS ) / 30.0) / log(10.0)) + 1.0 - 1.0*tanh( (kPlus + EPS) / 125.0))*tanh((kPlus + EPS) / 125.0));
+          su2double k0Plus = ( 1.0 /sqrt( constants[6])) * tanh((log10((kPlus +EPS ) / 30.0) + 1.0 - 1.0*tanh( (kPlus + EPS) / 125.0))*tanh((kPlus + EPS) / 125.0));
           su2double kwallPlus = max(0.0, k0Plus);
           su2double kwall = kwallPlus*FrictionVel*FrictionVel;
       
