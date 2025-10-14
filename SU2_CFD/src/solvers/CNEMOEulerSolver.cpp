@@ -542,17 +542,12 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       su2double lim_j = 2.0;
 
       for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
-        Project_Grad_i[iVar] = GeometryToolbox::DotProduct(nDim, Gradient_i[iVar], Vector_ij);
-        Project_Grad_j[iVar] = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
-
         su2double V_ij = 0.0;
         if (umuscl || van_albada)
           V_ij = V_j[iVar] - V_i[iVar];
 
-        if (umuscl) {
-          Project_Grad_i[iVar] = LimiterHelpers<>::umusclProjection(Project_Grad_i[iVar], V_ij, kappa);
-          Project_Grad_j[iVar] = LimiterHelpers<>::umusclProjection(Project_Grad_j[iVar], V_ij, kappa);
-        }
+        Project_Grad_i[iVar] = MUSCL_Reconstruction(Gradient_i[iVar], V_ij, Vector_ij, umuscl, kappa);
+        Project_Grad_j[iVar] = MUSCL_Reconstruction(Gradient_j[iVar], V_ij, Vector_ij, umuscl, kappa);
 
         if (limiter) {
           if (van_albada) {

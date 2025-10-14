@@ -223,14 +223,12 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           }
 
           for (auto iVar = 0u; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-            su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim, Gradient_i[iVar], Vector_ij);
-            su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
+            su2double V_ij = 0.0;
+            if (umusclFlow)
+              V_ij = V_j[iVar] - V_i[iVar];
 
-            if (umusclFlow) {
-              const su2double V_ij = V_j[iVar] - V_i[iVar];
-              Project_Grad_i = LimiterHelpers<>::umusclProjection(Project_Grad_i, V_ij, kappaFlow);
-              Project_Grad_j = LimiterHelpers<>::umusclProjection(Project_Grad_j, V_ij, kappaFlow);
-            }
+            su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], V_ij, Vector_ij, umusclFlow, kappaFlow);
+            su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], V_ij, Vector_ij, umusclFlow, kappaFlow);
 
             if (limiterFlow) {
               Project_Grad_i *= Limiter_i[iVar];
@@ -256,14 +254,12 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           }
 
           for (auto iVar = 0u; iVar < nVar; iVar++) {
-            su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim, Gradient_i[iVar], Vector_ij);
-            su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
+            su2double U_ij = 0.0;
+            if (umuscl)
+              U_ij = Scalar_j[iVar] - Scalar_i[iVar];
 
-            if (umuscl) {
-              const su2double U_ij = Scalar_j[iVar] - Scalar_i[iVar];
-              Project_Grad_i = LimiterHelpers<>::umusclProjection(Project_Grad_i, U_ij, kappa);
-              Project_Grad_j = LimiterHelpers<>::umusclProjection(Project_Grad_j, U_ij, kappa);
-            }
+            su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], U_ij, Vector_ij, umuscl, kappa);
+            su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], U_ij, Vector_ij, umuscl, kappa);
 
             if (limiter) {
               Project_Grad_i *= Limiter_i[iVar];

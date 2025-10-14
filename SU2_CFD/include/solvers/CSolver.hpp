@@ -579,6 +579,17 @@ public:
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
 
   /*!
+   * \brief Compute the projection of a variable for MUSCL reconstruction.
+   * \param[in] grad - Gradient vector.
+   * \param[in] delta_ij - Centered difference.
+   * \param[in] vector_ij - Distance vector.
+   * \param[in] umuscl - Whether to use a U-MUSCL (blended difference) reconstruction.
+   * \param[in] kappa - Blending coefficient for U-MUSCL reconstruction.
+   * \return - Projected variable.
+   */
+  su2double MUSCL_Reconstruction(su2double* grad, su2double delta_ij, su2double* vector_ij, bool umuscl, su2double kappa);
+
+  /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
    *        It is a virtual function, because for the DG-FEM solver a different version is needed.
    */

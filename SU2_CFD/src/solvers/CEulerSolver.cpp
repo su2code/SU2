@@ -1881,21 +1881,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
       for (auto iVar = 0u; iVar < nPrimVarGrad; iVar++) {
-        su2double Project_Grad_i = GeometryToolbox::DotProduct(nDim, Gradient_i[iVar], Vector_ij);
-        su2double Project_Grad_j = GeometryToolbox::DotProduct(nDim, Gradient_j[iVar], Vector_ij);
-
         su2double V_ij = 0.0;
         if (umuscl || van_albada)
           V_ij = V_j[iVar] - V_i[iVar];
 
-        if (umuscl) {
-          Project_Grad_i = LimiterHelpers<>::umusclProjection(Project_Grad_i, V_ij, kappa);
-          Project_Grad_j = LimiterHelpers<>::umusclProjection(Project_Grad_j, V_ij, kappa);
-        }
+        const su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], V_ij, Vector_ij, umuscl, kappa);
+        const su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], V_ij, Vector_ij, umuscl, kappa);
 
         su2double lim_i = 1.0;
         su2double lim_j = 1.0;
-
         if (van_albada) {
           lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
           lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j, V_ij, EPS);
