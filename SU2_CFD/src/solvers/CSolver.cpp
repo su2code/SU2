@@ -2267,7 +2267,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) co
 void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
 
   const auto kindLimiter = config->GetKind_SlopeLimit();
-  const auto umusclKappa = SU2_TYPE::GetValue(config->GetMUSCL_Kappa());
+  const auto umusclKappa = config->GetMUSCL_Kappa();
   const auto umuscl = (umusclKappa != 0.0);
   const auto& solution = base_nodes->GetSolution();
   const auto& gradient = base_nodes->GetGradient_Reconstruction();

@@ -75,7 +75,7 @@ struct LimiterHelpers
   {
     /*-------------------------------------------------------------------*/
     /*--- Reconstruction will be V_L = V_i + 0.25 * dV_ij^kappa.      ---*/
-    /*--- Scale dV_ij^cent  by 0.5 here and return 0.5 * dV_ij^kappa  ---*/
+    /*--- Scale dV_ij^cent by 0.5 here and return 0.5 * dV_ij^kappa   ---*/
     /*--- for backward compatibility (i.e. when kappa==0 and this     ---*/
     /*--- function isn't called, the reconstruction will be           ---*/
     /*--- V_L = V_i + 0.5 * proj, otherwise V_L = V_i + 0.5 * blend). ---*/

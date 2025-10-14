@@ -28,7 +28,6 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CScalarSolver.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
-#include "../../include/limiters/CLimiterDetails.hpp"
 
 template <class VariableType>
 CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative)
