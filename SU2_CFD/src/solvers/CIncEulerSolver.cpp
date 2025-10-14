@@ -1283,8 +1283,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         if (umuscl || van_albada)
           V_ij = V_j[iVar] - V_i[iVar];
 
-        const su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], V_ij, Vector_ij, umuscl, kappa);
-        const su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], V_ij, Vector_ij, umuscl, kappa);
+        const su2double Project_Grad_i = nkRelax * MUSCL_Reconstruction(Gradient_i[iVar], V_ij, Vector_ij, umuscl, kappa);
+        const su2double Project_Grad_j = nkRelax * MUSCL_Reconstruction(Gradient_j[iVar], V_ij, Vector_ij, umuscl, kappa);
 
         su2double lim_i = 1.0;
         su2double lim_j = 1.0;
@@ -1297,8 +1297,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
           lim_j = nodes->GetLimiter_Primitive(jPoint, iVar);
         }
 
-        Primitive_i[iVar] = V_i[iVar] + 0.5 * nkRelax * lim_i * Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] - 0.5 * nkRelax * lim_j * Project_Grad_j;
+        Primitive_i[iVar] = V_i[iVar] + 0.5 * lim_i * Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] - 0.5 * lim_j * Project_Grad_j;
       }
 
       for (auto iVar = nPrimVarGrad; iVar < nPrimVar; iVar++) {

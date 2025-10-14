@@ -34,17 +34,17 @@
 
 /*!
  * \brief Blended difference for U-MUSCL reconstruction.
- * \param[in] grad_proj - Gradient projection at point i: dot(grad_i, vector_ij)
- * \param[in] delta - Centered difference: V_j - V_i
- * \param[in] kappa - Blending parameter
- * \return Blended difference for reconstruction
+ * \param[in] grad_proj - Gradient projection at point i: dot(grad_i, vector_ij).
+ * \param[in] delta - Centered difference: V_j - V_i.
+ * \param[in] kappa - Blending parameter.
+ * \return Blended difference for reconstruction from point i.
  */
 FORCEINLINE Double umusclProjection(Double grad_proj,
                                     Double delta,
                                     Double kappa) {
   /*-------------------------------------------------------------------*/
   /*--- Reconstruction will be V_L = V_i + 0.25 * dV_ij^kappa.      ---*/
-  /*--- Scale dV_ij^cent  by 0.5 here and return 0.5 * dV_ij^kappa  ---*/
+  /*--- Scale dV_ij^cent by 0.5 here and return 0.5 * dV_ij^kappa   ---*/
   /*--- for backward compatibility (i.e. when kappa==0 and this     ---*/
   /*--- function isn't called, the reconstruction will be           ---*/
   /*--- V_L = V_i + 0.5 * proj, otherwise V_L = V_i + 0.5 * blend). ---*/
@@ -56,6 +56,36 @@ FORCEINLINE Double umusclProjection(Double grad_proj,
 
   /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
   return (1.0 - kappa) * upw + (1.0 + kappa) * cent;
+}
+
+/*!
+ * \brief MUSCL reconstruction of the specified variable.
+ * \param[in] grad_i - Gradient vector at point i.
+ * \param[in] delta - Centered difference: V_j - V_i.
+ * \param[in] vector_ij - Distance vector from i to j.
+ * \param[in] iVar - Variable index.
+ * \param[in] umuscl - If true, use U-MUSCL blended difference.
+ * \param[in] kappa - Blending coefficient.
+ * \param[in] relax - Newton-Krylov relaxation.
+ * \return Variable reconstructed from point i.
+ */
+template<class GradType, size_t nDim>
+FORCEINLINE Double musclReconstruction(const GradType& grad,
+                                       const Double delta,
+                                       const VectorDbl<nDim>& vector_ij,
+                                       size_t iVar,
+                                       bool umuscl,
+                                       Double kappa,
+                                       Double relax) {
+  /*--- Gradient projection ---*/
+  Double proj = dot(grad[iVar], vector_ij);
+
+  if (umuscl) {
+    /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
+    proj = umusclProjection(proj, delta, kappa);
+  }
+
+  return relax * proj;
 }
 
 /*!
@@ -72,28 +102,22 @@ FORCEINLINE void musclUnlimited(Int iPoint,
                                 Double relax) {
   constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
-  const auto scale = 0.5 * relax;
-
   auto grad_i = gatherVariables<nVarGrad,nDim>(iPoint, gradient);
   auto grad_j = gatherVariables<nVarGrad,nDim>(jPoint, gradient);
 
   for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
-    /*--- Gradient projections ---*/
-    Double proj_i = dot(grad_i[iVar], vector_ij);
-    Double proj_j = dot(grad_j[iVar], vector_ij);
+    /*--- Centered difference, only needed for U-MUSCL projection ---*/
+    Double delta_ij = 0.0;
+    if (umuscl)
+      delta_ij = V.j.all(iVar) - V.i.all(iVar);
 
-    if (umuscl) {
-      /*--- Centered difference: dV_ij^cent = V_j - V_i ---*/
-      const Double cent = V.j.all(iVar) - V.i.all(iVar);
-
-      /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
-      proj_i = umusclProjection(proj_i, cent, kappa);
-      proj_j = umusclProjection(proj_j, cent, kappa);
-    }
+    /*--- U-MUSCL reconstructed variables ---*/
+    const Double proj_i = musclReconstruction(grad_i, delta_ij, vector_ij, iVar, umuscl, kappa, relax);
+    const Double proj_j = musclReconstruction(grad_j, delta_ij, vector_ij, iVar, umuscl, kappa, relax);
 
     /*--- Apply reconstruction: V_L = V_i + 0.25 * dV_ij^kappa ---*/
-    V.i.all(iVar) += scale * proj_i;
-    V.j.all(iVar) -= scale * proj_j;
+    V.i.all(iVar) += 0.5 * proj_i;
+    V.j.all(iVar) -= 0.5 * proj_j;
   }
 }
 
@@ -112,8 +136,6 @@ FORCEINLINE void musclPointLimited(Int iPoint,
                                    Double relax) {
   constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
-  const auto scale = 0.5 * relax;
-
   auto lim_i = gatherVariables<nVarGrad>(iPoint, limiter);
   auto lim_j = gatherVariables<nVarGrad>(jPoint, limiter);
 
@@ -121,22 +143,18 @@ FORCEINLINE void musclPointLimited(Int iPoint,
   auto grad_j = gatherVariables<nVarGrad,nDim>(jPoint, gradient);
 
   for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
-    /*--- Gradient projections ---*/
-    Double proj_i = dot(grad_i[iVar], vector_ij);
-    Double proj_j = dot(grad_j[iVar], vector_ij);
+    /*--- Centered difference, only needed for U-MUSCL projection ---*/
+    Double delta_ij = 0.0;
+    if (umuscl)
+      delta_ij = V.j.all(iVar) - V.i.all(iVar);
 
-    if (umuscl) {
-      /*--- Centered difference: dV_ij^cent = Vj - Vi ---*/
-      const Double cent = V.j.all(iVar) - V.i.all(iVar);
-
-      /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
-      proj_i = umusclProjection(proj_i, cent, kappa);
-      proj_j = umusclProjection(proj_j, cent, kappa);
-    }
+    /*--- U-MUSCL reconstructed variables ---*/
+    const Double proj_i = musclReconstruction(grad_i, delta_ij, vector_ij, iVar, umuscl, kappa, relax);
+    const Double proj_j = musclReconstruction(grad_j, delta_ij, vector_ij, iVar, umuscl, kappa, relax);
 
     /*--- Apply reconstruction: V_L = V_i + 0.25 * lim * dV_ij^kappa ---*/
-    V.i.all(iVar) += scale * lim_i(iVar) * proj_i;
-    V.j.all(iVar) -= scale * lim_j(iVar) * proj_j;
+    V.i.all(iVar) += 0.5 * lim_i(iVar) * proj_i;
+    V.j.all(iVar) -= 0.5 * lim_j(iVar) * proj_j;
   }
 }
 
@@ -154,31 +172,24 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
                                   Double relax) {
   constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
-  const auto scale = 0.5 * relax;
-
   auto grad_i = gatherVariables<nVarGrad,nDim>(iPoint, gradient);
   auto grad_j = gatherVariables<nVarGrad,nDim>(jPoint, gradient);
 
   for (size_t iVar = 0; iVar < nVarGrad; ++iVar) {
-    Double proj_i = dot(grad_i[iVar], vector_ij);
-    Double proj_j = dot(grad_j[iVar], vector_ij);
+    /*--- Centered difference, needed for U-MUSCL projection and limiter ---*/
     const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
     const Double delta_ij_2 = pow(delta_ij, 2) + 1e-6;
 
-    if (umuscl) {
-      /*--- Centered difference: dV_ij^cent = V_j - V_i ---*/
-      const Double cent = V.j.all(iVar) - V.i.all(iVar);
-
-      /*--- Blended difference: dV_ij^kappa = (1-kappa)dV_ij^upw + (1+kappa)dV_ij^cent ---*/
-      proj_i = umusclProjection(proj_i, cent, kappa);
-      proj_j = umusclProjection(proj_j, cent, kappa);
-    }
+    /*--- U-MUSCL reconstructed variables ---*/
+    const Double proj_i = musclReconstruction(grad_i, delta_ij, vector_ij, iVar, umuscl, kappa, relax);
+    const Double proj_j = musclReconstruction(grad_j, delta_ij, vector_ij, iVar, umuscl, kappa, relax);
 
     /// TODO: Customize the limiter function.
     const Double lim_i = (delta_ij_2 + proj_i*delta_ij) / (pow(proj_i,2) + delta_ij_2);
     const Double lim_j = (delta_ij_2 + proj_j*delta_ij) / (pow(proj_j,2) + delta_ij_2);
-    V.i.all(iVar) += scale * lim_i * proj_i;
-    V.j.all(iVar) -= scale * lim_j * proj_j;
+
+    V.i.all(iVar) += 0.5 * lim_i * proj_i;
+    V.j.all(iVar) -= 0.5 * lim_j * proj_j;
   }
 }
 

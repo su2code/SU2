@@ -546,8 +546,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
         if (umuscl || van_albada)
           V_ij = V_j[iVar] - V_i[iVar];
 
-        Project_Grad_i[iVar] = MUSCL_Reconstruction(Gradient_i[iVar], V_ij, Vector_ij, umuscl, kappa);
-        Project_Grad_j[iVar] = MUSCL_Reconstruction(Gradient_j[iVar], V_ij, Vector_ij, umuscl, kappa);
+        Project_Grad_i[iVar] = nkRelax * MUSCL_Reconstruction(Gradient_i[iVar], V_ij, Vector_ij, umuscl, kappa);
+        Project_Grad_j[iVar] = nkRelax * MUSCL_Reconstruction(Gradient_j[iVar], V_ij, Vector_ij, umuscl, kappa);
 
         if (limiter) {
           if (van_albada) {
@@ -566,8 +566,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       su2double lim_ij = min(lim_i, lim_j);
 
       for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
-        Primitive_i[iVar] = V_i[iVar] + 0.5 * nkRelax * lim_ij * Project_Grad_i[iVar];
-        Primitive_j[iVar] = V_j[iVar] - 0.5 * nkRelax * lim_ij * Project_Grad_j[iVar];
+        Primitive_i[iVar] = V_i[iVar] + 0.5 * lim_ij * Project_Grad_i[iVar];
+        Primitive_j[iVar] = V_j[iVar] - 0.5 * lim_ij * Project_Grad_j[iVar];
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
