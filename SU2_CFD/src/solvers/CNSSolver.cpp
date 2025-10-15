@@ -834,6 +834,9 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
   const su2double Gas_Constant = config->GetGas_ConstantND();
   const unsigned short max_iter = config->GetwallModel_MaxIter();
   const su2double relax = config->GetwallModel_RelFac();
+  su2double tempLimits[2];
+  tempLimits[1] = config->GetTemperatureLimits(0);
+  tempLimits[2] = config->GetTemperatureLimits(1);
 
   /*--- Compute the recovery factor
    * use Molecular (Laminar) Prandtl number (see Nichols & Nelson, nomenclature ) ---*/
@@ -985,7 +988,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
           const su2double denum = (1.0 + Beta*U_Plus - Gam*U_Plus*U_Plus);
           if (denum > EPS){
             T_Wall = T_Normal / denum;
-            nodes->SetTemperature(iPoint,T_Wall);
+            nodes->SetTemperature(iPoint,T_Wall, tempLimits);
           }
           else {
             SU2_OMP_CRITICAL

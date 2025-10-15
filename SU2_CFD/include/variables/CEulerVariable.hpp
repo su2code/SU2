@@ -83,6 +83,7 @@ class CEulerVariable : public CFlowVariable {
   su2vector<unsigned short> DatasetExtrapolation; /*!< \brief Stores instances of dataset bounds violation when using data-driven fluid models. */
   su2vector<unsigned long> NIterNewtonsolver;    /*!< \brief Stores number of Newton solver iterations when using data-driven fluid models. */
   VectorType FluidEntropy;          /*!< \brief Stores the fluid entropy value as computed by the data-driven fluid model. */
+  su2double TemperatureLimits[2];                      /*!< \brief Temperature limits [K]. */
 
  public:
   /*!
@@ -194,9 +195,9 @@ class CEulerVariable : public CFlowVariable {
    * \brief Set the value of the temperature.
    * \param[in] temperature - how agitated the particles are :)
    */
-  inline bool SetTemperature(unsigned long iPoint, su2double temperature) final {
+  inline bool SetTemperature(unsigned long iPoint, su2double temperature, su2double* val_temp_limits) {
     Primitive(iPoint, indices.Temperature()) = temperature;
-    return temperature <= 0.0;
+    return (temperature <= val_temp_limits[0]) || (temperature >= val_temp_limits[1]);
   }
 
   /*!

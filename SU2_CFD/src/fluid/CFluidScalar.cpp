@@ -230,43 +230,46 @@ void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double
   ComputeMassDiffusivity();
 }
 
+/* Functions needed for compressible solver */
+
 su2double CFluidScalar::ComputeEfromT(su2double T) {
-  su2double toll = 1e-6;
-  su2double delta_T = 0.001;
-  su2double T_ref = 298.15;
-  su2double enthalpy = 0.0;
+  // su2double toll = 1e-6;
+  // su2double delta_T = 0.001;
+  // su2double T_ref = 298.15;
+  // su2double enthalpy = 0.0;
   su2double sensible_energy=0.0;
 
-  do {
-    enthalpy += Cp*delta_T;
-    T_ref+=delta_T;
-  } while (T_ref < T-toll);
+  // do {
+  //   enthalpy += Cp*delta_T;
+  //   T_ref+=delta_T;
+  // } while (T_ref < T-toll);
   
-  sensible_energy = enthalpy - Gas_Constant * T;
+  sensible_energy = Cv*T;
 
   return sensible_energy;
 }
 
 void CFluidScalar::ComputeTfromE(su2double e) {
-  su2double toll = 1e-6;
-  su2double T = 300.0, DT = 1.0, F, F1;
-  unsigned short nmax = 20, count = 0;
-  su2double e_0 = 0.0;
+  // su2double toll = 1e-6;
+  // su2double T = 300.0, DT = 1.0, F, F1;
+  // unsigned short nmax = 20, count = 0;
+  // su2double e_0 = 0.0;
 
-  do {
-    e_0=ComputeEfromT(T);
-    F = e - e_0;
-    F1 = -Cp + Gas_Constant;
-    DT = F / F1;
-    T -= DT;
-    count +=1;
-  } while (abs(DT) > toll && count < nmax);
+  // do {
+  //   e_0=ComputeEfromT(T);
+  //   F = e - e_0;
+  //   F1 = -Cp + Gas_Constant;
+  //   DT = F / F1;
+  //   T -= DT;
+  //   count +=1;
+  // } while (abs(DT) > toll && count < nmax);
 
-  if (count == nmax) {
-    cout << "Warning Newton-Raphson exceed number of max iteration in computing Temperature" << endl;
-  }
+  // if (count == nmax) {
+  //   cout << "Warning Newton-Raphson exceed number of max iteration in computing Temperature" << endl;
+  // }
 
-  Temperature = T;
+  // Temperature = T;
+  Temperature = e / Cv;
 }
 
 void CFluidScalar::SetTDState_rhoe(su2double rho, su2double e, const su2double *val_scalars) {

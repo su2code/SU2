@@ -148,13 +148,9 @@ bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2doubl
   FluidModel->SetTDState_rhoe(density, staticEnergy, scalar);
 
   bool check_dens  = SetDensity(iPoint);
-  su2double Temp_min=200.0;
-  su2double Temp_max=400.0;
-  su2double Temperature = min(Temp_max,max(FluidModel->GetTemperature(),Temp_min));
-  FluidModel->SetTDState_rhoT(density, Temperature, scalar);
   bool check_press = SetPressure(iPoint, FluidModel->GetPressure());
   bool check_sos   = SetSoundSpeed(iPoint, FluidModel->GetSoundSpeed2());
-  bool check_temp  = SetTemperature(iPoint, FluidModel->GetTemperature());
+  bool check_temp  = SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
 
   /*--- Check that the solution has a physical meaning ---*/
 
@@ -178,7 +174,7 @@ bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2doubl
     SetDensity(iPoint);
     SetPressure(iPoint, FluidModel->GetPressure());
     SetSoundSpeed(iPoint, FluidModel->GetSoundSpeed2());
-    SetTemperature(iPoint, FluidModel->GetTemperature());
+    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
 
     RightVol = false;
 

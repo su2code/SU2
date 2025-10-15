@@ -49,6 +49,8 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+  TemperatureLimits[0]= config->GetTemperatureLimits(0);
+  TemperatureLimits[1]= config->GetTemperatureLimits(1);
 
   nSecondaryVar = config->GetViscous() ? 8 : 2,
   nSecondaryVarGrad = 2;
@@ -114,7 +116,7 @@ bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
   bool check_dens  = SetDensity(iPoint);
   bool check_press = SetPressure(iPoint, FluidModel->GetPressure());
   bool check_sos   = SetSoundSpeed(iPoint, FluidModel->GetSoundSpeed2());
-  bool check_temp  = SetTemperature(iPoint, FluidModel->GetTemperature());
+  bool check_temp  = SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
 
   /*--- Check that the solution has a physical meaning ---*/
 
@@ -136,7 +138,7 @@ bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
     SetDensity(iPoint);
     SetPressure(iPoint, FluidModel->GetPressure());
     SetSoundSpeed(iPoint, FluidModel->GetSoundSpeed2());
-    SetTemperature(iPoint, FluidModel->GetTemperature());
+    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
 
     RightVol = false;
 

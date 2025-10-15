@@ -555,6 +555,8 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* config) {
+
+  if (config->GetKind_FluidModel()== FLUID_MIXTURE) return;
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
