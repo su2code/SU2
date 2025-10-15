@@ -6966,8 +6966,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   if (val_software == SU2_COMPONENT::SU2_CFD) {
 
-    auto PrintLimiterInfo = [&](const LIMITER kind_limiter) {
+    auto PrintLimiterInfo = [&](const LIMITER kind_limiter, const su2double kappa) {
       cout << "Second order integration in space, with slope limiter.\n";
+      if (kappa != 0.0) cout << "U-MUSCL reconstruction, with coefficient: " << kappa << ".\n";
       switch (kind_limiter) {
         case LIMITER::NONE:
           cout << "No slope-limiting method. " << endl;
@@ -7062,7 +7063,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
 
         if (MUSCL_Flow) {
-          PrintLimiterInfo(Kind_SlopeLimit_Flow);
+          PrintLimiterInfo(Kind_SlopeLimit_Flow, MUSCL_Kappa_Flow);
         } else {
           cout << "First order integration in space." << endl;
         }
@@ -7075,7 +7076,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == UPWIND::SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model." << endl;
         if (MUSCL_Turb) {
-          PrintLimiterInfo(Kind_SlopeLimit_Turb);
+          PrintLimiterInfo(Kind_SlopeLimit_Turb, MUSCL_Kappa_Turb);
         } else {
           cout << "First order integration in space." << endl;
         }
@@ -7101,7 +7102,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       if (Kind_ConvNumScheme_AdjFlow == SPACE_UPWIND) {
         if (Kind_Upwind_AdjFlow == UPWIND::ROE) cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the adjoint inviscid terms."<< endl;
         if (MUSCL_AdjFlow) {
-          PrintLimiterInfo(Kind_SlopeLimit_AdjFlow);
+          PrintLimiterInfo(Kind_SlopeLimit_AdjFlow, MUSCL_Kappa_AdjFlow);
         } else {
           cout << "First order integration." << endl;
         }
@@ -7115,7 +7116,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       if (Kind_ConvNumScheme_AdjTurb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == UPWIND::SCALAR_UPWIND) cout << "Scalar upwind solver for the adjoint turbulence model." << endl;
         if (MUSCL_AdjTurb) {
-          PrintLimiterInfo(Kind_SlopeLimit_AdjTurb);
+          PrintLimiterInfo(Kind_SlopeLimit_AdjTurb, 0.0);
         } else {
           cout << "First order integration." << endl;
         }
