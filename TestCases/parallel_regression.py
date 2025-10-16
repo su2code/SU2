@@ -510,7 +510,7 @@ def main():
     turb_naca0012_sst_expliciteuler.timeout   = 3200
     test_list.append(turb_naca0012_sst_expliciteuler)
 
-    # NACA0012 (SST, FUN3D finest grid, U-MUSCL)
+    # NACA0012 (SST, 2003m, U-MUSCL)
     turb_naca0012_sst_umuscl           = TestCase('turb_naca0012_sst_umuscl')
     turb_naca0012_sst_umuscl.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_umuscl.cfg_file  = "turb_NACA0012_sst_umuscl.cfg"
