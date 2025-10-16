@@ -441,7 +441,7 @@ def main():
     turb_oneram6_umuscl.cfg_dir   = "rans/oneram6"
     turb_oneram6_umuscl.cfg_file  = "turb_ONERAM6_umuscl.cfg"
     turb_oneram6_umuscl.test_iter = 10
-    turb_oneram6_umuscl.test_vals = [-2.226258, -6.527117, 0.227274, 0.117072, 0.000000]
+    turb_oneram6_umuscl.test_vals = [-2.417969, -6.630390, 0.238556, 0.159176, 0.000000]
     turb_oneram6_umuscl.timeout   = 3200
     test_list.append(turb_oneram6_umuscl)
 
@@ -492,7 +492,6 @@ def main():
     turb_naca0012_sst_1994_KLm.timeout   = 3200
     test_list.append(turb_naca0012_sst_1994_KLm)
 
-
     # NACA0012 (SST, fixed values for turbulence quantities)
     turb_naca0012_sst_fixedvalues           = TestCase('turb_naca0012_sst_fixedvalues')
     turb_naca0012_sst_fixedvalues.cfg_dir   = "rans/naca0012"
@@ -516,8 +515,7 @@ def main():
     turb_naca0012_sst_umuscl.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_umuscl.cfg_file  = "turb_NACA0012_sst_umuscl.cfg"
     turb_naca0012_sst_umuscl.test_iter = 10
-    turb_naca0012_sst_umuscl.test_vals = [-12.078069, -15.284102, -5.859484, 1.048053, 0.019238, -2.015780, 0.000000]
-    turb_naca0012_sst_umuscl.test_vals_aarch64 = [-12.232530, -14.435294, -6.037147, 1.047444, 0.019214, -1.704457, 0.000000]
+    turb_naca0012_sst_umuscl.test_vals = [-5.562109, -5.896601, 0.802894, 1.087476, 0.020323, -2.567948, 0.000000]
     turb_naca0012_sst_umuscl.timeout   = 3200
     test_list.append(turb_naca0012_sst_umuscl)
 
