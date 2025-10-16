@@ -436,6 +436,15 @@ def main():
     turb_oneram6_nk.tol       = 0.0001
     test_list.append(turb_oneram6_nk)
 
+    # ONERA M6 Wing - U-MUSCL
+    turb_oneram6_umuscl           = TestCase('turb_oneram6_umuscl')
+    turb_oneram6_umuscl.cfg_dir   = "rans/oneram6"
+    turb_oneram6_umuscl.cfg_file  = "turb_ONERAM6_umuscl.cfg"
+    turb_oneram6_umuscl.test_iter = 10
+    turb_oneram6_umuscl.test_vals = [-2.226258, -6.527117, 0.227274, 0.117072, 0.000000]
+    turb_oneram6_umuscl.timeout   = 3200
+    test_list.append(turb_oneram6_umuscl)
+
     # NACA0012 (SA, FUN3D finest grid results: CL=1.0983, CD=0.01242)
     turb_naca0012_sa           = TestCase('turb_naca0012_sa')
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
@@ -501,6 +510,16 @@ def main():
     turb_naca0012_sst_expliciteuler.test_vals = [-3.533766, -3.157224, 3.743381, 1.124757, 0.501700, -float("inf")]
     turb_naca0012_sst_expliciteuler.timeout   = 3200
     test_list.append(turb_naca0012_sst_expliciteuler)
+
+    # NACA0012 (SST, FUN3D finest grid, U-MUSCL)
+    turb_naca0012_sst_umuscl           = TestCase('turb_naca0012_sst_umuscl')
+    turb_naca0012_sst_umuscl.cfg_dir   = "rans/naca0012"
+    turb_naca0012_sst_umuscl.cfg_file  = "turb_NACA0012_sst_umuscl.cfg"
+    turb_naca0012_sst_umuscl.test_iter = 10
+    turb_naca0012_sst_umuscl.test_vals = [-12.078069, -15.284102, -5.859484, 1.048053, 0.019238, -2.015780, 0.000000]
+    turb_naca0012_sst_umuscl.test_vals_aarch64 = [-12.232530, -14.435294, -6.037147, 1.047444, 0.019214, -1.704457, 0.000000]
+    turb_naca0012_sst_umuscl.timeout   = 3200
+    test_list.append(turb_naca0012_sst_umuscl)
 
     # PROPELLER
     propeller           = TestCase('propeller')
