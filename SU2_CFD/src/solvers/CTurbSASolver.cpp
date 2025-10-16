@@ -1453,6 +1453,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
     su2double lengthScale = 0.0, lesSensor = 0.0;
 
+    const su2double LES_FilterWidth = config->GetLES_FilterWidth();
+
     switch(kindHybridRANSLES){
       case SA_DES: {
         /*--- Original Detached Eddy Simulation (DES97)
@@ -1460,12 +1462,15 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         1997
         ---*/
 
-        const su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
+        su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
+        if (LES_FilterWidth > 0.0){
+          maxDelta = LES_FilterWidth;
+        }
         const su2double distDES = constDES * maxDelta;
         lengthScale = min(distDES,wallDistance);
         lesSensor = (wallDistance<=distDES) ? 0.0 : 1.0;
 
-        if (config->GetDIHT()) {
+        if (config->GetEnforceLES()) {
           lengthScale = distDES;
           lesSensor = 1.0;
         }
@@ -1478,7 +1483,10 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
          Theoretical and Computational Fluid Dynamics - 2006
          ---*/
 
-        const su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
+        su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
+        if (LES_FilterWidth > 0.0){
+          maxDelta = LES_FilterWidth;
+        }
 
         const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
         const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
@@ -1487,7 +1495,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
         lesSensor = (wallDistance<=distDES) ? 0.0 : f_d;
 
-        if (config->GetDIHT()) {
+        if (config->GetEnforceLES()) {
           lengthScale = distDES;
           lesSensor = 1.0;
         }
@@ -1529,11 +1537,14 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
           maxDelta = deltaDDES;
         }
 
+        if (LES_FilterWidth > 0.0){
+          maxDelta = LES_FilterWidth;
+        }
         const su2double distDES = constDES * maxDelta;
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
         lesSensor = (wallDistance<=distDES) ? 0.0 : f_d;
 
-        if (config->GetDIHT()) {
+        if (config->GetEnforceLES()) {
           lengthScale = distDES;
           lesSensor = 1.0;
         }
@@ -1587,11 +1598,14 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
           maxDelta = deltaDDES;
         }
 
+        if (LES_FilterWidth > 0.0){
+          maxDelta = LES_FilterWidth;
+        }
         const su2double distDES = constDES * maxDelta;
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
         lesSensor = (wallDistance<=distDES) ? 0.0 : f_d;
 
-        if (config->GetDIHT()) {
+        if (config->GetEnforceLES()) {
           lengthScale = distDES;
           lesSensor = 1.0;
         }

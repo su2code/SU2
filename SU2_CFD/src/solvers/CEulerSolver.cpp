@@ -298,10 +298,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   }
   SetBaseClassPointerToNodes();
 
-  /*--- Generate initial random velocity field (Decaying Isotropic Homogeneous Turbulence). ---*/
-
-  if (config->GetDIHT()) nodes->SetVelDIHT(nPoint, nDim, nVar, config, geometry);
-
   if (iMesh == MESH_0) {
     nodes->NonPhysicalEdgeCounter.resize(geometry->GetnEdge()) = 0;
   }

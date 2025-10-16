@@ -2920,17 +2920,11 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Specify if the Stochastic Backscatter Model must be activated */
   addBoolOption("STOCHASTIC_BACKSCATTER", StochasticBackscatter, false);
 
-  /* DESCRIPTION: Specify if the Decay of Isotropic Homogeneous Turbulence (DIHT) must be simulated */
-  addBoolOption("DIHT", DIHT, false);
+  /* DESCRIPTION: Specify if the LES mode must be enforced */
+  addBoolOption("ENFORCE_LES", enforceLES, false);
 
-  /* DESCRIPTION: Domain length in x, y and z directions (DIHT) */
-  addDoubleArrayOption("DIHT_DOMAIN_LENGTH", 3, DIHT_DomainLength);
-
-  /* DESCRIPTION: Spacing of the grid points in x, y and z directions (DIHT) */
-  addDoubleArrayOption("DIHT_NPOINT", 3, DIHT_nPoint);
-
-  /* DESCRIPTION: Number of Fourier modes (DIHT) */
-  addUnsignedLongOption("DIHT_NUM_MODES", DIHT_nModes, 1000);
+  /* DESCRIPTION: Filter width for LES (if negative, it is computed based on the local cell size) */
+  addDoubleOption("LES_FILTER_WIDTH", LES_FilterWidth, -1.0);
 
   /* DESCRIPTION: Roe with low dissipation for unsteady flows */
   addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
@@ -6465,23 +6459,23 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
-        cout << "Stochastic Backscatter: ";
-        if (StochasticBackscatter) {
-          cout << "ON" << endl;
-          cout << "Backscatter timescale coefficient: " << SBS_Ctau << endl;
-        } else {
-          cout << "OFF" << endl;
+        if (Kind_HybridRANSLES != NO_HYBRIDRANSLES) {
+          if (LES_FilterWidth > 0.0) cout << "User-specified LES filter width: " << LES_FilterWidth << endl;
+          cout << "Stochastic Backscatter: ";
+          if (StochasticBackscatter) {
+            cout << "ON" << endl;
+            cout << "Backscatter timescale coefficient: " << SBS_Ctau << endl;
+          } else {
+            cout << "OFF" << endl;
+          }
         }
         if (StochasticBackscatter && Kind_HybridRANSLES == NO_HYBRIDRANSLES)
           SU2_MPI::Error("Stochastic Backscatter can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
-        if (DIHT) {
-          cout << "Decaying Isotropic Homogeneous Turbulence (DIHT): spectrum by Comte-Bellot & Corrsin (1971)." << endl;
-          cout << "WARNING: DIHT algorithm is only compatible with structured grids." << endl;
-          cout << "Computational domain size: " << DIHT_DomainLength[0] << ", " << DIHT_DomainLength[1] << ", " << DIHT_DomainLength[2] << " (L_REF)" << endl;
-          cout << "Number of grid points in x, y and z directions: " << static_cast<int>(DIHT_nPoint[0]) << ", " << static_cast<int>(DIHT_nPoint[1]) << ", " << static_cast<int>(DIHT_nPoint[2]) << endl;
-          cout << "Number of Fourier modes: " << DIHT_nModes << endl;
+        if (enforceLES) {
           if (Kind_HybridRANSLES == NO_HYBRIDRANSLES)
-            SU2_MPI::Error("DIHT mode can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
+            SU2_MPI::Error("ENFORCE_LES can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
+          else
+            cout << "LES enforced in the whole computational domain." << endl;
         }
         break;
       case MAIN_SOLVER::NEMO_EULER:

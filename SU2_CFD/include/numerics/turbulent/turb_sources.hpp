@@ -140,8 +140,6 @@ class CSourceBase_TurbSA : public CNumerics {
       corrFac = sqrt(0.5*(1.0+tRat)*(4.0+tRat)/(2.0+tRat));
     } else if (time_marching == TIME_MARCHING::DT_STEPPING_1ST) {
       corrFac = sqrt(1.0+0.5*tRat);
-    } else {
-      SU2_MPI::Error("Stochastic Backscatter Model only implemented for dual time stepping.", CURRENT_FUNCTION);
     }
     
     su2double scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * density * corrFac;

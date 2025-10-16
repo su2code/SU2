@@ -1084,10 +1084,8 @@ private:
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   bool StochasticBackscatter;          /*!< \brief Option to include Stochastic Backscatter Model. */
   su2double SBS_Ctau;                  /*!< \brief Stochastic Backscatter Model timescale coefficient. */
-  bool DIHT;                           /*!< \brief Option to simulate Decaying Isotropic Homogeneous Turbulence (DIHT). */
-  su2double DIHT_DomainLength[3];      /*!< \brief Domain length in each direction (DIHT). */
-  su2double DIHT_nPoint[3];        /*!< \brief Number of points in each direction (DIHT). */
-  unsigned long DIHT_nModes;           /*!< \brief Number of Fourier modes (DIHT). */
+  bool enforceLES;                     /*!< \brief Option to enforce LES mode in hybrid RANS-LES simulations. */
+  su2double LES_FilterWidth;           /*!< \brief LES filter width for hybrid RANS-LES simulations. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
@@ -9548,31 +9546,16 @@ public:
   bool GetStochastic_Backscatter(void) const { return StochasticBackscatter; }
 
   /*!
-   * \brief Get if the Decaying Isotropic Homogeneous Turbulence (DIHT) must be simulated.
-   * \return TRUE if DIHT is simulated.
+   * \brief Get if the LES mode must be enforced.
+   * \return TRUE if LES is enforced.
    */
-  bool GetDIHT(void) const { return DIHT; }
+  bool GetEnforceLES(void) const { return enforceLES; }
 
   /*!
-   * \brief Get the computational domain length (DIHT).
-   * \param[in] iDim - spatial component
-   * \return Domain length.
+   * \brief Get the LES Filter Width.
+   * \return Value of LES Filter Width.
    */
-  su2double GetDIHT_DomainLength(unsigned short iDim) const { return DIHT_DomainLength[iDim]*Length_Ref;}
-
-  /*!
-   * \brief Get the number of grid points in each direction (DIHT).
-   * \param[in] iDim - spatial component
-   * \return Number of grid points.
-   */
-  su2double GetDIHT_nPoint(unsigned short iDim) const { return DIHT_nPoint[iDim];}
-
-  /*!
-   * \brief Get the number of Fourier modes (DIHT).
-   * \param[in] iDim - spatial component
-   * \return Number of Fourier modes.
-   */
-  unsigned long GetDIHT_nModes() const { return DIHT_nModes;}
+  su2double GetLES_FilterWidth(void) const { return LES_FilterWidth; }
 
   /*!
    * \brief Get the Kind of Roe Low Dissipation Scheme for Unsteady flows.
