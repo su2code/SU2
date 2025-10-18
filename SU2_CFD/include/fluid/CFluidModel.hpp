@@ -286,7 +286,7 @@ class CFluidModel {
    * \param[in] th1 - first thermodynamic variable (P).
    * \param[in] th2 - second thermodynamic variable (T).
    */
-  virtual void SetTDState_PT(su2double P, su2double T,const su2double *val_scalars = nullptr) {}
+  virtual void SetTDState_PT(su2double P, su2double T, const su2double *val_scalars = nullptr) {}
 
   /*!
    * \brief virtual member that would be different for each gas model implemented
