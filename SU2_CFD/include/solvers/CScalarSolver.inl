@@ -150,6 +150,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
   /*--- Apply scalar advection correction terms for bounded scalar problems ---*/
   const bool bounded_scalar = numerics->GetBoundedScalar();
+  const bool compressible = config->GetKind_Regime()==ENUM_REGIME::COMPRESSIBLE;
 
   /*--- Static arrays of MUSCL-reconstructed flow primitives and turbulence variables (thread safety). ---*/
   su2double solution_i[MAXNVAR] = {0.0}, flowPrimVar_i[MAXNVARFLOW] = {0.0};
@@ -291,7 +292,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
        * If the ReducerStrategy is used, the corrections need to be applied in a loop over nodes
        * to avoid race conditions in accessing nodes shared by edges handled by different threads. ---*/
 
-      if (bounded_scalar && !ReducerStrategy) {
+      if (bounded_scalar && !compressible && !ReducerStrategy) {
         LinSysRes.AddBlock(iPoint, nodes->GetSolution(iPoint), -EdgeMassFlux);
         LinSysRes.AddBlock(jPoint, nodes->GetSolution(jPoint), EdgeMassFlux);
 
@@ -318,7 +319,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
     if (implicit) Jacobian.SetDiagonalAsColumnSum();
 
     /*--- Bounded scalar correction that cannot be applied in the edge loop when using the ReducerStrategy. ---*/
-    if (bounded_scalar) {
+    if (bounded_scalar && !compressible) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
         const auto* solution = nodes->GetSolution(iPoint);
