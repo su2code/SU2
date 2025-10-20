@@ -859,6 +859,13 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
         if (rans){
           CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
           numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0), 0.0);
+          if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+            numerics->SetOmegaSST(turbNodes->GetSolution(iPoint,1), 0.0); // #MB25
+          
+          /*--- Beta-FIML - #MB25 ---*/
+          if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+            numerics->SetBetaFiml(nodes->GetBetaFiml(iPoint), nodes->GetBetaFiml(iPoint));
+          }
         }
       }
 

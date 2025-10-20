@@ -190,7 +190,10 @@ class Config(ordered_bunch):
         # handle unpacking cases
         def_dv = self["DEFINITION_DV"]
 
-        n_dv = sum(def_dv["SIZE"])
+        if int(self.NPOIN) == 0:
+            n_dv = sum(def_dv['SIZE'])
+        else: 
+            n_dv = int(self.NPOIN)
 
         if not dv_old:
             dv_old = [0.0] * n_dv
@@ -203,11 +206,16 @@ class Config(ordered_bunch):
         dv_scales = def_dv["SCALE"]
 
         k = 0
-        for i, dv_scl in enumerate(dv_scales):
-            for j in range(def_dv["SIZE"][i]):
-                dv_new[k] = dv_new[k] * dv_scl
-                dv_old[k] = dv_old[k] * dv_scl
-                k = k + 1
+        if (int(self.NPOIN)==0): #MB25
+            for i, dv_scl in enumerate(dv_scales):
+                for j in range(def_dv["SIZE"][i]):
+                    dv_new[k] = dv_new[k] * dv_scl
+                    dv_old[k] = dv_old[k] * dv_scl
+                    k = k + 1
+        else:
+            for i in range(len(dv_new)):
+                dv_new[i] = dv_new[i]*dv_scales[0]
+                dv_old[i] = dv_old[i]*dv_scales[0]
 
         # Change the parameters of the design variables
 
@@ -771,6 +779,8 @@ def read_config(filename):
         data_dict["FREESTREAM_TEMPERATURE"] = 288.15
     if "MARKER_OUTLET" not in data_dict:
         data_dict["MARKER_OUTLET"] = "(NONE)"
+    if "NPOIN" not in data_dict:
+        data_dict['NPOIN'] = 0
 
     #
     # Multipoints requires some particular default values
@@ -929,6 +939,12 @@ def write_config(filename, param_dict):
 
     # break pointers
     param_dict = copy.deepcopy(param_dict)
+    npoin = int(param_dict.NPOIN)
+    if not npoin == 0:
+        if os.path.isfile('beta_fiml.dat') : 
+            os.remove('beta_fiml.dat')
+        output_beta_fiml = open('beta_fiml.dat',"w")
+        output_beta_fiml.seek(0)
 
     for raw_line in open(temp_filename):
         # remove line returns
@@ -959,15 +975,25 @@ def write_config(filename, param_dict):
             # comma delimited list of floats
             if case("DV_VALUE_NEW"):
                 pass
-            if case("DV_VALUE_OLD"):
-                pass
-            if case("DV_VALUE"):
+            if case("DV_VALUE_OLD"): #MB25
                 n_lists = len(new_value)
                 for i_value in range(n_lists):
-                    output_file.write("%s" % new_value[i_value])
-                    if i_value + 1 < n_lists:
+                    if (npoin == 0 or i_value == 0):
+                        output_file.write("%s" % new_value[i_value])
+                    if (npoin == 0 and i_value+1 < n_lists):
                         output_file.write(", ")
                 break
+            
+            if case("DV_VALUE"): #MB25
+                n_lists = len(new_value)
+                for i_value in range(n_lists):
+                    if (npoin == 0 or i_value == 0):
+                        output_file.write("%s" % new_value[i_value])
+                    if not npoin == 0 :
+                        output_beta_fiml.write("%s\n" % new_value[i_value])
+                    if (npoin == 0 and i_value+1 < n_lists):
+                        output_file.write(", ")
+                break		
 
             # comma delimited list of strings no paren's
             if case("DV_KIND"):
@@ -1121,6 +1147,7 @@ def write_config(filename, param_dict):
                             "FFD_CONTROL_POINT_2D",
                             "FFD_CAMBER_2D",
                             "FFD_THICKNESS_2D",
+                            "FIML" #MB25
                         ]:
                             n_param = len(new_value["PARAM"][i_dv])
                             output_file.write("%s , " % new_value["FFDTAG"][i_dv])
@@ -1203,6 +1230,8 @@ def write_config(filename, param_dict):
             )
 
     output_file.close()
+    if not(npoin == 0):
+        output_beta_fiml.close()
     os.remove(temp_filename)
 
 

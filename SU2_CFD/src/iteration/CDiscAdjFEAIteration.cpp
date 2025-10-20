@@ -215,7 +215,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
     case DEAD_WEIGHT:
     case ELECTRIC_FIELD:
 
-      for (unsigned short iDV = 0; iDV < adj_solver->GetnDVFEA(); iDV++) {
+      for (unsigned long iDV = 0; iDV < adj_solver->GetnDVFEA(); iDV++) {
         su2double dvfea = adj_solver->GetVal_DVFEA(iDV);
 
         structural_numerics[fea_term]->Set_DV_Val(iDV, dvfea);

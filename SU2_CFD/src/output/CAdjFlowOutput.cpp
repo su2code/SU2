@@ -365,3 +365,13 @@ void CAdjFlowOutput::LoadVolumeDataAdjScalar(const CConfig* config, const CSolve
   }
 
 }
+
+void CAdjFlowOutput::WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container){ // #MB25
+  /*--- Writing the sensitivity of a given functional w.r.t. the beta-field - #MB25. */
+  if (config->GetKind_Turb_RST_Model() == TURB_RST_MODEL::POPE
+     && config->GetInvDesign_FIML()) {
+      for (unsigned short iPope=0; iPope<config->GetRSTNbPopeCoeffs(); iPope++) {
+        solver_container[ADJFLOW_SOL]->WriteBetaFimlGrad(config,geometry,iPope);
+      }
+  }
+}

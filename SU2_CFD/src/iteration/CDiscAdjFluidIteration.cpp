@@ -404,13 +404,23 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 
   SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
 
-  if (kind_recording == RECORDING::SOLUTION_VARIABLES || kind_recording == RECORDING::SOLUTION_AND_MESH) {
+  if (kind_recording == RECORDING::SOLUTION_VARIABLES ||
+      kind_recording == RECORDING::TAG_INIT_SOLVER_VARIABLES ||
+      kind_recording == RECORDING::TAG_CHECK_SOLVER_VARIABLES ||
+      kind_recording == RECORDING::TAG_INIT_SOLVER_AND_MESH ||
+      kind_recording == RECORDING::TAG_CHECK_SOLVER_AND_MESH ||
+      kind_recording == RECORDING::SOLUTION_AND_MESH) {
+        
     /*--- Register flow and turbulent variables as input ---*/
 
     if (config[iZone]->GetFluidProblem()) {
+      std::cout << "BEFORE RegisterSolution()" << std::endl; 
       solvers0[ADJFLOW_SOL]->RegisterSolution(geometry0, config[iZone]);
+      std::cout << "AFTER RegisterSolution()" << std::endl; 
 
+      std::cout << "BEFORE RegisterVariables()" << std::endl; 
       solvers0[ADJFLOW_SOL]->RegisterVariables(geometry0, config[iZone]);
+      std::cout << "AFTER RegisterVariables()" << std::endl; 
     }
 
     if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
@@ -429,12 +439,24 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
     }
   }
 
-  if (kind_recording == RECORDING::MESH_COORDS || kind_recording == RECORDING::SOLUTION_AND_MESH) {
+  if (kind_recording == RECORDING::MESH_COORDS ||
+      kind_recording == RECORDING::SOLUTION_AND_MESH ||
+      kind_recording == RECORDING::TAG_INIT_SOLVER_AND_MESH ||
+      kind_recording == RECORDING::TAG_CHECK_SOLVER_AND_MESH) {
     /*--- Register node coordinates as input ---*/
 
     geometry0->RegisterCoordinates();
   }
 
+  if (kind_recording == RECORDING::BETA_FIML ||
+      kind_recording == RECORDING::TAG_INIT_BETA_FIML ||
+      kind_recording == RECORDING::TAG_CHECK_BETA_FIML ) { // #MB25
+    /*--- Register beta-fiml as input ---*/
+    std::cout << "BEFORE RegisterBetaFiml()" << std::endl; 
+    solvers0[ADJFLOW_SOL]->GetNodes()->RegisterBetaFiml(true); // Similar philosophy as geometry0->RegisterCoordinates();
+    std::cout << "AFTER RegisterBetaFiml()" << std::endl; 
+  }
+  
   if (kind_recording == RECORDING::MESH_DEFORM) {
     /*--- Undeformed mesh coordinates ---*/
     solvers0[ADJMESH_SOL]->RegisterSolution(geometry0, config[iZone]);
@@ -448,7 +470,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 
 void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                              CConfig** config, unsigned short iZone, unsigned short iInst,
-                                             RECORDING kind_recording) {
+                                             RECORDING kind_recording) { 
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 

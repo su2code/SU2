@@ -72,7 +72,7 @@ protected:
    * \brief Kinds of recordings (three different ones).
    */
   enum class Kind_Tape {
-    FULL_TAPE,                /*!< \brief Entire derivative information for a coupled adjoint
+    FULL_SOLVER_TAPE,         /*!< \brief Entire derivative information for a coupled adjoint
                                           solution update. */
     OBJECTIVE_FUNCTION_TAPE,  /*!< \brief Record only the dependence of the objective function
                                           w.r.t. solver variables (from all zones). */
@@ -96,7 +96,7 @@ protected:
 
   bool eval_transfer = false;     /*!< \brief Evaluate the transfer section of the tape. */
   su2double ObjFunc;              /*!< \brief Value of the objective function. */
-  int ObjFunc_Index;              /*!< \brief Index of the value of the objective function. */
+  AD::Identifier ObjFunc_Index;   /*!< \brief Index of the value of the objective function. */
 
   CIteration*** direct_iteration;       /*!< \brief Array of pointers to the direct iterations. */
   COutput** direct_output;              /*!< \brief Array of pointers to the direct outputs. */
@@ -292,5 +292,15 @@ protected:
       offset += solver->GetnVar();
     }
   }
+ 
+  /*!
+   * \brief Tape test. 
+   */
+  void TapeTest() override; 
+
+  /*!
+   * \brief Gathering error for tape test.
+   */
+  int TapeTestGatherErrors(AD::ErrorReport& error_report) const override; 
 
 };

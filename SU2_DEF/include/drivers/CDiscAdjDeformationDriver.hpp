@@ -35,6 +35,9 @@
 class CDiscAdjDeformationDriver : public CDriverBase {
  protected:
   su2double** Gradient;
+  std::vector<su2double> beta1_fiml_grad; 
+  std::vector<su2double> beta2_fiml_grad; 
+  std::vector<su2double> beta3_fiml_grad; 
 
  public:
   /*!
@@ -128,4 +131,11 @@ class CDiscAdjDeformationDriver : public CDriverBase {
    */
   void DerivativeTreatment_Gradient(CGeometry* geometry, CConfig* config, CVolumetricMovement* grid_movement,
                                     CSurfaceMovement* surface_movement, su2double** Gradient);
+
+  /*
+   * \brief Read the sensitivity of the functional w.r.t. the beta-field - #MB25.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] index - Index of the Pope's expansion coefficient (0, 1, or 2). 
+  */
+  void GetBetaFimlGrad(CConfig* config, unsigned short index); 
 };

@@ -92,7 +92,12 @@ def deform(config, dv_new=None, dv_old=None):
     suffix = "deform"
     mesh_name = konfig["MESH_FILENAME"]
     meshname_suffixed = su2io.add_suffix(mesh_name, suffix)
-    konfig["MESH_OUT_FILENAME"] = meshname_suffixed
+
+    #MB25 - Don't use new mesh, keep old one?
+    if konfig['NPOIN'] == 0 :
+        konfig['MESH_OUT_FILENAME'] = meshname_suffixed
+    else :
+        konfig['MESH_OUT_FILENAME'] = mesh_name
 
     # Run Deformation
     SU2_DEF(konfig)
@@ -112,7 +117,11 @@ def deform(config, dv_new=None, dv_old=None):
 
     # info out
     info = su2io.State()
-    info.FILES.MESH = meshname_suffixed
+    if konfig['NPOIN'] == 0 :
+        info.FILES.MESH = meshname_suffixed
+    else :    
+        info.FILES.MESH = mesh_name
+    
     info.VARIABLES.DV_VALUE_NEW = konfig.DV_VALUE_NEW
 
     return info

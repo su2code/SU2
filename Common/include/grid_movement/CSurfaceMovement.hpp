@@ -66,7 +66,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  void SetHicksHenne(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef);
+  void SetHicksHenne(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef);
 
   /*!
    * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
@@ -75,7 +75,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  void SetSurface_Bump(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef);
+  void SetSurface_Bump(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef);
 
   /*!
    * \brief Set a Hicks-Henne deformation bump functions on an airfoil.
@@ -84,7 +84,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  void SetAngleOfAttack(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef);
+  void SetAngleOfAttack(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef);
 
   /*!
    * \brief Set a deformation based on a change in the Kulfan parameters for an airfoil.
@@ -93,7 +93,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  void SetCST(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef);
+  void SetCST(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef);
 
   /*!
    * \brief Set a NACA 4 digits airfoil family for airfoil deformation.
@@ -123,7 +123,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  void SetRotation(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef);
+  void SetRotation(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef);
 
   /*!
    * \brief Computes the displacement of a rotating surface for a dynamic mesh simulation.
@@ -172,7 +172,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  void SetTranslation(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef);
+  void SetTranslation(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef);
 
   /*!
    * \brief Set a displacement for surface movement.
@@ -181,7 +181,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] iDV - Index of the design variable.
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
-  void SetScale(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef);
+  void SetScale(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef);
 
   /*!
    * \brief Copy the boundary coordinates to each vertex.
@@ -283,7 +283,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   bool SetFFDCPChange_2D(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
-                         unsigned short iDV, bool ResetDef) const;
+                         unsigned long iDV, bool ResetDef) const;
 
   /*!
    * \brief Set the deformation of the Free From box using the control point position.
@@ -294,7 +294,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   bool SetFFDCPChange(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
-                      unsigned short iDV, bool ResetDef) const;
+                      unsigned long iDV, bool ResetDef) const;
 
   /*!
    * \brief Set the deformation of the Free From box using the control point position.
@@ -305,7 +305,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   bool SetFFDGull(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
-                  unsigned short iDV, bool ResetDef) const;
+                  unsigned long iDV, bool ResetDef) const;
 
   /*!
    * \brief Set the deformation of the Free From box using the control point position.
@@ -316,7 +316,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   bool SetFFDNacelle(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
-                     unsigned short iDV, bool ResetDef) const;
+                     unsigned long iDV, bool ResetDef) const;
 
   /*!
    * \brief Set a camber deformation of the Free From box using the control point position.
@@ -327,7 +327,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   bool SetFFDCamber_2D(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
-                       unsigned short iDV, bool ResetDef) const;
+                       unsigned long iDV, bool ResetDef) const;
 
   /*!
    * \brief Set a thickness deformation of the Free From box using the control point position.
@@ -338,7 +338,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   bool SetFFDThickness_2D(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
-                          unsigned short iDV, bool ResetDef) const;
+                          unsigned long iDV, bool ResetDef) const;
 
   /*!
    * \brief Set a camber deformation of the Free From box using the control point position.
@@ -349,7 +349,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   bool SetFFDCamber(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
-                    unsigned short iDV, bool ResetDef) const;
+                    unsigned long iDV, bool ResetDef) const;
 
   /*!
    * \brief Set a thickness deformation of the Free From box using the control point position.
@@ -360,7 +360,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   bool SetFFDThickness(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
-                       unsigned short iDV, bool ResetDef) const;
+                       unsigned long iDV, bool ResetDef) const;
 
   /*!
    * \brief Set a thickness deformation of the Free From box using the control point position.
@@ -371,7 +371,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   void SetFFDAngleOfAttack(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
-                           unsigned short iDV, bool ResetDef);
+                           unsigned long iDV, bool ResetDef);
 
   /*!
    * \brief Set a twist angle deformation of the Free From box using the control point position.
@@ -382,7 +382,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   bool SetFFDTwist(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
-                   unsigned short iDV, bool ResetDef) const;
+                   unsigned long iDV, bool ResetDef) const;
 
   /*!
    * \brief Set a rotation angle deformation of the Free From box using the control point position.
@@ -393,7 +393,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   bool SetFFDRotation(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox, CFreeFormDefBox** ResetFFDBox,
-                      unsigned short iDV, bool ResetDef) const;
+                      unsigned long iDV, bool ResetDef) const;
 
   /*!
    * \brief Set a rotation angle deformation in a control surface of the Free From box using the control point position.
@@ -404,7 +404,7 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   bool SetFFDControl_Surface(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                             CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) const;
+                             CFreeFormDefBox** ResetFFDBox, unsigned long iDV, bool ResetDef) const;
 
   /*!
    * \brief Read the free form information from the grid input file.
@@ -457,7 +457,7 @@ class CSurfaceMovement : public CGridMovement {
    * \return <code>TRUE</code> if the FFD box name referenced with DV_PARAM can be found in the FFD box definition;
    * otherwise <code>FALSE</code>.
    */
-  inline bool CheckFFDBoxDefinition(CConfig* config, unsigned short iDV) {
+  inline bool CheckFFDBoxDefinition(CConfig* config, unsigned long iDV) {
     for (unsigned short iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
       if (FFDBox[iFFDBox]->GetTag() == config->GetFFDTag(iDV)) {
         return true;

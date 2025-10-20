@@ -38,6 +38,7 @@
 class CDiscAdjVariable : public CVariable {
 private:
   MatrixType Sensitivity; /*!< \brief Vector holding the derivative of target functional with respect to the coordinates at this node. */
+  MatrixType SensitivityBetaFiml; /*!< \brief Vector holding the derivative of target functional with respect to the beta corrective field - #MB25. */
   MatrixType Solution_Direct; /*!< \brief Stores the primal solution of the current timestep in order to be able to reset. */
   MatrixType DualTime_Derivative; /*!< \brief Container holding all/sum-of dual time contributions to the adjoint variable. */
   MatrixType DualTime_Derivative_n; /*!< \brief Container holding dual time contributions to the adjoint variable used in the next timestep. */
@@ -73,6 +74,21 @@ public:
     return Sensitivity(iPoint,iDim);
   }
   inline const MatrixType& GetSensitivity() const final { return Sensitivity; }
+
+  /*!
+   * \brief Set the sensitivity w.r.t the beta-corrective field at the node - #MB25
+   */
+  inline void SetSensitivityBetaFiml(unsigned long iPoint, unsigned short iPope, su2double val) final {
+    SensitivityBetaFiml(iPoint,iPope) = val;
+  }
+
+  /*!
+   * \brief Get the Sensitivity w.r.t. the beta-corrective field at the node - #MB25
+   */
+  inline su2double GetSensitivityBetaFiml(unsigned long iPoint, unsigned short iPope) const final {
+    return SensitivityBetaFiml(iPoint,iPope);
+  }
+  inline const MatrixType& GetSensitivityBetaFiml() const final { return SensitivityBetaFiml; } // #MB25
 
   /*!
    * \brief Set/store the dual time contributions to the adjoint variable.

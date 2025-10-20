@@ -31,7 +31,8 @@ using namespace std;
 int main(int argc, char* argv[]) {
   unsigned short iZone, nZone = SINGLE_ZONE;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
-  unsigned short iDV, iFFDBox, iPlane, nPlane, iVar;
+  unsigned long iDV; // #MB25 
+  unsigned short iFFDBox, iPlane, nPlane, iVar;
   su2double *ObjectiveFunc, *ObjectiveFunc_New, *Gradient, delta_eps, **Plane_P0, **Plane_Normal,
 
       Fuselage_Volume = 0.0, Fuselage_WettedArea = 0.0, Fuselage_MinWidth = 0.0, Fuselage_MaxWidth = 0.0,

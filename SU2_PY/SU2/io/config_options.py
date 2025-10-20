@@ -68,6 +68,9 @@ class DEFINITION_DV(ordered_bunch):
     """SU2.io.config.DEFINITION_DV()
 
     List of design variables (Design variables are separated by semicolons)
+    1D Design variables
+       - FIML (102, Scale | Mark. List | val) #MB25
+    
     2D Design variables
        -FFD_CONTROL_POINT_2D (  19, Scale | Mark. List | FFD_BoxTag, i_Ind, j_Ind, x_Mov, y_Mov )
        -FFD_CAMBER_2D 	 (  20, Scale | Mark. List | FFD_BoxTag, i_Ind )
@@ -123,6 +126,9 @@ class DV_KIND(ordered_bunch):
     """SU2.io.config.DV_KIND()
 
     List of design variables (Design variables are separated by semicolons)
+    1D Design variables
+       - FIML (102, Scale | Mark. List | val) #MB25
+    
     2D Design variables
        -FFD_CONTROL_POINT_2D (  19, Scale | Mark. List | FFD_BoxTag, i_Ind, j_Ind, x_Mov, y_Mov )
        -FFD_CAMBER_2D 	 (  20, Scale | Mark. List | FFD_BoxTag, i_Ind )

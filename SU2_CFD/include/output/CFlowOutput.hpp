@@ -221,6 +221,34 @@ protected:
   void SetCpInverseDesign(CSolver *solver, const CGeometry *geometry, const CConfig *config);
 
   /*!
+   * \brief Add MSE on the velocity field FIML output as history fields - #MB25
+   */
+  void AddVelocityFIMLOutput();
+
+  /*!
+   * \brief Set CP inverse design output field values (and also into the solver).
+   * \param[in,out] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVelocityFIMLOutput(CSolver *solver, const CGeometry *geometry, const CConfig *config);
+
+
+  /*!
+   * \brief Add MSE on the RST field FIML output as history fields - #MB25
+   */
+  void AddRSTFIMLOutput();
+
+  /*!
+   * \brief Set CP inverse design output field values (and also into the solver).
+   * \param[in,out] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetRSTFIMLOutput(CSolver *solver, const CGeometry *geometry, const CConfig *config);
+
+
+  /*!
    * \brief Add nearfield inverse design output as history fields
    */
   void AddNearfieldInverseDesignOutput();

@@ -230,6 +230,58 @@ class COptionEnumList final : public COptionBase {
   void SetDefault() override { mySize = 0; }
 };
 
+template <class Tenum, class TField>
+class COptionEnumLongList final : public COptionBase {
+  const map<string, Tenum>& m;
+  TField*& field;
+  unsigned long& mySize;
+  const string name;
+
+ public:
+  COptionEnumLongList() = delete;
+
+  COptionEnumLongList(string option_field_name, const map<string, Tenum>& m_, TField*& option_field,
+                  unsigned long& list_size)
+      : m(m_), field(option_field), mySize(list_size), name(option_field_name) {
+    field = nullptr;
+  }
+
+  ~COptionEnumLongList() {
+    delete[] field;
+    field = nullptr;
+  }
+
+  string SetValue(const vector<string>& option_value) override {
+    COptionBase::SetValue(option_value);
+    if (option_value.size() == 1 && option_value[0].compare("NONE") == 0) {
+      mySize = 0;
+      return "";
+    }
+    // size is the length of the option list
+    mySize = option_value.size();
+    field = new TField[mySize];
+
+    for (unsigned short i = 0; i < mySize; i++) {
+      // Check to see if the enum value is in the map
+
+      auto it = m.find(option_value[i]);
+
+      if (it == m.cend()) {
+        stringstream ss;
+        ss << name << ": invalid option value " << option_value[i] << ".\nDid you mean";
+        for (auto& item : m) ss << ", " << item.first;
+        ss << "?";
+        return ss.str();
+      }
+      // If it is there, set the option value
+      field[i] = it->second;
+    }
+    return "";
+  }
+
+  void SetDefault() override { mySize = 0; }
+};
+
 template <class Type>
 class COptionArray final : public COptionBase {
   string name;     // Identifier for the option
@@ -480,13 +532,13 @@ class COptionMathProblem : public COptionBase {
 
 class COptionDVParam : public COptionBase {
   string name;  // identifier for the option
-  unsigned short& nDV;
+  unsigned long& nDV;
   su2double**& paramDV;
   string*& FFDTag;
   unsigned short*& design_variable;
 
  public:
-  COptionDVParam(string option_field_name, unsigned short& nDV_field, su2double**& paramDV_field, string*& FFDTag_field,
+  COptionDVParam(string option_field_name, unsigned long& nDV_field, su2double**& paramDV_field, string*& FFDTag_field,
                  unsigned short*& design_variable_field)
       : nDV(nDV_field), paramDV(paramDV_field), FFDTag(FFDTag_field), design_variable(design_variable_field) {
     this->name = option_field_name;
@@ -550,7 +602,7 @@ class COptionDVParam : public COptionBase {
     stringstream ss;
     unsigned int i = 0;
 
-    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+    for (unsigned long iDV = 0; iDV < this->nDV; iDV++) {
       switch (this->design_variable[iDV]) {
         case NO_DEFORMATION:
           nParamDV[iDV] = 0;
@@ -651,6 +703,9 @@ class COptionDVParam : public COptionBase {
         case ROTATE_GRID:
           nParamDV[iDV] = 6;
           break;
+        case FIML:
+          nParamDV[iDV] = 1; // #MB25: Beta-field in Pope's expansion. 
+          break; 
         default: {
           string newstring;
           newstring.append(this->name);
@@ -665,7 +720,7 @@ class COptionDVParam : public COptionBase {
       SU2_MPI::Error("Wrong number of arguments for DV_PARAM!", CURRENT_FUNCTION);
     }
 
-    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+    for (unsigned long iDV = 0; iDV < this->nDV; iDV++) {
       for (unsigned short iParamDV = 0; iParamDV < nParamDV[iDV]; iParamDV++) {
         ss << option_value[i] << " ";
 
@@ -710,15 +765,15 @@ class COptionDVParam : public COptionBase {
 
 class COptionDVValue : public COptionBase {
   string name;  // identifier for the option
-  unsigned short*& nDV_Value;
+  unsigned long*& nDV_Value;
   su2double**& valueDV;
-  unsigned short& nDV;
+  unsigned long& nDV;
   su2double**& paramDV;
   unsigned short*& design_variable;
 
  public:
-  COptionDVValue(string option_field_name, unsigned short*& nDVValue_field, su2double**& valueDV_field,
-                 unsigned short& nDV_field, su2double**& paramDV_field, unsigned short*& design_variable_field)
+  COptionDVValue(string option_field_name, unsigned long*& nDVValue_field, su2double**& valueDV_field,
+                 unsigned long& nDV_field, su2double**& paramDV_field, unsigned short*& design_variable_field)
       : nDV_Value(nDVValue_field),
         valueDV(valueDV_field),
         nDV(nDV_field),
@@ -754,9 +809,9 @@ class COptionDVValue : public COptionBase {
     }
 
     this->valueDV = new su2double*[this->nDV];
-    this->nDV_Value = new unsigned short[this->nDV];
+    this->nDV_Value = new unsigned long[this->nDV];
 
-    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+    for (unsigned long iDV = 0; iDV < this->nDV; iDV++) {
       this->valueDV[iDV] = new su2double[3];
     }
 
@@ -764,7 +819,7 @@ class COptionDVValue : public COptionBase {
     unsigned short totalnValueDV = 0;
     stringstream ss;
     unsigned int i = 0;
-    for (unsigned short iDV = 0; iDV < this->nDV; iDV++) {
+    for (unsigned long iDV = 0; iDV < this->nDV; iDV++) {
       switch (this->design_variable[iDV]) {
         case FFD_CONTROL_POINT:
           if ((this->paramDV[iDV][4] == 0) && (this->paramDV[iDV][5] == 0) && (this->paramDV[iDV][6] == 0)) {

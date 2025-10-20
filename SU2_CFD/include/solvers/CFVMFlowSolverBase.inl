@@ -446,7 +446,13 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
                      geometry->nodes->GetCoord(jPoint));
 
   numerics->SetNormal(geometry->edges->GetNormal(iEdge));
-
+  
+  /*--- Beta-fiml. - #MB25 ---*/
+  if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+    numerics->SetBetaFiml(nodes->GetBetaFiml(iPoint), 
+                          nodes->GetBetaFiml(jPoint)); 
+  }
+  
   /*--- Primitive and secondary variables. ---*/
 
   numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
@@ -462,9 +468,12 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   /*--- Turbulent kinetic energy. ---*/
 
-  if (tkeNeeded)
+  if (tkeNeeded) {
     numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
                                    turbNodes->GetSolution(jPoint,0));
+    numerics->SetOmegaSST(turbNodes->GetSolution(iPoint,1), // #MB25
+                          turbNodes->GetSolution(jPoint,1));
+  }
 
   /*--- Wall shear stress values (wall functions) ---*/
 
@@ -671,12 +680,12 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
 
     StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
     AD::SetPreaccOut(StrainMag(iPoint));
-
-    /*--- Max is not differentiable, so we not register them for preacc. ---*/
-    strainMax = max(strainMax, StrainMag(iPoint));
-    omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
-
     AD::EndPreacc();
+    
+    /*--- Max is not differentiable, so we not register them for preacc. ---*/
+    strainMax = SU2_TYPE::GetValue(max(strainMax, StrainMag(iPoint))); 
+    omegaMax = SU2_TYPE::GetValue(max(omegaMax, GeometryToolbox::Norm(3, Vorticity)));
+
   }
   END_SU2_OMP_FOR
 
@@ -1379,10 +1388,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
 
               /*--- Turbulent kinetic energy ---*/
 
-              if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+              if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
                 visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
                                                     solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
-
+                visc_numerics->SetOmegaSST(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 1), // #MB25
+                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 1));
+              }
+              
               /*--- Compute and update residual ---*/
 
               auto residual = visc_numerics->ComputeResidual(config);
@@ -2910,6 +2922,12 @@ su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) 
       break;
     case CUSTOM_OBJFUNC:
       objFun += weight * Total_Custom_ObjFunc;
+      break;
+    case INVERSE_DESIGN_VELOCITY_FIML:
+      objFun += weight * Total_MSEVelFIML; // #MB25 
+      break;
+    case INVERSE_DESIGN_RST_FIML:
+      objFun += weight * Total_MSERSTFIML; // #MB25 
       break;
     default:
       break;

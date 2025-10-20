@@ -36,7 +36,8 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
                              const CConfig* config)
     : CNumerics(val_nDim, val_nVar, config),
       nPrimVar(val_nPrimVar),
-      correct_gradient(val_correct_grad) {
+      correct_gradient(val_correct_grad),
+      Mean_omega(0.) {
 
   unsigned short iVar, iDim;
 
@@ -65,7 +66,8 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
     Jacobian_i[iVar] = new su2double [nVar];
     Jacobian_j[iVar] = new su2double [nVar];
   }
-
+  
+  Mean_beta_fiml = new su2double [nbPopeCoeffs]; 
 }
 
 CAvgGrad_Base::~CAvgGrad_Base() {
@@ -98,6 +100,10 @@ CAvgGrad_Base::~CAvgGrad_Base() {
     delete [] Jacobian_j;
   }
 
+  if (Mean_beta_fiml != nullptr) {
+    delete [] Mean_beta_fiml;
+  }
+
 }
 
 void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
@@ -119,10 +125,13 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
 }
 
 void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
-                           const su2double* const *val_gradprimvar,
-                           const su2double val_turb_ke,
-                           const su2double val_laminar_viscosity,
-                           const su2double val_eddy_viscosity) {
+                                    const su2double* const *val_gradprimvar,
+                                    const su2double val_turb_ke,
+                                    const su2double val_laminar_viscosity,
+                                    const su2double val_eddy_viscosity,
+                                    const su2double val_omega,         
+                                    const su2double *val_beta_fiml,    
+                                    const bool popexpns=false) {
 
   const su2double Density = val_primvar[nDim+2];
 
@@ -139,8 +148,14 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
         tau[iDim][jDim] += (-Density) * MeanPerturbedRSM[iDim][jDim];
   } else {
     const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
-    // turb_ke is not considered in the stress tensor, see #797
-    ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, su2double(0.0));
+    if (not(popexpns)) {
+      // turb_ke is not considered in the stress tensor, see #797
+      ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, su2double(0.0));
+    } else {
+      // compute the RST using the Pope's expansion - #MB25 
+      ComputePopeStressTensor(nDim, tau, val_gradprimvar+1, val_beta_fiml, total_viscosity,
+                              Density, val_turb_ke, val_omega, nbPopeCoeffs); 
+    }
   }
 }
 
@@ -368,9 +383,21 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
-
+	
   unsigned short iVar, jVar, iDim;
-
+	
+	/*--- RST modeled with the Pope's expansion (no Boussinesq assumption) - #MB25 ---*/
+  const bool popexpns = (config->GetKind_Turb_RST_Model() == TURB_RST_MODEL::POPE); 
+	if (popexpns) {
+    AD::SetPreaccIn(beta_fiml_i,nbPopeCoeffs); 
+    AD::SetPreaccIn(beta_fiml_j,nbPopeCoeffs); 
+  }
+  
+	if (config->GetKind_Turb_Model()==TURB_MODEL::SST) {
+		AD::SetPreaccIn(omega_sst_i); 
+		AD::SetPreaccIn(omega_sst_j);
+	}
+	
   /*--- Normalized normal vector ---*/
 
   Area = GeometryToolbox::Norm(nDim, Normal);
@@ -403,6 +430,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
   Mean_Eddy_Viscosity = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   Mean_turb_ke = 0.5*(turb_ke_i + turb_ke_j);
+  if (config->GetKind_Turb_Model()==TURB_MODEL::SST) Mean_omega = 0.5*(omega_sst_i + omega_sst_j); // #MB25
+  else Mean_omega = su2double(0.); // for SA model for example #MB25
 
   /*--- Mean gradient approximation ---*/
 
@@ -431,11 +460,17 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
                         Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
                         Mean_turb_ke, MeanPerturbedRSM);
   }
-
+  
+  /*--- Mean beta_fiml at the edge - #MB25 --*/
+  for (unsigned short iPope = 0; iPope < nbPopeCoeffs; iPope++) 
+    Mean_beta_fiml[iPope] = 0.5*(beta_fiml_i[iPope] + beta_fiml_j[iPope]);
+  
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_omega,  
+                  Mean_beta_fiml, popexpns); // #MB25
+  
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
@@ -555,7 +590,19 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   AD::SetPreaccIn(Normal, nDim);
 
   unsigned short iVar, jVar, iDim;
-
+  
+	/*--- RST modeled with the Pope's expansion (no Boussinesq assumption) - #MB25 ---*/
+  const bool popexpns = (config->GetKind_Turb_RST_Model() == TURB_RST_MODEL::POPE); 
+	if (popexpns) {
+    AD::SetPreaccIn(beta_fiml_i,nbPopeCoeffs); 
+    AD::SetPreaccIn(beta_fiml_j,nbPopeCoeffs);
+  }
+  
+	if (config->GetKind_Turb_Model()==TURB_MODEL::SST) {
+		AD::SetPreaccIn(omega_sst_i); 
+		AD::SetPreaccIn(omega_sst_j);
+	}
+	
   /*--- Normalized normal vector ---*/
 
   Area = GeometryToolbox::Norm(nDim, Normal);
@@ -590,7 +637,8 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
   Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
   Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
-
+  if (config->GetKind_Turb_Model()==TURB_MODEL::SST) Mean_omega = 0.5*(omega_sst_i + omega_sst_j); // #MB25
+	
   /*--- Mean gradient approximation ---*/
 
   for (iVar = 0; iVar < nVar; iVar++)
@@ -616,10 +664,16 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
                         Mean_GradPrimVar+1, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity,
                         Mean_turb_ke, MeanPerturbedRSM);
   }
-
+  
+  /*--- Mean beta_fiml at the edge - #MB25 ---*/
+  for (unsigned short iPope = 0; iPope < nbPopeCoeffs; iPope++)
+    Mean_beta_fiml[iPope] = 0.5*(beta_fiml_i[iPope] + beta_fiml_j[iPope]);
+  
   /*--- Get projected flux tensor (viscous residual) ---*/
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_omega, 
+                  Mean_beta_fiml, popexpns); // #MB25
+  
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
@@ -873,7 +927,19 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   AD::SetPreaccIn(Normal, nDim);
 
   unsigned short iVar, jVar, iDim;
-
+  
+	/*--- RST modeled with the Pope's expansion (no Boussinesq assumption) - #MB25 ---*/
+  const bool popexpns = (config->GetKind_Turb_RST_Model() == TURB_RST_MODEL::POPE); 
+	if (popexpns) {
+    AD::SetPreaccIn(beta_fiml_i,nbPopeCoeffs); 
+    AD::SetPreaccIn(beta_fiml_j,nbPopeCoeffs); 
+  }
+  
+	if (config->GetKind_Turb_Model()==TURB_MODEL::SST) {
+		AD::SetPreaccIn(omega_sst_i); 
+		AD::SetPreaccIn(omega_sst_j);
+	}
+  
   /*--- Normalized normal vector ---*/
 
   Area = GeometryToolbox::Norm(nDim, Normal);
@@ -918,7 +984,8 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
   Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i + Thermal_Conductivity_j);
   Mean_Cp                   = 0.5*(Cp_i + Cp_j);
-
+  if (config->GetKind_Turb_Model()==TURB_MODEL::SST) Mean_omega = 0.5*(omega_sst_i + omega_sst_j); // #MB25
+	
   /*--- Mean gradient approximation ---*/
 
   for (iVar = 0; iVar < nDim+1; iVar++) {
@@ -947,10 +1014,16 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
                         Mean_turb_ke, MeanPerturbedRSM);
   }
 
+  /*--- Mean beta_fiml at the edge - #MB25 ---*/
+  for (unsigned short iPope = 0; iPope < nbPopeCoeffs; iPope++) 
+    Mean_beta_fiml[iPope] = 0.5*(beta_fiml_i[iPope] + beta_fiml_j[iPope]);
+  
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_omega, 
+                  Mean_beta_fiml, popexpns); // #MB25
+
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 

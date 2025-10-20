@@ -78,7 +78,9 @@ protected:
   Eddy_Viscosity_j;  /*!< \brief Eddy viscosity at point j. */
   su2double
   turb_ke_i,  /*!< \brief Turbulent kinetic energy at point i. */
-  turb_ke_j;  /*!< \brief Turbulent kinetic energy at point j. */
+  turb_ke_j,  /*!< \brief Turbulent kinetic energy at point j. */
+  omega_sst_i,    /*!< \brief Omega (k-w SST) at point i (for adim purpose) - #MB25 */ 
+  omega_sst_j;    /*!< \brief Omega (k-w SST) at point j (for adim purpose) - #MB25 */ 
   su2double
   intermittency_eff_i, /*!< \brief effective intermittency at point i. */
   intermittency_i; /*!< \brief intermittency at point i. */
@@ -190,6 +192,11 @@ protected:
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
+  const su2double                  // FIXME Why Coord_i and Coord_j are const su2double ??? 
+  *beta_fiml_i,                    /*!< \brief Coefficient of Pope's expansion obtained from FIML at point i. */ 
+  *beta_fiml_j;                    /*!< \brief Coefficient of Pope's expansion obtained from FIML at point i. */ 
+  unsigned short int nbPopeCoeffs; /*!< \brief Number of coefficients used in the Pope's expansion. */
+	
 public:
   /*!
    * \brief Return type used in some "ComputeResidual" overloads to give a
@@ -432,9 +439,13 @@ public:
     /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
 
     if (nDim == 3) {
-      rateofstrain[0][0] = velgrad[0][0];
-      rateofstrain[1][1] = velgrad[1][1];
-      rateofstrain[2][2] = velgrad[2][2];
+      su2double divVel = 0.0;
+      for (size_t iDim = 0; iDim < nDim; iDim++) {
+            divVel += velgrad[iDim][iDim];
+      }
+      rateofstrain[0][0] = velgrad[0][0] - 2./3. * divVel; // #MB25
+      rateofstrain[1][1] = velgrad[1][1] - 2./3. * divVel; // #MB25
+      rateofstrain[2][2] = velgrad[2][2] - 2./3. * divVel; // #MB25
       rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
       rateofstrain[0][2] = 0.5 * (velgrad[0][2] + velgrad[2][0]);
       rateofstrain[1][2] = 0.5 * (velgrad[1][2] + velgrad[2][1]);
@@ -443,15 +454,57 @@ public:
       rateofstrain[2][0] = rateofstrain[0][2];
     }
     else { // nDim==2
-      rateofstrain[0][0] = velgrad[0][0];
-      rateofstrain[1][1] = velgrad[1][1];
-      rateofstrain[2][2] = 0.0;
+      su2double divVel = 0.0;
+      for (size_t iDim = 0; iDim < nDim; iDim++) {
+            divVel += velgrad[iDim][iDim];
+      }
+      rateofstrain[0][0] = velgrad[0][0] - 2./3. * divVel; // FIXME
+      rateofstrain[1][1] = velgrad[1][1] - 2./3. * divVel; // FIXME
+      //rateofstrain[2][2] = 0.0;
       rateofstrain[0][1] = 0.5 * (velgrad[0][1] + velgrad[1][0]);
-      rateofstrain[0][2] = 0.0;
-      rateofstrain[1][2] = 0.0;
+      //rateofstrain[0][2] = 0.0;
+      //rateofstrain[1][2] = 0.0;
       rateofstrain[1][0] = rateofstrain[0][1];
-      rateofstrain[2][1] = rateofstrain[1][2];
-      rateofstrain[2][0] = rateofstrain[0][2];
+      //rateofstrain[2][1] = rateofstrain[1][2];
+      //rateofstrain[2][0] = rateofstrain[0][2];
+    }
+  }
+  
+  /*!
+   * \brief Compute the mean rate of rotation matrix - #MB25
+   * \details The parameter primvargrad can be e.g. PrimVar_Grad_i or Mean_GradPrimVar.
+   * \param[in] nDim - 2 or 3
+   * \param[out] rateofrotation - Rate of rotation matrix
+   * \param[in] velgrad - A velocity gradient matrix.
+   * \tparam Mat1 - any type that supports the [][] interface
+   * \tparam Mat2 - any type that supports the [][] interface
+   */
+  template<class Mat1, class Mat2>
+  FORCEINLINE static void ComputeMeanRateOfRotationMatrix(size_t nDim, Mat1& rateofrotation, const Mat2& velgrad){
+
+    /* --- Calculate the rate of rotation tensor, using mean velocity gradients --- */
+
+    if (nDim == 3) {
+      rateofrotation[0][0] = 0.;
+      rateofrotation[1][1] = 0.;
+      rateofrotation[2][2] = 0.;
+      rateofrotation[0][1] = 0.5 * (velgrad[0][1] - velgrad[1][0]);
+      rateofrotation[0][2] = 0.5 * (velgrad[0][2] - velgrad[2][0]);
+      rateofrotation[1][2] = 0.5 * (velgrad[1][2] - velgrad[2][1]);
+      rateofrotation[1][0] = -rateofrotation[0][1];
+      rateofrotation[2][1] = -rateofrotation[1][2];
+      rateofrotation[2][0] = -rateofrotation[0][2];
+    }
+    else { // nDim==2
+      rateofrotation[0][0] = 0.;
+      rateofrotation[1][1] = 0.;
+      //rateofrotation[2][2] = 0.0;
+      rateofrotation[0][1] = 0.5 * (velgrad[0][1] - velgrad[1][0]);
+      //rateofrotation[0][2] = 0.0;
+      //rateofrotation[1][2] = 0.0;
+      rateofrotation[1][0] = -rateofrotation[0][1];
+      //rateofrotation[2][1] = -rateofrotation[1][2];
+      //rateofrotation[2][0] = -rateofrotation[0][2];
     }
   }
 
@@ -477,8 +530,8 @@ public:
   template<class Mat1, class Mat2, class Scalar>
   FORCEINLINE static void ComputeStressTensor(size_t nDim, Mat1& stress, const Mat2& velgrad,
                                               Scalar viscosity, Scalar density=0.0,
-                                              Scalar turb_ke=0.0, bool reynolds3x3=false){
-    Scalar divVel = 0.0;
+                                              Scalar turb_ke=0.0, bool reynolds3x3=false){    
+    Scalar divVel = 0.0; //std::cout << "FORCEINLINE static void ComputeStressTensor()" << std::endl; // #MB25
     for (size_t iDim = 0; iDim < nDim; iDim++) {
       divVel += velgrad[iDim][iDim];
     }
@@ -495,6 +548,248 @@ public:
       stress[0][2] = stress[1][2] = stress[2][0] = stress[2][1] = 0.0;
       stress[2][2] = -pTerm;
     }
+  }
+  
+  /*!
+   * \brief Compute the stress tensor from the velocity gradients and based on the Pope's Expansion - #MB25
+   *
+   * see - Y.F. Marioni, "DEVELOPMENT OF MACHINE-LEARNT TURBULENCE CLOSURES FOR WAKE
+   *       MIXING PREDICTIONS IN LOW-PRESSURE TURBINES", Proceedings of ASME Turbo Expo 2022. 
+   *
+   * \param[in] nDim        - Dimension of the flow problem, 2 or 3
+   * \param[out] stress     - Stress tensor
+   * \param[in] velgrad     - A velocity gradient matrix.
+   * \param[in] viscosity   - Dynamic viscosity (mu_lam + mu_t)
+   * \param[in] density     - Density
+   * \param[in] turb_ke     - Turbulent kinetic energy, to non-dimensionalize the anisotropy stress tensor
+   * \param[in] omega_sst   - Omega scalar field from k-w SST, to non-dimensionalize the anisotropy stress tensor
+   * \param[in] beta_fiml   - Corrective field on the first coefficient of Pope's expansion
+   * \param[in] nbPopeCoeffs  - Number of Pope's coefficients
+   * \param[in] reynolds3x3 - If true, write to the third row and column of stress even if nDim==2.
+   * \tparam Mat1 - any type that supports the [][] interface
+   * \tparam Mat2 - any type that supports the [][] interface
+   */
+  template<class Mat1, class Mat2, class Scalar, class Vec1>
+	FORCEINLINE static void ComputePopeStressTensor(size_t nDim, Mat1& stress, const Mat2& velgrad, Vec1& beta_fiml,
+                                                  Scalar viscosity, Scalar density=0.0, Scalar turb_ke=0.0, Scalar omega_sst=0.0, 
+                                                  unsigned short nbPopeCoeffs=0, bool reynolds3x3=false) {
+    
+    // turb_ke is not considered in the stress tensor, see #797 and https://turbmodels.larc.nasa.gov/implementrans.html
+    ComputeStressTensor(nDim, stress, velgrad, viscosity, density, su2double(0.0), reynolds3x3); //turb_ke
+    
+    // Correction using Pope's expansion
+    for (int iPope=0; iPope<nbPopeCoeffs; iPope++) {
+      std::vector<std::vector<su2double> > Ti(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+      ComputePopeIntegrityBasisTensor(nDim, Ti, velgrad, viscosity, density, turb_ke, omega_sst, reynolds3x3, iPope); 
+      SumMat(nDim, Ti, stress, beta_fiml[iPope]*2*density*turb_ke); 
+    }
+  };
+  
+	/*!
+   * \brief Computes the mth integrity basis tensor of the Pope's expansion from the velocity gradient - #MB25
+   *
+   * See: S. B. Pope, "A more general effective-viscosity hypothesis", 
+   * J . Pluid Mech. (1975), vol. 72, part 2, pp. 331-340 (1975). 
+   *
+   * \param[in] nDim - Dimension of the flow problem, 2 or 3
+   * \param[out] tBasis - The mth integrity tensor basis
+   * \param[in] velgrad - A velocity gradient matrix.
+   * \param[in] viscosity - Viscosity
+   * \param[in] density - Density
+   * \param[in] turb_ke - Turbulent kinetic energy, for the turbulent stress tensor
+   * \param[in] reynolds3x3 - If true, write to the third row and column of stress even if nDim==2.
+   * \param[in] m - the index of the integrity tensor basis in the Pope's expansion
+   * \tparam Mat1 - any type that supports the [][] interface
+   * \tparam Mat2 - any type that supports the [][] interface
+  */
+	template <class Mat1, class Mat2, class Scalar>
+  FORCEINLINE static void ComputePopeIntegrityBasisTensor(size_t nDim,             /*!< \brief Dimension of the flow problem, 2 or 3 */
+                                              Mat1& tBasis,            /*!< \brief Matrix storing one of the 10 integrity basis tensors*/
+                                              const Mat2& velgrad,     /*!< \brief A velocity gradient matrix. */
+                                              Scalar viscosity,        /*!< \brief Viscosity */
+                                              Scalar density=0.0,      /*!< \brief Density */
+                                              Scalar turb_ke=0.0,      /*!< \brief Turbulent kinetic energy, for the turbulent stress tensor */
+                                              Scalar omega_sst=0.0,    /*!< \brief Omega scalar field from k-w SST, for the turbulent stress tensor */
+                                              bool reynolds3x3=false,  /*!< \brief If true, write to the third row and column of stress even if nDim==2. */
+                                              short unsigned int m=0   /*!< \brief Intex of the integrity basis tensor (from 0 to 9) */
+                                              ) {
+     /*--- Compute the mth integrity basis tensor of the Pope's expansion ---*/
+		Scalar adim = 1.; 
+		if (omega_sst > 1e-12) adim = 1./omega_sst; 
+		
+		std::vector<std::vector<su2double> > Sij(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+		ComputeMeanRateOfStrainMatrix(nDim, Sij, velgrad); 
+		MultMatScalar(nDim, Sij, adim); 
+			
+		std::vector<std::vector<su2double> > Rij(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+		ComputeMeanRateOfRotationMatrix(nDim, Rij, velgrad); 
+		MultMatScalar(nDim, Rij, adim); 
+		 
+		if (m==0) {
+			// First integrity basis tensor
+			EqualMat(nDim, Sij, tBasis);
+	
+		} else if (m==1) {
+			// Second integrity basis tensor
+			std::vector<std::vector<su2double> > RijSij(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			ProdMat(nDim, Sij, Rij, tBasis);
+			ProdMat(nDim, Rij, Sij, RijSij);
+			SumMat(nDim, RijSij, tBasis, -1.); 
+			
+		} else if (m==2) {
+			// Third integrity basis tensor
+			ProdMat(nDim, Sij, Sij, tBasis);         
+			su2double trace = 0.; TraceMat(nDim, tBasis, trace); 
+			SumMatScalarToDiag(nDim, tBasis, -1./3.*trace);
+		
+		} else if (m==3) {
+			// Fourth integrity basis tensor
+			ProdMat(nDim, Rij, Rij, tBasis);         
+			su2double trace = 0.; TraceMat(nDim, tBasis, trace); 
+			SumMatScalarToDiag(nDim, tBasis, -1./3.*trace);
+
+		} else if (m==4) {
+			// Fifth integrity basis tensor
+			std::vector<std::vector<su2double> > Sij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > Sij2Rij(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			ProdMat(nDim, Sij, Sij, Sij2);
+			ProdMat(nDim, Rij, Sij2, tBasis);
+			ProdMat(nDim, Sij2, Rij, Sij2Rij); 
+			SumMat(nDim, Sij2Rij, tBasis, -1.); 
+				
+		} else if (m==5) {
+			// Sixth integrity basis tensor
+			std::vector<std::vector<su2double> > Rij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > SijRij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			ProdMat(nDim, Rij, Rij, Rij2);
+			ProdMat(nDim, Rij2, Sij, tBasis);
+			ProdMat(nDim, Sij, Rij2, SijRij2); 
+			su2double trace = 0.; TraceMat(nDim, SijRij2, trace);
+			SumMat(nDim, SijRij2, tBasis, 1.); 
+			SumMatScalarToDiag(nDim, tBasis, -2./3.*trace);
+		
+		} else if (m==6) {
+			// Seventh integrity basis tensor
+			std::vector<std::vector<su2double> > Rij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > SijRij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > Rij2Sij(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > Rij2SijRij(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			ProdMat(nDim, Rij, Rij, Rij2);
+			ProdMat(nDim, Sij, Rij2, SijRij2);
+			ProdMat(nDim, Rij2, Sij, Rij2Sij);
+			ProdMat(nDim, Rij, SijRij2, tBasis); 
+			ProdMat(nDim, Rij2Sij, Rij, Rij2SijRij);
+			SumMat(nDim, Rij2SijRij, tBasis, -1.); 
+		
+		} else if (m==7) {
+			// Eight integrity basis tensor
+			std::vector<std::vector<su2double> > Sij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > RijSij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > Sij2Rij(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > Sij2RijSij(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			ProdMat(nDim, Sij, Sij, Sij2);
+			ProdMat(nDim, Rij, Sij2, RijSij2);
+			ProdMat(nDim, Sij2, Rij, Sij2Rij);
+			ProdMat(nDim, Sij, RijSij2, tBasis); 
+			ProdMat(nDim, Sij2Rij, Sij, Sij2RijSij); 
+			SumMat(nDim, Sij2RijSij, tBasis, -1.); 
+			
+		} else if (m==8) {
+			// Nineth integrity basis tensor
+			std::vector<std::vector<su2double> > Sij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > Rij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > Sij2Rij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			ProdMat(nDim, Sij, Sij, Sij2);
+			ProdMat(nDim, Rij, Rij, Rij2);
+			ProdMat(nDim, Rij2, Sij2, tBasis); 
+			ProdMat(nDim, Sij2, Rij2, Sij2Rij2); 
+			su2double trace = 0.;  TraceMat(nDim, Sij2Rij2, trace);
+			SumMat(nDim, Sij2Rij2, tBasis, 1.); 
+			SumMatScalarToDiag(nDim, tBasis, -2./3.*trace);
+			
+		} else {
+			// Tenth integrity basis tensor
+			std::vector<std::vector<su2double> > Sij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > Rij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > Sij2Rij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > Rij2Sij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			std::vector<std::vector<su2double> > Rij2Sij2Rij(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+			ProdMat(nDim, Sij, Sij, Sij2);
+			ProdMat(nDim, Rij, Rij, Rij2);
+			ProdMat(nDim, Sij2, Rij2, Sij2Rij2);
+			ProdMat(nDim, Rij, Sij2Rij2, tBasis);
+			ProdMat(nDim, Rij2, Sij2, Rij2Sij2);
+			ProdMat(nDim, Rij2Sij2, Rij, Rij2Sij2Rij);
+			SumMat(nDim, Rij2Sij2Rij, tBasis, -1.); 
+		}
+  };
+  
+  /*!
+   * \brief Computes and returns the five invariants of the Pope's expansion from the velocity gradient - #MB25
+   *
+   * See: S. B. Pope, "A more general effective-viscosity hypothesis", 
+   * J . Pluid Mech. (1975), vol. 72, part 2, pp. 331-340 (1975).
+   *
+   * \param[in] nDim - Dimension of the flow problem, 2 or 3
+   * \param[in] velgrad - A velocity gradient matrix.
+   * \param[in] viscosity - Viscosity
+   * \param[in] density - Density
+   * \param[in] turb_ke - Turbulent kinetic energy, for the turbulent stress tensor
+   * \param[in] reynolds3x3 - If true, write to the third row and column of stress even if nDim==2.
+   * \tparam Mat1 - any type that supports the [][] interface
+   *
+   * Returns: An std::vector of the five invariant of the Pope's expansion
+  */
+	template <class Mat1, class Scalar>
+  std::vector<su2double> ComputePopeInvariants(size_t nDim,             /*!< \brief Dimension of the flow problem, 2 or 3 */
+                                               const Mat1& velgrad,     /*!< \brief A velocity gradient matrix. */
+                                               Scalar viscosity,        /*!< \brief Viscosity */
+                                               Scalar density=0.0,      /*!< \brief Density */
+                                               Scalar turb_ke=0.0,      /*!< \brief Turbulent kinetic energy, for the turbulent stress tensor */
+                                               Scalar omega_sst=0.0,    /*!< \brief Omega-field from k-w SST, for the turbulent stress tensor */
+                                               bool reynolds3x3=false   /*!< \brief If true, write to the third row and column of stress even if nDim==2. */
+                                               ) {
+    /*--- Compute the five invariants of the Pope's expansion ---*/
+    Scalar adim = 1.; 
+    if (omega_sst > 1e-12) adim = 1./omega_sst; 
+    
+    std::vector<std::vector<su2double> > Sij(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+    ComputeMeanRateOfStrainMatrix(nDim, Sij, velgrad); 
+    MultMatScalar(nDim, Sij, adim); 
+    
+    std::vector<std::vector<su2double> > Rij(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+    ComputeMeanRateOfRotationMatrix(nDim, Rij, velgrad); 
+    MultMatScalar(nDim, Rij, adim);  
+    
+    // Initialization 
+    std::vector<su2double> invariants(5,0.);
+    
+    // First invariant: trace(Sij*Sij)
+    std::vector<std::vector<su2double> > Sij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+    ProdMat(nDim,Sij,Sij,Sij2); 
+    TraceMat(nDim, Sij2, invariants[0]);
+
+    // Second invariant: trace(Rij*Rij)
+    std::vector<std::vector<su2double> > Rij2(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+    ProdMat(nDim,Rij,Rij,Rij2); 
+    TraceMat(nDim, Rij2, invariants[1]); 
+    
+    // Third invariant: trace(Sij*Sij*Sij)
+    std::vector<std::vector<su2double> > buffer(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+    ProdMat(nDim,Sij,Sij2,buffer);
+    TraceMat(nDim, buffer, invariants[2]); 
+    
+    // Fourth invariant: trace(Rij*Rij*Sij)
+    buffer = std::vector<std::vector<su2double> >(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+    ProdMat(nDim,Rij2,Sij,buffer);
+    TraceMat(nDim, buffer, invariants[3]);
+    
+    // Fifth invariant: trace(Rij*Rij*Sij*Sij)
+    buffer = std::vector<std::vector<su2double> >(size_t(nDim), std::vector<su2double>(size_t(nDim), 0.));
+    ProdMat(nDim,Rij2,Sij2,buffer); 
+    TraceMat(nDim, buffer, invariants[4]);
+    
+    return invariants; 
   }
 
   /*!
@@ -816,6 +1111,16 @@ public:
   inline void SetTurbKineticEnergy(su2double val_turb_ke_i, su2double val_turb_ke_j) {
     turb_ke_i = val_turb_ke_i;
     turb_ke_j = val_turb_ke_j;
+  }
+
+	/*!
+   * \brief Set the omega scalar field of the k-w SST model (Menter). - #MB25
+   * \param[in] val_omega_sst_i - Value of the omega at point i.
+   * \param[in] val_omega_sst_j - Value of the omega at point j.
+   */
+  inline void SetOmegaSST(su2double val_omega_sst_i, su2double val_omega_sst_j) { 
+    omega_sst_i = val_omega_sst_i;
+    omega_sst_j = val_omega_sst_j;
   }
 
   /*!
@@ -1605,6 +1910,75 @@ public:
    * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
    */
   inline bool GetBoundedScalar() const { return bounded_scalar;}
+	
+	/*!
+   * \brief Function to set the value of the beta field(s) - #MB25
+  */
+  inline void SetBetaFiml(const su2double* val_beta_fiml_i, const su2double* val_beta_fiml_j){ 
+    beta_fiml_i = val_beta_fiml_i; 
+    beta_fiml_j = val_beta_fiml_j; 
+  }
+
+private:
+  /*!
+   * \brief Compute the product between matrices A and B and store the results in C - #MB25
+  */
+	template <class Mat1, class Mat2, class Mat3> 
+	FORCEINLINE static void ProdMat(size_t nDim, const Mat1& A, const Mat2& B, Mat3& C) {
+		/*--- Product of two square matrices ---*/
+		for (size_t iDim = 0; iDim < nDim; iDim++) 
+			for (size_t jDim = 0; jDim < nDim; jDim++) 
+				for (size_t kDim = 0; kDim < nDim; kDim++) 
+					C[iDim][jDim] += A[iDim][kDim]*B[kDim][jDim]; 
+	}
+  /*!
+   * \brief Store the content of matrix A to matrix B - #MB25
+  */
+	template <class Mat1, class Mat2> 
+	FORCEINLINE static void EqualMat(size_t nDim, const Mat1& A, Mat2& B) {
+		/*--- Transfer content ---*/
+		for (size_t iDim = 0; iDim < nDim; iDim++) 
+			for (size_t jDim = 0; jDim < nDim; jDim++) 
+				B[iDim][jDim] = A[iDim][jDim]; 
+	}
+  /*!
+   * \brief Add matrix A (multiplied by a factor) to matrix B - #MB25 
+  */
+	template <class Mat1, class Mat2, class Scalar> 
+	FORCEINLINE static void SumMat(size_t nDim, const Mat1& A, Mat2& B, Scalar factor) {
+		/*--- Sum of two square matrices ---*/
+		for (size_t iDim = 0; iDim < nDim; iDim++) 
+			for (size_t jDim = 0; jDim < nDim; jDim++) 
+				B[iDim][jDim] += factor*A[iDim][jDim]; 
+	}
+  /*!
+   * \brief Compute the trace of matrix A - #MB25
+  */
+	template <class Mat1, class Scalar> 
+	FORCEINLINE static void TraceMat(size_t nDim, const Mat1& A, Scalar& trace) {
+		/*--- Trace of square matrices ---*/
+		for (size_t iDim = 0; iDim < nDim; iDim++) 
+			trace += A[iDim][iDim]; 
+	}
+  /*!
+   * \brief Compute the trace of matrix A - #MB25
+  */
+	template <class Mat1, class Scalar> 
+	FORCEINLINE static void MultMatScalar(size_t nDim, Mat1& A, Scalar factor) {
+		/*--- Trace of square matrices ---*/
+		for (size_t iDim = 0; iDim < nDim; iDim++) 
+			for (size_t jDim = 0; jDim < nDim; jDim++)
+				A[iDim][jDim] *= factor;  
+	}
+	/*!
+   * \brief Add to a scalar to the diagonal of matrix A - #MB25
+  */
+	template <class Mat1, class Scalar> 
+	FORCEINLINE static void SumMatScalarToDiag(size_t nDim, Mat1& A, Scalar val) {
+		/*--- Trace of square matrices ---*/
+		for (size_t iDim = 0; iDim < nDim; iDim++) 
+			A[iDim][iDim] += val;  
+	}
 };
 
 /*!

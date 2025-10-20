@@ -956,6 +956,18 @@ static const MapType<std::string, TURB_MODEL> Turb_Model_Map = {
 };
 
 /*!
+ * \brief Types of RST models // #MB25
+ */ 
+enum class TURB_RST_MODEL {
+  NONE, /*!< \brief No turbulence model for RST (see function CNumerics::ComputeStressTensor). */
+  POPE, /*!< \brief RST approximated by the Pope's expansion */ 
+}; 
+static const MapType<std::string, TURB_RST_MODEL> Turb_RST_Model_Map = {
+  MakePair("NONE", TURB_RST_MODEL::NONE)
+  MakePair("POPE", TURB_RST_MODEL::POPE)
+}; 
+
+/*!
  * \brief Families of turbulence models
  */
 enum class TURB_FAMILY {
@@ -2010,6 +2022,8 @@ enum ENUM_OBJECTIVE {
   TOPOL_DISCRETENESS = 63,      /*!< \brief Measure of the discreteness of the current topology. */
   TOPOL_COMPLIANCE = 64,        /*!< \brief Measure of the discreteness of the current topology. */
   STRESS_PENALTY = 65,          /*!< \brief Penalty function of VM stresses above a maximum value. */
+  INVERSE_DESIGN_VELOCITY_FIML = 66,   /*!< \brief Velocity objective function definition (inverse design using FIML) */ // #MB25
+  INVERSE_DESIGN_RST_FIML = 67,        /*!< \brief RST objective function definition (inverse design using FIML) */      // #MB25
 };
 static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
@@ -2052,6 +2066,8 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
   MakePair("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE)
   MakePair("STRESS_PENALTY", STRESS_PENALTY)
+  MakePair("INVERSE_DESIGN_VELOCITY_FIML", INVERSE_DESIGN_VELOCITY_FIML) // #MB25
+  MakePair("INVERSE_DESIGN_RST_FIML",      INVERSE_DESIGN_RST_FIML)      // #MB25
 };
 
 /*!
@@ -2238,7 +2254,8 @@ enum ENUM_PARAM {
   TRANSLATE_GRID = 50,        /*!< \brief Translate the volume grid. */
   ROTATE_GRID = 51,           /*!< \brief Rotate the volume grid */
   SCALE_GRID = 52,            /*!< \brief Scale the volume grid. */
-  ANGLE_OF_ATTACK = 101       /*!< \brief Angle of attack for airfoils. */
+  ANGLE_OF_ATTACK = 101,      /*!< \brief Angle of attack for airfoils. */
+  FIML = 102,                 /*!< \brief Field Inversion Machine Learning (FIML). */ // #MB25
 };
 static const MapType<std::string, ENUM_PARAM> Param_Map = {
   MakePair("FFD_SETTING", FFD_SETTING)
@@ -2274,6 +2291,7 @@ static const MapType<std::string, ENUM_PARAM> Param_Map = {
   MakePair("TRANSLATE_GRID", TRANSLATE_GRID)
   MakePair("ROTATE_GRID", ROTATE_GRID)
   MakePair("SCALE_GRID", SCALE_GRID)
+  MakePair("FIML", FIML) // #MB25
 };
 
 /*!
@@ -2486,6 +2504,31 @@ static const MapType<std::string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = {
   MakePair("ELECTRIC_FIELD", D_EFIELD)
 };
 
+/*!
+ * \brief Types of tapes that can be checked in a tape debug run.
+ */
+enum class CHECK_TAPE_TYPE {
+  OBJECTIVE_FUNCTION,    /*!< \brief Tape that only includes dependencies and objective function calculation. */
+  FULL_SOLVER            /*!< \brief Tape that includes dependencies and all solvers. */
+};
+static const MapType<std::string, CHECK_TAPE_TYPE> CheckTapeType_Map = {
+    MakePair("OBJECTIVE_FUNCTION_TAPE", CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION)
+    MakePair("FULL_SOLVER_TAPE", CHECK_TAPE_TYPE::FULL_SOLVER)
+};
+
+/*!
+ * \brief Types of variables that can be checked for in a tape debug run.
+ */
+enum class CHECK_TAPE_VARIABLES {
+  SOLVER_VARIABLES,     /*!< \brief A (debug) tag will be assigned to solver/conservative variables. */
+  MESH_COORDINATES,      /*!< \brief A (debug) tag will be assigned to solver/conservative variables and mesh coordinates. */
+  VARIABLE_AND_BETA_FIML, /*!< \brief A (debug) tag will be assigned to solver/conservative variables and beta-field. - #MB25 */
+};
+static const MapType<std::string, CHECK_TAPE_VARIABLES> CheckTapeVariables_Map = {
+    MakePair("SOLVER_VARIABLES", CHECK_TAPE_VARIABLES::SOLVER_VARIABLES)
+    MakePair("SOLVER_VARIABLES_AND_MESH_COORDINATES", CHECK_TAPE_VARIABLES::MESH_COORDINATES)
+    MakePair("SOLVER_VARIABLES_AND_BETA_FIML", CHECK_TAPE_VARIABLES::VARIABLE_AND_BETA_FIML) // #MB25
+};
 
 enum class RECORDING {
   CLEAR_INDICES,
@@ -2493,6 +2536,13 @@ enum class RECORDING {
   MESH_COORDS,
   MESH_DEFORM,
   SOLUTION_AND_MESH,
+  BETA_FIML, // #MB25
+  TAG_INIT_SOLVER_VARIABLES,
+  TAG_CHECK_SOLVER_VARIABLES,
+  TAG_INIT_SOLVER_AND_MESH,
+  TAG_CHECK_SOLVER_AND_MESH,
+  TAG_INIT_BETA_FIML, // #MB25
+  TAG_CHECK_BETA_FIML, // #MB25
 };
 
 /*!

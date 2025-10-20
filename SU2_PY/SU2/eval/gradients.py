@@ -69,7 +69,7 @@ def gradient(func_name, method, config, state=None):
     Outputs:
         A list of floats of gradient values
     """
-
+    print("INFO: Evaluates the aerodynamic gradients.") #MB25
     # Initialize
     grads = {}
     state = su2io.State(state)
@@ -173,7 +173,7 @@ def adjoint(func_name, config, state=None):
         A Bunch() with keys of objective function names
         and values of list of floats of gradient values
     """
-
+    print("INFO: Evaluates the aerodynamics gradients using the adjoint methodology.") #MB25
     # ----------------------------------------------------
     #  Initialize
     # ----------------------------------------------------
@@ -337,6 +337,9 @@ def adjoint(func_name, config, state=None):
             state.update(info)
 
             # Gradient Projection
+            #if (konfig.DV_KIND[0]=="FIML"): #MB25
+            #    print("INFO: No projection of the gradient as the mesh is not deformed.") #MB25
+            #else:
             info = su2run.projection(konfig, state)
             state.update(info)
 
@@ -349,7 +352,7 @@ def adjoint(func_name, config, state=None):
     #: with output redirection
 
     # return output
-    grads = su2util.ordered_bunch()
+    grads = su2util.ordered_bunch() 
     grads[func_output] = state["GRADIENTS"][func_output]
     return grads
 
@@ -363,7 +366,7 @@ def adjoint(func_name, config, state=None):
 
 
 def stability(func_name, config, state=None, step=1e-2):
-
+    print("INFO: Stability function in gradients.py") #MB25
     folder = "STABILITY"  # os.path.join('STABILITY',func_name) #STABILITY/D_MOMENT_Y_D_ALPHA/
 
     # ----------------------------------------------------
@@ -1014,7 +1017,7 @@ def geometry(func_name, config, state=None):
         Bunch() of functions with keys of objective function names
         and values of objective function floats.
     """
-
+    print("INFO: Evaluates geometry with the following: SU2.run.deform() and SU2.run.geometry()") #MB25
     # ----------------------------------------------------
     #  Initialize
     # ----------------------------------------------------

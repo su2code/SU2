@@ -1581,4 +1581,10 @@ public:
    */
   inline bool GetHasHybridParallel() const final { return true; }
 
+public:
+  /*!
+   * \brief Return the name of the solver - #MB25
+  */
+  inline virtual string getName() override {return "CEulerSolver"; }; 
+  
 };

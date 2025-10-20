@@ -50,7 +50,8 @@ CSurfaceMovement::~CSurfaceMovement() {
 }
 
 vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* geometry, CConfig* config) {
-  unsigned short iFFDBox, iDV, iLevel, iChild, iParent, jFFDBox, iMarker;
+  unsigned short iFFDBox, iLevel, iChild, iParent, jFFDBox, iMarker;
+  unsigned long iDV; // #MB25
   unsigned short Degree_Unitary[] = {1, 1, 1}, BSpline_Unitary[] = {2, 2, 2};
   su2double MaxDiff, Current_Scale, Ratio, New_Scale;
   string FFDBoxTag;
@@ -1740,7 +1741,7 @@ su2double CSurfaceMovement::SetCartesianCoord(CGeometry* geometry, CConfig* conf
 }
 
 bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                                         CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) const {
+                                         CFreeFormDefBox** ResetFFDBox, unsigned long iDV, bool ResetDef) const {
   su2double movement[3] = {0.0, 0.0, 0.0}, Ampl;
   unsigned short index[3], i, j, iFFDBox, iPlane;
   string design_FFDBox;
@@ -1879,7 +1880,7 @@ bool CSurfaceMovement::SetFFDCPChange_2D(CGeometry* geometry, CConfig* config, C
 }
 
 bool CSurfaceMovement::SetFFDCPChange(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                                      CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) const {
+                                      CFreeFormDefBox** ResetFFDBox, unsigned long iDV, bool ResetDef) const {
   su2double movement[3] = {0.0, 0.0, 0.0}, Ampl;
   unsigned short index[3], i, j, k, iPlane, iFFDBox;
   bool CheckIndex;
@@ -2021,7 +2022,7 @@ bool CSurfaceMovement::SetFFDCPChange(CGeometry* geometry, CConfig* config, CFre
 }
 
 bool CSurfaceMovement::SetFFDGull(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                                  CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) const {
+                                  CFreeFormDefBox** ResetFFDBox, unsigned long iDV, bool ResetDef) const {
   su2double movement[3] = {0.0, 0.0, 0.0}, Ampl;
   unsigned short index[3], i, k, iPlane, iFFDBox;
   string design_FFDBox;
@@ -2072,7 +2073,7 @@ bool CSurfaceMovement::SetFFDGull(CGeometry* geometry, CConfig* config, CFreeFor
 }
 
 bool CSurfaceMovement::SetFFDNacelle(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                                     CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) const {
+                                     CFreeFormDefBox** ResetFFDBox, unsigned long iDV, bool ResetDef) const {
   su2double movement[3] = {0.0, 0.0, 0.0}, Ampl;
   unsigned short index[3], i, j, k, iPlane, iFFDBox, Theta, ThetaMax;
   string design_FFDBox;
@@ -2194,7 +2195,7 @@ bool CSurfaceMovement::SetFFDNacelle(CGeometry* geometry, CConfig* config, CFree
 }
 
 bool CSurfaceMovement::SetFFDCamber_2D(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                                       CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) const {
+                                       CFreeFormDefBox** ResetFFDBox, unsigned long iDV, bool ResetDef) const {
   su2double Ampl, movement[3] = {0.0, 0.0, 0.0};
   unsigned short index[3], kIndex, iFFDBox;
   string design_FFDBox;
@@ -2237,7 +2238,7 @@ bool CSurfaceMovement::SetFFDCamber_2D(CGeometry* geometry, CConfig* config, CFr
 }
 
 bool CSurfaceMovement::SetFFDThickness_2D(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                                          CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) const {
+                                          CFreeFormDefBox** ResetFFDBox, unsigned long iDV, bool ResetDef) const {
   su2double Ampl, movement[3] = {0.0, 0.0, 0.0};
   unsigned short index[3], kIndex, iFFDBox;
   string design_FFDBox;
@@ -2280,7 +2281,7 @@ bool CSurfaceMovement::SetFFDThickness_2D(CGeometry* geometry, CConfig* config, 
 }
 
 bool CSurfaceMovement::SetFFDCamber(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                                    CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) const {
+                                    CFreeFormDefBox** ResetFFDBox, unsigned long iDV, bool ResetDef) const {
   su2double Ampl, movement[3] = {0.0, 0.0, 0.0};
   unsigned short index[3], kIndex, iPlane, iFFDBox;
   string design_FFDBox;
@@ -2341,7 +2342,7 @@ bool CSurfaceMovement::SetFFDCamber(CGeometry* geometry, CConfig* config, CFreeF
 }
 
 void CSurfaceMovement::SetFFDAngleOfAttack(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                                           CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) {
+                                           CFreeFormDefBox** ResetFFDBox, unsigned long iDV, bool ResetDef) {
   su2double Scale = config->GetOpt_RelaxFactor();
 
   su2double Ampl = config->GetDV_Value(iDV) * Scale;
@@ -2350,7 +2351,7 @@ void CSurfaceMovement::SetFFDAngleOfAttack(CGeometry* geometry, CConfig* config,
 }
 
 bool CSurfaceMovement::SetFFDThickness(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                                       CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) const {
+                                       CFreeFormDefBox** ResetFFDBox, unsigned long iDV, bool ResetDef) const {
   su2double Ampl, movement[3] = {0.0, 0.0, 0.0};
   unsigned short index[3], kIndex, iPlane, iFFDBox;
   string design_FFDBox;
@@ -2411,7 +2412,7 @@ bool CSurfaceMovement::SetFFDThickness(CGeometry* geometry, CConfig* config, CFr
 }
 
 bool CSurfaceMovement::SetFFDTwist(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                                   CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) const {
+                                   CFreeFormDefBox** ResetFFDBox, unsigned long iDV, bool ResetDef) const {
   unsigned short iOrder, jOrder, kOrder;
   su2double x, y, z, movement[3], Segment_P0[3], Segment_P1[3], Plane_P0[3], Plane_Normal[3], Variable_P0, Variable_P1,
       Intersection[3], Variable_Interp;
@@ -2557,7 +2558,7 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry* geometry, CConfig* config, CFreeFo
 }
 
 bool CSurfaceMovement::SetFFDRotation(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                                      CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) const {
+                                      CFreeFormDefBox** ResetFFDBox, unsigned long iDV, bool ResetDef) const {
   unsigned short iOrder, jOrder, kOrder;
   su2double movement[3] = {0.0, 0.0, 0.0}, x, y, z;
   unsigned short index[3], iFFDBox;
@@ -2637,7 +2638,7 @@ bool CSurfaceMovement::SetFFDRotation(CGeometry* geometry, CConfig* config, CFre
 }
 
 bool CSurfaceMovement::SetFFDControl_Surface(CGeometry* geometry, CConfig* config, CFreeFormDefBox* FFDBox,
-                                             CFreeFormDefBox** ResetFFDBox, unsigned short iDV, bool ResetDef) const {
+                                             CFreeFormDefBox** ResetFFDBox, unsigned long iDV, bool ResetDef) const {
   unsigned short iOrder, jOrder, kOrder;
   su2double movement[3] = {0.0, 0.0, 0.0}, x, y, z;
   unsigned short index[3], iFFDBox;
@@ -2716,13 +2717,13 @@ bool CSurfaceMovement::SetFFDControl_Surface(CGeometry* geometry, CConfig* confi
   return true;
 }
 
-void CSurfaceMovement::SetAngleOfAttack(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef) {
+void CSurfaceMovement::SetAngleOfAttack(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef) {
   su2double Scale = config->GetOpt_RelaxFactor();
   su2double Ampl = config->GetDV_Value(iDV) * Scale;
   config->SetAoA_Offset(Ampl);
 }
 
-void CSurfaceMovement::SetHicksHenne(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef) {
+void CSurfaceMovement::SetHicksHenne(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef) {
   unsigned long iVertex;
   unsigned short iMarker;
   su2double VarCoord[3] = {0.0, 0.0, 0.0}, VarCoord_[3] = {0.0, 0.0, 0.0}, *Coord_, *Normal_, ek, fk,
@@ -2904,7 +2905,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry* boundary, CConfig* config, unsig
   }
 }
 
-void CSurfaceMovement::SetSurface_Bump(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef) {
+void CSurfaceMovement::SetSurface_Bump(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef) {
   unsigned long iVertex;
   unsigned short iMarker;
   su2double VarCoord[3] = {0.0, 0.0, 0.0}, ek, fk, *Coord, xCoord;
@@ -2960,7 +2961,7 @@ void CSurfaceMovement::SetSurface_Bump(CGeometry* boundary, CConfig* config, uns
   }
 }
 
-void CSurfaceMovement::SetCST(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef) {
+void CSurfaceMovement::SetCST(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef) {
   unsigned long iVertex;
   unsigned short iMarker;
   su2double VarCoord[3] = {0.0, 0.0, 0.0}, VarCoord_[3] = {0.0, 0.0, 0.0}, *Coord_, *Normal_, fk,
@@ -3164,7 +3165,7 @@ void CSurfaceMovement::SetCST(CGeometry* boundary, CConfig* config, unsigned sho
   }
 }
 
-void CSurfaceMovement::SetRotation(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef) {
+void CSurfaceMovement::SetRotation(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef) {
   unsigned long iVertex;
   unsigned short iMarker;
   su2double VarCoord[3] = {0.0, 0.0, 0.0}, *Coord;
@@ -3248,7 +3249,7 @@ void CSurfaceMovement::SetRotation(CGeometry* boundary, CConfig* config, unsigne
     }
 }
 
-void CSurfaceMovement::SetTranslation(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef) {
+void CSurfaceMovement::SetTranslation(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef) {
   unsigned long iVertex;
   unsigned short iMarker;
   su2double VarCoord[3] = {0.0, 0.0, 0.0};
@@ -3286,7 +3287,7 @@ void CSurfaceMovement::SetTranslation(CGeometry* boundary, CConfig* config, unsi
     }
 }
 
-void CSurfaceMovement::SetScale(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef) {
+void CSurfaceMovement::SetScale(CGeometry* boundary, CConfig* config, unsigned long iDV, bool ResetDef) {
   unsigned long iVertex;
   unsigned short iMarker;
   su2double VarCoord[3] = {0.0, 0.0, 0.0}, x, y, z, *Coord;

@@ -251,4 +251,19 @@ public:
   inline su2double GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex) const override {
     return Buffet_Sensor[val_marker][val_vertex];
   }
+
+  /*!
+   * \brief Set the Pope's (five) invariants at a given point - #MB25
+   */
+  void SetPopeInvariants(CGeometry *geometry, 
+                         CSolver **solver_container,
+                         CNumerics *numerics, 
+                         CConfig *config) override;
+
+public:
+  /*!
+   * \brief Return the name of the solver
+  */
+ inline string getName() override {return "CNSSolver"; }; // #MB25
+
 };

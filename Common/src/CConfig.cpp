@@ -366,6 +366,16 @@ void CConfig::addEnumListOption(const string name, unsigned short& input_size, T
   option_map.insert( pair<string, COptionBase*>(name, val) );
 }
 
+// input_size is the number of options read in from the config file
+template <class Tenum, class TField>
+void CConfig::addEnumLongListOption(const string name, unsigned long& input_size, TField*& option_field, const map<string, Tenum>& enum_map) {
+  input_size = 0;
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionEnumLongList<Tenum,TField>(name, enum_map, option_field, input_size);
+  option_map.insert( pair<string, COptionBase*>(name, val) );
+}
+
 void CConfig::addDoubleArrayOption(const string& name, const int size, su2double* option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
@@ -438,7 +448,7 @@ void CConfig::addMathProblemOption(const string& name, bool & ContinuousAdjoint,
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
-void CConfig::addDVParamOption(const string& name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag,
+void CConfig::addDVParamOption(const string& name, unsigned long & nDV_field, su2double** & paramDV, string* & FFDTag,
                       unsigned short* & design_variable) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
@@ -446,7 +456,7 @@ void CConfig::addDVParamOption(const string& name, unsigned short & nDV_field, s
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
-void CConfig::addDVValueOption(const string& name, unsigned short* & nDVValue_field, su2double** & valueDV, unsigned short & nDV_field,  su2double** & paramDV,
+void CConfig::addDVValueOption(const string& name, unsigned long* & nDVValue_field, su2double** & valueDV, unsigned long & nDV_field,  su2double** & paramDV,
                       unsigned short* & design_variable) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
@@ -1105,15 +1115,29 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MULTIZONE", Multizone_Problem, NO);
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL);
-#ifdef CODI_REVERSE_TYPE
+#if defined CODI_REVERSE_TYPE
   const bool discAdjDefault = true;
+#if defined (CODI_TAG_TAPE)
+  DiscreteAdjointDebug = true;
+#else
+  DiscreteAdjointDebug = false;
+#endif
 #else
   const bool discAdjDefault = false;
+  DiscreteAdjointDebug = false;
 #endif
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, TURB_MODEL::NONE);
+  
+  /*!\brief KIND_RST_MODEL \n DESCRIPTION: Specify the modelization of the Reynolds Stress Tensor (RST) \n Options: see \link Turb_RST_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
+  addEnumOption("KIND_RST_MODEL", Kind_Turb_RST_Model, Turb_RST_Model_Map, TURB_RST_MODEL::NONE); // #MB25
+  /*!\brief NBPOPECOEFFS \n DESCRIPTION: Specify the number of coefficients in the Pope's expansion \n DEFAULT: 0 \ingroup Config*/
+  addUnsignedShortOption("NBPOPECOEFFS", nbPopeCoeffs, 0); // #MB25;
+	/* DESCRIPTION: Lambda weight factor for FIML problems */
+  addDoubleOption("LAMBDA_FIML", Lambda_FIML, 0.0); //Larger lambda penalizes corrections away from 1.0 - #MB25
+  
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SST turbulence model options/corrections. \n Options: see \link SST_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumListOption("SST_OPTIONS", nSST_Options, SST_Options, SST_Options_Map);
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SA turbulence model options/corrections. \n Options: see \link SA_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
@@ -1179,6 +1203,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("WRT_VOLUME_OVERWRITE", Wrt_Volume_Overwrite, true);
   /*!\brief SYSTEM_MEASUREMENTS \n DESCRIPTION: System of measurements \n OPTIONS: see \link Measurements_Map \endlink \n DEFAULT: SI \ingroup Config*/
   addEnumOption("SYSTEM_MEASUREMENTS", SystemMeasurements, Measurements_Map, SI);
+  /*!\brief MULTIZONE_ADAPT_FILENAME \n DESCRIPTION: Append zone number to restart and solution filenames. \ingroup Config*/
+  addBoolOption("MULTIZONE_ADAPT_FILENAME", Multizone_Adapt_FileName, YES);
 
   /*!\par CONFIG_CATEGORY: FluidModel \ingroup Config*/
   /*!\brief FLUID_MODEL \n DESCRIPTION: Fluid model \n OPTIONS: See \link FluidModel_Map \endlink \n DEFAULT: STANDARD_AIR \ingroup Config*/
@@ -2121,6 +2147,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
+  /* DESCRIPTION: Beta-fiml input file - #MB25*/
+  addStringOption("BETA_FIML_FILENAME", Beta_Fiml_FileName, string("beta_fiml.dat")); 
   /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out.su2 \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
 
@@ -2170,6 +2198,8 @@ void CConfig::SetConfig_Options() {
   addStringOption("RESTART_FILENAME", Restart_FileName, string("restart.dat"));
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
   addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
+  /*!\brief RESTART_BETA_FILENAME  \n DESCRIPTION: Output file to store the sensitivity of the functional w.r.t. the beta-field - #MB25 . \ingroup Config*/
+  addStringOption("RESTART_BETA_FILENAME", Restart_BetaFileName, string("beta_fiml1_grad.dat")); // FIXME
   /*!\brief VOLUME_FLOW_FILENAME  \n DESCRIPTION: Output file flow (w/o extension) variables \ingroup Config */
   addStringOption("VOLUME_FILENAME", Volume_FileName, string("vol_solution"));
   /*!\brief VOLUME_ADJ_FILENAME
@@ -2328,7 +2358,7 @@ void CConfig::SetConfig_Options() {
   /*--- Options related to the grid deformation ---*/
 
   /* DESCRIPTION: Kind of deformation */
-  addEnumListOption("DV_KIND", nDV, Design_Variable, Param_Map);
+  addEnumLongListOption("DV_KIND", nDV, Design_Variable, Param_Map);
   /* DESCRIPTION: Marker of the surface to which we are going apply the shape deformation */
   addStringListOption("DV_MARKER", nMarker_DV, Marker_DV);
   /* DESCRIPTION: Parameters of the shape deformation
@@ -2694,7 +2724,10 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Evaluate inverse design on the surface  */
   addBoolOption("INV_DESIGN_HEATFLUX", InvDesign_HeatFlux, false);
-
+  
+  /* DESCRIPTION: Evaluate inverse design using FIML techniques  */
+  addBoolOption("INV_DESIGN_FIML", InvDesign_Fiml, false); // #MB25
+  
   /*!\par CONFIG_CATEGORY: Unsupported options \ingroup Config*/
   /*--- Options that are experimental and not intended for general use ---*/
 
@@ -2778,6 +2811,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Preaccumulation in the AD mode. */
   addBoolOption("PREACC", AD_Preaccumulation, YES);
 
+  /* DESCRIPTION: Specify the tape which is checked in a tape debug run. */
+  addEnumOption("CHECK_TAPE_TYPE", AD_CheckTapeType, CheckTapeType_Map, CHECK_TAPE_TYPE::FULL_SOLVER);
+
+  /* DESCRIPTION: Specify the tape which is checked in a tape debug run. */
+  addEnumOption("CHECK_TAPE_VARIABLES", AD_CheckTapeVariables, CheckTapeVariables_Map, CHECK_TAPE_VARIABLES::SOLVER_VARIABLES);
+
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/
 
@@ -2805,6 +2844,9 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: Previous value of the design variables */
   addPythonOption("DV_VALUE_OLD");
+
+  /* DESCRIPTION: Required for FIML Python Scripting - #MB25 */
+  addPythonOption("NPOIN");
 
   /* DESCRIPTION: Number of partitions of the mesh */
   addPythonOption("NUMBER_PART");
@@ -3396,7 +3438,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     /*---  Using default frequency of 250 for all files when steady, and 1 for unsteady. ---*/
     for (auto iVolumeFreq = 0; iVolumeFreq < nVolumeOutputFrequencies; iVolumeFreq++){
-      VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250;
+      if (Multizone_Problem && DiscreteAdjoint) {
+        VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : nOuterIter;
+      }
+      else {
+        VolumeOutputFrequencies[iVolumeFreq] = Time_Domain ? 1 : 250;
+      }
     }
   } else if (nVolumeOutputFrequencies < nVolumeOutputFiles) {
     /*--- If there are fewer frequencies than files, repeat the last frequency.
@@ -5008,6 +5055,67 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     Design_Variable[0] = NO_DEFORMATION;
   }
 
+  /*--- As the Design_Variable cannot be instantiated within the config file
+        as it will be tedious to write down the NPOIN DVs, they are simply set
+        to one in the config file and read from a given input file. - #MB25*/
+  bool fiml = false;
+  if (Design_Variable != nullptr) {
+    if ((nDV==1) && (Design_Variable[0]==FIML)) fiml = true;
+    if ((nDV==1) && (fiml)) {
+
+      /*--- Suppress all pointers linked to DVs as they are read from Beta_Fiml_FileName ---*/
+      if (DV_Value != nullptr) {
+        for (unsigned long iDV = 0; iDV < nDV; iDV++) delete[] DV_Value[iDV];
+        delete [] DV_Value;
+      }
+      if (Design_Variable != nullptr) delete [] Design_Variable; 
+      if (nDV_Value != nullptr) delete [] nDV_Value; 
+      if (ParamDV != nullptr) {
+        for (unsigned long iDV = 0; iDV < nDV; iDV++) delete[] ParamDV[iDV];
+        delete [] ParamDV; 
+      }
+      /*--- Create the appropriate Design_Variable and DV_Value vector*/
+      nDV = GetnPoin(Mesh_FileName,Mesh_FileFormat);
+      DV_Value        = new su2double*[nDV];
+      Design_Variable = new unsigned short[nDV]; 
+      nDV_Value       = new unsigned long[nDV]; 
+      ParamDV         = nullptr; // new su2double*[nDV]; // makes no sens for our implementation
+       
+      /*--- Open the beta_fiml file, throw an error if this fails. ---*/
+      ifstream beta_file;
+    	string text_line;
+#ifdef HAVE_MPI
+      if (SU2_MPI::GetRank() == MASTER_NODE) 
+        std::cout << "INFO: Reading from the beta-values (DVs) from " << Beta_Fiml_FileName.data() << std::endl; 
+#else
+      std::cout << "INFO: Reading from the beta-values (DVs) from " << Beta_Fiml_FileName.data() << std::endl; 
+#endif
+      beta_file.open(Beta_Fiml_FileName.data(), ios::in);
+      if (beta_file.fail()) {
+#ifdef HAVE_MPI
+        if (rank == MASTER_NODE) {
+          std::cout << "FATAL: There is no file named " << Beta_Fiml_FileName.data() << "." << std::endl;
+          exit(EXIT_FAILURE);
+        }
+#else
+        std::cout << "FATAL: There is no file named " << Beta_Fiml_FileName.data() << "." << std::endl;
+        exit(EXIT_FAILURE);
+#endif
+      }
+      
+      /*--- Initialize the beta-value (DVs) ---*/
+      for (unsigned long iDV = 0; iDV < nDV; iDV++ ) {
+        getline(beta_file, text_line);
+        istringstream point_line(text_line);
+        DV_Value[iDV] = new su2double[1]; // could be fixed to the # of Pope's coefficients
+        point_line >> DV_Value[iDV][0];
+        Design_Variable[iDV] = FIML; 
+        nDV_Value[iDV]       = 1; 
+      }
+      nParamDV = 1; // could be fixed to the # of Pope's coefficients
+    }
+  }
+  
   /*--- Checks for incompressible flow problems. ---*/
 
   if (Kind_Solver == MAIN_SOLVER::INC_EULER) {
@@ -6175,12 +6283,14 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   iMarker_Giles, iMarker_Outlet, iMarker_Isothermal, iMarker_HeatFlux, iMarker_HeatTransfer,
   iMarker_EngineInflow, iMarker_EngineExhaust, iMarker_Displacement, iMarker_Damper,
   iMarker_Load, iMarker_Internal, iMarker_Monitoring,
-  iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
+  iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV,
   iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
   iMarker_Emissivity, iMarker_StrongBC,
   iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface,
   iMarker_SobolevBC;
+
+  unsigned long iDV_Value; // #MB25
 
   bool fea = ((Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY) || (Kind_Solver == MAIN_SOLVER::DISC_ADJ_FEM));
 
@@ -6271,6 +6381,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
             cout << "." << endl;
             break;
+        }
+        switch (Kind_Turb_RST_Model) { // #MB25
+          case TURB_RST_MODEL::NONE: break;
+          case TURB_RST_MODEL::POPE:
+            cout << "Reynolds Stress Tensor model: Use the Pope's expansion coupled with beta-field obtained with FIML." << endl;
+            break; 
         }
         switch (Kind_Trans_Model) {
           case TURB_TRANS_MODEL::NONE:  break;
@@ -6576,7 +6692,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   if (((val_software == SU2_COMPONENT::SU2_DEF) || (val_software == SU2_COMPONENT::SU2_DOT)) && (Design_Variable[0] != NO_DEFORMATION)) {
 
-    for (unsigned short iDV = 0; iDV < nDV; iDV++) {
+    for (unsigned long iDV = 0; iDV < nDV; iDV++) {
 
 
       if ((Design_Variable[iDV] != NO_DEFORMATION) &&
@@ -6584,7 +6700,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           (Design_Variable[iDV] != SCALE_GRID) &&
           (Design_Variable[iDV] != TRANSLATE_GRID) &&
           (Design_Variable[iDV] != ROTATE_GRID) &&
-          (Design_Variable[iDV] != SURFACE_FILE)) {
+          (Design_Variable[iDV] != SURFACE_FILE) && 
+          (Design_Variable[iDV] != FIML) ) { // #MB25
 
         if (iDV == 0)
           cout << "Design variables definition (markers <-> value <-> param):" << endl;
@@ -6725,7 +6842,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
 
       }
-
+      
+      else if (Design_Variable[iDV] == FIML) { // #MB25
+        nParamDV = 1;
+        if (iDV==0) cout << "FIML Problem DV at every point in grid (nDV=" << nDV << ")." << endl;
+      }
+      
       else cout << endl;
 
     }
@@ -6780,6 +6902,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         case TOPOL_DISCRETENESS:         cout << "Topology discreteness objective function." << endl; break;
         case TOPOL_COMPLIANCE:           cout << "Topology compliance objective function." << endl; break;
         case STRESS_PENALTY:             cout << "Stress penalty objective function." << endl; break;
+        case INVERSE_DESIGN_VELOCITY_FIML: cout << "Inverse design on velocity field objective function (FIML)." << endl; break; // #MB25
+        case INVERSE_DESIGN_RST_FIML:    cout << "Inverse design on RST field objective function (FIML)." << endl; break; // #MB25
       }
     }
     else {
@@ -8340,7 +8464,7 @@ string CConfig::GetFilename(string filename, const string& ext, int timeIter) co
   filename = filename + string(ext);
 
   /*--- Append the zone number if multizone problems ---*/
-  if (Multizone_Problem)
+  if (Multizone_Problem && Multizone_Adapt_FileName)
     filename = GetMultizone_FileName(filename, GetiZone(), ext);
 
   /*--- Append the zone number if multiple instance problems ---*/
@@ -8503,6 +8627,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) const {
         case TOPOL_DISCRETENESS:          AdjExt = "_topdisc";  break;
         case TOPOL_COMPLIANCE:            AdjExt = "_topcomp";  break;
         case STRESS_PENALTY:              AdjExt = "_stress";   break;
+        case INVERSE_DESIGN_VELOCITY_FIML:AdjExt = "_invvelfiml"; break; // #MB25
+        case INVERSE_DESIGN_RST_FIML:     AdjExt = "_invrstfiml"; break; // #MB25
       }
     }
     else{
@@ -10274,4 +10400,47 @@ void CConfig::SetMultizone(const CConfig *driver_config, const CConfig* const* c
   FSI_Problem = fluid_zone && structural_zone;
 
   Multizone_Residual = true;
+}
+
+unsigned long CConfig::GetnPoin(string val_mesh_filename, unsigned short val_format) {
+    /* --- Function to return number of nodes in the SU2 mesh definition. 
+           Required to set the number of DVs for FIML case extract from JH19 --- */
+  string text_line, Marker_Tag;
+  ifstream mesh_file;
+  unsigned long nPoin = 1; // Default value
+  unsigned short iLine, nLine = 10;
+  char cstr[200];
+  string::size_type position;
+  
+  /*--- Search the mesh file for the 'NELEM' keyword. ---*/
+  switch (val_format) {
+    case SU2: {
+      std::string keyword = "NPOIN=";
+      std::ifstream infile(val_mesh_filename.c_str());
+
+      if (infile.is_open()) {
+        std::string line;
+        while ((std::getline(infile, line)) && (nPoin==1)) {
+          std::istringstream iss(line);
+          bool equal = true;
+          int ichar = 0;
+          while ((ichar<keyword.size()) && (equal)) {
+            if (line[ichar]!=keyword[ichar]) equal=false;
+            ichar ++;
+          }
+
+          if (equal) {
+            line.erase(0,keyword.size());
+            nPoin = std::stoll(line);
+          }
+        }
+      } else cout << "FATAL: There is no geometry file in CConfig::GetnPoin())!" << endl;
+      break;
+    }
+    default: {
+      cout << "ERROR - Lookup of NPOIN= not implemented yet for mesh format" << val_format << "!" << endl;
+      break;
+    }
+  }
+  return nPoin;
 }

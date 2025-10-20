@@ -133,7 +133,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
 
   /*--- Calculate the inviscid and viscous forces ---*/
   solver_container[iZone][iInst][FinestMesh][SolContainer_Position]->Pressure_Forces(geometry[iZone][iInst][iMesh], config[iZone]);
-
+  std::cout << "CFEM_DG_Integration::SingleGrid_Iteration()" << std::endl; // #MB25 
   solver_container[iZone][iInst][FinestMesh][SolContainer_Position]->Friction_Forces(geometry[iZone][iInst][iMesh], config[iZone]);
 
   /*--- Convergence strategy ---*/

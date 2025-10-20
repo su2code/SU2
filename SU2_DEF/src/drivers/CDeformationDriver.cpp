@@ -183,7 +183,8 @@ void CDeformationDriver::InitializeGeometry() {
     geometry_container[iZone][INST_0][MESH_0]->SetEdges();
     geometry_container[iZone][INST_0][MESH_0]->SetVertex(config_container[iZone]);
 
-    if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
+    if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION && 
+        config_container[iZone]->GetDesign_Variable(0) != FIML) { // #MB25
       /*--- Create the dual control volume structures. ---*/
 
       if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
@@ -309,7 +310,8 @@ void CDeformationDriver::DeformMesh() {
 
 void CDeformationDriver::DeformLegacy() {
   for (iZone = 0; iZone < nZone; iZone++) {
-    if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION) {
+    if (config_container[iZone]->GetDesign_Variable(0) != NO_DEFORMATION &&
+        config_container[iZone]->GetDesign_Variable(0) != FIML) { // #MB25
       unsigned short nInst_Zone = nInst[iZone];
 
       /*--- Definition of the Class for grid movement. ---*/
@@ -518,7 +520,8 @@ void CDeformationDriver::OutputFiles() {
     if ((config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) &&
         (config_container[ZONE_0]->GetDesign_Variable(0) != SCALE_GRID) &&
         (config_container[ZONE_0]->GetDesign_Variable(0) != TRANSLATE_GRID) &&
-        (config_container[ZONE_0]->GetDesign_Variable(0) != ROTATE_GRID)) {
+        (config_container[ZONE_0]->GetDesign_Variable(0) != ROTATE_GRID) && 
+        (config_container[ZONE_0]->GetDesign_Variable(0) != FIML)) {
       /*--- Write the free form deformation boxes after deformation if defined. ---*/
       if (!haveSurfaceDeformation) {
         if (rank == MASTER_NODE) cout << "No FFD information available." << endl;

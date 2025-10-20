@@ -555,6 +555,18 @@ class CDriver : public CDriverBase {
    */
   void SetMarkerTranslationRate(unsigned short iMarker, passivedouble vel_x, passivedouble vel_y, passivedouble vel_z);
 
+  /*!
+   * \brief Virtual function member. 
+   * Tape test - #MB25
+   */
+  virtual void TapeTest() {}; 
+
+  /*!
+   * \brief Virtual function member.
+   * Gathering error for tape test - #MB25
+   */
+  virtual int TapeTestGatherErrors(AD::ErrorReport& error_report) const {return 0; };
+
 /// \}
 };
 

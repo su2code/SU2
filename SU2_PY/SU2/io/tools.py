@@ -418,6 +418,8 @@ def get_objectiveSign(ObjFun_name):
         SURFACE_MASSFLOW
         SURFACE_MACH
         TOTAL_STATIC_EFFICIENCY
+        INVERSE_DESIGN_VELOCITY_FIML #MB25
+        INVERSE_DESIGN_RST_FIML      #MB25
     returns +1 otherwise
     """
 
@@ -517,6 +519,8 @@ def get_adjointSuffix(objective_function=None):
         "TOTAL_EFFICIENCY": "teff",
         "TOTAL_STATIC_EFFICIENCY": "tseff",
         "COMBO": "combo",
+        "INVERSE_DESIGN_VELOCITY_FIML": "invvelfiml", #MB25
+        "INVERSE_DESIGN_RST_FIML": "invrstfiml",      #MB25
     }
 
     # if none or false, return map
@@ -609,6 +613,7 @@ def get_dvMap():
         51: "ROTATE_GRID",
         52: "SCALE_GRID",
         101: "ANGLE_OF_ATTACK",
+        102: "FIML", #MB25
     }
 
     return dv_map
@@ -704,6 +709,12 @@ def get_gradFileFormat(grad_type, plot_format, kindID, special_cases=[]):
             if key == "INV_DESIGN_HEATFLUX":
                 header.append(r',"Grad_HeatFlux_Diff"')
                 write_format.append(", %.10f")
+            if key == "INVERSE_DESIGN_VELOCITY_FIML": # MB25
+                header.append(r', "Grad_Vel_Diff"')
+                write_format.append(", %.10f")
+            if key == "INVERSE_DESIGN_RST_FIML": #MB25
+                header.append(r', "Grad_RST_Diff"')
+                write_format.append(", %10f")
 
     # otherwise...
     else:
@@ -770,7 +781,8 @@ def get_gradFileFormat(grad_type, plot_format, kindID, special_cases=[]):
         pass
     elif kindID == "FFD_ANGLE_OF_ATTACK":
         pass
-
+    elif kindID =="FIML": #MB25
+        pass 
     # otherwise...
     else:
         raise Exception("Unrecognized Design Variable Kind")
@@ -880,6 +892,12 @@ def get_optFileFormat(plot_format, special_cases=None, nZones=1):
         if key == "INV_DESIGN_HEATFLUX":
             header_list.extend(["HeatFlux_Diff"])
             write_format.append(r", %.10f")
+        if key == "INVERSE_DESIGN_VEl_FIML": #MB25
+            header_list.extend(["Vel_Diff"])
+            write_format.append(r", %.10f")
+        if key == "INVERSE_DESIGN_RST_FIML": #MB25
+            header_list.extend(["RST_Diff"])
+            write_format.append(r", %.10f")
 
     # finish formats
     header_format = (
@@ -945,6 +963,8 @@ def get_specialCases(config):
         "1D_OUTPUT",
         "INV_DESIGN_CP",
         "INV_DESIGN_HEATFLUX",
+        "INVERSE_DESIGN_VELOCITY_FIML", #MB25
+        "INVERSE_DESIGN_RST_FIML", #MB25
     ]
 
     special_cases = []

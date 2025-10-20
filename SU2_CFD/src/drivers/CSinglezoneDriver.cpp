@@ -61,6 +61,18 @@ void CSinglezoneDriver::StartSolver() {
            << driver_config->GetnTime_Iter() - config_container[ZONE_0]->GetRestart_Iter() << " time steps." << endl;
   }
 
+   /*--- Start the debug recording mode for the discrete adjoint solver. ---*/
+  if (driver_config->GetDiscrete_Adjoint_Debug()) {
+
+    if (rank == MASTER_NODE) {
+      cout << "\nINFO: SU2_CFD_AD is compiled for debug mode recording. To resume the discrete adjoint solver," << endl; 
+      cout << "adjust -Dcodi-tape (-Dcodi-tape=JacobianLinear by default) and recompile." << endl;
+    }
+    Preprocess(0);
+    TapeTest();
+    return;
+  }
+
   /*--- Set the initial time iteration to the restart iteration. ---*/
   if (config_container[ZONE_0]->GetRestart() && driver_config->GetTime_Domain())
     TimeIter = config_container[ZONE_0]->GetRestart_Iter();

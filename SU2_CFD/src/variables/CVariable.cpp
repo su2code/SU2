@@ -69,13 +69,23 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
       External.resize(nPoint,nVar) = su2double(0.0);
 
     if (!adjoint) {
-      AD_InputIndex.resize(nPoint,nVar) = -1;
-      AD_OutputIndex.resize(nPoint,nVar) = -1;
-    }
+      AD_InputIndex.resize(nPoint,nVar) = AD::GetPassiveIndex();
+      AD_OutputIndex.resize(nPoint,nVar) = AD::GetPassiveIndex();
+    } 
   }
 
   if (config->GetMultizone_Problem())
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
+  
+  if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) { // #MB25
+    nbPopeCoeffs = config->GetRSTNbPopeCoeffs();
+
+		beta_fiml.resize(nPoint,nbPopeCoeffs) = su2double(0.0); 
+    beta_fiml_grad.resize(nPoint*nbPopeCoeffs, su2double(0.0));
+
+    AD_InputIndexBetaFiml.resize(nPoint,nbPopeCoeffs)  = AD::GetPassiveIndex();
+    AD_OutputIndexBetaFiml.resize(nPoint,nbPopeCoeffs) = AD::GetPassiveIndex();
+  }
 }
 
 void CVariable::Set_OldSolution() {

@@ -279,6 +279,8 @@ class State(ordered_bunch):
         targetea_name = "TargetEA.dat"
         targetcp_name = "TargetCp.dat"
         targetheatflux_name = "TargetHeatFlux.dat"
+        targetvel_name = "TargetVel.dat" #MB25
+        targetRST_name = "TargetRST.dat" #MB25
 
         adj_map = get_adjointSuffix()
         restart = config.RESTART_SOL == "YES"
@@ -400,6 +402,14 @@ class State(ordered_bunch):
         # heat flux inverse design
         if "INV_DESIGN_HEATFLUX" in special_cases:
             register_file("TARGET_HEATFLUX", targetheatflux_name)
+        
+        # DNS/LES velocity inverse design - #MB25
+        if "INVERSE_DESIGN_VELOCITY_FIML" in special_cases:
+            register_file("TARGET_VEL", targetvel_name)
+        
+        # DNAS/LES Reynolds stress tensor inverse design - #MB25
+        if "INVERSE_DESIGN_RST_FIML" in special_cases:
+            register_file("TARGET_RST", targetRST_name)
 
         return
 

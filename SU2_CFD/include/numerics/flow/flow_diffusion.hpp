@@ -58,6 +58,7 @@ protected:
   Mean_Laminar_Viscosity,                 /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,                    /*!< \brief Mean value of the eddy viscosity. */
   Mean_turb_ke,                           /*!< \brief Mean value of the turbulent kinetic energy. */
+  Mean_omega,                             /*!< \brief Mean value of omega (k-w SST). */ // #MB25
   Mean_TauWall,                           /*!< \brief Mean wall shear stress (wall functions). */
   TauWall_i, TauWall_j,                   /*!< \brief Wall shear stress at point i and j (wall functions). */
   dist_ij_2,                              /*!< \brief Length of the edge and face, squared */
@@ -66,6 +67,8 @@ protected:
 
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
+  
+  su2double *Mean_beta_fiml = nullptr;   /*!< \brief Mean value of the corrective field for the first Pope's coefficient - #MB25 */
 
   /*!
    * \brief Scale the stress tensor using a predefined wall stress.
@@ -198,12 +201,18 @@ public:
    * \param[in] val_turb_ke - Turbulent kinetic energy
    * \param[in] val_laminar_viscosity - Laminar viscosity.
    * \param[in] val_eddy_viscosity - Eddy viscosity.
+   * \param[in] val_omega - Omega from k-omega SST model. #MB25
+   * \param[in] val_beta_fiml - Beta corrective field (first Pope's coefficient). #MB25
+   * \param[in] popexpns - RST modeled using the Pope's expansion. #MB25
    */
   void SetStressTensor(const su2double *val_primvar,
                        const su2double* const *val_gradprimvar,
                        su2double val_turb_ke,
                        su2double val_laminar_viscosity,
-                       su2double val_eddy_viscosity);
+                       su2double val_eddy_viscosity,
+                       su2double val_omega,
+                       const su2double* val_beta_fiml,       
+                       const bool popexpns);
 
   /*!
    * \brief Get a component of the viscous stress tensor.

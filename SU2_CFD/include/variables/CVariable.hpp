@@ -92,14 +92,20 @@ protected:
 
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
-  su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
-  su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+  su2matrix<AD::Identifier> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector before solver iteration. */
+  su2matrix<AD::Identifier> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after solver iteration. */
 
   VectorType SolutionExtra; /*!< \brief Stores adjoint solution for extra solution variables.
                                         Currently only streamwise periodic pressure-drop for massflow prescribed flows. */
   VectorType ExternalExtra; /*!< \brief External storage for the adjoint value (i.e. for the OF mainly */
 
   VectorType SolutionExtra_BGS_k; /*!< \brief Intermediate storage, enables cross term extraction as that is also pushed to Solution. */
+  
+  su2activematrix beta_fiml;			   /*!< \brief Field Inversion and Machine Learning - FIML - (Similar type as Coord) - #MB25 */ 
+  vector<su2double> beta_fiml_grad;  /*!< \brief Field Inversion and Machine Learning - FIML - Gradient of the correction factor - #MB25 */ 
+  MatrixType PopeInvariants;         /*!< \brief NS Variables linked to Pope's invariants - #MB25 */
+  su2matrix<AD::Identifier> AD_InputIndexBetaFiml; /*!< \brief Indices of beta-fiml variables in the adjoint vector - #MB25 */
+  su2matrix<AD::Identifier> AD_OutputIndexBetaFiml; /*!< \brief Indices of beta-fiml variables in the adjoint vector after having been updated - #MB25 */
 
  protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
@@ -110,6 +116,7 @@ protected:
   unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
   unsigned long nSecondaryVarGrad = 0;   /*!< \brief Number of secondaries for which a gradient is computed. */
   unsigned long nAuxVar = 0; /*!< \brief Number of auxiliary variables. */
+  unsigned short nbPopeCoeffs = 0; /*!< \brief Number of Pope's coefficients - #MB25 */ 
 
   /*--- Only allow default construction by derived classes. ---*/
   CVariable() = default;
@@ -118,7 +125,7 @@ protected:
     assert(false && "A base method of CVariable was used, but it should have been overridden by the derived class.");
   }
 
-  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>* ad_index = nullptr) {
+  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<AD::Identifier>* ad_index = nullptr) {
     const auto nPoint = variable.rows();
     SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
     for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -133,7 +140,7 @@ protected:
     END_SU2_OMP_FOR
   }
 
-  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>& ad_index) {
+  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<AD::Identifier>& ad_index) {
     RegisterContainer(input, variable, &ad_index);
   }
 
@@ -988,6 +995,26 @@ public:
    * \return Value of the eddy viscosity.
    */
   inline virtual su2double GetEddyViscosity(unsigned long iPoint) const { return 0.0; }
+  
+  /*!
+   * \brief Return the ith Pope's invariant - #MB25
+   * \param[in] iPoint - Point index.
+   * \param[in] i      - Index of the Pope invariants (0, 1, 2, 3, or 4)
+   * \return Value of the ith Pope's invariant
+   */
+  inline su2double GetPopeInvariants(unsigned long iPoint, unsigned short i) const { 
+    return PopeInvariants(iPoint,i); 
+  }
+  
+  /*!
+   * \brief Set the ith Pope invariants - #MB25.
+   * \param[in] iPoint - Node index
+   * \param[in] i      - Index of the Pope invariants (0, 1, 2, 3, or 4)
+   * \param[in] val    - Value of the Pope invariants
+   */
+  inline void SetPopeInvariants(unsigned long iPoint, unsigned short i, su2double val) {
+    PopeInvariants(iPoint,i) = val;
+  }
 
   /*!
    * \brief A virtual member.
@@ -1704,6 +1731,87 @@ public:
    * \param[in] val_muT
    */
   inline virtual void SetmuT(unsigned long iPoint, su2double val_muT) {}
+  
+  /*!
+   * \brief Get the value of the beta FIML Correction factor - #MB25.
+   * \param[in] iPoint - Point index.
+   * \return the value of beta FIML variable.
+   */
+  inline su2double GetBetaFiml(unsigned long iPoint, unsigned short iPope) {
+    return beta_fiml(iPoint,iPope); 
+  } 
+
+  inline su2double* GetBetaFiml(unsigned long iPoint) {
+    return beta_fiml[iPoint]; 
+  } 
+
+  /*!
+   * \brief Get the value of the gradient of the beta FIML Correction factor - #MB25.
+   * \param[in] iPoint - Point index.
+   * \return the value of beta FIML variable gradient.
+   */
+  inline su2double GetBetaFimlGrad(unsigned long iPoint, unsigned short iPope) {
+    return beta_fiml_grad[iPoint*nbPopeCoeffs+iPope]; 
+    }; 
+
+  /*!
+   * \brief Set the value of the beta_fiml correction - #MB25.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_beta_fiml
+   */
+  inline void SetBetaFiml(unsigned long iPoint, unsigned short iPope, su2double val_beta_fiml) {
+    beta_fiml(iPoint,iPope) = val_beta_fiml;
+  }; 
+  
+  /*!
+   * \brief Set the value of the beta_fiml correction gradient - #MB25.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_beta_fiml_grad
+   */
+   inline void SetBetaFimlGrad(unsigned long iPoint, unsigned short iPope, su2double val_beta_fiml_grad) {
+    beta_fiml_grad[iPoint*nbPopeCoeffs+iPope] = val_beta_fiml_grad;
+   }; 
+
+   /*!
+   * \brief Set the adjoint values of the beta-fiml.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] adj_sol - Adjoint values of the beta variables.
+   */
+  inline void SetAdjointSolutionBetaFiml(unsigned long iPoint, const su2double* adj_sol) {
+    for (unsigned short iPope = 0; iPope < nbPopeCoeffs; iPope++)
+      AD::SetDerivative(AD_OutputIndexBetaFiml(iPoint, iPope), SU2_TYPE::GetValue(adj_sol[iPope]));
+  }
+
+  /*!
+   * \brief Get the adjoint values of the beta-fiml.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] iPope - Dimension.
+   */
+  inline su2double GetAdjointSolutionBetaFiml(unsigned long iPoint, unsigned short iPope) const {
+    return AD::GetDerivative(AD_InputIndexBetaFiml(iPoint, iPope));
+  }
+
+  /*!
+   * \brief Register beta-fiml field (corrective factor) of a point - #MB25
+   * \param[in] iPoint - Index of the point.
+   * \param[in] input - Register as input or output.
+   */
+  void RegisterBetaFiml(bool input) {
+    
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint, omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+      for (unsigned long iPope = 0; iPope < nbPopeCoeffs; iPope++) {
+        if (input) {
+          AD::RegisterInput(beta_fiml(iPoint,iPope));
+          AD::SetIndex(AD_InputIndexBetaFiml(iPoint, iPope), beta_fiml(iPoint,iPope));
+        } else {
+          AD::RegisterOutput(beta_fiml(iPoint,iPope));
+          AD::SetIndex(AD_OutputIndexBetaFiml(iPoint, iPope), beta_fiml(iPoint,iPope));
+        }
+      }
+    }
+    END_SU2_OMP_FOR
+  }
 
   /*!
    * \brief Set the value of the turbulence index.
@@ -2180,7 +2288,7 @@ public:
   }
 
   inline void GetAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol) const {
-    int index = 0;
+    AD::Identifier index = AD::GetPassiveIndex();
     for (unsigned long iVar = 0; iVar < Solution_time_n.cols(); iVar++) {
       AD::SetIndex(index, Solution_time_n(iPoint, iVar));
       adj_sol[iVar] = AD::GetDerivative(index);
@@ -2188,7 +2296,7 @@ public:
   }
 
   inline void GetAdjointSolution_time_n1(unsigned long iPoint, su2double *adj_sol) const {
-    int index = 0;
+    AD::Identifier index = AD::GetPassiveIndex();;
     for (unsigned long iVar = 0; iVar < Solution_time_n1.cols(); iVar++) {
       AD::SetIndex(index, Solution_time_n1(iPoint, iVar));
       adj_sol[iVar] = AD::GetDerivative(index);
@@ -2209,6 +2317,18 @@ public:
    */
   inline virtual su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
   inline virtual const MatrixType& GetSensitivity() const { AssertOverride(); return Solution; }
+
+  /*!
+   * \brief Set the sensitivity w.r.t the beta-corrective field at the node - #MB25
+   */
+  inline virtual void SetSensitivityBetaFiml(unsigned long iPoint, unsigned short iPope, su2double val) {}
+
+  /*!
+   * \brief Get the Sensitivity w.r.t. the beta-corrective field at the node - #MB25
+   */
+  inline virtual su2double GetSensitivityBetaFiml(unsigned long iPoint, unsigned short iPope) const {return 0.0;}
+  inline virtual const MatrixType& GetSensitivityBetaFiml() const { AssertOverride(); return beta_fiml; }
+
 
   inline virtual void SetTau_Wall(unsigned long iPoint, su2double tau_wall) {}
 

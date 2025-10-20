@@ -1489,6 +1489,15 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("TURB_DELTA_TIME", "Turb_Delta_Time", "TIMESTEP", "Value of the local timestep for the turbulence variables");
     AddVolumeOutput("TURB_CFL", "Turb_CFL", "TIMESTEP", "Value of the local CFL for the turbulence variables");
   }
+
+  // Pope's invariants - #MB25
+  if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+    AddVolumeOutput("INVARIANT_0", "Invariant_0", "POPE", "Value of the first Pope's invariant");
+    AddVolumeOutput("INVARIANT_1", "Invariant_1", "POPE", "Value of the second Pope's invariant");
+    AddVolumeOutput("INVARIANT_2", "Invariant_2", "POPE", "Value of the third Pope's invariant");
+    AddVolumeOutput("INVARIANT_3", "Invariant_3", "POPE", "Value of the fourth Pope's invariant");
+    AddVolumeOutput("INVARIANT_4", "Invariant_4", "POPE", "Value of the fifth Pope's invariant");
+  }
 }
 
 void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
@@ -1544,6 +1553,15 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
     SetVolumeOutputValue("TURB_DELTA_TIME", iPoint, Node_Turb->GetDelta_Time(iPoint));
     SetVolumeOutputValue("TURB_CFL", iPoint, Node_Turb->GetLocalCFL(iPoint));
+  }
+
+  /*--- Writing the five Pope's invariants - #MB25 ---*/
+  if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) { // #MB25
+    SetVolumeOutputValue("INVARIANT_0", iPoint, Node_Flow->GetPopeInvariants(iPoint,0));
+    SetVolumeOutputValue("INVARIANT_1", iPoint, Node_Flow->GetPopeInvariants(iPoint,1));
+    SetVolumeOutputValue("INVARIANT_2", iPoint, Node_Flow->GetPopeInvariants(iPoint,2));
+    SetVolumeOutputValue("INVARIANT_3", iPoint, Node_Flow->GetPopeInvariants(iPoint,3));
+    SetVolumeOutputValue("INVARIANT_4", iPoint, Node_Flow->GetPopeInvariants(iPoint,4));
   }
 
   if (config->GetSAParsedOptions().bc) {
@@ -1891,6 +1909,114 @@ void CFlowOutput::SetCpInverseDesign(CSolver *solver, const CGeometry *geometry,
 
   solver->SetTotal_CpDiff(PressDiff);
   SetHistoryOutputValue("INVERSE_DESIGN_PRESSURE", PressDiff);
+
+}
+
+void CFlowOutput::AddVelocityFIMLOutput(){ 
+  
+  AddHistoryOutput("INVERSE_DESIGN_VELOCITY_FIML", "VelFiml", ScreenOutputFormat::FIXED, "VEL_FIML", "MSE on velocity for FIML", HistoryFieldType::COEFFICIENT);
+}
+
+void CFlowOutput::SetVelocityFIMLOutput(CSolver *solver, const CGeometry *geometry, const CConfig *config) {
+
+  /*--- Evaluate the MSE between the RANS velocity and the DNS/LES velocity for FIML - #MB25 ---*/
+  su2double SRS_velocity      = 0.0; // TBD
+  su2double MSE_local         = 0.0; 
+  su2double MSE_global        = 0.0; 
+  unsigned long nPoint        = geometry->GetnPoint(); 
+
+  for (unsigned long iPoint=0; iPoint<nPoint; iPoint++) {
+    for (unsigned short iDim=0; iDim<nDim; iDim++) {
+      MSE_local += (solver->GetNodes()->GetVelocity(iPoint,iDim) - SRS_velocity)*(solver->GetNodes()->GetVelocity(iPoint,iDim) - SRS_velocity); 
+    }
+  }
+
+  //for (unsigned long iPoint=0; iPoint<nPoint; iPoint++) {
+  //  for (unsigned short iPope=0; iPope<1; iPope++) {
+  //    MSE_local += solver->GetNodes()->GetBetaFiml(iPoint,iPope); // simple sum of the beta_fiml !!!! 
+  //  }
+  //}
+
+#ifdef HAVE_MPI
+  unsigned long nPoint_global = 0;
+  SU2_MPI::Allreduce(&MSE_local, &MSE_global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nPoint, &nPoint_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  MSE_global /= nPoint_global; 
+#else
+  MSE_global = MSE_local/nPoint; 
+#endif
+
+  /*--- Update the MSE velocity coeffient. ---*/
+
+  solver->SetTotal_MSEVelFIML(MSE_global);
+  SetHistoryOutputValue("INVERSE_DESIGN_VELOCITY_FIML", MSE_global);
+
+}
+
+void CFlowOutput::AddRSTFIMLOutput(){ 
+  
+  AddHistoryOutput("INVERSE_DESIGN_RST_FIML", "RSTFiml", ScreenOutputFormat::FIXED, "RST_FIML", "MSE on RST for FIML", HistoryFieldType::COEFFICIENT);
+}
+
+void CFlowOutput::SetRSTFIMLOutput(CSolver *solver, const CGeometry *geometry, const CConfig *config) {
+
+  /*--- Evaluate the MSE between the RANS RST and the DNS/LES RST for FIML - #MB25 ---*/
+  su2double SRS_RST           = 0.0; // TBD
+  su2double MSE_local         = 0.0; 
+  su2double MSE_global        = 0.0; 
+  unsigned long nPoint        = geometry->GetnPoint(); 
+
+  bool isPope   = (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE);
+  bool isSST    = (config->GetKind_Turb_Model()==TURB_MODEL::SST);
+
+  unsigned short int nbCoeffs = config->GetRSTNbPopeCoeffs(); 
+  su2double RST[3][3]         = {{0.0}};
+
+  /*if (isPope && isSST) {
+    for (unsigned long iPoint=0; iPoint<nPoint; iPoint++) {
+      su2double lam_viscosity_local  = nodes->GetLaminarViscosity(iPoint);
+      su2double eddy_viscosity_local = nodes->GetEddyViscosity(iPoint);
+      su2double total_viscosity      = lam_viscosity_local+eddy_viscosity_local; 
+      su2double density_local        = nodes->GetDensity(iPoint); 
+      su2double tke_local            = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+      su2double omega_local          = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,1);
+      CNumerics::ComputePopeStressTensor(nDim, RST, nodes->GetVelocityGradient(iPoint), nodes->GetBetaFiml(iPoint),
+                                        total_viscosity, density_local, tke_local, omega_local, nbCoeffs);
+      for (unsigned short iDim=0; iDim<nDim; iDim++) {
+        for (unsigned short jDim=0; jDim<nDim; jDim++) {
+          MSE_local += (RST[iDim][jDim] - SRS_RST)*(RST[iDim][jDim] - SRS_RST); // FIXME
+        }
+      }
+    }
+  } else {*/
+    for (unsigned long iPoint=0; iPoint<nPoint; iPoint++) {
+      su2double lam_viscosity_local  = solver->GetNodes()->GetLaminarViscosity(iPoint);
+      su2double eddy_viscosity_local = solver->GetNodes()->GetEddyViscosity(iPoint);
+      su2double total_viscosity      = lam_viscosity_local+eddy_viscosity_local; 
+      su2double density_local        = solver->GetNodes()->GetDensity(iPoint); 
+      CNumerics::ComputeStressTensor(nDim, RST, solver->GetNodes()->GetVelocityGradient(iPoint), 
+                                     total_viscosity, density_local);
+      for (unsigned short iDim=0; iDim<nDim; iDim++) {
+        for (unsigned short jDim=0; jDim<nDim; jDim++) {
+          MSE_local += (RST[iDim][jDim] - SRS_RST)*(RST[iDim][jDim] - SRS_RST); // FIXME
+        }
+      }
+    }
+  //}
+
+#ifdef HAVE_MPI
+  unsigned long nPoint_global = 0;
+  SU2_MPI::Allreduce(&MSE_local, &MSE_global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nPoint, &nPoint_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  MSE_global /= nPoint_global; 
+#else
+  MSE_global = MSE_local/nPoint; 
+#endif
+  
+  /*--- Update the MSE RST coeffient. ---*/
+
+  solver->SetTotal_MSERSTFIML(MSE_global);
+  SetHistoryOutputValue("INVERSE_DESIGN_RST_FIML", MSE_global);
 
 }
 

@@ -1973,6 +1973,10 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   END_SU2_OMP_FOR
   } // end color loop
 
+  /*--- Evaluate the Pope's invariants if needed (not sure it is the good location - #MB25 ---*/
+  if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE)
+    SetPopeInvariants(geometry, solver_container, numerics, config);
+
   FinalizeResidualComputation(geometry, pausePreacc, counter_local, config);
 }
 
@@ -2149,6 +2153,13 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
         if (rans){
           CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
           numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0), turbNodes->GetSolution(iPoint,0));
+					if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+	          numerics->SetOmegaSST(turbNodes->GetSolution(iPoint,1), turbNodes->GetSolution(iPoint,1)); // #MB25
+        }
+        
+        /*--- Beta-FIML - #MB25 ---*/
+        if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+          numerics->SetBetaFiml(nodes->GetBetaFiml(iPoint), nodes->GetBetaFiml(iPoint));
         }
       }
 
@@ -4983,10 +4994,18 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Turbulent kinetic energy ---*/
 
-        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+        if (config->GetKind_Turb_Model() == TURB_MODEL::SST){
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+          visc_numerics->SetOmegaSST(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1), // #MB25
+                                     solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1));
+        }
 
+        /*--- Beta-FIML - #MB25 ---*/
+        if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+          visc_numerics->SetBetaFiml(nodes->GetBetaFiml(iPoint), nodes->GetBetaFiml(iPoint));
+        }
+        
         /*--- Compute and update viscous residual ---*/
 
         auto residual = visc_numerics->ComputeResidual(config);
@@ -5406,9 +5425,17 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Turbulent kinetic energy ---*/
 
-        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+        if (config->GetKind_Turb_Model() == TURB_MODEL::SST){
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+          visc_numerics->SetOmegaSST(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1), // #MB25
+                                     solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1)); 
+        }
+        
+        /*--- Beta-FIML - #MB25 ---*/
+        if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+          visc_numerics->SetBetaFiml(nodes->GetBetaFiml(iPoint), nodes->GetBetaFiml(iPoint));
+        }
 
         /*--- Compute and update residual ---*/
         auto residual = visc_numerics->ComputeResidual(config);
@@ -5901,9 +5928,17 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           /*--- Turbulent kinetic energy ---*/
 
-          if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+          if (config->GetKind_Turb_Model() == TURB_MODEL::SST){
             visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                                 solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+            visc_numerics->SetOmegaSST(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1), // #MB25
+                                       solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1));
+          }
+          
+          /*--- Beta-FIML - #MB25 ---*/
+          if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+            visc_numerics->SetBetaFiml(nodes->GetBetaFiml(iPoint), nodes->GetBetaFiml(iPoint));
+          }
 
           /*--- Compute and update residual ---*/
 
@@ -6819,9 +6854,17 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
         /*--- Turbulent kinetic energy ---*/
 
-        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+        if (config->GetKind_Turb_Model() == TURB_MODEL::SST){
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                               solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+          visc_numerics->SetOmegaSST(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1), // #MB25
+                                     solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1));
+        }
+        
+        /*--- Beta-FIML - #MB25 ---*/
+        if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+          visc_numerics->SetBetaFiml(nodes->GetBetaFiml(iPoint), nodes->GetBetaFiml(iPoint));
+        }
 
         /*--- Compute and update residual ---*/
 

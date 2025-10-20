@@ -48,12 +48,12 @@ CDiscAdjDeformationDriver::CDiscAdjDeformationDriver(char* confFile, SU2_Comm MP
 
   /*--- Initialize structure to store the gradient. ---*/
 
-  unsigned short nDV = config_container[ZONE_0]->GetnDV();
+  unsigned long nDV = config_container[ZONE_0]->GetnDV();
   Gradient = new su2double*[nDV];
 
   for (auto iDV = 0u; iDV < nDV; iDV++) {
     /*--- Initialize to zero ---*/
-    unsigned short nValue = config_container[ZONE_0]->GetnDV_Value(iDV);
+    unsigned long nValue = config_container[ZONE_0]->GetnDV_Value(iDV);
 
     Gradient[iDV] = new su2double[nValue];
   }
@@ -328,7 +328,7 @@ void CDiscAdjDeformationDriver::Run() {
 
   for (iZone = 0; iZone < nZone; iZone++) {
     if ((config_container[iZone]->GetDesign_Variable(0) != NONE) &&
-        (config_container[iZone]->GetDesign_Variable(0) != SURFACE_FILE)) {
+        (config_container[iZone]->GetDesign_Variable(0) != SURFACE_FILE)) { 
       if (rank == MASTER_NODE)
         cout << "\n---------- Start gradient evaluation using sensitivity information ----------" << endl;
 
@@ -384,7 +384,8 @@ void CDiscAdjDeformationDriver::Finalize() {
 
 void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* config,
                                                  CSurfaceMovement* surface_movement, su2double** Gradient) {
-  unsigned short iDV, nDV, iFFDBox, nDV_Value, iMarker, iDim;
+  unsigned long iDV, nDV, nDV_Value;
+  unsigned short iFFDBox, iMarker, iDim;
   unsigned long iVertex, iPoint;
   su2double delta_eps, my_Gradient, localGradient, *Normal, dS, *VarCoord, Sensitivity, dalpha[3], deps[3], dalpha_deps;
   bool *UpdatePoint, MoveSurface, Local_MoveSurface;
@@ -647,8 +648,11 @@ void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* c
 void CDiscAdjDeformationDriver::SetProjection_AD(CGeometry* geometry, CConfig* config,
                                                  CSurfaceMovement* surface_movement, su2double** Gradient) {
   su2double *VarCoord = nullptr, Sensitivity, my_Gradient, localGradient, *Normal, Area = 0.0;
-  unsigned short iDV_Value = 0, iMarker, nMarker, iDim, nDim, iDV, nDV;
+  unsigned long iDV_Value = 0, iDV, nDV; 
+  unsigned short iMarker, nMarker, iDim, nDim;
   unsigned long iVertex, nVertex, iPoint;
+
+  bool fiml = config->GetInvDesign_FIML(); // #MB25
 
   const int rank = SU2_MPI::GetRank();
 
@@ -672,8 +676,7 @@ void CDiscAdjDeformationDriver::SetProjection_AD(CGeometry* geometry, CConfig* c
 
   for (iDV = 0; iDV < nDV; iDV++) {
     for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
-      config->SetDV_Value(iDV, iDV_Value, 0.0);
-
+      if (!fiml) config->SetDV_Value(iDV, iDV_Value, 0.0); // #MB25
       AD::RegisterInput(config->GetDV_Value(iDV, iDV_Value));
     }
   }
@@ -728,20 +731,33 @@ void CDiscAdjDeformationDriver::SetProjection_AD(CGeometry* geometry, CConfig* c
 
   AD::ComputeAdjoint();
 
+  if (fiml) {
+    for (unsigned short iPope=0; iPope<config->GetRSTNbPopeCoeffs(); iPope++) 
+      GetBetaFimlGrad(config,iPope); // #MB25
+  }
+
   for (iDV = 0; iDV < nDV; iDV++) {
     for (iDV_Value = 0; iDV_Value < config->GetnDV_Value(iDV); iDV_Value++) {
-      my_Gradient = SU2_TYPE::GetDerivative(config->GetDV_Value(iDV, iDV_Value));
 
-      SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      if (fiml) { // #MB25 (not quite sure)
+    	if (iDV_Value==0) Gradient[iDV][iDV_Value] = beta1_fiml_grad[iDV];
+        if (iDV_Value==1) Gradient[iDV][iDV_Value] = beta2_fiml_grad[iDV];
+        if (iDV_Value==2) Gradient[iDV][iDV_Value] = beta3_fiml_grad[iDV];
+        
+      } else {
+        my_Gradient = SU2_TYPE::GetDerivative(config->GetDV_Value(iDV, iDV_Value));
 
-      /*--- Angle of Attack design variable (this is different, the value comes form the input file). ---*/
+        SU2_MPI::Allreduce(&my_Gradient, &localGradient, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
-      if ((config->GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) ||
-          (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK)) {
-        Gradient[iDV][iDV_Value] = config->GetAoA_Sens();
+        /*--- Angle of Attack design variable (this is different, the value comes form the input file). ---*/
+
+        if ((config->GetDesign_Variable(iDV) == ANGLE_OF_ATTACK) ||
+            (config->GetDesign_Variable(iDV) == FFD_ANGLE_OF_ATTACK)) {
+          Gradient[iDV][iDV_Value] = config->GetAoA_Sens();
+        }
+
+        Gradient[iDV][iDV_Value] += localGradient;
       }
-
-      Gradient[iDV][iDV_Value] += localGradient;
     }
   }
 
@@ -749,7 +765,7 @@ void CDiscAdjDeformationDriver::SetProjection_AD(CGeometry* geometry, CConfig* c
 }
 
 void CDiscAdjDeformationDriver::OutputGradient(su2double** Gradient, CConfig* config, ofstream& Gradient_file) {
-  unsigned short nDV, iDV, iDV_Value, nDV_Value;
+  unsigned long nDV, iDV, iDV_Value, nDV_Value;
 
   int rank = SU2_MPI::GetRank();
 
@@ -996,4 +1012,41 @@ void CDiscAdjDeformationDriver::DerivativeTreatment_Gradient(CGeometry* geometry
              config->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
     solver->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement, grid_movement, config, Gradient);
   }
+}
+
+
+void CDiscAdjDeformationDriver::GetBetaFimlGrad(CConfig* config, unsigned short index){
+
+	string 	restart_filename = "beta" + std::to_string(index+1) + "_fiml_grad.dat";
+	string   text_line;
+	ifstream restart_file;
+
+	unsigned long nDV = config->GetnDV();
+	if (index==0) beta1_fiml_grad.resize(nDV,0.0);
+  if (index==1) beta2_fiml_grad.resize(nDV,0.0);
+  if (index==2) beta3_fiml_grad.resize(nDV,0.0);
+  
+  //--- Open the restart file, and throw an error if this fails.
+
+	restart_file.open(restart_filename.data(), ios::in);
+	if (restart_file.fail()) {
+			std::cout << "FATAL: The restart file " << restart_filename.data() << " does not exist !" << std::endl;
+			exit(EXIT_FAILURE);
+	}
+
+	while(getline(restart_file, text_line)) {
+    std::string s; 
+    std::vector<std::string> split_line; 
+		std::stringstream point_line(text_line);
+    while (getline(point_line,s,' ')) split_line.push_back(s); 
+
+    unsigned long iDV = std::stoul(split_line[0],nullptr,0);
+    if (iDV<nDV) {
+      su2double beta_grad_val = std::stod(split_line[1]); 
+      if (index==0) beta1_fiml_grad[iDV] = beta_grad_val;
+      if (index==1) beta1_fiml_grad[iDV] = beta_grad_val;
+      if (index==2) beta1_fiml_grad[iDV] = beta_grad_val;
+    }
+	}
+	restart_file.close(); 
 }

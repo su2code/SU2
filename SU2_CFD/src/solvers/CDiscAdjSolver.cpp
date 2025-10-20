@@ -38,6 +38,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   direct_solver = direct_sol;
 
   adjoint = true;
+  fiml    = false; // #MB25
 
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
@@ -110,9 +111,20 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     SolverName = "ADJ.SOL";
     break;
   }
+  
+  /*--- Get the number of Pope's coefficients (if applicable) - #MB25 ---*/
+  if (KindDirect_Solver == RUNTIME_FLOW_SYS) {
+		nbPopeCoeffs = config->GetRSTNbPopeCoeffs(); 
+  }
+
+  /*--- Initialize the beta-field using the DVs - #MB25 ---*/
+  InitializeBetaFiml(config, geometry); // FIXME -> try to comment and see ??
 }
 
-CDiscAdjSolver::~CDiscAdjSolver() { delete nodes; }
+CDiscAdjSolver::~CDiscAdjSolver() { 
+  
+  delete nodes; 
+}
 
 void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
@@ -188,6 +200,8 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
     su2double SoundSpeed = 0.0;
 
+    // Treat Velocity_FreeStreamND config value as non-dependent (in debug mode)
+    AD::ClearTagOnVariable(config->GetVelocity_FreeStreamND()[0]);
     if (nDim == 2) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*Mach); }
     if (nDim == 3) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*cos(Beta)*Mach); }
 
@@ -495,7 +509,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
 
   const bool time_stepping = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
   const su2double eps = config->GetAdjSharp_LimiterCoeff()*config->GetRefElemLength();
-
+  std::cout << "CDiscAdjSolver::SetSensitivity(): " << std::endl; // #MB25
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
 
@@ -504,6 +518,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
     for (auto iDim = 0u; iDim < nDim; iDim++) {
 
       su2double Sensitivity = geometry->nodes->GetAdjointSolution(iPoint, iDim);
+      std::cout << iPoint << " " << iDim << " " << Sensitivity << std::endl; 
       AD::ResetInput(Coord[iDim]);
 
       /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
@@ -511,6 +526,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
       if (config->GetSens_Remove_Sharp() && geometry->nodes->GetSharpEdge_Distance(iPoint) < eps) {
         Sensitivity = 0.0;
       }
+      
       if (!time_stepping) {
         nodes->SetSensitivity(iPoint,iDim, Sensitivity);
       } else {
@@ -525,7 +541,37 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolve
   }
   END_SU2_OMP_PARALLEL
 
-  AD::EndUseAdjoints();
+  AD::EndUseAdjoints(); exit(1); 
+}
+
+void CDiscAdjSolver::SetSensitivityBetaFiml(CGeometry *geometry, CConfig *config, CSolver*) {
+
+  AD::BeginUseAdjoints();
+
+  SU2_OMP_PARALLEL {
+
+  std::cout << "CDiscAdjSolver::SetSensitivityBetaFiml(): " << std::endl; // #MB25
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+
+    auto beta_fiml_i = nodes->GetBetaFiml(iPoint);
+
+    for (auto iPope = 0u; iPope < nbPopeCoeffs; iPope++) {
+
+      su2double Sensitivity = nodes->GetAdjointSolutionBetaFiml(iPoint, iPope);
+      std::cout << iPoint << " " << iPope << " " << Sensitivity << std::endl; 
+      AD::ResetInput(beta_fiml_i[iPope]);
+      
+      nodes->SetSensitivityBetaFiml(iPoint,iPope,Sensitivity);
+    }
+  }
+  END_SU2_OMP_FOR
+
+  }
+  END_SU2_OMP_PARALLEL
+
+  AD::EndUseAdjoints(); exit(1); 
 }
 
 void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config) {
@@ -651,4 +697,70 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
     MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][ADJFLOW_SOL]->GetNodes()->GetSolution(),
                          *geometry[iMesh], solver[iMesh][ADJFLOW_SOL]->GetNodes()->GetSolution());
   }
+}
+
+void CDiscAdjSolver::WriteBetaFimlGrad(CConfig *config, CGeometry *geometry, unsigned short iPope) {
+  /* --- Write out beta*_fiml_grad.dat which contains derivatives 
+       in the same sequential order of the design variables - #MB25 --- */
+
+  string filename = "beta" + std::to_string(iPope+1) + "_fiml_grad.dat";
+
+  // Initialize the sensitivity
+  unsigned long local_nPoint = nPoint; 
+  std::vector<unsigned long> local_index(local_nPoint,0); 
+  std::vector<su2double> local_beta_grad(local_nPoint,0.0); 
+  for (unsigned long iPoint=0; iPoint<nPoint; iPoint++) {
+    if (geometry->nodes->GetDomain(iPoint)) {
+      local_index[iPoint] = geometry->nodes->GetGlobalIndex(iPoint); 
+    } else { local_index[iPoint] = config->GetnDV(); } // BOUNDARIES !
+    local_beta_grad[iPoint] = nodes->GetBetaFimlGrad(iPoint, iPope); 
+  }
+
+#ifdef HAVE_MPI
+  // Evaluate the total number of points (does not work with unsigned long for count and displ !)
+  unsigned short nbProc = SU2_MPI::GetSize(); 
+  std::vector<int> count(nbProc,0);
+  std::vector<int> displ(nbProc+1,0);
+  MPI_Allgather(&local_nPoint,1,MPI_INT,count.data(),1,MPI_INT,SU2_MPI::GetComm()); // MPI_UNSIGNED_LONG
+
+  unsigned long total_nPoint = 0; displ[0] = 0;
+  for (unsigned short iRank=0; iRank<nbProc; iRank++) {
+    total_nPoint  += count[iRank]; 
+    displ[iRank+1] = displ[iRank] + count[iRank];
+  }
+
+  // Gather the sensitivity across ranks
+  std::vector<su2double> total_beta_grad(total_nPoint,0.0); 
+  SU2_MPI::Allgatherv(local_beta_grad.data(), local_nPoint, MPI_DOUBLE, 
+                      total_beta_grad.data(), count.data(), displ.data(), 
+                      MPI_DOUBLE, SU2_MPI::GetComm());
+  
+  // Gather the global indexes across ranks
+  std::vector<unsigned long> total_index(total_nPoint,0); 
+  SU2_MPI::Allgatherv(local_index.data(), local_nPoint, MPI_UNSIGNED_LONG, 
+                      total_index.data(), count.data(), displ.data(), 
+                      MPI_UNSIGNED_LONG, SU2_MPI::GetComm()); 
+
+  // Open and write in file
+  if (SU2_MPI::GetRank()==MASTER_NODE) {
+    std::cout << "INFO: CDiscAdjSolver::WriteBetaFimlGrad --> Writing in file " << filename.c_str() << " on MASTER_NODE." << std::endl; 
+    ofstream restart_file;
+    restart_file.open(filename.c_str(), ios::out);
+    restart_file.precision(15);
+    for (unsigned long iPoint = 0; iPoint < total_nPoint; iPoint++) 
+      restart_file << total_index[iPoint] << " " << total_beta_grad[iPoint] << "\n"; 
+  }
+
+#else 
+  // Open and write in file
+  std::cout << "INFO: CDiscAdjSolver::WriteBetaFimlGrad --> Writing in file " << filename.c_str() << " sequentially." << std::endl; 
+  ofstream restart_file;
+  restart_file.open(filename.c_str(), ios::out);
+  restart_file.precision(15);
+  for (unsigned long iPoint = 0; iPoint < local_nPoint; iPoint++) 
+    restart_file << local_index[iPoint] << " " <<  local_beta_grad[iPoint] << "\n";
+
+  // Close file
+  restart_file.close();
+#endif
 }

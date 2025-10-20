@@ -500,6 +500,7 @@ class Project(object):
 
     def plot_results(self):
         """writes a tecplot file for plotting design results"""
+        print("INFO: writes a tecplot file for plotting design results")
         output_format = self.config.TABULAR_FORMAT
         functions = self.results.FUNCTIONS
         history = self.results.HISTORY

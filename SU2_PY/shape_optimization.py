@@ -30,6 +30,7 @@ from optparse import OptionParser
 
 sys.path.append(os.environ["SU2_RUN"])
 import SU2
+import numpy as np
 
 # -------------------------------------------------------------------
 #  Main
@@ -90,6 +91,13 @@ def main():
         help="Number of Zones",
         metavar="ZONES",
     )
+    parser.add_option(
+        "-b", 
+        "--baseline_nn", 
+        dest="beta_fiml_best", 
+        default=None,
+        help="Baseline beta-value (It not beta-field is initialized to one)", 
+        metavar="BETA")
 
     (options, args) = parser.parse_args()
 
@@ -189,6 +197,7 @@ def main():
         options.optimization,
         options.quiet,
         options.nzones,
+        options.beta_fiml_best,
     )
 
 
@@ -203,6 +212,7 @@ def shape_optimization(
     optimization="SLSQP",
     quiet=False,
     nzones=1,
+    beta_fiml_best=None,
 ):
     # Config
     config = SU2.io.Config(filename)
@@ -223,10 +233,29 @@ def shape_optimization(
     gradient_factor = float(
         config.OPT_GRADIENT_FACTOR
     )  # objective function and gradient scale
+
     def_dv = config.DEFINITION_DV  # complete definition of the desing variable
-    n_dv = sum(def_dv["SIZE"])  # number of design variables
+    kind_dv = config.DV_KIND    # type of design variable #MB25
+
+    if (config.NPOIN == 0): #MB25
+        n_dv = sum(def_dv['SIZE']) # number of design variables
+        x0   = [0.0]*n_dv          # initialization
+    else:
+        if (beta_fiml_best == None):
+            n_dv = int (config.NPOIN)
+            x0   = [float(config.DV_VALUE[0])]*n_dv # initial design
+        else:
+            sys.stdout.write('INFO: Reading betas from' + str(beta_fiml_best) + '\n')
+            beta  = open(beta_fiml_best)
+            x0    = []
+            lines = beta.readlines()     # Reading lines in file
+            n_dv  = 0
+            for line in lines:           # Taking each line
+                x0.append(float(line))   # Converting string to float	
+                n_dv = n_dv+1
+            sys.stdout.write('INFO: Total Number of Betas Set to ' + str(n_dv) + ' in shape_optimization.py \n')
+
     accu = float(config.OPT_ACCURACY) * gradient_factor  # optimizer accuracy
-    x0 = [0.0] * n_dv  # initial design
     xb_low = [
         float(bound_lower) / float(relax_factor)
     ] * n_dv  # lower dv bound it includes the line search acceleration factor
@@ -286,6 +315,8 @@ def shape_optimization(
         SU2.opt.BFGS(project, x0, xb, its, accu)
     if optimization == "POWELL":
         SU2.opt.POWELL(project, x0, xb, its, accu)
+    if optimization == "BFGSG":
+        SU2.opt.BFGSG(project, x0, xb, its, accu) #MB25
 
     # rename project file
     if projectname:

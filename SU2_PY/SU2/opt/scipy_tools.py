@@ -83,7 +83,11 @@ def scipy_slsqp(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
 
     # number of design variables
     dv_size = project.config["DEFINITION_DV"]["SIZE"]
-    n_dv = sum(dv_size)
+    if project.config.NPOIN == 0 :
+        n_dv = sum(dv_size)
+    else:
+        n_dv = int(project.config.NPOIN)
+    
     project.n_dv = n_dv
 
     # Initial guess
@@ -92,11 +96,15 @@ def scipy_slsqp(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
 
     # prescale x0
     dv_scales = project.config["DEFINITION_DV"]["SCALE"]
-    k = 0
-    for i, dv_scl in enumerate(dv_scales):
-        for j in range(dv_size[i]):
-            x0[k] = x0[k] / dv_scl
-            k = k + 1
+    if int(project.config.NPOIN) == 0 :
+        k = 0
+        for i, dv_scl in enumerate(dv_scales):
+            for j in range(dv_size[i]):
+                x0[k] = x0[k] / dv_scl
+                k = k + 1
+    else:
+        for i in range(len(x0)):
+            x0[i] = x0[i]/dv_scales[0]
 
     # scale accuracy
     obj = project.config["OPT_OBJECTIVE"]
@@ -188,6 +196,8 @@ def scipy_cg(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
 
     # number of design variables
     n_dv = len(project.config["DEFINITION_DV"]["KIND"])
+    if not(project.config.NPOIN == 0):
+        n_dv = int(project.config.NPOIN)
     project.n_dv = n_dv
 
     # Initial guess
@@ -196,7 +206,13 @@ def scipy_cg(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
 
     # prescale x0
     dv_scales = project.config["DEFINITION_DV"]["SCALE"]
-    x0 = [x0[i] / dv_scl for i, dv_scl in enumerate(dv_scales)]
+
+    if int(project.config.NPOIN) == 0 :
+        x0 = [x0[i] / dv_scl for i, dv_scl in enumerate(dv_scales)]
+    else:
+        for i in range(len(x0)) :
+            x0[i] = x0[i]/dv_scales[0]
+    
 
     # scale accuracy
     obj = project.config["OPT_OBJECTIVE"]
@@ -280,6 +296,8 @@ def scipy_bfgs(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
 
     # number of design variables
     n_dv = len(project.config["DEFINITION_DV"]["KIND"])
+    if not(project.config.NPOIN == 0):
+        n_dv = int(project.config.NPOIN)
     project.n_dv = n_dv
 
     # Initial guess
@@ -288,7 +306,11 @@ def scipy_bfgs(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
 
     # prescale x0
     dv_scales = project.config["DEFINITION_DV"]["SCALE"]
-    x0 = [x0[i] / dv_scl for i, dv_scl in enumerate(dv_scales)]
+    if int(project.config.NPOIN) == 0 :
+        x0 = [x0[i] / dv_scl for i, dv_scl in enumerate(dv_scales)]
+    else:
+        for i in range(len(x0)) :
+            x0[i] = x0[i]/dv_scales[0]
 
     # scale accuracy
     obj = project.config["OPT_OBJECTIVE"]
@@ -329,6 +351,103 @@ def scipy_bfgs(project, x0=None, xb=None, its=100, accu=1e-10, grads=True):
     # Done
     return outputs
 
+# -------------------------------------------------------------------
+#  Scipy L-BFGS-G
+# -------------------------------------------------------------------
+
+def scipy_bfgsg(project,x0=None,xb=None,its=100,accu=1e-10,grads=True):
+    """ result = scipy_bfgs(project,x0=[],xb=[],its=100,accu=1e-10)
+
+        Runs the Scipy implementation of BFGS with
+        an SU2 project
+
+        Inputs:
+            project - an SU2 project
+            x0      - optional, initial guess
+            xb      - optional, design variable bounds JRH - NOT USED!!
+            its     - max outer iterations, default 100
+            accu    - accuracy, default 1e-10
+
+        Outputs:
+           result - the outputs from scipy.fmin_slsqp
+    """
+
+    # import scipy optimizer
+    from scipy.optimize import fmin_l_bfgs_b
+
+    # handle input cases
+    if x0 is None: x0 = []
+    if xb is None: xb = []
+
+    # function handles
+    func           = obj_f
+
+    # gradient handles
+    if project.config.get('GRADIENT_METHOD','NONE') == 'NONE':
+        fprime         = None
+    else:
+        fprime         = obj_df
+
+    # number of design variables
+    n_dv = len(project.config["DEFINITION_DV"]["KIND"])
+    if not(project.config.NPOIN == 0):
+        n_dv = int(project.config.NPOIN)       
+    project.n_dv = n_dv
+
+    # Initial guess
+    if not x0: 
+        if (project.config["DV_KIND"]=="FIML"): x0 = [1.0]*n_dv
+        else: x0 = [0.0]*n_dv
+    
+    # prescale x0
+    dv_scales = project.config['DEFINITION_DV']['SCALE']
+    if int(project.config.NPOIN) == 0 :
+        x0 = [x0[i] / dv_scl for i, dv_scl in enumerate(dv_scales)]
+    else:
+        for i in range(len(x0)) :
+            x0[i] = x0[i]/dv_scales[0]
+
+    # scale accuracy
+    obj = project.config['OPT_OBJECTIVE']
+    obj_scale = obj[obj.keys()[0]]['SCALE']
+    #if project.config.NPOIN == 0 :
+    accu = accu*obj_scale
+
+    # scale accuracy
+    eps = 1.0e-04
+
+    # optimizer summary
+    sys.stdout.write('Broyden-Fletcher-Goldfarb-Shanno (BFGS) parameters:\n')
+    sys.stdout.write('Number of design variables: ' + str(n_dv) + '\n')
+    sys.stdout.write('Objective function scaling factor: ' + str(obj_scale) + '\n')
+    sys.stdout.write('Maximum number of iterations: ' + str(its) + '\n')
+    sys.stdout.write('Requested accuracy: ' + str(accu) + '\n')
+    if (project.config.NPOIN!=0):
+        sys.stdout.write('Initial guess for the independent variable(s): ' + str(x0[0]) + '\n')
+        sys.stdout.write('Lower and upper bound for each independent variable: ' + str(xb[0]) + '\n\n')
+    else: 
+        sys.stdout.write('Initial guess for the independent variable(s): ' + str(x0) + '\n')
+        sys.stdout.write('Lower and upper bound for each independent variable: ' + str(xb) + '\n\n')
+    
+    # Evaluate the objective function (only 1st iteration)
+    obj_f(x0,project)
+    
+    # Run Optimizer
+    #maxls option not available on Deepthought2 for some reason...
+    outputs = fmin_l_bfgs_b( x0         = x0             ,
+                         func           = func           ,
+                         fprime         = fprime         ,
+                         args           = (project,)     ,
+                         pgtol          = accu           ,
+                         bounds         = xb             ,
+                         epsilon        = eps            ,
+                         factr          = 10.0           ,
+                         maxiter        = its            ,
+                         iprint         = 99             ,
+                         m              = 50             )
+
+    # Done
+    return outputs
 
 def scipy_powell(project, x0=None, xb=None, its=100, accu=1e-10, grads=False):
     """result = scipy_powell(project,x0=[],xb=[],its=100,accu=1e-10)
@@ -359,6 +478,8 @@ def scipy_powell(project, x0=None, xb=None, its=100, accu=1e-10, grads=False):
 
     # number of design variables
     n_dv = len(project.config["DEFINITION_DV"]["KIND"])
+    if not(project.config.NPOIN == 0):
+        n_dv = int(project.config.NPOIN)  
     project.n_dv = n_dv
 
     # Initial guess
@@ -367,7 +488,11 @@ def scipy_powell(project, x0=None, xb=None, its=100, accu=1e-10, grads=False):
 
     # prescale x0
     dv_scales = project.config["DEFINITION_DV"]["SCALE"]
-    x0 = [x0[i] / dv_scl for i, dv_scl in enumerate(dv_scales)]
+    if int(project.config.NPOIN) == 0 :
+        x0 = [x0[i] / dv_scl for i, dv_scl in enumerate(dv_scales)]
+    else:
+        for i in range(len(x0)) :
+            x0[i] = x0[i]/dv_scales[0]
 
     # scale accuracy
     obj = project.config["OPT_OBJECTIVE"]

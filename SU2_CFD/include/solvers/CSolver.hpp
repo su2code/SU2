@@ -2325,6 +2325,18 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] val_mse - Value of the difference between velocity field and the target SRS velocity.
+   */
+  inline virtual void SetTotal_MSEVelFIML(su2double val_vel_mse) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_mse - Value of the difference between RST field and the target SRS RST.
+   */
+  inline virtual void SetTotal_MSERSTFIML(su2double val_rst_mse) { }
+
+  /*!
+   * \brief A virtual member.
    * \param[in] val_pressure - Value of the difference between heat and the target heat.
    */
   inline virtual void SetTotal_HeatFluxDiff(su2double val_heat) { }
@@ -3071,6 +3083,12 @@ public:
   inline virtual su2double GetTotal_Sens_Press() const { return 0; }
 
   /*!
+   * \brief Get the total beta-field sensitivity coefficient - #MB25
+   * \return Value of the beta-field sensitivity.
+   */
+  inline virtual su2double GetTotal_Sens_Beta_Fiml(unsigned long iPoint, unsigned iPope) const {return 0;}
+
+  /*!
    * \brief Set the total farfield temperature sensitivity coefficient.
    * \return Value of the farfield temperature sensitivity coefficient
    *         (inviscid + viscous contribution).
@@ -3566,6 +3584,14 @@ public:
    */
   inline virtual void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver *target_solver = nullptr){ }
 
+  /*!
+   * \brief A virtual member. Extract and set the beta-fiml sensitivity.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] target_solver - The target solver for the sensitivities, optional, for when the mesh solver is used.
+   */
+  inline virtual void SetSensitivityBetaFiml(CGeometry *geometry, CConfig *config, CSolver *target_solver = nullptr){ }
+  
   /*!
    * \brief A virtual member.
    * \param[in] Set value of interest: 0 - Initial value, 1 - Current value.
@@ -4333,6 +4359,26 @@ public:
     }
     END_SU2_OMP_FOR
   }
+  
+  /*!
+   * \brief Initialize beta-fiml field based on the Design Variable (DVs) stored in Config - #MB25
+   */
+  void InitializeBetaFiml(CConfig *config, CGeometry *geometry) {
+    unsigned short nbPopeCoeffs = config->GetRSTNbPopeCoeffs(); 
+		for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) { 
+      for (unsigned short iPope = 0; iPope < nbPopeCoeffs; iPope++) {
+        if (geometry->nodes->GetDomain(iPoint)) {
+            unsigned long iDV = geometry->nodes->GetGlobalIndex(iPoint); 
+            base_nodes->SetBetaFiml(iPoint,iPope,config->GetDV_Value(iDV,iPope)); // FIXME
+        }
+      }
+    }     
+  }; 
+
+  /*!
+   * \brief Write beta fiml gradient to file
+   */
+  virtual void WriteBetaFimlGrad(CConfig *config, CGeometry *geometry, unsigned short index) {}; // #MB25
 
 protected:
   /*!
@@ -4432,5 +4478,19 @@ protected:
       Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
     }
   }
+
+  /*!
+   * \brief Set the Pope's (five) invariants at a given point - #MB25
+   */
+  virtual void SetPopeInvariants(CGeometry *geometry, 
+                                 CSolver **solver_container,
+                                 CNumerics *numerics, 
+                                 CConfig *config) {};
+
+public:
+  /*!
+   * \brief Return the name of the solver
+  */
+  inline virtual string getName() {return "CSolver"; }; // #MB25
 
 };

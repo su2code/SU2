@@ -84,7 +84,7 @@ class Design(object):
         """Initializes an SU2 Design"""
 
         ## ???: Move to Project, no next folder here
-
+        print("INFO: Initializes an SU2 Design") #MB25
         if "*" in folder:
             folder = su2io.next_folder(folder)
 
@@ -113,7 +113,7 @@ class Design(object):
         """Evaluates an SU2 Design
         always adds config and state to the inputs list
         """
-
+        print("INFO: Evaluates an SU2 Design") #MB25
         config = self.config
         state = self.state
         files = self.files
@@ -228,7 +228,7 @@ def obj_f(dvs, config, state=None):
 
     Outputs a float.
     """
-
+    print("INFO: Evaluates SU2 Objectives") #MB25
     # unpack config and state
     config.unpack_dvs(dvs)
     state = su2io.State(state)
@@ -325,7 +325,7 @@ def obj_df(dvs, config, state=None):
 
     Outputs a list of gradients.
     """
-
+    print("INFO: Evaluates SU2 Objective Gradients") #MB25
     # unpack config and state
     config.unpack_dvs(dvs)
     state = su2io.State(state)
@@ -394,13 +394,17 @@ def obj_df(dvs, config, state=None):
             # Evaluate Objective Gradient
             grad = su2grad(this_obj, grad_method, config, state)
 
-            # scaling and sign
+            # scaling and sign 
             k = 0
-            for i_dv, dv_scl in enumerate(dv_scales):
-                for i_grd in range(dv_size[i_dv]):
-                    grad[k] = grad[k] * sign * scale * global_factor / dv_scl
-                    k = k + 1
-
+            if (config.NPOIN==0): #MB25
+                for i_dv, dv_scl in enumerate(dv_scales): 
+                    for i_grd in range(dv_size[i_dv]):
+                        grad[k] = grad[k] * sign * scale * global_factor / dv_scl
+                        k = k + 1
+            else:
+                for i_dv in range(1,len(grad)) :
+                    grad[i_dv] = grad[i_dv] * sign * scale / dv_scales[0]
+            
             vals_out.append(grad)
 
     #: for each objective

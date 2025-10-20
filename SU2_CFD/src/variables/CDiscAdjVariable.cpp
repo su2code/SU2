@@ -38,6 +38,10 @@ CDiscAdjVariable::CDiscAdjVariable(const su2double* sol, unsigned long npoint, u
     DualTime_Derivative_n.resize(nPoint,nVar) = su2double(0.0);
 
   Solution_Direct.resize(nPoint,nVar);
+
+  if (config->GetInvDesign_FIML())
+    SensitivityBetaFiml.resize(nPoint,config->GetRSTNbPopeCoeffs()) = su2double(0.0); // #MB25
+  
   Sensitivity.resize(nPoint,nDim) = su2double(0.0);
 
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)

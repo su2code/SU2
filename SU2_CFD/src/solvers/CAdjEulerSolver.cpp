@@ -3290,9 +3290,17 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Turbulent kinetic energy ---*/
 
-        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+        if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0), solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+          visc_numerics->SetOmegaSST(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1), solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1)); // #MB25
+        }
 
+        /*--- Beta-FIML - #MB25 ---*/
+        
+        if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+          visc_numerics->SetBetaFiml(nodes->GetBetaFiml(iPoint), nodes->GetBetaFiml(iPoint));
+        }
+        
         /*--- Gradient and limiter of Adjoint Variables ---*/
 
         visc_numerics->SetAdjointVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(iPoint));

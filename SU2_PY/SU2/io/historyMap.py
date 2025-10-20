@@ -681,6 +681,20 @@ history_header_map = {
         "HEADER": "Cp_Diff",
         "TYPE": "COEFFICIENT",
     },
+    "INVERSE_DESIGN_VELOCITY_FIML": {
+        "DESCRIPTION": "MSE on velocity for FIML"
+        "MARKER_MONITORING",
+        "GROUP": "VEL_FIML",
+        "HEADER": "VelFiml",
+        "TYPE": "COEFFICIENT",
+    },
+    "INVERSE_DESIGN_RST_FIML": {
+        "DESCRIPTION": "MSE on RST for FIML"
+        "MARKER_MONITORING",
+        "GROUP": "RST_FIML",
+        "HEADER": "RSTFiml",
+        "TYPE": "COEFFICIENT",
+    },
     "LIFT": {
         "DESCRIPTION": "Total lift coefficient on all surfaces set with "
         "MARKER_MONITORING",

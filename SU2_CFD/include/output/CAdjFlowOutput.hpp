@@ -92,4 +92,13 @@ class CAdjFlowOutput : public COutput {
    * \param[in] iPoint - Index of the point.
    */
   void LoadVolumeDataAdjScalar(const CConfig* config, const CSolver* const* solver, const unsigned long iPoint);
+
+  /*!
+   * \brief Write any additional files defined for the current solver - #MB25.
+   * \param[in] config - Definition of the particular problem per zone.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - The container holding all solution data.
+   */
+  void WriteAdditionalFiles(CConfig *config, CGeometry *geometry, CSolver **solver_container) override;
+
 };

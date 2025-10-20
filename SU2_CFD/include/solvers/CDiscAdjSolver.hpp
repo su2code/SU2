@@ -59,6 +59,9 @@ protected:
   su2double Total_Sens_ModVel;   /*!< \brief Total sensitivity to inlet velocity (incompressible). */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
   su2double TemperatureRad, Total_Sens_Temp_Rad;
+  
+  bool fiml;                        /*!< \bried Boolean indicating that FIML strategy is employed - #MB25 */
+  unsigned short int nbPopeCoeffs;  /*!< \brief Number of coefficients considered for the Pope's expansion - #MB25 */
 
   CDiscAdjVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */
 
@@ -137,6 +140,13 @@ public:
    */
   void SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*) override;
 
+  /*!
+   * \brief Extract and set the beta-fiml sensitivity - #MB25
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetSensitivityBetaFiml(CGeometry *geometry, CConfig *config, CSolver*) override;
+  
   /*!
    * \brief Provide the total shape sensitivity coefficient.
    * \return Value of the geometrical sensitivity coefficient
@@ -265,5 +275,10 @@ public:
     if (direct_solver) return direct_solver->GetHasHybridParallel();
     return false;
   }
+  
+  /*!
+   * \brief Write Beta Fiml Gradient in same order as design variables
+   */
+  void WriteBetaFimlGrad(CConfig *config,CGeometry *geometry, unsigned short index) override;
 
 };

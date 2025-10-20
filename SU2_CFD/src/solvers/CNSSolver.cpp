@@ -66,6 +66,10 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       break;
   }
 
+  /*--- Initialize the beta-field using the DVs - #MB25 ---*/
+  std::cout << "BEFORE InitializeBetaFiml() in CNSSolver" << std::endl;
+  InitializeBetaFiml(config, geometry); 
+  std::cout << "AFTER InitializeBetaFiml() in CNSSolver" << std::endl;
 }
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
@@ -265,7 +269,7 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 
 }
 
-void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
+void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver **solver) {
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;
@@ -1054,4 +1058,35 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
+}
+
+void CNSSolver::SetPopeInvariants(CGeometry *geometry, CSolver **solver_container,
+                                  CNumerics *numerics, CConfig *config) {
+  /*--- Compute the five Pope's invariants - #MB25 ---*/
+  std::vector<su2double> invariants(5,0.0); 
+
+  CMatrixView<const su2double> PrimVar_Grad; 
+  CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
+  su2double turb_ke    = 0.0; 
+  su2double omega_sst  = 0.0; 
+  su2double density    = 0.0; 
+  su2double viscosity  = 0.0; 
+
+  for (unsigned long iPoint=0; iPoint<geometry->GetnPoint(); iPoint++) {
+    density = nodes->GetDensity(iPoint); 
+    PrimVar_Grad = nodes->GetGradient_Primitive(iPoint); 
+    
+    viscosity  = nodes->GetLaminarViscosity(iPoint) + nodes->GetEddyViscosity(iPoint); 
+    
+    if (config->GetKind_Turb_Model()==TURB_MODEL::SST){
+      turb_ke   = turbNodes->GetSolution(iPoint,0); 
+      omega_sst = turbNodes->GetSolution(iPoint,1);
+    }
+    
+    invariants = numerics->ComputePopeInvariants(nDim,PrimVar_Grad+1,viscosity,density,turb_ke,omega_sst); 
+    
+    for (unsigned short i=0; i<5; i++) 
+      nodes->SetPopeInvariants(iPoint, i, invariants[i]);
+    
+  }
 }

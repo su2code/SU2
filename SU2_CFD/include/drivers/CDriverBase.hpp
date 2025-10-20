@@ -159,7 +159,7 @@ class CDriverBase {
    * \brief Get the number of design variables.
    * \return Number of design variables.
    */
-  unsigned short GetNumberDesignVariables() const;
+  unsigned long GetNumberDesignVariables() const;
 
   /*!
    * \brief Get the number of FFD boxes.

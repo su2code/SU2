@@ -73,15 +73,28 @@ def projection(config, state={}, step=1e-3):
 
     # choose dv values
     Definition_DV = konfig["DEFINITION_DV"]
-    n_DV = sum(Definition_DV["SIZE"])
+
+    if int(konfig.NPOIN) == 0:    
+        n_DV = sum(Definition_DV['SIZE'])
+    else:
+        n_DV = int(konfig.NPOIN)
+    
     if isinstance(step, list):
         assert len(step) == n_DV, "unexpected step vector length"
     else:
         step = [step] * n_DV
-    dv_old = [
-        0.0
-    ] * n_DV  # SU2_DOT input requirement, assumes linear superposition of design variables
-    dv_new = step
+    
+    if int(konfig.NPOIN) == 0:
+        dv_old = [0.0] * n_DV # SU2_DOT input requirement, assumes linear superposition of design variables
+        dv_new = step
+    else:
+        dv_old = konfig.DV_VALUE
+        dv_value = konfig.DV_VALUE
+        if len(dv_old) < int(konfig.NPOIN) :
+            dv_old = [0.0]*n_DV
+            config.DV_VALUE_OLD = dv_old
+        dv_new = dv_value
+    
     konfig.unpack_dvs(dv_new, dv_old)
 
     # filenames

@@ -126,4 +126,15 @@ public:
    * \brief Postprocess the adjoint iteration for ZONE_0.
    */
   void Postprocess(void) override;
+
+  /*!
+   * \brief Tape test. 
+   */
+  void TapeTest() override; 
+
+  /*!
+   * \brief Gathering error for tape test.
+   */
+  int TapeTestGatherErrors(AD::ErrorReport& error_report) const override; 
+
 };

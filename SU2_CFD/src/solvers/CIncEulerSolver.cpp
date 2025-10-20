@@ -2182,10 +2182,19 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Turbulent kinetic energy ---*/
 
-    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+      visc_numerics->SetOmegaSST(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1), // #MB25
+                                 solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1));
+    }
 
+    /*--- Beta-FIML - #MB25 ---*/
+    
+    if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+      visc_numerics->SetBetaFiml(nodes->GetBetaFiml(iPoint), nodes->GetBetaFiml(iPoint));
+    }
+    
     /*--- Compute and update viscous residual ---*/
 
     auto residual_v = visc_numerics->ComputeResidual(config);
@@ -2437,10 +2446,19 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Turbulent kinetic energy ---*/
 
-    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+      visc_numerics->SetOmegaSST(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1), // #MB25
+                                 solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1));
+    }
+    
+    /*--- Beta-FIML - #MB25 ---*/
 
+    if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+      visc_numerics->SetBetaFiml(nodes->GetBetaFiml(iPoint), nodes->GetBetaFiml(iPoint));
+    }
+    
     /*--- Compute and update residual ---*/
 
     auto residual_v = visc_numerics->ComputeResidual(config);
@@ -2635,9 +2653,18 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Turbulent kinetic energy ---*/
 
-    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST){
       visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0),
                                           solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,0));
+      visc_numerics->SetOmegaSST(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1), // #MB25
+                                 solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint,1));
+    }
+    
+    /*--- Beta-FIML - #MB25 ---*/
+
+    if (config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+      visc_numerics->SetBetaFiml(nodes->GetBetaFiml(iPoint), nodes->GetBetaFiml(iPoint));
+    }
 
     /*--- Compute and update residual ---*/
 

@@ -151,6 +151,9 @@ class CFVMFlowSolverBase : public CSolver {
   su2double AeroCoeffForceRef = 1.0;    /*!< \brief Reference force for aerodynamic coefficients. */
   su2double DynamicPressureRef = 1.0;   /*!< \brief Reference dynamic pressure. */
 
+  su2double Total_MSEVelFIML = 0.0;     /*!< \brief Total MSE Velocity coefficient for FIML - #MB25 */
+  su2double Total_MSERSTFIML = 0.0;     /*!< \brief Total MSE RST coefficient for FIML - #MB25 */
+
   su2double Total_CpDiff = 0.0;         /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_HeatFluxDiff = 0.0;   /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   su2double Total_CEquivArea = 0.0;     /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
@@ -2006,6 +2009,18 @@ class CFVMFlowSolverBase : public CSolver {
   inline void SetTotal_CpDiff(su2double val_pressure) final { Total_CpDiff = val_pressure; }
 
   /*!
+   * \brief Set the MSE Velocity coefficient for FIML - #MB25
+   * \param[in] val_vel_mse - Value of the difference between velocity field and the target SRS velocity.
+   */
+  inline void SetTotal_MSEVelFIML(su2double val_vel_mse) final { Total_MSEVelFIML = val_vel_mse; }
+
+  /*!
+   * \brief Set the MSE RST coefficient for FIML - #MB25
+   * \param[in] val_rst_mse - Value of the difference between RST field and the target SRS RST.
+   */
+  inline void SetTotal_MSERSTFIML(su2double val_rst_mse) final { Total_MSERSTFIML = val_rst_mse; }
+
+  /*!
    * \brief Set the value of the Equivalent Area coefficient.
    * \param[in] val_cequivarea - Value of the Equivalent Area coefficient.
    */
@@ -2443,5 +2458,11 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Get the mass fluxes across the edges (computed and stored during the discretization of convective fluxes).
    */
   inline const su2activevector* GetEdgeMassFluxes() const final { return &EdgeMassFluxes; }
+
+public:
+  /*!
+   * \brief Return the name of the solver
+  */
+  inline virtual string getName() override {return "CFVMFlowSolverBase"; }; // #MB25
 
 };

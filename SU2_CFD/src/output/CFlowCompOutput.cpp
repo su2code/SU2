@@ -204,6 +204,9 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
 
   AddCpInverseDesignOutput();
 
+  AddVelocityFIMLOutput(); // #MB25
+  AddRSTFIMLOutput(); // #MB25
+
   AddNearfieldInverseDesignOutput();
 
   if (config->GetBoolTurbomachinery()) AddTurboOutput(config->GetnZone());
@@ -473,6 +476,14 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
   /*--- Set nearfield diff fields ---*/
 
   if (config->GetEquivArea()) SetNearfieldInverseDesign(flow_solver, geometry, config);
+
+  /* --- Set MSE Vel. coef. for FIML - #MB25 */
+
+  SetVelocityFIMLOutput(flow_solver, geometry, config);
+
+  /* --- Set MSE RST coef. for FIML - #MB25 */
+
+  SetRSTFIMLOutput(flow_solver, geometry, config);
 
   /*--- Keep this as last, since it uses the history values that were set. ---*/
 

@@ -246,8 +246,8 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
                                                         CSurfaceMovement* surface_movement,
                                                         CVolumetricMovement* grid_movement, CConfig* config,
                                                         su2double** Gradient) {
-  unsigned nDVtotal=config->GetnDV_Total();
-  unsigned column, row;
+  unsigned long nDVtotal=config->GetnDV_Total();
+  unsigned long column, row;
   unsigned long iPoint;
   unsigned short iDim;
   vector<su2double> seedvector(nDVtotal, 0.0);
@@ -699,7 +699,7 @@ CSysMatrixVectorProduct<scalar_type> CGradientSmoothingSolver::GetStiffnessMatri
 
 void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CVolumetricMovement *grid_movement, CConfig *config, su2double** Gradient) {
 
-  unsigned int iDV, iDV_Value, iDV_index;
+  unsigned long iDV, iDV_Value, iDV_index;
 
   if (rank == MASTER_NODE) cout << endl << "Calculating the original DV gradient." << endl;
 
@@ -734,7 +734,7 @@ void CGradientSmoothingSolver::RecordTapeAndCalculateOriginalGradient(CGeometry 
 }
 
 void CGradientSmoothingSolver::OutputDVGradient(const CConfig* config, string out_file) {
-  unsigned iDV;
+  unsigned long iDV;
   if (rank == MASTER_NODE) {
     /*--- For multizone append zone number to filename. ---*/
     if (config->GetMultizone_Problem()) {
@@ -752,8 +752,9 @@ void CGradientSmoothingSolver::OutputDVGradient(const CConfig* config, string ou
 
 void CGradientSmoothingSolver::RecordParameterizationJacobian(CGeometry *geometry, CSurfaceMovement *surface_movement, CSysVector<su2double>& registeredCoord, CConfig *config) {
 
-  unsigned int nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
-  unsigned int iDV, iDV_Value, iMarker, iPoint, iVertex, iDim;
+  unsigned int nDim, nMarker, nPoint, nVertex;
+  unsigned long iDV, iDV_Value, nDV, nDV_Value; // #MB25 
+  unsigned int iMarker, iPoint, iVertex, iDim;
   su2double* VarCoord;
 
   /*--- get information from config ---*/
@@ -809,9 +810,9 @@ void CGradientSmoothingSolver::RecordParameterizationJacobian(CGeometry *geometr
 }
 
 void CGradientSmoothingSolver::ProjectDVtoMesh(CGeometry *geometry, std::vector<su2double>& seeding, CSysVector<su2matvecscalar>& result, CSysVector<su2double>& registeredCoord, CConfig *config) {
-
-  unsigned int nDim, nMarker, nDV, nDV_Value, nVertex;
-  unsigned int iDV, iDV_Value, iDV_index, iMarker, iVertex, iPoint, iDim;
+  unsigned int nDim, nMarker, nVertex;
+  unsigned long iDV_index, iDV, iDV_Value, nDV, nDV_Value; // #MB25
+  unsigned int iMarker, iVertex, iPoint, iDim;
 
   /*--- get information from config ---*/
   nMarker = config->GetnMarker_All();
@@ -851,8 +852,9 @@ void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<s
 
   /*--- adjoint surface deformation ---*/
 
-  unsigned int nDim, nMarker, nDV, nDV_Value, nVertex;
-  unsigned int iDV, iDV_Value, iDV_index, iPoint, iDim, iMarker, iVertex;
+  unsigned int nDim, nMarker, nVertex;
+  unsigned long iDV, iDV_Value, iDV_index, nDV, nDV_Value;
+  unsigned int iPoint, iDim, iMarker, iVertex;
   su2double my_Gradient, localGradient;
 
   // get some numbers from config

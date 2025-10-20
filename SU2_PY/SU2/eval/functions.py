@@ -70,6 +70,7 @@ def function(func_name, config, state=None):
         and values of objective function floats.
         Otherwise returns a float.
     """
+    print("INFO: Evaluates the aerodynamics and geometry functions.") #MB25
 
     # initialize
     state = su2io.State(state)
@@ -147,7 +148,7 @@ def aerodynamics(config, state=None):
     """vals = SU2.eval.aerodynamics(config,state=None)
 
     Evaluates aerodynamics with the following:
-              SU2.run.deform()
+        SU2.run.deform()
         SU2.run.direct()
 
     Assumptions:
@@ -171,7 +172,7 @@ def aerodynamics(config, state=None):
     # ----------------------------------------------------
     #  Initialize
     # ----------------------------------------------------
-
+    print("INFO: Evaluates aerodynamics with the following: SU2.run.deform() and SU2.run.direct()") #MB25
     # initialize
     state = su2io.State(state)
 
@@ -194,7 +195,10 @@ def aerodynamics(config, state=None):
     # ----------------------------------------------------
 
     # does decomposition and deformation
-    info = update_mesh(config, state)
+    if (config.DV_KIND[0]=="FIML"): #MB25
+        print("INFO: No deformation of the mesh, thus skip update_mesh function.") #MB25
+    else:
+        info = update_mesh(config, state)
 
     # ----------------------------------------------------
     #  Adaptation (not implemented)
@@ -276,6 +280,14 @@ def aerodynamics(config, state=None):
     # files: target heat flux distribution
     if "INV_DESIGN_HEATFLUX" in special_cases and "TARGET_HEATFLUX" in files:
         pull.append(files["TARGET_HEATFLUX"])
+    
+    # files: target DNS/LES velocity distribution - #MB25
+    if "INVERSE_DESIGN_VELOCITY_FIML" in special_cases and "TARGET_VEL" in files:
+        pull.append(files["TARGET_VEL"])
+    
+    # files: target DNS/LES Reynolds stress tensor - #MB25
+    if "INVERSE_DESIGN_RST_FIML" in special_cases and "TARGET_RST" in files:
+        pull.append(files["TARGET_RST"])
 
     # output redirection
     with redirect_folder("DIRECT", pull, link) as push:
@@ -283,7 +295,7 @@ def aerodynamics(config, state=None):
 
             # # RUN DIRECT SOLUTION # #
             info = su2run.direct(config)
-
+            
             konfig = copy.deepcopy(config)
             """
             If the time convergence criterion was activated, we have less time iterations.
@@ -336,7 +348,7 @@ def aerodynamics(config, state=None):
 
 
 def stability(config, state=None, step=1e-2):
-
+    print("INFO: Stability functions") #MB25
     folder = "STABILITY"  # os.path.join('STABILITY',func_name) #STABILITY/D_MOMENT_Y_D_ALPHA/
 
     # ----------------------------------------------------
@@ -403,6 +415,14 @@ def stability(config, state=None, step=1e-2):
     # files: target heat flux distribution
     if "INV_DESIGN_HEATFLUX" in special_cases and "TARGET_HEATFLUX" in files:
         pull.append(files["TARGET_HEATFLUX"])
+    
+    # files: target DNS/LES velocity distribution - #MB25
+    if "INVERSE_DESIGN_VELOCITY_FIML" in special_cases and "TARGET_VEL" in files:
+        pull.append(files["TARGET_VEL"])
+    
+    # files: target DNS/LES Reynolds stress tensor - #MB25
+    if "INVERSE_DESIGN_RST_FIML" in special_cases and "TARGET_RST" in files:
+        pull.append(files["TARGET_RST"])
 
     # pull needed files, start folder
     with redirect_folder(folder, pull, link) as push:
@@ -610,6 +630,14 @@ def multipoint(config, state=None, step=1e-2):
     # files: target heat flux distribution
     if "INV_DESIGN_HEATFLUX" in special_cases and "TARGET_HEATFLUX" in files:
         pull.append(files["TARGET_HEATFLUX"])
+    
+    # files: target DNS/LES velocity distribution - #MB25
+    if "INVERSE_DESIGN_VELOCITY_FIML" in special_cases and "TARGET_VEL" in files:
+        pull.append(files["TARGET_VEL"])
+    
+    # files: target DNS/LES Reynolds stress tensor - #MB25
+    if "INVERSE_DESIGN_RST_FIML" in special_cases and "TARGET_RST" in files:
+        pull.append(files["TARGET_RST"])
 
     # pull needed files, start folder_0
     with redirect_folder(folder[0], pull, link) as push:
@@ -828,7 +856,7 @@ def geometry(func_name, config, state=None):
     # ----------------------------------------------------
     #  Initialize
     # ----------------------------------------------------
-
+    print("INFO: Geometric functions") #MB25
     # initialize
     state = su2io.State(state)
     if not "MESH" in state.FILES:
@@ -923,7 +951,7 @@ def update_mesh(config, state=None):
     Modifies:
         config and state by reference
     """
-
+    print("INFO: updates mesh with the following: SU2.run.deform()") #MB25
     # ----------------------------------------------------
     #  Initialize
     # ----------------------------------------------------

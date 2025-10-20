@@ -115,6 +115,7 @@ private:
   Engine,                   /*!< \brief Flag to know if the code is going to compute a problem with engine. */
   InvDesign_Cp,             /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
   InvDesign_HeatFlux,       /*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
+  InvDesign_Fiml,           /*!< \brief Flag to kown if Field Inversion Machine Learning is applied - #MB25. */
   Wind_Gust,                /*!< \brief Flag to know if there is a wind gust. */
   Turb_Fixed_Values,        /*!< \brief Flag to know if there are fixed values for turbulence quantities in one half-plane. */
   Aeroelastic_Simulation,   /*!< \brief Flag to know if there is an aeroelastic simulation. */
@@ -463,9 +464,9 @@ private:
   bool ReorientElements;       /*!< \brief Flag for enabling element reorientation. */
   string CustomObjFunc;        /*!< \brief User-defined objective function. */
   string CustomOutputs;        /*!< \brief User-defined functions for outputs. */
-  unsigned short nDV,                  /*!< \brief Number of design variables. */
-  nObj, nObjW;                         /*! \brief Number of objective functions. */
-  unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
+  unsigned long nDV;                   /*!< \brief Number of design variables (can be very large for FIML) - #MB25. */
+  unsigned short nObj, nObjW;          /*!< \brief Number of objective functions. */
+  unsigned long* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;              /*!< \brief Number of ffd boxes. */
   unsigned short nTurboMachineryKind;  /*!< \brief Number turbomachinery types specified. */
   unsigned short nTurboInterfaces;     /*!< \brief Number of turbomachiery interfaces */
@@ -600,6 +601,8 @@ private:
 
   bool AD_Mode;             /*!< \brief Algorithmic Differentiation support. */
   bool AD_Preaccumulation;  /*!< \brief Enable or disable preaccumulation in the AD mode. */
+  CHECK_TAPE_TYPE AD_CheckTapeType;           /*!< \brief Type of tape that is checked in a tape debug run. */
+  CHECK_TAPE_VARIABLES AD_CheckTapeVariables; /*!< \brief Type of variables that are checked in a tape debug run. */
   STRUCT_COMPRESS Kind_Material_Compress;  /*!< \brief Determines if the material is compressible or incompressible (structural analysis). */
   STRUCT_MODEL Kind_Material;              /*!< \brief Determines the material model to be used (structural analysis). */
   STRUCT_DEFORMATION Kind_Struct_Solver;   /*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
@@ -611,6 +614,9 @@ private:
   TURB_SGS_MODEL Kind_SGS_Model;    /*!< \brief LES SGS model definition. */
   TURB_TRANS_MODEL Kind_Trans_Model;  /*!< \brief Transition model definition. */
   TURB_TRANS_CORRELATION Kind_Trans_Correlation;  /*!< \brief Transition correlation model definition. */
+  TURB_RST_MODEL Kind_Turb_RST_Model;   /*!< \brief Type of Reynold Stress Model, i.e. 1 for None, 2 for Pope's expansion */ // #MB25
+  unsigned short int nbPopeCoeffs;      /*!< \brief Number of Pope's expansion coefficients */ // #MB25
+  su2double Lambda_FIML;                /*!< \brief value of weight factor for FIML problems, penalizes designs far from baseline */ // #MB25
   su2double hRoughness;             /*!< \brief RMS roughness for Transition model. */
   unsigned short Kind_ActDisk, Kind_Engine_Inflow,
   *Kind_Data_Riemann,
@@ -805,6 +811,7 @@ private:
   unsigned short nMesh_Box_Size;
   short *Mesh_Box_Size;          /*!< \brief Array containing the number of grid points in the x-, y-, and z-directions for the analytic RECTANGLE and BOX grid formats. */
   string Mesh_FileName,          /*!< \brief Mesh input file. */
+  Beta_Fiml_FileName,            /*!< \brief Beta-fiml input file. */
   Mesh_Out_FileName,             /*!< \brief Mesh output file. */
   Solution_FileName,             /*!< \brief Flow solution input file. */
   Solution_AdjFileName,          /*!< \brief Adjoint solution input file for drag functional. */
@@ -813,6 +820,7 @@ private:
   Breakdown_FileName,            /*!< \brief Breakdown output file. */
   Restart_FileName,              /*!< \brief Restart file for flow variables. */
   Restart_AdjFileName,           /*!< \brief Restart file for adjoint variables, drag functional. */
+  Restart_BetaFileName,          /*!< \brief Restart file for ... - #MB25 */ // FIXME
   Adj_FileName,                  /*!< \brief Output file with the adjoint variables. */
   ObjFunc_Grad_FileName,         /*!< \brief Gradient of the objective function. */
   ObjFunc_Value_FileName,        /*!< \brief Objective function. */
@@ -822,6 +830,7 @@ private:
   VolSens_FileName,              /*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
   ObjFunc_Hess_FileName,         /*!< \brief Hessian approximation obtained by the Sobolev smoothing solver. */
   *DataDriven_Method_FileNames;    /*!< \brief Dataset information for data-driven fluid models. */
+  bool Multizone_Adapt_FileName; /*!< \brief Append zone number to solution and restart file names. */
 
   bool
   Wrt_Performance,           /*!< \brief Write the performance summary at the end of a calculation.  */
@@ -1052,7 +1061,8 @@ private:
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint;                /*!< \brief AD-based discrete adjoint mode. */
+  bool DiscreteAdjoint,                /*!< \brief AD-based discrete adjoint mode. */
+  DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
@@ -1319,6 +1329,9 @@ private:
   // input_size is the number of options read in from the config file
   template <class Tenum, class Tfield>
   void addEnumListOption(const string name, unsigned short& input_size, Tfield*& option_field, const map<string,Tenum>& enum_map);
+  
+  template <class Tenum, class Tfield>
+  void addEnumLongListOption(const string name, unsigned long& input_size, Tfield*& option_field, const map<string,Tenum>& enum_map);
 
   void addDoubleArrayOption(const string& name, const int size, su2double* option_field);
 
@@ -1342,10 +1355,10 @@ private:
                             bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
                             bool & Restart_Flow, const bool & Restart_Flow_default);
 
-  void addDVParamOption(const string& name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag,
+  void addDVParamOption(const string& name, unsigned long & nDV_field, su2double** & paramDV, string* & FFDTag,
                         unsigned short* & design_variable);
 
-  void addDVValueOption(const string& name, unsigned short* & nDVValue_field, su2double** & valueDV, unsigned short & nDV_field,  su2double** & paramDV,
+  void addDVValueOption(const string& name, unsigned long* & nDVValue_field, su2double** & valueDV, unsigned long & nDV_field,  su2double** & paramDV,
                         unsigned short* & design_variable);
 
   void addFFDDefOption(const string& name, unsigned short & nFFD_field, su2double** & coordFFD, string* & FFDTag);
@@ -2927,7 +2940,7 @@ public:
    * \param[in] val_param - Index of the parameter that we want to read.
    * \return Design variable parameter.
    */
-  su2double GetParamDV(unsigned short val_dv, unsigned short val_param) const { return ParamDV[val_dv][val_param]; }
+  su2double GetParamDV(unsigned long val_dv, unsigned short val_param) const { return ParamDV[val_dv][val_param]; }
 
   /*!
    * \brief Get the coordinates of the FFD corner points.
@@ -2950,7 +2963,7 @@ public:
    * \param[in] val_dv - Number of the design variable that we want to read.
    * \return Name of the FFD box.
    */
-  string GetFFDTag(unsigned short val_dv) const { return FFDTag[val_dv]; }
+  string GetFFDTag(unsigned long val_dv) const { return FFDTag[val_dv]; }
 
   /*!
    * \brief Get the FFD Tag of a particular FFD box.
@@ -2960,16 +2973,16 @@ public:
   string GetTagFFDBox(unsigned short val_ffd) const { return TagFFDBox[val_ffd]; }
 
   /*!
-   * \brief Get the number of design variables.
+   * \brief Get the number of design variables (can be large in FIML - #MB25).
    * \return Number of the design variables.
    */
-  unsigned short GetnDV(void) const { return nDV; }
+  unsigned long GetnDV(void) const { return nDV; }
 
   /*!
    * \brief Get the number of design variables.
    * \return Number of the design variables.
    */
-  unsigned short GetnDV_Value(unsigned short iDV) const {
+  unsigned long GetnDV_Value(unsigned long iDV) const {
     if (!nDV_Value) return 0;
     return nDV_Value[iDV];
   }
@@ -2977,10 +2990,10 @@ public:
   /*!
    * \brief Get the total number of design variables.
    */
-  unsigned short GetnDV_Total(void) const {
+  unsigned long GetnDV_Total(void) const {
     if (!nDV_Value) return 0;
     unsigned short sum = 0;
-    for (unsigned short iDV = 0; iDV < nDV; iDV++) {
+    for (unsigned long iDV = 0; iDV < nDV; iDV++) {
       sum += nDV_Value[iDV];
     }
     return sum;
@@ -4500,6 +4513,29 @@ public:
   TURB_MODEL GetKind_Turb_Model(void) const { return Kind_Turb_Model; }
 
   /*!
+   * \brief Get the kind of the Reynolds Stress Tensor (RST) model.
+   * \return Kind of the RST turbulence model (e.g., TURB_RST_MODEL::POPE).
+   */
+  TURB_RST_MODEL GetKind_Turb_RST_Model(void) const { return Kind_Turb_RST_Model; } // #MB25
+  
+  /*!
+   * \brief Get the number of coefficients in the Pope's expansion
+   * \return Number of Pope's expansion coefficients (WARNING: Max 3 coef.)
+   */
+  unsigned short int GetRSTNbPopeCoeffs(void) const { // #MB25
+    if (nbPopeCoeffs > 3) return 3; 
+    else return nbPopeCoeffs; 
+  } 
+  
+  /*!
+   * \brief Get the number of coefficients in the Pope's expansion
+   * \return Number of Pope's expansion coefficients (WARNING: Max 10 coef.)
+   */
+  su2double GetLambdaFiml(void) const { // #MB25
+    return Lambda_FIML; 
+  } 
+	
+  /*!
    * \brief Get the kind of the transition model.
    * \return Kind of the transion model.
    */
@@ -5510,12 +5546,19 @@ public:
 
   /*!
    * \brief Provides the number of varaibles.
+   * \brief Get whether filenames are appended the zone number automatically (multiphysics solver).
+   * \return Flag for appending zone numbers to restart and solution filenames. If Flag=true, zone numer is appended.
+   */
+  bool GetMultizone_AdaptFilename(void) const { return Multizone_Adapt_FileName; }
+
+  /*!
+   * \brief Provides the number of varaibles.
    * \return Number of variables.
    */
   unsigned short GetnVar(void);
 
   /*!
-   * \brief Provides the number of varaibles.
+   * \brief Provides the number of variables.
    * \return Number of variables.
    */
   unsigned short GetnZone(void) const { return nZone; }
@@ -5577,6 +5620,12 @@ public:
    */
   bool GetInvDesign_HeatFlux(void) const { return InvDesign_HeatFlux; }
 
+  /*!
+   * \brief Information about applying Field Inversion Machine Learning techniques to a correcting factor beta - #MB25
+   * \return <code>TRUE</code> or <code>FALSE</code> 
+   */
+  bool GetInvDesign_FIML(void) const { return InvDesign_Fiml; }
+  
   /*!
    * \brief Get name of the input grid.
    * \return File name of the input grid.
@@ -5887,8 +5936,8 @@ public:
    * \param[in] val_val - Value of the design variable that we want to read.
    * \return Design variable step.
    */
-  su2double& GetDV_Value(unsigned short val_dv, unsigned short val_val = 0) { return DV_Value[val_dv][val_val]; }
-  const su2double& GetDV_Value(unsigned short val_dv, unsigned short val_val = 0) const { return DV_Value[val_dv][val_val]; }
+  su2double& GetDV_Value(unsigned long val_dv, unsigned short val_val = 0) { return DV_Value[val_dv][val_val]; }
+  const su2double& GetDV_Value(unsigned long val_dv, unsigned short val_val = 0) const { return DV_Value[val_dv][val_val]; }
 
   /*!
    * \brief Set the value of the design variable step, we use this value in design problems.
@@ -5896,7 +5945,7 @@ public:
    * \param[in] val_ind - value of initial deformation.
    * \param[in] val    - Value of the design variable.
    */
-  void SetDV_Value(unsigned short val_dv, unsigned short val_ind, su2double val) { DV_Value[val_dv][val_ind] = val; }
+  void SetDV_Value(unsigned long val_dv, unsigned short val_ind, su2double val) { DV_Value[val_dv][val_ind] = val; }
 
   /*!
    * \brief Get information about the grid movement.
@@ -6331,11 +6380,11 @@ public:
   void SubtractFinestMesh(void) { FinestMesh = FinestMesh-1; }
 
   /*!
-   * \brief Obtain the kind of design variable.
+   * \brief Obtain the kind of design variable (nDV can be large for FIML - #MB25).
    * \param[in] val_dv - Number of the design variable that we want to read.
    * \return Design variable identification.
    */
-  unsigned short GetDesign_Variable(unsigned short val_dv) const { return Design_Variable[val_dv]; }
+  unsigned short GetDesign_Variable(unsigned long val_dv) const { return Design_Variable[val_dv]; }
 
   /*!
    * \brief Get the buffet sensor sharpness coefficient.
@@ -8905,6 +8954,12 @@ public:
   bool GetDiscrete_Adjoint(void) const { return DiscreteAdjoint; }
 
   /*!
+   * \brief Get the indicator whether a debug run for the discrete adjoint solver will be started.
+   * \return the discrete adjoint debug indicator.
+   */
+  bool GetDiscrete_Adjoint_Debug(void) const { return DiscreteAdjointDebug; }
+
+  /*!
    * \brief Get the number of subiterations while a ramp is applied.
    * \return Number of FSI subiters.
    */
@@ -9337,6 +9392,16 @@ public:
   unsigned short GetKind_RoeLowDiss(void) const { return Kind_RoeLowDiss; }
 
   /*!
+   * \brief Get the type of tape that will be checked in a tape debug run.
+   */
+  CHECK_TAPE_TYPE GetAD_CheckTapeType(void) const { return AD_CheckTapeType; }
+
+  /*!
+   * \brief Get the type of variables that will be checked for in a tape debug run.
+   */
+  CHECK_TAPE_VARIABLES GetAD_CheckTapeVariables(void) const { return AD_CheckTapeVariables; }
+
+  /*!
    * \brief Get the DES Constant.
    * \return Value of DES constant.
    */
@@ -9726,6 +9791,11 @@ public:
   unsigned short GetnVolumeOutputFiles() const { return nVolumeOutputFiles; }
 
   /*!
+   * \brief GetnVolumeOutputFrequencies
+   */
+  unsigned short GetnVolumeOutputFrequencies() const { return nVolumeOutputFrequencies; }
+
+  /*!
    * \brief GetVolumeOutputFrequency
    * \param[in] iFile: index of file number for which the writing frequency needs to be returned.
    */
@@ -9919,5 +9989,26 @@ public:
    * \return LM option data structure.
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
+
+  /*!
+   * \brief Read the mesh file to extract the NPOIN value (SU2 format) - #MB25
+   * \return Return the number of points in the mesh
+   */
+  unsigned long GetnPoin(string val_mesh_filename, unsigned short val_format); 
+
+  /*!
+   * \brief Print the RECORDING type - #MB25
+   */
+  void PrintRecordingType(RECORDING kind_recording) {
+    switch (kind_recording) {
+      case RECORDING::CLEAR_INDICES:      {std::cout << "Recording type: RECORDING::CLEAR_INDICES." << std::endl; break;}
+      case RECORDING::BETA_FIML:          {std::cout << "Recording type: RECORDING::BETA_FIML." << std::endl; break;}
+      case RECORDING::MESH_COORDS:        {std::cout << "Recording type: RECORDING::MESH_COORDS." << std::endl; break;}
+      case RECORDING::MESH_DEFORM:        {std::cout << "Recording type: RECORDING::MESH_DEFORM." << std::endl; break;}
+      case RECORDING::SOLUTION_AND_MESH:  {std::cout << "Recording type: RECORDING::SOLUTION_AND_MESH." << std::endl; break;}
+      case RECORDING::SOLUTION_VARIABLES: {std::cout << "Recording type: RECORDING::SOLUTION_VARIABLES." << std::endl; break;}
+      default:                            {std::cout << "Recording type: NONE" << std::endl; break;}
+    }
+  }
 
 };

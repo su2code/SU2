@@ -280,6 +280,25 @@ void CAdjFlowCompOutput::SetVolumeOutputFields(CConfig *config) {
   AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY", "sensitivity in normal direction");
   /// END_GROUP
 
+	/// BEGIN_GROUP: BETA_FIML, DESCRIPTION: Corrective fields obtained from Field Inversion
+	if (config->GetKind_Turb_Model()==TURB_MODEL::SST &&  // #MB25
+      config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+    std::cout << "AddVolumOutput()" << std::endl; // #MB25
+		switch (config->GetRSTNbPopeCoeffs()) {
+			case 3:  AddVolumeOutput("BETA_FIML_3",  "beta_fiml_3",  "SOLUTION",  "Value of the beta-3 field");
+			case 2:  AddVolumeOutput("BETA_FIML_2",  "beta_fiml_2",  "SOLUTION",  "Value of the beta-2 field");
+			case 1: {AddVolumeOutput("BETA_FIML_1",  "beta_fiml_1",  "SOLUTION",  "Value of the beta-1 field"); break; }
+			default: break; 
+		}
+
+    switch (config->GetRSTNbPopeCoeffs()) {
+			case 3:  AddVolumeOutput("SENS_BETA_FIML_3",  "sens_beta_fiml_3",  "SENSITIVITY",  "Sensitivity of obj. fun. to beta-3 field");
+			case 2:  AddVolumeOutput("SENS_BETA_FIML_2",  "sens_beta_fiml_2",  "SENSITIVITY",  "Sensitivity of obj. fun. to beta-2 field");
+			case 1: {AddVolumeOutput("SENS_BETA_FIML_1",  "sens_beta_fiml_1",  "SENSITIVITY",  "Sensitivity of obj. fun. to beta-1 field"); break; }
+			default: break; 
+		}
+  }
+  /// END_GROUP
 }
 
 void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) {
@@ -319,6 +338,25 @@ void CAdjFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
     SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_AdjFlow->GetSensitivity(iPoint, 2));
 
   LoadVolumeDataAdjScalar(config, solver, iPoint);
+	
+	if (config->GetKind_Turb_Model()==TURB_MODEL::SST &&  // #MB25
+      config->GetKind_Turb_RST_Model()==TURB_RST_MODEL::POPE) {
+		switch (config->GetRSTNbPopeCoeffs()) {
+			case 3:  SetVolumeOutputValue("BETA_FIML_3",  iPoint, Node_AdjFlow->GetBetaFiml(iPoint,2));
+			case 2:  SetVolumeOutputValue("BETA_FIML_2",  iPoint, Node_AdjFlow->GetBetaFiml(iPoint,1));
+			case 1: {SetVolumeOutputValue("BETA_FIML_1",  iPoint, Node_AdjFlow->GetBetaFiml(iPoint,0)); break; }
+			default: break; 
+		}
+
+    if (config->GetInvDesign_FIML()) {
+      switch (config->GetRSTNbPopeCoeffs()) {
+        case 3:  SetVolumeOutputValue("SENS_BETA_FIML_3",  iPoint, Node_AdjFlow->GetSensitivityBetaFiml(iPoint,2));
+        case 2:  SetVolumeOutputValue("SENS_BETA_FIML_2",  iPoint, Node_AdjFlow->GetSensitivityBetaFiml(iPoint,1));
+        case 1: {SetVolumeOutputValue("SENS_BETA_FIML_1",  iPoint, Node_AdjFlow->GetSensitivityBetaFiml(iPoint,0)); break; }
+        default: break; 
+      }
+    }
+  }
 }
 
 void CAdjFlowCompOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) {

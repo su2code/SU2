@@ -77,6 +77,9 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
     if (config->GetDeform_Mesh()) {
       SecondaryVariables = RECORDING::MESH_DEFORM;
     }
+    else if (config->GetInvDesign_FIML()) {
+      SecondaryVariables = RECORDING::BETA_FIML; // #MB25
+    }
     else { SecondaryVariables = RECORDING::MESH_COORDS; }
     MainSolver = ADJFLOW_SOL;
     break;
@@ -145,14 +148,15 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    *--- respect to the conservative variables. Since these derivatives do not change in the steady state case
    *--- we only have to record if the current recording is different from the main variables. ---*/
 
-  if (RecordingState != MainVariables){
+  if (RecordingState != MainVariables && 
+      config->GetDiscrete_Adjoint_Debug()==false){ //FIXME -> not quite sure !
     MainRecording();
   }
 
 }
 
 void CDiscAdjSinglezoneDriver::Run() {
-
+std::cout << "CDiscAdjSinglezoneDriver::Run()" << std::endl;
   CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
   if (config->GetnQuasiNewtonSamples() > 1) {
     fixPtCorrector.resize(config->GetnQuasiNewtonSamples(),
@@ -225,7 +229,9 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
     case MAIN_SOLVER::DISC_ADJ_HEAT :
 
       /*--- Compute the geometrical sensitivities ---*/
+      std::cout << "BEFORE CDiscAdjSinglezoneDriver::Postprocess()" << std::endl; 
       SecondaryRecording();
+      std::cout << "AFTER CDiscAdjSinglezoneDriver::Postprocess()" << std::endl; 
       break;
 
     case MAIN_SOLVER::DISC_ADJ_FEM :
@@ -267,9 +273,16 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
     switch(kind_recording) {
     case RECORDING::CLEAR_INDICES: cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:   cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
+    case RECORDING::BETA_FIML:     cout << "Storing computational graph wrt BETA_FIML." << endl; break; 
     case RECORDING::SOLUTION_VARIABLES:
       cout << "Direct iteration to store the primal computational graph." << endl;
       cout << "Computing residuals to check the convergence of the direct problem." << endl; break;
+    case RECORDING::TAG_INIT_SOLVER_VARIABLES:    cout << "Simulating recording with tag 1 on conservative variables." << endl; AD::SetTag(1); break;
+    case RECORDING::TAG_CHECK_SOLVER_VARIABLES:   cout << "Checking first recording with tag 2 on conservative variables." << endl; AD::SetTag(2); break;
+    case RECORDING::TAG_INIT_SOLVER_AND_MESH:     cout << "Simulating recording with tag 1 on conservative variables and mesh coordinates." << endl; AD::SetTag(1); break;
+    case RECORDING::TAG_CHECK_SOLVER_AND_MESH:    cout << "Checking first recording with tag 2 on conservative variables and mesh coordinates." << endl; AD::SetTag(2); break;
+    case RECORDING::TAG_INIT_BETA_FIML:           cout << "Simulating recording with tag 1 on beta-fiml input variables." << endl; AD::SetTag(1); break;
+    case RECORDING::TAG_CHECK_BETA_FIML:          cout << "Checking first recording with tag 2 on beta-fiml input variables." << endl; AD::SetTag(2); break;
     default: break;
     }
   }
@@ -279,8 +292,9 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   if (kind_recording != RECORDING::CLEAR_INDICES){
 
     AD::StartRecording();
-
+    std::cout << "BEFORE RegisterInput()" << std::endl; 
     iteration->RegisterInput(solver_container, geometry_container, config_container, ZONE_0, INST_0, kind_recording);
+    std::cout << "AFTER RegisterInput()" << std::endl;
   }
 
   /*--- Set the dependencies of the iteration ---*/
@@ -289,16 +303,18 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
                              INST_0, kind_recording);
 
   /*--- Do one iteration of the direct solver ---*/
-
+  std::cout << "BEFORE DirectRun()" << std::endl;
   DirectRun(kind_recording);
+  std::cout << "AFTER DirectRun()" << std::endl; 
 
   /*--- Store the recording state ---*/
 
   RecordingState = kind_recording;
 
   /*--- Register Output of the iteration ---*/
-
+  std::cout << "BEFORE RegisterOutput()" << std::endl;
   iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+  std::cout << "AFTER RegisterOutput()" << std::endl;
 
   /*--- Extract the objective function and store it --- */
 
@@ -350,6 +366,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     direct_output->SetHistoryOutput(geometry, solver, config, config->GetTimeIter(),
                                      config->GetOuterIter(), config->GetInnerIter());
     ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
+    std::cout << "CDiscAdjSinglezoneDriver::SetObjFunction(): " << ObjFunc << std::endl; 
     break;
 
   case MAIN_SOLVER::DISC_ADJ_HEAT:
@@ -415,7 +432,8 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
 void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
    *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
-
+  std::cout << "Within CDiscAdjSinglezoneDriver::SecondaryRecording()" << std::endl; 
+  
   SetRecording(RECORDING::CLEAR_INDICES);
 
   /*--- Store the computational graph of one direct iteration with the secondary variables as input. ---*/
@@ -440,6 +458,9 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
   if (SecondaryVariables == RECORDING::MESH_COORDS) {
     solver[MainSolver]->SetSensitivity(geometry, config);
   }
+  else if (SecondaryVariables == RECORDING::BETA_FIML) {
+    solver[MainSolver]->SetSensitivityBetaFiml(geometry, config); // FIXME !!!!
+  }
   else { // MESH_DEFORM
     solver[ADJMESH_SOL]->SetSensitivity(geometry, config, solver[MainSolver]);
   }
@@ -448,4 +469,79 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   AD::ClearAdjoints();
 
+}
+
+void CDiscAdjSinglezoneDriver::TapeTest() {
+
+  if (rank == MASTER_NODE) {
+    cout <<"\n---------------------------- Start Debug Run ----------------------------" << endl;
+  }
+
+  int total_errors = 0;
+  AD::ErrorReport error_report;
+  AD::SetTagErrorCallback(error_report);
+  std::ofstream out1("run1_process" + to_string(rank) + ".out");
+  std::ofstream out2("run2_process" + to_string(rank) + ".out");
+
+  AD::ResetErrorCounter(error_report);
+  AD::SetDebugReportFile(error_report, &out1);
+
+  /*--- This recording will assign the initial (same) tag to each registered variable.
+   *    During the recording, each dependent variable will be assigned the same tag. ---*/
+
+  if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
+    if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES_AND_MESH_COORDINATES." << endl;
+    SetRecording(RECORDING::TAG_INIT_SOLVER_AND_MESH);
+  } else if (driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::SOLVER_VARIABLES){
+    if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES." << endl;
+    SetRecording(RECORDING::TAG_INIT_SOLVER_VARIABLES);
+  } else {
+    if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES_AND_BETA_FIML." << endl;
+    SetRecording(RECORDING::TAG_INIT_BETA_FIML);
+  }
+  
+  total_errors = TapeTestGatherErrors(error_report);
+
+  AD::ResetErrorCounter(error_report);
+  AD::SetDebugReportFile(error_report, &out2);
+
+  /*--- This recording repeats the initial recording with a different tag.
+   *    If a variable was used before it became dependent on the inputs, this variable will still carry the tag
+   *    from the initial recording and a mismatch with the "check" recording tag will throw an error.
+   *    In such a case, a possible reason could be that such a variable is set by a post-processing routine while
+   *    for a mathematically correct recording this dependency must be included earlier. ---*/
+
+  if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) 
+    SetRecording(RECORDING::TAG_CHECK_SOLVER_AND_MESH);
+  else if (driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::SOLVER_VARIABLES)
+    SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES);
+  else SetRecording(RECORDING::TAG_CHECK_BETA_FIML);
+
+  total_errors += TapeTestGatherErrors(error_report);
+
+  if (rank == MASTER_NODE) {
+    cout << "\n------------------------- Tape Test Run Summary -------------------------" << endl;
+    cout << "\nTotal number of tape inconsistencies: " << total_errors << endl;
+    cout << "\n--------------------------- End Tape Test Run ---------------------------" << endl;
+  }
+}
+
+int CDiscAdjSinglezoneDriver::TapeTestGatherErrors(AD::ErrorReport& error_report) const {
+
+  int num_errors = AD::GetErrorCount(error_report);
+  int total_errors = 0;
+  std::vector<int> process_error(size);
+  SU2_MPI::Allreduce(&num_errors, &total_errors, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Gather(&num_errors, 1, MPI_INT, process_error.data(), 1, MPI_INT, MASTER_NODE, SU2_MPI::GetComm());
+
+  if (rank == MASTER_NODE) {
+    std::cout << "\nTotal number of detected tape inconsistencies: " << total_errors << std::endl;
+    if(total_errors > 0 && size > 1) {
+      std::cout << "\n";
+      for (int irank = 0; irank < size; irank++) {
+        std::cout << "Number of inconsistencies from process " << irank << ": " << process_error[irank] << std::endl;
+      }
+    }
+  }
+  return total_errors;
 }

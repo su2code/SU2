@@ -56,6 +56,9 @@ def write_plot(filename, plot_format, data_plot, keys_plot=None):
     for i, key in enumerate(keys_plot):
         # check vector lengths
         value = data_plot[key]
+        print("INFO: key=", key)
+        print("INFO: value=", value)
+        print("INFO: n_lines=", n_lines)
         if i == 0:
             n_lines = len(value)
         else:
