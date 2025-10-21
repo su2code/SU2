@@ -61,7 +61,6 @@ protected:
   const bool finestGrid;
   const bool dynamicGrid;
   const bool muscl;
-  const bool umuscl;
   const su2double umusclKappa;
   const LIMITER typeLimiter;
 
@@ -77,7 +76,6 @@ protected:
     finestGrid(iMesh == MESH_0),
     dynamicGrid(config.GetDynamic_Grid()),
     muscl(finestGrid && config.GetMUSCL_Flow()),
-    umuscl(muscl && config.GetMUSCL_Kappa_Flow() != 0.0),
     umusclKappa(config.GetMUSCL_Kappa_Flow()),
     typeLimiter(config.GetKind_SlopeLimit_Flow()) {
   }
@@ -125,7 +123,7 @@ public:
 
     /*--- Recompute density and enthalpy instead of reconstructing. ---*/
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umuscl, umusclKappa, nkRelax, typeLimiter, V1st, vector_ij, solution);
+        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umusclKappa, nkRelax, typeLimiter, V1st, vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 
