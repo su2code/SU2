@@ -508,7 +508,7 @@ private:
   DIFFUSIVITYMODEL Kind_Diffusivity_Model; /*!< \brief Kind of the mass diffusivity Model */
   FREESTREAM_OPTION Kind_FreeStreamOption; /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   MAIN_SOLVER Kind_Solver;         /*!< \brief Kind of solver: Euler, NS, Continuous adjoint, etc.  */
-  LIMITER Kind_SlopeLimit,    /*!< \brief Global slope limiter. */
+  LIMITER Kind_SlopeLimit,      /*!< \brief Slope limiter (for the runtime eq. system). */
   Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
   Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
@@ -555,12 +555,12 @@ private:
   Kind_ConvNumScheme_AdjTurb,   /*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
   Kind_ConvNumScheme_Species,   /*!< \brief Centered or upwind scheme for the species model. */
   Kind_ConvNumScheme_Template,  /*!< \brief Centered or upwind scheme for the level set equation. */
-  Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
+  Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations (for the runtime eq. system). */
   Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
   Kind_Matrix_Coloring;         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
 
   CENTERED
-  Kind_Centered,                /*!< \brief Centered scheme. */
+  Kind_Centered,                /*!< \brief Centered scheme (for the runtime eq. system). */
   Kind_Centered_Flow,           /*!< \brief Centered scheme for the flow equations. */
   Kind_Centered_AdjFlow,        /*!< \brief Centered scheme for the adjoint flow equations. */
   Kind_Centered_Turb,           /*!< \brief Centered scheme for the turbulence model. */
@@ -577,7 +577,7 @@ private:
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
 
   UPWIND
-  Kind_Upwind,                  /*!< \brief Upwind scheme. */
+  Kind_Upwind,                  /*!< \brief Upwind scheme (for the runtime eq. system). */
   Kind_Upwind_Flow,             /*!< \brief Upwind scheme for the flow equations. */
   Kind_Upwind_AdjFlow,          /*!< \brief Upwind scheme for the adjoint flow equations. */
   Kind_Upwind_Turb,             /*!< \brief Upwind scheme for the turbulence model. */
@@ -586,14 +586,14 @@ private:
   Kind_Upwind_Heat,             /*!< \brief Upwind scheme for the heat transfer model. */
   Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
-  bool MUSCL,              /*!< \brief MUSCL scheme .*/
+  bool MUSCL,              /*!< \brief MUSCL scheme (for the runtime eq. system). */
   MUSCL_Flow,              /*!< \brief MUSCL scheme for the flow equations.*/
   MUSCL_Turb,              /*!< \brief MUSCL scheme for the turbulence equations.*/
   MUSCL_Heat,              /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
   MUSCL_Species;           /*!< \brief MUSCL scheme for the species equations.*/
-  su2double MUSCL_Kappa,   /*!< \brief Blending coefficient for U-MUSCL scheme. */
+  su2double MUSCL_Kappa,   /*!< \brief Blending coefficient for U-MUSCL scheme (for the runtime eq. system). */
   MUSCL_Kappa_Flow,        /*!< \brief Blending coefficient for U-MUSCL scheme for the flow equations.*/
   MUSCL_Kappa_Turb,        /*!< \brief Blending coefficient for U-MUSCL scheme for the turbulence equations.*/
   MUSCL_Kappa_Heat,        /*!< \brief Blending coefficient for U-MUSCL scheme for the (fvm) heat equation.*/
@@ -4632,31 +4632,7 @@ public:
    * \brief Get if the upwind scheme used MUSCL or not.
    * \return MUSCL scheme.
    */
-  bool GetMUSCL_Heat(void) const { return MUSCL_Heat; }
-
-  /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
-   * \return MUSCL scheme.
-   */
-  bool GetMUSCL_Turb(void) const { return MUSCL_Turb; }
-
-  /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
-   * \return MUSCL scheme.
-   */
-  bool GetMUSCL_Species(void) const { return MUSCL_Species; }
-
-  /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
-   * \return MUSCL scheme.
-   */
   bool GetMUSCL_AdjFlow(void) const { return MUSCL_AdjFlow; }
-
-  /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
-   * \return MUSCL scheme.
-   */
-  bool GetMUSCL_AdjTurb(void) const { return MUSCL_AdjTurb; }
 
   /*!
    * \brief Get the blending coefficient for the U-MUSCL scheme.
@@ -4672,30 +4648,6 @@ public:
    * \return Blending coefficient for the MUSCL scheme.
    */
   su2double GetMUSCL_Kappa_Flow(void) const { return MUSCL_Kappa_Flow; }
-
-  /*!
-   * \brief Get the blending coefficient for the MUSCL scheme.
-   * \return Blending coefficient for the MUSCL scheme.
-   */
-  su2double GetMUSCL_Kappa_Heat(void) const { return MUSCL_Kappa_Heat; }
-
-  /*!
-   * \brief Get the blending coefficient for the MUSCL scheme.
-   * \return Blending coefficient for the MUSCL scheme.
-   */
-  su2double GetMUSCL_Kappa_Turb(void) const { return MUSCL_Kappa_Turb; }
-
-  /*!
-   * \brief Get the blending coefficient for the MUSCL scheme.
-   * \return Blending coefficient for the MUSCL scheme.
-   */
-  su2double GetMUSCL_Kappa_Species(void) const { return MUSCL_Kappa_Species; }
-
-  /*!
-   * \brief Get the blending coefficient for the MUSCL scheme.
-   * \return Blending coefficient for the MUSCL scheme.
-   */
-  su2double GetMUSCL_Kappa_AdjFlow(void) const { return MUSCL_Kappa_AdjFlow; }
 
   /*!
    * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).

@@ -31,7 +31,6 @@
 #include "../../include/fluid/CIncIdealGas.hpp"
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
-#include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
 #include "../../include/fluid/CFluidFlamelet.hpp"
@@ -1279,12 +1278,10 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
       for (auto iVar = 0u; iVar < nPrimVarGrad; iVar++) {
-        su2double V_ij = 0.0;
-        if (umuscl || van_albada)
-          V_ij = V_j[iVar] - V_i[iVar];
+        const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-        const su2double Project_Grad_i = nkRelax * MUSCL_Reconstruction(Gradient_i[iVar], V_ij, Vector_ij, umuscl, kappa);
-        const su2double Project_Grad_j = nkRelax * MUSCL_Reconstruction(Gradient_j[iVar], V_ij, Vector_ij, umuscl, kappa);
+        const su2double Project_Grad_i = nkRelax * MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa);
+        const su2double Project_Grad_j = nkRelax * MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa);
 
         su2double lim_i = 1.0;
         su2double lim_j = 1.0;

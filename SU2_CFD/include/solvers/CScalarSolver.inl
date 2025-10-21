@@ -145,8 +145,6 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
   /*--- U-MUSCL reconstruction ---*/
   const su2double kappa     = config->GetMUSCL_Kappa();
   const su2double kappaFlow = config->GetMUSCL_Kappa_Flow();
-  const bool umuscl         = muscl && (kappa != 0.0);
-  const bool umusclFlow     = musclFlow && (kappaFlow != 0.0);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
   const auto& edgeMassFluxes = *(solver_container[FLOW_SOL]->GetEdgeMassFluxes());
@@ -222,12 +220,10 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           }
 
           for (auto iVar = 0u; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-            su2double V_ij = 0.0;
-            if (umusclFlow)
-              V_ij = V_j[iVar] - V_i[iVar];
+            const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-            su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], V_ij, Vector_ij, umusclFlow, kappaFlow);
-            su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], V_ij, Vector_ij, umusclFlow, kappaFlow);
+            su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappaFlow);
+            su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappaFlow);
 
             if (limiterFlow) {
               Project_Grad_i *= Limiter_i[iVar];
@@ -253,12 +249,10 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           }
 
           for (auto iVar = 0u; iVar < nVar; iVar++) {
-            su2double U_ij = 0.0;
-            if (umuscl)
-              U_ij = Scalar_j[iVar] - Scalar_i[iVar];
+            const su2double U_ij = Scalar_j[iVar] - Scalar_i[iVar];
 
-            su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], U_ij, Vector_ij, umuscl, kappa);
-            su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], U_ij, Vector_ij, umuscl, kappa);
+            su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, U_ij, kappa);
+            su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, U_ij, kappa);
 
             if (limiter) {
               Project_Grad_i *= Limiter_i[iVar];

@@ -55,6 +55,8 @@
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../limiters/CLimiterDetails.hpp"
 #include "../variables/CVariable.hpp"
 
 #ifdef HAVE_LIBROM
@@ -580,14 +582,17 @@ public:
 
   /*!
    * \brief Compute the projection of a variable for MUSCL reconstruction.
+   * \note The result should be halved when added to i (or subtracted from j).
    * \param[in] grad - Gradient vector.
-   * \param[in] delta_ij - Centered difference.
    * \param[in] vector_ij - Distance vector.
-   * \param[in] umuscl - Whether to use a U-MUSCL (blended difference) reconstruction.
+   * \param[in] delta_ij - Centered difference.
    * \param[in] kappa - Blending coefficient for U-MUSCL reconstruction.
    * \return - Projected variable.
    */
-  su2double MUSCL_Reconstruction(su2double* grad, su2double delta_ij, su2double* vector_ij, bool umuscl, su2double kappa);
+  inline su2double MUSCL_Reconstruction(const su2double* grad, const su2double* vector_ij, su2double delta_ij, su2double kappa) {
+    su2double project_grad = GeometryToolbox::DotProduct(nDim, grad, vector_ij);
+    return LimiterHelpers<>::umusclProjection(project_grad, delta_ij, kappa);
+  }
 
   /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.

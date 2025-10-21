@@ -26,6 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+ #pragma once
 
 /*!
  * \brief A traits class for limiters, see notes for "computeLimiters_impl()".

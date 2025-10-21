@@ -2279,14 +2279,6 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
                   *geometry, *config, 0, nVar, umuscl, umusclKappa, solution, gradient, solMin, solMax, limiter);
 }
 
-su2double CSolver::MUSCL_Reconstruction(su2double* grad, su2double delta_ij, su2double* vector_ij, bool umuscl, su2double kappa) {
-  su2double project_grad = GeometryToolbox::DotProduct(nDim, grad, vector_ij);
-  if (umuscl) {
-    return LimiterHelpers<>::umusclProjection(project_grad, delta_ij, kappa);
-  }
-  return project_grad;
-}
-
 void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nVar) {
 
   short iVar, jVar, kVar;
