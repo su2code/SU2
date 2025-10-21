@@ -49,7 +49,6 @@
  * \param[in] config - Configuration of the problem.
  * \param[in] varBegin - First variable index for which to compute limiters.
  * \param[in] varEnd - End of computation range (nVar = end-begin).
- * \param[in] umuscl - Whether to use a blended difference for reconstruction.
  * \param[in] umusclKappa - Blending parameter for U-MUSCL reconstruction.
  * \param[in] field - Variable field.
  * \param[in] gradient - Gradient of the field.
@@ -72,7 +71,6 @@ void computeLimiters_impl(CSolver* solver,
                           const CConfig& config,
                           size_t varBegin,
                           size_t varEnd,
-                          bool umuscl,
                           su2double umusclKappa,
                           const FieldType& field,
                           const GradientType& gradient,
@@ -190,17 +188,12 @@ void computeLimiters_impl(CSolver* solver,
         for(size_t iDim = 0; iDim < nDim; ++iDim)
           proj += dist_ij[iDim] * gradient(iPoint,iVar,iDim);
 
-        if (umuscl) {
-          AD::SetPreaccIn(field(jPoint,iVar));
-          const su2double cent = 0.5 * (field(jPoint,iVar) - field(iPoint,iVar));
-          proj = LimiterHelpers<>::umusclProjection(proj, cent, umusclKappa);
-        }
+        AD::SetPreaccIn(field(jPoint,iVar));
+        const su2double cent = 0.5 * (field(jPoint,iVar) - field(iPoint,iVar));
+        proj = LimiterHelpers<>::umusclProjection(proj, cent, umusclKappa);
 
         projMax[iVar] = max(projMax[iVar], proj);
         projMin[iVar] = min(projMin[iVar], proj);
-
-        if (!umuscl)
-          AD::SetPreaccIn(field(jPoint,iVar));
 
         fieldMax(iPoint,iVar) = max(fieldMax(iPoint,iVar), field(jPoint,iVar));
         fieldMin(iPoint,iVar) = min(fieldMin(iPoint,iVar), field(jPoint,iVar));

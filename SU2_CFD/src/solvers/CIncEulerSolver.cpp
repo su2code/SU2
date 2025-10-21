@@ -1232,7 +1232,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const su2double nkRelax = config->GetNewtonKrylovRelaxation();
 
   const su2double kappa = config->GetMUSCL_Kappa_Flow();
-  const bool umuscl = muscl && (kappa != 0.0);
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/

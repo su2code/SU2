@@ -469,7 +469,6 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   const su2double nkRelax     = config->GetNewtonKrylovRelaxation();
 
   const su2double kappa       = config->GetMUSCL_Kappa_Flow();
-  const bool umuscl           = muscl && (kappa != 0.0);
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
