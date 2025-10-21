@@ -63,6 +63,7 @@ enum class SUB_SOLVER_TYPE {
   MESH,                    /*!< \brief Mesh solver */
   RADIATION,               /*!< \brief Radiation solver */
   DISC_ADJ_RADIATION,      /*!< \brief Discrete adjoint radiation solver */
+  POISSON_EQUATION,      /*!< \brief Discrete adjoint radiation solver */
   NONE
 };
 

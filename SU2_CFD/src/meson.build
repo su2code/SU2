@@ -84,7 +84,9 @@ su2_cfd_src += files(['variables/CIncNSVariable.cpp',
                       'variables/CEulerVariable.cpp',
                       'variables/CNEMOEulerVariable.cpp',
                       'variables/CNEMONSVariable.cpp',
-                      'variables/CSobolevSmoothingVariable.cpp'])
+                      'variables/CSobolevSmoothingVariable.cpp',
+                      'variables/CPBIncEulerVariable.cpp',
+                      'variables/CPBIncNSVariable.cpp'])
 
 su2_cfd_src += files(['solvers/CSolverFactory.cpp',
                       'solvers/CAdjEulerSolver.cpp',
@@ -117,7 +119,10 @@ su2_cfd_src += files(['solvers/CSolverFactory.cpp',
                       'solvers/CTurbSASolver.cpp',
                       'solvers/CTurbSSTSolver.cpp',
                       'solvers/CFEASolverBase.cpp',
-                      'solvers/CGradientSmoothingSolver.cpp'])
+                      'solvers/CGradientSmoothingSolver.cpp',
+                      'solvers/CPBIncEulerSolver.cpp',
+                      'solvers/CPBIncNSSolver.cpp',
+                      'solvers/CPoissonSolverFVM.cpp'])
 
 su2_cfd_src += files(['numerics/CNumerics.cpp',
                       'numerics/template.cpp',
@@ -146,7 +151,9 @@ su2_cfd_src += files(['numerics/CNumerics.cpp',
                       'numerics/elasticity/CFEALinearElasticity.cpp',
                       'numerics/elasticity/CFEANonlinearElasticity.cpp',
                       'numerics/elasticity/nonlinear_models.cpp',
-                      'numerics/CGradSmoothing.cpp'])
+                      'numerics/CGradSmoothing.cpp',
+                      'numerics/pbflow.cpp',
+                      'numerics/poisson.cpp'])
 
 su2_cfd_src += files(['../include/numerics_simd/CNumericsSIMD.cpp'])
 
@@ -185,7 +192,8 @@ su2_cfd_src += files(['iteration/CIteration.cpp',
                       'iteration/CFEMFluidIteration.cpp',
                       'iteration/CFluidIteration.cpp',
                       'iteration/CHeatIteration.cpp',
-                      'iteration/CTurboIteration.cpp'])
+                      'iteration/CTurboIteration.cpp',
+                      'iteration/CPBFluidIteration.cpp'])
 
 su2_cfd_src += files(['limiters/CLimiterDetails.cpp'])
 

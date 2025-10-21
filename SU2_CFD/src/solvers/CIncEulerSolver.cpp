@@ -2621,6 +2621,10 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         }
 
         break;
+      case INC_OUTLET_TYPE::OPEN:
+        SU2_MPI::Error("Boundary condition not implemented for density-based incompressible solver.", CURRENT_FUNCTION);
+        break;
+        
 
     }
 

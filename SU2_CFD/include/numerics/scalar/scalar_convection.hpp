@@ -129,7 +129,8 @@ class CUpwScalar : public CNumerics {
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
           su2double Velocity_i = V_i[iDim + idx.Velocity()] - GridVel_i[iDim];
           su2double Velocity_j = V_j[iDim + idx.Velocity()] - GridVel_j[iDim];
-          q_ij += 0.5 * (Velocity_i + Velocity_j) * Normal[iDim];
+          q_ij += 0.5 * (Velocity_i + Velocity_j)
+           * Normal[iDim];
         }
       } else {
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {

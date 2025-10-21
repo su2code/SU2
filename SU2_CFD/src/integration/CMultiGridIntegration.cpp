@@ -748,3 +748,191 @@ void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****s
   }
 
 }
+
+
+void CMultiGridIntegration::MultiGrid_CyclePB(CGeometry ****geometry,
+                                            CSolver *****solver,
+                                            CNumerics ******numerics,
+                                            CConfig **config,
+                                            unsigned short iMesh,
+                                            unsigned short RecursiveParam,
+                                            unsigned short RunTime_EqSystem,
+                                            unsigned short iZone,
+                                            unsigned short iInst) {
+  /*--- Not using this routine for now. ---*/
+  
+  unsigned short iPreSmooth, iPostSmooth, iRKStep, iRKLimit = 1, iCorr, nCorr = 1;
+    
+  //bool startup_multigrid = (config[iZone]->GetRestart_Flow() && (RunTime_EqSystem == RUNTIME_FLOW_SYS) && (Iteration == 0));
+  //bool piso = true;
+  bool piso = (config[iZone]->GetKind_PBIter() == ENUM_PBITER::PISO);
+  unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+  bool periodic = (config[iZone]->GetnMarker_Periodic() > 0);
+  
+  /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
+  
+  
+  for (iPreSmooth = 0; iPreSmooth < config[iZone]->GetMG_PreSmooth(iMesh); iPreSmooth++) {
+	  
+	 /*--- Momentum solve (Predict velocities using existing pressure field)---*/
+	 switch( config[iZone]->GetKind_Solver() ) {
+		  case MAIN_SOLVER::INC_EULER: 
+		  config[iZone]->SetGlobalParam(MAIN_SOLVER::INC_EULER, RUNTIME_FLOW_SYS); break;
+		  
+		  case MAIN_SOLVER::INC_NAVIER_STOKES:
+		  config[iZone]->SetGlobalParam(MAIN_SOLVER::INC_NAVIER_STOKES, RUNTIME_FLOW_SYS); break;
+		  
+		  case MAIN_SOLVER::INC_RANS:
+		  config[iZone]->SetGlobalParam(MAIN_SOLVER::INC_RANS, RUNTIME_FLOW_SYS); break;
+     }
+
+     config[iZone]->SetKind_TimeIntScheme(config[iZone]->GetKind_TimeIntScheme_Flow());
+
+     CurrentGridIteration(geometry, solver, numerics, config, iMesh, RUNTIME_FLOW_SYS, iZone, iInst);
+      
+     /*--- Set source term for pressure correction equation based on current flow solution ---*/
+     solver[iZone][iInst][iMesh][FLOW_SOL]->SetMomCoeff(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], periodic, iMesh);
+
+     solver[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], iMesh);
+
+     /*--- Solve the poisson equation (pressure correction) ---*/
+     config[iZone]->SetGlobalParam(MAIN_SOLVER::POISSON_EQUATION, RUNTIME_POISSON_SYS);
+     config[iZone]->SetKind_TimeIntScheme(config[iZone]->GetKind_TimeIntScheme()); // TODO PBFlow
+
+     for (iCorr = 0; iCorr < nCorr; iCorr++) {
+       CurrentGridIteration(geometry, solver, numerics, config, iMesh, RUNTIME_POISSON_SYS, iZone, iInst); 
+     }
+     
+     /*--- Correct pressure and velocities ---*/
+      solver[iZone][iInst][iMesh][FLOW_SOL]->Flow_Correction(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone]);
+      
+      solver[iZone][iInst][iMesh][FLOW_SOL]->Postprocessing(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], iMesh);
+      
+     if (piso) {
+		 config[iZone]->SetKind_TimeIntScheme(EULER_EXPLICIT);
+		 
+		 /*--- Momentum solve (Predict velocities using existing pressure field)---*/
+		 switch( config[iZone]->GetKind_Solver() ) {
+			 case MAIN_SOLVER::INC_EULER: 
+			 config[iZone]->SetGlobalParam(MAIN_SOLVER::INC_EULER, RUNTIME_FLOW_SYS); break;
+			 
+			 case MAIN_SOLVER::INC_NAVIER_STOKES:
+			 config[iZone]->SetGlobalParam(MAIN_SOLVER::INC_NAVIER_STOKES, RUNTIME_FLOW_SYS); break;
+			 
+			 case MAIN_SOLVER::INC_RANS:
+			 config[iZone]->SetGlobalParam(MAIN_SOLVER::INC_RANS, RUNTIME_FLOW_SYS); break;
+		}
+		
+		CurrentGridIteration(geometry, solver, numerics, config, iMesh, RUNTIME_FLOW_SYS, iZone, iInst);
+
+		config[iZone]->SetKind_TimeIntScheme(config[iZone]->GetKind_TimeIntScheme_Flow());
+
+		/*--- Set source term for pressure correction equation based on current flow solution ---*/
+		solver[iZone][iInst][iMesh][FLOW_SOL]->SetMomCoeff(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], periodic, iMesh);
+
+		solver[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], iMesh);
+
+		/*--- Solve the poisson equation (pressure correction) ---*/
+		config[iZone]->SetGlobalParam(MAIN_SOLVER::POISSON_EQUATION, RUNTIME_POISSON_SYS);
+
+		config[iZone]->SetKind_TimeIntScheme(config[iZone]->GetKind_TimeIntScheme()); // TODO PBFlow
+
+        CurrentGridIteration(geometry, solver, numerics, config, iMesh, RUNTIME_POISSON_SYS, iZone, iInst);
+
+        /*--- Correct pressure and velocities ---*/
+        solver[iZone][iInst][iMesh][FLOW_SOL]->Flow_Correction(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone]); 
+	}
+    
+  }
+  /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
+  
+  if ( iMesh < config[iZone]->GetnMGLevels()  ) {
+	  
+	   
+	   /*--- Solution postsmoothing in the prolongated grid ---*/
+    
+       for (iPostSmooth = 0; iPostSmooth < config[iZone]->GetMG_PostSmooth(iMesh); iPostSmooth++) {
+		   
+		   /*--- Momentum solve (Predict velocities using existing pressure field)---*/
+		   switch( config[iZone]->GetKind_Solver() ) {
+			   case MAIN_SOLVER::EULER: 
+			   config[iZone]->SetGlobalParam(MAIN_SOLVER::INC_EULER, RUNTIME_FLOW_SYS); break;
+			   
+			   case MAIN_SOLVER::NAVIER_STOKES:
+			   config[iZone]->SetGlobalParam(MAIN_SOLVER::INC_NAVIER_STOKES, RUNTIME_FLOW_SYS); break;
+			   
+			   case MAIN_SOLVER::RANS:
+			   config[iZone]->SetGlobalParam(MAIN_SOLVER::INC_RANS, RUNTIME_FLOW_SYS); break;
+			   
+		    }
+		    
+		    CurrentGridIteration(geometry, solver, numerics, config,
+                  iMesh, RUNTIME_FLOW_SYS,
+                  iZone, iInst);
+      
+            /*--- Set source term for pressure correction equation based on current flow solution ---*/
+            solver[iZone][iInst][iMesh][FLOW_SOL]->SetMomCoeff(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], periodic, iMesh);
+     
+            solver[iZone][iInst][iMesh][FLOW_SOL]->SetPoissonSourceTerm(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone],  iMesh);
+	
+
+           /*--- Solve the poisson equation (pressure correction) ---*/
+           config[iZone]->SetGlobalParam(MAIN_SOLVER::POISSON_EQUATION, RUNTIME_POISSON_SYS);
+     
+           CurrentGridIteration(geometry, solver, numerics, config,
+                  iMesh, RUNTIME_POISSON_SYS,
+                  iZone, iInst);
+     
+     
+           /*--- Correct pressure and velocities ---*/
+           solver[iZone][iInst][iMesh][FLOW_SOL]->Flow_Correction(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone]);
+       }
+  }
+}
+
+void CMultiGridIntegration::CurrentGridIteration(CGeometry ****geometry,
+                                            CSolver *****solver,
+                                            CNumerics ******numerics,
+                                            CConfig **config,
+                                            unsigned short iMesh,
+                                            unsigned short RunTime_EqSystem,
+                                            unsigned short iZone,
+                                            unsigned short iInst) {
+
+	unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+	su2double monitor = 0.0;
+	unsigned short FinestMesh = config[iZone]->GetFinestMesh();
+    
+    
+    /*--- Send-Receive boundary conditions, and preprocessing ---*/
+      
+    solver[iZone][iInst][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], iMesh, 0, RunTime_EqSystem, false);
+             
+    /*--- Set the old solution ---*/
+        
+    solver[iZone][iInst][iMesh][SolContainer_Position]->Set_OldSolution();
+
+    /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
+    solver[iZone][iInst][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], iMesh, config[iZone]->GetTimeIter());
+      
+    /*--- Space integration ---*/
+    Space_Integration(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], numerics[iZone][iInst][iMesh][SolContainer_Position], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem);
+      
+    /*--- Time integration, update solution using the old solution plus the solution increment ---*/
+    Time_Integration(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], NO_RK_ITER, RunTime_EqSystem);
+     
+    /*--- Send-Receive boundary conditions, and postprocessing ---*/
+    solver[iZone][iInst][iMesh][SolContainer_Position]->Postprocessing(geometry[iZone][iInst][iMesh], solver[iZone][iInst][iMesh], config[iZone], iMesh);
+
+   /*--- Compute adimensional parameters and the convergence monitor ---*/
+  
+   switch (RunTime_EqSystem) {
+    case RUNTIME_POISSON_SYS: monitor = log10(solver[iZone][iInst][iMesh][POISSON_SOL]->GetRes_RMS(0)); break;
+    case RUNTIME_FLOW_SYS: monitor = log10(solver[iZone][iInst][iMesh][FLOW_SOL]->GetRes_RMS(0)); break;
+  }
+  
+  /*--- Convergence strategy ---*/
+  
+  //Convergence_Monitoring(geometry[iZone][iInst][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
+    
+}
