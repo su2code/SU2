@@ -362,15 +362,16 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
 //  su2double Enthalpy = V_i[nDim+3];
   su2double Laminar_Viscosity = V_i[nDim+5];
   su2double Eddy_Viscosity = V_i[nDim+6];
+  su2double Thermal_Conductivity = V_i[nDim+7];
+  su2double Cp = V_i[nDim+8];
 
 //  su2double Energy = Enthalpy - Pressure/Density;
   su2double invDensity     = 1.0/Density;
   su2double invDensitysq   = invDensity*invDensity;
   su2double invDensitycube = invDensitysq*invDensity;
-  su2double Prandtl_Lam      = config->GetPrandtl_Lam();
   su2double Prandtl_Turb     = config->GetPrandtl_Turb();
   su2double mu_tot_1 = Laminar_Viscosity + Eddy_Viscosity;
-  su2double mu_tot_2 = Laminar_Viscosity/Prandtl_Lam + Eddy_Viscosity/Prandtl_Turb;
+  su2double mu_tot_2 = Thermal_Conductivity/Cp + Eddy_Viscosity/Prandtl_Turb;
 //  su2double Gas_Constant = config->GetGas_ConstantND();
 
   /*--- Required gradients of the flow variables, point j ---*/
