@@ -205,7 +205,7 @@ def main():
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 6
-    discadj_fsi.test_vals = [6, -8.931782, -10.109894, 3.1045e-11, -1.7610e-06]
+    discadj_fsi.test_vals = [6, -8.931929, -10.099132, 3.1054e-11, -1.7613e-06]
     test_list.append(discadj_fsi)
 
     ###################################

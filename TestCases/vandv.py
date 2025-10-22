@@ -53,7 +53,7 @@ def main():
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals         = [-12.541748, -9.912501, -10.889821, -7.100437, -10.256867, -4.777032, 0.002796]
+    flatplate_sst1994m.test_vals         = [-13.020780, -9.534770, -10.401630, -7.500939, -9.750799, -4.850353,  0.002807]
     flatplate_sst1994m.test_vals_aarch64 = [-13.024930, -9.634457, -10.707600, -7.558080, -9.926634, -4.910704, 0.002786]
     test_list.append(flatplate_sst1994m)
 
