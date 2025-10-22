@@ -31,6 +31,11 @@
 #include "CFlowVariable.hpp"
 
 /*!
+ * \brief Returns the number of primitive variables for which to compute gradients.
+ */
+unsigned long EulerNPrimVarGrad(const CConfig *config, unsigned long ndim);
+
+/*!
  * \class CEulerVariable
  * \brief Class for defining the variables of the compressible Euler solver.
  * \note Primitive variables (T, vx, vy, vz, P, rho, h, c)
