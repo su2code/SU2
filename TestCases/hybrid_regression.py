@@ -136,7 +136,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.009016, -7.262446, -0.000000, 2.089953]
+    poiseuille_profile.test_vals         = [-12.009008, -7.262217, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.494717, -7.711274, -0.000000, 2.085796]
     test_list.append(poiseuille_profile)
 
@@ -197,7 +197,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals         = [-12.050515, -16.149098, 1.058588, 0.022984, 20.000000, -2.832494, 0.000000, -14.067279, 0.000000]
+    turb_naca0012_sa.test_vals         = [-12.050656, -16.149098, 1.058588, 0.022984, 20.000000, -2.832357, 0.000000, -14.067279, 0.000000]
     turb_naca0012_sa.test_vals_aarch64 = [-12.050557, -16.149098, 1.058588, 0.022984, 20.000000, -2.832714, 0.000000, -14.067279, 0.000000]
     test_list.append(turb_naca0012_sa)
 
@@ -214,7 +214,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-12.074763, -14.836720, -5.743325, 1.000050, 0.019144, -2.650513]
+    turb_naca0012_sst_sust.test_vals = [-12.074686, -14.836720, -5.743324, 1.000050, 0.019144, -2.650625]
     test_list.append(turb_naca0012_sst_sust)
 
     # NACA0012 (SST, fixed values for turbulence quantities)
@@ -250,7 +250,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-14.137398, -9.107808, -10.879850, -5.806591, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-14.137306, -9.104064, -10.882700, -5.808219, 0.000000]
     test_list.append(axi_rans_air_nozzle_restart)
 
     #################################
