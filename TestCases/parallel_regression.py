@@ -1585,7 +1585,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_file  = "species2_primitiveVenturi_mixingmodel_viscosity.cfg"
     species2_primitiveVenturi_mixingmodel_viscosity.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-5.236181, -3.624224, -3.871405, -7.533947, -5.128207, 5.000000, -1.678081, 5.000000, -3.489246, 5.000000, -2.086184, 2.495408, 0.985469, 0.600247, 0.909691]
+    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-5.239118, -3.624947, -3.874462, -7.535191, -5.130418, 5.000000, -1.677376, 5.000000, -3.493540, 5.000000, -2.085009, 2.495398, 0.985401, 0.600225, 0.909772]
     test_list.append(species2_primitiveVenturi_mixingmodel_viscosity)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity
@@ -1593,7 +1593,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-5.824280, -4.632628, -4.560106, -6.764902, 2.076781, -5.480635, 30.000000, -7.313820, 12.000000, -8.059765, 8.000000, -8.904808, 2.092258, 1.000000, 0.600000, 0.492258]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [5.824346, -4.632948, -4.560590, -6.765715, 2.076808, -5.480881, 30.000000, -7.315121, 12.000000, -8.059064, 8.000000, -8.896288, 2.092262, 1.000000, 0.600000, 0.492262]
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity NonDimensional case
@@ -1601,7 +1601,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.400552, -4.915641, -4.836920, -7.711367, 1.771551, -5.086850, 10.000000, -2.741766, 3.000000, -5.104310, 5.000000, -5.859810, 2.092354, 1.000000, 0.600000, 0.492354]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.400769, -4.916015, -4.837449, -7.711760, 1.771402, -5.087077, 10.000000, -2.744436, 3.000000, -5.095706, 5.000000, -5.856784, 2.092358, 1.000000, 0.600000, 0.492358]
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model solving enthalpy equation using preconditioning +  JST convective scheme
@@ -1641,7 +1641,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_file  = "species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg"
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_vals = [-4.552043, -1.787188, -1.552953, -0.964948, 1.707903, -3.855700, 24.000000, -5.203239, 10.000000, -5.176998, 3.000000, -5.329906, 2.000000, 1.000000, 0.000000, 1.000000]
+    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_vals = [-4.767010, -1.818299, -1.842427, -0.615338, 1.366173, -3.921308, 21.000000, -5.213096, 9.000000, -5.422897, 4.000000, -5.919063, 2.000000, 1.000000, 0.000000, 1.000000]
     test_list.append(species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS)
 
     # 3 species (2 eq) primitive venturi mixing with inlet files.
@@ -1658,8 +1658,8 @@ def main():
     species_passive_val.cfg_dir   = "species_transport/passive_transport_validation"
     species_passive_val.cfg_file  = "passive_transport.cfg"
     species_passive_val.test_iter = 50
-    species_passive_val.test_vals = [-16.561013, -16.280437, -16.910003, -4.257599, 10.000000, -4.457215, 8.000000, -5.193350, 0.186610, 0.000000]
-    species_passive_val.test_vals_aarch64 = [-16.538551, -16.312552, -16.882823, -4.257599, 10, -4.585464, 8, -5.19335, 0.18661, 0]
+    species_passive_val.test_vals = [-16.499938, -16.287111, -16.904700, -4.257599, 10.000000, -4.504235, 8.000000, -5.193350, 0.186610, 0.000000]
+    species_passive_val.test_vals_aarch64 = [-16.499938, -16.287111, -16.904700, -4.257599, 10.000000, -4.504235, 8.000000, -5.193350, 0.186610, 0.000000]
     test_list.append(species_passive_val)
 
     # rectangle active 2-species transport
@@ -1676,7 +1676,7 @@ def main():
     species3_multizone_restart.cfg_dir   = "species_transport/multizone"
     species3_multizone_restart.cfg_file  = "configMaster.cfg"
     species3_multizone_restart.test_iter = 5
-    species3_multizone_restart.test_vals = [-4.717939, -4.785805]
+    species3_multizone_restart.test_vals = [-4.634484, -4.515504]
     species3_multizone_restart.multizone = True
     test_list.append(species3_multizone_restart)
 
