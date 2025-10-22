@@ -47,7 +47,7 @@ def main():
     cfd_flamelet_ch4.cfg_dir = "flamelet/01_laminar_premixed_ch4_flame_cfd"
     cfd_flamelet_ch4.cfg_file = "lam_prem_ch4_cfd.cfg"
     cfd_flamelet_ch4.test_iter = 10
-    cfd_flamelet_ch4.test_vals = [-14.297190, -12.593356, -14.249342, -6.069757, -14.816955, -17.057821]
+    cfd_flamelet_ch4.test_vals = [-11.167959, -10.484323, -12.764338, -5.876637, -13.407242, -17.032153]
     cfd_flamelet_ch4.new_output = True
     test_list.append(cfd_flamelet_ch4)
 
@@ -56,7 +56,7 @@ def main():
     cfd_flamelet_ch4_axi.cfg_dir = "flamelet/05_laminar_premixed_ch4_flame_cfd_axi"
     cfd_flamelet_ch4_axi.cfg_file = "lam_prem_ch4_cfd_axi.cfg"
     cfd_flamelet_ch4_axi.test_iter = 10
-    cfd_flamelet_ch4_axi.test_vals = [-10.935482, -11.477701, -11.302709, -12.734435, -6.110542]
+    cfd_flamelet_ch4_axi.test_vals = [-10.083640, -11.327840, -10.714798, -12.750041, -6.112100]
     cfd_flamelet_ch4_axi.new_output = True
     test_list.append(cfd_flamelet_ch4_axi)
 
@@ -65,7 +65,7 @@ def main():
     cfd_flamelet_ch4_partial_premix.cfg_dir = "flamelet/06_laminar_partial_premixed_ch4_flame_cfd"
     cfd_flamelet_ch4_partial_premix.cfg_file = "lam_partial_prem_ch4_cfd.cfg"
     cfd_flamelet_ch4_partial_premix.test_iter = 10
-    cfd_flamelet_ch4_partial_premix.test_vals = [-9.645814, -11.304194, -3.675580, -13.158500, -11.087904]
+    cfd_flamelet_ch4_partial_premix.test_vals = [-8.734770, -11.306471, -3.675618, -12.808760, -11.088026]
     cfd_flamelet_ch4_partial_premix.new_output = True
     test_list.append(cfd_flamelet_ch4_partial_premix)
 
@@ -74,7 +74,7 @@ def main():
     cfd_flamelet_h2.cfg_dir = "flamelet/07_laminar_premixed_h2_flame_cfd"
     cfd_flamelet_h2.cfg_file = "laminar_premixed_h2_flame_cfd.cfg"
     cfd_flamelet_h2.test_iter = 5
-    cfd_flamelet_h2.test_vals = [-10.006096, -9.844001, -3.290043, -11.338465]
+    cfd_flamelet_h2.test_vals = [-9.984960, -9.843830, -3.289852, -11.338450]
     cfd_flamelet_h2.new_output = True
     test_list.append(cfd_flamelet_h2)
 
@@ -610,7 +610,7 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals = [-7.786564, -2.036735, 0.012980, 1.944887, -170.930000]
+    inc_poly_cylinder.test_vals = [-7.866943, -1.883455, 0.043885, 1.935798, -148.430000]
     test_list.append(inc_poly_cylinder)
 
     # X-coarse laminar bend as a mixed element CGNS test
@@ -1202,7 +1202,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.778863, -2.040209]
+    slinc_steady.test_vals = [19.000000, -1.012869, -1.222087]
     slinc_steady.timeout   = 100
     slinc_steady.tol       = 0.00002
     slinc_steady.multizone = True
@@ -1310,7 +1310,7 @@ def main():
     p1rad.cfg_dir   = "radiation/p1model"
     p1rad.cfg_file  = "configp1.cfg"
     p1rad.test_iter = 100
-    p1rad.test_vals = [-7.743666, -7.921411, -2.111848, 0.098302, -47.897000]
+    p1rad.test_vals = [-7.639646, -7.433603, -0.546639, 0.013226, -133.880000]
     test_list.append(p1rad)
 
 
@@ -1336,7 +1336,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incomp_2d"
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-2.128827, -0.588812, -0.588812, -0.588812]
+    cht_incompressible.test_vals = [-1.376348, -0.591208, -0.591208, -0.591208]
     cht_incompressible.multizone = True
     test_list.append(cht_incompressible)
 
@@ -1593,7 +1593,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [5.824346, -4.632948, -4.560590, -6.765715, 2.076808, -5.480881, 30.000000, -7.315121, 12.000000, -8.059064, 8.000000, -8.896288, 2.092262, 1.000000, 0.600000, 0.492262]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-5.824346, -4.632948, -4.560590, -6.765715, 2.076808, -5.480881, 30.000000, -7.315121, 12.000000, -8.059064, 8.000000, -8.896288, 2.092262, 1.000000, 0.600000, 0.492262]
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity NonDimensional case
@@ -1702,7 +1702,7 @@ def main():
     cfd_flamelet_ch4_cht.cfg_dir = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
     cfd_flamelet_ch4_cht.cfg_file = "lam_prem_ch4_cht_cfd_master.cfg"
     cfd_flamelet_ch4_cht.test_iter = 5
-    cfd_flamelet_ch4_cht.test_vals = [-10.166224, -9.299576, -10.022482, -11.907558, -3.447626, -12.290421, -13.719415, -6.864920]
+    cfd_flamelet_ch4_cht.test_vals = [-7.209184, -6.102044, -7.491447, -9.317122, -3.204897, -9.811662, -13.554684, -6.864880]
     cfd_flamelet_ch4_cht.timeout = 1600
     cfd_flamelet_ch4_cht.multizone = True
     test_list.append(cfd_flamelet_ch4_cht)

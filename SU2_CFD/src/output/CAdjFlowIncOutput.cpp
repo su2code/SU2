@@ -316,10 +316,13 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config) {
     /// DESCRIPTION: Adjoint Velocity z-component.
     AddVolumeOutput("ADJ_VELOCITY-Z", "Adjoint_Velocity_z", "SOLUTION", "z-component of the adjoint velocity vector");
   }
-  /// DESCRIPTION: Adjoint Temperature.
-  AddVolumeOutput("ADJ_TEMPERATURE", "Adjoint_Temperature", "SOLUTION",  "Adjoint temperature");
-  /// DESCRIPTION: Adjoint Enthalpy.
-  AddVolumeOutput("ADJ_ENTHALPY", "Adjoint_Enthalpy", "SOLUTION", "Adjoint_Enthalpy");
+  if (weakly_coupled_heat) {
+    /// DESCRIPTION: Adjoint Temperature.
+    AddVolumeOutput("ADJ_TEMPERATURE", "Adjoint_Temperature", "SOLUTION", "Adjoint temperature");
+  } else {
+    /// DESCRIPTION: Adjoint Enthalpy.
+    AddVolumeOutput("ADJ_ENTHALPY", "Adjoint_Enthalpy", "SOLUTION", "Adjoint_Enthalpy");
+  }
 
   SetVolumeOutputFieldsAdjScalarSolution(config);
 
@@ -349,8 +352,11 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config) {
     AddVolumeOutput("RES_ADJ_VELOCITY-Z", "Residual_Adjoint_Velocity_z", "RESIDUAL", "Residual of the adjoint z-velocity");
   }
   /// DESCRIPTION: Residual of the adjoint energy.
-  
-  AddVolumeOutput("RES_ADJ_ENTHALPY", "Residual_Adjoint_Heat", "RESIDUAL", "Residual of the adjoint enthalpy");
+  if (weakly_coupled_heat) {
+    AddVolumeOutput("RES_ADJ_TEMPERATURE", "Residual_Adjoint_Heat", "RESIDUAL", "Residual of the adjoint temperature");
+  } else {
+    AddVolumeOutput("RES_ADJ_ENTHALPY", "Residual_Adjoint_Heat", "RESIDUAL", "Residual of the adjoint enthalpy");
+  }
 
   SetVolumeOutputFieldsAdjScalarResidual(config);
 
