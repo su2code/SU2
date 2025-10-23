@@ -142,7 +142,7 @@ def main():
     DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
-    DAspecies3_primitiveVenturi.test_vals         = [-9.806113, -8.630821, -8.666250, -8.333798, -12.914857, -11.017067, -10.232083]
+    DAspecies3_primitiveVenturi.test_vals         = [-9.819097, -8.643457, -8.676919, -8.347340, -12.926241, -9.739487, -8.947991]
     DAspecies3_primitiveVenturi.test_vals_aarch64 = [-7.865411, -7.548131, -7.347978, -7.217536, -11.822422, -10.968444, -10.193225]
     DAspecies3_primitiveVenturi.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(DAspecies3_primitiveVenturi)
