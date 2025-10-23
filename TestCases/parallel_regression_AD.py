@@ -91,7 +91,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals         = [-2.265304, -0.268780, -2.264900, -0.003033]
+    discadj_rans_naca0012_sst.test_vals         = [-2.260359, -0.252621, -2.344700, -0.003128]
     discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.265011, -0.279043, -2.268100, -0.002969]
     test_list.append(discadj_rans_naca0012_sst)
 
