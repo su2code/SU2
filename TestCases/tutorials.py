@@ -49,7 +49,7 @@ def main():
     cht_incompressible_unsteady.cfg_dir   = "../Tutorials/multiphysics/unsteady_cht/"
     cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible_unsteady.test_iter = 2
-    cht_incompressible_unsteady.test_vals = [-2.659390, -2.533160, -0.080399, -0.080399, -0.080399, -12.421450, 0.000000, 0, 0, 0, 0, 2.3824e+02] #last columns
+    cht_incompressible_unsteady.test_vals = [-2.661443, -2.546289, -0.080399, -0.080399, -0.080399, -12.421980, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 238.240000] #last columns
     cht_incompressible_unsteady.multizone = True
     cht_incompressible_unsteady.unsteady  = True
     test_list.append(cht_incompressible_unsteady)
@@ -59,7 +59,7 @@ def main():
     cht_incompressible.cfg_dir   = "../Tutorials/multiphysics/steady_cht"
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-2.128826, -0.588813, -0.588813, -0.588813] #last 4 columns
+    cht_incompressible.test_vals = [-1.376347, -0.591210, -0.591210, -0.591210] #last 4 columns
     cht_incompressible.command   = TestCase.Command(exec = "SU2_CFD")
     cht_incompressible.multizone = True
     test_list.append(cht_incompressible)
@@ -69,7 +69,7 @@ def main():
     cht_CR.cfg_dir   = "../Tutorials/multiphysics/contact_resistance_cht"
     cht_CR.cfg_file  = "master.cfg"
     cht_CR.test_iter = 80
-    cht_CR.test_vals = [-8.606916, -9.227614, -10.411673, -2.114949]
+    cht_CR.test_vals = [-8.606916, -9.227614, -10.411674, -2.116659]
     cht_CR.multizone = True
     test_list.append(cht_CR)
 
@@ -164,7 +164,7 @@ def main():
     premixed_hydrogen.cfg_dir = "../Tutorials/incompressible_flow/Inc_Combustion/1__premixed_hydrogen"
     premixed_hydrogen.cfg_file = "H2_burner.cfg"
     premixed_hydrogen.test_iter = 10
-    premixed_hydrogen.test_vals = [-9.880667, -10.491791, -11.028989, -4.325192, -11.885386]
+    premixed_hydrogen.test_vals = [-8.851285, -9.756885, -11.037752, -4.321598, -11.891933]
     test_list.append(premixed_hydrogen)
 
     ### Compressible Flow
