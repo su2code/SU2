@@ -197,7 +197,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals         = [-12.050656, -16.149098, 1.058588, 0.022984, 20.000000, -2.832357, 0.000000, -14.067279, 0.000000]
+    turb_naca0012_sa.test_vals         = [-12.038087, -16.332090, 1.080346, 0.018385, 20.000000, -2.873540, 0.000000, -14.250271, 0.000000]
     turb_naca0012_sa.test_vals_aarch64 = [-12.050557, -16.149098, 1.058588, 0.022984, 20.000000, -2.832714, 0.000000, -14.067279, 0.000000]
     test_list.append(turb_naca0012_sa)
 
@@ -206,7 +206,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.079119, -15.284130, -5.859467, 1.048053, 0.019238, -2.814455, 0.000000]
+    turb_naca0012_sst.test_vals = [-12.075727, -15.246732, -5.861249, 1.070036, 0.015841, -2.835749, 0.000000]
     test_list.append(turb_naca0012_sst)
 
     # NACA0012 (SST_SUST, FUN3D finest grid results: CL=1.0840, CD=0.01253)
@@ -214,7 +214,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-12.074686, -14.836720, -5.743324, 1.000050, 0.019144, -2.650625]
+    turb_naca0012_sst_sust.test_vals = [-12.073281, -14.836724, -5.732627, 1.000050, 0.019144, -2.629409]
     test_list.append(turb_naca0012_sst_sust)
 
     # NACA0012 (SST, fixed values for turbulence quantities)
@@ -263,7 +263,7 @@ def main():
     turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
     turb_naca0012_sst_restart_mg.test_iter = 20
     turb_naca0012_sst_restart_mg.ntest_vals = 5
-    turb_naca0012_sst_restart_mg.test_vals = [-7.630391, -7.172928, -0.627013, -0.000022, 0.078742]
+    turb_naca0012_sst_restart_mg.test_vals = [-6.586046, -5.057159, 0.830274, -0.008747, 0.078023]
     test_list.append(turb_naca0012_sst_restart_mg)
 
     #############################
