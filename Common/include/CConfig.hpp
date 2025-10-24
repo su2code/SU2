@@ -1090,6 +1090,7 @@ private:
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   bool StochasticBackscatter;          /*!< \brief Option to include Stochastic Backscatter Model. */
   su2double SBS_Ctau;                  /*!< \brief Stochastic Backscatter Model timescale coefficient. */
+  su2double SBS_Cmag;                  /*!< \brief Stochastic Backscatter Model intensity coefficient. */
   bool enforceLES;                     /*!< \brief Option to enforce LES mode in hybrid RANS-LES simulations. */
   su2double LES_FilterWidth;           /*!< \brief LES filter width for hybrid RANS-LES simulations. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
@@ -9553,10 +9554,16 @@ public:
   su2double GetConst_DES(void) const { return Const_DES; }
 
   /*!
-   * \brief Get the DES Constant.
-   * \return Value of DES constant.
+   * \brief Get the SBS timescale coefficient.
+   * \return Value of SBS timescale coefficient.
    */
   su2double GetSBS_Ctau(void) const { return SBS_Ctau; }
+
+  /*!
+   * \brief Get the SBS intensity coefficient.
+   * \return Value of SBS intensity coefficient.
+   */
+  su2double GetSBS_Cmag(void) const { return SBS_Cmag; }
 
   /*!
    * \brief Get the type of tape that will be checked in a tape debug run.

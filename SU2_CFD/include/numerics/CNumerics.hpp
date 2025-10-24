@@ -650,28 +650,16 @@ public:
    * \param[in] velGrad - Velocity gradient matrix.
    * \param[out] stochReynStress - Stochastic tensor (to be added to the Reynolds stress tensor).
    */
-  template<class Mat1, class Mat2, class Scalar>
+  template<class Mat, class Scalar, class Vector>
   NEVERINLINE static void ComputeStochReynStress(size_t nDim, Scalar density, Scalar eddyVis,
-                                                 const Mat1& velGrad, const su2double *rndVec, 
-                                                 Mat2& stochReynStress) {
-
-    /* --- Estimate turbulent kinetic energy --- */
-
-    Scalar turbKE = 0.0, strainMag = 0.0;
-    for (size_t iDim = 0; iDim < nDim; iDim++) {
-      for (size_t jDim = 0; jDim < nDim; jDim++) {
-        strainMag += pow(0.5 * (velGrad[iDim][jDim] + velGrad[jDim][iDim]), 2);
-      }
-    }
-    strainMag = sqrt(2.0 * strainMag);
-    turbKE = eddyVis * strainMag;
-    turbKE = max(turbKE, 1E-10);
+                                                 Scalar turbKE, Vector rndVec, 
+                                                 Mat& stochReynStress, Scalar Cmag) {
 
     /* --- Calculate stochastic tensor --- */
 
-    stochReynStress[1][0] = - density * turbKE * rndVec[2];
-    stochReynStress[2][0] =   density * turbKE * rndVec[1];
-    stochReynStress[2][1] = - density * turbKE * rndVec[0];
+    stochReynStress[1][0] = - Cmag * density * turbKE * rndVec[2];
+    stochReynStress[2][0] =   Cmag * density * turbKE * rndVec[1];
+    stochReynStress[2][1] = - Cmag * density * turbKE * rndVec[0];
     for (size_t iDim = 0; iDim < nDim; iDim++) {
       for (size_t jDim = 0; jDim <= iDim; jDim++) {
         if (iDim==jDim) {

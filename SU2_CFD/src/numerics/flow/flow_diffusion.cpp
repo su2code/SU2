@@ -460,8 +460,9 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   if (config->GetStochastic_Backscatter()) {
     for (iVar = 0; iVar < nDim; iVar++)
       Mean_StochVar[iVar] = 0.5*(stochVar_i[iVar] + stochVar_j[iVar]);
-    ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity, Mean_GradPrimVar+1,
-                           Mean_StochVar, stochReynStress);
+    su2double SBS_Cmag = config->GetSBS_Cmag();
+    ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity, Mean_turb_ke,
+                           Mean_StochVar, stochReynStress, SBS_Cmag);
   }
 
   /*--- Get projected flux tensor (viscous residual) ---*/
@@ -640,11 +641,13 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   if (config->GetStochastic_Backscatter()) {
     for (iVar = 0; iVar < nDim; iVar++)
       Mean_StochVar[iVar] = 0.5*(stochVar_i[iVar] + stochVar_j[iVar]);
-    ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity, Mean_GradPrimVar+1,
-                           Mean_StochVar, stochReynStress);
+    su2double SBS_Cmag = config->GetSBS_Cmag();
+    ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity, Mean_turb_ke,
+                           Mean_StochVar, stochReynStress, SBS_Cmag);
   }
 
   /*--- Get projected flux tensor (viscous residual) ---*/
+
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
                   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,config);
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
@@ -965,8 +968,9 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   if (config->GetStochastic_Backscatter()) {
     for (iVar = 0; iVar < nDim; iVar++)
       Mean_StochVar[iVar] = 0.5*(stochVar_i[iVar] + stochVar_j[iVar]);
-    ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity, Mean_GradPrimVar+1,
-                           Mean_StochVar, stochReynStress);
+    su2double SBS_Cmag = config->GetSBS_Cmag();
+    ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_Eddy_Viscosity, Mean_turb_ke,
+                           Mean_StochVar, stochReynStress, SBS_Cmag);
   }
 
   /*--- Get projected flux tensor (viscous residual) ---*/

@@ -2921,8 +2921,11 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
-  /* DESCRIPTION: SBS timescale constant */
-  addDoubleOption("SBS_CTAU", SBS_Ctau, 0.05);
+  /* DESCRIPTION: SBS timescale coefficient */
+  addDoubleOption("SBS_TIMESCALE_COEFF", SBS_Ctau, 0.05);
+
+  /* DESCRIPTION: SBS intensity coefficient */
+  addDoubleOption("SBS_INTENSITY_COEFF", SBS_Cmag, 1.0);
 
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
   addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
@@ -6491,7 +6494,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           cout << "Stochastic Backscatter: ";
           if (StochasticBackscatter) {
             cout << "ON" << endl;
+            cout << "Backscatter intensity coefficient: " << SBS_Cmag << endl;
+            if (SBS_Cmag < 0.0)
+              SU2_MPI::Error("Backscatter intensity coefficient must be non-negative.", CURRENT_FUNCTION);
             cout << "Backscatter timescale coefficient: " << SBS_Ctau << endl;
+            if (SBS_Ctau < 0.0)
+              SU2_MPI::Error("Backscatter timescale coefficient must be non-negative.", CURRENT_FUNCTION);
           } else {
             cout << "OFF" << endl;
           }
