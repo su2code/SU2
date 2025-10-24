@@ -35,7 +35,6 @@
 #include "../../include/fluid/CDataDrivenFluid.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
 #include "../../include/numerics_simd/CNumericsSIMD.hpp"
-#include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../include/output/CTurboOutput.hpp"
 
 
@@ -1804,6 +1803,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
+  const su2double kappa       = config->GetMUSCL_Kappa_Flow();
+
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -1831,8 +1832,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   for(auto k = 0ul; k < color.size; ++k) {
 
     auto iEdge = color.indices[k];
-
-    unsigned short iDim, iVar;
 
     /*--- Points in edge and normal vectors ---*/
 
@@ -1874,38 +1873,30 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       /*--- Reconstruction ---*/
 
       su2double Vector_ij[MAXNDIM] = {0.0};
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = nkRelax * 0.5 * (Coord_j[iDim] - Coord_i[iDim]);
-      }
+      GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Vector_ij);
 
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      for (auto iVar = 0u; iVar < nPrimVarGrad; iVar++) {
+        const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-        su2double Project_Grad_i = 0.0;
-        su2double Project_Grad_j = 0.0;
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
-        }
+        const su2double Project_Grad_i = nkRelax * MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa);
+        const su2double Project_Grad_j = nkRelax * MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa);
 
         su2double lim_i = 1.0;
         su2double lim_j = 1.0;
-
         if (van_albada) {
-          su2double V_ij = V_j[iVar] - V_i[iVar];
           lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
-          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, V_ij, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j, V_ij, EPS);
         }
         else if (limiter) {
           lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
           lim_j = nodes->GetLimiter_Primitive(jPoint, iVar);
         }
 
-        Primitive_i[iVar] = V_i[iVar] + lim_i * Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] + lim_j * Project_Grad_j;
+        Primitive_i[iVar] = V_i[iVar] + 0.5 * lim_i * Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] - 0.5 * lim_j * Project_Grad_j;
 
       }
 
@@ -1931,7 +1922,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       su2double R = sqrt(fabs(Primitive_j[prim_idx.Density()]/Primitive_i[prim_idx.Density()]));
       su2double sq_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
         su2double RoeVelocity = (R * Primitive_j[iDim + prim_idx.Velocity()] +
                                  Primitive_i[iDim + prim_idx.Velocity()]) / (R+1);
         sq_vel += pow(RoeVelocity, 2);
