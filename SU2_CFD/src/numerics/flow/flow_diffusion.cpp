@@ -50,7 +50,6 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
   for (iVar = 0; iVar < nPrimVar; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
 
-  Proj_Mean_GradPrimVar_Edge = new su2double[val_nPrimVar];
 
   tau_jacobian_i = new su2double* [nDim];
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -78,7 +77,6 @@ CAvgGrad_Base::~CAvgGrad_Base() {
     delete [] Mean_GradPrimVar;
   }
 
-  delete [] Proj_Mean_GradPrimVar_Edge;
 
   if (tau_jacobian_i != nullptr) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -107,12 +105,12 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
                                     const su2double val_dist_ij_2,
                                     const unsigned short val_nPrimVar) {
   for (unsigned short iVar = 0; iVar < val_nPrimVar; iVar++) {
-    Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
+    su2double Proj_Mean_GradPrimVar_Edge = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      Proj_Mean_GradPrimVar_Edge[iVar] += GradPrimVar[iVar][iDim]*val_edge_vector[iDim];
+      Proj_Mean_GradPrimVar_Edge += GradPrimVar[iVar][iDim]*val_edge_vector[iDim];
     }
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
+      GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge -
                                  (val_PrimVar_j[iVar]-val_PrimVar_i[iVar]))*val_edge_vector[iDim] / val_dist_ij_2;
     }
   }
