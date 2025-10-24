@@ -1987,6 +1987,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
+  /*!\brief MUSCL_KAPPA_FLOW \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
+  addDoubleOption("MUSCL_KAPPA_FLOW", MUSCL_Kappa_Flow, 0.0);
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, LIMITER::VENKATAKRISHNAN);
@@ -2008,6 +2010,8 @@ void CConfig::SetConfig_Options() {
   addConvectOption("CONV_NUM_METHOD_ADJFLOW", Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow, Kind_Upwind_AdjFlow);
   /*!\brief MUSCL_ADJFLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_ADJFLOW", MUSCL_AdjFlow, true);
+  /*!\brief MUSCL_KAPPA_ADJFLOW \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
+  addDoubleOption("MUSCL_KAPPA_ADJFLOW", MUSCL_Kappa_AdjFlow, 0.0);
   /*!\brief SLOPE_LIMITER_ADJFLOW
      * DESCRIPTION: Slope limiter for the adjoint solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_ADJFLOW", Kind_SlopeLimit_AdjFlow, Limiter_Map, LIMITER::VENKATAKRISHNAN);
@@ -2019,6 +2023,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_TURB \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_TURB", MUSCL_Turb, false);
+  /*!\brief MUSCL_KAPPA_TURB \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
+  addDoubleOption("MUSCL_KAPPA_TURB", MUSCL_Kappa_Turb, 0.0);
   /*!\brief SLOPE_LIMITER_TURB
    *  \n DESCRIPTION: Slope limiter  \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_TURB", Kind_SlopeLimit_Turb, Limiter_Map, LIMITER::VENKATAKRISHNAN);
@@ -2038,6 +2044,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_SPECIES \n DESCRIPTION: Check if the MUSCL scheme should be used \n DEFAULT false \ingroup Config*/
   addBoolOption("MUSCL_SPECIES", MUSCL_Species, false);
+  /*!\brief MUSCL_KAPPA_SPECIES \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
+  addDoubleOption("MUSCL_KAPPA_SPECIES", MUSCL_Kappa_Species, 0.0);
   /*!\brief SLOPE_LIMITER_SPECIES \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NONE \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_SPECIES", Kind_SlopeLimit_Species, Limiter_Map, LIMITER::NONE);
   /*!\brief CONV_NUM_METHOD_SPECIES \n DESCRIPTION: Convective numerical method for species transport \ingroup Config*/
@@ -2045,6 +2053,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief MUSCL_HEAT \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_HEAT", MUSCL_Heat, false);
+  /*!\brief MUSCL_KAPPA_HEAT \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
+  addDoubleOption("MUSCL_KAPPA_HEAT", MUSCL_Kappa_Heat, 0.0);
   /*!\brief SLOPE_LIMITER_HEAT \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT NONE \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_HEAT", Kind_SlopeLimit_Heat, Limiter_Map, LIMITER::NONE);
   /*!\brief CONV_NUM_METHOD_HEAT \n DESCRIPTION: Convective numerical method */
@@ -5520,6 +5530,23 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                    CURRENT_FUNCTION);
   }
 
+  /* Check MUSCL blending coefficients. */
+  if (MUSCL_Flow && (MUSCL_Kappa_Flow < -1.0 || MUSCL_Kappa_Flow > 1.0)) {
+    SU2_MPI::Error("MUSCL_KAPPA_FLOW should be in range [-1.0, 1.0].", CURRENT_FUNCTION);
+  }
+  if (MUSCL_Turb && (MUSCL_Kappa_Turb < -1.0 || MUSCL_Kappa_Turb > 1.0)) {
+    SU2_MPI::Error("MUSCL_KAPPA_TURB should be in range [-1.0, 1.0].", CURRENT_FUNCTION);
+  }
+  if (MUSCL_Heat && (MUSCL_Kappa_Heat < -1.0 || MUSCL_Kappa_Heat > 1.0)) {
+    SU2_MPI::Error("MUSCL_KAPPA_HEAT should be in range [-1.0, 1.0].", CURRENT_FUNCTION);
+  }
+  if (MUSCL_AdjFlow && (MUSCL_Kappa_AdjFlow < -1.0 || MUSCL_Kappa_AdjFlow > 1.0)) {
+    SU2_MPI::Error("MUSCL_KAPPA_ADJFLOW should be in range [-1.0, 1.0].", CURRENT_FUNCTION);
+  }
+  if (MUSCL_Species && (MUSCL_Kappa_Species < -1.0 || MUSCL_Kappa_Species > 1.0)) {
+    SU2_MPI::Error("MUSCL_KAPPA_SPECIES should be in range [-1.0, 1.0].", CURRENT_FUNCTION);
+  }
+
   /* Check for whether we need a second gradient method to calculate
    gradients for uwpind reconstruction. Set additional booleans to
    minimize overhead as appropriate. */
@@ -6942,8 +6969,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
   if (val_software == SU2_COMPONENT::SU2_CFD) {
 
-    auto PrintLimiterInfo = [&](const LIMITER kind_limiter) {
+    auto PrintLimiterInfo = [&](const LIMITER kind_limiter, const su2double kappa) {
       cout << "Second order integration in space, with slope limiter.\n";
+      if (kappa != 0.0) cout << "U-MUSCL reconstruction, with coefficient: " << kappa << ".\n";
       switch (kind_limiter) {
         case LIMITER::NONE:
           cout << "No slope-limiting method. " << endl;
@@ -7038,7 +7066,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
 
         if (MUSCL_Flow) {
-          PrintLimiterInfo(Kind_SlopeLimit_Flow);
+          PrintLimiterInfo(Kind_SlopeLimit_Flow, MUSCL_Kappa_Flow);
         } else {
           cout << "First order integration in space." << endl;
         }
@@ -7051,7 +7079,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == UPWIND::SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model." << endl;
         if (MUSCL_Turb) {
-          PrintLimiterInfo(Kind_SlopeLimit_Turb);
+          PrintLimiterInfo(Kind_SlopeLimit_Turb, MUSCL_Kappa_Turb);
         } else {
           cout << "First order integration in space." << endl;
         }
@@ -7077,7 +7105,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       if (Kind_ConvNumScheme_AdjFlow == SPACE_UPWIND) {
         if (Kind_Upwind_AdjFlow == UPWIND::ROE) cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the adjoint inviscid terms."<< endl;
         if (MUSCL_AdjFlow) {
-          PrintLimiterInfo(Kind_SlopeLimit_AdjFlow);
+          PrintLimiterInfo(Kind_SlopeLimit_AdjFlow, MUSCL_Kappa_AdjFlow);
         } else {
           cout << "First order integration." << endl;
         }
@@ -7091,7 +7119,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       if (Kind_ConvNumScheme_AdjTurb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == UPWIND::SCALAR_UPWIND) cout << "Scalar upwind solver for the adjoint turbulence model." << endl;
         if (MUSCL_AdjTurb) {
-          PrintLimiterInfo(Kind_SlopeLimit_AdjTurb);
+          PrintLimiterInfo(Kind_SlopeLimit_AdjTurb, 0.0);
         } else {
           cout << "First order integration." << endl;
         }
@@ -8673,13 +8701,14 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
 void CConfig::SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme,
                                     CENTERED val_kind_centered, UPWIND val_kind_upwind,
                                     LIMITER val_kind_slopelimit, bool val_muscl,
-                                    unsigned short val_kind_fem) {
+                                    su2double val_muscl_kappa, unsigned short val_kind_fem) {
   Kind_ConvNumScheme = val_kind_convnumscheme;
   Kind_Centered = val_kind_centered;
   Kind_Upwind = val_kind_upwind;
   Kind_FEM = val_kind_fem;
   Kind_SlopeLimit = val_kind_slopelimit;
   MUSCL = val_muscl;
+  MUSCL_Kappa = val_muscl_kappa;
 
 }
 
@@ -8697,7 +8726,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     if (val_system == RUNTIME_FLOW_SYS) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
                             Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                            MUSCL_Flow, NONE);
+                            MUSCL_Flow, MUSCL_Kappa_Flow, NONE);
       SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
     }
   };
@@ -8706,7 +8735,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     if (val_system == RUNTIME_TURB_SYS) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                             Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
-                            MUSCL_Turb, NONE);
+                            MUSCL_Turb, MUSCL_Kappa_Turb, NONE);
       SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
     }
   };
@@ -8714,7 +8743,8 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
   auto SetHeatParam = [&]() {
     if (val_system == RUNTIME_HEAT_SYS) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, Kind_Centered_Heat,
-                            Kind_Upwind_Heat, Kind_SlopeLimit_Heat, MUSCL_Heat, NONE);
+                            Kind_Upwind_Heat, Kind_SlopeLimit_Heat, MUSCL_Heat,
+                            MUSCL_Kappa_Heat, NONE);
       SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
     }
   };
@@ -8723,7 +8753,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     if (val_system == RUNTIME_SPECIES_SYS) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_Species, Kind_Centered_Species,
                             Kind_Upwind_Species, Kind_SlopeLimit_Species,
-                            MUSCL_Species, NONE);
+                            MUSCL_Species, MUSCL_Kappa_Species, NONE);
       SetKind_TimeIntScheme(Kind_TimeIntScheme_Species);
     }
   };
@@ -8732,7 +8762,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     if (val_system == RUNTIME_ADJFLOW_SYS) {
       SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjFlow, Kind_Centered_AdjFlow,
                             Kind_Upwind_AdjFlow, Kind_SlopeLimit_AdjFlow,
-                            MUSCL_AdjFlow, NONE);
+                            MUSCL_AdjFlow, MUSCL_Kappa_AdjFlow, NONE);
       SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjFlow);
     }
   };
@@ -8758,7 +8788,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       if (val_system == RUNTIME_TRANS_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Turb, Kind_Centered_Turb,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
-                              MUSCL_Turb, NONE);
+                              MUSCL_Turb, MUSCL_Kappa_Turb, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
       }
       break;
@@ -8772,7 +8802,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_FEM_Flow, Kind_Centered_Flow,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
-                              MUSCL_Flow, Kind_FEM_Flow);
+                              MUSCL_Flow, MUSCL_Kappa_Flow, Kind_FEM_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_FEM_Flow);
       }
       break;
@@ -8789,14 +8819,14 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
       if (val_system == RUNTIME_ADJTURB_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_AdjTurb, Kind_Centered_AdjTurb,
                               Kind_Upwind_AdjTurb, Kind_SlopeLimit_AdjTurb,
-                              MUSCL_AdjTurb, NONE);
+                              MUSCL_AdjTurb, 0.0, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
       }
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
     case MAIN_SOLVER::DISC_ADJ_HEAT:
       if (val_system == RUNTIME_HEAT_SYS) {
-        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
+        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, 0.0, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
@@ -8804,7 +8834,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     case MAIN_SOLVER::FEM_ELASTICITY:
     case MAIN_SOLVER::DISC_ADJ_FEM:
       if (val_system == RUNTIME_FEA_SYS) {
-        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, NONE);
+        SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, 0.0, NONE);
         SetKind_TimeIntScheme(NONE);
       }
       break;
