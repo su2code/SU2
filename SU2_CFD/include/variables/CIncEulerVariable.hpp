@@ -33,7 +33,7 @@
 /*!
  * \class CIncEulerVariable
  * \brief Class for defining the variables of the incompressible Euler solver.
- * \note Primitive variables (P, vx, vy, vz, T, rho,h, beta, lamMu, EddyMu, Kt_eff, Cp, Cv)
+ * \note Primitive variables (P, vx, vy, vz, T, rho, h, beta, lamMu, EddyMu, Kt_eff, Cp, Cv)
  * \note Gradients of primitives (P, vx, vy, vz, T, rho, h)
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon, T. Albring
