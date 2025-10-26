@@ -319,10 +319,9 @@ void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* ge
   /*--- Compute Projected gradient for species variables ---*/
   su2double ProjGradScalarVarNoCorr[MAXNVAR_SPECIES]{0.0};
   su2double Proj_Mean_GradScalarVar[MAXNVAR_SPECIES]{0.0};
-  su2double proj_vector_ij =
       numerics->ComputeProjectedGradient(nDim, n_species, Normal, Coord_i, Coord_j, Species_Grad_i, Species_Grad_j,
                                          true, Species_i, Species_j, ProjGradScalarVarNoCorr, Proj_Mean_GradScalarVar);
-  (void)proj_vector_ij;
+ 
 
   /*--- Get enthalpy diffusion terms and its gradient(for implicit) for each species at point i. ---*/
 
