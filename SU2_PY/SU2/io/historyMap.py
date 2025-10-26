@@ -515,12 +515,6 @@ history_header_map = {
         "HEADER": "d[CMz]",
         "TYPE": "D_COEFFICIENT",
     },
-    "D_REFERENCE_FORCE": {
-        "DESCRIPTION": "Derivative value",
-        "GROUP": "D_AERO_COEFF",
-        "HEADER": "d[RefForce]",
-        "TYPE": "D_COEFFICIENT",
-    },
     "D_REFERENCE_GEOMETRY": {
         "DESCRIPTION": "Derivative value",
         "GROUP": "D_STRUCT_COEFF",
@@ -1187,12 +1181,6 @@ history_header_map = {
         "HEADER": "PRTT",
         "TYPE": "DEFAULT",
     },
-    "REFERENCE_FORCE": {
-        "DESCRIPTION": "Reference force used to compute aerodynamic coefficients",
-        "GROUP": "AERO_COEFF",
-        "HEADER": "RefForce",
-        "TYPE": "COEFFICIENT",
-    },
     "REFERENCE_GEOMETRY": {
         "DESCRIPTION": "L2 norm of difference wrt reference geometry",
         "GROUP": "STRUCT_COEFF",
@@ -1805,12 +1793,6 @@ history_header_map = {
         "HEADER": "dtavg[CMz]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
-    "TAVG_D_REFERENCE_FORCE": {
-        "DESCRIPTION": "weighted time average derivative value",
-        "GROUP": "TAVG_D_AERO_COEFF",
-        "HEADER": "dtavg[RefForce]",
-        "TYPE": "TAVG_D_COEFFICIENT",
-    },
     "TAVG_D_REFERENCE_GEOMETRY": {
         "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_STRUCT_COEFF",
@@ -2055,12 +2037,6 @@ history_header_map = {
         "DESCRIPTION": "weighted time average value",
         "GROUP": "TAVG_AERO_COEFF",
         "HEADER": "tavg[CMz]",
-        "TYPE": "TAVG_COEFFICIENT",
-    },
-    "TAVG_REFERENCE_FORCE": {
-        "DESCRIPTION": "weighted time average value",
-        "GROUP": "TAVG_AERO_COEFF",
-        "HEADER": "tavg[RefForce]",
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_REFERENCE_GEOMETRY": {
