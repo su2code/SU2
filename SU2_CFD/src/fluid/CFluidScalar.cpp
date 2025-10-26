@@ -233,7 +233,7 @@ void CFluidScalar::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const 
   }
 }
 
-void CFluidScalar::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions){
+void CFluidScalar::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) const {
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     grad_enthalpy_diffusions[iVar] = Density *
                                (specificHeat[iVar] * massDiffusivity[iVar] -

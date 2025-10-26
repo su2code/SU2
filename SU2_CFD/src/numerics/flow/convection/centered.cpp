@@ -129,9 +129,6 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
   MeandRhodh = 0.0;
   if (variable_density) {
     MeandRhodh = -MeanDensity/(MeanTemperature * MeanCp);
-    MeanCp = 1.0;
-    Cp_i = 1.0;
-    Cp_j = 1.0;
   }
 
   /*--- Get projected flux tensor ---*/
@@ -170,12 +167,10 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
       /*--- Jacobian contributions ---*/
       /*--- Implicit terms ---*/
       if (implicit) {
-        for (iDim = 0; iDim < nDim; iDim++){
+        for (iDim = 0; iDim < nDim+1; iDim++){
           Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
           Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
         }
-        Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
-        Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
       }
     }
   }
@@ -395,12 +390,10 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
       /*--- Jacobian contributions ---*/
       /*--- Implicit terms ---*/
       if (implicit) {
-        for (iDim = 0; iDim < nDim; iDim++){
+        for (iDim = 0; iDim < nDim+1; iDim++){
           Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
           Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
         }
-        Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
-        Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
       }
     }
   }

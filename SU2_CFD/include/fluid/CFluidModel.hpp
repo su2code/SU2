@@ -195,12 +195,12 @@ class CFluidModel {
   /*!
    * \brief Get heat diffusivity terms.
    */
-  virtual void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions = nullptr) {}
+  virtual void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions = nullptr) const {}
 
   /*!
    * \brief Get gradient heat diffusivity terms.
    */
-  virtual void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions = nullptr) {}
+  virtual void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions = nullptr) const {}
 
   /*!
    * \brief Get fluid pressure partial derivative.

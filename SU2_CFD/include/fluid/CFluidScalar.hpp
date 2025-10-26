@@ -147,12 +147,12 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Get enthalpy diffusivity terms.
    */
-  void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) override;
+  void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const override;
 
   /*!
    * \brief Get gradient enthalpy diffusivity terms.
    */
-  void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) override;
+  void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) const override;
 
   /*!
    * \brief Set the Dimensionless State using Temperature.
