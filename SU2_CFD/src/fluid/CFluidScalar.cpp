@@ -223,7 +223,7 @@ su2double CFluidScalar::ComputeEnthalpyFromT(const su2double val_temperature, co
   return val_Enthalpy;
 }
 
-void CFluidScalar::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) {
+void CFluidScalar::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const {
   const su2double enthalpy_species_N = specificHeat[n_species_mixture - 1] * (Temperature - Ref_Temperature);
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     const su2double enthalpy_species_i = specificHeat[iVar] * (Temperature - Ref_Temperature);
