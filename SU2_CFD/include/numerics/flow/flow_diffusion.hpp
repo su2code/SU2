@@ -349,9 +349,7 @@ public:
  */
 class CGeneralAvgGrad_Flow final : public CAvgGrad_Base {
 private:
-  su2double Mean_SecVar[2],  /*!< \brief Mean secondary variables. */
-  Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
-  Mean_Cp;                   /*!< \brief Mean value of the Cp. */
+  su2double Mean_SecVar[2];  /*!< \brief Mean secondary variables. */
 
   /*!
    * \brief Compute the Jacobian of the heat flux vector
