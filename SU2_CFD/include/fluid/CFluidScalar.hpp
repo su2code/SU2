@@ -145,12 +145,26 @@ class CFluidScalar final : public CFluidModel {
   inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
 
   /*!
-   * \brief Get enthalpy diffusivity terms.
+   * \brief Get the enthalpy diffusivity terms for all species being solved.
+   *
+   * This function computes and retrieves the enthalpy diffusion terms required in the energy equation
+   * for multicomponent flows.
+   *
+   * \param[in,out] enthalpy_diffusions - Array containing the enthalpy diffusion terms for all
+   * species to be solved. The size of \p enthalpy_diffusions must be at least (n_species_mixture - 1),
+   * corresponding to the number of species transport equations in the system.
    */
   void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const override;
 
   /*!
-   * \brief Get gradient enthalpy diffusivity terms.
+   * \brief Get the gradient of enthalpy diffusivity terms for all species being solved.
+   *
+   * This function computes and retrieves the gradient of the enthalpy diffusion terms with respect to temperature.
+   * These terms are required for implicit computations when solving the energy equation for multicomponent flows.
+   *
+   * \param[in,out] grad_enthalpy_diffusions - Array containing the gradient of enthalpy diffusion terms for all
+   * species to be solved. The size of \p grad_enthalpy_diffusions must be at least (n_species_mixture - 1),
+   * corresponding to the number of species transport equations in the system.
    */
   void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) const override;
 
