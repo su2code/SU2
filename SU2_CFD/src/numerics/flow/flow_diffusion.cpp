@@ -655,12 +655,12 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
         proj_vector_ij += (Coord_j[iDim]-Coord_i[iDim])*Normal[iDim];
       }
       proj_vector_ij = proj_vector_ij/dist_ij_2;
-      Mean_Heat_Capacity = 0.5 * (V_i[nDim + 8] + V_j[nDim + 8]);
-      Jacobian_i[nDim + 1][nDim + 1] = -Mean_Thermal_Conductivity * proj_vector_ij / Mean_Heat_Capacity;
-      Jacobian_j[nDim + 1][nDim + 1] = Mean_Thermal_Conductivity * proj_vector_ij / Mean_Heat_Capacity;
+      Mean_Cp = 0.5 * (V_i[nDim + 8] + V_j[nDim + 8]);
+      Jacobian_i[nDim + 1][nDim + 1] = -Mean_Thermal_Conductivity * proj_vector_ij / Mean_Cp;
+      Jacobian_j[nDim + 1][nDim + 1] = Mean_Thermal_Conductivity * proj_vector_ij / Mean_Cp;
       if (energy_multicomponent){
-        Jacobian_i[nDim + 1][nDim + 1] -= JacHeatFluxDiffusion / Mean_Heat_Capacity;
-        Jacobian_j[nDim + 1][nDim + 1] += JacHeatFluxDiffusion / Mean_Heat_Capacity;
+        Jacobian_i[nDim + 1][nDim + 1] -= JacHeatFluxDiffusion / Mean_Cp;
+        Jacobian_j[nDim + 1][nDim + 1] += JacHeatFluxDiffusion / Mean_Cp;
       }
     }
 

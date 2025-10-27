@@ -40,12 +40,12 @@
 class CFluidScalar final : public CFluidModel {
  private:
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
-  su2double Gas_Constant;           /*!< \brief Specific gas constant. */
+  su2double Gas_Constant;                 /*!< \brief Specific gas constant. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
-  const su2double Ref_Temperature;        /*!< \brief Reference temperature. */
+  const su2double Ref_Temperature;        /*!< \brief Standard Reference temperature, usually set to 298.15 K. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
-  const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
-  const su2double Schmidt_Turb_Number;         /*!< \brief Prandlt number.*/
+  const su2double Prandtl_Turb_Number;    /*!< \brief Prandlt turbulent number.*/
+  const su2double Schmidt_Turb_Number;    /*!< \brief Schmidt turbulent number.*/
 
   const bool wilke;
   const bool davidson;
@@ -137,7 +137,7 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Get fluid thermal conductivity.
    */
-  inline su2double GetThermalConductivity() override { return Kt + Mu_Turb * Cp / Prandtl_Number; }
+  inline su2double GetThermalConductivity() override { return Kt + Mu_Turb * Cp / Prandtl_Turb_Number; }
 
   /*!
    * \brief Get fluid mass diffusivity.

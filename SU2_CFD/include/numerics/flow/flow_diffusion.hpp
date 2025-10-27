@@ -289,7 +289,6 @@ public:
 class CAvgGradInc_Flow final : public CAvgGrad_Base {
 private:
   su2double Mean_Thermal_Conductivity; /*!< \brief Mean value of the effective thermal conductivity. */
-  su2double Mean_Heat_Capacity;        /*!< \brief Mean value of the heat capacity. */
   bool energy;                         /*!< \brief computation with the energy equation. */
 
   /*!

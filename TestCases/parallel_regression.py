@@ -1658,8 +1658,8 @@ def main():
     species_passive_val.cfg_dir   = "species_transport/passive_transport_validation"
     species_passive_val.cfg_file  = "passive_transport.cfg"
     species_passive_val.test_iter = 50
-    species_passive_val.test_vals = [-16.499938, -16.287111, -16.904700, -4.257599, 10.000000, -4.504235, 8.000000, -5.193350, 0.186610, 0.000000]
-    species_passive_val.test_vals_aarch64 = [-16.499938, -16.287111, -16.904700, -4.257599, 10.000000, -4.504235, 8.000000, -5.193350, 0.186610, 0.000000]
+    species_passive_val.test_vals = [-16.517744, -16.282420, -16.871663, -4.257599, 10.000000, -4.278151, 8.000000, -5.193350, 0.186610, 0.000000]
+    species_passive_val.test_vals_aarch64 = [-16.517744, -16.282420, -16.871663, -4.257599, 10.000000, -4.278151, 8.000000, -5.193350, 0.186610, 0.000000]
     test_list.append(species_passive_val)
 
     # rectangle active 2-species transport
