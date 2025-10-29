@@ -4,7 +4,7 @@
  * \note Common methods are derived by defining small details
  *       via specialization of CLimiterDetails.
  * \author P. Gomes
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -49,6 +49,7 @@
  * \param[in] config - Configuration of the problem.
  * \param[in] varBegin - First variable index for which to compute limiters.
  * \param[in] varEnd - End of computation range (nVar = end-begin).
+ * \param[in] umusclKappa - Blending parameter for U-MUSCL reconstruction.
  * \param[in] field - Variable field.
  * \param[in] gradient - Gradient of the field.
  * \param[out] fieldMin - Minimum field values over direct neighbors of each point.
@@ -70,6 +71,7 @@ void computeLimiters_impl(CSolver* solver,
                           const CConfig& config,
                           size_t varBegin,
                           size_t varEnd,
+                          su2double umusclKappa,
                           const FieldType& field,
                           const GradientType& gradient,
                           FieldType& fieldMin,
@@ -186,10 +188,12 @@ void computeLimiters_impl(CSolver* solver,
         for(size_t iDim = 0; iDim < nDim; ++iDim)
           proj += dist_ij[iDim] * gradient(iPoint,iVar,iDim);
 
+        AD::SetPreaccIn(field(jPoint,iVar));
+        const su2double cent = 0.5 * (field(jPoint,iVar) - field(iPoint,iVar));
+        proj = LimiterHelpers<>::umusclProjection(proj, cent, umusclKappa);
+
         projMax[iVar] = max(projMax[iVar], proj);
         projMin[iVar] = min(projMin[iVar], proj);
-
-        AD::SetPreaccIn(field(jPoint,iVar));
 
         fieldMax(iPoint,iVar) = max(fieldMax(iPoint,iVar), field(jPoint,iVar));
         fieldMin(iPoint,iVar) = min(fieldMin(iPoint,iVar), field(jPoint,iVar));

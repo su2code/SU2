@@ -2,7 +2,7 @@
  * \file computeLimiters.hpp
  * \brief Compute limiters wrapper function.
  * \author P. Gomes
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,6 +45,7 @@ void computeLimiters(LIMITER LimiterKind,
                      const CConfig& config,
                      size_t varBegin,
                      size_t varEnd,
+                     su2double umusclKappa,
                      const FieldType& field,
                      const GradientType& gradient,
                      FieldType& fieldMin,
@@ -57,10 +58,10 @@ void computeLimiters(LIMITER LimiterKind,
 #define INSTANTIATE(KIND)\
 if (geometry.GetnDim() == 2) {\
   computeLimiters_impl<2,KIND>(solver, kindMpiComm, kindPeriodicComm1, kindPeriodicComm2, geometry,\
-                               config, varBegin, varEnd, field, gradient, fieldMin, fieldMax, limiter);\
+                               config, varBegin, varEnd, umusclKappa, field, gradient, fieldMin, fieldMax, limiter);\
 } else {\
   computeLimiters_impl<3,KIND>(solver, kindMpiComm, kindPeriodicComm1, kindPeriodicComm2, geometry,\
-                               config, varBegin, varEnd, field, gradient, fieldMin, fieldMax, limiter);\
+                               config, varBegin, varEnd, umusclKappa, field, gradient, fieldMin, fieldMax, limiter);\
 }
   switch (LimiterKind) {
     case LIMITER::NONE:

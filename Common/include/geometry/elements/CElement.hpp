@@ -3,7 +3,7 @@
  * \brief Main header of the Finite Element structure declaring the abstract
  *        interface and the available finite element types.
  * \author R. Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -927,7 +927,7 @@ class CPYRAM5 final : public CElementWithKnownSizes<5, 5, 3> {
  * \ingroup FemAlgos
  * \brief Prism element with 6 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  */
 class CPRISM6 final : public CElementWithKnownSizes<6, 6, 3> {
  private:

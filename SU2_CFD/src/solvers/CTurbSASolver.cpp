@@ -2,7 +2,7 @@
  * \file CTurbSASolver.cpp
  * \brief Main subroutines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -296,77 +296,15 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
 
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
-      su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
-
-  /*--- Points in edge. ---*/
-  const auto iPoint = geometry->edges->GetNode(iEdge, 0);
-  const auto jPoint = geometry->edges->GetNode(iEdge, 1);
-
-  /*--- Helper function to compute the flux ---*/
-  auto ComputeFlux = [&](unsigned long iPoint, unsigned long jPoint, const su2double* normal) {
-    numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
-    numerics->SetNormal(normal);
-
-    if (flowNodes) {
-      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
-    }
+  /*--- Define an object to set solver specific numerics contribution. ---*/
+  auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
     /*--- Roughness heights. ---*/
     numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
-
-    numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
-    numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
-
-    return numerics->ComputeResidual(config);
   };
+  
+  /*--- Now instantiate the generic non-conservative implementation with the functor above. ---*/
+  Viscous_Residual_NonCons(iEdge, geometry, solver_container, numerics, config, SolverSpecificNumerics);
 
-  /*--- Compute fluxes and jacobians i->j ---*/
-  const su2double* normal = geometry->edges->GetNormal(iEdge);
-  auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
-
-  JacobianScalarType *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
-  if (implicit) {
-    Jacobian.GetBlocks(iEdge, iPoint, jPoint, Block_ii, Block_ij, Block_ji, Block_jj);
-  }
-  if (ReducerStrategy) {
-    EdgeFluxes.SubtractBlock(iEdge, residual_ij);
-    EdgeFluxesDiff.SetBlock(iEdge, residual_ij);
-    if (implicit) {
-      /*--- For the reducer strategy the Jacobians are averaged for simplicity. ---*/
-      assert(nVar == 1);
-      Block_ij[0] -= 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_j[0][0]);
-      Block_ji[0] += 0.5 * SU2_TYPE::GetValue(residual_ij.jacobian_i[0][0]);
-    }
-  } else {
-    LinSysRes.SubtractBlock(iPoint, residual_ij);
-    if (implicit) {
-      assert(nVar == 1);
-      Block_ii[0] -= SU2_TYPE::GetValue(residual_ij.jacobian_i[0][0]);
-      Block_ij[0] -= SU2_TYPE::GetValue(residual_ij.jacobian_j[0][0]);
-    }
-  }
-
-  /*--- Compute fluxes and jacobians j->i ---*/
-  su2double flipped_normal[MAXNDIM];
-  for (auto iDim = 0u; iDim < nDim; iDim++) flipped_normal[iDim] = -normal[iDim];
-
-  auto residual_ji = ComputeFlux(jPoint, iPoint, flipped_normal);
-  if (ReducerStrategy) {
-    EdgeFluxesDiff.AddBlock(iEdge, residual_ji);
-    if (implicit) {
-      Block_ij[0] += 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_i[0][0]);
-      Block_ji[0] -= 0.5 * SU2_TYPE::GetValue(residual_ji.jacobian_j[0][0]);
-    }
-  } else {
-    LinSysRes.SubtractBlock(jPoint, residual_ji);
-    if (implicit) {
-      /*--- The order of arguments were flipped in the evaluation of residual_ji, the Jacobian
-       * associated with point i is stored in jacobian_j and point j in jacobian_i. ---*/
-      Block_ji[0] -= SU2_TYPE::GetValue(residual_ji.jacobian_j[0][0]);
-      Block_jj[0] -= SU2_TYPE::GetValue(residual_ji.jacobian_i[0][0]);
-    }
-  }
 }
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -1628,31 +1566,8 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  su2double localUnderRelaxation =  1.00;
-  const su2double allowableRatio =  0.99;
+  const su2double allowableRatio =  config->GetMaxUpdateFractionSA();
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    localUnderRelaxation = 1.0;
-    su2double ratio = fabs(LinSysSol[iPoint]) / (fabs(nodes->GetSolution(iPoint, 0)) + EPS);
-    /* We impose a limit on the maximum percentage that the
-      turbulence variables can change over a nonlinear iteration. */
-    if (ratio > allowableRatio) {
-      localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-    }
-
-    /* Threshold the relaxation factor in the event that there is
-     a very small value. This helps avoid catastrophic crashes due
-     to non-realizable states by canceling the update. */
-
-    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
-
-    /* Store the under-relaxation factor for this point. */
-
-    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
-
-  }
-  END_SU2_OMP_FOR
+  ComputeUnderRelaxationFactorHelper(allowableRatio);
 
 }

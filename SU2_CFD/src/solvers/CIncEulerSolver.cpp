@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,7 +31,6 @@
 #include "../../include/fluid/CIncIdealGas.hpp"
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
-#include "../../include/limiters/CLimiterDetails.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
 #include "../../include/fluid/CFluidFlamelet.hpp"
@@ -48,10 +47,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   unsigned short iMarker;
   ifstream restart_file;
-  unsigned short nZone = geometry->GetnZone();
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   int Unst_RestartIter = 0;
-  unsigned short iZone = config->GetiZone();
   bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                     (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
   bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
@@ -67,45 +64,36 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
 
-  if (restart && (iMesh == MESH_0) && nZone <= 1) {
+  if (restart) {
 
-    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    if (iMesh == MESH_0) {
 
-    auto filename_ = config->GetSolution_FileName();
+      /*--- Modify file name for a dual-time unsteady restart ---*/
 
-    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone, ".dat");
+      if (dual_time) {
+        if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+        else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
+          Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+        else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
+      }
 
-    /*--- Modify file name for a dual-time unsteady restart ---*/
+      /*--- Modify file name for a time stepping unsteady restart ---*/
 
-    if (dual_time) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST)
-        Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-2;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
+      if (time_stepping) {
+        if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+        else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
+      }
+
     }
 
-    /*--- Modify file name for a time stepping unsteady restart ---*/
-
-    if (time_stepping) {
-      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
-      else Unst_RestartIter = SU2_TYPE::Int(config->GetRestart_Iter())-1;
-      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter, ".dat");
+    if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
+      if (rank==MASTER_NODE) cout << "Setting streamwise periodic pressure drop from restart metadata file." << endl;
     }
 
-    /*--- Read and store the restart metadata. ---*/
-
-    filename_ = "flow";
-    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
+    auto filename_ = config->GetFilename("flow", ".meta", Unst_RestartIter);
     Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
+  }
 
-  }
-  if (restart && (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW)) {
-    string filename_ = "flow";
-    filename_ = config->GetFilename(filename_, ".meta", Unst_RestartIter);
-    Read_SU2_Restart_Metadata(geometry, config, adjoint, filename_);
-    if (rank==MASTER_NODE) cout << "Setting streamwise periodic pressure drop from restart metadata file." << endl;
-  }
 
   /*--- Set the gamma value ---*/
 
@@ -244,11 +232,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
   su2double Temperature_FreeStream = 0.0,  ModVel_FreeStream = 0.0,Energy_FreeStream = 0.0,
   ModVel_FreeStreamND = 0.0, Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
+  Thermal_Conductivity_FreeStream = 0.0, SpecificHeat_Cp_FreeStream = 0.0,
   Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Pressure_Thermodynamic = 0.0, Tke_FreeStream = 0.0,
   Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Temperature_Ref = 0.0, Velocity_Ref = 0.0, Time_Ref = 0.0,
   Gas_Constant_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0, Viscosity_Ref = 0.0, Conductivity_Ref = 0.0, Heat_Flux_Ref = 0.0, Energy_Ref= 0.0, Pressure_FreeStreamND = 0.0, Pressure_ThermodynamicND = 0.0, Density_FreeStreamND = 0.0,
   Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0, Specific_Heat_CpND = 0.0, Thermal_Expansion_CoeffND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
+  Thermal_Conductivity_FreeStreamND = 0.0, SpecificHeat_Cp_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
 
@@ -356,8 +346,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     /*--- Use the fluid model to compute the dimensional viscosity/conductivity. ---*/
 
     auxFluidModel->SetLaminarViscosityModel(config);
+    auxFluidModel->SetThermalConductivityModel(config);
     Viscosity_FreeStream = auxFluidModel->GetLaminarViscosity();
     config->SetViscosity_FreeStream(Viscosity_FreeStream);
+    Thermal_Conductivity_FreeStream = auxFluidModel->GetThermalConductivity();
+    config->SetThermalConductivity_FreeStream(Thermal_Conductivity_FreeStream);
+    SpecificHeat_Cp_FreeStream = auxFluidModel->GetCp();
+    config->SetSpecificHeatCp_FreeStream(SpecificHeat_Cp_FreeStream);
 
     Reynolds = Density_FreeStream*ModVel_FreeStream/Viscosity_FreeStream; config->SetReynolds(Reynolds);
 
@@ -450,6 +445,10 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND); config->SetModVel_FreeStreamND(ModVel_FreeStreamND);
 
   Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
+  Thermal_Conductivity_FreeStreamND = Thermal_Conductivity_FreeStream / Conductivity_Ref;
+  config->SetThermalConductivity_FreeStreamND(Thermal_Conductivity_FreeStreamND);
+  SpecificHeat_Cp_FreeStreamND = SpecificHeat_Cp_FreeStream / Gas_Constant_Ref;
+  config->SetSpecificHeatCp_FreeStreamND(SpecificHeat_Cp_FreeStreamND);
 
   Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStream(Tke_FreeStream);
@@ -1220,7 +1219,6 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
 
   unsigned long iPoint, jPoint, counter_local = 0;
-  unsigned short iDim, iVar;
 
   SU2_OMP_MASTER
   ErrorCounter = 0;
@@ -1231,6 +1229,9 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool limiter    = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool bounded_scalar = config->GetBounded_Scalar();
+  const su2double nkRelax = config->GetNewtonKrylovRelaxation();
+
+  const su2double kappa = config->GetMUSCL_Kappa_Flow();
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1270,41 +1271,33 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       auto Coord_j = geometry->nodes->GetCoord(jPoint);
 
       su2double Vector_ij[MAXNDIM] = {0.0};
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-      }
+      GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Vector_ij);
 
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
       auto Gradient_j = nodes->GetGradient_Reconstruction(jPoint);
 
-      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      for (auto iVar = 0u; iVar < nPrimVarGrad; iVar++) {
+        const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-        su2double Project_Grad_i = 0.0;
-        su2double Project_Grad_j = 0.0;
-
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Project_Grad_i += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
-        }
+        const su2double Project_Grad_i = nkRelax * MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa);
+        const su2double Project_Grad_j = nkRelax * MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa);
 
         su2double lim_i = 1.0;
         su2double lim_j = 1.0;
-
         if (van_albada) {
-          su2double V_ij = V_j[iVar] - V_i[iVar];
           lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
-          lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j, V_ij, EPS);
+          lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j, V_ij, EPS);
         }
         else if (limiter) {
           lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
           lim_j = nodes->GetLimiter_Primitive(jPoint, iVar);
         }
 
-        Primitive_i[iVar] = V_i[iVar] + lim_i * Project_Grad_i;
-        Primitive_j[iVar] = V_j[iVar] + lim_j * Project_Grad_j;
+        Primitive_i[iVar] = V_i[iVar] + 0.5 * lim_i * Project_Grad_i;
+        Primitive_j[iVar] = V_j[iVar] - 0.5 * lim_j * Project_Grad_j;
       }
 
-      for (iVar = nPrimVarGrad; iVar < nPrimVar; iVar++) {
+      for (auto iVar = nPrimVarGrad; iVar < nPrimVar; iVar++) {
         Primitive_i[iVar] = V_i[iVar];
         Primitive_j[iVar] = V_j[iVar];
       }
@@ -1328,7 +1321,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         counter_local += bad_recon;
 
         if (bad_recon) {
-          for (iVar = 0; iVar < nPrimVar; iVar++) {
+          for (auto iVar = 0u; iVar < nPrimVar; iVar++) {
             Primitive_i[iVar] = V_i[iVar];
             Primitive_j[iVar] = V_j[iVar];
           }
@@ -2306,7 +2299,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
      If requested, use the local boundary normal (negative),
      instead of the prescribed flow direction in the config. ---*/
 
-    if (config->GetInc_Inlet_UseNormal()) {
+    if (config->GetInletUseNormal()) {
       for (iDim = 0; iDim < nDim; iDim++)
         UnitFlowDir[iDim] = -Normal[iDim]/Area;
     } else {
