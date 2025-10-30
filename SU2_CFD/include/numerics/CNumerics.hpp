@@ -185,6 +185,9 @@ protected:
   su2double
   stochVar_i[3], /*!< \brief Stochastic variables at point i for Stochastic Backscatter Model. */
   stochVar_j[3]; /*!< \brief Stochastic variables at point j for Stochastic Backscatter Model. */
+  su2double
+  lesMode_i, /*!< \brief LES sensor at point i for hybrid RANS-LES methods. */
+  lesMode_j; /*!< \brief LES sensor at point j for hybrid RANS-LES methods. */
   SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
@@ -864,6 +867,16 @@ public:
   inline void SetStochVar(su2double val_stochvar_i, su2double val_stochvar_j, unsigned short iDim) {
     stochVar_i[iDim] = val_stochvar_i;
     stochVar_j[iDim] = val_stochvar_j;
+  }
+
+  /*!
+   * \brief Set the LES sensor for hybrid RANS-LES methods.
+   * \param[in] val_lesMode_i - Value of the LES sensor at point i.
+   * \param[in] val_lesMode_j - Value of the LES sensor at point j.
+   */
+  inline void SetLES_Mode(su2double val_lesMode_i, su2double val_lesMode_j) {
+    lesMode_i = val_lesMode_i;
+    lesMode_j = val_lesMode_j;
   }
 
   /*!

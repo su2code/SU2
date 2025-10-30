@@ -425,6 +425,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       if (config->GetStochastic_Backscatter()) {
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           numerics->SetStochSource(nodes->GetLangevinSourceTerms(iPoint, iDim), iDim);
+          numerics->SetLES_Mode(nodes->GetLES_Mode(iPoint), 0.0);
       }
 
     }
@@ -1764,14 +1765,14 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
           cout << endl
                << "Residual of Laplacian smoothing along dimension " << iDim+1 << "." << endl
                << "---------------------------------" << endl
-               << "  Iter        RMS Residual" << endl
+               << "   Iter       RMS Residual" << endl
                << "---------------------------------" << endl;
         }
         if (iter%10 == 0) {
           cout << "  " 
                << std::setw(5) << iter
                << "       "
-               << std::setw(12) << std::fixed << std::scientific << std::setprecision(6) << globalResNorm
+               << std::setw(12) << std::fixed << std::setprecision(6) << log10(globalResNorm)
                << endl;
         }
       }
@@ -1782,7 +1783,7 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
           cout << "  " 
                << std::setw(5) << iter
                << "       "
-               << std::setw(12) << std::fixed << std::scientific << ::setprecision(6) << globalResNorm
+               << std::setw(12) << std::fixed << ::setprecision(6) << log10(globalResNorm)
                << endl;
           cout << "---------------------------------" << endl;
         }
