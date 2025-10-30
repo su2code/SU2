@@ -1480,7 +1480,8 @@ enum ENUM_HYBRIDRANSLES {
   SST_DDES         = 6,  /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): DDES). */
   SST_IDDES        = 7,  /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Improved DDES). */
   SST_SIDDES       = 8,  /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Simplified Improved DDES). */
-  SST_EDDES        = 9   /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Enhanced (SLA) DDES). */
+  SST_EDDES        = 9,  /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Enhanced (SLA) DDES). */
+  SST_EDDES_UNSTR  = 10  /*!< \brief Kind of Hybrid RANS/LES (SST - Delayed DES (DDES): Enhanced (SLA) DDES). */
 };
 static const MapType<std::string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
   MakePair("NONE", NO_HYBRIDRANSLES)
@@ -1493,6 +1494,7 @@ static const MapType<std::string, ENUM_HYBRIDRANSLES> HybridRANSLES_Map = {
   MakePair("SST_IDDES", SST_IDDES)
   MakePair("SST_SIDDES", SST_SIDDES)
   MakePair("SST_EDDES", SST_EDDES)
+  MakePair("SST_EDDES_UNSTR", SST_EDDES_UNSTR)
 };
 
 /*!
