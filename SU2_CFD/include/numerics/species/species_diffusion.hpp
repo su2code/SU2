@@ -90,13 +90,31 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
     AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   }
 
+void CorrectGradient(su2double* GradPrimVar,
+                                    const su2double val_PrimVar_i,
+                                    const su2double val_PrimVar_j,
+                                    const su2double* val_edge_vector,
+                                    const su2double val_dist_ij_2,
+                                    const unsigned short val_nPrimVar) {
+    su2double Proj_Mean_GradPrimVar_Edge = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Proj_Mean_GradPrimVar_Edge += GradPrimVar[iDim]*val_edge_vector[iDim];
+    }
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      GradPrimVar[iDim] -= (Proj_Mean_GradPrimVar_Edge -
+                                 (val_PrimVar_j-val_PrimVar_i))*val_edge_vector[iDim] / val_dist_ij_2;
+    }
+}
+
+
+
   /*!
    * \brief Species transport specific steps in the ComputeResidual method
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-
+      
       switch(iVar)   {
       case 0:  {
       const su2double Diffusivity_Lam = 0.5 * (Density_i * Diffusion_Coeff_i[iVar] + Density_j * Diffusion_Coeff_j[iVar]);
@@ -120,31 +138,34 @@ class CAvgGrad_Species final : public CAvgGrad_Scalar<FlowIndices> {
 
       const su2double proj_on_rhoj = proj_vector_ij / Density_j;
       Jacobian_j[iVar][iVar] = Diffusivity * proj_on_rhoj;
-      break;
-      }
+       break;
+       }
 
-      case 1: {
+       case 1: {
 
-      
-        /* --- face-averaged thermal conductivity --- */
-        const su2double conductivity = 0.5 * (Thermal_Conductivity_i + Thermal_Conductivity_j);
-      
-        /* --- project mean temperature gradient onto the face normal --- */
-        su2double dT_proj = 0.0;
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          dT_proj += 0.5*(PrimVar_Grad_i[nDim+1][iDim] + PrimVar_Grad_j[nDim+1][iDim]) * Normal[iDim];
-        }    
-        /* --- heat flux contribution --- */
-        Flux[iVar] = conductivity * dT_proj;  
-      
-      break;
-      }
-    // iVar
-    }
+         const su2double Conductivity_lam = 0.5 * (Laminar_Viscosity_i + Laminar_Viscosity_j)/Prandtl_Lam;
+         su2double Conductivity_Turb = 0.0;
+
+         if (turbulence) {
+           Conductivity_Turb = 0.5 * (Eddy_Viscosity_i + Eddy_Viscosity_j) / Prandtl_Turb;
+         }
+         su2double Conductivity = Conductivity_lam + Conductivity_Turb;
+
+         Jacobian_i[iVar][iVar] = -Conductivity * proj_vector_ij;
+         Jacobian_j[iVar][iVar] =  Conductivity * proj_vector_ij;
+
+        Flux[iVar] = Conductivity * Proj_Mean_GradScalarVar[iVar];
+        break;
+       }
+     // iVar
+     }
   }
 }
 
  public:
+
+
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.

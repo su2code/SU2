@@ -477,7 +477,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 void CAvgGrad_Flow::SetHeatFluxVector(const su2double* const *val_gradprimvar,
                                       const su2double val_laminar_viscosity,
                                       const su2double val_eddy_viscosity) {
-
+  // nijso: generalize, we use here ideal gas law and Pr = mu*cp/k => k = mu*cp/Pr
+  // so we never use user defined thermal conductivity
   const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   const su2double heat_flux_factor = Cp * (val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb);
 

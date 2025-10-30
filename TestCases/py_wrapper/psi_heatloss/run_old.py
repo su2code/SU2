@@ -412,11 +412,12 @@ def main():
 
     if (rank==0):
       print("python iteration ", inner_iter)
-    #ApplyScalar(driver,marker_ids)
+    ApplyScalar(driver,marker_ids)
     driver.Preprocess(inner_iter)
     driver.Run()
 
     Source = driver.UserDefinedSource(iSPECIESSOLVER)
+    #Source_Flow = driver.UserDefinedSource(iFLOWSOLVER)
 
     # set the source term, per point
     for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
@@ -424,6 +425,13 @@ def main():
       # default TFC of Zimont: rho*Sc = rho_u * U_t * grad(c)
       S = zimont(driver, i_node)
       Source.Set(i_node, 0, S)
+
+     # S1=diffusion(driver,i_node)
+     # Source.Set(i_node,1,S1)
+      
+
+      #S_T = 0.92*0.0284*50.5*1e6*(zimont(driver, i_node)) #should be 50.5 instead of 32.9
+      #Source_Flow.Set(i_node, iTEMP, S_T)
 
     # for the update of temperature, we need to update also the halo nodes
     #for i_node in range(driver.GetNumberNodes()):
