@@ -47,7 +47,7 @@ constexpr T linSolEpsilon() {
 }
 template <>
 constexpr float linSolEpsilon<float>() {
-  return 1e-12;
+  return 1e-14;
 }
 }  // namespace
 
