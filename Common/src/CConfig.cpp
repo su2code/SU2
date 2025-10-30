@@ -2921,6 +2921,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
+  /* DESCRIPTION: SBS lengthscale coefficient */
+  addDoubleOption("SBS_LENGTHSCALE_COEFF", SBS_Cdelta, 0.1);
+
+  /* DESCRIPTION: Maximum number of smoothing iterations for SBS model. */
+  addUnsignedShortOption("SBS_MAX_ITER_SMOOTH", SBS_maxIterSmooth, 100);
+
   /* DESCRIPTION: SBS timescale coefficient */
   addDoubleOption("SBS_TIMESCALE_COEFF", SBS_Ctau, 0.05);
 
@@ -6497,6 +6503,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             cout << "Backscatter intensity coefficient: " << SBS_Cmag << endl;
             if (SBS_Cmag < 0.0)
               SU2_MPI::Error("Backscatter intensity coefficient must be non-negative.", CURRENT_FUNCTION);
+            cout << "Backscatter lengthscale coefficient: " << SBS_Cdelta << endl;
+            if (SBS_Cdelta < 0.0)
+              SU2_MPI::Error("Backscatter lengthscale coefficient must be non-negative.", CURRENT_FUNCTION);
             cout << "Backscatter timescale coefficient: " << SBS_Ctau << endl;
             if (SBS_Ctau < 0.0)
               SU2_MPI::Error("Backscatter timescale coefficient must be non-negative.", CURRENT_FUNCTION);

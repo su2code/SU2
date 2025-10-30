@@ -1089,6 +1089,8 @@ private:
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   bool StochasticBackscatter;          /*!< \brief Option to include Stochastic Backscatter Model. */
+  su2double SBS_Cdelta;                /*!< \brief Stochastic Backscatter Model lengthscale coefficient. */
+  unsigned short SBS_maxIterSmooth;    /*!< \brief Maximum number of smoothing iterations for the SBS model. */
   su2double SBS_Ctau;                  /*!< \brief Stochastic Backscatter Model timescale coefficient. */
   su2double SBS_Cmag;                  /*!< \brief Stochastic Backscatter Model intensity coefficient. */
   bool enforceLES;                     /*!< \brief Option to enforce LES mode in hybrid RANS-LES simulations. */
@@ -9552,6 +9554,18 @@ public:
    * \return Value of DES constant.
    */
   su2double GetConst_DES(void) const { return Const_DES; }
+
+  /*!
+   * \brief Get the SBS lengthscale coefficient.
+   * \return Value of SBS lengthscale coefficient.
+   */
+  su2double GetSBS_Cdelta(void) const { return SBS_Cdelta; }
+
+  /*!
+   * \brief Get the SBS timescale coefficient.
+   * \return Value of SBS timescale coefficient.
+   */
+  su2double GetSBS_maxIterSmooth(void) const { return SBS_maxIterSmooth; }
 
   /*!
    * \brief Get the SBS timescale coefficient.

@@ -43,6 +43,7 @@ private:
   VectorType DES_LengthScale;
   VectorType LES_Mode;
   MatrixType stochSource;
+  MatrixType stochSource_old;
   VectorType Vortex_Tilting;
   MatrixTypeGen stochGen;
 
@@ -92,6 +93,22 @@ public:
    * \param[in] val_stochSource - Value of the source term for the stochastic equations.
    */
   inline void SetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim, su2double val_stochSource) override { stochSource(iPoint, iDim) = val_stochSource; }
+
+  /*!
+   * \brief Get the old value of the source terms for the stochastic equations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \return Old value of the source terms for the stochastic equations.
+   */
+  inline virtual su2double GetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim) const override { return stochSource_old(iPoint, iDim); }
+
+  /*!
+   * \brief Set the old value of source terms for the stochastic equations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSource_old - Old value of the source term for the stochastic equations.
+   */
+  inline void SetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim, su2double val_stochSource_old) override { stochSource_old(iPoint, iDim) = val_stochSource_old; }
 
 /*!
    * \brief Set the LES sensor.

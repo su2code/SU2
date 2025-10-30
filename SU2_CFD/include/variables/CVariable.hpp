@@ -408,6 +408,7 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
+   * \param[in] val_les_mode - Value of the LES sensor.
    */
   inline virtual void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) {}
 
@@ -422,9 +423,24 @@ public:
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    * \param[in] iDim - Dimension index.
-   * \param[in] val_stochSource - Seed for Langevin equations.
+   * \param[in] val_stochSource - Source term in Langevin equations.
    */
   inline virtual void SetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim, su2double val_stochSource) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   */
+  inline virtual su2double GetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSource_old - Old value of source term in Langevin equations.
+   */
+  inline virtual void SetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim, su2double val_stochSource_old) {}
 
   /*!
    * \brief A virtual member.
@@ -437,7 +453,7 @@ public:
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    * \param[in] iDim - Dimension index.
-   * \param[in] val_stochSource - Source term for Langevin equations.
+   * \param[in] val_stochGen - Pseudo-random number generator for Langevin equations.
    */
   inline virtual void SetLangevinGen(unsigned long iPoint, unsigned short iDim, std::mt19937 val_stochGen) {}
 

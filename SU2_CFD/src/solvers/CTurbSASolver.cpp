@@ -242,6 +242,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     if (backscatter && innerIter==0) {
       SetLangevinGen(config, geometry);
       SetLangevinSourceTerms(config, geometry);
+      SmoothLangevinSourceTerms(config, geometry);
     }
 
   }
@@ -1630,6 +1631,7 @@ void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry)
       su2double lesSensor = nodes->GetLES_Mode(iPoint);
       su2double rnd = RandomToolbox::GetRandomNormal(gen);
       rnd *= std::nearbyint(lesSensor);
+      nodes->SetLangevinSourceTermsOld(iPoint, iDim, rnd);
       nodes->SetLangevinSourceTerms(iPoint, iDim, rnd);
     }
   }
@@ -1651,6 +1653,158 @@ void CTurbSASolver::SetLangevinGen(CConfig* config, CGeometry* geometry) {
     }
   }
   END_SU2_OMP_FOR
+
+}
+
+void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geometry) {
+
+  const su2double LES_FilterWidth = config->GetLES_FilterWidth();
+  const su2double pi = 4.0*atan(1.0);
+  const su2double cDelta = config->GetSBS_Cdelta();
+  const unsigned short maxIter = config->GetSBS_maxIterSmooth();
+  const unsigned long global_nPointDomain = geometry->GetGlobal_nPointDomain();
+  const su2double tol = 1.0e-6;
+
+  /*--- Compute the time step ensuring stability of the pseudo-time integration. ---*/
+
+  su2double localMinDx = -1.0;
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+    auto coord_i = geometry->nodes->GetCoord(iPoint);
+    for (unsigned short iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); ++iNode) {
+      unsigned long jPoint = geometry->nodes->GetPoint(iPoint, iNode);
+      auto coord_j = geometry->nodes->GetCoord(jPoint);
+      su2double dx_ij = GeometryToolbox::Distance(nDim, coord_i, coord_j);
+      su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
+      if (LES_FilterWidth > 0.0) maxDelta = LES_FilterWidth;
+      su2double b = sqrt(cDelta) * maxDelta;
+      dx_ij /= b;
+      if (dx_ij < localMinDx || localMinDx < 0.0) localMinDx = dx_ij;
+    }
+  }
+  su2double globalMinDx = 0.0;
+  SU2_MPI::Allreduce(&localMinDx, &globalMinDx, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  su2double CFL = 0.8;
+  su2double dt = CFL * globalMinDx * globalMinDx;
+
+  /*--- Start the pseudo-time integration for the Laplacian smoothing. ---*/
+
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+  
+    for (unsigned short iter = 0; iter < maxIter; iter++) {
+
+      /*--- Set the stochastic source terms to zero at solid walls. ---*/
+
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetSolid_Wall(iMarker)) {
+          for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
+            unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            nodes->SetLangevinSourceTerms(iPoint, iDim, 0.0);
+            nodes->SetLangevinSourceTermsOld(iPoint, iDim, 0.0);
+          }
+        }
+      }
+
+      /*--- MPI communication. ---*/
+
+      InitiateComms(geometry, config, MPI_QUANTITIES::STOCH_SOURCE_LANG);
+      CompleteComms(geometry, config, MPI_QUANTITIES::STOCH_SOURCE_LANG);
+
+      /*--- Update the solution in pseudo-time. ---*/
+
+      su2double localResNorm = 0.0;
+
+      SU2_OMP_FOR_DYN(omp_chunk_size)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+        unsigned short lesSensor = std::nearbyint(nodes->GetLES_Mode(iPoint));
+        if (lesSensor == 0) continue;
+
+        su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
+        if (LES_FilterWidth > 0.0) maxDelta = LES_FilterWidth;
+        su2double b = sqrt(cDelta) * maxDelta;
+        su2double b2 = b * b;
+        su2double volume_iPoint = geometry->nodes->GetVolume(iPoint);
+        su2double source_i = nodes->GetLangevinSourceTerms(iPoint, iDim);
+        auto coord_i = geometry->nodes->GetCoord(iPoint);
+
+        /*--- Discretize the Laplace operator. ---*/
+
+        su2double lap = 0.0;
+        for (unsigned short iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
+          auto jPoint = geometry->nodes->GetPoint(iPoint, iNode);
+          auto coord_j = geometry->nodes->GetCoord(jPoint);
+          auto iEdge = geometry->nodes->GetEdge(iPoint, iNode);
+          auto* normal = geometry->edges->GetNormal(iEdge);
+          su2double area = GeometryToolbox::Norm(nDim, normal);
+          su2double dx_ij = GeometryToolbox::Distance(nDim, coord_i, coord_j);
+          su2double source_j = nodes->GetLangevinSourceTerms(jPoint, iDim);
+          lap += area/volume_iPoint * (source_j - source_i)/dx_ij;
+        }
+        lap *= b2;
+
+        /*--- Update the solution and sum the residual. ---*/
+
+        su2double source_i_old = nodes->GetLangevinSourceTermsOld(iPoint, iDim);
+        su2double rhs = (source_i_old - source_i + lap) * dt;
+        localResNorm += rhs * rhs;
+        source_i += rhs;
+        nodes->SetLangevinSourceTerms(iPoint, iDim, source_i);
+
+      }
+      END_SU2_OMP_FOR
+
+      /*--- Stop integration if residual drops below tolerance. ---*/
+
+      su2double globalResNorm = 0.0;
+      SU2_MPI::Allreduce(&localResNorm, &globalResNorm, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      globalResNorm = sqrt(globalResNorm / global_nPointDomain);
+
+      if (rank == MASTER_NODE) {
+        if (iter == 0) {
+          cout << endl
+               << "Residual of Laplacian smoothing along dimension " << iDim+1 << "." << endl
+               << "---------------------------------" << endl
+               << "  Iter        RMS Residual" << endl
+               << "---------------------------------" << endl;
+        }
+        if (iter%10 == 0) {
+          cout << "  " 
+               << std::setw(5) << iter
+               << "       "
+               << std::setw(12) << std::fixed << std::scientific << std::setprecision(6) << globalResNorm
+               << endl;
+        }
+      }
+
+      if (globalResNorm < tol || iter == maxIter-1) {
+
+        if (rank == MASTER_NODE) {
+          cout << "  " 
+               << std::setw(5) << iter
+               << "       "
+               << std::setw(12) << std::fixed << std::scientific << ::setprecision(6) << globalResNorm
+               << endl;
+          cout << "---------------------------------" << endl;
+        }
+        
+        /*--- Scale source terms for variance preservation. ---*/
+
+        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+          su2double source = nodes->GetLangevinSourceTerms(iPoint, iDim);
+          su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
+          if (LES_FilterWidth > 0.0) maxDelta = LES_FilterWidth;
+          su2double b = sqrt(cDelta) * maxDelta;
+          su2double b3 = b * b * b;
+          su2double volume = geometry->nodes->GetVolume(iPoint);
+          source *= sqrt(8.0*pi*b3/volume);
+          nodes->SetLangevinSourceTerms(iPoint, iDim, source);
+        }
+
+        break;
+
+      }
+    }
+  }
 
 }
 

@@ -72,6 +72,13 @@ private:
   void SetLangevinGen(CConfig* config, CGeometry* geometry);
 
   /*!
+   * \brief Apply Laplacian smoothing to the source terms in Langevin equations (Stochastic Backscatter Model).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition.
+   */
+  void SmoothLangevinSourceTerms(CConfig* config, CGeometry* geometry);
+
+  /*!
    * \brief Compute nu tilde from the wall functions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
