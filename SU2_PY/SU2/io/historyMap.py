@@ -59,40 +59,40 @@ history_header_map = {
         "HEADER": "Temp",
         "TYPE": "COEFFICIENT",
     },
-    "AbsFlowAngleIn_\" + tag": {
-        "DESCRIPTION": "Absolute flow angle in \" + tag",
+    'AbsFlowAngleIn_" + tag': {
+        "DESCRIPTION": 'Absolute flow angle in " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "AbsFlowAngleIn_\" + tag",
+        "HEADER": 'AbsFlowAngleIn_" + tag',
         "TYPE": "DEFAULT",
     },
-    "AbsFlowAngleOut_\" + tag": {
-        "DESCRIPTION": "Absolute flow angle out \" + tag",
+    'AbsFlowAngleOut_" + tag': {
+        "DESCRIPTION": 'Absolute flow angle out " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "AbsFlowAngleOut_\" + tag",
+        "HEADER": 'AbsFlowAngleOut_" + tag',
         "TYPE": "DEFAULT",
     },
-    "BGS_\" + cv_name": {
-        "DESCRIPTION": "BGS residual of the \" + cv_name + \" controlling variable equation.",
+    'BGS_" + cv_name': {
+        "DESCRIPTION": 'BGS residual of the " + cv_name + " controlling variable equation.',
         "GROUP": "BGS_RES",
-        "HEADER": "bgs[\" + cv_name + \"]",
+        "HEADER": 'bgs[" + cv_name + "]',
         "TYPE": "RESIDUAL",
     },
-    "BGS_\"+scalar_name": {
-        "DESCRIPTION": "BGS residual of the \"+scalar_name+\" mass fraction equation.",
+    'BGS_"+scalar_name': {
+        "DESCRIPTION": 'BGS residual of the "+scalar_name+" mass fraction equation.',
         "GROUP": "BGS_RES",
-        "HEADER": "bgs[\"+scalar_name+\"]",
+        "HEADER": 'bgs["+scalar_name+"]',
         "TYPE": "RESIDUAL",
     },
-    "BGS_ADJ_\" + cv_name": {
-        "DESCRIPTION": "BGS residual of the adjoint \" + cv_name",
+    'BGS_ADJ_" + cv_name': {
+        "DESCRIPTION": 'BGS residual of the adjoint " + cv_name',
         "GROUP": "BGS_RES",
-        "HEADER": "bgs[\" + cv_name + \"]",
+        "HEADER": 'bgs[" + cv_name + "]',
         "TYPE": "RESIDUAL",
     },
-    "BGS_ADJ_\" + scalar_name": {
-        "DESCRIPTION": "BGS residual of the adjoint of \" + scalar_name + \" .",
+    'BGS_ADJ_" + scalar_name': {
+        "DESCRIPTION": 'BGS residual of the adjoint of " + scalar_name + " .',
         "GROUP": "BGS_RES",
-        "HEADER": "bgs[\" + scalar_name + \"]",
+        "HEADER": 'bgs[" + scalar_name + "]',
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_DENSITY": {
@@ -167,10 +167,10 @@ history_header_map = {
         "HEADER": "bgs[A_P1]",
         "TYPE": "RESIDUAL",
     },
-    "BGS_ADJ_SPECIES_\" + std::to_string(iVar": {
+    'BGS_ADJ_SPECIES_" + std::to_string(iVar': {
         "DESCRIPTION": "BGS residual of the adjoint transported species.",
         "GROUP": "BGS_RES",
-        "HEADER": "bgs[A_rho*Y_\" + std::to_string(iVar) + \"]",
+        "HEADER": 'bgs[A_rho*Y_" + std::to_string(iVar) + "]',
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_TEMPERATURE": {
@@ -275,10 +275,10 @@ history_header_map = {
         "HEADER": "bgs[LM_2]",
         "TYPE": "RESIDUAL",
     },
-    "BGS_SPECIES_\" + std::to_string(iVar": {
+    'BGS_SPECIES_" + std::to_string(iVar': {
         "DESCRIPTION": "Maximum residual of transported species.",
         "GROUP": "BGS_RES",
-        "HEADER": "bgs[rho*Y_\" + std::to_string(iVar)+\"]",
+        "HEADER": 'bgs[rho*Y_" + std::to_string(iVar)+"]',
         "TYPE": "RESIDUAL",
     },
     "BGS_TEMPERATURE": {
@@ -617,10 +617,10 @@ history_header_map = {
         "HEADER": "d[Secondary_Over_Uniformity]",
         "TYPE": "D_COEFFICIENT",
     },
-    "D_SURFACE_SPECIES_\" + std::to_string(iVar": {
+    'D_SURFACE_SPECIES_" + std::to_string(iVar': {
         "DESCRIPTION": "Derivative value",
         "GROUP": "D_SPECIES_COEFF",
-        "HEADER": "d[Avg_Species_\" + std::to_string(iVar]",
+        "HEADER": 'd[Avg_Species_" + std::to_string(iVar]',
         "TYPE": "D_COEFFICIENT",
     },
     "D_SURFACE_STATIC_PRESSURE": {
@@ -689,16 +689,16 @@ history_header_map = {
         "HEADER": "d[VolFrac]",
         "TYPE": "D_COEFFICIENT",
     },
-    "DensityIn_\" + tag": {
-        "DESCRIPTION": "Flow angle out \" + tag",
+    'DensityIn_" + tag': {
+        "DESCRIPTION": 'Flow angle out " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "DensityIn_\" + tag",
+        "HEADER": 'DensityIn_" + tag',
         "TYPE": "DEFAULT",
     },
-    "DensityOut_\" + tag": {
-        "DESCRIPTION": "Absolute flow angle in \" + tag",
+    'DensityOut_" + tag': {
+        "DESCRIPTION": 'Absolute flow angle in " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "DensityOut_\" + tag",
+        "HEADER": 'DensityOut_" + tag',
         "TYPE": "DEFAULT",
     },
     "EFFICIENCY": {
@@ -719,16 +719,16 @@ history_header_map = {
         "HEADER": "EntropyGen",
         "TYPE": "DEFAULT",
     },
-    "EntropyIn_\" + tag": {
-        "DESCRIPTION": "Total pressure loss \" + tag",
+    'EntropyIn_" + tag': {
+        "DESCRIPTION": 'Total pressure loss " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "EntropyIn_\" + tag",
+        "HEADER": 'EntropyIn_" + tag',
         "TYPE": "DEFAULT",
     },
-    "EntropyOut_\" + tag": {
-        "DESCRIPTION": "Kinetic energy loss \" + tag",
+    'EntropyOut_" + tag': {
+        "DESCRIPTION": 'Kinetic energy loss " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "EntropyOut_\" + tag",
+        "HEADER": 'EntropyOut_" + tag',
         "TYPE": "DEFAULT",
     },
     "EulerianWork": {
@@ -767,10 +767,10 @@ history_header_map = {
         "HEADER": "Cp_Diff",
         "TYPE": "COEFFICIENT",
     },
-    "KineticEnergyLoss_\" + tag": {
+    'KineticEnergyLoss_" + tag': {
         "DESCRIPTION": "Blade Kinetic Energy Loss Coefficient",
         "GROUP": "TURBO_PERF",
-        "HEADER": "KELC_\" + tag",
+        "HEADER": 'KELC_" + tag',
         "TYPE": "DEFAULT",
     },
     "KineticEnergyLoss_Stage": {
@@ -875,28 +875,28 @@ history_header_map = {
         "HEADER": "maxHF",
         "TYPE": "COEFFICIENT",
     },
-    "MAX_\" + cv_name": {
-        "DESCRIPTION": "Maximum residual of the \" + cv_name + \" equation.",
+    'MAX_" + cv_name': {
+        "DESCRIPTION": 'Maximum residual of the " + cv_name + " equation.',
         "GROUP": "MAX_RES",
-        "HEADER": "max[\" + cv_name + \"]",
+        "HEADER": 'max[" + cv_name + "]',
         "TYPE": "RESIDUAL",
     },
-    "MAX_\" + scalar_name": {
-        "DESCRIPTION": "Maximum residual of the \" + scalar_name + \" mass fraction equation.",
+    'MAX_" + scalar_name': {
+        "DESCRIPTION": 'Maximum residual of the " + scalar_name + " mass fraction equation.',
         "GROUP": "MAX_RES",
-        "HEADER": "max[\" + scalar_name + \"]",
+        "HEADER": 'max[" + scalar_name + "]',
         "TYPE": "RESIDUAL",
     },
-    "MAX_ADJ_\" + cv_name": {
-        "DESCRIPTION": "Maximum residual of the adjoint \" + cv_name",
+    'MAX_ADJ_" + cv_name': {
+        "DESCRIPTION": 'Maximum residual of the adjoint " + cv_name',
         "GROUP": "MAX_RES",
-        "HEADER": "max[\"+cv_name +\"]",
+        "HEADER": 'max["+cv_name +"]',
         "TYPE": "RESIDUAL",
     },
-    "MAX_ADJ_\" + scalar_name": {
-        "DESCRIPTION": "Maximum residual of the adjoint of \" + scalar_name + \" .",
+    'MAX_ADJ_" + scalar_name': {
+        "DESCRIPTION": 'Maximum residual of the adjoint of " + scalar_name + " .',
         "GROUP": "MAX_RES",
-        "HEADER": "max[scalar_\" + scalar_name + \"]",
+        "HEADER": 'max[scalar_" + scalar_name + "]',
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_DENSITY": {
@@ -947,10 +947,10 @@ history_header_map = {
         "HEADER": "max[A_Rho]",
         "TYPE": "RESIDUAL",
     },
-    "MAX_ADJ_SPECIES_\" + std::to_string(iVar": {
+    'MAX_ADJ_SPECIES_" + std::to_string(iVar': {
         "DESCRIPTION": "Maximum residual of the adjoint transported species.",
         "GROUP": "MAX_RES",
-        "HEADER": "max[A_rho*Y_\" + std::to_string(iVar) + \"]",
+        "HEADER": 'max[A_rho*Y_" + std::to_string(iVar) + "]',
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_TEMPERATURE": {
@@ -1049,10 +1049,10 @@ history_header_map = {
         "HEADER": "max[LM_2]",
         "TYPE": "RESIDUAL",
     },
-    "MAX_SPECIES_\" + std::to_string(iVar": {
+    'MAX_SPECIES_" + std::to_string(iVar': {
         "DESCRIPTION": "Maximum residual of transported species.",
         "GROUP": "MAX_RES",
-        "HEADER": "max[rho*Y_\" + std::to_string(iVar)+\"]",
+        "HEADER": 'max[rho*Y_" + std::to_string(iVar)+"]',
         "TYPE": "RESIDUAL",
     },
     "MAX_TEMPERATURE": {
@@ -1115,40 +1115,40 @@ history_header_map = {
         "HEADER": "CMz",
         "TYPE": "COEFFICIENT",
     },
-    "MachIn_\" + tag": {
-        "DESCRIPTION": "Total-to-Static efficiency \" + tag",
+    'MachIn_" + tag': {
+        "DESCRIPTION": 'Total-to-Static efficiency " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "MachIn_\" + tag",
+        "HEADER": 'MachIn_" + tag',
         "TYPE": "DEFAULT",
     },
-    "MachOut_\" + tag": {
-        "DESCRIPTION": "Total-to-Static efficiency \" + tag",
+    'MachOut_" + tag': {
+        "DESCRIPTION": 'Total-to-Static efficiency " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "MachOut_\" + tag",
+        "HEADER": 'MachOut_" + tag',
         "TYPE": "DEFAULT",
     },
-    "MassFlowIn_\" + tag": {
-        "DESCRIPTION": "Mach out \" + tag",
+    'MassFlowIn_" + tag': {
+        "DESCRIPTION": 'Mach out " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "MassFlowIn_\" + tag",
+        "HEADER": 'MassFlowIn_" + tag',
         "TYPE": "DEFAULT",
     },
-    "MassFlowOut_\" + tag": {
-        "DESCRIPTION": "Total efficiency \" + tag",
+    'MassFlowOut_" + tag': {
+        "DESCRIPTION": 'Total efficiency " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "MassFlowOut_\" + tag",
+        "HEADER": 'MassFlowOut_" + tag',
         "TYPE": "DEFAULT",
     },
-    "NormalVelocityIn_\" + tag": {
-        "DESCRIPTION": "Absolute flow angle out \" + tag",
+    'NormalVelocityIn_" + tag': {
+        "DESCRIPTION": 'Absolute flow angle out " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "NormalVelocityIn_\" + tag",
+        "HEADER": 'NormalVelocityIn_" + tag',
         "TYPE": "DEFAULT",
     },
-    "NormalVelocityOut_\" + tag": {
-        "DESCRIPTION": "Mass flow in \" + tag",
+    'NormalVelocityOut_" + tag': {
+        "DESCRIPTION": 'Mass flow in " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "NormalVelocityOut_\" + tag",
+        "HEADER": 'NormalVelocityOut_" + tag',
         "TYPE": "DEFAULT",
     },
     "PREV_AOA": {
@@ -1157,16 +1157,16 @@ history_header_map = {
         "HEADER": "Previous_AOA",
         "TYPE": "DEFAULT",
     },
-    "PressureIn_\" + tag": {
-        "DESCRIPTION": "Pressure ratio \" + tag",
+    'PressureIn_" + tag': {
+        "DESCRIPTION": 'Pressure ratio " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "PressureIn_\" + tag",
+        "HEADER": 'PressureIn_" + tag',
         "TYPE": "DEFAULT",
     },
-    "PressureOut_\" + tag": {
-        "DESCRIPTION": "Flow angle in \" + tag",
+    'PressureOut_" + tag': {
+        "DESCRIPTION": 'Flow angle in " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "PressureOut_\" + tag",
+        "HEADER": 'PressureOut_" + tag',
         "TYPE": "DEFAULT",
     },
     "PressureRatioTS": {
@@ -1193,28 +1193,28 @@ history_header_map = {
         "HEADER": "RefNode",
         "TYPE": "COEFFICIENT",
     },
-    "RMS_\"+CV_name": {
-        "DESCRIPTION": "Root-mean squared residual of \" + CV_name + \" controlling variable equation.",
+    'RMS_"+CV_name': {
+        "DESCRIPTION": 'Root-mean squared residual of " + CV_name + " controlling variable equation.',
         "GROUP": "RMS_RES",
-        "HEADER": "rms[\"+CV_name+\"]",
+        "HEADER": 'rms["+CV_name+"]',
         "TYPE": "RESIDUAL",
     },
-    "RMS_\"+scalar_name": {
-        "DESCRIPTION": "Root-mean squared residual of the \"+scalar_name+\" mass fraction equation.",
+    'RMS_"+scalar_name': {
+        "DESCRIPTION": 'Root-mean squared residual of the "+scalar_name+" mass fraction equation.',
         "GROUP": "RMS_RES",
-        "HEADER": "rms[\"+scalar_name+\"]",
+        "HEADER": 'rms["+scalar_name+"]',
         "TYPE": "RESIDUAL",
     },
-    "RMS_ADJ_\" + scalar_name": {
-        "DESCRIPTION": "Root-mean square residual of the adjoint of \" + scalar_name + \" .",
+    'RMS_ADJ_" + scalar_name': {
+        "DESCRIPTION": 'Root-mean square residual of the adjoint of " + scalar_name + " .',
         "GROUP": "RMS_RES",
-        "HEADER": "rms[\" + scalar_name + \"]",
+        "HEADER": 'rms[" + scalar_name + "]',
         "TYPE": "RESIDUAL",
     },
-    "RMS_ADJ_\"+cv_name": {
-        "DESCRIPTION": "Root-mean square residual of the adjoint \" + cv_name",
+    'RMS_ADJ_"+cv_name': {
+        "DESCRIPTION": 'Root-mean square residual of the adjoint " + cv_name',
         "GROUP": "RMS_RES",
-        "HEADER": "rms[\" + cv_name + \"]",
+        "HEADER": 'rms[" + cv_name + "]',
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_DENSITY": {
@@ -1271,10 +1271,10 @@ history_header_map = {
         "HEADER": "rms[A_P1]",
         "TYPE": "RESIDUAL",
     },
-    "RMS_ADJ_SPECIES_\" + std::to_string(iVar": {
+    'RMS_ADJ_SPECIES_" + std::to_string(iVar': {
         "DESCRIPTION": "Root-mean square residual of the adjoint transported species.",
         "GROUP": "RMS_RES",
-        "HEADER": "rms[A_rho*Y_\" + std::to_string(iVar) + \"]",
+        "HEADER": 'rms[A_rho*Y_" + std::to_string(iVar) + "]',
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_TEMPERATURE": {
@@ -1391,10 +1391,10 @@ history_header_map = {
         "HEADER": "rms[R]",
         "TYPE": "RESIDUAL",
     },
-    "RMS_SPECIES_\" + std::to_string(iVar": {
+    'RMS_SPECIES_" + std::to_string(iVar': {
         "DESCRIPTION": "Root-mean square residual of transported species.",
         "GROUP": "RMS_RES",
-        "HEADER": "rms[rho*Y_\" + std::to_string(iVar)+\"]",
+        "HEADER": 'rms[rho*Y_" + std::to_string(iVar)+"]',
         "TYPE": "RESIDUAL",
     },
     "RMS_TKE": {
@@ -1427,13 +1427,13 @@ history_header_map = {
         "HEADER": "Sens_AoA",
         "TYPE": "COEFFICIENT",
     },
-    "SENS_EFIELD_\" + iVarS": {
+    'SENS_EFIELD_" + iVarS': {
         "DESCRIPTION": "d Objective / d Electric field",
         "GROUP": "SENSITIVITY",
         "HEADER": "Sens[EField\" + iVarS + ']'",
         "TYPE": "DEFAULT",
     },
-    "SENS_E_\" + iVarS": {
+    'SENS_E_" + iVarS': {
         "DESCRIPTION": "d Objective / d Elasticity modulus",
         "GROUP": "SENSITIVITY",
         "HEADER": "Sens[E\" + iVarS + ']'",
@@ -1451,7 +1451,7 @@ history_header_map = {
         "HEADER": "Sens_Mach",
         "TYPE": "COEFFICIENT",
     },
-    "SENS_NU_\" + iVarS": {
+    'SENS_NU_" + iVarS': {
         "DESCRIPTION": "d Objective / d Poisson ratio",
         "GROUP": "SENSITIVITY",
         "HEADER": "Sens[Nu\" + iVarS + ']'",
@@ -1469,13 +1469,13 @@ history_header_map = {
         "HEADER": "Sens_Pout",
         "TYPE": "COEFFICIENT",
     },
-    "SENS_RHO_\" + iVarS": {
+    'SENS_RHO_" + iVarS': {
         "DESCRIPTION": "d Objective / d Material density",
         "GROUP": "SENSITIVITY",
         "HEADER": "Sens[Rho\" + iVarS + ']'",
         "TYPE": "DEFAULT",
     },
-    "SENS_RHO_DL_\" + iVarS": {
+    'SENS_RHO_DL_" + iVarS': {
         "DESCRIPTION": "d Objective / d Dead load density",
         "GROUP": "SENSITIVITY",
         "HEADER": "Sens[RhoDL\" + iVarS + ']'",
@@ -1559,10 +1559,10 @@ history_header_map = {
         "HEADER": "Secondary_Over_Uniformity",
         "TYPE": "COEFFICIENT",
     },
-    "SURFACE_SPECIES_\" + std::to_string(iVar": {
-        "DESCRIPTION": "Total average species \" + std::to_string(iVar) + \" on all markers set in MARKER_ANALYZE",
+    'SURFACE_SPECIES_" + std::to_string(iVar': {
+        "DESCRIPTION": 'Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE',
         "GROUP": "SPECIES_COEFF",
-        "HEADER": "Avg_Species_\" + std::to_string(iVar",
+        "HEADER": 'Avg_Species_" + std::to_string(iVar',
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_SPECIES_VARIANCE": {
@@ -1895,10 +1895,10 @@ history_header_map = {
         "HEADER": "dtavg[Secondary_Over_Uniformity]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
-    "TAVG_D_SURFACE_SPECIES_\" + std::to_string(iVar": {
+    'TAVG_D_SURFACE_SPECIES_" + std::to_string(iVar': {
         "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_SPECIES_COEFF",
-        "HEADER": "dtavg[Avg_Species_\" + std::to_string(iVar]",
+        "HEADER": 'dtavg[Avg_Species_" + std::to_string(iVar]',
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SURFACE_STATIC_PRESSURE": {
@@ -2141,10 +2141,10 @@ history_header_map = {
         "HEADER": "tavg[Secondary_Over_Uniformity]",
         "TYPE": "TAVG_COEFFICIENT",
     },
-    "TAVG_SURFACE_SPECIES_\" + std::to_string(iVar": {
+    'TAVG_SURFACE_SPECIES_" + std::to_string(iVar': {
         "DESCRIPTION": "weighted time average value",
         "GROUP": "TAVG_SPECIES_COEFF",
-        "HEADER": "tavg[Avg_Species_\" + std::to_string(iVar]",
+        "HEADER": 'tavg[Avg_Species_" + std::to_string(iVar]',
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_SURFACE_STATIC_PRESSURE": {
@@ -2243,34 +2243,34 @@ history_header_map = {
         "HEADER": "HF",
         "TYPE": "COEFFICIENT",
     },
-    "TangentialVelocityIn_\" + tag": {
-        "DESCRIPTION": "Mass flow out \" + tag",
+    'TangentialVelocityIn_" + tag': {
+        "DESCRIPTION": 'Mass flow out " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "TangentialVelocityIn_\" + tag",
+        "HEADER": 'TangentialVelocityIn_" + tag',
         "TYPE": "DEFAULT",
     },
-    "TangentialVelocityOut_\" + tag": {
-        "DESCRIPTION": "Mach in \" + tag",
+    'TangentialVelocityOut_" + tag': {
+        "DESCRIPTION": 'Mach in " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "TangentialVelocityOut_\" + tag",
+        "HEADER": 'TangentialVelocityOut_" + tag',
         "TYPE": "DEFAULT",
     },
-    "TemperatureIn_\" + tag": {
-        "DESCRIPTION": "Temperature ratio \" + tag",
+    'TemperatureIn_" + tag': {
+        "DESCRIPTION": 'Temperature ratio " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "TemperatureIn_\" + tag",
+        "HEADER": 'TemperatureIn_" + tag',
         "TYPE": "DEFAULT",
     },
-    "TemperatureOut_\" + tag": {
-        "DESCRIPTION": "Flow angle in \" + tag",
+    'TemperatureOut_" + tag': {
+        "DESCRIPTION": 'Flow angle in " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "TemperatureOut_\" + tag",
+        "HEADER": 'TemperatureOut_" + tag',
         "TYPE": "DEFAULT",
     },
-    "TotPressureLoss_\" + tag": {
+    'TotPressureLoss_" + tag': {
         "DESCRIPTION": "Blade Pressure Loss Coefficient",
         "GROUP": "TURBO_PERF",
-        "HEADER": "TPLC_\" + tag",
+        "HEADER": 'TPLC_" + tag',
         "TYPE": "DEFAULT",
     },
     "TotPressureLoss_Stage": {
@@ -2279,28 +2279,28 @@ history_header_map = {
         "HEADER": "TPLC_all",
         "TYPE": "DEFAULT",
     },
-    "TotalEntahalpyIn_\" + tag": {
-        "DESCRIPTION": "Entropy generation \" + tag",
+    'TotalEntahalpyIn_" + tag': {
+        "DESCRIPTION": 'Entropy generation " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "TotalEntahalpyIn_\" + tag",
+        "HEADER": 'TotalEntahalpyIn_" + tag',
         "TYPE": "DEFAULT",
     },
-    "TotalEnthalpyOut_\" + tag": {
-        "DESCRIPTION": "Eulerian work \" + tag",
+    'TotalEnthalpyOut_" + tag': {
+        "DESCRIPTION": 'Eulerian work " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "TotalEnthalpyOut_\" + tag",
+        "HEADER": 'TotalEnthalpyOut_" + tag',
         "TYPE": "DEFAULT",
     },
-    "TotalPressureIn_\" + tag": {
-        "DESCRIPTION": "Pressure ratio \" + tag",
+    'TotalPressureIn_" + tag': {
+        "DESCRIPTION": 'Pressure ratio " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "TotPressureIn_\" + tag",
+        "HEADER": 'TotPressureIn_" + tag',
         "TYPE": "DEFAULT",
     },
-    "TotalPressureOut_\" + tag": {
-        "DESCRIPTION": "Flow angle in \" + tag",
+    'TotalPressureOut_" + tag': {
+        "DESCRIPTION": 'Flow angle in " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "TotPressureOut_\" + tag",
+        "HEADER": 'TotPressureOut_" + tag',
         "TYPE": "DEFAULT",
     },
     "TotalStaticEfficiency": {
@@ -2309,16 +2309,16 @@ history_header_map = {
         "HEADER": "TotStaticEff",
         "TYPE": "DEFAULT",
     },
-    "TotalTemperatureIn_\" + tag": {
-        "DESCRIPTION": "Temperature ratio \" + tag",
+    'TotalTemperatureIn_" + tag': {
+        "DESCRIPTION": 'Temperature ratio " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "TotTemperatureIn_\" + tag",
+        "HEADER": 'TotTemperatureIn_" + tag',
         "TYPE": "DEFAULT",
     },
-    "TotalTemperatureOut_\" + tag": {
-        "DESCRIPTION": "Flow angle in \" + tag",
+    'TotalTemperatureOut_" + tag': {
+        "DESCRIPTION": 'Flow angle in " + tag',
         "GROUP": "TURBO_PERF",
-        "HEADER": "TotTemperatureOut_\" + tag",
+        "HEADER": 'TotTemperatureOut_" + tag',
         "TYPE": "DEFAULT",
     },
     "TotalTotalEfficiency": {

@@ -103,8 +103,8 @@ def parse_output(files):
     def _dq(s):
         if not isinstance(s, str):
             s = str(s)
-        s = s.replace("\\", "\\\\").replace("\"", "\\\"")
-        return f"\"{s}\""
+        s = s.replace("\\", "\\\\").replace('"', '\\"')
+        return f'"{s}"'
 
     _field_order = ("DESCRIPTION", "GROUP", "HEADER", "TYPE")
 
@@ -118,8 +118,6 @@ def parse_output(files):
                     f.write(f"        {_dq(name)}: {_dq(val[name])},\n")
             f.write("    },\n")
         f.write("}\n")
-
-
 
 
 parse_output(fileList)
