@@ -3528,7 +3528,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Check if MULTIGRID is requested in VOLUME_OUTPUT and set the config boolean accordingly. ---*/
-  Wrt_MultiGrid = false;
+  Wrt_MultiGrid = true;
   for (unsigned short iField = 0; iField < nVolumeOutput; iField++) {
     if(VolumeOutput[iField].find("MULTIGRID") != string::npos) {
       Wrt_MultiGrid = true;

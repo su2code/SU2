@@ -483,7 +483,7 @@ private:
   unsigned short **DegreeFFDBox;      /*!< \brief Degree of the FFD boxes. */
   string *FFDTag;                     /*!< \brief Parameters of the design variable. */
   string *TagFFDBox;                  /*!< \brief Tag of the FFD box. */
-  unsigned short GeometryMode;        /*!< \brief Gemoetry mode (analysis or gradient computation). */
+  unsigned short GeometryMode;        /*!< \brief Geometry mode (analysis or gradient computation). */
   unsigned short MGCycle;             /*!< \brief Kind of multigrid cycle. */
   unsigned short FinestMesh;          /*!< \brief Finest mesh for the full multigrid approach. */
   unsigned short nFFD_Fix_IDir,
@@ -2881,7 +2881,7 @@ public:
   unsigned short GetFinestMesh(void) const { return FinestMesh; }
 
   /*!
-   * \brief Get the kind of multigrid (V or W).
+   * \brief Get the kind of multigrid (V, W or FULLMG).
    * \note This variable is used in a recursive way to perform the different kind of cycles
    * \return 0 or 1 depending of we are dealing with a V or W cycle.
    */
@@ -3024,7 +3024,28 @@ public:
    * \brief Get the number of Runge-Kutta steps.
    * \return Number of Runge-Kutta steps.
    */
-  unsigned short GetnRKStep(void) const { return nRKStep; }
+  unsigned short GetnRKStep(void) const {
+
+    unsigned short iRKLimit = 1;
+
+    switch (GetKind_TimeIntScheme()) {
+      case RUNGE_KUTTA_EXPLICIT:
+        iRKLimit = GetnRKStep();
+        break;
+      case CLASSICAL_RK4_EXPLICIT:
+        iRKLimit = 4;
+        break;
+      case EULER_EXPLICIT:
+      case EULER_IMPLICIT:
+        iRKLimit = 1;
+        break;
+      default:
+        iRKLimit = 1;
+        break;
+    }
+  //return nRKStep;
+  return iRKLimit;
+}
 
   /*!
    * \brief Get the number of time levels for time accurate local time stepping.

@@ -4322,8 +4322,8 @@ public:
       }
       const su2double scale = 1 / geoCoarse.nodes->GetVolume(iPointCoarse);
 
-      for (auto iChildren = 0ul; iChildren < geoCoarse.nodes->GetnChildren_CV(iPointCoarse); ++iChildren) {
-        const auto iPointFine = geoCoarse.nodes->GetChildren_CV(iPointCoarse, iChildren);
+      for (auto iChild = 0ul; iChild < geoCoarse.nodes->GetnChildren_CV(iPointCoarse); ++iChild) {
+        const auto iPointFine = geoCoarse.nodes->GetChildren_CV(iPointCoarse, iChild);
         const su2double w = geoFine.nodes->GetVolume(iPointFine) * scale;
         for (auto iVar = 0ul; iVar < varsCoarse.cols(); ++iVar) {
           varsCoarse(iPointCoarse, iVar) += w * varsFine(iPointFine, iVar);

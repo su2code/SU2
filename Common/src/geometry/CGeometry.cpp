@@ -3902,11 +3902,14 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
     for (auto step = 0u; step < iMesh; ++step) {
       auto coarseMesh = geometry[iMesh - 1 - step];
       if (step)
-        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint) {
           CoarseGridColor_(iPoint, step) = CoarseGridColor_(coarseMesh->nodes->GetParent_CV(iPoint), step - 1);
+        }
       else
-        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
-          CoarseGridColor_(iPoint, step) = color[coarseMesh->nodes->GetParent_CV(iPoint)];
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint){
+          //CoarseGridColor_(iPoint, step) = color[coarseMesh->nodes->GetParent_CV(iPoint)];
+          CoarseGridColor_(iPoint, step) = coarseMesh->nodes->GetParent_CV(iPoint);
+        }
     }
   }
 }

@@ -577,7 +577,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     }
 
-    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is diferent from 0.
+    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is different from 0.
      * This is only done once because in dual time the time step cannot be variable. ---*/
 
     if (dual_time && (Iteration == config->GetRestart_Iter()) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {

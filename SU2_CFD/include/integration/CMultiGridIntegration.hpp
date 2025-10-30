@@ -133,6 +133,29 @@ private:
   void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
+
+  void PostSmoothing(unsigned short RunTime_EqSystem,
+  CSolver* solver_fine,
+  CNumerics** numerics_fine,
+  CGeometry* geometry_fine,
+  CSolver** solver_container_fine,
+  CConfig *config,
+  unsigned short iMesh,
+  unsigned short iRKLimit);
+
+  void PreSmoothing(unsigned short RunTime_EqSystem,
+  CGeometry**** geometry,
+  CSolver***** solver_container,
+  CConfig **config_container,
+  CSolver* solver_fine,
+  CNumerics** numerics_fine,
+  CGeometry* geometry_fine,
+  CSolver** solver_container_fine,
+  CConfig *config,
+  unsigned short iMesh,
+  unsigned short iZone,
+  unsigned short iRKLimit);
+
   /*!
    * \brief Compute the fine grid correction from the coarse solution.
    * \param[out] sol_fine - Pointer to the solution on the fine grid.

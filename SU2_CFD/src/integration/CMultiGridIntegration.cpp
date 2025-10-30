@@ -139,7 +139,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   CConfig* config = config_container[iZone];
 
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
-  const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Shorter names to refer to fine grid entities. ---*/
@@ -151,71 +150,18 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
   /*--- Number of RK steps. ---*/
 
-  unsigned short iRKLimit = 1;
+  unsigned short iRKLimit = config->GetnRKStep();
 
-  switch (config->GetKind_TimeIntScheme()) {
-    case RUNGE_KUTTA_EXPLICIT:
-      iRKLimit = config->GetnRKStep();
-      break;
-    case CLASSICAL_RK4_EXPLICIT:
-      iRKLimit = 4;
-      break;
-    case EULER_EXPLICIT:
-    case EULER_IMPLICIT:
-      iRKLimit = 1;
-      break;
-  }
+  // standard multigrid: pre-smoothing
+  // start with solution on fine grid h
+  // apply nonlinear smoother (e.g. Gauss-Seidel) to system to damp high-frequency errors.
+  PreSmoothing(RunTime_EqSystem, geometry, solver_container, config_container, solver_fine, numerics_fine, geometry_fine, solver_container_fine, config, iMesh, iZone,iRKLimit);
 
-  /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
-
-  for (unsigned short iPreSmooth = 0; iPreSmooth < config->GetMG_PreSmooth(iMesh); iPreSmooth++) {
-
-    /*--- Time and space integration ---*/
-
-    for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
-
-      /*--- Send-Receive boundary conditions, and preprocessing ---*/
-
-      solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
-
-
-      if (iRKStep == 0) {
-
-        /*--- Set the old solution ---*/
-
-        solver_fine->Set_OldSolution();
-
-        if (classical_rk4) solver_fine->Set_NewSolution();
-
-        /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
-
-        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh, config->GetTimeIter());
-
-        /*--- Restrict the solution and gradient for the adjoint problem ---*/
-
-        Adjoint_Setup(geometry, solver_container, config_container, RunTime_EqSystem, config->GetTimeIter(), iZone);
-
-      }
-
-      /*--- Space integration ---*/
-
-      Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
-
-      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
-
-      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
-
-      /*--- Send-Receive boundary conditions, and postprocessing ---*/
-
-      solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
-
-    }
-
-  }
 
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
 
   if ( iMesh < config->GetnMGLevels() ) {
+    cout << "imesh =" << iMesh << " " << config->GetnMGLevels() << endl;
 
     /*--- Shorter names to refer to coarse grid entities. ---*/
 
@@ -239,7 +185,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     SetResidual_Term(geometry_fine, solver_fine);
 
     /*--- Compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$ ---*/
-
+    // restrict the fine-grid solution to the coarser grid. This must be FAS multigrid, because else we restrict the residual.
     SetRestricted_Solution(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
     solver_coarse->Preprocessing(geometry_coarse, solver_container_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem, false);
@@ -271,39 +217,112 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
 
     GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
-
     SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), 1.25, config);
-
     SetProlongated_Correction(solver_fine, geometry_fine, config, iMesh);
 
 
     /*--- Solution post-smoothing in the prolongated grid. ---*/
+    PostSmoothing(RunTime_EqSystem, solver_fine, numerics_fine, geometry_fine, solver_container_fine, config, iMesh, iRKLimit);
 
-    for (unsigned short iPostSmooth = 0; iPostSmooth < config->GetMG_PostSmooth(iMesh); iPostSmooth++) {
-
-      for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
-
-        solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
-
-        if (iRKStep == 0) {
-          solver_fine->Set_OldSolution();
-
-          if (classical_rk4) solver_fine->Set_NewSolution();
-
-          solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  config->GetTimeIter());
-        }
-
-        Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
-
-        Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
-
-        solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
-
-      }
-    }
   }
 
 }
+
+
+void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
+CGeometry**** geometry,
+CSolver***** solver_container,
+CConfig **config_container,
+CSolver* solver_fine,
+CNumerics** numerics_fine,
+CGeometry* geometry_fine,
+CSolver** solver_container_fine,
+CConfig *config,
+unsigned short iMesh,
+unsigned short iZone,
+unsigned short iRKLimit) {
+  const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
+  const unsigned short nPreSmooth = config->GetMG_PreSmooth(iMesh);
+  const unsigned long timeIter = config->GetTimeIter();
+
+  /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
+  for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
+
+    /*--- Time and space integration ---*/
+    for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
+
+      /*--- Send-Receive boundary conditions, and preprocessing ---*/
+      solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
+
+      if (iRKStep == 0) {
+
+        /*--- Set the old solution ---*/
+        solver_fine->Set_OldSolution();
+
+        if (classical_rk4) solver_fine->Set_NewSolution();
+        // nijso asks: only call when classical_rk4?
+        // this copies solution to old solution, which we already did above.
+        //solver_fine->Set_OldSolution();
+
+        /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
+        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh, timeIter);
+
+        /*--- Restrict the solution and gradient for the adjoint problem ---*/
+        // nijso asks: why do we call this here but not in the post-smoothing?
+        Adjoint_Setup(geometry, solver_container, config_container, RunTime_EqSystem, timeIter, iZone);
+
+      }
+      cout << "pre-smoothing mesh " << iMesh << " rkstep " << iRKStep << endl;
+      /*--- Space integration ---*/
+      Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
+
+      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
+      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+
+      /*--- Send-Receive boundary conditions, and postprocessing ---*/
+      solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
+
+    }
+  }
+}
+
+
+void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem, CSolver* solver_fine,CNumerics** numerics_fine, CGeometry* geometry_fine, CSolver** solver_container_fine, CConfig *config, unsigned short iMesh,unsigned short iRKLimit)
+{
+  const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
+  const unsigned short nPostSmooth = config->GetMG_PostSmooth(iMesh);
+  const unsigned long timeIter = config->GetTimeIter();
+
+  /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
+  for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
+
+    for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
+
+      solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
+
+      if (iRKStep == 0) {
+
+        /*--- Set the old solution ---*/
+        solver_fine->Set_OldSolution();
+
+        if (classical_rk4) solver_fine->Set_NewSolution();
+          solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  timeIter);
+
+      }
+
+      /*--- Space integration ---*/
+      Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
+      cout << "post-smoothing mesh " << iMesh << " rkstep " << iRKStep << endl;
+      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
+      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+
+      /*--- Send-Receive boundary conditions, and postprocessing ---*/
+      solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
+
+    }
+  }
+}
+
 
 void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                       CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
@@ -353,8 +372,8 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- For dirichlet boundary condtions, set the correction to zero.
-         Note that Solution_Old stores the correction not the actual value ---*/
+        /*--- For dirichlet boundary conditions, set the correction to zero.
+         Note that Solution_Old stores the correction, not the actual value ---*/
 
         su2double zero[3] = {0.0};
         sol_coarse->GetNodes()->SetVelocity_Old(Point_Coarse, zero);
@@ -590,6 +609,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
             sol_coarse->GetNodes()->SetVelSolutionVector(Point_Coarse, Grid_Vel);
           }
           else {
+            // nijso asks: why only for the velocity?
             /*--- For stationary no-slip walls, set the velocity to zero. ---*/
             su2double zero[3] = {0.0};
             sol_coarse->GetNodes()->SetVelSolutionVector(Point_Coarse, zero);

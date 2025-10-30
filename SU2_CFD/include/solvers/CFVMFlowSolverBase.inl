@@ -592,7 +592,7 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* confi
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSolver**, CConfig *config) {
-
+  cout << "calling ImplicitEuler" << endl;
   PrepareImplicitIteration(geometry, nullptr, config);
 
   /*--- Solve or smooth the linear system. ---*/
@@ -605,7 +605,7 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
   END_SU2_OMP_FOR
 
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
-
+  cout << "iter = " << iter << " " << System.GetResidual() << endl;
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     SetIterLinSolver(iter);
     SetResLinSolver(System.GetResidual());
