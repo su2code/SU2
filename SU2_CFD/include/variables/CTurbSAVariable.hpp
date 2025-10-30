@@ -100,7 +100,7 @@ public:
    * \param[in] iDim - Dimension index.
    * \return Old value of the source terms for the stochastic equations.
    */
-  inline virtual su2double GetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim) const override { return stochSource_old(iPoint, iDim); }
+  inline su2double GetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim) const override { return stochSource_old(iPoint, iDim); }
 
   /*!
    * \brief Set the old value of source terms for the stochastic equations.
