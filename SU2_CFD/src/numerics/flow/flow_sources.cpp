@@ -241,7 +241,7 @@ CNumerics::ResidualType<> CSourceGeneralAxisymmetric_Flow::ComputeResidual(const
     residual[3] = Volume * rho * Enthalpy_i * dv_dr;  // ρH(∂v/∂r)
 
     if (implicit) {
-      /* For now, set Jacobian to zero at axis (can be improved later). */
+      /* For now, set Jacobian to zero at axis (can be improved later to help with convergence). */
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++)
           jacobian[iVar][jVar] = 0.0;
