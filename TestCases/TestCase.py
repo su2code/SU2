@@ -386,6 +386,9 @@ class TestCase:
 
                         # If file tolerance is set to 0, make regular diff
                         if self.tol_file_percent == 0.0:
+                            # Strip trailing whitespace but keep newline for difflib
+                            fromlines = [line.rstrip() + '\n' for line in fromlines]
+                            tolines = [line.rstrip() + '\n' for line in tolines]
                             diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
 
                         # Else test word by word with given tolerance
