@@ -1367,7 +1367,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
         su2double Project_Grad_Enthalpy_i = 0.0;
         su2double Project_Grad_Enthalpy_j = 0.0;
 
-        for (iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0; iDim < nDim; iDim++) {
           Project_Grad_Enthalpy_i += Vector_ij[iDim] * nodes->GetAuxVarGradient(iPoint, 1, iDim);
           Project_Grad_Enthalpy_j -= Vector_ij[iDim] * nodes->GetAuxVarGradient(jPoint, 1, iDim);
         }
