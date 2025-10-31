@@ -1259,7 +1259,7 @@ def main():
     # "Formulas for Stress, Strain, and Structural Matrices", 2nd Edition, figure 19-4,
     # the maximum stress is 165.6MPa, we get a Von Misses stress very close to that.
     rotating_cylinder_fea.test_vals = [-6.861940, -6.835550, -6.895497, 22, -8.313847, 1.6502e+08]
-    rotating_cylinder_fea.test_vals_aarch64 = [-6.861939, -6.835539, -6.895498, 22, -8.313847, 16502e+08]
+    rotating_cylinder_fea.test_vals_aarch64 = [-6.861939, -6.835539, -6.895498, 22, -8.313847, 1.6502e+08]
     test_list.append(rotating_cylinder_fea)
 
     # Dynamic beam, 2d
