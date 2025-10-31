@@ -496,7 +496,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
 }
 
-void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *config,
+void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, CSolver** solver_container, const CConfig *config,
                                    unsigned short val_marker, unsigned short kind_boundary) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -634,36 +634,54 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       if (py_custom) {
         Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / config->GetTemperature_Ref();
       }
-      const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-      /*--- Get coordinates of i & nearest normal and compute distance ---*/
-
-      const auto Coord_i = geometry->nodes->GetCoord(iPoint);
-      const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
-      su2double UnitNormal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; ++iDim) UnitNormal[iDim] = Normal[iDim] / Area;
-      const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord_i, Coord_j);
-
-      /*--- Compute the normal gradient in temperature using Twall ---*/
-
-      const su2double dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
-
-      /*--- Get thermal conductivity ---*/
-      const su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
-
-      /*--- Apply a weak boundary condition for the energy equation.
-      Compute the residual due to the prescribed heat flux. ---*/
-
-      LinSysRes(iPoint, nDim+1) -= thermal_conductivity*dTdn*Area;
-
-      /*--- Jacobian contribution for temperature equation. ---*/
-
-      if (implicit) {
+      if (config->GetMarker_StrongBC(Marker_Tag) == true) {
+        /*--- Strong imposition of the temperature. ---*/
+        LinSysRes(iPoint, nDim + 1) = 0.0;
         if (multicomponent) {
-          const su2double Cp = nodes->GetSpecificHeatCp(iPoint);
-          Jacobian.AddVal2Diag(iPoint, nDim + 1, thermal_conductivity * Area / (dist_ij * Cp));
+          /*--- Retrieve scalars at wall node. ---*/
+          su2double* scalars = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+          /*--- Retrieve fluid model. ---*/
+          CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+          /*--- Set thermodynamic state given wall temperature and species composition. ---*/
+          fluid_model_local->SetTDState_T(Twall, scalars);
+          /*--- Set enthalpy obtained from fluid model. ---*/
+          nodes->SetSolution_Old(iPoint, nDim + 1, fluid_model_local->GetEnthalpy());
         } else {
-          Jacobian.AddVal2Diag(iPoint, nDim + 1, thermal_conductivity * Area / dist_ij);
+          nodes->SetSolution_Old(iPoint, nDim + 1, Twall);
+        }
+        nodes->SetEnergy_ResTruncError_Zero(iPoint);
+      } else {
+        /*--- Apply a weak boundary condition for the energy equation. ---*/
+        const auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+
+        /*--- Get coordinates of i & nearest normal and compute distance ---*/
+
+        const auto Coord_i = geometry->nodes->GetCoord(iPoint);
+        const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
+        su2double UnitNormal[MAXNDIM] = {0.0};
+        for (auto iDim = 0u; iDim < nDim; ++iDim) UnitNormal[iDim] = Normal[iDim] / Area;
+        const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord_i, Coord_j);
+
+        /*--- Compute the normal gradient in temperature using Twall ---*/
+
+        const su2double dTdn = -(nodes->GetTemperature(Point_Normal) - Twall) / dist_ij;
+
+        /*--- Get thermal conductivity ---*/
+        const su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+
+        /*--- Compute the residual due to the prescribed heat flux. ---*/
+
+        LinSysRes(iPoint, nDim + 1) -= thermal_conductivity * dTdn * Area;
+
+        /*--- Jacobian contribution for temperature equation. ---*/
+
+        if (implicit) {
+          if (multicomponent) {
+            const su2double Cp = nodes->GetSpecificHeatCp(iPoint);
+            Jacobian.AddVal2Diag(iPoint, nDim + 1, thermal_conductivity * Area / (dist_ij * Cp));
+          } else {
+            Jacobian.AddVal2Diag(iPoint, nDim + 1, thermal_conductivity * Area / dist_ij);
+          }
         }
       }
       break;
@@ -674,19 +692,16 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
 void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver**, CNumerics*,
                                     CNumerics*, CConfig *config, unsigned short val_marker) {
-
-  BC_Wall_Generic(geometry, config, val_marker, HEAT_FLUX);
+  BC_Wall_Generic(geometry, nullptr, config, val_marker, HEAT_FLUX);
 }
 
-void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver**, CNumerics*,
+void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver** solver_container, CNumerics*,
                                     CNumerics*, CConfig *config, unsigned short val_marker) {
-
-  BC_Wall_Generic(geometry, config, val_marker, ISOTHERMAL);
+  BC_Wall_Generic(geometry, solver_container, config, val_marker, ISOTHERMAL);
 }
 
 void CIncNSSolver::BC_HeatTransfer_Wall(const CGeometry *geometry, const CConfig *config, const unsigned short val_marker) {
-
-  BC_Wall_Generic(geometry, config, val_marker, HEAT_TRANSFER);
+  BC_Wall_Generic(geometry, nullptr, config, val_marker, HEAT_TRANSFER);
 }
 
 void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
