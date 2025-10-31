@@ -498,13 +498,9 @@ CNumerics::ResidualType<> CSourceGravity::ComputeResidual(const CConfig* config)
   return ResidualType<>(residual, jacobian, nullptr);
 }
 
-CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                           CSourceBase_Flow(val_nDim, val_nVar, config) {
-
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
-}
+CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar,
+                                                     const CConfig* config)
+    : CSourceBase_Flow(val_nDim, val_nVar, config) {}
 
 CNumerics::ResidualType<> CSourceRotatingFrame_Flow::ComputeResidual(const CConfig* config) {
 
@@ -566,9 +562,6 @@ CSourceIncRotatingFrame_Flow::CSourceIncRotatingFrame_Flow(unsigned short val_nD
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
   /*--- Retrieve the angular velocity vector from config. ---*/
   for (unsigned short iDim = 0; iDim < 3; iDim++)
     Omega[iDim] = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
@@ -629,10 +622,7 @@ CNumerics::ResidualType<> CSourceIncRotatingFrame_Flow::ComputeResidual(const CC
 
 CSourceVorticityConfinement::CSourceVorticityConfinement(unsigned short val_nDim, unsigned short val_nVar,
                                                          const CConfig* config)
-    : CSourceBase_Flow(val_nDim, val_nVar, config) {
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-}
+    : CSourceBase_Flow(val_nDim, val_nVar, config) {}
 
 CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CConfig* config) {
   /*--- density, \rho ---*/
