@@ -216,7 +216,7 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
   }
 
   if (muscl) {
-    /*--- Recompute density and enthalpy instead of reconstructing. ---*/
+    /*--- Reconstruct density and enthalpy without using their gradients. ---*/
     constexpr auto nVarGrad = ReconVarType::nVar - 2;
     switch (limiterType) {
     case LIMITER::NONE:
@@ -229,12 +229,20 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
       musclPointLimited<nVarGrad>(iPoint, jPoint, vector_ij, limiters, gradients, V, kappa, relax);
       break;
     }
+    /*--- Recompute density using the reconstructed pressure and temperature. ---*/
     V.i.density() = V.i.pressure() / (gasConst * V.i.temperature());
     V.j.density() = V.j.pressure() / (gasConst * V.j.temperature());
 
+    /*--- Reconstruct enthalpy using dH/dT = Cp and dH/dv = v. Recomputing enthalpy would cause
+     * stability issues because we use rho E = rho H - P, which loses its relation to temperaure
+     * if both rho and H are recomputed. ---*/
     const su2double cp = gasConst * gamma / (gamma - 1);
-    V.i.enthalpy() = cp * V.i.temperature() + 0.5 * squaredNorm<nDim>(V.i.velocity());
-    V.j.enthalpy() = cp * V.j.temperature() + 0.5 * squaredNorm<nDim>(V.j.velocity());
+    V.i.enthalpy() += cp * (V.i.temperature() - V1st.i.temperature());
+    V.j.enthalpy() += cp * (V.j.temperature() - V1st.j.temperature());
+    for (size_t iDim = 0; iDim < nDim; ++iDim) {
+      V.i.enthalpy() += V1st.i.velocity()[iDim] * (V.i.velocity()[iDim] - V1st.i.velocity()[iDim]);
+      V.j.enthalpy() += V1st.j.velocity()[iDim] * (V.j.velocity()[iDim] - V1st.j.velocity()[iDim]);
+    }
 
     /*--- Detect a non-physical reconstruction based on negative pressure or density. ---*/
     const Double neg_p_or_rho = fmax(fmin(V.i.pressure(), V.j.pressure()) < 0.0,
