@@ -124,6 +124,7 @@ class TestCase:
         self.command = self.Command()
         self.timeout = 0
         self.tol = 0.0
+        self.tol_aarch64 = 0.0
         self.tapetest_tol = 0
         self.tol_file_percent = 0.0
         self.comp_threshold = 0.0
@@ -386,6 +387,9 @@ class TestCase:
 
                         # If file tolerance is set to 0, make regular diff
                         if self.tol_file_percent == 0.0:
+                            # Strip trailing whitespace but keep newline for difflib
+                            fromlines = [line.rstrip() + '\n' for line in fromlines]
+                            tolines = [line.rstrip() + '\n' for line in tolines]
                             diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
 
                         # Else test word by word with given tolerance
@@ -1034,3 +1038,6 @@ class TestCase:
 
             if len(self.reference_file_aarch64) != 0:
                 self.reference_file = self.reference_file_aarch64
+
+            if self.tol_aarch64 != 0:
+                self.tol = self.tol_aarch64
