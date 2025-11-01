@@ -4,10 +4,20 @@ on:
   push:
     branches:
       - 'fix_regression_arm'
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: 'ARM runner to use'
+        default: 'ubuntu-24.04-arm'
+        options:
+          - 'ubuntu-22.04-arm'
+          - 'ubuntu-24.04-arm'
+        required: true
+        type: choice
 
 jobs:
   build_on_arm64:
     name: Run the jobs on Linux ARM64
     uses: './.github/workflows/regression.yml'
     with:
-      runner: 'ubuntu-24.04-arm'
+      runner: ${{ inputs.runner || 'ubuntu-24.04-arm' }}

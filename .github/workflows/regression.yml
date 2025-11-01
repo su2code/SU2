@@ -76,7 +76,7 @@ jobs:
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   build_tsan:
     name: Build SU2 (tsan)
-    if: inputs.runner != 'ubuntu-24.04-arm'
+    if: ${{ !contains(inputs.runner, 'arm') }}
     strategy:
       fail-fast: false
       matrix:
@@ -218,7 +218,7 @@ jobs:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   discadj_tape_tests:
-    if: inputs.runner != 'ubuntu-24.04-arm'
+    if: ${{ !contains(inputs.runner, 'arm') }}
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     name: Tape Tests
     needs: build
@@ -267,7 +267,7 @@ jobs:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   thread_sanitizer_tests:
-    if: inputs.runner != 'ubuntu-24.04-arm'
+    if: ${{ !contains(inputs.runner, 'arm') }}
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     name: Thread Sanitizer Tests
     needs: build_tsan
