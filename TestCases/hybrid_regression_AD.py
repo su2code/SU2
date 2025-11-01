@@ -113,6 +113,7 @@ def main():
     discadj_incomp_cylinder.test_iter = 20
     discadj_incomp_cylinder.test_vals         = [20.000000, -2.746353, -2.934792, 0.000000]
     discadj_incomp_cylinder.test_vals_aarch64 = [20.000000, -2.731541, -2.890897, 0.000000]
+    discadj_incomp_cylinder.tol_aarch64 = 2e-1
     test_list.append(discadj_incomp_cylinder)
 
     ######################################

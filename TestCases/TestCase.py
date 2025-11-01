@@ -124,6 +124,7 @@ class TestCase:
         self.command = self.Command()
         self.timeout = 0
         self.tol = 0.0
+        self.tol_aarch64 = 0.0
         self.tapetest_tol = 0
         self.tol_file_percent = 0.0
         self.comp_threshold = 0.0
@@ -1037,3 +1038,6 @@ class TestCase:
 
             if len(self.reference_file_aarch64) != 0:
                 self.reference_file = self.reference_file_aarch64
+
+            if self.tol_aarch64 != 0:
+                self.tol = self.tol_aarch64
