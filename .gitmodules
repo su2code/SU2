@@ -1,6 +1,6 @@
 [submodule "externals/codi"]
 	path = externals/codi
-	url = https://github.com/scicompkl/CoDiPack
+	url = https://github.com/SciCompKL/CoDiPack
 	ignore = dirty
 [submodule "externals/medi"]
 	path = externals/medi

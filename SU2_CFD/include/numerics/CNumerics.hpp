@@ -729,6 +729,41 @@ public:
   su2double GetIntermittencyEff() const { return intermittency_eff_i; }
 
   /*!
+   * \brief Get the value of the Transition Momentum Thickness Reynolds number from correlations.
+   * \param[out] Corr_Rec_i - Value of the Transition Momentum Thickness Reynolds number at point i.
+   */
+  inline virtual su2double GetCorr_Rec() {return 0.0;}
+
+   /*!
+   * \brief Get the value of the Momentum Thickness Reynolds number.
+   * \param[out] re_t - Value of the Momentum Thickness Reynolds number at point i.
+   */
+  inline virtual su2double GetRe_t() {return 0.0;}
+  inline virtual su2double GetTu() {return 0.0;}
+  inline virtual su2double GetLambda_theta() {return 0.0;}
+  inline virtual su2double Getduds() {return 0.0;}
+  inline virtual su2double GetRe_v() {return 0.0;}
+  inline virtual su2double GetProd() {return 0.0;}
+  inline virtual su2double GetDestr() {return 0.0;}
+  inline virtual su2double GetF_onset1() {return 0.0;}
+  inline virtual su2double GetF_onset2() {return 0.0;}
+  inline virtual su2double GetF_onset3() {return 0.0;}
+  inline virtual su2double GetF_onset() {return 0.0;}
+
+   /*!
+   * \brief Set the value of the F2 blending function into SLM transition model.
+   * \param[in] val_F2 - F2 blending function.
+   */
+  inline virtual void SetF2(su2double val_F2) {}
+
+  /*!
+   * \brief Set the gradient of the auxiliary variables.
+   * \param[in] val_auxvar_grad_i - Gradient of the auxiliary variable at point i.
+   * \param[in] val_auxvar_grad_j - Gradient of the auxiliary variable at point j.
+   */
+  inline virtual void SetAuxVar(su2double val_AuxVar) {}
+
+  /*!
    * \brief Set the gradient of the auxiliary variables.
    * \param[in] val_auxvar_grad_i - Gradient of the auxiliary variable at point i.
    * \param[in] val_auxvar_grad_j - Gradient of the auxiliary variable at point j.

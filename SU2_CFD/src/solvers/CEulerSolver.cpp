@@ -1074,17 +1074,12 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
-  if (config->GetTurbulenceIntensity_FreeStream() *100 <= 1.3) {
-    if (config->GetTurbulenceIntensity_FreeStream() *100 >=0.027) {
-        Re_ThetaT_FreeStream = (1173.51-589.428*config->GetTurbulenceIntensity_FreeStream() *100+0.2196/
-        (config->GetTurbulenceIntensity_FreeStream() *100*config->GetTurbulenceIntensity_FreeStream() *100));
-      }
-    else {
-      Re_ThetaT_FreeStream = (1173.51-589.428*config->GetTurbulenceIntensity_FreeStream() *100+0.2196/(0.27*0.27));
-    }
+  const su2double Intensity = config->GetTurbulenceIntensity_FreeStream()*100.0;
+  if (Intensity <= 1.3) {
+    Re_ThetaT_FreeStream = (1173.51-589.428*Intensity+0.2196/(pow(max(Intensity, 0.027), 2.0)));
   }
-  else {
-    Re_ThetaT_FreeStream = 331.5*pow(config->GetTurbulenceIntensity_FreeStream() *100-0.5658,-0.671);
+  else if(Intensity>1.3) {
+    Re_ThetaT_FreeStream = 331.5*pow(Intensity-0.5658,-0.671);
   }
   config->SetReThetaT_FreeStream(Re_ThetaT_FreeStream);
 
