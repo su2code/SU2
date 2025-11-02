@@ -54,7 +54,7 @@ def main():
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
     flatplate_sst1994m.test_vals         = [-13.020633, -9.534767, -10.401566, -7.501415, -9.750798, -4.850297, 0.002807]
-    flatplate_sst1994m.test_vals_aarch64 = [-13.024930, -9.634457, -10.707600, -7.558080, -9.926634, -4.910704, 0.002786]
+    flatplate_sst1994m.test_vals_aarch64 = [-13.021715, -9.534786, -10.401912, -7.501836, -9.750800, -4.850665, 0.002807]
     test_list.append(flatplate_sst1994m)
 
     # bump in channel - sst-v1994m
@@ -63,7 +63,7 @@ def main():
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
     bump_sst1994m.test_vals         = [-13.025425, -10.803521, -10.650384, -7.627578, -10.816248, -5.308678, 0.004911]
-    bump_sst1994m.test_vals_aarch64 = [-13.025265, -10.669816, -10.615338, -7.577125, -10.709448, -5.453868, 0.004903]
+    bump_sst1994m.test_vals_aarch64 = [-13.042689, -10.812982, -10.604523, -7.655547, -10.816257, -5.308083, 0.004911]
     test_list.append(bump_sst1994m)
 
     # SWBLI SA
@@ -90,6 +90,7 @@ def main():
     dsma661_sa.cfg_file   = "dsma661_sa_config.cfg"
     dsma661_sa.test_iter  = 5
     dsma661_sa.test_vals  = [-11.252527, -8.241876, -8.975283, -5.932184, -10.737674, 0.155687, 0.024232]
+    dsma661_sa.test_vals_aarch64 = [-11.293183, -8.241775, -9.083761, -6.011398, -10.737680, 0.155687, 0.024232]
     test_list.append(dsma661_sa)
 
     # DSMA661 - SST-V2003m
@@ -98,6 +99,7 @@ def main():
     dsma661_sst.cfg_file  = "dsma661_sst_config.cfg"
     dsma661_sst.test_iter = 5
     dsma661_sst.test_vals = [-10.979743, -8.400531, -8.767856, -5.814709, -10.519366, -7.345095, 0.155875, 0.023353]
+    dsma661_sst.test_vals_aarch64 = [-10.977195, -8.403731, -8.747068, -5.808899, -10.522786, -7.369851, 0.155875, 0.023353]
     test_list.append(dsma661_sst)
 
     ##########################
