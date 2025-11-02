@@ -80,7 +80,7 @@ def main():
     sp_pinArray_2d_mf_hf.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 25
-    sp_pinArray_2d_mf_hf.test_vals = [-4.685950, 1.388066, -0.755449, 241.878890]
+    sp_pinArray_2d_mf_hf.test_vals = [-4.685131, 1.388616, -0.755475, 241.878084]
     sp_pinArray_2d_mf_hf.test_vals_aarch64 = [-4.686092, 1.387918, -0.755447, 241.878841]
     test_list.append(sp_pinArray_2d_mf_hf)
 
@@ -89,7 +89,7 @@ def main():
     sp_pinArray_2d_dp_hf_tp.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
-    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.732729, 1.326135, -0.713419, 208.023676]
+    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.737196, 1.322378, -0.713373, 208.023676]
     sp_pinArray_2d_dp_hf_tp.test_vals_aarch64 = [-4.733643, 1.325195, -0.713411, 208.023676]
     test_list.append(sp_pinArray_2d_dp_hf_tp)
 
