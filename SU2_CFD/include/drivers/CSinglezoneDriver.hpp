@@ -110,4 +110,9 @@ public:
    */
   bool Monitor(unsigned long TimeIter) override;
 
+  /*!
+   * \brief Perform all steps to compute the metric tensor.
+   */
+  virtual void ComputeMetricField();
+
 };
