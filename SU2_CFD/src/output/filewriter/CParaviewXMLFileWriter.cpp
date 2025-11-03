@@ -53,8 +53,10 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
   }
 
   /*--- We always have 3 coords, independent of the actual value of nDim ---*/
+  /*--- We also always have 6 tensor components ---*/
 
   const int NCOORDS = 3;
+  const int NTENSOR = 6;
   const unsigned short nDim = dataSorter->GetnDim();
   unsigned short iDim = 0;
 
@@ -139,30 +141,85 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
     fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'),
                     fieldname.end());
 
-    /*--- Check whether this field is a vector or scalar. ---*/
+    /*--- Check whether this field is a vector, tensor, or scalar. ---*/
+    /*--- Check tensor components first (longer patterns) to avoid false matches ---*/
 
-    bool output_variable = true, isVector = false;
-    size_t found = fieldNames[iField].find("_x");
+    bool output_variable = true, isVector = false, isTensor = false;
+
+    // Check for tensor components first (_xx, _xy, _yy, _xz, _yz, _zz)
+    size_t found = fieldNames[iField].find("_xx");
     if (found!=string::npos) {
       output_variable = true;
-      isVector        = true;
+      isTensor        = true;
     }
-    found = fieldNames[iField].find("_y");
+    found = fieldNames[iField].find("_xy");
     if (found!=string::npos) {
-      /*--- We have found a vector, so skip the Y component. ---*/
+      /*--- We have found a tensor, so skip the XY component. ---*/
       output_variable = false;
+      isTensor        = true;
       VarCounter++;
     }
-    found = fieldNames[iField].find("_z");
+    found = fieldNames[iField].find("_yy");
     if (found!=string::npos) {
-      /*--- We have found a vector, so skip the Z component. ---*/
+      /*--- We have found a tensor, so skip the YY component. ---*/
       output_variable = false;
+      isTensor        = true;
+      VarCounter++;
+    }
+    found = fieldNames[iField].find("_xz");
+    if (found!=string::npos) {
+      /*--- We have found a tensor, so skip the XZ component. ---*/
+      output_variable = false;
+      isTensor        = true;
+      VarCounter++;
+    }
+    found = fieldNames[iField].find("_yz");
+    if (found!=string::npos) {
+      /*--- We have found a tensor, so skip the YZ component. ---*/
+      output_variable = false;
+      isTensor        = true;
+      VarCounter++;
+    }
+    found = fieldNames[iField].find("_zz");
+    if (found!=string::npos) {
+      /*--- We have found a tensor, so skip the ZZ component. ---*/
+      output_variable = false;
+      isTensor        = true;
       VarCounter++;
     }
 
-    /*--- Write the point data as an <X,Y,Z> vector or a scalar. ---*/
+    // Check for vector components only if not a tensor (_x, _y, _z)
+    if (!isTensor) {
+      found = fieldNames[iField].find("_x");
+      if (found!=string::npos) {
+        output_variable = true;
+        isVector        = true;
+      }
+      found = fieldNames[iField].find("_y");
+      if (found!=string::npos) {
+        /*--- We have found a vector, so skip the Y component. ---*/
+        output_variable = false;
+        VarCounter++;
+      }
+      found = fieldNames[iField].find("_z");
+      if (found!=string::npos) {
+        /*--- We have found a vector, so skip the Z component. ---*/
+        output_variable = false;
+        VarCounter++;
+      }
+    }
 
-    if (output_variable && isVector) {
+    /*--- Write the point data as an <X,Y,Z> vector, tensor, or a scalar. ---*/
+
+    if (output_variable && isTensor) {
+
+      /*--- Adjust the string name to remove the tensor component suffix ---*/
+
+      fieldname.erase(fieldname.end()-3,fieldname.end());
+
+      AddDataArray(VTKDatatype::FLOAT32, fieldname, NTENSOR, myPoint*NTENSOR, GlobalPoint*NTENSOR);
+
+    } else if (output_variable && isVector) {
 
       /*--- Adjust the string name to remove the leading "X-" ---*/
 
@@ -252,32 +309,111 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
   VarCounter = varStart;
   for (iField = varStart; iField < fieldNames.size(); iField++) {
 
-    /*--- Check whether this field is a vector or scalar. ---*/
+    /*--- Check whether this field is a vector, tensor, or scalar. ---*/
+    /*--- Check tensor components first (longer patterns) to avoid double counting ---*/
 
-    bool output_variable = true, isVector = false;
-    size_t found = fieldNames[iField].find("_x");
+    bool output_variable = true, isVector = false, isTensor = false;
+
+    // Check for tensor components first (_xx, _xy, _yy, _xz, _yz, _zz)
+    size_t found = fieldNames[iField].find("_xx");
     if (found!=string::npos) {
       output_variable = true;
-      isVector        = true;
+      isTensor        = true;
     }
-    found = fieldNames[iField].find("_y");
+    found = fieldNames[iField].find("_xy");
     if (found!=string::npos) {
-      /*--- We have found a vector, so skip the Y component. ---*/
+      /*--- We have found a tensor, so skip the XY component. ---*/
       output_variable = false;
+      isTensor        = true;
       VarCounter++;
     }
-    found = fieldNames[iField].find("_z");
+    found = fieldNames[iField].find("_yy");
     if (found!=string::npos) {
-      /*--- We have found a vector, so skip the Z component. ---*/
+      /*--- We have found a tensor, so skip the YY component. ---*/
       output_variable = false;
+      isTensor        = true;
+      VarCounter++;
+    }
+    found = fieldNames[iField].find("_xz");
+    if (found!=string::npos) {
+      /*--- We have found a tensor, so skip the XZ component. ---*/
+      output_variable = false;
+      isTensor        = true;
+      VarCounter++;
+    }
+    found = fieldNames[iField].find("_yz");
+    if (found!=string::npos) {
+      /*--- We have found a tensor, so skip the YZ component. ---*/
+      output_variable = false;
+      isTensor        = true;
+      VarCounter++;
+    }
+    found = fieldNames[iField].find("_zz");
+    if (found!=string::npos) {
+      /*--- We have found a tensor, so skip the ZZ component. ---*/
+      output_variable = false;
+      isTensor        = true;
       VarCounter++;
     }
 
-    /*--- Write the point data as an <X,Y,Z> vector or a scalar. ---*/
+    // Check for vector components only if not a tensor (_x, _y, _z)
+    if (!isTensor) {
+      found = fieldNames[iField].find("_x");
+      if (found!=string::npos) {
+        output_variable = true;
+        isVector        = true;
+      }
+      found = fieldNames[iField].find("_y");
+      if (found!=string::npos) {
+        /*--- We have found a vector, so skip the Y component. ---*/
+        output_variable = false;
+        VarCounter++;
+      }
+      found = fieldNames[iField].find("_z");
+      if (found!=string::npos) {
+        /*--- We have found a vector, so skip the Z component. ---*/
+        output_variable = false;
+        VarCounter++;
+      }
+    }
 
-    if (output_variable && isVector) {
+    /*--- Write the point data as a tensor, <X,Y,Z> vector, or scalar. ---*/
+
+    if (output_variable && isTensor) {
+
+      /*--- Resize buffer to accommodate tensor data ---*/
+      dataBufferFloat.resize(myPoint*NTENSOR);
+
+      float val = 0.0;
+      for (iPoint = 0; iPoint < myPoint; iPoint++) {
+        dataBufferFloat[iPoint*NTENSOR + 0] = (float)dataSorter->GetData(VarCounter+0,iPoint); // XX
+        dataBufferFloat[iPoint*NTENSOR + 1] = (float)dataSorter->GetData(VarCounter+2,iPoint); // YY
+        dataBufferFloat[iPoint*NTENSOR + 3] = (float)dataSorter->GetData(VarCounter+1,iPoint); // XY
+        if (nDim == 2) {
+          /*--- For 2D tensors, set the off-diagonal z-components to 0, and zz-component to 1 ---*/
+
+          dataBufferFloat[iPoint*NTENSOR + 2] = 1.0; // ZZ = 1
+          dataBufferFloat[iPoint*NTENSOR + 4] = 0.0; // YZ = 0
+          dataBufferFloat[iPoint*NTENSOR + 5] = 0.0; // XZ = 0
+        } else {
+          /*--- For 3D tensors, get the z-components ---*/
+          dataBufferFloat[iPoint*NTENSOR + 2] = (float)dataSorter->GetData(VarCounter+5,iPoint); // ZZ
+          dataBufferFloat[iPoint*NTENSOR + 4] = (float)dataSorter->GetData(VarCounter+4,iPoint); // YZ
+          dataBufferFloat[iPoint*NTENSOR + 5] = (float)dataSorter->GetData(VarCounter+3,iPoint); // XZ
+        }
+      }
+
+      WriteDataArray(dataBufferFloat.data(), VTKDatatype::FLOAT32, myPoint*NTENSOR, GlobalPoint*NTENSOR,
+                     dataSorter->GetnPointCumulative(rank)*NTENSOR);
+
+      VarCounter++;
+
+    } else if (output_variable && isVector) {
 
       /*--- Load up the buffer for writing this rank's vector data. ---*/
+
+      /*--- Resize buffer back to coordinate size ---*/
+      dataBufferFloat.resize(myPoint*NCOORDS);
 
       float val = 0.0;
       for (iPoint = 0; iPoint < myPoint; iPoint++) {
@@ -298,6 +434,8 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
 
     } else if (output_variable) {
 
+      /*--- For scalar data, ensure buffer is properly sized ---*/
+      dataBufferFloat.resize(myPoint);
 
       /*--- For now, create a temp 1D buffer to load up the data for writing.
        This will be replaced with a derived data type most likely. ---*/
