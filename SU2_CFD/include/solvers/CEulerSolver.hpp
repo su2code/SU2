@@ -283,9 +283,9 @@ protected:
       const auto nSensor = config->GetnMetric_Sensor();
       for (auto iSensor = 0; iSensor < nSensor; iSensor++) {
         switch (config->GetMetric_Sensor(iSensor)) {
-          case METRIC_SENSOR::MACH:
+          case METRIC_SENSOR::DENSITY:
             for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-              const su2double prim_var = nodes->GetVelocity2(iPoint) / nodes->GetSoundSpeed(iPoint);
+              const su2double prim_var = nodes->GetDensity(iPoint);
               nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
             }
             break;
@@ -295,16 +295,29 @@ protected:
               nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
             }
             break;
+          case METRIC_SENSOR::TOTAL_PRESSURE:
+            for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+              const su2double Mach = sqrt(nodes->GetVelocity2(iPoint))/nodes->GetSoundSpeed(iPoint);
+              const su2double prim_var = nodes->GetPressure(iPoint)*pow((1+0.2*Mach*Mach), 3.5);
+              nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
+            }
+            break;
           case METRIC_SENSOR::TEMPERATURE:
             for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
               const su2double prim_var = nodes->GetTemperature(iPoint);
               nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
             }
             break;
-          case METRIC_SENSOR::DENSITY:
+          case METRIC_SENSOR::ENERGY:
+            for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+              const su2double prim_var = nodes->GetEnergy(iPoint);
+              nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
+            }
+            break;
+          case METRIC_SENSOR::MACH:
           default:
             for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-              const su2double prim_var = nodes->GetDensity(iPoint);
+              const su2double prim_var = sqrt(nodes->GetVelocity2(iPoint)) / nodes->GetSoundSpeed(iPoint);
               nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
             }
             break;
