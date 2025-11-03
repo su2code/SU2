@@ -352,4 +352,20 @@ protected:
    * \param[in] config - Definition of the particular problem per zone.
    */
   void SetFixedCLScreenOutput(const CConfig *config);
+
+  /*!
+   * \brief Add mesh adaptation outputs.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void AddMeshAdaptationOutputs(const CConfig* config);
+
+  /*!
+   * \brief Load mesh adaptation outputs.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - The container holding all solution data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint - Index of the point.
+   */
+  void LoadMeshAdaptationOutputs(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
+                                 unsigned long iPoint);
 };
