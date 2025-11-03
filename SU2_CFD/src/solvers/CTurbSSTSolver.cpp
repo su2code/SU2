@@ -233,7 +233,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     const su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
     const su2double StrainMag = max(flowNodes->GetStrainMag(iPoint), 1e-12);
-    nodes->SetBlendingFunc(iPoint, mu, dist, rho, config->GetKind_Trans_Model());
+    nodes->SetBlendingFunc(iPoint, mu, dist, rho, VorticityMag, config->GetKind_Trans_Model());
 
     const su2double F2 = nodes->GetF2blending(iPoint);
 
@@ -425,12 +425,12 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
     if (geometry->nodes->GetDomain(iPoint)) {
+      const auto options = config->GetROUGHSSTParsedOptions();
 
       /*--- distance to closest neighbor ---*/
       su2double wall_dist = geometry->vertex[val_marker][iVertex]->GetNearestNeighborDistance();
 
       if (rough_wall) {
-
         /*--- Set wall values ---*/
         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
         su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
@@ -445,11 +445,10 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
         su2double S_R= 0.0;
         su2double solution[2] = {};
-
         /*--- Modify the omega and k to account for a rough wall. ---*/
 
         /*--- Reference 1 original Wilcox (1998) ---*/
-        if (roughsstParsedOptions.wilcox1998) {
+        if (options.wilcox1998) {
           if (kPlus <= 25)
             S_R = (50/(kPlus+EPS))*(50/(kPlus+EPS));
           else
@@ -458,7 +457,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
           solution[0] = 0.0;
           solution[1] = FrictionVel*FrictionVel*S_R/(laminar_viscosity/density);          
         } 
-        else if (roughsstParsedOptions.wilcox2006) {
+        else if (options.wilcox2006) {
         /*--- Reference 2 from D.C. Wilcox Turbulence Modeling for CFD (2006) ---*/
           if (kPlus <= 5)
             S_R = pow(200/(kPlus+EPS),2);
@@ -469,8 +468,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
           solution[1] = FrictionVel*FrictionVel*S_R/(laminar_viscosity/density);
         } 
         /*--- Knopp eddy viscosity limiter ---*/
-        else if (roughsstParsedOptions.limiter_knopp) {
-            
+        else if (options.limiter_knopp) {
           su2double d0 = 0.03*Roughness_Height*min(1.0, pow((kPlus + EPS )/30.0, 2.0/3.0))*min(1.0, pow((kPlus + EPS)/45.0, 0.25))*min(1.0, pow((kPlus + EPS) /60, 0.25));
           solution[0] = (FrictionVel*FrictionVel / sqrt(constants[6]))*min(1.0, kPlus / 90.0);
 
@@ -479,8 +477,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
           solution[1] = min( FrictionVel/(sqrt(constants[6])*d0*kappa), 60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2))); 
         }
         /*--- Aupoix eddy viscosity limiter ---*/ 
-        else if (roughsstParsedOptions.limiter_aupoix) {
-          
+        else if (options.limiter_aupoix) {
           su2double k0Plus = ( 1.0 /sqrt( constants[6])) * tanh((log10((kPlus +EPS ) / 30.0) + 1.0 - 1.0*tanh( (kPlus + EPS) / 125.0))*tanh((kPlus + EPS) / 125.0));
           su2double kwallPlus = max(0.0, k0Plus);
           su2double kwall = kwallPlus*FrictionVel*FrictionVel;
@@ -489,16 +486,13 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
           solution[0] = kwall;
           solution[1] = omegawallPlus*FrictionVel*FrictionVel*density/laminar_viscosity;
-        
         }
-
         /*--- Set the solution values and zero the residual ---*/
         nodes->SetSolution_Old(iPoint,solution);
         nodes->SetSolution(iPoint,solution);
         LinSysRes.SetBlock_Zero(iPoint);
         
       } else { // smooth wall
-
         /*--- Set wall values ---*/
         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
         su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);

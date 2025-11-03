@@ -1656,7 +1656,7 @@ public:
    * \param[in] val_density - Value of the density.
    * \param[in] val_dist - Value of the distance to the wall.
    */
-  inline virtual void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density, TURB_TRANS_MODEL trans_model) {}
+  inline virtual void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density, su2double vorticity_mag, TURB_TRANS_MODEL trans_model) {}
 
   /*!
    * \brief Get the first blending function of the SST model.
@@ -1672,6 +1672,17 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   inline virtual su2double GetCrossDiff(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Get the value of the SST Limiter.
+   */
+  inline virtual su2double GetSSTLimiter(unsigned long iPoint) const { return 0.0; }
+
+  
+  /*!
+   * \brief Set the value of the SST Limiter.
+   */
+  inline virtual su2double SetSSTLimiter(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief Get the value of the eddy viscosity.

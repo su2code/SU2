@@ -45,16 +45,18 @@ CTurbSSTVariable::CTurbSSTVariable(su2double kine, su2double omega, su2double mu
   sigma_om2 = constants[3];
   beta_star = constants[6];
   prod_lim_const = constants[10];
+  a1 = constants[7];
 
   F1.resize(nPoint) = su2double(1.0);
   F2.resize(nPoint) = su2double(0.0);
   CDkw.resize(nPoint) = su2double(0.0);
+  SST_Limiter.resize(nPoint, 1.0);
 
   muT.resize(nPoint) = mut;
 }
 
 void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_viscosity,
-                                       su2double val_dist, su2double val_density, TURB_TRANS_MODEL trans_model) {
+                                       su2double val_dist, su2double val_density, su2double vorticity_mag, TURB_TRANS_MODEL trans_model) {
   su2double arg2, arg2A, arg2B, arg1;
 
   AD::StartPreacc();
@@ -91,7 +93,13 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
     F1(iPoint) = max(F1(iPoint), F3);
   }
 
-  AD::SetPreaccOut(F1(iPoint)); AD::SetPreaccOut(F2(iPoint)); AD::SetPreaccOut(CDkw(iPoint));
+  /*--- SST Limiter ---*/ 
+  
+  su2double limiter = a1*Solution(iPoint,1) / (F2(iPoint)*vorticity_mag + EPS);
+  limiter = min(1.0, limiter);
+  SST_Limiter(iPoint) = limiter;
+
+  AD::SetPreaccOut(F1(iPoint)); AD::SetPreaccOut(F2(iPoint)); AD::SetPreaccOut(CDkw(iPoint)); AD::SetPreaccOut(SST_Limiter(iPoint));
   AD::EndPreacc();
 
 }

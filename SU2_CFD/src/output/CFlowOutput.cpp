@@ -1422,6 +1422,10 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE", "Turbulent eddy viscosity");
+    /*--- SST Limiter ---*/
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+      AddVolumeOutput("SST_LIMITER", "SST_Limiter", "PRIMITIVE", "SST viscosity limiter");
+    }
   }
 
 }
@@ -1559,6 +1563,11 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity(iPoint));
     SetVolumeOutputValue("TURB_DELTA_TIME", iPoint, Node_Turb->GetDelta_Time(iPoint));
     SetVolumeOutputValue("TURB_CFL", iPoint, Node_Turb->GetLocalCFL(iPoint));
+    /*--- SST Limiter ---*/
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+        SetVolumeOutputValue("SST_LIMITER", iPoint, Node_Turb->GetSSTLimiter(iPoint));
+        su2double sst_lim = Node_Turb->GetSSTLimiter(iPoint);
+  }
   }
 
   if (config->GetSAParsedOptions().bc) {
