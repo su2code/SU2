@@ -274,6 +274,49 @@ protected:
                                                const CConfig *config);
 
   /*!
+   * \brief Store the primitive variables needed for adaptation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) final {
+    if (!config->GetGoal_Oriented_Metric()) {
+      const auto nSensor = config->GetnMetric_Sensor();
+      for (auto iSensor = 0; iSensor < nSensor; iSensor++) {
+        switch (config->GetMetric_Sensor(iSensor)) {
+          case METRIC_SENSOR::MACH:
+            for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+              const su2double prim_var = nodes->GetVelocity2(iPoint) / nodes->GetSoundSpeed(iPoint);
+              nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
+            }
+            break;
+          case METRIC_SENSOR::PRESSURE:
+            for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+              const su2double prim_var = nodes->GetPressure(iPoint);
+              nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
+            }
+            break;
+          case METRIC_SENSOR::TEMPERATURE:
+            for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+              const su2double prim_var = nodes->GetTemperature(iPoint);
+              nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
+            }
+            break;
+          case METRIC_SENSOR::DENSITY:
+          default:
+            for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+              const su2double prim_var = nodes->GetDensity(iPoint);
+              nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
+            }
+            break;
+        }
+      }
+    }
+    else {
+      // TODO: store variables which need Hessian computation for goal-oriented metric
+    }
+  }
+
+  /*!
    * \brief Set gradients of coefficients for fixed CL mode
    * \param[in] config - Definition of the particular problem.
    */

@@ -92,6 +92,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   nSpecies     = config->GetnSpecies();
   nMarker      = config->GetnMarker_All();
   nDim         = geometry->GetnDim();
+  nSymMat      = 3 * (nDim - 1);
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 

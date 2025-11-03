@@ -41,6 +41,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
 
   nMarker      = config->GetnMarker_All();
   nPoint       = geometry->GetnPoint();
