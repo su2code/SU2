@@ -97,6 +97,13 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
   if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {
     HB_Source.resize(nPoint, nVar) = su2double(0.0);
   }
+
+  if (config->GetCompute_Metric()) {
+    unsigned short nHess = config->GetGoal_Oriented_Metric()? nVar : config->GetnMetric_Sensor();
+    unsigned short nSymMat = 3 * (nDim - 1);
+    Primitive_Adapt.resize(nPoint, nHess) = su2double(0.0);
+    Metric.resize(nPoint, nSymMat) = 0.0;
+  }
 }
 
 void CFlowVariable::SetSolution_New() {
