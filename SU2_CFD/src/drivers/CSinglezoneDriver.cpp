@@ -334,7 +334,7 @@ void CSinglezoneDriver::ComputeMetricField() {
   solver_flow->CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
   solver_flow->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER,
                              RUNTIME_FLOW_SYS, true);
-  solver_flow->SetPrimitive_Adapt(geometry, config, solver_flow->GetNodes());
+  solver_flow->SetPrimitive_Adapt(geometry, config);
 
   if (config->GetKind_Hessian_Method() == GREEN_GAUSS) {
     if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
