@@ -83,7 +83,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
 
   /*--- Gradient and Hessian for anisotropic metric ---*/
   if (config->GetCompute_Metric()) {
-    unsigned short nHess = config->GetGoal_Oriented_Metric()? nVar : config->GetnMetric_Sensor();
+    unsigned short nHess = config->GetnMetric_Sensor();
     Gradient_Adapt.resize(nPoint,nHess,nDim,0.0);
     Hessian.resize(nPoint,nHess,nSymMat,0.0);
   }

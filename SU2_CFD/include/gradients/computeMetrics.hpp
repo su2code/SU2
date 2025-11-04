@@ -252,8 +252,6 @@ void normalizeMetrics(CGeometry& geometry, const CConfig& config,
 
   const unsigned long nPointDomain = geometry.GetnPointDomain();
 
-  const bool goal = (config.GetGoal_Oriented_Metric());
-
   /*--- Constants defining normalization ---*/
   const ScalarType p = config.GetMetric_Norm();
   const ScalarType N = SU2_TYPE::GetValue(config.GetMetric_Complexity());

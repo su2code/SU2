@@ -1381,11 +1381,11 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case MPI_QUANTITIES::GRADIENT_ADAPT:
-      COUNT_PER_POINT  = config->GetGoal_Oriented_Metric()? nVar*nDim : config->GetnMetric_Sensor()*nDim;
+      COUNT_PER_POINT  = config->GetnMetric_Sensor()*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case MPI_QUANTITIES::HESSIAN:
-      COUNT_PER_POINT  = config->GetGoal_Oriented_Metric()? nVar*nSymMat : config->GetnMetric_Sensor()*nSymMat;
+      COUNT_PER_POINT  = config->GetnMetric_Sensor()*nSymMat;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     default:
@@ -2191,9 +2191,9 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
 }
 
 void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, short idxVel, const unsigned short Kind_Solver) {
-  const auto& solution = config->GetGoal_Oriented_Metric()? base_nodes->GetSolution() : base_nodes->GetPrimitive_Adapt();
+  const auto& solution = base_nodes->GetPrimitive_Adapt();
   auto& gradient = base_nodes->GetGradient_Adapt();
-  auto nHess = config->GetGoal_Oriented_Metric()? nVar : config->GetnMetric_Sensor();
+  auto nHess = config->GetnMetric_Sensor();
 
   computeGradientsGreenGauss(this, MPI_QUANTITIES::GRADIENT_ADAPT, PERIODIC_GRAD_ADAPT,
                              *geometry, *config, solution, 0, nHess, idxVel, gradient);
@@ -4391,14 +4391,10 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
   /*--- TODO: - goal-oriented metric ---*/
   /*---       - metric intersection  ---*/
   const unsigned long nPointDomain = geometry->GetnPointDomain();
+  const unsigned short nSensor = config->GetnMetric_Sensor();
 
-  const bool visc = (config->GetViscous());
-  const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
-
-  const bool goal = (config->GetGoal_Oriented_Metric());
   const bool normalize = (config->GetNormalize_Metric());
 
-  unsigned short nSensor = config->GetnMetric_Sensor();
 
   const unsigned long time_iter = config->GetTimeIter();
   const bool steady = (config->GetTime_Marching() == TIME_MARCHING::STEADY);
@@ -4452,11 +4448,6 @@ void CSolver::AddMetrics(CSolver **solver, const CGeometry*geometry, const CConf
 
   const unsigned long nPointDomain = geometry->GetnPointDomain();
   const unsigned short nSymMat = 3*(nDim-1);
-  const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
-  const unsigned short nSensor = config->GetnMetric_Sensor();
-
-  const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
-  const bool goal = (config->GetGoal_Oriented_Metric());
 
   const unsigned long time_iter = config->GetTimeIter();
   const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||

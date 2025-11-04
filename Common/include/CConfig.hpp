@@ -10167,12 +10167,6 @@ public:
   bool GetNormalize_Metric(void) const { return Normalize_Metric; }
 
   /*!
-   * \brief Check if goal-oriented error estimation is being carried out
-   * \return <code>TRUE<\code> if goal-oriented error estimation is taking place
-   */
-  bool GetGoal_Oriented_Metric(void) const { return (nMetric_Sensor > 0) && (Metric_Sensor[0] == METRIC_SENSOR::GOAL); }
-
-  /*!
    * \brief Get the kind of method for computation of Hessians used for anisotropy.
    * \return Numerical method for computation of Hessians used for anisotropy.
    */

@@ -5805,16 +5805,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (Compute_Metric) {
     /*--- Check that config is valid for requested sensor ---*/
     for (auto iSensor = 0; iSensor < nMetric_Sensor; iSensor++) {
-      /*--- If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
+      /*--- TODO: If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
+      /*--- For now, goal-oriented adaptation is unsupported ---*/
       if (Metric_Sensor[iSensor] == METRIC_SENSOR::GOAL) {
-        if (nMetric_Sensor != 1)
-          SU2_MPI::Error("Adaptation sensor GOAL cannot be used with other sensors.", CURRENT_FUNCTION);
-        if (!DiscreteAdjoint)
-          SU2_MPI::Error("Adaptation sensor GOAL can only be computed for MATH_PROBLEM = DISCRETE_ADJOINT.", CURRENT_FUNCTION);
+        SU2_MPI::Error("Adaptation sensor GOAL not yet supported.", CURRENT_FUNCTION);
       }
 
       if (Kind_Solver == MAIN_SOLVER::NEMO_EULER || Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) {
-          if (Metric_Sensor[iSensor] == METRIC_SENSOR::GOAL || Metric_Sensor[iSensor] == METRIC_SENSOR::DENSITY || Metric_Sensor[iSensor] == METRIC_SENSOR::TOTAL_PRESSURE)
+          if (Metric_Sensor[iSensor] == METRIC_SENSOR::DENSITY || Metric_Sensor[iSensor] == METRIC_SENSOR::TOTAL_PRESSURE)
             SU2_MPI::Error(string("Adaptation sensor ") + GetMetric_SensorString(iSensor) + string(" not available for NEMO problems."), CURRENT_FUNCTION);
         }
         if (Kind_Solver != MAIN_SOLVER::NEMO_EULER && Kind_Solver != MAIN_SOLVER::NEMO_NAVIER_STOKES) {
@@ -5822,7 +5820,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
             SU2_MPI::Error(string("Adaptation sensor ") + GetMetric_SensorString(iSensor) + string(" not available for non-NEMO problems."), CURRENT_FUNCTION);
         }
         if (Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) {
-          if (Metric_Sensor[iSensor] == METRIC_SENSOR::GOAL || Metric_Sensor[iSensor] == METRIC_SENSOR::MACH)
+          if (Metric_Sensor[iSensor] == METRIC_SENSOR::MACH)
             SU2_MPI::Error(string("Adaptation sensor ") + GetMetric_SensorString(iSensor) + string(" not available for INC problems."), CURRENT_FUNCTION);
         }
     }
