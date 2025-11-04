@@ -41,11 +41,9 @@ protected:
   su2double sigma_om2;
   su2double beta_star;
   su2double prod_lim_const;
-  su2double a1;
   VectorType F1;
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
-  VectorType SST_Limiter; 
   SST_ParsedOptions sstParsedOptions;
 public:
   /*!
@@ -73,7 +71,7 @@ public:
    * \param[in] val_dist - Value of the distance to the wall.
    * \param[in] val_density - Value of the density.
    */
-  void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density, su2double vorticity_mag, TURB_TRANS_MODEL trans_model) override;
+  void SetBlendingFunc(unsigned long iPoint, su2double val_viscosity, su2double val_dist, su2double val_density, TURB_TRANS_MODEL trans_model) override;
 
   /*!
    * \brief Get the first blending function.
@@ -89,9 +87,4 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   inline su2double GetCrossDiff(unsigned long iPoint) const override { return CDkw(iPoint); }
-  /*!
-   * \brief Get the value of the SST Limiter.
-   */
-  inline su2double GetSSTLimiter(unsigned long iPoint) const { return SST_Limiter[iPoint]; }
-
 };
