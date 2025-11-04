@@ -384,7 +384,6 @@ void CParaviewXMLFileWriter::WriteData(string val_filename){
       /*--- Resize buffer to accommodate tensor data ---*/
       dataBufferFloat.resize(myPoint*NTENSOR);
 
-      float val = 0.0;
       for (iPoint = 0; iPoint < myPoint; iPoint++) {
         dataBufferFloat[iPoint*NTENSOR + 0] = (float)dataSorter->GetData(VarCounter+0,iPoint); // XX
         dataBufferFloat[iPoint*NTENSOR + 1] = (float)dataSorter->GetData(VarCounter+2,iPoint); // YY

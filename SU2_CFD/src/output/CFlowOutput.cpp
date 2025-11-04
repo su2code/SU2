@@ -4132,7 +4132,6 @@ void CFlowOutput::LoadMeshAdaptationOutputs(const CConfig* config, const CSolver
                                             unsigned long iPoint) {
 
   const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
-  const auto* Node_Geo = geometry->nodes;
   if(config->GetCompute_Metric()) {
     // Common metric components for both 2D and 3D
     SetVolumeOutputValue("METRIC_XX", iPoint, Node_Flow->GetMetric(iPoint, 0));

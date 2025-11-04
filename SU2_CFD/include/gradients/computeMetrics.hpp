@@ -32,6 +32,7 @@
 #include <vector>
 #include <algorithm>
 #include <limits>
+#include <cmath>
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
@@ -171,7 +172,7 @@ void setPositiveDefiniteMetrics(CGeometry& geometry, const CConfig& config,
     /*--- Make positive definite by taking absolute value of eigenvalues ---*/
     /*--- Handle NaN and very small values that could cause numerical issues ---*/
     for (auto iDim = 0; iDim < nDim; iDim++) {
-      if (EigVal[iDim] != EigVal[iDim]) {
+      if (std::isnan(EigVal[iDim])) {
         /*--- NaN detected, set to small positive value ---*/
         EigVal[iDim] = eps;
       } else {
@@ -268,8 +269,6 @@ void normalizeMetrics(CGeometry& geometry, const CConfig& config,
   ScalarType A[nDim][nDim], EigVec[nDim][nDim], EigVal[nDim], work[nDim];
 
   for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-    auto nodes = geometry.nodes;
-
     /*--- Decompose metric ---*/
     Tensor::get(metric, iPoint, iSensor, A, nDim);
     CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
