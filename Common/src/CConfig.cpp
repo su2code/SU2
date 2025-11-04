@@ -3072,15 +3072,15 @@ void CConfig::SetConfig_Options() {
   addPythonOption("ADAP_ADJ_CFLS");
   /*!\brief ADAP_RESIDUAL_REDUCTIONS \n DESCRIPTION: Residual reduction at each target complexity */
   addPythonOption("ADAP_RESIDUAL_REDUCTIONS");
-  /*!\brief ADAP_ITER \n DESCRIPTION: Maximum cell size at each target complexity */
+  /*!\brief ADAP_HMAXS \n DESCRIPTION: Maximum cell size at each target complexity */
   addPythonOption("ADAP_HMAXS");
-  /*!\brief ADAP_ITER \n DESCRIPTION: Minimum cell size at each target complexity */
+  /*!\brief ADAP_HMINS \n DESCRIPTION: Minimum cell size at each target complexity */
   addPythonOption("ADAP_HMINS");
   /*!\brief ADAP_HGRAD \n DESCRIPTION: Size gradation smoothing parameter */
   addPythonOption("ADAP_HGRAD");
-  /*!\brief ADAP_ITER \n DESCRIPTION: Hausdorff distance parameter for surface remeshing */
+  /*!\brief ADAP_HAUSD \n DESCRIPTION: Hausdorff distance parameter for surface remeshing */
   addPythonOption("ADAP_HAUSD");
-  /*!\brief ADAP_ITER \n DESCRIPTION: A mesh adaptation option */
+  /*!\brief ADAP_ANGLE \n DESCRIPTION: Sharp angle detection parameter for surface remeshing */
   addPythonOption("ADAP_ANGLE");
 
   /* END_CONFIG_OPTIONS */
