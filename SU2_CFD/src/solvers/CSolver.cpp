@@ -4407,33 +4407,28 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
   vector<double> integrals;
   for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
     SU2_OMP_MASTER
+    /*--- Make the Hessian eigenvalues positive definite, and add to the metric tensor ---*/
+    auto& hessians = base_nodes->GetHessian();
+    setPositiveDefiniteMetrics<su2double, tensor::hessian>(*geometry, *config, iSensor, hessians);
+    AddMetrics(solver, geometry, config, iSensor);
 
-    if (!goal) {
-      /*--- Make the Hessian eigenvalues positive definite, and add to the metric tensor ---*/
-      auto& hessians = base_nodes->GetHessian();
-      setPositiveDefiniteMetrics<su2double, tensor::hessian>(*geometry, *config, iSensor, hessians);
-      AddMetrics(solver, geometry, config, iSensor);
+    /*--- Integrate metric field on the last iteration (the end of the simulation if steady) ---*/
+    auto& metrics = base_nodes->GetMetric();
+    double integral = 0.0;
+    if (is_last_iter)
+      integral = integrateMetrics<double>(*geometry, *config, iSensor, metrics);
 
-      /*--- Integrate metric field on the last iteration (the end of the simulation if steady) ---*/
-      auto& metrics = base_nodes->GetMetric();
-      double integral = 0.0;
-      if (is_last_iter)
-        integral = integrateMetrics<double>(*geometry, *config, iSensor, metrics);
+    /*--- Normalize the metric field for steady simulations, or if requested for unsteady ---*/
+    if (steady || (normalize && is_last_iter))
+      normalizeMetrics<double, tensor::metric>(*geometry, *config, iSensor, integral, metrics);
 
-      /*--- Normalize the metric field for steady simulations, or if requested for unsteady ---*/
-      if (steady || (normalize && is_last_iter))
-        normalizeMetrics<double, tensor::metric>(*geometry, *config, iSensor, integral, metrics);
-
-      /*--- Store the integral to be written ---*/
-      if (is_last_iter) {
-        integrals.push_back(integral);
-        if (rank == MASTER_NODE) {
-          cout << "Global metric normalization integral for sensor ";
-          cout << config->GetMetric_SensorString(iSensor) << ": " << integral << endl;
-        }
+    /*--- Store the integral to be written ---*/
+    if (is_last_iter) {
+      integrals.push_back(integral);
+      if (rank == MASTER_NODE) {
+        cout << "Global metric normalization integral for sensor ";
+        cout << config->GetMetric_SensorString(iSensor) << ": " << integral << endl;
       }
-    } else {
-      SU2_MPI::Error("Goal-oriented metric not currently implemented.", CURRENT_FUNCTION);
     }
     END_SU2_OMP_MASTER
     SU2_OMP_BARRIER
