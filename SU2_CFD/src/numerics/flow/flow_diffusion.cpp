@@ -481,6 +481,8 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   }
 
   AD::SetPreaccOut(Proj_Flux_Tensor, nVar);
+  AD::SetPreaccOut(Jacobian_i, nVar, nVar);
+  AD::SetPreaccOut(Jacobian_j, nVar, nVar);
   AD::EndPreacc();
 
   return ResidualType<>(Proj_Flux_Tensor, Jacobian_i, Jacobian_j);

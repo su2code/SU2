@@ -8816,11 +8816,16 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
   const auto iZone = config->GetiZone();
+  const bool spalart_allmaras = (config->GetKind_Turb_Model() == TURB_MODEL::SA);
+  const bool menter_sst       = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   for (auto iSpan= 0u; iSpan < nSpanWiseSections; iSpan++){
     su2double TotalAreaVelocity[MAXNDIM]={0.0},
               TotalAreaPressure{0},
-              TotalAreaDensity{0};
+              TotalAreaDensity{0},
+              TotalAreaNu{0},
+              TotalAreaKine{0},
+              TotalAreaOmega{0};
     for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++){
       for (auto iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){
@@ -8836,6 +8841,16 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
                 auto Pressure = nodes->GetPressure(iPoint);
                 auto Density = nodes->GetDensity(iPoint);
+
+                /*--- This is in Euler, however we also need to average the turbulent variables so we do it here too ---*/
+                su2double Kine{0}, Omega{0}, Nu{0};
+                if(menter_sst){
+                  Kine = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+                  Omega = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,1);
+                }
+                if(spalart_allmaras){
+                  Nu = solver[TURB_SOL]->GetNodes()->GetSolution(iPoint,0);
+                }
 
                 su2double UnitNormal[MAXNDIM]={0},
                           TurboNormal[MAXNDIM]={0},
@@ -8857,6 +8872,9 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
                 TotalAreaDensity  += Area*Density;
                 for (auto iDim = 0u; iDim < nDim; iDim++)
                   TotalAreaVelocity[iDim] += Area*Velocity[iDim];
+                TotalAreaNu       += Area*Nu;
+                TotalAreaKine     += Area*Kine;
+                TotalAreaOmega    += Area*Omega;
               }
             }
           }
@@ -8870,9 +8888,15 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
     su2double MyTotalAreaDensity = TotalAreaDensity;
     su2double MyTotalAreaPressure  = TotalAreaPressure;
+    su2double MyTotalAreaNu = TotalAreaNu;
+    su2double MyTotalAreaKine = TotalAreaKine;
+    su2double MyTotalAreaOmega = TotalAreaOmega;
 
     SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&MyTotalAreaNu, &TotalAreaNu, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&MyTotalAreaKine, &TotalAreaKine, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&MyTotalAreaOmega, &TotalAreaOmega, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
     auto* MyTotalAreaVelocity = new su2double[nDim];
 
@@ -8904,6 +8928,10 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
             for (auto iDim = 0u; iDim < nDim; iDim++)
               AverageVelocity[iMarker][iSpan][iDim]  = TotalAreaVelocity[iDim] / TotalArea;
 
+            AverageNu[iMarker][iSpan]             = TotalAreaNu / TotalArea;
+            AverageKine[iMarker][iSpan]           = TotalAreaKine / TotalArea;
+            AverageOmega[iMarker][iSpan]          = TotalAreaOmega / TotalArea;
+
             /* --- compute static averaged quantities ---*/
             ComputeTurboVelocity(AverageVelocity[iMarker][iSpan], AverageTurboNormal , AverageTurboVelocity[iMarker][iSpan], marker_flag, config->GetKind_TurboMachinery(iZone));
 
@@ -8933,6 +8961,10 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
           AveragePressure[iMarker][nSpanWiseSections]         = AveragePressure[iMarker][nSpanWiseSections/2];
           for (auto iDim = 0u; iDim < nDim; iDim++)
             AverageVelocity[iMarker][nSpanWiseSections][iDim] = AverageVelocity[iMarker][nSpanWiseSections/2][iDim];
+
+          AverageNu[iMarker][nSpanWiseSections]             = AverageNu[iMarker][nSpanWiseSections/2];
+          AverageKine[iMarker][nSpanWiseSections]           = AverageKine[iMarker][nSpanWiseSections/2];
+          AverageOmega[iMarker][nSpanWiseSections]          = AverageOmega[iMarker][nSpanWiseSections/2];
 
           /* --- compute static averaged quantities ---*/
           ComputeTurboVelocity(AverageVelocity[iMarker][nSpanWiseSections], AverageTurboNormal , AverageTurboVelocity[iMarker][nSpanWiseSections], marker_flag, config->GetKind_TurboMachinery(iZone));
