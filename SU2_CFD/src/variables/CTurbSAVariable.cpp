@@ -27,7 +27,6 @@
 
 
 #include "../../include/variables/CTurbSAVariable.hpp"
-#include "../../../Common/include/toolboxes/random_toolbox.hpp"
 
 CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned long npoint,
                                  unsigned long ndim, unsigned long nvar, CConfig *config) :
@@ -40,11 +39,8 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
   } else {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       Solution_Old(iPoint, 0) = Solution(iPoint, 0) = val_nu_tilde;
-      for (unsigned long iVar = 1; iVar < nVar; iVar++) {
-        unsigned long seed = RandomToolbox::GetSeed(val_nu_tilde, iVar);
-        std::mt19937 gen(seed);
-        su2double val_stoch_var = RandomToolbox::GetRandomNormal(gen);
-        Solution_Old(iPoint, iVar) = Solution(iPoint, iVar) = val_stoch_var;
+      for (unsigned short iVar = 1; iVar < nVar; iVar++) {
+        Solution_Old(iPoint, iVar) = Solution(iPoint, iVar) = 0.0;
       }
     }
   }

@@ -238,11 +238,29 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
     bool backscatter = config->GetStochastic_Backscatter();
     unsigned long innerIter = config->GetInnerIter();
+    unsigned long timeIter = config->GetTimeIter();
+    unsigned long restartIter = config->GetRestart_Iter();
 
     if (backscatter && innerIter==0) {
       SetLangevinGen(config, geometry);
       SetLangevinSourceTerms(config, geometry);
-      SmoothLangevinSourceTerms(config, geometry);
+      const unsigned short maxIter = config->GetSBS_maxIterSmooth();
+      bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                        (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
+      if (maxIter>0) SmoothLangevinSourceTerms(config, geometry);
+      if (timeIter == restartIter) {
+        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+          for (unsigned short iVar = 1; iVar < nVar; iVar++) {
+            const su2double randomSource = nodes->GetLangevinSourceTerms(iPoint, iVar-1);
+            nodes->SetSolution(iPoint, iVar, randomSource);
+            nodes->SetSolution_Old(iPoint, iVar, randomSource);
+            if (dual_time) {
+              nodes->Set_Solution_time_n(iPoint, iVar, randomSource);
+              nodes->Set_Solution_time_n1(iPoint, iVar, randomSource);
+            }
+          }
+        }
+      }
     }
 
   }
@@ -1630,8 +1648,8 @@ void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry)
     for (auto iDim = 0u; iDim < nDim; iDim++){
       auto gen = nodes->GetLangevinGen(iPoint, iDim);
       su2double lesSensor = nodes->GetLES_Mode(iPoint);
-      su2double rnd = RandomToolbox::GetRandomNormal(gen);
-      rnd *= std::nearbyint(lesSensor);
+      su2double rnd = 0.0;
+      if (lesSensor > 0.999) rnd = RandomToolbox::GetRandomNormal(gen);
       nodes->SetLangevinSourceTermsOld(iPoint, iDim, rnd);
       nodes->SetLangevinSourceTerms(iPoint, iDim, rnd);
     }
@@ -1664,61 +1682,39 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
   const su2double cDelta = config->GetSBS_Cdelta();
   const unsigned short maxIter = config->GetSBS_maxIterSmooth();
   const unsigned long global_nPointDomain = geometry->GetGlobal_nPointDomain();
-  const su2double tol = 1.0e-6;
+  const su2double tol = -5.0;
+  const su2double sourceLim = 5.0;
+  const su2double omega = 0.8;
 
-  /*--- Compute the time step ensuring stability of the pseudo-time integration. ---*/
+  /*--- Set the stochastic source terms to zero at boundaries. ---*/
 
-  su2double localMinDx = -1.0;
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    auto coord_i = geometry->nodes->GetCoord(iPoint);
-    for (unsigned short iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); ++iNode) {
-      unsigned long jPoint = geometry->nodes->GetPoint(iPoint, iNode);
-      auto coord_j = geometry->nodes->GetCoord(jPoint);
-      su2double dx_ij = GeometryToolbox::Distance(nDim, coord_i, coord_j);
-      su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
-      if (LES_FilterWidth > 0.0) maxDelta = LES_FilterWidth;
-      su2double b = sqrt(cDelta) * maxDelta;
-      dx_ij /= b;
-      if (dx_ij < localMinDx || localMinDx < 0.0) localMinDx = dx_ij;
+  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
+      unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (geometry->nodes->GetDomain(iPoint)) {
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          nodes->SetLangevinSourceTerms(iPoint, iDim, 0.0);
+          nodes->SetLangevinSourceTermsOld(iPoint, iDim, 0.0);
+        }
+      }
     }
   }
-  su2double globalMinDx = 0.0;
-  SU2_MPI::Allreduce(&localMinDx, &globalMinDx, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-  su2double CFL = 0.8;
-  su2double dt = CFL * globalMinDx * globalMinDx;
 
-  /*--- Start the pseudo-time integration for the Laplacian smoothing. ---*/
+  /*--- Start SOR algorithm for the Laplacian smoothing. ---*/
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
   
     for (unsigned short iter = 0; iter < maxIter; iter++) {
-
-      /*--- Set the stochastic source terms to zero at solid walls. ---*/
-
-      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetSolid_Wall(iMarker)) {
-          for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
-            unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            nodes->SetLangevinSourceTerms(iPoint, iDim, 0.0);
-            nodes->SetLangevinSourceTermsOld(iPoint, iDim, 0.0);
-          }
-        }
-      }
 
       /*--- MPI communication. ---*/
 
       InitiateComms(geometry, config, MPI_QUANTITIES::STOCH_SOURCE_LANG);
       CompleteComms(geometry, config, MPI_QUANTITIES::STOCH_SOURCE_LANG);
 
-      /*--- Update the solution in pseudo-time. ---*/
-
       su2double localResNorm = 0.0;
 
       SU2_OMP_FOR_DYN(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-        unsigned short lesSensor = std::nearbyint(nodes->GetLES_Mode(iPoint));
-        if (lesSensor == 0) continue;
 
         su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
         if (LES_FilterWidth > 0.0) maxDelta = LES_FilterWidth;
@@ -1726,11 +1722,13 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
         su2double b2 = b * b;
         su2double volume_iPoint = geometry->nodes->GetVolume(iPoint);
         su2double source_i = nodes->GetLangevinSourceTerms(iPoint, iDim);
+        su2double source_i_old = nodes->GetLangevinSourceTermsOld(iPoint, iDim);
         auto coord_i = geometry->nodes->GetCoord(iPoint);
 
-        /*--- Discretize the Laplace operator. ---*/
+        /*--- Assemble system matrix. ---*/
 
-        su2double lap = 0.0;
+        su2double diag = 1.0;
+        su2double sum = 0.0;
         for (unsigned short iNode = 0; iNode < geometry->nodes->GetnPoint(iPoint); iNode++) {
           auto jPoint = geometry->nodes->GetPoint(iPoint, iNode);
           auto coord_j = geometry->nodes->GetCoord(jPoint);
@@ -1739,16 +1737,16 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
           su2double area = GeometryToolbox::Norm(nDim, normal);
           su2double dx_ij = GeometryToolbox::Distance(nDim, coord_i, coord_j);
           su2double source_j = nodes->GetLangevinSourceTerms(jPoint, iDim);
-          lap += area/volume_iPoint * (source_j - source_i)/dx_ij;
+          su2double a_ij = area/volume_iPoint * b2/dx_ij;
+          diag += a_ij;
+          sum += a_ij * source_j;
         }
-        lap *= b2;
 
-        /*--- Update the solution and sum the residual. ---*/
+        /*--- Update the solution. ---*/
 
-        su2double source_i_old = nodes->GetLangevinSourceTermsOld(iPoint, iDim);
-        su2double rhs = (source_i_old - source_i + lap) * dt;
-        localResNorm += rhs * rhs;
-        source_i += rhs;
+        su2double source_tmp = (source_i_old + sum) / diag;
+        localResNorm += pow(omega * (source_tmp - source_i), 2);
+        source_i = (1.0-omega)*source_i + omega*source_tmp;
         nodes->SetLangevinSourceTerms(iPoint, iDim, source_i);
 
       }
@@ -1777,7 +1775,7 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
         }
       }
 
-      if (globalResNorm < tol || iter == maxIter-1) {
+      if (log10(globalResNorm) < tol || iter == maxIter-1) {
 
         if (rank == MASTER_NODE) {
           cout << "  " 
@@ -1797,7 +1795,9 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
           su2double b = sqrt(cDelta) * maxDelta;
           su2double b3 = b * b * b;
           su2double volume = geometry->nodes->GetVolume(iPoint);
-          source *= sqrt(8.0*pi*b3/volume);
+          su2double scaleFactor = sqrt(8.0 * pi * b3 / volume);
+          source *= scaleFactor;
+          source = min(max(source, -sourceLim), sourceLim);
           nodes->SetLangevinSourceTerms(iPoint, iDim, source);
         }
 

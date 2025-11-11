@@ -118,7 +118,7 @@ class CSourceBase_TurbSA : public CNumerics {
    * \brief Include source-term residuals for Langevin equations (Stochastic Backscatter Model) 
    */
   inline void ResidualStochEquations(su2double timeStep, const su2double ct, 
-                                     su2double lengthScale,
+                                     su2double lengthScale, su2double DES_const,
                                      const CSAVariables& var, TIME_MARCHING time_marching) {
 
     const su2double& nue = ScalarVar_i[0];
@@ -132,7 +132,10 @@ class CSourceBase_TurbSA : public CNumerics {
     
     const su2double nut = nue * var.fv1;
 
-    su2double tTurb = ct * pow(lengthScale, 2) / max(nut, nut_small);
+    su2double tLES = ct * pow(lengthScale/DES_const, 2) / max(nut, nut_small);
+    su2double tRANS = pow(lengthScale, 2) / max(nut, nut_small);
+    su2double tLR = tLES / tRANS;
+    su2double tTurb = tLES / (lesMode_i + (1.0-lesMode_i)*tLR);
     su2double tRat = timeStep / tTurb;
     
     su2double corrFac = 1.0;
@@ -142,7 +145,8 @@ class CSourceBase_TurbSA : public CNumerics {
       corrFac = sqrt(1.0+0.5*tRat);
     }
     
-    su2double scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * density * corrFac;
+    su2double scaleFactor = 0.0;
+    if (lesMode_i > 0.999) scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * density * corrFac;
 
     ResidSB[0] = Residual;
     for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
@@ -379,9 +383,8 @@ class CSourceBase_TurbSA : public CNumerics {
           AddStochSource(var, PrimVar_Grad_i + idx.Velocity(), config->GetSBS_Cmag());
         const su2double DES_const = config->GetConst_DES();
         const su2double ctau = config->GetSBS_Ctau();
-        const su2double ctTurb = ctau / pow(DES_const, 2);
-        ResidualStochEquations(config->GetDelta_UnstTime(), ctTurb, dist_i, var,
-                               config->GetTime_Marching());
+        ResidualStochEquations(config->GetDelta_UnstTime(), ctau, dist_i, DES_const,
+                               var, config->GetTime_Marching());
       }
     }
 

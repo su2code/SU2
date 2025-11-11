@@ -6509,6 +6509,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             cout << "Backscatter timescale coefficient: " << SBS_Ctau << endl;
             if (SBS_Ctau < 0.0)
               SU2_MPI::Error("Backscatter timescale coefficient must be non-negative.", CURRENT_FUNCTION);
+            if (SBS_maxIterSmooth > 0)
+              cout << "Maximum number of iterations for implicit smoothing: " << SBS_maxIterSmooth << endl;
+            else
+              cout << "No smoothing applied to source terms in Langevin equations." << endl;
           } else {
             cout << "OFF" << endl;
           }
