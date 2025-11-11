@@ -37,7 +37,6 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 
   heat = config->GetEnergy_Equation();
 
-  weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
   flamelet = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
 
   streamwisePeriodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
@@ -108,7 +107,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Root-mean square residual of the velocity z-component.
   if (nDim == 3) AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", ScreenOutputFormat::FIXED,   "RMS_RES", "Root-mean square residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
+  if (heat) AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutputFields_ScalarRMS_RES(config);
 
@@ -127,7 +126,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3)
     AddHistoryOutput("MAX_VELOCITY-Z", "max[W]", ScreenOutputFormat::FIXED,   "MAX_RES", "Maximum residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat)
+  if (heat)
     AddHistoryOutput("MAX_TEMPERATURE", "max[T]", ScreenOutputFormat::FIXED, "MAX_RES", "Root-mean square residual of the temperature.", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutputFields_ScalarMAX_RES(config);
@@ -144,7 +143,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3)
     AddHistoryOutput("BGS_VELOCITY-Z", "bgs[W]", ScreenOutputFormat::FIXED,   "BGS_RES", "BGS residual of the velocity z-component.", HistoryFieldType::RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat)
+  if (heat)
     AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the temperature.", HistoryFieldType::RESIDUAL);
 
   AddHistoryOutputFields_ScalarBGS_RES(config);
@@ -184,7 +183,7 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   AddAerodynamicCoefficients(config);
 
-  if (heat || weakly_coupled_heat) {
+  if (heat) {
     AddHeatCoefficients(config);
     AddHistoryOutput("AVG_TEMPERATURE", "Temp", ScreenOutputFormat::SCIENTIFIC, "HEAT", "Average temperature on all surfaces set with MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   }
@@ -196,7 +195,6 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
   CSolver* flow_solver = solver[FLOW_SOL];
-  CSolver* heat_solver = solver[HEAT_SOL];
   CSolver* rad_solver  = solver[RAD_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
 
@@ -222,13 +220,6 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
       SetHistoryOutputValue("BGS_RAD_ENERGY", log10(rad_solver->GetRes_BGS(0)));
   }
 
-  if (weakly_coupled_heat){
-    SetHeatCoefficients(config, heat_solver);
-    SetHistoryOutputValue("AVG_TEMPERATURE", heat_solver->GetTotal_AvgTemperature());
-    SetHistoryOutputValue("RMS_TEMPERATURE", log10(heat_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
-    if (multiZone) SetHistoryOutputValue("BGS_TEMPERATURE", log10(heat_solver->GetRes_BGS(0)));
-  }
   if (heat) {
     SetHeatCoefficients(config, flow_solver);
     SetHistoryOutputValue("AVG_TEMPERATURE", flow_solver->GetTotal_AvgTemperature());
@@ -295,7 +286,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
-  if (heat || weakly_coupled_heat || flamelet)
+  if (heat || flamelet)
     AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION", "Temperature");
 
   SetVolumeOutputFieldsScalarSolution(config);
@@ -354,7 +345,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_VELOCITY-Y", "Limiter_Velocity_y", "LIMITER", "Limiter value of the y-velocity");
     if (nDim == 3)
       AddVolumeOutput("LIMITER_VELOCITY-Z", "Limiter_Velocity_z", "LIMITER", "Limiter value of the z-velocity");
-    if (heat || weakly_coupled_heat || flamelet)
+    if (heat || flamelet)
       AddVolumeOutput("LIMITER_TEMPERATURE", "Limiter_Temperature", "LIMITER", "Limiter value of the temperature");
   }
 
@@ -383,13 +374,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
-  const CVariable* Node_Heat = nullptr;
   const CVariable* Node_Rad = nullptr;
   auto* Node_Geo = geometry->nodes;
-
-  if (weakly_coupled_heat){
-    Node_Heat = solver[HEAT_SOL]->GetNodes();
-  }
 
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
 
@@ -400,7 +386,6 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
 
   if (heat || flamelet) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
-  if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
 
   // Radiation solver
   if (config->AddRadiation()){
@@ -439,7 +424,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("LIMITER_VELOCITY-Y", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 2));
     if (nDim == 3)
       SetVolumeOutputValue("LIMITER_VELOCITY-Z", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, 3));
-    if (heat || weakly_coupled_heat)
+    if (heat)
       SetVolumeOutputValue("LIMITER_TEMPERATURE", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+1));
   }
 

@@ -35,8 +35,6 @@ CAdjFlowIncOutput::CAdjFlowIncOutput(CConfig *config, unsigned short nDim) : CAd
 
   heat = config->GetEnergy_Equation();
 
-  weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
   rad_model = config->GetKind_RadiationModel();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
@@ -112,7 +110,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config) {
     AddHistoryOutput("RMS_ADJ_VELOCITY-Z", "rms[A_W]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint Velocity z-component.", HistoryFieldType::RESIDUAL);
   }
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) {
+  if (heat) {
     AddHistoryOutput("RMS_ADJ_TEMPERATURE", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
   }
 
@@ -140,7 +138,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config) {
     AddHistoryOutput("MAX_ADJ_VELOCITY-Z", "max[A_RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL);
   }
   /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) {
+  if (heat) {
     AddHistoryOutput("MAX_ADJ_TEMPERATURE", "max[A_T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature.", HistoryFieldType::RESIDUAL);
   }
 
@@ -159,7 +157,7 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config) {
     AddHistoryOutput("BGS_ADJ_VELOCITY-Z", "bgs[A_RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL);
   }
   /// DESCRIPTION: BGS residual of the temperature.
-  if (heat || weakly_coupled_heat) {
+  if (heat) {
     AddHistoryOutput("BGS_ADJ_TEMPERATURE", "bgs[A_T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
   }
 
@@ -199,7 +197,6 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config) {
 void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
   CSolver* adjflow_solver = solver[ADJFLOW_SOL];
-  CSolver* adjheat_solver = solver[ADJHEAT_SOL];
   CSolver* adjrad_solver = solver[ADJRAD_SOL];
   CSolver* mesh_solver = solver[MESH_SOL];
 
@@ -208,9 +205,6 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   SetHistoryOutputValue("RMS_ADJ_VELOCITY-Y", log10(adjflow_solver->GetRes_RMS(2)));
   if (nDim == 3) {
     SetHistoryOutputValue("RMS_ADJ_VELOCITY-Z", log10(adjflow_solver->GetRes_RMS(3)));
-  }
-  if (weakly_coupled_heat) {
-    SetHistoryOutputValue("RMS_ADJ_TEMPERATURE",         log10(adjheat_solver->GetRes_RMS(0)));
   }
   if (heat) {
     if (nDim == 3) SetHistoryOutputValue("RMS_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_RMS(4)));
@@ -231,9 +225,6 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
   if (nDim == 3) {
     SetHistoryOutputValue("MAX_ADJ_VELOCITY-Z", log10(adjflow_solver->GetRes_Max(3)));
   }
-  if (weakly_coupled_heat) {
-    SetHistoryOutputValue("MAX_ADJ_TEMPERATURE",         log10(adjheat_solver->GetRes_Max(0)));
-  }
   if (heat) {
     if (nDim == 3) SetHistoryOutputValue("MAX_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_Max(4)));
     else           SetHistoryOutputValue("MAX_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_Max(3)));
@@ -245,9 +236,6 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     SetHistoryOutputValue("BGS_ADJ_VELOCITY-Y", log10(adjflow_solver->GetRes_BGS(2)));
     if (nDim == 3) {
       SetHistoryOutputValue("BGS_ADJ_VELOCITY-Z", log10(adjflow_solver->GetRes_BGS(3)));
-    }
-    if (weakly_coupled_heat) {
-      SetHistoryOutputValue("BGS_ADJ_TEMPERATURE",         log10(adjheat_solver->GetRes_BGS(0)));
     }
     if (heat) {
       if (nDim == 3) SetHistoryOutputValue("BGS_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_BGS(4)));
@@ -355,13 +343,9 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config) {
 void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) {
 
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->GetNodes();
-  CVariable* Node_AdjHeat = nullptr;
   CVariable* Node_AdjRad  = nullptr;
   CPoint*    Node_Geo     = geometry->nodes;
 
-  if (weakly_coupled_heat) {
-    Node_AdjHeat = solver[ADJHEAT_SOL]->GetNodes();
-  }
   if (config->GetKind_RadiationModel() != RADIATION_MODEL::NONE) {
     Node_AdjRad = solver[ADJRAD_SOL]->GetNodes();
   }
@@ -378,14 +362,10 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   if (nDim == 3) {
     SetVolumeOutputValue("ADJ_VELOCITY-Z", iPoint, Node_AdjFlow->GetSolution(iPoint, 3));
   }
-
-  if (weakly_coupled_heat) {
-    SetVolumeOutputValue("ADJ_TEMPERATURE", iPoint, Node_AdjHeat->GetSolution(iPoint, 0));
-  }
-  else {
-    if (nDim == 3) SetVolumeOutputValue("ADJ_TEMPERATURE", iPoint, Node_AdjFlow->GetSolution(iPoint, 4));
-    else           SetVolumeOutputValue("ADJ_TEMPERATURE", iPoint, Node_AdjFlow->GetSolution(iPoint, 3));
-  }
+  if (nDim == 3)
+    SetVolumeOutputValue("ADJ_TEMPERATURE", iPoint, Node_AdjFlow->GetSolution(iPoint, 4));
+  else
+    SetVolumeOutputValue("ADJ_TEMPERATURE", iPoint, Node_AdjFlow->GetSolution(iPoint, 3));
 
   // Radiation
   if (config->AddRadiation()) {
