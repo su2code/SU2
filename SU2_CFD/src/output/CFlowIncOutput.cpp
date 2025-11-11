@@ -35,7 +35,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
 
   turb_model = config->GetKind_Turb_Model();
 
-  heat = config->GetEnergy_Equation();
+heat = config->GetEnergy_Equation() || config->GetWeakly_Coupled_Heat() ;
 
   flamelet = (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET);
 
