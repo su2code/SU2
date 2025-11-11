@@ -1303,6 +1303,84 @@ class COptionRiemann : public COptionBase {
 };
 
 template <class Tenum>
+class COptionWallSpecies : public COptionBase {
+ protected:
+  map<string, Tenum> m;
+  string name;  // identifier for the option
+  unsigned short& size;
+  string*& marker;
+  unsigned short*& field;  // Reference to the field name
+  su2double*& value;
+
+ public:
+  COptionWallSpecies(string option_field_name, unsigned short& nMarker_Wall_Species, string*& Marker_Wall_Species,
+                     unsigned short*& option_field, const map<string, Tenum> m, su2double*& value)
+      : size(nMarker_Wall_Species), marker(Marker_Wall_Species), field(option_field), value(value) {
+    this->name = option_field_name;
+    this->m = m;
+  }
+  ~COptionWallSpecies() override{};
+
+  string SetValue(const vector<string>& option_value) override {
+    COptionBase::SetValue(option_value);
+    unsigned short totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker = nullptr;
+      this->field = nullptr;
+      this->value = nullptr;
+      return "";
+    }
+
+    if (totalVals % 3 != 0) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": must have a number of entries divisible by 3");
+      this->size = 0;
+      this->marker = nullptr;
+      this->field = nullptr;
+      this->value = nullptr;
+      return newstring;
+    }
+
+    unsigned short nVals = totalVals / 3;
+    this->size = nVals;
+    this->marker = new string[nVals];
+    this->field = new unsigned short[nVals];
+    this->value = new su2double[nVals];
+
+    for (unsigned long i = 0; i < nVals; i++) {
+      this->marker[i].assign(option_value[3 * i]);
+      // Check to see if the enum value is in the map
+      if (this->m.find(option_value[3 * i + 1]) == m.end()) {
+        string str;
+        str.append(this->name);
+        str.append(": invalid option value ");
+        str.append(option_value[3 * i + 1]);
+        str.append(". Check current SU2 options in config_template.cfg.");
+        return str;
+      }
+      Tenum val = this->m[option_value[3 * i + 1]];
+      this->field[i] = val;
+
+      istringstream ss_value(option_value[3 * i + 2]);
+      if (!(ss_value >> this->value[i])) {
+        return badValue("WallSpecies", this->name);
+      }
+    }
+
+    return "";
+  }
+
+  void SetDefault() override {
+    this->marker = nullptr;
+    this->field = nullptr;
+    this->value = nullptr;
+    this->size = 0;  // There is no default value for list
+  }
+};
+
+template <class Tenum>
 class COptionGiles : public COptionBase {
   map<string, Tenum> m;
   unsigned short& size;

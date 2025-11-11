@@ -566,6 +566,19 @@ class CDriverBase {
     main_geometry->SetCustomBoundaryHeatFlux(iMarker, iVertex, WallHeatFlux);
   }
 
+    /*!
+   * \brief Set the wall normal scalar values at a vertex on a specified marker (MARKER_PYTHON_CUSTOM).
+   * \note This can be the input of a scalar transport equation.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] WallScalar - Value of the normal heat flux.
+   */
+
+   inline void SetMarkerCustomScalar(unsigned short iMarker, unsigned long iVertex, std::vector<su2double> WallScalar) {
+    auto* solver = solver_container[selected_zone][INST_0][MESH_0][SPECIES_SOL];
+    solver->SetCustomBoundaryScalar(iMarker, iVertex, WallScalar);
+  }
+
   /*!
    * \brief Selects zone to be used for python driver operations.
    * \param[in] iZone - Zone identifier.

@@ -514,6 +514,15 @@ void CConfig::addRiemannOption(const string name, unsigned short & nMarker_Riema
 }
 
 template <class Tenum>
+void CConfig::addWallSpeciesOption(const string name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species, unsigned short* & option_field, const map<string, Tenum> & enum_map,
+                                   su2double* & value) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionWallSpecies<Tenum>(name, nMarker_Wall_Species, Marker_Wall_Species, option_field, enum_map, value);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
+template <class Tenum>
 void CConfig::addGilesOption(const string name, unsigned short & nMarker_Giles, string * & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                              su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relaxfactor1, su2double* & relaxfactor2) {
   assert(option_map.find(name) == option_map.end());
@@ -9229,6 +9238,20 @@ const su2double* CConfig::GetInlet_SpeciesVal(const string& val_marker) const {
   for (iMarker_Inlet_Species = 0; iMarker_Inlet_Species < nMarker_Inlet_Species; iMarker_Inlet_Species++)
     if (Marker_Inlet_Species[iMarker_Inlet_Species] == val_marker) break;
   return Inlet_SpeciesVal[iMarker_Inlet_Species];
+}
+
+su2double CConfig::GetWall_SpeciesVal(const string& val_marker) const {
+  unsigned short iMarker_Wall_Species;
+  for (iMarker_Wall_Species = 0; iMarker_Wall_Species < nMarker_Wall_Species; iMarker_Wall_Species++)
+    if (Marker_Wall_Species[iMarker_Wall_Species] == val_marker) break;
+  return Wall_SpeciesVal[iMarker_Wall_Species];
+}
+
+unsigned short CConfig::GetWall_SpeciesType(const string& val_marker) const {
+  unsigned short iMarker_Wall_Species;
+  for (iMarker_Wall_Species = 0; iMarker_Wall_Species < nMarker_Wall_Species; iMarker_Wall_Species++)
+    if (Marker_Wall_Species[iMarker_Wall_Species] == val_marker) break;
+  return Kind_Wall_Species[iMarker_Wall_Species];
 }
 
 const su2double* CConfig::GetInlet_TurbVal(const string& val_marker) const {

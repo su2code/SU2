@@ -2200,6 +2200,14 @@ class CFVMFlowSolverBase : public CSolver {
     else
       Inlet_FlowDir[val_marker][val_vertex][val_dim] = val_flowdir;
   }
+   
+    /*!
+   * \brief Set the value of the customized normal scalar values/flux at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   */
+  inline void SetCustomBoundaryScalar(unsigned short val_marker, unsigned long val_vertex, 
+    std::vector<su2double> val_customBoundaryScalar) {  }
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions.
