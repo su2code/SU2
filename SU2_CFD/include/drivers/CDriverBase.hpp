@@ -574,7 +574,7 @@ class CDriverBase {
    * \param[in] WallScalar - Value of the normal heat flux.
    */
 
-   inline void SetMarkerCustomScalar(unsigned short iMarker, unsigned long iVertex, std::vector<su2double> WallScalar) {
+   inline void SetMarkerCustomScalar(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> WallScalar) {
     auto* solver = solver_container[selected_zone][INST_0][MESH_0][SPECIES_SOL];
     solver->SetCustomBoundaryScalar(iMarker, iVertex, WallScalar);
   }
