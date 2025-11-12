@@ -1319,7 +1319,20 @@ class COptionWallSpecies : public COptionBase {
     this->name = option_field_name;
     this->m = m;
   }
-  ~COptionWallSpecies() override{};
+  ~COptionWallSpecies() override {
+    if (marker) {
+      delete[] marker;
+      marker = nullptr;
+    }
+    if (field) {
+      delete[] field;
+      field = nullptr;
+    }
+    if (value) {
+      delete[] value;
+      value = nullptr;
+    }
+  }
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
