@@ -209,7 +209,7 @@ void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeomet
 
   iDonorSpan = target_solution->GetnMixingStates(Marker_Target, Span_Target);
 
-  for (iVar = 0; iVar < nTargetVar+1; iVar++)
+  for (iVar = 0; iVar < nTargetVar; iVar++)
     target_solution->SetMixingState(Marker_Target, Span_Target, iVar, Target_Variable[iVar]);
 
   target_solution->SetnMixingStates( Marker_Target, Span_Target, iDonorSpan + 1 );
