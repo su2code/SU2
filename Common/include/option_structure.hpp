@@ -1104,26 +1104,26 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 /*!
  * \brief SST rough-wall boundary conditions Options
  */
-enum class ROUGHSST_OPTIONS {
+enum class ROUGHSST_MODEL {
   NONE,                 /*!< \brief No option / default no surface roughness applied. */
   WILCOX1998,           /*!< \brief Wilcox 1998 boundary conditions for rough walls. */
   WILCOX2006,           /*!< \brief Wilcox 2006 boundary conditions for rough walls / default version if roughness is applied. */
   LIMITER_KNOPP,        /*!< \brief Knopp eddy viscosity limiter. */
   LIMITER_AUPOIX,       /*!< \brief Aupoix eddy viscosity limiter. */
 };
-static const MapType<std::string, ROUGHSST_OPTIONS> ROUGHSST_Options_Map = {
-  MakePair("NONE", ROUGHSST_OPTIONS::NONE)
-  MakePair("WILCOX1998", ROUGHSST_OPTIONS::WILCOX1998)
-  MakePair("WILCOX2006", ROUGHSST_OPTIONS::WILCOX2006)
-  MakePair("LIMITER_KNOPP", ROUGHSST_OPTIONS::LIMITER_KNOPP)
-  MakePair("LIMITER_AUPOIX", ROUGHSST_OPTIONS::LIMITER_AUPOIX)
+static const MapType<std::string, ROUGHSST_MODEL> RoughSST_Model_Map = {
+  MakePair("NONE", ROUGHSST_MODEL::NONE)
+  MakePair("WILCOX1998", ROUGHSST_MODEL::WILCOX1998)
+  MakePair("WILCOX2006", ROUGHSST_MODEL::WILCOX2006)
+  MakePair("LIMITER_KNOPP", ROUGHSST_MODEL::LIMITER_KNOPP)
+  MakePair("LIMITER_AUPOIX", ROUGHSST_MODEL::LIMITER_AUPOIX)
 };
 
 /*!
  * \brief Structure containing parsed SST rough-wall boundary conditions options.
  */
 struct ROUGH_SST_ParsedOptions {
-  ROUGHSST_OPTIONS version = ROUGHSST_OPTIONS::NONE;         /*!< \brief KWBC base model. */
+  ROUGHSST_MODEL version = ROUGHSST_MODEL::NONE;         /*!< \brief KWBC base model. */
   bool wilcox1998 = false;                           /*!< \brief Use Wilcox boundary conditions for rough walls (1998). */
   bool wilcox2006 = false;                          /*!< \brief Use Wilcox boundary conditions for rough walls (2006). */
   bool limiter_knopp = false;                        /*!< \brief Use Knopp eddy viscosity limiter. */
@@ -1137,15 +1137,15 @@ struct ROUGH_SST_ParsedOptions {
  * \param[in] rank - MPI rank.
  * \return Struct with SST options.
  */
-inline ROUGH_SST_ParsedOptions ParseROUGHSSTOptions(ROUGHSST_OPTIONS sstbcs_option) {
+inline ROUGH_SST_ParsedOptions ParseROUGHSSTOptions(ROUGHSST_MODEL sstbcs_option) {
     ROUGH_SST_ParsedOptions opts;
     opts.version = sstbcs_option;
 
     switch(sstbcs_option) {
-        case ROUGHSST_OPTIONS::WILCOX1998: opts.wilcox1998 = true; break;
-        case ROUGHSST_OPTIONS::WILCOX2006: opts.wilcox2006 = true; break;
-        case ROUGHSST_OPTIONS::LIMITER_KNOPP: opts.limiter_knopp = true; break;
-        case ROUGHSST_OPTIONS::LIMITER_AUPOIX: opts.limiter_aupoix = true; break;
+        case ROUGHSST_MODEL::WILCOX1998: opts.wilcox1998 = true; break;
+        case ROUGHSST_MODEL::WILCOX2006: opts.wilcox2006 = true; break;
+        case ROUGHSST_MODEL::LIMITER_KNOPP: opts.limiter_knopp = true; break;
+        case ROUGHSST_MODEL::LIMITER_AUPOIX: opts.limiter_aupoix = true; break;
         default: break;
     }
 

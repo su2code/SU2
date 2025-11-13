@@ -756,11 +756,10 @@ private:
   SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
   SA_OPTIONS *SA_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
   LM_OPTIONS *LM_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
-  ROUGHSST_OPTIONS *ROUGHSST_Options;         /*!< \brief List of modifications/corrections/versions of rough-wall boundary conditions for SST turbulence model.*/
+  ROUGHSST_MODEL Kind_RoughSST_Model;         /*!< \brief List of modifications/corrections/versions of rough-wall boundary conditions for SST turbulence model.*/
   unsigned short nSST_Options;        /*!< \brief Number of SST options specified. */
   unsigned short nSA_Options;         /*!< \brief Number of SA options specified. */
   unsigned short nLM_Options;         /*!< \brief Number of SA options specified. */
-  unsigned short nROUGHSST_Options;       /*!< \brief Number of rough-wall boundary conditions for SST turbulence model options specified. */
   WALL_FUNCTIONS  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
