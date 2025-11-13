@@ -58,6 +58,15 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
         const auto markDonor = donor_config->FindInterfaceMarker(iMarkerInt);
         const auto markTarget = target_config->FindInterfaceMarker(iMarkerInt);
 
+        unsigned short turboMarkDonor, turboMarkTarget;
+        if (donorZone > targetZone){
+            turboMarkDonor = TURBO_MARKER_TYPE::INFLOW;
+            turboMarkTarget = TURBO_MARKER_TYPE::OUTFLOW;
+        } else {
+            turboMarkDonor = TURBO_MARKER_TYPE::OUTFLOW;
+            turboMarkTarget = TURBO_MARKER_TYPE::INFLOW;
+        }
+
         // Spans are defined on one processor only, check to see if other processors have interface
 #ifdef HAVE_MPI
     auto buffMarkDonor = new int[size];
@@ -76,19 +85,23 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
 
         if (!CheckInterfaceBoundary(markDonor, markTarget)) continue;
 
-        if (markDonor != -1) nSpanDonor = donor_config->GetnSpanWiseSections();
-        if (markTarget != -1) nSpanTarget = target_config->GetnSpanWiseSections();
+        nSpanDonor = donor_config->GetnSpanWiseSections();
+        nSpanTarget = target_config->GetnSpanWiseSections();
 
         if (nSpanTarget) targetSpans[markTarget].resize(nSpanTarget);
 
-        const auto spanValuesDonor = donor_geometry->GetSpanWiseValue(markDonor);
-        const auto spanValuesTarget = target_geometry->GetSpanWiseValue(markTarget);
+        const auto spanValuesDonor = donor_geometry->GetSpanWiseValue(turboMarkDonor);
+        const auto spanValuesTarget = target_geometry->GetSpanWiseValue(turboMarkTarget);
 
-        /*--- Interpolation of values at hub & shroud ---*/
+        /*--- Interpolation at hub, shroud & 1D values ---*/
         targetSpans[iMarkerInt].globalSpan[0] = 0;
         targetSpans[iMarkerInt].coefficient[0] = 0.0;
-        targetSpans[iMarkerInt].globalSpan[nSpanTarget] = nSpanTarget;
-        targetSpans[iMarkerInt].coefficient[nSpanTarget] = 0.0;
+        if (nDim > 2) {
+            targetSpans[iMarkerInt].globalSpan[nSpanTarget-1] = nSpanTarget-1;
+            targetSpans[iMarkerInt].coefficient[nSpanTarget-1] = 0.0;
+            targetSpans[iMarkerInt].globalSpan[nSpanTarget] = nSpanTarget;
+            targetSpans[iMarkerInt].coefficient[nSpanTarget] = 0.0;
+        }
 
         for(auto iSpanTarget = 1; iSpanTarget < nSpanTarget - 2; iSpanTarget++){
             auto tSpan = 0; // Nearest donor span index

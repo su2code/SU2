@@ -187,7 +187,7 @@ protected:
   inline void SetMixingStateStructure(unsigned short val_marker, unsigned long val_span) final {
     if( MixingState[val_marker][val_span] != nullptr ) delete [] MixingState[val_marker][val_span];
 
-    for( int iVar = 0; iVar < 8; iVar++) MixingState[val_marker][val_span] = new su2double[iVar];
+    MixingState[val_marker][val_span] = new su2double[8];
   }
 
   /*!
