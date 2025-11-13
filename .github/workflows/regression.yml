@@ -211,7 +211,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:250717-1402
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
+          args: -b ${{github.ref}} -t develop -c feature_turb_flatplate_SST_RoughBCs -s ${{matrix.testscript}}
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:250717-1402
         with:
@@ -260,7 +260,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:250717-1402
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--tapetests"
+          args: -b ${{github.ref}} -t develop -c feature_turb_flatplate_SST_RoughBCs -s ${{matrix.testscript}} -a "--tapetests"
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:250717-1402
         with:
@@ -306,7 +306,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2-tsan:250717-1402
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--tsan"
+          args: -b ${{github.ref}} -t develop -c feature_turb_flatplate_SST_RoughBCs -s ${{matrix.testscript}} -a "--tsan"
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2-tsan:250717-1402
         with:
@@ -351,7 +351,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2-asan:250717-1402
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--asan"
+          args: -b ${{github.ref}} -t develop -c feature_turb_flatplate_SST_RoughBCs -s ${{matrix.testscript}} -a "--asan"
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2-asan:250717-1402
         with:
