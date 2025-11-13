@@ -185,6 +185,8 @@ protected:
    * \param[in] val_span   - vertex index
    */
   inline void SetMixingStateStructure(unsigned short val_marker, unsigned long val_span) final {
+    assert(val_marker < MixingState.size());
+    assert(val_span < MixingState[val_marker].size());
     if( MixingState[val_marker][val_span] != nullptr ) delete [] MixingState[val_marker][val_span];
 
     MixingState[val_marker][val_span] = new su2double[8];

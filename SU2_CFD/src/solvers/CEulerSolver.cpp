@@ -465,8 +465,8 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig **config_con
 
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == GILES_BOUNDARY) {
-      MixingState[iMarker].resize(nSpanWiseSections);
-      MixingStateNodes[iMarker].resize(nSpanWiseSections);
+      MixingState[iMarker].resize(nSpanWiseSections+1);
+      MixingStateNodes[iMarker].resize(nSpanWiseSections+1);
     }
   }
 
