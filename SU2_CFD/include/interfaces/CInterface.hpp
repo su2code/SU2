@@ -148,6 +148,12 @@ protected:
     for (auto iVar = 0u; iVar < nVar; iVar++) Target_Variable[iVar] += donorCoeff * bcastVariable[iVar];
   }
 
+  inline virtual void RecoverTarget_Variable(const su2double *bcastVariable) { }
+
+  inline virtual void RecoverTarget_Variable(const su2double *bcastVariable, const su2double *next_bcastVariable, su2double donorCoeff) { }
+
+
+
   /*!
    * \brief A virtual member.
    * \param[in] target_solution - Solution from the target mesh.
@@ -186,6 +192,21 @@ public:
    */
   inline virtual void SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
                                        unsigned short donorZone) { }
+
+  /*!
+   * \brief Interpolate data and broadcast it into all processors, for nonmatching meshes.
+   * \param[in] interpolator - Object defining the interpolation.
+   * \param[in] donor_solution - Solution from the donor mesh.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   */
+  inline virtual void BroadcastData_MixingPlane(const CInterpolator& interpolator,
+                     CSolver *donor_solution, CSolver *target_solution,
+                     CGeometry *donor_geometry, CGeometry *target_geometry,
+                     const CConfig *donor_config, const CConfig *target_config) { };
 
   /*!
    * \brief Transfer pre-processing for the mixing plane inteface.

@@ -296,6 +296,9 @@ class CDriver : public CDriverBase {
   void PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                     CInterface*** interface, CIteration*** iteration, bool dummy);
 
+  void PreprocessTurboVertex(CConfig** config, CGeometry**** geometry, CSolver***** solver,
+                                    CInterface*** interface, CIteration*** iteration, bool dummy);
+
   /*!
    * \brief A virtual member.
    * \param[in] donorZone - zone in which the displacements will be predicted.

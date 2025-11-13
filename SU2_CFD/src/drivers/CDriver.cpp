@@ -226,6 +226,13 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
     CGeometry::ComputeWallDistance(config_container, geometry_container);
   }
 
+  if (config_container[ZONE_0]->GetBoolTurbomachinery()){
+    if (rank == MASTER_NODE)
+      cout << endl <<"---------------------- Turbo-Vertex Preprocessing ---------------------" << endl;
+
+    PreprocessTurboVertex(config_container, geometry_container, solver_container, interface_container, iteration_container, dummy_geo);
+  }
+
   /*--- Definition of the interface and transfer conditions between different zones. ---*/
 
   if (nZone > 1) {
@@ -250,10 +257,7 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
       cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
 
     PreprocessTurbomachinery(config_container, geometry_container, solver_container, interface_container, iteration_container, dummy_geo);
-  } else {
-    mixingplane = false;
   }
-
 
   PreprocessPythonInterface(config_container, geometry_container, solver_container);
 
@@ -2417,8 +2421,11 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
 
         /*--- Setup the interpolation. ---*/
 
-        interpolation[donor][target] = unique_ptr<CInterpolator>(CInterpolatorFactory::CreateInterpolator(
-                                       geometry, config, interpolation[target][donor].get(), donor, target));
+        if (!config[donor]->GetBoolTurbomachinery()) {
+          interpolation[donor][target] = unique_ptr<CInterpolator>(CInterpolatorFactory::CreateInterpolator(
+                                       geometry, config, interpolation[target][donor].get(), donor, target, false));
+          if (rank == MASTER_NODE) cout << " Transferring ";
+          }
 
         /*--- The type of variables transferred depends on the donor/target physics. ---*/
 
@@ -2431,8 +2438,6 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
         const bool structural_donor = config[donor]->GetStructuralProblem();
 
         /*--- Initialize the appropriate transfer strategy. ---*/
-
-        if (rank == MASTER_NODE) cout << " Transferring ";
 
         if (fluid_donor && structural_target) {
 
@@ -2460,12 +2465,18 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
             auto interfaceIndex = donor+target; // Here we assume that the interfaces at each side are the same kind
             switch (config[donor]->GetKind_TurboInterface(interfaceIndex)) {
               case TURBO_INTERFACE_KIND::MIXING_PLANE: {
+                interpolation[donor][target] = unique_ptr<CInterpolator>(CInterpolatorFactory::CreateInterpolator(
+                                       geometry, config, interpolation[target][donor].get(), donor, target, true));
+                if (rank == MASTER_NODE) cout << " Transferring ";
                 auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
                 interface[donor][target] = new CMixingPlaneInterface(nVar, 0);
                 if (rank == MASTER_NODE) cout << "using a mixing-plane interface from donor zone " << donor << " to target zone " << target << "." << endl;
                 break;
               }
               case TURBO_INTERFACE_KIND::FROZEN_ROTOR: {
+                interpolation[donor][target] = unique_ptr<CInterpolator>(CInterpolatorFactory::CreateInterpolator(
+                                       geometry, config, interpolation[target][donor].get(), donor, target, false));
+                if (rank == MASTER_NODE) cout << " Transferring ";
                 auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
                 interface[donor][target] = new CSlidingInterface(nVar, 0);
                 if (rank == MASTER_NODE) cout << "using a fluid interface interface from donor zone " << donor << " to target zone " << target << "." << endl;
@@ -2604,7 +2615,7 @@ void CDriver::PreprocessOutput(CConfig **config, CConfig *driver_config, COutput
 
 }
 
-void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
+void CDriver::PreprocessTurboVertex(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                            CInterface*** interface, CIteration*** iteration, bool dummy){
 
   unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
@@ -2639,6 +2650,16 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
     }
   }
   if (rank == MASTER_NODE) cout<<"Max number of span-wise sections among all zones: "<< nSpanMax<<"."<< endl;
+}
+
+void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
+                                           CInterface*** interface, CIteration*** iteration, bool dummy){
+  unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
+  unsigned short nSpanMax = 0;
+  bool restart   = (config[ZONE_0]->GetRestart() || config[ZONE_0]->GetRestart_Flow());
+  mixingplane = config[ZONE_0]->GetBoolMixingPlaneInterface();
+  bool discrete_adjoint = config[ZONE_0]->GetDiscrete_Adjoint();
+  su2double areaIn, areaOut, nBlades, flowAngleIn, flowAngleOut;
 
   // TODO(turbo): make it general for turbo HB
   if (rank == MASTER_NODE) cout<<"Compute inflow and outflow average geometric quantities." << endl;

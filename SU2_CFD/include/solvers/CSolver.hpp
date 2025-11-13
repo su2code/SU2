@@ -1280,6 +1280,55 @@ public:
    */
   virtual void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) { }
 
+  /*!
+  * \brief Get the outer state for mixing plane interface nodes.
+  * \param[in] val_marker - marker index
+  * \param[in] val_span - vertex index
+  * \param[in] val_state  - requested state component
+  * \param[in] donor_span - index of the donor span to get
+  */
+  inline virtual su2double GetMixingState(unsigned short val_marker,
+                                   unsigned long val_span,
+                                   unsigned short val_state) const { return 0; }
+
+  /*!
+   * \brief Allocates the final pointer of MixingState depending on how many donor vertex donate to it. That number is stored in MixingStateNodes[val_marker][val_vertex].
+   * \param[in] val_marker   - marker index
+   * \param[in] val_span     - span index
+   */
+  inline virtual void SetMixingStateStructure(unsigned short val_marker, unsigned long val_vertex) { }
+
+  /*!
+   * \brief Set the outer state for mixing plane interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_span     - vertex index
+   * \param[in] val_state    - requested state component
+   * \param[in] donor_index  - index of the donor node to set
+   * \param[in] component    - set value
+   */
+  inline virtual void SetMixingState(unsigned short val_marker,
+                              unsigned long val_span,
+                              unsigned short val_state,
+                              // unsigned long donor_span, // Do I care about where it comes from?
+                              su2double component) { }
+
+  /*!
+   * \brief Set the number of outer state for mixing plane interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_span   - span index
+   * \param[in] value - number of outer states
+   */
+  inline virtual void SetnMixingStates(unsigned short val_marker,
+                                unsigned long val_span,
+                                int value) { }
+
+  /*!
+   * \brief Get the number of outer state for mixing plane interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_span - vertex index
+   */
+  inline virtual int GetnMixingStates(unsigned short val_marker, unsigned long val_span) const  { return 0; }
+
  /*!
    * \brief Get the outer state for fluid interface nodes.
    * \param[in] val_marker - marker index
@@ -3865,76 +3914,76 @@ public:
    * \param[in] val_marker - bound marker.
    * \return Value of the Average Nu on the surface <i>val_marker</i>.
    */
-  inline virtual su2double GetExtAverageNu(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
+  // inline virtual su2double GetExtAverageNu(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
 
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Kine on the surface <i>val_marker</i>.
-   */
-  inline virtual su2double GetExtAverageKine(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
+  // /*!
+  //  * \brief A virtual member.
+  //  * \param[in] val_marker - bound marker.
+  //  * \return Value of the Average Kine on the surface <i>val_marker</i>.
+  //  */
+  // inline virtual su2double GetExtAverageKine(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
 
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Omega on the surface <i>val_marker</i>.
-   */
-  inline virtual su2double GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
+  // /*!
+  //  * \brief A virtual member.
+  //  * \param[in] val_marker - bound marker.
+  //  * \return Value of the Average Omega on the surface <i>val_marker</i>.
+  //  */
+  // inline virtual su2double GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan) const { return 0.0; }
 
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Density on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageDensity(unsigned short valMarker,
-                                           unsigned short valSpan,
-                                           su2double valDensity) { }
+  // /*!
+  //  * \brief A virtual member.
+  //  * \param[in] val_marker - bound marker.
+  //  * \return Value of the Average Density on the surface <i>val_marker</i>.
+  //  */
+  // inline virtual void SetExtAverageDensity(unsigned short valMarker,
+  //                                          unsigned short valSpan,
+  //                                          su2double valDensity) { }
 
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Pressure on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAveragePressure(unsigned short valMarker,
-                                            unsigned short valSpan,
-                                            su2double valPressure) { }
+  // /*!
+  //  * \brief A virtual member.
+  //  * \param[in] val_marker - bound marker.
+  //  * \return Value of the Average Pressure on the surface <i>val_marker</i>.
+  //  */
+  // inline virtual void SetExtAveragePressure(unsigned short valMarker,
+  //                                           unsigned short valSpan,
+  //                                           su2double valPressure) { }
 
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageTurboVelocity(unsigned short valMarker,
-                                                 unsigned short valSpan,
-                                                 unsigned short valIndex,
-                                                 su2double valTurboVelocity) { }
+  // /*!
+  //  * \brief A virtual member.
+  //  * \param[in] val_marker - bound marker.
+  //  * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
+  //  */
+  // inline virtual void SetExtAverageTurboVelocity(unsigned short valMarker,
+  //                                                unsigned short valSpan,
+  //                                                unsigned short valIndex,
+  //                                                su2double valTurboVelocity) { }
 
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Nu on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageNu(unsigned short valMarker,
-                                      unsigned short valSpan,
-                                      su2double valNu) { }
+  // /*!
+  //  * \brief A virtual member.
+  //  * \param[in] val_marker - bound marker.
+  //  * \return Value of the Average Nu on the surface <i>val_marker</i>.
+  //  */
+  // inline virtual void SetExtAverageNu(unsigned short valMarker,
+  //                                     unsigned short valSpan,
+  //                                     su2double valNu) { }
 
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Kine on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageKine(unsigned short valMarker,
-                                        unsigned short valSpan,
-                                        su2double valKine) { }
+  // /*!
+  //  * \brief A virtual member.
+  //  * \param[in] val_marker - bound marker.
+  //  * \return Value of the Average Kine on the surface <i>val_marker</i>.
+  //  */
+  // inline virtual void SetExtAverageKine(unsigned short valMarker,
+  //                                       unsigned short valSpan,
+  //                                       su2double valKine) { }
 
-  /*!
-   * \brief A virtual member.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Omega on the surface <i>val_marker</i>.
-   */
-  inline virtual void SetExtAverageOmega(unsigned short valMarker,
-                                         unsigned short valSpan,
-                                         su2double valOmega) { }
+  // /*!
+  //  * \brief A virtual member.
+  //  * \param[in] val_marker - bound marker.
+  //  * \return Value of the Average Omega on the surface <i>val_marker</i>.
+  //  */
+  // inline virtual void SetExtAverageOmega(unsigned short valMarker,
+  //                                        unsigned short valSpan,
+  //                                        su2double valOmega) { }
 
   /*!
    * \brief A virtual member.

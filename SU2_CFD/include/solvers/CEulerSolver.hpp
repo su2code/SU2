@@ -124,20 +124,20 @@ protected:
   vector<su2activematrix> AverageVelocity;
   vector<su2activematrix> AverageTurboVelocity;
   vector<su2activematrix> OldAverageTurboVelocity;
-  vector<su2activematrix> ExtAverageTurboVelocity;
+  // vector<su2activematrix> ExtAverageTurboVelocity;
   su2activematrix AveragePressure;
   su2activematrix OldAveragePressure;
   su2activematrix RadialEquilibriumPressure;
-  su2activematrix ExtAveragePressure;
+  // su2activematrix ExtAveragePressure;
   su2activematrix AverageDensity;
   su2activematrix OldAverageDensity;
-  su2activematrix ExtAverageDensity;
+  // su2activematrix ExtAverageDensity;
   su2activematrix AverageNu;
   su2activematrix AverageKine;
   su2activematrix AverageOmega;
-  su2activematrix ExtAverageNu;
-  su2activematrix ExtAverageKine;
-  su2activematrix ExtAverageOmega;
+  // su2activematrix ExtAverageNu;
+  // su2activematrix ExtAverageKine;
+  // su2activematrix ExtAverageOmega;
   su2activevector AverageMassFlowRate;
 
   su2activematrix DensityIn;
@@ -160,6 +160,70 @@ protected:
   su2double KineticEnergyLoss;
 
   /*--- End of Turbomachinery Solver Variables ---*/
+
+  vector<vector<su2double*>> MixingState; // vector of vector of pointers... inner dim alloc'd elsewhere (welcome, to the night zone)
+  vector<vector<int>> MixingStateNodes;
+
+  /*!
+  * \brief Get the outer state for mixing plane interface nodes.
+  * \param[in] val_marker - marker index
+  * \param[in] val_span - vertex index
+  * \param[in] val_state  - requested state component
+  // * \param[in] donor_index- index of the donor node to get
+  */
+  inline su2double GetMixingState(unsigned short val_marker,
+                                   unsigned long val_span,
+                                   unsigned short val_state
+                                  //  unsigned long donor_index
+                                  ) const final {
+    return MixingState[val_marker][val_span][val_state];
+  }
+
+  /*!
+   * \brief Allocates the final pointer of MixingState depending on how many donor spans donate to it. That number is stored in MixingStateSpans[val_marker][val_Span].
+   * \param[in] val_marker   - marker index
+   * \param[in] val_span   - vertex index
+   */
+  inline void SetMixingStateStructure(unsigned short val_marker, unsigned long val_span) final {
+    if( MixingState[val_marker][val_span] != nullptr ) delete [] MixingState[val_marker][val_span];
+
+    for( int iVar = 0; iVar < 8; iVar++) MixingState[val_marker][val_span] = new su2double[iVar];
+  }
+
+  /*!
+   * \brief Set the outer state for mixing plane interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_span   - vertex index
+   * \param[in] val_state    - requested state component
+  //  * \param[in] donor_index  - index of the donor node to set
+   * \param[in] component    - set value
+   */
+  inline void SetMixingState(unsigned short val_marker,
+                              unsigned long val_span,
+                              unsigned short val_state,
+                              // unsigned long donor_index,
+                              su2double component) final {
+    MixingState[val_marker][val_span][val_state] = component;
+  }
+
+  /*!
+   * \brief Set the number of outer state for mixing plane interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_span - vertex index
+   * \param[in] value - number of outer states
+   */
+  inline void SetnMixingStates(unsigned short val_marker,
+                                unsigned long val_span,
+                                int value) final { MixingStateNodes[val_marker][val_span] = value; }
+
+  /*!
+   * \brief Get the number of outer state for mixing plane interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   */
+  inline int GetnMixingStates(unsigned short val_marker, unsigned long val_span) const final {
+    return MixingStateNodes[val_marker][val_span];
+  }
 
   /*!
    * \brief Preprocessing actions common to the Euler and NS solvers.
@@ -1272,99 +1336,99 @@ public:
    * \param[in] val_marker - bound marker.
    * \return Value of the Average turbulent Nu on the surface <i>val_marker</i>.
    */
-  inline su2double GetExtAverageNu(unsigned short valMarker, unsigned short valSpan) const final {
-    return ExtAverageNu[valMarker][valSpan];
-  }
+  // inline su2double GetExtAverageNu(unsigned short valMarker, unsigned short valSpan) const final {
+  //   return ExtAverageNu[valMarker][valSpan];
+  // }
 
-  /*!
-   * \brief Provide the average density at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average turbulent Kine on the surface <i>val_marker</i>.
-   */
-  inline su2double GetExtAverageKine(unsigned short valMarker, unsigned short valSpan) const final {
-    return ExtAverageKine[valMarker][valSpan];
-  }
+  // /*!
+  //  * \brief Provide the average density at the boundary of interest.
+  //  * \param[in] val_marker - bound marker.
+  //  * \return Value of the Average turbulent Kine on the surface <i>val_marker</i>.
+  //  */
+  // inline su2double GetExtAverageKine(unsigned short valMarker, unsigned short valSpan) const final {
+  //   return ExtAverageKine[valMarker][valSpan];
+  // }
 
-  /*!
-   * \brief Provide the average density at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average turbulent Omega on the surface <i>val_marker</i>.
-   */
-  inline su2double GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan) const final {
-    return ExtAverageOmega[valMarker][valSpan];
-  }
+  // /*!
+  //  * \brief Provide the average density at the boundary of interest.
+  //  * \param[in] val_marker - bound marker.
+  //  * \return Value of the Average turbulent Omega on the surface <i>val_marker</i>.
+  //  */
+  // inline su2double GetExtAverageOmega(unsigned short valMarker, unsigned short valSpan) const final {
+  //   return ExtAverageOmega[valMarker][valSpan];
+  // }
 
-  /*!
-   * \brief Set the external average density at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \param[in] val_Span   - value of the Span.
-   * \param[in] valDensity - value to set.
-   */
-  inline void SetExtAverageDensity(unsigned short valMarker,
-                                   unsigned short valSpan,
-                                   su2double valDensity) final {
-    ExtAverageDensity[valMarker][valSpan] = valDensity;
-  }
+  // /*!
+  //  * \brief Set the external average density at the boundary of interest.
+  //  * \param[in] val_marker - bound marker.
+  //  * \param[in] val_Span   - value of the Span.
+  //  * \param[in] valDensity - value to set.
+  //  */
+  // inline void SetExtAverageDensity(unsigned short valMarker,
+  //                                  unsigned short valSpan,
+  //                                  su2double valDensity) final {
+  //   ExtAverageDensity[valMarker][valSpan] = valDensity;
+  // }
 
-  /*!
-   * \brief Set the external average density at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \param[in] val_Span   - value of the Span.
-   * \param[in] valPressure - value to set.
-   */
-  inline void SetExtAveragePressure(unsigned short valMarker,
-                                    unsigned short valSpan,
-                                    su2double valPressure) final {
-    ExtAveragePressure[valMarker][valSpan] = valPressure;
-  }
+  // /*!
+  //  * \brief Set the external average density at the boundary of interest.
+  //  * \param[in] val_marker - bound marker.
+  //  * \param[in] val_Span   - value of the Span.
+  //  * \param[in] valPressure - value to set.
+  //  */
+  // inline void SetExtAveragePressure(unsigned short valMarker,
+  //                                   unsigned short valSpan,
+  //                                   su2double valPressure) final {
+  //   ExtAveragePressure[valMarker][valSpan] = valPressure;
+  // }
 
-  /*!
-   * \brief Set the external the average turbo velocity average at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
-   */
-  inline void SetExtAverageTurboVelocity(unsigned short valMarker,
-                                         unsigned short valSpan,
-                                         unsigned short valIndex,
-                                         su2double valTurboVelocity) final {
-    ExtAverageTurboVelocity[valMarker][valSpan][valIndex] = valTurboVelocity;
-  }
+  // /*!
+  //  * \brief Set the external the average turbo velocity average at the boundary of interest.
+  //  * \param[in] val_marker - bound marker.
+  //  * \return Value of the Average Total Pressure on the surface <i>val_marker</i>.
+  //  */
+  // inline void SetExtAverageTurboVelocity(unsigned short valMarker,
+  //                                        unsigned short valSpan,
+  //                                        unsigned short valIndex,
+  //                                        su2double valTurboVelocity) final {
+  //   ExtAverageTurboVelocity[valMarker][valSpan][valIndex] = valTurboVelocity;
+  // }
 
-  /*!
-   * \brief Set the external average turbulent Nu at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \param[in] val_Span   - value of the Span.
-   * \param[in] valNu - value to set.
-   */
-  inline void SetExtAverageNu(unsigned short valMarker,
-                              unsigned short valSpan,
-                              su2double valNu) final {
-    ExtAverageNu[valMarker][valSpan] = valNu;
-  }
+  // /*!
+  //  * \brief Set the external average turbulent Nu at the boundary of interest.
+  //  * \param[in] val_marker - bound marker.
+  //  * \param[in] val_Span   - value of the Span.
+  //  * \param[in] valNu - value to set.
+  //  */
+  // inline void SetExtAverageNu(unsigned short valMarker,
+  //                             unsigned short valSpan,
+  //                             su2double valNu) final {
+  //   ExtAverageNu[valMarker][valSpan] = valNu;
+  // }
 
-  /*!
-   * \brief Set the external average turbulent Kine at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \param[in] val_Span   - value of the Span.
-   * \param[in] valKine - value to set.
-   */
-  inline void SetExtAverageKine(unsigned short valMarker,
-                                unsigned short valSpan,
-                                su2double valKine) final {
-    ExtAverageKine[valMarker][valSpan] = valKine;
-  }
+  // /*!
+  //  * \brief Set the external average turbulent Kine at the boundary of interest.
+  //  * \param[in] val_marker - bound marker.
+  //  * \param[in] val_Span   - value of the Span.
+  //  * \param[in] valKine - value to set.
+  //  */
+  // inline void SetExtAverageKine(unsigned short valMarker,
+  //                               unsigned short valSpan,
+  //                               su2double valKine) final {
+  //   ExtAverageKine[valMarker][valSpan] = valKine;
+  // }
 
-  /*!
-   * \brief Set the external average turbulent Omega at the boundary of interest.
-   * \param[in] val_marker - bound marker.
-   * \param[in] val_Span   - value of the Span.
-   * \param[in] valOmega - value to set.
-   */
-  inline void SetExtAverageOmega(unsigned short valMarker,
-                                 unsigned short valSpan,
-                                 su2double valOmega) final {
-    ExtAverageOmega[valMarker][valSpan] = valOmega;
-  }
+  // /*!
+  //  * \brief Set the external average turbulent Omega at the boundary of interest.
+  //  * \param[in] val_marker - bound marker.
+  //  * \param[in] val_Span   - value of the Span.
+  //  * \param[in] valOmega - value to set.
+  //  */
+  // inline void SetExtAverageOmega(unsigned short valMarker,
+  //                                unsigned short valSpan,
+  //                                su2double valOmega) final {
+  //   ExtAverageOmega[valMarker][valSpan] = valOmega;
+  // }
 
   /*!
    * \brief Provide the inlet density to check convergence of conservative mixing-plane.

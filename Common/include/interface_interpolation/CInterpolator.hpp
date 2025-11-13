@@ -101,6 +101,21 @@ class CInterpolator {
   };
   vector<vector<CDonorInfo> > targetVertices; /*! \brief Donor information per marker per vertex of the target. */
 
+  struct CSpanDonorInfo {
+      vector<int> processor;
+      vector<unsigned long> globalSpan;
+      vector<su2double> coefficient;
+
+      unsigned long nDonor() const { return processor.size(); }
+
+      void resize(size_t nDonor) {
+      processor.resize(nDonor);
+      globalSpan.resize(nDonor); // Refers to the donor span
+      coefficient.resize(nDonor); // Refers to the coefficient
+      }
+  };
+  vector<CSpanDonorInfo> targetSpans;
+
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry_container - Geometrical definition of the problem.

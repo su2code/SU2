@@ -27,6 +27,7 @@
  */
 
 #include "../../../include/interfaces/cfd/CMixingPlaneInterface.hpp"
+#include "../../../Common/include/interface_interpolation/CInterpolator.hpp"
 #include "../../../../Common/include/CConfig.hpp"
 #include "../../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../include/solvers/CSolver.hpp"
@@ -54,64 +55,164 @@ void CMixingPlaneInterface::SetSpanWiseLevels(const CConfig *donor_config, const
   }
 }
 
+void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& interpolator,
+                               CSolver *donor_solution, CSolver *target_solution,
+                               CGeometry *donor_geometry, CGeometry *target_geometry,
+                               const CConfig *donor_config, const CConfig *target_config) {
+  static_assert(su2activematrix::Storage == StorageType::RowMajor,"");
+
+  /*--- Loop over interface markers. ---*/
+
+  for (auto iMarkerInt = 0u; iMarkerInt < donor_config->GetMarker_n_ZoneInterface()/2; iMarkerInt++) {
+
+    /*--- Check if this interface connects the two zones, if not continue. ---*/
+
+    const auto markDonor = donor_config->FindInterfaceMarker(iMarkerInt);
+    const auto markTarget = target_config->FindInterfaceMarker(iMarkerInt);
+
+    if(!CInterpolator::CheckInterfaceBoundary(markDonor, markTarget)) continue;
+
+    /*--- Count donor spans on this rank. ---*/
+    unsigned short nLocalSpanDonor = donor_config->GetnSpanWiseSections();
+    const auto nSpanDonor = donor_config->GetnSpanWiseSections();
+
+    /*--- Gather donor counts and compute total sizes, and displacements (cumulative
+     * sums) to perform an Allgatherv of donor indices and variables. ---*/
+
+    vector<int> nAllSpanDonor(size), nAllVarCounts(size), spanIdx(size,0), spanVar(size);
+    SU2_MPI::Allgather(&nLocalSpanDonor, 1, MPI_INT, nAllSpanDonor.data(), 1, MPI_INT, SU2_MPI::GetComm());
+
+    for (int i = 0; i < size; ++i) {
+      nAllVarCounts[i] = nAllSpanDonor[i] * 8;
+      if(i) spanIdx[i] = spanIdx[i-1] + nAllSpanDonor[i-1];
+      spanVar[i] = spanIdx[i] * 8;
+    }
+
+    /*--- Fill send buffers. ---*/
+
+    vector<unsigned long> sendDonorIdx(nLocalSpanDonor);
+    su2activematrix sendDonorVar(nLocalSpanDonor, 8);
+
+    if (markDonor >= 0) {
+      for (auto iSpan = 0ul, iSend = 0ul; iSpan < nSpanDonor; iSpan++) {
+        GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iSpan, 0);
+        for (auto iVar = 0u; iVar < nVar; iVar++) sendDonorVar(iSend, iVar) = Donor_Variable[iVar];
+
+        sendDonorIdx[iSend] = iSpan;
+        ++iSend;
+      }
+    }
+    /*--- Gather data. ---*/
+    const int nGlobalSpanDonor = spanIdx.back() + nAllSpanDonor.back();
+
+    vector<unsigned long> donorIdx(nGlobalSpanDonor);
+    su2activematrix donorVar(nGlobalSpanDonor, 8);
+    int nSpanSize = nSpanDonor*size;
+
+    SU2_MPI::Allgatherv(sendDonorIdx.data(), sendDonorIdx.size(), MPI_UNSIGNED_LONG, donorIdx.data(),
+                      nAllSpanDonor.data(), spanIdx.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+
+    SU2_MPI::Allgatherv(sendDonorVar.data(), sendDonorVar.size(), MPI_DOUBLE, donorVar.data(),
+                        nAllVarCounts.data(), spanVar.data(), MPI_DOUBLE, SU2_MPI::GetComm());
+
+    /*--- This rank does not need to do more work. ---*/
+    if (markTarget < 0) continue;
+
+    /*--- Loop over target spans. ---*/
+    auto nTargetSpan = target_config->GetnSpanWiseSections() + 1;
+
+    for (auto iTargetSpan = 0ul; iTargetSpan < nTargetSpan; iTargetSpan++) {
+
+      auto& targetSpan = interpolator.targetSpans[markTarget];
+      const auto nDonorSpan = targetSpan.nDonor();
+
+      InitializeTarget_Variable(target_solution, markTarget, iTargetSpan, nDonorSpan);
+
+      if ((iTargetSpan == 0) || (iTargetSpan < nTargetSpan - 3)) {
+        /*--- Transfer values at hub, shroud and 1D values ---*/
+        unsigned long iDonorSpan;
+        if (iTargetSpan == 0) iDonorSpan = 0;
+        else if (iTargetSpan == nTargetSpan - 2) iDonorSpan = nDonorSpan - 2;
+        else if (iTargetSpan == nTargetSpan - 1) iDonorSpan = nDonorSpan - 1;
+
+        const auto idx = lower_bound(donorIdx.begin(), donorIdx.end(), iDonorSpan) - donorIdx.begin();
+        assert(idx < static_cast<long>(donorIdx.size()));
+
+        RecoverTarget_Variable(donorVar[idx]);
+
+        SetTarget_Variable(target_solution, target_geometry, target_config, markTarget, iTargetSpan, 0);
+      }
+      else {
+        /*--- Get the global index of the donor and the interpolation coefficient. ---*/
+
+        const auto donorSpan = targetSpan.globalSpan[iTargetSpan];
+        const auto donorCoeff = targetSpan.coefficient[iTargetSpan];
+
+        /*--- Find the index of the global donor point in the donor data. ---*/
+
+        const auto idx = lower_bound(donorIdx.begin(), donorIdx.end(), donorSpan) - donorIdx.begin();
+        assert(idx < static_cast<long>(donorIdx.size()));
+
+        /*--- Recover the Target_Variable from the buffer of variables. ---*/
+        RecoverTarget_Variable(donorVar[idx], donorVar[idx+1], donorCoeff);
+
+        SetTarget_Variable(target_solution, target_geometry, target_config, markTarget, iTargetSpan, 0);
+      }
+    }
+  }
+}
+
 void CMixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
-                                              const CConfig *donor_config, unsigned long Marker_Donor,
-                                              unsigned long iSpan, unsigned long rank) {
+                                          const CConfig *donor_config, unsigned long Marker_Donor,
+                                          unsigned long Span_Donor, unsigned long Point_Donor) {
 
-  unsigned short nDim = nVar - 2;
-  bool turbulent = (donor_config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  Donor_Variable[0] = donor_solution->GetAverageDensity(Marker_Donor, Span_Donor);
+  Donor_Variable[1] = donor_solution->GetAveragePressure(Marker_Donor, Span_Donor);
+  Donor_Variable[2] = donor_solution->GetAverageTurboVelocity(Marker_Donor, Span_Donor)[0];
+  Donor_Variable[3] = donor_solution->GetAverageTurboVelocity(Marker_Donor, Span_Donor)[1];
 
-
-
-  Donor_Variable[0] = donor_solution->GetAverageDensity(Marker_Donor, iSpan);
-  Donor_Variable[1] = donor_solution->GetAveragePressure(Marker_Donor, iSpan);
-  Donor_Variable[2] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[0];
-  Donor_Variable[3] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[1];
-
-  if(nDim == 3){
-    Donor_Variable[4] = donor_solution->GetAverageTurboVelocity(Marker_Donor, iSpan)[2];
+  if(donor_geometry->GetnDim() == 3){
+    Donor_Variable[4] = donor_solution->GetAverageTurboVelocity(Marker_Donor, Span_Donor)[2];
   }
   else{
     Donor_Variable[4] = -1.0;
   }
 
-  if(turbulent){
-    Donor_Variable[5] = donor_solution->GetAverageNu(Marker_Donor, iSpan);
-    Donor_Variable[6] = donor_solution->GetAverageKine(Marker_Donor, iSpan);
-    Donor_Variable[7] = donor_solution->GetAverageOmega(Marker_Donor, iSpan);
+  if(donor_config->GetKind_Turb_Model() != TURB_MODEL::NONE){
+    Donor_Variable[5] = donor_solution->GetAverageNu(Marker_Donor, Span_Donor);
+    Donor_Variable[6] = donor_solution->GetAverageKine(Marker_Donor, Span_Donor);
+    Donor_Variable[7] = donor_solution->GetAverageOmega(Marker_Donor, Span_Donor);
   }
   else{
     Donor_Variable[5] = -1.0;
     Donor_Variable[6] = -1.0;
     Donor_Variable[7] = -1.0;
   }
+}
+
+void CMixingPlaneInterface::InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
+                                                  unsigned long Span_Target, unsigned short nSpanDonor) {
+
+  target_solution->SetnMixingStates(Marker_Target, Span_Target, nSpanDonor); // This is to allocate
+  target_solution->SetMixingStateStructure(Marker_Target, Span_Target);
+  target_solution->SetnMixingStates(Marker_Target, Span_Target, 0); // Reset counter to 0
 
 }
 
-
 void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
-                                               const CConfig *target_config, unsigned long Marker_Target,
-                                               unsigned long iSpan, unsigned long rank) {
+                                           const CConfig *target_config, unsigned long Marker_Target,
+                                           unsigned long Span_Target, unsigned long Point_Target) {
 
-  unsigned short nDim = nVar - 2;
-  bool turbulent = (target_config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+  unsigned short iVar, iDonorSpan, nTargetVar;
+  nTargetVar = 8;
+  /*--- Set the mixing plane solution with the value of the Target Variable ---*/
 
+  iDonorSpan = target_solution->GetnMixingStates(Marker_Target, Span_Target);
 
-  target_solution->SetExtAverageDensity(Marker_Target, iSpan, Target_Variable[0]);
-  target_solution->SetExtAveragePressure(Marker_Target, iSpan, Target_Variable[1]);
-  target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 0, Target_Variable[2]);
-  target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 1, Target_Variable[3]);
+  for (iVar = 0; iVar < nTargetVar+1; iVar++)
+    target_solution->SetMixingState(Marker_Target, Span_Target, iVar, Target_Variable[iVar]);
 
-  if(nDim == 3){
-    target_solution->SetExtAverageTurboVelocity(Marker_Target, iSpan, 2, Target_Variable[4]);
-  }
-
-  if(turbulent){
-    target_solution->SetExtAverageNu(Marker_Target, iSpan, Target_Variable[5]);
-    target_solution->SetExtAverageKine(Marker_Target, iSpan, Target_Variable[6]);
-    target_solution->SetExtAverageOmega(Marker_Target, iSpan,  Target_Variable[7]);
-  }
-
+  target_solution->SetnMixingStates( Marker_Target, Span_Target, iDonorSpan + 1 );
 }
 
 void CMixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution,

@@ -325,7 +325,6 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
       }
     }
   }
-
 }
 
 

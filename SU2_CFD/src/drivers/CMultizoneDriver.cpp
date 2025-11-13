@@ -593,16 +593,24 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
       break;
     case MIXING_PLANE:
     {
-      const auto nMarkerInt = config_container[donorZone]->GetnMarker_MixingPlaneInterface() / 2;
-
-      /*--- Transfer the average value from the donorZone to the targetZone ---*/
-      /*--- Loops over the mixing planes defined in the config file to find the correct mixing plane for the donor-target combination ---*/
-      for (auto iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
-            interface_container[donorZone][targetZone]->AllgatherAverage(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                config_container[donorZone], config_container[targetZone], iMarkerInt );
-      }
+      interface_container[donorZone][targetZone]->BroadcastData_MixingPlane(*interpolator_container[donorZone][targetZone].get(),
+      solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
+      solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+      geometry_container[donorZone][INST_0][MESH_0],
+      geometry_container[targetZone][INST_0][MESH_0],
+      config_container[donorZone],
+      config_container[targetZone]);
       break;
+      // const auto nMarkerInt = config_container[donorZone]->GetnMarker_MixingPlaneInterface() / 2;
+
+      // /*--- Transfer the average value from the donorZone to the targetZone ---*/
+      // /*--- Loops over the mixing planes defined in the config file to find the correct mixing plane for the donor-target combination ---*/
+      // for (auto iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
+      //       interface_container[donorZone][targetZone]->AllgatherAverage(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+      //           geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+      //           config_container[donorZone], config_container[targetZone], iMarkerInt );
+      // }
+      // break;
     }
     default:
       if(rank == MASTER_NODE)

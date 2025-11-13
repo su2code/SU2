@@ -50,6 +50,21 @@ public:
   void SetSpanWiseLevels(const CConfig *donor_config, const CConfig *target_config) override;
 
   /*!
+   * \brief Interpolate data and broadcast it into all processors, for nonmatching meshes.
+   * \param[in] interpolator - Object defining the interpolation.
+   * \param[in] donor_solution - Solution from the donor mesh.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
+   */
+  void BroadcastData_MixingPlane(const CInterpolator& interpolator,
+                     CSolver *donor_solution, CSolver *target_solution,
+                     CGeometry *donor_geometry, CGeometry *target_geometry,
+                     const CConfig *donor_config, const CConfig *target_config) override;
+
+  /*!
    * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
    * \param[in] donor_solution - Solution from the donor mesh.
    * \param[in] donor_geometry - Geometry of the donor mesh.
@@ -60,6 +75,9 @@ public:
    */
   void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, const CConfig *donor_config,
                          unsigned long Marker_Donor, unsigned long val_Span, unsigned long Point_Donor) override;
+
+  void InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
+                          unsigned long Span_Target, unsigned short nDonorPoints) override;
 
   /*!
    * \brief Set the variable that has been received from the target mesh into the target mesh.
@@ -72,6 +90,18 @@ public:
    */
   void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, const CConfig *target_config,
                           unsigned long Marker_Target, unsigned long val_Span, unsigned long Point_Target) override;
+
+  inline void RecoverTarget_Variable(const su2double *bcastVariable) override{
+    for (auto iVar = 0u; iVar < 8; iVar++) {
+      Target_Variable[iVar] = bcastVariable[iVar];
+    }
+  }
+
+  inline void RecoverTarget_Variable(const su2double *bcastVariable, const su2double *next_bcastVariable, su2double donorCoeff) override {
+    for (auto iVar = 0u; iVar < 8; iVar++) {
+      Target_Variable[iVar] = (1 - donorCoeff)*bcastVariable[iVar] + donorCoeff * next_bcastVariable[iVar];
+    }
+  }
 
   /*!
    * \brief Store all the turboperformance in the solver in ZONE_0.
