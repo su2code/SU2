@@ -253,6 +253,31 @@ def main():
     turb_wallfunction_flatplate_sst.test_vals = [-4.581446, -1.913566, -1.958042, 0.909602, -1.602844, 1.482035, 10.000000, -1.741580, 0.033323, 0.002425]
     test_list.append(turb_wallfunction_flatplate_sst)
 
+    # FLAT PLATE, ROUGHNESS BCS WILCOX2006 SST
+    turb_flatplate_sst_roughBCWilcox2006           = TestCase('turb_sst_flatplate_roughBCWilcox2006')
+    turb_flatplate_sst_roughBCWilcox2006.cfg_dir   = "rans/flatplate/roughness/bc_wilcox2006"
+    turb_flatplate_sst_roughBCWilcox2006.cfg_file  = "turb_SST_flatplate_roughBCWilcox2006.cfg"
+    turb_flatplate_sst_roughBCWilcox2006.test_iter = 10
+    turb_flatplate_sst_roughBCWilcox2006.test_vals = [-4.581446, -1.913566, -1.958042, 0.909602, -1.602844, 1.482035, 10.000000, -1.741580, 0.033323, 0.002425]
+    test_list.append(turb_flatplate_sst_roughBCWilcox2006)
+
+    # FLAT PLATE, ROUGHNESS BCS KNOPP SST
+    turb_flatplate_sst_roughBCKnopp           = TestCase('turb_sst_flatplate_roughBCKnopp')
+    turb_flatplate_sst_roughBCKnopp.cfg_dir   = "rans/flatplate/roughness/bc_knopp"
+    turb_flatplate_sst_roughBCKnopp.cfg_file  = "turb_SST_flatplate_roughBCKnopp.cfg"
+    turb_flatplate_sst_roughBCKnopp.test_iter = 10
+    turb_flatplate_sst_roughBCKnopp.test_vals = [-4.581446, -1.913566, -1.958042, 0.909602, -1.602844, 1.482035, 10.000000, -1.741580, 0.033323, 0.002425]
+    test_list.append(turb_flatplate_sst_roughBCKnopp)
+
+    # FLAT PLATE, ROUGHNESS BCS AUPOIX SST
+    turb_flatplate_sst_roughBCAupoix           = TestCase('turb_sst_flatplate_roughBCAupoix')
+    turb_flatplate_sst_roughBCAupoix.cfg_dir   = "rans/flatplate/roughness/bc_aupoix"
+    turb_flatplate_sst_roughBCAupoix.cfg_file  = "turb_SST_flatplate_roughBCAupoix.cfg"
+    turb_flatplate_sst_roughBCAupoix.test_iter = 10
+    turb_flatplate_sst_roughBCAupoix.test_vals = [-4.581446, -1.913566, -1.958042, 0.909602, -1.602844, 1.482035, 10.000000, -1.741580, 0.033323, 0.002425]
+    test_list.append(turb_flatplate_sst_roughBCAupoix)
+
+
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA
     turb_wallfunction_flatplate_sa           = TestCase('turb_sa_wallfunction_flatplate')
     turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
