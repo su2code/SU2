@@ -1175,8 +1175,6 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
 
         const su2double f_max = 1.0, f_min = 0.1, a1 = 0.15, a2 = 0.3;
 
-        const auto nNeigh = geometry->nodes->GetnPoint(iPoint);
-
         su2double vortexTiltingMeasure = nodes->GetVortex_Tilting(iPoint);
 
         const su2double omega = GeometryToolbox::Norm(3, Vorticity);
@@ -1234,9 +1232,7 @@ void CTurbSSTSolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, C
         // I could be naming it either as SST_EDDES to follow the same notation as for the SA model or as SST_SLA_DDES to follow the paper notation
 
         const su2double f_max = 1.0, f_min = 0.1, a1 = 0.15, a2 = 0.3;
-
-        const auto nNeigh = geometry->nodes->GetnPoint(iPoint);
-
+        
         su2double vortexTiltingMeasure = nodes->GetVortex_Tilting(iPoint);
 
         su2double deltaOmega = -1.0;
