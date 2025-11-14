@@ -741,7 +741,11 @@ template <class ScalarType>
 void BCGSTABpre_parallel(const CSysVector<ScalarType>& a, CSysVector<ScalarType>& b_in,
              const CMatrixVectorProduct<ScalarType>& mat_vec, const CPreconditioner<ScalarType>& precond, const CConfig* config) {
 
-    ScalarType norm_r_in = 0.0, norm0_in = 0.0;
+    // NOTE: norm0_in is currently unused. To avoid -Werror unused-variable warnings,
+    // we mark it [[maybe_unused]] so that future changes can reuse it without
+    // triggering a build failure.
+    ScalarType norm_r_in = 0.0;
+    [[maybe_unused]] ScalarType norm0_in = 0.0;
     unsigned long ii = 0;
 
     CSysVector<ScalarType> A_z_i;
