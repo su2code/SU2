@@ -200,6 +200,7 @@ private:
   nMarker_Inlet_Species,          /*!< \brief Number of inlet species markers. */
   nSpecies_per_Inlet,             /*!< \brief Number of species defined per inlet markers. */
   nMarker_Wall_Species,           /*!< \brief Number of wall species markers. */
+  nSpecies_per_Wall,              /*!< \brief Number of species defined per wall markers. */
   nMarker_Inlet_Turb,             /*!< \brief Number of inlet turbulent markers. */
   nTurb_Properties,               /*!< \brief Number of turbulent properties per inlet markers. */
   nMarker_Riemann,                /*!< \brief Number of Riemann flow markers. */
@@ -296,8 +297,8 @@ private:
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
   su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity and viscosity ratio for inlet boundaries. */
-  unsigned short *Kind_Wall_Species;         /*!< \brief Species boundary condition type for wall boundaries (FLUX or VALUE). */
-  su2double *Wall_SpeciesVal;                /*!< \brief Specified species flux or value for wall boundaries. */
+  unsigned short **Kind_Wall_Species;        /*!< \brief Species boundary condition type for wall boundaries (FLUX or VALUE) per species. */
+  su2double **Wall_SpeciesVal;               /*!< \brief Specified species flux or value for wall boundaries per species. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
   su2double *Inflow_Mach;                    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Inflow_Pressure;                /*!< \brief Specified fan face pressure for nacelle boundaries. */
@@ -1396,8 +1397,9 @@ private:
                      su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relaxfactor1, su2double* & relaxfactor2);
 
   template <class Tenum>
-  void addWallSpeciesOption(const string name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species, unsigned short* & option_field, const map<string, Tenum> & enum_map,
-                            su2double* & value);
+  void addWallSpeciesOption(const string name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species,
+                            unsigned short** & option_field, const map<string, Tenum> & enum_map,
+                            su2double** & value, unsigned short & nSpecies_per_Wall);
 
   void addExhaustOption(const string& name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
                         su2double* & Ttotal, su2double* & Ptotal);
@@ -7140,18 +7142,20 @@ public:
   const su2double* GetInlet_SpeciesVal(const string& val_index) const;
 
   /*!
-   * \brief Get the species value at a wall boundary
+   * \brief Get the species value at a wall boundary for a specific species
    * \param[in] val_marker - Marker tag corresponding to the wall boundary.
+   * \param[in] iSpecies - Species index.
    * \return The wall species value (flux or Dirichlet value).
    */
-  su2double GetWall_SpeciesVal(const string& val_marker) const;
+  su2double GetWall_SpeciesVal(const string& val_marker, unsigned short iSpecies) const;
 
   /*!
-   * \brief Get the species boundary condition type at a wall boundary
+   * \brief Get the species boundary condition type at a wall boundary for a specific species
    * \param[in] val_marker - Marker tag corresponding to the wall boundary.
+   * \param[in] iSpecies - Species index.
    * \return The wall species type (WALL_SPECIES_FLUX or WALL_SPECIES_VALUE).
    */
-  unsigned short GetWall_SpeciesType(const string& val_marker) const;
+  unsigned short GetWall_SpeciesType(const string& val_marker, unsigned short iSpecies) const;
 
   /*!
    * \brief Get the turbulent properties values at an inlet boundary

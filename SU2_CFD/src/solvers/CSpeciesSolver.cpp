@@ -439,10 +439,6 @@ void CSpeciesSolver::BC_Wall_Generic(CGeometry* geometry, CSolver** solver_conta
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  // Get wall species boundary condition type and value for this marker
-  su2double WallSpeciesValue = config->GetWall_SpeciesVal(Marker_Tag);
-  unsigned short wallspeciestype = config->GetWall_SpeciesType(Marker_Tag);
-
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -455,6 +451,10 @@ void CSpeciesSolver::BC_Wall_Generic(CGeometry* geometry, CSolver** solver_conta
   su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
   for (auto iVar = 0u; iVar < nVar; iVar++) {
+
+       // Get wall species boundary condition type and value for this marker and species
+       su2double WallSpeciesValue = config->GetWall_SpeciesVal(Marker_Tag, iVar);
+       unsigned short wallspeciestype = config->GetWall_SpeciesType(Marker_Tag, iVar);
 
        su2double WallSpecies = WallSpeciesValue;
 

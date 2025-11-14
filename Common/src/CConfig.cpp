@@ -514,11 +514,12 @@ void CConfig::addRiemannOption(const string name, unsigned short & nMarker_Riema
 }
 
 template <class Tenum>
-void CConfig::addWallSpeciesOption(const string name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species, unsigned short* & option_field, const map<string, Tenum> & enum_map,
-                                   su2double* & value) {
+void CConfig::addWallSpeciesOption(const string name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species,
+                                   unsigned short** & option_field, const map<string, Tenum> & enum_map,
+                                   su2double** & value, unsigned short & nSpecies_per_Wall) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
-  COptionBase* val = new COptionWallSpecies<Tenum>(name, nMarker_Wall_Species, Marker_Wall_Species, option_field, enum_map, value);
+  COptionBase* val = new COptionWallSpecies<Tenum>(name, nMarker_Wall_Species, Marker_Wall_Species, option_field, enum_map, value, nSpecies_per_Wall);
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
@@ -1628,9 +1629,10 @@ void CConfig::SetConfig_Options() {
    * \n OPTIONS: See \link Riemann_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addRiemannOption("MARKER_RIEMANN", nMarker_Riemann, Marker_Riemann, Kind_Data_Riemann, Riemann_Map, Riemann_Var1, Riemann_Var2, Riemann_FlowDir);
   /*!\brief MARKER_WALL_SPECIES \n DESCRIPTION: Wall species boundary marker(s) with the following format:
-   * (marker_name, BC_TYPE, value, ...) where BC_TYPE is either FLUX (Neumann) or VALUE (Dirichlet).
+   * (marker_name, BC_TYPE, value, BC_TYPE, value, ...) where BC_TYPE is either FLUX (Neumann) or VALUE (Dirichlet).
+   * Each marker must specify the same number of species (N species per marker).
    * \n OPTIONS: See \link Wall_Map \endlink. \ingroup Config*/
-  addWallSpeciesOption("MARKER_WALL_SPECIES", nMarker_Wall_Species, Marker_Wall_Species, Kind_Wall_Species, Wall_Map, Wall_SpeciesVal);
+  addWallSpeciesOption("MARKER_WALL_SPECIES", nMarker_Wall_Species, Marker_Wall_Species, Kind_Wall_Species, Wall_Map, Wall_SpeciesVal, nSpecies_per_Wall);
   /*!\brief MARKER_GILES \n DESCRIPTION: Giles boundary marker(s) with the following formats, a unit vector. */
   /* \n OPTIONS: See \link Giles_Map \endlink. The variables indicated by the option and the flow direction unit vector must be specified. \ingroup Config*/
   addGilesOption("MARKER_GILES", nMarker_Giles, Marker_Giles, Kind_Data_Giles, Giles_Map, Giles_Var1, Giles_Var2, Giles_FlowDir, RelaxFactorAverage, RelaxFactorFourier);
@@ -5720,6 +5722,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       nSpecies_options.insert(nSpecies_options.end(), {nSpecies_Clipping_Min, nSpecies_Clipping_Max});
     if (nMarker_Inlet_Species > 0)
       nSpecies_options.push_back(nSpecies_per_Inlet);
+    if (nMarker_Wall_Species > 0)
+      nSpecies_options.push_back(nSpecies_per_Wall);
     // Add more options for size check here.
 
     /*--- nSpecies_Init is the master, but it simply checks for consistency. ---*/
@@ -5732,6 +5736,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     /*--- Check whether some variables (or their sums) are in physical bounds. [0,1] for species related quantities. ---*/
     /*--- Note, only for species transport, not for flamelet model ---*/
+    /*
     if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
       su2double Species_Init_Sum = 0.0;
       for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -5749,7 +5754,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_INLET_SPECIES sum", 0.0, 1.0);
       }
     }
-
+*/
   } // species transport checks
 
   /*--- Define some variables for flamelet model. ---*/
@@ -9244,22 +9249,22 @@ const su2double* CConfig::GetInlet_SpeciesVal(const string& val_marker) const {
   return Inlet_SpeciesVal[iMarker_Inlet_Species];
 }
 
-su2double CConfig::GetWall_SpeciesVal(const string& val_marker) const {
+su2double CConfig::GetWall_SpeciesVal(const string& val_marker, unsigned short iSpecies) const {
   /*--- Search for the marker in the wall species list ---*/
   for (unsigned short iMarker_Wall_Species = 0; iMarker_Wall_Species < nMarker_Wall_Species; iMarker_Wall_Species++) {
     if (Marker_Wall_Species[iMarker_Wall_Species] == val_marker) {
-      return Wall_SpeciesVal[iMarker_Wall_Species];
+      return Wall_SpeciesVal[iMarker_Wall_Species][iSpecies];
     }
   }
   /*--- If marker not found (MARKER_WALL_SPECIES=NONE), return zero flux ---*/
   return 0.0;
 }
 
-unsigned short CConfig::GetWall_SpeciesType(const string& val_marker) const {
+unsigned short CConfig::GetWall_SpeciesType(const string& val_marker, unsigned short iSpecies) const {
   /*--- Search for the marker in the wall species list ---*/
   for (unsigned short iMarker_Wall_Species = 0; iMarker_Wall_Species < nMarker_Wall_Species; iMarker_Wall_Species++) {
     if (Marker_Wall_Species[iMarker_Wall_Species] == val_marker) {
-      return Kind_Wall_Species[iMarker_Wall_Species];
+      return Kind_Wall_Species[iMarker_Wall_Species][iSpecies];
     }
   }
   /*--- If marker not found (MARKER_WALL_SPECIES=NONE), return FLUX type (zero flux BC) ---*/

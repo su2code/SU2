@@ -1309,13 +1309,16 @@ class COptionWallSpecies : public COptionBase {
   string name;  // identifier for the option
   unsigned short& size;
   string*& marker;
-  unsigned short*& field;  // Reference to the field name
-  su2double*& value;
+  unsigned short**& field;  // Reference to the field name (now 2D: marker x species)
+  su2double**& value;       // Now 2D: marker x species
+  unsigned short& nSpecies_per_Wall;
 
  public:
   COptionWallSpecies(string option_field_name, unsigned short& nMarker_Wall_Species, string*& Marker_Wall_Species,
-                     unsigned short*& option_field, const map<string, Tenum> m, su2double*& value)
-      : size(nMarker_Wall_Species), marker(Marker_Wall_Species), field(option_field), value(value) {
+                     unsigned short**& option_field, const map<string, Tenum> m, su2double**& value,
+                     unsigned short& nSpecies_per_Wall)
+      : size(nMarker_Wall_Species), marker(Marker_Wall_Species), field(option_field), value(value),
+        nSpecies_per_Wall(nSpecies_per_Wall) {
     this->name = option_field_name;
     this->m = m;
   }
@@ -1325,10 +1328,16 @@ class COptionWallSpecies : public COptionBase {
       marker = nullptr;
     }
     if (field) {
+      for (unsigned short i = 0; i < size; i++) {
+        delete[] field[i];
+      }
       delete[] field;
       field = nullptr;
     }
     if (value) {
+      for (unsigned short i = 0; i < size; i++) {
+        delete[] value[i];
+      }
       delete[] value;
       value = nullptr;
     }
@@ -1342,43 +1351,103 @@ class COptionWallSpecies : public COptionBase {
       this->marker = nullptr;
       this->field = nullptr;
       this->value = nullptr;
+      this->nSpecies_per_Wall = 0;
       return "";
     }
 
-    if (totalVals % 3 != 0) {
+    /*--- Determine the number of markers and species per marker.
+     * Format: marker1, TYPE1, value1, TYPE2, value2, ..., marker2, TYPE1, value1, ...
+     * Each marker name starts with a letter, each TYPE is an enum string (starts with letter),
+     * and each value is numeric. Pattern: marker, (TYPE, value) x N ---*/
+
+    vector<unsigned short> marker_indices;  // Indices where markers start
+    vector<unsigned short> species_counts;  // Number of species per marker
+
+    // Find all marker positions (strings starting with a letter that are not TYPE keywords)
+    for (unsigned short i = 0; i < totalVals; i++) {
+      if (isalpha(option_value[i][0])) {
+        // Check if this could be a TYPE keyword (i.e., is it in the enum map?)
+        if (this->m.find(option_value[i]) != m.end()) {
+          continue;  // This is a TYPE keyword, not a marker
+        }
+        // This is a marker name
+        marker_indices.push_back(i);
+      }
+    }
+
+    if (marker_indices.empty()) {
       string newstring;
       newstring.append(this->name);
-      newstring.append(": must have a number of entries divisible by 3");
-      this->size = 0;
-      this->marker = nullptr;
-      this->field = nullptr;
-      this->value = nullptr;
+      newstring.append(": no valid markers found");
       return newstring;
     }
 
-    unsigned short nVals = totalVals / 3;
-    this->size = nVals;
-    this->marker = new string[nVals];
-    this->field = new unsigned short[nVals];
-    this->value = new su2double[nVals];
+    // Calculate number of species for each marker
+    for (unsigned short i = 0; i < marker_indices.size(); i++) {
+      unsigned short start_idx = marker_indices[i] + 1;  // Start after marker name
+      unsigned short end_idx = (i + 1 < marker_indices.size()) ? marker_indices[i + 1] : totalVals;
+      unsigned short entries = end_idx - start_idx;
 
-    for (unsigned long i = 0; i < nVals; i++) {
-      this->marker[i].assign(option_value[3 * i]);
-      // Check to see if the enum value is in the map
-      if (this->m.find(option_value[3 * i + 1]) == m.end()) {
-        string str;
-        str.append(this->name);
-        str.append(": invalid option value ");
-        str.append(option_value[3 * i + 1]);
-        str.append(". Check current SU2 options in config_template.cfg.");
-        return str;
+      // Each species needs 2 entries: TYPE and value
+      if (entries % 2 != 0) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(": each marker must have pairs of (TYPE, value) entries");
+        return newstring;
       }
-      Tenum val = this->m[option_value[3 * i + 1]];
-      this->field[i] = val;
 
-      istringstream ss_value(option_value[3 * i + 2]);
-      if (!(ss_value >> this->value[i])) {
-        return badValue("WallSpecies", this->name);
+      species_counts.push_back(entries / 2);
+    }
+
+    // Check that all markers have the same number of species
+    this->nSpecies_per_Wall = species_counts[0];
+    for (auto count : species_counts) {
+      if (count != this->nSpecies_per_Wall) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(": all markers must specify the same number of species");
+        return newstring;
+      }
+    }
+
+    // Allocate arrays
+    this->size = marker_indices.size();
+    this->marker = new string[this->size];
+    this->field = new unsigned short*[this->size];
+    this->value = new su2double*[this->size];
+
+    for (unsigned short i = 0; i < this->size; i++) {
+      this->field[i] = new unsigned short[this->nSpecies_per_Wall];
+      this->value[i] = new su2double[this->nSpecies_per_Wall];
+    }
+
+    // Parse the values
+    for (unsigned short iMarker = 0; iMarker < this->size; iMarker++) {
+      unsigned short marker_idx = marker_indices[iMarker];
+      this->marker[iMarker].assign(option_value[marker_idx]);
+
+      // Parse species data for this marker
+      for (unsigned short iSpecies = 0; iSpecies < this->nSpecies_per_Wall; iSpecies++) {
+        unsigned short type_idx = marker_idx + 1 + 2 * iSpecies;
+        unsigned short val_idx = type_idx + 1;
+
+        // Check TYPE keyword
+        if (this->m.find(option_value[type_idx]) == m.end()) {
+          string str;
+          str.append(this->name);
+          str.append(": invalid option value ");
+          str.append(option_value[type_idx]);
+          str.append(". Check current SU2 options in config_template.cfg.");
+          return str;
+        }
+
+        Tenum val = this->m[option_value[type_idx]];
+        this->field[iMarker][iSpecies] = val;
+
+        istringstream ss_value(option_value[val_idx]);
+        if (!(ss_value >> this->value[iMarker][iSpecies])) {
+          return badValue("WallSpecies", this->name);
+        }
       }
     }
 
@@ -1390,6 +1459,7 @@ class COptionWallSpecies : public COptionBase {
     this->field = nullptr;
     this->value = nullptr;
     this->size = 0;  // There is no default value for list
+    this->nSpecies_per_Wall = 0;
   }
 };
 
