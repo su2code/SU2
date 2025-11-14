@@ -1383,7 +1383,7 @@ class COptionWallSpecies : public COptionBase {
     }
 
     // Calculate number of species for each marker
-    for (unsigned short i = 0; i < marker_indices.size(); i++) {
+    for (size_t i = 0; i < marker_indices.size(); i++) {
       unsigned short start_idx = marker_indices[i] + 1;  // Start after marker name
       unsigned short end_idx = (i + 1 < marker_indices.size()) ? marker_indices[i + 1] : totalVals;
       unsigned short entries = end_idx - start_idx;
