@@ -5711,7 +5711,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- Helper function that checks scalar variable bounds. ---*/
     auto checkScalarBounds = [&](su2double scalar, const string& name, su2double lowerBound, su2double upperBound) {
       if (scalar < lowerBound || scalar > upperBound)
-        SU2_MPI::Error(string("Variable: ") + name + string(", is out of bounds."), CURRENT_FUNCTION);
+        cout << "Value: " << scalar << " for " << name << " is out of bounds [" << lowerBound << "," << upperBound << "]." << endl;
     };
 
     /*--- Some options have to provide as many entries as there are additional species equations. ---*/
@@ -5736,7 +5736,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
     /*--- Check whether some variables (or their sums) are in physical bounds. [0,1] for species related quantities. ---*/
     /*--- Note, only for species transport, not for flamelet model ---*/
-    /*
+
     if (Kind_Species_Model == SPECIES_MODEL::SPECIES_TRANSPORT) {
       su2double Species_Init_Sum = 0.0;
       for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -5754,7 +5754,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         checkScalarBounds(Inlet_SpeciesVal_Sum, "MARKER_INLET_SPECIES sum", 0.0, 1.0);
       }
     }
-*/
+
   } // species transport checks
 
   /*--- Define some variables for flamelet model. ---*/
