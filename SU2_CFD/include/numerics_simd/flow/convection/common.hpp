@@ -51,9 +51,7 @@ FORCEINLINE Double umusclProjection(Double grad_proj,
   /*--- To maintain proper scaling for edge limiters, the result of ---*/
   /*--- this function is 0.5 * dV_ij^kap.                           ---*/
   /*-------------------------------------------------------------------*/
-  const Double cent = 0.5 * delta;
-  const Double upw = grad_proj - cent;
-  return (1.0 - kappa) * upw + (1.0 + kappa) * cent;
+  return (1.0 - kappa) * grad_proj + kappa * delta;
 }
 
 /*!
@@ -235,13 +233,16 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
 
     /*--- Reconstruct enthalpy using dH/dT = Cp and dH/dv = v. Recomputing enthalpy would cause
      * stability issues because we use rho E = rho H - P, which loses its relation to temperaure
-     * if both rho and H are recomputed. ---*/
+     * if both rho and H are recomputed. This only seems to be an issue for wall-function meshes.
+     * NOTE: This "one-sided" reconstruction does not lose much of the U-MUSCL benefit, because
+     * the static enthalpy is linear, and for the KE term we do the equivalent of using the
+     * average dH/dv, which is exact for quadratic functions. ---*/
     const su2double cp = gasConst * gamma / (gamma - 1);
     V.i.enthalpy() += cp * (V.i.temperature() - V1st.i.temperature());
     V.j.enthalpy() += cp * (V.j.temperature() - V1st.j.temperature());
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
-      V.i.enthalpy() += V1st.i.velocity()[iDim] * (V.i.velocity()[iDim] - V1st.i.velocity()[iDim]);
-      V.j.enthalpy() += V1st.j.velocity()[iDim] * (V.j.velocity()[iDim] - V1st.j.velocity()[iDim]);
+      V.i.enthalpy() += 0.5 * (pow(V.i.velocity(iDim), 2) - pow(V1st.i.velocity(iDim), 2));
+      V.j.enthalpy() += 0.5 * (pow(V.j.velocity(iDim), 2) - pow(V1st.j.velocity(iDim), 2));
     }
 
     /*--- Detect a non-physical reconstruction based on negative pressure or density. ---*/
