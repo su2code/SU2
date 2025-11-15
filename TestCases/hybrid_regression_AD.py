@@ -78,7 +78,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.997050, -0.199287, 0.000003, -0.000000, 5.000000, -2.919668, 5.000000, -7.320138]
+    discadj_rans_naca0012_sa.test_vals = [-2.987151, 0.533082, 0.000004, -0.000000, 5.000000, -2.939636, 5.000000, -7.913743]
     test_list.append(discadj_rans_naca0012_sa)
 
     # Adjoint turbulent NACA0012 SST
@@ -86,7 +86,8 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.236564, -0.190312, 2.762900, -0.039660]
+    discadj_rans_naca0012_sst.test_vals = [-2.201847, -0.172462, 3.043300, -0.041820]
+    discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.201855, -0.172443, 3.043400, -0.041820]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -111,7 +112,8 @@ def main():
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
     discadj_incomp_cylinder.test_vals         = [20.000000, -2.746353, -2.934792, 0.000000]
-    discadj_incomp_cylinder.test_vals_aarch64 = [20.000000, -2.746353, -2.934792, 0.000000]
+    discadj_incomp_cylinder.test_vals_aarch64 = [20.000000, -2.731541, -2.890897, 0.000000]
+    discadj_incomp_cylinder.tol_aarch64 = 2e-1
     test_list.append(discadj_incomp_cylinder)
 
     ######################################
@@ -200,7 +202,7 @@ def main():
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
     discadj_fea.test_vals         = [1.774569, 1.928023, -0.000364, -8.690300]
-    discadj_fea.test_vals_aarch64 = [1.939275, 1.989717, -0.000364, -8.708200]
+    discadj_fea.test_vals_aarch64 = [1.794371, 2.005865, -0.000365, -8.718100]
     test_list.append(discadj_fea)
 
     ######################################

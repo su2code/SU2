@@ -83,7 +83,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-2.996948, -0.199135, 0.000004, -0.000000, 5.000000, -3.430662, 5.000000, -7.402623]
+    discadj_rans_naca0012_sa.test_vals = [-2.987053, 0.533213, 0.000004, -0.000000, 5.000000, -3.450037, 5.000000, -7.820204]
     test_list.append(discadj_rans_naca0012_sa)
 
     # Adjoint turbulent NACA0012 SST
@@ -91,8 +91,8 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals         = [-2.265304, -0.268780, -2.264900, -0.003033]
-    discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.265011, -0.279043, -2.268100, -0.002969]
+    discadj_rans_naca0012_sst.test_vals         = [-2.226852, -0.253100, -2.299300, -0.003164]
+    discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.226852, -0.253100, -2.299300, -0.003164]
     test_list.append(discadj_rans_naca0012_sst)
 
     #######################################
@@ -231,7 +231,7 @@ def main():
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
     discadj_trans_stator.test_vals = [79.000000, 0.667030, 0.483921, 0.518403, -1.013538]
-    discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.667030, 0.483921, 0.518403, -1.013538]
+    discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.696755, 0.485950, 0.569475, -0.990065]
     test_list.append(discadj_trans_stator)
 
     ###################################
@@ -244,7 +244,7 @@ def main():
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
     discadj_fea.test_vals         = [-2.849453, -3.238429, -0.000364, -8.708700] #last 4 columns
-    discadj_fea.test_vals_aarch64 = [-2.849573, -3.238516, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_vals_aarch64 = [-2.849646, -3.238577, -0.000364, -8.708700] #last 4 columns
     test_list.append(discadj_fea)
 
     ###################################
@@ -257,7 +257,6 @@ def main():
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
     discadj_heat.test_vals         = [-2.001337, 0.655543, 0.000000, 0.006170]
-    discadj_heat.test_vals_aarch64 = [-2.226539, 0.605868, 0.000000, -6.256400]
     test_list.append(discadj_heat)
 
     ###################################
@@ -278,7 +277,7 @@ def main():
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
     discadj_fsi2.test_vals         = [-4.772585, 0.918091, -3.863369, 0.295450, 3.841200]
-    discadj_fsi2.test_vals_aarch64 = [-4.349372, 0.190601, -1.303589, 0.754070, 2.324400]
+    discadj_fsi2.test_vals_aarch64 = [-4.773008, 0.916312, -3.863369, 0.295450, 3.841200]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
 
