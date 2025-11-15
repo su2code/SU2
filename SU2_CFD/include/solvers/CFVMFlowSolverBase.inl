@@ -592,7 +592,6 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* confi
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSolver**, CConfig *config) {
-  cout << "calling ImplicitEuler" << endl;
   PrepareImplicitIteration(geometry, nullptr, config);
 
   /*--- Solve or smooth the linear system. ---*/

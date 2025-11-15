@@ -157,7 +157,20 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
                              (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
 
-          /*--- Note: We could also allow 2 markers that are of the same type, except when they are symmetry markers. ---*/
+          /*--- Note: in 2D, We could also allow to agglomerate markers that are of the same type, except when they are symmetry markers. ---*/
+          // if (nDim==2){
+          //   if ((config->GetMarker_All_KindBC(copy_marker[0]) == config->GetMarker_All_KindBC(copy_marker[1])) &&
+          //       (config->GetMarker_All_KindBC(copy_marker[0]) != SYMMETRY_PLANE)) {
+          //     agglomerate_seed = true;
+          //   }
+          // }
+
+          /* in 3D, this is the edge of a surface, so we can always try to agglomerate if the other marker is of the same type.*/
+          if (nDim==3){
+            agglomerate_seed = true;
+          }
+
+
 
           /* --- Euler walls can also not be agglomerated when the point has 2 markers ---*/
           //if ((config->GetMarker_All_KindBC(copy_marker[0]) == EULER_WALL) ||
@@ -194,8 +207,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
               /*--- We set the value of the child ---*/
               nodes->SetChildren_CV(Index_CoarseCV, nChildren, CVPoint);
               nChildren++;
-              /*--- In 2D, we only agglomerate 2 nodes. ---*/
-              if (nDim==2) break;
+              /*--- In 2D, we only agglomerate 2 nodes if the nodes are on the line edge. ---*/
+              if ((nDim==2) && (counter==1)) break;
+              /*--- In 3D, we only agglomerate 2 nodes if the nodes are on the surface edge. ---*/
+              if ((nDim==3) && (counter==2)) break;
 
             }
           }
@@ -631,6 +646,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
       /*--- Valley -> Valley: only if of the same type---*/
       if (counter == 1) {
         /*--- We agglomerate if there is only one marker and it is the same marker as the seed marker ---*/
+        // So this is the case when in 2D we are on an edge, and in 3D we are in the interior of a surface.
         // note that this should be the same marker id, not just the same marker type.
         // also note that the seed point can have 2 markers, one of them may be a send-receive.
         if ((marker_seed.size()==1) && (copy_marker[0] == marker_seed[0])) agglomerate_CV = true;
@@ -662,8 +678,13 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
       /*--- Ridge -> Ridge: only if of the same type (same marker ID) ---*/
       if (counter == 2) {
 
-        // the child has 2 markers, it cannot be agglomerated with the seed.
-        agglomerate_CV = false;
+        // in 2D, if the child has 2 markers it is a corner, it cannot be agglomerated with the seed.
+        if (nDim==2) agglomerate_CV = false;
+        else if (nDim==3) {
+          // in 3D, this is an edge of a surface, so we can agglomerate if the other marker is of the same type.
+          agglomerate_CV = true;
+        }
+
 
         // check if the seed also has 2 markers
         //if (marker_seed.size() == 2) {

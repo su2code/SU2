@@ -202,7 +202,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iRKStep, unsigned short RunTime_EqSystem) {
-  cout << "time integration CIntegration.cpp" << endl;
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
   switch (config->GetKind_TimeIntScheme()) {
