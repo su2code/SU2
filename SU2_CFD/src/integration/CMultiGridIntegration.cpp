@@ -161,7 +161,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
 
   if ( iMesh < config->GetnMGLevels() ) {
-    cout << "imesh =" << iMesh << " " << config->GetnMGLevels() << endl;
+    //cout << "imesh =" << iMesh << " " << config->GetnMGLevels() << endl;
 
     /*--- Shorter names to refer to coarse grid entities. ---*/
 
@@ -272,7 +272,7 @@ unsigned short iRKLimit) {
         Adjoint_Setup(geometry, solver_container, config_container, RunTime_EqSystem, timeIter, iZone);
 
       }
-      cout << "pre-smoothing mesh " << iMesh << " rkstep " << iRKStep << endl;
+      //cout << "pre-smoothing mesh " << iMesh << " rkstep " << iRKStep << endl;
       /*--- Space integration ---*/
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
 
@@ -312,7 +312,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem, CSolv
 
       /*--- Space integration ---*/
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
-      cout << "post-smoothing mesh " << iMesh << " rkstep " << iRKStep << endl;
+      //cout << "post-smoothing mesh " << iMesh << " rkstep " << iRKStep << endl;
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
 
