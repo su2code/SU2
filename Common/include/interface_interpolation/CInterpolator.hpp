@@ -109,12 +109,12 @@ class CInterpolator {
       unsigned long nDonor() const { return processor.size(); }
 
       void resize(size_t nDonor) {
-      processor.resize(nDonor);
-      globalSpan.resize(nDonor); // Refers to the donor span
-      coefficient.resize(nDonor); // Refers to the coefficient
+        processor.resize(nDonor);
+        globalSpan.resize(nDonor); // Refers to the donor span
+        coefficient.resize(nDonor); // Refers to the coefficient
       }
   };
-  vector<CSpanDonorInfo> targetSpans;
+  vector<vector<CSpanDonorInfo>> targetSpans; // <iMarkerInt<TargetSpan<CSpanDonorInfo>>
 
   /*!
    * \brief Constructor of the class.

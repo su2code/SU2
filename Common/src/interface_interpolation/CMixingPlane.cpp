@@ -51,59 +51,97 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
     auto nSpanDonor     = donor_config->GetnSpanWiseSections();
     auto nSpanTarget    = target_config->GetnSpanWiseSections();
 
-    targetSpans.resize(nMarkerInt);
+    targetSpans.resize(config[donorZone]->GetnMarker_MixingPlaneInterface());
 
     /*--- On the donor side ---*/
     for (auto iMarkerInt = 0u; iMarkerInt < nMarkerInt; iMarkerInt++){
-        const auto markDonor = donor_config->FindInterfaceMarker(iMarkerInt);
-        const auto markTarget = target_config->FindInterfaceMarker(iMarkerInt);
+        int markDonor = -1, markTarget = -1;
+        unsigned short donorFlag = 0, targetFlag = 0;
 
-        unsigned short turboMarkDonor, turboMarkTarget;
-        if (donorZone > targetZone){
-            turboMarkDonor = TURBO_MARKER_TYPE::INFLOW;
-            turboMarkTarget = TURBO_MARKER_TYPE::OUTFLOW;
-        } else {
-            turboMarkDonor = TURBO_MARKER_TYPE::OUTFLOW;
-            turboMarkTarget = TURBO_MARKER_TYPE::INFLOW;
+        /*--- On the donor side ---*/
+        for (auto iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
+            /*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
+            if ( donor_config->GetMarker_All_MixingPlaneInterface(iMarkerDonor) == iMarkerInt ){
+                /*--- We have identified the local index of the Donor marker ---*/
+                /*--- Now we are going to store the average values that belong to Marker_Donor on each processor ---*/
+                /*--- Store the identifier for the structural marker ---*/
+                markDonor = iMarkerDonor;
+                donorFlag = donor_config->GetMarker_All_TurbomachineryFlag(iMarkerDonor);
+                /*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
+                break;
+            }
+            /*--- If the tag hasn't matched any tag within the donor markers ---*/
+            markDonor = -1;
+            donorFlag   = -1;
         }
 
-        // Spans are defined on one processor only, check to see if other processors have interface
 #ifdef HAVE_MPI
-    auto buffMarkDonor = new int[size];
-    auto buffMarkTarget = new int[size];
-    for (int iSize = 0; iSize<size; iSize++){
-        buffMarkDonor[iSize] = -1;
-        buffMarkTarget[iSize] = -1;
+    auto buffMarkerDonor = new int[size];
+    auto buffDonorFlag = new int[size];
+    for (int iSize=0; iSize<size; iSize++){
+        buffMarkerDonor[iSize] = -1;
+        buffDonorFlag[iSize] = -1;
     }
 
-    SU2_MPI::Allgather(&markDonor, 1, MPI_INT, buffMarkDonor, 1, MPI_INT, SU2_MPI::GetComm());
-    SU2_MPI::Allgather(&markTarget, 1, MPI_INT, buffMarkTarget, 1, MPI_INT, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(&markDonor, 1 , MPI_INT, buffMarkerDonor, 1, MPI_INT, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(&donorFlag, 1 , MPI_INT, buffDonorFlag, 1, MPI_INT, SU2_MPI::GetComm());
 
-    delete [] buffMarkDonor;
-    delete [] buffMarkTarget;
+    markDonor= -1;
+    donorFlag= -1;
+
+    for (int iSize=0; iSize<size; iSize++) {
+        if(buffMarkerDonor[iSize] >= 0.0) {
+            markDonor = buffMarkerDonor[iSize];
+            donorFlag = buffDonorFlag[iSize];
+            break;
+        }
+    }
+    delete [] buffMarkerDonor;
+    delete [] buffDonorFlag;
 #endif
 
-        if (!CheckInterfaceBoundary(markDonor, markTarget)) continue;
+        /*--- On the target side we have to identify the marker as well ---*/
+        for (auto iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
+            /*--- If the tag GetMarker_All_MixingPlaneInterface(iMarkerTarget) equals the index we are looping at ---*/
+            if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ){
+                /*--- Store the identifier for the fluid marker ---*/
+                markTarget = iMarkerTarget;
+                targetFlag = target_config->GetMarker_All_TurbomachineryFlag(iMarkerTarget);
+                /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
+                break;
+            }
+            /*--- If the tag hasn't matched any tag within the Flow markers ---*/
+            markTarget = -1;
+            targetFlag = -1;
+        }
+
+        if (markTarget == -1 || markDonor == -1) continue;
 
         nSpanDonor = donor_config->GetnSpanWiseSections();
         nSpanTarget = target_config->GetnSpanWiseSections();
 
-        if (nSpanTarget) targetSpans[markTarget].resize(nSpanTarget);
+        targetSpans[iMarkerInt].resize(nSpanTarget+1);
 
-        const auto spanValuesDonor = donor_geometry->GetSpanWiseValue(turboMarkDonor);
-        const auto spanValuesTarget = target_geometry->GetSpanWiseValue(turboMarkTarget);
+        for (auto iSpanTarget = 0u; iSpanTarget < nSpanTarget; iSpanTarget++){
+            targetSpans[iMarkerInt][iSpanTarget].resize(nSpanTarget);
+        }
+
+        const auto spanValuesDonor = donor_geometry->GetSpanWiseValue(donorFlag);
+        const auto spanValuesTarget = target_geometry->GetSpanWiseValue(targetFlag);
 
         /*--- Interpolation at hub, shroud & 1D values ---*/
-        targetSpans[iMarkerInt].globalSpan[0] = 0;
-        targetSpans[iMarkerInt].coefficient[0] = 0.0;
+        targetSpans[iMarkerInt][0].globalSpan[0] = 0;
+        targetSpans[iMarkerInt][0].coefficient[0] = 0.0;
         if (nDim > 2) {
-            targetSpans[iMarkerInt].globalSpan[nSpanTarget-1] = nSpanTarget-1;
-            targetSpans[iMarkerInt].coefficient[nSpanTarget-1] = 0.0;
-            targetSpans[iMarkerInt].globalSpan[nSpanTarget] = nSpanTarget;
-            targetSpans[iMarkerInt].coefficient[nSpanTarget] = 0.0;
+            targetSpans[iMarkerInt][nSpanTarget-2].globalSpan[nSpanDonor-2] = nSpanDonor-2;
+            targetSpans[iMarkerInt][nSpanTarget-2].coefficient[nSpanTarget-2] = 0.0;
+            targetSpans[iMarkerInt][nSpanTarget-1].globalSpan[nSpanTarget-1] = nSpanDonor-1;
+            targetSpans[iMarkerInt][nSpanTarget-1].coefficient[nSpanTarget-1] = 0.0;
         }
 
         for(auto iSpanTarget = 1; iSpanTarget < nSpanTarget - 2; iSpanTarget++){
+            auto &targetSpan = targetSpans[iMarkerInt][iSpanTarget];
+
             auto tSpan = 0; // Nearest donor span index
             auto kSpan = 0; // Lower bound donor span for interpolation
             su2double coeff = 0.0; // Interpolation coefficient
@@ -111,8 +149,8 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
             
             switch(donor_config->GetKind_MixingPlaneInterface()){
                 case MATCHING:
-                    targetSpans[iMarkerInt].globalSpan[iSpanTarget] = iSpanTarget;
-                    targetSpans[iMarkerInt].coefficient[iSpanTarget] = 0.0;
+                    targetSpan.globalSpan[iSpanTarget] = iSpanTarget;
+                    targetSpan.coefficient[iSpanTarget] = 0.0;
                     break;
                     
                 case NEAREST_SPAN:
@@ -124,8 +162,8 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
                             tSpan = iSpanDonor;
                         }
                     }
-                    targetSpans[iMarkerInt].globalSpan[iSpanTarget] = tSpan;
-                    targetSpans[iMarkerInt].coefficient[iSpanTarget] = 0.0;
+                    targetSpan.globalSpan[iSpanTarget] = tSpan;
+                    targetSpan.coefficient[iSpanTarget] = 0.0;
                     break;
                     
                 case LINEAR_INTERPOLATION:
@@ -140,46 +178,14 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
                     // Calculate interpolation coefficient
                     coeff = (spanValuesTarget[iSpanTarget] - spanValuesDonor[kSpan]) / 
                             (spanValuesDonor[kSpan + 1] - spanValuesDonor[kSpan]);
-                    targetSpans[iMarkerInt].globalSpan[iSpanTarget] = kSpan;
-                    targetSpans[iMarkerInt].coefficient[iSpanTarget] = coeff;
+                    targetSpan.globalSpan[iSpanTarget] = kSpan;
+                    targetSpan.coefficient[iSpanTarget] = coeff;
                     break;
                     
                 default:
                     SU2_MPI::Error("MixingPlane interface option not implemented yet", CURRENT_FUNCTION);
                     break;
             }
-
-
-            // for (auto iSpanDonor = 1; iSpanDonor < nSpanDonor - 2; iSpanDonor++) {
-            //     const auto test = abs(SpanValuesTarget[iSpanTarget] - SpanValuesDonor[iSpanDonor]);
-            //     const auto test2 = abs(SpanValuesTarget[iSpanTarget] - SpanValuesDonor[iSpanDonor]);
-            //     if(test < dist && SpanValuesTarget[iSpanTarget] > SpanValuesDonor[iSpanDonor]){
-            //         dist = test;
-            //         kSpan = iSpanDonor;
-            //     }
-            //     if(test2 < dist2){
-            //         dist2 = test2;
-            //         tSpan = iSpanDonor;
-            //     }
-            // }
-            // switch(donor_config->GetKind_MixingPlaneInterface()){
-            //     case MATCHING:
-            //         targetSpans.globalSpan[iSpanTarget]  = iSpanTarget;
-            //         targetSpans.coefficent[iSpanTarget]  = 0.0;
-            //         break;
-            //     case NEAREST_SPAN:
-            //         targetSpans.globalSpan[iSpanTarget]  = tSpan;
-            //         targetSpans.coefficent[iSpanTarget]  = 0.0;
-            //         break;
-            //     case LINEAR_INTERPOLATION:
-            //         targetSpans.globalSpan[iSpanTarget]  = kSpan;
-            //         targetSpans.coefficent[iSpanTarget]  = (SpanValuesTarget[iSpanTarget] - SpanValuesDonor[kSpan])
-            //                                         /(SpanValuesDonor[kSpan + 1] - SpanValuesDonor[kSpan]);
-            //         break;
-            //     default:
-            //         SU2_MPI::Error("MixingPlane interface option not implemented yet", CURRENT_FUNCTION);
-            //         break;
-            // }
+        }
     }
-}
 }

@@ -72,48 +72,38 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
     if(!CInterpolator::CheckInterfaceBoundary(markDonor, markTarget)) continue;
 
-    /*--- Count donor spans on this rank. ---*/
-    unsigned short nLocalSpanDonor = donor_config->GetnSpanWiseSections();
+    // The number of spans is available on every rank
     const auto nSpanDonor = donor_config->GetnSpanWiseSections();
-
-    /*--- Gather donor counts and compute total sizes, and displacements (cumulative
-     * sums) to perform an Allgatherv of donor indices and variables. ---*/
-
-    vector<int> nAllSpanDonor(size), nAllVarCounts(size), spanIdx(size,0), spanVar(size);
-    SU2_MPI::Allgather(&nLocalSpanDonor, 1, MPI_INT, nAllSpanDonor.data(), 1, MPI_INT, SU2_MPI::GetComm());
-
-    for (int i = 0; i < size; ++i) {
-      nAllVarCounts[i] = nAllSpanDonor[i] * 8;
-      if(i) spanIdx[i] = spanIdx[i-1] + nAllSpanDonor[i-1];
-      spanVar[i] = spanIdx[i] * 8;
-    }
 
     /*--- Fill send buffers. ---*/
 
-    vector<unsigned long> sendDonorIdx(nLocalSpanDonor);
-    su2activematrix sendDonorVar(nLocalSpanDonor, 8);
+    vector<unsigned long> sendDonorIdx(nSpanDonor);
+    su2activematrix sendDonorVar(nSpanDonor, 8);
 
     if (markDonor >= 0) {
       for (auto iSpan = 0ul, iSend = 0ul; iSpan < nSpanDonor; iSpan++) {
         GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iSpan, 0);
-        for (auto iVar = 0u; iVar < nVar; iVar++) sendDonorVar(iSend, iVar) = Donor_Variable[iVar];
-
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          if (AD::IsActive(Donor_Variable[iVar]) != 0) cout << "Donor var " << iVar << " is active " << endl;
+          sendDonorVar(iSend, iVar) = Donor_Variable[iVar];
+        }
         sendDonorIdx[iSend] = iSpan;
         ++iSend;
       }
     }
     /*--- Gather data. ---*/
-    const int nGlobalSpanDonor = spanIdx.back() + nAllSpanDonor.back();
+    const int nTotalDonors = nSpanDonor * size;
+    const int nSpanDonorVars = nSpanDonor * 8;
+    vector<unsigned long> donorIdx(nTotalDonors);
+    su2activematrix donorVar(nTotalDonors, 8);
 
-    vector<unsigned long> donorIdx(nGlobalSpanDonor);
-    su2activematrix donorVar(nGlobalSpanDonor, 8);
-    int nSpanSize = nSpanDonor*size;
+    SU2_MPI::Allgather(sendDonorIdx.data(), nSpanDonor, MPI_UNSIGNED_LONG,
+                      donorIdx.data(), nSpanDonor, MPI_UNSIGNED_LONG,
+                      SU2_MPI::GetComm());
 
-    SU2_MPI::Allgatherv(sendDonorIdx.data(), sendDonorIdx.size(), MPI_UNSIGNED_LONG, donorIdx.data(),
-                      nAllSpanDonor.data(), spanIdx.data(), MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-
-    SU2_MPI::Allgatherv(sendDonorVar.data(), sendDonorVar.size(), MPI_DOUBLE, donorVar.data(),
-                        nAllVarCounts.data(), spanVar.data(), MPI_DOUBLE, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(sendDonorVar.data(), nSpanDonorVars, MPI_DOUBLE,
+                      donorVar.data(), nSpanDonorVars, MPI_DOUBLE,
+                      SU2_MPI::GetComm());
 
     /*--- This rank does not need to do more work. ---*/
     if (markTarget < 0) continue;
@@ -123,7 +113,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
     for (auto iTargetSpan = 0ul; iTargetSpan < nTargetSpan; iTargetSpan++) {
 
-      auto& targetSpan = interpolator.targetSpans[markTarget];
+      auto& targetSpan = interpolator.targetSpans[iMarkerInt][markTarget];
       const auto nDonorSpan = targetSpan.nDonor();
 
       InitializeTarget_Variable(target_solution, markTarget, iTargetSpan, nDonorSpan);
