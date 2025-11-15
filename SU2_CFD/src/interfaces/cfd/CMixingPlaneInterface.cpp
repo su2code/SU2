@@ -83,10 +83,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     if (markDonor >= 0) {
       for (auto iSpan = 0ul, iSend = 0ul; iSpan < nSpanDonor; iSpan++) {
         GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iSpan, 0);
-        for (auto iVar = 0u; iVar < nVar; iVar++) {
-          if (AD::IsActive(Donor_Variable[iVar]) != 0) cout << "Donor var " << iVar << " is active " << endl;
-          sendDonorVar(iSend, iVar) = Donor_Variable[iVar];
-        }
+        for (auto iVar = 0u; iVar < nVar; iVar++) sendDonorVar(iSend, iVar) = Donor_Variable[iVar];
         sendDonorIdx[iSend] = iSpan;
         ++iSend;
       }
