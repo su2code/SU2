@@ -232,7 +232,7 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
     V.j.density() = V.j.pressure() / (gasConst * V.j.temperature());
 
     /*--- Reconstruct enthalpy using dH/dT = Cp and dH/dv = v. Recomputing enthalpy would cause
-     * stability issues because we use rho E = rho H - P, which loses its relation to temperaure
+     * stability issues because we use rho E = rho H - P, which loses its relation to temperature
      * if both rho and H are recomputed. This only seems to be an issue for wall-function meshes.
      * NOTE: This "one-sided" reconstruction does not lose much of the U-MUSCL benefit, because
      * the static enthalpy is linear, and for the KE term we do the equivalent of using the
