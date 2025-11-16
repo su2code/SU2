@@ -154,4 +154,14 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] val_marker - Index of the boundary marker.
    */
   void SetMultiGridWallTemperature(const CGeometry* fine_grid, unsigned short val_marker) override;
+
+  /*!
+   * \brief Write VTK file to visualize the agglomeration structure.
+   * \param[in] fine_grid - Geometrical definition of the fine grid.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Multigrid level index.
+   * \param[in] filename - Name of the output VTK file.
+   */
+  void WriteAgglomerationVTK(const CGeometry* fine_grid, const CConfig* config,
+                             unsigned short iMesh, const std::string& filename) const;
 };

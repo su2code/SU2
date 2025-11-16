@@ -1940,6 +1940,27 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         SU2_MPI::Allreduce(&myCFLMax, &Max_CFL_Local, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
         SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
         Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
+
+        /*--- Update the config CFL for MESH_0 with the average adapted value. ---*/
+        config->SetCFL(MESH_0, Avg_CFL_Local);
+
+        /*--- Update coarse mesh CFL values using the same scaling as in CMultiGridGeometry.cpp.
+              This ensures coarse meshes follow the adaptive CFL changes from the fine mesh. ---*/
+        const unsigned short nMGLevels = config->GetnMGLevels();
+        const unsigned short nDim = geometry[MESH_0]->GetnDim();
+
+        for (unsigned short iMGLevel = 1; iMGLevel <= nMGLevels; iMGLevel++) {
+          /*--- Get coarse/fine point counts for this level. ---*/
+          const su2double nPointCoarse = su2double(geometry[iMGLevel]->GetGlobal_nPointDomain());
+          const su2double nPointFine = su2double(geometry[iMGLevel-1]->GetGlobal_nPointDomain());
+
+          /*--- Apply the same scaling factor as used during geometry construction. ---*/
+          const su2double factor = 2.0;
+          const su2double Coeff = pow(nPointFine / nPointCoarse, 1.0 / nDim);
+          const su2double CFL_Coarse = factor * config->GetCFL(iMGLevel - 1) / Coeff;
+
+          config->SetCFL(iMGLevel, CFL_Coarse);
+        }
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
