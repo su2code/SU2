@@ -31,7 +31,6 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/fluid/CMutationTCLib.hpp"
 #include "../../include/fluid/CSU2TCLib.hpp"
-#include "../../include/limiters/CLimiterDetails.hpp"
 
 CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
@@ -469,6 +468,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const su2double nkRelax     = config->GetNewtonKrylovRelaxation();
 
+  const su2double kappa       = config->GetMUSCL_Kappa_Flow();
+
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -521,9 +522,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
       /*--- High order reconstruction using MUSCL strategy ---*/
       su2double Vector_ij[MAXNDIM] = {0.0};
-      for (auto iDim = 0ul; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = nkRelax * 0.5 * (Coord_j[iDim] - Coord_i[iDim]);
-      }
+      GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Vector_ij);
 
       /*--- Retrieve gradient information ---*/
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
@@ -541,18 +540,15 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       su2double lim_j = 2.0;
 
       for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
-        Project_Grad_i[iVar] = 0.0; Project_Grad_j[iVar] = 0.0;
+        const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-        for (auto iDim = 0ul; iDim < nDim; iDim++) {
-          Project_Grad_i[iVar] += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j[iVar] -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
-        }
+        Project_Grad_i[iVar] = nkRelax * MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa);
+        Project_Grad_j[iVar] = nkRelax * MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa);
 
         if (limiter) {
           if (van_albada) {
-            su2double V_ij = V_j[iVar] - V_i[iVar];
             su2double va_lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i[iVar], V_ij, EPS);
-            su2double va_lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j[iVar], V_ij, EPS);
+            su2double va_lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j[iVar], V_ij, EPS);
             lim_i = min(lim_i, va_lim_i);
             lim_j = min(lim_j, va_lim_j);
           } else {
@@ -566,8 +562,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       su2double lim_ij = min(lim_i, lim_j);
 
       for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
-        Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i[iVar];
-        Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j[iVar];
+        Primitive_i[iVar] = V_i[iVar] + 0.5 * lim_ij * Project_Grad_i[iVar];
+        Primitive_j[iVar] = V_j[iVar] - 0.5 * lim_ij * Project_Grad_j[iVar];
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
