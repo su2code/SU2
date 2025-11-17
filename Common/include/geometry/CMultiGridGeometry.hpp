@@ -66,6 +66,12 @@ class CMultiGridGeometry final : public CGeometry {
   void SetSuitableNeighbors(vector<unsigned long>& Suitable_Indirect_Neighbors, unsigned long iPoint,
                             unsigned long Index_CoarseCV, const CGeometry* fine_grid) const;
 
+  /*!
+   * \brief Compute surface straightness for multigrid geometry.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeSurfStraightness(CConfig* config);
+
  public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetBoundControlVolume;

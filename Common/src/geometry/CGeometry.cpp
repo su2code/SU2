@@ -2472,8 +2472,8 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
    * All nodes that are shared by multiple symmetries have to get a corrected normal. */
 
   /*--- Compute if markers are straight lines or planes. ---*/
-  ComputeSurfStraightness(config, false);
-
+  ComputeSurfStraightness(config, true);
+  cout << "ComputeModifiedSymmetryNormals:: boundIsStraight size = " << boundIsStraight.size() << endl;
   symmetryNormals.clear();
   symmetryNormals.resize(nMarker);
   std::vector<unsigned short> symMarkers, curvedSymMarkers;
@@ -2589,7 +2589,7 @@ void CGeometry::ComputeSurfStraightness(const CConfig* config, bool print_on_scr
   constexpr passivedouble epsilon = 1.0e-6;
   su2double Area;
   string Local_TagBound, Global_TagBound;
-
+  cout << "Computing surface straightness for symmetry and Euler wall boundary markers..." << endl;
   vector<su2double> Normal(nDim), UnitNormal(nDim), RefUnitNormal(nDim);
 
   /*--- Assume now that this boundary marker is straight. As soon as one
@@ -2602,6 +2602,7 @@ void CGeometry::ComputeSurfStraightness(const CConfig* config, bool print_on_scr
         the value false (or see cases specified in the conditional below)
         which could be wrong. ---*/
   boundIsStraight.resize(nMarker);
+  cout << "boundisstraight size = " << boundIsStraight.size() << endl;
   fill(boundIsStraight.begin(), boundIsStraight.end(), true);
 
   /*--- Loop over all local markers ---*/
@@ -2685,7 +2686,7 @@ void CGeometry::ComputeSurfStraightness(const CConfig* config, bool print_on_scr
     /*--- Product of type <int>(bool) is equivalnt to a 'logical and' ---*/
     SU2_MPI::Allreduce(Buff_Send_isStraight.data(), Buff_Recv_isStraight.data(), nMarker_Global, MPI_INT, MPI_PROD,
                        SU2_MPI::GetComm());
-
+    cout << "global markers = " << nMarker_Global << endl;
     /*--- Print results on screen. ---*/
     if (rank == MASTER_NODE) {
       for (iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {

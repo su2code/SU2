@@ -37,6 +37,11 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   /*--- Maximum agglomeration size in 2D is 4 nodes, in 3D is 8 nodes. ---*/
   const short int maxAgglomSize=4;
 
+  /*--- Compute surface straightness to determine straight boundaries ---*/
+  if (iMesh == MESH_0) ComputeSurfStraightness(config);
+  else boundIsStraight = fine_grid->boundIsStraight;
+  cout << "bound size = " << boundIsStraight.size() << endl;
+
   /*--- Agglomeration Scheme II (Nishikawa, Diskin, Thomas)
         Create a queue system to do the agglomeration
    1st) More than two markers ---> Vertices (never agglomerate)
@@ -47,7 +52,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   /*--- Set a marker to indicate indirect agglomeration, for quads and hexs,
    i.e. consider up to neighbors of neighbors of neighbors.
    For other levels this information is propagated down during their construction. ---*/
-
+  cout <<"Setting up multigrid level " << iMesh << " agglomeration..." << endl;
   if (iMesh == MESH_1) {
     for (auto iPoint = 0ul; iPoint < fine_grid->GetnPoint(); iPoint++)
       fine_grid->nodes->SetAgglomerate_Indirect(iPoint, false);
@@ -64,7 +69,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
 
   /*--- Create the coarse grid structure using as baseline the fine grid ---*/
-
+  cout << "  Creating coarse grid structure..." << endl;
   CMultiGridQueue MGQueue_InnerCV(fine_grid->GetnPoint());
   vector<unsigned long> Suitable_Indirect_Neighbors;
 
@@ -139,9 +144,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           // The seed/parent is one valley, so we set this part to true
           // if the child is only on this same valley, we set it to true as well.
           agglomerate_seed = true;
-
+          cout << "    seed has one marker, can be agglomerated. size=" << boundIsStraight.size() << endl;
           /*--- Euler walls can be curved and agglomerating them leads to difficulties ---*/
-          if (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL) agglomerate_seed = false;
+          if (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL && !boundIsStraight[marker_seed[0]]) agglomerate_seed = false;
+          cout << "end of seed agglomeration check" << endl;
           /*--- Note that if the marker is a SEND_RECEIVE, then the node is actually an interior point.
                 In that case it can only be agglomerated with another interior point. ---*/
 
@@ -157,9 +163,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
                              (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
 
-          /* --- Euler walls can also not be agglomerated when the point has 2 markers ---*/
-          if ((config->GetMarker_All_KindBC(copy_marker[0]) == EULER_WALL) ||
-              (config->GetMarker_All_KindBC(copy_marker[1]) == EULER_WALL)) {
+          /* --- Euler walls can also not be agglomerated when the point has 2 markers or if curved ---*/
+          if ((config->GetMarker_All_KindBC(copy_marker[0]) == EULER_WALL && !boundIsStraight[copy_marker[0]]) ||
+              (config->GetMarker_All_KindBC(copy_marker[1]) == EULER_WALL && !boundIsStraight[copy_marker[1]])) {
             agglomerate_seed = false;
           }
 
@@ -173,7 +179,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         /*--- If there are more than 2 markers, the aglomeration will be discarded ---*/
 
         if (counter > 2) agglomerate_seed = false;
-
+        // note that if one of the markers is SEND_RECEIVE, then we could allow agglomeration since
+        // the real number of markers is then 2.
 
 
         /*--- If the seed (parent) can be agglomerated, we try to agglomerate connected childs to the parent ---*/
@@ -668,6 +675,46 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 }
 
 
+bool CMultiGridGeometry::GeometricalCheck(unsigned long iPoint, const CGeometry* fine_grid,
+                                          const CConfig* config) const {
+  su2double max_dimension = 1.2;
+
+  /*--- Evaluate the total size of the element ---*/
+
+  bool Volume = true;
+  su2double ratio = pow(fine_grid->nodes->GetVolume(iPoint), 1.0 / su2double(nDim)) * max_dimension;
+  su2double limit = pow(config->GetDomainVolume(), 1.0 / su2double(nDim));
+  if (ratio > limit) {
+    Volume = false;
+    cout << "Volume limit reached!" << endl;
+  }
+  /*--- Evaluate the stretching of the element ---*/
+
+  bool Stretching = true;
+
+  /* unsigned short iNode, iDim;
+   unsigned long jPoint;
+   su2double *Coord_i = fine_grid->nodes->GetCoord(iPoint);
+   su2double max_dist = 0.0 ; su2double min_dist = 1E20;
+   for (iNode = 0; iNode < fine_grid->nodes->GetnPoint(iPoint); iNode ++) {
+   jPoint = fine_grid->nodes->GetPoint(iPoint, iNode);
+   su2double *Coord_j = fine_grid->nodes->GetCoord(jPoint);
+   su2double distance = 0.0;
+   for (iDim = 0; iDim < nDim; iDim++)
+   distance += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+   distance = sqrt(distance);
+   max_dist = max(distance, max_dist);
+   min_dist = min(distance, min_dist);
+   }
+   if ( max_dist/min_dist > 100.0 ) Stretching = false;*/
+
+  return (Stretching && Volume);
+}
+
+void CMultiGridGeometry::ComputeSurfStraightness(CConfig* config) {
+  CGeometry::ComputeSurfStraightness(config, true);
+}
+
 bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<short> marker_seed, const CGeometry* fine_grid,
                                                const CConfig* config) const {
   bool agglomerate_CV = false;
@@ -679,12 +726,13 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
       (GeometricalCheck(CVPoint, fine_grid, config))) {
     /*--- If the point belongs to a boundary, its type must be compatible with the seed marker. ---*/
 
+    int counter = 0;
+    unsigned short copy_marker[3] = {};
+
     if (fine_grid->nodes->GetBoundary(CVPoint)) {
       /*--- Identify the markers of the vertex that we want to agglomerate ---*/
 
       // count number of markers on the agglomeration candidate
-      int counter = 0;
-      unsigned short copy_marker[3] = {};
       for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker() && counter < 3; jMarker++) {
         if (fine_grid->nodes->GetVertex(CVPoint, jMarker) != -1) {
           copy_marker[counter] = jMarker;
@@ -753,6 +801,17 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
       //   agglomerate_CV = false;
       // }
     }
+
+    // /*--- Check for curved EULER_WALL ---*/
+    // if (agglomerate_CV && fine_grid->nodes->GetBoundary(CVPoint)) {
+    //   for (int i = 0; i < counter; i++) {
+    //     if (config->GetMarker_All_KindBC(copy_marker[i]) == EULER_WALL && !boundIsStraight[copy_marker[i]]) {
+    //       agglomerate_CV = false;
+    //       break;
+    //     }
+    //   }
+    // }
+
   }
 
   return agglomerate_CV;
@@ -760,41 +819,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
 
 
 /*--- ---*/
-bool CMultiGridGeometry::GeometricalCheck(unsigned long iPoint, const CGeometry* fine_grid,
-                                          const CConfig* config) const {
-  su2double max_dimension = 1.2;
 
-  /*--- Evaluate the total size of the element ---*/
-
-  bool Volume = true;
-  su2double ratio = pow(fine_grid->nodes->GetVolume(iPoint), 1.0 / su2double(nDim)) * max_dimension;
-  su2double limit = pow(config->GetDomainVolume(), 1.0 / su2double(nDim));
-  if (ratio > limit) {
-    Volume = false;
-    cout << "Volume limit reached!" << endl;
-  }
-  /*--- Evaluate the stretching of the element ---*/
-
-  bool Stretching = true;
-
-  /* unsigned short iNode, iDim;
-   unsigned long jPoint;
-   su2double *Coord_i = fine_grid->nodes->GetCoord(iPoint);
-   su2double max_dist = 0.0 ; su2double min_dist = 1E20;
-   for (iNode = 0; iNode < fine_grid->nodes->GetnPoint(iPoint); iNode ++) {
-   jPoint = fine_grid->nodes->GetPoint(iPoint, iNode);
-   su2double *Coord_j = fine_grid->nodes->GetCoord(jPoint);
-   su2double distance = 0.0;
-   for (iDim = 0; iDim < nDim; iDim++)
-   distance += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-   distance = sqrt(distance);
-   max_dist = max(distance, max_dist);
-   min_dist = min(distance, min_dist);
-   }
-   if ( max_dist/min_dist > 100.0 ) Stretching = false;*/
-
-  return (Stretching && Volume);
-}
 
 void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_Indirect_Neighbors, unsigned long iPoint,
                                               unsigned long Index_CoarseCV, const CGeometry* fine_grid) const {
