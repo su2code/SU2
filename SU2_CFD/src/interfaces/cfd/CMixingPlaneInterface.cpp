@@ -67,8 +67,8 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
   for (auto iMarkerInt = 0u; iMarkerInt < donor_config->GetMarker_n_ZoneInterface()/2; iMarkerInt++) {
 
     /*--- Find the markers containing the interface ---*/
-    short markDonor = donor_config->FindMixingPlaneInterfaceMarker(iMarkerInt, donor_geometry->GetnMarker());
-    short markTarget= target_config->FindMixingPlaneInterfaceMarker(iMarkerInt, target_geometry->GetnMarker());
+    short markDonor = donor_config->FindMixingPlaneInterfaceMarker(donor_geometry->GetnMarker());
+    short markTarget= target_config->FindMixingPlaneInterfaceMarker(target_geometry->GetnMarker());
 
     /*--- Check if this interface connects the two zones, if not continue. ---*/
     if(!CInterpolator::CheckInterfaceBoundary(markDonor, markTarget)) continue;

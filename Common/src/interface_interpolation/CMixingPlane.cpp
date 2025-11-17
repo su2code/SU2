@@ -58,7 +58,7 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
         int markDonor = -1, markTarget = -1;
         unsigned short donorFlag = 0, targetFlag = 0;
 
-        markDonor = donor_config->FindMixingPlaneInterfaceMarker(iMarkerInt, donor_config->GetnMarker_All());
+        markDonor = donor_config->FindMixingPlaneInterfaceMarker(donor_config->GetnMarker_All());
         donorFlag = (markDonor != -1) ? donor_config->GetMarker_All_MixingPlaneInterface(markDonor) : -1;
 
 #ifdef HAVE_MPI
@@ -86,7 +86,7 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
     delete [] buffDonorFlag;
 #endif
 
-        markTarget = target_config->FindMixingPlaneInterfaceMarker(iMarkerInt, target_config->GetnMarker_All());
+        markTarget = target_config->FindMixingPlaneInterfaceMarker(target_config->GetnMarker_All());
         targetFlag = (markTarget != -1) ? target_config->GetMarker_All_MixingPlaneInterface(markTarget) : -1;
 
         if (markTarget == -1 || markDonor == -1) continue;
