@@ -58,22 +58,8 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
         int markDonor = -1, markTarget = -1;
         unsigned short donorFlag = 0, targetFlag = 0;
 
-        /*--- On the donor side ---*/
-        for (auto iMarkerDonor = 0; iMarkerDonor < nMarkerDonor; iMarkerDonor++){
-            /*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
-            if ( donor_config->GetMarker_All_MixingPlaneInterface(iMarkerDonor) == iMarkerInt ){
-                /*--- We have identified the local index of the Donor marker ---*/
-                /*--- Now we are going to store the average values that belong to Marker_Donor on each processor ---*/
-                /*--- Store the identifier for the structural marker ---*/
-                markDonor = iMarkerDonor;
-                donorFlag = donor_config->GetMarker_All_TurbomachineryFlag(iMarkerDonor);
-                /*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
-                break;
-            }
-            /*--- If the tag hasn't matched any tag within the donor markers ---*/
-            markDonor = -1;
-            donorFlag   = -1;
-        }
+        markDonor = donor_config->FindMixingPlaneInterfaceMarker(iMarkerInt, donor_config->GetnMarker_All());
+        donorFlag = (markDonor != -1) ? donor_config->GetMarker_All_MixingPlaneInterface(markDonor) : -1;
 
 #ifdef HAVE_MPI
     auto buffMarkerDonor = new int[size];
@@ -100,20 +86,8 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
     delete [] buffDonorFlag;
 #endif
 
-        /*--- On the target side we have to identify the marker as well ---*/
-        for (auto iMarkerTarget = 0; iMarkerTarget < nMarkerTarget; iMarkerTarget++){
-            /*--- If the tag GetMarker_All_MixingPlaneInterface(iMarkerTarget) equals the index we are looping at ---*/
-            if ( target_config->GetMarker_All_MixingPlaneInterface(iMarkerTarget) == iMarkerInt ){
-                /*--- Store the identifier for the fluid marker ---*/
-                markTarget = iMarkerTarget;
-                targetFlag = target_config->GetMarker_All_TurbomachineryFlag(iMarkerTarget);
-                /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
-                break;
-            }
-            /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-            markTarget = -1;
-            targetFlag = -1;
-        }
+        markTarget = target_config->FindMixingPlaneInterfaceMarker(iMarkerInt, target_config->GetnMarker_All());
+        targetFlag = (markTarget != -1) ? target_config->GetMarker_All_MixingPlaneInterface(markTarget) : -1;
 
         if (markTarget == -1 || markDonor == -1) continue;
 
@@ -122,21 +96,17 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
 
         targetSpans[iMarkerInt].resize(nSpanTarget+1);
 
-        for (auto iSpanTarget = 0u; iSpanTarget < nSpanTarget; iSpanTarget++){
-            targetSpans[iMarkerInt][iSpanTarget].resize(nSpanTarget);
-        }
-
         const auto spanValuesDonor = donor_geometry->GetSpanWiseValue(donorFlag);
         const auto spanValuesTarget = target_geometry->GetSpanWiseValue(targetFlag);
 
         /*--- Interpolation at hub, shroud & 1D values ---*/
-        targetSpans[iMarkerInt][0].globalSpan[0] = 0;
-        targetSpans[iMarkerInt][0].coefficient[0] = 0.0;
+        targetSpans[iMarkerInt][0].donorSpan = 0;
+        targetSpans[iMarkerInt][0].coefficient = 0.0;
         if (nDim > 2) {
-            targetSpans[iMarkerInt][nSpanTarget-2].globalSpan[nSpanDonor-2] = nSpanDonor-2;
-            targetSpans[iMarkerInt][nSpanTarget-2].coefficient[nSpanTarget-2] = 0.0;
-            targetSpans[iMarkerInt][nSpanTarget-1].globalSpan[nSpanTarget-1] = nSpanDonor-1;
-            targetSpans[iMarkerInt][nSpanTarget-1].coefficient[nSpanTarget-1] = 0.0;
+            targetSpans[iMarkerInt][nSpanTarget-2].donorSpan = nSpanDonor-2;
+            targetSpans[iMarkerInt][nSpanTarget-2].coefficient = 0.0;
+            targetSpans[iMarkerInt][nSpanTarget-1].donorSpan = nSpanDonor-1;
+            targetSpans[iMarkerInt][nSpanTarget-1].coefficient = 0.0;
         }
 
         for(auto iSpanTarget = 1; iSpanTarget < nSpanTarget - 2; iSpanTarget++){
@@ -149,8 +119,8 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
             
             switch(donor_config->GetKind_MixingPlaneInterface()){
                 case MATCHING:
-                    targetSpan.globalSpan[iSpanTarget] = iSpanTarget;
-                    targetSpan.coefficient[iSpanTarget] = 0.0;
+                    targetSpan.donorSpan = iSpanTarget;
+                    targetSpan.coefficient = 0.0;
                     break;
                     
                 case NEAREST_SPAN:
@@ -162,8 +132,8 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
                             tSpan = iSpanDonor;
                         }
                     }
-                    targetSpan.globalSpan[iSpanTarget] = tSpan;
-                    targetSpan.coefficient[iSpanTarget] = 0.0;
+                    targetSpan.donorSpan = tSpan;
+                    targetSpan.coefficient = 0.0;
                     break;
                     
                 case LINEAR_INTERPOLATION:
@@ -178,8 +148,8 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
                     // Calculate interpolation coefficient
                     coeff = (spanValuesTarget[iSpanTarget] - spanValuesDonor[kSpan]) / 
                             (spanValuesDonor[kSpan + 1] - spanValuesDonor[kSpan]);
-                    targetSpan.globalSpan[iSpanTarget] = kSpan;
-                    targetSpan.coefficient[iSpanTarget] = coeff;
+                    targetSpan.donorSpan = kSpan;
+                    targetSpan.coefficient = coeff;
                     break;
                     
                 default:

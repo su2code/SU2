@@ -226,6 +226,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
     /*--- Turbomachinery Specific Montior ---*/
   if (config[ZONE_0]->GetBoolTurbomachinery()){
     if (val_iZone == config[ZONE_0]->GetnZone()-1) {
+      ComputeTurboPerformance(solver, geometry, config);
       auto TurbomachineryBladePerformances = GetBladesPerformanceVector(solver, config[val_iZone]->GetnZone());
 
       output->SetHistoryOutput(geometry, solver, config, TurbomachineryStagePerformance, TurbomachineryBladePerformances,

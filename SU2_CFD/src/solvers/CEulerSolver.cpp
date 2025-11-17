@@ -5591,8 +5591,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
         auto nDonorSpan = GetnMixingStates(val_marker, iSpan);
         su2double donorAverages[8] = {0.0};
-        for (auto iVar = 0u; iVar < 8; iVar++) {
-          donorAverages[iVar] = GetMixingState(val_marker, iSpan, iVar);
+        for (auto mixVar = 0u; mixVar < 8; mixVar++) {
+          donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
         }
         const auto ExtAverageDensity = donorAverages[0];
         const auto ExtAveragePressure = donorAverages[1];
@@ -6248,7 +6248,6 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
     deltaSpan       = SpanWiseValues[nSpanWiseSections-1]*spanPercent;
     coeffrelfacAvg  = (relfacAvgCfg - extrarelfacAvg)/deltaSpan;
   }
-  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
     /*--- Compute under relaxation for the Hub and Shroud Avg and Fourier Coefficient---*/
     if(nDim == 3){
@@ -6290,12 +6289,13 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
     su2double ExtAverageDensity, ExtAveragePressure;
     su2double ExtAverageTurboVelocity[3] = {0.0};
     su2double donorAverages[8] = {0.0};
-    int nDonorSpan;
     switch (config->GetKind_Data_Giles(Marker_Tag)){
       case MIXING_IN: case MIXING_IN_1D: case MIXING_OUT: case MIXING_OUT_1D:
-        nDonorSpan = GetnMixingStates(val_marker, iSpan);
-        for (auto iVar = 0u; iVar < 8; iVar++) {
-          donorAverages[iVar] = GetMixingState(val_marker, iSpan, iVar);
+        // for (auto iMarkerGeo = 0u; iMarkeGeo < geometry->GetnMarker(); iMarkerGeo++){
+        //   if (config->Get)
+        // }
+        for (auto mixVar = 0u; mixVar < 8; mixVar++) {
+          donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
         }
         ExtAverageDensity = donorAverages[0];
         ExtAveragePressure = donorAverages[1];
@@ -6515,7 +6515,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
 
     /*--- Loop over all the vertices on this boundary marker ---*/
 
-    //SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+    SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
     for (iVertex = 0; iVertex < geometry->GetnVertexSpan(val_marker,iSpan); iVertex++) {
 
       /*--- using the other vertex information for retrieving some information ---*/

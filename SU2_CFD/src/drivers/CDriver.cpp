@@ -2702,24 +2702,6 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
     }
   }
 
-
-  if(mixingplane){
-    if (rank == MASTER_NODE) cout<<"Preprocessing of the Mixing-Plane Interface." << endl;
-    for (donorZone = 0; donorZone < nZone; donorZone++) {
-      nMarkerInt     = config_container[donorZone]->GetnMarker_MixingPlaneInterface()/2;
-      for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++){
-        for (targetZone = 0; targetZone < nZone; targetZone++) {
-          if (donorZone == targetZone) continue;
-          if (interface[donorZone][targetZone]->GetInterfaceType()==MIXING_PLANE){
-            interface[donorZone][targetZone]->PreprocessAverage(geometry[donorZone][INST_0][MESH_0], geometry[targetZone][INST_0][MESH_0],
-                config[donorZone], config[targetZone],
-                iMarkerInt);
-          }
-        }
-      }
-    }
-  }
-
   if(!restart && !discrete_adjoint){
     if (rank == MASTER_NODE) cout<<"Initialize turbomachinery solution quantities." << endl;
     for(iZone = 0; iZone < nZone; iZone++) {
@@ -2746,8 +2728,6 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
 
     }
   }
-
-  //TurbomachineryStagePerformance = std::make_shared<CTurbomachineryStagePerformance>(solver[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetFluidModel());
 }
 
 CDriver::~CDriver() = default;

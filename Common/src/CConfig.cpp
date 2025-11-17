@@ -9934,6 +9934,23 @@ short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
   return -1;
 }
 
+short CConfig::FindMixingPlaneInterfaceMarker(unsigned short iMarkerInt, unsigned short nMarker) const {
+  short mark;
+  for (auto iMarker = 0; iMarker < nMarker; iMarker++){
+      /*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
+      if (GetMarker_All_MixingPlaneInterface(iMarker)){
+          /*--- We have identified the local index of the marker ---*/
+          /*--- Store the identifier for the marker ---*/
+          mark = iMarker;
+          /*--- Exit the for loop: we have found the local index for Mixing-Plane interface ---*/
+          return mark;
+      }
+      /*--- If the tag hasn't matched any tag within the donor markers ---*/
+      mark = -1;
+  }
+  return mark;
+}
+
 void CConfig::Tick(double *val_start_time) {
 
 #ifdef PROFILE

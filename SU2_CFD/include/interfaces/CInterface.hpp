@@ -148,9 +148,9 @@ protected:
     for (auto iVar = 0u; iVar < nVar; iVar++) Target_Variable[iVar] += donorCoeff * bcastVariable[iVar];
   }
 
-  inline virtual void RecoverTarget_Variable(const su2double *bcastVariable) { }
+  inline virtual void RecoverTarget_Variable(const vector<su2double> bcastVariable, unsigned long idx) { }
 
-  inline virtual void RecoverTarget_Variable(const su2double *bcastVariable, const su2double *next_bcastVariable, su2double donorCoeff) { }
+  inline virtual void RecoverTarget_Variable(const vector<su2double> bcastVariable, unsigned long idx, su2double donorCoeff) { }
 
 
 

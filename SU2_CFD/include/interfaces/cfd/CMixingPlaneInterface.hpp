@@ -36,6 +36,7 @@
  */
 class CMixingPlaneInterface : public CInterface {
 public:
+  unsigned int nMixingVars;
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
@@ -91,15 +92,15 @@ public:
   void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, const CConfig *target_config,
                           unsigned long Marker_Target, unsigned long val_Span, unsigned long Point_Target) override;
 
-  inline void RecoverTarget_Variable(const su2double *bcastVariable) override{
-    for (auto iVar = 0u; iVar < 8; iVar++) {
-      Target_Variable[iVar] = bcastVariable[iVar];
+  inline void RecoverTarget_Variable(const vector<su2double> bcastVariable, unsigned long iSpan) override{
+    for (auto iVar = 0u; iVar < nMixingVars; iVar++) {
+      Target_Variable[iVar] = bcastVariable[iSpan * nMixingVars + iVar];
     }
   }
 
-  inline void RecoverTarget_Variable(const su2double *bcastVariable, const su2double *next_bcastVariable, su2double donorCoeff) override {
-    for (auto iVar = 0u; iVar < 8; iVar++) {
-      Target_Variable[iVar] = (1 - donorCoeff)*bcastVariable[iVar] + donorCoeff * next_bcastVariable[iVar];
+  inline void RecoverTarget_Variable(const vector<su2double> bcastVariable, unsigned long iSpan, su2double donorCoeff) override {
+    for (auto iVar = 0u; iVar < nMixingVars; iVar++) {
+      Target_Variable[iVar] = (1 - donorCoeff)*bcastVariable[iSpan * nMixingVars + iVar] + donorCoeff * bcastVariable[(iSpan + 1) * nMixingVars + iVar];
     }
   }
 

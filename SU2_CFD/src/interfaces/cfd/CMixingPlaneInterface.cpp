@@ -33,9 +33,10 @@
 #include "../../../include/solvers/CSolver.hpp"
 
 CMixingPlaneInterface::CMixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst){
-  nVar = val_nVar;
-  Donor_Variable     = new su2double[nVar + 5]();
-  Target_Variable    = new su2double[nVar + 5]();
+  nVar = val_nVar; // Solver vars
+  nMixingVars = 8; // Always 8 vars in turbo MP
+  Donor_Variable     = new su2double[nMixingVars]();
+  Target_Variable    = new su2double[nMixingVars]();
   InterfaceType      = ENUM_TRANSFER::MIXING_PLANE;
 }
 
@@ -65,11 +66,11 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
   for (auto iMarkerInt = 0u; iMarkerInt < donor_config->GetMarker_n_ZoneInterface()/2; iMarkerInt++) {
 
+    /*--- Find the markers containing the interface ---*/
+    short markDonor = donor_config->FindMixingPlaneInterfaceMarker(iMarkerInt, donor_geometry->GetnMarker());
+    short markTarget= target_config->FindMixingPlaneInterfaceMarker(iMarkerInt, target_geometry->GetnMarker());
+
     /*--- Check if this interface connects the two zones, if not continue. ---*/
-
-    const auto markDonor = donor_config->FindInterfaceMarker(iMarkerInt);
-    const auto markTarget = target_config->FindInterfaceMarker(iMarkerInt);
-
     if(!CInterpolator::CheckInterfaceBoundary(markDonor, markTarget)) continue;
 
     // The number of spans is available on every rank
@@ -77,33 +78,44 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
     /*--- Fill send buffers. ---*/
 
-    vector<unsigned long> sendDonorIdx(nSpanDonor);
-    su2activematrix sendDonorVar(nSpanDonor, 8);
+    vector<short> sendDonorMarker(nSpanDonor);
+    vector<su2double> sendDonorVar(nSpanDonor * nMixingVars);
 
-    if (markDonor >= 0) {
-      for (auto iSpan = 0ul, iSend = 0ul; iSpan < nSpanDonor; iSpan++) {
+    if (markDonor != -1) {
+      // cout << "markDonor Identified!" << endl;
+      for (auto iSpan = 0ul; iSpan < nSpanDonor; iSpan++) {
         GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iSpan, 0);
-        for (auto iVar = 0u; iVar < nVar; iVar++) sendDonorVar(iSend, iVar) = Donor_Variable[iVar];
-        sendDonorIdx[iSend] = iSpan;
-        ++iSend;
+        for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = Donor_Variable[iVar];
+        sendDonorMarker[iSpan] = markDonor;
       }
     }
+#ifdef HAVE_MPI
     /*--- Gather data. ---*/
     const int nTotalDonors = nSpanDonor * size;
-    const int nSpanDonorVars = nSpanDonor * 8;
-    vector<unsigned long> donorIdx(nTotalDonors);
-    su2activematrix donorVar(nTotalDonors, 8);
+    const int nSpanDonorVars = nSpanDonor * nMixingVars;
+    vector<unsigned long> buffDonorMarker(nTotalDonors);
+    vector<su2double> buffDonorVar(nTotalDonors * nMixingVars);
 
-    SU2_MPI::Allgather(sendDonorIdx.data(), nSpanDonor, MPI_UNSIGNED_LONG,
-                      donorIdx.data(), nSpanDonor, MPI_UNSIGNED_LONG,
+    SU2_MPI::Allgather(sendDonorMarker.data(), nSpanDonor, MPI_UNSIGNED_SHORT,
+                      buffDonorMarker.data(), nSpanDonor, MPI_UNSIGNED_SHORT,
                       SU2_MPI::GetComm());
 
     SU2_MPI::Allgather(sendDonorVar.data(), nSpanDonorVars, MPI_DOUBLE,
-                      donorVar.data(), nSpanDonorVars, MPI_DOUBLE,
+                      buffDonorVar.data(), nSpanDonorVars, MPI_DOUBLE,
                       SU2_MPI::GetComm());
 
+    for (auto iSize = 0; iSize < size; iSize++){
+      if (buffDonorVar[nSpanDonorVars * iSize] > 0.0) {
+        for (auto iSpan = 0ul; iSpan < nSpanDonor; iSpan++){
+          for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = buffDonorVar[iSize * nSpanDonorVars + iVar]; // This could be wrong in 3D
+        }
+        markDonor = buffDonorMarker[iSize * nSpanDonor];
+      }
+    }
+#endif
+
     /*--- This rank does not need to do more work. ---*/
-    if (markTarget < 0) continue;
+    if (!(markTarget != -1 && markDonor != -1)) continue;
 
     /*--- Loop over target spans. ---*/
     auto nTargetSpan = target_config->GetnSpanWiseSections() + 1;
@@ -111,37 +123,28 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     for (auto iTargetSpan = 0ul; iTargetSpan < nTargetSpan; iTargetSpan++) {
 
       auto& targetSpan = interpolator.targetSpans[iMarkerInt][markTarget];
-      const auto nDonorSpan = targetSpan.nDonor();
 
-      InitializeTarget_Variable(target_solution, markTarget, iTargetSpan, nDonorSpan);
+      InitializeTarget_Variable(target_solution, markTarget, iTargetSpan, nSpanDonor);
 
       if ((iTargetSpan == 0) || (iTargetSpan < nTargetSpan - 3)) {
         /*--- Transfer values at hub, shroud and 1D values ---*/
-        unsigned long iDonorSpan;
-        if (iTargetSpan == 0) iDonorSpan = 0;
-        else if (iTargetSpan == nTargetSpan - 2) iDonorSpan = nDonorSpan - 2;
-        else if (iTargetSpan == nTargetSpan - 1) iDonorSpan = nDonorSpan - 1;
+        unsigned long donorSpan;
+        if (iTargetSpan == 0) donorSpan = 0;
+        else if (iTargetSpan == nTargetSpan - 2) donorSpan = nSpanDonor - 2;
+        else if (iTargetSpan == nTargetSpan - 1) donorSpan = nSpanDonor - 1;
 
-        const auto idx = lower_bound(donorIdx.begin(), donorIdx.end(), iDonorSpan) - donorIdx.begin();
-        assert(idx < static_cast<long>(donorIdx.size()));
-
-        RecoverTarget_Variable(donorVar[idx]);
+        RecoverTarget_Variable(sendDonorVar, donorSpan);
 
         SetTarget_Variable(target_solution, target_geometry, target_config, markTarget, iTargetSpan, 0);
       }
       else {
         /*--- Get the global index of the donor and the interpolation coefficient. ---*/
 
-        const auto donorSpan = targetSpan.globalSpan[iTargetSpan];
-        const auto donorCoeff = targetSpan.coefficient[iTargetSpan];
-
-        /*--- Find the index of the global donor point in the donor data. ---*/
-
-        const auto idx = lower_bound(donorIdx.begin(), donorIdx.end(), donorSpan) - donorIdx.begin();
-        assert(idx < static_cast<long>(donorIdx.size()));
+        const auto donorSpan = targetSpan.donorSpan;
+        const auto donorCoeff = targetSpan.coefficient;
 
         /*--- Recover the Target_Variable from the buffer of variables. ---*/
-        RecoverTarget_Variable(donorVar[idx], donorVar[idx+1], donorCoeff);
+        RecoverTarget_Variable(sendDonorVar, donorSpan, donorCoeff);
 
         SetTarget_Variable(target_solution, target_geometry, target_config, markTarget, iTargetSpan, 0);
       }
@@ -190,13 +193,12 @@ void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeomet
                                            const CConfig *target_config, unsigned long Marker_Target,
                                            unsigned long Span_Target, unsigned long Point_Target) {
 
-  unsigned short iVar, iDonorSpan, nTargetVar;
-  nTargetVar = 8;
+  unsigned short iVar, iDonorSpan;
   /*--- Set the mixing plane solution with the value of the Target Variable ---*/
 
   iDonorSpan = target_solution->GetnMixingStates(Marker_Target, Span_Target);
 
-  for (iVar = 0; iVar < nTargetVar; iVar++)
+  for (iVar = 0; iVar < nMixingVars; iVar++)
     target_solution->SetMixingState(Marker_Target, Span_Target, iVar, Target_Variable[iVar]);
 
   target_solution->SetnMixingStates( Marker_Target, Span_Target, iDonorSpan + 1 );

@@ -10053,6 +10053,13 @@ public:
   short FindInterfaceMarker(unsigned short iInterface) const;
 
   /*!
+   * \brief Find the marker index (if any) that is part of a mixing plane interface pair.
+   * \param[in] nMarker - Number of the marker in a zone being tested, starting at 0.
+   * \return value > 1 if (on this mpi rank) the zone defined by config is part of the mixing plane.
+   */
+  short FindMixingPlaneInterfaceMarker(unsigned short nMarker) const;
+
+  /*!
    * \brief Get whether or not to save solution data to libROM.
    * \return True if specified in config file.
    */

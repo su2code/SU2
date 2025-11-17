@@ -120,7 +120,7 @@ class CFluidIteration : public CIteration {
   /*!
    * \brief Computes turboperformance.
    */
-  void ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter);
+  // void ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container);
 
   /*!
    * \brief Postprocesses the fluid system before heading to another physics system or the next iteration.
