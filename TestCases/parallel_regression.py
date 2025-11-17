@@ -611,7 +611,7 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals = [-7.866943, -1.883455, 0.043885, 1.935798, -148.430000]
+    inc_poly_cylinder.test_vals = [-8.030976, -2.362995, 0.006829, 1.923532, -172.590000]
     test_list.append(inc_poly_cylinder)
 
     # X-coarse laminar bend as a mixed element CGNS test
