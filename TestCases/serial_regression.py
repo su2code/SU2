@@ -253,7 +253,7 @@ def main():
     turb_wallfunction_flatplate_sst.test_vals = [-4.581446, -1.913566, -1.958042, 0.909602, -1.602844, 1.482035, 10.000000, -1.741580, 0.033323, 0.002425]
     test_list.append(turb_wallfunction_flatplate_sst)
 
-    # FLAT PLATE, ROUGHNESS BCS WILCOX2006 SST
+    # FLAT PLATE, ROUGHNESS BC WILCOX2006 SST
     turb_flatplate_sst_roughBCWilcox2006           = TestCase('turb_sst_flatplate_roughBCWilcox2006')
     turb_flatplate_sst_roughBCWilcox2006.cfg_dir   = "rans/flatplate/roughness/bc_wilcox2006"
     turb_flatplate_sst_roughBCWilcox2006.cfg_file  = "turb_SST_flatplate_roughBCWilcox2006.cfg"
@@ -261,7 +261,7 @@ def main():
     turb_flatplate_sst_roughBCWilcox2006.test_vals = [10.000000, 0.052109, -3.937983, -1.063721, -1.483116, 1.514608, -1.003919, 4.472050, -0.180308, 0.033500]
     test_list.append(turb_flatplate_sst_roughBCWilcox2006)
 
-    # FLAT PLATE, ROUGHNESS BCS KNOPP SST
+    # FLAT PLATE, ROUGHNESS BC KNOPP SST
     turb_flatplate_sst_roughBCKnopp           = TestCase('turb_sst_flatplate_roughBCKnopp')
     turb_flatplate_sst_roughBCKnopp.cfg_dir   = "rans/flatplate/roughness/bc_knopp"
     turb_flatplate_sst_roughBCKnopp.cfg_file  = "turb_SST_flatplate_roughBCKnopp.cfg"
@@ -269,7 +269,7 @@ def main():
     turb_flatplate_sst_roughBCKnopp.test_vals = [10.000000, 0.053020, -3.454853, -0.684543, -0.886080, 2.140376, 1.043068, 4.808919, -0.203494, 0.053645]
     test_list.append(turb_flatplate_sst_roughBCKnopp)
 
-    # FLAT PLATE, ROUGHNESS BCS AUPOIX SST
+    # FLAT PLATE, ROUGHNESS BC AUPOIX SST
     turb_flatplate_sst_roughBCAupoix           = TestCase('turb_sst_flatplate_roughBCAupoix')
     turb_flatplate_sst_roughBCAupoix.cfg_dir   = "rans/flatplate/roughness/bc_aupoix"
     turb_flatplate_sst_roughBCAupoix.cfg_file  = "turb_SST_flatplate_roughBCAupoix.cfg"
