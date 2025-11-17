@@ -58,8 +58,13 @@ class CIncIdealGasPolynomial final : public CFluidModel {
    * \param[in] config - configuration container for the problem.
    */
   void SetCpModel(const CConfig* config) override {
+    const su2double t_ref = config->GetStandard_RefTemperatureND();
+    Enthalpy_Ref = 0.0;
+    su2double t_i = 1.0;
     for (int i = 0; i < N; ++i) {
+      t_i *= t_ref;
       coeffs_[i] = config->GetCp_PolyCoeffND(i);
+      Enthalpy_Ref += coeffs_[i] * t_i / (i + 1);
     }
   }
 
@@ -72,15 +77,16 @@ class CIncIdealGasPolynomial final : public CFluidModel {
     Temperature = t;
     Density = Pressure / (Temperature * Gas_Constant);
 
-    /* Evaluate the new Cp from the coefficients and temperature. */
+    /* Evaluate the new Cp and enthalpy from the coefficients and temperature. */
     Cp = coeffs_[0];
+    Enthalpy = coeffs_[0] * t - Enthalpy_Ref;
     su2double t_i = 1.0;
     for (int i = 1; i < N; ++i) {
       t_i *= t;
       Cp += coeffs_[i] * t_i;
+      Enthalpy += coeffs_[i] * t_i * t / (i + 1);
     }
     Cv = Cp / Gamma;
-    Enthalpy = Cp * Temperature;
   }
 
   /*!
@@ -89,20 +95,50 @@ class CIncIdealGasPolynomial final : public CFluidModel {
    */
   void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override {
     Enthalpy = val_enthalpy;
-    Temperature = Enthalpy / Cp;
-    Density = Pressure / (Temperature * Gas_Constant);
-    /* Evaluate the new Cp from the coefficients and temperature. */
-    Cp = coeffs_[0];
-    su2double t_i = 1.0;
-    for (int i = 1; i < N; ++i) {
-      t_i *= Temperature;
-      Cp += coeffs_[i] * t_i;
+    /*--- convergence criterion for temperature in [K], high accuracy needed for restarts. ---*/
+    const su2double toll = 1e-5;
+    su2double temp_iter = 300.0;
+    su2double Cp_iter = 0.0;
+    su2double delta_temp_iter = 1e10;
+    su2double delta_enthalpy_iter;
+    const int counter_limit = 20;
+
+    int counter = 0;
+
+    /*--- Computing temperature given enthalpy using Newton-Raphson. ---*/
+    while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
+      /* Evaluate the new Cp and enthalpy from the coefficients and temperature. */
+      Cp_iter = coeffs_[0];
+      su2double Enthalpy_iter = coeffs_[0] * temp_iter - Enthalpy_Ref;
+      su2double t_i = 1.0;
+      for (int i = 1; i < N; ++i) {
+        t_i *= temp_iter;
+        Cp_iter += coeffs_[i] * t_i;
+        Enthalpy_iter += coeffs_[i] * t_i * temp_iter / (i + 1);
+      }
+
+      delta_enthalpy_iter = Enthalpy - Enthalpy_iter;
+
+      delta_temp_iter = delta_enthalpy_iter / Cp_iter;
+
+      temp_iter += delta_temp_iter;
+      if (temp_iter < 0.0) {
+        cout << "Warning: Negative temperature has been found during Newton-Raphson" << endl;
+        break;
+      }
     }
+    Temperature = temp_iter;
+    Cp = Cp_iter;
+    if (counter == counter_limit) {
+      cout << "Warning Newton-Raphson exceed number of max iteration in temperature computation" << endl;
+    }
+    Density = Pressure / (Temperature * Gas_Constant);
     Cv = Cp / Gamma;
   }
 
  private:
   su2double Gas_Constant{0.0}; /*!< \brief Specific Gas Constant. */
   su2double Gamma{0.0};        /*!< \brief Ratio of specific heats. */
-  array<su2double, N> coeffs_; /*!< \brief Polynomial coefficients for conductivity as a function of temperature. */
+  array<su2double, N> coeffs_; /*!< \brief Polynomial coefficients for heat capacity as a function of temperature. */
+  su2double Enthalpy_Ref;      /*!< \brief Enthalpy computed at the reference temperature. */
 };

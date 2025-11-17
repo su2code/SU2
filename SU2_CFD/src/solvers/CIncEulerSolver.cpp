@@ -2587,7 +2587,6 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool viscous = config->GetViscous();
   const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
-  const bool species_model = config->GetKind_Species_Model() != SPECIES_MODEL::NONE;
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
   su2double Normal[MAXNDIM] = {0.0};
@@ -2714,12 +2713,8 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     V_outlet[prim_idx.CpTotal()] = nodes->GetSpecificHeatCp(iPoint);
 
-    /*-- Enthalpy is needed for energy equation. ---*/
-    const su2double* scalar_outlet = nullptr;
-    if (species_model) scalar_outlet = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
-    CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
-    auxFluidModel->SetTDState_T(nodes->GetTemperature(iPoint), scalar_outlet);
-    V_outlet[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
+    /*-- Neumann condition for Enthalpy in energy equation. ---*/
+    V_outlet[prim_idx.Enthalpy()] = nodes->GetEnthalpy(iPoint);
 
     /*--- Set various quantities in the solver class ---*/
 
