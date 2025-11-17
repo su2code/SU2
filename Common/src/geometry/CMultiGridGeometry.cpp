@@ -40,7 +40,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   /*--- Compute surface straightness to determine straight boundaries ---*/
   if (iMesh == MESH_0) ComputeSurfStraightness(config);
   else boundIsStraight = fine_grid->boundIsStraight;
-  cout << "bound size = " << boundIsStraight.size() << endl;
 
   /*--- Agglomeration Scheme II (Nishikawa, Diskin, Thomas)
         Create a queue system to do the agglomeration
@@ -52,7 +51,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   /*--- Set a marker to indicate indirect agglomeration, for quads and hexs,
    i.e. consider up to neighbors of neighbors of neighbors.
    For other levels this information is propagated down during their construction. ---*/
-  cout <<"Setting up multigrid level " << iMesh << " agglomeration..." << endl;
   if (iMesh == MESH_1) {
     for (auto iPoint = 0ul; iPoint < fine_grid->GetnPoint(); iPoint++)
       fine_grid->nodes->SetAgglomerate_Indirect(iPoint, false);
@@ -69,7 +67,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
 
   /*--- Create the coarse grid structure using as baseline the fine grid ---*/
-  cout << "  Creating coarse grid structure..." << endl;
   CMultiGridQueue MGQueue_InnerCV(fine_grid->GetnPoint());
   vector<unsigned long> Suitable_Indirect_Neighbors;
 
@@ -78,18 +75,11 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   unsigned long Index_CoarseCV = 0;
 
   /*--- STEP 1: The first step is the boundary agglomeration. ---*/
-  //cout << "loop over Markers" << endl;
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
-    //cout << "*** loop:marker = " << iMarker << " " << config->GetMarker_All_TagBound(iMarker) << endl;
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
 
-      //cout << "*** seed point " << iPoint << ", coord = " << fine_grid->nodes->GetCoord(iPoint, 0) << " " << fine_grid->nodes->GetCoord(iPoint, 1) << endl;
-      //cout << "*** seed point is on the marker: " << fine_grid->nodes->GetVertex(iPoint, iMarker)
-      //<< " , agglomerated=" <<fine_grid->nodes->GetAgglomerate(iPoint) << " , domain = " <<fine_grid->nodes->GetDomain(iPoint)
-      //<< " , geo =" << GeometricalCheck(iPoint, fine_grid, config)
-      //<<endl;
-      /*--- If the element has not been previously agglomerated and it
+       /*--- If the element has not been previously agglomerated and it
        belongs to this physical domain, and it meets the geometrical
        criteria, the agglomeration is studied. ---*/
       vector<short> marker_seed;
@@ -97,8 +87,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       if ((!fine_grid->nodes->GetAgglomerate(iPoint)) && (fine_grid->nodes->GetDomain(iPoint)) &&
           (GeometricalCheck(iPoint, fine_grid, config))) {
         unsigned short nChildren = 1;
-
-         //cout << "    seed point is evaluated for agglomeration " << endl;
 
         /*--- We set an index for the parent control volume, this
          also marks it as agglomerated. ---*/
@@ -118,9 +106,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
         for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker(); jMarker++) {
           const string Marker_Tag = config->GetMarker_All_TagBound(iMarker); //fine_grid->GetMarker_Tag(jMarker);
-          //cout << "    marker = " << jMarker<<" " << Marker_Tag << endl;
           if (fine_grid->nodes->GetVertex(iPoint, jMarker) != -1) {
-            //cout << "      point is on marker" << endl;
             copy_marker[counter] = jMarker;
             counter++;
 
@@ -129,9 +115,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
             }
           }
         }
-
-
-        //cout << "    counter for this seed point = " << counter << endl;
 
         /*--- To agglomerate a vertex it must have only one physical bc!!
          This can be improved. If there is only one marker, it is a good
@@ -144,10 +127,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           // The seed/parent is one valley, so we set this part to true
           // if the child is only on this same valley, we set it to true as well.
           agglomerate_seed = true;
-          cout << "    seed has one marker, can be agglomerated. size=" << boundIsStraight.size() << endl;
           /*--- Euler walls can be curved and agglomerating them leads to difficulties ---*/
+          //if (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL) agglomerate_seed = false;
           if (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL && !boundIsStraight[marker_seed[0]]) agglomerate_seed = false;
-          cout << "end of seed agglomeration check" << endl;
           /*--- Note that if the marker is a SEND_RECEIVE, then the node is actually an interior point.
                 In that case it can only be agglomerated with another interior point. ---*/
 
@@ -164,6 +146,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
                              (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
 
           /* --- Euler walls can also not be agglomerated when the point has 2 markers or if curved ---*/
+          // if ((config->GetMarker_All_KindBC(copy_marker[0]) == EULER_WALL) ||
+          //     (config->GetMarker_All_KindBC(copy_marker[1]) == EULER_WALL)) {
+          //   agglomerate_seed = false;
+          // }
           if ((config->GetMarker_All_KindBC(copy_marker[0]) == EULER_WALL && !boundIsStraight[copy_marker[0]]) ||
               (config->GetMarker_All_KindBC(copy_marker[1]) == EULER_WALL && !boundIsStraight[copy_marker[1]])) {
             agglomerate_seed = false;
@@ -209,9 +195,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
               nodes->SetChildren_CV(Index_CoarseCV, nChildren, CVPoint);
               nChildren++;
-              /*--- In 2D, we only agglomerate 2 nodes if the nodes are on the line edge. ---*/
+              /*--- In 2D, we agglomerate exactly 2 nodes if the nodes are on the line edge. ---*/
               if ((nDim==2) && (counter==1)) break;
-              /*--- In 3D, we only agglomerate 2 nodes if the nodes are on the surface edge. ---*/
+              /*--- In 3D, we agglomerate exactly 2 nodes if the nodes are on the surface edge. ---*/
               if ((nDim==3) && (counter==2)) break;
               /*--- Apply maxAgglomSize limit for 3D internal boundary face nodes (counter==1 in 3D). ---*/
               if (nChildren==maxAgglomSize) break;
