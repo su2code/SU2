@@ -9964,7 +9964,7 @@ short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
   return -1;
 }
 
-short CConfig::FindMixingPlaneInterfaceMarker(unsigned short iMarkerInt, unsigned short nMarker) const {
+short CConfig::FindMixingPlaneInterfaceMarker(unsigned short nMarker) const {
   short mark;
   for (auto iMarker = 0; iMarker < nMarker; iMarker++){
       /*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
