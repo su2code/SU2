@@ -1,0 +1,48 @@
+<header>
+
+[number of layers]
+3
+
+[neurons per layer]
+3
+2
+1
+
+[activation function]
+linear
+linear
+linear
+
+[input names]
+ProgressVariable
+EnthalpyTot
+MixtureFraction
+
+[input normalization]
+-6.8059708053507162e-01	+4.5623852432084366e-01
+-4.9308262569627967e+06	+8.6731375409855954e+06
++2.5577753524576785e-03	+3.6840647718850406e-01
+
+[output names]
+NULL
+
+[output normalization]
+0.0 1.0
+
+</header>
+
+[weights per layer]
+<layer>
+0.0 0.0
+0.0 0.0
+0.0 0.0
+</layer>
+<layer>
+0.0
+0.0
+</layer>
+
+[biases per layer]
+0.0 0.0 0.0
+0.0 0.0
+0.0
