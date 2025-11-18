@@ -181,6 +181,7 @@ def main():
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
     discadj_fea.test_vals         = [-2.849844, -3.238713, -0.000364, -8.708700]
+    discadj_fea.test_vals_aarch64 = [-2.849588, -3.238523, -0.000364, -8.708700]
     discadj_fea.tol               = 0.00007
     test_list.append(discadj_fea)
 
@@ -206,6 +207,7 @@ def main():
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 6
     discadj_fsi.test_vals = [6, -8.930124, -10.147185, 3.1061e-11, -1.7615e-06]
+    discadj_fsi.test_vals_aarch64 = [6, -8.928861, -10.122430, 3.0979e-11, -1.7585e-06]
     test_list.append(discadj_fsi)
 
     ###################################
