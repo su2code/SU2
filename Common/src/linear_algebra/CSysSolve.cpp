@@ -739,119 +739,115 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
 
 template <class ScalarType>
 void BCGSTABpre_parallel(const CSysVector<ScalarType>& a, CSysVector<ScalarType>& b_in,
-             const CMatrixVectorProduct<ScalarType>& mat_vec, const CPreconditioner<ScalarType>& precond, const CConfig* config) {
+                         const CMatrixVectorProduct<ScalarType>& mat_vec, const CPreconditioner<ScalarType>& precond,
+                         const CConfig* config) {
+  // NOTE: norm0_in is currently unused. To avoid -Werror unused-variable warnings,
+  // we mark it [[maybe_unused]] so that future changes can reuse it without
+  // triggering a build failure.
+  ScalarType norm_r_in = 0.0;
+  [[maybe_unused]] ScalarType norm0_in = 0.0;
+  unsigned long ii = 0;
 
-    // NOTE: norm0_in is currently unused. To avoid -Werror unused-variable warnings,
-    // we mark it [[maybe_unused]] so that future changes can reuse it without
-    // triggering a build failure.
-    ScalarType norm_r_in = 0.0;
-    [[maybe_unused]] ScalarType norm0_in = 0.0;
-    unsigned long ii = 0;
+  CSysVector<ScalarType> A_z_i;
+  CSysVector<ScalarType> r_0_in;
+  CSysVector<ScalarType> r_in;
+  CSysVector<ScalarType> p;
+  CSysVector<ScalarType> v;
+  CSysVector<ScalarType> z_i;
 
-    CSysVector<ScalarType> A_z_i;
-    CSysVector<ScalarType> r_0_in;
-    CSysVector<ScalarType> r_in;
-    CSysVector<ScalarType> p;
-    CSysVector<ScalarType> v;
-    CSysVector<ScalarType> z_i;
+  /*--- Allocate if not allocated yet ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    auto nVar = a.GetNVar();
+    auto nBlk = a.GetNBlk();
+    auto nBlkDomain = a.GetNBlkDomain();
 
-    /*--- Allocate if not allocated yet ---*/
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-        auto nVar = a.GetNVar();
-        auto nBlk = a.GetNBlk();
-        auto nBlkDomain = a.GetNBlkDomain();
+    A_z_i.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+    r_0_in.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+    r_in.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+    p.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+    v.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+    z_i.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-        A_z_i.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-        r_0_in.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-        r_in.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-        p.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-        v.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-        z_i.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+  /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
+  mat_vec(b_in, A_z_i);
+  r_in = a - A_z_i;
+
+  /*--- Only compute the residuals in full communication mode. ---*/
+  if (config->GetComm_Level() == COMM_FULL) {
+    norm_r_in = r_in.norm();
+    norm0_in = a.norm();
+    /*--- Set the norm to the initial residual value ---*/
+    /*--- if (tol_type == LinearToleranceType::RELATIVE) norm0_in = norm_r_in; ---*/
+  }
+
+  /*--- Initialization ---*/
+  ScalarType alpha = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
+  p = ScalarType(0.0);
+  v = ScalarType(0.0);
+  r_0_in = r_in;
+
+  ScalarType tolerance = 1e-5;  // Tolerance for the residual norm
+
+  /*--- Loop over all search directions ---*/
+  while (ii < 1000) {  // Arbitrary high iteration limit for safety
+    /*--- Compute rho_prime ---*/
+    rho_prime = rho;
+
+    /*--- Compute rho_i ---*/
+    rho = r_in.dot(r_0_in);
+
+    /*--- Compute beta ---*/
+    ScalarType beta_in = (rho / rho_prime) * (alpha / omega);
+
+    /*--- Update p ---*/
+    p = beta_in * (p - omega * v) + r_in;
+
+    /*--- Preconditioning step ---*/
+    precond(p, z_i);
+    mat_vec(z_i, v);
+
+    /*--- Calculate step-length alpha ---*/
+    ScalarType r_0_v = r_0_in.dot(v);
+    alpha = rho / r_0_v;
+
+    /*--- Update solution and residual ---*/
+    b_in += alpha * z_i;
+    r_in -= alpha * v;
+
+    /*--- Preconditioning step ---*/
+    precond(r_in, z_i);
+    mat_vec(z_i, A_z_i);
+
+    /*--- Calculate step-length omega, avoid division by 0. ---*/
+    omega = A_z_i.squaredNorm();
+    if (omega == ScalarType(0)) break;
+    omega = A_z_i.dot(r_in) / omega;
+
+    /*--- Update solution and residual ---*/
+    b_in += omega * z_i;
+    r_in -= omega * A_z_i;
+
+    /*--- Update the residual norm ---*/
+    norm_r_in = r_in.norm();
+
+    /*--- Check if residual norm is below tolerance ---*/
+    if (norm_r_in < tolerance) {
+      break;  // Stop if the residual norm is below the desired tolerance
     }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-    /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
-    mat_vec(b_in, A_z_i);
-    r_in = a - A_z_i;
-
-    /*--- Only compute the residuals in full communication mode. ---*/
-    if (config->GetComm_Level() == COMM_FULL) {
-        norm_r_in = r_in.norm();
-        norm0_in = a.norm();
-        /*--- Set the norm to the initial residual value ---*/
-        /*--- if (tol_type == LinearToleranceType::RELATIVE) norm0_in = norm_r_in; ---*/
-    }
-
-    /*--- Initialization ---*/
-    ScalarType alpha = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
-    p = ScalarType(0.0);
-    v = ScalarType(0.0);
-    r_0_in = r_in;
-
-    ScalarType tolerance = 1e-5;  // Tolerance for the residual norm
-
-    /*--- Loop over all search directions ---*/
-    while (ii < 1000) {  // Arbitrary high iteration limit for safety
-        /*--- Compute rho_prime ---*/
-        rho_prime = rho;
-
-        /*--- Compute rho_i ---*/
-        rho = r_in.dot(r_0_in);
-
-        /*--- Compute beta ---*/
-        ScalarType beta_in = (rho / rho_prime) * (alpha / omega);
-
-        /*--- Update p ---*/
-        p = beta_in * (p - omega * v) + r_in;
-
-        /*--- Preconditioning step ---*/
-        precond(p, z_i);
-        mat_vec(z_i, v);
-
-        /*--- Calculate step-length alpha ---*/
-        ScalarType r_0_v = r_0_in.dot(v);
-        alpha = rho / r_0_v;
-
-        /*--- Update solution and residual ---*/
-        b_in += alpha * z_i;
-        r_in -= alpha * v;
-
-        /*--- Preconditioning step ---*/
-        precond(r_in, z_i);
-        mat_vec(z_i, A_z_i);
-
-        /*--- Calculate step-length omega, avoid division by 0. ---*/
-        omega = A_z_i.squaredNorm();
-        if (omega == ScalarType(0)) break;
-        omega = A_z_i.dot(r_in) / omega;
-
-        /*--- Update solution and residual ---*/
-        b_in += omega * z_i;
-        r_in -= omega * A_z_i;
-
-        /*--- Update the residual norm ---*/
-        norm_r_in = r_in.norm();
-
-        /*--- Check if residual norm is below tolerance ---*/
-        if (norm_r_in < tolerance) {
-            break;  // Stop if the residual norm is below the desired tolerance
-        }
-
-        ii++;  // Increment iteration counter
-    }
+    ii++;  // Increment iteration counter
+  }
 }
 
-
-
-
 template <class ScalarType>
-unsigned long CSysSolve<ScalarType>::FGMRESandBCGSTAB2_LinSolver(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,
-                                                      const CMatrixVectorProduct<ScalarType>& mat_vec,
-                                                      const CPreconditioner<ScalarType>& precond, ScalarType tol,
-                                                      unsigned long m, ScalarType& residual, bool monitoring,
-                                                      const CConfig* config) const {
-
-
+unsigned long CSysSolve<ScalarType>::FGMRESandBCGSTAB2_LinSolver(const CSysVector<ScalarType>& b,
+                                                                 CSysVector<ScalarType>& x,
+                                                                 const CMatrixVectorProduct<ScalarType>& mat_vec,
+                                                                 const CPreconditioner<ScalarType>& precond,
+                                                                 ScalarType tol, unsigned long m, ScalarType& residual,
+                                                                 bool monitoring, const CConfig* config) const {
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   const bool flexible = !precond.IsIdentity();
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
@@ -939,7 +935,7 @@ unsigned long CSysSolve<ScalarType>::FGMRESandBCGSTAB2_LinSolver(const CSysVecto
 
     if (flexible) {
       /*--- Use BCGSTAB as inner iteration ---*/
-     BCGSTABpre_parallel(W[i], Z[i], mat_vec, precond, config); 
+      BCGSTABpre_parallel(W[i], Z[i], mat_vec, precond, config);
 
       mat_vec(Z[i], W[i + 1]);
     } else {
@@ -1004,9 +1000,6 @@ unsigned long CSysSolve<ScalarType>::FGMRESandBCGSTAB2_LinSolver(const CSysVecto
   residual = beta / norm0;
   return i;
 }
-
-
-
 
 template <class ScalarType>
 unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,
@@ -1245,8 +1238,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
                                        ScreenOutput, config);
         break;
       case FGMRESandBCGSTAB2:
-        IterLinSol = FGMRESandBCGSTAB2_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
-                                      ScreenOutput, config);
+        IterLinSol = FGMRESandBCGSTAB2_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter,
+                                                 residual, ScreenOutput, config);
         break;
       case CONJUGATE_GRADIENT:
         IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
@@ -1408,8 +1401,8 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
                                      ScreenOutput, config);
       break;
     case FGMRESandBCGSTAB2:
-      IterLinSol = FGMRESandBCGSTAB2_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
-                                      ScreenOutput, config);
+      IterLinSol = FGMRESandBCGSTAB2_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter,
+                                               residual, ScreenOutput, config);
       break;
     case CONJUGATE_GRADIENT:
       IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
