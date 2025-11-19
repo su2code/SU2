@@ -496,6 +496,10 @@ private:
   unsigned short *MG_PreSmooth,       /*!< \brief Multigrid Pre smoothing. */
   *MG_PostSmooth,                     /*!< \brief Multigrid Post smoothing. */
   *MG_CorrecSmooth;                   /*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
+  bool MG_Smooth_EarlyExit; /*!< \brief Enable early exit for MG smoothing. */
+  su2double MG_Smooth_Res_Threshold; /*!< \brief Residual reduction threshold for early exit. */
+  bool MG_Smooth_Output; /*!< \brief Output per-iteration multigrid smoothing info. */
+  su2double MG_Smooth_Coeff; /*!< \brief Smoothing coefficient for multigrid correction smoothing. */
   su2double *LocationStations;        /*!< \brief Airfoil sections in wing slicing subroutine. */
 
   ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
@@ -3836,6 +3840,30 @@ public:
     if (nMG_CorrecSmooth == 0) return 0;
     return MG_CorrecSmooth[val_mesh];
   }
+
+  /*!
+   * \brief Get whether early exit is enabled for MG smoothing.
+   * \return True if early exit is enabled.
+   */
+  bool GetMG_Smooth_EarlyExit() const { return MG_Smooth_EarlyExit; }
+
+  /*!
+   * \brief Get the residual threshold for early exit in MG smoothing.
+   * \return Residual threshold.
+   */
+  su2double GetMG_Smooth_Res_Threshold() const { return MG_Smooth_Res_Threshold; }
+
+  /*!
+   * \brief Get whether per-iteration output is enabled for MG smoothing.
+   * \return True if output is enabled.
+   */
+  bool GetMG_Smooth_Output() const { return MG_Smooth_Output; }
+
+  /*!
+   * \brief Get the smoothing coefficient for MG correction smoothing.
+   * \return Smoothing coefficient.
+   */
+  su2double GetMG_Smooth_Coeff() const { return MG_Smooth_Coeff; }
 
   /*!
    * \brief plane of the FFD (I axis) that should be fixed.

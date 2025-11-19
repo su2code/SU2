@@ -28,6 +28,8 @@
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
+#include "ComputeLinSysResRMS.hpp"
+
 
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
 
@@ -217,7 +219,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
 
     GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
-    SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), 1.25, config);
+    SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), config->GetMG_Smooth_Coeff(), config, iMesh);
     SetProlongated_Correction(solver_fine, geometry_fine, config, iMesh);
 
 
@@ -245,43 +247,52 @@ unsigned short iRKLimit) {
   const unsigned short nPreSmooth = config->GetMG_PreSmooth(iMesh);
   const unsigned long timeIter = config->GetTimeIter();
 
+  // Early exit settings from config
+  const bool early_exit_enabled = config->GetMG_Smooth_EarlyExit();
+  const su2double early_exit_threshold = config->GetMG_Smooth_Res_Threshold();
+  const bool output_enabled = config->GetMG_Smooth_Output();
+
+  su2double initial_rms = 0.0;
+  if (early_exit_enabled || output_enabled) {
+    initial_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
+    if (output_enabled) {
+      cout << "MG Pre-Smoothing Level " << iMesh << " Initial RMS: " << initial_rms << endl;
+    }
+  }
+
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
   for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
-
     /*--- Time and space integration ---*/
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
-
       /*--- Send-Receive boundary conditions, and preprocessing ---*/
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
-
       if (iRKStep == 0) {
-
         /*--- Set the old solution ---*/
         solver_fine->Set_OldSolution();
-
         if (classical_rk4) solver_fine->Set_NewSolution();
-        // nijso asks: only call when classical_rk4?
-        // this copies solution to old solution, which we already did above.
-        //solver_fine->Set_OldSolution();
-
-        /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
         solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh, timeIter);
-
-        /*--- Restrict the solution and gradient for the adjoint problem ---*/
-        // nijso asks: why do we call this here but not in the post-smoothing?
         Adjoint_Setup(geometry, solver_container, config_container, RunTime_EqSystem, timeIter, iZone);
-
       }
-      //cout << "pre-smoothing mesh " << iMesh << " rkstep " << iRKStep << endl;
       /*--- Space integration ---*/
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
-
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
-
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
+    }
 
+    // Early exit check and output
+    if (early_exit_enabled || output_enabled) {
+      su2double current_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
+      if (output_enabled) {
+        cout << "MG Pre-Smoothing Level " << iMesh << " Iteration " << iPreSmooth + 1 << "/" << nPreSmooth << " RMS: " << current_rms << endl;
+      }
+      if (early_exit_enabled && current_rms < early_exit_threshold * initial_rms) {
+        if (output_enabled) {
+          cout << "MG Pre-Smoothing Level " << iMesh << " Early exit at iteration " << iPreSmooth + 1 << endl;
+        }
+        break;
+      }
     }
   }
 }
@@ -293,32 +304,49 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem, CSolv
   const unsigned short nPostSmooth = config->GetMG_PostSmooth(iMesh);
   const unsigned long timeIter = config->GetTimeIter();
 
+  // Early exit settings from config
+  const bool early_exit_enabled = config->GetMG_Smooth_EarlyExit();
+  const su2double early_exit_threshold = config->GetMG_Smooth_Res_Threshold();
+  const bool output_enabled = config->GetMG_Smooth_Output();
+
+  su2double initial_rms = 0.0;
+  if (early_exit_enabled || output_enabled) {
+    initial_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
+    if (output_enabled) {
+      cout << "MG Post-Smoothing Level " << iMesh << " Initial RMS: " << initial_rms << endl;
+    }
+  }
+
   /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
   for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
-
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
-
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
-
       if (iRKStep == 0) {
-
         /*--- Set the old solution ---*/
         solver_fine->Set_OldSolution();
-
         if (classical_rk4) solver_fine->Set_NewSolution();
-          solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  timeIter);
-
+        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  timeIter);
       }
-
       /*--- Space integration ---*/
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
-      //cout << "post-smoothing mesh " << iMesh << " rkstep " << iRKStep << endl;
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
-
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
+    }
 
+    // Early exit check and output
+    if (early_exit_enabled || output_enabled) {
+      su2double current_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
+      if (output_enabled) {
+        cout << "MG Post-Smoothing Level " << iMesh << " Iteration " << iPostSmooth + 1 << "/" << nPostSmooth << " RMS: " << current_rms << endl;
+      }
+      if (early_exit_enabled && current_rms < early_exit_threshold * initial_rms) {
+        if (output_enabled) {
+          cout << "MG Post-Smoothing Level " << iMesh << " Early exit at iteration " << iPostSmooth + 1 << endl;
+        }
+        break;
+      }
     }
   }
 }
@@ -400,7 +428,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 }
 
 void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-                                                         unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) {
+                                                         unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config, unsigned short iMesh) {
 
   /*--- Check if there is work to do. ---*/
   if (val_nSmooth == 0) return;
@@ -418,7 +446,19 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   }
   END_SU2_OMP_FOR
 
-  /*--- Jacobi iterations. ---*/
+  /*--- Compute initial RMS for adaptive smoothing ---*/
+  su2double initial_rms = 0.0;
+  if (config->GetMG_Smooth_EarlyExit()) {
+    initial_rms = ComputeLinSysResRMS(solver, geometry);
+  }
+
+  /*--- Output initial RMS if enabled ---*/
+  if (config->GetMG_Smooth_Output()) {
+    cout << "MG Correction-Smoothing Level " << iMesh << " Initial RMS: " << initial_rms << endl;
+  }
+
+  /*--- Jacobi iterations with adaptive early exit ---*/
+  unsigned short actual_iterations = val_nSmooth;
 
   for (iSmooth = 0; iSmooth < val_nSmooth; iSmooth++) {
 
@@ -470,6 +510,35 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
       }
     }
 
+    /*--- Output RMS residual if enabled ---*/
+    if (config->GetMG_Smooth_Output()) {
+      const su2double RMS_Res = ComputeLinSysResRMS(solver, geometry);
+      cout << "MG Correction-Smoothing Level " << iMesh << " Iteration " << iSmooth+1 << "/" << val_nSmooth << " RMS: " << RMS_Res << endl;
+    }
+
+    /*--- Adaptive early exit check after first iteration ---*/
+    if (config->GetMG_Smooth_EarlyExit() && iSmooth == 0 && val_nSmooth > 1) {
+      su2double current_rms = ComputeLinSysResRMS(solver, geometry);
+      su2double reduction_ratio = current_rms / initial_rms;
+
+      // If RMS reduction is sufficient (ratio <= threshold), additional iterations may not be necessary
+      if (reduction_ratio <= config->GetMG_Smooth_Res_Threshold()) {
+        if (config->GetMG_Smooth_Output()) {
+          cout << "MG Correction-Smoothing Level " << iMesh << " Early exit: sufficient RMS reduction ("
+               << reduction_ratio << " <= " << config->GetMG_Smooth_Res_Threshold() << ")" << endl;
+        }
+        actual_iterations = 1;  // Only do this one iteration
+        break;
+      }
+      // If reduction is insufficient (ratio > threshold), continue with remaining iterations
+    }
+
+  }
+
+  /*--- Log if iterations were skipped ---*/
+  if (config->GetMG_Smooth_Output() && actual_iterations < val_nSmooth) {
+    cout << "MG Correction-Smoothing Level " << iMesh << " completed " << actual_iterations
+         << "/" << val_nSmooth << " iterations (adaptive early exit)" << endl;
   }
 
 }

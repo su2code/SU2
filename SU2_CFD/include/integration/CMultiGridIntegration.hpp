@@ -177,7 +177,7 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-                                    unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config);
+                                    unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief Restrict solution from fine grid to a coarse grid.

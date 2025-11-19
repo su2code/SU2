@@ -610,9 +610,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   if (iMesh != MESH_0) {
     //const su2double factor = 1.5; //nijso: too high
-    const su2double factor = 2.0;
+    const su2double factor = 1.1;
     const su2double Coeff = pow(su2double(Global_nPointFine) / Global_nPointCoarse, 1.0 / nDim);
-    const su2double CFL = factor * config->GetCFL(iMesh - 1) / Coeff;
+    const su2double CFL = factor * config->GetCFL(iMesh - 1);// / Coeff;
     config->SetCFL(iMesh, CFL);
   }
 

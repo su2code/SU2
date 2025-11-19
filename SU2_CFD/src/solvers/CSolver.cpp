@@ -1955,11 +1955,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
           const su2double nPointFine = su2double(geometry[iMGLevel-1]->GetGlobal_nPointDomain());
 
           /*--- Apply the same scaling factor as used during geometry construction. ---*/
-          const su2double factor = 2.0;
+          const su2double factor = 1.1;
           const su2double Coeff = pow(nPointFine / nPointCoarse, 1.0 / nDim);
-          const su2double CFL_Coarse = factor * config->GetCFL(iMGLevel - 1) / Coeff;
-
-          config->SetCFL(iMGLevel, CFL_Coarse);
+          const su2double CFL_Coarse = factor * config->GetCFL(iMGLevel - 1);// / Coeff;
+          cout << "Adapted CFL for MG Level " << iMGLevel << ": " << CFL_Coarse << endl;
+          // nijso: comment this if we do not adapt the coarse level CFLs
+          //config->SetCFL(iMGLevel, CFL_Coarse);
         }
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
