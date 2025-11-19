@@ -2473,7 +2473,6 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
 
   /*--- Compute if markers are straight lines or planes. ---*/
   ComputeSurfStraightness(config, true);
-  cout << "ComputeModifiedSymmetryNormals:: boundIsStraight size = " << boundIsStraight.size() << endl;
   symmetryNormals.clear();
   symmetryNormals.resize(nMarker);
   std::vector<unsigned short> symMarkers, curvedSymMarkers;

@@ -3031,7 +3031,7 @@ public:
    * \brief Get the number of Runge-Kutta steps.
    * \return Number of Runge-Kutta steps.
    */
-  unsigned short GetnRKStep(void) const {
+ unsigned short GetnRKStep(void) const {
 
     unsigned short iRKLimit = 1;
 
