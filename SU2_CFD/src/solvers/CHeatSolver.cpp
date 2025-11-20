@@ -314,8 +314,6 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                   CConfig *config, unsigned short iMesh) {
 
-  CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
-
   /*--- Regular source terms go here. ---*/
   /*--- ... ---*/
 
