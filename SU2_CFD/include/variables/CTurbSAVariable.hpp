@@ -46,6 +46,7 @@ private:
   MatrixType stochSource_old;
   VectorType Vortex_Tilting;
   MatrixTypeGen stochGen;
+  VectorType besselIntegral;
 
 public:
   /*!
@@ -110,7 +111,7 @@ public:
    */
   inline void SetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim, su2double val_stochSource_old) override { stochSource_old(iPoint, iDim) = val_stochSource_old; }
 
-/*!
+  /*!
    * \brief Set the LES sensor.
    */
   inline void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) override { LES_Mode(iPoint) = val_les_mode; }
@@ -150,5 +151,18 @@ public:
    * \param[in] val_stochGen - Value of the seed for the stochastic equations.
    */
   inline void SetLangevinGen(unsigned long iPoint, unsigned short iDim, std::mt19937 val_stochGen) override { stochGen(iPoint, iDim) = val_stochGen; }
+
+  /*!
+   * \brief Set the integral of the product of three Bessel functions appearing in Laplacian smoothing.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_integral - Value of the integral.
+   */
+  inline void SetBesselIntegral(unsigned long iPoint, su2double val_integral) override { besselIntegral(iPoint) = val_integral; }
+
+  /*!
+   * \brief Get the the integral of the product of three Bessel functions appearing in Laplacian smoothing.
+   * \return Value of the integral.
+   */
+  inline su2double GetBesselIntegral(unsigned long iPoint) const override { return besselIntegral(iPoint); }
 
 };

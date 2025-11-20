@@ -1678,13 +1678,14 @@ void CTurbSASolver::SetLangevinGen(CConfig* config, CGeometry* geometry) {
 void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geometry) {
 
   const su2double LES_FilterWidth = config->GetLES_FilterWidth();
-  const su2double pi = 4.0*atan(1.0);
   const su2double cDelta = config->GetSBS_Cdelta();
   const unsigned short maxIter = config->GetSBS_maxIterSmooth();
   const unsigned long global_nPointDomain = geometry->GetGlobal_nPointDomain();
   const su2double tol = -5.0;
   const su2double sourceLim = 5.0;
   const su2double omega = 0.8;
+  unsigned long timeIter = config->GetTimeIter();
+  unsigned long restartIter = config->GetRestart_Iter();
 
   /*--- Set the stochastic source terms to zero at boundaries. ---*/
 
@@ -1788,17 +1789,85 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
         
         /*--- Scale source terms for variance preservation. ---*/
 
+        su2double var_check_old = 0.0;
+        su2double mean_check_old = 0.0;
+        su2double var_check_new = 0.0;
+        su2double mean_check_new = 0.0;
+        su2double var_check_notSmoothed = 0.0;
+        su2double mean_check_notSmoothed = 0.0;
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
           su2double source = nodes->GetLangevinSourceTerms(iPoint, iDim);
+          su2double source_notSmoothed = nodes->GetLangevinSourceTermsOld(iPoint, iDim);
+          mean_check_old += source;
+          var_check_old += source * source;
+          mean_check_notSmoothed += source_notSmoothed;
+          var_check_notSmoothed += source_notSmoothed * source_notSmoothed;
           su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
           if (LES_FilterWidth > 0.0) maxDelta = LES_FilterWidth;
           su2double b = sqrt(cDelta) * maxDelta;
-          su2double b3 = b * b * b;
-          su2double volume = geometry->nodes->GetVolume(iPoint);
-          su2double scaleFactor = sqrt(8.0 * pi * b3 / volume);
+          su2double b2 = b * b;
+          auto coord_i = geometry->nodes->GetCoord(iPoint);
+          su2double max_dx = 0.0;
+          su2double max_dy = 0.0;
+          su2double max_dz = 0.0;
+          unsigned short nNeigh = geometry->nodes->GetnPoint(iPoint);
+          for (unsigned short iNode = 0; iNode < nNeigh; iNode++) {
+            auto jPoint = geometry->nodes->GetPoint(iPoint, iNode);
+            auto coord_j = geometry->nodes->GetCoord(jPoint);
+            su2double dx = fabs(coord_i[0]-coord_j[0]);
+            su2double dy = fabs(coord_i[1]-coord_j[1]);
+            su2double dz = 0.0;
+            if (nDim == 3) dz = fabs(coord_i[2]-coord_j[2]);
+            if (dx > max_dx) max_dx = dx;
+            if (dy > max_dy) max_dy = dy;
+            if (dz > max_dz) max_dz = dz;
+          }
+          su2double dx2 = max_dx * max_dx;
+          su2double dy2 = max_dy * max_dy;
+          su2double dz2 = max_dz * max_dz;
+          su2double bx = b2 / dx2;
+          su2double by = b2 / dy2;
+          su2double bz = 0.0;
+          if (nDim == 3) bz = b2 / dz2;
+          su2double integral = 0.0;
+          if (timeIter==restartIter) {
+            integral = RandomToolbox::GetBesselIntegral(bx, by, bz);
+            nodes->SetBesselIntegral(iPoint, integral);
+          } else {
+            integral = nodes->GetBesselIntegral(iPoint);
+          }
+          su2double scaleFactor = 1.0 / sqrt(max(integral, 1e-10));
           source *= scaleFactor;
+          mean_check_new += source;
+          var_check_new += source * source;
           source = min(max(source, -sourceLim), sourceLim);
           nodes->SetLangevinSourceTerms(iPoint, iDim, source);
+        }
+        su2double mean_check_old_G = 0.0;
+        su2double mean_check_new_G = 0.0;
+        su2double mean_check_notSmoothed_G = 0.0;
+        su2double var_check_old_G = 0.0;
+        su2double var_check_new_G = 0.0;
+        su2double var_check_notSmoothed_G = 0.0;
+        SU2_MPI::Allreduce(&mean_check_old, &mean_check_old_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&mean_check_new, &mean_check_new_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&mean_check_notSmoothed, &mean_check_notSmoothed_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&var_check_old, &var_check_old_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&var_check_new, &var_check_new_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&var_check_notSmoothed, &var_check_notSmoothed_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        mean_check_old_G /= global_nPointDomain;
+        var_check_old_G /= global_nPointDomain;
+        var_check_old_G -= mean_check_old_G * mean_check_old_G;
+        mean_check_new_G /= global_nPointDomain;
+        var_check_new_G /= global_nPointDomain;
+        var_check_new_G -= mean_check_new_G * mean_check_new_G;
+        mean_check_notSmoothed_G /= global_nPointDomain;
+        var_check_notSmoothed_G /= global_nPointDomain;
+        var_check_notSmoothed_G -= mean_check_notSmoothed_G * mean_check_notSmoothed_G;
+        if (rank == MASTER_NODE) {
+          cout << "Mean of stochastic source term before scaling: " << mean_check_old_G <<". After: " << mean_check_new_G << "." << endl;
+          cout << "Variance of stochastic source term before scaling: " << var_check_old_G/var_check_notSmoothed_G <<". After: " << var_check_new_G/var_check_notSmoothed_G << "." << endl;
+          cout << endl;
         }
 
         break;

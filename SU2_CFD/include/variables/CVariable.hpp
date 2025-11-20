@@ -452,6 +452,18 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
+   * \param[in] val_integral - Value of the integral.
+   */
+  inline virtual void SetBesselIntegral(unsigned long iPoint, su2double val_integral) {}
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double GetBesselIntegral(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
    * \param[in] iDim - Dimension index.
    * \param[in] val_stochGen - Pseudo-random number generator for Langevin equations.
    */

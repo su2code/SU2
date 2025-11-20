@@ -62,6 +62,7 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
   stochSource.resize(nPoint, nDim) = su2double(0.0);
   stochSource_old.resize(nPoint, nDim) = su2double(0.0);
   stochGen.resize(nPoint, nDim);
+  besselIntegral.resize(nPoint);
 
 }
 
