@@ -491,7 +491,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
         nodes->SetSolution_Old(iPoint,solution);
         nodes->SetSolution(iPoint,solution);
         LinSysRes.SetBlock_Zero(iPoint);
-        
       } else { // smooth wall
         /*--- Set wall values ---*/
         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);

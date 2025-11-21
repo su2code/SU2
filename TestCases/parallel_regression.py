@@ -408,6 +408,22 @@ def main():
     turb_flatplate_CC_Sarkar.test_vals = [-1.195053, 2.089306, 1.529063, 5.164703, -3.700917, 8.162921]
     test_list.append(turb_flatplate_CC_Sarkar)
 
+    # FLAT PLATE, ROUGHNESS BC KNOPP SST
+    turb_flatplate_sst_roughBCKnopp           = TestCase('turb_sst_flatplate_roughBCKnopp')
+    turb_flatplate_sst_roughBCKnopp.cfg_dir   = "rans/flatplate/roughness/bc_knopp"
+    turb_flatplate_sst_roughBCKnopp.cfg_file  = "turb_SST_flatplate_roughBCKnopp.cfg"
+    turb_flatplate_sst_roughBCKnopp.test_iter = 10
+    turb_flatplate_sst_roughBCKnopp.test_vals = [10.000000, 0.053020, -3.454853, -0.684543, -0.886080, 2.140376, 1.043068, 4.808919, -0.203494, 0.053645]
+    test_list.append(turb_flatplate_sst_roughBCKnopp)
+
+    # FLAT PLATE, ROUGHNESS BC AUPOIX SST
+    turb_flatplate_sst_roughBCAupoix           = TestCase('turb_sst_flatplate_roughBCAupoix')
+    turb_flatplate_sst_roughBCAupoix.cfg_dir   = "rans/flatplate/roughness/bc_aupoix"
+    turb_flatplate_sst_roughBCAupoix.cfg_file  = "turb_SST_flatplate_roughBCAupoix.cfg"
+    turb_flatplate_sst_roughBCAupoix.test_iter = 10
+    turb_flatplate_sst_roughBCAupoix.test_vals = [10.000000, 0.053252, -3.575414, -0.761810, -0.998912, 2.003238, 0.907276, 4.807309, -0.197354, 0.051349]
+    test_list.append(turb_flatplate_sst_roughBCAupoix)
+
     # ONERA M6 Wing
     turb_oneram6           = TestCase('turb_oneram6')
     turb_oneram6.cfg_dir   = "rans/oneram6"
