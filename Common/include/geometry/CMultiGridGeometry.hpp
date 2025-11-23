@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CGeometry.hpp"
+class CMultiGridQueue;
 
 /*!
  * \class CMultiGridGeometry
@@ -65,6 +66,17 @@ class CMultiGridGeometry final : public CGeometry {
    */
   void SetSuitableNeighbors(vector<unsigned long>& Suitable_Indirect_Neighbors, unsigned long iPoint,
                             unsigned long Index_CoarseCV, const CGeometry* fine_grid) const;
+
+  /*!
+   * \brief Agglomerate high-aspect ratio interior cells along implicit lines starting from wall vertices.
+   * \param[in,out] Index_CoarseCV - Reference to the current coarse control volume index that will be
+   *                                  incremented as new coarse CVs are created.
+   * \param[in] fine_grid - Geometrical definition of the problem (fine grid).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in,out] MGQueue_InnerCV - Queue used for STEP 2; agglomerated points will be removed from it.
+   */
+  void AgglomerateImplicitLines(unsigned long &Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
+                                CMultiGridQueue &MGQueue_InnerCV);
 
   /*!
    * \brief Compute surface straightness for multigrid geometry.

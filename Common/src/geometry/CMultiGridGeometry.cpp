@@ -29,6 +29,11 @@
 #include "../../include/geometry/CMultiGridQueue.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include <cmath>
+#include <unordered_map>
+#include <climits>
+#include <iostream>
+#include <cstdlib>
 
 
 /*--- Nijso says: this could perhaps be replaced by metis partitioning? ---*/
@@ -302,6 +307,14 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       MGQueue_InnerCV.MoveCV(iPoint, priority);
     }
   }
+
+  /*--- Agglomerate high-aspect-ratio interior nodes along implicit lines from walls. ---*/
+  if (config->GetMG_Implicit_Lines()) {
+    AgglomerateImplicitLines(Index_CoarseCV, fine_grid, config, MGQueue_InnerCV);
+  }
+
+
+
 
   /*--- STEP 2: Agglomerate the domain points. ---*/
   //cout << "*********** STEP 2 ***" << endl;
@@ -898,6 +911,293 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_In
   // sort(Suitable_Indirect_Neighbors.begin(), Suitable_Indirect_Neighbors.end());
   // auto it2 = unique(Suitable_Indirect_Neighbors.begin(), Suitable_Indirect_Neighbors.end());
   // Suitable_Indirect_Neighbors.resize(it2 - Suitable_Indirect_Neighbors.begin());
+}
+
+
+void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long &Index_CoarseCV, const CGeometry* fine_grid,
+                                                 const CConfig* config, CMultiGridQueue &MGQueue_InnerCV) {
+  /*--- Parameters ---*/
+  const su2double angle_threshold_deg = 20.0; /* stop line if direction deviates more than this */
+  const su2double pi = acos(-1.0);
+  const su2double cos_threshold = cos(angle_threshold_deg * pi / 180.0);
+  const unsigned long max_line_length = 12; /* maximum number of nodes on implicit line (including wall) */
+
+  const unsigned long nPoint = fine_grid->GetnPoint();
+  vector<char> reserved(nPoint, 0);
+  const bool debug = (std::getenv("SU2_MG_IMPLICIT_DEBUG") != nullptr);
+  if (debug) std::cout << "[MG_IMPLICIT] Starting AgglomerateImplicitLines: nPoint=" << nPoint
+                        << " angle_thresh=" << angle_threshold_deg << " max_line_length=" << max_line_length << std::endl;
+
+  /*--- Collect implicit lines starting at wall vertices ---*/
+  vector<vector<unsigned long>> lines;           // each line: [W, n1, n2, ...]
+  vector<unsigned long> wall_nodes;              // wall node for each line (index into lines)
+  for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    /* skip non-wall markers (keep same condition as FindNormal_Neighbor) */
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE ||
+        config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY ||
+        config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
+      continue;
+    cout << "We are on marker with name " << config->GetMarker_CfgFile_TagBound(iMarker)  << " and kind "
+         << config->GetMarker_All_KindBC(iMarker) << endl;
+
+    for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
+      const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
+      cout << "node number " << iPoint << endl;
+      ///* skip already agglomerated or non-domain points */
+      //if (fine_grid->nodes->GetAgglomerate(iPoint) || !fine_grid->nodes->GetDomain(iPoint)) continue;
+
+      /* get normal at the vertex; if not available skip */
+      const long ChildVertex = fine_grid->nodes->GetVertex(iPoint, iMarker);
+      if (ChildVertex == -1) continue;
+      su2double Normal[MAXNDIM] = {0.0};
+      fine_grid->vertex[iMarker][ChildVertex]->GetNormal(Normal);
+
+      /* start building the implicit line */
+      vector<unsigned long> L;
+      L.push_back(iPoint);
+
+      /* prev direction: use vertex normal (assumed inward) */
+      vector<su2double> prev_dir(nDim, 0.0);
+      for (unsigned i = 0; i < nDim; ++i) prev_dir[i] = Normal[i];
+      su2double norm_prev = GeometryToolbox::Norm(nDim, prev_dir.data());
+      if (norm_prev == 0.0) continue;
+      for (unsigned i = 0; i < nDim; ++i) prev_dir[i] /= norm_prev;
+
+      unsigned long current = iPoint;
+      while (L.size() < max_line_length) {
+        /* find best interior neighbor aligned with prev_dir */
+        su2double best_dot = -2.0;
+        unsigned long best_neighbor = ULONG_MAX;
+        for (auto jPoint : fine_grid->nodes->GetPoints(current)) {
+          if (jPoint == current) continue;
+            if (fine_grid->nodes->GetAgglomerate(jPoint)) {
+              if (debug) {
+                const auto parent = fine_grid->nodes->GetParent_CV(jPoint);
+                unsigned short nchild = 0;
+                if (parent != ULONG_MAX) nchild = nodes->GetnChildren_CV(parent);
+                std::cout << "[MG_IMPLICIT] Neighbor " << jPoint << " already agglomerated; parent=" << parent
+                          << " nChildren=" << nchild << " children: ";
+                if (parent != ULONG_MAX) {
+                  for (unsigned short ci = 0; ci < nchild; ++ci) {
+                    std::cout << nodes->GetChildren_CV(parent, ci) << " ";
+                  }
+                }
+                std::cout << std::endl;
+
+                /*--- If parent has exactly two children, try to identify wall child and other child ---*/
+                if (parent != ULONG_MAX && nchild == 2) {
+                  unsigned long wall_child = ULONG_MAX;
+                  unsigned long other_child = ULONG_MAX;
+                  for (unsigned short ci = 0; ci < nchild; ++ci) {
+                    const auto ch = nodes->GetChildren_CV(parent, ci);
+                    if (fine_grid->nodes->GetBoundary(ch)) wall_child = ch;
+                    else other_child = ch;
+                  }
+                  if (wall_child != ULONG_MAX && other_child != ULONG_MAX) {
+                    std::cout << "[MG_IMPLICIT] node " << wall_child << " was agglomerated with node " << other_child
+                              << ", node " << wall_child << " has " << nchild << " children" << std::endl;
+                  } else {
+                    std::cout << "[MG_IMPLICIT] parent " << parent << " children do not match expected (wall + child)" << std::endl;
+                  }
+                }
+              }
+            }
+            else {
+              cout << "neighbor " << jPoint << " not agglomerated!!!!!!!!!!!!!!!!!!!" << endl;
+            }
+          if (!fine_grid->nodes->GetDomain(jPoint)) continue;
+          if (fine_grid->nodes->GetBoundary(jPoint)) continue; /* avoid boundary nodes */
+
+          /* compute direction */
+          su2double vec[MAXNDIM] = {0.0};
+          su2double len = 0.0;
+          for (auto d = 0u; d < nDim; ++d) {
+            vec[d] = fine_grid->nodes->GetCoord(jPoint, d) - fine_grid->nodes->GetCoord(current, d);
+            len += vec[d] * vec[d];
+          }
+          if (len <= 0.0) continue;
+          len = sqrt(len);
+          for (auto d = 0u; d < nDim; ++d) vec[d] /= len;
+
+          /* alignment with prev_dir */
+          su2double dot = 0.0;
+          for (auto d = 0u; d < nDim; ++d) dot += vec[d] * prev_dir[d];
+          if (dot > best_dot) {
+            best_dot = dot;
+            best_neighbor = jPoint;
+          }
+        }
+
+        if (best_neighbor == ULONG_MAX) break;
+        if (best_dot < cos_threshold) break; /* deviation too large */
+
+        /* append neighbor */
+        L.push_back(best_neighbor);
+
+        /* update prev_dir */
+        su2double dir_new[MAXNDIM] = {0.0};
+        su2double len_new = 0.0;
+        for (auto d = 0u; d < nDim; ++d) {
+          dir_new[d] = fine_grid->nodes->GetCoord(best_neighbor, d) - fine_grid->nodes->GetCoord(current, d);
+          len_new += dir_new[d] * dir_new[d];
+        }
+        if (len_new <= 0.0) break;
+        len_new = sqrt(len_new);
+        for (auto d = 0u; d < nDim; ++d) prev_dir[d] = dir_new[d] / len_new;
+
+        current = best_neighbor;
+      }
+
+      /* accept line only if it contains at least two interior nodes (i.e., length >= 3 incl. wall) */
+      if (L.size() >= 3) {
+        if (debug) {
+          std::cout << "[MG_IMPLICIT] Found implicit line starting at wall " << iPoint << " : ";
+          for (auto pid : L) {
+            std::cout << pid << " ";
+          }
+          std::cout << " (len=" << L.size() << ")\n";
+        }
+        lines.push_back(L);
+        wall_nodes.push_back(iPoint);
+      }
+    }
+  }
+
+  if (lines.empty()) return;
+
+  /*--- Advancing-front greedy pairing with cross-line merging:
+       For each pair position (first+second, then third+fourth...), attempt to
+       merge pairs across lines when their wall seeds share the same parent.
+       If no neighbor-line match exists, create a 2-child coarse CV for the pair. ---*/
+  unsigned pair_idx = 0;
+  bool done_stage = false;
+  while (!done_stage) {
+    done_stage = true;
+
+    // map wall parent -> list of line indices that start with a wall node having that parent
+    unordered_map<unsigned long, vector<unsigned long>> parent_to_lines;
+    parent_to_lines.reserve(lines.size() * 2);
+    for (unsigned long li = 0; li < lines.size(); ++li) {
+      const auto &L = lines[li];
+      if (L.empty()) continue;
+      const auto W = L[0];
+      const auto pW = fine_grid->nodes->GetParent_CV(W);
+      parent_to_lines[pW].push_back(li);
+    }
+
+    // track which lines had a pair processed this stage
+    vector<char> line_processed(lines.size(), 0);
+
+    // First, attempt cross-line merges for parents that have >1 wall-line
+    for (auto &entry : parent_to_lines) {
+      const auto &line_ids = entry.second;
+      if (line_ids.size() < 2) continue;
+
+      // pair up lines in consecutive order (0 with 1, 2 with 3, ...)
+      for (size_t k = 0; k + 1 < line_ids.size(); k += 2) {
+        const auto li1 = line_ids[k];
+        const auto li2 = line_ids[k + 1];
+        if (line_processed[li1] || line_processed[li2]) continue;
+
+        const auto &L1 = lines[li1];
+        const auto &L2 = lines[li2];
+        const auto idx1 = 1 + 2 * pair_idx;
+        const auto idx2 = idx1 + 1;
+        if (L1.size() <= idx2 || L2.size() <= idx2) continue; // both must have the pair at this stage
+
+        const auto a = L1[idx1];
+        const auto b = L1[idx2];
+        const auto c = L2[idx1];
+        const auto d = L2[idx2];
+
+        // skip if any already agglomerated or reserved
+        if (fine_grid->nodes->GetAgglomerate(a) || fine_grid->nodes->GetAgglomerate(b) ||
+            fine_grid->nodes->GetAgglomerate(c) || fine_grid->nodes->GetAgglomerate(d))
+          continue;
+        if (reserved[a] || reserved[b] || reserved[c] || reserved[d]) continue;
+
+        // geometrical checks for all
+        if (!GeometricalCheck(a, fine_grid, config) || !GeometricalCheck(b, fine_grid, config) ||
+            !GeometricalCheck(c, fine_grid, config) || !GeometricalCheck(d, fine_grid, config))
+          continue;
+
+        // create a new coarse control volume merging {a,b,c,d}
+        if (debug) {
+          std::cout << "[MG_IMPLICIT] Stage " << pair_idx <<
+                       ": CROSS-LINE merge creating coarse CV " << Index_CoarseCV << " from points ";
+          std::cout << a << "," << b << "," << c << "," << d << std::endl;
+        }
+        fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 0, a);
+        fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 1, b);
+        fine_grid->nodes->SetParent_CV(c, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 2, c);
+        fine_grid->nodes->SetParent_CV(d, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 3, d);
+        nodes->SetnChildren_CV(Index_CoarseCV, 4);
+
+        reserved[a] = reserved[b] = reserved[c] = reserved[d] = 1;
+        MGQueue_InnerCV.RemoveCV(a);
+        MGQueue_InnerCV.RemoveCV(b);
+        MGQueue_InnerCV.RemoveCV(c);
+        MGQueue_InnerCV.RemoveCV(d);
+
+        Index_CoarseCV++;
+        line_processed[li1] = line_processed[li2] = 1;
+        done_stage = false;
+      }
+    }
+
+    // Second, for remaining lines, create 2-child coarse CVs for that stage
+    for (unsigned long li = 0; li < lines.size(); ++li) {
+      if (line_processed[li]) continue;
+      const auto &L = lines[li];
+      const auto idx1 = 1 + 2 * pair_idx;
+      const auto idx2 = idx1 + 1;
+      if (L.size() <= idx2) continue; // no pair at this stage
+
+      const auto a = L[idx1];
+      const auto b = L[idx2];
+      if (fine_grid->nodes->GetAgglomerate(a) || fine_grid->nodes->GetAgglomerate(b)) continue;
+      if (reserved[a] || reserved[b]) continue;
+      if (!GeometricalCheck(a, fine_grid, config) || !GeometricalCheck(b, fine_grid, config)) continue;
+
+        if (debug) {
+          std::cout << "[MG_IMPLICIT] Stage " << pair_idx << ": 2-child merge creating coarse CV " << Index_CoarseCV
+                    << " from points " << a << "," << b << std::endl;
+        }
+
+      // create 2-child coarse CV
+      fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
+      nodes->SetChildren_CV(Index_CoarseCV, 0, a);
+      fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
+      nodes->SetChildren_CV(Index_CoarseCV, 1, b);
+      nodes->SetnChildren_CV(Index_CoarseCV, 2);
+
+      reserved[a] = reserved[b] = 1;
+      MGQueue_InnerCV.RemoveCV(a);
+      MGQueue_InnerCV.RemoveCV(b);
+
+      Index_CoarseCV++;
+      done_stage = false;
+    }
+
+    pair_idx++;
+    // stop when no more pairs available at this stage across any line
+    bool any_more = false;
+    for (const auto &L : lines) {
+      if (L.size() > 1 + 2 * pair_idx) {
+        any_more = true;
+        break;
+      }
+    }
+    if (!any_more) break;
+  }
+
+  /* NOTE: cross-line / neighbor-line merging (when wall nodes were agglomerated together)
+     is not implemented here yet. This function implements the advancing-front greedy
+     pairing along implicit lines as a first pass. */
 }
 
 void CMultiGridGeometry::SetPoint_Connectivity(const CGeometry* fine_grid) {
