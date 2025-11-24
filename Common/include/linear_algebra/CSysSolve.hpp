@@ -348,21 +348,6 @@ class CSysSolve {
   unsigned long BCGSTAB_LinSolver(const VectorType& b, VectorType& x, const ProductType& mat_vec,
                                   const PrecondType& precond, ScalarType tol, unsigned long m, ScalarType& residual,
                                   bool monitoring, const CConfig* config) const;
-  /*!
-   * \brief The nested FGMRES and BCGSTAB solver
-   * \param[in] b - the right hand size vector
-   * \param[in,out] x - on entry the intial guess, on exit the solution
-   * \param[in] mat_vec - object that defines matrix-vector product
-   * \param[in] precond - object that defines preconditioner
-   * \param[in] tol - tolerance with which to solve the system
-   * \param[in] m - maximum size of the search subspace
-   * \param[out] residual - final normalized residual
-   * \param[in] monitoring - turn on priting residuals from solver to screen.
-   * \param[in] config - Definition of the particular problem.
-   */
-  unsigned long FGMRESandBCGSTAB2_LinSolver(const VectorType& b, VectorType& x, const ProductType& mat_vec,
-                                            const PrecondType& precond, ScalarType tol, unsigned long m,
-                                            ScalarType& residual, bool monitoring, const CConfig* config) const;
 
   /*!
    * \brief Generic smoother (modified Richardson iteration with preconditioner)

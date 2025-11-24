@@ -2354,7 +2354,6 @@ enum ENUM_LINEAR_SOLVER {
   CONJUGATE_GRADIENT,   /*!< \brief Preconditionated conjugate gradient method for grid deformation. */
   FGMRES,               /*!< \brief Flexible Generalized Minimal Residual method. */
   BCGSTAB,              /*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
-  FGMRESandBCGSTAB2,    /*!< \brief FGMRESandBCGSTAB (main solver). */
   RESTARTED_FGMRES,     /*!< \brief Flexible Generalized Minimal Residual method with restart. */
   SMOOTHER,             /*!< \brief Iterative smoother. */
   PASTIX_LDLT,          /*!< \brief PaStiX LDLT (complete) factorization. */
@@ -2363,7 +2362,6 @@ enum ENUM_LINEAR_SOLVER {
 static const MapType<std::string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
   MakePair("CONJUGATE_GRADIENT", CONJUGATE_GRADIENT)
   MakePair("BCGSTAB", BCGSTAB)
-  MakePair("FGMRESandBCGSTAB2", FGMRESandBCGSTAB2)
   MakePair("FGMRES", FGMRES)
   MakePair("RESTARTED_FGMRES", RESTARTED_FGMRES)
   MakePair("SMOOTHER", SMOOTHER)
