@@ -3772,7 +3772,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
       bool admissibleColoring = false; /* keep track wether the last tested coloring is admissible */
 
       while (true) {
-        edgeColoring = colorSparsePattern(pattern, nextEdgeColorGroupSize, balanceColors);
+        edgeColoring = colorSparsePattern(pattern, nextEdgeColorGroupSize, false, balanceColors);
 
         /*--- If the coloring fails, reduce the color group size. ---*/
         if (edgeColoring.empty()) {
@@ -3809,12 +3809,12 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
 
       /*--- If the last tested coloring was not admissible, recompute the final coloring. ---*/
       if (!admissibleColoring) {
-        edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
+        edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, false, balanceColors);
       }
     }
     /*--- No adaptivity. ---*/
     else {
-      edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
+      edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, false, balanceColors);
     }
 
     /*--- If the coloring fails use the natural coloring. This is a
@@ -3867,7 +3867,7 @@ const CCompressedSparsePatternUL& CGeometry::GetElementColoring(su2double* effic
 
     /*--- Color the elements. ---*/
     constexpr bool balanceColors = true;
-    elemColoring = colorSparsePattern(pattern, elemColorGroupSize, balanceColors);
+    elemColoring = colorSparsePattern(pattern, elemColorGroupSize, false, balanceColors);
 
     /*--- Same as for the edge coloring. ---*/
     if (elemColoring.empty()) SetNaturalElementColoring();
@@ -3896,7 +3896,7 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
     /*--- Color the coarse points. ---*/
     vector<tColor> color;
     const auto& adjacency = geometry[iMesh]->nodes->GetPoints();
-    if (colorSparsePattern<tColor, nColor>(adjacency, 1, false, &color).empty()) continue;
+    if (colorSparsePattern<tColor, nColor>(adjacency, 1, true, false, &color).empty()) continue;
 
     /*--- Propagate colors to fine mesh. ---*/
     for (auto step = 0u; step < iMesh; ++step) {
@@ -4044,8 +4044,8 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
     }
   }
 
-  const auto coloring =
-      colorSparsePattern<uint8_t, std::numeric_limits<uint8_t>::max()>(CCompressedSparsePatternUL(adjacency), 1, true);
+  const auto coloring = colorSparsePattern<uint8_t, std::numeric_limits<uint8_t>::max()>(
+      CCompressedSparsePatternUL(adjacency), 1, false, true);
   const auto nColors = coloring.getOuterSize();
 
   /*--- Sort linelets by color. ---*/
