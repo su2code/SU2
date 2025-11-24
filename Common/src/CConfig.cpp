@@ -1966,6 +1966,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES", MG_Implicit_Lines, false);
 
+  /*!\brief MG_IMPLICIT_DEBUG\n DESCRIPTION: Enable debug output for implicit-lines agglomeration. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_IMPLICIT_DEBUG", MG_Implicit_Debug, false);
+
   /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for MG correction smoothing. DEFAULT: 1.25 \ingroup Config*/
   addDoubleOption("MG_SMOOTH_COEFF", MG_Smooth_Coeff, 1.25);
 

@@ -500,6 +500,7 @@ private:
   su2double MG_Smooth_Res_Threshold; /*!< \brief Residual reduction threshold for early exit. */
   bool MG_Smooth_Output; /*!< \brief Output per-iteration multigrid smoothing info. */
   bool MG_Implicit_Lines; /*!< \\brief Enable implicit-lines agglomeration from walls. */
+  bool MG_Implicit_Debug; /*!< \brief Enable debug output for implicit-lines agglomeration. */
   su2double MG_Smooth_Coeff; /*!< \brief Smoothing coefficient for multigrid correction smoothing. */
   su2double *LocationStations;        /*!< \brief Airfoil sections in wing slicing subroutine. */
 
@@ -3865,6 +3866,12 @@ public:
    * \return True if implicit-lines agglomeration is enabled.
    */
   bool GetMG_Implicit_Lines() const { return MG_Implicit_Lines; }
+
+  /*!\
+   * \brief Get whether implicit-lines debug output is enabled.
+   * \return True if implicit-lines debug output is enabled.
+   */
+  bool GetMG_Implicit_Debug() const { return MG_Implicit_Debug; }
 
   /*!
    * \brief Get the smoothing coefficient for MG correction smoothing.

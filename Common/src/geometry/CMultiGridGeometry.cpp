@@ -654,21 +654,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
-  // print out all point connections
-  // for (auto iPoint = 0ul; iPoint < fine_grid->GetnPoint(); iPoint++) {
-  //   cout << iPoint << ", parent=" << fine_grid->nodes->GetParent_CV(iPoint) << endl;
-  // }
-
-  // // loop over coarse points
-  // for (auto iCoarsePoint = 0ul; iCoarsePoint < Index_CoarseCV; iCoarsePoint++) {
-  //     cout << iCoarsePoint << endl;
-  //   // print all fine-point children of the coarse point
-  //   for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
-  //     //const auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
-  //     cout << "     " <<nodes->GetChildren_CV(iCoarsePoint, iChildren) << endl;
-  //   }
-  // }
-
 
   edgeColorGroupSize = config->GetEdgeColoringGroupSize();
 }
@@ -924,7 +909,7 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long &Index_CoarseCV,
 
   const unsigned long nPoint = fine_grid->GetnPoint();
   vector<char> reserved(nPoint, 0);
-  const bool debug = (std::getenv("SU2_MG_IMPLICIT_DEBUG") != nullptr);
+  const bool debug = config->GetMG_Implicit_Debug();
   if (debug) std::cout << "[MG_IMPLICIT] Starting AgglomerateImplicitLines: nPoint=" << nPoint
                         << " angle_thresh=" << angle_threshold_deg << " max_line_length=" << max_line_length << std::endl;
 
