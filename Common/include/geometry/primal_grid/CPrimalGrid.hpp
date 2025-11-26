@@ -28,11 +28,11 @@
 
 #pragma once
 
+#include <cstdint>
 #include <iostream>
 #include <vector>
 #include <limits>
 #include <cstdlib>
-#include <limits>
 #include <memory>
 
 #include "../../option_structure.hpp"
