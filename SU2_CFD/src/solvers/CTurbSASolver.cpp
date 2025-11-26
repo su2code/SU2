@@ -1865,8 +1865,8 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
         var_check_notSmoothed_G /= global_nPointDomain;
         var_check_notSmoothed_G -= mean_check_notSmoothed_G * mean_check_notSmoothed_G;
         if (rank == MASTER_NODE) {
-          cout << "Mean of stochastic source term before scaling: " << mean_check_old_G <<". After: " << mean_check_new_G << "." << endl;
-          cout << "Variance of stochastic source term before scaling: " << var_check_old_G/var_check_notSmoothed_G <<". After: " << var_check_new_G/var_check_notSmoothed_G << "." << endl;
+          cout << "Mean of stochastic source term before scaling: " << mean_check_old_G <<". After scaling: " << mean_check_new_G << "." << endl;
+          cout << "Variance of stochastic source term before scaling: " << var_check_old_G/var_check_notSmoothed_G <<". After scaling: " << var_check_new_G/var_check_notSmoothed_G << "." << endl;
           cout << endl;
         }
 

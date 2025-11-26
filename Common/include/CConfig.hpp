@@ -1095,6 +1095,7 @@ private:
   su2double SBS_Cmag;                  /*!< \brief Stochastic Backscatter Model intensity coefficient. */
   bool enforceLES;                     /*!< \brief Option to enforce LES mode in hybrid RANS-LES simulations. */
   su2double LES_FilterWidth;           /*!< \brief LES filter width for hybrid RANS-LES simulations. */
+  bool LD2_Scheme;                     /*!< \brief Use the LD2 scheme (incompressible flows, combined with JST discretization). */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
@@ -9542,6 +9543,12 @@ public:
    * \return Value of LES Filter Width.
    */
   su2double GetLES_FilterWidth(void) const { return LES_FilterWidth; }
+
+  /*!
+   * \brief Get if the LD2 scheme must be employed (incompressible flows, combined with JST discretization).
+   * \return TRUE if LD2 scheme is enabled.
+   */
+  bool GetLD2_Scheme(void) const { return LD2_Scheme; }
 
   /*!
    * \brief Get the Kind of Roe Low Dissipation Scheme for Unsteady flows.

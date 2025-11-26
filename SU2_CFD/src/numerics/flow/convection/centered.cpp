@@ -312,6 +312,8 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0;
+  bool LD2_Scheme = config->GetLD2_Scheme();
+  const su2double alpha_LD2 = 0.36;
 
   /*--- Primitive variables at point i and j ---*/
 
@@ -327,6 +329,31 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim]    = V_i[iDim+1];
     Velocity_j[iDim]    = V_j[iDim+1];
+  }
+
+  if (LD2_Scheme) {
+    su2double d_ij[3] = {0.0};
+    for (iDim = 0; iDim < nDim; iDim++)
+      d_ij[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    su2double velGrad_i[3][3] = {{0.0}};
+    su2double velGrad_j[3][3] = {{0.0}};
+    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        velGrad_i[iDim][jDim] = PrimVar_Grad_i[iDim+1][jDim];
+        velGrad_j[iDim][jDim] = PrimVar_Grad_j[iDim+1][jDim];
+      }
+    }
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Velocity_i[iDim] += alpha_LD2 * (velGrad_i[iDim][0] * d_ij[0] +
+                                       velGrad_i[iDim][1] * d_ij[1] +
+                                       velGrad_i[iDim][2] * d_ij[2]);
+      Velocity_j[iDim] -= alpha_LD2 * (velGrad_j[iDim][0] * d_ij[0] +
+                                       velGrad_j[iDim][1] * d_ij[1] +
+                                       velGrad_j[iDim][2] * d_ij[2]);
+    }
+  }
+
+  for (iDim = 0; iDim < nDim; iDim++) {
     MeanVelocity[iDim]  =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
     sq_vel_i           += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
     sq_vel_j           += 0.5*Velocity_j[iDim]*Velocity_j[iDim];

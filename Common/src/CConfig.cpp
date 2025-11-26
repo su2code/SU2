@@ -2945,6 +2945,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Filter width for LES (if negative, it is computed based on the local cell size) */
   addDoubleOption("LES_FILTER_WIDTH", LES_FilterWidth, -1.0);
 
+  /* DESCRIPTION: Specify if the LD2 scheme must be employed (incompressible flows, combined with JST discretization). */
+  addBoolOption("LD2_OPTION", LD2_Scheme, false);
+
   /* DESCRIPTION: Roe with low dissipation for unsteady flows */
   addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
 
@@ -7079,7 +7082,17 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           cout << "First order integration." << endl;
         }
         else {
-          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms.\n";
+          if (LD2_Scheme) {
+            cout << "Low-Dissipation Low-Dispersion (LD2) scheme for the flow inviscid terms." << endl;
+            if (!(Kind_Solver==MAIN_SOLVER::INC_EULER || Kind_Solver==MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver==MAIN_SOLVER::INC_RANS))
+              SU2_MPI::Error("LD2 option available for incompressible flow simulations only.", CURRENT_FUNCTION);
+            if (Kind_FluidModel != CONSTANT_DENSITY)
+              SU2_MPI::Error("LD2 option available for constant density flow simulations only.", CURRENT_FUNCTION);
+            if (Energy_Equation)
+              cout << "WARNING: LD2 option not compatible with the energy equation. JST discretization in energy equation employed." << endl;
+          } else {
+            cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms.\n";
+          }
           cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << ".\n";
           cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
         }

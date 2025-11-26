@@ -1125,6 +1125,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   const bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool jst_scheme  = ((config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0));
   const bool bounded_scalar = config->GetBounded_Scalar();
+  const bool LD2_Scheme = config->GetLD2_Scheme();
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1160,6 +1161,11 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     if (jst_scheme) {
       numerics->SetUndivided_Laplacian(nodes->GetUndivided_Laplacian(iPoint), nodes->GetUndivided_Laplacian(jPoint));
       numerics->SetSensor(nodes->GetSensor(iPoint), nodes->GetSensor(jPoint));
+    }
+
+    if (LD2_Scheme) {
+      numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(jPoint));
+      numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
     }
 
     /*--- Grid movement ---*/
