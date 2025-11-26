@@ -49,7 +49,7 @@ class CPrimalGrid {
   unsigned long GlobalIndex_DomainElement;
 
   std::unique_ptr<unsigned long[]> Nodes;    /*!< \brief Global node indices of the element. */
-  std::unique_ptr<long[]> Neighbor_Elements; /*!< \brief Vector to store the elements surronding this element. */
+  std::unique_ptr<long[]> Neighbor_Elements; /*!< \brief Vector to store the elements surrounding this element. */
 
   su2double Coord_CG[3] = {0.0}; /*!< \brief Coordinates of the center-of-gravity of the element. */
   su2double Volume;              /*!< \brief Volume of the element. */
