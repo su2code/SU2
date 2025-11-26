@@ -64,7 +64,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
   /*--- Loop over interface markers. ---*/
 
-  for (auto iMarkerInt = 0u; iMarkerInt < donor_config->GetMarker_n_ZoneInterface()/2; iMarkerInt++) {
+  for (auto iMarkerInt = 0u; iMarkerInt < donor_config->GetnMarker_MixingPlaneInterface()/2; iMarkerInt++) {
 
     /*--- Find the markers containing the interface ---*/
     short markDonor = donor_config->FindMixingPlaneInterfaceMarker(donor_geometry->GetnMarker());
@@ -126,7 +126,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
       InitializeTarget_Variable(target_solution, markTarget, iTargetSpan, nSpanDonor);
 
-      if ((iTargetSpan == 0) || (iTargetSpan < nTargetSpan - 3)) {
+      if ((iTargetSpan == 0) || (iTargetSpan > nTargetSpan - 3)) {
         /*--- Transfer values at hub, shroud and 1D values ---*/
         unsigned long donorSpan;
         if (iTargetSpan == 0) donorSpan = 0;

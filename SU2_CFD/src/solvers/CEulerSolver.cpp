@@ -453,12 +453,12 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig **config_con
     }
   }
 
-  auto nMarkerMixingPlane = config->GetnMarker_MixingPlaneInterface();
+  auto nMarkerInterface = config->GetnMarker_ZoneInterface();
 
-  MixingState.resize(nMarkerMixingPlane);
-  MixingStateNodes.resize(nMarkerMixingPlane);
+  MixingState.resize(nMarkerInterface);
+  MixingStateNodes.resize(nMarkerInterface);
 
-  for (unsigned long iMarker = 0; iMarker < nMarkerMixingPlane; iMarker++) {
+  for (unsigned long iMarker = 0; iMarker < nMarkerInterface; iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == GILES_BOUNDARY) {
       MixingState[iMarker].resize(nSpanWiseSections+1);
       MixingStateNodes[iMarker].resize(nSpanWiseSections+1);
@@ -9643,3 +9643,7 @@ void CEulerSolver::ComputeTurboBladePerformance(CGeometry* geometry, CConfig* co
     KineticEnergyLoss = BladePerf->GetKineticEnergyLoss();
   }
 }
+
+// void CEulerSolver::RegisterSolutionExtra(bool input, CConfig* config) {
+//   nodes->RegisterGridVelocity();
+// }
