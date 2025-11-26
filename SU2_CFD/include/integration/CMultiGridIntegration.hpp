@@ -68,7 +68,8 @@ private:
   void MultiGrid_Cycle(CGeometry ****geometry, CSolver *****solver_container,
                        CNumerics ******numerics_container, CConfig **config,
                        unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                       unsigned short iZone, unsigned short iInst);
+                       unsigned short iZone, unsigned short iInst,
+                       unsigned short *lastPreSmoothIters);
 
   /*!
    * \brief Compute the forcing term.
@@ -79,7 +80,8 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
-                       CGeometry *geo_coarse, CConfig *config, unsigned short iMesh);
+                       CGeometry *geo_coarse, CConfig *config, unsigned short iMesh,
+                       su2double val_factor = -1.0);
 
   /*!
    * \brief Add the truncation error to the residual.
@@ -154,7 +156,8 @@ private:
   CConfig *config,
   unsigned short iMesh,
   unsigned short iZone,
-  unsigned short iRKLimit);
+  unsigned short iRKLimit,
+  unsigned short *lastPreSmoothIters);
 
   /*!
    * \brief Compute the fine grid correction from the coarse solution.

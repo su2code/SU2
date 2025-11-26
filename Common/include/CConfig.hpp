@@ -6799,6 +6799,9 @@ public:
    */
   su2double GetDamp_Res_Restric(void) const { return Damp_Res_Restric; }
 
+  /*!\n+   * \brief Set the damping factor for the residual restriction.\n+   * \param[in] val New value for the damping factor.\n+   */
+  void SetDamp_Res_Restric(su2double val) { Damp_Res_Restric = val; }
+
   /*!
    * \brief Value of the damping factor for the correction prolongation.
    * \return Value of the damping factor.

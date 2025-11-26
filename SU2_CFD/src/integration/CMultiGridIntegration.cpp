@@ -29,6 +29,13 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
 #include "ComputeLinSysResRMS.hpp"
+#include <algorithm>
+
+// Forward declaration of the adaptive damping helper so it can be used by
+// MultiGrid_Cycle before the helper's definition further down the file.
+static su2double Damp_Restric_Adapt(const unsigned short *lastPreSmoothIters,
+                                   unsigned short lastPreSmoothCount,
+                                   CConfig *config);
 
 
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
@@ -106,8 +113,16 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   /*--- Perform the Full Approximation Scheme multigrid ---*/
 
+  // Allocate per-MG-run storage for the number of pre-smoothing iterations
+  const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
+  unsigned short *lastPreSmoothIters = new unsigned short[nMGLevels + 1];
+  for (unsigned short ii = 0; ii <= nMGLevels; ++ii) lastPreSmoothIters[ii] = 0;
+
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
-                  FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
+                  FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst,
+                  lastPreSmoothIters);
+
+  delete [] lastPreSmoothIters;
 
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
@@ -136,7 +151,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
                                             unsigned short RecursiveParam,
                                             unsigned short RunTime_EqSystem,
                                             unsigned short iZone,
-                                            unsigned short iInst) {
+                                            unsigned short iInst,
+                                            unsigned short *lastPreSmoothIters) {
 
   CConfig* config = config_container[iZone];
 
@@ -157,7 +173,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   // standard multigrid: pre-smoothing
   // start with solution on fine grid h
   // apply nonlinear smoother (e.g. Gauss-Seidel) to system to damp high-frequency errors.
-  PreSmoothing(RunTime_EqSystem, geometry, solver_container, config_container, solver_fine, numerics_fine, geometry_fine, solver_container_fine, config, iMesh, iZone,iRKLimit);
+  PreSmoothing(RunTime_EqSystem, geometry, solver_container, config_container, solver_fine, numerics_fine, geometry_fine, solver_container_fine, config, iMesh, iZone, iRKLimit, lastPreSmoothIters);
 
 
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
@@ -196,7 +212,10 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
 
-    SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
+    // Adapt damping based on recorded pre-smoothing iterations and apply to forcing term
+    cout << "calling damp_restric_Adapt" << endl;
+    su2double adapted_factor = Damp_Restric_Adapt(lastPreSmoothIters, config->GetnMGLevels() + 1, config);
+    SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1, adapted_factor);
 
     /*--- Restore the time integration settings. ---*/
 
@@ -213,7 +232,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
         nextRecurseParam = 0;
 
       MultiGrid_Cycle(geometry, solver_container, numerics_container, config_container,
-                      iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst);
+              iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst, lastPreSmoothIters);
     }
 
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
@@ -242,7 +261,8 @@ CSolver** solver_container_fine,
 CConfig *config,
 unsigned short iMesh,
 unsigned short iZone,
-unsigned short iRKLimit) {
+unsigned short iRKLimit,
+unsigned short *lastPreSmoothIters) {
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
   const unsigned short nPreSmooth = config->GetMG_PreSmooth(iMesh);
   const unsigned long timeIter = config->GetTimeIter();
@@ -261,6 +281,7 @@ unsigned short iRKLimit) {
   }
 
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
+  unsigned short actual_iterations = nPreSmooth;
   for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
     /*--- Time and space integration ---*/
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
@@ -291,10 +312,14 @@ unsigned short iRKLimit) {
         if (output_enabled) {
           cout << "MG Pre-Smoothing Level " << iMesh << " Early exit at iteration " << iPreSmooth + 1 << endl;
         }
+        actual_iterations = iPreSmooth + 1;
         break;
       }
     }
   }
+
+  // Record actual iterations performed for this MG level
+  if (lastPreSmoothIters != nullptr) lastPreSmoothIters[iMesh] = actual_iterations;
 }
 
 
@@ -588,7 +613,8 @@ void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSys
 }
 
 void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
-                                            CGeometry *geo_coarse, CConfig *config, unsigned short iMesh) {
+                                            CGeometry *geo_coarse, CConfig *config, unsigned short iMesh,
+                                            su2double val_factor) {
 
   unsigned long Point_Fine, Point_Coarse, iVertex;
   unsigned short iMarker, iVar, iChildren;
@@ -596,6 +622,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
 
   const unsigned short nVar = sol_coarse->GetnVar();
   su2double factor = config->GetDamp_Res_Restric();
+  if (val_factor > 0.0) factor = val_factor;
 
   auto *Residual = new su2double[nVar];
 
@@ -636,6 +663,122 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   END_SU2_OMP_FOR
 
 }
+
+/*
+ * Damp_Restric_Adapt
+ * ------------------
+ * Compute an adapted restriction damping factor (Damp_Res_Restric) based on the
+ * number of pre-smoothing iterations actually performed on each multigrid level.
+ *
+ * Arguments:
+ *  - lastPreSmoothIters: array of length at least (nMGLevels+1) containing the
+ *    recorded number of pre-smoothing iterations performed at each MG level.
+ *    The convention used here is that index == level (0..nMGLevels).
+ *  - lastPreSmoothCount: length of the array passed in (for safety checks).
+ *  - config: the CConfig pointer used to read current settings (no write performed).
+ *
+ * Returns:
+ *  - the adapted damping factor (may be equal to current factor if no change).
+ *
+ * Notes:
+ *  - This routine performs MPI Allreduce operations to make the adapt decision
+ *    globally consistent across ranks.
+ *  - The function intentionally does NOT write back into CConfig; it returns the
+ *    new factor so the caller can decide how to apply it (e.g., via a setter
+ *    once available or by passing it into the next call).
+ */
+static su2double Damp_Restric_Adapt(const unsigned short *lastPreSmoothIters,
+                                   unsigned short lastPreSmoothCount,
+                                   CConfig *config) {
+  //cout << "starting Damp_Restric_Adapt" << endl;
+  if (config == nullptr) return 0.0;
+
+  const unsigned short nMGLevels = config->GetnMGLevels();
+
+  // Safety: require the provided array to have at least nMGLevels+1 entries
+  if (lastPreSmoothIters == nullptr || lastPreSmoothCount < (nMGLevels + 1)) {
+    // Not enough information to adapt; return current factor unchanged
+    return config->GetDamp_Res_Restric();
+  }
+
+  int local_any_full = 0; // true if any inspected coarse level reached configured max
+  int local_all_one = 1;  // true if all inspected coarse levels performed exactly 1 iter
+  int local_inspected = 0; // number of coarse levels that have recorded a pre-smooth value
+
+  // Inspect all coarse-grid levels (levels 1..nMGLevels). Ignore entries
+  // that are still zero (not yet visited during this MG run).
+  for (unsigned short lvl = 1; lvl <= nMGLevels; ++lvl) {
+    const unsigned short performed = lastPreSmoothIters[lvl];
+    const unsigned short configured = config->GetMG_PreSmooth(lvl);
+    //cout << "  Level " << lvl << ": performed=" << performed
+    //     << " configured=" << configured << endl;
+    if (performed == 0) continue; // skip un-inspected level
+    ++local_inspected;
+    if (performed >= configured) local_any_full = 1;
+    if (performed != 1) local_all_one = 0;
+  }
+  //cout << "local_inspected=" << local_inspected
+  //     << " local_any_full=" << local_any_full
+  //     << " local_all_one=" << local_all_one << endl;
+
+
+    // Debug output: local decision stats
+    //cout << "Damp_Restric_Adapt local: inspected=" << local_inspected
+    //  << " any_full=" << local_any_full << " all_one=" << local_all_one << endl;
+
+    // Make decision globally consistent across MPI ranks
+  int global_any_full = 0;
+  int global_all_one = 0;
+  int global_inspected = 0;
+
+  // Sum inspected counts across ranks; if nobody inspected any levels, skip adaptation
+  SU2_MPI::Allreduce(&local_inspected, &global_inspected, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
+
+  if (global_inspected == 0) {
+    // No ranks have inspected coarse levels yet — do not adapt
+    return config->GetDamp_Res_Restric();
+  }
+
+    SU2_MPI::Allreduce(&local_any_full, &global_any_full, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&local_all_one, &global_all_one, 1, MPI_INT, MPI_MIN, SU2_MPI::GetComm());
+
+    //cout << "Damp_Restric_Adapt global: inspected=" << global_inspected
+    //  << " any_full=" << global_any_full << " all_one=" << global_all_one << endl;
+
+  const su2double current = config->GetDamp_Res_Restric();
+  //cout << "Current Damp_Res_Restric: " << current << endl;
+  su2double new_factor = current;
+
+  const su2double scale_down = 0.95;
+  const su2double scale_up = 1.01;
+  const su2double clamp_min = 0.1;
+  const su2double clamp_max = 0.9;
+
+  if (global_any_full) {
+    new_factor = current * scale_down;
+  } else if (global_all_one) {
+    new_factor = current * scale_up;
+  } else {
+    // no change
+    return current;
+  }
+
+  // Clamp result
+  new_factor = std::min(std::max(new_factor, clamp_min), clamp_max);
+
+  // Optionally log the change on all ranks (config controls verbosity)
+  if (config->GetMG_Smooth_Output()) {
+    cout << "Adaptive Damp_Res_Restric: " << current << " -> " << new_factor << endl;
+  }
+  // Persist the adapted factor into the runtime config so subsequent cycles
+  // observe the updated value. This is safe because the adapt decision was
+  // already made through global MPI reductions, so calling the setter on all
+  // ranks yields the same value everywhere.
+  config->SetDamp_Res_Restric(new_factor);
+  cout << "ending Damp_Restric_Adapt, damping = " <<config->GetDamp_Res_Restric()  << endl;
+  return new_factor;
+}
+
 
 void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solver) {
 
