@@ -213,7 +213,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
 
     // Adapt damping based on recorded pre-smoothing iterations and apply to forcing term
-    cout << "calling damp_restric_Adapt" << endl;
+    //cout << "calling damp_restric_Adapt" << endl;
     su2double adapted_factor = Damp_Restric_Adapt(lastPreSmoothIters, config->GetnMGLevels() + 1, config);
     SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1, adapted_factor);
 
@@ -775,7 +775,7 @@ static su2double Damp_Restric_Adapt(const unsigned short *lastPreSmoothIters,
   // already made through global MPI reductions, so calling the setter on all
   // ranks yields the same value everywhere.
   config->SetDamp_Res_Restric(new_factor);
-  cout << "ending Damp_Restric_Adapt, damping = " <<config->GetDamp_Res_Restric()  << endl;
+  //cout << "ending Damp_Restric_Adapt, damping = " <<config->GetDamp_Res_Restric()  << endl;
   return new_factor;
 }
 

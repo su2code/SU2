@@ -1106,6 +1106,30 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long &Index_CoarseCV,
             !GeometricalCheck(c, fine_grid, config) || !GeometricalCheck(d, fine_grid, config))
           continue;
 
+
+        // Check for duplicate indices — guard against merging the same node twice.
+        if (a == b || a == c || a == d || b == c || b == d || c == d) {
+          if (debug) {
+            std::cout << "[MG_IMPLICIT] Duplicate indices detected in CROSS-LINE merge at stage " << pair_idx
+                      << " lines " << li1 << "," << li2 << " : indices = " << a << "," << b << "," << c
+                      << "," << d << "\n";
+            std::cout << "[MG_IMPLICIT] Parents: " << fine_grid->nodes->GetParent_CV(a) << ","
+                      << fine_grid->nodes->GetParent_CV(b) << "," << fine_grid->nodes->GetParent_CV(c) << ","
+                      << fine_grid->nodes->GetParent_CV(d) << "\n";
+            std::cout << "[MG_IMPLICIT] Reserved flags: " << reserved[a] << "," << reserved[b] << ","
+                      << reserved[c] << "," << reserved[d] << "\n";
+          } else {
+            std::cout << "[MG_IMPLICIT] Duplicate indices detected in CROSS-LINE merge; skipping merge for Index_CoarseCV="
+                      << Index_CoarseCV << "\n";
+          }
+
+          // Stop implicit-line agglomeration for other lines that share this parent
+          // so only one wall-line per parent is processed (prevents later conflicts).
+          for (auto other_li : entry.second) line_processed[other_li] = 1;
+
+          continue;
+        }
+
         // create a new coarse control volume merging {a,b,c,d}
         if (debug) {
           std::cout << "[MG_IMPLICIT] Stage " << pair_idx <<
@@ -1130,6 +1154,8 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long &Index_CoarseCV,
 
         Index_CoarseCV++;
         line_processed[li1] = line_processed[li2] = 1;
+        // mark all other lines sharing this parent as processed (stop their implicit agglomeration)
+        for (auto other_li : line_ids) if (other_li != li1 && other_li != li2) line_processed[other_li] = 1;
         done_stage = false;
       }
     }
