@@ -1969,6 +1969,11 @@ void CConfig::SetConfig_Options() {
   /*!\brief MG_IMPLICIT_DEBUG\n DESCRIPTION: Enable debug output for implicit-lines agglomeration. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_DEBUG", MG_Implicit_Debug, false);
 
+  /*!\brief MG_MIN_MESHSIZE
+   \ DESCRIPTION: Minimum global mesh size (points) to allow another multigrid level. DEFAULT: 1000 \ingroup Config*/
+  addUnsignedLongOption("MG_MIN_MESHSIZE", MG_Min_MeshSize, 1000);
+
+
   /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for MG correction smoothing. DEFAULT: 1.25 \ingroup Config*/
   addDoubleOption("MG_SMOOTH_COEFF", MG_Smooth_Coeff, 1.25);
 

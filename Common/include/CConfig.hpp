@@ -491,6 +491,8 @@ private:
   unsigned short nMG_PreSmooth,       /*!< \brief Number of MG pre-smooth parameters found in config file. */
   nMG_PostSmooth,                     /*!< \brief Number of MG post-smooth parameters found in config file. */
   nMG_CorrecSmooth;                   /*!< \brief Number of MG correct-smooth parameters found in config file. */
+  unsigned long MG_Min_MeshSize;      /*!< \brief Minimum mesh size per coarsest level to allow another MG level. */
+
   short *FFD_Fix_IDir,
   *FFD_Fix_JDir, *FFD_Fix_KDir;       /*!< \brief Exact sections. */
   unsigned short *MG_PreSmooth,       /*!< \brief Multigrid Pre smoothing. */
@@ -3872,6 +3874,13 @@ public:
    * \return True if implicit-lines debug output is enabled.
    */
   bool GetMG_Implicit_Debug() const { return MG_Implicit_Debug; }
+
+  /*!\
+   * \brief Get the minimum mesh size threshold used to compute effective MG levels.
+   * \return Minimum mesh size per coarsest level.
+   */
+  unsigned long GetMG_Min_MeshSize() const { return MG_Min_MeshSize; }
+
 
   /*!
    * \brief Get the smoothing coefficient for MG correction smoothing.
