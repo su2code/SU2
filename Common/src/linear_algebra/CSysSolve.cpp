@@ -278,7 +278,6 @@ void BCGSTABpre_parallel(const CSysVector<ScalarType>& a, CSysVector<ScalarType>
   }
 }
 
-
 template <class ScalarType>
 void CSysSolve<ScalarType>::WriteHeader(const string& solver, ScalarType restol, ScalarType resinit) const {
   cout << "\n# " << solver << " residual history\n";
@@ -531,7 +530,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     if (masterRank) {
       SU2_OMP_MASTER
-        cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+      cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
       END_SU2_OMP_MASTER
     }
     residual = beta;
@@ -566,10 +565,9 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
     if (beta < tol * norm0) break;
 
     if (flexible) {
-
       if (useNestedBiCGSTAB) {
         /*--- Nested mod: W[i] by inner BCGSTAB ---*/
-        Z[i] = ScalarType(0.0);  
+        Z[i] = ScalarType(0.0);
         BCGSTABpre_parallel(W[i], Z[i], mat_vec, precond, config);
 
         /*---  Add to Krylov subspace ---*/
@@ -855,7 +853,6 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   residual = norm_r / norm0;
   return i;
 }
-
 
 template <class ScalarType>
 unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,

@@ -7279,15 +7279,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             case RESTARTED_FGMRES:
               if (Kind_Linear_Solver == BCGSTAB){
                 cout << "BCGSTAB is used for solving the linear system." << endl;
-              }  
+              }
               else {
                     if (GetNested_Linear_Solver()){
                         cout << "Nested FGMRES (FGMRES with inner BiCGSTAB) is used for solving the linear system." << endl;
-                    }    
-                    else { 
+                    }
+                    else {
                        cout << "FGMRES is used for solving the linear system." << endl;
-                    }   
-               }     
+                    }
+               }
               switch (Kind_Linear_Solver_Prec) {
                 case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
                 case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
