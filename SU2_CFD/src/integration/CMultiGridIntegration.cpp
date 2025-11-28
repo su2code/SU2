@@ -747,10 +747,11 @@ static su2double Damp_Restric_Adapt(const unsigned short *lastPreSmoothIters,
   //cout << "Current Damp_Res_Restric: " << current << endl;
   su2double new_factor = current;
 
-  const su2double scale_down = 0.95;
+  const su2double scale_down = 0.99;
   const su2double scale_up = 1.01;
-  const su2double clamp_min = 0.05;
-  const su2double clamp_max = 1.0;
+  const su2double clamp_min = 0.1;
+  // larger than this is bad for stability
+  const su2double clamp_max = 0.95;
 
   if (global_any_full) {
     new_factor = current * scale_down;
