@@ -123,7 +123,7 @@ class Driver:
         # clear previous output and run direct solver
         try:
             os.remove(self._objValFile)
-        except:
+        except OSError:
             pass
 
         try:
@@ -136,7 +136,7 @@ class Driver:
                     break
             # the return code of mpirun is useless, we test the value of the function
             self._assert_isfinite(val)
-        except:
+        except OSError:
             raise RuntimeError("Objective function evaluation failed")
         # end
 
@@ -150,7 +150,7 @@ class Driver:
         # clear previous output and run direct solver
         try:
             os.remove(self._objDerFile)
-        except:
+        except OSError:
             pass
         N = x.shape[0]
         y = np.ndarray((N,))
@@ -167,7 +167,7 @@ class Driver:
                 self._assert_isfinite(val)
                 y[i] = val * obj_scale / var_scale
             # end
-        except:
+        except OSError:
             raise RuntimeError("Objective gradient evaluation failed")
         # end
 
@@ -186,7 +186,7 @@ class Driver:
                     val = float(lines[1].split(",")[col])
                     break
             self._assert_isfinite(val)
-        except:
+        except OSError:
             raise RuntimeError("Constraint function evaluation failed")
         # end
 
@@ -200,7 +200,7 @@ class Driver:
         # clear previous output and run solver
         try:
             os.remove(self._conDerFile)
-        except:
+        except OSError:
             pass
         N = x.shape[0]
         y = np.ndarray((N,))
@@ -217,7 +217,7 @@ class Driver:
                 self._assert_isfinite(val)
                 y[i] = val * con_scale / var_scale
             # end
-        except:
+        except OSError:
             raise RuntimeError("Constraint function evaluation failed")
         # end
 
@@ -295,7 +295,7 @@ class IncrParam:
         return self._value == self._maxi
 
     def value(self):
-        if self._func == None:
+        if self._func is None:
             return self._value
         else:
             return self._func(self._value)
