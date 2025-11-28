@@ -124,7 +124,7 @@ class Driver:
         try:
             os.remove(self._objValFile)
         except OSError:
-            pass
+            pass  # Ignore error if file does not exist
 
         try:
             sp.call(self._objValCommand, shell=True)
@@ -136,7 +136,7 @@ class Driver:
                     break
             # the return code of mpirun is useless, we test the value of the function
             self._assert_isfinite(val)
-        except OSError:
+        except Exception:
             raise RuntimeError("Objective function evaluation failed")
         # end
 
@@ -151,7 +151,7 @@ class Driver:
         try:
             os.remove(self._objDerFile)
         except OSError:
-            pass
+            pass  # Ignore error if file does not exist
         N = x.shape[0]
         y = np.ndarray((N,))
 
@@ -167,7 +167,7 @@ class Driver:
                 self._assert_isfinite(val)
                 y[i] = val * obj_scale / var_scale
             # end
-        except OSError:
+        except Exception:
             raise RuntimeError("Objective gradient evaluation failed")
         # end
 
@@ -186,7 +186,7 @@ class Driver:
                     val = float(lines[1].split(",")[col])
                     break
             self._assert_isfinite(val)
-        except OSError:
+        except Exception:
             raise RuntimeError("Constraint function evaluation failed")
         # end
 
@@ -201,7 +201,7 @@ class Driver:
         try:
             os.remove(self._conDerFile)
         except OSError:
-            pass
+            pass  # Ignore error if file does not exist
         N = x.shape[0]
         y = np.ndarray((N,))
 
@@ -217,7 +217,7 @@ class Driver:
                 self._assert_isfinite(val)
                 y[i] = val * con_scale / var_scale
             # end
-        except OSError:
+        except Exception:
             raise RuntimeError("Constraint function evaluation failed")
         # end
 
