@@ -7098,6 +7098,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
       }
 
+      if (Kind_ConvNumScheme_Flow != SPACE_CENTERED || (Kind_ConvNumScheme_Flow == SPACE_CENTERED && Kind_Centered_Flow == CENTERED::LAX))  {
+        SU2_MPI::Error("LD2 option available for JST scheme only.", CURRENT_FUNCTION);
+      }
+
       if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
         if (Kind_Upwind_Flow == UPWIND::ROE)    cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == UPWIND::TURKEL) cout << "Roe-Turkel solver for the flow inviscid terms."<< endl;
