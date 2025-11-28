@@ -742,8 +742,6 @@ static su2double Damp_Restric_Adapt(const unsigned short *lastPreSmoothIters,
     SU2_MPI::Allreduce(&local_any_full, &global_any_full, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&local_all_one, &global_all_one, 1, MPI_INT, MPI_MIN, SU2_MPI::GetComm());
 
-    //cout << "Damp_Restric_Adapt global: inspected=" << global_inspected
-    //  << " any_full=" << global_any_full << " all_one=" << global_all_one << endl;
 
   const su2double current = config->GetDamp_Res_Restric();
   //cout << "Current Damp_Res_Restric: " << current << endl;
@@ -751,8 +749,8 @@ static su2double Damp_Restric_Adapt(const unsigned short *lastPreSmoothIters,
 
   const su2double scale_down = 0.95;
   const su2double scale_up = 1.01;
-  const su2double clamp_min = 0.1;
-  const su2double clamp_max = 0.9;
+  const su2double clamp_min = 0.05;
+  const su2double clamp_max = 1.0;
 
   if (global_any_full) {
     new_factor = current * scale_down;

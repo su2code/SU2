@@ -905,7 +905,7 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long &Index_CoarseCV,
   const su2double angle_threshold_deg = 20.0; /* stop line if direction deviates more than this */
   const su2double pi = acos(-1.0);
   const su2double cos_threshold = cos(angle_threshold_deg * pi / 180.0);
-  const unsigned long max_line_length = 12; /* maximum number of nodes on implicit line (including wall) */
+  const unsigned long max_line_length = 20; /* maximum number of nodes on implicit line (including wall) */
 
   const unsigned long nPoint = fine_grid->GetnPoint();
   vector<char> reserved(nPoint, 0);
