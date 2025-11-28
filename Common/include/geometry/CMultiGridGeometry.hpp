@@ -75,8 +75,8 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] config - Definition of the particular problem.
    * \param[in,out] MGQueue_InnerCV - Queue used for STEP 2; agglomerated points will be removed from it.
    */
-  void AgglomerateImplicitLines(unsigned long &Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
-                                CMultiGridQueue &MGQueue_InnerCV);
+  void AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
+                                CMultiGridQueue& MGQueue_InnerCV);
 
   /*!
    * \brief Compute surface straightness for multigrid geometry.
@@ -172,5 +172,4 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] val_marker - Index of the boundary marker.
    */
   void SetMultiGridWallTemperature(const CGeometry* fine_grid, unsigned short val_marker) override;
-
 };

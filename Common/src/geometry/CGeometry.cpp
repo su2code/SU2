@@ -3906,7 +3906,7 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
           CoarseGridColor_(iPoint, step) = CoarseGridColor_(coarseMesh->nodes->GetParent_CV(iPoint), step - 1);
         }
       else
-        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint){
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint) {
           CoarseGridColor_(iPoint, step) = color[coarseMesh->nodes->GetParent_CV(iPoint)];
         }
     }
