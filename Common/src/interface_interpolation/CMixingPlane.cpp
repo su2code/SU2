@@ -43,8 +43,6 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
     const auto donor_config = config[donorZone];
     const auto target_config = config[targetZone];
 
-    const auto nMarkerDonor   = donor_geometry->GetnMarker(); // Number of markers on the interfacce
-    const auto nMarkerTarget  = target_geometry->GetnMarker();
     //TODO turbo this approach only works if all the turboamchinery marker
     //    of all zones have the same amount of span wise sections.
     //TODO turbo initialization needed for the MPI routine should be place somewhere else.
@@ -54,7 +52,7 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
     targetSpans.resize(config[donorZone]->GetnMarker_MixingPlaneInterface());
 
     /*--- On the donor side ---*/
-    for (auto iMarkerInt = 0u; iMarkerInt < nMarkerInt; iMarkerInt++){
+    for (auto iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++){
         int markDonor = -1, markTarget = -1;
         unsigned short donorFlag = 0, targetFlag = 0;
 
