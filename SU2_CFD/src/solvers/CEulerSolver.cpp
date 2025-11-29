@@ -5581,7 +5581,6 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         for (iDim = 0; iDim < nDim; iDim++)
           ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
-        auto nDonorSpan = GetnMixingStates(val_marker, iSpan);
         su2double donorAverages[8] = {0.0};
         for (auto mixVar = 0u; mixVar < 8; mixVar++) {
           donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
@@ -6283,9 +6282,6 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
     su2double donorAverages[8] = {0.0};
     switch (config->GetKind_Data_Giles(Marker_Tag)){
       case MIXING_IN: case MIXING_IN_1D: case MIXING_OUT: case MIXING_OUT_1D:
-        // for (auto iMarkerGeo = 0u; iMarkeGeo < geometry->GetnMarker(); iMarkerGeo++){
-        //   if (config->Get)
-        // }
         for (auto mixVar = 0u; mixVar < 8; mixVar++) {
           donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
         }

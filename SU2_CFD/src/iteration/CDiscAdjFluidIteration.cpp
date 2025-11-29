@@ -543,9 +543,6 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** g
   if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
     solvers0[ADJTURB_SOL]->RegisterOutput(geometry0, config[iZone]);
   }
-  if (config[iZone]->GetBoolTurbomachinery()) {
-    solvers0[ADJFLOW_SOL]->Register_VertexNormals(geometry0, config[iZone], false);
-  }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     solvers0[ADJSPECIES_SOL]->RegisterOutput(geometry0, config[iZone]);
   }
