@@ -92,13 +92,13 @@ public:
   void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, const CConfig *target_config,
                           unsigned long Marker_Target, unsigned long val_Span, unsigned long Point_Target) override;
 
-  inline void RecoverTarget_Variable(const vector<su2double> bcastVariable, unsigned long iSpan) override{
+  inline void RecoverTarget_Span_Endwall(const vector<su2double> bcastVariable, unsigned long iSpan) override{
     for (auto iVar = 0u; iVar < nMixingVars; iVar++) {
       Target_Variable[iVar] = bcastVariable[iSpan * nMixingVars + iVar];
     }
   }
 
-  inline void RecoverTarget_Variable(const vector<su2double> bcastVariable, unsigned long iSpan, su2double donorCoeff) override {
+  inline void RecoverTarget_Span(const vector<su2double> bcastVariable, unsigned long iSpan, su2double donorCoeff) override {
     for (auto iVar = 0u; iVar < nMixingVars; iVar++) {
       Target_Variable[iVar] = (1 - donorCoeff)*bcastVariable[iSpan * nMixingVars + iVar] + donorCoeff * bcastVariable[(iSpan + 1) * nMixingVars + iVar];
     }

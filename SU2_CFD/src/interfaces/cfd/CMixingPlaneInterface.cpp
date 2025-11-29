@@ -133,7 +133,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
         else if (iTargetSpan == nTargetSpan - 2) donorSpan = nSpanDonor - 2;
         else if (iTargetSpan == nTargetSpan - 1) donorSpan = nSpanDonor - 1;
 
-        RecoverTarget_Variable(sendDonorVar, donorSpan);
+        RecoverTarget_Span_Endwall(sendDonorVar, donorSpan);
 
         SetTarget_Variable(target_solution, target_geometry, target_config, markTarget, iTargetSpan, 0);
       }
@@ -144,7 +144,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
         const auto donorCoeff = targetSpan.coefficient;
 
         /*--- Recover the Target_Variable from the buffer of variables. ---*/
-        RecoverTarget_Variable(sendDonorVar, donorSpan, donorCoeff);
+        RecoverTarget_Span(sendDonorVar, donorSpan, donorCoeff);
 
         SetTarget_Variable(target_solution, target_geometry, target_config, markTarget, iTargetSpan, 0);
       }

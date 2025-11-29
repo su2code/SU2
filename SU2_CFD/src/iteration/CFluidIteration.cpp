@@ -377,7 +377,7 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
             INST_0);
 
     /*--- Postprocessing Step ---*/
-    Postprocess(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, val_iInst);
+    // Postprocess(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, val_iInst);
 
     /*--- Monitor the pseudo-time ---*/
     StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox,
