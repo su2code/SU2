@@ -2665,7 +2665,7 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
   if (rank == MASTER_NODE) cout<<"Compute inflow and outflow average geometric quantities." << endl;
   for (iZone = 0; iZone < nZone; iZone++) {
     geometry[iZone][INST_0][MESH_0]->SetAvgTurboValue(config[iZone], iZone, INFLOW, true);
-    geometry[iZone][INST_0][MESH_0]->SetAvgTurboValue(config[iZone],iZone, OUTFLOW, true);
+    geometry[iZone][INST_0][MESH_0]->SetAvgTurboValue(config[iZone], iZone, OUTFLOW, true);
     geometry[iZone][INST_0][MESH_0]->GatherInOutAverageValues(config[iZone], true);
   }
 

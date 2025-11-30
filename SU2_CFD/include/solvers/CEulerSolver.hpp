@@ -133,6 +133,7 @@ protected:
   su2activematrix AverageKine;
   su2activematrix AverageOmega;
   su2activevector AverageMassFlowRate;
+  su2activematrix AverageRelTangVelocity;
 
   su2activematrix DensityIn;
   su2activematrix PressureIn;
@@ -146,6 +147,8 @@ protected:
   su2activematrix KineOut;
   su2activematrix OmegaOut;
   su2activematrix NuOut;
+  su2activematrix RelTangVelocityIn;
+  su2activematrix RelTangVelocityOut;
 
   vector<su2matrix<complex<su2double> > > CkInflow, CkOutflow1, CkOutflow2;
 
@@ -157,6 +160,14 @@ protected:
 
   vector<vector<su2double*>> MixingState; // vector of vector of pointers... inner dim alloc'd elsewhere (welcome, to the night zone)
   vector<vector<int>> MixingStateNodes;
+
+  inline su2double GetTangGridVelIn(unsigned short val_blade, unsigned long val_span) {
+    return TurboVelocityIn[val_blade][val_span][1] - RelTangVelocityIn[val_blade][val_span];
+  }
+
+  inline su2double GetTangGridVelOut(unsigned short val_blade, unsigned long val_span) {
+    return TurboVelocityOut[val_blade][val_span][1] - RelTangVelocityOut[val_blade][val_span];
+  }
 
   /*!
   * \brief Get the outer state for mixing plane interface nodes.

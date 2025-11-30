@@ -291,10 +291,6 @@ void CFluidIteration::UpdateRamps(CGeometry**** geometry_container, CConfig** co
       geometry->SetAvgTurboValue(config, iZone, INFLOW, false);
       geometry->SetAvgTurboValue(config, iZone, OUTFLOW, false);
       geometry->GatherInOutAverageValues(config, false);
-
-      if (iZone < nZone - 1) {
-        geometry_container[nZone-1][INST_0][MESH_0]->SetAvgTurboGeoValues(config ,geometry_container[iZone][INST_0][MESH_0], iZone);
-      }
     }
   }
 
@@ -377,7 +373,7 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
             INST_0);
 
     /*--- Postprocessing Step ---*/
-    // Postprocess(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, val_iInst);
+    Postprocess(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone, val_iInst);
 
     /*--- Monitor the pseudo-time ---*/
     StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox,

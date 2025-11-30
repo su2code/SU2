@@ -1,8 +1,8 @@
 /*!
  * \file CMixingPlaneInterface.cpp
- * \brief Declaration and inlines of the class to transfer average variables
+ * \brief Declaration and inlines of the class to transfer average solver variables
  *        needed for MixingPlane computation from a generic zone into another one.
- * \author S. Vitale
+ * \author J. Kelly, S. Vitale
  * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -34,7 +34,7 @@
 
 CMixingPlaneInterface::CMixingPlaneInterface(unsigned short val_nVar, unsigned short val_nConst){
   nVar = val_nVar; // Solver vars
-  nMixingVars = 8; // Always 8 vars in turbo MP
+  nMixingVars = 8; // 8 solver vars in turbo MP
   Donor_Variable     = new su2double[nMixingVars]();
   Target_Variable    = new su2double[nMixingVars]();
   InterfaceType      = ENUM_TRANSFER::MIXING_PLANE;
@@ -82,7 +82,6 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     vector<su2double> sendDonorVar(nSpanDonor * nMixingVars);
 
     if (markDonor != -1) {
-      // cout << "markDonor Identified!" << endl;
       for (auto iSpan = 0ul; iSpan < nSpanDonor; iSpan++) {
         GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iSpan, 0);
         for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = Donor_Variable[iVar];
@@ -118,7 +117,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     if (!(markTarget != -1 && markDonor != -1)) continue;
 
     /*--- Loop over target spans. ---*/
-    auto nTargetSpan = target_config->GetnSpanWiseSections() + 1;
+    unsigned long nTargetSpan = target_config->GetnSpanWiseSections() + 1;
 
     for (auto iTargetSpan = 0ul; iTargetSpan < nTargetSpan; iTargetSpan++) {
 
@@ -126,7 +125,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
       InitializeTarget_Variable(target_solution, markTarget, iTargetSpan, nSpanDonor);
 
-      if ((iTargetSpan == 0) || (iTargetSpan > nTargetSpan - 3)) {
+      if ((iTargetSpan == 0) || (iTargetSpan == nTargetSpan - 1) || (iTargetSpan == nTargetSpan - 2)) {
         /*--- Transfer values at hub, shroud and 1D values ---*/
         unsigned long donorSpan;
         if (iTargetSpan == 0) donorSpan = 0;
