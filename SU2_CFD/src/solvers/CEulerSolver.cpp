@@ -6285,18 +6285,16 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
     su2double donorAverages[8] = {0.0};
     switch (config->GetKind_Data_Giles(Marker_Tag)){
       case MIXING_IN: case MIXING_IN_1D: case MIXING_OUT: case MIXING_OUT_1D:
-        for (auto mixVar = 0u; mixVar < 8; mixVar++) {
-          donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
-        }
-        ExtAverageDensity = donorAverages[0];
-        ExtAveragePressure = donorAverages[1];
-        ExtAverageTurboVelocity[0] = donorAverages[2];
-        ExtAverageTurboVelocity[1] = donorAverages[3];
-        ExtAverageTurboVelocity[2] = donorAverages[4];
+        for (auto mixVar = 0u; mixVar < 8; mixVar++) donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
         break;
       default:
         break;
     }
+    ExtAverageDensity = donorAverages[0];
+    ExtAveragePressure = donorAverages[1];
+    ExtAverageTurboVelocity[0] = donorAverages[2];
+    ExtAverageTurboVelocity[1] = donorAverages[3];
+    ExtAverageTurboVelocity[2] = donorAverages[4];
 
     switch(config->GetKind_Data_Giles(Marker_Tag)){
 
