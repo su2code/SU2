@@ -1488,11 +1488,7 @@ def main():
     pywrapper_buoyancy.cfg_dir = "py_wrapper/custom_source_buoyancy"
     pywrapper_buoyancy.cfg_file = "lam_buoyancy_cavity.cfg"
     pywrapper_buoyancy.test_iter = 0
-<<<<<<< HEAD
     pywrapper_buoyancy.test_vals = [-11.864224, -12.149668, -3.539309, -6.119375]
-=======
-    pywrapper_buoyancy.test_vals = [-17.746020, -17.462127, -17.428851, -12.260605]
->>>>>>> develop
     pywrapper_buoyancy.test_vals_aarch64 = [-17.746018, -17.460693, -17.430708, -12.260624]
     pywrapper_buoyancy.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_buoyancy)
