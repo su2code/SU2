@@ -90,8 +90,8 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     }
 #ifdef HAVE_MPI
     /*--- Gather data. ---*/
-    const int nTotalDonors = nSpanDonor * size;
-    const int nSpanDonorVars = nSpanDonor * nMixingVars;
+    const auto nTotalDonors = nSpanDonor * size;
+    const auto nSpanDonorVars = nSpanDonor * nMixingVars;
     vector<unsigned long> buffDonorMarker(nTotalDonors);
     vector<su2double> buffDonorVar(nTotalDonors * nMixingVars);
 

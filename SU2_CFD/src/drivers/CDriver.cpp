@@ -2654,8 +2654,7 @@ void CDriver::PreprocessTurboVertex(CConfig** config, CGeometry**** geometry, CS
 
 void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                            CInterface*** interface, CIteration*** iteration, bool dummy){
-  unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
-  unsigned short nSpanMax = 0;
+  unsigned short donorZone,targetZone;
   bool restart   = (config[ZONE_0]->GetRestart() || config[ZONE_0]->GetRestart_Flow());
   mixingplane = config[ZONE_0]->GetBoolMixingPlaneInterface();
   bool discrete_adjoint = config[ZONE_0]->GetDiscrete_Adjoint();

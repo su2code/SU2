@@ -803,7 +803,6 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
   for (auto iSpan = 0u; iSpan < nSpanWiseSections ; iSpan++){
 
-    auto nDonorSpan = solver_container[FLOW_SOL]->GetnMixingStates(val_marker, iSpan);
     const auto extAverageKine = solver_container[FLOW_SOL]->GetMixingState(val_marker, iSpan, 6);
     const auto extAverageOmega = solver_container[FLOW_SOL]->GetMixingState(val_marker, iSpan, 7);
     su2double solution_j[] = {extAverageKine, extAverageOmega};

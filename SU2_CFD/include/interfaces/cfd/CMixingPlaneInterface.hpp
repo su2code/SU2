@@ -37,7 +37,7 @@
  */
 class CMixingPlaneInterface : public CInterface {
 public:
-  unsigned int nMixingVars;
+  unsigned short nMixingVars;
   /*!
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
