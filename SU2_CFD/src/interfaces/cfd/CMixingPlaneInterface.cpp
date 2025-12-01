@@ -79,7 +79,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     /*--- Fill send buffers. ---*/
 
     vector<short> sendDonorMarker(nSpanDonor);
-    vector<su2double> sendDonorVar(nSpanDonor * nMixingVars);
+    vector<su2double> sendDonorVar(static_cast<size_t>(nSpanDonor) * nMixingVars);
 
     if (markDonor != -1) {
       for (auto iSpan = 0ul; iSpan < nSpanDonor; iSpan++) {
@@ -104,11 +104,11 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
                       SU2_MPI::GetComm());
 
     for (auto iSize = 0; iSize < size; iSize++){
-      if (buffDonorVar[nSpanDonorVars * iSize] > 0.0) {
+      if (buffDonorVar[static_cast<size_t>(nSpanDonorVars) * iSize] > 0.0) {
         for (auto iSpan = 0ul; iSpan < nSpanDonor; iSpan++){
-          for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = buffDonorVar[iSize * nSpanDonorVars + iVar]; // This could be wrong in 3D
+          for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = buffDonorVar[static_cast<size_t>(iSize) * nSpanDonorVars + iVar]; // This could be wrong in 3D
         }
-        markDonor = buffDonorMarker[iSize * nSpanDonor];
+        markDonor = buffDonorMarker[static_cast<unsigned long>(iSize) * static_cast<unsigned long>(nSpanDonor)];
       }
     }
 #endif
