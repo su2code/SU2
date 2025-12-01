@@ -456,6 +456,12 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig **config_con
     }
   }
 
+  /*--- Initialise donor quantities ---*/
+  ExtAverageDensity = su2double(0.0);
+  ExtAveragePressure = su2double(0.0);
+  ExtAverageTurboVelocity.resize(nDim);
+  for (auto iDim = 0u; iDim < nDim; iDim++) ExtAverageTurboVelocity[iDim] = su2double(0.0);
+
   auto nMarkerInterface = config->GetnMarker_ZoneInterface();
 
   MixingState.resize(nMarkerInterface);
@@ -5584,13 +5590,16 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         for (iDim = 0; iDim < nDim; iDim++)
           ProjVelocity_i += Velocity_i[iDim]*UnitNormal[iDim];
 
-        su2double donorAverages[8] = {0.0};
-        for (auto mixVar = 0u; mixVar < 8; mixVar++) {
-          donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
+        su2double donorAverages[5] = {0.0};
+        switch (config->GetKind_Data_Giles(Marker_Tag)){
+          case MIXING_IN: case MIXING_IN_1D: case MIXING_OUT: case MIXING_OUT_1D:
+            for (auto mixVar = 0u; mixVar < 5; mixVar++) donorAverages[mixVar] = GetMixingState(val_marker, iSpan, mixVar);
+            break;
+          default:
+            break;
         }
-        const auto ExtAverageDensity = donorAverages[0];
-        const auto ExtAveragePressure = donorAverages[1];
-        su2double ExtAverageTurboVelocity[3] = {0.0};
+        ExtAverageDensity = donorAverages[0];
+        ExtAveragePressure = donorAverages[1];
         ExtAverageTurboVelocity[0] = donorAverages[2];
         ExtAverageTurboVelocity[1] = donorAverages[3];
         ExtAverageTurboVelocity[2] = donorAverages[4];
@@ -6280,8 +6289,6 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
     kend_max = geometry->GetnFreqSpanMax(config->GetMarker_All_TurbomachineryFlag(val_marker));
     conv_numerics->GetRMatrix(AverageSoundSpeed, AverageDensity[val_marker][iSpan], R_Matrix);
 
-    su2double ExtAverageDensity, ExtAveragePressure;
-    su2double ExtAverageTurboVelocity[3] = {0.0};
     su2double donorAverages[5] = {0.0};
     switch (config->GetKind_Data_Giles(Marker_Tag)){
       case MIXING_IN: case MIXING_IN_1D: case MIXING_OUT: case MIXING_OUT_1D:

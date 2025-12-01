@@ -150,6 +150,10 @@ protected:
   su2activematrix RelTangVelocityIn;
   su2activematrix RelTangVelocityOut;
 
+  su2double ExtAverageDensity;
+  su2double ExtAveragePressure;
+  su2activevector ExtAverageTurboVelocity;
+
   vector<su2matrix<complex<su2double> > > CkInflow, CkOutflow1, CkOutflow2;
 
   su2double EntropyGeneration;
