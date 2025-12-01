@@ -2618,12 +2618,8 @@ void CDriver::PreprocessOutput(CConfig **config, CConfig *driver_config, COutput
 void CDriver::PreprocessTurboVertex(CConfig** config, CGeometry**** geometry, CSolver***** solver,
                                            CInterface*** interface, CIteration*** iteration, bool dummy){
 
-  unsigned short donorZone,targetZone, nMarkerInt, iMarkerInt;
   unsigned short nSpanMax = 0;
-  bool restart   = (config[ZONE_0]->GetRestart() || config[ZONE_0]->GetRestart_Flow());
   mixingplane = config[ZONE_0]->GetBoolMixingPlaneInterface();
-  bool discrete_adjoint = config[ZONE_0]->GetDiscrete_Adjoint();
-  su2double areaIn, areaOut, nBlades, flowAngleIn, flowAngleOut;
 
   /*--- Create turbovertex structure ---*/
   if (rank == MASTER_NODE) cout<<endl<<"Initialize Turbo Vertex Structure." << endl;
