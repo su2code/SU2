@@ -93,7 +93,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     const auto nTotalDonors = nSpanDonor * size;
     const auto nSpanDonorVars = nSpanDonor * nMixingVars;
     vector<unsigned long> buffDonorMarker(nTotalDonors);
-    vector<su2double> buffDonorVar(nTotalDonors * nMixingVars);
+    vector<su2double> buffDonorVar(static_cast<unsigned long>(nTotalDonors) * nMixingVars);
 
     SU2_MPI::Allgather(sendDonorMarker.data(), nSpanDonor, MPI_UNSIGNED_SHORT,
                       buffDonorMarker.data(), nSpanDonor, MPI_UNSIGNED_SHORT,

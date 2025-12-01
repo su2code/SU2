@@ -216,8 +216,6 @@ void CIteration::InitTurboPerformance(CGeometry* geometry, CConfig** config, CFl
 
 void CIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container) {
   // Computes the turboperformance per blade in zone iBlade
-  const auto nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
-  const auto nBladesRow = config_container[ZONE_0]->GetnMarker_Turbomachinery();
   const auto nZone = config_container[ZONE_0]->GetnZone();
 
   auto TurbomachineryBladePerformances = GetBladesPerformanceVector(solver, nZone);
