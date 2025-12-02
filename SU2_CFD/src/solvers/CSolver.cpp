@@ -3381,10 +3381,10 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
       /*--- External iteration ---*/
 
-      position = text_line.find ("ITER=",0);
+      position = text_line.find("ITER=", 0);
       if (position != string::npos) {
-        // TODO: 'ITER=' has 5 chars, not 9!
-        text_line.erase (0,9); InnerIter_ = atoi(text_line.c_str());
+        text_line.erase(0, 5);
+        InnerIter_ = atoi(text_line.c_str());  // 'ITER=' has 5 chars
       }
 
       /*--- Angle of attack ---*/
