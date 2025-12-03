@@ -92,28 +92,30 @@ inline double GetRandomUniform(std::mt19937 gen, double xmin = 0.0, double xmax 
  */
 inline double GetBesselZero(double x) {
     double abx = fabs(x);
+
     if (abx < 3.75) {
         double t = x / 3.75;
-        t = t * t;
-        return 1.0 + t*(3.5156229 +
-             t*(3.0899424 +
-             t*(1.2067492 +
-             t*(0.2659732 +
-             t*(0.0360768 +
-             t*0.0045813)))));
+        double p = 1.0 +
+            t*t*(3.5156229 +
+            t*t*(3.0899424 +
+            t*t*(1.2067492 +
+            t*t*(0.2659732 +
+            t*t*(0.0360768 +
+            t*t*0.0045813)))));
+        return log(p);
     } else {
-        double t = 3.75/abx;
-        double ans = (exp(abx)/sqrt(abx)) *
-            (0.39894228 +
-             t*(0.01328592 +
-             t*(0.00225319 +
-             t*(-0.00157565 +
-             t*(0.00916281 +
-             t*(-0.02057706 +
-             t*(0.02635537 +
-             t*(-0.01647633 +
-             t*0.00392377))))))));
-        return ans;
+        double t = 3.75 / abx;
+        double poly =
+            0.39894228 +
+            t*(0.01328592 +
+            t*(0.00225319 +
+            t*(-0.00157565 +
+            t*(0.00916281 +
+            t*(-0.02057706 +
+            t*(0.02635537 +
+            t*(-0.01647633 +
+            t*0.00392377)))))));
+        return abx - 0.5*log(abx) + log(poly);
     }
 }
 
@@ -125,24 +127,34 @@ inline double GetBesselZero(double x) {
  * \return Value of the integral.
  */
 inline double GetBesselIntegral(double beta_x, double beta_y, double beta_z) {
+
     const double A  = 1.0 + 2.0*(beta_x + beta_y + beta_z);
     const double Bx = 2.0*beta_x;
     const double By = 2.0*beta_y;
     const double Bz = 2.0*beta_z;
-    const int N = 4000;
-    const double t_max = 40.0;
-    const double delta_t = t_max / N;
+
+    const int    N      = 4000;
+    const double t_max  = 40.0;
+    const double dt     = t_max / N;
+
     double sum = 0.0;
-    for (int i = 0; i < N; i++) {
-        double t   = i * delta_t;
-        double I0x = GetBesselZero(Bx * t);
-        double I0y = GetBesselZero(By * t);
-        double I0z = GetBesselZero(Bz * t);
-        double integrand = t * exp(-A * t)
-                             * (I0x * I0y * I0z);
+
+    for (int i = 1; i < N; i++) {
+        double t = i * dt;
+
+        double e = exp(-A*t);
+
+        double lx = GetBesselZero(Bx*t);
+        double ly = GetBesselZero(By*t);
+        double lz = GetBesselZero(Bz*t);
+
+        double lin = log(t) - A*t + lx + ly + lz;
+
+        double integrand = exp(lin);
         sum += integrand;
     }
-    return sum * delta_t;
+
+    return sum * dt;
 }
 
 /// @}

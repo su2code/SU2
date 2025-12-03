@@ -1682,7 +1682,7 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
   const unsigned short maxIter = config->GetSBS_maxIterSmooth();
   const unsigned long global_nPointDomain = geometry->GetGlobal_nPointDomain();
   const su2double tol = -5.0;
-  const su2double sourceLim = 5.0;
+  const su2double sourceLim = 3.0;
   const su2double omega = 0.8;
   unsigned long timeIter = config->GetTimeIter();
   unsigned long restartIter = config->GetRestart_Iter();
@@ -1838,9 +1838,9 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
           }
           su2double scaleFactor = 1.0 / sqrt(max(integral, 1e-10));
           source *= scaleFactor;
+          source = min(max(source, -sourceLim), sourceLim);
           mean_check_new += source;
           var_check_new += source * source;
-          source = min(max(source, -sourceLim), sourceLim);
           nodes->SetLangevinSourceTerms(iPoint, iDim, source);
         }
         su2double mean_check_old_G = 0.0;
@@ -1865,7 +1865,7 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
         var_check_notSmoothed_G /= global_nPointDomain;
         var_check_notSmoothed_G -= mean_check_notSmoothed_G * mean_check_notSmoothed_G;
         if (rank == MASTER_NODE) {
-          cout << "Mean of stochastic source term before scaling: " << mean_check_old_G <<". After scaling: " << mean_check_new_G << "." << endl;
+          cout << "Mean of stochastic source term before scaling: " << mean_check_old_G-mean_check_notSmoothed_G <<". After scaling: " << mean_check_new_G-mean_check_notSmoothed_G << "." << endl;
           cout << "Variance of stochastic source term before scaling: " << var_check_old_G/var_check_notSmoothed_G <<". After scaling: " << var_check_new_G/var_check_notSmoothed_G << "." << endl;
           cout << endl;
         }
