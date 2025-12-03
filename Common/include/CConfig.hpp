@@ -1093,6 +1093,7 @@ private:
   unsigned short SBS_maxIterSmooth;    /*!< \brief Maximum number of smoothing iterations for the SBS model. */
   su2double SBS_Ctau;                  /*!< \brief Stochastic Backscatter Model timescale coefficient. */
   su2double SBS_Cmag;                  /*!< \brief Stochastic Backscatter Model intensity coefficient. */
+  bool stochSourceNu;                  /*!< \brief Option for including stochastic source term in turbulence model equation (Stochastic Backscatter Model). */
   bool enforceLES;                     /*!< \brief Option to enforce LES mode in hybrid RANS-LES simulations. */
   su2double LES_FilterWidth;           /*!< \brief LES filter width for hybrid RANS-LES simulations. */
   bool LD2_Scheme;                     /*!< \brief Use the LD2 scheme (incompressible flows, combined with JST discretization). */
@@ -9537,6 +9538,12 @@ public:
    * \return TRUE if LES is enforced.
    */
   bool GetEnforceLES(void) const { return enforceLES; }
+
+  /*!
+   * \brief Get if the stochastic source term must be included in the turbulence model equation.
+   * \return TRUE if the stochastic source term is included in the turbulence model equation.
+   */
+  bool GetStochSourceNu(void) const { return stochSourceNu; }
 
   /*!
    * \brief Get the LES Filter Width.

@@ -379,7 +379,7 @@ class CSourceBase_TurbSA : public CNumerics {
       /*--- Compute residual for Langevin equations (Stochastic Backscatter Model). ---*/
 
       if (backscatter) {
-        if (lesMode_i > 0.999)
+        if (lesMode_i > 0.999 && config->GetStochSourceNu())
           AddStochSource(var, PrimVar_Grad_i + idx.Velocity(), config->GetSBS_Cmag());
         const su2double DES_const = config->GetConst_DES();
         const su2double ctau = config->GetSBS_Ctau();

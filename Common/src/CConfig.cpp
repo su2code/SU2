@@ -2942,6 +2942,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Specify if the LES mode must be enforced */
   addBoolOption("ENFORCE_LES", enforceLES, false);
 
+  /* DESCRIPTION: Specify if the stochastic source term must be included in the turbulence model equation */
+  addBoolOption("STOCH_SOURCE_NU", stochSourceNu, false)
+
   /* DESCRIPTION: Filter width for LES (if negative, it is computed based on the local cell size) */
   addDoubleOption("LES_FILTER_WIDTH", LES_FilterWidth, -1.0);
 
@@ -6516,6 +6519,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
               cout << "Maximum number of iterations for implicit smoothing: " << SBS_maxIterSmooth << endl;
             else
               cout << "No smoothing applied to source terms in Langevin equations." << endl;
+            if (stochSourceNu)
+              cout << "Stochastic source term included in turbulence model equation" << endl;
           } else {
             cout << "OFF" << endl;
           }
