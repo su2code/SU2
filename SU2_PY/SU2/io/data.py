@@ -115,7 +115,7 @@ def load_data(file_name, var_names=None, file_format="infer", core_name="python_
     #: with filelock
 
     # load specified varname into dictionary
-    if var_names != None:
+    if var_names is not None:
         # check for one item name array
         if isinstance(var_names, str):
             var_names = [
@@ -365,7 +365,7 @@ def rec2dict(array_in):
         # convert array
         elif isinstance(value, numpy.ndarray):
             # check for another struct level
-            if value.dtype.names == None:
+            if value.dtype.names is None:
                 value = value.tolist()
             # telescoping
             else:

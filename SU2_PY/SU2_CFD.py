@@ -120,7 +120,7 @@ def main():
     options.wave_equation = options.wave_equation.upper() == "TRUE"
     options.heat_equation = options.heat_equation.upper() == "TRUE"
 
-    if options.filename == None:
+    if options.filename is None:
         raise Exception("No config file provided. Use -f flag")
 
     if options.with_MPI == True:
@@ -163,7 +163,7 @@ def main():
     # Finalize the solver and exit cleanly
     SU2Driver.Finalize()
 
-    if SU2Driver != None:
+    if SU2Driver is not None:
         del SU2Driver
 
 
