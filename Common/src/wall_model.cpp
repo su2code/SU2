@@ -306,11 +306,9 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange, const
     if (y_cv[0] * sqrt(tauWall / rho) / (mu_lam / rho) > 1.0)
       SU2_MPI::Error("Y+ greater than one: Increase the number of points or growth ratio.", CURRENT_FUNCTION);
 
-    /* Define a norm
-     * Check convergence only if previous values are non-zero to avoid division by zero
-     */
-    bool tau_converged = (tauWall_prev != 0.0) ? (abs(1.0 - tauWall / tauWall_prev) < tol) : false;
-    bool q_converged = (qWall_prev != 0.0) ? (abs(1.0 - qWall / qWall_prev) < tol) : false;
+    /* Define a norm */
+    bool tau_converged = abs(1.0 - tauWall / fmax(tauWall_prev, 1e-16)) < tol;
+    bool q_converged = abs(1.0 - qWall / fmax(qWall_prev, 1e-16)) < tol;
 
     if (tau_converged && q_converged) {
       converged = true;
@@ -394,20 +392,9 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange, con
     const su2double lhs = -((tExchange - TWall) * rho_wall * c_p * u_tau);
     const su2double Gamma = -(0.01 * (Pr_lam * pow(y_plus, 4.0)) / (1.0 + 5.0 * y_plus * pow(Pr_lam, 3.0)));
     const su2double rhs_1 = Pr_lam * y_plus * exp(Gamma);
-    
-    /* Protect against division by zero in exp(1/Gamma) when Gamma is very small */
-    const su2double eps_gamma = 1e-20;
-    su2double exp_term;
-    if (abs(Gamma) > eps_gamma) {
-      exp_term = exp(1.0 / Gamma);
-    } else {
-      /* For very small Gamma, cap the exponential to prevent overflow/division by zero */
-      exp_term = (Gamma > 0) ? exp(1.0 / eps_gamma) : exp(-1.0 / eps_gamma);
-    }
-    
     const su2double rhs_2 =
         (2.12 * log(1.0 + y_plus) + pow((3.85 * pow(Pr_lam, (1.0 / 3.0)) - 1.3), 2.0) + 2.12 * log(Pr_lam)) *
-        exp_term;
+        exp(1.0 / fmin(Gamma, -1e-16));
     qWall = lhs / (rhs_1 + rhs_2);
   } else {
     qWall = Wall_HeatFlux;

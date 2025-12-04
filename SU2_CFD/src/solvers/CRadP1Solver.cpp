@@ -282,18 +282,10 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   /*--- Get the specified wall emissivity from config ---*/
   Wall_Emissivity = config->GetWall_Emissivity(Marker_Tag);
 
-  /*--- Clamp emissivity to valid physical range [0,1] to prevent division by zero ---*/
-  if (Wall_Emissivity < 0.0) {
-    Wall_Emissivity = 0.0;
-  }
-  if (Wall_Emissivity > 1.0) {
-    Wall_Emissivity = 1.0;
-  }
-
   /*--- Compute the constant for the wall theta ---*/
   Theta = Wall_Emissivity / (2.0*(2.0 - Wall_Emissivity));
 
-    /*--- Retrieve the specified wall temperature ---*/
+  /*--- Retrieve the specified wall temperature ---*/
   Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
@@ -363,14 +355,6 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Get the specified wall emissivity from config ---*/
   Wall_Emissivity = config->GetWall_Emissivity(Marker_Tag);
-
-  /*--- Clamp emissivity to valid physical range [0,1] to prevent division by zero ---*/
-  if (Wall_Emissivity < 0.0) {
-    Wall_Emissivity = 0.0;
-  }
-  if (Wall_Emissivity > 1.0) {
-    Wall_Emissivity = 1.0;
-  }
 
   /*--- Compute the constant for the wall theta ---*/
   Theta = Wall_Emissivity / (2.0*(2.0 - Wall_Emissivity));
@@ -445,19 +429,6 @@ void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, C
 
   /*--- Get the specified wall emissivity from config ---*/
   Wall_Emissivity = config->GetWall_Emissivity(Marker_Tag);
-
-  /*--- Clamp emissivity to valid physical range [0,1] to prevent division by zero ---*/
-<<<<<<< HEAD
-  if (Wall_Emissivity < 0.0) {
-    Wall_Emissivity = 0.0;
-  }
-  if (Wall_Emissivity > 1.0) {
-    Wall_Emissivity = 1.0;
-  }
-=======
-  if (Wall_Emissivity < 0.0) Wall_Emissivity = 0.0;
-  if (Wall_Emissivity > 1.0) Wall_Emissivity = 1.0;
->>>>>>> 46baac1286ba393e261fef83bced67d0d4d3f269
 
   /*--- Compute the constant for the wall theta ---*/
   Theta = Wall_Emissivity / (2.0*(2.0 - Wall_Emissivity));

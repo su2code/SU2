@@ -8252,8 +8252,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
 
     char str_buf[CGNS_STRING_SIZE], fname[100];
     unsigned short iVar;
-    strncpy(fname, filename.c_str(), sizeof(fname) - 1);
-    fname[sizeof(fname) - 1] = '\0';  // Ensure null termination
+    strcpy(fname, filename.c_str());
     int nRestart_Vars = 5, nFields;
     int* Restart_Vars = new int[5];
     passivedouble* Restart_Data = nullptr;
@@ -8566,8 +8565,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig* config) {
     /*--- First, check that this is not a binary restart file. ---*/
 
     char fname[100];
-    strncpy(fname, filename.c_str(), sizeof(fname) - 1);
-    fname[sizeof(fname) - 1] = '\0';  // Ensure null termination
+    strcpy(fname, filename.c_str());
     int magic_number;
 
 #ifndef HAVE_MPI
