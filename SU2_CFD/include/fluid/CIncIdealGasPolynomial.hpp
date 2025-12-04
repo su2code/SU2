@@ -66,6 +66,7 @@ class CIncIdealGasPolynomial final : public CFluidModel {
       coeffs_[i] = config->GetCp_PolyCoeffND(i);
       Enthalpy_Ref += coeffs_[i] * t_i / (i + 1);
     }
+    Temperature_Min = config->GetTemperatureLimits(0);
   }
 
   /*!
@@ -122,8 +123,9 @@ class CIncIdealGasPolynomial final : public CFluidModel {
       delta_temp_iter = delta_enthalpy_iter / Cp_iter;
 
       temp_iter += delta_temp_iter;
-      if (temp_iter < 0.0) {
+      if (temp_iter < Temperature_Min) {
         cout << "Warning: Negative temperature has been found during Newton-Raphson" << endl;
+        temp_iter = Temperature_Min;
         break;
       }
     }
@@ -141,4 +143,5 @@ class CIncIdealGasPolynomial final : public CFluidModel {
   su2double Gamma{0.0};        /*!< \brief Ratio of specific heats. */
   array<su2double, N> coeffs_; /*!< \brief Polynomial coefficients for heat capacity as a function of temperature. */
   su2double Enthalpy_Ref;      /*!< \brief Enthalpy computed at the reference temperature. */
+  su2double Temperature_Min;   /*!< \brief Minimum temperature value allowed in Newton-Raphson iterations. */
 };
