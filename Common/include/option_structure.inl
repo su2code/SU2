@@ -1317,7 +1317,10 @@ class COptionWallSpecies : public COptionBase {
   COptionWallSpecies(string option_field_name, unsigned short& nMarker_Wall_Species, string*& Marker_Wall_Species,
                      unsigned short**& option_field, const map<string, Tenum> m, su2double**& value,
                      unsigned short& nSpecies_per_Wall)
-      : size(nMarker_Wall_Species), marker(Marker_Wall_Species), field(option_field), value(value),
+      : size(nMarker_Wall_Species),
+        marker(Marker_Wall_Species),
+        field(option_field),
+        value(value),
         nSpecies_per_Wall(nSpecies_per_Wall) {
     this->name = option_field_name;
     this->m = m;
