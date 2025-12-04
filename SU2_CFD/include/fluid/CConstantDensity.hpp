@@ -62,6 +62,8 @@ class CConstantDensity final : public CFluidModel {
   /*!
    * \brief Set the Dimensionless State using Enthalpy.
    * \param[in] val_enthalpy - Enthalpy value at the point.
+   * \param[in] val_scalars - not used here. 
+   
    */
   void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override {
     Enthalpy = val_enthalpy;
