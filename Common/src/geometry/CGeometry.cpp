@@ -2588,17 +2588,16 @@ void CGeometry::ComputeSurfStraightness(const CConfig* config, bool print_on_scr
   constexpr passivedouble epsilon = 1.0e-6;
   su2double Area;
   string Local_TagBound, Global_TagBound;
-    cout << "Computing surface straightness for symmetry and Euler wall boundary markers..." << endl;
+  cout << "Computing surface straightness for symmetry and Euler wall boundary markers..." << endl;
 
-  vector<su2double> Normal(nDim), UnitNormal(nDim), RefUnitNormal(nDim);  /*--- Assume now that this boundary marker is straight. As soon as one
-        AreaElement is found that is not aligned with a Reference then it is
-        certain that the boundary marker is not straight and one can stop
-        searching. Another possibility is that this process doesn't own
-        any nodes of that boundary, in that case we also have to assume the
-        boundary is straight.
-        Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets
-        the value false (or see cases specified in the conditional below)
-        which could be wrong. ---*/
+  vector<su2double> Normal(nDim), UnitNormal(nDim), RefUnitNormal(nDim); /*--- Assume now that this boundary marker is
+       straight. As soon as one AreaElement is found that is not aligned with a Reference then it is certain that the
+       boundary marker is not straight and one can stop searching. Another possibility is that this process doesn't own
+       any nodes of that boundary, in that case we also have to assume the
+       boundary is straight.
+       Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets
+       the value false (or see cases specified in the conditional below)
+       which could be wrong. ---*/
   boundIsStraight.resize(nMarker);
   cout << "boundisstraight size = " << boundIsStraight.size() << endl;
   fill(boundIsStraight.begin(), boundIsStraight.end(), true);
@@ -2699,8 +2698,6 @@ void CGeometry::ComputeSurfStraightness(const CConfig* config, bool print_on_scr
     }      // if rank==MASTER
   }        // if print_on_scren
 }
-
-
 
 void CGeometry::ComputeSurf_Curvature(CConfig* config) {
   unsigned short iMarker, iNeigh_Point, iDim, iNode, iNeighbor_Nodes, Neighbor_Node;

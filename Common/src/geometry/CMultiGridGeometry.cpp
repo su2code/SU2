@@ -80,7 +80,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   unsigned long Index_CoarseCV = 0;
 
   /*--- Statistics for Euler wall agglomeration ---*/
-  map<unsigned short, unsigned long> euler_wall_agglomerated, euler_wall_rejected_curvature, euler_wall_rejected_straight;
+  map<unsigned short, unsigned long> euler_wall_agglomerated, euler_wall_rejected_curvature,
+      euler_wall_rejected_straight;
   for (unsigned short iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
       euler_wall_agglomerated[iMarker] = 0;
@@ -141,8 +142,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         /*--- ! Note that in the case of MPI SEND_RECEIVE markers, we might need other conditions ---*/
         if (counter == 1) {
           cout << "we have exactly one marker at point " << iPoint << endl;
-          cout << " marker is " << marker_seed[0] << ", marker name = "
-               << config->GetMarker_All_TagBound(marker_seed[0]);
+          cout << " marker is " << marker_seed[0]
+               << ", marker name = " << config->GetMarker_All_TagBound(marker_seed[0]);
           cout << ", marker type = " << config->GetMarker_All_KindBC(marker_seed[0]) << endl;
           // The seed/parent is one valley, so we set this part to true
           // if the child is only on this same valley, we set it to true as well.
@@ -709,10 +710,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           if (total > 0) {
             su2double accept_rate = 100.0 * su2double(agglomerated) / su2double(total);
             cout << "  Marker: " << marker_name << endl;
-            cout << "    Seeds agglomerated:       " << agglomerated << " ("
-                 << std::setprecision(1) << std::fixed << accept_rate << "%)" << endl;
-            cout << "    Seeds rejected (>45° curv): " << rejected << " ("
-                 << std::setprecision(1) << std::fixed << (100.0 - accept_rate) << "%)" << endl;
+            cout << "    Seeds agglomerated:       " << agglomerated << " (" << std::setprecision(1) << std::fixed
+                 << accept_rate << "%)" << endl;
+            cout << "    Seeds rejected (>45° curv): " << rejected << " (" << std::setprecision(1) << std::fixed
+                 << (100.0 - accept_rate) << "%)" << endl;
           }
         }
       }
@@ -1649,7 +1650,7 @@ void CMultiGridGeometry::FindNormal_Neighbor(const CConfig* config) {
 }
 
 su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, unsigned long iPoint,
-                                                     unsigned short iMarker) const {
+                                                    unsigned short iMarker) const {
   /*--- Compute local curvature (maximum angle between adjacent face normals) at a boundary vertex.
         This is used to determine if agglomeration is safe based on a curvature threshold. ---*/
 

@@ -511,7 +511,6 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
 
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
-
       /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
       if (std::abs(A(jVar, jVar)) < eps) {
         ScalarType sign = (A(jVar, jVar) >= ScalarType(0)) ? ScalarType(1) : ScalarType(-1);
