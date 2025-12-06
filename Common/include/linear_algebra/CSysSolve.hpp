@@ -97,8 +97,9 @@ class CSysSolve {
   mutable VectorType r_0; /*!< \brief The "arbitrary" vector in BCGSTAB. */
   mutable VectorType v;   /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
 
-  mutable std::vector<VectorType> W; /*!< \brief Large matrix used by FGMRES, w^i+1 = A * z^i. */
-  mutable std::vector<VectorType> Z; /*!< \brief Large matrix used by FGMRES, preconditioned W. */
+  mutable unsigned long k = 0;
+  mutable std::vector<VectorType> V, W; /*!< \brief Large matrix used by FGMRES, w^i+1 = A * z^i. */
+  mutable std::vector<VectorType> Z;    /*!< \brief Large matrix used by FGMRES, preconditioned W. */
 
   VectorType
       LinSysSol_tmp; /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
@@ -332,6 +333,22 @@ class CSysSolve {
   unsigned long RFGMRES_LinSolver(const VectorType& b, VectorType& x, const ProductType& mat_vec,
                                   const PrecondType& precond, ScalarType tol, unsigned long m, ScalarType& residual,
                                   bool monitoring, const CConfig* config);
+
+  /*!
+   * \brief Flexible Generalized Conjugate Residual Method with Inner Orthogonalization and Deflated Restarting.
+   * \param[in] b - the right hand size vector
+   * \param[in,out] x - on entry the intial guess, on exit the solution
+   * \param[in] mat_vec - object that defines matrix-vector product
+   * \param[in] precond - object that defines preconditioner
+   * \param[in] tol - tolerance with which to solve the system
+   * \param[in] max_iter - maximum number of iterations
+   * \param[out] residual - final normalized residual
+   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] config - Definition of the particular problem.
+   */
+  unsigned long FGCRODR_LinSolver(const VectorType& b, VectorType& x, const ProductType& mat_vec,
+                                  const PrecondType& precond, ScalarType tol, unsigned long max_iter,
+                                  ScalarType& residual, bool monitoring, const CConfig* config) const;
 
   /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)

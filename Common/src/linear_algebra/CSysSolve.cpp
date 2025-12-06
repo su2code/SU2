@@ -25,6 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "Eigen/Core"
+#include "Eigen/Dense"
+
 #include "../../include/linear_algebra/CSysSolve.hpp"
 #include "../../include/linear_algebra/CSysSolve_b.hpp"
 #include "../../include/parallelization/omp_structure.hpp"
@@ -565,6 +568,223 @@ unsigned long CSysSolve<ScalarType>::RFGMRES_LinSolver(const CSysVector<ScalarTy
 }
 
 template <class ScalarType>
+unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,
+                                                       const CMatrixVectorProduct<ScalarType>& mat_vec,
+                                                       const CPreconditioner<ScalarType>& precond, ScalarType tol,
+                                                       unsigned long max_iter, ScalarType& residual, bool monitoring,
+                                                       const CConfig* config) const {
+  using EigenMatrix = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
+  using EigenVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
+
+  const auto m = config->GetLinear_Solver_Restart_Frequency();
+  max_iter = max(max_iter, m);
+  /*--- One quarter of the vectors for deflation. ---*/
+  const auto deflation = m / 4;
+
+  const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
+  /*--- If we call the solver outside of a parallel region, but the number of threads allows,
+   * we still want to parallelize some of the expensive operations. ---*/
+  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
+
+  /*--- Check the subspace size. ---*/
+
+  if (m < 1) {
+    SU2_MPI::Error("Number of linear solver restart iterations must be greater than 0.", CURRENT_FUNCTION);
+  }
+  if (m > 100) {
+    SU2_MPI::Error("FGCRODR subspace is too large (> 100).", CURRENT_FUNCTION);
+  }
+
+  /*--- Allocate if not allocated yet. ---*/
+
+  if (V.size() <= m) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      const auto nVar = b.GetNVar();
+      const auto nBlk = b.GetNBlk();
+      const auto nBlkDomain = b.GetNBlkDomain();
+
+      r.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+      V.resize(m + 1);
+      for (auto& v : V) v.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+      Z.resize(m);
+      for (auto& z : Z) z.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+      W.resize(deflation + 1);
+      for (auto& w : W) w.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
+
+  /*--- Hessenberg matrix. See FGMRES for parallelization notes. ---*/
+
+  su2matrix<ScalarType> H(m + 1, m);
+  EigenMatrix Heigen(m + 1, m);
+
+  /*--- Calculate the norm of the rhs vector. ---*/
+
+  ScalarType norm0 = b.norm();
+
+  /*--- Calculate the initial residual and compute its norm. ---*/
+
+  if (!xIsZero) {
+    mat_vec(x, Z.back());
+    r = b - Z.back();
+  } else {
+    r = b;
+  }
+
+  /*--- Rebuild V and W for the new matrix.
+   * Q * R = A * Z
+   * V = Q = A * (Z * R^-1)
+   * Such that the first part of the Arnoldi relation is:
+   * A * (Zk * R^-1) = Vk * I
+   * TODO(pedro): If the matrix is the same we can save this work.
+   * But we would still need to make the new r orthogonal to Vk. ---*/
+  if (k > 0) {
+    EigenMatrix R = EigenMatrix::Zero(k, k);
+    std::vector<ScalarType> vr(k);
+    for (auto j = 0ul; j < k; ++j) {
+      mat_vec(Z[j], V[j]);
+
+      for (auto i = 0ul; i < j; ++i) {
+        R(i, j) = V[i].dot(V[j]);
+        V[j] -= R(i, j) * V[i];
+      }
+      R(j, j) = V[j].norm();
+      V[j] /= R(j, j);
+
+      /*--- Make r orthogonal to the rebuilt V. ---*/
+      vr[j] = r.dot(V[j]);
+      r -= vr[j] * V[j];
+    }
+    /*--- Apply R^-1 to Z and W and update x accordingly. R is uppper triangular,
+     * so we loop backwards to compute the products in-place. ---*/
+    EigenMatrix invR = R.template triangularView<Eigen::Upper>().solve(EigenMatrix::Identity(k, k));
+    for (auto j = k - 1;; --j) {
+      Z[j] *= invR(j, j);
+      W[j] *= invR(j, j);
+      for (auto i = 0ul; i < j; ++i) {
+        Z[j] += invR(i, j) * Z[i];
+        W[j] += invR(i, j) * W[i];
+      }
+      x += vr[j] * Z[j];
+      if (j == 0) break;  // j is unsigned, avoid underflow.
+    }
+  }
+  ScalarType rNorm = r.norm();
+
+  /*--- Set the norm to the initial initial residual value. ---*/
+
+  if (tol_type == LinearToleranceType::RELATIVE) norm0 = rNorm;
+
+  if (rNorm < tol * norm0 || rNorm < eps) {
+    /*--- The system is already solved. ---*/
+
+    if (masterRank) {
+      SU2_OMP_MASTER
+      cout << "CSysSolve::FGCRODR(): system solved by initial guess." << endl;
+      END_SU2_OMP_MASTER
+    }
+    residual = rNorm;
+    return 0;
+  }
+
+  /*--- Output header information including initial residual. ---*/
+
+  unsigned long iter = 0;
+  if (monitoring && masterRank) {
+    SU2_OMP_MASTER {
+      WriteHeader("FGCRODR", tol, rNorm);
+      WriteHistory(iter, rNorm / norm0);
+    }
+    END_SU2_OMP_MASTER
+  }
+
+  for (iter = 0; iter < max_iter;) {
+    /*--- Initial direction. ---*/
+    V[k] = r / rNorm;
+
+    /*--- Initialize the H matrix. ---*/
+    H = ScalarType(0);
+    for (auto j = 0ul; j < k; ++j) H(j, j) = 1;
+
+    /*--- Inner loop. ---*/
+    for (auto j = k; j < m; ++j) {
+      ++iter;
+      precond(V[j], Z[j]);
+      mat_vec(Z[j], V[j + 1]);
+
+      if (nestedParallel) {
+        /*--- "omp parallel if" does not work well here ---*/
+        SU2_OMP_PARALLEL
+        ModGramSchmidt(true, j, H, V);
+        END_SU2_OMP_PARALLEL
+      } else {
+        ModGramSchmidt(false, j, H, V);
+      }
+    }
+
+    /*--- We don't store the part of W that is equal to V explicitly,
+     * W(:, k:m) = V(:, k:m). ---*/
+
+    /*--- Solve the reduced system. We do not use Given's rotations to factor H in place
+     * because we need the Arnoldi relation to hold to compute the Ritz values. ---*/
+
+    for (auto i = 0ul; i <= m; ++i) {
+      for (auto j = 0ul; j < m; ++j) {
+        Heigen(i, j) = H(i, j);
+      }
+    }
+    EigenVector c = EigenVector::Zero(m + 1);
+    c(k) = rNorm;
+
+    EigenVector y = Heigen.colPivHouseholderQr().solve(c);
+    EigenVector rls = c - Heigen * y;
+
+    /*--- Update the solution and residual. ---*/
+
+    r = V.back() * rls(m);
+    for (auto i = 0ul; i < m; ++i) {
+      x += Z[i] * y(i);
+      r -= V[i] * rls(i);
+    }
+    rNorm = rls.norm();
+
+    if (monitoring && masterRank) {
+      SU2_OMP_MASTER
+      WriteHistory(iter + 1, rNorm / norm0);
+      END_SU2_OMP_MASTER
+    }
+  }
+
+  /*--- Recalculate final (neg.) residual (this should be optional). ---*/
+
+  if (monitoring && config->GetComm_Level() == COMM_FULL) {
+    if (masterRank) {
+      SU2_OMP_MASTER
+      WriteFinalResidual("FGMRES", iter, rNorm / norm0);
+      END_SU2_OMP_MASTER
+    }
+
+    if (recomputeRes) {
+      mat_vec(x, Z.back());
+      Z.back() -= b;
+      ScalarType res = Z.back().norm();
+
+      if (fabs(res - rNorm) > tol * 10) {
+        if (masterRank) {
+          SU2_OMP_MASTER
+          WriteWarning(rNorm, res, tol);
+          END_SU2_OMP_MASTER
+        }
+      }
+    }
+  }
+
+  residual = rNorm / norm0;
+  return iter;
+}
+
+template <class ScalarType>
 unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,
                                                        const CMatrixVectorProduct<ScalarType>& mat_vec,
                                                        const CPreconditioner<ScalarType>& precond, ScalarType tol,
@@ -970,7 +1190,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
                                       ScreenOutput, config);
         break;
       case RESTARTED_FGMRES:
-        IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+        IterLinSol = FGCRODR_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
                                        ScreenOutput, config);
         break;
       case CONJUGATE_GRADIENT:
