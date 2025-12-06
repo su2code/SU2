@@ -841,6 +841,8 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     geometry[MESH_0]->ComputeSurf_Curvature(config);
   }
 
+
+
   /*--- Compute the global surface areas for all markers. ---*/
 
   geometry[MESH_0]->ComputeSurfaceAreaCfgFile(config);

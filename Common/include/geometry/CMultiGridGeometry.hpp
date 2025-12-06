@@ -84,6 +84,15 @@ class CMultiGridGeometry final : public CGeometry {
    */
   void ComputeSurfStraightness(CConfig* config);
 
+  /*!
+   * \brief Compute local curvature at a boundary vertex on Euler wall.
+   * \param[in] fine_grid - Fine grid geometry.
+   * \param[in] iPoint - Point index.
+   * \param[in] iMarker - Marker index.
+   * \return Maximum angle (in degrees) between this vertex normal and adjacent vertex normals.
+   */
+  su2double ComputeLocalCurvature(const CGeometry* fine_grid, unsigned long iPoint, unsigned short iMarker) const;
+
  public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
   using CGeometry::SetBoundControlVolume;

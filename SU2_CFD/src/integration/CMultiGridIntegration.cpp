@@ -645,6 +645,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
 
   delete [] Residual;
 
+  /*--- Zero momentum components of truncation error on viscous walls ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetViscous_Wall(iMarker)) {
       SU2_OMP_FOR_STAT(32)

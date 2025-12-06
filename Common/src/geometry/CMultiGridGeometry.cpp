@@ -33,7 +33,9 @@
 #include <unordered_map>
 #include <climits>
 #include <iostream>
+#include <iomanip>
 #include <cstdlib>
+#include <map>
 
 /*--- Nijso says: this could perhaps be replaced by metis partitioning? ---*/
 CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, unsigned short iMesh) : CGeometry() {
@@ -41,11 +43,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   /*--- Maximum agglomeration size in 2D is 4 nodes, in 3D is 8 nodes. ---*/
   const short int maxAgglomSize = 4;
 
-  /*--- Compute surface straightness to determine straight boundaries ---*/
-  if (iMesh == MESH_0)
-    ComputeSurfStraightness(config);
-  else
-    boundIsStraight = fine_grid->boundIsStraight;
+  /*--- Inherit boundary properties from fine grid ---*/
+  boundIsStraight = fine_grid->boundIsStraight;
 
   /*--- Agglomeration Scheme II (Nishikawa, Diskin, Thomas)
         Create a queue system to do the agglomeration
@@ -80,8 +79,19 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   unsigned long Index_CoarseCV = 0;
 
+  /*--- Statistics for Euler wall agglomeration ---*/
+  map<unsigned short, unsigned long> euler_wall_agglomerated, euler_wall_rejected_curvature, euler_wall_rejected_straight;
+  for (unsigned short iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+      euler_wall_agglomerated[iMarker] = 0;
+      euler_wall_rejected_curvature[iMarker] = 0;
+      euler_wall_rejected_straight[iMarker] = 0;
+    }
+  }
+
   /*--- STEP 1: The first step is the boundary agglomeration. ---*/
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    cout << "marker name = " << config->GetMarker_All_TagBound(iMarker) << endl;
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
 
@@ -130,13 +140,31 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         /*--- Valley -> Valley : conditionally allowed when both points are on the same marker. ---*/
         /*--- ! Note that in the case of MPI SEND_RECEIVE markers, we might need other conditions ---*/
         if (counter == 1) {
+          cout << "we have exactly one marker at point " << iPoint << endl;
+          cout << " marker is " << marker_seed[0] << ", marker name = "
+               << config->GetMarker_All_TagBound(marker_seed[0]);
+          cout << ", marker type = " << config->GetMarker_All_KindBC(marker_seed[0]) << endl;
           // The seed/parent is one valley, so we set this part to true
           // if the child is only on this same valley, we set it to true as well.
           agglomerate_seed = true;
-          /*--- Euler walls can be curved and agglomerating them leads to difficulties ---*/
-          // if (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL) agglomerate_seed = false;
-          if (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL && !boundIsStraight[marker_seed[0]])
-            agglomerate_seed = false;
+          /*--- Euler walls: check curvature-based agglomeration criterion ---*/
+          if (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL) {
+            /*--- Allow agglomeration if marker is straight OR local curvature is small ---*/
+            if (!boundIsStraight[marker_seed[0]]) {
+              /*--- Compute local curvature at this point ---*/
+              su2double local_curvature = ComputeLocalCurvature(fine_grid, iPoint, marker_seed[0]);
+              // limit to 30 degrees
+              if (local_curvature >= 30.0) {
+                agglomerate_seed = false;  // High curvature: do not agglomerate
+                euler_wall_rejected_curvature[marker_seed[0]]++;
+              } else {
+                euler_wall_agglomerated[marker_seed[0]]++;
+              }
+            } else {
+              /*--- Straight wall: agglomerate ---*/
+              euler_wall_agglomerated[marker_seed[0]]++;
+            }
+          }
           /*--- Note that if the marker is a SEND_RECEIVE, then the node is actually an interior point.
                 In that case it can only be agglomerated with another interior point. ---*/
         }
@@ -151,14 +179,25 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
                              (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
 
-          /* --- Euler walls can also not be agglomerated when the point has 2 markers or if curved ---*/
-          // if ((config->GetMarker_All_KindBC(copy_marker[0]) == EULER_WALL) ||
-          //     (config->GetMarker_All_KindBC(copy_marker[1]) == EULER_WALL)) {
-          //   agglomerate_seed = false;
-          // }
-          if ((config->GetMarker_All_KindBC(copy_marker[0]) == EULER_WALL && !boundIsStraight[copy_marker[0]]) ||
-              (config->GetMarker_All_KindBC(copy_marker[1]) == EULER_WALL && !boundIsStraight[copy_marker[1]])) {
-            agglomerate_seed = false;
+          /*--- Euler walls: check curvature-based agglomeration criterion for both markers ---*/
+          bool euler_wall_rejected_here = false;
+          for (unsigned short i = 0; i < 2; i++) {
+            if (config->GetMarker_All_KindBC(copy_marker[i]) == EULER_WALL) {
+              if (!boundIsStraight[copy_marker[i]]) {
+                /*--- Compute local curvature at this point ---*/
+                su2double local_curvature = ComputeLocalCurvature(fine_grid, iPoint, copy_marker[i]);
+                // limit to 30 degrees
+                if (local_curvature >= 30.0) {
+                  agglomerate_seed = false;  // High curvature: do not agglomerate
+                  euler_wall_rejected_curvature[copy_marker[i]]++;
+                  euler_wall_rejected_here = true;
+                }
+              }
+              /*--- Track agglomeration if not rejected ---*/
+              if (agglomerate_seed && !euler_wall_rejected_here) {
+                euler_wall_agglomerated[copy_marker[i]]++;
+              }
+            }
           }
 
           /*--- In 2D, corners are not agglomerated, but in 3D counter=2 means we are on the
@@ -641,6 +680,43 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     MGTable << iMesh << Global_nPointCoarse << ss.str() << config->GetCFL(iMesh);
     if (iMesh == config->GetnMGLevels()) {
       MGTable.PrintFooter();
+    }
+  }
+
+  /*--- Output Euler wall agglomeration statistics ---*/
+  if (rank == MASTER_NODE) {
+    /*--- Gather global statistics for Euler walls ---*/
+    bool has_euler_walls = false;
+    for (unsigned short iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+        has_euler_walls = true;
+        break;
+      }
+    }
+
+    if (has_euler_walls) {
+      cout << endl;
+      cout << "Euler Wall Agglomeration Statistics (45° curvature threshold):" << endl;
+      cout << "----------------------------------------------------------------" << endl;
+
+      for (unsigned short iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker++) {
+        if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+          string marker_name = config->GetMarker_All_TagBound(iMarker);
+          unsigned long agglomerated = euler_wall_agglomerated[iMarker];
+          unsigned long rejected = euler_wall_rejected_curvature[iMarker];
+          unsigned long total = agglomerated + rejected;
+
+          if (total > 0) {
+            su2double accept_rate = 100.0 * su2double(agglomerated) / su2double(total);
+            cout << "  Marker: " << marker_name << endl;
+            cout << "    Seeds agglomerated:       " << agglomerated << " ("
+                 << std::setprecision(1) << std::fixed << accept_rate << "%)" << endl;
+            cout << "    Seeds rejected (>45° curv): " << rejected << " ("
+                 << std::setprecision(1) << std::fixed << (100.0 - accept_rate) << "%)" << endl;
+          }
+        }
+      }
+      cout << "----------------------------------------------------------------" << endl;
     }
   }
 
@@ -1570,4 +1646,68 @@ void CMultiGridGeometry::FindNormal_Neighbor(const CConfig* config) {
       }
     }
   }
+}
+
+su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, unsigned long iPoint,
+                                                     unsigned short iMarker) const {
+  /*--- Compute local curvature (maximum angle between adjacent face normals) at a boundary vertex.
+        This is used to determine if agglomeration is safe based on a curvature threshold. ---*/
+
+  /*--- Get the vertex index for this point on this marker ---*/
+  long iVertex = fine_grid->nodes->GetVertex(iPoint, iMarker);
+  if (iVertex < 0) return 0.0;  // Point not on this marker
+
+  /*--- Get the normal at this vertex ---*/
+  su2double Normal_i[MAXNDIM] = {0.0};
+  fine_grid->vertex[iMarker][iVertex]->GetNormal(Normal_i);
+  su2double Area_i = GeometryToolbox::Norm(int(nDim), Normal_i);
+
+  if (Area_i < 1e-12) return 0.0;  // Skip degenerate vertices
+
+  /*--- Normalize the normal ---*/
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Normal_i[iDim] /= Area_i;
+  }
+
+  /*--- Find maximum angle with neighboring vertices on the same marker ---*/
+  su2double max_angle = 0.0;
+
+  /*--- Loop over edges connected to this point ---*/
+  for (unsigned short iEdge = 0; iEdge < fine_grid->nodes->GetnPoint(iPoint); iEdge++) {
+    unsigned long jPoint = fine_grid->nodes->GetPoint(iPoint, iEdge);
+
+    /*--- Check if neighbor is also on this marker ---*/
+    long jVertex = fine_grid->nodes->GetVertex(jPoint, iMarker);
+    if (jVertex < 0) continue;  // Not on this marker
+
+    /*--- Get normal at neighbor vertex ---*/
+    su2double Normal_j[MAXNDIM] = {0.0};
+    fine_grid->vertex[iMarker][jVertex]->GetNormal(Normal_j);
+    su2double Area_j = GeometryToolbox::Norm(int(nDim), Normal_j);
+
+    if (Area_j < 1e-12) continue;  // Skip degenerate neighbor
+
+    /*--- Normalize the neighbor normal ---*/
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      Normal_j[iDim] /= Area_j;
+    }
+
+    /*--- Compute dot product: cos(angle) = n_i · n_j ---*/
+    su2double dot_product = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      dot_product += Normal_i[iDim] * Normal_j[iDim];
+    }
+
+    /*--- Clamp to [-1, 1] to avoid numerical issues with acos ---*/
+    dot_product = max(-1.0, min(1.0, dot_product));
+
+    /*--- Compute angle in degrees ---*/
+    su2double angle_rad = acos(dot_product);
+    su2double angle_deg = angle_rad * 180.0 / PI_NUMBER;
+
+    /*--- Track maximum angle ---*/
+    max_angle = max(max_angle, angle_deg);
+  }
+
+  return max_angle;
 }
