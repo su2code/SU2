@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -550,7 +550,7 @@ enum ENUM_FLUIDMODEL {
   FLUID_MIXTURE = 9,      /*!< \brief Species mixture model. */
   COOLPROP = 10,          /*!< \brief Thermodynamics library. */
   FLUID_FLAMELET = 11,    /*!< \brief lookup table (LUT) method for premixed flamelets. */
-  DATADRIVEN_FLUID = 12,           /*!< \brief multi-layer perceptron driven fluid model. */
+  DATADRIVEN_FLUID = 12,  /*!< \brief multi-layer perceptron driven fluid model. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -2287,6 +2287,7 @@ enum ENUM_PARAM {
   CST = 34,                   /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
   SURFACE_BUMP = 35,          /*!< \brief Surfacebump function for flat surfaces deformation. */
   SURFACE_FILE = 36,          /*!< \brief Nodal coordinates for surface set using a file (external parameterization). */
+  HICKS_HENNE_CAMBER = 37,    /*!< \brief Hicks-Henne bump function for camber line deformation. */
   DV_EFIELD = 40,             /*!< \brief Electric field in deformable membranes. */
   DV_YOUNG = 41,
   DV_POISSON = 42,
@@ -2304,6 +2305,7 @@ static const MapType<std::string, ENUM_PARAM> Param_Map = {
   MakePair("FFD_CAMBER_2D", FFD_CAMBER_2D)
   MakePair("FFD_THICKNESS_2D", FFD_THICKNESS_2D)
   MakePair("HICKS_HENNE", HICKS_HENNE)
+  MakePair("HICKS_HENNE_CAMBER", HICKS_HENNE_CAMBER)
   MakePair("SURFACE_BUMP", SURFACE_BUMP)
   MakePair("ANGLE_OF_ATTACK", ANGLE_OF_ATTACK)
   MakePair("NACA_4DIGITS", NACA_4DIGITS)
@@ -2543,6 +2545,29 @@ static const MapType<std::string, ENUM_DIRECTDIFF_VAR> DirectDiff_Var_Map = {
   MakePair("ELECTRIC_FIELD", D_EFIELD)
 };
 
+/*!
+ * \brief Types of tapes that can be checked in a tape debug run.
+ */
+enum class CHECK_TAPE_TYPE {
+  OBJECTIVE_FUNCTION,    /*!< \brief Tape that only includes dependencies and objective function calculation. */
+  FULL_SOLVER            /*!< \brief Tape that includes dependencies and all solvers. */
+};
+static const MapType<std::string, CHECK_TAPE_TYPE> CheckTapeType_Map = {
+    MakePair("OBJECTIVE_FUNCTION_TAPE", CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION)
+    MakePair("FULL_SOLVER_TAPE", CHECK_TAPE_TYPE::FULL_SOLVER)
+};
+
+/*!
+ * \brief Types of variables that can be checked for in a tape debug run.
+ */
+enum class CHECK_TAPE_VARIABLES {
+  SOLVER_VARIABLES,     /*!< \brief A (debug) tag will be assigned to solver/conservative variables. */
+  MESH_COORDINATES      /*!< \brief A (debug) tag will be assigned to solver/conservative variables and mesh coordinates. */
+};
+static const MapType<std::string, CHECK_TAPE_VARIABLES> CheckTapeVariables_Map = {
+    MakePair("SOLVER_VARIABLES", CHECK_TAPE_VARIABLES::SOLVER_VARIABLES)
+    MakePair("SOLVER_VARIABLES_AND_MESH_COORDINATES", CHECK_TAPE_VARIABLES::MESH_COORDINATES)
+};
 
 enum class RECORDING {
   CLEAR_INDICES,
@@ -2550,6 +2575,10 @@ enum class RECORDING {
   MESH_COORDS,
   MESH_DEFORM,
   SOLUTION_AND_MESH,
+  TAG_INIT_SOLVER_VARIABLES,
+  TAG_CHECK_SOLVER_VARIABLES,
+  TAG_INIT_SOLVER_AND_MESH,
+  TAG_CHECK_SOLVER_AND_MESH
 };
 
 /*!
@@ -2786,6 +2815,19 @@ static const MapType<std::string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
   MakePair("MESH_LEVEL",           ENUM_SOBOLEV_MODUS::MESH_LEVEL)
   MakePair("ONLY_GRADIENT",        ENUM_SOBOLEV_MODUS::ONLY_GRAD)
 };
+
+/*!
+ * \brief Type of mesh deformation
+ */
+enum class DEFORM_KIND {
+  ELASTIC,                 /*!< \brief Linear elasticity method. */
+  RBF                    /*!< \brief Radial basis function interpolation. */
+};
+static const MapType<std::string, DEFORM_KIND> Deform_Kind_Map = {
+  MakePair("ELASTIC",   DEFORM_KIND::ELASTIC)
+  MakePair("RBF",       DEFORM_KIND::RBF)
+};
+
 
 #undef MakePair
 /* END_CONFIG_ENUMS */

@@ -3,7 +3,7 @@
 ## \file parallel_computation.py
 #  \brief Python script for doing the continuous adjoint computation using the SU2 suite.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -64,7 +64,7 @@ def main():
     options.partitions = int(options.partitions)
     options.compute = options.compute.upper() == "TRUE"
 
-    if options.filename == None:
+    if options.filename is None:
         raise Exception("No config file provided. Use -f flag")
 
     parallel_computation(options.filename, options.partitions, options.compute)

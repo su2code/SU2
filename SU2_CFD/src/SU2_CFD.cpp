@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Command line parsing ---*/
 
-  CLI::App app{"SU2 v8.2.0 \"Harrier\", The Open-Source CFD Code"};
+  CLI::App app{"SU2 v8.3.0 \"Harrier\", The Open-Source CFD Code"};
   app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n"
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("-t,--threads", num_threads, "Number of OpenMP threads per MPI rank.");

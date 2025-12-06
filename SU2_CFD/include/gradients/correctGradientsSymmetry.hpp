@@ -2,7 +2,7 @@
  * \file correctGradientsSymmetry.hpp
  * \brief Implements the symmetry boundary conditions for the gradient computations.
  * \author N. Beishuizen
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

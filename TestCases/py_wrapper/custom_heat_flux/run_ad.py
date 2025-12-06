@@ -2,7 +2,7 @@
 
 ## \file run.py
 #  \brief Unsteady adjoint heat transfer case with custom heat flux.
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -82,7 +82,7 @@ SCREEN_OUTPUT= TIME_ITER, CUR_TIME, INNER_ITER, RMS_RES, LINSOL
 UNST_ADJOINT_ITER= 41
 % Only interested in the final value of the objective.
 ITER_AVERAGE_OBJ= 1
-SOLUTION_FILENAME= restart.dat
+SOLUTION_FILENAME= restart
 VOLUME_OUTPUT= SOLUTION, SENSITIVITY, SENSITIVITY_N
 """
 

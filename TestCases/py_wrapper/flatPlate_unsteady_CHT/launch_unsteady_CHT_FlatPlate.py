@@ -3,7 +3,7 @@
 ## \file launch_unsteady_CHT_FlatPlate.py
 #  \brief Python script to launch SU2_CFD with customized unsteady boundary conditions using the Python wrapper.
 #  \author David Thomas
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #

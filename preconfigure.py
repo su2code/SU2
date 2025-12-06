@@ -3,7 +3,7 @@
 ## \file preconfigure.py
 #  \brief An preconfigure script for setting up the build environment
 #  \author T. Albring and F. Poli
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -37,7 +37,7 @@ def build_ninja():
 
     # If we are on windows, we don't need to compile ninja, we just download the executable
     if os.name == "nt":
-        ninja_exe_url = "https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-win.zip"
+        ninja_exe_url = "https://github.com/ninja-build/ninja/releases/download/v1.13.0/ninja-win.zip"
 
         # Try to execute ninja, if it fails, download .exe from github
         try:
@@ -69,7 +69,12 @@ def build_ninja():
             )
         except OSError:
             print("ninja executable not found. Building ...")
-            subprocess.run(["python3", "configure.py", "--bootstrap"], cwd=ninjapath)
+            # Specify C++17
+            env = os.environ.copy()
+            env["CXXFLAGS"] = env.get("CXXFLAGS", "") + " -std=c++17"
+            subprocess.run(
+                ["python3", "configure.py", "--bootstrap"], cwd=ninjapath, env=env
+            )
             shutil.copy(ninjapath + os.path.sep + "ninja", ".")
 
 
@@ -84,7 +89,6 @@ def run(
     own_fado=True,
     own_mlpcpp=True,
 ):
-
     # Set up the build environment, i.e. clone or download submodules
     init_submodules(
         method="auto",

@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1779,19 +1779,24 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       /* Sum the RMS residuals for all equations. */
 
       New_Func = 0.0;
+      unsigned short totalVars = 0;
       for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
         New_Func += log10(solverFlow->GetRes_RMS(iVar));
+        ++totalVars;
       }
       if ((iMesh == MESH_0) && solverTurb) {
         for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
           New_Func += log10(solverTurb->GetRes_RMS(iVar));
+          ++totalVars;
         }
       }
       if ((iMesh == MESH_0) && solverSpecies) {
         for (unsigned short iVar = 0; iVar < solverSpecies->GetnVar(); iVar++) {
           New_Func += log10(solverSpecies->GetRes_RMS(iVar));
+          ++totalVars;
         }
       }
+      New_Func /= totalVars;
 
       /* Compute the difference in the nonlinear residuals between the
        current and previous iterations, taking care with very low initial
@@ -2262,6 +2267,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) co
 void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
 
   const auto kindLimiter = config->GetKind_SlopeLimit();
+  const auto umusclKappa = config->GetMUSCL_Kappa();
   const auto& solution = base_nodes->GetSolution();
   const auto& gradient = base_nodes->GetGradient_Reconstruction();
   auto& solMin = base_nodes->GetSolution_Min();
@@ -2269,7 +2275,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
   auto& limiter = base_nodes->GetLimiter();
 
   computeLimiters(kindLimiter, this, MPI_QUANTITIES::SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2,
-                  *geometry, *config, 0, nVar, solution, gradient, solMin, solMax, limiter);
+                  *geometry, *config, 0, nVar, umusclKappa, solution, gradient, solMin, solMax, limiter);
 }
 
 void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nVar) {
@@ -2762,7 +2768,6 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
   /*--- First, check that this is not a binary restart file. ---*/
 
   char fname[100];
-  val_filename += ".csv";
   strcpy(fname, val_filename.c_str());
   int magic_number;
 
@@ -2911,7 +2916,6 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config, string val_filename) {
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
-  val_filename += ".dat";
   strcpy(fname, val_filename.c_str());
   const int nRestart_Vars = 5;
   Restart_Vars.resize(nRestart_Vars);
@@ -3562,12 +3566,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   const auto KIND_SOLVER = val_kind_solver;
   const auto KIND_MARKER = val_kind_marker;
 
-  const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                             (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ||
-                             (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
-
-  const auto iZone = config->GetiZone();
-  const auto nZone = config->GetnZone();
 
   auto profile_filename = config->GetInlet_FileName();
 
@@ -3596,17 +3594,6 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   //if (config->GetEnergy_Equation() ==false)
   //nCol_InletFile = nCol_InletFile -1;
 
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  if (nZone > 1)
-    profile_filename = config->GetMultizone_FileName(profile_filename, iZone, ".dat");
-
-  /*--- Modify file name for an unsteady restart ---*/
-
-  if (time_stepping)
-    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter, ".dat");
-
-
   // create vector of column names
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -3623,7 +3610,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     // are stored in p_value and t_value and the flow direction in flow_dir_or_vel, while for a
     // supersonic inlet the static conditions are stored in p_value and t_value and the flow
     // velocity in flow_dir_or_vel.
-    su2double p_value, t_value;
+    su2double p_value{}, t_value{};
     const su2double* flow_dir_or_vel = nullptr;
 
     if (KIND_MARKER == INLET_FLOW) {
@@ -4108,7 +4095,7 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
 
   unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint;
-  int index;
+  AD::Identifier index;
 
   /*--- Loop over all the markers ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -4275,14 +4262,6 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
   /*--- Read and store the restart metadata. ---*/
 
 //  Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, filename);
-
-  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
-
-  if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry, config, filename);
-  } else {
-    Read_SU2_Restart_ASCII(geometry, config, filename);
-  }
 
   /*--- Load data from the restart into correct containers. ---*/
 

@@ -2,7 +2,7 @@
 
 ## \file topology_optimization.py
 #  \brief Python script to drive SU2 in topology optimization.
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -70,7 +70,7 @@ options = {"disp": True, "maxcor": 10, "ftol": ftol_u, "gtol": 1e-18}
 commands = ["SU2_CFD ", "SU2_CFD_AD "]
 
 # file through which SU2 gets the design densities
-inputFile = "element_properties.dat"
+inputFile = "element_properties"
 
 # names of the output files [objective value, objective gradient, constraint value, ...]
 outputFiles = ["grad_compliance.dat", "grad_vol_frac.dat"]
@@ -123,8 +123,8 @@ class Driver:
         # clear previous output and run direct solver
         try:
             os.remove(self._objValFile)
-        except:
-            pass
+        except OSError:
+            pass  # Ignore error if file does not exist
 
         try:
             sp.call(self._objValCommand, shell=True)
@@ -136,7 +136,7 @@ class Driver:
                     break
             # the return code of mpirun is useless, we test the value of the function
             self._assert_isfinite(val)
-        except:
+        except Exception:
             raise RuntimeError("Objective function evaluation failed")
         # end
 
@@ -150,8 +150,8 @@ class Driver:
         # clear previous output and run direct solver
         try:
             os.remove(self._objDerFile)
-        except:
-            pass
+        except OSError:
+            pass  # Ignore error if file does not exist
         N = x.shape[0]
         y = np.ndarray((N,))
 
@@ -167,7 +167,7 @@ class Driver:
                 self._assert_isfinite(val)
                 y[i] = val * obj_scale / var_scale
             # end
-        except:
+        except Exception:
             raise RuntimeError("Objective gradient evaluation failed")
         # end
 
@@ -186,7 +186,7 @@ class Driver:
                     val = float(lines[1].split(",")[col])
                     break
             self._assert_isfinite(val)
-        except:
+        except Exception:
             raise RuntimeError("Constraint function evaluation failed")
         # end
 
@@ -200,8 +200,8 @@ class Driver:
         # clear previous output and run solver
         try:
             os.remove(self._conDerFile)
-        except:
-            pass
+        except OSError:
+            pass  # Ignore error if file does not exist
         N = x.shape[0]
         y = np.ndarray((N,))
 
@@ -217,7 +217,7 @@ class Driver:
                 self._assert_isfinite(val)
                 y[i] = val * con_scale / var_scale
             # end
-        except:
+        except Exception:
             raise RuntimeError("Constraint function evaluation failed")
         # end
 
@@ -295,7 +295,7 @@ class IncrParam:
         return self._value == self._maxi
 
     def value(self):
-        if self._func == None:
+        if self._func is None:
             return self._value
         else:
             return self._func(self._value)

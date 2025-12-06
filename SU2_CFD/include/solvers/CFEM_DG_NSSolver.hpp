@@ -2,7 +2,7 @@
  * \file CFEM_DG_NSSolver.hpp
  * \brief Headers of the CFEM_DG_NSSolver class
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Main class for defining the Navier-Stokes Discontinuous Galerkin finite element flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  */
 class CFEM_DG_NSSolver final : public CFEM_DG_EulerSolver {
 private:

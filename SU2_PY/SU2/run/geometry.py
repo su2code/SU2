@@ -3,7 +3,7 @@
 ## \file geometry.py
 #  \brief python package for running geometry analyses
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -75,11 +75,11 @@ def geometry(config, step=1e-3):
     grad_filename = konfig["GRAD_OBJFUNC_FILENAME"]
 
     if tabular_format == "CSV":
-        func_filename = func_filename.split(".")[0] + ".csv"
-        grad_filename = grad_filename.split(".")[0] + ".csv"
+        func_filename = func_filename + ".csv"
+        grad_filename = grad_filename + ".csv"
     else:
-        func_filename = func_filename.split(".")[0] + ".dat"
-        grad_filename = grad_filename.split(".")[0] + ".dat"
+        func_filename = func_filename + ".dat"
+        grad_filename = grad_filename + ".dat"
 
     # choose dv values
     Definition_DV = konfig["DEFINITION_DV"]

@@ -2,7 +2,7 @@
  * \file CFEANonlinearElasticity.hpp
  * \brief Declaration and inlines of the nonlinear elasticity FE numerics class.
  * \author Ruben Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@
  *        Compute_Plane_Stress_Term and Compute_Stress_Tensor.
  * \ingroup Elasticity_Equations
  * \author R.Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  */
 class CFEANonlinearElasticity : public CFEAElasticity {
 

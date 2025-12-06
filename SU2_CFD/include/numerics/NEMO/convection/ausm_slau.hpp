@@ -2,7 +2,7 @@
  * \file ausm_slau.hpp
  * \brief Declaration of numerics classes for the AUSM and SLAU family of schemes in NEMO.
  * \author F. Palacios, S.R. Copeland, W. Maier, C. Garbacz
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

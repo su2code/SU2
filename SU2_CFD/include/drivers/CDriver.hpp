@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -751,6 +751,19 @@ class CDriver : public CDriverBase {
    * \param[in] vel_z - Value of velocity along z-axis.
    */
   void SetMarkerTranslationRate(unsigned short iMarker, passivedouble vel_x, passivedouble vel_y, passivedouble vel_z);
+
+  /*!
+   * \brief Get the Freestream Density for nondimensionalization
+   * \return Freestream Density
+   */
+  passivedouble GetDensityFreeStreamND() const;
+
+  /*!
+   * \brief Get the reference Body force for nondimensionalization
+   * \return reference Body Force
+   */
+  passivedouble GetForceRef() const;
+
 
 /// \}
 };

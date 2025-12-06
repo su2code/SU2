@@ -3,7 +3,7 @@
  * \brief Declaration of the point class that stores geometric and adjacency
  *        information for dual control volumes.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -82,10 +82,9 @@ class CPoint {
   su2activematrix Coord; /*!< \brief vector with the coordinates of the node. */
   su2activematrix
       Coord_Old; /*!< \brief Old coordinates vector for primal solution reloading for Disc.Adj. with dynamic grid. */
-  su2activematrix Coord_Sum; /*!< \brief Sum of coordinates vector for geometry smoothing. */
-  su2activematrix Coord_n;   /*!< \brief Coordinates at time n for use with dynamic meshes. */
-  su2activematrix Coord_n1;  /*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
-  su2activematrix Coord_p1;  /*!< \brief Coordinates at time n+1 for use with dynamic meshes. */
+  su2activematrix Coord_n;  /*!< \brief Coordinates at time n for use with dynamic meshes. */
+  su2activematrix Coord_n1; /*!< \brief Coordinates at time n-1 for use with dynamic meshes. */
+  su2activematrix Coord_p1; /*!< \brief Coordinates at time n+1 for use with dynamic meshes. */
 
   su2activematrix GridVel;      /*!< \brief Velocity of the grid for dynamic mesh cases. */
   CVectorOfMatrix GridVel_Grad; /*!< \brief Gradient of the grid velocity for dynamic meshes. */
@@ -113,9 +112,10 @@ class CPoint {
   su2activevector MaxLength;          /*!< \brief The maximum cell-center to cell-center length. */
   su2activevector RoughnessHeight;    /*!< \brief Roughness of the nearest wall. */
 
-  su2matrix<int> AD_InputIndex; /*!< \brief Indices of Coord variables in the adjoint vector. */
-  su2matrix<int>
-      AD_OutputIndex; /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
+  su2matrix<AD::Identifier>
+      AD_InputIndex; /*!< \brief Indices of Coord variables in the adjoint vector before solver iteration. */
+  su2matrix<AD::Identifier>
+      AD_OutputIndex; /*!< \brief Indices of Coord variables in the adjoint vector after solver iteration. */
 
   /*!
    * \brief Allocate fields required by the minimal constructor.

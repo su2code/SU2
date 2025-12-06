@@ -1,7 +1,7 @@
 /*!
  * \file trans_correlations.hpp
  * \brief Numerics class for the LM model's correlation functions.
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

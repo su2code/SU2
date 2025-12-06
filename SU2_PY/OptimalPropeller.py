@@ -1,7 +1,7 @@
 ## \file OptimalPropeller.py
 #  \brief Python script for generating the ActuatorDisk.dat file.
 #  \author E. Saetta, L. Russo, R. Tognaccini
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #

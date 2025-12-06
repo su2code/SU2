@@ -3,7 +3,7 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "option_structure.hpp"
 #include "parallelization/mpi_structure.hpp"
 using namespace std;
 
@@ -232,18 +233,19 @@ class COptionEnumList final : public COptionBase {
 
 template <class Type>
 class COptionArray final : public COptionBase {
-  string name;     // Identifier for the option
-  const int size;  // Number of elements
-  Type* field;     // Reference to the field
+  string name;             // Identifier for the option
+  const int size;          // Number of elements
+  const bool allow_fewer;  // Allow smaller size
+  Type* field;             // Reference to the field
 
  public:
-  COptionArray(string option_field_name, const int list_size, Type* option_field)
-      : name(option_field_name), size(list_size), field(option_field) {}
+  COptionArray(string option_field_name, const int list_size, const bool allow_fewer, Type* option_field)
+      : name(std::move(option_field_name)), size(list_size), allow_fewer(allow_fewer), field(option_field) {}
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     // Check that the size is correct
-    if (option_value.size() != (unsigned long)this->size) {
+    if ((option_value.size() < size_t(size) && !allow_fewer) || option_value.size() > size_t(size)) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": wrong number of arguments: ");
@@ -257,7 +259,7 @@ class COptionArray final : public COptionBase {
       newstring.append(" found");
       return newstring;
     }
-    for (int i = 0; i < this->size; i++) {
+    for (size_t i = 0; i < option_value.size(); i++) {
       istringstream is(option_value[i]);
       if (!(is >> field[i])) {
         return badValue(" array", this->name);
@@ -569,6 +571,9 @@ class COptionDVParam : public COptionBase {
           break;
         case HICKS_HENNE:
           nParamDV[iDV] = 2;
+          break;
+        case HICKS_HENNE_CAMBER:
+          nParamDV[iDV] = 1;
           break;
         case SURFACE_BUMP:
           nParamDV[iDV] = 3;

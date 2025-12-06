@@ -2,7 +2,7 @@
 
 ## \file run.py
 #  \brief Unsteady adjoint FEA case with custom load.
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -84,7 +84,7 @@ CONV_FIELD= ADJOINT_DISP_X, ADJOINT_DISP_Y
 FEA_ADVANCED_MODE= YES
 UNST_ADJOINT_ITER= 21
 ITER_AVERAGE_OBJ= 0
-SOLUTION_FILENAME= restart.dat
+SOLUTION_FILENAME= restart
 VOLUME_OUTPUT= SOLUTION, SENSITIVITY, SENSITIVITY_N
 """
 

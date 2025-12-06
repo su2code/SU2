@@ -2,7 +2,7 @@
  * \file CGradientSmoothing.cpp
  * \brief Main solver routines for the gradient smoothing problem.
  * \author T. Dick
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -93,7 +93,7 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
     element_container[GRAD_TERM][EL_PYRAM2] = new CPYRAM6();
   }
 
-  /*--- For operations on surfaces we initalize the structures for nDim-1 ---*/
+  /*--- For operations on surfaces we initialize the structures for nDim-1 ---*/
   if (config->GetSmoothOnSurface()) {
     if (nDim == 2) {
       element_container[GRAD_TERM][EL_LINE] = new CLINE();

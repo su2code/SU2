@@ -2,7 +2,7 @@
  * \file CSU2FileWriter.cpp
  * \brief Filewriter class SU2 native ASCII (CSV) format.
  * \author T. Albring
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

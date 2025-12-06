@@ -4,7 +4,7 @@
  *        Contains methods for common tasks, e.g. compute flux
  *        Jacobians.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -51,7 +51,6 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
-  Prandtl_Lam = config->GetPrandtl_Lam();
   Prandtl_Turb = config->GetPrandtl_Turb();
   Gas_Constant = config->GetGas_ConstantND();
 

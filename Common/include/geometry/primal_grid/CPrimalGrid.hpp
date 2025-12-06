@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for storing the primal grid structure.
  *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,11 +28,11 @@
 
 #pragma once
 
+#include <cstdint>
 #include <iostream>
 #include <vector>
 #include <limits>
 #include <cstdlib>
-#include <limits>
 #include <memory>
 
 #include "../../option_structure.hpp"

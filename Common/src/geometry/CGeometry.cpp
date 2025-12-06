@@ -2,7 +2,7 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -792,15 +792,20 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
   nPoint_Send_All[0] = 0;
   int* nPoint_Recv_All = new int[size + 1];
   nPoint_Recv_All[0] = 0;
-  int* nPoint_Flag = new int[size];
 
-  for (iRank = 0; iRank < size; iRank++) {
-    nPoint_Send_All[iRank] = 0;
-    nPoint_Recv_All[iRank] = 0;
-    nPoint_Flag[iRank] = -1;
-  }
-  nPoint_Send_All[size] = 0;
-  nPoint_Recv_All[size] = 0;
+  /*--- Store a set of unique (point, marker) pairs per destination rank. ---*/
+  using PointMarkerPair = std::pair<unsigned long, unsigned long>;
+
+  auto pairHash = [](const PointMarkerPair& p) -> std::size_t {
+    // Use the golden ratio constant and bit mixing to generate pair hash
+    std::size_t h1 = std::hash<unsigned long>{}(p.first);
+    std::size_t h2 = std::hash<unsigned long>{}(p.second);
+
+    return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+  };
+
+  using PointMarkerSet = std::unordered_set<PointMarkerPair, decltype(pairHash)>;
+  std::vector<PointMarkerSet> Points_Send_All(size, PointMarkerSet(0, pairHash));
 
   /*--- Loop through all of our periodic markers and track
    our sends with each rank. ---*/
@@ -821,19 +826,17 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
 
           iRank = static_cast<int>(geometry->vertex[iMarker][iVertex]->GetDonorProcessor());
 
-          /*--- If we have not visited this point last, increment our
-           number of points that must be sent to a particular proc. ---*/
-
-          if ((nPoint_Flag[iRank] != static_cast<int>(iPoint))) {
-            nPoint_Flag[iRank] = static_cast<int>(iPoint);
-            nPoint_Send_All[iRank + 1] += 1;
-          }
+          /*--- Store the (point, marker) pair in the set for the destination rank. ---*/
+          Points_Send_All[iRank].insert(std::make_pair(iPoint, static_cast<unsigned long>(iMarker)));
         }
       }
     }
   }
 
-  delete[] nPoint_Flag;
+  for (iRank = 0; iRank < size; iRank++) {
+    nPoint_Send_All[iRank + 1] = Points_Send_All[iRank].size();
+    nPoint_Recv_All[iRank + 1] = 0;
+  }
 
   /*--- Communicate the number of points to be sent/recv'd amongst
    all processors. After this communication, each proc knows how
@@ -943,11 +946,15 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
   auto* idSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend] * nPackets];
   for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend] * nPackets; iSend++) idSend[iSend] = 0;
 
+  /*--- Re-use set of unique points per destination rank. ---*/
+  for (iRank = 0; iRank < size; iRank++) Points_Send_All[iRank].clear();
+
   /*--- Build the lists of local index and periodic marker index values. ---*/
 
   ii = 0;
   jj = 0;
   for (iSend = 0; iSend < nPeriodicSend; iSend++) {
+    int destRank = Neighbors_PeriodicSend[iSend];
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
         iPeriodic = config->GetMarker_All_PerBound(iMarker);
@@ -969,14 +976,21 @@ void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
              index on the matching periodic point and the periodic marker
              index to be communicated to the recv rank. ---*/
 
-            if (iRank == Neighbors_PeriodicSend[iSend]) {
-              Local_Point_PeriodicSend[ii] = iPoint;
-              Local_Marker_PeriodicSend[ii] = static_cast<unsigned long>(iMarker);
-              jj = ii * nPackets;
-              idSend[jj] = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
-              jj++;
-              idSend[jj] = static_cast<unsigned long>(iPeriodic);
-              ii++;
+            if (iRank == destRank) {
+              /*--- Check if we have already added this (point, marker) pair
+               for this destination rank. Use the result if insert(), which is
+               a pair whose second element is success. ---*/
+              const auto pointMarkerPair = std::make_pair(iPoint, static_cast<unsigned long>(iMarker));
+              const auto insertResult = Points_Send_All[destRank].insert(pointMarkerPair);
+              if (insertResult.second) {
+                Local_Point_PeriodicSend[ii] = iPoint;
+                Local_Marker_PeriodicSend[ii] = static_cast<unsigned long>(iMarker);
+                jj = ii * nPackets;
+                idSend[jj] = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
+                jj++;
+                idSend[jj] = static_cast<unsigned long>(iPeriodic);
+                ii++;
+              }
             }
           }
         }
@@ -3758,7 +3772,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
       bool admissibleColoring = false; /* keep track wether the last tested coloring is admissible */
 
       while (true) {
-        edgeColoring = colorSparsePattern(pattern, nextEdgeColorGroupSize, balanceColors);
+        edgeColoring = colorSparsePattern(pattern, nextEdgeColorGroupSize, false, balanceColors);
 
         /*--- If the coloring fails, reduce the color group size. ---*/
         if (edgeColoring.empty()) {
@@ -3795,12 +3809,12 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
 
       /*--- If the last tested coloring was not admissible, recompute the final coloring. ---*/
       if (!admissibleColoring) {
-        edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
+        edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, false, balanceColors);
       }
     }
     /*--- No adaptivity. ---*/
     else {
-      edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
+      edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, false, balanceColors);
     }
 
     /*--- If the coloring fails use the natural coloring. This is a
@@ -3853,7 +3867,7 @@ const CCompressedSparsePatternUL& CGeometry::GetElementColoring(su2double* effic
 
     /*--- Color the elements. ---*/
     constexpr bool balanceColors = true;
-    elemColoring = colorSparsePattern(pattern, elemColorGroupSize, balanceColors);
+    elemColoring = colorSparsePattern(pattern, elemColorGroupSize, false, balanceColors);
 
     /*--- Same as for the edge coloring. ---*/
     if (elemColoring.empty()) SetNaturalElementColoring();
@@ -3882,7 +3896,7 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
     /*--- Color the coarse points. ---*/
     vector<tColor> color;
     const auto& adjacency = geometry[iMesh]->nodes->GetPoints();
-    if (colorSparsePattern<tColor, nColor>(adjacency, 1, false, &color).empty()) continue;
+    if (colorSparsePattern<tColor, nColor>(adjacency, 1, true, false, &color).empty()) continue;
 
     /*--- Propagate colors to fine mesh. ---*/
     for (auto step = 0u; step < iMesh; ++step) {
@@ -4028,8 +4042,8 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
     }
   }
 
-  const auto coloring =
-      colorSparsePattern<uint8_t, std::numeric_limits<uint8_t>::max()>(CCompressedSparsePatternUL(adjacency), 1, true);
+  const auto coloring = colorSparsePattern<uint8_t, std::numeric_limits<uint8_t>::max()>(
+      CCompressedSparsePatternUL(adjacency), 1, false, true);
   const auto nColors = coloring.getOuterSize();
 
   /*--- Sort linelets by color. ---*/

@@ -2,7 +2,7 @@
  * \file CTETRA1.cpp
  * \brief Definition of 4-node tetra element with 1 Gauss point.
  * \author R. Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -2,7 +2,7 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -620,7 +620,7 @@ class CPhysicalGeometry final : public CGeometry {
 
   /*!
    * \brief Compute the maximum thickness of an airfoil.
-   * \return Maximum thickness at a particular seccion.
+   * \return Maximum thickness at a particular section.
    */
   su2double Compute_MaxThickness(su2double* Plane_P0, su2double* Plane_Normal, CConfig* config,
                                  vector<su2double>& Xcoord_Airfoil, vector<su2double>& Ycoord_Airfoil,
@@ -628,7 +628,7 @@ class CPhysicalGeometry final : public CGeometry {
 
   /*!
    * \brief Compute the twist of an airfoil.
-   * \return Twist at a particular seccion.
+   * \return Twist at a particular section.
    */
   su2double Compute_Twist(su2double* Plane_P0, su2double* Plane_Normal, vector<su2double>& Xcoord_Airfoil,
                           vector<su2double>& Ycoord_Airfoil, vector<su2double>& Zcoord_Airfoil) override;
@@ -708,7 +708,7 @@ class CPhysicalGeometry final : public CGeometry {
 
   /*!
    * \brief Compute the dihedral of a wing.
-   * \return Dihedral at a particular seccion.
+   * \return Dihedral at a particular section.
    */
   su2double Compute_Dihedral(su2double* LeadingEdge_im1, su2double* TrailingEdge_im1, su2double* LeadingEdge_i,
                              su2double* TrailingEdge_i) override;

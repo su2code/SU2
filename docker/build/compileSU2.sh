@@ -60,10 +60,10 @@ else
 fi
 
 if [ ! -d "docker_build" ]; then
-  ./meson.py docker_build --prefix=$workdir/install $flags
+  ./meson.py setup docker_build --prefix=$workdir/install $flags
 else
   echo "Build Directory found. Ignoring build flags. To set new flags, remove docker_build directory."
-  ./meson.py docker_build --reconfigure $flags
+  ./meson.py setup docker_build --reconfigure $flags
 fi
 
 ./ninja -C docker_build install

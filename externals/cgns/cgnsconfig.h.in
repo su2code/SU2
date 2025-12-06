@@ -35,26 +35,24 @@
 #ifndef CGNSCONFIG_H
 #define CGNSCONFIG_H
 
-#define CG_BUILD_HDF5      1
-#define CG_BUILD_DEBUG     0
-#define CG_BUILD_FORTRAN   0
-#define CG_BUILD_PARALLEL  @BUILDPARALLEL@
-#define CG_BUILD_BASESCOPE 0
+#define CG_BUILD_DEBUG     @BUILDDEBUG@
+#define CG_BUILD_FORTRAN   @BUILDFORTRAN@
+#define CG_BUILD_BASESCOPE @BUILDBASESCOPE@
 
-#define HDF5_INCLUDE_PATH ""
-#define HDF5_LIBRARY      ""
+#define HDF5_INCLUDE_PATH "@HDF5INC@"
+#define HDF5_LIBRARY      "@HDF5LIB@"
 
-#define HDF5_NEED_MPI     0
-#define HDF5_NEED_SZIP    0
-#define HDF5_NEED_ZLIB    0
+#define HDF5_NEED_MPI     @H5NEEDMPI@
+#define HDF5_NEED_SZIP    @H5NEEDSZIP@
+#define HDF5_NEED_ZLIB    @H5NEEDZLIB@
 
-#define MPI_INCLUDE_PATH ""
-#define MPI_LIBRARY      ""
-#define SZIP_LIBRARY     ""
-#define ZLIB_LIBRARY     ""
+#define MPI_INCLUDE_PATH "@MPIINC@"
+#define MPI_LIBRARY      "@MPILIBS@"
+#define SZIP_LIBRARY     "@SZIPLIB@"
+#define ZLIB_LIBRARY     "@ZLIBLIB@"
 
-#define MPI_INC          ""
-#define MPI_LIBS         ""
+#define MPI_INC          "@MPIINC@"
+#define MPI_LIBS         "@MPILIBS@"
 
 #include "cgnstypes.h"
 

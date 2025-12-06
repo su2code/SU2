@@ -2,7 +2,7 @@
  * \file CMeshVariable.cpp
  * \brief Definition of the variables for mesh motion using a pseudo-elastic approach.
  * \author Ruben Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@ CMeshVariable::CMeshVariable(unsigned long npoint, unsigned long ndim, CConfig *
   /*--- Store the dimensionality of the problem ---*/
   nDim = ndim;
 
-  /*--- Initalize the variables that will always be there in a problem with moving mesh ---*/
+  /*--- Initialize the variables that will always be there in a problem with moving mesh ---*/
   Mesh_Coord.resize(nPoint,nDim) = su2double(0.0);
   WallDistance.resize(nPoint) = su2double(1e-9);
 

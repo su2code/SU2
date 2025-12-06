@@ -3,7 +3,7 @@
  * \brief Reads a 3D box grid into linear partitions for the
  *        finite element solver (FEM).
  * \author T. Economon, E. van der Weide
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -3,7 +3,7 @@
  * \brief Declaration and inlines of the class to transfer conservative variables
  *        from a generic zone into another
  * \author G. Gori Politecnico di Milano
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

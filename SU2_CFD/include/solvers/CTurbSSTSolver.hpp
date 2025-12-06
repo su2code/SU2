@@ -2,7 +2,7 @@
  * \file CTurbSSTSolver.hpp
  * \brief Headers of the CTurbSSTSolver class
  * \author A. Campos, F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -53,6 +53,14 @@ private:
                      CSolver **solver_container,
                      const CConfig *config,
                      unsigned short val_marker);
+                     
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
+   * a nonlinear iteration for stability.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeUnderRelaxationFactor(const CConfig *config);
+
 public:
   /*!
    * \brief Constructor.

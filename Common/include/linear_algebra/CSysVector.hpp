@@ -3,7 +3,7 @@
  * \brief Declararion and inlines of the vector class used in the
  * solution of large, distributed, sparse linear systems.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,6 +32,7 @@
 #include "../parallelization/omp_structure.hpp"
 #include "../parallelization/vectorization.hpp"
 #include "vector_expressions.hpp"
+#include "../../include/CConfig.hpp"
 
 /*!
  * \brief OpenMP worksharing construct used in CSysVector for loops.
@@ -70,6 +71,8 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   unsigned long nElm = 0;       /*!< \brief Total number of elements (or number elements on this processor). */
   unsigned long nElmDomain = 0; /*!< \brief Total number of elements without Ghost cells. */
   unsigned long nVar = 1;       /*!< \brief Number of elements in a block. */
+
+  ScalarType* d_vec_val = nullptr; /*!< \brief Device Pointer to store the vector values on the GPU. */
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -194,6 +197,29 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     for (auto i = 0ul; i < nElm; i++) vec_val[i] = SU2_TYPE::GetValue(other[i]);
     END_CSYSVEC_PARFOR
   }
+
+  /*!
+   * \brief Performs the memory copy from host to device.
+   * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
+   */
+  void HtDTransfer(bool trigger = true) const;
+
+  /*!
+   * \brief Performs the memory copy from device to host.
+   * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
+   */
+  void DtHTransfer(bool trigger = true) const;
+
+  /*!
+   * \brief Sets all the elements of the GPU vector to a certain value
+   * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
+   */
+  void GPUSetVal(ScalarType val, bool trigger = true) const;
+
+  /*!
+   * \brief return device pointer that points to the CSysVector values in GPU memory
+   */
+  inline ScalarType* GetDevicePointer() const { return d_vec_val; }
 
   /*!
    * \brief return the number of local elements in the CSysVector

@@ -2,7 +2,7 @@
  * \file CAdjElasticityOutput.hpp
  * \brief Headers of the adjoint elasticity output class.
  * \author T. Albring, R. Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

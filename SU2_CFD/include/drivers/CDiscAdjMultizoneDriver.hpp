@@ -2,7 +2,7 @@
  * \class CDiscAdjMultizoneDriver.hpp
  * \brief Class for driving adjoint multi-zone problems.
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -69,10 +69,10 @@ protected:
   };
 
   /*!
-   * \brief Kinds of recordings (three different ones).
+   * \brief Kinds of recordings.
    */
   enum class Kind_Tape {
-    FULL_TAPE,                /*!< \brief Entire derivative information for a coupled adjoint
+    FULL_SOLVER_TAPE,         /*!< \brief Entire derivative information for a coupled adjoint
                                           solution update. */
     OBJECTIVE_FUNCTION_TAPE,  /*!< \brief Record only the dependence of the objective function
                                           w.r.t. solver variables (from all zones). */
@@ -96,7 +96,7 @@ protected:
 
   bool eval_transfer = false;     /*!< \brief Evaluate the transfer section of the tape. */
   su2double ObjFunc;              /*!< \brief Value of the objective function. */
-  int ObjFunc_Index;              /*!< \brief Index of the value of the objective function. */
+  AD::Identifier ObjFunc_Index;   /*!< \brief Index of the value of the objective function. */
 
   CIteration*** direct_iteration;       /*!< \brief Array of pointers to the direct iterations. */
   COutput** direct_output;              /*!< \brief Array of pointers to the direct outputs. */
@@ -140,6 +140,16 @@ public:
    * \brief [Overload] Launch the computation for discrete adjoint multizone problems.
    */
   void StartSolver() override;
+
+  /*!
+   * \brief [Overload] Launch the tape test mode for the discrete adjoint multizone solver.
+   */
+  void TapeTest ();
+
+  /*!
+   * \brief [Overload] Get error numbers after a tape test run of the discrete adjoint multizone solver.
+   */
+  int TapeTestGatherErrors(AD::ErrorReport& error_report) const;
 
   /*!
    * \brief Preprocess the multizone iteration

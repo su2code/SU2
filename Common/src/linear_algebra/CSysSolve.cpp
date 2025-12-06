@@ -2,7 +2,7 @@
  * \file CSysSolve.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,7 +47,7 @@ constexpr T linSolEpsilon() {
 }
 template <>
 constexpr float linSolEpsilon<float>() {
-  return 1e-12;
+  return 1e-14;
 }
 }  // namespace
 

@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -600,6 +600,7 @@ def get_dvMap():
         34: "CST",
         35: "SURFACE_BUMP",
         36: "SURFACE_FILE",
+        37: "HICKS_HENNE_CAMBER",
         40: "DV_EFIELD",
         41: "DV_YOUNG",
         42: "DV_POISSON",
@@ -722,6 +723,9 @@ def get_gradFileFormat(grad_type, plot_format, kindID, special_cases=[]):
     elif kindID == "HICKS_HENNE":
         header.append(r',"Up/Down","Loc_Max"')
         write_format.append(r", %s, %s")
+    if kindID == "HICKS_HENNE_CAMBER":
+        header.append(r',"Loc_Max"')
+        write_format.append(r", %s")
     elif kindID == "SURFACE_BUMP":
         header.append(r',"Loc_Start","Loc_End","Loc_Max"')
         write_format.append(r", %s, %s, %s")
@@ -1178,8 +1182,6 @@ def restart2solution(config, state={}):
     if config.MATH_PROBLEM == "DIRECT":
         restart = config.RESTART_FILENAME
         solution = config.SOLUTION_FILENAME
-        restart = restart.split(".")[0]
-        solution = solution.split(".")[0]
 
         if "RESTART_ASCII" in config.get("OUTPUT_FILES", ["RESTART_BINARY"]):
             restart += ".csv"

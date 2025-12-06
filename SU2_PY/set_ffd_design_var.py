@@ -3,7 +3,7 @@
 ## \file set_ffd_design_var.py
 #  \brief Python script for automatically generating a list of FFD variables.
 #  \author T. Economon, F. Palacios
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -214,7 +214,7 @@ if options.dim == 3:
     iVariable = 0
     dvList = "DEFINITION_DV= "
     for kIndex in range(options.kOrder):
-        for jIndex in range(1 + options.jOrder / 2):
+        for jIndex in range(1 + options.jOrder // 2):
             for iIndex in range(options.iOrder):
                 iVariable = iVariable + 1
                 dvList = (
@@ -237,7 +237,7 @@ if options.dim == 3:
                     + ", 1.0, 0.0 )"
                 )
                 if iVariable < (
-                    options.iOrder * (1 + options.jOrder / 2) * options.kOrder
+                    options.iOrder * (1 + options.jOrder // 2) * options.kOrder
                 ):
                     dvList = dvList + "; "
 
@@ -249,7 +249,7 @@ if options.dim == 3:
     iVariable = 0
     dvList = "DEFINITION_DV= "
     for kIndex in range(options.kOrder):
-        for jIndex in range(1 + options.jOrder / 2):
+        for jIndex in range(1 + options.jOrder // 2):
             for iIndex in range(options.iOrder):
                 iVariable = iVariable + 1
                 dvList = (
@@ -272,7 +272,7 @@ if options.dim == 3:
                     + ", 0.0, 1.0 )"
                 )
                 if iVariable < (
-                    options.iOrder * (1 + options.jOrder / 2) * options.kOrder
+                    options.iOrder * (1 + options.jOrder // 2) * options.kOrder
                 ):
                     dvList = dvList + "; "
 

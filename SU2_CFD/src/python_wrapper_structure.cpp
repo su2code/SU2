@@ -2,7 +2,7 @@
  * \file python_wrapper_structure.cpp
  * \brief Driver subroutines that are used by the Python wrapper. Those routines are usually called from an external Python environment.
  * \author D. Thomas
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -438,6 +438,14 @@ void CDriver::SetAdjointSourceTerm(vector<passivedouble> values) {
 //////////////////////////////////////////////////////////////////////////////////
 
 unsigned long CDriver::GetNumberTimeIter() const { return config_container[selected_zone]->GetnTime_Iter(); }
+
+passivedouble CDriver::GetDensityFreeStreamND() const {
+  return SU2_TYPE::GetValue(config_container[selected_zone]->GetDensity_FreeStreamND());
+  }
+
+passivedouble CDriver::GetForceRef() const {
+  return SU2_TYPE::GetValue(config_container[selected_zone]->GetForce_Ref());
+  }
 
 unsigned long CDriver::GetTimeIter() const { return TimeIter; }
 

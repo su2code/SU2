@@ -4,7 +4,7 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring and F. Poli
-#  \version 8.2.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -51,7 +51,6 @@ def init_submodules(
     own_fado=True,
     own_mlpcpp=True,
 ):
-
     cur_dir = sys.path[0]
 
     # This information of the modules is used if projects was not cloned using git
@@ -60,11 +59,11 @@ def init_submodules(
     github_repo_codi = "https://github.com/scicompkl/CoDiPack"
     sha_version_medi = "0cfaf96e7a31a5a8941b97f84198da03a8f8bd7a"
     github_repo_medi = "https://github.com/SciCompKL/MeDiPack"
-    sha_version_opdi = "a5e2ac47035b6b3663f60d5f80b7a9fe62084867"
+    sha_version_opdi = "294807b0111ce241cda97db62f80cdd5012d9381"
     github_repo_opdi = "https://github.com/SciCompKL/OpDiLib"
-    sha_version_meson = "41c650a040d50e0912d268af7a903a9ce1456dfa"
+    sha_version_meson = "5a82ea0501736a666ca9cc003ea0774f8219fd65"
     github_repo_meson = "https://github.com/mesonbuild/meson"
-    sha_version_ninja = "52649de2c56b63f42bc59513d51286531c595b44"
+    sha_version_ninja = "b4d51f6ed5bed09dd2b70324df0d9cb4ecad2638"
     github_repo_ninja = "https://github.com/ninja-build/ninja"
     sha_version_mpp = "5ff579f43781cae07411e5ab46291c9971536be6"
     github_repo_mpp = "https://github.com/mutationpp/Mutationpp"
@@ -195,7 +194,6 @@ def is_git_directory(path="."):
 
 def submodule_status(path, sha_commit):
     if not os.path.exists(path + os.path.sep + sha_commit):
-
         # Check the status of the submodule
         status = subprocess.run(
             ["git", "submodule", "status", path],
@@ -252,7 +250,6 @@ def submodule_status(path, sha_commit):
 
 
 def download_module(name, alt_name, git_repo, commit_sha):
-
     # ZipFile does not preserve file permissions.
     # This is a workaround for that problem:
     # https://stackoverflow.com/questions/39296101/python-zipfile-removes-execute-permissions-from-binaries
@@ -275,7 +272,6 @@ def download_module(name, alt_name, git_repo, commit_sha):
     module_identifier = os.path.join(alt_name, commit_sha)
 
     if not os.path.exists(module_identifier):
-
         if os.path.exists(alt_name) and os.listdir(alt_name):
             print("Directory " + alt_name + " is not empty")
             print("Maybe submodules are already cloned with git?")

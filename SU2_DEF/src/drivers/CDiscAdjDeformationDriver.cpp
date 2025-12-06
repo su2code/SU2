@@ -2,7 +2,7 @@
  * \file CDiscAdjDeformationDriver.cpp
  * \brief Main subroutines for driving the projection of sensitivities.
  * \author T. Economon, H. Kline, R. Sanchez, A. Gastaldi, H. Patel
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -31,7 +31,7 @@
 
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../../Common/include/grid_movement/CSurfaceMovement.hpp"
-#include "../../../Common/include/grid_movement/CVolumetricMovement.hpp"
+#include "../../../Common/include/grid_movement/CVolumetricMovementFactory.hpp"
 #include "../../../SU2_CFD/include/numerics/CGradSmoothing.hpp"
 #include "../../../SU2_CFD/include/output/CBaselineOutput.hpp"
 #include "../../../SU2_CFD/include/solvers/CBaselineSolver.hpp"
@@ -285,8 +285,8 @@ void CDiscAdjDeformationDriver::Preprocess() {
       unsigned short nInst_Zone = nInst[iZone];
 
       grid_movement[iZone] = new CVolumetricMovement*[nInst_Zone]();
-      grid_movement[iZone][INST_0] =
-          new CVolumetricMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+      grid_movement[iZone][INST_0] = CVolumetricMovementFactory::CreateCVolumetricMovement(
+          geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
 
       /*--- Read in sensitivities from file. ---*/
 
@@ -563,6 +563,10 @@ void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* c
 
     else if (config->GetDesign_Variable(iDV) == ROTATION) {
       surface_movement->SetRotation(geometry, config, iDV, true);
+    }
+
+    else if (config->GetDesign_Variable(iDV) == HICKS_HENNE_CAMBER) {
+      surface_movement->SetHicksHenneCamber(geometry, config);
     }
 
     /*--- NACA_4Digits design variable. ---*/

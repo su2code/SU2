@@ -2,7 +2,7 @@
  * \file NEMO_sources.hpp
  * \brief Declarations of numerics classes for source-term integration.
  * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for two-temperature model source terms.
  * \ingroup SourceDiscr
  * \author C. Garbacz, W. Maier, S. Copeland.
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  */
 class CSource_NEMO : public CNEMONumerics {
 private:

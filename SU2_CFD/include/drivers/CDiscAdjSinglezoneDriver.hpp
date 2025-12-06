@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez, H. Patel, A. Gastaldi
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -47,7 +47,7 @@ class LinPreconditioner;
  * \ingroup DiscAdj
  * \brief Class for driving single-zone adjoint solvers.
  * \author R. Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  */
 class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
 protected:

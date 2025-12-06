@@ -2,7 +2,7 @@
  * \file CIncEulerVariable.cpp
  * \brief Definition of the variable classes for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,6 +37,8 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+  TemperatureLimits[0]= config->GetTemperatureLimits(0);
+  TemperatureLimits[1]= config->GetTemperatureLimits(1);
 
   /*--- Solution initialization ---*/
 
@@ -76,7 +78,7 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
   /*--- Set the value of the temperature directly ---*/
 
   su2double Temperature = Solution(iPoint, nDim+1);
-  const auto check_temp = SetTemperature(iPoint, Temperature);
+  const auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
@@ -102,7 +104,7 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
     /*--- Recompute the primitive variables ---*/
 
     Temperature = Solution(iPoint, nDim+1);
-    SetTemperature(iPoint, Temperature);
+    SetTemperature(iPoint, Temperature, TemperatureLimits);
     FluidModel->SetTDState_T(Temperature);
     SetDensity(iPoint, FluidModel->GetDensity());
 

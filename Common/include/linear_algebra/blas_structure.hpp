@@ -4,7 +4,7 @@
           operations, which are typically found in the BLAS libraries.
           The functions are in the <i>blass_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@ class CConfig;
  * \ingroup BLAS
  * \brief Class, which serves as an interface to the BLAS functionalities needed.
  * \author: E. van der Weide
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  */
 class CBlasStructure {
  public:

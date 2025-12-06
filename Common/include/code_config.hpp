@@ -2,7 +2,7 @@
  * \file code_config.hpp
  * \brief Header file for collecting common macros, definitions and type configurations.
  * \author T. Albring, P. Gomes, J. Blühdorn
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -110,6 +110,8 @@ using su2double = codi::RealReversePrimal;
 using su2double = codi::RealReversePrimalIndexGen<double, double, codi::ReuseIndexManager<int> >;
 #elif defined(CODI_PRIMAL_MULTIUSE_TAPE)
 using su2double = codi::RealReversePrimalIndex;
+#elif defined(CODI_TAG_TAPE)
+using su2double = codi::RealReverseTag;
 #else
 #error "Please define a CoDiPack tape."
 #endif

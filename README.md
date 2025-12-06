@@ -3,15 +3,13 @@
 </p>
 
 
-# SU2 (ver. 8.2.0 "Harrier"): The Open-Source CFD Code
+# SU2 (ver. 8.3.0 "Harrier"): The Open-Source CFD Code
 
 Computational analysis tools have revolutionized the way we design engineering systems, but most established codes are proprietary, unavailable, or prohibitively expensive for many users. The SU2 team is changing this, making multiphysics analysis and design optimization freely available as open-source software and involving everyone in its creation and development.
 
-For an overview of the technical details in SU2, please see the following AIAA Journal article:
-
-"SU2: An open-source suite for multiphysics simulation and design," AIAA Journal, 54(3):828-846, 2016. <http://arc.aiaa.org/doi/10.2514/1.J053813>
-
 Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
+
+If you use the latest version of SU2, please cite [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17209057.svg)](https://doi.org/10.5281/zenodo.17209057) to acknowledge the active contributors.
 
 Continuous Integration:<br/>
 [![Regression Testing](https://github.com/su2code/SU2/workflows/Regression%20Testing/badge.svg?branch=develop)](https://github.com/su2code/SU2/actions)
@@ -54,7 +52,7 @@ Short summary of the minimal requirements:
 If you have these tools installed, you can create a configuration using the `meson.py` found in the root source code folder:
 
 ```
-./meson.py build
+./meson.py setup build
 ```
 
 Use `ninja` to compile and install the code

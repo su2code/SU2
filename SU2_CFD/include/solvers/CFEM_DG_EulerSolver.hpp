@@ -2,7 +2,7 @@
  * \file CFEM_DG_EulerSolver.hpp
  * \brief Headers of the CFEM_DG_EulerSolver class
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,7 +35,7 @@
  * \brief Main class for defining the Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:

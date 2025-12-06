@@ -2,7 +2,7 @@
  * \file CGradientSmoothingSolver.hpp
  * \brief SOlver class for Sobolev smoothing of sensitivities.
  * \author T. Dick
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -275,7 +275,7 @@ public:
   }
 
   /*!
-   * \brief Set the current working dimension, if the seperate dimension option is set.
+   * \brief Set the current working dimension, if the separate dimension option is set.
    * \param[in] iDim - the dimension we are currently working in.
    */
   inline void SetCurrentDim(unsigned int iDim) {

@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow NEMO problems.
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 8.2.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -218,7 +218,6 @@ CAvgGradCorrected_NEMO::CAvgGradCorrected_NEMO(unsigned short val_nDim,
   for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
 
-  Proj_Mean_GradPrimVar_Edge = new su2double[nPrimVarGrad];
 
   Flux   = new su2double[nVar];
   Jacobian_i = new su2double* [nVar];
@@ -245,7 +244,6 @@ CAvgGradCorrected_NEMO::~CAvgGradCorrected_NEMO() {
     delete [] Mean_GradPrimVar[iVar];
   delete [] Mean_GradPrimVar;
 
-  delete [] Proj_Mean_GradPrimVar_Edge;
 
   delete [] Flux;
 
@@ -323,9 +321,9 @@ CNumerics::ResidualType<> CAvgGradCorrected_NEMO::ComputeResidual(const CConfig 
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
   for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
-    Proj_Mean_GradPrimVar_Edge[iVar] = GeometryToolbox::DotProduct(nDim, Mean_GradPrimVar[iVar], Edge_Vector);
+    su2double Proj_Mean_GradPrimVar_Edge = GeometryToolbox::DotProduct(nDim, Mean_GradPrimVar[iVar], Edge_Vector);
     for (auto iDim = 0ul; iDim < nDim; iDim++) {
-      Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
+      Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge -
                                        (PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
     }
   }
