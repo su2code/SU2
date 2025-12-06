@@ -1945,10 +1945,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
   } else {
-    const su2double factor = 1.1;
-    const su2double CFL = factor * config->GetCFL(iMesh - 1);// / Coeff;
+    const su2double factor = 1.5;
+    const su2double CFL = factor * config->GetCFL(iMesh - 1);
     cout << "imesh="<< iMesh <<"Avg CFL="<<CFL << endl;
-
     config->SetCFL(iMesh, CFL);
 
   }

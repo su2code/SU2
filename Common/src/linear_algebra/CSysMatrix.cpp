@@ -505,9 +505,21 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
 #define A(I, J) matrix[(I)*nVar + (J)]
 
   /*--- Transform system in Upper Matrix ---*/
+
+  /*--- Regularization epsilon to prevent divide-by-zero ---*/
+  constexpr ScalarType eps = 1e-12;
+
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
+
+      /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
+      if (std::abs(A(jVar, jVar)) < eps) {
+        ScalarType sign = (A(jVar, jVar) >= ScalarType(0)) ? ScalarType(1) : ScalarType(-1);
+        A(jVar, jVar) = sign * eps;
+      }
+
       ScalarType weight = A(iVar, jVar) / A(jVar, jVar);
+
       for (auto kVar = jVar; kVar < nVar; kVar++) A(iVar, kVar) -= weight * A(jVar, kVar);
       vec[iVar] -= weight * vec[jVar];
     }
@@ -517,6 +529,13 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
   for (auto iVar = nVar; iVar > 0ul;) {
     iVar--;  // unsigned type
     for (auto jVar = iVar + 1; jVar < nVar; jVar++) vec[iVar] -= A(iVar, jVar) * vec[jVar];
+
+    /*--- Regularize diagonal if too small ---*/
+    if (std::abs(A(iVar, iVar)) < eps) {
+      ScalarType sign = (A(iVar, iVar) >= ScalarType(0)) ? ScalarType(1) : ScalarType(-1);
+      A(iVar, iVar) = sign * eps;
+    }
+
     vec[iVar] /= A(iVar, iVar);
   }
 #undef A
@@ -819,6 +838,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 
     for (auto iPoint = begin; iPoint < end; ++iPoint) {
       auto idx = iPoint * nVar;
+
       LowerProduct(prod, iPoint, begin, low_prod);         // Compute L.x*
       VectorSubtraction(&vec[idx], low_prod, &prod[idx]);  // Compute y = b - L.x*
       Gauss_Elimination(iPoint, &prod[idx]);               // Solve D.x* = y
@@ -845,6 +865,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
     for (auto iPoint = row_end; iPoint > begin;) {
       iPoint--;  // because of unsigned type
       auto idx = iPoint * nVar;
+
       DiagonalProduct(prod, iPoint, dia_prod);           // Compute D.x*
       UpperProduct(prod, iPoint, row_end, up_prod);      // Compute U.x_(n+1)
       VectorSubtraction(dia_prod, up_prod, &prod[idx]);  // Compute y = D.x*-U.x_(n+1)
