@@ -1712,7 +1712,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   /* Adapt the CFL number on all multigrid levels using an
    exponential progression with under-relaxation approach. */
 
-  vector<su2double> MGFactor(config->GetnMGLevels()+1,1.0);
+  //vector<su2double> MGFactor(config->GetnMGLevels()+1,1.0);
   const su2double CFLFactorDecrease = config->GetCFL_AdaptParam(0);
   const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
@@ -1722,7 +1722,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
 
   /* Number of iterations considered to check for stagnation. */
-  const auto Res_Count = min(400ul, config->GetnInner_Iter()-1);
+  const auto Res_Count = min(100ul, config->GetnInner_Iter()-1);
 
   static bool reduceCFL, resetCFL, canIncrease;
 
@@ -1822,7 +1822,14 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
             prev = val;
           }
           /* Flip-flop: many sign changes with little net progress */
-          reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5);
+          bool flipFlopDetected = (signChanges > Res_Count/4) && (totalChange > -0.5);
+          unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+          if (rank == MASTER_NODE && iter % 50 == 0) {
+            cout << "FlipFlop Debug - Iter " << iter << ": signChanges=" << signChanges
+                 << " threshold=" << Res_Count/4 << " totalChange=" << totalChange
+                 << " flipFlopDetected=" << flipFlopDetected << endl;
+          }
+          reduceCFL |= flipFlopDetected;
 
           if (totalChange > 2.0) { // orders of magnitude divergence
             resetCFL = true;
@@ -1991,7 +1998,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
           previousOscillation = oscillationDetected;
 
           /* Only act on oscillation if it persists for at least 3 checks */
-          if (oscillationCounter >= 3) {
+          bool persistentOscillation = (oscillationCounter >= 3);
+          if (rank == MASTER_NODE && currIter % 50 == 0) {
+            cout << "Persistence Debug - Iter " << currIter << ": oscillationCounter=" << oscillationCounter
+                 << " persistentOscillation=" << persistentOscillation << endl;
+          }
+          if (persistentOscillation) {
             reduceCFL |= true;
           }
 
@@ -2162,6 +2174,26 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     const su2double CFL = factor * config->GetCFL(iMesh - 1);
     cout << "imesh="<< iMesh <<"Avg CFL="<<CFL << endl;
     config->SetCFL(iMesh, CFL);
+
+    /* Apply the CFL to all points on this coarse mesh. */
+    CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
+    CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
+    CSolver *solverSpecies = solver_container[iMesh][SPECIES_SOL];
+
+    const su2double CFLTurbReduction = config->GetCFLRedCoeff_Turb();
+    const su2double CFLSpeciesReduction = config->GetCFLRedCoeff_Species();
+
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
+    for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
+      solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
+      if (solverTurb) {
+        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL * CFLTurbReduction);
+      }
+      if (solverSpecies) {
+        solverSpecies->GetNodes()->SetLocalCFL(iPoint, CFL * CFLSpeciesReduction);
+      }
+    }
+    END_SU2_OMP_FOR
 
   }
 
