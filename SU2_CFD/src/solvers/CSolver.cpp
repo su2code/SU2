@@ -1765,6 +1765,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       canIncrease = (linRes < linTol) && (iter >= startingIter);
 
+      if (rank == MASTER_NODE && iter % 50 == 0) {
+        cout << "CFL Debug - Iter " << iter << ": linRes=" << linRes << " linTol=" << linTol
+             << " reduceCFL=" << reduceCFL << " canIncrease=" << canIncrease << " resetCFL=" << resetCFL << endl;
+      }
+
      if (Res_Count > 0) {
         Old_Func = New_Func;
         if (NonLinRes_Series.empty()) NonLinRes_Series.resize(Res_Count,0.0);
@@ -1805,8 +1810,29 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         NonLinRes_Counter++;
         if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
 
+        /* Fast flip-flop detection using XOR sign changes (from old code).
+           This catches rapid oscillations that the peak-valley logic might miss. */
+        if (config->GetInnerIter() >= Res_Count) {
+          unsigned long signChanges = 0;
+          su2double totalChange = 0.0;
+          auto prev = NonLinRes_Series.front();
+          for (const auto& val : NonLinRes_Series) {
+            totalChange += val;
+            signChanges += (prev > 0) ^ (val > 0);
+            prev = val;
+          }
+          /* Flip-flop: many sign changes with little net progress */
+          reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5);
+
+          if (totalChange > 2.0) { // orders of magnitude divergence
+            resetCFL = true;
+            NonLinRes_Counter = 0;
+            for (auto& val : NonLinRes_Series) val = 0.0;
+          }
+        }
+
         /* Detect oscillations and divergence using peak-valley progression
-           plus slope-based guards. This replaces the older sign-change check.
+           plus slope-based guards. This works alongside the flip-flop check above.
            - Maintain a history window (Res_Count up to 400 iters).
            - Extract peaks/valleys with minimum separation to avoid noise.
            - Require new peaks/valleys to progress downward; otherwise flag.
@@ -1815,10 +1841,14 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
         if (config->GetInnerIter() >= 3) {
           const unsigned long EXT_WINDOW = 300;
-          const unsigned long MIN_SEPARATION = 10;    /* iters between extrema to avoid noise */
+          const unsigned long MIN_SEPARATION = 30;    /* iters between extrema to avoid noise */
           const su2double VALUE_TOL = 0.05;            /* log10 residual tolerance for peak/valley improvement */
           const su2double SLOPE_FLAT = -1.0e-3;        /* slope >= this => stagnation */
-          const su2double SLOPE_UP   =  1.5e-3;        /* slope > this => divergence */
+          const su2double SLOPE_UP   =  0.1;           /* slope > this => divergence (log10 per iter) */
+
+          /* Counter to avoid reacting to every single iteration */
+          static unsigned long oscillationCounter = 0;
+          static bool previousOscillation = false;
 
           /* Reconstruct New_Func history from the delta buffer. */
           vector<su2double> funcHistory;
@@ -1840,6 +1870,15 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
           /* Find peaks and valleys using deques for automatic size management. */
           static deque<pair<unsigned long, su2double>> peaks;
           static deque<pair<unsigned long, su2double>> valleys;
+
+          /* Clear old extrema that are outside the lookback window */
+          while (!peaks.empty() && currIter > EXT_WINDOW && peaks.front().first + EXT_WINDOW < currIter) {
+            peaks.pop_front();
+          }
+          while (!valleys.empty() && currIter > EXT_WINDOW && valleys.front().first + EXT_WINDOW < currIter) {
+            valleys.pop_front();
+          }
+
           unsigned long lastExtIdx = 0;
           for (unsigned long i = 1; i + 1 < histSize; i++) {
             if (i - lastExtIdx < MIN_SEPARATION) continue;
@@ -1864,11 +1903,16 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
             if (pts.size() < 2) return 0.0;
             if (pts.size() == 2) {
               /* Two points: simple slope. */
-              return (pts[1].second - pts[0].second) / su2double(pts[1].first - pts[0].first);
+              const su2double dt = su2double(pts[1].first - pts[0].first);
+              if (dt < 1e-12) return 0.0; /* Avoid division by zero */
+              return (pts[1].second - pts[0].second) / dt;
             }
             /* Three points: average of two consecutive slopes. */
-            const su2double slope1 = (pts[1].second - pts[0].second) / su2double(pts[1].first - pts[0].first);
-            const su2double slope2 = (pts[2].second - pts[1].second) / su2double(pts[2].first - pts[1].first);
+            const su2double dt1 = su2double(pts[1].first - pts[0].first);
+            const su2double dt2 = su2double(pts[2].first - pts[1].first);
+            if (dt1 < 1e-12 || dt2 < 1e-12) return 0.0; /* Avoid division by zero */
+            const su2double slope1 = (pts[1].second - pts[0].second) / dt1;
+            const su2double slope2 = (pts[2].second - pts[1].second) / dt2;
             return 0.5 * (slope1 + slope2);
           };
 
@@ -1887,19 +1931,77 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
           if (haveSlopePeaks) slopePeaks = slopeLSQ(peaks);
           if (haveSlopeValleys) slopeValleys = slopeLSQ(valleys);
 
-          bool slopeFlat = (haveSlopePeaks && slopePeaks >= SLOPE_FLAT) || (haveSlopeValleys && slopeValleys >= SLOPE_FLAT);
+          /* If slope is exactly zero (extrema at same iteration), it's not meaningful - ignore it */
+          bool slopeFlat = false;
+          if (haveSlopePeaks && fabs(slopePeaks) > 1e-12 && slopePeaks >= SLOPE_FLAT) slopeFlat = true;
+          if (haveSlopeValleys && fabs(slopeValleys) > 1e-12 && slopeValleys >= SLOPE_FLAT) slopeFlat = true;
+
           bool slopeUp = (haveSlopePeaks && slopePeaks > SLOPE_UP) || (haveSlopeValleys && slopeValleys > SLOPE_UP);
+
+          /* Check overall trend: even with oscillations, is the average moving down? */
+          su2double overallSlope = 0.0;
+          if (peaks.size() >= 2 && valleys.size() >= 2) {
+            /* Use the oldest peak/valley and newest peak/valley to get overall trend */
+            su2double oldestValue = min(peaks.front().second, valleys.front().second);
+            su2double newestValue = min(peaks.back().second, valleys.back().second);
+            unsigned long oldestIter = min(peaks.front().first, valleys.front().first);
+            unsigned long newestIter = max(peaks.back().first, valleys.back().first);
+            su2double dt = su2double(newestIter - oldestIter);
+            if (dt > 1e-12) {
+              overallSlope = (newestValue - oldestValue) / dt;
+            }
+          }
 
           /* Only act when we have at least two peaks and two valleys to avoid premature locking. */
           bool haveData = (peaks.size() >= 2 && valleys.size() >= 2);
           bool progressionFail = haveData && peaksStagnant && valleysStagnant;
-          bool oscillationDetected = haveData && (progressionFail || slopeFlat || slopeUp);
 
-          reduceCFL |= oscillationDetected;
+          /* If all slopes are zero (extrema at same time or too close), don't treat as oscillation */
+          bool allSlopesZero = (fabs(slopePeaks) < 1e-12 && fabs(slopeValleys) < 1e-12 && fabs(overallSlope) < 1e-12);
+
+          /* Oscillation is only bad if slopes are problematic AND overall trend is not improving */
+          bool oscillationDetected = false;
+          if (haveData && !allSlopesZero) {
+            oscillationDetected = (progressionFail || (slopeFlat && overallSlope >= -1.0e-3) || slopeUp);
+          }
+
+          if (rank == MASTER_NODE && currIter % 50 == 0 && haveData) {
+            cout << "Oscillation Debug - Iter " << currIter << ": peaks=" << peaks.size() << " valleys=" << valleys.size()
+                 << " slopePeaks=" << slopePeaks << " slopeValleys=" << slopeValleys
+                 << " overallSlope=" << overallSlope
+                 << " slopeFlat=" << slopeFlat << " progressionFail=" << progressionFail
+                 << " oscillationDetected=" << oscillationDetected << endl;
+          }
+
+          /* If overall trend is good (decreasing), don't block CFL increase */
+          if (overallSlope < -1.0e-3) {
+            oscillationDetected = false;
+          }
+
+          /* Damping: only reduce CFL if oscillation persists for multiple iterations */
+          if (oscillationDetected) {
+            if (previousOscillation) {
+              oscillationCounter++;
+            } else {
+              oscillationCounter = 1;
+            }
+          } else {
+            oscillationCounter = 0;
+          }
+          previousOscillation = oscillationDetected;
+
+          /* Only act on oscillation if it persists for at least 3 checks */
+          if (oscillationCounter >= 3) {
+            reduceCFL |= true;
+          }
 
           /* Strong divergence safety: if the total change over the full buffer is large positive, reset. */
           su2double totalChange = 0.0;
           for (const auto& v : NonLinRes_Series) totalChange += v;
+          if (rank == MASTER_NODE && currIter % 50 == 0) {
+            cout << "Divergence Debug - Iter " << currIter << ": totalChange=" << totalChange
+                 << " slopeUp=" << slopeUp << endl;
+          }
           if (totalChange > 2.0 || slopeUp) { // 2 orders worse or clear rising slope
             resetCFL = true;
             NonLinRes_Counter = 0;
@@ -1972,6 +2074,13 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         CFLFactor = CFLFactorIncrease;
       }
 
+      /* Debug output for first point every 50 iterations */
+      if (iPoint == 0 && config->GetInnerIter() % 50 == 0 && rank == MASTER_NODE) {
+        cout << "Point " << iPoint << " - underRelax=" << underRelaxation
+             << " CFLFactor=" << CFLFactor << " CFL=" << CFL
+             << " reduceCFL=" << reduceCFL << " canIncrease=" << canIncrease << endl;
+      }
+
       /* Check if we are hitting the min or max and adjust. */
 
       if (CFL*CFLFactor <= CFLMin) {
@@ -1982,6 +2091,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       } else if (CFL*CFLFactor >= CFLMax) {
         CFL       = CFLMax;
         //CFLFactor = MGFactor[iMesh];
+      }
+
+      /* Debug output for min/max capping */
+      if (iPoint == 0 && config->GetInnerIter() % 50 == 0 && rank == MASTER_NODE) {
+        cout << "After min/max check - CFL=" << CFL << " (min=" << CFLMin << ", max=" << CFLMax
+             << ", wanted=" << (CFL*CFLFactor) << ")" << endl;
       }
 
       /* If we detect a stalled nonlinear residual, then force the CFL
