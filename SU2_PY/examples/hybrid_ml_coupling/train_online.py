@@ -70,7 +70,7 @@ def main():
             # We use the History Output value for this demonstration
             # Note: Ensure "RMS_DENSITY" is present in your config's HISTORY_OUTPUT
             physics_state = driver.GetOutputValue("RMS_DENSITY")
-        except:
+        except Exception:
             print(f"  Iter {i}: [Warning] Could not extract RMS_DENSITY. Using dummy value.")
             physics_state = 0.0
             
