@@ -30,6 +30,7 @@
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
+#include <deque>
 #include "../../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
 #include "../../../Common/include/toolboxes/MMS/CInviscidVortexSolution.hpp"
 #include "../../../Common/include/toolboxes/MMS/CMMSIncEulerSolution.hpp"
@@ -1836,9 +1837,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
           const unsigned long currIter = config->GetInnerIter();
           const unsigned long startIter = currIter - histSize + 1;
 
-          /* Find peaks and valleys. */
-          vector<pair<unsigned long, su2double>> peaks;
-          vector<pair<unsigned long, su2double>> valleys;
+          /* Find peaks and valleys using deques for automatic size management. */
+          static deque<pair<unsigned long, su2double>> peaks;
+          static deque<pair<unsigned long, su2double>> valleys;
           unsigned long lastExtIdx = 0;
           for (unsigned long i = 1; i + 1 < histSize; i++) {
             if (i - lastExtIdx < MIN_SEPARATION) continue;
@@ -1849,40 +1850,27 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
             /* Drop extrema that fall outside lookback window. */
             if (currIter > EXT_WINDOW && iter_i + EXT_WINDOW < currIter) continue;
             if (b > a && b > c) {
-              peaks.emplace_back(iter_i, b);
+              peaks.push_back(make_pair(iter_i, b));
+              if (peaks.size() > 3) peaks.pop_front();
               lastExtIdx = i;
             } else if (b < a && b < c) {
-              valleys.emplace_back(iter_i, b);
+              valleys.push_back(make_pair(iter_i, b));
+              if (valleys.size() > 3) valleys.pop_front();
               lastExtIdx = i;
             }
           }
 
-          auto slopeLSQ = [](const vector<pair<unsigned long, su2double>>& pts) {
+          auto slopeLSQ = [](const deque<pair<unsigned long, su2double>>& pts) {
             if (pts.size() < 2) return 0.0;
-            const unsigned long n = pts.size();
-            su2double meanX = 0.0, meanY = 0.0;
-            for (const auto& p : pts) { meanX += p.first; meanY += p.second; }
-            meanX /= n; meanY /= n;
-            su2double num = 0.0, den = 0.0;
-            for (const auto& p : pts) {
-              su2double dx = p.first - meanX;
-              num += dx * (p.second - meanY);
-              den += dx * dx;
+            if (pts.size() == 2) {
+              /* Two points: simple slope. */
+              return (pts[1].second - pts[0].second) / su2double(pts[1].first - pts[0].first);
             }
-            return (den > 1e-16) ? num / den : 0.0;
+            /* Three points: average of two consecutive slopes. */
+            const su2double slope1 = (pts[1].second - pts[0].second) / su2double(pts[1].first - pts[0].first);
+            const su2double slope2 = (pts[2].second - pts[1].second) / su2double(pts[2].first - pts[1].first);
+            return 0.5 * (slope1 + slope2);
           };
-
-          /* Keep only the last three peaks/valleys for slope; drop older than window. */
-          auto trimLastN = [](const vector<pair<unsigned long, su2double>>& v, unsigned long N) {
-            vector<pair<unsigned long, su2double>> out;
-            const unsigned long sz = v.size();
-            const unsigned long start = (sz > N) ? sz - N : 0;
-            for (unsigned long i = start; i < sz; ++i) out.push_back(v[i]);
-            return out;
-          };
-
-          auto recentPeaks = trimLastN(peaks, 3);
-          auto recentValleys = trimLastN(valleys, 3);
 
           bool peaksStagnant = false, valleysStagnant = false;
           if (peaks.size() >= 2) {
@@ -1894,10 +1882,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
           /* Slope of last 3 peaks/valleys (only if enough points). */
           su2double slopePeaks = 0.0, slopeValleys = 0.0;
-          bool haveSlopePeaks = (recentPeaks.size() >= 2);
-          bool haveSlopeValleys = (recentValleys.size() >= 2);
-          if (haveSlopePeaks) slopePeaks = slopeLSQ(recentPeaks);
-          if (haveSlopeValleys) slopeValleys = slopeLSQ(recentValleys);
+          bool haveSlopePeaks = (peaks.size() >= 2);
+          bool haveSlopeValleys = (valleys.size() >= 2);
+          if (haveSlopePeaks) slopePeaks = slopeLSQ(peaks);
+          if (haveSlopeValleys) slopeValleys = slopeLSQ(valleys);
 
           bool slopeFlat = (haveSlopePeaks && slopePeaks >= SLOPE_FLAT) || (haveSlopeValleys && slopeValleys >= SLOPE_FLAT);
           bool slopeUp = (haveSlopePeaks && slopePeaks > SLOPE_UP) || (haveSlopeValleys && slopeValleys > SLOPE_UP);
