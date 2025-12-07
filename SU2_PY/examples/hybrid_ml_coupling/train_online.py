@@ -21,7 +21,6 @@ Requirements:
     - torch
 """
 
-import numpy as np
 import pysu2
 from mpi4py import MPI
 import torch
