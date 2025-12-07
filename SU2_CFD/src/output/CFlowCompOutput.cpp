@@ -639,7 +639,7 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::vector<std::shared_ptr<
   SpanWiseValuesOut = geometry->GetSpanWiseValue(OUTFLOW);
 
   /*--- Writing Span wise inflow thermodynamic quantities. ---*/
-  spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_thermodynamic_values.dat";
+  spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_thermodynamic_values";
   if (nZone > 1) {
     spanwise_performance_filename.append("_" + std::to_string(val_iZone) + ".dat");
   } else {
@@ -677,12 +677,13 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::vector<std::shared_ptr<
     file.width(30); file << BladePerf->GetInletState().GetTotalEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
     file.width(30); file << BladePerf->GetInletState().GetDensity()*config[ZONE_0]->GetDensity_Ref();
     file.width(30); file << BladePerf->GetInletState().GetEntropy()*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+    file << endl;
   }
 
   file.close();
 
   /*--- Writing Span wise outflow thermodynamic quantities. ---*/
-  spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_thermodynamic_values.dat";
+  spanwise_performance_filename = "TURBOMACHINERY/outflow_spanwise_thermodynamic_values";
   if (nZone > 1) {
     spanwise_performance_filename.append("_" + std::to_string(val_iZone) + ".dat");
   } else {
@@ -721,12 +722,13 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::vector<std::shared_ptr<
     file.width(30); file << BladePerf->GetOutletState().GetTotalEnthalpy()*config[ZONE_0]->GetEnergy_Ref();
     file.width(30); file << BladePerf->GetOutletState().GetDensity()*config[ZONE_0]->GetDensity_Ref();
     file.width(30); file << BladePerf->GetOutletState().GetEntropy()*config[ZONE_0]->GetEnergy_Ref()/config[ZONE_0]->GetTemperature_Ref();
+    file << endl;
   }
 
   file.close();
 
   /*--- Writing Span wise inflow kinematic quantities. ---*/
-  spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_kinematic_values.dat";
+  spanwise_performance_filename = "TURBOMACHINERY/inflow_spanwise_kinematic_values";
   if (nZone > 1) {
     spanwise_performance_filename.append("_" + std::to_string(val_iZone) + ".dat");
   } else {

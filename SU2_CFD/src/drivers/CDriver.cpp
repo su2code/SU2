@@ -2467,6 +2467,8 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
               case TURBO_INTERFACE_KIND::MIXING_PLANE: {
                 interpolation[donor][target] = unique_ptr<CInterpolator>(CInterpolatorFactory::CreateInterpolator(
                                        geometry, config, interpolation[target][donor].get(), donor, target, true));
+                string fname = "TURBOMACHINERY/Mixing_Plane_Interpolator_Donor_" + to_string(donor) + "_Target_" + to_string(target) + ".dat";
+                interpolation[donor][target]->WriteInterpolationDetails(fname, config);
                 if (rank == MASTER_NODE) cout << " Transferring ";
                 auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
                 interface[donor][target] = new CMixingPlaneInterface(nVar, 0);

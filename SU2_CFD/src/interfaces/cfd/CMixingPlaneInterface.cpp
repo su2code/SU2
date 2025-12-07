@@ -125,12 +125,12 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
       InitializeTarget_Variable(target_solution, markTarget, iTargetSpan, nSpanDonor);
 
-      if ((iTargetSpan == 0) || (iTargetSpan == nTargetSpan - 1) || (iTargetSpan == nTargetSpan - 2)) {
+      if ((iTargetSpan == 0) || (iTargetSpan == nTargetSpan) || (iTargetSpan == nTargetSpan - 1)) {
         /*--- Transfer values at hub, shroud and 1D values ---*/
         unsigned long donorSpan;
         if (iTargetSpan == 0) donorSpan = 0;
-        else if (iTargetSpan == nTargetSpan - 2) donorSpan = nSpanDonor - 2;
         else if (iTargetSpan == nTargetSpan - 1) donorSpan = nSpanDonor - 1;
+        else if (iTargetSpan == nTargetSpan) donorSpan = nSpanDonor;
 
         RecoverTarget_Span_Endwall(sendDonorVar, donorSpan);
 

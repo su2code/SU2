@@ -5602,7 +5602,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
         ExtAveragePressure = donorAverages[1];
         ExtAverageTurboVelocity[0] = donorAverages[2];
         ExtAverageTurboVelocity[1] = donorAverages[3];
-        ExtAverageTurboVelocity[2] = donorAverages[4];
+        if (nDim == 3) ExtAverageTurboVelocity[2] = donorAverages[4];
 
         /*--- Build the external state u_e from boundary data and internal node ---*/
 
@@ -6301,7 +6301,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
     ExtAveragePressure = donorAverages[1];
     ExtAverageTurboVelocity[0] = donorAverages[2];
     ExtAverageTurboVelocity[1] = donorAverages[3];
-    ExtAverageTurboVelocity[2] = donorAverages[4];
+    if (nDim == 3) ExtAverageTurboVelocity[2] = donorAverages[4];
 
     switch(config->GetKind_Data_Giles(Marker_Tag)){
 

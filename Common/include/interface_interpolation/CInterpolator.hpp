@@ -139,6 +139,11 @@ class CInterpolator {
   virtual void PrintStatistics(void) const {}
 
   /*!
+   * \brief Write mixing plane interpolation details to file
+   */
+  inline virtual void WriteInterpolationDetails(const string& filename, const CConfig* const* config) {};
+
+  /*!
    * \brief Check whether an interface should be processed or not, i.e. if it is part of the zones.
    * \param[in] val_markDonor  - Marker tag from donor zone.
    * \param[in] val_markTarget - Marker tag from target zone.

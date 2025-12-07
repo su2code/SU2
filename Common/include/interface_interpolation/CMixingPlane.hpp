@@ -40,4 +40,11 @@ class CMixingPlane final : public CInterpolator {
                                    unsigned int jZone);
 
     void SetTransferCoeff(const CConfig* const* config) override;
+
+    /*!
+     * \brief Write interpolation details to file.
+     * \param[in] filename - Name of output file.
+     * \param[in] config - Configuration for all zones.
+     */
+    void WriteInterpolationDetails(const string& filename, const CConfig* const* config) override;
 };

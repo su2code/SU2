@@ -101,13 +101,13 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
         targetSpans[iMarkerInt][0].donorSpan = 0;
         targetSpans[iMarkerInt][0].coefficient = 0.0;
         if (nDim > 2) {
-            targetSpans[iMarkerInt][nSpanTarget-2].donorSpan = nSpanDonor-2;
-            targetSpans[iMarkerInt][nSpanTarget-2].coefficient = 0.0;
             targetSpans[iMarkerInt][nSpanTarget-1].donorSpan = nSpanDonor-1;
             targetSpans[iMarkerInt][nSpanTarget-1].coefficient = 0.0;
+            targetSpans[iMarkerInt][nSpanTarget].donorSpan = nSpanDonor;
+            targetSpans[iMarkerInt][nSpanTarget].coefficient = 0.0;
         }
 
-        for(auto iSpanTarget = 1; iSpanTarget < nSpanTarget - 2; iSpanTarget++){
+        for(auto iSpanTarget = 1; iSpanTarget < nSpanTarget - 1; iSpanTarget++){
             auto &targetSpan = targetSpans[iMarkerInt][iSpanTarget];
 
             auto tSpan = 0; // Nearest donor span index
@@ -136,16 +136,17 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
                     
                 case LINEAR_INTERPOLATION:
                     // Find the donor span interval that brackets the target span
-                    for (auto iSpanDonor = 1; iSpanDonor < nSpanDonor - 2; iSpanDonor++) {
-                        if(spanValuesTarget[iSpanTarget] >= spanValuesDonor[iSpanDonor] && 
-                        spanValuesTarget[iSpanTarget] <= spanValuesDonor[iSpanDonor + 1]){
+                    for (auto iSpanDonor = 1; iSpanDonor < nSpanDonor - 1; iSpanDonor++) {
+                        const auto test = abs(spanValuesTarget[iSpanTarget] - spanValuesDonor[iSpanDonor]);
+                        if(test < minDist && spanValuesTarget[iSpanTarget] > spanValuesDonor[iSpanDonor]){
                             kSpan = iSpanDonor;
-                            break;
+                            minDist = test;
                         }
                     }
                     // Calculate interpolation coefficient
                     coeff = (spanValuesTarget[iSpanTarget] - spanValuesDonor[kSpan]) / 
                             (spanValuesDonor[kSpan + 1] - spanValuesDonor[kSpan]);
+                    if (((coeff < 0) || (coeff > 1)) && (rank == MASTER_NODE)) cout << "Warning! Target spans exist outside the bounds of donor spans!" << endl;
                     targetSpan.donorSpan = kSpan;
                     targetSpan.coefficient = coeff;
                     break;
@@ -156,4 +157,94 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
             }
         }
     }
+}
+
+void CMixingPlane::WriteInterpolationDetails(const std::string& filename, const CConfig* const* config) {
+    // Only write from master process in MPI
+    if (rank != MASTER_NODE) return;
+    
+    std::ofstream outFile(filename);
+    
+    if (!outFile.is_open()) {
+        cout << "Error: Could not open file " << filename << ". Abandoning interpolator writing..." << endl;
+        return;
+    }
+    
+    const auto donor_config = config[donorZone];
+    const auto target_config = config[targetZone];
+    const auto nMarkerInt = config[donorZone]->GetnMarker_MixingPlaneInterface() / 2;
+
+    outFile << "Mixing-Plane Interpolator Details. Donor Zone = " << donorZone << " Target Zone = " << targetZone << ". Interpolation Method = ";
+    switch(donor_config->GetKind_MixingPlaneInterface()) {
+        case MATCHING:
+            outFile << "MATCHING\n";
+            break;
+        case NEAREST_SPAN:
+            outFile << "NEAREST_SPAN\n";
+            break;
+        case LINEAR_INTERPOLATION:
+            outFile << "LINEAR_INTERPOLATION\n";
+            break;
+        default:
+            outFile << "UNKNOWN\n";
+    }
+    outFile << "\n";
+    outFile << "===============================================================" << endl;
+    
+    // Loop through each marker interface
+    for (auto iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
+        if (targetSpans[iMarkerInt].empty()) continue;
+        
+        outFile << "Marker Interface " << iMarkerInt << "\n";
+        outFile << "---------------------\n";
+        outFile << "Target Span, Donor Span, Interpolation Coefficient\n";
+        
+        for (size_t iSpanTarget = 0; iSpanTarget < targetSpans[iMarkerInt].size(); iSpanTarget++) {
+            const auto& targetSpan = targetSpans[iMarkerInt][iSpanTarget];
+            outFile << iSpanTarget << ", "
+                    << targetSpan.donorSpan << ", "
+                    << targetSpan.coefficient << "\n";
+        }
+        outFile << "\n";
+    }
+    
+    // Optional: Write grouped by donor span
+    outFile << "\n\nGrouped by Donor Span\n";
+    outFile << "=====================\n\n";
+    
+    for (auto iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
+        if (targetSpans[iMarkerInt].empty()) continue;
+        
+        outFile << "Marker Interface " << iMarkerInt << "\n";
+        outFile << "---------------------\n";
+        
+        // Find max donor span
+        unsigned long maxDonorSpan = 0;
+        for (const auto& ts : targetSpans[iMarkerInt]) {
+            maxDonorSpan = std::max(maxDonorSpan, ts.donorSpan);
+        }
+        
+        // Group by donor span
+        for (unsigned long iDonor = 0; iDonor <= maxDonorSpan; iDonor++) {
+            bool hasTargets = false;
+            std::ostringstream targets;
+            
+            for (size_t iSpanTarget = 0; iSpanTarget < targetSpans[iMarkerInt].size(); iSpanTarget++) {
+                if (targetSpans[iMarkerInt][iSpanTarget].donorSpan == iDonor) {
+                    if (hasTargets) targets << ", ";
+                    targets << "Target " << iSpanTarget 
+                            << " (coeff=" << targetSpans[iMarkerInt][iSpanTarget].coefficient << ")";
+                    hasTargets = true;
+                }
+            }
+            
+            if (hasTargets) {
+                outFile << "Donor Span " << iDonor << ": " << targets.str() << "\n";
+            }
+        }
+        outFile << "\n";
+    }
+    
+    outFile.close();
+    cout << "Interpolation details written to " << filename << endl;
 }
