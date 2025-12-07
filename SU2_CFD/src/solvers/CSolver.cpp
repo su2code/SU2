@@ -1721,7 +1721,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
 
   /* Number of iterations considered to check for stagnation. */
-  const auto Res_Count = min(100ul, config->GetnInner_Iter()-1);
+  const auto Res_Count = min(400ul, config->GetnInner_Iter()-1);
 
   static bool reduceCFL, resetCFL, canIncrease;
 
@@ -1804,24 +1804,134 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         NonLinRes_Counter++;
         if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
 
-        /* Detect flip-flop convergence to reduce CFL and large increases
-         to reset to minimum value, in that case clear the history. */
+        /* Detect oscillations and divergence using peak-valley progression
+           plus slope-based guards. This replaces the older sign-change check.
+           - Maintain a history window (Res_Count up to 400 iters).
+           - Extract peaks/valleys with minimum separation to avoid noise.
+           - Require new peaks/valleys to progress downward; otherwise flag.
+           - Use least-squares slope on last 3 peaks/valleys to catch divergence.
+           - Forget extrema older than a lookback window (300 iters). */
 
-        if (config->GetInnerIter() >= Res_Count) {
-          unsigned long signChanges = 0;
-          su2double totalChange = 0.0;
-          auto prev = NonLinRes_Series.front();
-          for (const auto& val : NonLinRes_Series) {
-            totalChange += val;
-            signChanges += (prev > 0) ^ (val > 0);
-            prev = val;
+        if (config->GetInnerIter() >= 3) {
+          const unsigned long EXT_WINDOW = 300;
+          const unsigned long MIN_SEPARATION = 10;    /* iters between extrema to avoid noise */
+          const su2double VALUE_TOL = 0.05;            /* log10 residual tolerance for peak/valley improvement */
+          const su2double SLOPE_FLAT = -1.0e-3;        /* slope >= this => stagnation */
+          const su2double SLOPE_UP   =  1.5e-3;        /* slope > this => divergence */
+
+          /* Reconstruct New_Func history from the delta buffer. */
+          vector<su2double> funcHistory;
+          funcHistory.reserve(Res_Count);
+          su2double curr = New_Func;
+          funcHistory.push_back(curr);
+          for (unsigned long i = 1; i < Res_Count; i++) {
+            unsigned long idx = (NonLinRes_Counter + Res_Count - i) % Res_Count;
+            curr -= NonLinRes_Series[idx];
+            funcHistory.push_back(curr);
           }
-          reduceCFL |= (signChanges > Res_Count/4) && (totalChange > -0.5);
+          reverse(funcHistory.begin(), funcHistory.end());
 
-          if (totalChange > 2.0) { // orders of magnitude
+          /* Map history index to iteration number. */
+          const unsigned long histSize = funcHistory.size();
+          const unsigned long currIter = config->GetInnerIter();
+          const unsigned long startIter = currIter - histSize + 1;
+
+          /* Find peaks and valleys. */
+          vector<pair<unsigned long, su2double>> peaks;
+          vector<pair<unsigned long, su2double>> valleys;
+          unsigned long lastExtIdx = 0;
+          for (unsigned long i = 1; i + 1 < histSize; i++) {
+            if (i - lastExtIdx < MIN_SEPARATION) continue;
+            su2double a = funcHistory[i-1];
+            su2double b = funcHistory[i];
+            su2double c = funcHistory[i+1];
+            unsigned long iter_i = startIter + i;
+            /* Drop extrema that fall outside lookback window. */
+            if (currIter > EXT_WINDOW && iter_i + EXT_WINDOW < currIter) continue;
+            if (b > a && b > c) {
+              peaks.emplace_back(iter_i, b);
+              lastExtIdx = i;
+            } else if (b < a && b < c) {
+              valleys.emplace_back(iter_i, b);
+              lastExtIdx = i;
+            }
+          }
+
+          auto slopeLSQ = [](const vector<pair<unsigned long, su2double>>& pts) {
+            if (pts.size() < 2) return 0.0;
+            const unsigned long n = pts.size();
+            su2double meanX = 0.0, meanY = 0.0;
+            for (const auto& p : pts) { meanX += p.first; meanY += p.second; }
+            meanX /= n; meanY /= n;
+            su2double num = 0.0, den = 0.0;
+            for (const auto& p : pts) {
+              su2double dx = p.first - meanX;
+              num += dx * (p.second - meanY);
+              den += dx * dx;
+            }
+            return (den > 1e-16) ? num / den : 0.0;
+          };
+
+          /* Keep only the last three peaks/valleys for slope; drop older than window. */
+          auto trimLastN = [](const vector<pair<unsigned long, su2double>>& v, unsigned long N) {
+            vector<pair<unsigned long, su2double>> out;
+            const unsigned long sz = v.size();
+            const unsigned long start = (sz > N) ? sz - N : 0;
+            for (unsigned long i = start; i < sz; ++i) out.push_back(v[i]);
+            return out;
+          };
+
+          auto recentPeaks = trimLastN(peaks, 3);
+          auto recentValleys = trimLastN(valleys, 3);
+
+          bool peaksStagnant = false, valleysStagnant = false;
+          if (peaks.size() >= 2) {
+            peaksStagnant = peaks.back().second >= peaks[peaks.size()-2].second - VALUE_TOL;
+          }
+          if (valleys.size() >= 2) {
+            valleysStagnant = valleys.back().second >= valleys[valleys.size()-2].second - VALUE_TOL;
+          }
+
+          /* Slope of last 3 peaks/valleys (only if enough points). */
+          su2double slopePeaks = 0.0, slopeValleys = 0.0;
+          bool haveSlopePeaks = (recentPeaks.size() >= 2);
+          bool haveSlopeValleys = (recentValleys.size() >= 2);
+          if (haveSlopePeaks) slopePeaks = slopeLSQ(recentPeaks);
+          if (haveSlopeValleys) slopeValleys = slopeLSQ(recentValleys);
+
+          bool slopeFlat = (haveSlopePeaks && slopePeaks >= SLOPE_FLAT) || (haveSlopeValleys && slopeValleys >= SLOPE_FLAT);
+          bool slopeUp = (haveSlopePeaks && slopePeaks > SLOPE_UP) || (haveSlopeValleys && slopeValleys > SLOPE_UP);
+
+          /* Only act when we have at least two peaks and two valleys to avoid premature locking. */
+          bool haveData = (peaks.size() >= 2 && valleys.size() >= 2);
+          bool progressionFail = haveData && peaksStagnant && valleysStagnant;
+          bool oscillationDetected = haveData && (progressionFail || slopeFlat || slopeUp);
+
+          reduceCFL |= oscillationDetected;
+
+          /* Strong divergence safety: if the total change over the full buffer is large positive, reset. */
+          su2double totalChange = 0.0;
+          for (const auto& v : NonLinRes_Series) totalChange += v;
+          if (totalChange > 2.0 || slopeUp) { // 2 orders worse or clear rising slope
             resetCFL = true;
             NonLinRes_Counter = 0;
             for (auto& val : NonLinRes_Series) val = 0.0;
+          }
+
+          /* Stagnation guard: if over a recent window there is essentially no improvement,
+             lower CFL to escape the stall. */
+          const unsigned long STALL_WINDOW = min(100ul, Res_Count);
+          if (config->GetInnerIter() >= STALL_WINDOW) {
+            su2double stallChange = 0.0;
+            for (unsigned long i = 0; i < STALL_WINDOW; i++) {
+              unsigned long idx = (NonLinRes_Counter + Res_Count - 1 - i) % Res_Count;
+              stallChange += NonLinRes_Series[idx];
+            }
+            /* If cumulative change is greater than a small negative tolerance, we are stalled. */
+            const su2double STALL_TOL = -0.1; /* about 0.1 log10 improvement threshold over window */
+            if (stallChange > STALL_TOL) {
+              reduceCFL = true;
+            }
           }
         }
       }
