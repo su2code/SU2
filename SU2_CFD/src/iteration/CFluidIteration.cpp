@@ -241,6 +241,9 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   if (config[val_iZone]->GetRampOutflow())
       UpdateRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::BOUNDARY);
 
+  if (config[val_iZone]->GetMUSCLRamp())
+    UpdateRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::MUSCL);
+
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
@@ -328,6 +331,29 @@ void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** con
             break;
         }
       }
+    }
+  }
+
+  if (ramp_flag == RAMP_TYPE::MUSCL) {
+    const long unsigned startIter = config->GetMUSCLRampCoeff(RAMP_COEFF::INITIAL_VALUE);
+    const long unsigned updateFreq = config->GetMUSCLRampCoeff(RAMP_COEFF::UPDATE_FREQ);
+    const long unsigned finalIter = config->GetMUSCLRampCoeff(RAMP_COEFF::FINAL_ITER);
+    const auto power = config->GetMUSCLRampPower();
+    auto iterFrac = (static_cast<double>(iter - startIter)/static_cast<double>(finalIter - startIter));
+    if (iter < startIter) return;
+    if ((iter == startIter) && (rank == MASTER_NODE)) cout << "Beginning to ramp MUSCL scheme..." << endl;
+    if ((iter % updateFreq == 0 && iter < finalIter) || (iter == finalIter)) {
+      switch (config->GetKind_MUSCLRamp()) {
+        case MUSCL_RAMP_TYPE::ITERATION:
+          config->SetMUSCLRampValue(std::pow(std::min<double>(1.0, iterFrac), power));
+          break;
+        case MUSCL_RAMP_TYPE::SMOOTH_FUNCTION:
+          config->SetMUSCLRampValue(std::pow((0.5 * (1 -  cos(M_PI * std::min(1.0, iterFrac)))), power));
+          break;
+        default:
+          break;
+      }
+      if (rank == MASTER_NODE) cout << "MUSCL Ramp value updated. New Value: " << config->GetMUSCLRampValue() << endl;
     }
   }
 }

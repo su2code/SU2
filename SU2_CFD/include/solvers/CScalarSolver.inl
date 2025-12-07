@@ -222,8 +222,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           for (auto iVar = 0u; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
             const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-            su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappaFlow);
-            su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappaFlow);
+            su2double Project_Grad_i = config->GetMUSCLRampValue() * MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappaFlow);
+            su2double Project_Grad_j = config->GetMUSCLRampValue() * MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappaFlow);
 
             if (limiterFlow) {
               Project_Grad_i *= Limiter_i[iVar];
@@ -251,8 +251,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
           for (auto iVar = 0u; iVar < nVar; iVar++) {
             const su2double U_ij = Scalar_j[iVar] - Scalar_i[iVar];
 
-            su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, U_ij, kappa);
-            su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, U_ij, kappa);
+            su2double Project_Grad_i = config->GetMUSCLRampValue() * MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, U_ij, kappa);
+            su2double Project_Grad_j = config->GetMUSCLRampValue() * MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, U_ij, kappa);
 
             if (limiter) {
               Project_Grad_i *= Limiter_i[iVar];

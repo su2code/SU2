@@ -1986,6 +1986,18 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
   /*!\brief MUSCL_KAPPA_FLOW \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
   addDoubleOption("MUSCL_KAPPA_FLOW", MUSCL_Kappa_Flow, 0.0);
+  /*!\brief RAMP_MUSCL \n DESCRIPTION: Enable ramping of the MUSCL scheme from 1st to 2nd order using specified method*/
+  addBoolOption("RAMP_MUSCL", RampMUSCL, false);
+  /*! brief RAMP_OUTLET_COEFF \n DESCRIPTION: the 1st coeff is the ramp start iteration,
+   * the 2nd coeff is the iteration update frequenct, 3rd coeff is the total number of iterations */
+  unsigned short nMUSCLCoeffs = 3;
+  rampMUSCLCoeff = new unsigned long [nMUSCLCoeffs];
+  rampMUSCLCoeff[0] = 0.0; rampMUSCLCoeff[1] = 1.0; rampMUSCLCoeff[2] = 500.0;
+  addULongListOption("RAMP_MUSCL_COEFF", nMUSCLCoeffs, rampMUSCLCoeff);
+  /*!\brief RAMP_MUSCL_POWER \n DESRCIPTION: Exponent of the MUSCL ramp formulation */
+  addDoubleOption("RAMP_MUSCL_POWER", RampMUSCLPower, 1.0);
+  /*!\brief KIND_MUSCL_RAMP \n DESCRIPTION: The kind of MUSCL Ramp to be applied */
+  addEnumOption("KIND_MUSCL_RAMP", Kind_MUSCLRamp, MUSCLRamp_Map, MUSCL_RAMP_TYPE::ITERATION);
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, LIMITER::VENKATAKRISHNAN);
@@ -4477,6 +4489,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         Giles_Var1[iMarker] = rampOutletCoeff[RAMP_COEFF::INITIAL_VALUE];
       }
     }
+  }
+
+  if(RampMUSCL && !DiscreteAdjoint){
+    rampMUSCLValue = 0.0;
+  } else {
+    rampMUSCLValue = 1.0;
   }
 
   /*--- Check on extra Relaxation factor for Giles---*/
