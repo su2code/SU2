@@ -53,6 +53,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    3rd) One marker ---> Surface (always agglomerate)
    4th) No marker ---> Internal Volume (always agglomerate) ---*/
 
+   //note that for MPI, we introduce interfaces and we can choose to have agglomeration over
+   //the interface or not.
+
   /*--- Set a marker to indicate indirect agglomeration, for quads and hexs,
    i.e. consider up to neighbors of neighbors of neighbors.
    For other levels this information is propagated down during their construction. ---*/
