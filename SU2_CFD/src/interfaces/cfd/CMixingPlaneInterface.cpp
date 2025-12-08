@@ -92,7 +92,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     /*--- Gather data. ---*/
     const auto nTotalDonors = nSpanDonor * size; // Number of donor spans across all ranks
     const auto nSpanDonorVars = nSpanDonor * nMixingVars; // Number of variables to be transferred on each rank
-    vector<unsigned long> buffDonorMarker(nTotalDonors);
+    vector<unsigned short> buffDonorMarker(nTotalDonors);
     vector<su2double> buffDonorVar(static_cast<unsigned long>(nTotalDonors) * nMixingVars); // Total number of variables to be transferred on all ranks
 
     SU2_MPI::Allgather(sendDonorMarker.data(), nSpanDonor, MPI_UNSIGNED_SHORT,
@@ -104,7 +104,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
                       SU2_MPI::GetComm());
 
     for (auto iSize = 0; iSize < size; iSize++){
-      if (buffDonorVar[static_cast<size_t>(nSpanDonorVars) * iSize] > 0.0) {
+      if (buffDonorMarker[static_cast<size_t>(iSize) * static_cast<unsigned long>(nSpanDonor)] != -1) {
         for (auto iSpan = 0ul; iSpan < nSpanDonor; iSpan++){
           for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = buffDonorVar[static_cast<size_t>(iSize) * nSpanDonorVars + iSpan * nMixingVars + iVar];
         }
@@ -202,29 +202,4 @@ void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeomet
   }
 
   target_solution->SetnMixingStates( Marker_Target, Span_Target, iDonorSpan + 1 );
-}
-
-void CMixingPlaneInterface::SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
-                                             unsigned short donorZone){
-  
-  unsigned short iSpan;
-
-  for(iSpan = 0; iSpan<nSpanMaxAllZones +1; iSpan++){
-    /*--- transfer inviscid quantities ---*/
-    target_solution->SetDensityIn(donor_solution->GetDensityIn(donorZone, iSpan), donorZone, iSpan);
-    target_solution->SetPressureIn(donor_solution->GetPressureIn(donorZone, iSpan), donorZone, iSpan);
-    target_solution->SetTurboVelocityIn(donor_solution->GetTurboVelocityIn(donorZone, iSpan), donorZone, iSpan);
-    target_solution->SetDensityOut(donor_solution->GetDensityOut(donorZone, iSpan), donorZone, iSpan);
-    target_solution->SetPressureOut(donor_solution->GetPressureOut(donorZone, iSpan), donorZone, iSpan);
-    target_solution->SetTurboVelocityOut(donor_solution->GetTurboVelocityOut(donorZone, iSpan), donorZone, iSpan);
-
-    /*--- transfer turbulent quantities ---*/
-    target_solution->SetKineIn(donor_solution->GetKineIn(donorZone, iSpan), donorZone, iSpan);
-    target_solution->SetOmegaIn(donor_solution->GetOmegaIn(donorZone, iSpan), donorZone, iSpan);
-    target_solution->SetNuIn(donor_solution->GetNuIn(donorZone, iSpan), donorZone, iSpan);
-    target_solution->SetKineOut(donor_solution->GetKineOut(donorZone, iSpan), donorZone, iSpan);
-    target_solution->SetOmegaOut(donor_solution->GetOmegaOut(donorZone, iSpan), donorZone, iSpan);
-    target_solution->SetNuOut(donor_solution->GetNuOut(donorZone, iSpan), donorZone, iSpan);
-
-  }
 }
