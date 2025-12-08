@@ -97,7 +97,7 @@ class OrderedBunch(OrderedDict):
         """
         try:
             return hasattr(self, k) or dict.__contains__(self, k)
-        except:
+        except Exception:
             return False
 
     # only called if k not found in normal places
@@ -160,7 +160,7 @@ class OrderedBunch(OrderedDict):
         except AttributeError:
             try:
                 self[k] = v
-            except:
+            except (KeyError, TypeError):
                 raise AttributeError(k)
         else:
             object.__setattr__(self, k, v)
