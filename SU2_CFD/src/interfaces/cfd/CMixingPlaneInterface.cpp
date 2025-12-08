@@ -121,7 +121,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
     for (auto iTargetSpan = 0ul; iTargetSpan < nTargetSpan; iTargetSpan++) {
 
-      auto& targetSpan = interpolator.targetSpans[iMarkerInt][markTarget];
+      auto& targetSpan = interpolator.targetSpans[iMarkerInt][iTargetSpan];
 
       InitializeTarget_Variable(target_solution, markTarget, iTargetSpan, nSpanDonor);
 
