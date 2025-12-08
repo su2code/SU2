@@ -1114,10 +1114,12 @@ private:
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
 
+  struct CMUSCLRampParam {
+    su2double RampMUSCLPower; /*!< \brief Exponent by which to raise the MUSCL ramp to the power of */
+    MUSCL_RAMP_TYPE Kind_MUSCLRamp; /*!< \brief The kind of MUSCL ramp */
+    unsigned long rampMUSCLCoeff[3];     /*!< \brief ramp MUSCL value coefficients for the COption class. */
+  } RampMUSCLParam;
   su2double rampMUSCLValue; /*!< \brief Current value of the MUSCL ramp */
-  su2double RampMUSCLPower; /*!< \brief Exponent by which to raise the MUSCL ramp to the power of */
-  MUSCL_RAMP_TYPE Kind_MUSCLRamp;
-  unsigned long rampMUSCLCoeff[3];     /*!< \brief ramp MUSCL value coefficients for the COption class. */
 
   ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
   bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
@@ -5204,14 +5206,6 @@ public:
   };
 
   /*!
-   * \brief Interface for accessing MUSCL ramp coefficient information
-   * \return coeff for ramps
-  */
-  unsigned long GetMUSCLRampCoeff(RAMP_COEFF val_coeff) const {
-    return rampMUSCLCoeff[val_coeff];
-  }
-
-  /*!
    * \brief Set MUSCL ramp value.
   */
   void SetMUSCLRampValue(su2double ramp_value) { rampMUSCLValue = ramp_value; }
@@ -5223,16 +5217,10 @@ public:
   su2double GetMUSCLRampValue(void) const { return rampMUSCLValue; }
 
   /*!
-   * \brief Get MUSCL ramp power.
-   * \return Ramp MUSCL power
-  */
-  su2double GetMUSCLRampPower(void) const { return RampMUSCLPower; }
-
-  /*!
-   * \brief Get MUSCL ramp kind.
+   * \brief Get MUSCL ramp paramaters.
    * \return Ramp MUSCL kind
   */
-  MUSCL_RAMP_TYPE GetKindMUSCLRamp(void) const { return Kind_MUSCLRamp; }
+  const CMUSCLRampParam& GetMUSCLRampParam(void) const { return RampMUSCLParam; }
 
   /*!
    * \brief Generic interface for setting monitor outlet values for the ramp.
