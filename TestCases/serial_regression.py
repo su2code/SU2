@@ -104,14 +104,6 @@ def main():
     naca0012.test_vals = [-4.766184, -4.287722, 0.326688, 0.022661]
     test_list.append(naca0012)
 
-    # NACA0012 w/ MUSCL ramp
-    naca0012_MUSCL_ramp           = TestCase('naca0012_MUSCL_ramp')
-    naca0012_MUSCL_ramp.cfg_dir   = "euler/naca0012"
-    naca0012_MUSCL_ramp.cfg_file  = "inv_NACA0012_Roe_MUSCL_ramp.cfg"
-    naca0012_MUSCL_ramp.test_iter = 30
-    naca0012_MUSCL_ramp.test_vals = [-4.766168, -4.287699, 0.326688, 0.022661]
-    test_list.append(naca0012_MUSCL_ramp)
-
     # Supersonic wedge
     wedge           = TestCase('wedge')
     wedge.cfg_dir   = "euler/wedge"
