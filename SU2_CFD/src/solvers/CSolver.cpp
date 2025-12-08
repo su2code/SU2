@@ -1908,19 +1908,26 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
           auto slopeLSQ = [](const deque<pair<unsigned long, su2double>>& pts) {
             if (pts.size() < 2) return 0.0;
-            if (pts.size() == 2) {
-              /* Two points: simple slope. */
-              const su2double dt = su2double(pts[1].first - pts[0].first);
-              if (dt < 1e-12) return 0.0; /* Avoid division by zero */
-              return (pts[1].second - pts[0].second) / dt;
+
+            /* Compute least-squares linear regression slope:
+               slope = [n*Σ(xy) - Σ(x)*Σ(y)] / [n*Σ(x²) - (Σ(x))²] */
+            su2double n = su2double(pts.size());
+            su2double sumX = 0.0, sumY = 0.0, sumXY = 0.0, sumX2 = 0.0;
+
+            for (const auto& pt : pts) {
+              su2double x = su2double(pt.first);   // iteration number
+              su2double y = pt.second;              // log10 residual value
+              sumX += x;
+              sumY += y;
+              sumXY += x * y;
+              sumX2 += x * x;
             }
-            /* Three points: average of two consecutive slopes. */
-            const su2double dt1 = su2double(pts[1].first - pts[0].first);
-            const su2double dt2 = su2double(pts[2].first - pts[1].first);
-            if (dt1 < 1e-12 || dt2 < 1e-12) return 0.0; /* Avoid division by zero */
-            const su2double slope1 = (pts[1].second - pts[0].second) / dt1;
-            const su2double slope2 = (pts[2].second - pts[1].second) / dt2;
-            return 0.5 * (slope1 + slope2);
+
+            su2double denominator = n * sumX2 - sumX * sumX;
+            if (fabs(denominator) < 1e-12) return 0.0;  // Avoid division by zero
+
+            su2double slope = (n * sumXY - sumX * sumY) / denominator;
+            return slope;
           };
 
           bool peaksStagnant = false, valleysStagnant = false;
@@ -2199,11 +2206,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
 }
 
-    //for (unsigned short iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-    //   const su2double CFLRatio = config->GetCFL(iMesh)/config->GetCFL(iMesh-1);
-    //   MGFactor[iMesh] = MGFactor[iMesh-1]*CFLRatio;
-    //   cout << "  CFL  Level " << iMesh << " initial: " << config->GetCFL(iMesh)<< endl;
-    //   cout << "  CFL  Level " << iMesh-1 << " initial: " << config->GetCFL(iMesh-1) << endl;
 
 }
 
