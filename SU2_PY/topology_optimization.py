@@ -123,7 +123,7 @@ class Driver:
         # clear previous output and run direct solver
         try:
             os.remove(self._objValFile)
-        except OSError:
+        except Exception:
             pass
 
         try:
@@ -150,7 +150,7 @@ class Driver:
         # clear previous output and run direct solver
         try:
             os.remove(self._objDerFile)
-        except OSError:
+        except Exception:
             pass
         N = x.shape[0]
         y = np.ndarray((N,))
@@ -200,7 +200,7 @@ class Driver:
         # clear previous output and run solver
         try:
             os.remove(self._conDerFile)
-        except OSError:
+        except Exception:
             pass
         N = x.shape[0]
         y = np.ndarray((N,))
