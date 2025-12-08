@@ -4497,6 +4497,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if(RampMUSCL && !DiscreteAdjoint){
+    if (RampMUSCLPower <= 0.0) SU2_MPI::Error("RAMP_MUSCL_POWER cannot be less than or equal to zero!");
     rampMUSCLValue = 0.0;
   } else {
     rampMUSCLValue = 1.0;
