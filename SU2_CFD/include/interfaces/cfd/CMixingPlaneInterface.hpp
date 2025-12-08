@@ -104,15 +104,4 @@ public:
       Target_Variable[iVar] = (1 - donorCoeff)*bcastVariable[iSpan * nMixingVars + iVar] + donorCoeff * bcastVariable[(iSpan + 1) * nMixingVars + iVar];
     }
   }
-
-  /*!
-   * \brief Store all the turboperformance in the solver in ZONE_0.
-   * \param[in] donor_solution  - Solution from the donor mesh.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] donorZone       - counter of the donor solution
-   */
-  void SetAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone) override;
-
-
-
 };

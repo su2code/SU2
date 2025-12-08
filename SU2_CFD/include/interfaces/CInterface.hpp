@@ -186,15 +186,6 @@ public:
   inline virtual void SetSpanWiseLevels(const CConfig *donor_config, const CConfig *target_config) { }
 
   /*!
-   * \brief A virtual member.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] donor_zone - Index of the donorZone.
-   */
-  inline virtual void SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
-                                       unsigned short donorZone) { }
-
-  /*!
    * \brief Interpolate data and broadcast it into all processors, for nonmatching meshes.
    * \param[in] interpolator - Object defining the interpolation.
    * \param[in] donor_solution - Solution from the donor mesh.
