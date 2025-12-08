@@ -92,11 +92,11 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     /*--- Gather data. ---*/
     const auto nTotalDonors = nSpanDonor * size; // Number of donor spans across all ranks
     const auto nSpanDonorVars = nSpanDonor * nMixingVars; // Number of variables to be transferred on each rank
-    vector<unsigned short> buffDonorMarker(nTotalDonors);
+    vector<short> buffDonorMarker(nTotalDonors);
     vector<su2double> buffDonorVar(static_cast<unsigned long>(nTotalDonors) * nMixingVars); // Total number of variables to be transferred on all ranks
 
-    SU2_MPI::Allgather(sendDonorMarker.data(), nSpanDonor, MPI_UNSIGNED_SHORT,
-                      buffDonorMarker.data(), nSpanDonor, MPI_UNSIGNED_SHORT,
+    SU2_MPI::Allgather(sendDonorMarker.data(), nSpanDonor, MPI_SHORT,
+                      buffDonorMarker.data(), nSpanDonor, MPI_SHORT,
                       SU2_MPI::GetComm());
 
     SU2_MPI::Allgather(sendDonorVar.data(), nSpanDonorVars, MPI_DOUBLE,
