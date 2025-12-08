@@ -1117,7 +1117,7 @@ private:
   su2double rampMUSCLValue; /*!< \brief Current value of the MUSCL ramp */
   su2double RampMUSCLPower; /*!< \brief Exponent by which to raise the MUSCL ramp to the power of */
   MUSCL_RAMP_TYPE Kind_MUSCLRamp;
-  unsigned long *rampMUSCLCoeff;     /*!< \brief ramp MUSCL value coefficients for the COption class. */
+  unsigned long rampMUSCLCoeff[3];     /*!< \brief ramp MUSCL value coefficients for the COption class. */
 
   ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
   bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
@@ -1348,6 +1348,8 @@ private:
   void addDoubleArrayOption(const string& name, int size, bool allow_fewer, su2double* option_field);
 
   void addUShortArrayOption(const string& name, int size, bool allow_fewer, unsigned short* option_field);
+
+  void addULongArrayOption(const string& name, int size, bool allow_fewer, unsigned long* option_field);
 
   void addDoubleListOption(const string& name, unsigned short & size, su2double * & option_field);
 
@@ -5230,7 +5232,7 @@ public:
    * \brief Get MUSCL ramp kind.
    * \return Ramp MUSCL kind
   */
-  MUSCL_RAMP_TYPE GetKind_MUSCLRamp(void) const { return Kind_MUSCLRamp; }
+  MUSCL_RAMP_TYPE GetKindMUSCLRamp(void) const { return Kind_MUSCLRamp; }
 
   /*!
    * \brief Generic interface for setting monitor outlet values for the ramp.

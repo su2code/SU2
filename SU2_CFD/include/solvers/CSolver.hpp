@@ -590,7 +590,7 @@ public:
    * \param[in] ramp_val - Value of the ramp
    * \return - Projected variable.
    */
-  inline su2double MUSCL_Reconstruction(const su2double* grad, const su2double* vector_ij, su2double delta_ij, su2double kappa) {
+  inline su2double MUSCL_Reconstruction(const su2double* grad, const su2double* vector_ij, su2double delta_ij, su2double kappa, su2double ramp_val) {
     su2double project_grad = GeometryToolbox::DotProduct(nDim, grad, vector_ij);
     return LimiterHelpers<>::umusclProjection(project_grad, delta_ij, kappa);
   }

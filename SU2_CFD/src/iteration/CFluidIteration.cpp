@@ -343,7 +343,7 @@ void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** con
     if (iter < startIter) return;
     if ((iter == startIter) && (rank == MASTER_NODE)) cout << "Beginning to ramp MUSCL scheme..." << endl;
     if ((iter % updateFreq == 0 && iter < finalIter) || (iter == finalIter)) {
-      switch (config->GetKind_MUSCLRamp()) {
+      switch (config->GetKindMUSCLRamp()) {
         case MUSCL_RAMP_TYPE::ITERATION:
           config->SetMUSCLRampValue(std::pow(std::min<double>(1.0, iterFrac), power));
           break;

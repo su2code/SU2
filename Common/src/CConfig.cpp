@@ -409,6 +409,13 @@ void CConfig::addULongListOption(const string& name, unsigned short & size, unsi
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+void CConfig::addULongArrayOption(const string& name, const int size, const bool allow_fewer, unsigned long* option_field) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionArray<unsigned long>(name, size, allow_fewer, option_field);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
 void CConfig::addStringListOption(const string& name, unsigned short & num_marker, string* & option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
@@ -1990,10 +1997,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("RAMP_MUSCL", RampMUSCL, false);
   /*! brief RAMP_OUTLET_COEFF \n DESCRIPTION: the 1st coeff is the ramp start iteration,
    * the 2nd coeff is the iteration update frequenct, 3rd coeff is the total number of iterations */
-  unsigned short nMUSCLCoeffs = 3;
-  rampMUSCLCoeff = new unsigned long [nMUSCLCoeffs];
   rampMUSCLCoeff[0] = 0.0; rampMUSCLCoeff[1] = 1.0; rampMUSCLCoeff[2] = 500.0;
-  addULongListOption("RAMP_MUSCL_COEFF", nMUSCLCoeffs, rampMUSCLCoeff);
+  addULongArrayOption("RAMP_MUSCL_COEFF", 3, false, rampMUSCLCoeff);
   /*!\brief RAMP_MUSCL_POWER \n DESRCIPTION: Exponent of the MUSCL ramp formulation */
   addDoubleOption("RAMP_MUSCL_POWER", RampMUSCLPower, 1.0);
   /*!\brief KIND_MUSCL_RAMP \n DESCRIPTION: The kind of MUSCL Ramp to be applied */
