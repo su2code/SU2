@@ -146,12 +146,14 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
                     // Calculate interpolation coefficient
                     coeff = (spanValuesTarget[iSpanTarget] - spanValuesDonor[kSpan]) / 
                             (spanValuesDonor[kSpan + 1] - spanValuesDonor[kSpan]);
-                    if (((coeff < 0) || (coeff > 1)) && (rank == MASTER_NODE)){
-                        cout << "Warning! Target spans exist outside the bounds of donor spans!" <<  endl;
-                        cout << "Target span " << iSpanTarget << " <- " << kSpan << " coeff = " << coeff << endl;
-                        if (iSpanTarget < nSpanTarget/2) cout << "This is likely an issue at the hub." << endl;
-                        if (iSpanTarget > nSpanTarget/2) cout << "This is likely an issue at the shroud." << endl;
-                        cout << "Setting coeff = 0.0" << endl;
+                    if ((coeff < 0) || (coeff > 1)) {
+                        if (rank == MASTER_NODE) {
+                            cout << "Warning! Target spans exist outside the bounds of donor spans!" <<  endl;
+                            cout << "Target span " << iSpanTarget << " <- " << kSpan << " coeff = " << coeff << endl;
+                            if (iSpanTarget < nSpanTarget/2) cout << "This is likely an issue at the hub." << endl;
+                            if (iSpanTarget > nSpanTarget/2) cout << "This is likely an issue at the shroud." << endl;
+                            cout << "Setting coeff = 0.0" << endl;
+                        }
                         coeff = 0.0;
                     }
                     targetSpan.donorSpan = kSpan;
