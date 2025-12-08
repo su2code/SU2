@@ -90,10 +90,10 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     }
 #ifdef HAVE_MPI
     /*--- Gather data. ---*/
-    const auto nTotalDonors = nSpanDonor * size;
-    const auto nSpanDonorVars = nSpanDonor * nMixingVars;
+    const auto nTotalDonors = nSpanDonor * size; // Number of donor spans across all ranks
+    const auto nSpanDonorVars = nSpanDonor * nMixingVars; // Number of variables to be transferred on each rank
     vector<unsigned long> buffDonorMarker(nTotalDonors);
-    vector<su2double> buffDonorVar(static_cast<unsigned long>(nTotalDonors) * nMixingVars);
+    vector<su2double> buffDonorVar(static_cast<unsigned long>(nTotalDonors) * nMixingVars); // Total number of variables to be transferred on all ranks
 
     SU2_MPI::Allgather(sendDonorMarker.data(), nSpanDonor, MPI_UNSIGNED_SHORT,
                       buffDonorMarker.data(), nSpanDonor, MPI_UNSIGNED_SHORT,
@@ -106,7 +106,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     for (auto iSize = 0; iSize < size; iSize++){
       if (buffDonorVar[static_cast<size_t>(nSpanDonorVars) * iSize] > 0.0) {
         for (auto iSpan = 0ul; iSpan < nSpanDonor; iSpan++){
-          for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = buffDonorVar[static_cast<size_t>(iSize) * nSpanDonorVars + iVar]; // This could be wrong in 3D
+          for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = buffDonorVar[static_cast<size_t>(iSize) * nSpanDonorVars + iSpan * nMixingVars + iVar];
         }
         markDonor = buffDonorMarker[static_cast<unsigned long>(iSize) * static_cast<unsigned long>(nSpanDonor)];
       }
@@ -197,8 +197,9 @@ void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeomet
 
   iDonorSpan = target_solution->GetnMixingStates(Marker_Target, Span_Target);
 
-  for (iVar = 0; iVar < nMixingVars; iVar++)
+  for (iVar = 0; iVar < nMixingVars; iVar++) {
     target_solution->SetMixingState(Marker_Target, Span_Target, iVar, Target_Variable[iVar]);
+  }
 
   target_solution->SetnMixingStates( Marker_Target, Span_Target, iDonorSpan + 1 );
 }
