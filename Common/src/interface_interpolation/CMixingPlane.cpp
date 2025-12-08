@@ -59,33 +59,45 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
         markDonor = donor_config->FindMixingPlaneInterfaceMarker(donor_config->GetnMarker_All());
         donorFlag = (markDonor != -1) ? donor_config->GetMarker_All_MixingPlaneInterface(markDonor) : -1;
 
+        markTarget = target_config->FindMixingPlaneInterfaceMarker(target_config->GetnMarker_All());
+        targetFlag = (markTarget != -1) ? target_config->GetMarker_All_MixingPlaneInterface(markTarget) : -1;
+
 #ifdef HAVE_MPI
     auto buffMarkerDonor = new int[size];
     auto buffDonorFlag = new int[size];
+    auto buffMarkerTarget = new int[size];
+    auto buffTargetFlag = new int[size];
     for (int iSize=0; iSize<size; iSize++){
         buffMarkerDonor[iSize] = -1;
         buffDonorFlag[iSize] = -1;
+        buffMarkerTarget[iSize] = -1;
+        buffTargetFlag[iSize] = -1;
     }
 
     SU2_MPI::Allgather(&markDonor, 1 , MPI_INT, buffMarkerDonor, 1, MPI_INT, SU2_MPI::GetComm());
     SU2_MPI::Allgather(&donorFlag, 1 , MPI_INT, buffDonorFlag, 1, MPI_INT, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(&markTarget, 1 , MPI_INT, buffMarkerTarget, 1, MPI_INT, SU2_MPI::GetComm());
+    SU2_MPI::Allgather(&targetFlag, 1 , MPI_INT, buffTargetFlag, 1, MPI_INT, SU2_MPI::GetComm());
 
     markDonor= -1;
     donorFlag= -1;
+    markTarget= -1;
+    targetFlag= -1;
 
     for (int iSize=0; iSize<size; iSize++) {
         if(buffMarkerDonor[iSize] >= 0.0) {
             markDonor = buffMarkerDonor[iSize];
             donorFlag = buffDonorFlag[iSize];
+            markTarget = buffMarkerDonor[iSize];
+            targetFlag = buffDonorFlag[iSize];
             break;
         }
     }
     delete [] buffMarkerDonor;
     delete [] buffDonorFlag;
+    delete [] buffMarkerTarget;
+    delete [] buffTargetFlag;
 #endif
-
-        markTarget = target_config->FindMixingPlaneInterfaceMarker(target_config->GetnMarker_All());
-        targetFlag = (markTarget != -1) ? target_config->GetMarker_All_MixingPlaneInterface(markTarget) : -1;
 
         if (markTarget == -1 || markDonor == -1) continue;
 
