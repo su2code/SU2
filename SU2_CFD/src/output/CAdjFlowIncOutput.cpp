@@ -225,10 +225,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     SetHistoryOutputValue("RMS_ADJ_TEMPERATURE",         log10(adjheat_solver->GetRes_RMS(0)));
   }
   if (heat) {
-    if (nDim == 3)
-      SetHistoryOutputValue("RMS_ADJ_ENTHALPY", log10(adjflow_solver->GetRes_RMS(4)));
-    else
-      SetHistoryOutputValue("RMS_ADJ_ENTHALPY", log10(adjflow_solver->GetRes_RMS(3)));
+    SetHistoryOutputValue("RMS_ADJ_ENTHALPY", log10(adjflow_solver->GetRes_RMS(nDim + 1)));
   }
 
   if (config->AddRadiation()) {
