@@ -64,11 +64,11 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
   /*--- Loop over interface markers. ---*/
 
-  for (auto iMarkerInt = 0u; iMarkerInt < donor_config->GetnMarker_MixingPlaneInterface()/2; iMarkerInt++) {
+  for (auto iMarkerInt = 1u; iMarkerInt < donor_config->GetnMarker_MixingPlaneInterface()/2 + 1; iMarkerInt++) {
 
     /*--- Find the markers containing the interface ---*/
-    short markDonor = donor_config->FindMixingPlaneInterfaceMarker(donor_geometry->GetnMarker());
-    short markTarget= target_config->FindMixingPlaneInterfaceMarker(target_geometry->GetnMarker());
+    short markDonor = donor_config->FindMixingPlaneInterfaceMarker(donor_geometry->GetnMarker(), iMarkerInt);
+    short markTarget= target_config->FindMixingPlaneInterfaceMarker(target_geometry->GetnMarker(), iMarkerInt);
 
     /*--- Check if this interface connects the two zones, if not continue. ---*/
     if(!CInterpolator::CheckInterfaceBoundary(markDonor, markTarget)) continue;
@@ -78,11 +78,11 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
     /*--- Fill send buffers. ---*/
 
-    vector<short> sendDonorMarker(nSpanDonor);
-    vector<su2double> sendDonorVar(static_cast<size_t>(nSpanDonor) * nMixingVars);
+    vector<short> sendDonorMarker(nSpanDonor + 1);
+    vector<su2double> sendDonorVar(static_cast<size_t>(nSpanDonor + 1) * nMixingVars);
 
     if (markDonor != -1) {
-      for (auto iSpan = 0ul; iSpan < nSpanDonor; iSpan++) {
+      for (auto iSpan = 0ul; iSpan < nSpanDonor + 1; iSpan++) {
         GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iSpan, 0);
         for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = Donor_Variable[iVar];
         sendDonorMarker[iSpan] = markDonor;
@@ -90,13 +90,13 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     }
 #ifdef HAVE_MPI
     /*--- Gather data. ---*/
-    const auto nTotalDonors = nSpanDonor * size; // Number of donor spans across all ranks
-    const auto nSpanDonorVars = nSpanDonor * nMixingVars; // Number of variables to be transferred on each rank
+    const auto nTotalDonors = (nSpanDonor + 1) * size; // Number of donor spans across all ranks
+    const auto nSpanDonorVars = (nSpanDonor + 1) * nMixingVars; // Number of variables to be transferred on each rank
     vector<short> buffDonorMarker(nTotalDonors);
     vector<su2double> buffDonorVar(static_cast<unsigned long>(nTotalDonors) * nMixingVars); // Total number of variables to be transferred on all ranks
 
-    SU2_MPI::Allgather(sendDonorMarker.data(), nSpanDonor, MPI_SHORT,
-                      buffDonorMarker.data(), nSpanDonor, MPI_SHORT,
+    SU2_MPI::Allgather(sendDonorMarker.data(), nSpanDonor + 1, MPI_SHORT,
+                      buffDonorMarker.data(), nSpanDonor + 1, MPI_SHORT,
                       SU2_MPI::GetComm());
 
     SU2_MPI::Allgather(sendDonorVar.data(), nSpanDonorVars, MPI_DOUBLE,
@@ -104,11 +104,12 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
                       SU2_MPI::GetComm());
 
     for (auto iSize = 0; iSize < size; iSize++){
-      if (buffDonorMarker[static_cast<size_t>(iSize) * static_cast<unsigned long>(nSpanDonor)] != -1) {
-        for (auto iSpan = 0ul; iSpan < nSpanDonor; iSpan++){
+      if (buffDonorMarker[static_cast<size_t>(iSize) * static_cast<unsigned long>(nSpanDonor + 1)] != -1) {
+        for (auto iSpan = 0ul; iSpan < nSpanDonor + 1; iSpan++){
           for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = buffDonorVar[static_cast<size_t>(iSize) * nSpanDonorVars + iSpan * nMixingVars + iVar];
         }
-        markDonor = buffDonorMarker[static_cast<unsigned long>(iSize) * static_cast<unsigned long>(nSpanDonor)];
+        markDonor = buffDonorMarker[static_cast<unsigned long>(iSize) * static_cast<unsigned long>(nSpanDonor + 1)];
+        break; // Avoid overwriting
       }
     }
 #endif

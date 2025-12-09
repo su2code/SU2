@@ -131,7 +131,7 @@ class CInterpolator {
    * \note Main method that derived classes must implement.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetTransferCoeff(const CConfig* const* config) = 0;
+  virtual void SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) = 0;
 
   /*!
    * \brief Print information about the interpolation.

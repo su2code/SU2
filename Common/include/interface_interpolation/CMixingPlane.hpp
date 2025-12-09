@@ -39,7 +39,7 @@ class CMixingPlane final : public CInterpolator {
     CMixingPlane(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone,
                                    unsigned int jZone);
 
-    void SetTransferCoeff(const CConfig* const* config) override;
+    void SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) override;
 
     /*!
      * \brief Write interpolation details to file.

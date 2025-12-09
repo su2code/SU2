@@ -33,15 +33,18 @@
 CMixingPlane::CMixingPlane(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone,
                                    unsigned int jZone)
     : CInterpolator(geometry_container, config, iZone, jZone) {
-  SetTransferCoeff(config);
+  SetTransferCoeff(geometry_container, config);
 }
 
-void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
+void CMixingPlane::SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) {
     const auto nMarkerInt = config[donorZone]->GetnMarker_MixingPlaneInterface() / 2;
     const auto nDim = donor_geometry->GetnDim();
 
     const auto donor_config = config[donorZone];
     const auto target_config = config[targetZone];
+
+    const auto donor_geometry = geometry[donorZone][INST_0][MESH_0];
+    const auto target_geometry = geometry[targetZone][INST_0][MESH_0];
 
     //TODO turbo this approach only works if all the turboamchinery marker
     //    of all zones have the same amount of span wise sections.
@@ -52,14 +55,14 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
     targetSpans.resize(config[donorZone]->GetnMarker_MixingPlaneInterface());
 
     /*--- On the donor side ---*/
-    for (auto iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++){
+    for (auto iMarkerInt = 1; iMarkerInt < nMarkerInt + 1; iMarkerInt++){
         int markDonor = -1, markTarget = -1;
-        unsigned short donorFlag = 0, targetFlag = 0;
+        short donorFlag = 0, targetFlag = 0;
 
-        markDonor = donor_config->FindMixingPlaneInterfaceMarker(donor_config->GetnMarker_All());
+        markDonor = donor_config->FindMixingPlaneInterfaceMarker(donor_geometry->GetnMarker(), iMarkerInt);
         donorFlag = (markDonor != -1) ? donor_config->GetMarker_All_MixingPlaneInterface(markDonor) : -1;
 
-        markTarget = target_config->FindMixingPlaneInterfaceMarker(target_config->GetnMarker_All());
+        markTarget = target_config->FindMixingPlaneInterfaceMarker(target_geometry->GetnMarker(), iMarkerInt);
         targetFlag = (markTarget != -1) ? target_config->GetMarker_All_MixingPlaneInterface(markTarget) : -1;
 
 #ifdef HAVE_MPI
@@ -85,11 +88,17 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
     targetFlag= -1;
 
     for (int iSize=0; iSize<size; iSize++) {
-        if(buffMarkerDonor[iSize] >= 0.0) {
+        if(buffMarkerDonor[iSize] != -1) {
             markDonor = buffMarkerDonor[iSize];
             donorFlag = buffDonorFlag[iSize];
-            markTarget = buffMarkerDonor[iSize];
-            targetFlag = buffDonorFlag[iSize];
+            break;
+        }
+    }
+
+    for (int iSize=0; iSize<size; iSize++) {
+        if(buffMarkerTarget[iSize] != -1) {
+            markTarget = buffMarkerTarget[iSize];
+            targetFlag = buffTargetFlag[iSize];
             break;
         }
     }
@@ -98,7 +107,6 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
     delete [] buffMarkerTarget;
     delete [] buffTargetFlag;
 #endif
-
         if (markTarget == -1 || markDonor == -1) continue;
 
         nSpanDonor = donor_config->GetnSpanWiseSections();
@@ -115,9 +123,9 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
         if (nDim > 2) {
             targetSpans[iMarkerInt][nSpanTarget-1].donorSpan = nSpanDonor-1;
             targetSpans[iMarkerInt][nSpanTarget-1].coefficient = 0.0;
-            targetSpans[iMarkerInt][nSpanTarget].donorSpan = nSpanDonor;
-            targetSpans[iMarkerInt][nSpanTarget].coefficient = 0.0;
         }
+        targetSpans[iMarkerInt][nSpanTarget].donorSpan = nSpanDonor;
+        targetSpans[iMarkerInt][nSpanTarget].coefficient = 0.0;
 
         for(auto iSpanTarget = 1; iSpanTarget < nSpanTarget - 1; iSpanTarget++){
             auto &targetSpan = targetSpans[iMarkerInt][iSpanTarget];
@@ -147,31 +155,46 @@ void CMixingPlane::SetTransferCoeff(const CConfig* const* config) {
                     break;
                     
                 case LINEAR_INTERPOLATION:
-                    // Find the donor span interval that brackets the target span
-                    for (auto iSpanDonor = 1; iSpanDonor < nSpanDonor - 1; iSpanDonor++) {
-                        const auto test = abs(spanValuesTarget[iSpanTarget] - spanValuesDonor[iSpanDonor]);
-                        if(test < minDist && spanValuesTarget[iSpanTarget] > spanValuesDonor[iSpanDonor]){
-                            kSpan = iSpanDonor;
-                            minDist = test;
-                        }
+                {
+                    bool printWarning = false;
+                    // Check if target span is within donor bound
+                    if (spanValuesTarget[iSpanTarget] <= spanValuesDonor[0]) {
+                        // Below hub - use hub value
+                        targetSpan.donorSpan = 0;
+                        targetSpan.coefficient = 0.0;
+                        printWarning = true;
                     }
-                    // Calculate interpolation coefficient
-                    coeff = (spanValuesTarget[iSpanTarget] - spanValuesDonor[kSpan]) / 
-                            (spanValuesDonor[kSpan + 1] - spanValuesDonor[kSpan]);
-                    if ((coeff < 0) || (coeff > 1)) {
+                    else if (spanValuesTarget[iSpanTarget] >= spanValuesDonor[nSpanDonor - 1]) {
+                        // Above shroud - use shroud value
+                        targetSpan.donorSpan = nSpanDonor - 1;
+                        targetSpan.coefficient = 0.0;
+                        printWarning = true;
+                    }
+                    else {
+                        // Find the donor span interval that brackets the target span
+                        for (auto iSpanDonor = 0; iSpanDonor < nSpanDonor - 1; iSpanDonor++) {
+                            const auto test = abs(spanValuesTarget[iSpanTarget] - spanValuesDonor[iSpanDonor]);
+                            if(test < minDist && spanValuesTarget[iSpanTarget] > spanValuesDonor[iSpanDonor]){
+                                kSpan = iSpanDonor;
+                                minDist = test;
+                            }
+                        }
+                        // Calculate interpolation coefficient
+                        coeff = (spanValuesTarget[iSpanTarget] - spanValuesDonor[kSpan]) / 
+                                (spanValuesDonor[kSpan + 1] - spanValuesDonor[kSpan]);
+                        targetSpan.donorSpan = kSpan;
+                        targetSpan.coefficient = coeff;
+                    }
+                    if (printWarning) {
                         if (rank == MASTER_NODE) {
-                            cout << "Warning! Target spans exist outside the bounds of donor spans!" <<  endl;
-                            cout << "Target span " << iSpanTarget << " <- " << kSpan << " coeff = " << coeff << endl;
-                            if (iSpanTarget < nSpanTarget/2) cout << "This is likely an issue at the hub." << endl;
-                            if (iSpanTarget > nSpanTarget/2) cout << "This is likely an issue at the shroud." << endl;
-                            cout << "Setting coeff = 0.0" << endl;
+                            cout << "Warning! Target spans exist outside the bounds of donor spans! Clamping interpolator..." <<  endl;
+                            if (spanValuesTarget[iSpanTarget] <= spanValuesDonor[0]) cout << "This is an issue at the hub." << endl;
+                            if (spanValuesTarget[iSpanTarget] >= spanValuesDonor[nSpanDonor - 1]) cout << "This is an issue at the shroud." << endl;
+                            cout << "Setting coeff = 0.0 and transferring endwall value!" << endl;
                         }
-                        coeff = 0.0;
                     }
-                    targetSpan.donorSpan = kSpan;
-                    targetSpan.coefficient = coeff;
                     break;
-                    
+                }
                 default:
                     SU2_MPI::Error("MixingPlane interface option not implemented yet", CURRENT_FUNCTION);
                     break;

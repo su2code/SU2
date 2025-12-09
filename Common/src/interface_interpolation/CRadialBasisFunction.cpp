@@ -47,7 +47,7 @@ extern "C" void dgemm_(const char*, const char*, const int*, const int*, const i
 CRadialBasisFunction::CRadialBasisFunction(CGeometry**** geometry_container, const CConfig* const* config,
                                            unsigned int iZone, unsigned int jZone)
     : CInterpolator(geometry_container, config, iZone, jZone) {
-  SetTransferCoeff(config);
+  SetTransferCoeff(geometry_container, config);
 }
 
 void CRadialBasisFunction::PrintStatistics() const {
@@ -98,7 +98,7 @@ su2double CRadialBasisFunction::Get_RadialBasisValue(RADIAL_BASIS type, const su
   return rbf;
 }
 
-void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
+void CRadialBasisFunction::SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) {
   /*--- RBF options. ---*/
   const auto kindRBF = config[donorZone]->GetKindRadialBasisFunction();
   const bool usePolynomial = config[donorZone]->GetRadialBasisFunctionPolynomialOption();
