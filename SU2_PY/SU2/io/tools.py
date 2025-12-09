@@ -1173,7 +1173,7 @@ def make_link(src, dst):
 
 
 def restart2solution(config, state=None):
-    """restart2solution(config,state={})
+    """restart2solution(config, state=None)
     moves restart file to solution file,
     optionally updates state
     direct or adjoint is read from config
