@@ -78,7 +78,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
     /*--- Fill send buffers. ---*/
 
-    vector<short> sendDonorMarker(nSpanDonor + 1);
+    vector<short> sendDonorMarker(nSpanDonor + 1, -1);
     vector<su2double> sendDonorVar(static_cast<size_t>(nSpanDonor + 1) * nMixingVars);
 
     if (markDonor != -1) {
@@ -124,23 +124,19 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
       auto& targetSpan = interpolator.targetSpans[iMarkerInt][iTargetSpan];
 
+      /*--- Get the global index of the donor span. ---*/
+      const auto donorSpan = targetSpan.donorSpan;
+
       InitializeTarget_Variable(target_solution, markTarget, iTargetSpan, nSpanDonor);
 
       if ((iTargetSpan == 0) || (iTargetSpan == nTargetSpan) || (iTargetSpan == nTargetSpan - 1)) {
         /*--- Transfer values at hub, shroud and 1D values ---*/
-        unsigned long donorSpan;
-        if (iTargetSpan == 0) donorSpan = 0;
-        else if (iTargetSpan == nTargetSpan - 1) donorSpan = nSpanDonor - 1;
-        else if (iTargetSpan == nTargetSpan) donorSpan = nSpanDonor;
-
         RecoverTarget_Span_Endwall(sendDonorVar, donorSpan);
 
         SetTarget_Variable(target_solution, target_geometry, target_config, markTarget, iTargetSpan, 0);
       }
       else {
-        /*--- Get the global index of the donor and the interpolation coefficient. ---*/
-
-        const auto donorSpan = targetSpan.donorSpan;
+        /*--- Get the global index of interpolation coefficient. ---*/
         const auto donorCoeff = targetSpan.coefficient;
 
         /*--- Recover the Target_Variable from the buffer of variables. ---*/

@@ -2963,7 +2963,7 @@ void CFluidDriver::Run() {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (jZone = 0; jZone < nZone; jZone++)
         if(jZone != iZone && interpolator_container[iZone][jZone] != nullptr)
-        interpolator_container[iZone][jZone]->SetTransferCoeff(config_container);
+        interpolator_container[iZone][jZone]->SetTransferCoeff(geometry_container, config_container);
     }
   }
 

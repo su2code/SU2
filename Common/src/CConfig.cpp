@@ -9964,11 +9964,11 @@ short CConfig::FindInterfaceMarker(unsigned short iInterface) const {
   return -1;
 }
 
-short CConfig::FindMixingPlaneInterfaceMarker(unsigned short nMarker) const {
+short CConfig::FindMixingPlaneInterfaceMarker(unsigned short nMarker, unsigned short iMarkerInt) const {
   short mark;
   for (auto iMarker = 0; iMarker < nMarker; iMarker++){
       /*--- If the tag GetMarker_All_MixingPlaneInterface equals the index we are looping at ---*/
-      if (GetMarker_All_MixingPlaneInterface(iMarker)){
+      if (GetMarker_All_MixingPlaneInterface(iMarker) == iMarkerInt){
           /*--- We have identified the local index of the marker ---*/
           /*--- Store the identifier for the marker ---*/
           mark = iMarker;

@@ -236,7 +236,7 @@ void CMixingPlane::WriteInterpolationDetails(const std::string& filename, const 
     outFile << "===============================================================" << endl;
     
     // Loop through each marker interface
-    for (auto iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
+    for (auto iMarkerInt = 0; iMarkerInt < nMarkerInt + 1; iMarkerInt++) {
         if (targetSpans[iMarkerInt].empty()) continue;
         
         outFile << "Marker Interface " << iMarkerInt << "\n";
@@ -256,7 +256,7 @@ void CMixingPlane::WriteInterpolationDetails(const std::string& filename, const 
     outFile << "\n\nGrouped by Donor Span\n";
     outFile << "=====================\n\n";
     
-    for (auto iMarkerInt = 0; iMarkerInt < nMarkerInt; iMarkerInt++) {
+    for (auto iMarkerInt = 0; iMarkerInt < nMarkerInt + 1; iMarkerInt++) {
         if (targetSpans[iMarkerInt].empty()) continue;
         
         outFile << "Marker Interface " << iMarkerInt << "\n";

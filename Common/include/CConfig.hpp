@@ -10040,7 +10040,7 @@ public:
    * \param[in] nMarker - Number of the marker in a zone being tested, starting at 0.
    * \return value > 1 if (on this mpi rank) the zone defined by config is part of the mixing plane.
    */
-  short FindMixingPlaneInterfaceMarker(unsigned short nMarker) const;
+  short FindMixingPlaneInterfaceMarker(unsigned short nMarker, unsigned short iMarkerInt) const;
 
   /*!
    * \brief Get whether or not to save solution data to libROM.
