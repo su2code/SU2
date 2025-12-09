@@ -125,6 +125,8 @@ class Driver:
             os.remove(self._objValFile)
         except Exception:
             pass
+        except OSError:
+            pass  # Ignore error if file does not exist
 
         try:
             sp.call(self._objValCommand, shell=True)
@@ -152,6 +154,8 @@ class Driver:
             os.remove(self._objDerFile)
         except Exception:
             pass
+        except OSError:
+            pass  # Ignore error if file does not exist
         N = x.shape[0]
         y = np.ndarray((N,))
 
@@ -202,6 +206,9 @@ class Driver:
             os.remove(self._conDerFile)
         except Exception:
             pass
+
+        except OSError:
+            pass  # Ignore error if file does not exist
         N = x.shape[0]
         y = np.ndarray((N,))
 
