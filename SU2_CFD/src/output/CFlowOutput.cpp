@@ -4015,6 +4015,11 @@ void CFlowOutput::SetTimeAveragedFields() {
     AddVolumeOutput("MEAN_VELOCITY-Z", "MeanVelocity_z", "TIME_AVERAGE", "Mean velocity z-component");
 
   AddVolumeOutput("MEAN_PRESSURE", "MeanPressure", "TIME_AVERAGE", "Mean pressure");
+  AddVolumeOutput("MEAN_SKIN_FRICTION-X", "MeanSkinFriction_x", "TIME_AVERAGE", "Mean skin friction x-component");
+  AddVolumeOutput("MEAN_SKIN_FRICTION-Y", "MeanSkinFriction_y", "TIME_AVERAGE", "Mean skin friction y-component");
+  if (nDim==3)
+    AddVolumeOutput("MEAN_SKIN_FRICTION-Z", "MeanSkinFriction_z", "TIME_AVERAGE", "Mean skin friction z-component");
+
   AddVolumeOutput("RMS_U",   "RMS[u]", "TIME_AVERAGE", "RMS u");
   AddVolumeOutput("RMS_V",   "RMS[v]", "TIME_AVERAGE", "RMS v");
   AddVolumeOutput("RMS_UV",  "RMS[uv]", "TIME_AVERAGE", "RMS uv");
@@ -4041,6 +4046,9 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *No
     SetAvgVolumeOutputValue("MEAN_VELOCITY-Z", iPoint, Node_Flow->GetVelocity(iPoint,2));
 
   SetAvgVolumeOutputValue("MEAN_PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
+  SetAvgVolumeOutputValue("MEAN_SKIN_FRICTION-X", iPoint, GetVolumeOutputValue("SKIN_FRICTION-X", iPoint));
+  SetAvgVolumeOutputValue("MEAN_SKIN_FRICTION-Y", iPoint, GetVolumeOutputValue("SKIN_FRICTION-Y", iPoint));
+  if (nDim == 3) SetAvgVolumeOutputValue("MEAN_SKIN_FRICTION-Z", iPoint, GetVolumeOutputValue("SKIN_FRICTION-Z", iPoint));
 
   SetAvgVolumeOutputValue("RMS_U", iPoint, pow(Node_Flow->GetVelocity(iPoint,0),2));
   SetAvgVolumeOutputValue("RMS_V", iPoint, pow(Node_Flow->GetVelocity(iPoint,1),2));

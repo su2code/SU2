@@ -6520,7 +6520,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             else
               cout << "No smoothing applied to source terms in Langevin equations." << endl;
             if (stochSourceNu)
-              cout << "Stochastic source term included in turbulence model equation" << endl;
+              cout << "Stochastic source term included in turbulence model equation." << endl;
+	    else
+              cout << "Stochastic source term NOT included in turbulence model equation." << endl;
           } else {
             cout << "OFF" << endl;
           }
