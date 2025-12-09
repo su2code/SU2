@@ -74,7 +74,7 @@ FORCEINLINE Double musclReconstruction(const GradType& grad,
                                        Double relax,
                                        Double ramp_val) {
   const Double proj = dot(grad[iVar], vector_ij);
-  return relax * umusclProjection(proj, delta, kappa);
+  return ramp_val * relax * umusclProjection(proj, delta, kappa);
 }
 
 /*!
