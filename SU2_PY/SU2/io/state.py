@@ -111,7 +111,7 @@ def State_Factory(state=None, config=None):
         config = state
         state = None
 
-    if not state is None:
+    if state is not None:
         assert isinstance(state, State), "input is must be a state instance"
         return state
 

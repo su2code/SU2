@@ -88,9 +88,9 @@ def write_plot(filename, plot_format, data_plot, keys_plot=None):
     return
 
 
-def tecplot(filename, data_plot, keys_plot=[]):
+def tecplot(filename, data_plot, keys_plot=None):
     write_plot(filename, "TECPLOT", data_plot, keys_plot)
 
 
-def paraview(filename, data_plot, keys_plot=[]):
+def paraview(filename, data_plot, keys_plot=None):
     write_plot(filename, "CSV", data_plot, keys_plot)
