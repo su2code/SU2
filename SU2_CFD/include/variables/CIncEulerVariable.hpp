@@ -73,6 +73,7 @@ public:
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
   su2double TemperatureLimits[2];                      /*!< \brief Temperature limits [K]. */
   su2double TemperatureInc = 0.0;                      /*!< \brief Temperature [K] imposed when energy equation is switch off. */
+  bool Energy;                                         /*!< \brief Flag for Energy equation in incompressible flows. */
  public:
   /*!
    * \brief Constructor of the class.
