@@ -67,14 +67,12 @@ CIncEulerVariable::CIncEulerVariable(su2double density, su2double pressure, cons
 }
 
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel)  {
-
   static bool printed = false;
   if (!printed) {
     std::cout << "[DEBUG] SetPrimVar was called!" << std::endl;
     printed = true;
   }
   
-
   bool physical = true;
 
   /*--- Set the value of the pressure ---*/
@@ -99,7 +97,6 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
   const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
   Density_unsteady[iPoint] = FluidModel->GetDensity();
 
-
   /*--- Non-physical solution found. Revert to old values. ---*/
 
   if (check_dens || check_temp) {
@@ -115,7 +112,6 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
     SetTemperature(iPoint, Temperature);
     FluidModel->SetTDState_T(Temperature);
     SetDensity(iPoint, FluidModel->GetDensity());
-
 
     /*--- Flag this point as non-physical. ---*/
 
