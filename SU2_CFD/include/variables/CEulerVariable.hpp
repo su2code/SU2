@@ -192,7 +192,6 @@ class CEulerVariable : public CFlowVariable {
     Density_unsteady[iPoint] = val;
   }
 
-
   /*!
    * \brief Set the value of the temperature.
    * \param[in] temperature - how agitated the particles are :)
