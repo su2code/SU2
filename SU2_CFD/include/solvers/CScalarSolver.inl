@@ -694,7 +694,7 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
 
       if (Conservative) {
         if (incompressible)
-          Density_n = flowNodes->GetDensity_time_n(iPoint);  // Temporary fix
+          Density_n = flowNodes->GetDensity_time_n(iPoint);  // Updated for transient density
         else
           Density_n = flowNodes->GetSolution_time_n(iPoint, 0);
       }
@@ -750,7 +750,7 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
 
           if (Conservative) {
             if (incompressible)
-              Density_n = flowNodes->GetDensity_time_n(iPoint);  // Temporary fix
+              Density_n = flowNodes->GetDensity_time_n(iPoint);  // Updated for transient density
             else
               Density_n = flowNodes->GetSolution_time_n(iPoint, 0);
           }
