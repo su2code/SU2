@@ -27,14 +27,13 @@
 
 #include "../../include/variables/CSpeciesFlameletVariable.hpp"
 
-CSpeciesFlameletVariable::CSpeciesFlameletVariable( const su2double* species_inf, unsigned long npoint,
+CSpeciesFlameletVariable::CSpeciesFlameletVariable(const su2double* species_inf, unsigned long npoint,
                                                    unsigned long ndim, unsigned long nvar, const CConfig* config)
     : CSpeciesVariable(species_inf, npoint, ndim, nvar, config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned long iVar = 0; iVar < nVar; iVar++) Solution(iPoint, iVar) = species_inf[iVar];
 
   Solution_Old = Solution;
-  
 
   /*--- Allocate and initialize solution for the dual time strategy ---*/
   bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
@@ -43,7 +42,6 @@ CSpeciesFlameletVariable::CSpeciesFlameletVariable( const su2double* species_inf
   if (dual_time) {
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
-    
   }
 
   /*--- Allocate residual structures ---*/
