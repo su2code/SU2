@@ -302,7 +302,6 @@ protected:
   /*! \brief Minimum required volume fields for restart file. */
   const std::vector<string> restartVolumeFields = {"COORDINATES", "SOLUTION", "SENSITIVITY", "GRID_VELOCITY","DENSITY_TIME_N"};
 
-
   /*----------------------------- Convergence monitoring ----------------------------*/
 
   su2double cauchyValue,         /*!< \brief Summed value of the convergence indicator. */
