@@ -52,7 +52,6 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   bool physical = true;
 
- 
   /*--- Set the value of the pressure ---*/
 
   SetPressure(iPoint);
@@ -80,7 +79,6 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
   Density_unsteady[iPoint] = FluidModel->GetDensity();
-
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
