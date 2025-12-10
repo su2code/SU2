@@ -46,6 +46,5 @@ CSpeciesVariable::CSpeciesVariable(const su2double* species_inf, unsigned long n
   if (dual_time) {
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
-   
   }
 }
