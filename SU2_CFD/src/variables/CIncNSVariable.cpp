@@ -30,7 +30,8 @@
 
 CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
                                unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) :
-                               CIncEulerVariable(pressure, velocity, enthalpy, npoint, ndim, nvar, config) {
+                               CIncEulerVariable(pressure, velocity, enthalpy, npoint, ndim, nvar, config),
+                               Energy(config->GetEnergy_Equation()) {
 
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
@@ -46,7 +47,6 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
     Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
   }
-  Energy = config->GetEnergy_Equation();
   if(!Energy) TemperatureInc = config->GetInc_Temperature_Init();
 }
 
