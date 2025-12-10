@@ -6993,7 +6993,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     auto PrintLimiterInfo = [&](const LIMITER kind_limiter, const su2double kappa) {
       cout << "Second order integration in space, with slope limiter.\n";
       if (RampMUSCL) {
-        cout << "Ramping MUSCL sheme from first to second order starting at iter " << RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::INITIAL_VALUE] 
+        cout << "Ramping MUSCL sheme from first to second order starting at iter " << RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::INITIAL_VALUE]
           << ", ending at iter " << RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::FINAL_ITER] + RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::INITIAL_VALUE]
           << ", updating every " << RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::UPDATE_FREQ] << " iterations." << endl;
         string MUSCLRampType;
@@ -7001,7 +7001,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case MUSCL_RAMP_TYPE::ITERATION:
             MUSCLRampType = "linear";
             break;
-          case MUSCL_RAMP_TYPE::SMOOTH_FUNCTION: 
+          case MUSCL_RAMP_TYPE::SMOOTH_FUNCTION:
             MUSCLRampType = "cosine";
             break;
         }
