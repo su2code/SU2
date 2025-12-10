@@ -100,7 +100,6 @@ public:
     return val_density <= 0.0;
   }
   
-
   inline void Set_Density_time_n(unsigned long iPoint, su2double val) {
     Density_time_n[iPoint] = val;
   }
@@ -113,7 +112,6 @@ public:
     return Density_time_n[iPoint];
   }
   
-
   /*!
    * \brief Set the value of the density for the incompressible flows.
    * \param[in] iPoint - Point index.
@@ -160,8 +158,6 @@ public:
    * \return Value of the density of the flow.
    */
   inline su2double GetDensity(unsigned long iPoint) const final { return Primitive(iPoint, indices.Density()); }
-
-  
 
   /*!
    * \brief Get the temperature of the flow.
