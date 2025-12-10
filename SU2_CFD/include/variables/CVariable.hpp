@@ -282,7 +282,6 @@ public:
    */
   void Set_Density_time_n();
 
-
   /*!
    * \brief Set the variable solution at time n.
    * \param[in] iPoint - Point index.
@@ -323,7 +322,6 @@ public:
   inline void Set_Density_unsteady(unsigned long iPoint, su2double val) {
     Density_unsteady[iPoint] = val;
   } 
-
 
   /*!
    * \brief Virtual Member. Specify a vector to set the velocity components of the solution.
@@ -518,7 +516,6 @@ public:
    */
   inline su2double *GetSolution_time_n1(unsigned long iPoint) { return Solution_time_n1[iPoint]; }
   inline MatrixType& GetSolution_time_n1() { return Solution_time_n1; }
-
 
     /*!
    * \brief Get the solution at time n.
@@ -1903,8 +1900,6 @@ public:
    */
   inline su2double GetSolution_time_n1(unsigned long iPoint, unsigned long iVar) const { return Solution_time_n1(iPoint,iVar); }
 
-
-  
   /*!
    * \brief Get the velocity (Structural Analysis).
    * \param[in] iVar - Index of the variable.
