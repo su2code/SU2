@@ -35,6 +35,7 @@
 #include "../../Common/include/option_structure.hpp"
 #include "CFileReaderLUT.hpp"
 #include "CTrapezoidalMap.hpp"
+#include "CTrapezoidalMapFAST.hpp"
 
 /*!
  * \brief Look up table.
@@ -63,6 +64,7 @@ class CLookUpTable {
   std::vector<su2double> z_values_levels; /*!< \brief Constant z-values of each table level.*/
 
   unsigned short table_dim = 2; /*!< \brief Table dimension.*/
+
   /*!
    * \brief The lower and upper limits of the z, y and x variable for each table level.
    */
@@ -100,9 +102,15 @@ class CLookUpTable {
   su2vector<su2vector<unsigned long>> hull;
 
   /*! \brief
-   * Trapezoidal map objects for the table levels.
+   * Trapezoidal map objects for the table levels (original SU2 implementation).
    */
   su2vector<CTrapezoidalMap> trap_map_x_y;
+
+  /*! \brief
+   * Memory-efficient trapezoidal map objects for LUT_FAST.
+   */
+  su2vector<CTrapezoidalMapFAST> trap_map_x_y_FAST;
+  bool use_fast_trap_map_{false};
 
   /*! \brief
    * Vector of all the weight factors for the interpolation.
@@ -186,24 +194,12 @@ class CLookUpTable {
 
   /*!
    * \brief Perform linear interpolation between two table levels for a single variable.
-   * \param[in] val_CV3 - Value of the third controlling variable at the query point.
-   * \param[in] lower_level - Table level index of the table level directly below the query point.
-   * \param[in] upper_level - Table level index of the table level directly above the query point.
-   * \param[in] lower_value - Result from x-y interpolation on the lower table level.
-   * \param[in] upper_value - Result from x-y interpolation on the upper table level.
-   * \param[in] val_vars - Pointer to interpolation result.
    */
   void Linear_Interpolation(const su2double val_CV3, const unsigned long lower_level, const unsigned long upper_level,
                             su2double& lower_value, su2double& upper_value, su2double*& var_vals) const;
 
   /*!
    * \brief Perform linear interpolation between two table levels for a vector of variables.
-   * \param[in] val_CV3 - Value of the third controlling variable at the query point.
-   * \param[in] lower_level - Table level index of the table level directly below the query point.
-   * \param[in] upper_level - Table level index of the table level directly above the query point.
-   * \param[in] lower_values - Results from x-y interpolation on the lower table level.
-   * \param[in] upper_values - Results from x-y interpolation on the upper table level.
-   * \param[in] val_vars - Pointer to interpolation results for all interpolation variables.
    */
   void Linear_Interpolation(const su2double val_CV3, const unsigned long lower_level, const unsigned long upper_level,
                             std::vector<su2double>& lower_values, std::vector<su2double>& upper_values,
@@ -211,73 +207,34 @@ class CLookUpTable {
 
   /*!
    * \brief Find the point on the hull (boundary of the table) that is closest to the point P(val_CV1,val_CV2).
-   * \param[in] val_CV1 - First coordinate of point P(val_CV1,val_CV2) to check.
-   * \param[in] val_CV2 - Second coordinate of point P(val_CV1,val_CV2) to check.
-   * \returns Point id of the nearest neighbor on the hull.
    */
   unsigned long FindNearestNeighborOnHull(su2double val_CV1, su2double val_CV2, unsigned long i_level = 0);
 
   /*!
    * \brief Interpolate data based on distance-weighted averaging on the nearest two table nodes.
-   * \param[in] val_CV1 - First coordinate of point P(val_CV1,val_CV2) to check.
-   * \param[in] val_CV2 - Second coordinate of point P(val_CV1,val_CV2) to check.
-   * \param[in] val_names_var - Vector of string names of the variables to look up.
-   * \param[out] val_vars - Pointer to the vector of stored values of the variables to look up.
    */
   void InterpolateToNearestNeighbors(const su2double val_CV1, const su2double val_CV2,
                                      const std::vector<std::string>& names_var, std::vector<su2double*>& var_vals,
                                      const unsigned long i_level = 0);
 
-  /*!
-   * \brief Interpolate data based on distance-weighted averaging on the nearest two table nodes.
-   * \param[in] val_CV1 - First coordinate of point P(val_CV1,val_CV2) to check.
-   * \param[in] val_CV2 - Second coordinate of point P(val_CV1,val_CV2) to check.
-   * \param[in] idx_var - Vector of table variable indices to be looked up.
-   * \param[out] val_vars - Pointer to the vector of stored values of the variables to look up.
-   */
   void InterpolateToNearestNeighbors(const su2double val_CV1, const su2double val_CV2,
                                      const std::vector<unsigned long>& idx_var, std::vector<su2double>& var_vals,
                                      const unsigned long i_level = 0);
 
-  /*!
-   * \brief Interpolate data based on distance-weighted averaging on the nearest two table nodes.
-   * \param[in] val_CV1 - First coordinate of point P(val_CV1,val_CV2) to check.
-   * \param[in] val_CV2 - Second coordinate of point P(val_CV1,val_CV2) to check.
-   * \param[in] idx_var - Vector of table variable indices to be looked up.
-   * \param[out] val_vars - Pointer to the vector of stored values of the variables to look up.
-   */
   void InterpolateToNearestNeighbors(const su2double val_CV1, const su2double val_CV2,
                                      const std::vector<unsigned long>& idx_var, std::vector<su2double*>& var_vals,
                                      const unsigned long i_level = 0);
 
-  /*!
-   * \brief Interpolate data based on distance-weighted averaging on the nearest two table nodes for a single variable.
-   * \param[in] val_CV1 - First coordinate of point P(val_CV1,val_CV2) to check.
-   * \param[in] val_CV2 - Second coordinate of point P(val_CV1,val_CV2) to check.
-   * \param[in] name_var - Variable name to look up.
-   * \param[out] var_val - Pointer to the to be interpolated variable.
-   */
   void InterpolateToNearestNeighbors(const su2double val_CV1, const su2double val_CV2, const std::string& name_var,
                                      su2double* var_val, const unsigned long i_level = 0);
 
   /*!
    * \brief Determine if a point P(val_CV1,val_CV2) is inside the triangle val_id_triangle.
-   * \param[in] val_CV1 - First coordinate of point P(val_CV1,val_CV2) to check.
-   * \param[in] val_CV2 - Second coordinate of point P(val_CV1,val_CV2) to check.
-   * \param[in] val_id_triangle - ID of the triangle to check.
-   * \returns True if the point is in the triangle, false if it is outside.
    */
   bool IsInTriangle(su2double val_CV1, su2double val_CV2, unsigned long val_id_triangle, unsigned long i_level = 0);
 
   /*!
    * \brief Compute the area of a triangle given the 3 points of the triangle.
-   * \param[in] x1 - The coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
-   * \param[in] y1 - The coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
-   * \param[in] x2 - The coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
-   * \param[in] y2 - The coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
-   * \param[in] x3 - The coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
-   * \param[in] y3 - The coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
-   * \returns The absolute value of the area of the triangle.
    */
   inline su2double TriArea(su2double x1, su2double y1, su2double x2, su2double y2, su2double x3, su2double y3) {
     return abs((x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) * 0.5);
@@ -285,11 +242,6 @@ class CLookUpTable {
 
   /*!
    * \brief Compute the values of the first and second controlling variable based on normalized query coordinates
-   * \param[in] inclusion_levels - Pair containing lower(first) and upper(second) table inclusion level indices.
-   * \param[in] val_CV1 - First controlling variable value.
-   * \param[in] val_CV2 - Second controlling variable value.
-   * \param[in] val_CV3 - Third controlling variable value.
-   * \returns Array with first and second controlling variable values for the upper and lower table inclusion levels.
    */
   std::array<std::array<su2double, 2>, 2> ComputeNormalizedXY(std::pair<unsigned long, unsigned long>& inclusion_levels,
                                                               const su2double val_CV1, const su2double val_CV2,
@@ -297,21 +249,12 @@ class CLookUpTable {
 
   /*!
    * \brief Find the triangle within which the query point (val_CV1, val_CV2) is located.
-   * \param[in] val_CV1 - First controlling variable value.
-   * \param[in] val_CV2 - Second controlling variable value.
-   * \param[in] id_triangle - Reference to inclusion triangle index.
-   * \param[in] iLevel - Table level index.
-   * \returns if query point is within data set.
    */
   bool FindInclusionTriangle(const su2double val_CV1, const su2double val_CV2, unsigned long& id_triangle,
                              const unsigned long iLevel = 0);
 
   /*!
    * \brief Identify the nearest second nearest hull nodes w.r.t. the query point (val_CV1, val_CV2).
-   * \param[in] val_CV1 - First controlling variable value.
-   * \param[in] val_CV2 - Second controlling variable value.
-   * \param[in] iLevel - Table level index.
-   * \returns pair with nearest node index(first) and second nearest node(second).
    */
   std::pair<unsigned long, unsigned long> FindNearestNeighbors(const su2double val_CV1, const su2double val_CV2,
                                                                const unsigned long iLevel = 0);
@@ -320,82 +263,56 @@ class CLookUpTable {
   CLookUpTable(const std::string& file_name_lut, std::string name_CV1_in, std::string name_CV2_in);
 
   /*!
+   * \brief Build the original SU2 trapezoidal map (DAG-based).
+   * WARNING: This can use a lot of memory for large tables!
+   * Use EnableFastTrapMap() for large tables instead.
+   */
+  void BuildOriginalTrapMap();
+
+  /*!
+   * \brief Enable Memory-efficient trapezoidal map (LUT_FAST mode).
+   * This builds band-based maps with O(n) memory instead of the original O(n log n) DAG.
+   */
+  void EnableFastTrapMap();
+
+  /*!
+   * \brief Check if fast trapezoidal map is enabled.
+   */
+  inline bool UsingFastTrapMap() const { return use_fast_trap_map_; }
+
+  /*!
    * \brief Print information to screen.
    */
   void PrintTableInfo();
 
   /*!
    * \brief Lookup value of variable stored under idx_var using controlling variable values(val_CV1,val_CV2).
-   * \param[in] idx_var - Column index corresponding to look-up data.
-   * \param[out] val_var - The stored value of the variable to look up.
-   * \param[in] val_CV1 - Value of controlling variable 1.
-   * \param[in] val_CV2 - Value of controlling variable 2.
-   * \returns whether query is inside (true) or outside (false) data set.
    */
   bool LookUp_XY(const unsigned long idx_var, su2double* val_var, const su2double val_CV1, const su2double val_CV2,
                  const unsigned long i_level = 0);
 
-  /*!
-   * \brief Lookup the value of the variable stored under idx_var using controlling variable values(val_CV1,val_CV2).
-   * \param[in] idx_var - Table data column indices corresponding to look-up variables.
-   * \param[out] val_var - The stored value of the variable to look up.
-   * \param[in] val_CV1 - Value of controlling variable 1.
-   * \param[in] val_CV2 - Value of controlling variable 2.
-   * \returns whether query is inside (true) or outside (false) data set.
-   */
   bool LookUp_XY(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars, const su2double val_CV1,
                  const su2double val_CV2, const unsigned long i_level = 0);
 
-  /*!
-   * \brief Lookup the values of the variables stored under idx_var using controlling variable values(val_CV1,val_CV2).
-   * \param[in] idx_var - Table data column indices corresponding to look-up variables.
-   * \param[out] val_var - The stored value of the variable to look up.
-   * \param[in] val_CV1 - Value of controlling variable 1.
-   * \param[in] val_CV2 - Value of controlling variable 2.
-   * \returns whether query is inside (true) or outside (false) data set.
-   */
   bool LookUp_XY(const std::vector<unsigned long>& idx_var, std::vector<su2double*>& val_vars, const su2double val_CV1,
                  su2double val_CV2, const unsigned long i_level = 0);
-  /*!
-   * \brief Lookup the value of the variable stored under idx_var using controlling variable values(val_CV1,val_CV2,
-   * val_CV3). \param[in] val_name_var - String name of the variable to look up. \param[out] val_var - The stored value
-   * of the variable to look up. \param[in] val_CV1 - Value of controlling variable 1. \param[in] val_CV2 - Value of
-   * controlling variable 2. \param[in] val_CV3 - Value of controlling variable 3. \returns whether query is inside
-   * (true) or outside (false) data set.
-   */
+
   bool LookUp_XYZ(const unsigned long idx_var, su2double* val_var, const su2double val_CV1, const su2double val_CV2,
                   const su2double val_CV3);
 
-  /*!
-   * \brief Lookup the values of the variables stored under idx_var using controlling variable values
-   * (val_CV1,val_CV2,val_z). \param[in] idx_var - Table variable index to look up. \param[out] val_var - The stored
-   * value of the variable to look up. \param[in] val_CV1 - Value of controlling variable 1. \param[in] val_CV2 - Value
-   * of controlling variable 2. \param[in] val_CV3 - Value of controlling variable 3. \returns whether query is inside
-   * (true) or outside (false) data set.
-   */
   bool LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double>& val_vars, const su2double val_CV1,
                   const su2double val_CV2, const su2double val_CV3 = 0);
 
-  /*!
-   * \brief Lookup the values of the variables stored under idx_var using controlling variable values
-   * (val_CV1,val_CV2,val_z). \param[in] idx_var - Table variable index to look up. \param[out] val_var - The stored
-   * value of the variable to look up. \param[in] val_CV1 - Value of controlling variable 1. \param[in] val_CV2 - Value
-   * of controlling variable 2. \param[in] val_CV3 - Value of controlling variable 3. \returns whether query is inside
-   * (true) or outside (false) data set.
-   */
   bool LookUp_XYZ(const std::vector<unsigned long>& idx_var, std::vector<su2double*>& val_vars, const su2double val_CV1,
                   const su2double val_CV2, const su2double val_CV3 = 0);
 
   /*!
    * \brief Find the table levels with constant z-values directly above and below query val_z.
-   * \param[in] val_CV3 - Value of controlling variable 3.
-   * \returns Pair of inclusion level indices (first = lower level index, second = upper level index).
    */
   std::pair<unsigned long, unsigned long> FindInclusionLevels(const su2double val_CV3);
 
   /*!
    * \brief Determine the minimum and maximum value of the second controlling variable.
-   * \returns Pair of minimum and maximum value of controlling variable 2.
    */
   inline std::pair<su2double*, su2double*> GetTableLimitsY(const unsigned long i_level = 0) const {
     return limits_table_y[i_level];
@@ -403,7 +320,6 @@ class CLookUpTable {
 
   /*!
    * \brief Determine the minimum and maximum value of the first controlling variable.
-   * \returns Pair of minimum and maximum value of controlling variable 1.
    */
   inline std::pair<su2double*, su2double*> GetTableLimitsX(const unsigned long i_level = 0) const {
     return limits_table_x[i_level];
@@ -416,8 +332,6 @@ class CLookUpTable {
 
   /*!
    * \brief Returns the index to the variable in the lookup table.
-   * \param[in] nameVar - Variable name for which to retrieve the column index.
-   * \returns Table data column index corresponding to variable.
    */
   inline unsigned int GetIndexOfVar(const std::string& nameVar) const {
     int index = find(names_var.begin(), names_var.end(), nameVar) - names_var.begin();

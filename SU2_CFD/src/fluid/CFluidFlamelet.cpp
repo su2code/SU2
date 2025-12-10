@@ -78,7 +78,23 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
       }
       look_up_table = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], table_scalar_names[I_PROGVAR],
                                        table_scalar_names[I_ENTH]);
+      /*--- Build the original trapezoidal map (can use lots of memory!) ---*/
+      look_up_table->BuildOriginalTrapMap();
       break;
+      
+    case ENUM_DATADRIVEN_METHOD::LUT_FAST:
+      if (rank == MASTER_NODE) {
+        cout << "**************************************************" << endl;
+        cout << "***   initializing the FAST lookup table       ***" << endl;
+        cout << "***   (Memory-efficient trapezoidal map)    ***" << endl;
+        cout << "**************************************************" << endl;
+      }
+      look_up_table = new CLookUpTable(config->GetDataDriven_FileNames()[0], table_scalar_names[I_PROGVAR],
+                                       table_scalar_names[I_ENTH]);
+      /*--- Build Memory-efficient trapezoidal map (O(n) memory) ---*/
+      look_up_table->EnableFastTrapMap();
+      break;
+      
     default:
       if (rank == MASTER_NODE) {
         cout << "***********************************************" << endl;
@@ -104,8 +120,10 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 }
 
 CFluidFlamelet::~CFluidFlamelet() {
-  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT)
+  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT || 
+      Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT_FAST)
     delete look_up_table;
+
 #ifdef USE_MLPCPP
   if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
     delete iomap_TD;
@@ -113,7 +131,7 @@ CFluidFlamelet::~CFluidFlamelet() {
     delete iomap_LookUp;
     delete lookup_mlp;
     if (preferential_diffusion) delete iomap_PD;
-    }
+  }
 #endif
 }
 
@@ -214,7 +232,10 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   preferential_diffusion = flamelet_options.preferential_diffusion;
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
+    case ENUM_DATADRIVEN_METHOD::LUT_FAST:
+      if (preferential_diffusion) {
       preferential_diffusion = look_up_table->CheckForVariables(varnames_PD);
+      }
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP
@@ -320,6 +341,7 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
   bool inside;
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
+    case ENUM_DATADRIVEN_METHOD::LUT_FAST:
       if (output_refs.size() != LUT_idx.size())
         SU2_MPI::Error(string("Output vector size incompatible with manifold lookup operation."), CURRENT_FUNCTION);
       if (include_mixture_fraction) {
