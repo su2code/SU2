@@ -338,11 +338,11 @@ void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** con
     const auto RampMUSCLParam = config->GetMUSCLRampParam();
     const long unsigned startIter = RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::INITIAL_VALUE];
     const long unsigned updateFreq = RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::UPDATE_FREQ];
-    const long unsigned finalIter = RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::FINAL_ITER];
-    auto iterFrac = (static_cast<double>(iter - startIter)/static_cast<double>(finalIter - startIter));
+    const long unsigned rampLength = RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::FINAL_ITER];
+    auto iterFrac = (static_cast<double>(iter - startIter)/static_cast<double>((rampLength + startIter) - startIter));
     if (iter < startIter) return;
     if ((iter == startIter) && (rank == MASTER_NODE)) cout << "Beginning to ramp MUSCL scheme..." << endl;
-    if ((iter % updateFreq == 0 && iter < finalIter) || (iter == finalIter)) {
+    if ((iter % updateFreq == 0 && iter < (rampLength + startIter)) || (iter == (rampLength + startIter))) {
       switch (RampMUSCLParam.Kind_MUSCLRamp) {
         case MUSCL_RAMP_TYPE::ITERATION:
           config->SetMUSCLRampValue(std::pow(std::min<double>(1.0, iterFrac), RampMUSCLParam.RampMUSCLPower));
