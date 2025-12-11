@@ -823,8 +823,7 @@ CNumerics::ResidualType<> CSourceRadiation::ComputeResidual(const CConfig *confi
 
     /*--- Jacobian is set to zero on initialization. ---*/
 
-    jacobian[nDim+1][nDim+1] = -RadVar_Source[1]*Volume;
-
+    jacobian[nDim + 1][nDim + 1] = -RadVar_Source[1] * Volume / Cp_i;
   }
 
   return ResidualType<>(residual, jacobian, nullptr);

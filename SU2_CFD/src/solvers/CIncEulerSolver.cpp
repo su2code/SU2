@@ -1661,6 +1661,10 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       second_numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
+      /*--- Set Cp (for implicit) ---*/
+
+      if (implicit) second_numerics->SetSpecificHeat(nodes->GetSpecificHeatCp(iPoint), 0.0);
+
       /*--- Compute the residual ---*/
 
       auto residual = second_numerics->ComputeResidual(config);
