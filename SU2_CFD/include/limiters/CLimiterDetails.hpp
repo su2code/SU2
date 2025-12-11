@@ -3,14 +3,14 @@
  * \brief A class template that allows defining limiters via
  *        specialization of particular details.
  * \author P. Gomes
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+ #pragma once
 
 /*!
  * \brief A traits class for limiters, see notes for "computeLimiters_impl()".
@@ -71,6 +72,22 @@ struct LimiterHelpers
 {
   FORCEINLINE static Type epsilon() {return std::numeric_limits<passivedouble>::epsilon();}
 
+  FORCEINLINE static Type umusclProjection(const Type& grad_proj, const Type& delta, const Type& kappa)
+  {
+    /*-------------------------------------------------------------------*/
+    /*--- The MUSCL kappa-scheme reconstruction is typically written: ---*/
+    /*---     V_L = V_i + 0.25 * dV_ij^kap, where                     ---*/
+    /*---     dV_ij^kap = (1-kappa) dV_ij^upw + (1+kappa) dV_ij^cen,  ---*/
+    /*---     dV_ij^cen = V_j - V_i,                                  ---*/
+    /*---     dV_ij^upw = 2 grad(Vi) dot vector_ij - dV_ij^cen.       ---*/
+    /*--- To maintain proper scaling for edge limiters, the result of ---*/
+    /*--- this function is 0.5 * dV_ij^kap.                           ---*/
+    /*-------------------------------------------------------------------*/
+    const Type cent = 0.5 * delta;
+    const Type upw = grad_proj - cent;
+    return (1.0 - kappa) * upw + (1.0 + kappa) * cent;
+  }
+
   FORCEINLINE static Type venkatFunction(const Type& proj, const Type& delta, const Type& eps2)
   {
     Type y = delta*(delta+proj) + eps2;
@@ -79,7 +96,7 @@ struct LimiterHelpers
 
   FORCEINLINE static Type vanAlbadaFunction(const Type& proj, const Type& delta, const Type& eps)
   {
-    return delta * (2*proj + delta) / (4*pow(proj, 2) + pow(delta, 2) + eps);
+    return delta * (proj + delta) / (pow(proj, 2) + pow(delta, 2) + eps);
   }
 
   FORCEINLINE static Type raisedSine(const Type& dist)

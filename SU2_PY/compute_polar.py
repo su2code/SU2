@@ -3,14 +3,14 @@
 ## \file Compute_polar.py
 #  \brief Python script for performing polar sweep.
 #  \author E Arad (based on T. Lukaczyk and  F. Palacios script)
-#  \version 8.1.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -482,10 +482,28 @@ def main():
                 # if caseName exists copy the restart file from it for run continuation
                 # Continue from previous sweep point if this is not he first
                 if os.path.isdir(caseName):
-                    command = "cp " + caseName + "/" + config.SOLUTION_FILENAME + " ."
+
+                    print(
+                        "config option READ_BINARY_RESTART=", config.READ_BINARY_RESTART
+                    )
+                    if config.READ_BINARY_RESTART == "YES":
+                        file_ext = ".dat"
+                    else:
+                        file_ext = ".csv"
+                    command = (
+                        "cp "
+                        + caseName
+                        + "/"
+                        + config.SOLUTION_FILENAME
+                        + file_ext
+                        + " ."
+                    )
                     if options.verbose:
                         print(command)
-                    shutil.copy2(caseName + "/" + config.SOLUTION_FILENAME, os.getcwd())
+                    shutil.copy2(
+                        caseName + "/" + config.SOLUTION_FILENAME + file_ext,
+                        os.getcwd(),
+                    )
                     konfig.RESTART_SOL = "YES"
                 else:
                     konfig.RESTART_SOL = "NO"
@@ -557,7 +575,12 @@ def main():
             # save data
             SU2.io.save_data("results.pkl", results)
             shutil.copy2("results.pkl", "DIRECT")
-            shutil.copy2(config.SOLUTION_FILENAME, "DIRECT")
+
+            if config.READ_BINARY_RESTART == "YES":
+                file_ext = ".dat"
+            else:
+                file_ext = ".csv"
+            shutil.copy2(config.SOLUTION_FILENAME + file_ext, "DIRECT")
 
             if os.path.isdir(caseName):
                 command = (
@@ -580,8 +603,12 @@ def main():
     f.close()
     if os.path.isdir("DIRECT"):
         shutil.rmtree("DIRECT")
-    if os.path.isfile(config.SOLUTION_FILENAME):
-        os.remove(config.SOLUTION_FILENAME)
+    if config.READ_BINARY_RESTART == "YES":
+        file_ext = ".dat"
+    else:
+        file_ext = ".csv"
+    if os.path.isfile(config.SOLUTION_FILENAME + file_ext):
+        os.remove(config.SOLUTION_FILENAME + file_ext)
     if os.path.isfile("results.pkl"):
         os.remove("results.pkl")
     print("Post sweep cleanup completed")

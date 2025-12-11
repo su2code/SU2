@@ -2,14 +2,14 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -612,8 +612,6 @@ int main(int argc, char* argv[]) {
 
     /*--- Write the objective function in a external file ---*/
     string filename = config_container[ZONE_0]->GetObjFunc_Value_FileName();
-    unsigned short lastindex = filename.find_last_of('.');
-    filename = filename.substr(0, lastindex);
     if (tabTecplot)
       filename += ".dat";
     else
@@ -730,8 +728,6 @@ int main(int argc, char* argv[]) {
     /*--- Write the gradient in a external file ---*/
     if (rank == MASTER_NODE) {
       string filename = config_container[ZONE_0]->GetObjFunc_Grad_FileName();
-      unsigned short lastindex = filename.find_last_of('.');
-      filename = filename.substr(0, lastindex);
       if (tabTecplot)
         filename += ".dat";
       else
@@ -932,6 +928,17 @@ int main(int argc, char* argv[]) {
         }
         MoveSurface = true;
         surface_movement->SetRotation(geometry_container[ZONE_0], config_container[ZONE_0], iDV, true);
+      }
+
+      /*--- HICKS_HENNE_CAMBER design variable ---*/
+
+      else if (config_container[ZONE_0]->GetDesign_Variable(iDV) == HICKS_HENNE_CAMBER) {
+        if (rank == MASTER_NODE) {
+          cout << endl << "Design variable number " << iDV << "." << endl;
+          cout << "Perform 2D deformation of the surface." << endl;
+        }
+        MoveSurface = true;
+        surface_movement->SetHicksHenneCamber(geometry_container[ZONE_0], config_container[ZONE_0]);
       }
 
       /*--- NACA_4Digits design variable ---*/

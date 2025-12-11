@@ -2,14 +2,14 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -111,7 +111,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig* config, unsigned short val_iZone, 
   /*--- If SU2_DEF then write a file with the boundary information ---*/
 
   if ((config->GetKind_SU2() == SU2_COMPONENT::SU2_DEF) && (rank == MASTER_NODE)) {
-    string str = "boundary.dat";
+    string str = "boundary";
 
     str = config->GetMultizone_FileName(str, val_iZone, ".dat");
 
@@ -3350,6 +3350,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_Deform_Mesh(iMarker, config->GetMarker_CfgFile_Deform_Mesh(Marker_Tag));
       config->SetMarker_All_Deform_Mesh_Sym_Plane(iMarker, config->GetMarker_CfgFile_Deform_Mesh_Sym_Plane(Marker_Tag));
+      config->SetMarker_All_Deform_Mesh_Internal(iMarker, config->GetMarker_CfgFile_Deform_Mesh_Internal(Marker_Tag));
       config->SetMarker_All_Fluid_Load(iMarker, config->GetMarker_CfgFile_Fluid_Load(Marker_Tag));
       config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -3375,6 +3376,7 @@ void CPhysicalGeometry::SetBoundaries(CConfig* config) {
       config->SetMarker_All_Moving(iMarker, NO);
       config->SetMarker_All_Deform_Mesh(iMarker, NO);
       config->SetMarker_All_Deform_Mesh_Sym_Plane(iMarker, NO);
+      config->SetMarker_All_Deform_Mesh_Internal(iMarker, NO);
       config->SetMarker_All_Fluid_Load(iMarker, NO);
       config->SetMarker_All_PyCustom(iMarker, NO);
       config->SetMarker_All_PerBound(iMarker, NO);
@@ -3769,6 +3771,7 @@ void CPhysicalGeometry::LoadUnpartitionedSurfaceElements(CConfig* config, CMeshR
       config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
       config->SetMarker_All_Deform_Mesh(iMarker, config->GetMarker_CfgFile_Deform_Mesh(Marker_Tag));
       config->SetMarker_All_Deform_Mesh_Sym_Plane(iMarker, config->GetMarker_CfgFile_Deform_Mesh_Sym_Plane(Marker_Tag));
+      config->SetMarker_All_Deform_Mesh_Internal(iMarker, config->GetMarker_CfgFile_Deform_Mesh_Internal(Marker_Tag));
       config->SetMarker_All_Fluid_Load(iMarker, config->GetMarker_CfgFile_Fluid_Load(Marker_Tag));
       config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
       config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
@@ -4639,7 +4642,7 @@ void CPhysicalGeometry::SetElement_Connectivity() {
 
           if ((elem[iElem]->GetNeighbor_Elements(iFace) == -1) && (iElem < Test_Elem) &&
               FindFace(iElem, Test_Elem, first_elem_face, second_elem_face)) {
-            /*--- Localice which faces are sharing both elements ---*/
+            /*--- Localize which faces are sharing both elements ---*/
 
             elem[iElem]->SetNeighbor_Elements(Test_Elem, first_elem_face);
 
@@ -4663,7 +4666,7 @@ void CPhysicalGeometry::SetBoundVolume() {
       CheckVol = false;
 
       for (iElem = 0; iElem < nodes->GetnElem(Point); iElem++) {
-        /*--- Look for elements surronding that point --*/
+        /*--- Look for elements surrounding that point --*/
         cont = 0;
         iElem_Domain = nodes->GetElem(Point, iElem);
         for (iNode_Domain = 0; iNode_Domain < elem[iElem_Domain]->GetnNodes(); iNode_Domain++) {
@@ -4772,10 +4775,10 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
   nSpan_loc = 0;
   if (nDim == 2) {
     nSpanWiseSections[marker_flag - 1] = 1;
-    // TODO (turbo) make it more genral
+    // TODO (turbo) make it more general
     if (marker_flag == OUTFLOW) config->SetnSpanWiseSections(1);
 
-    /*---Initilize the vector of span-wise values that will be ordered ---*/
+    /*---Initialize the vector of span-wise values that will be ordered ---*/
     SpanWiseValue[marker_flag - 1] = new su2double[1];
     for (iSpan = 0; iSpan < 1; iSpan++) {
       SpanWiseValue[marker_flag - 1][iSpan] = 0;
@@ -4789,7 +4792,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
 
           /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
-           * in order to caount the number of Span ---*/
+           * in order to count the number of Span ---*/
           for (jMarker = 0; jMarker < nMarker; jMarker++) {
             if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
 
@@ -5688,8 +5691,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
     char buffer[50];
 
     if (GetnZone() > 1) {
-      unsigned short lastindex = multizone_filename.find_last_of('.');
-      multizone_filename = multizone_filename.substr(0, lastindex);
       SPRINTF(buffer, "_%d.dat", SU2_TYPE::Int(val_iZone));
       multizone_filename.append(string(buffer));
     }

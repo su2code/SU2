@@ -2,14 +2,14 @@
  * \file CDriver.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -95,6 +95,8 @@
 #include "../../include/iteration/CIterationFactory.hpp"
 
 #include "../../../Common/include/parallelization/omp_structure.hpp"
+
+#include "../../../Common/include/grid_movement/CVolumetricMovementFactory.hpp"
 
 #include <cassert>
 
@@ -1527,7 +1529,9 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
     case MAIN_SOLVER::FEM_ELASTICITY:
     case MAIN_SOLVER::DISC_ADJ_FEM:
-      fem = true; break;
+      fem = true;
+      heat = config->GetWeakly_Coupled_Heat();
+      break;
 
     case MAIN_SOLVER::ADJ_EULER:
       adj_euler = euler = compressible = true; break;
@@ -2312,8 +2316,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
       ifstream properties_file;
 
       string filename = config->GetFEA_FileName();
-      if (nZone > 1)
-        filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
       properties_file.open(filename.data(), ios::in);
 
@@ -2373,7 +2375,7 @@ void CDriver::PreprocessDynamicMesh(CConfig *config, CGeometry **geometry, CSolv
   if (!fem_solver && (config->GetGrid_Movement() || (config->GetDirectDiff() == D_DESIGN))) {
     if (rank == MASTER_NODE)
       cout << "Setting dynamic mesh structure for zone "<< iZone + 1<<"." << endl;
-    grid_movement = new CVolumetricMovement(geometry[MESH_0], config);
+    grid_movement = CVolumetricMovementFactory::CreateCVolumetricMovement(geometry[MESH_0], config);
 
     if (surface_movement == nullptr)
       surface_movement = new CSurfaceMovement();

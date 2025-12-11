@@ -3,14 +3,14 @@
 ## \file interface.py
 #  \brief python package interfacing with the SU2 suite
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.1.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -56,9 +56,9 @@ if user_defined:
     mpi_Command = os.environ["SU2_MPI_COMMAND"]
 elif slurm_job:
     mpi_Command = "srun -n %i %s"
-elif not which("mpirun") is None:
+elif which("mpirun") is not None:
     mpi_Command = "mpirun -n %i %s"
-elif not which("mpiexec") is None:
+elif which("mpiexec") is not None:
     mpi_Command = "mpiexec -n %i %s"
 else:
     mpi_Command = ""
@@ -261,7 +261,6 @@ def run_command(Command):
     """runs os command with subprocess
     checks for errors from command
     """
-
     sys.stdout.flush()
 
     proc = subprocess.Popen(

@@ -4,14 +4,14 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring and F. Poli
-#  \version 8.1.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -51,20 +51,19 @@ def init_submodules(
     own_fado=True,
     own_mlpcpp=True,
 ):
-
     cur_dir = sys.path[0]
 
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = "762ba7698e3ceaa1b17aa299421ddd418f00b823"
+    sha_version_codi = "a0725b2bfd172e741a07f96b041a5ddf88d441d7"
     github_repo_codi = "https://github.com/scicompkl/CoDiPack"
-    sha_version_medi = "7d550831e0e233a85b9d9af9c181d7ecb2929946"
+    sha_version_medi = "0cfaf96e7a31a5a8941b97f84198da03a8f8bd7a"
     github_repo_medi = "https://github.com/SciCompKL/MeDiPack"
-    sha_version_opdi = "a6b9655c240af2a35454a61727e5bbbbaa3a425f"
+    sha_version_opdi = "294807b0111ce241cda97db62f80cdd5012d9381"
     github_repo_opdi = "https://github.com/SciCompKL/OpDiLib"
-    sha_version_meson = "41c650a040d50e0912d268af7a903a9ce1456dfa"
+    sha_version_meson = "5a82ea0501736a666ca9cc003ea0774f8219fd65"
     github_repo_meson = "https://github.com/mesonbuild/meson"
-    sha_version_ninja = "52649de2c56b63f42bc59513d51286531c595b44"
+    sha_version_ninja = "b4d51f6ed5bed09dd2b70324df0d9cb4ecad2638"
     github_repo_ninja = "https://github.com/ninja-build/ninja"
     sha_version_mpp = "5ff579f43781cae07411e5ab46291c9971536be6"
     github_repo_mpp = "https://github.com/mutationpp/Mutationpp"
@@ -74,7 +73,7 @@ def init_submodules(
     github_repo_mel = "https://github.com/pcarruscag/MEL"
     sha_version_fado = "ce7ee018e4e699af5028d69baa1939fea290e18a"
     github_repo_fado = "https://github.com/pcarruscag/FADO"
-    sha_version_mlpcpp = "6865a58b22f21a92977839d9c93eae9522402f55"
+    sha_version_mlpcpp = "e19ca0cafb28c4b7ba5b8cffef42883259b00dc0"
     github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
 
     medi_name = "MeDiPack"
@@ -195,7 +194,6 @@ def is_git_directory(path="."):
 
 def submodule_status(path, sha_commit):
     if not os.path.exists(path + os.path.sep + sha_commit):
-
         # Check the status of the submodule
         status = subprocess.run(
             ["git", "submodule", "status", path],
@@ -252,7 +250,6 @@ def submodule_status(path, sha_commit):
 
 
 def download_module(name, alt_name, git_repo, commit_sha):
-
     # ZipFile does not preserve file permissions.
     # This is a workaround for that problem:
     # https://stackoverflow.com/questions/39296101/python-zipfile-removes-execute-permissions-from-binaries
@@ -275,7 +272,6 @@ def download_module(name, alt_name, git_repo, commit_sha):
     module_identifier = os.path.join(alt_name, commit_sha)
 
     if not os.path.exists(module_identifier):
-
         if os.path.exists(alt_name) and os.listdir(alt_name):
             print("Directory " + alt_name + " is not empty")
             print("Maybe submodules are already cloned with git?")

@@ -3,14 +3,14 @@
 ## \file config.py
 #  \brief python package for config
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.1.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -94,7 +94,7 @@ class Config(ordered_bunch):
                 self.read(filename)
             except IOError:
                 print("Could not find config file: %s" % filename)
-            except:
+            except Exception:
                 print("Unexpected error: ", sys.exc_info()[0])
                 raise
         self._filename = filename
@@ -752,9 +752,9 @@ def read_config(filename):
             "EQUALITY": OrderedDict(),
         }
     if "VALUE_OBJFUNC_FILENAME" not in data_dict:
-        data_dict["VALUE_OBJFUNC_FILENAME"] = "of_eval.dat"
+        data_dict["VALUE_OBJFUNC_FILENAME"] = "of_eval"
     if "GRAD_OBJFUNC_FILENAME" not in data_dict:
-        data_dict["GRAD_OBJFUNC_FILENAME"] = "of_grad.dat"
+        data_dict["GRAD_OBJFUNC_FILENAME"] = "of_grad"
     if "AOA" not in data_dict:
         data_dict["AOA"] = 0.0
     if "SIDESLIP_ANGLE" not in data_dict:
@@ -905,9 +905,9 @@ def read_config(filename):
             "SIZE": [1],
         }
     if "VALUE_OBJFUNC_FILENAME" not in data_dict:
-        data_dict["VALUE_OBJFUNC_FILENAME"] = "of_eval.dat"
+        data_dict["VALUE_OBJFUNC_FILENAME"] = "of_eval"
     if "GRAD_OBJFUNC_FILENAME" not in data_dict:
-        data_dict["GRAD_OBJFUNC_FILENAME"] = "of_grad.dat"
+        data_dict["GRAD_OBJFUNC_FILENAME"] = "of_grad"
 
     return data_dict
 

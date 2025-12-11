@@ -2,14 +2,14 @@
  * \file CSurfaceMovement.cpp
  * \brief Subroutines for moving mesh surface elements
  * \author F. Palacios, T. Economon, S. Padron
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -584,7 +584,7 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
   else if ((config->GetDesign_Variable(0) == ROTATION) || (config->GetDesign_Variable(0) == TRANSLATION) ||
            (config->GetDesign_Variable(0) == SCALE) || (config->GetDesign_Variable(0) == HICKS_HENNE) ||
            (config->GetDesign_Variable(0) == SURFACE_BUMP) || (config->GetDesign_Variable(0) == ANGLE_OF_ATTACK) ||
-           (config->GetDesign_Variable(0) == CST)) {
+           (config->GetDesign_Variable(0) == CST) || (config->GetDesign_Variable(0) == HICKS_HENNE_CAMBER)) {
     /*--- Apply rotation, displacement and stretching design variables (this
      should be done before the bump function design variables) ---*/
 
@@ -640,6 +640,11 @@ vector<vector<su2double> > CSurfaceMovement::SetSurface_Deformation(CGeometry* g
       }
     }
 
+    /*--- HICKS_HENNE_CAMBER design variable ---*/
+
+    if (config->GetDesign_Variable(0) == HICKS_HENNE_CAMBER) {
+      SetHicksHenneCamber(geometry, config);
+    }
   }
 
   /*--- NACA_4Digits design variable ---*/
@@ -3514,8 +3519,6 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry* geometry, CConfig* con
        physical time, so perform mesh motion in reverse. ---*/
       unsigned long nFlowIter = config->GetnTime_Iter() - 1;
       flowIter = nFlowIter - iter;
-      unsigned short lastindex = DV_Filename.find_last_of('.');
-      DV_Filename = DV_Filename.substr(0, lastindex);
       if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10))
         SPRINTF(buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100))
@@ -3530,8 +3533,6 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry* geometry, CConfig* con
     } else {
       /*--- Forward time for the direct problem ---*/
       flowIter = iter;
-      unsigned short lastindex = DV_Filename.find_last_of('.');
-      DV_Filename = DV_Filename.substr(0, lastindex);
       if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10))
         SPRINTF(buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100))
@@ -3692,6 +3693,130 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry* geometry, CConfig* con
         /*--- Set position changes to be applied by the spring analogy ---*/
         geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
       }
+    }
+  }
+}
+
+void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config) {
+  unsigned long iVertex;
+  unsigned short iMarker, nDV_Camber = 0;
+  su2double VarCoord[3] = {0.0, 0.0, 0.0}, VarCoordTrans[3] = {0.0, 0.0, 0.0}, *CoordTrans, *NormalTrans, ek, fk,
+            Coord[3] = {0.0, 0.0, 0.0}, TPCoord[2] = {0.0, 0.0}, LPCoord[2] = {0.0, 0.0}, USTPCoord[2] = {0.0, 0.0},
+            LSTPCoord[2] = {0.0, 0.0}, Distance, Chord, AoA, ValCos, ValSin;
+  vector<su2double> positions, values, X_Coord_upper, Y_Coord_upper, X_Coord_lower, Y_Coord_lower;
+
+  // --- Check if the type of design variables is only HICKS_HENNE_CAMBER ---// // TODO: Extend to CAMBER + THICKNESS
+  for (unsigned short iDV = 0; iDV < config->GetnDV(); iDV++)
+    if (config->GetDesign_Variable(iDV) != HICKS_HENNE_CAMBER) {
+      SU2_MPI::Error("'HicksHenneCamber' can not be combined with other design variables.", CURRENT_FUNCTION);
+    } else {
+      nDV_Camber++;
+    }
+
+  positions.resize(nDV_Camber);
+  values.resize(nDV_Camber);
+
+  /*--- Collect the values of the Hicks-Henne camber design variables ---*/
+  for (unsigned short iDV = 0, counter = 0; iDV < config->GetnDV(); iDV++) {
+    if (config->GetDesign_Variable(iDV) == HICKS_HENNE_CAMBER) {
+      positions[counter] =
+          config->GetParamDV(iDV, 0);             /*--- Position of the camber point as a fraction of the chord ---*/
+      values[counter] = config->GetDV_Value(iDV); /*--- Value of the deformation ---*/
+      counter++;
+    }
+  }
+
+  /*--- Compute the angle of attack, Leading-edge (LP) and Trailing-edge (TP) point.
+        We do this for upper and lower surface separately to detect blunt trailing edges ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      CoordTrans = boundary->vertex[iMarker][0]->GetCoord();
+      LSTPCoord[0] = CoordTrans[0];
+      LSTPCoord[1] = CoordTrans[1];
+      USTPCoord[0] = CoordTrans[0];
+      USTPCoord[1] = CoordTrans[1];
+      for (iVertex = 1; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+        CoordTrans = boundary->vertex[iMarker][iVertex]->GetCoord();
+        NormalTrans = boundary->vertex[iMarker][0]->GetNormal();
+        if ((CoordTrans[0] > TPCoord[0]) && (abs(NormalTrans[1]) > abs(NormalTrans[0]))) {
+          if (NormalTrans[1] >= 0.0) {
+            USTPCoord[0] = CoordTrans[0];
+            USTPCoord[1] = CoordTrans[1];
+          } else {
+            LSTPCoord[0] = CoordTrans[0];
+            LSTPCoord[1] = CoordTrans[1];
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Correct the TP coordinates if the trailing edge is blunt ---*/
+  if ((fabs(USTPCoord[0] - LSTPCoord[0]) > EPS) || (fabs(USTPCoord[1] - LSTPCoord[1]) > EPS)) {
+    TPCoord[0] = (USTPCoord[0] + LSTPCoord[0]) / 2.0;
+    TPCoord[1] = (USTPCoord[1] + LSTPCoord[1]) / 2.0;
+  } else {
+    TPCoord[0] = USTPCoord[0];
+    TPCoord[1] = USTPCoord[1];
+  }
+
+  Chord = 0.0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_DV(iMarker) == YES) {
+      for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+        CoordTrans = boundary->vertex[iMarker][iVertex]->GetCoord();
+        Distance = GeometryToolbox::Distance(2, CoordTrans, TPCoord);
+        if (Chord < Distance) {
+          Chord = Distance;
+          LPCoord[0] = CoordTrans[0];
+          LPCoord[1] = CoordTrans[1];
+        }
+      }
+    }
+  }
+
+  AoA = atan((LPCoord[1] - TPCoord[1]) / (TPCoord[0] - LPCoord[0])) * 180 / PI_NUMBER;
+
+  /*--- Apply deformation based on the camberline Hicks-Henne deformation and the existing airfoil thickness
+   * distribution ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    for (iVertex = 0; iVertex < boundary->nVertex[iMarker]; iVertex++) {
+      if (config->GetMarker_All_DV(iMarker) == YES) {
+        CoordTrans = boundary->vertex[iMarker][iVertex]->GetCoord();
+        NormalTrans = boundary->vertex[iMarker][iVertex]->GetNormal();
+
+        ValCos = cos(AoA * PI_NUMBER / 180.0);
+        ValSin = sin(AoA * PI_NUMBER / 180.0);
+
+        /*--- Transform the coordinates ---*/
+        Coord[0] = (CoordTrans[0] - LPCoord[0]) * ValCos - (CoordTrans[1] - LPCoord[1]) * ValSin;
+        Coord[0] = max(0.0, Coord[0]);  // Coord x should be always positive
+        Coord[1] = (CoordTrans[1] - LPCoord[1]) * ValCos + (CoordTrans[0] - LPCoord[0]) * ValSin;
+
+        /*--- Special case: surface point is part of trailing edge ---*/
+        if (Coord[0] > 0.99) {
+          continue;
+        }
+
+        /*--- Compute the Hicks-Henne bumps ---*/
+        fk = 0.0;
+        for (unsigned short iDV = 0; iDV < nDV_Camber; iDV++) {
+          ek = log10(0.5) / log10(positions[iDV]);
+          if (Coord[0] > 10 * EPS) fk += pow(sin(PI_NUMBER * pow(Coord[0], ek)), 3) * values[iDV];
+        }
+        VarCoord[1] = fk;
+      }
+
+      /*--- Apply the transformation to the coordinate variation ---*/
+
+      ValCos = cos(-AoA * PI_NUMBER / 180.0);
+      ValSin = sin(-AoA * PI_NUMBER / 180.0);
+
+      VarCoordTrans[0] = VarCoord[0] * ValCos - VarCoord[1] * ValSin;
+      VarCoordTrans[1] = VarCoord[1] * ValCos + VarCoord[0] * ValSin;
+
+      boundary->vertex[iMarker][iVertex]->SetVarCoord(VarCoordTrans);
     }
   }
 }
@@ -4064,7 +4189,7 @@ void CSurfaceMovement::ReadFFDInfo(CGeometry* geometry, CConfig* config, CFreeFo
 
   mesh_file.open(val_mesh_filename);
   if (mesh_file.fail()) {
-    SU2_MPI::Error("There is no geometry file (ReadFFDInfo)!!", CURRENT_FUNCTION);
+    SU2_MPI::Error("ReadFFDInfo:: There is no geometry file called " + val_mesh_filename, CURRENT_FUNCTION);
   }
 
   while (getline(mesh_file, text_line)) {
@@ -4921,9 +5046,7 @@ void CSurfaceMovement::WriteFFDInfo(CSurfaceMovement** surface_movement, CGeomet
   if (rank == MASTER_NODE) {
     /*--- Read the name of the output file ---*/
 
-    auto str = config[ZONE_0]->GetMesh_Out_FileName();
-    unsigned short lastindex = str.find_last_of('.');
-    str = str.substr(0, lastindex) + ".su2";
+    auto str = config[ZONE_0]->GetMesh_Out_FileName() + ".su2";
 
     output_file.precision(15);
     output_file.open(str, ios::out | ios::app);

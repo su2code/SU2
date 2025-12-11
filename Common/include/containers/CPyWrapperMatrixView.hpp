@@ -2,14 +2,14 @@
  * \file CPyWrapperMatrixView.hpp
  * \brief Simple matrix views to use with the python wrapper.
  * \author P. Gomes
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,6 +54,9 @@
                                                                                                                  \
   /*! \brief Gets the value for a (row, column) pair. */                                                         \
   passivedouble operator()(unsigned long row, unsigned long col) const { return Get(row, col); }                 \
+                                                                                                                 \
+  /*! \brief Gets the values for a row of the matrix. */                                                         \
+  std::vector<passivedouble> operator()(unsigned long row) const { return Get(row); }                            \
                                                                                                                  \
   /*! \brief Gets the value for a (row, column) pair. */                                                         \
   passivedouble Get(unsigned long row, unsigned long col) const { return SU2_TYPE::GetValue(Access(row, col)); } \
@@ -162,4 +165,78 @@ class CPyWrapperMarkerMatrixView {
 
   /*--- Use the macro to generate the interface. ---*/
   PY_WRAPPER_MATRIX_INTERFACE
+};
+
+/*!
+ * \class CPyWrapper3DMatrixView
+ * \ingroup PySU2
+ * \brief This class wraps C3DDoubleMatrix for the python wrapper matrix interface.
+ * It is generaly used to wrap access to solver gradients defined for the entire volume.
+ */
+class CPyWrapper3DMatrixView {
+ protected:
+  static_assert(su2activematrix::IsRowMajor, "");
+  su2double* data_ = nullptr;
+  unsigned long rows_ = 0, cols_ = 0, dims_ = 0;
+  std::string name_;
+  bool read_only_ = false;
+
+  /*--- Define the functions required by the interface macro. ---*/
+  inline const su2double& Access(unsigned long row, unsigned long col, unsigned long dim) const {
+    if (row > rows_ || col > cols_ || dim > dims_) SU2_MPI::Error(name_ + " out of bounds", "CPyWrapper3DMatrixView");
+    return data_[row * (cols_ * dims_) + col * dims_ + dim];
+  }
+  inline su2double& Access(unsigned long row, unsigned long col, unsigned long dim) {
+    if (read_only_) SU2_MPI::Error(name_ + " is read-only", "CPyWrapper3DMatrixView");
+    const auto& const_me = *this;
+    return const_cast<su2double&>(const_me.Access(row, col, dim));
+  }
+
+ public:
+  CPyWrapper3DMatrixView() = default;
+
+  /*!
+   * \brief Construct the view of the matrix.
+   * \note "name" should be set to the variable name being returned to give better information to users.
+   * \note "read_only" can be set to true to prevent the data from being modified.
+   */
+  CPyWrapper3DMatrixView(C3DDoubleMatrix& mat, const std::string& name, bool read_only)
+      : data_(mat.data()),
+        rows_(mat.length()),
+        cols_(mat.rows()),
+        dims_(mat.cols()),
+        name_(name),
+        read_only_(read_only) {}
+
+  /*! \brief Returns the shape of the matrix. */
+  std::vector<unsigned long> Shape() const { return {rows_, cols_, dims_}; }
+
+  /*! \brief Returns whether the data is read-only [true] or if it can be modified [false]. */
+  bool IsReadOnly() const { return read_only_; }
+
+  /*! \brief Gets the value for a (row, column, dimension) triplet. */
+  passivedouble operator()(unsigned long row, unsigned long col, unsigned long dim) const { return Get(row, col, dim); }
+
+  /*! \brief Gets the values for a row and column of the matrix. */
+  std::vector<passivedouble> operator()(unsigned long row, unsigned long col) const { return Get(row, col); }
+
+  /*! \brief Gets the value for a (row, column, dimension) triplet. */
+  passivedouble Get(unsigned long row, unsigned long col, unsigned long dim) const {
+    return SU2_TYPE::GetValue(Access(row, col, dim));
+  }
+
+  /*! \brief Gets the values for a row and column of the matrix. */
+  std::vector<passivedouble> Get(unsigned long row, unsigned long col) const {
+    std::vector<passivedouble> vals(dims_);
+    for (unsigned long j = 0; j < dims_; ++j) vals[j] = Get(row, col, j);
+    return vals;
+  }
+  /*! \brief Sets the value for a (row, column, dimension) triplet. This clears derivative information. */
+  void Set(unsigned long row, unsigned long col, unsigned long dim, passivedouble val) { Access(row, col, dim) = val; }
+
+  /*! \brief Sets the values for a row and column of the matrix. */
+  void Set(unsigned long row, unsigned long col, std::vector<passivedouble> vals) {
+    unsigned long j = 0;
+    for (const auto& val : vals) Set(row, col, j++, val);
+  }
 };

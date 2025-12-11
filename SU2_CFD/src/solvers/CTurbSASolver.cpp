@@ -2,14 +2,14 @@
  * \file CTurbSASolver.cpp
  * \brief Main subroutines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -73,8 +73,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
 
-    if (ReducerStrategy)
+    if (ReducerStrategy) {
       EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+      EdgeFluxesDiff.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+    }
 
     if (config->GetExtraOutput()) {
       if (nDim == 2) { nOutputVariables = 13; }
@@ -299,10 +301,10 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
     /*--- Roughness heights. ---*/
     numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
   };
+  
+  /*--- Now instantiate the generic non-conservative implementation with the functor above. ---*/
+  Viscous_Residual_NonCons(iEdge, geometry, solver_container, numerics, config, SolverSpecificNumerics);
 
-  /*--- Now instantiate the generic implementation with the functor above. ---*/
-
-  Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
 }
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -427,6 +429,11 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   }
 
   AD::EndNoSharedReading();
+
+  /*--- Custom user defined source term (from the python wrapper) ---*/
+  if (config->GetPyCustomSource()) {
+    CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
+  }
 
 }
 
@@ -1559,31 +1566,8 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  su2double localUnderRelaxation =  1.00;
-  const su2double allowableRatio =  0.99;
+  const su2double allowableRatio =  config->GetMaxUpdateFractionSA();
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    localUnderRelaxation = 1.0;
-    su2double ratio = fabs(LinSysSol[iPoint]) / (fabs(nodes->GetSolution(iPoint, 0)) + EPS);
-    /* We impose a limit on the maximum percentage that the
-      turbulence variables can change over a nonlinear iteration. */
-    if (ratio > allowableRatio) {
-      localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-    }
-
-    /* Threshold the relaxation factor in the event that there is
-     a very small value. This helps avoid catastrophic crashes due
-     to non-realizable states by canceling the update. */
-
-    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
-
-    /* Store the under-relaxation factor for this point. */
-
-    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
-
-  }
-  END_SU2_OMP_FOR
+  ComputeUnderRelaxationFactorHelper(allowableRatio);
 
 }

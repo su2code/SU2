@@ -2,14 +2,14 @@
  * \file COutput.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -82,24 +82,9 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   volumeFilename  = "volume";
   restartFilename = "restart";
 
-  /*--- Retrieve the history filename ---*/
+  /*--- Retrieve the history filename, including extension ---*/
 
-  historyFilename = config->GetConv_FileName();
-
-  /*--- Add the correct file extension depending on the file format ---*/
-
-  string hist_ext = ".csv";
-  if (config->GetTabular_FileFormat() == TAB_OUTPUT::TAB_TECPLOT) hist_ext = ".dat";
-
-  /*--- Append the zone ID ---*/
-
-  historyFilename = config->GetMultizone_HistoryFileName(historyFilename, config->GetiZone(), hist_ext);
-
-  /*--- Append the restart iteration ---*/
-
-  if (config->GetTime_Domain() && config->GetRestart()) {
-    historyFilename = config->GetUnsteady_FileName(historyFilename, config->GetRestart_Iter(), hist_ext);
-  }
+  historyFilename = config->GetHistory_FileName();
 
   historySep = ",";
 
@@ -383,17 +368,13 @@ void COutput::LoadData(CGeometry *geometry, CConfig *config, CSolver** solver_co
 
 }
 
-void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName){
+void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE format, string fileName) {
 
   /*--- File writer that will later be used to write the file to disk. Created below in the "switch" ---*/
   CFileWriter *fileWriter = nullptr;
 
   /*--- Set current time iter even if history file is not written ---*/
   curTimeIter = config->GetTimeIter();
-
-  /*--- If it is still present, strip the extension (suffix) from the filename ---*/
-  const auto lastindex = fileName.find_last_of('.');
-  fileName = fileName.substr(0, lastindex);
 
   /*--- If the filename with appended iteration is set (depending on the WRT_*_OVERWRITE options)
    *    two files are writen, the normal one and a copy to avoid overwriting previous outputs. ---*/

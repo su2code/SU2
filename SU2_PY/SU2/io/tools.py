@@ -3,14 +3,14 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.1.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -45,18 +45,17 @@ def read_gradients(Grad_filename, scale=1.0):
     """
 
     # open file and skip first line
-    gradfile = open(Grad_filename)
-    gradfile.readline()
+    with open(Grad_filename) as gradfile:
+        gradfile.readline()
 
-    # read values
-    grad_vals = []
-    for line in gradfile:
-        line = line.strip()
-        if len(line) == 0:
-            break
-        grad_vals.append(float(line) * scale)
-    #: for each line
-
+        # read values
+        grad_vals = []
+        for line in gradfile:
+            line = line.strip()
+            if len(line) == 0:
+                break
+            grad_vals.append(float(line) * scale)
+    # done
     return grad_vals
 
 
@@ -387,7 +386,7 @@ def read_aerodynamics(
                 Func_Values[key] = history_data["TAVG_" + key][-1]
     else:
         # in steady cases take only last value.
-        for key, value in Func_Values.iteritems():
+        for key, value in Func_Values.items():
             if not history_data.get(key):
                 raise KeyError(
                     "Key "
@@ -600,6 +599,7 @@ def get_dvMap():
         34: "CST",
         35: "SURFACE_BUMP",
         36: "SURFACE_FILE",
+        37: "HICKS_HENNE_CAMBER",
         40: "DV_EFIELD",
         41: "DV_YOUNG",
         42: "DV_POISSON",
@@ -640,7 +640,7 @@ def get_dvID(kindName):
     try:
         return id_map[kindName]
     except KeyError:
-        raise Exception("Unrecognized Design Variable Name: %s", kindName)
+        raise Exception("Unrecognized Design Variable Name: %s" % kindName)
 
 
 #: def get_dvID()
@@ -651,7 +651,10 @@ def get_dvID(kindName):
 # -------------------------------------------------------------------
 
 
-def get_gradFileFormat(grad_type, plot_format, kindID, special_cases=[]):
+def get_gradFileFormat(grad_type, plot_format, kindID, special_cases=None):
+
+    if special_cases is None:
+        special_cases = []
 
     # start header, build a list of strings and join at the end
     header = []
@@ -722,12 +725,15 @@ def get_gradFileFormat(grad_type, plot_format, kindID, special_cases=[]):
     elif kindID == "HICKS_HENNE":
         header.append(r',"Up/Down","Loc_Max"')
         write_format.append(r", %s, %s")
+    if kindID == "HICKS_HENNE_CAMBER":
+        header.append(r',"Loc_Max"')
+        write_format.append(r", %s")
     elif kindID == "SURFACE_BUMP":
         header.append(r',"Loc_Start","Loc_End","Loc_Max"')
         write_format.append(r", %s, %s, %s")
     elif kindID == "CST":
         header.append(r',"Up/Down","Kulfan number", "Total Kulfan numbers"')
-        write_format.append(r", %s, %s", "%s")
+        write_format.append(r", %s, %s, %s")
     elif kindID == "FAIRING":
         header.append(r',"ControlPoint_Index","Theta_Disp","R_Disp"')
         write_format.append(r", %s, %s, %s")
@@ -1166,8 +1172,8 @@ def make_link(src, dst):
             os.symlink(src, dst)
 
 
-def restart2solution(config, state={}):
-    """restart2solution(config,state={})
+def restart2solution(config, state=None):
+    """restart2solution(config, state=None)
     moves restart file to solution file,
     optionally updates state
     direct or adjoint is read from config
@@ -1178,8 +1184,6 @@ def restart2solution(config, state={}):
     if config.MATH_PROBLEM == "DIRECT":
         restart = config.RESTART_FILENAME
         solution = config.SOLUTION_FILENAME
-        restart = restart.split(".")[0]
-        solution = solution.split(".")[0]
 
         if "RESTART_ASCII" in config.get("OUTPUT_FILES", ["RESTART_BINARY"]):
             restart += ".csv"

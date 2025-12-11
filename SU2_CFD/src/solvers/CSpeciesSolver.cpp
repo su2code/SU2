@@ -2,14 +2,14 @@
  * \file CSpeciesSolver.cpp
  * \brief Main subroutines of CSpeciesSolver class
  * \author T. Kattmann
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -110,8 +110,7 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
 
   nDim = geometry->GetnDim();
 
-
-if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 
@@ -182,15 +181,17 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
                                  bool val_update_geo) {
   /*--- Restart the solution from file information ---*/
 
-  const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  string restart_filename = config->GetSolution_FileName();
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
     if (config->GetRead_Binary_Restart()) {
+      restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
       Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
     } else {
+      restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 
@@ -332,9 +333,9 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
                               CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   /*--- Loop over all the vertices on this boundary marker ---*/
-
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -342,9 +343,6 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
-
-    /*--- Identify the boundary by string name ---*/
-    string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
     if (config->GetMarker_StrongBC(Marker_Tag)==true) {
       nodes->SetSolution_Old(iPoint, Inlet_SpeciesVars[val_marker][iVertex]);
@@ -429,7 +427,7 @@ su2double CSpeciesSolver::GetInletAtVertex(unsigned short iMarker, unsigned long
 
 void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
   /*--- Find BC string to the numeric-identifier. ---*/
-  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) {
     const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -568,4 +566,17 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     }
     END_SU2_OMP_FOR
   }
+
+  /*--- Custom user defined source term (from the python wrapper) ---*/
+  if (config->GetPyCustomSource()) {
+    CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
+  }
+
+}
+
+void CSpeciesSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
+
+  const bool restart = config->GetRestart() || config->GetRestart_Flow();
+
+  PushSolutionBackInTime(TimeIter, restart, solver_container, geometry, config);
 }

@@ -2,14 +2,14 @@
  * \file CEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,10 +28,22 @@
 #include "../../include/variables/CEulerVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
+unsigned long EulerNPrimVarGrad(const CConfig *config, unsigned long ndim) {
+  if (config->GetContinuous_Adjoint()) return ndim + 4;
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) return ndim + 1;
+
+  const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR ||
+                         config->GetKind_FluidModel() == IDEAL_GAS;
+  if (ideal_gas && config->GetKind_Upwind_Flow() == UPWIND::ROE && !config->Low_Mach_Correction()) {
+    // Based on CRoeBase (numerics_simd).
+    return ndim + 2;
+  }
+  return ndim + 4;
+}
+
 CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2double energy, unsigned long npoint,
                                unsigned long ndim, unsigned long nvar, const CConfig *config)
-  : CFlowVariable(npoint, ndim, nvar, ndim + 9,
-                  ndim + (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED && !config->GetContinuous_Adjoint() ? 1 : 4), config),
+  : CFlowVariable(npoint, ndim, nvar, ndim + 9, EulerNPrimVarGrad(config, ndim), config),
     indices(ndim, 0) {
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||

@@ -1,16 +1,16 @@
-﻿/*!
+/*!
  * \file CGeometry.hpp
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +51,7 @@ extern "C" {
 #include <climits>
 #include <memory>
 #include <unordered_map>
+#include <cstdint>
 
 #include "primal_grid/CPrimalGrid.hpp"
 #include "dual_grid/CDualGrid.hpp"
@@ -243,6 +244,8 @@ class CGeometry {
   /*!< \brief Corrected normals on nodes with shared symmetry markers. */
   vector<std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>>> symmetryNormals;
 
+  /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+  vector<bool> boundIsStraight;
   vector<su2double> SurfaceAreaCfgFile; /*!< \brief Total Surface area for all markers. */
 
   /*--- Partitioning-specific variables ---*/
@@ -953,6 +956,19 @@ class CGeometry {
   void SetCustomBoundary(CConfig* config);
 
   /*!
+   * \brief General interface for setting the velocity in the geometry during motion ramps
+   * \param[in] config - config class
+   * \param[in] ramp_flag - flag for type of ramp
+   * \param[in] print - bool to print update to screen
+   */
+  void SetVelocity(CConfig* config, bool print) {
+    if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::ROTATING_FRAME)
+      SetRotationalVelocity(config, print);
+    else if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::STEADY_TRANSLATION)
+      SetTranslationalVelocity(config, print);
+  };
+
+  /*!
    * \brief Set cartesian grid velocity based on rotational speed and axis.
    * \param[in] config - Definition of the particular problem.
    * \param[in] print - Display information on screen.
@@ -1004,6 +1020,15 @@ class CGeometry {
    * \return Global Surface Area to the local marker
    */
   su2double GetSurfaceArea(const CConfig* config, unsigned short val_marker) const;
+
+  /*!
+   * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
+   *        only and store the information in boundIsStraight. For all other boundary types
+   *        this will return false and could therfore be wrong. Used ultimately for BC_Slip_Wall.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] print_on_screen - Boolean whether to print result on screen.
+   */
+  void ComputeSurfStraightness(const CConfig* config, bool print_on_screen);
 
   /*!
    * \brief Find and store all vertices on a sharp corner in the geometry.

@@ -2,14 +2,14 @@
  * \file CDeformationDriver.cpp
  * \brief Main subroutines for driving the mesh deformation.
  * \author A. Gastaldi, H. Patel
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser/ General Public
@@ -31,6 +31,8 @@
 #include "../../../SU2_CFD/include/numerics/elasticity/CFEALinearElasticity.hpp"
 #include "../../../SU2_CFD/include/output/CMeshOutput.hpp"
 #include "../../../SU2_CFD/include/solvers/CMeshSolver.hpp"
+
+#include "../../../Common/include/grid_movement/CVolumetricMovementFactory.hpp"
 
 using namespace std;
 
@@ -315,8 +317,8 @@ void CDeformationDriver::DeformLegacy() {
       /*--- Definition of the Class for grid movement. ---*/
 
       grid_movement[iZone] = new CVolumetricMovement*[nInst_Zone]();
-      grid_movement[iZone][INST_0] =
-          new CVolumetricMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+      grid_movement[iZone][INST_0] = CVolumetricMovementFactory::CreateCVolumetricMovement(
+          geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
 
       /*--- Save original coordinates to be reused in convexity checking procedure. ---*/
 

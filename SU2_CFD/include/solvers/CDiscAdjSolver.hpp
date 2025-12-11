@@ -2,14 +2,14 @@
  * \file CDiscAdjSolver.hpp
  * \brief Headers of the CDiscAdjSolver class
  * \author T. Albring
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,7 +57,7 @@ protected:
   su2double Total_Sens_BPress;   /*!< \brief Total sensitivity to outlet pressure. */
   su2double Total_Sens_Density;  /*!< \brief Total sensitivity to initial density (incompressible). */
   su2double Total_Sens_ModVel;   /*!< \brief Total sensitivity to inlet velocity (incompressible). */
-  su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
+  su2double Mach, Alpha, Beta, Temperature, BPressure, ModVel;
   su2double TemperatureRad, Total_Sens_Temp_Rad;
 
   CDiscAdjVariable* nodes = nullptr;  /*!< \brief The highest level in the variable hierarchy this solver can safely use. */

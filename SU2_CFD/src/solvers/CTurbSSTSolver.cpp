@@ -2,14 +2,14 @@
  * \file CTurbSSTSolver.cpp
  * \brief Main subroutines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -75,8 +75,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
     System.SetxIsZero(true);
 
-    if (ReducerStrategy)
+    if (ReducerStrategy) {
       EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+      EdgeFluxesDiff.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
+    }
 
     /*--- Initialize the BGS residuals in multizone problems. ---*/
     if (multizone){
@@ -294,9 +296,9 @@ void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry
     numerics->SetF1blending(nodes->GetF1blending(iPoint), nodes->GetF1blending(jPoint));
   };
 
-  /*--- Now instantiate the generic implementation with the functor above. ---*/
+  /*--- Now instantiate the generic non-conservative implementation with the functor above. ---*/
+  Viscous_Residual_NonCons(iEdge, geometry, solver_container, numerics, config, SolverSpecificNumerics);
 
-  Viscous_Residual_impl(SolverSpecificNumerics, iEdge, geometry, solver_container, numerics, config);
 }
 
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
@@ -386,6 +388,11 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   END_SU2_OMP_FOR
 
   AD::EndNoSharedReading();
+
+  /*--- Custom user defined source term (from the python wrapper) ---*/
+  if (config->GetPyCustomSource()) {
+    CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
+  }
 
 }
 
@@ -1018,4 +1025,11 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
     }
   }
 
+}
+
+void CTurbSSTSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+
+  const su2double allowableRatio = config->GetMaxUpdateFractionSST();
+
+  ComputeUnderRelaxationFactorHelper(allowableRatio);
 }

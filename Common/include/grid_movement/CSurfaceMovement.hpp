@@ -2,14 +2,14 @@
  * \file CSurfaceMovement.hpp
  * \brief Headers of the CSurfaceMovement class.
  * \author F. Palacios, T. Economon.
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -94,6 +94,13 @@ class CSurfaceMovement : public CGridMovement {
    * \param[in] ResetDef - Reset the deformation before starting a new one.
    */
   void SetCST(CGeometry* boundary, CConfig* config, unsigned short iDV, bool ResetDef);
+
+  /*!
+   * \brief Set a Hicks-Henne deformation bump function on the camberline of an airfoil.
+   * \param[in] boundary - Geometry of the boundary.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHicksHenneCamber(CGeometry* boundary, CConfig* config);
 
   /*!
    * \brief Set a NACA 4 digits airfoil family for airfoil deformation.

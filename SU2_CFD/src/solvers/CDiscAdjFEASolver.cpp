@@ -2,14 +2,14 @@
  * \file CDiscAdjFEASolver.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -463,7 +463,14 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
   auto filename = config->GetSolution_AdjFileName();
   auto restart_filename = config->GetObjFunc_Extension(filename);
-  restart_filename = config->GetFilename(restart_filename, "", val_iter);
+
+  if (config->GetRead_Binary_Restart()) {
+    restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
+  } else {
+    restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
+  }
 
   BasicLoadRestart(geometry[MESH_0], config, restart_filename, geometry[MESH_0]->GetnDim());
 

@@ -3,14 +3,14 @@
 ## \file SU2_CFD.py
 #  \brief Python script to launch SU2_CFD through the Python Wrapper.
 #  \author David Thomas
-#  \version 8.1.0 "Harrier"
+#  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -120,7 +120,7 @@ def main():
     options.wave_equation = options.wave_equation.upper() == "TRUE"
     options.heat_equation = options.heat_equation.upper() == "TRUE"
 
-    if options.filename == None:
+    if options.filename is None:
         raise Exception("No config file provided. Use -f flag")
 
     if options.with_MPI == True:
@@ -163,7 +163,7 @@ def main():
     # Finalize the solver and exit cleanly
     SU2Driver.Finalize()
 
-    if SU2Driver != None:
+    if SU2Driver is not None:
         del SU2Driver
 
 

@@ -2,14 +2,14 @@
  * \file CFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -232,13 +232,19 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
                            config, TurbomachineryStagePerformance, TurbomachineryPerformance, val_iZone, config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter(), val_iInst);
     }
-
-    TurboMonitor(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone);
+    /*--- Update ramps, grid first then outlet boundary ---*/
+    if (config[val_iZone]->GetRampMotionFrame())
+      UpdateRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::GRID);
   }
+
+  // Outside turbo scope as Riemann boundaries can be ramped (pressure only)
+  if (config[val_iZone]->GetRampOutflow())
+      UpdateRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::BOUNDARY);
+
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
-  
+
   StopCalc = output->GetConvergence();
 
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
@@ -251,35 +257,39 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   return StopCalc;
 }
 
-void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone) {
+void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag) {
+  /*--- Generic function for handling ramps ---*/
+  // Grid updates (i.e. rotation/translation) handled seperately to boundary (i.e. pressure/mass flow) updates
   auto* config = config_container[iZone];
+  auto* geometry = geometry_container[iZone][INST_0][ZONE_0];
+
+  std::string msg = "\nUpdated rotating frame grid velocities for zone ";
+  if (ramp_flag == RAMP_TYPE::GRID && config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::STEADY_TRANSLATION)
+    msg = "\nUpdated translation frame grid velocities for zone ";
 
   if (config_container[ZONE_0]->GetMultizone_Problem())
     iter = config_container[ZONE_0]->GetOuterIter();
-  /*--- ROTATING FRAME Ramp: Compute the updated rotational velocity. ---*/
-  if (config->GetGrid_Movement() && config->GetRampRotatingFrame()) {
-    const unsigned long rampFreq = SU2_TYPE::Int(config->GetRampRotatingFrame_Coeff(1));
-    const unsigned long finalRamp_Iter = SU2_TYPE::Int(config->GetRampRotatingFrame_Coeff(2));
-    const su2double rot_z_ini = config->GetRampRotatingFrame_Coeff(0);
-    const bool print = (config->GetComm_Level() == COMM_FULL);
 
-    if(iter % rampFreq == 0 && iter <= finalRamp_Iter){
+  /*-- Update grid velocities (ROTATING_FRAME, STEADY_TRANSLATION)*/
+  if (ramp_flag == RAMP_TYPE::GRID && config->GetGrid_Movement()) {
+    const auto ini_vel = config->GetRampCoeff(ramp_flag, RAMP_COEFF::INITIAL_VALUE);
+    const long unsigned rampFreq = SU2_TYPE::Int(config->GetRampCoeff(ramp_flag, RAMP_COEFF::UPDATE_FREQ));
+    const long unsigned finalRamp_Iter = SU2_TYPE::Int(config->GetRampCoeff(ramp_flag, RAMP_COEFF::FINAL_ITER));
 
-      const su2double rot_z_final = config->GetFinalRotation_Rate_Z();
-
-      if (fabs(rot_z_final) > 0.0) {
-        const su2double rot_z = rot_z_ini + iter * ( rot_z_final - rot_z_ini) / finalRamp_Iter;
-        config->SetRotation_Rate(2, rot_z);
-        if (rank == MASTER_NODE && iter > 0) {
-          cout << "\nUpdated rotating frame grid velocities for zone " << iZone << ".\n";
-        }
-        geometry_container[iZone][INST_0][MESH_0]->SetRotationalVelocity(config, print);
-        geometry_container[iZone][INST_0][MESH_0]->SetShroudVelocity(config);
+    // Two options needed as if finalRamp_Iter % rampFreq != 0 final value is not set correctly
+    if((iter % rampFreq == 0 && iter < finalRamp_Iter) || (iter == finalRamp_Iter)){
+      const auto final_vel =  config->GetFinalValue(ramp_flag);
+      if(fabs(final_vel) > 0.0) {
+        const auto vel = ini_vel + iter * (final_vel - ini_vel)/finalRamp_Iter;
+        config->SetRate(vel);
+        if (rank == MASTER_NODE && iter > 0) cout << msg << iZone << ".\n";
+        geometry->SetVelocity(config, true);
+        geometry->SetShroudVelocity(config);
       }
-
-      geometry_container[iZone][INST_0][MESH_0]->SetAvgTurboValue(config, iZone, INFLOW, false);
-      geometry_container[iZone][INST_0][MESH_0]->SetAvgTurboValue(config, iZone, OUTFLOW, false);
-      geometry_container[iZone][INST_0][MESH_0]->GatherInOutAverageValues(config, false);
+      // Update average turbo values
+      geometry->SetAvgTurboValue(config, iZone, INFLOW, false);
+      geometry->SetAvgTurboValue(config, iZone, OUTFLOW, false);
+      geometry->GatherInOutAverageValues(config, false);
 
       if (iZone < nZone - 1) {
         geometry_container[nZone-1][INST_0][MESH_0]->SetAvgTurboGeoValues(config ,geometry_container[iZone][INST_0][MESH_0], iZone);
@@ -287,16 +297,16 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
     }
   }
 
-  /*--- Outlet Pressure Ramp: Compute the updated pressure. ---*/
-  if (config->GetRampOutletPressure()) {
-    const unsigned long rampFreq = SU2_TYPE::Int(config->GetRampOutletPressure_Coeff(1));
-    const unsigned long finalRamp_Iter = SU2_TYPE::Int(config->GetRampOutletPressure_Coeff(2));
-    const su2double outPres_ini = config->GetRampOutletPressure_Coeff(0);
-    const su2double outPres_final = config->GetFinalOutletPressure();
+  // Boundary ramps (pressure/mass flow)
+  if (ramp_flag == RAMP_TYPE::BOUNDARY){
+    const auto outVal_ini = config->GetRampCoeff(ramp_flag, RAMP_COEFF::INITIAL_VALUE);
+    const long unsigned rampFreq = SU2_TYPE::Int(config->GetRampCoeff(ramp_flag, RAMP_COEFF::UPDATE_FREQ));
+    const long unsigned finalRamp_Iter = SU2_TYPE::Int(config->GetRampCoeff(ramp_flag, RAMP_COEFF::FINAL_ITER));
+    const auto outVal_final = config->GetFinalValue(ramp_flag);
 
-    if (iter % rampFreq == 0 && iter <= finalRamp_Iter) {
-      const su2double outPres = outPres_ini + iter * (outPres_final - outPres_ini) / finalRamp_Iter;
-      if (rank == MASTER_NODE) config->SetMonitorOutletPressure(outPres);
+    if ((iter % rampFreq == 0 && iter < finalRamp_Iter) || (iter == finalRamp_Iter)) {
+      const su2double outVal = outVal_ini + iter * (outVal_final - outVal_ini) / finalRamp_Iter;
+      if (rank == MASTER_NODE) config->SetMonitorValue(outVal);
 
       for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         const auto KindBC = config->GetMarker_All_KindBC(iMarker);
@@ -312,8 +322,8 @@ void CFluidIteration::TurboMonitor(CGeometry**** geometry_container, CConfig** c
           case GILES_BOUNDARY:
             KindBCOption = config->GetKind_Data_Giles(Marker_Tag);
             if (KindBCOption == STATIC_PRESSURE || KindBCOption == STATIC_PRESSURE_1D ||
-                KindBCOption == RADIAL_EQUILIBRIUM ) {
-              config->SetGiles_Var1(outPres, Marker_Tag);
+                KindBCOption == RADIAL_EQUILIBRIUM || KindBCOption == MASS_FLOW_OUTLET) {
+              config->SetGiles_Var1(outVal, Marker_Tag);
             }
             break;
         }
@@ -345,12 +355,12 @@ void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry****
       bladesPrimitives.push_back(bladePrimitives);
     }
     TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladesPrimitives);
-    
+
     auto nSpan = config_container[ZONE_0]->GetnSpanWiseSections();
     auto InState = TurbomachineryPerformance->GetBladesPerformances().at(ZONE_0).at(nSpan)->GetInletState();
     nSpan = config_container[nZone-1]->GetnSpanWiseSections();
     auto OutState =  TurbomachineryPerformance->GetBladesPerformances().at(nZone-1).at(nSpan)->GetOutletState();
-    
+
     TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[nZone-1]);
   }
 }
@@ -658,7 +668,6 @@ void CFluidIteration::SetDualTime_Aeroelastic(CConfig* config) const {
         Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if (Marker_Tag == Monitoring_Tag) { owner = 1; break;
         }           owner = 0;
-       
 
       }
       plunge = config->GetAeroelastic_plunge(iMarker_Monitoring);

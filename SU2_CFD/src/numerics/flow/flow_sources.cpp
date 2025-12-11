@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.3.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -73,7 +73,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
       sq_vel += Velocity_i *Velocity_i;
     }
 
-    Pressure_i = (Gamma-1.0)*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
+    Pressure_i = Gamma_Minus_One*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
     Enthalpy_i = (U_i[nDim+1] + Pressure_i) / U_i[0];
 
     residual[0] = yinv*Volume*U_i[2];
@@ -487,13 +487,9 @@ CNumerics::ResidualType<> CSourceGravity::ComputeResidual(const CConfig* config)
   return ResidualType<>(residual, jacobian, nullptr);
 }
 
-CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                           CSourceBase_Flow(val_nDim, val_nVar, config) {
-
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
-}
+CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar,
+                                                     const CConfig* config)
+    : CSourceBase_Flow(val_nDim, val_nVar, config) {}
 
 CNumerics::ResidualType<> CSourceRotatingFrame_Flow::ComputeResidual(const CConfig* config) {
 
@@ -555,9 +551,6 @@ CSourceIncRotatingFrame_Flow::CSourceIncRotatingFrame_Flow(unsigned short val_nD
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
   /*--- Retrieve the angular velocity vector from config. ---*/
   for (unsigned short iDim = 0; iDim < 3; iDim++)
     Omega[iDim] = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
@@ -618,10 +611,7 @@ CNumerics::ResidualType<> CSourceIncRotatingFrame_Flow::ComputeResidual(const CC
 
 CSourceVorticityConfinement::CSourceVorticityConfinement(unsigned short val_nDim, unsigned short val_nVar,
                                                          const CConfig* config)
-    : CSourceBase_Flow(val_nDim, val_nVar, config) {
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-}
+    : CSourceBase_Flow(val_nDim, val_nVar, config) {}
 
 CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CConfig* config) {
   /*--- density, \rho ---*/
