@@ -264,7 +264,6 @@ class CLookUpTable {
 
   /*!
    * \brief Build the original SU2 trapezoidal map (DAG-based).
-   * WARNING: This can use a lot of memory for large tables!
    * Use EnableFastTrapMap() for large tables instead.
    */
   void BuildOriginalTrapMap();

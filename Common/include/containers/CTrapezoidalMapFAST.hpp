@@ -4,10 +4,7 @@
  *        Based on Pedro Gomes' (pcarruscag) LUT implementation:
  *        https://github.com/pcarruscag/LUT
  *
- * This is a faithful adaptation of Pedro's algorithm for SU2's FGM module.
- * The algorithm uses band-based spatial indexing with O(log n) query time.
- * 
- * NOTE: This implementation is C++11 compatible for SU2.
+ *
  */
 
 #ifndef CTRAPEZOIDALMAP_FAST_HPP
@@ -24,7 +21,6 @@
 
 namespace su2_lut {
 
-/*--- Type aliases matching Pedro's implementation ---*/
 using IntT = int32_t;
 using RealT = su2double;
 
@@ -51,7 +47,7 @@ struct TrapezoidalMap {
     VectorReal x_bands, edge_y;
 };
 
-/*--- C++11 compatible comparison functors ---*/
+/*--- Comparison functors ---*/
 struct PointComparator {
     const VectorReal& x;
     const VectorReal& y;
@@ -78,7 +74,6 @@ struct PairSecondComparator {
 
 /*!
  * \brief Orders points by ascending x coordinates and updates triangle indices.
- * This is critical - the algorithm assumes points are sorted by x.
  */
 inline void ReorderPoints(Matrix3i& triangles, VectorReal& x, VectorReal& y) {
     const IntT n_pts = static_cast<IntT>(x.size());
@@ -179,7 +174,7 @@ inline void ExtractEdges(const Matrix3i& triangles, Matrix2i& edge_pts,
 }
 
 /*!
- * \brief Band detection result structure (for C++11 compatibility).
+ * \brief Band detection result structure.
  */
 struct BandResult {
     IntT n_bands;
@@ -416,7 +411,7 @@ inline void BuildTrapezoidalMap(const Matrix2i& edge_pts, const VectorReal& x,
 }
 
 /*!
- * \brief Query result structure (for C++11 compatibility).
+ * \brief Query result structure.
  */
 struct QueryResult {
     IntT edge_below;
