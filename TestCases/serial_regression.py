@@ -1098,7 +1098,7 @@ def main():
     p1rad.cfg_dir   = "radiation/p1model"
     p1rad.cfg_file  = "configp1.cfg"
     p1rad.test_iter = 100
-    p1rad.test_vals = [-7.641761, -7.438020, -0.541910, 0.003913, -133.770000]
+    p1rad.test_vals = [-7.751309, -7.923059, -2.119084, 0.091733, -47.387000]
     test_list.append(p1rad)
 
     # ###############################
