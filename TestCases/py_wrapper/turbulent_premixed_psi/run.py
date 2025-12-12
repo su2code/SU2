@@ -95,8 +95,10 @@ def update_temperature(SU2Driver, iPoint):
     iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
     # the list with names
     solindex = getsolvar(SU2Driver)
-    iTEMP = solindex.get("TEMPERATURE")
-    SU2Driver.Solution(iFLOWSOLVER).Set(iPoint,iTEMP,T)
+    # get solution index for energy equation
+    iEnergy = solindex.get("ENERGY")
+    # set solution in energy equation
+    SU2Driver.Solution(iFLOWSOLVER).Set(iPoint,iEnergy,T)
 
 
 # ################################################################## #

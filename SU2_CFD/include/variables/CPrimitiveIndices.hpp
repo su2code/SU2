@@ -124,6 +124,9 @@ std::map<std::string, IndexType> PrimitiveNameToIndexMap(const CPrimitiveIndices
   nameToIndex["VELOCITY_Y"] = idx.Velocity() + 1;
   if (idx.NDim() == 3) {
     nameToIndex["VELOCITY_Z"] = idx.Velocity() + 2;
+    nameToIndex["ENERGY"] = idx.Velocity() + 3;
+  } else {
+    nameToIndex["ENERGY"] = idx.Velocity() + 2;
   }
   for (IndexType iSpecies = 0; iSpecies < idx.NSpecies(); ++iSpecies) {
     nameToIndex["DENSITY_" + std::to_string(iSpecies)] = idx.SpeciesDensities() + iSpecies;
