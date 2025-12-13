@@ -47,7 +47,7 @@ def main():
     cfd_flamelet_ch4.cfg_dir = "flamelet/01_laminar_premixed_ch4_flame_cfd"
     cfd_flamelet_ch4.cfg_file = "lam_prem_ch4_cfd.cfg"
     cfd_flamelet_ch4.test_iter = 10
-    cfd_flamelet_ch4.test_vals = [-14.297190, -12.593356, -14.249342, -6.069757, -14.816955, -17.057821]
+    cfd_flamelet_ch4.test_vals = [-11.167959, -10.484323, -12.764338, -5.876637, -13.407242, -17.032153]
     cfd_flamelet_ch4.new_output = True
     test_list.append(cfd_flamelet_ch4)
 
@@ -56,7 +56,7 @@ def main():
     cfd_flamelet_ch4_axi.cfg_dir = "flamelet/05_laminar_premixed_ch4_flame_cfd_axi"
     cfd_flamelet_ch4_axi.cfg_file = "lam_prem_ch4_cfd_axi.cfg"
     cfd_flamelet_ch4_axi.test_iter = 10
-    cfd_flamelet_ch4_axi.test_vals = [-10.935482, -11.477701, -11.302709, -12.734435, -6.110542]
+    cfd_flamelet_ch4_axi.test_vals = [-10.083640, -11.327840, -10.714798, -12.750041, -6.112100]
     cfd_flamelet_ch4_axi.new_output = True
     test_list.append(cfd_flamelet_ch4_axi)
 
@@ -65,7 +65,7 @@ def main():
     cfd_flamelet_ch4_partial_premix.cfg_dir = "flamelet/06_laminar_partial_premixed_ch4_flame_cfd"
     cfd_flamelet_ch4_partial_premix.cfg_file = "lam_partial_prem_ch4_cfd.cfg"
     cfd_flamelet_ch4_partial_premix.test_iter = 10
-    cfd_flamelet_ch4_partial_premix.test_vals = [-9.645814, -11.304194, -3.675580, -13.158500, -11.087904]
+    cfd_flamelet_ch4_partial_premix.test_vals = [-8.734770, -11.306471, -3.675618, -12.808760, -11.088026]
     cfd_flamelet_ch4_partial_premix.new_output = True
     test_list.append(cfd_flamelet_ch4_partial_premix)
 
@@ -74,7 +74,7 @@ def main():
     cfd_flamelet_h2.cfg_dir = "flamelet/07_laminar_premixed_h2_flame_cfd"
     cfd_flamelet_h2.cfg_file = "laminar_premixed_h2_flame_cfd.cfg"
     cfd_flamelet_h2.test_iter = 5
-    cfd_flamelet_h2.test_vals = [-10.006096, -9.844001, -3.290043, -11.338465]
+    cfd_flamelet_h2.test_vals = [-9.984960, -9.843830, -3.289852, -11.338450]
     cfd_flamelet_h2.new_output = True
     test_list.append(cfd_flamelet_h2)
 
@@ -611,7 +611,7 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals = [-7.786564, -2.036735, 0.012980, 1.944887, -170.930000]
+    inc_poly_cylinder.test_vals = [-8.030976, -2.362995, 0.006829, 1.923532, -172.590000]
     test_list.append(inc_poly_cylinder)
 
     # X-coarse laminar bend as a mixed element CGNS test
@@ -1209,7 +1209,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.778863, -2.040209]
+    slinc_steady.test_vals = [19.000000, -1.012869, -1.222087]
     slinc_steady.timeout   = 100
     slinc_steady.tol       = 0.00002
     slinc_steady.multizone = True
@@ -1345,7 +1345,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incomp_2d"
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-2.128827, -0.588812, -0.588812, -0.588812]
+    cht_incompressible.test_vals = [-1.376348, -0.591208, -0.591208, -0.591208]
     cht_incompressible.multizone = True
     test_list.append(cht_incompressible)
 
@@ -1363,7 +1363,7 @@ def main():
     sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     sp_pinArray_cht_2d_dp_hf.cfg_file  = "configMaster.cfg"
     sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    sp_pinArray_cht_2d_dp_hf.test_vals = [0.374853, -0.882716, -0.970590, -0.613374, 208.023676, 350.230000, -0.000000, -0.613370, 0.613370]
+    sp_pinArray_cht_2d_dp_hf.test_vals = [0.379544, 2.491817, -1.255558, -0.613405, 208.023676, 349.870000, -0.000000, -0.613410, 0.613410]
     sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(sp_pinArray_cht_2d_dp_hf)
 
@@ -1372,7 +1372,7 @@ def main():
     sp_pinArray_3d_cht_mf_hf_tp.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_3d"
     sp_pinArray_3d_cht_mf_hf_tp.cfg_file  = "configMaster.cfg"
     sp_pinArray_3d_cht_mf_hf_tp.test_iter = 30
-    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [-1.279608, -2.263747, -3.397255, -0.009777, 104.609505, 418.370000, 0.000000]
+    sp_pinArray_3d_cht_mf_hf_tp.test_vals = [0.261726, 3.878700, 0.298987, -0.009537, 104.749181, 354.800000, 0.000000]
     sp_pinArray_3d_cht_mf_hf_tp.multizone = True
     test_list.append(sp_pinArray_3d_cht_mf_hf_tp)
 
@@ -1488,7 +1488,7 @@ def main():
     pywrapper_buoyancy.cfg_dir = "py_wrapper/custom_source_buoyancy"
     pywrapper_buoyancy.cfg_file = "lam_buoyancy_cavity.cfg"
     pywrapper_buoyancy.test_iter = 0
-    pywrapper_buoyancy.test_vals = [-17.746020, -17.462127, -17.428851, -12.260605]
+    pywrapper_buoyancy.test_vals = [-11.864224, -12.149668, -3.539309, -6.119375]
     pywrapper_buoyancy.test_vals_aarch64 = [-17.746018, -17.460693, -17.430708, -12.260624]
     pywrapper_buoyancy.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_buoyancy)
@@ -1498,7 +1498,7 @@ def main():
     pywrapper_zimont.cfg_dir = "py_wrapper/turbulent_premixed_psi"
     pywrapper_zimont.cfg_file = "psi.cfg"
     pywrapper_zimont.test_iter = 0
-    pywrapper_zimont.test_vals = [-3.229704, -1.602176, -3.904854, -2.631849, 0.752828, -3.498356]
+    pywrapper_zimont.test_vals = [-5.532006, -4.663972, -5.838306, -4.316956, -2.073665, -4.453762]
     pywrapper_zimont.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_zimont)
 
@@ -1578,7 +1578,7 @@ def main():
     species2_primitiveVenturi_mixingmodel.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel.cfg_file  = "species2_primitiveVenturi_mixingmodel.cfg"
     species2_primitiveVenturi_mixingmodel.test_iter = 50
-    species2_primitiveVenturi_mixingmodel.test_vals = [-5.741491, -4.566437, -4.672755, -5.777257, -0.068325, -5.584627, 5.000000, -1.368747, 5.000000, -4.868573, 5.000000, -1.452304, 0.000376, 0.000359, 0.000016, 0.000000]
+    species2_primitiveVenturi_mixingmodel.test_vals = [ -5.737415, -4.566668, -4.671780, -5.777603, -0.066800, -5.583554, 5.000000, -1.373807, 5.000000, -4.869219, 5.000000, -1.453021, 0.000381, 0.000365, 0.000016, 0.000000]
     test_list.append(species2_primitiveVenturi_mixingmodel)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model and bounded scalar transport
@@ -1586,7 +1586,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_boundedscalar.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_boundedscalar.cfg_file  = "species2_primitiveVenturi_mixingmodel_boundedscalar.cfg"
     species2_primitiveVenturi_mixingmodel_boundedscalar.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_boundedscalar.test_vals = [-5.691987, -4.511898, -4.616477, -5.776937, -0.113163, -5.705283, 5.000000, -1.430668, 5.000000, -4.923447, 5.000000, -1.771537, 0.000318, 0.000318, 0.000000, 0.000000]
+    species2_primitiveVenturi_mixingmodel_boundedscalar.test_vals = [-5.690396, -4.512158, -4.616488, -5.776093, -0.113176, -5.705291, 5.000000, -1.433234, 5.000000, -4.921121, 5.000000, -1.770744, 0.000318, 0.000318, 0.000000, 0.000000]
     test_list.append(species2_primitiveVenturi_mixingmodel_boundedscalar)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including viscosity, thermal conductivity and inlet markers for SA turbulence model
@@ -1594,7 +1594,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_viscosity.cfg_file  = "species2_primitiveVenturi_mixingmodel_viscosity.cfg"
     species2_primitiveVenturi_mixingmodel_viscosity.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-5.236181, -3.624224, -3.871405, -7.533947, -5.128207, 5.000000, -1.678081, 5.000000, -3.489246, 5.000000, -2.086184, 2.495408, 0.985469, 0.600247, 0.909691]
+    species2_primitiveVenturi_mixingmodel_viscosity.test_vals = [-5.239118, -3.624947, -3.874462, -7.535191, -5.130418, 5.000000, -1.677376, 5.000000, -3.493540, 5.000000, -2.085009, 2.495398, 0.985401, 0.600225, 0.909772]
     test_list.append(species2_primitiveVenturi_mixingmodel_viscosity)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity
@@ -1602,7 +1602,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-5.835345, -4.512778, -4.659961, -6.941393, 2.322419, -5.509186, 30.000000, -6.906068, 11.000000, -8.236295, 8.000000, -9.290696, 2.077551, 1.000000, 0.600000, 0.477551]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2.test_vals = [-5.824346, -4.632948, -4.560590, -6.765715, 2.076808, -5.480881, 30.000000, -7.315121, 12.000000, -8.059064, 8.000000, -8.896288, 2.092262, 1.000000, 0.600000, 0.492262]
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2)
 
     # 2 species (1 eq) primitive venturi mixing using mixing model including heat capacity and mass diffusivity NonDimensional case
@@ -1610,8 +1610,24 @@ def main():
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg_file  = "species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.cfg"
     species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.418710, -4.796715, -4.930132, -7.722998, 2.018220, -5.114320, 10.000000, -2.265326, 4.000000, -5.351738, 4.000000, -5.060011, 2.077776, 1.000000, 0.600000, 0.477776]
+    species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND.test_vals = [-5.400769, -4.916015, -4.837449, -7.711760, 1.771402, -5.087077, 10.000000, -2.744436, 3.000000, -5.095706, 5.000000, -5.856784, 2.092358, 1.000000, 0.600000, 0.492358]
     test_list.append(species2_primitiveVenturi_mixingmodel_heatcapacity_H2_ND)
+
+    # 2 species (1 eq) primitive venturi mixing using mixing model solving enthalpy equation using preconditioning +  JST convective scheme
+    species2_primitiveVenturi_JST           = TestCase('species2_primitiveVenturi_JST.cfg')
+    species2_primitiveVenturi_JST.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_JST.cfg_file  = "species2_primitiveVenturi_JST.cfg"
+    species2_primitiveVenturi_JST.test_iter = 50
+    species2_primitiveVenturi_JST.test_vals = [-6.035464, -7.071918, -7.201080, -1.142940, -8.348316, 10.000000, -3.223791, 10.000000, -4.435519, 0.049048, 0.014468, 0.020068, 0.014512, 25.000000]
+    test_list.append(species2_primitiveVenturi_JST)
+
+    # 2 species (1 eq) primitive venturi mixing using mixing model solving enthalpy equation using preconditioning + Lax-Friedrich convective scheme
+    species2_primitiveVenturi_Lax_Friedrich           = TestCase('species2_primitiveVenturi_Lax_Friedrich.cfg')
+    species2_primitiveVenturi_Lax_Friedrich.cfg_dir   = "species_transport/venturi_primitive_3species"
+    species2_primitiveVenturi_Lax_Friedrich.cfg_file  = "species2_primitiveVenturi_Lax_Friedrich.cfg"
+    species2_primitiveVenturi_Lax_Friedrich.test_iter = 50
+    species2_primitiveVenturi_Lax_Friedrich.test_vals = [-6.092441, -6.981653, -6.982959, -1.195023, -8.245626, 10.000000, -3.472515, 8.000000, -5.356121, 0.048943, 0.014468, 0.020007, 0.014468, 12.500000]
+    test_list.append(species2_primitiveVenturi_Lax_Friedrich)
 
     # 2 species (1 eq) primitive venturi mixing
     species2_primitiveVenturi           = TestCase('species2_primitiveVenturi')
@@ -1634,7 +1650,7 @@ def main():
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_dir   = "species_transport/venturi_primitive_3species"
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg_file  = "species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.cfg"
     species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_iter = 50
-    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_vals = [-4.552043, -1.787188, -1.552953, -0.964948, 1.707903, -3.855700, 24.000000, -5.203239, 10.000000, -5.176998, 3.000000, -5.329906, 2.000000, 1.000000, 0.000000, 1.000000]
+    species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS.test_vals = [-4.767010, -1.818299, -1.842427, -0.615338, 1.366173, -3.921308, 21.000000, -5.213096, 9.000000, -5.422897, 4.000000, -5.919063, 2.000000, 1.000000, 0.000000, 1.000000]
     test_list.append(species2_primitiveVenturi_mixingmodel_TURBULENT_MARKERS)
 
     # 3 species (2 eq) primitive venturi mixing with inlet files.
@@ -1651,8 +1667,8 @@ def main():
     species_passive_val.cfg_dir   = "species_transport/passive_transport_validation"
     species_passive_val.cfg_file  = "passive_transport.cfg"
     species_passive_val.test_iter = 50
-    species_passive_val.test_vals = [-16.513090, -16.281772, -16.906963, -4.257599, 10.000000, -4.263917, 8.000000, -5.193350, 0.186610, 0.000000]
-    species_passive_val.test_vals_aarch64 = [-16.571193, -16.335237, -16.927990, -4.257599, 10.000000, -4.179271, 8.000000, -5.193350, 0.186610, 0.000000]
+    species_passive_val.test_vals = [-16.517744, -16.282420, -16.871663, -4.257599, 10.000000, -4.278151, 8.000000, -5.193350, 0.186610, 0.000000]
+    species_passive_val.test_vals_aarch64 = [-16.517744, -16.282420, -16.871663, -4.257599, 10.000000, -4.278151, 8.000000, -5.193350, 0.186610, 0.000000]
     test_list.append(species_passive_val)
 
     # rectangle active 2-species transport
@@ -1660,8 +1676,8 @@ def main():
     species_active_transport_temp_limits.cfg_dir   = "species_transport/passive_transport_validation"
     species_active_transport_temp_limits.cfg_file  = "active_species_transport_temp_limits.cfg"
     species_active_transport_temp_limits.test_iter = 50
-    species_active_transport_temp_limits.test_vals = [-2.340885, -2.257725, -1.926927, -3.236329, 9.000000, -5.006265, 4.000000, -5.931361, 1.646370, 0.993308, 0.000445, 0.652617]
-    species_active_transport_temp_limits.test_vals_aarch64 = [-2.340885, -2.257725, -1.926927, -3.236329, 9.000000, -5.006265, 4.000000, -5.931361, 1.646370, 0.993308, 0.000445, 0.652617]
+    species_active_transport_temp_limits.test_vals = [-1.785041, -2.565628, 2.460433, -3.188111, 9.000000, -5.551493, 3.000000, -5.826106, 1.456438, 0.998134, 0.001475, 0.456829]
+    species_active_transport_temp_limits.test_vals_aarch64 = [-1.785041, -2.565628, 2.460433, -3.188111, 9.000000, -5.551493, 3.000000, -5.826106, 1.456438, 0.998134, 0.001475, 0.456829]
     test_list.append(species_active_transport_temp_limits)
 
     # species transport, 3 species with multizone (2 fluid regions)
@@ -1669,7 +1685,7 @@ def main():
     species3_multizone_restart.cfg_dir   = "species_transport/multizone"
     species3_multizone_restart.cfg_file  = "configMaster.cfg"
     species3_multizone_restart.test_iter = 5
-    species3_multizone_restart.test_vals = [-3.723247, -3.108855]
+    species3_multizone_restart.test_vals = [-4.634484, -4.515504]
     species3_multizone_restart.multizone = True
     test_list.append(species3_multizone_restart)
 
@@ -1695,7 +1711,7 @@ def main():
     cfd_flamelet_ch4_cht.cfg_dir = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
     cfd_flamelet_ch4_cht.cfg_file = "lam_prem_ch4_cht_cfd_master.cfg"
     cfd_flamelet_ch4_cht.test_iter = 5
-    cfd_flamelet_ch4_cht.test_vals = [-10.166224, -9.299576, -10.022482, -11.907558, -3.447626, -12.290421, -13.719415, -6.864920]
+    cfd_flamelet_ch4_cht.test_vals = [-7.209184, -6.102044, -7.491447, -9.317122, -3.204897, -9.811662, -13.554684, -6.864880]
     cfd_flamelet_ch4_cht.timeout = 1600
     cfd_flamelet_ch4_cht.multizone = True
     test_list.append(cfd_flamelet_ch4_cht)
