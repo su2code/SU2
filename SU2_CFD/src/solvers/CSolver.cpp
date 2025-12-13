@@ -2028,7 +2028,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
           }
 
           /* Stagnation guard: if over a recent window there is essentially no improvement,
-             lower CFL to escape the stall. */
+             lower CFL to escape the stall. Only trigger if we're truly stalled (near zero or
+             positive change) and not conflicting with other indicators showing good progress. */
           const unsigned long STALL_WINDOW = min(100ul, Res_Count);
           if (config->GetInnerIter() >= STALL_WINDOW) {
             su2double stallChange = 0.0;
@@ -2036,9 +2037,24 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
               unsigned long idx = (NonLinRes_Counter + Res_Count - 1 - i) % Res_Count;
               stallChange += NonLinRes_Series[idx];
             }
-            /* If cumulative change is greater than a small negative tolerance, we are stalled. */
-            const su2double STALL_TOL = -0.1; /* about 0.1 log10 improvement threshold over window */
-            if (stallChange > STALL_TOL) {
+            /* Only flag as stalled if change is very small or positive, AND we're not already
+               seeing good convergence indicators (canIncrease means linear solver is doing well).
+               Tightened threshold from -0.1 to -0.01 to avoid false positives on slow but steady convergence. */
+            const su2double STALL_TOL = -0.01; /* about 0.01 log10 improvement threshold over window */
+            bool isStalled = (stallChange > STALL_TOL);
+
+            if (rank == MASTER_NODE && currIter % 50 == 0) {
+              cout << "Stagnation Debug - Iter " << currIter << ": stallChange=" << stallChange
+                   << " STALL_TOL=" << STALL_TOL << " isStalled=" << isStalled
+                   << " canIncrease=" << canIncrease << " will_reduce="
+                   << ((isStalled && !canIncrease) || (stallChange > 0.0)) << endl;
+            }
+
+            /* Don't override canIncrease unless truly stalled (near zero or positive trend) */
+            if (isStalled && !canIncrease) {
+              reduceCFL = true;
+            } else if (stallChange > 0.0) {
+              /* Only force reduction if residuals actually increased */
               reduceCFL = true;
             }
           }
@@ -2100,35 +2116,23 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
              << " reduceCFL=" << reduceCFL << " canIncrease=" << canIncrease << endl;
       }
 
-      /* Check if we are hitting the min or max and adjust. */
-
-      if (CFL*CFLFactor <= CFLMin) {
-        CFL       = CFLMin;
-        // nijso says: we might need to add this back in again when we have more complex
-        // cfl scaling for multigrid (happening in CMultiGridGeometry.cpp)
-        //CFLFactor = MGFactor[iMesh];
-      } else if (CFL*CFLFactor >= CFLMax) {
-        CFL       = CFLMax;
-        //CFLFactor = MGFactor[iMesh];
-      }
-
-      /* Debug output for min/max capping */
-      if (iPoint == 0 && config->GetInnerIter() % 50 == 0 && rank == MASTER_NODE) {
-        cout << "After min/max check - CFL=" << CFL << " (min=" << CFLMin << ", max=" << CFLMax
-             << ", wanted=" << (CFL*CFLFactor) << ")" << endl;
-      }
-
       /* If we detect a stalled nonlinear residual, then force the CFL
        for all points to the minimum temporarily to restart the ramp. */
 
       if (resetCFL) {
-        CFL       = CFLMin;
-        //CFLFactor = MGFactor[iMesh];
+        CFL = CFLMin;
+      } else {
+        /* Apply the adjustment to the CFL first. */
+        CFL *= CFLFactor;
+
+        /* Then clamp to min/max limits. */
+        CFL = max(CFLMin, min(CFLMax, CFL));
       }
 
-      /* Apply the adjustment to the CFL and store local values. */
-
-      CFL *= CFLFactor;
+      /* Debug output for min/max capping */
+      if (iPoint == 0 && config->GetInnerIter() % 50 == 0 && rank == MASTER_NODE) {
+        cout << "After adjustment - CFL=" << CFL << " (min=" << CFLMin << ", max=" << CFLMax << ")" << endl;
+      }
 
       //cout << "CFL = " << CFL << " Factor = " << CFLFactor << endl;
 
