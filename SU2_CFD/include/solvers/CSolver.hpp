@@ -1454,6 +1454,21 @@ private:
 
   bool DetectFlipFlop(const CFLAdaptParams &params, CConfig *config);
 
+  void DetermineLinearSolverBasedCFLFlags(const CFLAdaptParams &params, CConfig *config,
+                                          su2double linRes, su2double linTol,
+                                          bool &reduceCFL, bool &resetCFL, bool &canIncrease);
+
+  void TrackResidualHistory(const CFLAdaptParams &params, CConfig *config,
+                            CSolver **solver_container, unsigned short iMesh,
+                            su2double &New_Func, su2double &Old_Func,
+                            bool &reduceCFL, bool &resetCFL);
+
+  void DetectFastDivergence(const CFLAdaptParams &params, CConfig *config,
+                            su2double New_Func, su2double Old_Func,
+                            bool &reduceCFL, bool &resetCFL);
+
+  void DetectPeakValley(const CFLAdaptParams &params, CConfig *config,
+                        su2double New_Func, bool &reduceCFL, bool &resetCFL);
 
   void ApplyCFLToAllPoints(CGeometry *geometry, CSolver **solver_container,
                            CConfig *config, unsigned short iMesh,
