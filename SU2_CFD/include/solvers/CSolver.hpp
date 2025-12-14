@@ -1431,6 +1431,59 @@ public:
    */
   void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config);
 
+private:
+
+  /*! \brief Data structures for modular CFL adaptation */
+
+  struct CFLAdaptParams {
+    su2double CFLFactorDecrease, CFLFactorIncrease;
+    su2double CFLMin, CFLMax;
+    su2double acceptableLinTol, startingIter;
+    unsigned long Res_Count, stallWindow;
+  };
+
+  su2double ComputeAdjustedCFL(su2double currentCFL, su2double underRelaxation,
+                                bool reduceCFL, bool resetCFL, bool canIncrease,
+                                unsigned long iter, su2double startingIter,
+                                su2double CFLMin, su2double CFLMax,
+                                su2double CFLFactorDecrease, su2double CFLFactorIncrease);
+
+  /*! \brief Helper methods for modular CFL adaptation */
+
+  CFLAdaptParams InitializeCFLAdaptParams(CConfig *config);
+
+  su2double ComputeMaxLinearResidual(CSolver *solverFlow, CSolver *solverTurb, CSolver *solverSpecies);
+
+  bool DetectFlipFlop(const CFLAdaptParams &params, CConfig *config);
+
+  void DetermineLinearSolverBasedCFLFlags(const CFLAdaptParams &params, CConfig *config,
+                                          su2double linRes, su2double linTol,
+                                          bool &reduceCFL, bool &resetCFL, bool &canIncrease);
+
+  void TrackResidualHistory(const CFLAdaptParams &params, CConfig *config,
+                            CSolver **solver_container, unsigned short iMesh,
+                            su2double &New_Func, su2double &Old_Func,
+                            bool &reduceCFL, bool &resetCFL);
+
+  void DetectFastDivergence(const CFLAdaptParams &params, CConfig *config,
+                            su2double New_Func, su2double Old_Func,
+                            bool &reduceCFL, bool &resetCFL);
+
+  void DetectPeakValley(const CFLAdaptParams &params, CConfig *config,
+                        su2double New_Func, bool &reduceCFL, bool &resetCFL);
+
+  void ApplyCFLToAllPoints(CGeometry *geometry, CSolver **solver_container,
+                           CConfig *config, unsigned short iMesh,
+                           bool reduceCFL, bool resetCFL, bool canIncrease,
+                           su2double startingIter);
+
+  void PerformCFLReductions(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+
+  void ApplyCFLToCoarseGrid(CGeometry *geometry, CSolver **solver_container,
+                           CConfig *config, unsigned short iMesh);
+
+public:
+
   /*!
    * \brief Reset the local CFL adaption variables
    */
