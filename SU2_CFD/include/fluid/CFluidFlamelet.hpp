@@ -119,6 +119,13 @@ class CFluidFlamelet final : public CFluidModel {
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars = nullptr) override;
 
   /*!
+   * \brief Set the thermodynamic state.
+   * \param[in] val_enthalpy - enthalpy
+   * \param[in] val_scalars - pointer to species mass fractions
+   */
+  void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override;
+
+  /*!
    * \brief Evaluate data-set for flamelet simulations.
    * \param[in] input_scalar - controlling variables used to interpolate manifold.
    * \param[in] lookup_type - look-up operation to be performed (FLAMELET_LOOKUP_OPS)
