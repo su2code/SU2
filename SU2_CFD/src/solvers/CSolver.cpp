@@ -2035,26 +2035,57 @@ void CSolver::TrackResidualHistory(const CFLAdaptParams &params, CConfig *config
   CSolver *solverTurb = (iMesh == MESH_0) ? solver_container[TURB_SOL] : nullptr;
   CSolver *solverSpecies = (iMesh == MESH_0) ? solver_container[SPECIES_SOL] : nullptr;
 
-  /* Sum the RMS residuals for all equations. */
-  New_Func = 0.0;
+  /* Compute aggregate residual metric. Handle communication level to ensure consistency across MPI ranks.
+     In COMM_FULL mode, residuals are already globally reduced, so we can use them directly.
+     In COMM_REDUCED mode, residuals are local only, so we need to synchronize across ranks. */
+  const bool useGlobalResiduals = (config->GetComm_Level() == COMM_FULL);
   unsigned short totalVars = 0;
-  for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
-    New_Func += log10(solverFlow->GetRes_RMS(iVar));
-    ++totalVars;
-  }
-  if (solverTurb) {
-    for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
-      New_Func += log10(solverTurb->GetRes_RMS(iVar));
+
+  if (useGlobalResiduals) {
+    /* COMM_FULL: Residuals already globally averaged - use directly */
+    New_Func = 0.0;
+    for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
+      New_Func += log10(solverFlow->GetRes_RMS(iVar));
       ++totalVars;
     }
-  }
-  if (solverSpecies) {
-    for (unsigned short iVar = 0; iVar < solverSpecies->GetnVar(); iVar++) {
-      New_Func += log10(solverSpecies->GetRes_RMS(iVar));
+    if (solverTurb) {
+      for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+        New_Func += log10(solverTurb->GetRes_RMS(iVar));
+        ++totalVars;
+      }
+    }
+    if (solverSpecies) {
+      for (unsigned short iVar = 0; iVar < solverSpecies->GetnVar(); iVar++) {
+        New_Func += log10(solverSpecies->GetRes_RMS(iVar));
+        ++totalVars;
+      }
+    }
+    New_Func /= totalVars;
+  } else {
+    /* COMM_REDUCED: Residuals are local only - need MPI synchronization for consistent CFL decisions */
+    su2double New_Func_Local = 0.0;
+    for (unsigned short iVar = 0; iVar < solverFlow->GetnVar(); iVar++) {
+      New_Func_Local += log10(solverFlow->GetRes_RMS(iVar));
       ++totalVars;
     }
+    if (solverTurb) {
+      for (unsigned short iVar = 0; iVar < solverTurb->GetnVar(); iVar++) {
+        New_Func_Local += log10(solverTurb->GetRes_RMS(iVar));
+        ++totalVars;
+      }
+    }
+    if (solverSpecies) {
+      for (unsigned short iVar = 0; iVar < solverSpecies->GetnVar(); iVar++) {
+        New_Func_Local += log10(solverSpecies->GetRes_RMS(iVar));
+        ++totalVars;
+      }
+    }
+    New_Func_Local /= totalVars;
+
+    /* Synchronize across MPI ranks to ensure all ranks make identical CFL decisions */
+    SU2_MPI::Allreduce(&New_Func_Local, &New_Func, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    New_Func /= su2double(size);
   }
-  New_Func /= totalVars;
 
   /* Compute the difference in the nonlinear residuals between the
      current and previous iterations, taking care with very low initial
