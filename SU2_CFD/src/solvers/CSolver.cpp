@@ -1967,6 +1967,17 @@ CSolver::CFLAdaptParams CSolver::InitializeCFLAdaptParams(CConfig *config) {
   return params;
 }
 
+su2double CSolver::ComputeMaxLinearResidual(CSolver *solverFlow, CSolver *solverTurb, CSolver *solverSpecies) {
+  /* Compute the maximum linear residual across all active solvers. */
+
+  su2double linResTurb = 0.0;
+  su2double linResSpecies = 0.0;
+  if (solverTurb) linResTurb = solverTurb->GetResLinSolver();
+  if (solverSpecies) linResSpecies = solverSpecies->GetResLinSolver();
+
+  return max(solverFlow->GetResLinSolver(), max(linResTurb, linResSpecies));
+}
+
 void CSolver::DetermineLinearSolverBasedCFLFlags(const CFLAdaptParams &params, CConfig *config,
                                                  su2double linRes, su2double linTol,
                                                  bool &reduceCFL, bool &resetCFL, bool &canIncrease) {
@@ -2371,16 +2382,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
       CSolver *solverSpecies = solver_container[iMesh][SPECIES_SOL];
 
-    /* Check whether we achieved the requested reduction in the linear
-     solver residual within the specified number of linear iterations. */
-
-      su2double linResTurb = 0.0;
-      su2double linResSpecies = 0.0;
-      if (solverTurb) linResTurb = solverTurb->GetResLinSolver();
-      if (solverSpecies) linResSpecies = solverSpecies->GetResLinSolver();
-
-      /* Max linear residual between flow and turbulence/species transport. */
-      const su2double linRes = max(solverFlow->GetResLinSolver(), max(linResTurb, linResSpecies));
+      /* Check whether we achieved the requested reduction in the linear
+         solver residual within the specified number of linear iterations. */
+      const su2double linRes = ComputeMaxLinearResidual(solverFlow, solverTurb, solverSpecies);
 
       /* Tolerance limited to an acceptable value. */
       const su2double linTol = max(params.acceptableLinTol, config->GetLinear_Solver_Error());

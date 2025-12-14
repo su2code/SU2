@@ -1452,6 +1452,8 @@ private:
 
   CFLAdaptParams InitializeCFLAdaptParams(CConfig *config);
 
+  su2double ComputeMaxLinearResidual(CSolver *solverFlow, CSolver *solverTurb, CSolver *solverSpecies);
+
   bool DetectFlipFlop(const CFLAdaptParams &params, CConfig *config);
 
   void DetermineLinearSolverBasedCFLFlags(const CFLAdaptParams &params, CConfig *config,
