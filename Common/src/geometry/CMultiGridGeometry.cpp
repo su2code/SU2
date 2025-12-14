@@ -54,7 +54,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    4th) No marker ---> Internal Volume (always agglomerate) ---*/
 
    //note that for MPI, we introduce interfaces and we can choose to have agglomeration over
-   //the interface or not.
+   //the interface or not. Nishikawa chooses not to agglomerate over interfaces.
 
   /*--- Set a marker to indicate indirect agglomeration, for quads and hexs,
    i.e. consider up to neighbors of neighbors of neighbors.
@@ -314,20 +314,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
-  /* --- Note that we can check index_coarse_cv for nr of children ---*/
-  // for (auto icoarse_cv = 0u; icoarse_cv < Index_CoarseCV; icoarse_cv++) {
-  //   cout << "coarse node " << icoarse_cv << ", children = " << nodes->GetnChildren_CV(icoarse_cv) << " " << endl;
-  // }
-
-  /*--- Check all agglomerations and see if there is a 1-node agglomeration ---*/
-  // for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
-  //   for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
-  //     const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
-  //     cout << "ipoint = " << iPoint << " , " << nodes->GetnChildren_CV(iPoint) << " " <<
-  //     fine_grid->nodes->GetParent_CV(iPoint) << endl;
-  //   }
-  // }
-
   /*--- Update the queue with the results from the boundary agglomeration ---*/
 
   for (auto iPoint = 0ul; iPoint < fine_grid->GetnPoint(); iPoint++) {
@@ -551,15 +537,28 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   nodes->ResetPoints();
 
 #ifdef HAVE_MPI
+  /*--- Reset halo point parents before MPI agglomeration.
+   This is critical for multi-level multigrid: when creating level N from level N-1,
+   the fine grid (level N-1) already has Parent_CV set from when it was created from level N-2.
+   Those parent indices point to level N, but when creating level N+1, they would be
+   incorrectly interpreted as level N+1 indices. Resetting ensures clean agglomeration. ---*/
+
+  for (auto iPoint = fine_grid->GetnPointDomain(); iPoint < fine_grid->GetnPoint(); iPoint++) {
+    fine_grid->nodes->SetParent_CV(iPoint, ULONG_MAX);
+  }
+
   /*--- Dealing with MPI parallelization, the objective is that the received nodes must be agglomerated
    in the same way as the donor (send) nodes. Send the node agglomeration information of the donor
    (parent and children). The agglomerated halos of this rank are set according to the rank where
    they are domain points. ---*/
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    cout << " marker name = " << config->GetMarker_All_TagBound(iMarker) << endl;
+    cout << " marker type = " << config->GetMarker_All_KindBC(iMarker) << endl;
+    cout << " send/recv = " << config->GetMarker_All_SendRecv(iMarker) << endl;
     if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) && (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-      const auto MarkerS = iMarker;
-      const auto MarkerR = iMarker + 1;
+      const auto MarkerS = iMarker; // sending marker
+      const auto MarkerR = iMarker + 1; // receiving marker
 
       const auto send_to = config->GetMarker_All_SendRecv(MarkerS) - 1;
       const auto receive_from = abs(config->GetMarker_All_SendRecv(MarkerR)) - 1;
@@ -606,36 +605,157 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       vector<unsigned long> Parent_Local(nVertexR);
       vector<unsigned long> Children_Local(nVertexR);
 
-      for (auto iVertex = 0ul; iVertex < nVertexR; iVertex++) {
-        /*--- We use the same sorting as in the donor domain, i.e. the local parents
-         are numbered according to their order in the remote rank. ---*/
+      /*--- First pass: Determine which parents will actually be used (have non-skipped children).
+       This prevents creating orphaned halo CVs that have coordinates (0,0,0). ---*/
+      vector<bool> parent_used(Aux_Parent.size(), false);
+      vector<unsigned long> parent_local_index(Aux_Parent.size(), ULONG_MAX);
 
+      for (auto iVertex = 0ul; iVertex < nVertexR; iVertex++) {
+        const auto iPoint_Fine = fine_grid->vertex[MarkerR][iVertex]->GetNode();
+        auto existing_parent = fine_grid->nodes->GetParent_CV(iPoint_Fine);
+
+        /*--- Skip if already agglomerated (first-wins policy) ---*/
+        if (existing_parent != ULONG_MAX) continue;
+
+        /*--- Find which parent this vertex maps to ---*/
         for (auto jVertex = 0ul; jVertex < Aux_Parent.size(); jVertex++) {
           if (Parent_Remote[iVertex] == Aux_Parent[jVertex]) {
-            Parent_Local[iVertex] = jVertex + Index_CoarseCV;
+            parent_used[jVertex] = true;
             break;
           }
         }
+      }
+
+      /*--- Assign local indices only to used parents ---*/
+      unsigned long nUsedParents = 0;
+      for (auto jVertex = 0ul; jVertex < Aux_Parent.size(); jVertex++) {
+        if (parent_used[jVertex]) {
+          parent_local_index[jVertex] = Index_CoarseCV + nUsedParents;
+          nUsedParents++;
+        }
+      }
+
+      /*--- Now map each received vertex to its local parent ---*/
+      for (auto iVertex = 0ul; iVertex < nVertexR; iVertex++) {
+        Parent_Local[iVertex] = ULONG_MAX;
+        for (auto jVertex = 0ul; jVertex < Aux_Parent.size(); jVertex++) {
+          if (Parent_Remote[iVertex] == Aux_Parent[jVertex]) {
+            Parent_Local[iVertex] = parent_local_index[jVertex];
+            break;
+          }
+        }
+
+        /*--- Validate that parent mapping was found (only matters if not skipped later) ---*/
+        if (Parent_Local[iVertex] == ULONG_MAX) {
+          SU2_MPI::Error(string("MPI agglomeration failed to map parent index ") +
+                         to_string(Parent_Remote[iVertex]) +
+                         string(" for vertex ") + to_string(iVertex),
+                         CURRENT_FUNCTION);
+        }
+
         Children_Local[iVertex] = fine_grid->vertex[MarkerR][iVertex]->GetNode();
       }
 
-      Index_CoarseCV += Aux_Parent.size();
+      /*--- Debug: Track state before updating Index_CoarseCV ---*/
+      auto Index_CoarseCV_Before = Index_CoarseCV;
 
-      vector<unsigned short> nChildren_MPI(Index_CoarseCV, 0);
+      /*--- Only increment by the number of parents that will actually be used ---*/
+      Index_CoarseCV += nUsedParents;
+
+      /*--- Debug counters ---*/
+      unsigned long nConflicts = 0, nSkipped = 0, nOutOfBounds = 0, nSuccess = 0;
 
       /*--- Create the final structure ---*/
       for (auto iVertex = 0ul; iVertex < nVertexR; iVertex++) {
         const auto iPoint_Coarse = Parent_Local[iVertex];
         const auto iPoint_Fine = Children_Local[iVertex];
 
-        /*--- Be careful, it is possible that a node changes the agglomeration configuration,
-         the priority is always when receiving the information. ---*/
+        /*--- Debug: Check for out-of-bounds access ---*/
+        if (iPoint_Coarse >= Index_CoarseCV) {
+          cout << "ERROR [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR
+               << "]: Out-of-bounds coarse CV index " << iPoint_Coarse
+               << " >= " << Index_CoarseCV
+               << " (vertex " << iVertex << ", fine point " << iPoint_Fine << ")" << endl;
+          nOutOfBounds++;
+          continue;
+        }
+
+        /*--- Solution 1: Skip if this halo point was already agglomerated ---*/
+        auto existing_parent = fine_grid->nodes->GetParent_CV(iPoint_Fine);
+        if (existing_parent != ULONG_MAX) {
+          if (existing_parent != iPoint_Coarse) {
+            /*--- Conflict detected: different parent from different interface ---*/
+            nConflicts++;
+
+            /*--- Only print detailed info for first few conflicts or if suspicious ---*/
+            if (nConflicts <= 5 || existing_parent < nPointDomain) {
+              cout << "INFO [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR
+                   << "]: Halo point " << iPoint_Fine
+                   << " already agglomerated to parent " << existing_parent
+                   << (existing_parent < nPointDomain ? " (DOMAIN CV!)" : " (halo CV)")
+                   << ", skipping reassignment to " << iPoint_Coarse
+                   << " (from rank " << receive_from << ")" << endl;
+            }
+          } else {
+            /*--- Same parent from different interface (duplicate) - just skip silently ---*/
+            nSkipped++;
+          }
+          continue;  // First-wins: keep existing assignment
+        }
+
+        /*--- First assignment for this halo point - proceed with agglomeration ---*/
+
+        /*--- Critical fix: Append to existing children, don't overwrite ---*/
+        auto existing_children_count = nodes->GetnChildren_CV(iPoint_Coarse);
+
         fine_grid->nodes->SetParent_CV(iPoint_Fine, iPoint_Coarse);
-        nodes->SetChildren_CV(iPoint_Coarse, nChildren_MPI[iPoint_Coarse], iPoint_Fine);
-        nChildren_MPI[iPoint_Coarse]++;
-        nodes->SetnChildren_CV(iPoint_Coarse, nChildren_MPI[iPoint_Coarse]);
+        nodes->SetChildren_CV(iPoint_Coarse, existing_children_count, iPoint_Fine);
+        nodes->SetnChildren_CV(iPoint_Coarse, existing_children_count + 1);
         nodes->SetDomain(iPoint_Coarse, false);
+        nSuccess++;
       }
+
+      /*--- Debug: Report statistics for this marker pair ---*/
+      cout << "MPI Agglomeration [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR
+           << " (rank " << send_to << " <-> " << receive_from << ")]: "
+           << nSuccess << " assigned, " << nSkipped << " duplicates, "
+           << nConflicts << " conflicts";
+      if (nOutOfBounds > 0) {
+        cout << ", " << nOutOfBounds << " OUT-OF-BOUNDS (CRITICAL!)";
+      }
+      cout << endl;
+
+      if (nConflicts > 5) {
+        cout << "  Note: Only first 5 conflicts shown in detail, total conflicts = " << nConflicts << endl;
+      }
+
+      /*--- Debug: Validate buffer size assumption ---*/
+      if (nVertexS != nVertexR) {
+        cout << "WARNING [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR
+             << "]: Asymmetric interface - nVertexS=" << nVertexS
+             << " != nVertexR=" << nVertexR << endl;
+      }
+    }
+  }
+
+  /*--- Post-process: Check for orphaned coarse CVs (should be none with new logic) ---*/
+
+  if (size > SINGLE_NODE) {
+    unsigned long nOrphaned = 0;
+
+    /*--- Count orphaned CVs for reporting ---*/
+    for (auto iCoarse = nPointDomain; iCoarse < Index_CoarseCV; iCoarse++) {
+      if (nodes->GetnChildren_CV(iCoarse) == 0) {
+        nOrphaned++;
+        /*--- This shouldn't happen with the new parent prefiltering logic ---*/
+        cout << "WARNING [Rank " << rank << "]: Orphaned halo CV " << iCoarse
+             << " detected (should not occur with current logic)" << endl;
+      }
+    }
+
+    if (nOrphaned > 0) {
+      cout << "WARNING [Rank " << rank << "]: " << nOrphaned
+           << " orphaned halo coarse CVs found - this indicates a logic error!" << endl;
     }
   }
 #endif  // HAVE_MPI
