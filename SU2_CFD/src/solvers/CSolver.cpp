@@ -1704,6 +1704,152 @@ void CSolver::ResetCFLAdapt() {
   NonLinRes_Counter = 0;
 }
 
+
+
+su2double CSolver::ComputeAdjustedCFL(su2double currentCFL,
+                                       su2double underRelaxation,
+                                       bool reduceCFL,
+                                       bool resetCFL,
+                                       bool canIncrease,
+                                       unsigned long iter,
+                                       su2double startingIter,
+                                       su2double CFLMin,
+                                       su2double CFLMax,
+                                       su2double CFLFactorDecrease,
+                                       su2double CFLFactorIncrease) {
+  /* If we detect a stalled nonlinear residual, force CFL to minimum */
+  if (resetCFL) {
+    return CFLMin;
+  }
+
+  /* Determine CFL adjustment factor based on under-relaxation and convergence flags.
+     Only apply under-relaxation based reduction after starting iteration. */
+  su2double CFLFactor = 1.0;
+  if ((iter >= startingIter && underRelaxation < 0.1) || reduceCFL) {
+    CFLFactor = CFLFactorDecrease;
+  } else if ((iter >= startingIter && underRelaxation >= 0.1 && underRelaxation < 1.0) || !canIncrease) {
+    CFLFactor = 1.0;
+  } else {
+    CFLFactor = CFLFactorIncrease;
+  }
+
+  /* Apply the adjustment factor */
+  su2double CFL = currentCFL * CFLFactor;
+
+  /* Clamp to min/max limits */
+  CFL = max(CFLMin, min(CFLMax, CFL));
+
+  return CFL;
+}
+
+void CSolver::ApplyCFLToAllPoints(CGeometry *geometry,
+                                   CSolver **solver_container,
+                                   CConfig *config,
+                                   unsigned short iMesh,
+                                   bool reduceCFL,
+                                   bool resetCFL,
+                                   bool canIncrease,
+                                   su2double startingIter) {
+  const bool fullComms = (config->GetComm_Level() == COMM_FULL);
+  const unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+
+  CSolver *solverFlow = solver_container[FLOW_SOL];
+  CSolver *solverTurb = solver_container[TURB_SOL];
+  CSolver *solverSpecies = solver_container[SPECIES_SOL];
+
+  const su2double CFLMin = config->GetCFL_AdaptParam(2);
+  const su2double CFLMax = config->GetCFL_AdaptParam(3);
+  const su2double CFLFactorDecrease = config->GetCFL_AdaptParam(0);
+  const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
+  const su2double CFLTurbReduction = config->GetCFLRedCoeff_Turb();
+  const su2double CFLSpeciesReduction = config->GetCFLRedCoeff_Species();
+
+  su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
+
+  SU2_OMP_MASTER
+  if (fullComms) {
+    Min_CFL_Local = 1e30;
+    Max_CFL_Local = 0.0;
+    Avg_CFL_Local = 0.0;
+  }
+  END_SU2_OMP_MASTER
+
+  SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPointDomain(), omp_get_max_threads()))
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    /* Get current local CFL and under-relaxation parameters */
+    su2double currentCFL = solverFlow->GetNodes()->GetLocalCFL(iPoint);
+    su2double underRelaxationFlow = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
+    su2double underRelaxationTurb = 1.0;
+    if (solverTurb)
+      underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
+    const su2double underRelaxation = min(underRelaxationFlow, underRelaxationTurb);
+
+    /* Compute adjusted CFL using the dedicated function */
+    su2double CFL = ComputeAdjustedCFL(currentCFL, underRelaxation,
+                                        reduceCFL, resetCFL, canIncrease,
+                                        iter, startingIter,
+                                        CFLMin, CFLMax,
+                                        CFLFactorDecrease, CFLFactorIncrease);
+
+    /* Debug output for first point every 50 iterations or at iteration 1 */
+    if (iPoint == 0 && (config->GetInnerIter() % 50 == 0 || config->GetInnerIter() == 1) && rank == MASTER_NODE) {
+      cout << "Point " << iPoint << " Iter=" << iter << " startingIter=" << startingIter
+           << " - underRelax=" << underRelaxation
+           << " CFL_before=" << currentCFL << " CFL_after=" << CFL
+           << " reduceCFL=" << reduceCFL << " canIncrease=" << canIncrease << endl;
+    }
+
+    /* Set the adjusted CFL for all solvers */
+    solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
+    if (solverTurb) {
+      solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL * CFLTurbReduction);
+    }
+    if (solverSpecies) {
+      solverSpecies->GetNodes()->SetLocalCFL(iPoint, CFL * CFLSpeciesReduction);
+    }
+
+    /* Store min/max/sum for reporting */
+    if (fullComms) {
+      myCFLMin = min(CFL, myCFLMin);
+      myCFLMax = max(CFL, myCFLMax);
+      myCFLSum += CFL;
+    }
+  }
+  END_SU2_OMP_FOR
+
+  /* Reduce the min/max/avg local CFL numbers */
+  if (fullComms) {
+    SU2_OMP_CRITICAL
+    { /* OpenMP reduction */
+      Min_CFL_Local = min(Min_CFL_Local, myCFLMin);
+      Max_CFL_Local = max(Max_CFL_Local, myCFLMax);
+      Avg_CFL_Local += myCFLSum;
+    }
+    END_SU2_OMP_CRITICAL
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    { /* MPI reduction and config update */
+      PerformCFLReductions(geometry, config, iMesh);
+      if (rank == MASTER_NODE) {
+        cout << "imesh=" << iMesh << " Avg CFL=" << Avg_CFL_Local << endl;
+      }
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
+}
+
+void CSolver::PerformCFLReductions(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+  su2double myCFLMin = Min_CFL_Local, myCFLMax = Max_CFL_Local, myCFLSum = Avg_CFL_Local;
+
+  SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&myCFLMax, &Max_CFL_Local, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+  Avg_CFL_Local /= su2double(geometry->GetGlobal_nPointDomain());
+
+  config->SetCFL(iMesh, Avg_CFL_Local);
+}
+
 void CSolver::ApplyCFLToCoarseGrid(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh) {
   const su2double factor = 1.5;
@@ -1735,7 +1881,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   /* Adapt the CFL number on all multigrid levels using an
    exponential progression with under-relaxation approach. */
 
-  //vector<su2double> MGFactor(config->GetnMGLevels()+1,1.0);
   const su2double CFLFactorDecrease = config->GetCFL_AdaptParam(0);
   const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
   const su2double CFLMin            = config->GetCFL_AdaptParam(2);
@@ -1787,9 +1932,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       { /* Only the master thread updates the shared variables. */
 
-      /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
-      resetCFL = linRes > 0.99;
       unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+
+      /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
+      /* Only reset CFL after starting iteration to allow initial convergence analysis */
+      resetCFL = (linRes > 0.99) && (iter >= startingIter);
 
       /* only change CFL number when larger than starting iteration */
       bool shouldReduce = (linRes > 1.2*linTol) && (iter >= startingIter);
@@ -1886,9 +2033,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         }
 
         /* FAST DIVERGENCE DETECTION: Catch issues in 1-10 iterations before they become catastrophic.
-           These checks run before the longer-term oscillation detection below. */
+           These checks run before the longer-term oscillation detection below.
+           Only activate after startingIter to allow initial convergence analysis. */
 
-        if (config->GetInnerIter() >= 1) {
+        if (iter >= startingIter) {
           const unsigned long currIter = config->GetInnerIter();
 
           /* 1. SINGLE-ITERATION SPIKE DETECTION: Catch catastrophic jumps immediately */
@@ -1947,9 +2095,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
            - Extract peaks/valleys with minimum separation to avoid noise.
            - Require new peaks/valleys to progress downward; otherwise flag.
            - Use least-squares slope on last 3 peaks/valleys to catch divergence.
-           - Forget extrema older than a lookback window (300 iters). */
+           - Forget extrema older than a lookback window (300 iters).
+           Only activate after startingIter to allow initial convergence analysis. */
 
-        if (config->GetInnerIter() >= 3) {
+        if (iter >= startingIter && config->GetInnerIter() >= 3) {
           const unsigned long EXT_WINDOW = 300;
           const unsigned long MIN_SEPARATION = 30;    /* iters between extrema to avoid noise */
           const su2double VALUE_TOL = 0.05;            /* log10 residual tolerance for peak/valley improvement */
@@ -2220,155 +2369,24 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     } /* End safe global access, now all threads update the CFL number. */
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-    /* Loop over all points on this grid and apply CFL adaption. */
-
-    su2double myCFLMin = 1e30, myCFLMax = 0.0, myCFLSum = 0.0;
-    const su2double CFLTurbReduction = config->GetCFLRedCoeff_Turb();
-    const su2double CFLSpeciesReduction = config->GetCFLRedCoeff_Species();
-
-    SU2_OMP_MASTER
-    if (fullComms) {
-      Min_CFL_Local = 1e30;
-      Max_CFL_Local = 0.0;
-      Avg_CFL_Local = 0.0;
-    }
-    END_SU2_OMP_MASTER
-
-    SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
-    for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
-
-      /* Get the current local flow CFL number at this point. */
-
-      su2double CFL = solverFlow->GetNodes()->GetLocalCFL(iPoint);
-
-      /* Get the current under-relaxation parameters that were computed
-       during the previous nonlinear update. If we have a turbulence model,
-       take the minimum under-relaxation parameter between the mean flow
-       and turbulence systems. */
-
-      su2double underRelaxationFlow = solverFlow->GetNodes()->GetUnderRelaxation(iPoint);
-      su2double underRelaxationTurb = 1.0;
-      if (solverTurb)
-        underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
-      const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
-
-      /* If we apply a small under-relaxation parameter for stability,
-       then we should reduce the CFL before the next iteration. If we
-       are able to add the entire nonlinear update (under-relaxation = 1)
-       then we schedule an increase the CFL number for the next iteration. */
-
-      su2double CFLFactor = 1.0;
-      if (underRelaxation < 0.1 || reduceCFL) {
-        CFLFactor = CFLFactorDecrease;
-      } else if ((underRelaxation >= 0.1 && underRelaxation < 1.0) || !canIncrease) {
-        CFLFactor = 1.0;
-      } else {
-        CFLFactor = CFLFactorIncrease;
-      }
-
-      /* Debug output for first point every 50 iterations */
-      if (iPoint == 0 && config->GetInnerIter() % 50 == 0 && rank == MASTER_NODE) {
-        cout << "Point " << iPoint << " - underRelax=" << underRelaxation
-             << " CFLFactor=" << CFLFactor << " CFL=" << CFL
-             << " reduceCFL=" << reduceCFL << " canIncrease=" << canIncrease << endl;
-      }
-
-      /* If we detect a stalled nonlinear residual, then force the CFL
-       for all points to the minimum temporarily to restart the ramp. */
-
-      if (resetCFL) {
-        CFL = CFLMin;
-      } else {
-        /* Apply the adjustment to the CFL first. */
-        CFL *= CFLFactor;
-
-        /* Then clamp to min/max limits. */
-        CFL = max(CFLMin, min(CFLMax, CFL));
-      }
-
-      /* Debug output for min/max capping */
-      if (iPoint == 0 && config->GetInnerIter() % 50 == 0 && rank == MASTER_NODE) {
-        cout << "After adjustment - CFL=" << CFL << " (min=" << CFLMin << ", max=" << CFLMax << ")" << endl;
-      }
-
-      //cout << "CFL = " << CFL << " Factor = " << CFLFactor << endl;
-
-      solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
-      if (solverTurb) {
-        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL * CFLTurbReduction);
-      }
-      if (solverSpecies) {
-        solverSpecies->GetNodes()->SetLocalCFL(iPoint, CFL * CFLSpeciesReduction);
-      }
-
-      /* Store min and max CFL for reporting on the fine grid. */
-
-      if (fullComms) {
-        myCFLMin = min(CFL,myCFLMin);
-        myCFLMax = max(CFL,myCFLMax);
-        myCFLSum += CFL;
-      }
-
-    }
-    END_SU2_OMP_FOR
-
-    /* Reduce the min/max/avg local CFL numbers. */
-
-    if (fullComms) {
-      SU2_OMP_CRITICAL
-      { /* OpenMP reduction. */
-        Min_CFL_Local = min(Min_CFL_Local,myCFLMin);
-        Max_CFL_Local = max(Max_CFL_Local,myCFLMax);
-        Avg_CFL_Local += myCFLSum;
-      }
-      END_SU2_OMP_CRITICAL
-
-      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-      { /* MPI reduction. */
-        myCFLMin = Min_CFL_Local; myCFLMax = Max_CFL_Local; myCFLSum = Avg_CFL_Local;
-        SU2_MPI::Allreduce(&myCFLMin, &Min_CFL_Local, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-        SU2_MPI::Allreduce(&myCFLMax, &Max_CFL_Local, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-        SU2_MPI::Allreduce(&myCFLSum, &Avg_CFL_Local, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-        Avg_CFL_Local /= su2double(geometry[iMesh]->GetGlobal_nPointDomain());
-
-        /*--- Update the config CFL for MESH_0 with the average adapted value. ---*/
-        cout << "imesh="<< iMesh <<"Avg CFL="<<Avg_CFL_Local << endl;
-        config->SetCFL(iMesh, Avg_CFL_Local);
-      }
-      END_SU2_OMP_SAFE_GLOBAL_ACCESS
-    }
+    /* Apply CFL adaptation to all points on this grid */
+    ApplyCFLToAllPoints(geometry[iMesh], solver_container[iMesh], config, iMesh,
+                        reduceCFL, resetCFL, canIncrease, startingIter);
   } else {
-    const su2double factor = 1.5;
-    const su2double CFL = factor * config->GetCFL(iMesh - 1);
-    cout << "imesh="<< iMesh <<"Avg CFL="<<CFL << endl;
-    config->SetCFL(iMesh, CFL);
+    /* For coarse grids, apply CFL using the dedicated function */
+    ApplyCFLToCoarseGrid(geometry[iMesh], solver_container[iMesh], config, iMesh);
 
-    /* Apply the CFL to all points on this coarse mesh. */
-    CSolver *solverFlow = solver_container[iMesh][FLOW_SOL];
-    CSolver *solverTurb = solver_container[iMesh][TURB_SOL];
-    CSolver *solverSpecies = solver_container[iMesh][SPECIES_SOL];
-
-    const su2double CFLTurbReduction = config->GetCFLRedCoeff_Turb();
-    const su2double CFLSpeciesReduction = config->GetCFLRedCoeff_Species();
-
-    SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(),omp_get_max_threads()))
-    for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
-      solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
-      if (solverTurb) {
-        solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL * CFLTurbReduction);
-      }
-      if (solverSpecies) {
-        solverSpecies->GetNodes()->SetLocalCFL(iPoint, CFL * CFLSpeciesReduction);
-      }
+    if (rank == MASTER_NODE) {
+      cout << "imesh=" << iMesh << " Avg CFL=" << config->GetCFL(iMesh) << endl;
     }
-    END_SU2_OMP_FOR
-
   }
-
+}
 }
 
 
-}
+
+
+
 
 void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) {
 
