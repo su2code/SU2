@@ -1433,11 +1433,27 @@ public:
 
 private:
 
+  /*! \brief Data structures for modular CFL adaptation */
+
+  struct CFLAdaptParams {
+    su2double CFLFactorDecrease, CFLFactorIncrease;
+    su2double CFLMin, CFLMax;
+    su2double acceptableLinTol, startingIter;
+    unsigned long Res_Count, stallWindow;
+  };
+
   su2double ComputeAdjustedCFL(su2double currentCFL, su2double underRelaxation,
                                 bool reduceCFL, bool resetCFL, bool canIncrease,
                                 unsigned long iter, su2double startingIter,
                                 su2double CFLMin, su2double CFLMax,
                                 su2double CFLFactorDecrease, su2double CFLFactorIncrease);
+
+  /*! \brief Helper methods for modular CFL adaptation */
+
+  CFLAdaptParams InitializeCFLAdaptParams(CConfig *config);
+
+  bool DetectFlipFlop(const CFLAdaptParams &params, CConfig *config);
+
 
   void ApplyCFLToAllPoints(CGeometry *geometry, CSolver **solver_container,
                            CConfig *config, unsigned short iMesh,

@@ -1873,6 +1873,44 @@ void CSolver::ApplyCFLToCoarseGrid(CGeometry *geometry, CSolver **solver_contain
   END_SU2_OMP_FOR
 }
 
+bool CSolver::DetectFlipFlop(const CFLAdaptParams &params, CConfig *config) {
+  unsigned long signChanges = 0;
+  su2double totalChange = 0.0;
+  auto prev = NonLinRes_Series.front();
+
+  for (const auto& val : NonLinRes_Series) {
+    totalChange += val;
+    signChanges += (prev > 0) ^ (val > 0);
+    prev = val;
+  }
+
+  bool flipFlopDetected = (signChanges > params.Res_Count/4) && (totalChange > -0.5);
+  unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+
+  if (rank == MASTER_NODE && iter % 50 == 0) {
+    cout << "FlipFlop Debug - Iter " << iter << ": signChanges=" << signChanges
+         << " threshold=" << params.Res_Count/4 << " totalChange=" << totalChange
+         << " flipFlopDetected=" << flipFlopDetected << endl;
+  }
+
+  if (totalChange > 2.0) return true;
+
+  return flipFlopDetected;
+}
+
+CSolver::CFLAdaptParams CSolver::InitializeCFLAdaptParams(CConfig *config) {
+  CFLAdaptParams params;
+  params.CFLFactorDecrease = config->GetCFL_AdaptParam(0);
+  params.CFLFactorIncrease = config->GetCFL_AdaptParam(1);
+  params.CFLMin = config->GetCFL_AdaptParam(2);
+  params.CFLMax = config->GetCFL_AdaptParam(3);
+  params.acceptableLinTol = config->GetCFL_AdaptParam(4);
+  params.startingIter = config->GetCFL_AdaptParam(5);
+  params.Res_Count = min(100ul, config->GetnInner_Iter()-1);
+  params.stallWindow = min(100ul, params.Res_Count);
+
+  return params;
+  }
 
 void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CSolver   ***solver_container,
@@ -1881,16 +1919,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   /* Adapt the CFL number on all multigrid levels using an
    exponential progression with under-relaxation approach. */
 
-  const su2double CFLFactorDecrease = config->GetCFL_AdaptParam(0);
-  const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
-  const su2double CFLMin            = config->GetCFL_AdaptParam(2);
-  const su2double CFLMax            = config->GetCFL_AdaptParam(3);
-  const su2double acceptableLinTol  = config->GetCFL_AdaptParam(4);
-  const su2double startingIter      = config->GetCFL_AdaptParam(5);
-  const bool fullComms              = (config->GetComm_Level() == COMM_FULL);
-
-  /* Number of iterations considered to check for stagnation. */
-  const auto Res_Count = min(100ul, config->GetnInner_Iter()-1);
+  const CFLAdaptParams params = InitializeCFLAdaptParams(config);
+  const bool fullComms = (config->GetComm_Level() == COMM_FULL);
 
   /* Damping: require consecutive iterations before acting */
   const unsigned long DAMPING_ITERS_REDUCE = 5;
@@ -1923,7 +1953,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       const su2double linRes = max(solverFlow->GetResLinSolver(), max(linResTurb, linResSpecies));
 
       /* Tolerance limited to an acceptable value. */
-      const su2double linTol = max(acceptableLinTol, config->GetLinear_Solver_Error());
+      const su2double linTol = max(params.acceptableLinTol, config->GetLinear_Solver_Error());
 
       /* Check that we are meeting our nonlinear residual reduction target
        over time so that we do not get stuck in limit cycles, this is done
@@ -1936,11 +1966,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
       /* Check if we should decrease or if we can increase, the 20% is to avoid flip-flopping. */
       /* Only reset CFL after starting iteration to allow initial convergence analysis */
-      resetCFL = (linRes > 0.99) && (iter >= startingIter);
+      resetCFL = (linRes > 0.99) && (iter >= params.startingIter);
 
       /* only change CFL number when larger than starting iteration */
-      bool shouldReduce = (linRes > 1.2*linTol) && (iter >= startingIter);
-      bool canIncrease_raw = (linRes < linTol) && (iter >= startingIter);
+      bool shouldReduce = (linRes > 1.2*linTol) && (iter >= params.startingIter);
+      bool canIncrease_raw = (linRes < linTol) && (iter >= params.startingIter);
 
       /* Apply consecutive iteration damping */
       if (shouldReduce) {
@@ -1964,9 +1994,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
              << " resetCFL=" << resetCFL << endl;
       }
 
-     if (Res_Count > 0) {
+     if (params.Res_Count > 0) {
         Old_Func = New_Func;
-        if (NonLinRes_Series.empty()) NonLinRes_Series.resize(Res_Count,0.0);
+        if (NonLinRes_Series.empty()) NonLinRes_Series.resize(params.Res_Count,0.0);
 
         /* Sum the RMS residuals for all equations. */
 
@@ -2002,29 +2032,19 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         /* Increment the counter, if we hit the max size, then start over. */
 
         NonLinRes_Counter++;
-        if (NonLinRes_Counter == Res_Count) NonLinRes_Counter = 0;
+        if (NonLinRes_Counter == params.Res_Count) NonLinRes_Counter = 0;
 
         /* Fast flip-flop detection using XOR sign changes (from old code).
            This catches rapid oscillations that the peak-valley logic might miss. */
-        if (config->GetInnerIter() >= Res_Count) {
-          unsigned long signChanges = 0;
+        if (config->GetInnerIter() >= params.Res_Count) {
+          bool flipFlopOrDivergence = DetectFlipFlop(params, config);
+          reduceCFL |= flipFlopOrDivergence;
+
+          /* Check for catastrophic divergence and reset if needed */
           su2double totalChange = 0.0;
-          auto prev = NonLinRes_Series.front();
           for (const auto& val : NonLinRes_Series) {
             totalChange += val;
-            signChanges += (prev > 0) ^ (val > 0);
-            prev = val;
           }
-          /* Flip-flop: many sign changes with little net progress */
-          bool flipFlopDetected = (signChanges > Res_Count/4) && (totalChange > -0.5);
-          unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
-          if (rank == MASTER_NODE && iter % 50 == 0) {
-            cout << "FlipFlop Debug - Iter " << iter << ": signChanges=" << signChanges
-                 << " threshold=" << Res_Count/4 << " totalChange=" << totalChange
-                 << " flipFlopDetected=" << flipFlopDetected << endl;
-          }
-          reduceCFL |= flipFlopDetected;
-
           if (totalChange > 2.0) { // orders of magnitude divergence
             resetCFL = true;
             NonLinRes_Counter = 0;
@@ -2036,7 +2056,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
            These checks run before the longer-term oscillation detection below.
            Only activate after startingIter to allow initial convergence analysis. */
 
-        if (iter >= startingIter) {
+        if (iter >= params.startingIter) {
           const unsigned long currIter = config->GetInnerIter();
 
           /* 1. SINGLE-ITERATION SPIKE DETECTION: Catch catastrophic jumps immediately */
@@ -2061,7 +2081,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
             /* Sum the last 10 delta values */
             for (unsigned long i = 0; i < SHORT_WINDOW; i++) {
-              unsigned long idx = (NonLinRes_Counter + Res_Count - 1 - i) % Res_Count;
+              unsigned long idx = (NonLinRes_Counter + params.Res_Count - 1 - i) % params.Res_Count;
               recentChange += NonLinRes_Series[idx];
             }
 
@@ -2088,6 +2108,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
                  << " shortTermDivergence=" << shortTermDivergence << endl;
           }
         }
+        /*--- End of fast divergence detection ---*/
 
         /* Detect oscillations and divergence using peak-valley progression
            plus slope-based guards. This works alongside the flip-flop check above.
@@ -2098,7 +2119,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
            - Forget extrema older than a lookback window (300 iters).
            Only activate after startingIter to allow initial convergence analysis. */
 
-        if (iter >= startingIter && config->GetInnerIter() >= 3) {
+        if (iter >= params.startingIter && config->GetInnerIter() >= 3) {
           const unsigned long EXT_WINDOW = 300;
           const unsigned long MIN_SEPARATION = 30;    /* iters between extrema to avoid noise */
           const su2double VALUE_TOL = 0.05;            /* log10 residual tolerance for peak/valley improvement */
@@ -2111,11 +2132,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
           /* Reconstruct New_Func history from the delta buffer. */
           vector<su2double> funcHistory;
-          funcHistory.reserve(Res_Count);
+          funcHistory.reserve(params.Res_Count);
           su2double curr = New_Func;
           funcHistory.push_back(curr);
-          for (unsigned long i = 1; i < Res_Count; i++) {
-            unsigned long idx = (NonLinRes_Counter + Res_Count - i) % Res_Count;
+          for (unsigned long i = 1; i < params.Res_Count; i++) {
+            unsigned long idx = (NonLinRes_Counter + params.Res_Count - i) % params.Res_Count;
             curr -= NonLinRes_Series[idx];
             funcHistory.push_back(curr);
           }
@@ -2336,11 +2357,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
           /* Stagnation guard: if over a recent window there is essentially no improvement,
              lower CFL to escape the stall. Only trigger if we're truly stalled (near zero or
              positive change) and not conflicting with other indicators showing good progress. */
-          const unsigned long STALL_WINDOW = min(100ul, Res_Count);
+          const unsigned long STALL_WINDOW = min(100ul, params.Res_Count);
           if (config->GetInnerIter() >= STALL_WINDOW) {
             su2double stallChange = 0.0;
             for (unsigned long i = 0; i < STALL_WINDOW; i++) {
-              unsigned long idx = (NonLinRes_Counter + Res_Count - 1 - i) % Res_Count;
+              unsigned long idx = (NonLinRes_Counter + params.Res_Count - 1 - i) % params.Res_Count;
               stallChange += NonLinRes_Series[idx];
             }
             /* Only flag as stalled if change is very small or positive, AND we're not already
@@ -2371,7 +2392,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     /* Apply CFL adaptation to all points on this grid */
     ApplyCFLToAllPoints(geometry[iMesh], solver_container[iMesh], config, iMesh,
-                        reduceCFL, resetCFL, canIncrease, startingIter);
+                        reduceCFL, resetCFL, canIncrease, params.startingIter);
   } else {
     /* For coarse grids, apply CFL using the dedicated function */
     ApplyCFLToCoarseGrid(geometry[iMesh], solver_container[iMesh], config, iMesh);
