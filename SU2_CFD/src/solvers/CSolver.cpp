@@ -1704,6 +1704,29 @@ void CSolver::ResetCFLAdapt() {
   NonLinRes_Counter = 0;
 }
 
+void CSolver::ApplyCFLToCoarseGrid(CGeometry *geometry, CSolver **solver_container,
+                                   CConfig *config, unsigned short iMesh) {
+  const su2double factor = 1.5;
+  const su2double CFL = factor * config->GetCFL(iMesh - 1);
+
+  config->SetCFL(iMesh, CFL);
+
+  CSolver *solverFlow = solver_container[FLOW_SOL];
+  CSolver *solverTurb = solver_container[TURB_SOL];
+  CSolver *solverSpecies = solver_container[SPECIES_SOL];
+
+  const su2double CFLTurbReduction = config->GetCFLRedCoeff_Turb();
+  const su2double CFLSpeciesReduction = config->GetCFLRedCoeff_Species();
+
+  SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPointDomain(), omp_get_max_threads()))
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    solverFlow->GetNodes()->SetLocalCFL(iPoint, CFL);
+    if (solverTurb) solverTurb->GetNodes()->SetLocalCFL(iPoint, CFL * CFLTurbReduction);
+    if (solverSpecies) solverSpecies->GetNodes()->SetLocalCFL(iPoint, CFL * CFLSpeciesReduction);
+  }
+  END_SU2_OMP_FOR
+}
+
 
 void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CSolver   ***solver_container,
@@ -1724,7 +1747,15 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   /* Number of iterations considered to check for stagnation. */
   const auto Res_Count = min(100ul, config->GetnInner_Iter()-1);
 
-  static bool reduceCFL, resetCFL, canIncrease;
+  /* Damping: require consecutive iterations before acting */
+  const unsigned long DAMPING_ITERS_REDUCE = 5;
+  const unsigned long DAMPING_ITERS_INCREASE = 10;
+  static unsigned long consecutiveReduceIters = 0;
+  static unsigned long consecutiveIncreaseIters = 0;
+
+  static bool reduceCFL = false;
+  static bool resetCFL = false;
+  static bool canIncrease = false;
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     if (iMesh == MESH_0) {
@@ -1761,13 +1792,29 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
 
       /* only change CFL number when larger than starting iteration */
-      reduceCFL = (linRes > 1.2*linTol) && (iter >= startingIter);
+      bool shouldReduce = (linRes > 1.2*linTol) && (iter >= startingIter);
+      bool canIncrease_raw = (linRes < linTol) && (iter >= startingIter);
 
-      canIncrease = (linRes < linTol) && (iter >= startingIter);
+      /* Apply consecutive iteration damping */
+      if (shouldReduce) {
+        consecutiveReduceIters++;
+        consecutiveIncreaseIters = 0;
+      } else if (canIncrease_raw) {
+        consecutiveIncreaseIters++;
+        consecutiveReduceIters = 0;
+      } else {
+        consecutiveReduceIters = 0;
+        consecutiveIncreaseIters = 0;
+      }
+
+      reduceCFL = (consecutiveReduceIters >= DAMPING_ITERS_REDUCE);
+      canIncrease = (consecutiveIncreaseIters >= DAMPING_ITERS_INCREASE);
 
       if (rank == MASTER_NODE && iter % 50 == 0) {
         cout << "CFL Debug - Iter " << iter << ": linRes=" << linRes << " linTol=" << linTol
-             << " reduceCFL=" << reduceCFL << " canIncrease=" << canIncrease << " resetCFL=" << resetCFL << endl;
+             << " reduceCFL=" << reduceCFL << " (consec=" << consecutiveReduceIters << "/" << DAMPING_ITERS_REDUCE << ")"
+             << " canIncrease=" << canIncrease << " (consec=" << consecutiveIncreaseIters << "/" << DAMPING_ITERS_INCREASE << ")"
+             << " resetCFL=" << resetCFL << endl;
       }
 
      if (Res_Count > 0) {
@@ -1835,6 +1882,62 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
             resetCFL = true;
             NonLinRes_Counter = 0;
             for (auto& val : NonLinRes_Series) val = 0.0;
+          }
+        }
+
+        /* FAST DIVERGENCE DETECTION: Catch issues in 1-10 iterations before they become catastrophic.
+           These checks run before the longer-term oscillation detection below. */
+
+        if (config->GetInnerIter() >= 1) {
+          const unsigned long currIter = config->GetInnerIter();
+
+          /* 1. SINGLE-ITERATION SPIKE DETECTION: Catch catastrophic jumps immediately */
+          su2double singleIterChange = New_Func - Old_Func;
+          bool spikeDetected = false;
+          bool catastrophicSpike = false;
+
+          if (singleIterChange > 0.15) {  /* 0.15 log10 jump in one iteration */
+            spikeDetected = true;
+            reduceCFL = true;
+            if (singleIterChange > 0.3) {  /* 0.3+ log units = catastrophic */
+              catastrophicSpike = true;
+              resetCFL = true;
+            }
+          }
+
+          /* 2. SHORT-WINDOW TREND DETECTION: Catch degradation over 10 iterations */
+          bool shortTermDivergence = false;
+          if (currIter >= 10) {
+            const unsigned long SHORT_WINDOW = 10;
+            su2double recentChange = 0.0;
+
+            /* Sum the last 10 delta values */
+            for (unsigned long i = 0; i < SHORT_WINDOW; i++) {
+              unsigned long idx = (NonLinRes_Counter + Res_Count - 1 - i) % Res_Count;
+              recentChange += NonLinRes_Series[idx];
+            }
+
+            /* Average change per iteration over the short window */
+            su2double recentSlope = recentChange / su2double(SHORT_WINDOW);
+
+            /* Trigger if: residuals increasing OR stalling after initial convergence */
+            if (recentChange > 0.1) {  /* Net increase over 10 iterations */
+              shortTermDivergence = true;
+              reduceCFL = true;
+            } else if (recentSlope > -0.0005 && Old_Func < -3.0) {
+              /* Convergence rate < 0.0005/iter after reaching -3.0 = stalling */
+              shortTermDivergence = true;
+              reduceCFL = true;
+            }
+          }
+
+          /* Debug output for fast detection mechanisms */
+          if (rank == MASTER_NODE && currIter % 50 == 0) {
+            cout << "FastDivergence Debug - Iter " << currIter
+                 << ": singleIterChange=" << singleIterChange
+                 << " spikeDetected=" << spikeDetected
+                 << " catastrophicSpike=" << catastrophicSpike
+                 << " shortTermDivergence=" << shortTermDivergence << endl;
           }
         }
 
@@ -1942,8 +2045,12 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
           su2double slopePeaks = 0.0, slopeValleys = 0.0;
           bool haveSlopePeaks = (peaks.size() >= 2);
           bool haveSlopeValleys = (valleys.size() >= 2);
-          if (haveSlopePeaks) slopePeaks = slopeLSQ(peaks);
-          if (haveSlopeValleys) slopeValleys = slopeLSQ(valleys);
+          if (haveSlopePeaks && peaks.back().first > peaks.front().first) {
+            slopePeaks = slopeLSQ(peaks);
+          }
+          if (haveSlopeValleys && valleys.back().first > valleys.front().first) {
+            slopeValleys = slopeLSQ(valleys);
+          }
 
           /* If slope is exactly zero (extrema at same iteration), it's not meaningful - ignore it */
           bool slopeFlat = false;
@@ -1952,17 +2059,35 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
           bool slopeUp = (haveSlopePeaks && slopePeaks > SLOPE_UP) || (haveSlopeValleys && slopeValleys > SLOPE_UP);
 
-          /* Check overall trend: even with oscillations, is the average moving down? */
+          /* Check overall trend: compute average of ALL peaks and valleys to get robust trend.
+             In log10 space: convergence means residuals become more negative (decrease).
+             So we want: (avgNew - avgOld) < 0 for convergence. But we'll compute per-iteration
+             rate as (avgNew - avgOld)/dt, making NEGATIVE = convergence. */
           su2double overallSlope = 0.0;
           if (peaks.size() >= 2 && valleys.size() >= 2) {
-            /* Use the oldest peak/valley and newest peak/valley to get overall trend */
-            su2double oldestValue = min(peaks.front().second, valleys.front().second);
-            su2double newestValue = min(peaks.back().second, valleys.back().second);
-            unsigned long oldestIter = min(peaks.front().first, valleys.front().first);
-            unsigned long newestIter = max(peaks.back().first, valleys.back().first);
-            su2double dt = su2double(newestIter - oldestIter);
-            if (dt > 1e-12) {
-              overallSlope = (newestValue - oldestValue) / dt;
+            /* Average all peaks and valleys separately */
+            su2double avgOldPeaks = 0.0, avgOldValleys = 0.0;
+            su2double avgNewPeaks = 0.0, avgNewValleys = 0.0;
+            unsigned long cntOld = 0, cntNew = 0;
+
+            /* Split extrema into old half and new half */
+            unsigned long midIter = (peaks.front().first + peaks.back().first) / 2;
+
+            for (const auto& p : peaks) {
+              if (p.first <= midIter) { avgOldPeaks += p.second; cntOld++; }
+              else { avgNewPeaks += p.second; cntNew++; }
+            }
+            for (const auto& v : valleys) {
+              if (v.first <= midIter) { avgOldValleys += v.second; cntOld++; }
+              else { avgNewValleys += v.second; cntNew++; }
+            }
+
+            if (cntOld > 0 && cntNew > 0) {
+              su2double avgOld = (avgOldPeaks + avgOldValleys) / cntOld;
+              su2double avgNew = (avgNewPeaks + avgNewValleys) / cntNew;
+              /* Slope = (avgNew - avgOld) / dt: NEGATIVE = convergence (residuals decreasing) */
+              unsigned long dt = peaks.back().first - peaks.front().first;
+              if (dt > 0) overallSlope = (avgNew - avgOld) / su2double(dt);
             }
           }
 
@@ -1973,22 +2098,40 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
           /* If all slopes are zero (extrema at same time or too close), don't treat as oscillation */
           bool allSlopesZero = (fabs(slopePeaks) < 1e-12 && fabs(slopeValleys) < 1e-12 && fabs(overallSlope) < 1e-12);
 
-          /* Oscillation is only bad if slopes are problematic AND overall trend is not improving */
+          /* Oscillation is only bad if slopes are problematic AND overall trend is not improving.
+             overallSlope = (avgNew - avgOld)/dt: NEGATIVE = convergence, POSITIVE = divergence */
           bool oscillationDetected = false;
           if (haveData && !allSlopesZero) {
-            oscillationDetected = (progressionFail || (slopeFlat && overallSlope >= -1.0e-3) || slopeUp);
+            oscillationDetected = (progressionFail || (slopeFlat && overallSlope > -0.001) || slopeUp);
           }
 
           if (rank == MASTER_NODE && currIter % 50 == 0 && haveData) {
             cout << "Oscillation Debug - Iter " << currIter << ": peaks=" << peaks.size() << " valleys=" << valleys.size()
                  << " slopePeaks=" << slopePeaks << " slopeValleys=" << slopeValleys
-                 << " overallSlope=" << overallSlope
+                 << " overallSlope=" << overallSlope << " (neg=converge, pos=diverge)"
                  << " slopeFlat=" << slopeFlat << " progressionFail=" << progressionFail
                  << " oscillationDetected=" << oscillationDetected << endl;
           }
 
-          /* If overall trend is good (decreasing), don't block CFL increase */
-          if (overallSlope < -1.0e-3) {
+          /* If overall trend shows strong convergence (negative slope), don't block CFL increase */
+          if (overallSlope < -0.001) {
+            oscillationDetected = false;
+          }
+
+          /* Compute totalChange early to use for stronger override logic */
+          su2double totalChange = 0.0;
+          for (const auto& v : NonLinRes_Series) totalChange += v;
+
+          /* STRONG OVERRIDE: If totalChange shows convergence over buffer, ignore oscillation detection.
+             This prevents false positives from noisy extrema when actual trend is good.
+             Relaxed from -0.1 to -0.01 to handle slow late-stage convergence. */
+          if (totalChange < -0.01) {  /* At least 0.01 log10 improvement over buffer */
+            oscillationDetected = false;
+          }
+
+          /* Also disable slopeUp detection if buffer shows net convergence - prevents false positives
+             from noise in individual valley slopes when overall trend is clearly downward */
+          if (totalChange < 0.0 && slopeUp) {
             oscillationDetected = false;
           }
 
@@ -2000,12 +2143,26 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
               oscillationCounter = 1;
             }
           } else {
-            oscillationCounter = 0;
+            /* Decay counter aggressively when not detecting oscillation */
+            if (oscillationCounter > 0) {
+              oscillationCounter = max(0ul, oscillationCounter - 5);
+            }
           }
           previousOscillation = oscillationDetected;
 
           /* Only act on oscillation if it persists for at least 3 checks */
           bool persistentOscillation = (oscillationCounter >= 3);
+
+          /* EMERGENCY RESET: If counter is very high but we have clear convergence, reset completely.
+             This handles cases where stale detections accumulated and won't decay fast enough.
+             Use -0.01 threshold to match the main override logic. */
+          if (oscillationCounter > 50 && totalChange < -0.01) {
+            oscillationCounter = 0;
+            persistentOscillation = false;
+            if (rank == MASTER_NODE && currIter % 50 == 0) {
+              cout << "  Emergency reset: oscillation counter cleared due to strong convergence" << endl;
+            }
+          }
           if (rank == MASTER_NODE && currIter % 50 == 0) {
             cout << "Persistence Debug - Iter " << currIter << ": oscillationCounter=" << oscillationCounter
                  << " persistentOscillation=" << persistentOscillation << endl;
@@ -2014,14 +2171,14 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
             reduceCFL |= true;
           }
 
-          /* Strong divergence safety: if the total change over the full buffer is large positive, reset. */
-          su2double totalChange = 0.0;
-          for (const auto& v : NonLinRes_Series) totalChange += v;
+          /* Strong divergence safety: if the total change over the full buffer is large positive, reset.
+             totalChange already computed above for override logic.
+             Only trigger slopeUp reset if also seeing net divergence in buffer. */
           if (rank == MASTER_NODE && currIter % 50 == 0) {
             cout << "Divergence Debug - Iter " << currIter << ": totalChange=" << totalChange
                  << " slopeUp=" << slopeUp << endl;
           }
-          if (totalChange > 2.0 || slopeUp) { // 2 orders worse or clear rising slope
+          if (totalChange > 2.0 || (slopeUp && totalChange > 0.0)) { // 2 orders worse OR slope issues with net divergence
             resetCFL = true;
             NonLinRes_Counter = 0;
             for (auto& val : NonLinRes_Series) val = 0.0;

@@ -1431,6 +1431,8 @@ public:
    */
   void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config);
 
+  void ApplyCFLToCoarseGrid(CGeometry *geometry, CSolver **solver_container,
+                           CConfig *config, unsigned short iMesh);
   /*!
    * \brief Reset the local CFL adaption variables
    */
