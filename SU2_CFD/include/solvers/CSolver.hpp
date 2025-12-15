@@ -1479,6 +1479,8 @@ private:
 
   void PerformCFLReductions(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
+  void SynchronizeCFLFlags(bool &reduceCFL, bool &resetCFL, bool &canIncrease);
+
   void ApplyCFLToCoarseGrid(CGeometry *geometry, CSolver **solver_container,
                            CConfig *config, unsigned short iMesh,
                            bool reduceCFL, bool resetCFL, bool canIncrease,

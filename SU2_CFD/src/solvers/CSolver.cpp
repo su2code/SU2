@@ -1850,6 +1850,34 @@ void CSolver::PerformCFLReductions(CGeometry *geometry, CConfig *config, unsigne
   config->SetCFL(iMesh, Avg_CFL_Local);
 }
 
+void CSolver::SynchronizeCFLFlags(bool &reduceCFL, bool &resetCFL, bool &canIncrease) {
+#ifdef HAVE_MPI
+  /* Synchronize CFL decision flags across all MPI ranks to ensure consistent global strategy.
+     This prevents different ranks from making conflicting CFL decisions which would cause:
+     - Inconsistent CFL values for corresponding points across domain decomposition
+     - Potential divergence when some ranks reduce CFL while others increase
+     - Multigrid issues when coarse levels don't respond to fine grid instabilities
+
+     Logic:
+     - reduceCFL: Use logical OR - if ANY rank needs to reduce, ALL should reduce (safety)
+     - resetCFL: Use logical OR - if ANY rank detects catastrophic divergence, ALL should reset
+     - canIncrease: Use logical AND - only increase if ALL ranks are stable (conservative) */
+
+  int reduceCFL_int = reduceCFL ? 1 : 0;
+  int resetCFL_int = resetCFL ? 1 : 0;
+  int canIncrease_int = canIncrease ? 1 : 0;
+
+  SU2_MPI::Allreduce(MPI_IN_PLACE, &reduceCFL_int, 1, MPI_INT, MPI_LOR, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(MPI_IN_PLACE, &resetCFL_int, 1, MPI_INT, MPI_LOR, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(MPI_IN_PLACE, &canIncrease_int, 1, MPI_INT, MPI_LAND, SU2_MPI::GetComm());
+
+  reduceCFL = (reduceCFL_int != 0);
+  resetCFL = (resetCFL_int != 0);
+  canIncrease = (canIncrease_int != 0);
+#endif
+  /* No synchronization needed for serial builds - flags remain as computed locally */
+}
+
 void CSolver::ApplyCFLToCoarseGrid(CGeometry *geometry, CSolver **solver_container,
                                    CConfig *config, unsigned short iMesh,
                                    bool reduceCFL, bool resetCFL, bool canIncrease,
@@ -2487,28 +2515,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
         }
       }
 
-    /* Synchronize CFL decision flags across all MPI ranks to ensure consistent global strategy.
-       This prevents different ranks from making conflicting CFL decisions which would cause:
-       - Inconsistent CFL values for corresponding points across domain decomposition
-       - Potential divergence when some ranks reduce CFL while others increase
-       - Multigrid issues when coarse levels don't respond to fine grid instabilities
-
-       Logic:
-       - reduceCFL: Use logical OR - if ANY rank needs to reduce, ALL should reduce (safety)
-       - resetCFL: Use logical OR - if ANY rank detects catastrophic divergence, ALL should reset
-       - canIncrease: Use logical AND - only increase if ALL ranks are stable (conservative) */
-
-    int reduceCFL_int = reduceCFL ? 1 : 0;
-    int resetCFL_int = resetCFL ? 1 : 0;
-    int canIncrease_int = canIncrease ? 1 : 0;
-
-    SU2_MPI::Allreduce(MPI_IN_PLACE, &reduceCFL_int, 1, MPI_INT, MPI_LOR, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(MPI_IN_PLACE, &resetCFL_int, 1, MPI_INT, MPI_LOR, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(MPI_IN_PLACE, &canIncrease_int, 1, MPI_INT, MPI_LAND, SU2_MPI::GetComm());
-
-    reduceCFL = (reduceCFL_int != 0);
-    resetCFL = (resetCFL_int != 0);
-    canIncrease = (canIncrease_int != 0);
+    /* Synchronize CFL decision flags across all MPI ranks */
+    SynchronizeCFLFlags(reduceCFL, resetCFL, canIncrease);
 
     if (rank == MASTER_NODE && iter % 50 == 0) {
       cout << "MPI-Synchronized CFL Flags - Iter " << iter
