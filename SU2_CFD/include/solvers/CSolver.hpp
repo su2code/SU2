@@ -37,6 +37,8 @@
 #include <algorithm>
 #include <iostream>
 #include <set>
+#include <deque>
+#include <utility>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -79,6 +81,14 @@ protected:
   vector<su2double> NonLinRes_Series; /*!< \brief Vector holding the nonlinear residual indicator series. */
   su2double Old_Func,  /*!< \brief Old value of the nonlinear residual indicator. */
   New_Func;            /*!< \brief Current value of the nonlinear residual indicator. */
+
+  /*--- Adaptive CFL State Variables ---*/
+  unsigned long consecutiveReduceIters;   /*!< \brief Counter for consecutive iterations requiring CFL reduction. */
+  unsigned long consecutiveIncreaseIters; /*!< \brief Counter for consecutive iterations allowing CFL increase. */
+  unsigned long oscillationCounter;       /*!< \brief Counter for oscillation detection. */
+  bool previousOscillation;               /*!< \brief Flag for previous oscillation state. */
+  std::deque<std::pair<unsigned long, su2double>> peaks;   /*!< \brief History of residual peaks. */
+  std::deque<std::pair<unsigned long, su2double>> valleys; /*!< \brief History of residual valleys. */
   unsigned short nVar,           /*!< \brief Number of variables of the problem. */
   nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */

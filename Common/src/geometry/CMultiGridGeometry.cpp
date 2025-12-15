@@ -171,6 +171,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           }
           /*--- Note that if the marker is a SEND_RECEIVE, then the node is actually an interior point.
                 In that case it can only be agglomerated with another interior point. ---*/
+          /*--- Temporarily don't agglomerate SEND_RECEIVE markers---*/
+          if (config->GetMarker_All_KindBC(marker_seed[0]) == SEND_RECEIVE) {
+            agglomerate_seed = false;
+          }
         }
 
         /*--- If there are two markers, we will agglomerate if any of the
@@ -179,9 +183,13 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         /*--- Note that in 2D, this is a corner and we do not agglomerate. ---*/
         /*--- In 3D, we agglomerate if the 2 markers are the same. ---*/
         if (counter == 2) {
+
           /*--- Only agglomerate if one of the 2 markers are MPI markers. ---*/
-          agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
-                             (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
+          //agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
+          //                   (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
+          /*--- Do not agglomerate if one of the 2 markers are MPI markers. ---*/
+          agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) != SEND_RECEIVE) &&
+                             (config->GetMarker_All_KindBC(copy_marker[1]) != SEND_RECEIVE);
 
           /*--- Euler walls: check curvature-based agglomeration criterion for both markers ---*/
           bool euler_wall_rejected_here = false;
@@ -866,11 +874,11 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   nPoint = Index_CoarseCV;
 
   /*--- Console output with the summary of the agglomeration ---*/
-
-  unsigned long nPointFine = fine_grid->GetnPoint();
+  // nijso: do not include halo points in the count
+  unsigned long nPointFine = fine_grid->GetnPointDomain();
   unsigned long Global_nPointCoarse, Global_nPointFine;
 
-  SU2_MPI::Allreduce(&nPoint, &Global_nPointCoarse, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nPointDomain, &Global_nPointCoarse, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&nPointFine, &Global_nPointFine, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
   SetGlobal_nPointDomain(Global_nPointCoarse);

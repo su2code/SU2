@@ -95,6 +95,15 @@ CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_m
 
   IterLinSolver = 0;
 
+  /*--- Initialize Adaptive CFL state ---*/
+  consecutiveReduceIters = 0;
+  consecutiveIncreaseIters = 0;
+  oscillationCounter = 0;
+  previousOscillation = false;
+  NonLinRes_Counter = 0;
+  Old_Func = 0.0;
+  New_Func = 0.0;
+
   /*--- Initialize pointer for any verification solution. ---*/
   VerificationSolution  = nullptr;
 
@@ -1702,6 +1711,12 @@ void CSolver::ResetCFLAdapt() {
   Old_Func = 0;
   New_Func = 0;
   NonLinRes_Counter = 0;
+  consecutiveReduceIters = 0;
+  consecutiveIncreaseIters = 0;
+  oscillationCounter = 0;
+  previousOscillation = false;
+  peaks.clear();
+  valleys.clear();
 }
 
 
@@ -2047,8 +2062,8 @@ void CSolver::DetermineLinearSolverBasedCFLFlags(const CFLAdaptParams &params, C
 
   const unsigned long DAMPING_ITERS_REDUCE = 5;
   const unsigned long DAMPING_ITERS_INCREASE = 10;
-  static unsigned long consecutiveReduceIters = 0;
-  static unsigned long consecutiveIncreaseIters = 0;
+  // static unsigned long consecutiveReduceIters = 0; // Removed static
+  // static unsigned long consecutiveIncreaseIters = 0; // Removed static
 
   unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
 
@@ -2197,8 +2212,8 @@ void CSolver::DetectPeakValley(const CFLAdaptParams &params, CConfig *config,
   const su2double SLOPE_UP   =  0.1;           /* slope > this => divergence (log10 per iter) */
 
   /* Counter to avoid reacting to every single iteration */
-  static unsigned long oscillationCounter = 0;
-  static bool previousOscillation = false;
+  // static unsigned long oscillationCounter = 0; // Removed static
+  // static bool previousOscillation = false; // Removed static
 
   /* Reconstruct New_Func history from the delta buffer. */
   vector<su2double> funcHistory;
@@ -2218,8 +2233,8 @@ void CSolver::DetectPeakValley(const CFLAdaptParams &params, CConfig *config,
   const unsigned long startIter = currIter - histSize + 1;
 
   /* Find peaks and valleys using deques for automatic size management. */
-  static deque<pair<unsigned long, su2double>> peaks;
-  static deque<pair<unsigned long, su2double>> valleys;
+  // static deque<pair<unsigned long, su2double>> peaks; // Removed static
+  // static deque<pair<unsigned long, su2double>> valleys; // Removed static
 
   /* Clear old extrema that are outside the lookback window */
   while (!peaks.empty() && currIter > EXT_WINDOW && peaks.front().first + EXT_WINDOW < currIter) {
@@ -2462,9 +2477,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
   const CFLAdaptParams params = InitializeCFLAdaptParams(config);
   //const bool fullComms = (config->GetComm_Level() == COMM_FULL);
 
-  static bool reduceCFL = false;
-  static bool resetCFL = false;
-  static bool canIncrease = false;
+  bool reduceCFL = false;
+  bool resetCFL = false;
+  bool canIncrease = false;
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     if (iMesh == MESH_0) {
