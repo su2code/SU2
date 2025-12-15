@@ -475,10 +475,11 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
       numerics->SetStochVar(turbNodes->GetSolution(iPoint, 1 + iDim),
                             turbNodes->GetSolution(jPoint, 1 + iDim), iDim);
     }
-    su2double eddy_visc_i, eddy_visc_j, DES_length_i,
+    su2double rho, eddy_visc_i, eddy_visc_j, DES_length_i,
               DES_length_j, tke_i, tke_j, lesMode_i, lesMode_j;
-    eddy_visc_i = turbNodes->GetmuT(iPoint);
-    eddy_visc_j = turbNodes->GetmuT(jPoint);
+    rho = nodes->GetDensity(iPoint);
+    eddy_visc_i = turbNodes->GetmuT(iPoint) / rho;
+    eddy_visc_j = turbNodes->GetmuT(jPoint) / rho;
     DES_length_i = turbNodes->GetDES_LengthScale(iPoint);
     DES_length_j = turbNodes->GetDES_LengthScale(jPoint);
     lesMode_i = turbNodes->GetLES_Mode(iPoint);

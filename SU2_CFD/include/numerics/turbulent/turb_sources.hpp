@@ -122,18 +122,14 @@ class CSourceBase_TurbSA : public CNumerics {
                                      const CSAVariables& var, TIME_MARCHING time_marching) {
 
     const su2double& nue = ScalarVar_i[0];
-
     const auto& density = V_i[idx.Density()];
 
-    const su2double nut_small = 1.0e-10;
-
-    su2double Ji_2 = pow(var.Ji,2);
-    su2double Ji_3 = Ji_2 * var.Ji;
+    const su2double nut_small = 1.0e-12;
     
-    const su2double nut = nue * var.fv1;
+    const su2double nut = max(nue * var.fv1, nut_small);
 
-    su2double tLES = ct * pow(lengthScale/DES_const, 2) / max(nut, nut_small);
-    su2double tRANS = pow(lengthScale, 2) / max(nut, nut_small);
+    su2double tLES = ct * pow(lengthScale/DES_const, 2) / nut;
+    su2double tRANS = pow(lengthScale, 2) / nut;
     su2double tLR = tLES / tRANS;
     su2double tTurb = tLES / (lesMode_i + (1.0-lesMode_i)*tLR);
     su2double tRat = timeStep / tTurb;
@@ -146,7 +142,7 @@ class CSourceBase_TurbSA : public CNumerics {
     }
     
     su2double scaleFactor = 0.0;
-    if (lesMode_i > 0.999) scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * density * corrFac;
+    if (std::nearbyint(lesMode_i) == 1) scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * density * corrFac;
 
     ResidSB[0] = Residual;
     for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
@@ -157,21 +153,14 @@ class CSourceBase_TurbSA : public CNumerics {
     for (unsigned short iVar = 0; iVar < nVar; iVar++ ) {
       for (unsigned short jVar = 0; jVar < nVar; jVar++ ) {
         JacobianSB_i[iVar][jVar] = 0.0;
-        if (iVar == jVar) JacobianSB_i[iVar][jVar] = -1.0/tTurb * density * Volume;
       }
     }
-    JacobianSB_i[0][0] = Jacobian_i[0];
-
-    su2double dnut_dnue = var.fv1 + 3.0 * var.cv1_3 * Ji_3 / pow(Ji_3 + var.cv1_3, 2);
-    su2double dtTurb_dnut = - ct * pow(lengthScale,2) / (max(nut, nut_small)*max(nut, nut_small));
 
     for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
-      JacobianSB_i[iVar][0] = - 1.0/tTurb * scaleFactor * stochSource[iVar-1]
-                              + 1.0/(tTurb*tTurb) * ScalarVar_i[iVar]
-                              + density * corrFac * stochSource[iVar-1] / 
-                                (tTurb * sqrt(2.0*tTurb*timeStep));
-      JacobianSB_i[iVar][0] *= dtTurb_dnut * dnut_dnue * Volume;
+      JacobianSB_i[iVar][iVar] = -1.0/tTurb * density * Volume;
     }
+
+    JacobianSB_i[0][0] = Jacobian_i[0];
 
   }
 
@@ -182,23 +171,21 @@ class CSourceBase_TurbSA : public CNumerics {
   inline void AddStochSource(const CSAVariables& var, const MatrixType& velGrad, const su2double Cmag) {
 
     su2double dist2 = dist_i * dist_i;
-    const su2double eps = 1.0e-10;
+    const su2double eps = 1.0e-12;
     su2double xi3 = pow(var.Ji, 3);
 
     su2double factor = dist2 / (2.0 * var.fv1 * ScalarVar_i[0] + eps);
     factor /= (3.0 * xi3 * var.cv1_3 / pow(xi3 + var.cv1_3, 2) + var.fv1 + eps);
 
-    const auto& density = V_i[idx.Density()];
-
     su2double tke = pow(var.fv1*ScalarVar_i[0]/dist_i, 2); 
 
-    su2double R12 =   Cmag * density * tke * ScalarVar_i[2];
-    su2double R13 = - Cmag * density * tke * ScalarVar_i[1];
-    su2double R23 =   Cmag * density * tke * ScalarVar_i[0];
+    su2double R12 = (nDim==3 ?   Cmag * tke * ScalarVar_i[3] : 0.0);
+    su2double R13 =            - Cmag * tke * ScalarVar_i[2];
+    su2double R23 =              Cmag * tke * ScalarVar_i[1];
 
-    su2double RGradU = R12 * (velGrad[0][1] - velGrad[1][0]) +
-                       R13 * (velGrad[0][2] - velGrad[2][0]) +
-                       R23 * (velGrad[1][2] - velGrad[2][1]);
+    su2double RGradU =            R12 * (velGrad[0][1] - velGrad[1][0]) +
+                       (nDim==3 ? R13 * (velGrad[0][2] - velGrad[2][0]) +
+                                  R23 * (velGrad[1][2] - velGrad[2][1]) : 0.0);
 
     su2double source_k = - RGradU;
     su2double source_nu = factor * source_k;
@@ -379,7 +366,7 @@ class CSourceBase_TurbSA : public CNumerics {
       /*--- Compute residual for Langevin equations (Stochastic Backscatter Model). ---*/
 
       if (backscatter) {
-        if (lesMode_i > 0.999 && config->GetStochSourceNu())
+        if (std::nearbyint(lesMode_i) == 1 && config->GetStochSourceNu())
           AddStochSource(var, PrimVar_Grad_i + idx.Velocity(), config->GetSBS_Cmag());
         const su2double DES_const = config->GetConst_DES();
         const su2double ctau = config->GetSBS_Ctau();

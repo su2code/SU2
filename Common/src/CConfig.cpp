@@ -2946,7 +2946,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("ENFORCE_LES", enforceLES, false);
 
   /* DESCRIPTION: Specify if the stochastic source term must be included in the turbulence model equation */
-  addBoolOption("STOCH_SOURCE_NU", stochSourceNu, false);
+  addBoolOption("STOCH_SOURCE_NU", stochSourceNu, true);
 
   /* DESCRIPTION: Filter width for LES (if negative, it is computed based on the local cell size) */
   addDoubleOption("LES_FILTER_WIDTH", LES_FilterWidth, -1.0);

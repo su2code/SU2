@@ -1648,8 +1648,7 @@ void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry)
     for (auto iDim = 0u; iDim < nDim; iDim++){
       auto gen = nodes->GetLangevinGen(iPoint, iDim);
       su2double lesSensor = nodes->GetLES_Mode(iPoint);
-      su2double rnd = 0.0;
-      if (lesSensor > 0.999) rnd = RandomToolbox::GetRandomNormal(gen);
+      su2double rnd = RandomToolbox::GetRandomNormal(gen) * std::nearbyint(lesSensor);
       nodes->SetLangevinSourceTermsOld(iPoint, iDim, rnd);
       nodes->SetLangevinSourceTerms(iPoint, iDim, rnd);
     }
@@ -1678,28 +1677,14 @@ void CTurbSASolver::SetLangevinGen(CConfig* config, CGeometry* geometry) {
 void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geometry) {
 
   const su2double LES_FilterWidth = config->GetLES_FilterWidth();
+  const su2double constDES = config->GetConst_DES();
   const su2double cDelta = config->GetSBS_Cdelta();
   const unsigned short maxIter = config->GetSBS_maxIterSmooth();
-  const unsigned long global_nPointDomain = geometry->GetGlobal_nPointDomain();
   const su2double tol = -5.0;
   const su2double sourceLim = 3.0;
   const su2double omega = 0.8;
   unsigned long timeIter = config->GetTimeIter();
   unsigned long restartIter = config->GetRestart_Iter();
-
-  /*--- Set the stochastic source terms to zero at boundaries. ---*/
-
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++ ) {
-      unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      if (geometry->nodes->GetDomain(iPoint)) {
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          nodes->SetLangevinSourceTerms(iPoint, iDim, 0.0);
-          nodes->SetLangevinSourceTermsOld(iPoint, iDim, 0.0);
-        }
-      }
-    }
-  }
 
   /*--- Start SOR algorithm for the Laplacian smoothing. ---*/
 
@@ -1713,11 +1698,15 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
       CompleteComms(geometry, config, MPI_QUANTITIES::STOCH_SOURCE_LANG);
 
       su2double localResNorm = 0.0;
+      unsigned long local_nPointLES = 0;
 
       SU2_OMP_FOR_DYN(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-        su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
+        const su2double lesSensor = nodes->GetLES_Mode(iPoint);
+        if (std::nearbyint(lesSensor) == 0.0) continue;
+        local_nPointLES += 1;
+        const su2double DES_LengthScale = nodes->GetDES_LengthScale(iPoint);
+        su2double maxDelta = DES_LengthScale / constDES;
         if (LES_FilterWidth > 0.0) maxDelta = LES_FilterWidth;
         su2double b = sqrt(cDelta) * maxDelta;
         su2double b2 = b * b;
@@ -1756,8 +1745,10 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
       /*--- Stop integration if residual drops below tolerance. ---*/
 
       su2double globalResNorm = 0.0;
+      unsigned long global_nPointLES = 0;
+      SU2_MPI::Allreduce(&local_nPointLES, &global_nPointLES, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&localResNorm, &globalResNorm, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      globalResNorm = sqrt(globalResNorm / global_nPointDomain);
+      globalResNorm = sqrt(globalResNorm / global_nPointLES);
 
       if (rank == MASTER_NODE) {
         if (iter == 0) {
@@ -1796,6 +1787,8 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
         su2double var_check_notSmoothed = 0.0;
         su2double mean_check_notSmoothed = 0.0;
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+          const su2double lesSensor = nodes->GetLES_Mode(iPoint);
+          if (std::nearbyint(lesSensor) == 0.0) continue;
           su2double source = nodes->GetLangevinSourceTerms(iPoint, iDim);
           su2double source_notSmoothed = nodes->GetLangevinSourceTermsOld(iPoint, iDim);
           mean_check_old += source;
@@ -1855,14 +1848,14 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
         SU2_MPI::Allreduce(&var_check_old, &var_check_old_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
         SU2_MPI::Allreduce(&var_check_new, &var_check_new_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
         SU2_MPI::Allreduce(&var_check_notSmoothed, &var_check_notSmoothed_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-        mean_check_old_G /= global_nPointDomain;
-        var_check_old_G /= global_nPointDomain;
+        mean_check_old_G /= global_nPointLES;
+        var_check_old_G /= global_nPointLES;
         var_check_old_G -= mean_check_old_G * mean_check_old_G;
-        mean_check_new_G /= global_nPointDomain;
-        var_check_new_G /= global_nPointDomain;
+        mean_check_new_G /= global_nPointLES;
+        var_check_new_G /= global_nPointLES;
         var_check_new_G -= mean_check_new_G * mean_check_new_G;
-        mean_check_notSmoothed_G /= global_nPointDomain;
-        var_check_notSmoothed_G /= global_nPointDomain;
+        mean_check_notSmoothed_G /= global_nPointLES;
+        var_check_notSmoothed_G /= global_nPointLES;
         var_check_notSmoothed_G -= mean_check_notSmoothed_G * mean_check_notSmoothed_G;
         if (rank == MASTER_NODE) {
           cout << "Mean of stochastic source term before scaling: " << mean_check_old_G-mean_check_notSmoothed_G <<". After scaling: " << mean_check_new_G-mean_check_notSmoothed_G << "." << endl;

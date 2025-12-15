@@ -666,23 +666,15 @@ public:
 
     /* --- Calculate stochastic tensor --- */
 
-    if (lesSensor > 0.999) {
-      stochReynStress[1][0] = - Cmag * density * turbKE * rndVec[2];
-      stochReynStress[2][0] =   Cmag * density * turbKE * rndVec[1];
-      stochReynStress[2][1] = - Cmag * density * turbKE * rndVec[0];
-      for (size_t iDim = 0; iDim < nDim; iDim++) {
-        for (size_t jDim = 0; jDim <= iDim; jDim++) {
-          if (iDim==jDim) {
-            stochReynStress[iDim][jDim] = 0.0;
-          } else {
-            stochReynStress[jDim][iDim] = - stochReynStress[iDim][jDim];
-          }
-        }
-      }
-    } else {
-      for (size_t iDim = 0; iDim < nDim; iDim++) {
-        for (size_t jDim = 0; jDim < nDim; jDim++) {
+    stochReynStress[1][0] = - std::nearbyint(lesSensor) * Cmag * density * turbKE * rndVec[2];
+    stochReynStress[2][0] =   std::nearbyint(lesSensor) * Cmag * density * turbKE * rndVec[1];
+    stochReynStress[2][1] = - std::nearbyint(lesSensor) * Cmag * density * turbKE * rndVec[0];
+    for (size_t iDim = 0; iDim < nDim; iDim++) {
+      for (size_t jDim = 0; jDim <= iDim; jDim++) {
+        if (iDim==jDim) {
           stochReynStress[iDim][jDim] = 0.0;
+        } else {
+          stochReynStress[jDim][iDim] = - stochReynStress[iDim][jDim];
         }
       }
     }
