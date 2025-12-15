@@ -881,6 +881,11 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     geometry[iMGlevel]->SetEdges();
     geometry[iMGlevel]->SetVertex(geometry[iMGlevel-1], config);
 
+    /*--- Validate halo CV coordinates if debug option enabled ---*/
+    if (auto* mg_geometry = dynamic_cast<CMultiGridGeometry*>(geometry[iMGlevel])) {
+      mg_geometry->ValidateHaloCoordinates(config, iMGlevel);
+    }
+
     /*--- Create the control volume structures ---*/
 
     geometry[iMGlevel]->SetControlVolume(geometry[iMGlevel-1], ALLOCATE);

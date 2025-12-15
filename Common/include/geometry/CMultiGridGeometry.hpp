@@ -181,4 +181,11 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] val_marker - Index of the boundary marker.
    */
   void SetMultiGridWallTemperature(const CGeometry* fine_grid, unsigned short val_marker) override;
+
+  /*!
+   * \brief Validate that halo CV coordinates match corresponding domain CVs on remote ranks (debug feature).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Multigrid level for reporting.
+   */
+  void ValidateHaloCoordinates(const CConfig* config, unsigned short iMesh) const;
 };

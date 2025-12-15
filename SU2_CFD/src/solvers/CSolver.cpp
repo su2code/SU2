@@ -1851,9 +1851,35 @@ void CSolver::PerformCFLReductions(CGeometry *geometry, CConfig *config, unsigne
 }
 
 void CSolver::ApplyCFLToCoarseGrid(CGeometry *geometry, CSolver **solver_container,
-                                   CConfig *config, unsigned short iMesh) {
-  const su2double factor = 1.5;
-  const su2double CFL = factor * config->GetCFL(iMesh - 1);
+                                   CConfig *config, unsigned short iMesh,
+                                   bool reduceCFL, bool resetCFL, bool canIncrease,
+                                   su2double startingIter) {
+  const unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+
+  /* Base strategy: use 1.5x multiplier from fine grid */
+  const su2double baseFactor = 1.5;
+  su2double CFL_base = baseFactor * config->GetCFL(iMesh - 1);
+
+  /* Apply same adaptation logic as fine grid to respond to stability issues.
+     This prevents coarse grids from being too aggressive when fine grid struggles. */
+  const su2double CFLMin = config->GetCFL_AdaptParam(2);
+  const su2double CFLMax = config->GetCFL_AdaptParam(3);
+  const su2double CFLFactorDecrease = config->GetCFL_AdaptParam(0);
+  const su2double CFLFactorIncrease = config->GetCFL_AdaptParam(1);
+
+  su2double CFL = CFL_base;
+
+  /* Apply fine grid stability flags to coarse grid */
+  if (resetCFL && iter >= startingIter) {
+    CFL = CFLMin;
+  } else if (reduceCFL && iter >= startingIter) {
+    CFL = max(CFLMin, CFL_base * CFLFactorDecrease);
+  } else if (canIncrease && iter >= startingIter) {
+    CFL = min(CFLMax, CFL_base * CFLFactorIncrease);
+  }
+
+  /* Clamp to bounds */
+  CFL = max(CFLMin, min(CFLMax, CFL));
 
   config->SetCFL(iMesh, CFL);
 
@@ -1871,6 +1897,12 @@ void CSolver::ApplyCFLToCoarseGrid(CGeometry *geometry, CSolver **solver_contain
     if (solverSpecies) solverSpecies->GetNodes()->SetLocalCFL(iPoint, CFL * CFLSpeciesReduction);
   }
   END_SU2_OMP_FOR
+
+  if (rank == MASTER_NODE && iter % 50 == 0) {
+    cout << "Coarse Grid " << iMesh << " - CFL=" << CFL
+         << " (base=" << CFL_base << ", reduceCFL=" << reduceCFL
+         << ", resetCFL=" << resetCFL << ", canIncrease=" << canIncrease << ")" << endl;
+  }
 }
 
 bool CSolver::DetectFlipFlop(const CFLAdaptParams &params, CConfig *config) {
@@ -1919,9 +1951,11 @@ void CSolver::DetectFastDivergence(const CFLAdaptParams &params, CConfig *config
 
   /* 2. SHORT-WINDOW TREND DETECTION: Catch degradation over 10 iterations */
   bool shortTermDivergence = false;
+  su2double recentChange = 0.0;
+  su2double recentSlope = 0.0;
+
   if (currIter >= 10) {
     const unsigned long SHORT_WINDOW = 10;
-    su2double recentChange = 0.0;
 
     /* Sum the last 10 delta values */
     for (unsigned long i = 0; i < SHORT_WINDOW; i++) {
@@ -1930,17 +1964,15 @@ void CSolver::DetectFastDivergence(const CFLAdaptParams &params, CConfig *config
     }
 
     /* Average change per iteration over the short window */
-    su2double recentSlope = recentChange / su2double(SHORT_WINDOW);
+    recentSlope = recentChange / su2double(SHORT_WINDOW);
 
-    /* Trigger if: residuals increasing OR stalling after initial convergence */
+    /* Trigger if: residuals increasing (actual divergence) */
     if (recentChange > 0.1) {  /* Net increase over 10 iterations */
       shortTermDivergence = true;
       reduceCFL = true;
-    } else if (recentSlope > -0.0005 && Old_Func < -3.0) {
-      /* Convergence rate < 0.0005/iter after reaching -3.0 = stalling */
-      shortTermDivergence = true;
-      reduceCFL = true;
     }
+    /* Note: Removed stall detection here - it was too aggressive for late-stage convergence.
+       The stagnation guard in TrackResidualHistory handles this more robustly over a longer window. */
   }
 
   /* Debug output for fast detection mechanisms */
@@ -1949,6 +1981,8 @@ void CSolver::DetectFastDivergence(const CFLAdaptParams &params, CConfig *config
          << ": singleIterChange=" << singleIterChange
          << " spikeDetected=" << spikeDetected
          << " catastrophicSpike=" << catastrophicSpike
+         << " recentChange(10iter)=" << recentChange
+         << " recentSlope=" << recentSlope
          << " shortTermDivergence=" << shortTermDivergence << endl;
   }
 }
@@ -2452,6 +2486,37 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
           DetectPeakValley(params, config, New_Func, reduceCFL, resetCFL);
         }
       }
+
+    /* Synchronize CFL decision flags across all MPI ranks to ensure consistent global strategy.
+       This prevents different ranks from making conflicting CFL decisions which would cause:
+       - Inconsistent CFL values for corresponding points across domain decomposition
+       - Potential divergence when some ranks reduce CFL while others increase
+       - Multigrid issues when coarse levels don't respond to fine grid instabilities
+
+       Logic:
+       - reduceCFL: Use logical OR - if ANY rank needs to reduce, ALL should reduce (safety)
+       - resetCFL: Use logical OR - if ANY rank detects catastrophic divergence, ALL should reset
+       - canIncrease: Use logical AND - only increase if ALL ranks are stable (conservative) */
+
+    int reduceCFL_int = reduceCFL ? 1 : 0;
+    int resetCFL_int = resetCFL ? 1 : 0;
+    int canIncrease_int = canIncrease ? 1 : 0;
+
+    SU2_MPI::Allreduce(MPI_IN_PLACE, &reduceCFL_int, 1, MPI_INT, MPI_LOR, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(MPI_IN_PLACE, &resetCFL_int, 1, MPI_INT, MPI_LOR, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(MPI_IN_PLACE, &canIncrease_int, 1, MPI_INT, MPI_LAND, SU2_MPI::GetComm());
+
+    reduceCFL = (reduceCFL_int != 0);
+    resetCFL = (resetCFL_int != 0);
+    canIncrease = (canIncrease_int != 0);
+
+    if (rank == MASTER_NODE && iter % 50 == 0) {
+      cout << "MPI-Synchronized CFL Flags - Iter " << iter
+           << ": reduceCFL=" << reduceCFL
+           << " resetCFL=" << resetCFL
+           << " canIncrease=" << canIncrease << endl;
+    }
+
     } /* End safe global access, now all threads update the CFL number. */
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -2459,12 +2524,11 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     ApplyCFLToAllPoints(geometry[iMesh], solver_container[iMesh], config, iMesh,
                         reduceCFL, resetCFL, canIncrease, params.startingIter);
   } else {
-    /* For coarse grids, apply CFL using the dedicated function */
-    ApplyCFLToCoarseGrid(geometry[iMesh], solver_container[iMesh], config, iMesh);
-
-    if (rank == MASTER_NODE) {
-      cout << "imesh=" << iMesh << " Avg CFL=" << config->GetCFL(iMesh) << endl;
-    }
+    /* For coarse grids, apply CFL respecting the fine grid stability flags.
+       This ensures that if fine grid detected divergence/oscillation, coarse grids
+       also reduce CFL instead of blindly using an aggressive multiplier. */
+    ApplyCFLToCoarseGrid(geometry[iMesh], solver_container[iMesh], config, iMesh,
+                         reduceCFL, resetCFL, canIncrease, params.startingIter);
   }
 }
 }
