@@ -573,6 +573,9 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(TauWall_i); AD::SetPreaccIn(TauWall_j);
   AD::SetPreaccIn(Normal, nDim);
+  if (energy_multicomponent) {
+    AD::SetPreaccIn(HeatFluxDiffusion);
+  }
 
   unsigned short iVar, jVar, iDim;
 
@@ -600,9 +603,9 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Density and transport properties ---*/
 
-  Laminar_Viscosity_i    = V_i[nDim+4];  Laminar_Viscosity_j    = V_j[nDim+4];
-  Eddy_Viscosity_i       = V_i[nDim+5];  Eddy_Viscosity_j       = V_j[nDim+5];
-  Thermal_Conductivity_i = V_i[nDim+6];  Thermal_Conductivity_j = V_j[nDim+6];
+  Laminar_Viscosity_i    = V_i[nDim+5];  Laminar_Viscosity_j    = V_j[nDim+5];
+  Eddy_Viscosity_i       = V_i[nDim+6];  Eddy_Viscosity_j       = V_j[nDim+6];
+  Thermal_Conductivity_i = V_i[nDim+7];  Thermal_Conductivity_j = V_j[nDim+7];
 
   /*--- Mean transport properties ---*/
 
@@ -657,6 +660,10 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
 
+  if (energy_multicomponent) {
+    Proj_Flux_Tensor[nVar - 1] += HeatFluxDiffusion;
+  }
+
   /*--- Implicit part ---*/
 
   if (implicit) {
@@ -681,8 +688,13 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
         proj_vector_ij += (Coord_j[iDim]-Coord_i[iDim])*Normal[iDim];
       }
       proj_vector_ij = proj_vector_ij/dist_ij_2;
-      Jacobian_i[nDim+1][nDim+1] = -Mean_Thermal_Conductivity*proj_vector_ij;
-      Jacobian_j[nDim+1][nDim+1] =  Mean_Thermal_Conductivity*proj_vector_ij;
+      Mean_Cp = 0.5 * (V_i[nDim + 8] + V_j[nDim + 8]);
+      Jacobian_i[nDim + 1][nDim + 1] = -Mean_Thermal_Conductivity * proj_vector_ij / Mean_Cp;
+      Jacobian_j[nDim + 1][nDim + 1] = Mean_Thermal_Conductivity * proj_vector_ij / Mean_Cp;
+      if (energy_multicomponent){
+        Jacobian_i[nDim + 1][nDim + 1] -= JacHeatFluxDiffusion / Mean_Cp;
+        Jacobian_j[nDim + 1][nDim + 1] += JacHeatFluxDiffusion / Mean_Cp;
+      }
     }
 
   }

@@ -241,7 +241,7 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
               sqrt(config->GetBulk_Modulus()/(flow_nodes->GetDensity(iPoint)));
             }
             Temperature       = flow_nodes->GetTemperature(iPoint);
-            Enthalpy          = flow_nodes->GetSpecificHeatCp(iPoint)*Temperature;
+            Enthalpy          = flow_nodes->GetEnthalpy(iPoint);
             TotalTemperature  = Temperature + 0.5*Velocity2/flow_nodes->GetSpecificHeatCp(iPoint);
             TotalPressure     = Pressure + 0.5*Density*Velocity2;
           }

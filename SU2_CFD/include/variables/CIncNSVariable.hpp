@@ -41,6 +41,7 @@ private:
   VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale; /*!< \brief DES Length Scale. */
   VectorType LES_Mode;        /*!< \brief Sensor for local simulation mode (0=RANS, 1=LES).*/
+  const bool Energy;          /*!< \brief Flag for Energy equation in incompressible flows. */
 
 public:
   /*!

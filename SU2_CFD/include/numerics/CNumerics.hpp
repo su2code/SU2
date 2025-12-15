@@ -130,6 +130,10 @@ protected:
   const su2double
   *ScalarVar_i,   /*!< \brief Vector of scalar variables at point i. */
   *ScalarVar_j;   /*!< \brief Vector of scalar variables at point j. */
+  su2double
+  HeatFluxDiffusion;   /*!< \brief Heat flux due to enthalpy diffusion for multicomponent. */
+  su2double
+  JacHeatFluxDiffusion;   /*!< \brief Heat flux jacobian due to enthalpy diffusion for multicomponent. */
   const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
@@ -195,6 +199,8 @@ protected:
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
+
+  bool energy_multicomponent = false; /*!< \brief Flag for multicomponent and reacting flow  */
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
@@ -800,6 +806,20 @@ public:
   }
 
   /*!
+   * \brief Set the heat flux due to enthalpy diffusion
+   * \param[in] val_heatfluxdiffusion - Value of the heat flux due to enthalpy diffusion.
+   */
+  inline void SetHeatFluxDiffusion(su2double val_heatfluxdiffusion) { HeatFluxDiffusion = val_heatfluxdiffusion; }
+
+  /*!
+   * \brief Set Jacobian of the heat flux due to enthalpy diffusion
+   * \param[in] val_jacheatfluxdiffusion - Value of the heat flux jacobian due to enthalpy diffusion.
+   */
+  inline void SetJacHeatFluxDiffusion(su2double val_jacheatfluxdiffusion) {
+    JacHeatFluxDiffusion = val_jacheatfluxdiffusion;
+  }
+
+  /*!
    * \brief Set the laminar viscosity.
    * \param[in] val_laminar_viscosity_i - Value of the laminar viscosity at point i.
    * \param[in] val_laminar_viscosity_j - Value of the laminar viscosity at point j.
@@ -1117,8 +1137,7 @@ public:
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Pointer to the velocity.
    * \param[in] val_betainc2 - Value of the artificial compresibility factor.
-   * \param[in] val_cp - Value of the specific heat at constant pressure.
-   * \param[in] val_temperature - Value of the temperature.
+   * \param[in] val_enthalpy - Value of the enthalpy.
    * \param[in] val_dRhodT - Value of the derivative of density w.r.t. temperature.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_scale - Scale of the projection.
@@ -1127,8 +1146,7 @@ public:
   void GetInviscidIncProjJac(const su2double *val_density,
                              const su2double *val_velocity,
                              const su2double *val_betainc2,
-                             const su2double *val_cp,
-                             const su2double *val_temperature,
+                             const su2double *val_enthalpy,
                              const su2double *val_dRhodT,
                              const su2double *val_normal,
                              su2double val_scale,
@@ -1139,17 +1157,15 @@ public:
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Pointer to the velocity.
    * \param[in] val_betainc2 - Value of the artificial compresibility factor.
-   * \param[in] val_cp - Value of the specific heat at constant pressure.
-   * \param[in] val_temperature - Value of the temperature.
-   * \param[in] val_dRhodT - Value of the derivative of density w.r.t. temperature.
+   * \param[in] val_enthalpy - Value of the enthalpy.
+   * \param[in] val_dRhodh - Value of the derivative of density w.r.t. enthalpy.
    * \param[out] val_Precon - Pointer to the preconditioning matrix.
    */
   void GetPreconditioner(const su2double *val_density,
                          const su2double *val_velocity,
                          const su2double *val_betainc2,
-                         const su2double *val_cp,
-                         const su2double *val_temperature,
-                         const su2double *val_drhodt,
+                         const su2double *val_enthalpy,
+                         const su2double *val_drhodh,
                          su2double **val_Precon) const;
 
   /*!
