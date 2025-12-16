@@ -101,6 +101,9 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   }
 
+/*--- Set density for unsteady problems ---*/
+Density_unsteady[iPoint] = FluidModel->GetDensity();
+
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
 
   SetVelocity(iPoint);
