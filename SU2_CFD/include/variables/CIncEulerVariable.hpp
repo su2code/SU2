@@ -105,7 +105,7 @@ public:
     Density_time_n[iPoint] = val;
   }
 
-  inline void Set_Density_unsteady(unsigned long iPoint, su2double val) {
+  inline void SetDensity_Unsteady(unsigned long iPoint, su2double val) {
     Density_unsteady[iPoint] = val;
   }
   
