@@ -7108,7 +7108,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
       }
 
-      if (Kind_ConvNumScheme_Flow != SPACE_CENTERED || (Kind_ConvNumScheme_Flow == SPACE_CENTERED && Kind_Centered_Flow == CENTERED::LAX))  {
+      if ((Kind_ConvNumScheme_Flow != SPACE_CENTERED || (Kind_ConvNumScheme_Flow == SPACE_CENTERED && Kind_Centered_Flow == CENTERED::LAX)) && LD2_Scheme) { {
         SU2_MPI::Error("LD2 option available for JST scheme only.", CURRENT_FUNCTION);
       }
 
