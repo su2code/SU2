@@ -697,8 +697,10 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
       if (Conservative) {
         if (incompressible)
           Density_n = flowNodes->GetDensity_time_n(iPoint);  // Updated for transient density
+          // nijso: no second order for dynamic meshes?
         else
           Density_n = flowNodes->GetSolution_time_n(iPoint, 0);
+          // nijso: no second order for dynamic meshes?
       }
 
       for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
@@ -756,7 +758,7 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
             else
               Density_n = flowNodes->GetSolution_time_n(iPoint, 0);
           }
-
+          // nijso: what about second order?
           for (iVar = 0; iVar < nVar; iVar++) LinSysRes(iPoint, iVar) += Density_n * U_time_n[iVar] * Residual_GCL;
         }
         END_SU2_OMP_FOR

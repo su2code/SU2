@@ -58,7 +58,8 @@ CIncEulerVariable::CIncEulerVariable(su2double density, su2double pressure, cons
   if (dual_time) {
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
-    Density_unsteady = density;
+    Density_time_n = density;
+    Density_time_n1 = density;
   }
 
   if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE) {
@@ -69,6 +70,7 @@ CIncEulerVariable::CIncEulerVariable(su2double density, su2double pressure, cons
 }
 
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel)  {
+
   bool physical = true;
 
   /*--- Set the value of the pressure ---*/

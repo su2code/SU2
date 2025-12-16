@@ -70,7 +70,7 @@ protected:
   MatrixType Solution_time_n;    /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   MatrixType Solution_time_n1;   /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
   VectorType Delta_Time;         /*!< \brief Time step. */
-  VectorType Density_unsteady;
+  VectorType Density_unsteady;       /*!< \brief density for unsteady flows. */
   VectorType Density_time_n;         /*!< \brief density at time n for dual-time stepping technique. */
   VectorType Density_time_n1;        /*!< \brief density at time n for dual-time stepping technique. */
 
@@ -297,12 +297,12 @@ public:
     /*!
    * \brief Set the density at time n.
    */
-  void Set_Density_time_n();
+  void SetDensity_time_n();
 
     /*!
    * \brief Set the density at time n-1.
    */
-  void Set_Density_time_n1();
+  void SetDensity_time_n1();
 
   /*!
    * \brief Set the variable solution at time n.
@@ -337,15 +337,15 @@ public:
     Solution_time_n1(iPoint,iVar) = val_sol;
   }
 
-  inline void Set_Density_time_n(unsigned long iPoint, su2double val) {
+  inline void SetDensity_time_n(unsigned long iPoint, su2double val) {
     Density_time_n[iPoint] = val;
   }
 
-   inline void Set_Density_time_n1(unsigned long iPoint, su2double val) {
+   inline void SetDensity_time_n1(unsigned long iPoint, su2double val) {
     Density_time_n1[iPoint] = val;
   }
 
-  inline void Set_Density_unsteady(unsigned long iPoint, su2double val) {
+  inline void SetDensity_unsteady(unsigned long iPoint, su2double val) {
     Density_unsteady[iPoint] = val;
   } 
 

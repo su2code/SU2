@@ -189,16 +189,16 @@ class CEulerVariable : public CFlowVariable {
     return Primitive(iPoint, indices.Density()) <= 0.0;
   }
 
-  inline void Set_Density_time_n(unsigned long iPoint, su2double val) {
-    Density_time_n[iPoint] = val;
+  inline void SetDensity_Time_n(unsigned long iPoint, su2double val_density_time_n) {
+    Density_time_n[iPoint] = val_density_time_n;
   }
 
-  inline void Set_Density_time_n1(unsigned long iPoint, su2double val) {
-    Density_time_n1[iPoint] = val;
+  inline void SetDensity_time_n1(unsigned long iPoint, su2double val_density_time_n1) {
+    Density_time_n1[iPoint] = val_density_time_n1;
   }
 
-  inline void Set_Density_unsteady(unsigned long iPoint, su2double val) {
-    Density_unsteady[iPoint] = val;
+  inline void SetDensity_Unsteady(unsigned long iPoint, su2double val_density_unsteady) {
+    Density_unsteady[iPoint] = val_density_unsteady;
   }
 
   /*!
