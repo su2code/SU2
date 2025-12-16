@@ -70,7 +70,7 @@ protected:
   MatrixType Solution_time_n;    /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   MatrixType Solution_time_n1;   /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
   VectorType Delta_Time;         /*!< \brief Time step. */
-  VectorType Density_unsteady;
+  VectorType Density_unsteady;       /*!< \brief density for unsteady flows. */
   VectorType Density_time_n;         /*!< \brief density at time n for dual-time stepping technique. */
 
   CVectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
