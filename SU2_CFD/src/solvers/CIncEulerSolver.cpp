@@ -2806,10 +2806,10 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool energy = config->GetEnergy_Equation();
 
-  const int ndim = nDim;
-  auto V2U = [ndim](su2double Density, const su2double* V, su2double* U) {
+  const int nvar = nVar;
+  auto V2U = [nvar](su2double Density, const su2double* V, su2double* U) {
     U[0] = Density;
-    for (int iDim = 0; iDim <= ndim; iDim++) U[iDim + 1] = Density * V[iDim + 1];
+    for (int iVar = 1; iVar < nvar; ++iVar) U[iVar] = Density * V[iVar];
   };
 
   /*--- Store the physical time step ---*/
@@ -2867,7 +2867,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       if (implicit) {
         su2double delta = (second_order ? 1.5 : 1.0) * Volume_nP1 * Density / TimeStep;
 
-        for (iDim = 0; iDim <= nDim; iDim++) Jacobian.AddVal2Diag(iPoint, iDim + 1, delta);
+        for (iVar = 1; iVar < nVar; ++iVar) Jacobian.AddVal2Diag(iPoint, iVar, delta);
       }
     }
     END_SU2_OMP_FOR
