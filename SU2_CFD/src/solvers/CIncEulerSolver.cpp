@@ -2754,7 +2754,6 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Access the density and Cp at this node (constant for now). ---*/
 
       Density_time_n = nodes->GetDensity_time_n(iPoint);
-      Density_unsteady = nodes->GetDensity_unsteady(iPoint);
       Density = nodes->GetDensity(iPoint);
       Cp = nodes->GetSpecificHeatCp(iPoint);
       
