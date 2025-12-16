@@ -69,6 +69,7 @@ CIncEulerVariable::CIncEulerVariable(su2double density, su2double pressure, cons
 }
 
 bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel)  {
+
   bool physical = true;
 
   /*--- Set the value of the pressure ---*/
