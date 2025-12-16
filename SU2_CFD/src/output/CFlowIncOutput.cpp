@@ -375,7 +375,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 
   AddCommonFVMOutputs(config);
 
-  AddVolumeOutput("DENSITY_TIME_N", "Density_time_n", "SOLUTION", "Density at previous time step");
+  AddVolumeOutput("DENSITY_TIME_N", "Density_time_n", "SOLUTION", "Density at previous time step n");
+  AddVolumeOutput("DENSITY_TIME_N1", "Density_time_n1", "SOLUTION", "Density at previous time step n-1");
   if (config->GetTime_Domain()) {
     SetTimeAveragedFields();
   }
@@ -420,6 +421,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())/factor);
   SetVolumeOutputValue("DENSITY", iPoint, Node_Flow->GetDensity(iPoint));
   SetVolumeOutputValue("DENSITY_TIME_N", iPoint, Node_Flow->GetDensity_time_n(iPoint));
+  SetVolumeOutputValue("DENSITY_TIME_N1", iPoint, Node_Flow->GetDensity_time_n1(iPoint));
 
   if (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));

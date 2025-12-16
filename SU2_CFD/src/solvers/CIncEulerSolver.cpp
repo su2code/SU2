@@ -2713,7 +2713,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double U_time_nM1[MAXNVAR], U_time_n[MAXNVAR], U_time_nP1[MAXNVAR];
   su2double Volume_nM1, Volume_nP1, TimeStep;
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
-  su2double Density, Cp, Density_time_n, Density_unsteady;
+  su2double Density, Cp, Density_time_n, Density_time_nM1, Density_unsteady;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
@@ -2753,6 +2753,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
       /*--- Access the density and Cp at this node (constant for now). ---*/
 
+      Density_time_nM1 = nodes->GetDensity_time_n1(iPoint);
       Density_time_n = nodes->GetDensity_time_n(iPoint);
       Density_unsteady = nodes->GetDensity_unsteady(iPoint);
       Density = nodes->GetDensity(iPoint);
@@ -2760,8 +2761,9 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       
       /*--- Compute the conservative variable vector for all time levels. ---*/
 
-      V2U(Density, Cp, V_time_nM1, U_time_nM1);
+      V2U(Density_time_nM1, Cp, V_time_nM1, U_time_nM1);
       V2U(Density_time_n, Cp, V_time_n, U_time_n);
+      // nijso asks: what is the difference between density_unsteady and density?
       V2U(Density, Cp, V_time_nP1, U_time_nP1);
 
       /*--- CV volume at time n+1. As we are on a static mesh, the volume

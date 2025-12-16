@@ -634,11 +634,7 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       if (Conservative) {
         if (incompressible) {
-          /*--- This is temporary and only valid for constant-density problems:
-          density could also be temperature dependent, but as it is not a part
-          of the solution vector it's neither stored for previous time steps
-          nor updated with the solution at the end of each iteration. */
-          Density_nM1 = flowNodes->GetDensity(iPoint);
+          Density_nM1 = flowNodes->GetDensity_time_n1(iPoint);
           Density_n = flowNodes->GetDensity_time_n(iPoint);
           Density_nP1 = flowNodes->GetDensity(iPoint);
         } else {
@@ -801,7 +797,7 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
           density could also be temperature dependent, but as it is not a part
           of the solution vector it's neither stored for previous time steps
           nor updated with the solution at the end of each iteration. */
-          Density_nM1 = flowNodes->GetDensity(iPoint);
+          Density_nM1 = flowNodes->GetDensity_time_n1(iPoint);
           Density_n = flowNodes->GetDensity_time_n(iPoint);
           Density_nP1 = flowNodes->GetDensity(iPoint);
         } else {

@@ -193,6 +193,10 @@ class CEulerVariable : public CFlowVariable {
     Density_time_n[iPoint] = val;
   }
 
+  inline void Set_Density_time_n1(unsigned long iPoint, su2double val) {
+    Density_time_n1[iPoint] = val;
+  }
+
   inline void Set_Density_unsteady(unsigned long iPoint, su2double val) {
     Density_unsteady[iPoint] = val;
   }

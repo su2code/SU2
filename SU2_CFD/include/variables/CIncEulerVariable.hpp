@@ -105,6 +105,10 @@ public:
     Density_time_n[iPoint] = val;
   }
 
+  inline void Set_Density_time_n1(unsigned long iPoint, su2double val) {
+    Density_time_n1[iPoint] = val;
+  }
+
   inline void Set_Density_unsteady(unsigned long iPoint, su2double val) {
     Density_unsteady[iPoint] = val;
   }
@@ -112,7 +116,11 @@ public:
   inline su2double GetDensity_time_n(unsigned long iPoint) const {
     return Density_time_n[iPoint];
   }
-  
+
+  inline su2double GetDensity_time_n1(unsigned long iPoint) const {
+    return Density_time_n1[iPoint];
+  }
+
   /*!
    * \brief Set the value of the density for the incompressible flows.
    * \param[in] iPoint - Point index.

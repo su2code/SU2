@@ -72,6 +72,7 @@ protected:
   VectorType Delta_Time;         /*!< \brief Time step. */
   VectorType Density_unsteady;
   VectorType Density_time_n;         /*!< \brief density at time n for dual-time stepping technique. */
+  VectorType Density_time_n1;        /*!< \brief density at time n for dual-time stepping technique. */
 
   CVectorOfMatrix Gradient;  /*!< \brief Gradient of the solution of the problem. */
   C3DDoubleMatrix Rmatrix;   /*!< \brief Geometry-based matrix for weighted least squares gradient calculations. */
@@ -298,6 +299,11 @@ public:
    */
   void Set_Density_time_n();
 
+    /*!
+   * \brief Set the density at time n-1.
+   */
+  void Set_Density_time_n1();
+
   /*!
    * \brief Set the variable solution at time n.
    * \param[in] iPoint - Point index.
@@ -334,7 +340,11 @@ public:
   inline void Set_Density_time_n(unsigned long iPoint, su2double val) {
     Density_time_n[iPoint] = val;
   }
-  
+
+   inline void Set_Density_time_n1(unsigned long iPoint, su2double val) {
+    Density_time_n1[iPoint] = val;
+  }
+
   inline void Set_Density_unsteady(unsigned long iPoint, su2double val) {
     Density_unsteady[iPoint] = val;
   } 
@@ -547,6 +557,14 @@ public:
    */
   inline su2double GetDensity_time_n(unsigned long iPoint) const { return Density_time_n[iPoint]; }
   inline VectorType& GetDensity_time_n() { return Density_time_n; }
+
+  /*!
+   * \brief Get the solution at time n.
+   * \param[in] iPoint - Point index.
+   * \return Pointer to the solution (at time n) vector.
+   */
+  inline su2double GetDensity_time_n1(unsigned long iPoint) const { return Density_time_n1[iPoint]; }
+  inline VectorType& GetDensity_time_n1() { return Density_time_n1; }
 
   /*!
    * \brief Get the density.
@@ -2209,9 +2227,13 @@ public:
   void RegisterSolution_time_n1();
 
    /*!
-   * \brief Register the variables in the solution_time_n1 array as input/output variable.
+   * \brief Register the variables in the density_time_n array as input/output variable.
    */
   void RegisterDensity_time_n();
+   /*!
+   * \brief Register the variables in the density_time_n1 array as input/output variable.
+   */
+  void RegisterDensity_time_n1();
 
   /*!
    * \brief Register the variables in the user defined source array as input/output variable.
