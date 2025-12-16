@@ -28,9 +28,10 @@
 #include "../../include/variables/CIncNSVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
-CIncNSVariable::CIncNSVariable(su2double density, su2double pressure, const su2double *velocity, su2double temperature,
+CIncNSVariable::CIncNSVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
                                unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) :
-                               CIncEulerVariable(density, pressure, velocity, temperature, npoint, ndim, nvar, config) {
+                               CIncEulerVariable(density, pressure, velocity, enthalpy, npoint, ndim, nvar, config),
+                               Energy(config->GetEnergy_Equation()) {
 
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
@@ -46,34 +47,33 @@ CIncNSVariable::CIncNSVariable(su2double density, su2double pressure, const su2d
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
     Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
   }
+  if(!Energy) TemperatureInc = config->GetInc_Temperature_Init();
 }
 
 bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
 
   bool physical = true;
+  su2double Temperature;
+  su2double Enthalpy;
 
   /*--- Set the value of the pressure ---*/
 
   SetPressure(iPoint);
 
-  /*--- Set the value of the temperature directly ---*/
-
-  su2double Temperature = Solution(iPoint, indices.Temperature());
+  if (Energy) {
+    Enthalpy = Solution(iPoint, nDim + 1);
+    FluidModel->SetTDState_h(Enthalpy, scalar);
+    Temperature = FluidModel->GetTemperature();
+  } else {
+    /*--- When energy equation is switch off, a constant temperature is imposed, and enthalpy is recomputed based on
+     * this temperature. As in the fluid flamelet model, the temperature is retrieved from a look-up table, then the
+     * temperature is obtained directly from the fluidmodel. For the other fluid models, GetTemperature provides the
+     * same value as TemperatureInc ---*/
+    FluidModel->SetTDState_T(TemperatureInc, scalar);
+    Enthalpy = Solution(iPoint, nDim + 1) = FluidModel->GetEnthalpy();
+    Temperature = FluidModel->GetTemperature();
+  }
   auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
-
-  /*--- Use the fluid model to compute the new value of density.
-  Note that the thermodynamic pressure is constant and decoupled
-  from the dynamic pressure being iterated. ---*/
-
-  /*--- Use the fluid model to compute the new value of density. ---*/
-
-  FluidModel->SetTDState_T(Temperature, scalar);
-
-  /*--- for FLAMELET: copy the LUT temperature into the solution ---*/
-  Solution(iPoint,nDim+1) = FluidModel->GetTemperature();
-  /*--- for FLAMELET: update the local temperature using LUT variables ---*/
-  Temperature = Solution(iPoint,indices.Temperature());
-  check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
   /*--- Set the value of the density ---*/
 
@@ -90,9 +90,10 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
     /*--- Recompute the primitive variables ---*/
 
-    Temperature = Solution(iPoint, indices.Temperature());
-    SetTemperature(iPoint, Temperature, TemperatureLimits);
-    FluidModel->SetTDState_T(Temperature, scalar);
+    Enthalpy = Solution(iPoint, nDim + 1);
+    FluidModel->SetTDState_h(Enthalpy, scalar);
+    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
+
     SetDensity(iPoint, FluidModel->GetDensity());
 
     /*--- Flag this point as non-physical. ---*/
@@ -125,6 +126,7 @@ Density_unsteady[iPoint] = FluidModel->GetDensity();
 
   SetSpecificHeatCp(iPoint, FluidModel->GetCp());
   SetSpecificHeatCv(iPoint, FluidModel->GetCv());
+  SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
 
   return physical;
 

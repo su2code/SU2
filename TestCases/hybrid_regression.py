@@ -383,8 +383,8 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals         = [-7.827942, -2.061513, 0.029525, 1.953498, -174.780000]
-    inc_poly_cylinder.test_vals_aarch64 = [-7.827942, -2.061513, 0.029525, 1.953498, -174.780000]
+    inc_poly_cylinder.test_vals         = [-8.241953, -2.424330, 0.027284, 1.909617, -173.010000]
+    inc_poly_cylinder.test_vals_aarch64 = [-8.241953, -2.424330, 0.027284, 1.909617, -173.010000]
     test_list.append(inc_poly_cylinder)
 
     # X-coarse laminar bend as a mixed element CGNS test
@@ -420,7 +420,7 @@ def main():
     inc_weakly_coupled.cfg_dir = "disc_adj_heat"
     inc_weakly_coupled.cfg_file = "primal.cfg"
     inc_weakly_coupled.test_iter = 10
-    inc_weakly_coupled.test_vals = [-18.095922, -16.331787, -16.514014, -9.756795, -18.203865, -14.053738, 5.550800]
+    inc_weakly_coupled.test_vals = [-18.203897, -16.304273, -16.482683, -15.007166, -17.858118, -14.025087, 5.609100]
     test_list.append(inc_weakly_coupled)
 
     ######################################
@@ -665,8 +665,8 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals         = [19.000000, -1.799803, -2.128200]
-    slinc_steady.test_vals_aarch64 = [19.000000, -1.799803, -2.128199]
+    slinc_steady.test_vals         = [19.000000, -1.048446, -1.324274]
+    slinc_steady.test_vals_aarch64 = [19.000000, -1.048446, -1.324274]
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
 

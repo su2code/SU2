@@ -415,7 +415,7 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals = [-8.083556, -2.134369, 0.018999, 1.932938, -173.730000]
+    inc_poly_cylinder.test_vals = [-8.232551, -2.412865, 0.010163, 1.895333, -172.760000]
     test_list.append(inc_poly_cylinder)
 
     # X-coarse laminar bend as a mixed element CGNS test
@@ -986,7 +986,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.803732, -2.108492]
+    slinc_steady.test_vals = [19.000000, -1.049468, -1.303013]
     slinc_steady.timeout   = 100
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
@@ -1117,7 +1117,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incomp_2d"
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-2.128826, -0.588813, -0.588813, -0.588813]
+    cht_incompressible.test_vals = [-1.376347, -0.591210, -0.591210, -0.591210]
     cht_incompressible.multizone = True
     test_list.append(cht_incompressible)
 
