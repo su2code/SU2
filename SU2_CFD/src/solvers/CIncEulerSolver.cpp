@@ -3007,8 +3007,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       if (implicit) {
         su2double delta = (second_order? 1.5 : 1.0) * Volume_nP1 * Density / TimeStep;
 
-        for (iDim = 0; iDim <= nDim; iDim++)
-          Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
+        for (iVar = 1; iVar < nVar; ++iVar)
+          Jacobian.AddVal2Diag(iPoint, iVar, delta);
       }
     }
     END_SU2_OMP_FOR
