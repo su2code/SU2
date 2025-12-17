@@ -38,6 +38,7 @@ def build_ninja():
     # If we are on windows, we don't need to compile ninja, we just download the executable
     if os.name == "nt":
         ninja_exe_url = "https://github.com/ninja-build/ninja/releases/download/v1.13.0/ninja-win.zip"
+        ninja_zip_path = sys.path[0] + os.path.sep + "ninja-win.zip"
 
         # Try to execute ninja, if it fails, download .exe from github
         try:
@@ -48,8 +49,8 @@ def build_ninja():
         except OSError:
             print("Downloading ninja ... ")
             try:
-                urllib.request.urlretrieve(ninja_exe_url, "ninja-win.zip")
-            except:
+                urllib.request.urlretrieve(ninja_exe_url, ninja_zip_path)
+            except Exception as e:
                 print(e)
                 print("Download of ninja executable failed.")
                 print("Get archive at " + ninja_exe_url)
@@ -57,9 +58,9 @@ def build_ninja():
                 print("Run meson.py again.")
                 sys.exit(1)
 
-            zipf = zipfile.ZipFile(sys.path[0] + os.path.sep + "ninja-win.zip")
-            zipf.extractall(sys.path[0])
-            remove_file(sys.path[0] + os.path.sep + "ninja-win.zip")
+            with zipfile.ZipFile(ninja_zip_path) as zipf:
+                zipf.extractall(sys.path[0])
+            remove_file(ninja_zip_path)
     else:
         ninjapath = sys.path[0] + os.path.sep + "externals" + os.path.sep + "ninja"
         try:
@@ -75,7 +76,7 @@ def build_ninja():
             subprocess.run(
                 ["python3", "configure.py", "--bootstrap"], cwd=ninjapath, env=env
             )
-            shutil.copy(ninjapath + os.path.sep + "ninja", ".")
+            shutil.copy(ninjapath + os.path.sep + "ninja", sys.path[0] + os.path.sep + "ninja")
 
 
 def run(

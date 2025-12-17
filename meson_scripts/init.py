@@ -289,7 +289,7 @@ def download_module(name, alt_name, git_repo, commit_sha):
 
             if not os.path.exists(filepath) and not os.path.exists(alt_filepath):
                 try:
-                    urllib.request.urlretrieve(url, commit_sha + ".zip")
+                    urllib.request.urlretrieve(url, filepath)
                 except Exception as e:
                     print(e)
                     print("Download of module " + name + " failed.")
@@ -303,8 +303,8 @@ def download_module(name, alt_name, git_repo, commit_sha):
                 filepath = alt_filepath
 
             # Unzip file
-            zipf = MyZipFile(filepath)
-            zipf.extractall(target_dir)
+            with MyZipFile(filepath) as zipf:
+                zipf.extractall(target_dir)
 
             # Remove directory if exists
             if os.path.exists(alt_name):
