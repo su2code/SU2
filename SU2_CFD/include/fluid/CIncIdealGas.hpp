@@ -58,6 +58,17 @@ class CIncIdealGas final : public CFluidModel {
     /*--- The EoS only depends upon temperature. ---*/
     Temperature = t;
     Density = Pressure / (Temperature * Gas_Constant);
+    Enthalpy = Cp * Temperature;
+  }
+
+  /*!
+   * \brief Set the Dimensionless State using Enthalpy.
+   * \param[in] val_enthalpy - Enthalpy value at the point.
+   */
+  void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override {
+    Enthalpy = val_enthalpy;
+    Temperature = Enthalpy / Cp;
+    Density = Pressure / (Temperature * Gas_Constant);
   }
 
  private:

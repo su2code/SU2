@@ -924,6 +924,7 @@ private:
   Initial_BCThrust,                /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Pressure_FreeStream,             /*!< \brief Total pressure of the fluid. */
   Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
+  Standard_Ref_Temperature,        /*!< \brief Standard reference temperature for multicomponent flows. */
   Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   unsigned short wallModel_MaxIter; /*!< \brief maximum number of iterations for the Newton method for the wall model */
@@ -1967,6 +1968,12 @@ public:
    * \return Thermodynamic pressure.
    */
   su2double GetPressure_Thermodynamic(void) const { return Pressure_Thermodynamic; }
+
+  /*!
+   * \brief Get the value of the standard reference temperature for multicomponent flows.
+   * \return Standard reference temperature, Non-dimensionalized if it is needed for Non-Dimensional problems.
+   */
+  su2double GetStandard_RefTemperatureND(void) const { return Standard_Ref_Temperature / Temperature_Ref; }
 
   /*!
    * \brief Get the value of the non-dimensionalized thermodynamic pressure.
