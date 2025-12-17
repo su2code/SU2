@@ -151,7 +151,6 @@ def calculate_adiabatic_flame_temperature(phi, T_in, c, tolerance=1e-3, max_iter
 
     # Initial guess for adiabatic flame temperature
     T_guess = 1800  # K
-    R = 8.314462618  # kJ/kmol-K
 
     for iteration in range(max_iterations):
         # Get coefficients for current temperature guess (products)
