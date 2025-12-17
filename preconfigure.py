@@ -76,7 +76,9 @@ def build_ninja():
             subprocess.run(
                 ["python3", "configure.py", "--bootstrap"], cwd=ninjapath, env=env
             )
-            shutil.copy(ninjapath + os.path.sep + "ninja", sys.path[0] + os.path.sep + "ninja")
+            shutil.copy(
+                ninjapath + os.path.sep + "ninja", sys.path[0] + os.path.sep + "ninja"
+            )
 
 
 def run(
