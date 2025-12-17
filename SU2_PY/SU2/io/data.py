@@ -359,7 +359,7 @@ def rec2dict(array_in):
         value = array_in[key].tolist()[0][0]
 
         # convert string
-        if isinstance(value[0], unicode):
+        if isinstance(value[0], str):
             value = str(value[0])
 
         # convert array
