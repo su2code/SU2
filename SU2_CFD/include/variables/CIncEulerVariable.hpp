@@ -78,14 +78,14 @@ public:
    * \brief Constructor of the class.
    * \param[in] val_pressure - value of the pressure.
    * \param[in] velocity - Value of the flow velocity (initialization value).
-   * \param[in] temperature - Value of the temperature (initialization value).
+   * \param[in] enthalpy - Value of the enthalpy (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
 
-  CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature,
+  CIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
@@ -125,7 +125,7 @@ public:
   }
 
   /*!
-   * \brief Set the value of the enthalpy for multicomponent incompressible flows with energy equation.
+   * \brief Set the value of the enthalpy for incompressible flows with energy equation.
    * \param[in] iPoint - Point index.
    */
   inline void SetEnthalpy(unsigned long iPoint, su2double val_enthalpy) {
