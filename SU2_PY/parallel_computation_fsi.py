@@ -64,7 +64,7 @@ def main():
     options.partitions = int(options.partitions)
     options.compute = options.compute.upper() == "TRUE"
 
-    if options.filename == None:
+    if options.filename is None:
         raise Exception("No config file provided. Use -f flag")
 
     parallel_computation(options.filename, options.partitions, options.compute)

@@ -212,17 +212,31 @@ class CFluidModel {
   /*!
    * \brief Get heat diffusivity terms.
    */
-  virtual void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions = nullptr) {}
-
-  /*!
-   * \brief Get heat diffusivity terms.
-   */
   virtual void GetMassCorrectionDiffusivity(su2double* massCorrection_diffusions = nullptr) {}
 
   /*!
-   * \brief Get gradient heat diffusivity terms.
+   * \brief Get the enthalpy diffusivity terms for all species being solved.
+   *
+   * This function computes and retrieves the enthalpy diffusion terms required in the energy equation
+   * for multicomponent flows.
+   *
+   * \param[in,out] enthalpy_diffusions - Array containing the enthalpy diffusion terms for all
+   * species to be solved. The size of \p enthalpy_diffusions must be at least (n_species_mixture - 1),
+   * corresponding to the number of species transport equations in the system.
    */
-  virtual void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions = nullptr) {}
+  virtual void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions = nullptr) const {}
+
+  /*!
+   * \brief Get the gradient of enthalpy diffusivity terms for all species being solved.
+   *
+   * This function computes and retrieves the gradient of the enthalpy diffusion terms with respect to temperature.
+   * These terms are required for implicit computations when solving the energy equation for multicomponent flows.
+   *
+   * \param[in,out] grad_enthalpy_diffusions - Array containing the gradient of enthalpy diffusion terms for all
+   * species to be solved. The size of \p grad_enthalpy_diffusions must be at least (n_species_mixture - 1),
+   * corresponding to the number of species transport equations in the system.
+   */
+  virtual void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions = nullptr) const {}
 
   /*!
    * \brief Get fluid pressure partial derivative.

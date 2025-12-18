@@ -89,26 +89,15 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0, ProjVelocity = 0.0;
-  su2double WorkingVariable_i, WorkingVariable_j;
 
   /*--- Primitive variables at point i and j ---*/
 
   Pressure_i    = V_i[0];             Pressure_j    = V_j[0];
   Temperature_i = V_i[nDim+1];        Temperature_j = V_j[nDim+1];
   DensityInc_i  = V_i[nDim+2];        DensityInc_j  = V_j[nDim+2];
-  BetaInc2_i    = V_i[nDim+3];        BetaInc2_j    = V_j[nDim+3];
-  Cp_i          = V_i[nDim+7];        Cp_j          = V_j[nDim+7];
-  if (energy_multicomponent) {
-    Enthalpy_i = V_i[nDim + 9];
-    Enthalpy_j = V_j[nDim + 9];
-    WorkingVariable_i = Enthalpy_i;
-    WorkingVariable_j = Enthalpy_j;
-  } else {
-    Enthalpy_i = Cp_i * Temperature_i;
-    Enthalpy_j = Cp_j * Temperature_j;
-    WorkingVariable_i = Temperature_i;
-    WorkingVariable_j = Temperature_j;
-  }
+  BetaInc2_i    = V_i[nDim+4];        BetaInc2_j    = V_j[nDim+4];
+  Cp_i          = V_i[nDim+8];        Cp_j          = V_j[nDim+8];
+  Enthalpy_i    = V_i[nDim+3];        Enthalpy_j    = V_j[nDim+3];
 
   Area = 0.0;
   sq_vel_i = 0.0; sq_vel_j = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
@@ -132,21 +121,14 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
   MeanEnthalpy    = 0.5*(Enthalpy_i    + Enthalpy_j);
   MeanCp          = 0.5*(Cp_i          + Cp_j);
   MeanTemperature = 0.5*(Temperature_i + Temperature_j);
-  MeanWorkingVar  = 0.5*(WorkingVariable_i + WorkingVariable_j);
 
   /*--- We need the derivative of the equation of state to build the
    preconditioning matrix. For now, the only option is the ideal gas
    law, but in the future, dRhodT should be in the fluid model. ---*/
 
-  MeandRhodT = 0.0;
+  MeandRhodh = 0.0;
   if (variable_density) {
-    MeandRhodT = -MeanDensity/MeanTemperature;
-  }
-  if (energy_multicomponent) {
-    MeandRhodT /= MeanCp ;
-    MeanCp = 1.0;
-    Cp_i = 1.0;
-    Cp_j = 1.0;
+    MeandRhodh = -MeanDensity/(MeanTemperature * MeanCp);
   }
 
   /*--- Get projected flux tensor ---*/
@@ -156,7 +138,7 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
   /*--- Jacobians of the inviscid flux ---*/
 
   if (implicit) {
-    GetInviscidIncProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanWorkingVar, &MeandRhodT, Normal, 0.5, Jacobian_i);
+    GetInviscidIncProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanEnthalpy, &MeandRhodh, Normal, 0.5, Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
         Jacobian_j[iVar][jVar] = Jacobian_i[iVar][jVar];
@@ -185,12 +167,10 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
       /*--- Jacobian contributions ---*/
       /*--- Implicit terms ---*/
       if (implicit) {
-        for (iDim = 0; iDim < nDim; iDim++){
+        for (iDim = 0; iDim < nDim+1; iDim++){
           Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
           Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
         }
-        Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
-        Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
       }
     }
   }
@@ -199,11 +179,11 @@ CNumerics::ResidualType<> CCentLaxInc_Flow::ComputeResidual(const CConfig* confi
 
   for (iVar = 0; iVar < nVar - 1; iVar++)
     Diff_V[iVar] = V_i[iVar]-V_j[iVar];
-  Diff_V[nVar - 1] = WorkingVariable_i - WorkingVariable_j;
+  Diff_V[nVar - 1] = Enthalpy_i - Enthalpy_j;
 
   /*--- Build the preconditioning matrix using mean values ---*/
 
-  GetPreconditioner(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanWorkingVar, &MeandRhodT, Precon);
+  GetPreconditioner(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanEnthalpy, &MeandRhodh, Precon);
 
   /*--- Compute the local espectral radius of the preconditioned system
    and the stretching factor. ---*/
@@ -331,26 +311,15 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0;
-  su2double WorkingVariable_i, WorkingVariable_j;
 
   /*--- Primitive variables at point i and j ---*/
 
   Pressure_i    = V_i[0];             Pressure_j    = V_j[0];
   Temperature_i = V_i[nDim+1];        Temperature_j = V_j[nDim+1];
   DensityInc_i  = V_i[nDim+2];        DensityInc_j  = V_j[nDim+2];
-  BetaInc2_i    = V_i[nDim+3];        BetaInc2_j    = V_j[nDim+3];
-  Cp_i          = V_i[nDim+7];        Cp_j          = V_j[nDim+7];
-  if (energy_multicomponent) {
-    Enthalpy_i = V_i[nDim + 9];
-    Enthalpy_j = V_j[nDim + 9];
-    WorkingVariable_i = Enthalpy_i;
-    WorkingVariable_j = Enthalpy_j;
-  } else {
-    Enthalpy_i = Cp_i * Temperature_i;
-    Enthalpy_j = Cp_j * Temperature_j;
-    WorkingVariable_i = Temperature_i;
-    WorkingVariable_j = Temperature_j;
-  }
+  BetaInc2_i    = V_i[nDim+4];        BetaInc2_j    = V_j[nDim+4];
+  Cp_i          = V_i[nDim+8];        Cp_j          = V_j[nDim+8];
+  Enthalpy_i    = V_i[nDim+3];        Enthalpy_j    = V_j[nDim+3];
 
   Area = 0.0;
   sq_vel_i = 0.0; sq_vel_j = 0.0; ProjVelocity_i = 0.0; ProjVelocity_j = 0.0;
@@ -372,7 +341,6 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
   MeanPressure    = 0.5*(Pressure_i    + Pressure_j);
   MeanBetaInc2    = 0.5*(BetaInc2_i    + BetaInc2_j);
   MeanEnthalpy    = 0.5*(Enthalpy_i    + Enthalpy_j);
-  MeanWorkingVar  = 0.5*(WorkingVariable_i + WorkingVariable_j);
   MeanCp          = 0.5*(Cp_i          + Cp_j);
   MeanTemperature = 0.5*(Temperature_i + Temperature_j);
 
@@ -380,15 +348,9 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
    preconditioning matrix. For now, the only option is the ideal gas
    law, but in the future, dRhodT should be in the fluid model. ---*/
 
-  MeandRhodT = 0.0;
+  MeandRhodh = 0.0;
   if (variable_density) {
-    MeandRhodT = -MeanDensity/MeanTemperature;
-  }
-  if (energy_multicomponent) {
-    MeandRhodT /= MeanCp ;
-    MeanCp = 1.0;
-    Cp_i = 1.0;
-    Cp_j = 1.0;
+    MeandRhodh = -MeanDensity/(MeanTemperature*MeanCp);
   }
 
   /*--- Get projected flux tensor ---*/
@@ -398,7 +360,7 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
   /*--- Jacobians of the inviscid flux ---*/
 
   if (implicit) {
-    GetInviscidIncProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanWorkingVar, &MeandRhodT, Normal, 0.5, Jacobian_i);
+    GetInviscidIncProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanEnthalpy, &MeandRhodh, Normal, 0.5, Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
         Jacobian_j[iVar][jVar] = Jacobian_i[iVar][jVar];
@@ -428,12 +390,10 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
       /*--- Jacobian contributions ---*/
       /*--- Implicit terms ---*/
       if (implicit) {
-        for (iDim = 0; iDim < nDim; iDim++){
+        for (iDim = 0; iDim < nDim+1; iDim++){
           Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
           Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
         }
-        Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
-        Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
       }
     }
   }
@@ -443,7 +403,7 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
   for (iVar = 0; iVar < nVar; iVar++) {
     Diff_Lapl[iVar] = Und_Lapl_i[iVar]-Und_Lapl_j[iVar];
     if (iVar == nVar - 1) {
-      Diff_V[iVar] = WorkingVariable_i - WorkingVariable_j;
+      Diff_V[iVar] = Enthalpy_i - Enthalpy_j;
     } else {
       Diff_V[iVar] = V_i[iVar] - V_j[iVar];
     }
@@ -452,7 +412,7 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
 
   /*--- Build the preconditioning matrix using mean values ---*/
 
-  GetPreconditioner(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanWorkingVar, &MeandRhodT, Precon);
+  GetPreconditioner(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanEnthalpy, &MeandRhodh, Precon);
 
   /*--- Compute the local spectral radius of the preconditioned system
    and the stretching factor. ---*/

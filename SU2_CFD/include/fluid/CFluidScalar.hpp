@@ -40,11 +40,12 @@
 class CFluidScalar final : public CFluidModel {
  private:
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
-  su2double Gas_Constant;           /*!< \brief Specific gas constant. */
+  su2double Gas_Constant;                 /*!< \brief Specific gas constant. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
-  const su2double Ref_Temperature;        /*!< \brief Reference temperature. */
+  const su2double Ref_Temperature;        /*!< \brief Standard Reference temperature, usually set to 298.15 K. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
-  const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
+  const su2double Prandtl_Turb_Number;    /*!< \brief Prandlt turbulent number.*/
+  const su2double Schmidt_Turb_Number;    /*!< \brief Schmidt turbulent number.*/
 
   const bool wilke;
   const bool davidson;
@@ -136,7 +137,7 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Get fluid thermal conductivity.
    */
-  inline su2double GetThermalConductivity() override { return Kt + Mu_Turb * Cp / Prandtl_Number; }
+  inline su2double GetThermalConductivity() override { return Kt + Mu_Turb * Cp / Prandtl_Turb_Number; }
 
   /*!
    * \brief Get fluid mass diffusivity.
@@ -144,19 +145,33 @@ class CFluidScalar final : public CFluidModel {
   inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
 
   /*!
-   * \brief Get enthalpy diffusivity terms.
+   * \brief Get the enthalpy diffusivity terms for all species being solved.
+   *
+   * This function computes and retrieves the enthalpy diffusion terms required in the energy equation
+   * for multicomponent flows.
+   *
+   * \param[in,out] enthalpy_diffusions - Array containing the enthalpy diffusion terms for all
+   * species to be solved. The size of \p enthalpy_diffusions must be at least (n_species_mixture - 1),
+   * corresponding to the number of species transport equations in the system.
    */
-  void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) override;
+  void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const override;
+
+  /*!
+   * \brief Get the gradient of enthalpy diffusivity terms for all species being solved.
+   *
+   * This function computes and retrieves the gradient of the enthalpy diffusion terms with respect to temperature.
+   * These terms are required for implicit computations when solving the energy equation for multicomponent flows.
+   *
+   * \param[in,out] grad_enthalpy_diffusions - Array containing the gradient of enthalpy diffusion terms for all
+   * species to be solved. The size of \p grad_enthalpy_diffusions must be at least (n_species_mixture - 1),
+   * corresponding to the number of species transport equations in the system.
+   */
+  void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) const override;
 
   /*!
    * \brief Get enthalpy diffusivity terms.
    */
   void GetMassCorrectionDiffusivity(su2double* massCorrection_diffusions) override;
-
-  /*!
-   * \brief Get gradient enthalpy diffusivity terms.
-   */
-  void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) override;
 
   /*!
    * \brief Set the Dimensionless State using Temperature.

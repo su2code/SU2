@@ -78,7 +78,7 @@ void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
   sol->thermo()->setState_TP(T_ref, Pressure_Thermodynamic);
   // The universal gas constant times temperature is retrieved from cantera.
   const su2double uni_gas_constant_temp = sol->thermo()->RT();
-  sol->thermo()->getEnthalpy_RT_ref(&enthalpiesSpecies[0]);
+  sol->thermo()->getEnthalpy_RT_ref(enthalpiesSpecies.data());
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
     enthalpyFormation[iVar] = uni_gas_constant_temp * enthalpiesSpecies[speciesIndex] / molarMasses[speciesIndex];
@@ -116,10 +116,10 @@ void CFluidCantera::ComputeHeatRelease() {
   }
 }
 
-void CFluidCantera::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) {
+void CFluidCantera::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const {
   // The universal gas constant times temperature is retrieved from cantera.
   const su2double uni_gas_constant_temp = sol->thermo()->RT();
-  sol->thermo()->getEnthalpy_RT_ref(&enthalpiesSpecies[0]);
+  sol->thermo()->getEnthalpy_RT_ref(enthalpiesSpecies.data());
   const int speciesN = sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
@@ -135,10 +135,10 @@ void CFluidCantera::GetMassCorrectionDiffusivity(su2double* massCorrection_diffu
   }
 }
 
-void CFluidCantera::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) {
+void CFluidCantera::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) const {
   // The universal gas constant is retrieved from cantera,in order to keep consistency with the values retrieve from it.
   const su2double universal_gas_constant = (sol->thermo()->RT()) / Temperature;
-  sol->thermo()->getCp_R_ref(&specificHeatSpecies[0]);
+  sol->thermo()->getCp_R_ref(specificHeatSpecies.data());
   const int speciesN = sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);

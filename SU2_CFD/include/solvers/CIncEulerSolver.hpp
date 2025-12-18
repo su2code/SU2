@@ -210,8 +210,8 @@ public:
    *       thread-safe manner.
    * \param[in,out] fluidModel - The fluid model.
    * \param[in] nDim - Number of physical dimensions.
-   * \param[in,out] primitive - Primitive variables.
    * \param[in] scalar - scalar variable.
+   * \param[in,out] primitive - Primitive variables.
    */
   static void ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim, const su2double* scalar,
                                              su2double* primitive);

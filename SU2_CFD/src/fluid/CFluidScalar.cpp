@@ -47,7 +47,8 @@ CFluidScalar::CFluidScalar(su2double value_pressure_operating, const CConfig* co
       Pressure_Thermodynamic(value_pressure_operating),
       Ref_Temperature(config->GetStandard_RefTemperatureND()),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
-      Prandtl_Number(config->GetPrandtl_Turb()),
+      Prandtl_Turb_Number(config->GetPrandtl_Turb()),
+      Schmidt_Turb_Number(config->GetSchmidt_Number_Turbulent()),
       wilke(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::WILKE),
       davidson(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::DAVIDSON) {
   if (n_species_mixture > ARRAYSIZE) {
@@ -222,26 +223,29 @@ su2double CFluidScalar::ComputeEnthalpyFromT(const su2double val_temperature, co
   return val_Enthalpy;
 }
 
-void CFluidScalar::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) {
+void CFluidScalar::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const {
   const su2double enthalpy_species_N = specificHeat[n_species_mixture - 1] * (Temperature - Ref_Temperature);
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     const su2double enthalpy_species_i = specificHeat[iVar] * (Temperature - Ref_Temperature);
     enthalpy_diffusions[iVar] = Density * (enthalpy_species_i * massDiffusivity[iVar] -
                                            enthalpy_species_N * massDiffusivity[n_species_mixture - 1]);
+    enthalpy_diffusions[iVar] += Mu_Turb * (enthalpy_species_i - enthalpy_species_N) / Schmidt_Turb_Number;
+  }
+}
+
+void CFluidScalar::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) const {
+  for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
+    grad_enthalpy_diffusions[iVar] = Density *
+                               (specificHeat[iVar] * massDiffusivity[iVar] -
+                                specificHeat[n_species_mixture - 1] * massDiffusivity[n_species_mixture - 1]);
+    grad_enthalpy_diffusions[iVar] +=
+        Mu_Turb * (specificHeat[iVar] - specificHeat[n_species_mixture - 1]) / Schmidt_Turb_Number;
   }
 }
 
 void CFluidScalar::GetMassCorrectionDiffusivity(su2double* massCorrection_diffusions) {
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     massCorrection_diffusions[iVar] = Density * (massDiffusivity[iVar] - massDiffusivity[n_species_mixture - 1]);
-  }
-}
-
-void CFluidScalar::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions){
-  for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
-    grad_enthalpy_diffusions[iVar] = Density *
-                               (specificHeat[iVar] * massDiffusivity[iVar] -
-                                specificHeat[n_species_mixture - 1] * massDiffusivity[n_species_mixture - 1]);
   }
 }
 
@@ -273,7 +277,7 @@ void CFluidScalar::SetTDState_h(const su2double val_enthalpy, const su2double* v
    * depend on temperature, but it does depend on mixture composition, temperature is directly solved from the
    * expression h_s = Cp(T - T_ref).
    */
-  Temperature = Enthalpy / Cp + Ref_Temperature;
+  Temperature = val_enthalpy / Cp + Ref_Temperature;
   Density = Pressure_Thermodynamic / (Temperature * Gas_Constant);
   Cv = Cp - Gas_Constant;
 

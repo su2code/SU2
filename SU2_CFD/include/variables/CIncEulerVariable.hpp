@@ -33,8 +33,8 @@
 /*!
  * \class CIncEulerVariable
  * \brief Class for defining the variables of the incompressible Euler solver.
- * \note Primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv)
- * \note Gradients of primitives (P, vx, vy, vz, T, rho, beta)
+ * \note Primitive variables (P, vx, vy, vz, T, rho, h, beta, lamMu, EddyMu, Kt_eff, Cp, Cv)
+ * \note Gradients of primitives (P, vx, vy, vz, T, rho, h)
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon, T. Albring
  */
@@ -52,14 +52,14 @@ public:
     inline IndexType Velocity() const { return 1; }
     inline IndexType Temperature() const { return nDim+1; }
     inline IndexType Density() const { return nDim+2; }
-    inline IndexType Beta() const { return nDim+3; }
+    inline IndexType Enthalpy() const { return nDim+3; }
+    inline IndexType Beta() const { return nDim+4; }
     inline IndexType SoundSpeed() const { return Beta(); }
-    inline IndexType LaminarViscosity() const { return nDim+4; }
-    inline IndexType EddyViscosity() const { return nDim+5; }
-    inline IndexType ThermalConductivity() const { return nDim+6; }
-    inline IndexType CpTotal() const { return nDim+7; }
-    inline IndexType CvTotal() const { return nDim+8; }
-    inline IndexType Enthalpy() const { return nDim + 9; }
+    inline IndexType LaminarViscosity() const { return nDim+5; }
+    inline IndexType EddyViscosity() const { return nDim+6; }
+    inline IndexType ThermalConductivity() const { return nDim+7; }
+    inline IndexType CpTotal() const { return nDim+8; }
+    inline IndexType CvTotal() const { return nDim+9; }
 
     /*--- For compatible interface with NEMO. ---*/
     inline IndexType SpeciesDensities() const { return std::numeric_limits<IndexType>::max(); }
@@ -72,6 +72,7 @@ public:
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
   su2double TemperatureLimits[2];                      /*!< \brief Temperature limits [K]. */
+  su2double TemperatureInc = 0.0;                      /*!< \brief Temperature [K] imposed when energy equation is switch off. */
  public:
   /*!
    * \brief Constructor of the class.

@@ -981,7 +981,7 @@ class CFVMFlowSolverBase : public CSolver {
    */
   template<bool compute_ur>
   void CompleteImplicitIteration_impl(CGeometry *geometry, CConfig *config) {
-    
+
     if (compute_ur) ComputeUnderRelaxationFactor(config);
 
     /*--- Update solution with under-relaxation and communicate it. ---*/

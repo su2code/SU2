@@ -66,8 +66,8 @@ class CFluidCantera final : public CFluidModel {
   std::array<su2double, ARRAYSIZE> enthalpyFormation;  /*!< \brief Enthalpy of Formation of all species. */
   std::array<su2double, ARRAYSIZE> massFractions;      /*!< \brief Mass fractions of all species. */
   std::array<su2double, ARRAYSIZE> massDiffusivity;    /*!< \brief mass diffusivity of all species. */
-  vector<su2double> enthalpiesSpecies;                 /*!< \brief Molar enthalpies of all species. */
-  vector<su2double> specificHeatSpecies;               /*!< \brief Molar heat capacities of all species. */
+  mutable vector<su2double> enthalpiesSpecies;                 /*!< \brief Molar enthalpies of all species. */
+  mutable vector<su2double> specificHeatSpecies;               /*!< \brief Molar heat capacities of all species. */
 
   /*!
    * \brief Compute mass diffusivity for species.
@@ -128,7 +128,7 @@ class CFluidCantera final : public CFluidModel {
   /*!
    * \brief Get enthalpy diffusivity terms.
    */
-  void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) override;
+  void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const override;
 
   /*!
    * \brief Get enthalpy diffusivity terms.
@@ -138,7 +138,7 @@ class CFluidCantera final : public CFluidModel {
   /*!
    * \brief Get gradient enthalpy diffusivity terms.
    */
-  void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) override;
+  void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) const override;
 
   /*!
    * \brief Set the Dimensionless State using Temperature.

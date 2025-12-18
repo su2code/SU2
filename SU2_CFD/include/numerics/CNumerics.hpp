@@ -1078,8 +1078,7 @@ public:
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Pointer to the velocity.
    * \param[in] val_betainc2 - Value of the artificial compresibility factor.
-   * \param[in] val_cp - Value of the specific heat at constant pressure.
-   * \param[in] val_temperature - Value of the temperature.
+   * \param[in] val_enthalpy - Value of the enthalpy.
    * \param[in] val_dRhodT - Value of the derivative of density w.r.t. temperature.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_scale - Scale of the projection.
@@ -1088,8 +1087,7 @@ public:
   void GetInviscidIncProjJac(const su2double *val_density,
                              const su2double *val_velocity,
                              const su2double *val_betainc2,
-                             const su2double *val_cp,
-                             const su2double *val_temperature,
+                             const su2double *val_enthalpy,
                              const su2double *val_dRhodT,
                              const su2double *val_normal,
                              su2double val_scale,
@@ -1100,17 +1098,15 @@ public:
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Pointer to the velocity.
    * \param[in] val_betainc2 - Value of the artificial compresibility factor.
-   * \param[in] val_cp - Value of the specific heat at constant pressure.
-   * \param[in] val_temperature - Value of the temperature.
-   * \param[in] val_dRhodT - Value of the derivative of density w.r.t. temperature.
+   * \param[in] val_enthalpy - Value of the enthalpy.
+   * \param[in] val_dRhodh - Value of the derivative of density w.r.t. enthalpy.
    * \param[out] val_Precon - Pointer to the preconditioning matrix.
    */
   void GetPreconditioner(const su2double *val_density,
                          const su2double *val_velocity,
                          const su2double *val_betainc2,
-                         const su2double *val_cp,
-                         const su2double *val_temperature,
-                         const su2double *val_drhodt,
+                         const su2double *val_enthalpy,
+                         const su2double *val_drhodh,
                          su2double **val_Precon) const;
 
   /*!

@@ -49,9 +49,9 @@ private:
   su2double **Precon, **invPrecon_A;
   su2double Proj_ModJac_Tensor_ij, Pressure_i,
   Pressure_j, ProjVelocity,
-  MeandRhodT, dRhodT_i, dRhodT_j, /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
+  MeandRhodh, dRhodh_i, dRhodh_j, /*!< \brief Derivative of density w.r.t. enthalpy (variable density flows). */
   Temperature_i, Temperature_j,   /*!< \brief Temperature at node 0 and 1. */
-  MeanDensity, MeanPressure, MeanSoundSpeed, MeanBetaInc2, MeanWorkingVar, MeanCp, MeanTemperature; /*!< \brief Mean values of primitive variables. */
+  MeanDensity, MeanPressure, MeanSoundSpeed, MeanBetaInc2, MeanEnthalpy, MeanCp, MeanTemperature; /*!< \brief Mean values of primitive variables. */
   unsigned short iDim, iVar, jVar, kVar;
 
   su2double* Flux = nullptr;        /*!< \brief The flux / residual across the edge. */

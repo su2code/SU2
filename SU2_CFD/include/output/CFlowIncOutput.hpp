@@ -40,7 +40,6 @@ class CFlowIncOutput final: public CFlowOutput {
 private:
   TURB_MODEL turb_model;     /*!< \brief The kind of turbulence model*/
   bool heat;                 /*!< \brief Boolean indicating whether have a heat problem*/
-  bool multicomponent;       /*!< \brief Boolean indicating whether have a multicomponent problem*/
   bool weakly_coupled_heat;  /*!< \brief Boolean indicating whether have a weakly coupled heat equation*/
   bool flamelet;  /*!< \brief Boolean indicating whether we solve the flamelet equations */
   unsigned short streamwisePeriodic;   /*!< \brief Boolean indicating whether it is a streamwise periodic simulation. */

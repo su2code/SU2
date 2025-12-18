@@ -148,6 +148,12 @@ history_header_map = {
         "HEADER": "bgs[A_T]",
         "TYPE": "RESIDUAL",
     },
+    "BGS_ADJ_ENTHALPY": {
+        "DESCRIPTION": "BGS residual of the adjoint " "enthalpy.",
+        "GROUP": "BGS_RES",
+        "HEADER": "bgs[A_h]",
+        "TYPE": "RESIDUAL",
+    },
     "BGS_ADJ_TKE": {
         "DESCRIPTION": "BGS residual of the adjoint kinetic energy.",
         "GROUP": "BGS_RES",

@@ -259,16 +259,11 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
 
     /*--- Set primitive variables at points iPoint. ---*/
 
-    const su2double Temp_i = V_i[nDim+1];
     Pressure_i    = V_i[0];
     DensityInc_i  = V_i[nDim+2];
-    BetaInc2_i    = V_i[nDim+3];
-    Cp_i          = V_i[nDim+7];
-    if (multicomponent && energy) {
-      Enthalpy_i = V_i[nDim + 9];
-    } else {
-      Enthalpy_i = Cp_i * Temp_i;
-    }
+    BetaInc2_i    = V_i[nDim+4];
+    Cp_i          = V_i[nDim+8];
+    Enthalpy_i    = V_i[nDim+3];
 
     for (iDim = 0; iDim < nDim; iDim++)
       Velocity_i[iDim] = V_i[iDim+1];
@@ -300,11 +295,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       jacobian[3][0] = 0.0;
       jacobian[3][1] = 0.0;
       jacobian[3][2] = Enthalpy_i;
-      if (multicomponent && energy) {
-        jacobian[3][3] = (1.0 - Enthalpy_i / (Cp_i * Temp_i)) * Velocity_i[1];
-      } else {
-        jacobian[3][3] = Cp_i * Velocity_i[1];
-      }
+      jacobian[3][3] = Velocity_i[1];
 
       for (iVar=0; iVar < nVar; iVar++)
         for (jVar=0; jVar < nVar; jVar++)
@@ -316,9 +307,9 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
 
     if (viscous) {
 
-      Laminar_Viscosity_i    = V_i[nDim+4];
-      Eddy_Viscosity_i       = V_i[nDim+5];
-      Thermal_Conductivity_i = V_i[nDim+6];
+      Laminar_Viscosity_i    = V_i[nDim+5];
+      Eddy_Viscosity_i       = V_i[nDim+6];
+      Thermal_Conductivity_i = V_i[nDim+7];
 
       su2double total_viscosity;
 
@@ -832,8 +823,7 @@ CNumerics::ResidualType<> CSourceRadiation::ComputeResidual(const CConfig *confi
 
     /*--- Jacobian is set to zero on initialization. ---*/
 
-    jacobian[nDim+1][nDim+1] = -RadVar_Source[1]*Volume;
-
+    jacobian[nDim + 1][nDim + 1] = -RadVar_Source[1] * Volume / Cp_i;
   }
 
   return ResidualType<>(residual, jacobian, nullptr);
