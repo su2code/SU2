@@ -2799,7 +2799,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double U_time_nM1[MAXNVAR], U_time_n[MAXNVAR], U_time_nP1[MAXNVAR];
   su2double Volume_nM1, Volume_nP1, TimeStep;
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
-  su2double Density, Density_time_n, Density_time_nM1, Density_unsteady;
+  su2double Density, Density_time_n, Density_time_nM1;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
