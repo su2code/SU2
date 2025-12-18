@@ -307,8 +307,8 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange, const
       SU2_MPI::Error("Y+ greater than one: Increase the number of points or growth ratio.", CURRENT_FUNCTION);
 
     /* Define a norm */
-    bool tau_converged = abs(1.0 - tauWall / fmax(tauWall_prev, EPS)) < tol;
-    bool q_converged = abs(1.0 - qWall / fmax(qWall_prev, EPS)) < tol;
+    bool tau_converged = abs(tauWall - tauWall_prev) < fmax(tol * abs(tauWall), EPS);
+    bool q_converged = abs(qWall - qWall_prev) < fmax(tol * abs(qWall), EPS);
 
     if (tau_converged && q_converged) {
       converged = true;
