@@ -2978,6 +2978,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Access the density at this node (constant for now). ---*/
 
       Density = nodes->GetDensity(iPoint);
+      Density_time_nM1 = nodes->GetDensity_time_n1(iPoint);
+      Density_time_n = nodes->GetDensity_time_n(iPoint);
 
       /*--- Compute the conservative variable vector for all time levels. ---*/
 
