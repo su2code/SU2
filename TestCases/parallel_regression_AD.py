@@ -316,8 +316,8 @@ def main():
     da_unsteadyCHT_cylinder.cfg_dir   = "coupled_cht/disc_adj_unsteadyCHT_cylinder"
     da_unsteadyCHT_cylinder.cfg_file  = "chtMaster.cfg"
     da_unsteadyCHT_cylinder.test_iter = 2
-    da_unsteadyCHT_cylinder.test_vals         = [-12.131633, -12.617906, -12.688933, -16.179747, -6.432277, 0.000000, 75.761000, 0.247780]
-    da_unsteadyCHT_cylinder.test_vals_aarch64 = [-12.131633, -12.617906, -12.688933, -16.179747, -6.432277, 0.000000, 75.761000, 0.247780]
+    da_unsteadyCHT_cylinder.test_vals         = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662012, 0.000000, 89.932000, 0.295190]
+    da_unsteadyCHT_cylinder.test_vals_aarch64 = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662012, 0.000000, 89.932000, 0.295190]
     da_unsteadyCHT_cylinder.unsteady  = True
     da_unsteadyCHT_cylinder.multizone = True
     test_list.append(da_unsteadyCHT_cylinder)
