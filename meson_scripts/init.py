@@ -289,7 +289,7 @@ def download_module(name, alt_name, git_repo, commit_sha):
 
             if not os.path.exists(filepath) and not os.path.exists(alt_filepath):
                 try:
-                    urllib.request.urlretrieve(url, filepath)
+                    urllib.request.urlretrieve(url, filename)
                 except Exception as e:
                     print(e)
                     print("Download of module " + name + " failed.")

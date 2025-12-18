@@ -77,7 +77,8 @@ def build_ninja():
                 ["python3", "configure.py", "--bootstrap"], cwd=ninjapath, env=env
             )
             shutil.copy(
-                ninjapath + os.path.sep + "ninja", sys.path[0] + os.path.sep + "ninja"
+                os.path.join(ninjapath, "ninja"),
+                os.path.join(sys.path[0], "ninja"),
             )
 
 
