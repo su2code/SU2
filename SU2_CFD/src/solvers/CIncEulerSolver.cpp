@@ -2985,7 +2985,9 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
       V2U(Density, V_time_nM1, U_time_nM1);
       V2U(Density, V_time_n, U_time_n);
-      V2U(Density, V_time_nP1, U_time_nP1);
+V2U(Density_time_nM1, V_time_nM1, U_time_nM1);
+V2U(Density_time_n, V_time_n, U_time_n);
+V2U(Density, V_time_nP1, U_time_nP1);
 
       /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
        grids, the volumes will change. On rigidly transforming grids, the
