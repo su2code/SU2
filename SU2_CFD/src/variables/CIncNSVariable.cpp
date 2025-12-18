@@ -126,6 +126,9 @@ Density_unsteady[iPoint] = FluidModel->GetDensity();
 
   SetSpecificHeatCp(iPoint, FluidModel->GetCp());
   SetSpecificHeatCv(iPoint, FluidModel->GetCv());
+
+  /*--- Set enthalpy ---*/
+
   SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
 
   return physical;
