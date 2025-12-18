@@ -2853,18 +2853,17 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double U_time_nM1[MAXNVAR], U_time_n[MAXNVAR], U_time_nP1[MAXNVAR];
   su2double Volume_nM1, Volume_nP1, TimeStep;
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
-  su2double Density, Cp;
+  su2double Density;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool energy = config->GetEnergy_Equation();
 
-  const int ndim = nDim;
-  auto V2U = [ndim](su2double Density, su2double Cp, const su2double* V, su2double* U) {
+  const int nvar = nVar;
+  auto V2U = [nvar](su2double Density, const su2double* V, su2double* U) {
     U[0] = Density;
-    for (int iDim = 0; iDim < ndim; iDim++) U[iDim+1] = Density*V[iDim+1];
-    U[ndim+1] = Density*Cp*V[ndim+1];
+    for (int iVar = 1; iVar < nvar; ++iVar) U[iVar] = Density * V[iVar];
   };
 
   /*--- Store the physical time step ---*/
@@ -2891,16 +2890,15 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       V_time_n   = nodes->GetSolution_time_n(iPoint);
       V_time_nP1 = nodes->GetSolution(iPoint);
 
-      /*--- Access the density and Cp at this node (constant for now). ---*/
+      /*--- Access the density at this node (constant for now). ---*/
 
       Density = nodes->GetDensity(iPoint);
-      Cp = nodes->GetSpecificHeatCp(iPoint);
 
       /*--- Compute the conservative variable vector for all time levels. ---*/
 
-      V2U(Density, Cp, V_time_nM1, U_time_nM1);
-      V2U(Density, Cp, V_time_n, U_time_n);
-      V2U(Density, Cp, V_time_nP1, U_time_nP1);
+      V2U(Density, V_time_nM1, U_time_nM1);
+      V2U(Density, V_time_n, U_time_n);
+      V2U(Density, V_time_nP1, U_time_nP1);
 
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
        of the CV will remained fixed for all time steps. ---*/
@@ -2921,13 +2919,9 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
 
       if (implicit) {
-        su2double delta = (second_order? 1.5 : 1.0) * Volume_nP1 * Density / TimeStep;
+        su2double delta = (second_order ? 1.5 : 1.0) * Volume_nP1 * Density / TimeStep;
 
-        for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
-
-        if (energy) delta *= Cp;
-        Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
+        for (iVar = 1; iVar < nVar; ++iVar) Jacobian.AddVal2Diag(iPoint, iVar, delta);
       }
     }
     END_SU2_OMP_FOR
@@ -2952,8 +2946,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
       V_time_n = nodes->GetSolution_time_n(iPoint);
       Density = nodes->GetDensity(iPoint);
-      Cp = nodes->GetSpecificHeatCp(iPoint);
-      V2U(Density, Cp, V_time_n, U_time_n);
+      V2U(Density, V_time_n, U_time_n);
 
       GridVel_i = geometry->nodes->GetGridVel(iPoint);
 
@@ -3008,8 +3001,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
           V_time_n = nodes->GetSolution_time_n(iPoint);
           Density = nodes->GetDensity(iPoint);
-          Cp = nodes->GetSpecificHeatCp(iPoint);
-          V2U(Density, Cp, V_time_n, U_time_n);
+          V2U(Density, V_time_n, U_time_n);
 
           for (iVar = 0; iVar < nVar-!energy; iVar++)
             LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
@@ -3035,16 +3027,15 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       V_time_n   = nodes->GetSolution_time_n(iPoint);
       V_time_nP1 = nodes->GetSolution(iPoint);
 
-      /*--- Access the density and Cp at this node (constant for now). ---*/
+      /*--- Access the density at this node (constant for now). ---*/
 
       Density = nodes->GetDensity(iPoint);
-      Cp = nodes->GetSpecificHeatCp(iPoint);
 
       /*--- Compute the conservative variable vector for all time levels. ---*/
 
-      V2U(Density, Cp, V_time_nM1, U_time_nM1);
-      V2U(Density, Cp, V_time_n, U_time_n);
-      V2U(Density, Cp, V_time_nP1, U_time_nP1);
+      V2U(Density, V_time_nM1, U_time_nM1);
+      V2U(Density, V_time_n, U_time_n);
+      V2U(Density, V_time_nP1, U_time_nP1);
 
       /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
        grids, the volumes will change. On rigidly transforming grids, the
@@ -3070,11 +3061,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       if (implicit) {
         su2double delta = (second_order? 1.5 : 1.0) * Volume_nP1 * Density / TimeStep;
 
-        for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian.AddVal2Diag(iPoint, iDim+1, delta);
-
-        if (energy) delta *= Cp;
-        Jacobian.AddVal2Diag(iPoint, nDim+1, delta);
+        for (iVar = 1; iVar < nVar; ++iVar)
+          Jacobian.AddVal2Diag(iPoint, iVar, delta);
       }
     }
     END_SU2_OMP_FOR
