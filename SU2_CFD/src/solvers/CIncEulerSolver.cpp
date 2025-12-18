@@ -2894,7 +2894,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
       V_time_n = nodes->GetSolution_time_n(iPoint);
       Density = nodes->GetDensity(iPoint);
-      V2U(Density, V_time_n, U_time_n);
+Density_time_n = nodes->GetDensity_time_n(iPoint);
+V2U(Density_time_n, V_time_n, U_time_n);
 
       GridVel_i = geometry->nodes->GetGridVel(iPoint);
 
