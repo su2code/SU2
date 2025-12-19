@@ -1229,6 +1229,9 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
   /*!\brief THERMODYNAMIC_PRESSURE  \n DESCRIPTION: Thermodynamics(operating) Pressure (101325 Pa), only for incompressible flows) \ingroup Config*/
   addDoubleOption("THERMODYNAMIC_PRESSURE", Pressure_Thermodynamic, 101325.0);
+  /*!\brief STANDARD_REFERENCE_TEMPERATURE  \n DESCRIPTION: Standard reference temperature (298.15K), only for
+   * multicomponent incompressible flows) \ingroup Config*/
+  addDoubleOption("STANDARD_REFERENCE_TEMPERATURE", Standard_Ref_Temperature, 298.15);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant pressure, Cp (1004.703 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
   addDoubleListOption("SPECIFIC_HEAT_CP", nSpecific_Heat_Cp, Specific_Heat_Cp);
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
@@ -6192,8 +6195,8 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
     }
   }
 
-  /*--- Idenftification fo Giles Markers ---*/
-  // This is seperate from MP and Turbomachinery Markers as all mixing plane markers are Giles,
+  /*--- Identification of Giles Markers ---*/
+  // This is separate from MP and Turbomachinery Markers as all mixing plane markers are Giles,
   // but not all Giles markers are mixing plane
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_Giles[iMarker_CfgFile] = NO;
@@ -10017,8 +10020,8 @@ void CConfig::SetProfilingCSV() {
 
   /*--- Allocate and initialize memory ---*/
 
-  double *l_min_red = NULL, *l_max_red = NULL, *l_tot_red = NULL, *l_avg_red = NULL;
-  int *n_calls_red = NULL;
+  double *l_min_red = nullptr, *l_max_red = nullptr, *l_tot_red = nullptr, *l_avg_red = nullptr;
+  int *n_calls_red = nullptr;
   double* l_min = new double[map_size];
   double* l_max = new double[map_size];
   double* l_tot = new double[map_size];
