@@ -1668,7 +1668,7 @@ def main():
     species3_primitiveVenturi_fluxvalue.cfg_file  = "species3_primitiveVenturi_flux_value.cfg"
     species3_primitiveVenturi_fluxvalue.test_iter = 50
     species3_primitiveVenturi_fluxvalue.test_vals = [-5.537438, -4.503863, -4.553632, -5.400874, -0.945967, -5.818774, -5.945211, 5.000000, -0.544749, 5.000000, -2.599435, 5.000000, -0.596360]
-    test_list.append(species3_primitiveVenturi_inletFile)
+    test_list.append(species3_primitiveVenturi_fluxvalue)
 
     # rectangle passive transport validation
     species_passive_val           = TestCase('species_passive_val')
