@@ -85,7 +85,13 @@ class CFluidCantera final : public CFluidModel {
    * \brief Set enthalpies of formation.
    */
   void SetEnthalpyFormation(const CConfig* config);
-  #endif
+
+  /*!
+   * \brief Set species mass fraction array for Cantera.
+   * \param[in] val_scalars - Scalar mass fractions.
+   */
+  void SetMassFractions(const su2double* val_scalars);
+#endif
 
  public:
   /*!
