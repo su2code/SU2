@@ -1059,7 +1059,7 @@ public:
    * \param[in] val_velocity - Pointer to the velocity.
    * \param[in] val_betainc2 - Value of the artificial compresibility factor.
    * \param[in] val_enthalpy - Value of the enthalpy.
-   * \param[in] val_dRhodT - Value of the derivative of density w.r.t. temperature.
+   * \param[in] val_dRhodh - Value of the derivative of density w.r.t. enthalpy.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
@@ -1068,7 +1068,7 @@ public:
                              const su2double *val_velocity,
                              const su2double *val_betainc2,
                              const su2double *val_enthalpy,
-                             const su2double *val_dRhodT,
+                             const su2double *val_dRhodh,
                              const su2double *val_normal,
                              su2double val_scale,
                              su2double **val_Proj_Jac_Tensor) const;
