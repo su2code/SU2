@@ -46,10 +46,12 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
       n_species_mixture(config->GetnSpecies() + 1),
       Pressure_Thermodynamic(value_pressure_operating),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
-      Prandtl_Number(config->GetPrandtl_Turb()),
+      Prandtl_Turb_Number(config->GetPrandtl_Turb()),
+      Schmidt_Turb_Number(config->GetSchmidt_Number_Turbulent()),
       Transport_Model(config->GetTransport_Model()),
       Chemical_MechanismFile(config->GetChemical_MechanismFile()),
-      Phase_Name(config->GetPhase_Name()){
+      Phase_Name(config->GetPhase_Name()),
+      Combustion(config->GetCombustion()) {
   if (n_species_mixture > ARRAYSIZE) {
     SU2_MPI::Error("Too many species, increase ARRAYSIZE", CURRENT_FUNCTION);
   }
@@ -60,7 +62,7 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
   }
   enthalpiesSpecies.resize(sol->thermo()->nSpecies());
   specificHeatSpecies.resize(sol->thermo()->nSpecies());
-  SetEnthalpyFormation(config);
+  if (Combustion) SetEnthalpyFormation(config);
 }
 
 void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
@@ -72,7 +74,7 @@ void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
     massFractions[speciesIndex] =config->GetSpecies_Init()[i_scalar];
     val_scalars_sum += config->GetSpecies_Init()[i_scalar];
   }
-  massFractions[n_species_mixture - 1] = 1.0 - val_scalars_sum;
+  massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1.0 - val_scalars_sum;
   sol->thermo()->setMassFractions(massFractions.data());
   su2double T_ref = 298.15;
   sol->thermo()->setState_TP(T_ref, Pressure_Thermodynamic);
@@ -123,9 +125,15 @@ void CFluidCantera::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const
   const int speciesN = sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
-    enthalpy_diffusions[iVar] = Density * uni_gas_constant_temp *
-                                ((enthalpiesSpecies[speciesIndex] * massDiffusivity[iVar] / molarMasses[speciesIndex]) -
-                                 (enthalpiesSpecies[speciesN] * massDiffusivity[n_species_mixture - 1] / molarMasses[speciesN]));
+    enthalpy_diffusions[iVar] =
+        Density * uni_gas_constant_temp *
+        ((enthalpiesSpecies[speciesIndex] * massDiffusivity[iVar] / molarMasses[speciesIndex]) -
+         (enthalpiesSpecies[speciesN] * massDiffusivity[n_species_mixture - 1] / molarMasses[speciesN]));
+    enthalpy_diffusions[iVar] +=
+        Mu_Turb * uni_gas_constant_temp *
+        ((enthalpiesSpecies[speciesIndex] / molarMasses[speciesIndex]) -
+         (enthalpiesSpecies[speciesN] * massDiffusivity[n_species_mixture - 1] / molarMasses[speciesN])) /
+        Schmidt_Turb_Number;
   }
 }
 
@@ -142,9 +150,15 @@ void CFluidCantera::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusio
   const int speciesN = sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1]);
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     int speciesIndex = sol->thermo()->speciesIndex(gasComposition[iVar]);
-    grad_enthalpy_diffusions[iVar] = Density * universal_gas_constant *
-                               ((specificHeatSpecies[speciesIndex] * massDiffusivity[iVar] / molarMasses[speciesIndex]) -
-                                (specificHeatSpecies[speciesN] * massDiffusivity[n_species_mixture - 1] / molarMasses[speciesN]));
+    grad_enthalpy_diffusions[iVar] =
+        Density * universal_gas_constant *
+        ((specificHeatSpecies[speciesIndex] * massDiffusivity[iVar] / molarMasses[speciesIndex]) -
+         (specificHeatSpecies[speciesN] * massDiffusivity[n_species_mixture - 1] / molarMasses[speciesN]));
+    grad_enthalpy_diffusions[iVar] +=
+        Mu_Turb * universal_gas_constant *
+        ((specificHeatSpecies[speciesIndex] / molarMasses[speciesIndex]) -
+         (specificHeatSpecies[speciesN] / molarMasses[speciesN])) /
+        Schmidt_Turb_Number;
   }
 }
 
@@ -160,10 +174,6 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
   }
   massFractions[sol->thermo()->speciesIndex(gasComposition[n_species_mixture - 1])] = 1.0 - val_scalars_sum;
   
-  // AD::StartPreacc();
-  // AD::SetPreaccIn(Temperature);
-  // AD::SetPreaccIn(massFractions, ARRAYSIZE);
-  
   sol->thermo()->setMassFractions(massFractions.data());
   sol->thermo()->setState_TP(Temperature, Pressure_Thermodynamic);
   Density = sol->thermo()->density();
@@ -173,16 +183,8 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
   Mu = sol->transport()->viscosity();
   Kt = sol->transport()->thermalConductivity();
 
-  // AD::SetPreaccOut(Enthalpy);
-  // AD::SetPreaccOut(Mu);
-  // AD::SetPreaccOut(Kt);
-  // AD::SetPreaccOut(Density);
-  // AD::SetPreaccOut(Cp);
-  // AD::SetPreaccOut(Cv);
-  // AD::EndPreacc();
-
   ComputeMassDiffusivity();
-  ComputeHeatRelease();
+  if (Combustion) ComputeHeatRelease();
 }
 
 void CFluidCantera::SetTDState_h(const su2double val_enthalpy, const su2double* val_scalars) {

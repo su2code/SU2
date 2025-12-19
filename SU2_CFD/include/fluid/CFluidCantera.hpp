@@ -51,10 +51,12 @@ class CFluidCantera final : public CFluidModel {
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
-  const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
+  const su2double Prandtl_Turb_Number;    /*!< \brief Prandlt turbulent number.*/
+  const su2double Schmidt_Turb_Number;    /*!< \brief Schmidt turbulent number.*/
   const string Transport_Model;           /*!< \brief Transport model used for computing mixture properties*/
   const string Chemical_MechanismFile;    /*!< \brief Chemical reaction mechanism used for in cantera*/
   const string Phase_Name;                /*!< \brief Name of the phase used for in cantera*/
+  const bool Combustion;                  /*!< \brief Flag for problems involving combustion.*/
 
   static constexpr int ARRAYSIZE = 16;
 
@@ -101,7 +103,7 @@ class CFluidCantera final : public CFluidModel {
   /*!
    * \brief Get fluid thermal conductivity.
    */
-  inline su2double GetThermalConductivity() override { return Kt + Mu_Turb * Cp / Prandtl_Number; }
+  inline su2double GetThermalConductivity() override { return Kt + Mu_Turb * Cp / Prandtl_Turb_Number; }
 
   /*!
    * \brief Get fluid mass diffusivity.
