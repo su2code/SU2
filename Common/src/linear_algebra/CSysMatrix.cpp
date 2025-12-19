@@ -571,9 +571,6 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 #else
 #define A(I, J) matrix[(I)*nVar + (J)]
 
-  /*--- Regularization epsilon to prevent divide-by-zero ---*/
-  //constexpr ScalarType eps = 1e-12;
-
   /*--- Transform system in Upper Matrix ---*/
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
