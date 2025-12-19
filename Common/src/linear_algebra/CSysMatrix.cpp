@@ -505,10 +505,6 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
 #define A(I, J) matrix[(I)*nVar + (J)]
 
   /*--- Transform system in Upper Matrix ---*/
-
-  /*--- Regularization epsilon to prevent divide-by-zero ---*/
-  //constexpr ScalarType eps = 1e-12;
-
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
 
