@@ -60,8 +60,8 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     speciesIndices[iVar] = sol->thermo()->speciesIndex(config->GetChemical_GasComposition(iVar));
   }
-  enthalpiesSpecies.resize(sol->thermo()->nSpecies());
-  specificHeatSpecies.resize(sol->thermo()->nSpecies());
+  enthalpiesSpecies.resize(ARRAYSIZE);
+  specificHeatSpecies.resize(ARRAYSIZE);
   if (Combustion) SetEnthalpyFormation(config);
 }
 
@@ -80,17 +80,15 @@ void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
 }
 
 void CFluidCantera::ComputeMassDiffusivity() {
-  int nsp = sol->thermo()->nSpecies();
-  vector<su2double> diff(nsp);
-  sol->transport()->getMixDiffCoeffsMass(&diff[0]);
+  vector<su2double> diffusivities(ARRAYSIZE);
+  sol->transport()->getMixDiffCoeffsMass(&diffusivities[0]);
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    massDiffusivity[iVar] = diff[speciesIndices[iVar]];
+    massDiffusivity[iVar] = diffusivities[speciesIndices[iVar]];
   }
 }
 
 void CFluidCantera::ComputeChemicalSourceTerm(const su2double* val_scalars) {
-  const int nsp = sol->thermo()->nSpecies();
-  vector<su2double> netProductionRates(nsp);
+  vector<su2double> netProductionRates(ARRAYSIZE);
   sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
   for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
     chemicalSourceTerm[iVar] = molarMasses[speciesIndices[iVar]] * netProductionRates[speciesIndices[iVar]];
@@ -98,8 +96,7 @@ void CFluidCantera::ComputeChemicalSourceTerm(const su2double* val_scalars) {
 }
 
 void CFluidCantera::ComputeHeatRelease() {
-  const int nsp = sol->thermo()->nSpecies();
-  vector<su2double> netProductionRates(nsp);
+  vector<su2double> netProductionRates(ARRAYSIZE);
   sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
   Heat_Release = 0.0;
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
