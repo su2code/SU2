@@ -505,7 +505,8 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
 #define A(I, J) matrix[(I)*nVar + (J)]
 
   /*--- Regularization epsilon to prevent divide-by-zero ---*/
-  constexpr passivedouble eps = 1e-12;
+  //constexpr passivedouble eps = 1e-12;
+  const su2double eps = 1e-12;
 
   /*--- Transform system in Upper Matrix ---*/
 
@@ -513,7 +514,8 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
       /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
       if (std::abs(A(jVar, jVar)) < eps) {
-        A(jVar, jVar) = (A(jVar, jVar) >= ScalarType(0)) ? ScalarType(eps) : ScalarType(-eps);
+        //A(jVar, jVar) = (A(jVar, jVar) >= ScalarType(0)) ? ScalarType(eps) : ScalarType(-eps);
+        A(jVar, jVar) = (A(jVar, jVar) >= 0.0 ? eps : -eps);
         std::cout << "DEBUG Gauss_Elimination: Regularized small pivot A(" << jVar << "," << jVar << ") to "
                   << A(jVar, jVar) << std::endl;
       }
@@ -532,7 +534,8 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
 
     /*--- Regularize diagonal if too small ---*/
     if (std::abs(A(iVar, iVar)) < eps) {
-      A(iVar, iVar) = (A(iVar, iVar) >= ScalarType(0)) ? ScalarType(eps) : ScalarType(-eps);
+      //A(iVar, iVar) = (A(iVar, iVar) >= ScalarType(0)) ? ScalarType(eps) : ScalarType(-eps);
+      A(iVar, iVar) = (A(iVar, iVar) >= 0.0 ? eps : -eps);
       std::cout << "DEBUG Gauss_Elimination backsubst: Regularized small diagonal A(" << iVar << "," << iVar << ") to "
                 << A(iVar, iVar) << std::endl;
     }
@@ -568,14 +571,14 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 #define A(I, J) matrix[(I)*nVar + (J)]
 
   /*--- Regularization epsilon to prevent divide-by-zero ---*/
-  constexpr passivedouble eps = 1e-12;
+  const su2double eps = 1e-12;
 
   /*--- Transform system in Upper Matrix ---*/
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
       /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
       if (std::abs(A(jVar, jVar)) < eps) {
-        A(jVar, jVar) = (A(jVar, jVar) >= ScalarType(0)) ? ScalarType(eps) : ScalarType(-eps);
+        A(jVar, jVar) = (A(jVar, jVar) >= 0.0 ? eps : -eps);
         std::cout << "DEBUG MatrixInverse: Regularized small pivot A(" << jVar << "," << jVar << ") to "
                   << A(jVar, jVar) << " at iVar=" << iVar << std::endl;
       }
@@ -596,7 +599,7 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 
     /*--- Regularize diagonal if too small ---*/
     if (std::abs(A(iVar, iVar)) < eps) {
-      A(iVar, iVar) = (A(iVar, iVar) >= ScalarType(0)) ? ScalarType(eps) : ScalarType(-eps);
+      A(iVar, iVar) = (A(iVar, iVar) >= 0.0 ? eps : -eps);
       std::cout << "DEBUG MatrixInverse backsubst: Regularized small diagonal A(" << iVar << "," << iVar << ") to "
                 << A(iVar, iVar) << std::endl;
     }
