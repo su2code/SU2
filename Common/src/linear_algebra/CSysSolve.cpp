@@ -458,11 +458,44 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
       precond(W[i], Z[i]);
 
+      /*--- Debug: Check for NaN/Inf in Z[i] after preconditioner ---*/
+      for (unsigned long j = 0; j < Z[i].GetLocSize(); j++) {
+        const su2double val = Z[i][j];
+        if (std::isnan(val) || std::isinf(val)) {
+          if (masterRank) {
+            cout << "DEBUG: NaN/Inf detected in Z[" << i << "][" << j << "] = " << val
+                 << " after preconditioner at iteration " << i << endl;
+          }
+        }
+      }
+
       /*---  Add to Krylov subspace ---*/
 
       mat_vec(Z[i], W[i + 1]);
+
+      /*--- Debug: Check for NaN/Inf in W[i+1] after mat_vec ---*/
+      for (unsigned long j = 0; j < W[i + 1].GetLocSize(); j++) {
+        const su2double val = W[i + 1][j];
+        if (std::isnan(val) || std::isinf(val)) {
+          if (masterRank) {
+            cout << "DEBUG: NaN/Inf detected in W[" << (i+1) << "][" << j << "] = " << val
+                 << " after mat_vec at iteration " << i << endl;
+          }
+        }
+      }
     } else {
       mat_vec(W[i], W[i + 1]);
+
+      /*--- Debug: Check for NaN/Inf in W[i+1] after mat_vec ---*/
+      for (unsigned long j = 0; j < W[i + 1].GetLocSize(); j++) {
+        const su2double val = W[i + 1][j];
+        if (std::isnan(val) || std::isinf(val)) {
+          if (masterRank) {
+            cout << "DEBUG: NaN/Inf detected in W[" << (i+1) << "][" << j << "] = " << val
+                 << " after mat_vec at iteration " << i << endl;
+          }
+        }
+      }
     }
 
     /*---  Modified Gram-Schmidt orthogonalization ---*/

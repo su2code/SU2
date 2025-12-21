@@ -144,10 +144,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         /*--- Valley -> Valley : conditionally allowed when both points are on the same marker. ---*/
         /*--- ! Note that in the case of MPI SEND_RECEIVE markers, we might need other conditions ---*/
         if (counter == 1) {
-          cout << "we have exactly one marker at point " << iPoint << endl;
-          cout << " marker is " << marker_seed[0]
-               << ", marker name = " << config->GetMarker_All_TagBound(marker_seed[0]);
-          cout << ", marker type = " << config->GetMarker_All_KindBC(marker_seed[0]) << endl;
+          //cout << "we have exactly one marker at point " << iPoint << endl;
+          //cout << " marker is " << marker_seed[0]
+          //     << ", marker name = " << config->GetMarker_All_TagBound(marker_seed[0]);
+          //cout << ", marker type = " << config->GetMarker_All_KindBC(marker_seed[0]) << endl;
           // The seed/parent is one valley, so we set this part to true
           // if the child is only on this same valley, we set it to true as well.
           agglomerate_seed = true;
@@ -175,6 +175,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           if (config->GetMarker_All_KindBC(marker_seed[0]) == SEND_RECEIVE) {
             agglomerate_seed = false;
           }
+
+            agglomerate_seed = false;
         }
 
         /*--- If there are two markers, we will agglomerate if any of the
@@ -215,6 +217,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           /*--- In 2D, corners are not agglomerated, but in 3D counter=2 means we are on the
                 edge of a 2D face. In that case, agglomerate if both nodes are the same. ---*/
           // if (nDim == 2) agglomerate_seed = false;
+            agglomerate_seed = false;
+
         }
 
         /*--- If there are more than 2 markers, the aglomeration will be discarded ---*/
@@ -222,6 +226,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         if (counter > 2) agglomerate_seed = false;
         // note that if one of the markers is SEND_RECEIVE, then we could allow agglomeration since
         // the real number of markers is then 2.
+
+
+agglomerate_seed = false;  // nijso: do not agglomerate boundary points for now.
+
 
         /*--- If the seed (parent) can be agglomerated, we try to agglomerate connected childs to the parent ---*/
         /*--- Note that in 2D we allow a maximum of 4 nodes to be agglomerated ---*/
@@ -313,13 +321,71 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       // cout << "point " << iPoint << ", parent = " << fine_grid->nodes->GetParent_CV(iPoint)
       //     << " " << fine_grid->nodes->GetAgglomerate(iPoint) << endl;
       if ((!fine_grid->nodes->GetAgglomerate(iPoint)) && (fine_grid->nodes->GetDomain(iPoint))) {
-        // cout << "       Boundary:mark left-over nodes " << endl;
+         cout << "       Boundary:mark left-over nodes " << endl;
         fine_grid->nodes->SetParent_CV(iPoint, Index_CoarseCV);
         nodes->SetChildren_CV(Index_CoarseCV, 0, iPoint);
         nodes->SetnChildren_CV(Index_CoarseCV, 1);
         Index_CoarseCV++;
       }
     }
+  }
+
+  /*--- Diagnostic output: Print boundary agglomeration details ---*/
+  if (SU2_MPI::GetRank() == 0) {
+    cout << "\n=== Boundary Agglomeration Report (Level " << iMesh << ") ===" << endl;
+  }
+
+  for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    const string marker_name = config->GetMarker_All_TagBound(iMarker);
+    vector<unsigned long> boundary_coarse_nodes;
+
+    /*--- Collect unique coarse nodes at this boundary ---*/
+    for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
+      const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
+      if (fine_grid->nodes->GetDomain(iPoint)) {
+        const auto parent = fine_grid->nodes->GetParent_CV(iPoint);
+        if (find(boundary_coarse_nodes.begin(), boundary_coarse_nodes.end(), parent) == boundary_coarse_nodes.end()) {
+          boundary_coarse_nodes.push_back(parent);
+        }
+      }
+    }
+
+    //if (SU2_MPI::GetRank() == 0 && !boundary_coarse_nodes.empty()) {
+      cout << "rank=" << rank << "\nMarker: " << marker_name << " (ID=" << iMarker << ")" << endl;
+      cout << "  Total coarse CVs: " << boundary_coarse_nodes.size() << endl;
+
+      /*--- Print first 10 coarse nodes with details ---*/
+      unsigned long nPrint = min(static_cast<unsigned long>(10), static_cast<unsigned long>(boundary_coarse_nodes.size()));
+      cout << "  First " << nPrint << " coarse CVs (max 10):" << endl;
+
+      for (unsigned long i = 0; i < nPrint; i++) {
+        const auto coarse_id = boundary_coarse_nodes[i];
+        const auto nChildren = nodes->GetnChildren_CV(coarse_id);
+
+        cout << "    Coarse CV " << coarse_id << " has " << nChildren << " children: ";
+        for (unsigned short iChild = 0; iChild < nChildren; iChild++) {
+          const auto child_id = nodes->GetChildren_CV(coarse_id, iChild);
+          cout << child_id;
+          if (iChild < nChildren - 1) cout << ", ";
+        }
+        cout << endl;
+
+        /*--- Print child coordinates ---*/
+        for (unsigned short iChild = 0; iChild < nChildren; iChild++) {
+          const auto child_id = nodes->GetChildren_CV(coarse_id, iChild);
+          cout << "      Child " << child_id << " coords: (";
+          for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+            cout << fine_grid->nodes->GetCoord(child_id, iDim);
+            if (iDim < nDim - 1) cout << ", ";
+          }
+          cout << ")" << endl;
+        }
+      }
+    //}
+  }
+
+  if (SU2_MPI::GetRank() == 0) {
+    cout << "=== End Boundary Agglomeration Report ===" << endl << endl;
   }
 
   /*--- Update the queue with the results from the boundary agglomeration ---*/

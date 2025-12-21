@@ -1580,9 +1580,9 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   bool center           = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  bool center_jst       = (config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0);
-  bool center_jst_ke    = (config->GetKind_Centered_Flow() == CENTERED::JST_KE) && (iMesh == MESH_0);
-  bool center_jst_mat   = (config->GetKind_Centered_Flow() == CENTERED::JST_MAT) && (iMesh == MESH_0);
+  bool center_jst       = (config->GetKind_Centered_Flow() == CENTERED::JST);
+  bool center_jst_ke    = (config->GetKind_Centered_Flow() == CENTERED::JST_KE);
+  bool center_jst_mat   = (config->GetKind_Centered_Flow() == CENTERED::JST_MAT);
   bool engine           = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool fixed_cl         = config->GetFixed_CL_Mode();
