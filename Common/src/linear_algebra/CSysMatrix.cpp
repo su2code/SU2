@@ -494,6 +494,18 @@ void CSysMatrix<ScalarType>::SetValDiagonalZero() {
   END_SU2_OMP_FOR
 }
 
+/*--- Helper function to regularize small pivots ---*/
+template <class ScalarType>
+inline void RegularizePivot(ScalarType& pivot, unsigned long row, unsigned long col, const char* context) {
+  const float eps = 1e-12;
+  if (std::abs(pivot) < eps) {
+    pivot = std::copysign(eps, SU2_TYPE::GetValue(pivot));
+#ifndef NDEBUG
+    std::cout << context << ": Regularized small pivot A(" << row << "," << col << ") to " << pivot << std::endl;
+#endif
+  }
+}
+
 template <class ScalarType>
 void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* vec) const {
 #ifdef USE_MKL_LAPACK
@@ -504,21 +516,12 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
 #else
 #define A(I, J) matrix[(I)*nVar + (J)]
 
-  /*--- Regularization epsilon to prevent divide-by-zero ---*/
-  //constexpr passivedouble eps = 1e-12;
-  const su2double eps = 1e-12;
-
   /*--- Transform system in Upper Matrix ---*/
 
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
       /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
-      if (std::abs(A(jVar, jVar)) < eps) {
-        //A(jVar, jVar) = (A(jVar, jVar) >= ScalarType(0)) ? ScalarType(eps) : ScalarType(-eps);
-        A(jVar, jVar) = (A(jVar, jVar) >= 0.0 ? eps : -eps);
-        std::cout << "DEBUG Gauss_Elimination: Regularized small pivot A(" << jVar << "," << jVar << ") to "
-                  << A(jVar, jVar) << std::endl;
-      }
+      RegularizePivot(A(jVar, jVar), jVar, jVar, "DEBUG Gauss_Elimination");
 
       ScalarType weight = A(iVar, jVar) / A(jVar, jVar);
 
@@ -533,12 +536,7 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
     for (auto jVar = iVar + 1; jVar < nVar; jVar++) vec[iVar] -= A(iVar, jVar) * vec[jVar];
 
     /*--- Regularize diagonal if too small ---*/
-    if (std::abs(A(iVar, iVar)) < eps) {
-      //A(iVar, iVar) = (A(iVar, iVar) >= ScalarType(0)) ? ScalarType(eps) : ScalarType(-eps);
-      A(iVar, iVar) = (A(iVar, iVar) >= 0.0 ? eps : -eps);
-      std::cout << "DEBUG Gauss_Elimination backsubst: Regularized small diagonal A(" << iVar << "," << iVar << ") to "
-                << A(iVar, iVar) << std::endl;
-    }
+    RegularizePivot(A(iVar, iVar), iVar, iVar, "DEBUG Gauss_Elimination backsubst");
 
     vec[iVar] /= A(iVar, iVar);
   }
@@ -570,20 +568,11 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 #else
 #define A(I, J) matrix[(I)*nVar + (J)]
 
-  /*--- Regularization epsilon to prevent divide-by-zero ---*/
-  const float eps = 1e-12;
-
   /*--- Transform system in Upper Matrix ---*/
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
       /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
-      if (std::abs(A(jVar, jVar)) < eps) {
-        A(jVar, jVar) = std::copysign(eps, SU2_TYPE::GetValue(A(jVar, jVar)));
-#ifndef NDEBUG
-        std::cout << "MatrixInverse: Regularized small pivot A(" << jVar << "," << jVar << ") to "
-                  << A(jVar, jVar) << " at iVar=" << iVar << std::endl;
-#endif
-      }
+      RegularizePivot(A(jVar, jVar), jVar, jVar, "MatrixInverse");
 
       ScalarType weight = A(iVar, jVar) / A(jVar, jVar);
       for (auto kVar = jVar; kVar < nVar; kVar++) A(iVar, kVar) -= weight * A(jVar, kVar);
@@ -600,11 +589,7 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
       for (auto kVar = 0ul; kVar < nVar; kVar++) M(iVar, kVar) -= A(iVar, jVar) * M(jVar, kVar);
 
     /*--- Regularize diagonal if too small ---*/
-    if (std::abs(A(iVar, iVar)) < eps) {
-      A(iVar, iVar) = (A(iVar, iVar) >= 0.0 ? eps : -eps);
-      std::cout << "DEBUG MatrixInverse backsubst: Regularized small diagonal A(" << iVar << "," << iVar << ") to "
-                << A(iVar, iVar) << std::endl;
-    }
+    RegularizePivot(A(iVar, iVar), iVar, iVar, "DEBUG MatrixInverse backsubst");
 
     for (auto kVar = 0ul; kVar < nVar; kVar++) {
       M(iVar, kVar) /= A(iVar, iVar);
