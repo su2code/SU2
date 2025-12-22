@@ -418,7 +418,6 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (heat) {
     SetVolumeOutputValue("ENTHALPY", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
   }
-
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
 
   // Radiation solver
