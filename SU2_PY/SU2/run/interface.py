@@ -271,7 +271,9 @@ def run_command(Command):
 
     # Avoid potential deadlocks when a child process writes heavily to stderr:
     # read stderr via communicate() while streaming stdout to the console.
-    proc = subprocess.Popen(Command, shell=True, stdout=sys.stdout, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(
+        Command, shell=True, stdout=sys.stdout, stderr=subprocess.PIPE
+    )
     _, stderr = proc.communicate()
 
     return_code = proc.returncode
