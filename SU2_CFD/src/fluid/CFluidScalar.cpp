@@ -282,4 +282,5 @@ void CFluidScalar::SetTDState_h(const su2double val_enthalpy, const su2double* v
   }
 
   Kt = WilkeConductivity(val_scalars);
+  ComputeMassDiffusivity();
 }

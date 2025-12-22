@@ -302,6 +302,8 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
     const su2double* scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
     solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
     solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_T(temperature, scalar);
+    /*--- Recompute viscosity, important  to get diffusivity correct across MPI ranks. ---*/
+    const su2double viscosity =  solver_container[FLOW_SOL]->GetFluidModel()->GetLaminarViscosity();
     for (auto iVar = 0u; iVar <= nVar; iVar++) {
       const su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
