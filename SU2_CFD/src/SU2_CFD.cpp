@@ -27,6 +27,8 @@
 
 #include "../include/SU2_CFD.hpp"
 
+#include <cstring>
+
 /* Include file, needed for the runtime NaN catching. You also have to include feenableexcept(...) below. */
 //#include <fenv.h>
 
@@ -78,7 +80,11 @@ int main(int argc, char *argv[]) {
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
    file is specified, default.cfg is used) ---*/
-  strcpy(config_file_name, filename.c_str());
+  if (filename.size() >= MAX_STRING_SIZE) {
+    SU2_MPI::Error("Config file path too long (exceeds MAX_STRING_SIZE).", CURRENT_FUNCTION);
+  }
+  strncpy(config_file_name, filename.c_str(), MAX_STRING_SIZE - 1);
+  config_file_name[MAX_STRING_SIZE - 1] = '\0';
 
   /*--- Read the name and format of the input mesh file to get from the mesh
    file the number of zones and dimensions from the numerical grid (required

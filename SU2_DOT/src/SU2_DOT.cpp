@@ -27,6 +27,8 @@
 
 #include "../../SU2_DEF/include/drivers/CDiscAdjDeformationDriver.hpp"
 
+#include <cstring>
+
 int main(int argc, char* argv[]) {
   char config_file_name[MAX_STRING_SIZE];
 
@@ -47,7 +49,11 @@ int main(int argc, char* argv[]) {
    (if no config file is specified, default.cfg is used). ---*/
 
   if (argc == 2) {
-    strcpy(config_file_name, argv[1]);
+    if (strlen(argv[1]) >= MAX_STRING_SIZE) {
+      SU2_MPI::Error("Config file path too long (exceeds MAX_STRING_SIZE).", CURRENT_FUNCTION);
+    }
+    strncpy(config_file_name, argv[1], MAX_STRING_SIZE - 1);
+    config_file_name[MAX_STRING_SIZE - 1] = '\0';
   } else {
     strcpy(config_file_name, "default.cfg");
   }

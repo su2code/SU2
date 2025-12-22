@@ -27,6 +27,8 @@
 
 #include "../include/SU2_SOL.hpp"
 
+#include <cstring>
+
 using namespace std;
 
 int main(int argc, char* argv[]) {
@@ -56,7 +58,11 @@ int main(int argc, char* argv[]) {
    file is specified, default.cfg is used) ---*/
 
   if (argc == 2 || argc == 3) {
-    strcpy(config_file_name, argv[1]);
+    if (strlen(argv[1]) >= MAX_STRING_SIZE) {
+      SU2_MPI::Error("Config file path too long (exceeds MAX_STRING_SIZE).", CURRENT_FUNCTION);
+    }
+    strncpy(config_file_name, argv[1], MAX_STRING_SIZE - 1);
+    config_file_name[MAX_STRING_SIZE - 1] = '\0';
   } else {
     strcpy(config_file_name, "default.cfg");
   }
@@ -98,7 +104,12 @@ int main(int argc, char* argv[]) {
      read and stored. ---*/
 
     if (driver_config->GetnConfigFiles() > 0) {
-      strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
+      const auto& zone_filename = driver_config->GetConfigFilename(iZone);
+      if (zone_filename.size() >= MAX_STRING_SIZE) {
+        SU2_MPI::Error("Zone config file path too long (exceeds MAX_STRING_SIZE).", CURRENT_FUNCTION);
+      }
+      strncpy(zone_file_name, zone_filename.c_str(), MAX_STRING_SIZE - 1);
+      zone_file_name[MAX_STRING_SIZE - 1] = '\0';
       config_container[iZone] = new CConfig(driver_config, zone_file_name, SU2_COMPONENT::SU2_SOL, iZone, nZone, true);
     } else {
       config_container[iZone] =
