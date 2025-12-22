@@ -305,7 +305,6 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
-
   if (weakly_coupled_heat) AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
   if (heat) AddVolumeOutput("ENTHALPY", "Enthalpy", "SOLUTION", "Enthalpy");
 
