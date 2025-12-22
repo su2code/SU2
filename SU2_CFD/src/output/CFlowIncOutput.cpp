@@ -305,7 +305,6 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
-
   if (weakly_coupled_heat) AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
   if (heat) AddVolumeOutput("ENTHALPY", "Enthalpy", "SOLUTION", "Enthalpy");
 
@@ -419,7 +418,6 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (heat) {
     SetVolumeOutputValue("ENTHALPY", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
   }
-
   if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
 
   // Radiation solver
