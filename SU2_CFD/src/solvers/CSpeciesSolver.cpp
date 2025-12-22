@@ -212,7 +212,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
     /*--- for the flamelet model, the temperature is saved to file, but the energy equation is off ---*/
 
-   if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) skipVars--;
+   if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
 
     /*--- Load data from the restart into correct containers. ---*/
 

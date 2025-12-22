@@ -133,7 +133,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
     const bool flamelet = (config->GetKind_FluidModel() == FLUID_FLAMELET);
 
-    if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) skipVars--;
+    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -252,7 +252,7 @@ void CTurbSolver::ComputeUnderRelaxationFactorHelper(su2double allowableRatio) {
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
-  
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     su2double localUnderRelaxation = 1.0;
@@ -265,16 +265,16 @@ void CTurbSolver::ComputeUnderRelaxationFactorHelper(su2double allowableRatio) {
       turbulence variables can change over a nonlinear iteration. */
       if (ratio > allowableRatio) {
         localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-      
+
       }
     }
 
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due
      to non-realizable states by canceling the update. */
-    
+
     if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
-    
+
     /* Store the under-relaxation factor for this point. */
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);

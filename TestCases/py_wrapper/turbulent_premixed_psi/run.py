@@ -91,19 +91,12 @@ def update_temperature(SU2Driver, iPoint):
     iSPECIESSOLVER = SU2Driver.GetSolverIndices()['SPECIES']
     # Note: returns a list
     C = SU2Driver.Solution(iSPECIESSOLVER)(iPoint,0)
-    T = Tu*(1-C) + Tf*C
-    iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
-    # the list with names
-    solindex = getsolvar(SU2Driver)
-    primindex = SU2Driver.GetPrimitiveIndices()
-    # get Cp
-    iCp = primindex.get("CP_TOTAL")
-    Cp = SU2Driver.Primitives()(iPoint,iCp)
-    # get solution index for energy equation
-    iTEMP = solindex.get("TEMPERATURE")
-    # set enthalpy, for Ideal Gas model, enthalpy is Cp*T
-    SU2Driver.Solution(iFLOWSOLVER).Set(iPoint,iTEMP,Cp*T)
 
+    T = Tu*(1-C) + Tf*C
+
+    prim_indices = SU2Driver.GetPrimitiveIndices()
+    iTemp = prim_indices['TEMPERATURE']
+    SU2Driver.Primitives().Set(iPoint,iTemp, T)
 
 # ################################################################## #
 # Source term according to Zimont
