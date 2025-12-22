@@ -578,9 +578,11 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
       /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
       if (std::abs(A(jVar, jVar)) < eps) {
-        A(jVar, jVar) = (A(jVar, jVar) >= 0.0 ? eps : -eps);
-        std::cout << "DEBUG MatrixInverse: Regularized small pivot A(" << jVar << "," << jVar << ") to "
+        A(jVar, jVar) = std::copysign(eps, SU2_TYPE::GetValue(A(jVar, jVar)));
+#ifndef NDEBUG
+        std::cout << "MatrixInverse: Regularized small pivot A(" << jVar << "," << jVar << ") to "
                   << A(jVar, jVar) << " at iVar=" << iVar << std::endl;
+#endif
       }
 
       ScalarType weight = A(iVar, jVar) / A(jVar, jVar);
