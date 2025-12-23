@@ -102,7 +102,6 @@ def parallel_computation(filename, partitions=0, compute=True):
         config.SOLUTION_FILENAME = config.RESTART_FILENAME
     elif config.SOLVER == "FLUID_STRUCTURE_INTERACTION":
         config.SOLUTION_FILENAME = config.RESTART_FILENAME
-        config.SOLUTION_FILENAME = config.RESTART_FILENAME
 
     info = SU2.run.merge(config)
     state.update(info)
