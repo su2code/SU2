@@ -280,8 +280,6 @@ def run_command(Command):
 
     return_code = proc.returncode
     message = (stderr or b"").decode(errors="replace")
-    return_code = proc.returncode
-    message = stderr.decode(errors="replace")
 
     if return_code < 0:
         message = "SU2 process was terminated by signal '%s'\n%s" % (
