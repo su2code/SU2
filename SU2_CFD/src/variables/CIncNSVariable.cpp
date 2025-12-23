@@ -47,7 +47,6 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
     Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
   }
-  if(!Energy) TemperatureInc = config->GetInc_Temperature_Init();
 }
 
 bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
