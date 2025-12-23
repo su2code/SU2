@@ -65,12 +65,10 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
     FluidModel->SetTDState_h(Enthalpy, scalar);
     Temperature = FluidModel->GetTemperature();
   } else {
-    /*--- When energy equation is switch off, a constant temperature is imposed, and enthalpy is recomputed based on
-     * this temperature. As in the fluid flamelet model, the temperature is retrieved from a look-up table, then the
-     * temperature is obtained directly from the fluidmodel. For the other fluid models, GetTemperature provides the
-     * same value as TemperatureInc ---*/
-    FluidModel->SetTDState_T(TemperatureInc, scalar);
-    Enthalpy = Solution(iPoint, nDim + 1) = FluidModel->GetEnthalpy();
+    /*--- When energy equation is switched off, use enthalpy from solution to compute temperature.
+     * This allows Python wrapper updates to enthalpy to correctly update the density. ---*/
+    Enthalpy = Solution(iPoint, nDim + 1);
+    FluidModel->SetTDState_h(Enthalpy, scalar);
     Temperature = FluidModel->GetTemperature();
   }
   auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
