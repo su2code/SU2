@@ -26,9 +26,6 @@
  */
 
 #include "../include/SU2_GEO.hpp"
-
-#include <cstring>
-
 using namespace std;
 
 int main(int argc, char* argv[]) {
@@ -95,11 +92,7 @@ int main(int argc, char* argv[]) {
    file is specified, default.cfg is used) ---*/
 
   if (argc == 2) {
-    if (strlen(argv[1]) >= MAX_STRING_SIZE) {
-      SU2_MPI::Error("Config file path too long (exceeds MAX_STRING_SIZE).", CURRENT_FUNCTION);
-    }
-    strncpy(config_file_name, argv[1], MAX_STRING_SIZE - 1);
-    config_file_name[MAX_STRING_SIZE - 1] = '\0';
+    strcpy(config_file_name, argv[1]);
   } else {
     strcpy(config_file_name, "default.cfg");
   }
