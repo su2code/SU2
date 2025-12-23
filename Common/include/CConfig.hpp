@@ -641,6 +641,7 @@ private:
   unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;       /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
+  unsigned long Linear_Solver_Restart_Deflation; /*!< \brief Number of vectors used for deflated restarts. */
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
@@ -4329,6 +4330,11 @@ public:
    * \return Restart frequency of the linear solver for the implicit formulation.
    */
   unsigned long GetLinear_Solver_Restart_Frequency(void) const { return Linear_Solver_Restart_Frequency; }
+
+  /*!
+   * \brief Get the number of vectors used for deflated restarts.
+   */
+  unsigned long GetLinear_Solver_Restart_Deflation(void) const { return Linear_Solver_Restart_Deflation; }
 
   /*!
    * \brief Get the relaxation factor for iterative linear smoothers.

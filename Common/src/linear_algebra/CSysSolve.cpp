@@ -27,6 +27,7 @@
 
 #include "Eigen/Core"
 #include "Eigen/Dense"
+#include "Eigen/Eigenvalues"
 
 #include "../../include/linear_algebra/CSysSolve.hpp"
 #include "../../include/linear_algebra/CSysSolve_b.hpp"
@@ -37,6 +38,8 @@
 #include "../../include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../include/linear_algebra/CPreconditioner.hpp"
 
+#include <complex>
+#include <iostream>
 #include <limits>
 
 /*!
@@ -113,7 +116,7 @@ void CSysSolve<ScalarType>::SolveReduced(int n, const su2matrix<ScalarType>& Hsb
 
 template <class ScalarType>
 void CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg,
-                                           vector<CSysVector<ScalarType> >& w) const {
+                                           vector<CSysVector<ScalarType>>& w) const {
   const auto thread = omp_get_thread_num();
 
   /*--- If Hsbg is shared by multiple threads calling this function, only one
@@ -567,6 +570,59 @@ unsigned long CSysSolve<ScalarType>::RFGMRES_LinSolver(const CSysVector<ScalarTy
   return 0;
 }
 
+namespace {
+/*--- Computes v = vs * ws or v += vs * ws with unrolling of up to 4 iterations. ---*/
+template <class ScalarType, class Weights, class Vectors>
+void LinearCombination(const unsigned long n, const Vectors& vs, const Weights& ws, CSysVector<ScalarType>& v,
+                       bool inc = false) {
+  if (n == 0) {
+    if (!inc) v = ScalarType{};
+    return;
+  }
+  for (unsigned long i = 0; i < n; i += 4) {
+    switch (n - i) {
+      case 1: {
+        if (inc) {
+          v += vs(i) * ws(i);
+        } else {
+          v = vs(i) * ws(i);
+        }
+      } break;
+      case 2: {
+        if (inc) {
+          v += vs(i) * ws(i) + vs(i + 1) * ws(i + 1);
+        } else {
+          v = vs(i) * ws(i) + vs(i + 1) * ws(i + 1);
+        }
+      } break;
+      case 3: {
+        if (inc) {
+          v += vs(i) * ws(i) + vs(i + 1) * ws(i + 1) + vs(i + 2) * ws(i + 2);
+        } else {
+          v = vs(i) * ws(i) + vs(i + 1) * ws(i + 1) + vs(i + 2) * ws(i + 2);
+        }
+      } break;
+      default: {
+        if (inc) {
+          v += vs(i) * ws(i) + vs(i + 1) * ws(i + 1) + vs(i + 2) * ws(i + 2) + vs(i + 3) * ws(i + 3);
+        } else {
+          v = vs(i) * ws(i) + vs(i + 1) * ws(i + 1) + vs(i + 2) * ws(i + 2) + vs(i + 3) * ws(i + 3);
+        }
+      }
+    }
+    inc = true;
+  }
+}
+
+/*--- Specialization to handle a vector of CSysVector directly. ---*/
+template <class ScalarType, class Weights>
+void LinearCombination(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs, const Weights& ws,
+                       CSysVector<ScalarType>& v, bool inc = false) {
+  LinearCombination(
+      n, [&vs](unsigned long i) -> auto& { return vs[i]; }, ws, v, inc);
+}
+}  // namespace
+
 template <class ScalarType>
 unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,
                                                        const CMatrixVectorProduct<ScalarType>& mat_vec,
@@ -576,10 +632,8 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarTy
   using EigenMatrix = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
   using EigenVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
-  const auto m = config->GetLinear_Solver_Restart_Frequency();
-  max_iter = max(max_iter, m);
-  /*--- One quarter of the vectors for deflation. ---*/
-  const auto deflation = m / 4;
+  auto m = min(config->GetLinear_Solver_Restart_Frequency(), max_iter);
+  const auto deflation = min(config->GetLinear_Solver_Restart_Deflation(), m - 1);
 
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
@@ -597,7 +651,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarTy
 
   /*--- Allocate if not allocated yet. ---*/
 
-  if (V.size() <= m) {
+  if (V.size() < m + 1 || W.size() < deflation + 1) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       const auto nVar = b.GetNVar();
       const auto nBlk = b.GetNBlk();
@@ -610,6 +664,8 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarTy
       for (auto& z : Z) z.Initialize(nBlk, nBlkDomain, nVar, nullptr);
       W.resize(deflation + 1);
       for (auto& w : W) w.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+      T.resize(deflation + 1);
+      for (auto& t : T) t.Initialize(nBlk, nBlkDomain, nVar, nullptr);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
@@ -641,8 +697,10 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarTy
    * But we would still need to make the new r orthogonal to Vk. ---*/
   if (k > 0) {
     EigenMatrix R = EigenMatrix::Zero(k, k);
-    std::vector<ScalarType> vr(k);
+    EigenVector vr = EigenVector::Zero(k);
     for (auto j = 0ul; j < k; ++j) {
+      /*--- When k = 0, Z = M(W), we could keep that property but it is not
+       * critical and so we choose to save the cost of precond(W[j], Z[j]); ---*/
       mat_vec(Z[j], V[j]);
 
       for (auto i = 0ul; i < j; ++i) {
@@ -653,24 +711,25 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarTy
       V[j] /= R(j, j);
 
       /*--- Make r orthogonal to the rebuilt V. ---*/
-      vr[j] = r.dot(V[j]);
-      r -= vr[j] * V[j];
+      vr(j) = r.dot(V[j]);
     }
+    LinearCombination(k, V, -vr, r, true);
+
     /*--- Apply R^-1 to Z and W and update x accordingly. R is uppper triangular,
      * so we loop backwards to compute the products in-place. ---*/
     EigenMatrix invR = R.template triangularView<Eigen::Upper>().solve(EigenMatrix::Identity(k, k));
     for (auto j = k - 1;; --j) {
-      Z[j] *= invR(j, j);
-      W[j] *= invR(j, j);
-      for (auto i = 0ul; i < j; ++i) {
-        Z[j] += invR(i, j) * Z[i];
-        W[j] += invR(i, j) * W[i];
+      for (auto* basis : {&W, &Z}) {
+        auto reversed = [&](auto i) -> const auto& { return (*basis)[j - i]; };
+        LinearCombination(
+            j + 1, reversed, [&](auto i) { return invR(j - i, j); }, (*basis)[j]);
       }
-      x += vr[j] * Z[j];
       if (j == 0) break;  // j is unsigned, avoid underflow.
     }
+    LinearCombination(k, Z, vr, x, true);
   }
   ScalarType rNorm = r.norm();
+  auto iter = k;
 
   /*--- Set the norm to the initial initial residual value. ---*/
 
@@ -678,19 +737,17 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarTy
 
   if (rNorm < tol * norm0 || rNorm < eps) {
     /*--- The system is already solved. ---*/
-
     if (masterRank) {
       SU2_OMP_MASTER
       cout << "CSysSolve::FGCRODR(): system solved by initial guess." << endl;
       END_SU2_OMP_MASTER
     }
-    residual = rNorm;
-    return 0;
+    residual = rNorm / norm0;
+    return iter;
   }
 
   /*--- Output header information including initial residual. ---*/
 
-  unsigned long iter = 0;
   if (monitoring && masterRank) {
     SU2_OMP_MASTER {
       WriteHeader("FGCRODR", tol, rNorm);
@@ -699,15 +756,22 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarTy
     END_SU2_OMP_MASTER
   }
 
-  for (iter = 0; iter < max_iter;) {
+  while (iter < max_iter) {
     /*--- Initial direction. ---*/
     V[k] = r / rNorm;
 
-    /*--- Initialize the H matrix. ---*/
+    /*--- Initialize the H matrix and RHS of the reduced system. ---*/
     H = ScalarType(0);
-    for (auto j = 0ul; j < k; ++j) H(j, j) = 1;
+    Heigen = EigenMatrix::Zero(m + 1, m);
+    for (auto j = 0ul; j < k; ++j) {
+      Heigen(j, j) = H(j, j) = 1;
+    }
+    EigenVector c = EigenVector::Zero(m + 1), rls = EigenVector::Zero(m + 1), y;
+    /*--- c = r_norm * e1 when k=0 is a special case of c = V' * r. ---*/
+    c(k) = rNorm;
 
-    /*--- Inner loop. ---*/
+    /*--- Inner loop to build the generalized Arnoldi relation, AZ = VH. ---*/
+    bool converged = false;
     for (auto j = k; j < m; ++j) {
       ++iter;
       precond(V[j], Z[j]);
@@ -721,50 +785,158 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarTy
       } else {
         ModGramSchmidt(false, j, H, V);
       }
+
+      /*--- Solve the reduced system. We do not use Given's rotations to factor H in place
+       * because we need the Arnoldi relation to hold to compute the Ritz values. ---*/
+      const auto mj = j + 1;
+      auto Hj = Heigen.leftCols(mj);
+
+      for (auto i = 0ul; i <= mj; ++i) {
+        Hj(i, j) = H(i, j);
+      }
+      y = Hj.colPivHouseholderQr().solve(c);
+
+      /*--- Residual of the least squares problem, its norm is equivalent to ||b - Ax||. ---*/
+      rls = c - Hj * y;
+      rNorm = rls.norm();
+
+      const ScalarType eps = rNorm / norm0;
+
+      if (monitoring && masterRank) {
+        SU2_OMP_MASTER
+        WriteHistory(iter, eps);
+        END_SU2_OMP_MASTER
+      }
+      if ((iter >= max_iter || eps <= tol) && j >= deflation) {
+        /*--- Adjust m if we stop early. ---*/
+        converged = true;
+        m = mj;
+        break;
+      }
     }
 
     /*--- We don't store the part of W that is equal to V explicitly,
      * W(:, k:m) = V(:, k:m). ---*/
 
-    /*--- Solve the reduced system. We do not use Given's rotations to factor H in place
-     * because we need the Arnoldi relation to hold to compute the Ritz values. ---*/
+    /*--- Update the solution and residual. The latter is only required if we restart. ---*/
 
+    LinearCombination(m, Z, y, x, true);
+    if (!converged) LinearCombination(m + 1, V, rls, r);
+
+    /*--- Update deflation vectors. ---*/
+
+    if (deflation == 0) {
+      if (converged) break;
+      continue;
+    }
+
+    /*--- Compute Ritz values and keep the ones with the smallest real part. ---*/
+
+    EigenMatrix VW = EigenMatrix::Identity(m + 1, m);
     for (auto i = 0ul; i <= m; ++i) {
-      for (auto j = 0ul; j < m; ++j) {
-        Heigen(i, j) = H(i, j);
+      for (auto j = 0ul; j < k; ++j) {
+        // TODO(pedro): There are clever ways to avoid this multiplication, or at least use BLAS.
+        VW(i, j) = V[i].dot(W[j]);
       }
     }
-    EigenVector c = EigenVector::Zero(m + 1);
-    c(k) = rNorm;
+    const auto Hm = Heigen.topLeftCorner(m + 1, m);
+    EigenMatrix HTVW = Hm.transpose() * VW;
 
-    EigenVector y = Heigen.colPivHouseholderQr().solve(c);
-    EigenVector rls = c - Heigen * y;
+    /*--- If the "B" matrix in the generalized eigenvalue problem is not invertible we reset. ---*/
+    if (Eigen::ColPivHouseholderQR<EigenMatrix> qr(HTVW); !qr.isInvertible()) {
+      if (masterRank) {
+        SU2_OMP_MASTER
+        cout << "WARNING: (VH)^T W in FGCRODR is not invertible.\n";
+        END_SU2_OMP_MASTER
+      }
+      SU2_OMP_SAFE_GLOBAL_ACCESS(k = 0;)
+      if (converged) break;
+      continue;
+    }
+    EigenMatrix HTH = Hm.transpose() * Hm;
+    Eigen::GeneralizedEigenSolver<EigenMatrix> ges(HTH, HTVW);
+    const auto& lambda = ges.eigenvalues();
 
-    /*--- Update the solution and residual. ---*/
+    std::vector<int> order(m);
+    std::iota(order.begin(), order.end(), 0);
+    std::sort(order.begin(), order.end(),
+              [&lambda](int i, int j) { return fabs(std::real(lambda(i))) < fabs(std::real(lambda(j))); });
 
-    r = V.back() * rls(m);
+    EigenMatrix P(m, deflation + 1);
+    auto k_new = 0ul;
     for (auto i = 0ul; i < m; ++i) {
-      x += Z[i] * y(i);
-      r -= V[i] * rls(i);
-    }
-    rNorm = rls.norm();
+      const auto j = order[i];
 
-    if (monitoring && masterRank) {
-      SU2_OMP_MASTER
-      WriteHistory(iter + 1, rNorm / norm0);
-      END_SU2_OMP_MASTER
+      /*--- Skip conjugate pairs because we split complex vectors into real and imag. ---*/
+      if (i > 0 && abs(lambda(j) - std::conj(lambda(order[i - 1]))) / abs(lambda(j)) < 1e-3) {
+        continue;
+      }
+      if (monitoring && config->GetComm_Level() == COMM_FULL && masterRank) {
+        SU2_OMP_MASTER
+        cout << "     FGCRODR Ritz value #" << i << ": " << lambda(j) << "\n";
+        END_SU2_OMP_MASTER
+      }
+      P.col(k_new++) = ges.eigenvectors().col(j).real();
+
+      if (fabs(std::imag(lambda(j))) > 1e-2 * fabs(std::real(lambda(j)))) {
+        P.col(k_new++) = ges.eigenvectors().col(j).imag();
+      }
+      if (k_new >= deflation) break;
     }
+    P.conservativeResize(m, k_new);
+
+    /*--- Modify the Krylov basis vectors using P.
+     * A Z P = V H P <=> A Z P = V Q R <=> A Z P R^-1 = V Q <=> A Zk = Vk.
+     * W is updated the same way as Z since Z = M(W). ---*/
+
+    EigenMatrix HP = Hm * P;
+    Eigen::HouseholderQR<EigenMatrix> qr(HP);
+    EigenMatrix Q = qr.householderQ() * EigenMatrix::Identity(m + 1, k_new);
+    auto R = qr.matrixQR().topRows(k_new).template triangularView<Eigen::Upper>();
+
+    EigenMatrix PinvR = P * (R.solve(EigenMatrix::Identity(k_new, k_new)));
+
+    auto modify = [&](const EigenMatrix& mod, const auto& basis) {
+      for (auto j = 0ul; j < k_new; ++j) {
+        LinearCombination(mod.rows(), basis, mod.col(j), T[j]);
+      }
+    };
+    modify(
+        PinvR, [&](auto i) -> auto& { return i < k ? W[i] : V[i]; });
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      /*--- T and W are the same size, so we can swap them. ---*/
+      std::swap(T, W);
+      k = k_new;
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+    /*--- For other basis we need to swap vectors one by one. ---*/
+    auto update = [&](auto& basis) {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        for (auto j = 0ul; j < k_new; ++j) T[j].swap(basis[j]);
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+    };
+
+    modify(PinvR, Z);
+    update(Z);
+
+    /*--- Updating V is only necessary if we restart. ---*/
+    if (converged) break;
+    modify(Q, V);
+    update(V);
   }
+  residual = rNorm / norm0;
 
   /*--- Recalculate final (neg.) residual (this should be optional). ---*/
 
   if (monitoring && config->GetComm_Level() == COMM_FULL) {
     if (masterRank) {
       SU2_OMP_MASTER
-      WriteFinalResidual("FGMRES", iter, rNorm / norm0);
+      WriteFinalResidual("FGCRODR", iter, residual);
       END_SU2_OMP_MASTER
     }
-
     if (recomputeRes) {
       mat_vec(x, Z.back());
       Z.back() -= b;
@@ -779,8 +951,6 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarTy
       }
     }
   }
-
-  residual = rNorm / norm0;
   return iter;
 }
 
@@ -1189,8 +1359,12 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
         IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
                                       ScreenOutput, config);
         break;
-      case RESTARTED_FGMRES:
+      case FGCRODR:
         IterLinSol = FGCRODR_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+                                       ScreenOutput, config);
+        break;
+      case RESTARTED_FGMRES:
+        IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
                                        ScreenOutput, config);
         break;
       case CONJUGATE_GRADIENT:
@@ -1343,6 +1517,10 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
     case FGMRES:
       IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
                                     ScreenOutput, config);
+      break;
+    case FGCRODR:
+      IterLinSol = FGCRODR_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+                                     ScreenOutput, config);
       break;
     case RESTARTED_FGMRES:
       IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,

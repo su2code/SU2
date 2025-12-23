@@ -98,8 +98,8 @@ class CSysSolve {
   mutable VectorType v;   /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
 
   mutable unsigned long k = 0;
-  mutable std::vector<VectorType> V, W; /*!< \brief Large matrix used by FGMRES, w^i+1 = A * z^i. */
-  mutable std::vector<VectorType> Z;    /*!< \brief Large matrix used by FGMRES, preconditioned W. */
+  mutable std::vector<VectorType> W, V; /*!< \brief Large matrix used by FGMRES, w^i+1 = A * z^i. */
+  mutable std::vector<VectorType> Z, T; /*!< \brief Large matrix used by FGMRES, preconditioned W. */
 
   VectorType
       LinSysSol_tmp; /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
@@ -436,4 +436,9 @@ class CSysSolve {
    * \brief Set the screen output frequency during monitoring.
    */
   inline void SetMonitoringFrequency(bool frequency) { monitorFreq = frequency; }
+
+  /*!
+   * \brief Discard FGCRODR's deflation vectors for the next solve.
+   */
+  inline void ResetDeflation() { k = 0; }
 };
