@@ -42,7 +42,6 @@ class CFluidScalar final : public CFluidModel {
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
   su2double Gas_Constant;                 /*!< \brief Specific gas constant. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
-  const su2double Ref_Temperature;        /*!< \brief Standard Reference temperature, usually set to 298.15 K. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
   const su2double Prandtl_Turb_Number;    /*!< \brief Prandlt turbulent number.*/
   const su2double Schmidt_Turb_Number;    /*!< \brief Schmidt turbulent number.*/
@@ -177,7 +176,7 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Virtual member.
    * \param[in] val_enthalpy - Enthalpy value at the point.
-   * \param[in] val_scalars - Scalar mass fractions. 
+   * \param[in] val_scalars - Scalar mass fractions.
    */
   void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override;
 };

@@ -53,25 +53,20 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
 bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
 
   bool physical = true;
-  su2double Temperature;
-  su2double Enthalpy;
 
   /*--- Set the value of the pressure ---*/
 
   SetPressure(iPoint);
 
-  if (Energy) {
-    Enthalpy = Solution(iPoint, nDim + 1);
-    FluidModel->SetTDState_h(Enthalpy, scalar);
-    Temperature = FluidModel->GetTemperature();
-  } else {
-    /*--- When energy equation is switched off, use enthalpy from solution to compute temperature.
-     * This allows Python wrapper updates to enthalpy to correctly update the density. ---*/
-    Enthalpy = Solution(iPoint, nDim + 1);
-    FluidModel->SetTDState_h(Enthalpy, scalar);
-    Temperature = FluidModel->GetTemperature();
-  }
+  su2double Enthalpy = Solution(iPoint, nDim + 1);
+  FluidModel->SetTDState_h(Enthalpy, scalar);
+  su2double Temperature = FluidModel->GetTemperature();
+
   auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
+
+  /*--- Use the fluid model to compute the new value of density.
+  Note that the thermodynamic pressure is constant and decoupled
+  from the dynamic pressure being iterated. ---*/
 
   /*--- Set the value of the density ---*/
 
@@ -91,7 +86,6 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
     Enthalpy = Solution(iPoint, nDim + 1);
     FluidModel->SetTDState_h(Enthalpy, scalar);
     SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
-
     SetDensity(iPoint, FluidModel->GetDensity());
 
     /*--- Flag this point as non-physical. ---*/

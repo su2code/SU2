@@ -56,16 +56,16 @@ class CConstantDensity final : public CFluidModel {
        decoupled equation. Hence, we update the value.
        Note Cp = Cv, (gamma = 1).*/
     Temperature = t;
-    Enthalpy = Cp * Temperature;
+    Enthalpy = Cp * (Temperature - STD_REF_TEMP);  // Sensible enthalpy relative to STD_REF_TEMP
   }
 
   /*!
    * \brief Set the Dimensionless State using Enthalpy.
    * \param[in] val_enthalpy - Enthalpy value at the point.
-   * \param[in] val_scalars - not used here. 
+   * \param[in] val_scalars - not used here.
    */
   void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override {
     Enthalpy = val_enthalpy;
-    Temperature = Enthalpy / Cp;
+    Temperature = Enthalpy / Cp + STD_REF_TEMP;  // Temperature from sensible enthalpy
   }
 };

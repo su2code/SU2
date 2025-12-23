@@ -2145,9 +2145,9 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
      Therefore, we build inv(Precon) here and multiply by the residual
      later in the R-K and Euler Explicit time integration schemes. ---*/
 
-    
+
     Preconditioner[0][0] = Enthalpy * BetaInc2 * dRhodh / Density + BetaInc2;
-    
+
     for (iDim = 0; iDim < nDim; iDim++) Preconditioner[iDim + 1][0] = -1.0 * Velocity[iDim] / Density;
 
     if (energy) {

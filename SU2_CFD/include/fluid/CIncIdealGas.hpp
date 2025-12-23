@@ -58,7 +58,7 @@ class CIncIdealGas final : public CFluidModel {
     /*--- The EoS only depends upon temperature. ---*/
     Temperature = t;
     Density = Pressure / (Temperature * Gas_Constant);
-    Enthalpy = Cp * Temperature;
+    Enthalpy = Cp * (Temperature - STD_REF_TEMP);  // Sensible enthalpy relative to REF_TEMP
   }
 
   /*!
@@ -67,7 +67,7 @@ class CIncIdealGas final : public CFluidModel {
    */
   void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override {
     Enthalpy = val_enthalpy;
-    Temperature = Enthalpy / Cp;
+    Temperature = Enthalpy / Cp + STD_REF_TEMP;  // Temperature from sensible enthalpy
     Density = Pressure / (Temperature * Gas_Constant);
   }
 

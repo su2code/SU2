@@ -58,11 +58,10 @@ class CIncIdealGasPolynomial final : public CFluidModel {
    * \param[in] config - configuration container for the problem.
    */
   void SetCpModel(const CConfig* config) override {
-    const su2double t_ref = config->GetStandard_RefTemperatureND();
     Enthalpy_Ref = 0.0;
     su2double t_i = 1.0;
     for (int i = 0; i < N; ++i) {
-      t_i *= t_ref;
+      t_i *= STD_REF_TEMP;
       coeffs_[i] = config->GetCp_PolyCoeffND(i);
       Enthalpy_Ref += coeffs_[i] * t_i / (i + 1);
     }
