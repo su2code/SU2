@@ -263,11 +263,14 @@ def run_command(Command):
     """
     sys.stdout.flush()
 
+    # Use communicate() to continuously drain stderr and avoid deadlocks if the
+    # subprocess writes a lot of output to stderr.
     proc = subprocess.Popen(
         Command, shell=True, stdout=sys.stdout, stderr=subprocess.PIPE
     )
-    return_code = proc.wait()
-    message = proc.stderr.read().decode()
+    _, stderr = proc.communicate()
+    return_code = proc.returncode
+    message = stderr.decode(errors="replace")
 
     if return_code < 0:
         message = "SU2 process was terminated by signal '%s'\n%s" % (
@@ -277,7 +280,7 @@ def run_command(Command):
         raise SystemExit(message)
     elif return_code > 0:
         message = "Path = %s\nCommand = %s\nSU2 process returned error '%s'\n%s" % (
-            os.path.abspath(","),
+            os.path.abspath("."),
             Command,
             return_code,
             message,
