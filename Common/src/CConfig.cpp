@@ -9262,7 +9262,7 @@ su2double CConfig::GetWall_SpeciesVal(const string& val_marker, unsigned short i
   return 0.0;
 }
 
-unsigned short CConfig::GetWall_SpeciesType(const string& val_marker, unsigned short iSpecies) const {
+WALL_SPECIES_TYPE CConfig::GetWall_SpeciesType(const string& val_marker, unsigned short iSpecies) const {
   /*--- Search for the marker in the wall species list ---*/
   for (unsigned short iMarker_Wall_Species = 0; iMarker_Wall_Species < nMarker_Wall_Species; iMarker_Wall_Species++) {
     if (Marker_Wall_Species[iMarker_Wall_Species] == val_marker) {
@@ -9270,7 +9270,7 @@ unsigned short CConfig::GetWall_SpeciesType(const string& val_marker, unsigned s
     }
   }
   /*--- If marker not found (MARKER_WALL_SPECIES=NONE), return FLUX type (zero flux BC) ---*/
-  return WALL_SPECIES_FLUX;
+  return WALL_SPECIES_TYPE::WALL_SPECIES_FLUX;
 }
 
 const su2double* CConfig::GetInlet_TurbVal(const string& val_marker) const {

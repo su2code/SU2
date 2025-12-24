@@ -149,7 +149,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
                  CConfig* config, unsigned short val_marker) final;
 
   /*!
-   * \brief Impose the isothermal wall boundary condition.
+   * \brief Impose the isothermal wall Dirichlet boundary condition (value).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
@@ -161,7 +161,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
                           CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
 
   /*!
-   * \brief Impose the heat flux wall boundary condition.
+   * \brief Impose the heat flux Neumann wall boundary condition (flux).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] conv_numerics - Description of the numerical method.
