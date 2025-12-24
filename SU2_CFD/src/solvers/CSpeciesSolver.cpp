@@ -432,8 +432,7 @@ void CSpeciesSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_cont
 }
 
 void CSpeciesSolver::BC_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
-                                                        CNumerics* conv_numerics, CNumerics* visc_numerics,
-                                                        CConfig* config, unsigned short val_marker, bool cht_mode) {
+                                                        CConfig* config, unsigned short val_marker) {
   const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   const bool py_custom = config->GetMarker_All_PyCustom(val_marker);
 
