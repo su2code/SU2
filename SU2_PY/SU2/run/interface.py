@@ -38,7 +38,13 @@ from ..util import which
 #  Setup
 # ------------------------------------------------------------
 
-SU2_RUN = os.environ["SU2_RUN"]
+try:
+    SU2_RUN = os.environ["SU2_RUN"]
+except KeyError as exc:
+    raise RuntimeError(
+        'Environment variable "SU2_RUN" is not set. Please set SU2_RUN to the SU2 installation bin directory.'
+    ) from exc
+
 sys.path.append(SU2_RUN)
 quote = '"' if sys.platform == "win32" else ""
 
@@ -263,14 +269,17 @@ def run_command(Command):
     """
     sys.stdout.flush()
 
+    # Avoid potential deadlocks when a child process writes heavily to stderr:
+    # read stderr via communicate() while streaming stdout to the console.
     # Use communicate() to continuously drain stderr and avoid deadlocks if the
     # subprocess writes a lot of output to stderr.
     proc = subprocess.Popen(
         Command, shell=True, stdout=sys.stdout, stderr=subprocess.PIPE
     )
     _, stderr = proc.communicate()
+
     return_code = proc.returncode
-    message = stderr.decode(errors="replace")
+    message = (stderr or b"").decode(errors="replace")
 
     if return_code < 0:
         message = "SU2 process was terminated by signal '%s'\n%s" % (
