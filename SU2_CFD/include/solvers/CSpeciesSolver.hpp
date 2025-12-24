@@ -41,7 +41,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   unsigned short Inlet_Position;             /*!< \brief Column index for scalar variables in inlet files. */
   vector<su2activematrix> Inlet_SpeciesVars; /*!< \brief Species variables at inlet profiles. */
   vector<su2activematrix> Wall_SpeciesVars; /*!< \brief Species variables at  profiles. */
-  vector<su2matrix<su2double> >CustomBoundaryScalar;
+  vector<su2matrix<su2double>> CustomBoundaryScalar;
 
  public:
   /*!
@@ -245,17 +245,6 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       CustomBoundaryScalar[val_marker](val_vertex, iVar) = val_customBoundaryScalar[iVar];
     }
-  }
-
-  /*!
-   * \brief Get custom boundary scalar value for a specific variable.
-   * \param[in] val_marker - Boundary marker index
-   * \param[in] val_vertex - Boundary vertex index
-   * \param[in] iVar - Variable index
-   * \return Custom boundary scalar value
-   */
-  inline su2double GetCustomBoundaryScalar(unsigned short val_marker, unsigned long val_vertex, unsigned short iVar) const {
-    return CustomBoundaryScalar[val_marker](val_vertex, iVar);
   }
 
 };
