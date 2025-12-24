@@ -41,6 +41,7 @@
 #include <complex>
 #include <iostream>
 #include <limits>
+#include <type_traits>
 
 /*!
  * \brief Epsilon used in CSysSolve depending on datatype to
@@ -549,7 +550,7 @@ unsigned long CSysSolve<ScalarType>::RFGMRES_LinSolver(const CSysVector<ScalarTy
                                                        const CMatrixVectorProduct<ScalarType>& mat_vec,
                                                        const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                        unsigned long MaxIter, ScalarType& residual, bool monitoring,
-                                                       const CConfig* config) {
+                                                       const CConfig* config) const {
   const auto restartIter = config->GetLinear_Solver_Restart_Frequency();
 
   SU2_OMP_MASTER {
@@ -624,11 +625,12 @@ void LinearCombination(const unsigned long n, const std::vector<CSysVector<Scala
 }  // namespace
 
 template <class ScalarType>
-unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,
-                                                       const CMatrixVectorProduct<ScalarType>& mat_vec,
-                                                       const CPreconditioner<ScalarType>& precond, ScalarType tol,
-                                                       unsigned long max_iter, ScalarType& residual, bool monitoring,
-                                                       const CConfig* config) const {
+template <class Dummy>
+unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,
+                                                           const CMatrixVectorProduct<ScalarType>& mat_vec,
+                                                           const CPreconditioner<ScalarType>& precond, ScalarType tol,
+                                                           unsigned long max_iter, ScalarType& residual,
+                                                           bool monitoring, const CConfig* config) const {
   using EigenMatrix = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
   using EigenVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
@@ -952,6 +954,19 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarTy
     }
   }
   return iter;
+}
+
+template <class ScalarType>
+unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x,
+                                                       const CMatrixVectorProduct<ScalarType>& mat_vec,
+                                                       const CPreconditioner<ScalarType>& precond, ScalarType tol,
+                                                       unsigned long max_iter, ScalarType& residual, bool monitoring,
+                                                       const CConfig* config) const {
+  if constexpr (std::is_same_v<ScalarType, float> || std::is_same_v<ScalarType, double>) {
+    return FGCRODR_LinSolverImpl<>(b, x, mat_vec, precond, tol, max_iter, residual, monitoring, config);
+  } else {
+    return RFGMRES_LinSolver(b, x, mat_vec, precond, tol, max_iter, residual, monitoring, config);
+  }
 }
 
 template <class ScalarType>
