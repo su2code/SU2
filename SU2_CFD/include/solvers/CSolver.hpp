@@ -2857,7 +2857,7 @@ public:
                                            unsigned short val_dim) const { return 0; }
 
 
-    /*!
+  /*!
    * \brief Set the value of the customized normal scalar values/flux at a specified vertex on a specified marker.
    * \param[in] val_marker - Marker value
    * \param[in] val_vertex - Boundary vertex value
