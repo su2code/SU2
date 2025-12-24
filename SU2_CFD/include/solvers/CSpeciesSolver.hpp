@@ -247,15 +247,4 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
     }
   }
 
-  /*!
-   * \brief Get custom boundary scalar value for a specific variable.
-   * \param[in] val_marker - Boundary marker index
-   * \param[in] val_vertex - Boundary vertex index
-   * \param[in] iVar - Variable index
-   * \return Custom boundary scalar value
-   */
-  inline su2double GetCustomBoundaryScalar(unsigned short val_marker, unsigned long val_vertex, unsigned short iVar) const {
-    return CustomBoundaryScalar[val_marker](val_vertex, iVar);
-  }
-
 };
