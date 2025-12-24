@@ -297,7 +297,7 @@ private:
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
   su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity and viscosity ratio for inlet boundaries. */
-  unsigned short **Kind_Wall_Species;        /*!< \brief Species boundary condition type for wall boundaries (FLUX or VALUE) per species. */
+  WALL_SPECIES_TYPE **Kind_Wall_Species;        /*!< \brief Species boundary condition type for wall boundaries (FLUX or VALUE) per species. */
   su2double **Wall_SpeciesVal;               /*!< \brief Specified species flux or value for wall boundaries per species. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
   su2double *Inflow_Mach;                    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -1399,7 +1399,7 @@ private:
 
   template <class Tenum>
   void addWallSpeciesOption(const string name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species,
-                            unsigned short** & option_field, const map<string, Tenum> & enum_map,
+                            WALL_SPECIES_TYPE** & option_field, const map<string, Tenum> & enum_map,
                             su2double** & value, unsigned short & nSpecies_per_Wall);
 
   void addExhaustOption(const string& name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,

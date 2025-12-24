@@ -157,8 +157,9 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                          CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
+  void BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container,
+                          CNumerics* conv_numerics, CNumerics* visc_numerics,
+                          CConfig* config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose the heat flux Neumann wall boundary condition (flux).
@@ -169,21 +170,19 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
-  void BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                        CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) override;
+  void BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container,
+                        CNumerics* conv_numerics, CNumerics* visc_numerics,
+                        CConfig* config, unsigned short val_marker) override;
 
   /*!
    * \brief Generic wall boundary condition implementation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   * \param[in] cht_mode - Flag for conjugate heat transfer mode (default: false).
    */
-  void BC_Wall_Generic(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                       CNumerics* visc_numerics, CConfig* config, unsigned short val_marker, bool cht_mode = false);
+  void BC_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
+                       CConfig* config, unsigned short val_marker);
 
   /*--- Note that BC_Sym_Plane, BC_HeatFlux_Wall, BC_Isothermal_Wall are all treated as zero-flux BC for the
    * mass-factions, which can be fulfilled by no additional residual contribution on these nodes.

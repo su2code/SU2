@@ -420,15 +420,15 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
 
 void CSpeciesSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container,
-                                                CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
-                                                unsigned short val_marker) {
-  BC_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+                                                CNumerics* conv_numerics, CNumerics* visc_numerics,
+                                                CConfig* config, unsigned short val_marker) {
+  BC_Wall_Generic(geometry, solver_container, config, val_marker);
 }
 
 void CSpeciesSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container,
-                                                CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
-                                                unsigned short val_marker) {
-  BC_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, false);
+                                                CNumerics* conv_numerics, CNumerics* visc_numerics,
+                                                CConfig* config, unsigned short val_marker) {
+  BC_Wall_Generic(geometry, solver_container, config, val_marker);
 }
 
 void CSpeciesSolver::BC_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
@@ -438,48 +438,49 @@ void CSpeciesSolver::BC_Wall_Generic(CGeometry* geometry, CSolver** solver_conta
 
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
-  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
 
-    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    // Get wall species boundary condition type and value for this marker and species
+    const su2double WallSpeciesValue = config->GetWall_SpeciesVal(Marker_Tag, iVar);
+    const WALL_SPECIES_TYPE wallspeciestype = config->GetWall_SpeciesType(Marker_Tag, iVar);
 
-    if (!geometry->nodes->GetDomain(iPoint)) continue;
+    SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+    for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-    const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    su2double Area = GeometryToolbox::Norm(nDim, Normal);
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
 
-      // Get wall species boundary condition type and value for this marker and species
-      su2double WallSpeciesValue = config->GetWall_SpeciesVal(Marker_Tag, iVar);
-      unsigned short wallspeciestype = config->GetWall_SpeciesType(Marker_Tag, iVar);
+      su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
       su2double WallSpecies = WallSpeciesValue;
 
       /*--- Get the scalar values from the python wrapper. ---*/
       if (py_custom) {
-        WallSpecies = GetCustomBoundaryScalar(val_marker, iVertex, iVar);
+        WallSpecies = CustomBoundaryScalar[val_marker](iVertex,iVar);
       }
 
-    switch(wallspeciestype) {
-      case WALL_SPECIES_TYPE::WALL_SPECIES_FLUX:
-        //Flux Boundary condition
-        LinSysRes(iPoint, iVar) -= WallSpecies * Area;
-      break;
-      case WALL_SPECIES_TYPE::WALL_SPECIES_VALUE:
-        //Dirichlet Strong Boundary Condition
-        nodes->SetSolution(iPoint, iVar, WallSpecies);
-        nodes->SetSolution_Old(iPoint, iVar, WallSpecies);
-        LinSysRes(iPoint, iVar) = 0.0;
-        if (implicit) {
-          unsigned long total_index = iPoint * nVar + iVar;
-          Jacobian.DeleteValsRowi(total_index);
-        }
-      break;
+      switch(wallspeciestype) {
+        case WALL_SPECIES_TYPE::WALL_SPECIES_FLUX:
+          //Flux Boundary condition
+          LinSysRes(iPoint, iVar) -= WallSpecies * Area;
+        break;
+        case WALL_SPECIES_TYPE::WALL_SPECIES_VALUE:
+          //Dirichlet Strong Boundary Condition
+          nodes->SetSolution(iPoint, iVar, WallSpecies);
+          nodes->SetSolution_Old(iPoint, iVar, WallSpecies);
+          LinSysRes(iPoint, iVar) = 0.0;
+          if (implicit) {
+            unsigned long total_index = iPoint * nVar + iVar;
+            Jacobian.DeleteValsRowi(total_index);
+          }
+        break;
+      }
     }
+    END_SU2_OMP_FOR
   }
-  END_SU2_OMP_FOR
 }
 
 

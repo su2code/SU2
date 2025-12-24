@@ -1309,13 +1309,13 @@ class COptionWallSpecies : public COptionBase {
   string name;  // identifier for the option
   unsigned short& size;
   string*& marker;
-  unsigned short**& field;  // Reference to the field name (now 2D: marker x species)
+  WALL_SPECIES_TYPE**& field;  // Reference to the field name (now 2D: marker x species)
   su2double**& value;       // Now 2D: marker x species
   unsigned short& nSpecies_per_Wall;
 
  public:
   COptionWallSpecies(string option_field_name, unsigned short& nMarker_Wall_Species, string*& Marker_Wall_Species,
-                     unsigned short**& option_field, const map<string, Tenum> m, su2double**& value,
+                     WALL_SPECIES_TYPE**& option_field, const map<string, Tenum> m, su2double**& value,
                      unsigned short& nSpecies_per_Wall)
       : size(nMarker_Wall_Species),
         marker(Marker_Wall_Species),
@@ -1416,11 +1416,11 @@ class COptionWallSpecies : public COptionBase {
     // Allocate arrays
     this->size = marker_indices.size();
     this->marker = new string[this->size];
-    this->field = new unsigned short*[this->size];
+    this->field = new WALL_SPECIES_TYPE*[this->size];
     this->value = new su2double*[this->size];
 
     for (unsigned short i = 0; i < this->size; i++) {
-      this->field[i] = new unsigned short[this->nSpecies_per_Wall];
+      this->field[i] = new WALL_SPECIES_TYPE[this->nSpecies_per_Wall];
       this->value[i] = new su2double[this->nSpecies_per_Wall];
     }
 

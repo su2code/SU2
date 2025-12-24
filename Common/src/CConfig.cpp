@@ -515,7 +515,7 @@ void CConfig::addRiemannOption(const string name, unsigned short & nMarker_Riema
 
 template <class Tenum>
 void CConfig::addWallSpeciesOption(const string name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species,
-                                   unsigned short** & option_field, const map<string, Tenum> & enum_map,
+                                   WALL_SPECIES_TYPE** & option_field, const map<string, Tenum> & enum_map,
                                    su2double** & value, unsigned short & nSpecies_per_Wall) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
