@@ -41,7 +41,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   unsigned short Inlet_Position;             /*!< \brief Column index for scalar variables in inlet files. */
   vector<su2activematrix> Inlet_SpeciesVars; /*!< \brief Species variables at inlet profiles. */
   vector<su2activematrix> Wall_SpeciesVars; /*!< \brief Species variables at  profiles. */
-  vector<su2matrix<su2double> >CustomBoundaryScalar;
+  vector<su2matrix<su2double>> CustomBoundaryScalar;
 
  public:
   /*!
