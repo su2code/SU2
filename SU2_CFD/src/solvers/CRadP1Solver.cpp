@@ -285,7 +285,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   /*--- Compute the constant for the wall theta ---*/
   Theta = Wall_Emissivity / (2.0*(2.0 - Wall_Emissivity));
 
-    /*--- Retrieve the specified wall temperature ---*/
+  /*--- Retrieve the specified wall temperature ---*/
   Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/

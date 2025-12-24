@@ -306,9 +306,11 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange, const
     if (y_cv[0] * sqrt(tauWall / rho) / (mu_lam / rho) > 1.0)
       SU2_MPI::Error("Y+ greater than one: Increase the number of points or growth ratio.", CURRENT_FUNCTION);
 
-    /* Define a norm
-     */
-    if (abs(1.0 - tauWall / tauWall_prev) < tol && abs(1.0 - qWall / qWall_prev) < tol) {
+    /* Define a norm */
+    bool tau_converged = abs(tauWall - tauWall_prev) < fmax(tol * abs(tauWall), EPS);
+    bool q_converged = abs(qWall - qWall_prev) < fmax(tol * abs(qWall), EPS);
+
+    if (tau_converged && q_converged) {
       converged = true;
     }
   }
@@ -392,7 +394,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange, con
     const su2double rhs_1 = Pr_lam * y_plus * exp(Gamma);
     const su2double rhs_2 =
         (2.12 * log(1.0 + y_plus) + pow((3.85 * pow(Pr_lam, (1.0 / 3.0)) - 1.3), 2.0) + 2.12 * log(Pr_lam)) *
-        exp(1. / Gamma);
+        exp(1.0 / fmin(Gamma, -EPS));
     qWall = lhs / (rhs_1 + rhs_2);
   } else {
     qWall = Wall_HeatFlux;
