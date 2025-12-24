@@ -241,7 +241,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
    * \param[in] val_customBoundaryScalar - Vector of scalar values
    */
   inline void SetCustomBoundaryScalar(unsigned short val_marker, unsigned long val_vertex,
-                                      vector<passivedouble> val_customBoundaryScalar) {
+                                      vector<passivedouble> val_customBoundaryScalar) final {
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       CustomBoundaryScalar[val_marker](val_vertex, iVar) = val_customBoundaryScalar[iVar];
     }
