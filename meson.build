@@ -19,7 +19,7 @@ python = pymod.find_installation()
 
 if get_option('enable-cuda')
   add_languages('cuda')
-  add_global_arguments('-arch=sm_86', language : 'cuda')
+  add_global_arguments('-arch=native', language : 'cuda')
 endif
 
 su2_cpp_args = []

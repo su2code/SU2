@@ -1869,6 +1869,9 @@ void CConfig::SetConfig_Options() {
   /*!\par CONFIG_CATEGORY: Linear solver definition \ingroup Config*/
   /*--- Options related to the linear solvers ---*/
 
+  /*!\brief GRAPH_PARTIONING
+   *  \n DESCRIPTION: Algorithm for partioning the matrix graph to facilitate parallel execution of linear algebra subroutines\n OPTIONS: see \link Graph_Part_Map \endlink \n DEFAULT: LEVEL_SCHEDULING \ingroup Config*/
+  addEnumOption("GRAPH_PART_ALGORITHM", Kind_Graph_Part_Algo, Graph_Part_Map, LEVEL_SCHEDULING);
   /*!\brief LINEAR_SOLVER
    *  \n DESCRIPTION: Linear solver for the implicit, mesh deformation, or discrete adjoint systems \n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
   addEnumOption("LINEAR_SOLVER", Kind_Linear_Solver, Linear_Solver_Map, FGMRES);
@@ -1907,7 +1910,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("DISCADJ_LIN_SOLVER", Kind_DiscAdj_Linear_Solver, Linear_Solver_Map, FGMRES);
   /* DESCRIPTION: Preconditioner for the discrete adjoint Krylov linear solvers */
   addEnumOption("DISCADJ_LIN_PREC", Kind_DiscAdj_Linear_Prec, Linear_Solver_Prec_Map, ILU);
-  /* DESCRIPTION: Linear solver for the discete adjoint systems */
+  /* DESCRIPTION: Thread block size for CUDA GPUs */
+  addUnsignedShortOption("CUDA_BLOCK_SIZE", Cuda_Block_Size, 1024);
 
   /* DESCRIPTION: Maximum update ratio value for flow density and energy variables */
   addDoubleOption("MAX_UPDATE_FLOW", MaxUpdateFlow, 0.2);

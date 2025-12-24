@@ -148,8 +148,10 @@ class CSysMatrix {
   ScalarType* d_matrix;           /*!< \brief Device Pointer to store the matrix values on the GPU. */
   const unsigned long* d_row_ptr; /*!< \brief Device Pointers to the first element in each row. */
   const unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
-  bool useCuda;                   /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
-                                     Mainly used to conditionally free GPU memory in the class destructor. */
+  const unsigned long* d_dia_ptr; /*!< \brief Device Column index for each of the elements in val(). */
+  unsigned long* d_partition_offsets;
+  bool useCuda; /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
+                   Mainly used to conditionally free GPU memory in the class destructor. */
 
   ScalarType* ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
@@ -904,8 +906,8 @@ class CSysMatrix {
    * \param[in] vec - CSysVector to be multiplied by the preconditioner.
    * \param[out] prod - Result of the product A*vec.
    */
-  void GPUComputeLU_SGSPreconditioner(ScalarType& vec, ScalarType& prod, CGeometry* geometry,
-                                      const CConfig* config) const;
+  void GPUComputeLU_SGSPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
+                                      CGeometry* geometry, const CConfig* config) const;
 
   /*!
    * \brief Build the Jacobi preconditioner.

@@ -149,6 +149,14 @@ class CPhysicalGeometry final : public CGeometry {
   void DistributeColoring(const CConfig* config, CGeometry* geometry);
 
   /*!
+   * \brief Divide the graph produced by the matrix into parallel partitions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] pointList - Ordered list of points in the mesh.
+   */
+  template <class ScalarType>
+  void PartitionGraph(const CConfig* config, vector<ScalarType>& pointList);
+
+  /*!
    * \brief Distribute the grid points, including ghost points, across all ranks based on a ParMETIS coloring.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.

@@ -261,6 +261,13 @@ class CGeometry {
   unsigned long* nPointCumulative{nullptr}; /*!< \brief Cumulative storage array containing the total number of points
                                                on all prior ranks in the linear partitioning. */
 
+  unsigned long nPartition;       /*!< \brief Number of divisions of the matrix graph during execution of parallel
+                                     partitioning algorithms. */
+  unsigned long maxPartitionSize; /*!< \brief Size of the level with the maximum number of elements. */
+  vector<unsigned long>
+      partitionOffsets; /*!< \brief Vector array containing the indices at which different parallel partitions begin. */
+  vector<unsigned long> chainPtr; /*!< \brief Vector array containing distribution of levels into chains. */
+
   /*--- Data structures for point-to-point MPI communications. ---*/
 
   int maxCountPerPoint{0}; /*!< \brief Maximum number of pieces of data sent per vertex in point-to-point comms. */
