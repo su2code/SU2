@@ -7162,7 +7162,7 @@ public:
    * \param[in] iSpecies - Species index.
    * \return The wall species type (WALL_SPECIES_FLUX or WALL_SPECIES_VALUE).
    */
-  unsigned short GetWall_SpeciesType(const string& val_marker, unsigned short iSpecies) const;
+  WALL_SPECIES_TYPE GetWall_SpeciesType(const string& val_marker, unsigned short iSpecies) const;
 
   /*!
    * \brief Get the turbulent properties values at an inlet boundary
