@@ -1838,7 +1838,7 @@ static const MapType<std::string, RIEMANN_TYPE> Giles_Map = {
 /*!
  * \brief Types of wall species boundary conditions.
  */
-enum WALL_SPECIES_TYPE {
+enum class WALL_SPECIES_TYPE {
   WALL_SPECIES_FLUX = 1,   /*!< \brief Neumann flux boundary condition for wall species. */
   WALL_SPECIES_VALUE = 2   /*!< \brief Dirichlet value boundary condition for wall species. */
 };
