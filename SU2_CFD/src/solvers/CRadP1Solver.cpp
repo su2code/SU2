@@ -285,7 +285,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   /*--- Compute the constant for the wall theta ---*/
   Theta = Wall_Emissivity / (2.0*(2.0 - Wall_Emissivity));
 
-    /*--- Retrieve the specified wall temperature ---*/
+  /*--- Retrieve the specified wall temperature ---*/
   Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
@@ -575,7 +575,7 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   su2double Area, Vol, Lambda;
   su2double Global_Delta_Time = 1E6, Local_Delta_Time = 0.0, K_v = 0.25;
   su2double CFL = config->GetCFL_Rad();
-  su2double GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
+  su2double GammaP1 = 1.0 / (3.0*fmax(Absorption_Coeff + Scattering_Coeff, EPS));
   const su2double* Normal;
 
   /*--- Compute spectral radius based on thermal conductivity ---*/

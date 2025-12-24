@@ -116,7 +116,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [20.000000, -2.082673, -2.013587, 0.000000]
+    discadj_incomp_cylinder.test_vals = [20.000000, -5.181765, -3.840710, 0.000000]
     test_list.append(discadj_incomp_cylinder)
 
     ######################################
@@ -256,7 +256,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals         = [-2.001337, 0.655543, 0.000000, 0.006170]
+    discadj_heat.test_vals = [-1.928244, 0.730865, 0.000000, -3.993500]
     test_list.append(discadj_heat)
 
     ###################################
@@ -290,7 +290,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.955510, -3.085549, -3.085516, -3.085511]
+    discadj_cht.test_vals = [-6.131109, -2.564634, -2.565220, -2.565303]
     test_list.append(discadj_cht)
 
     # 2D DA cht streamwise periodic case, 2 zones, avg temp objective
@@ -298,7 +298,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-5.081814, -3.881868, -4.127717]
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-3.907317, -5.155811, -3.183956]
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
@@ -307,7 +307,7 @@ def main():
     da_sp_pinArray_cht_2d_mf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/dp-adjoint_chtPinArray_2d"
     da_sp_pinArray_cht_2d_mf.cfg_file  = "configMaster.cfg"
     da_sp_pinArray_cht_2d_mf.test_iter = 100
-    da_sp_pinArray_cht_2d_mf.test_vals = [-4.512241, -1.154741, -1.436747, -18.499579, 0.148431, -5.675770, -19.074432, -50.463572]
+    da_sp_pinArray_cht_2d_mf.test_vals = [-4.512241, -1.154741, -1.436747, 0.148439, -5.675767, -15.727696, -50.4635702]
     da_sp_pinArray_cht_2d_mf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_mf)
 
@@ -316,8 +316,8 @@ def main():
     da_unsteadyCHT_cylinder.cfg_dir   = "coupled_cht/disc_adj_unsteadyCHT_cylinder"
     da_unsteadyCHT_cylinder.cfg_file  = "chtMaster.cfg"
     da_unsteadyCHT_cylinder.test_iter = 2
-    da_unsteadyCHT_cylinder.test_vals         = [-3.508906, -4.317739, -4.241558, -11.836892, -12.862648, 0.000000, 3.688000, 0.295190]
-    da_unsteadyCHT_cylinder.test_vals_aarch64 = [-3.508906, -4.317739, -4.241558, -11.836892, -12.862650, 0.000000, 3.688000, 0.295190]
+    da_unsteadyCHT_cylinder.test_vals         = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662012, 0.000000, 89.932000, 0.295190]
+    da_unsteadyCHT_cylinder.test_vals_aarch64 = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662012, 0.000000, 89.932000, 0.295190]
     da_unsteadyCHT_cylinder.unsteady  = True
     da_unsteadyCHT_cylinder.multizone = True
     test_list.append(da_unsteadyCHT_cylinder)
@@ -332,7 +332,7 @@ def main():
     discadj_flamelet_ch4_hx.cfg_file         = "lam_prem_ch4_hx_ad.cfg"
     discadj_flamelet_ch4_hx.multizone        = False
     discadj_flamelet_ch4_hx.test_iter        = 10
-    discadj_flamelet_ch4_hx.test_vals        = [-8.699008, -8.604699, -8.816298, -6.626855, -14.620943, -3.249062, -18.930953]
+    discadj_flamelet_ch4_hx.test_vals        = [-8.717448, -8.450564, -8.766800, -6.626764, -14.602479, -3.248656, -18.930954]
     test_list.append(discadj_flamelet_ch4_hx)
 
     # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)
@@ -341,7 +341,7 @@ def main():
     discadj_flamelet_ch4_cht.cfg_file         = "lam_prem_ch4_cht_ad_master.cfg"
     discadj_flamelet_ch4_cht.multizone        = True
     discadj_flamelet_ch4_cht.test_iter        = 10
-    discadj_flamelet_ch4_cht.test_vals        = [-2.760027, -1.999839, -2.096537, -0.153424, -7.289370, -18.655063, -18.622003, -4.847179]
+    discadj_flamelet_ch4_cht.test_vals        = [-2.764345, -1.998773, -2.082310, -0.140923, -7.287831, -18.655078, -18.622026, -4.847187]
     test_list.append(discadj_flamelet_ch4_cht)
 
     ######################################

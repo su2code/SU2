@@ -196,7 +196,7 @@ def save_data(
                 core_name=core_name,
             )
             # check for keys not in new data
-            for key, value in data_dict_old.iteritems():
+            for key, value in data_dict_old.items():
                 if not (key in data_dict):
                     data_dict[key] = value
             #: for each dict item
@@ -359,7 +359,7 @@ def rec2dict(array_in):
         value = array_in[key].tolist()[0][0]
 
         # convert string
-        if isinstance(value[0], unicode):
+        if isinstance(value[0], str):
             value = str(value[0])
 
         # convert array
@@ -418,7 +418,7 @@ def append_nestdict(base_dict, add_dict):
     for key in add_dict.keys():
 
         # ensure base_dict key exists and is a list
-        if not base_dict.has_key(key):
+        if key not in base_dict:
             if isinstance(add_dict[key], dict):
                 base_dict[key] = {}
             else:
