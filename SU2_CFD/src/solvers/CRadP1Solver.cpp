@@ -575,7 +575,7 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   su2double Area, Vol, Lambda;
   su2double Global_Delta_Time = 1E6, Local_Delta_Time = 0.0, K_v = 0.25;
   su2double CFL = config->GetCFL_Rad();
-  su2double GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
+  su2double GammaP1 = 1.0 / (3.0*fmax(Absorption_Coeff + Scattering_Coeff, EPS));
   const su2double* Normal;
 
   /*--- Compute spectral radius based on thermal conductivity ---*/
