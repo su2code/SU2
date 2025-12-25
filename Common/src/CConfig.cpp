@@ -62,6 +62,12 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 //#pragma omp threadprivate(Profile_Function_tp, Profile_Time_tp, Profile_ID_tp, Profile_Map_tp)
 
 
+/* --- Map from config string to inner solver enum --- */
+std::map<std::string, ENUM_LINEAR_SOLVER_INNER> Inner_Linear_Solver_Map = {
+  {"NONE",    INNER_SOLVER_NONE},
+  {"BCGSTAB", INNER_SOLVER_BCGSTAB}
+};
+
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], SU2_COMPONENT val_software, bool verb_high) {
 
   /*--- Set the case name to the base config file name without extension ---*/
@@ -1908,6 +1914,20 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Preconditioner for the discrete adjoint Krylov linear solvers */
   addEnumOption("DISCADJ_LIN_PREC", Kind_DiscAdj_Linear_Prec, Linear_Solver_Prec_Map, ILU);
   /* DESCRIPTION: Linear solver for the discete adjoint systems */
+
+  /*!\brief LINEAR_SOLVER_NESTED
+   *  \n DESCRIPTION: Enable nested Krylov linear solver (e.g. FGMRES with inner solver).
+   *  \n OPTIONS: YES, NO \ingroup Config */
+  addBoolOption("LINEAR_SOLVER_NESTED", Nested_Linear_Solver, false);
+
+  /*!\brief LINEAR_SOLVER_INNER
+   *  \n DESCRIPTION: Inner linear solver used when LINEAR_SOLVER_NESTED = YES.
+   *  \n OPTIONS: see \link Inner_Linear_Solver_Map \endlink
+   *  \n DEFAULT: BCGSTAB \ingroup Config */
+  addEnumOption("LINEAR_SOLVER_INNER",
+                Kind_Linear_Solver_Inner,
+                Inner_Linear_Solver_Map,
+                INNER_SOLVER_BCGSTAB);
 
   /* DESCRIPTION: Maximum update ratio value for flow density and energy variables */
   addDoubleOption("MAX_UPDATE_FLOW", MaxUpdateFlow, 0.2);
@@ -7260,10 +7280,17 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             case BCGSTAB:
             case FGMRES:
             case RESTARTED_FGMRES:
-              if (Kind_Linear_Solver == BCGSTAB)
+              if (Kind_Linear_Solver == BCGSTAB){
                 cout << "BCGSTAB is used for solving the linear system." << endl;
-              else
-                cout << "FGMRES is used for solving the linear system." << endl;
+              }
+              else {
+                    if (GetNested_Linear_Solver()){
+                        cout << "Nested FGMRES (FGMRES with inner BiCGSTAB) is used for solving the linear system." << endl;
+                    }
+                    else {
+                       cout << "FGMRES is used for solving the linear system." << endl;
+                    }
+               }
               switch (Kind_Linear_Solver_Prec) {
                 case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
                 case LINELET: cout << "Using a linelet preconditioning."<< endl; break;

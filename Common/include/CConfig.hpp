@@ -53,6 +53,12 @@
 
 using namespace std;
 
+/*Inner solver for nested linear solver:*/
+enum ENUM_LINEAR_SOLVER_INNER {
+  INNER_SOLVER_NONE = 0,
+  INNER_SOLVER_BCGSTAB
+};
+
 /*!
  * \class CConfig
  * \brief Main class for defining the problem; basically this class reads the configuration file, and
@@ -430,6 +436,7 @@ private:
   unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
   bool NewtonKrylov;           /*!< \brief Use a coupled Newton method to solve the flow equations. */
+  bool Nested_Linear_Solver;   /*!< \brief Enable nested Krylov linear solver (e.g. FGMRES + inner solver). */
   array<unsigned short,3> NK_IntParam{{20, 3, 2}}; /*!< \brief Integer parameters for NK method. */
   array<su2double,5> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4, 1.0}}; /*!< \brief Floating-point parameters for NK method. */
   su2double NK_Relaxation = 1.0;
@@ -525,6 +532,7 @@ private:
   Kind_Deform_Linear_Solver,             /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver. */
   Kind_Linear_Solver,                    /*!< \brief Numerical solver for the implicit scheme. */
+  Kind_Linear_Solver_Inner,              /*!< \brief Inner solver used in nested Krylov schemes. */
   Kind_Linear_Solver_Prec,               /*!< \brief Preconditioner of the linear solver. */
   Kind_DiscAdj_Linear_Solver,            /*!< \brief Linear solver for the discrete adjoint system. */
   Kind_DiscAdj_Linear_Prec,              /*!< \brief Preconditioner of the discrete adjoint linear solver. */
@@ -4287,6 +4295,16 @@ public:
    * \return Numerical solver for implicit formulation (solving the linear system).
    */
   unsigned short GetKind_Linear_Solver(void) const { return Kind_Linear_Solver; }
+
+  /*!
+   * \brief Check whether nested Krylov linear solver is enabled.
+   */
+  bool GetNested_Linear_Solver(void) const { return Nested_Linear_Solver; }
+
+  /*!
+   * \brief Get the inner linear solver used in nested Krylov schemes.
+   */
+  unsigned short GetKind_Linear_Solver_Inner(void) const { return Kind_Linear_Solver_Inner; }
 
 
   /*!

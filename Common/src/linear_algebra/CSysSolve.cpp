@@ -172,6 +172,112 @@ void CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<Sc
   w[i + 1] /= nrm;
 }
 
+/*--- Inner Krylov solver for nested FGMRES ---*/
+
+template <class ScalarType>
+void BCGSTABpre_parallel(const CSysVector<ScalarType>& a, CSysVector<ScalarType>& b_in,
+                         const CMatrixVectorProduct<ScalarType>& mat_vec, const CPreconditioner<ScalarType>& precond,
+                         const CConfig* config) {
+  // NOTE: norm0_in is currently unused. To avoid -Werror unused-variable warnings,
+  // we mark it [[maybe_unused]] so that future changes can reuse it without
+  // triggering a build failure.
+  ScalarType norm_r_in = 0.0;
+  [[maybe_unused]] ScalarType norm0_in = 0.0;
+  unsigned long ii = 0;
+
+  CSysVector<ScalarType> A_z_i;
+  CSysVector<ScalarType> r_0_in;
+  CSysVector<ScalarType> r_in;
+  CSysVector<ScalarType> p;
+  CSysVector<ScalarType> v;
+  CSysVector<ScalarType> z_i;
+
+  /*--- Allocate if not allocated yet ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    auto nVar = a.GetNVar();
+    auto nBlk = a.GetNBlk();
+    auto nBlkDomain = a.GetNBlkDomain();
+
+    A_z_i.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+    r_0_in.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+    r_in.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+    p.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+    v.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+    z_i.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
+  mat_vec(b_in, A_z_i);
+  r_in = a - A_z_i;
+
+  /*--- Only compute the residuals in full communication mode. ---*/
+  if (config->GetComm_Level() == COMM_FULL) {
+    norm_r_in = r_in.norm();
+    norm0_in = a.norm();
+    /*--- Set the norm to the initial residual value ---*/
+    /*--- if (tol_type == LinearToleranceType::RELATIVE) norm0_in = norm_r_in; ---*/
+  }
+
+  /*--- Initialization ---*/
+  ScalarType alpha = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
+  p = ScalarType(0.0);
+  v = ScalarType(0.0);
+  r_0_in = r_in;
+
+  ScalarType tolerance = 1e-5;  // Tolerance for the residual norm
+
+  /*--- Loop over all search directions ---*/
+  while (ii < 1000) {  // Arbitrary high iteration limit for safety
+    /*--- Compute rho_prime ---*/
+    rho_prime = rho;
+
+    /*--- Compute rho_i ---*/
+    rho = r_in.dot(r_0_in);
+
+    /*--- Compute beta ---*/
+    ScalarType beta_in = (rho / rho_prime) * (alpha / omega);
+
+    /*--- Update p ---*/
+    p = beta_in * (p - omega * v) + r_in;
+
+    /*--- Preconditioning step ---*/
+    precond(p, z_i);
+    mat_vec(z_i, v);
+
+    /*--- Calculate step-length alpha ---*/
+    ScalarType r_0_v = r_0_in.dot(v);
+    alpha = rho / r_0_v;
+
+    /*--- Update solution and residual ---*/
+    b_in += alpha * z_i;
+    r_in -= alpha * v;
+
+    /*--- Preconditioning step ---*/
+    precond(r_in, z_i);
+    mat_vec(z_i, A_z_i);
+
+    /*--- Calculate step-length omega, avoid division by 0. ---*/
+    omega = A_z_i.squaredNorm();
+    if (omega == ScalarType(0)) break;
+    omega = A_z_i.dot(r_in) / omega;
+
+    /*--- Update solution and residual ---*/
+    b_in += omega * z_i;
+    r_in -= omega * A_z_i;
+
+    /*--- Update the residual norm ---*/
+    norm_r_in = r_in.norm();
+
+    /*--- Check if residual norm is below tolerance ---*/
+    if (norm_r_in < tolerance) {
+      break;  // Stop if the residual norm is below the desired tolerance
+    }
+
+    ii++;  // Increment iteration counter
+  }
+}
+
 template <class ScalarType>
 void CSysSolve<ScalarType>::WriteHeader(const string& solver, ScalarType restol, ScalarType resinit) const {
   cout << "\n# " << solver << " residual history\n";
@@ -359,6 +465,11 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
    * we still want to parallelize some of the expensive operations. ---*/
   const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
 
+  /*--- Nested inner solver (BCGSTAB) option ---*/
+  const bool useNestedBiCGSTAB =
+      config->GetNested_Linear_Solver() &&
+      (config->GetKind_Linear_Solver_Inner() == static_cast<unsigned short>(INNER_SOLVER_BCGSTAB));
+
   /*---  Check the subspace size ---*/
 
   if (m < 1) {
@@ -454,13 +565,19 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
     if (beta < tol * norm0) break;
 
     if (flexible) {
-      /*---  Precondition the CSysVector w[i] and store result in z[i] ---*/
+      if (useNestedBiCGSTAB) {
+        /*--- Nested mod: W[i] by inner BCGSTAB ---*/
+        Z[i] = ScalarType(0.0);
+        BCGSTABpre_parallel(W[i], Z[i], mat_vec, precond, config);
 
-      precond(W[i], Z[i]);
+        /*---  Add to Krylov subspace ---*/
+        mat_vec(Z[i], W[i + 1]);
 
-      /*---  Add to Krylov subspace ---*/
+      } else {
+        precond(W[i], Z[i]);
+        mat_vec(Z[i], W[i + 1]);
+      }
 
-      mat_vec(Z[i], W[i + 1]);
     } else {
       mat_vec(W[i], W[i + 1]);
     }
