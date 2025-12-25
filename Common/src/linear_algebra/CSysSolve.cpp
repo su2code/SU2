@@ -35,6 +35,7 @@
 #include "../../include/linear_algebra/CPreconditioner.hpp"
 
 #include <limits>
+#include <memory>
 
 /*!
  * \brief Epsilon used in CSysSolve depending on datatype to
@@ -110,7 +111,7 @@ void CSysSolve<ScalarType>::SolveReduced(int n, const su2matrix<ScalarType>& Hsb
 
 template <class ScalarType>
 void CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg,
-                                           vector<CSysVector<ScalarType> >& w) const {
+                                           vector<CSysVector<ScalarType>>& w) const {
   const auto thread = omp_get_thread_num();
 
   /*--- If Hsbg is shared by multiple threads calling this function, only one
@@ -170,112 +171,6 @@ void CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<Sc
   /*--- Scale the resulting vector ---*/
 
   w[i + 1] /= nrm;
-}
-
-/*--- Inner Krylov solver for nested FGMRES ---*/
-
-template <class ScalarType>
-void BCGSTABpre_parallel(const CSysVector<ScalarType>& a, CSysVector<ScalarType>& b_in,
-                         const CMatrixVectorProduct<ScalarType>& mat_vec, const CPreconditioner<ScalarType>& precond,
-                         const CConfig* config) {
-  // NOTE: norm0_in is currently unused. To avoid -Werror unused-variable warnings,
-  // we mark it [[maybe_unused]] so that future changes can reuse it without
-  // triggering a build failure.
-  ScalarType norm_r_in = 0.0;
-  [[maybe_unused]] ScalarType norm0_in = 0.0;
-  unsigned long ii = 0;
-
-  CSysVector<ScalarType> A_z_i;
-  CSysVector<ScalarType> r_0_in;
-  CSysVector<ScalarType> r_in;
-  CSysVector<ScalarType> p;
-  CSysVector<ScalarType> v;
-  CSysVector<ScalarType> z_i;
-
-  /*--- Allocate if not allocated yet ---*/
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    auto nVar = a.GetNVar();
-    auto nBlk = a.GetNBlk();
-    auto nBlkDomain = a.GetNBlkDomain();
-
-    A_z_i.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-    r_0_in.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-    r_in.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-    p.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-    v.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-    z_i.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-  }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
-  /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
-  mat_vec(b_in, A_z_i);
-  r_in = a - A_z_i;
-
-  /*--- Only compute the residuals in full communication mode. ---*/
-  if (config->GetComm_Level() == COMM_FULL) {
-    norm_r_in = r_in.norm();
-    norm0_in = a.norm();
-    /*--- Set the norm to the initial residual value ---*/
-    /*--- if (tol_type == LinearToleranceType::RELATIVE) norm0_in = norm_r_in; ---*/
-  }
-
-  /*--- Initialization ---*/
-  ScalarType alpha = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
-  p = ScalarType(0.0);
-  v = ScalarType(0.0);
-  r_0_in = r_in;
-
-  ScalarType tolerance = 1e-5;  // Tolerance for the residual norm
-
-  /*--- Loop over all search directions ---*/
-  while (ii < 1000) {  // Arbitrary high iteration limit for safety
-    /*--- Compute rho_prime ---*/
-    rho_prime = rho;
-
-    /*--- Compute rho_i ---*/
-    rho = r_in.dot(r_0_in);
-
-    /*--- Compute beta ---*/
-    ScalarType beta_in = (rho / rho_prime) * (alpha / omega);
-
-    /*--- Update p ---*/
-    p = beta_in * (p - omega * v) + r_in;
-
-    /*--- Preconditioning step ---*/
-    precond(p, z_i);
-    mat_vec(z_i, v);
-
-    /*--- Calculate step-length alpha ---*/
-    ScalarType r_0_v = r_0_in.dot(v);
-    alpha = rho / r_0_v;
-
-    /*--- Update solution and residual ---*/
-    b_in += alpha * z_i;
-    r_in -= alpha * v;
-
-    /*--- Preconditioning step ---*/
-    precond(r_in, z_i);
-    mat_vec(z_i, A_z_i);
-
-    /*--- Calculate step-length omega, avoid division by 0. ---*/
-    omega = A_z_i.squaredNorm();
-    if (omega == ScalarType(0)) break;
-    omega = A_z_i.dot(r_in) / omega;
-
-    /*--- Update solution and residual ---*/
-    b_in += omega * z_i;
-    r_in -= omega * A_z_i;
-
-    /*--- Update the residual norm ---*/
-    norm_r_in = r_in.norm();
-
-    /*--- Check if residual norm is below tolerance ---*/
-    if (norm_r_in < tolerance) {
-      break;  // Stop if the residual norm is below the desired tolerance
-    }
-
-    ii++;  // Increment iteration counter
-  }
 }
 
 template <class ScalarType>
@@ -465,11 +360,6 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
    * we still want to parallelize some of the expensive operations. ---*/
   const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
 
-  /*--- Nested inner solver (BCGSTAB) option ---*/
-  const bool useNestedBiCGSTAB =
-      config->GetNested_Linear_Solver() &&
-      (config->GetKind_Linear_Solver_Inner() == static_cast<unsigned short>(INNER_SOLVER_BCGSTAB));
-
   /*---  Check the subspace size ---*/
 
   if (m < 1) {
@@ -565,19 +455,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
     if (beta < tol * norm0) break;
 
     if (flexible) {
-      if (useNestedBiCGSTAB) {
-        /*--- Nested mod: W[i] by inner BCGSTAB ---*/
-        Z[i] = ScalarType(0.0);
-        BCGSTABpre_parallel(W[i], Z[i], mat_vec, precond, config);
-
-        /*---  Add to Krylov subspace ---*/
-        mat_vec(Z[i], W[i + 1]);
-
-      } else {
-        precond(W[i], Z[i]);
-        mat_vec(Z[i], W[i + 1]);
-      }
-
+      precond(W[i], Z[i]);
+      mat_vec(Z[i], W[i + 1]);
     } else {
       mat_vec(W[i], W[i + 1]);
     }
@@ -1019,9 +898,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
       break;
     }
 
-    /*--- Normal mode
-     * assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD', but does not enforce it to avoid compiler warning.
-     * ---*/
+    /*--- Normal mode assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD',
+     * but does not enforce it to avoid compiler warning.  ---*/
     default: {
       KindSolver = config->GetKind_Linear_Solver();
       KindPrecond = config->GetKind_Linear_Solver_Prec();
@@ -1030,6 +908,17 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
       ScreenOutput = false;
       break;
     }
+  }
+
+  const bool nested = (KindSolver == FGMRES || KindSolver == RESTARTED_FGMRES || KindSolver == SMOOTHER) &&
+                      config->GetKind_Linear_Solver_Inner() != LINEAR_SOLVER_INNER::NONE;
+
+  if (nested && !inner_solver) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      inner_solver = std::make_unique<CSysSolve<ScalarType>>(LINEAR_SOLVER_MODE::STANDARD);
+      inner_solver->SetxIsZero(true);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Stop the recording for the linear solver ---*/
@@ -1065,13 +954,25 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 
     auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
-    const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
-
-    auto precond = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
-
     /*--- Build preconditioner. ---*/
 
-    precond->Build();
+    const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
+    auto* normal_prec = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
+    normal_prec->Build();
+
+    CPreconditioner<ScalarType>* nested_prec = nullptr;
+    if (nested) {
+      nested_prec = new CAbstractPreconditioner<ScalarType>([&](const CSysVector<ScalarType>& u,
+                                                                CSysVector<ScalarType>& v) {
+        /*--- Initialize to 0 to be safe. ---*/
+        v = ScalarType{};
+        ScalarType unused{};
+        /*--- Handle other types here if desired but do not call Solve because
+         * that will create issues with the AD external function. ---*/
+        (void)inner_solver->BCGSTAB_LinSolver(u, v, mat_vec, *normal_prec, SolverTol, MaxIter, unused, false, config);
+      });
+    }
+    const auto* precond = nested ? nested_prec : normal_prec;
 
     /*--- Solve system. ---*/
 
@@ -1117,7 +1018,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 
     HandleTemporariesOut(LinSysSol);
 
-    delete precond;
+    delete normal_prec;
+    delete nested_prec;
 
     if (TapeActive) {
       /*--- To keep the behavior of SU2_DOT, but not strictly required since jacobian is symmetric(?). ---*/
@@ -1202,9 +1104,8 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
       break;
     }
 
-    /*--- Normal mode
-     * assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD', but does not enforce it to avoid compiler warning.
-     * ---*/
+    /*--- Normal mode assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD',
+     * but does not enforce it to avoid compiler warning. ---*/
     default: {
       KindSolver = config->GetKind_Linear_Solver();
       KindPrecond = config->GetKind_Linear_Solver_Prec();
@@ -1215,19 +1116,43 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
     }
   }
 
+  const bool nested = (KindSolver == FGMRES || KindSolver == RESTARTED_FGMRES || KindSolver == SMOOTHER) &&
+                      config->GetKind_Linear_Solver_Inner() != LINEAR_SOLVER_INNER::NONE;
+
+  if (nested && !inner_solver) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      inner_solver = std::make_unique<CSysSolve<ScalarType>>(LINEAR_SOLVER_MODE::STANDARD);
+      inner_solver->SetxIsZero(true);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
+
   /*--- Set up preconditioner and matrix-vector product ---*/
 
-  const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
+  auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
-  auto precond = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
+  const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
+  auto* normal_prec = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
 
   /*--- If there was no call to solve first the preconditioner needs to be built here. ---*/
   if (directCall) {
     Jacobian.TransposeInPlace();
-    precond->Build();
+    normal_prec->Build();
   }
 
-  auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
+  CPreconditioner<ScalarType>* nested_prec = nullptr;
+  if (nested) {
+    nested_prec =
+        new CAbstractPreconditioner<ScalarType>([&](const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) {
+          /*--- Initialize to 0 to be safe. ---*/
+          v = ScalarType{};
+          ScalarType unused{};
+          /*--- Handle other types here if desired but do not call Solve because
+           * that will create issues with the AD external function. ---*/
+          (void)inner_solver->BCGSTAB_LinSolver(u, v, mat_vec, *normal_prec, SolverTol, MaxIter, unused, false, config);
+        });
+  }
+  const auto* precond = nested ? nested_prec : normal_prec;
 
   /*--- Solve the system ---*/
 
@@ -1271,7 +1196,8 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
 
   HandleTemporariesOut(LinSysSol);
 
-  delete precond;
+  delete normal_prec;
+  delete nested_prec;
 
   SU2_OMP_MASTER {
     Residual = residual;
