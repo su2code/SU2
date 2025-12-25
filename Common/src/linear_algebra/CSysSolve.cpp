@@ -455,7 +455,12 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
     if (beta < tol * norm0) break;
 
     if (flexible) {
+      /*---  Precondition the CSysVector w[i] and store result in z[i] ---*/
+
       precond(W[i], Z[i]);
+
+      /*---  Add to Krylov subspace ---*/
+
       mat_vec(Z[i], W[i + 1]);
     } else {
       mat_vec(W[i], W[i + 1]);
