@@ -163,7 +163,7 @@ void CAvgGrad_Base::AddTauWall(const su2double *UnitNormal,
   GeometryToolbox::TangentProjection(nDim, tau, UnitNormal, TauTangent);
 
   su2double WallShearStress = GeometryToolbox::Norm(nDim, TauTangent);
-  su2double Scale = TauWall / WallShearStress;
+  su2double Scale = TauWall / fmax(WallShearStress, EPS);
 
   /*--- Scale the stress tensor by the ratio of the wall shear stress
    (from wall functions) to the one computed above. ---*/

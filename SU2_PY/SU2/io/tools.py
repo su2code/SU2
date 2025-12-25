@@ -1064,9 +1064,11 @@ def expand_time(name, config):
             name_pat = add_suffix(name, "%05d")
             names = [name_pat % i for i in range(n_start_time, n_time)]
         else:
+            names = []  # Initialize empty list before loop
             for n in range(len(name)):
                 name_pat = add_suffix(name[n], "%05d")
-                names = [name_pat % i for i in range(n_start_time, n_time)]
+                # Use extend() to accumulate all filenames (consistent with expand_zones)
+                names.extend([name_pat % i for i in range(n_start_time, n_time)])
     else:
         if not isinstance(name, list):
             names = [name]

@@ -404,7 +404,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.788405, -11.040877, 0.000008, 0.309505]
+    inc_turb_naca0012.test_vals = [-4.758062, -10.974496, -0.000005, -0.028654, 4, -5.397415, 2, -6.426845]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
