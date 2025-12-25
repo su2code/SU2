@@ -2370,6 +2370,19 @@ static const MapType<std::string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
 };
 
 /*!
+ * \brief Inner solver for nested linear solver, only compatible with "flexible" linear solvers.
+ */
+enum class LINEAR_SOLVER_INNER {
+  NONE,     /*!< \brief Do not use a nested linear solver. */
+  BCGSTAB,  /*!< \brief Use BCGSTAB as the preconditioning linear solver. */
+};
+static const MapType<std::string, LINEAR_SOLVER_INNER> Inner_Linear_Solver_Map = {
+  MakePair("NONE", LINEAR_SOLVER_INNER::NONE)
+  MakePair("BCGSTAB", LINEAR_SOLVER_INNER::BCGSTAB)
+};
+
+
+/*!
  * \brief Types surface continuity at the intersection with the FFD
  */
 enum ENUM_FFD_CONTINUITY {
