@@ -31,6 +31,7 @@
 #include "../containers/C2DContainer.hpp"
 
 #include <cmath>
+#include <memory>
 #include <vector>
 #include <iostream>
 #include <cstdlib>
@@ -115,6 +116,9 @@ class CSysSolve {
   mutable bool xIsZero = false;   /*!< \brief If true assume the initial solution is always 0. */
   bool recomputeRes = false;      /*!< \brief Recompute the residual after inner iterations, if monitoring. */
   unsigned long monitorFreq = 10; /*!< \brief Monitoring frequency. */
+
+  /*!< \brief Inner solver for nested preconditioning. */
+  std::unique_ptr<CSysSolve<ScalarType>> inner_solver;
 
   /*!
    * \brief sign transfer function
