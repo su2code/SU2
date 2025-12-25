@@ -430,7 +430,6 @@ private:
   unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
   bool NewtonKrylov;           /*!< \brief Use a coupled Newton method to solve the flow equations. */
-  bool Nested_Linear_Solver;   /*!< \brief Enable nested Krylov linear solver (e.g. FGMRES + inner solver). */
   array<unsigned short,3> NK_IntParam{{20, 3, 2}}; /*!< \brief Integer parameters for NK method. */
   array<su2double,5> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4, 1.0}}; /*!< \brief Floating-point parameters for NK method. */
   su2double NK_Relaxation = 1.0;
