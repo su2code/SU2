@@ -35,6 +35,7 @@
 #include "../../include/linear_algebra/CPreconditioner.hpp"
 
 #include <limits>
+#include <memory>
 
 /*!
  * \brief Epsilon used in CSysSolve depending on datatype to
@@ -110,7 +111,7 @@ void CSysSolve<ScalarType>::SolveReduced(int n, const su2matrix<ScalarType>& Hsb
 
 template <class ScalarType>
 void CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg,
-                                           vector<CSysVector<ScalarType> >& w) const {
+                                           vector<CSysVector<ScalarType>>& w) const {
   const auto thread = omp_get_thread_num();
 
   /*--- If Hsbg is shared by multiple threads calling this function, only one
@@ -902,9 +903,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
       break;
     }
 
-    /*--- Normal mode
-     * assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD', but does not enforce it to avoid compiler warning.
-     * ---*/
+    /*--- Normal mode assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD',
+     * but does not enforce it to avoid compiler warning.  ---*/
     default: {
       KindSolver = config->GetKind_Linear_Solver();
       KindPrecond = config->GetKind_Linear_Solver_Prec();
@@ -913,6 +913,17 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
       ScreenOutput = false;
       break;
     }
+  }
+
+  const bool nested = (KindSolver == FGMRES || KindSolver == RESTARTED_FGMRES || KindSolver == SMOOTHER) &&
+                      config->GetKind_Linear_Solver_Inner() != LINEAR_SOLVER_INNER::NONE;
+
+  if (nested && !inner_solver) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      inner_solver = std::make_unique<CSysSolve<ScalarType>>(LINEAR_SOLVER_MODE::STANDARD);
+      inner_solver->SetxIsZero(true);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*--- Stop the recording for the linear solver ---*/
@@ -948,13 +959,25 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 
     auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
-    const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
-
-    auto precond = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
-
     /*--- Build preconditioner. ---*/
 
-    precond->Build();
+    const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
+    auto* normal_prec = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
+    normal_prec->Build();
+
+    CPreconditioner<ScalarType>* nested_prec = nullptr;
+    if (nested) {
+      nested_prec = new CAbstractPreconditioner<ScalarType>([&](const CSysVector<ScalarType>& u,
+                                                                CSysVector<ScalarType>& v) {
+        /*--- Initialize to 0 to be safe. ---*/
+        v = ScalarType{};
+        ScalarType unused{};
+        /*--- Handle other types here if desired but do not call Solve because
+         * that will create issues with the AD external function. ---*/
+        (void)inner_solver->BCGSTAB_LinSolver(u, v, mat_vec, *normal_prec, SolverTol, MaxIter, unused, false, config);
+      });
+    }
+    const auto* precond = nested ? nested_prec : normal_prec;
 
     /*--- Solve system. ---*/
 
@@ -1000,7 +1023,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 
     HandleTemporariesOut(LinSysSol);
 
-    delete precond;
+    delete normal_prec;
+    delete nested_prec;
 
     if (TapeActive) {
       /*--- To keep the behavior of SU2_DOT, but not strictly required since jacobian is symmetric(?). ---*/
@@ -1085,9 +1109,8 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
       break;
     }
 
-    /*--- Normal mode
-     * assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD', but does not enforce it to avoid compiler warning.
-     * ---*/
+    /*--- Normal mode assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD',
+     * but does not enforce it to avoid compiler warning. ---*/
     default: {
       KindSolver = config->GetKind_Linear_Solver();
       KindPrecond = config->GetKind_Linear_Solver_Prec();
@@ -1098,19 +1121,43 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
     }
   }
 
+  const bool nested = (KindSolver == FGMRES || KindSolver == RESTARTED_FGMRES || KindSolver == SMOOTHER) &&
+                      config->GetKind_Linear_Solver_Inner() != LINEAR_SOLVER_INNER::NONE;
+
+  if (nested && !inner_solver) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      inner_solver = std::make_unique<CSysSolve<ScalarType>>(LINEAR_SOLVER_MODE::STANDARD);
+      inner_solver->SetxIsZero(true);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
+
   /*--- Set up preconditioner and matrix-vector product ---*/
 
-  const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
+  auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
-  auto precond = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
+  const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
+  auto* normal_prec = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
 
   /*--- If there was no call to solve first the preconditioner needs to be built here. ---*/
   if (directCall) {
     Jacobian.TransposeInPlace();
-    precond->Build();
+    normal_prec->Build();
   }
 
-  auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
+  CPreconditioner<ScalarType>* nested_prec = nullptr;
+  if (nested) {
+    nested_prec =
+        new CAbstractPreconditioner<ScalarType>([&](const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) {
+          /*--- Initialize to 0 to be safe. ---*/
+          v = ScalarType{};
+          ScalarType unused{};
+          /*--- Handle other types here if desired but do not call Solve because
+           * that will create issues with the AD external function. ---*/
+          (void)inner_solver->BCGSTAB_LinSolver(u, v, mat_vec, *normal_prec, SolverTol, MaxIter, unused, false, config);
+        });
+  }
+  const auto* precond = nested ? nested_prec : normal_prec;
 
   /*--- Solve the system ---*/
 
@@ -1154,7 +1201,8 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
 
   HandleTemporariesOut(LinSysSol);
 
-  delete precond;
+  delete normal_prec;
+  delete nested_prec;
 
   SU2_OMP_MASTER {
     Residual = residual;

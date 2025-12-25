@@ -1887,6 +1887,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("LINEAR_SOLVER_SMOOTHER_RELAXATION", Linear_Solver_Smoother_Relaxation, 1.0);
   /* DESCRIPTION: Custom number of threads used for additive domain decomposition for ILU and LU_SGS (0 is "auto"). */
   addUnsignedLongOption("LINEAR_SOLVER_PREC_THREADS", Linear_Solver_Prec_Threads, 0);
+  /* DESCRIPTION: Use an inner linear solver. */
+  addEnumOption("LINEAR_SOLVER_INNER", Kind_Linear_Solver_Inner, Inner_Linear_Solver_Map, LINEAR_SOLVER_INNER::NONE);
   /* DESCRIPTION: Relaxation factor for updates of adjoint variables. */
   addDoubleOption("RELAXATION_FACTOR_ADJOINT", Relaxation_Factor_Adjoint, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */
@@ -1907,7 +1909,6 @@ void CConfig::SetConfig_Options() {
   addEnumOption("DISCADJ_LIN_SOLVER", Kind_DiscAdj_Linear_Solver, Linear_Solver_Map, FGMRES);
   /* DESCRIPTION: Preconditioner for the discrete adjoint Krylov linear solvers */
   addEnumOption("DISCADJ_LIN_PREC", Kind_DiscAdj_Linear_Prec, Linear_Solver_Prec_Map, ILU);
-  /* DESCRIPTION: Linear solver for the discete adjoint systems */
 
   /* DESCRIPTION: Maximum update ratio value for flow density and energy variables */
   addDoubleOption("MAX_UPDATE_FLOW", MaxUpdateFlow, 0.2);
@@ -7260,10 +7261,15 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             case BCGSTAB:
             case FGMRES:
             case RESTARTED_FGMRES:
-              if (Kind_Linear_Solver == BCGSTAB)
+              if (Kind_Linear_Solver == BCGSTAB) {
                 cout << "BCGSTAB is used for solving the linear system." << endl;
-              else
-                cout << "FGMRES is used for solving the linear system." << endl;
+              } else {
+                if (Kind_Linear_Solver_Inner == LINEAR_SOLVER_INNER::BCGSTAB){
+                  cout << "Nested FGMRES (FGMRES with inner BiCGSTAB) is used for solving the linear system." << endl;
+                } else {
+                  cout << "FGMRES is used for solving the linear system." << endl;
+                }
+              }
               switch (Kind_Linear_Solver_Prec) {
                 case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
                 case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
@@ -7310,6 +7316,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
               cout << "FGMRES is used for solving the linear system." << endl;
               cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
+              if (Kind_Linear_Solver_Inner == LINEAR_SOLVER_INNER::BCGSTAB)
+                cout << "Nested BiCGSTAB is used as the inner solver." << endl;
               break;
             case CONJUGATE_GRADIENT:
               cout << "A Conjugate Gradient method is used for solving the linear system." << endl;
