@@ -1310,7 +1310,7 @@ class COptionWallSpecies : public COptionBase {
   unsigned short& size;
   string*& marker;
   WALL_SPECIES_TYPE**& field;  // Reference to the field name (now 2D: marker x species)
-  su2double**& value;       // Now 2D: marker x species
+  su2double**& value;          // Now 2D: marker x species
   unsigned short& nSpecies_per_Wall;
 
  public:
