@@ -85,7 +85,7 @@ jobs:
           - config_set: BaseOMP-tsan
             flags: '--buildtype=debugoptimized -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
           - config_set: ReverseOMP-tsan
-            flags: '--buildtype=debugoptimized -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
+            flags: '--buildtype=debugoptimized --optimization=1 -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
           #- config_set: ForwardOMP-tsan
           #  flags: '--buildtype=debug -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
