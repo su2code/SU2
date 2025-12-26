@@ -171,7 +171,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   GetFluidModel()->SetTDState_T(Temperature_Inf, scalar_init);
   Enthalpy_Inf = GetFluidModel()->GetEnthalpy();
 
-  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+  /*--- Initialize the secondary values for direct derivative approximations ---*/
 
   switch (config->GetDirectDiff()) {
     case NO_DERIVATIVE:

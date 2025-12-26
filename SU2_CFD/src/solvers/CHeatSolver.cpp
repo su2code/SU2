@@ -637,7 +637,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
           for (auto iDim = 0u; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
           dist = sqrt(dist);
 
-          dTdn = (Twall - nodes->GetTemperature(iPointNormal))/dist;
+          dTdn = (Twall - nodes->GetTemperature(iPointNormal))/fmax(dist, EPS);
 
           HeatFlux[iMarker][iVertex] = thermal_diffusivity*dTdn*config->GetHeat_Flux_Ref();
 
@@ -668,7 +668,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
           for (auto iDim = 0u; iDim < nDim; iDim++) dist += (Coord_Normal[iDim]-Coord[iDim])*(Coord_Normal[iDim]-Coord[iDim]);
           dist = sqrt(dist);
 
-          dTdn = (Twall - nodes->GetTemperature(iPointNormal))/dist;
+          dTdn = (Twall - nodes->GetTemperature(iPointNormal))/fmax(dist, EPS);
 
           HeatFlux[iMarker][iVertex] = thermal_diffusivity*dTdn*config->GetHeat_Flux_Ref();
 
