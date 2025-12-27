@@ -371,7 +371,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange, con
                                  (-(1.0 / 11.0) * h_wm * exp(-0.33 * y_plus) / nu_wall +
                                   (1.0 / 11.0) * h_wm * exp(-(1.0 / 11.0) * y_plus) / nu_wall +
                                   (1.0 / 33.0) * u_tau0 * pow(h_wm, 2.0) * exp(-0.33 * y_plus) / pow(nu_wall, 2.0)) -
-                             1.0 * h_wm / (nu_wall * (karman * y_plus + 1.0));
+                             h_wm / (nu_wall * (karman * y_plus + 1.0));
 
     /* Newton method
      */
