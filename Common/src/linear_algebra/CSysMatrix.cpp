@@ -494,6 +494,18 @@ void CSysMatrix<ScalarType>::SetValDiagonalZero() {
   END_SU2_OMP_FOR
 }
 
+/*--- Helper function to regularize small pivots ---*/
+template <class ScalarType>
+inline void RegularizePivot(ScalarType& pivot, unsigned long row, unsigned long col, const char* context) {
+  const float eps = 1e-12;
+  if (std::abs(pivot) < eps) {
+    pivot = std::copysign(eps, SU2_TYPE::GetValue(pivot));
+#ifndef NDEBUG
+    std::cout << context << ": Regularized small pivot A(" << row << "," << col << ") to " << pivot << std::endl;
+#endif
+  }
+}
+
 template <class ScalarType>
 void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* vec) const {
 #ifdef USE_MKL_LAPACK
@@ -505,9 +517,14 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
 #define A(I, J) matrix[(I)*nVar + (J)]
 
   /*--- Transform system in Upper Matrix ---*/
+
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
+      /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
+      RegularizePivot(A(jVar, jVar), jVar, jVar, "DEBUG Gauss_Elimination");
+
       ScalarType weight = A(iVar, jVar) / A(jVar, jVar);
+
       for (auto kVar = jVar; kVar < nVar; kVar++) A(iVar, kVar) -= weight * A(jVar, kVar);
       vec[iVar] -= weight * vec[jVar];
     }
@@ -517,6 +534,10 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
   for (auto iVar = nVar; iVar > 0ul;) {
     iVar--;  // unsigned type
     for (auto jVar = iVar + 1; jVar < nVar; jVar++) vec[iVar] -= A(iVar, jVar) * vec[jVar];
+
+    /*--- Regularize diagonal if too small ---*/
+    RegularizePivot(A(iVar, iVar), iVar, iVar, "DEBUG Gauss_Elimination backsubst");
+
     vec[iVar] /= A(iVar, iVar);
   }
 #undef A
@@ -550,8 +571,10 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
   /*--- Transform system in Upper Matrix ---*/
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
-      ScalarType weight = A(iVar, jVar) / A(jVar, jVar);
+      /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
+      RegularizePivot(A(jVar, jVar), jVar, jVar, "MatrixInverse");
 
+      ScalarType weight = A(iVar, jVar) / A(jVar, jVar);
       for (auto kVar = jVar; kVar < nVar; kVar++) A(iVar, kVar) -= weight * A(jVar, kVar);
 
       /*--- at this stage M is lower triangular so not all cols need updating ---*/
@@ -565,7 +588,12 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
     for (auto jVar = iVar + 1; jVar < nVar; jVar++)
       for (auto kVar = 0ul; kVar < nVar; kVar++) M(iVar, kVar) -= A(iVar, jVar) * M(jVar, kVar);
 
-    for (auto kVar = 0ul; kVar < nVar; kVar++) M(iVar, kVar) /= A(iVar, iVar);
+    /*--- Regularize diagonal if too small ---*/
+    RegularizePivot(A(iVar, iVar), iVar, iVar, "DEBUG MatrixInverse backsubst");
+
+    for (auto kVar = 0ul; kVar < nVar; kVar++) {
+      M(iVar, kVar) /= A(iVar, iVar);
+    }
   }
 #undef A
 #endif
