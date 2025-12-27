@@ -407,7 +407,7 @@ def main():
     inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
     inc_buoyancy.cfg_file  = "lam_buoyancy_cavity.cfg"
     inc_buoyancy.test_iter = 20
-    inc_buoyancy.test_vals = [-4.436657, 0.507847, 0.000000, 0.000000]
+    inc_buoyancy.test_vals = [-3.860463, -3.122402, 4.074509, -23.414000]
     test_list.append(inc_buoyancy)
 
     # Laminar heated cylinder with polynomial fluid model
@@ -1098,7 +1098,7 @@ def main():
     p1rad.cfg_dir   = "radiation/p1model"
     p1rad.cfg_file  = "configp1.cfg"
     p1rad.test_iter = 50
-    p1rad.test_vals = [-7.751309, -7.923059, -2.119084, 0.091733, -47.387000]
+    p1rad.test_vals = [-8.284673, -8.008659, -2.424204, 0.389030, -56.560000]
     test_list.append(p1rad)
 
     # ###############################

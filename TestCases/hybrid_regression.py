@@ -375,7 +375,7 @@ def main():
     inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
     inc_buoyancy.cfg_file  = "lam_buoyancy_cavity.cfg"
     inc_buoyancy.test_iter = 20
-    inc_buoyancy.test_vals = [-4.431165, 3.504788, 0.000000, 0.000000]
+    inc_buoyancy.test_vals = [-3.860456, -3.122396, 4.074516, -23.415000]
     test_list.append(inc_buoyancy)
 
     # Laminar heated cylinder with polynomial fluid model

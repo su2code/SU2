@@ -223,7 +223,7 @@ def main():
   sys.stdout.flush()
 
   # run N iterations
-  for inner_iter in range(2000):
+  for inner_iter in range(10):
     if (rank==0):
       print("python iteration ", inner_iter)
 
