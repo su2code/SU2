@@ -216,7 +216,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double vel_u = flowNodes->GetVelocity(iPoint, 0);
     const su2double vel_v = flowNodes->GetVelocity(iPoint, 1);
     const su2double vel_w = (nDim ==3) ? flowNodes->GetVelocity(iPoint, 2) : 0.0;
-    const su2double VelocityMag = max(sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w), 1e-10);
+    const su2double VelocityMag = max(sqrt(pow(vel_u, 2) + pow(vel_v, 2) + pow(vel_w, 2)), EPS);
     su2double omega = 0.0;
     su2double k = 0.0;
     if(TurbFamily == TURB_FAMILY::KW){
