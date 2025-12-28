@@ -93,7 +93,7 @@ private:
   bool MG_AdjointFlow;              /*!< \brief MG with the adjoint flow problem */
   su2double *PressureLimits,
   *DensityLimits,
-  *TemperatureLimits;             /*!< \brief Limits for the primitive variables */
+  TemperatureLimits[2];           /*!< \brief Limits for the primitive variables */
   bool ActDisk_DoubleSurface;     /*!< \brief actuator disk double surface  */
   bool Engine_HalfModel;          /*!< \brief only half model is in the computational grid  */
   bool ActDisk_SU2_DEF;           /*!< \brief actuator disk double surface  */
@@ -431,7 +431,8 @@ private:
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
   bool NewtonKrylov;           /*!< \brief Use a coupled Newton method to solve the flow equations. */
   array<unsigned short,3> NK_IntParam{{20, 3, 2}}; /*!< \brief Integer parameters for NK method. */
-  array<su2double,4> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4}}; /*!< \brief Floating-point parameters for NK method. */
+  array<su2double,5> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4, 1.0}}; /*!< \brief Floating-point parameters for NK method. */
+  su2double NK_Relaxation = 1.0;
 
   unsigned short nMGLevels;    /*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;         /*!< \brief Number of CFL, one for each multigrid level. */
@@ -507,13 +508,14 @@ private:
   DIFFUSIVITYMODEL Kind_Diffusivity_Model; /*!< \brief Kind of the mass diffusivity Model */
   FREESTREAM_OPTION Kind_FreeStreamOption; /*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   MAIN_SOLVER Kind_Solver;         /*!< \brief Kind of solver: Euler, NS, Continuous adjoint, etc.  */
-  LIMITER Kind_SlopeLimit,    /*!< \brief Global slope limiter. */
+  LIMITER Kind_SlopeLimit,      /*!< \brief Slope limiter (for the runtime eq. system). */
   Kind_SlopeLimit_Flow,         /*!< \brief Slope limiter for flow equations.*/
   Kind_SlopeLimit_Turb,         /*!< \brief Slope limiter for the turbulence equation.*/
   Kind_SlopeLimit_AdjTurb,      /*!< \brief Slope limiter for the adjoint turbulent equation.*/
   Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
   Kind_SlopeLimit_Heat,         /*!< \brief Slope limiter for the adjoint equation.*/
   Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
+  LINEAR_SOLVER_INNER Kind_Linear_Solver_Inner; /*!< \brief Inner solver used in nested Krylov schemes. */
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
@@ -554,12 +556,12 @@ private:
   Kind_ConvNumScheme_AdjTurb,   /*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
   Kind_ConvNumScheme_Species,   /*!< \brief Centered or upwind scheme for the species model. */
   Kind_ConvNumScheme_Template,  /*!< \brief Centered or upwind scheme for the level set equation. */
-  Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations. */
+  Kind_FEM,                     /*!< \brief Finite element scheme for the flow equations (for the runtime eq. system). */
   Kind_FEM_Flow,                /*!< \brief Finite element scheme for the flow equations. */
   Kind_Matrix_Coloring;         /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
 
   CENTERED
-  Kind_Centered,                /*!< \brief Centered scheme. */
+  Kind_Centered,                /*!< \brief Centered scheme (for the runtime eq. system). */
   Kind_Centered_Flow,           /*!< \brief Centered scheme for the flow equations. */
   Kind_Centered_AdjFlow,        /*!< \brief Centered scheme for the adjoint flow equations. */
   Kind_Centered_Turb,           /*!< \brief Centered scheme for the turbulence model. */
@@ -576,7 +578,7 @@ private:
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
 
   UPWIND
-  Kind_Upwind,                  /*!< \brief Upwind scheme. */
+  Kind_Upwind,                  /*!< \brief Upwind scheme (for the runtime eq. system). */
   Kind_Upwind_Flow,             /*!< \brief Upwind scheme for the flow equations. */
   Kind_Upwind_AdjFlow,          /*!< \brief Upwind scheme for the adjoint flow equations. */
   Kind_Upwind_Turb,             /*!< \brief Upwind scheme for the turbulence model. */
@@ -585,13 +587,19 @@ private:
   Kind_Upwind_Heat,             /*!< \brief Upwind scheme for the heat transfer model. */
   Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
-  bool MUSCL,              /*!< \brief MUSCL scheme .*/
+  bool MUSCL,              /*!< \brief MUSCL scheme (for the runtime eq. system). */
   MUSCL_Flow,              /*!< \brief MUSCL scheme for the flow equations.*/
   MUSCL_Turb,              /*!< \brief MUSCL scheme for the turbulence equations.*/
   MUSCL_Heat,              /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,           /*!< \brief MUSCL scheme for the adj flow equations.*/
-  MUSCL_AdjTurb;           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
-  bool MUSCL_Species;      /*!< \brief MUSCL scheme for the species equations.*/
+  MUSCL_AdjTurb,           /*!< \brief MUSCL scheme for the adj turbulence equations.*/
+  MUSCL_Species;           /*!< \brief MUSCL scheme for the species equations.*/
+  su2double MUSCL_Kappa,   /*!< \brief Blending coefficient for U-MUSCL scheme (for the runtime eq. system). */
+  MUSCL_Kappa_Flow,        /*!< \brief Blending coefficient for U-MUSCL scheme for the flow equations.*/
+  MUSCL_Kappa_Turb,        /*!< \brief Blending coefficient for U-MUSCL scheme for the turbulence equations.*/
+  MUSCL_Kappa_Heat,        /*!< \brief Blending coefficient for U-MUSCL scheme for the (fvm) heat equation.*/
+  MUSCL_Kappa_AdjFlow,     /*!< \brief Blending coefficient for U-MUSCL scheme for the adj flow equations.*/
+  MUSCL_Kappa_Species;     /*!< \brief Blending coefficient for U-MUSCL scheme for the species equations.*/
   bool Use_Accurate_Jacobians;  /*!< \brief Use numerically computed Jacobians for AUSM+up(2) and SLAU(2). */
   bool Use_Accurate_Turb_Jacobians; /*!< \brief Use numerically computed Jacobians for standard SA turbulence model. */
   bool EulerPersson;       /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
@@ -899,6 +907,8 @@ private:
   ModVel_FreeStreamND,             /*!< \brief Non-dimensional magnitude of the free-stream velocity of the fluid.  */
   Density_FreeStream,              /*!< \brief Free-stream density of the fluid. */
   Viscosity_FreeStream,            /*!< \brief Free-stream viscosity of the fluid.  */
+  ThermalConductivity_FreeStream,  /*!< \brief Free-stream thermal conductivity of the fluid. */
+  SpecificHeatCp_FreeStream,       /*!< \brief Free-stream specific heat capacity at constant pressure of the fluid.  */
   Tke_FreeStream,                  /*!< \brief Total turbulent kinetic energy of the fluid.  */
   Intermittency_FreeStream,        /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
   ReThetaT_FreeStream,             /*!< \brief Freestream Transition Momentum Thickness Reynolds Number (for LM transition model) of the fluid.  */
@@ -910,6 +920,7 @@ private:
   Initial_BCThrust,                /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Pressure_FreeStream,             /*!< \brief Total pressure of the fluid. */
   Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
+  Standard_Ref_Temperature,        /*!< \brief Standard reference temperature for multicomponent flows. */
   Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   unsigned short wallModel_MaxIter; /*!< \brief maximum number of iterations for the Newton method for the wall model */
@@ -940,6 +951,8 @@ private:
   Velocity_FreeStreamND[3],   /*!< \brief Farfield velocity values (external flow). */
   Energy_FreeStreamND,        /*!< \brief Farfield energy value (external flow). */
   Viscosity_FreeStreamND,     /*!< \brief Farfield viscosity value (external flow). */
+  ThermalConductivity_FreeStreamND,  /*!< \brief Farfield thermal conductivity value (external flow). */
+  SpecificHeatCp_FreeStreamND,      /*!< \brief Farfield specific heat capacity at constant pressure value (external flow). */
   Tke_FreeStreamND,           /*!< \brief Farfield kinetic energy (external flow). */
   Omega_FreeStreamND,         /*!< \brief Specific dissipation (external flow). */
   Omega_FreeStream;           /*!< \brief Specific dissipation (external flow). */
@@ -1328,9 +1341,9 @@ private:
   template <class Tenum, class Tfield>
   void addEnumListOption(const string name, unsigned short& input_size, Tfield*& option_field, const map<string,Tenum>& enum_map);
 
-  void addDoubleArrayOption(const string& name, const int size, su2double* option_field);
+  void addDoubleArrayOption(const string& name, int size, bool allow_fewer, su2double* option_field);
 
-  void addUShortArrayOption(const string& name, const int size, unsigned short* option_field);
+  void addUShortArrayOption(const string& name, int size, bool allow_fewer, unsigned short* option_field);
 
   void addDoubleListOption(const string& name, unsigned short & size, su2double * & option_field);
 
@@ -1761,6 +1774,18 @@ public:
   su2double GetViscosity_FreeStream(void) const { return Viscosity_FreeStream; }
 
   /*!
+   * \brief Get the value of the freestream thermal conductivity.
+   * \return Freestream thermal conductivity.
+   */
+  su2double GetThermalConductivity_FreeStream(void) const { return ThermalConductivity_FreeStream; }
+
+  /*!
+   * \brief Get the value of the freestream heat capacity at constant pressure.
+   * \return Freestream heat capacity at constant pressure.
+   */
+  su2double GetSpecificHeatCp_FreeStream(void) const { return SpecificHeatCp_FreeStream; }
+
+  /*!
    * \brief Get the value of the freestream density.
    * \return Freestream density.
    */
@@ -1936,6 +1961,12 @@ public:
   su2double GetPressure_Thermodynamic(void) const { return Pressure_Thermodynamic; }
 
   /*!
+   * \brief Get the value of the standard reference temperature for multicomponent flows.
+   * \return Standard reference temperature, Non-dimensionalized if it is needed for Non-Dimensional problems.
+   */
+  su2double GetStandard_RefTemperatureND(void) const { return Standard_Ref_Temperature / Temperature_Ref; }
+
+  /*!
    * \brief Get the value of the non-dimensionalized thermodynamic pressure.
    * \return Non-dimensionalized thermodynamic pressure.
    */
@@ -1990,6 +2021,18 @@ public:
    * \return Non-dimensionalized freestream viscosity.
    */
   su2double GetViscosity_FreeStreamND(void) const { return Viscosity_FreeStreamND; }
+
+  /*!
+   * \brief Get the value of the non-dimensionalized freestream thermal conductivity.
+   * \return Non-dimensionalized freestream thermal conductivity.
+   */
+  su2double GetThermalConductivity_FreeStreamND(void) const { return ThermalConductivity_FreeStreamND; }
+
+  /*!
+   * \brief Get the value of the non-dimensionalized freestream heat capacity at constant pressure.
+   * \return Non-dimensionalized freestream heat capacity at constant pressure.
+   */
+  su2double GetSpecificHeatCp_FreeStreamND(void) const { return SpecificHeatCp_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized freestream viscosity.
@@ -2154,6 +2197,12 @@ public:
    * \return Initial temperature for incompressible flows.
    */
   su2double GetInc_Temperature_Init(void) const { return Inc_Temperature_Init; }
+
+  /*!
+   * \brief Get Temperature limits for incompressible flows.
+   * \return Temperature limits minimum and maximum values.
+   */
+  su2double GetTemperatureLimits(int iVar) const { return TemperatureLimits[iVar]; }
 
   /*!
    * \brief Get the flag for activating species transport clipping.
@@ -2422,11 +2471,12 @@ public:
    * \param[in] val_kind_upwind - If upwind scheme, kind of upwind scheme (Roe, etc.).
    * \param[in] val_kind_slopelimit - If upwind scheme, kind of slope limit.
    * \param[in] val_muscl - Define if we apply a MUSCL scheme or not.
+   * \param[in] val_muscl_kappa - Define the blending coefficient for the MUSCL scheme.
    * \param[in] val_kind_fem - If FEM, what kind of FEM discretization.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, CENTERED val_kind_centered,
                              UPWIND val_kind_upwind, LIMITER val_kind_slopelimit,
-                             bool val_muscl,  unsigned short val_kind_fem);
+                             bool val_muscl, su2double val_muscl_kappa, unsigned short val_kind_fem);
 
   /*!
    * \brief Get the value of limiter coefficient.
@@ -2611,6 +2661,18 @@ public:
   void SetViscosity_FreeStream(su2double val_viscosity_freestream) { Viscosity_FreeStream = val_viscosity_freestream; }
 
   /*!
+   * \brief Set the freestream thermal conductivity.
+   * \param[in] val_thermalconductivity_freestream - Value of the freestream thermal conductivity.
+   */
+  void SetThermalConductivity_FreeStream(su2double val_thermalconductivity_freestream) { ThermalConductivity_FreeStream = val_thermalconductivity_freestream; }
+
+  /*!
+   * \brief Set the freestream specific heat capacity at constant pressure.
+   * \param[in] val_specificheatCp_freestream - Value of the freestream specific heat capacity at constant pressure.
+   */
+  void SetSpecificHeatCp_FreeStream(su2double val_specificheatCp_freestream) { SpecificHeatCp_FreeStream = val_specificheatCp_freestream; }
+
+  /*!
    * \brief Set the magnitude of the free-stream velocity.
    * \param[in] val_modvel_freestream - Magnitude of the free-stream velocity.
    */
@@ -2671,6 +2733,18 @@ public:
    * \param[in] val_viscosity_freestreamnd - Value of the non-dimensional free-stream viscosity.
    */
   void SetViscosity_FreeStreamND(su2double val_viscosity_freestreamnd) { Viscosity_FreeStreamND = val_viscosity_freestreamnd; }
+
+  /*!
+   * \brief Set the non-dimensional free-stream thermal conductivity.
+   * \param[in] val_thermalconductivity_freestreamnd - Value of the non-dimensional free-stream thermal conductivity.
+   */
+  void SetThermalConductivity_FreeStreamND(su2double val_thermalconductivity_freestreamnd) { ThermalConductivity_FreeStreamND = val_thermalconductivity_freestreamnd; }
+
+  /*!
+   * \brief Set the non-dimensional free-stream specific heat capacity at constant pressure.
+   * \param[in] val_specificheatCp_freestreamnd - Value of the non-dimensional free-stream specific heat capacity at constant pressure.
+   */
+  void SetSpecificHeatCp_FreeStreamND(su2double val_specificheatCp_freestreamnd) { SpecificHeatCp_FreeStreamND = val_specificheatCp_freestreamnd; }
 
   /*!
    * \brief Set the non-dimensional freestream turbulent kinetic energy.
@@ -4215,6 +4289,10 @@ public:
    */
   unsigned short GetKind_Linear_Solver(void) const { return Kind_Linear_Solver; }
 
+  /*!
+   * \brief Get the inner linear solver used in nested Krylov linear solvers.
+   */
+  LINEAR_SOLVER_INNER GetKind_Linear_Solver_Inner(void) const { return Kind_Linear_Solver_Inner; }
 
   /*!
    * \brief Get the kind of preconditioner for the implicit solver.
@@ -4317,12 +4395,22 @@ public:
   /*!
    * \brief Get Newton-Krylov integer parameters.
    */
-  array<unsigned short,3> GetNewtonKrylovIntParam(void) const { return NK_IntParam; }
+  array<unsigned short,3> GetNewtonKrylovIntParam() const { return NK_IntParam; }
 
   /*!
    * \brief Get Newton-Krylov floating-point parameters.
    */
-  array<su2double,4> GetNewtonKrylovDblParam(void) const { return NK_DblParam; }
+  array<su2double,5> GetNewtonKrylovDblParam() const { return NK_DblParam; }
+
+  /*!
+   * \brief Get the Newton-Krylov relaxation.
+   */
+  su2double GetNewtonKrylovRelaxation() const { return NK_Relaxation; }
+
+  /*!
+   * \brief Set the Newton-Krylov relaxation.
+   */
+  void SetNewtonKrylovRelaxation(const su2double& relaxation) { NK_Relaxation = relaxation; }
 
   /*!
    * \brief Returns the Roe kappa (multipler of the dissipation term).
@@ -4548,54 +4636,30 @@ public:
 
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
-   * \note This is the information that the code will use, the method will
-   *       change in runtime depending of the specific equation (direct, adjoint,
-   *       linearized) that is being solved.
    * \return MUSCL scheme.
    */
   bool GetMUSCL_Flow(void) const { return MUSCL_Flow; }
 
   /*!
    * \brief Get if the upwind scheme used MUSCL or not.
-   * \note This is the information that the code will use, the method will
-   *       change in runtime depending of the specific equation (direct, adjoint,
-   *       linearized) that is being solved.
-   * \return MUSCL scheme.
-   */
-  bool GetMUSCL_Heat(void) const { return MUSCL_Heat; }
-
-  /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
-   * \note This is the information that the code will use, the method will
-   *       change in runtime depending of the specific equation (direct, adjoint,
-   *       linearized) that is being solved.
-   * \return MUSCL scheme.
-   */
-  bool GetMUSCL_Turb(void) const { return MUSCL_Turb; }
-
-  /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
-   * \return MUSCL scheme.
-   */
-  bool GetMUSCL_Species(void) const { return MUSCL_Species; }
-
-  /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
-   * \note This is the information that the code will use, the method will
-   *       change in runtime depending of the specific equation (direct, adjoint,
-   *       linearized) that is being solved.
    * \return MUSCL scheme.
    */
   bool GetMUSCL_AdjFlow(void) const { return MUSCL_AdjFlow; }
 
   /*!
-   * \brief Get if the upwind scheme used MUSCL or not.
+   * \brief Get the blending coefficient for the U-MUSCL scheme.
    * \note This is the information that the code will use, the method will
    *       change in runtime depending of the specific equation (direct, adjoint,
    *       linearized) that is being solved.
-   * \return MUSCL scheme.
+   * \return Blending coefficient for the U-MUSCL scheme.
    */
-  bool GetMUSCL_AdjTurb(void) const { return MUSCL_AdjTurb; }
+  su2double GetMUSCL_Kappa(void) const { return MUSCL_Kappa; }
+
+  /*!
+   * \brief Get the blending coefficient for the MUSCL scheme.
+   * \return Blending coefficient for the MUSCL scheme.
+   */
+  su2double GetMUSCL_Kappa_Flow(void) const { return MUSCL_Kappa_Flow; }
 
   /*!
    * \brief Get whether to "Use Accurate Jacobians" for AUSM+up(2) and SLAU(2).

@@ -64,7 +64,7 @@ def main():
     options.partitions = int(options.partitions)
     options.compute = options.compute.upper() == "TRUE"
 
-    if options.filename == None:
+    if options.filename is None:
         raise Exception("No config file provided. Use -f flag")
 
     parallel_computation(options.filename, options.partitions, options.compute)
@@ -101,7 +101,6 @@ def parallel_computation(filename, partitions=0, compute=True):
     if config.SOLVER == "FEM_ELASTICITY":
         config.SOLUTION_FILENAME = config.RESTART_FILENAME
     elif config.SOLVER == "FLUID_STRUCTURE_INTERACTION":
-        config.SOLUTION_FILENAME = config.RESTART_FILENAME
         config.SOLUTION_FILENAME = config.RESTART_FILENAME
 
     info = SU2.run.merge(config)

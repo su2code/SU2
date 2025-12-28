@@ -67,8 +67,10 @@ private:
   enum class ResEvalType {EXPLICIT, DEFAULT};
 
   bool setup = false;
+  bool autoRelaxation = false;
   Scalar finDiffStepND = 0.0;
   Scalar finDiffStep = 0.0; /*!< \brief Based on RMS(solution), used in matrix-free products. */
+  Scalar nkRelaxation = 1.0;
   unsigned long omp_chunk_size; /*!< \brief Chunk size used in light point loops. */
 
   /*--- Number of iterations and tolerance for the linear preconditioner,
@@ -81,7 +83,7 @@ private:
    * criteria are zero, or the solver does not provide a linear
    * preconditioner, there is no startup phase. ---*/
   bool startupPeriod = false;
-  unsigned short startupIters = 0;
+  unsigned short startupIters = 0, iter = 0;
   su2double startupResidual = 0.0;
   su2double firstResidual = -20.0;
 
@@ -96,8 +98,9 @@ private:
   CNumerics*** numerics = nullptr;
 
   /*--- Residual and linear solver. ---*/
-  CSysVector<Scalar> LinSysRes;
+  CSysVector<Scalar> LinSysRes, LinSysResRelax;
   CSysSolve<Scalar> LinSolver;
+  const CSysVector<Scalar>* LinSysRes0 = nullptr;
 
   /*--- If possible the solution vector of the solver is re-used, otherwise this temporary is used. ---*/
   CSysVector<Scalar> LinSysSol;
@@ -155,7 +158,11 @@ private:
     auto product = CSysMatrixVectorProduct<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
     v = MixedScalar(0.0);
     MixedScalar eps_t = eps;
-    iters = solvers[FLOW_SOL]->System.FGMRES_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
+    if (config->GetKind_Linear_Solver_Inner() == LINEAR_SOLVER_INNER::NONE) {
+      iters = solvers[FLOW_SOL]->System.FGMRES_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
+    } else {
+      iters = solvers[FLOW_SOL]->System.BCGSTAB_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
+    }
     eps = eps_t;
     return iters;
   }

@@ -233,18 +233,19 @@ class COptionEnumList final : public COptionBase {
 
 template <class Type>
 class COptionArray final : public COptionBase {
-  string name;     // Identifier for the option
-  const int size;  // Number of elements
-  Type* field;     // Reference to the field
+  string name;             // Identifier for the option
+  const int size;          // Number of elements
+  const bool allow_fewer;  // Allow smaller size
+  Type* field;             // Reference to the field
 
  public:
-  COptionArray(string option_field_name, const int list_size, Type* option_field)
-      : name(option_field_name), size(list_size), field(option_field) {}
+  COptionArray(string option_field_name, const int list_size, const bool allow_fewer, Type* option_field)
+      : name(std::move(option_field_name)), size(list_size), allow_fewer(allow_fewer), field(option_field) {}
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     // Check that the size is correct
-    if (option_value.size() != (unsigned long)this->size) {
+    if ((option_value.size() < size_t(size) && !allow_fewer) || option_value.size() > size_t(size)) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": wrong number of arguments: ");
@@ -258,7 +259,7 @@ class COptionArray final : public COptionBase {
       newstring.append(" found");
       return newstring;
     }
-    for (int i = 0; i < this->size; i++) {
+    for (size_t i = 0; i < option_value.size(); i++) {
       istringstream is(option_value[i]);
       if (!(is >> field[i])) {
         return badValue(" array", this->name);

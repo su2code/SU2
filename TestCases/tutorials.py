@@ -49,7 +49,7 @@ def main():
     cht_incompressible_unsteady.cfg_dir   = "../Tutorials/multiphysics/unsteady_cht/"
     cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible_unsteady.test_iter = 2
-    cht_incompressible_unsteady.test_vals = [-2.659390, -2.533160, -0.080399, -0.080399, -0.080399, -12.421450, 0.000000, 0, 0, 0, 0, 2.3824e+02] #last columns
+    cht_incompressible_unsteady.test_vals = [-2.661440, -2.534489, -0.080399, -0.080399, -0.080399, -12.421979, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 238.240000] #last columns
     cht_incompressible_unsteady.multizone = True
     cht_incompressible_unsteady.unsteady  = True
     test_list.append(cht_incompressible_unsteady)
@@ -59,7 +59,7 @@ def main():
     cht_incompressible.cfg_dir   = "../Tutorials/multiphysics/steady_cht"
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-2.128826, -0.588813, -0.588813, -0.588813] #last 4 columns
+    cht_incompressible.test_vals = [-1.376347, -0.591210, -0.591210, -0.591210] #last 4 columns
     cht_incompressible.command   = TestCase.Command(exec = "SU2_CFD")
     cht_incompressible.multizone = True
     test_list.append(cht_incompressible)
@@ -69,7 +69,7 @@ def main():
     cht_CR.cfg_dir   = "../Tutorials/multiphysics/contact_resistance_cht"
     cht_CR.cfg_file  = "master.cfg"
     cht_CR.test_iter = 80
-    cht_CR.test_vals = [-8.606916, -9.227614, -10.411673, -2.114949]
+    cht_CR.test_vals = [-8.606916, -9.227614, -10.411674, -2.116659]
     cht_CR.multizone = True
     test_list.append(cht_CR)
 
@@ -80,7 +80,8 @@ def main():
     sp_pinArray_2d_mf_hf.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 25
-    sp_pinArray_2d_mf_hf.test_vals = [-4.685979, 1.388027, -0.755447, 241.878868]
+    sp_pinArray_2d_mf_hf.test_vals = [-4.685131, 1.388616, -0.755475, 241.878084]
+    sp_pinArray_2d_mf_hf.test_vals_aarch64 = [-4.686092, 1.387918, -0.755447, 241.878841]
     test_list.append(sp_pinArray_2d_mf_hf)
 
     # 2D pin case pressure drop periodic with heatflux BC and temperature periodicity
@@ -88,7 +89,8 @@ def main():
     sp_pinArray_2d_dp_hf_tp.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
-    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.732739, 1.326248, -0.713419, 208.023676]
+    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.737196, 1.322378, -0.713373, 208.023676]
+    sp_pinArray_2d_dp_hf_tp.test_vals_aarch64 = [-4.733643, 1.325195, -0.713411, 208.023676]
     test_list.append(sp_pinArray_2d_dp_hf_tp)
 
     # 90 degree pipe bend with wall functions from the experiments of Sudo et al.
@@ -118,7 +120,7 @@ def main():
     sudo_design_adjoint.command  = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(sudo_design_adjoint)
 
-    # Laminar vortex shedding behind a cylinder (Re=120) 
+    # Laminar vortex shedding behind a cylinder (Re=120)
     von_karman_cylinder = TestCase('von_karman_cylinder')
     von_karman_cylinder.cfg_dir = "../Tutorials/incompressible_flow/Inc_Von_Karman_Cylinder"
     von_karman_cylinder.cfg_file  = "unsteady_incomp_cylinder.cfg"
@@ -142,8 +144,7 @@ def main():
     DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
-    DAspecies3_primitiveVenturi.test_vals         = [-9.806113, -8.630821, -8.666250, -8.333798, -12.914857, -11.017067, -10.232083]
-    DAspecies3_primitiveVenturi.test_vals_aarch64 = [-7.865411, -7.548131, -7.347978, -7.217536, -11.822422, -10.968444, -10.193225]
+    DAspecies3_primitiveVenturi.test_vals = [-9.819097, -8.643457, -8.676919, -8.347340, -12.926241, -9.739487, -8.947991]
     DAspecies3_primitiveVenturi.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(DAspecies3_primitiveVenturi)
 
@@ -152,7 +153,7 @@ def main():
     kenics_mixer_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport_Composition_Dependent_Model"
     kenics_mixer_tutorial.cfg_file  = "kenics_mixer_tutorial.cfg"
     kenics_mixer_tutorial.test_iter = 10
-    kenics_mixer_tutorial.test_vals = [-7.489818, -6.823672, -6.838301, -6.378918, -7.906045, -3.060796, -7.447919, 5.000000, -1.861690, 4.000000, -5.319671, 3.000000, -6.376137, 0.025476, 0.000000, 0.025476, 0.000000, 64.093000, 8.470600, 48.094000, 7.527900]
+    kenics_mixer_tutorial.test_vals = [-7.490303, -6.823796, -6.838369, -6.383332, -7.907780, -3.062276, -7.451176, 5.000000, -1.858354, 4.000000, -5.318193, 3.000000, -6.371744, 0.025671, 0.000000, 0.025671, 0.000000, 62.846000, 8.470600, 46.847000, 7.527900]
     kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(kenics_mixer_tutorial)
 
@@ -164,7 +165,7 @@ def main():
     premixed_hydrogen.cfg_dir = "../Tutorials/incompressible_flow/Inc_Combustion/1__premixed_hydrogen"
     premixed_hydrogen.cfg_file = "H2_burner.cfg"
     premixed_hydrogen.test_iter = 10
-    premixed_hydrogen.test_vals = [-9.880667, -10.491791, -11.028989, -4.325192, -11.885386]
+    premixed_hydrogen.test_vals = [-8.851285, -9.756885, -11.037752, -4.321598, -11.891933]
     test_list.append(premixed_hydrogen)
 
     ### Compressible Flow
@@ -236,8 +237,8 @@ def main():
     tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
     tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3A.test_iter  = 20
-    tutorial_trans_flatplate_T3A.test_vals  = [-5.809004, -2.070606, -3.968979, -0.278178, -1.953095, 1.708529, -3.514939, 0.357469]
-    tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.837368, -2.092246, -3.984172, -0.302357, -1.928108, 1.667157, -3.496279, 0.391610]
+    tutorial_trans_flatplate_T3A.test_vals  = [-5.808996, -2.070606, -3.969765, -0.277943, -1.953093, 1.708472, -3.514943, 0.357411]
+    tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.808996, -2.070606, -3.969765, -0.277943, -1.953289, 1.708472, -3.514943, 0.357411]
     tutorial_trans_flatplate_T3A.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3A)
 
@@ -246,8 +247,8 @@ def main():
     tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
-    tutorial_trans_flatplate_T3Am.test_vals  = [-5.533828, -1.681628, -2.868711, -0.051877, -3.695533, 3.413630, -2.385344, 1.103633]
-    tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-6.063726, -1.945088, -3.946923, -0.549166, -3.863794, 2.664439, -2.517601, 1.112978]
+    tutorial_trans_flatplate_T3Am.test_vals  = [-5.538098, -1.681627, -2.877016, -0.055689, -3.695534, 3.413620, -2.385344, 1.103633]
+    tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-5.540938, -1.681627, -2.878831, -0.058224, -3.695533, 3.413628, -2.385345, 1.103633]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
 
@@ -301,8 +302,8 @@ def main():
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
-    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.292632, 0.000000, 0.300303, 0.770888, 0.002399, 0.014070]
-    tutorial_unst_naca0012.test_vals_aarch64 = [520.000000, 0.000000, -5.298777, 0.000000, 0.288956, 0.736706, 0.002419, 0.007134]
+    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.295170, 0.000000, 0.318434, 0.813975, 0.002902, 0.015444]
+    tutorial_unst_naca0012.test_vals_aarch64 = [520.000000, 0.000000, -5.292359, 0.000000, 0.284720, 0.766329, 0.000954, 0.007565]
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
 
