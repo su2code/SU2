@@ -63,10 +63,7 @@ def parse_output(files):
                 curOutputField["GROUP"] = s[3].strip(' ()"\n;')
                 curOutputField["DESCRIPTION"] = s[4].strip(' ()"\n;')
                 if len(s) == 6:
-                    if "::" in s[5]:
-                        curOutputField["TYPE"] = s[5].strip(' ()"\n;').split("::")[1]
-                    else:
-                        curOutputField["TYPE"] = s[5].strip(' ()"\n;')
+                    curOutputField["TYPE"] = s[5].strip(' ()"\n;').split("::")[1]
                 else:
                     curOutputField["TYPE"] = "DEFAULT"
                 outputFields[name] = curOutputField
