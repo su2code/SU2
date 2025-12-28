@@ -24,7 +24,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
-import os, pprint
+import os
 
 su2_home = os.environ["SU2_HOME"]
 
@@ -63,7 +63,10 @@ def parse_output(files):
                 curOutputField["GROUP"] = s[3].strip(' ()"\n;')
                 curOutputField["DESCRIPTION"] = s[4].strip(' ()"\n;')
                 if len(s) == 6:
-                    curOutputField["TYPE"] = s[5].strip(' ()"\n;').split("::")[1]
+                    if "::" in s[5]:
+                        curOutputField["TYPE"] = s[5].strip(' ()"\n;').split("::")[1]
+                    else:
+                        curOutputField["TYPE"] = s[5].strip(' ()"\n;')
                 else:
                     curOutputField["TYPE"] = "DEFAULT"
                 outputFields[name] = curOutputField
@@ -98,10 +101,26 @@ def parse_output(files):
             addedOutputFields[name] = curOutputField
 
     outputFields.update(addedOutputFields)
-    f = open(os.path.join(su2_home, "SU2_PY/SU2/io/historyMap.py"), "w")
-    f.write("history_header_map = ")
-    pprint.pprint(outputFields, f)
-    f.close()
+    out_path = os.path.join(su2_home, "SU2_PY/SU2/io/historyMap.py")
+
+    def _dq(s):
+        if not isinstance(s, str):
+            s = str(s)
+        s = s.replace("\\", "\\\\").replace('"', '\\"')
+        return f'"{s}"'
+
+    _field_order = ("DESCRIPTION", "GROUP", "HEADER", "TYPE")
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("history_header_map = {\n")
+        for key in sorted(outputFields.keys()):
+            val = outputFields[key]
+            f.write(f"    {_dq(key)}: {{\n")
+            for name in _field_order:
+                if name in val:
+                    f.write(f"        {_dq(name)}: {_dq(val[name])},\n")
+            f.write("    },\n")
+        f.write("}\n")
 
 
 parse_output(fileList)
