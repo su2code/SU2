@@ -477,7 +477,7 @@ public:
   su2double GetHistoryFieldValue(const string& name) const {
     auto it = historyOutput_Map.find(name);
     if (it != historyOutput_Map.end()) return it->second.value;
-    SU2_MPI::Error("Cannot find output field with name " + name, CURRENT_FUNCTION);
+    std::cout << "Warning: History field " << name << " not found." << std::endl;
     return 0;
   }
 
