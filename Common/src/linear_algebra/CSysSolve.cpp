@@ -976,7 +976,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarTy
                                                        const CMatrixVectorProduct<ScalarType>& mat_vec,
                                                        const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                        unsigned long max_iter, ScalarType& residual, bool monitoring,
-                                                       const CConfig* config, FgcrodrMode mode) const {
+                                                       const CConfig* config, [[maybe_unused]] FgcrodrMode mode) const {
   if constexpr (std::is_same_v<ScalarType, float> || std::is_same_v<ScalarType, double>) {
     return FGCRODR_LinSolverImpl<>(b, x, mat_vec, precond, tol, max_iter, residual, monitoring, config, mode);
   } else {
