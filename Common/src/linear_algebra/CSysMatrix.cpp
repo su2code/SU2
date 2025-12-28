@@ -157,7 +157,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     };
 
     GPUAllocAndInit(d_matrix, nnz * nVar * nEqn);
-    GPUAllocAndCopy(d_row_ptr, row_ptr, (nPointDomain + 1.0));
+    GPUAllocAndCopy(d_row_ptr, row_ptr, (nPointDomain + 1));
     GPUAllocAndCopy(d_col_ind, col_ind, nnz);
   }
 

@@ -84,7 +84,7 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
   /*--- Read farfield conditions from config ---*/
   Temperature_Inf = config->GetTemperature_FreeStreamND();
 
-  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+  /*--- Initialize the secondary values for direct derivative approximations ---*/
 
   switch(direct_diff){
     case NO_DERIVATIVE: case D_DENSITY:
@@ -320,7 +320,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Compute the radiative heat flux. ---*/
       Radiative_Energy = nodes->GetSolution(iPoint, 0);
-      Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
+      Radiative_Heat_Flux = Theta*(Ib_w - Radiative_Energy);
 
       /*--- Compute the Viscous contribution to the residual ---*/
       Res_Visc[0] = Radiative_Heat_Flux*Area;
@@ -394,7 +394,7 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Compute the radiative heat flux. ---*/
       Radiative_Energy = nodes->GetSolution(iPoint, 0);
-      Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
+      Radiative_Heat_Flux = Theta*(Ib_w - Radiative_Energy);
 
       /*--- Compute the Viscous contribution to the residual ---*/
       Res_Visc[0] = Radiative_Heat_Flux*Area;
