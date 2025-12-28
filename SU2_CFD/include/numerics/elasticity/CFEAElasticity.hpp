@@ -192,7 +192,7 @@ public:
       S1 += tauMax;
       S2 -= tauMax;
 
-      return sqrt(S1*S1+S2*S2-2*S1*S2);
+      return sqrt(S1*S1 + S2*S2 - S1*S2);
     }
     else {
       su2double Sxx = stress[0], Syy = stress[1], Szz = stress[3];
