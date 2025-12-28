@@ -76,7 +76,7 @@ def gradient(func_name, method, config, state=None):
     if func_name == "ALL":
         raise Exception("func_name = 'ALL' not yet supported")
     func_output = func_name
-    if type(func_name) == list:
+    if isinstance(func_name, list):
         if config.OPT_COMBINE_OBJECTIVE == "YES":
             func_output = "COMBO"
         else:
@@ -184,7 +184,7 @@ def adjoint(func_name, config, state=None):
 
     # When a list of objectives is used, they are combined
     # and the output name is 'COMBO'
-    multi_objective = type(func_name) == list
+    multi_objective = isinstance(func_name, list)
     func_output = func_name
     if multi_objective:
         func_output = "COMBO"
