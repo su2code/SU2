@@ -55,6 +55,15 @@ class CPreconditioner;
 enum class LinearToleranceType { RELATIVE, ABSOLUTE };
 
 /*!
+ * \brief Modes of using FGCRODR.
+ * \ingroup SpLinSys
+ */
+enum class FgcrodrMode {
+  NORMAL,   /*!< \brief Solve the linear system. */
+  SAME_MAT, /*!< \brief "NORMAL" but knowing the matrix did not change. */
+};
+
+/*!
  * \class CSysSolve
  * \ingroup SpLinSys
  * \brief Class for solving linear systems using classical and Krylov-subspace iterative methods
@@ -99,8 +108,8 @@ class CSysSolve {
   mutable VectorType v;   /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
 
   mutable unsigned long k = 0;
-  mutable std::vector<VectorType> W, V; /*!< \brief Large matrix used by FGMRES, w^i+1 = A * z^i. */
-  mutable std::vector<VectorType> Z, T; /*!< \brief Large matrix used by FGMRES, preconditioned W. */
+  mutable std::vector<VectorType> Z, V; /*!< \brief Large matrices used by FGMRES, v^i+1 = A * z^i. */
+  mutable std::vector<VectorType> W, T; /*!< \brief Large matrices used by FGCRODR for deflation vectors. */
 
   /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
   VectorType LinSysSol_tmp;
@@ -283,7 +292,8 @@ class CSysSolve {
   template <class Dummy = int>
   unsigned long FGCRODR_LinSolverImpl(const VectorType& b, VectorType& x, const ProductType& mat_vec,
                                       const PrecondType& precond, ScalarType tol, unsigned long max_iter,
-                                      ScalarType& residual, bool monitoring, const CConfig* config) const;
+                                      ScalarType& residual, bool monitoring, const CConfig* config,
+                                      FgcrodrMode mode) const;
 
  public:
   /*!
@@ -341,10 +351,12 @@ class CSysSolve {
    * \param[out] residual - final normalized residual
    * \param[in] monitoring - turn on priting residuals from solver to screen.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] mode - See FgcrodrMode.
    */
   unsigned long FGCRODR_LinSolver(const VectorType& b, VectorType& x, const ProductType& mat_vec,
                                   const PrecondType& precond, ScalarType tol, unsigned long max_iter,
-                                  ScalarType& residual, bool monitoring, const CConfig* config) const;
+                                  ScalarType& residual, bool monitoring, const CConfig* config,
+                                  FgcrodrMode mode = FgcrodrMode::NORMAL) const;
 
   /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -436,5 +448,5 @@ class CSysSolve {
   /*!
    * \brief Discard FGCRODR's deflation vectors for the next solve.
    */
-  inline void ResetDeflation() { k = 0; }
+  inline void ResetDeflation() const { k = 0; }
 };
