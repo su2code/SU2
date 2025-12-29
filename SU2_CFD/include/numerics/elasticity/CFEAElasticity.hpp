@@ -182,31 +182,32 @@ public:
   /*!
    * \brief Compute VonMises stress from components Sxx Syy Sxy Szz Sxz Syz.
    */
-  template<class T>
-  static su2double VonMisesStress(unsigned short nDim, const T& stress, su2double Nu, bool isPlaneStrain) {
+  template <class T>
+  static su2double VonMisesStress(unsigned short nDim, const T& stress) {
+    su2double VM = 0.0;
+
     if (nDim == 2) {
-      su2double Sxx = stress[0], Syy = stress[1], Sxy = stress[2];
+      /*--- In 2D, we expect 4 components: Sxx, Syy, Sxy, Szz ---*/
+      su2double Sxx = stress[0];
+      su2double Syy = stress[1];
+      su2double Sxy = stress[2];
+      su2double Szz = stress[3]; // <--- Critical: Input must have size 4!
 
-      /*--- In Plane Strain, Szz is not zero. It is determined by Poisson's ratio. ---*/
-      su2double Szz = 0.0;
-      if (isPlaneStrain) {
-        Szz = Nu * (Sxx + Syy);
-      }
-
-      /*--- General 3D Von Mises formula reduced to 2D components + Szz ---*/
-      /*--- Sigma_vm = sqrt( 0.5 * [ (Sxx-Syy)^2 + (Syy-Szz)^2 + (Szz-Sxx)^2 + 6*Sxy^2 ] ) ---*/
-      
-      return sqrt(0.5 * (pow(Sxx - Syy, 2) + pow(Syy - Szz, 2) + pow(Szz - Sxx, 2) + 6.0 * pow(Sxy, 2)));
+      VM = sqrt( 0.5 * ( (Sxx-Syy)*(Sxx-Syy) + (Syy-Szz)*(Syy-Szz) + (Szz-Sxx)*(Szz-Sxx) + 6.0*Sxy*Sxy ) );
     }
     else {
-      su2double Sxx = stress[0], Syy = stress[1], Szz = stress[3];
-      su2double Sxy = stress[2], Sxz = stress[4], Syz = stress[5];
+      /*--- 3D: Sxx, Syy, Szz, Sxy, Syz, Szx ---*/
+      su2double Sxx = stress[0];
+      su2double Syy = stress[1];
+      su2double Szz = stress[2];
+      su2double Sxy = stress[3];
+      su2double Syz = stress[4];
+      su2double Szx = stress[5];
 
-      return sqrt(0.5*(pow(Sxx - Syy, 2) +
-                       pow(Syy - Szz, 2) +
-                       pow(Szz - Sxx, 2) +
-                       6.0*(pow(Sxy, 2) + pow(Syz, 2) + pow(Sxz, 2))));
+      VM = sqrt( 0.5 * ( (Sxx-Syy)*(Sxx-Syy) + (Syy-Szz)*(Syy-Szz) + (Szz-Sxx)*(Szz-Sxx) + 6.0*(Sxy*Sxy + Syz*Syz + Szx*Szx) ) );
     }
+
+    return VM;
   }
 
 protected:

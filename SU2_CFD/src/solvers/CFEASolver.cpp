@@ -1296,7 +1296,26 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
-      const auto vms = CFEAElasticity::VonMisesStress(nDim, nodes->GetStress_FEM(iPoint), Nu, isPlaneStrain);
+      /*--- Pack Stress Vector (Handle Szz logic locally) ---*/
+      const su2double* rawStress = nodes->GetStress_FEM(iPoint);
+      su2double Stress_VM[6] = {0.0};
+
+      if (nDim == 2) {
+          Stress_VM[0] = rawStress[0]; // Sxx
+          Stress_VM[1] = rawStress[1]; // Syy
+          Stress_VM[2] = rawStress[2]; // Sxy
+          
+          if (isPlaneStrain) {
+              Stress_VM[3] = Nu * (rawStress[0] + rawStress[1]);
+          } else {
+              Stress_VM[3] = 0.0;
+          }
+      } 
+      else {
+          for (unsigned short k = 0; k < 6; k++) Stress_VM[k] = rawStress[k];
+      }
+
+      const auto vms = CFEAElasticity::VonMisesStress(nDim, Stress_VM);
 
       nodes->SetVonMises_Stress(iPoint, vms);
 

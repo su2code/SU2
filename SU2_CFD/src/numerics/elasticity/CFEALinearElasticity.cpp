@@ -367,7 +367,25 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
   }
 
   if (nDim == 3) std::swap(avgStress[2], avgStress[3]);
-  auto elStress = VonMisesStress(nDim, avgStress, Nu, isPlaneStrain);
+  /*--- Pack Average Stress Vector ---*/
+  su2double avgStress_VM[6] = {0.0};
+
+  if (nDim == 2) {
+      avgStress_VM[0] = avgStress[0];
+      avgStress_VM[1] = avgStress[1];
+      avgStress_VM[2] = avgStress[2];
+
+      if (isPlaneStrain) {
+          avgStress_VM[3] = Nu * (avgStress[0] + avgStress[1]);
+      } else {
+          avgStress_VM[3] = 0.0;
+      }
+  } 
+  else {
+      for (unsigned short k = 0; k < 6; k++) avgStress_VM[k] = avgStress[k];
+  }
+
+  auto elStress = CFEAElasticity::VonMisesStress(nDim, avgStress_VM);
 
   /*--- We only differentiate w.r.t. an avg VM stress for the element as
    * considering all nodal stresses would use too much memory. ---*/
