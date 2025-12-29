@@ -183,7 +183,7 @@ public:
    * \brief Compute VonMises stress from components Sxx Syy Sxy Szz Sxz Syz.
    */
   template<class T>
-  static su2double VonMisesStress(unsigned short nDim, const T& stress, su2double Nu = 0.0, bool isPlaneStrain = false) {
+  static su2double VonMisesStress(unsigned short nDim, const T& stress, su2double Nu, bool isPlaneStrain) {
     if (nDim == 2) {
       su2double Sxx = stress[0], Syy = stress[1], Sxy = stress[2];
 
