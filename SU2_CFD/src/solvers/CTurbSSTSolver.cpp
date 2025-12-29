@@ -272,7 +272,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
         }
         shearStress = sqrt(shearStress);
 
-        const su2double FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
+        const su2double FrictionVelocity = max(sqrt(shearStress/flowNodes->GetDensity(iPoint)), EPS);
         const su2double wall_dist = geometry->vertex[iMarker][iVertex]->GetNearestNeighborDistance();
 
         const su2double Derivative = flowNodes->GetLaminarViscosity(jPoint) * pow(nodes->GetSolution(jPoint, 0), 0.673) / wall_dist;

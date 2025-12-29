@@ -206,7 +206,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.093953, -15.251079, -5.906327, 1.070413, 0.015775, -2.855686, 0.000000]
+    turb_naca0012_sst.test_vals = [-12.093897, -15.251080, -5.906326, 1.070413, 0.015775, -2.855557, 0]
     turb_naca0012_sst.test_vals_aarch64 = [-12.075928, -15.246732, -5.861249, 1.070036, 0.015841, -2.835263, 0.000000]
     test_list.append(turb_naca0012_sst)
 
@@ -252,7 +252,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-12.066672, -7.446472, -8.813335, -3.730660, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-12.066676, -7.446616, -8.813770, -3.730662, 0]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.140441, -9.154674, -10.886121, -5.806594, 0.000000]
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -404,7 +404,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.788405, -11.040877, 0.000008, 0.309505]
+    inc_turb_naca0012.test_vals = [-4.758063, -10.974497, -0.000004, -0.028654, 4, -5.405154, 2, -5.032677]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
@@ -420,7 +420,7 @@ def main():
     inc_weakly_coupled.cfg_dir = "disc_adj_heat"
     inc_weakly_coupled.cfg_file = "primal.cfg"
     inc_weakly_coupled.test_iter = 10
-    inc_weakly_coupled.test_vals = [-18.203897, -16.304273, -16.482683, -15.007166, -17.858118, -14.025087, 5.609100]
+    inc_weakly_coupled.test_vals = [-18.204006, -16.304263, -16.482688, -15.007166, -17.858118, -14.025082, 5.609100]
     test_list.append(inc_weakly_coupled)
 
     ######################################
