@@ -61,7 +61,7 @@ class CIncIdealGasPolynomial final : public CFluidModel {
     Enthalpy_Ref = 0.0;
     su2double t_i = 1.0;
     for (int i = 0; i < N; ++i) {
-      t_i *= STD_REF_TEMP;
+      t_i *= STD_REF_TEMP / config->GetInc_Temperature_Ref();
       coeffs_[i] = config->GetCp_PolyCoeffND(i);
       Enthalpy_Ref += coeffs_[i] * t_i / (i + 1);
     }
