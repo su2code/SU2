@@ -1883,6 +1883,8 @@ void CConfig::SetConfig_Options() {
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
+  /* DESCRIPTION: Number of vectors used for deflated restarts */
+  addUnsignedLongOption("LINEAR_SOLVER_RESTART_DEFLATION", Linear_Solver_Restart_Deflation, 4);
   /* DESCRIPTION: Relaxation factor for iterative linear smoothers (SMOOTHER_ILU/JACOBI/LU-SGS/LINELET) */
   addDoubleOption("LINEAR_SOLVER_SMOOTHER_RELAXATION", Linear_Solver_Smoother_Relaxation, 1.0);
   /* DESCRIPTION: Custom number of threads used for additive domain decomposition for ILU and LU_SGS (0 is "auto"). */
@@ -7264,10 +7266,11 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
               if (Kind_Linear_Solver == BCGSTAB) {
                 cout << "BCGSTAB is used for solving the linear system." << endl;
               } else {
+                const std::string name = Kind_Linear_Solver == FGCRODR ? "FGCRODR" : "FGMRES";
                 if (Kind_Linear_Solver_Inner == LINEAR_SOLVER_INNER::BCGSTAB){
-                  cout << "Nested FGMRES (FGMRES with inner BiCGSTAB) is used for solving the linear system." << endl;
+                  cout << "Nested " << name << " (with inner BiCGSTAB) is used for solving the linear system." << endl;
                 } else {
-                  cout << "FGMRES is used for solving the linear system." << endl;
+                  cout << name << " is used for solving the linear system." << endl;
                 }
               }
               switch (Kind_Linear_Solver_Prec) {
@@ -7318,6 +7321,11 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
               cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
               if (Kind_Linear_Solver_Inner == LINEAR_SOLVER_INNER::BCGSTAB)
                 cout << "Nested BiCGSTAB is used as the inner solver." << endl;
+              break;
+            case FGCRODR:
+              cout << "FGCRODR is used for solving the linear system." << endl;
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+              cout << "Max number of iterations: "<< Linear_Solver_Iter <<"."<< endl;
               break;
             case CONJUGATE_GRADIENT:
               cout << "A Conjugate Gradient method is used for solving the linear system." << endl;
