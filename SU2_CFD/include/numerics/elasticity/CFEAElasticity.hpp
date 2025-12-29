@@ -181,7 +181,6 @@ public:
 
   /*!
    * \brief Compute VonMises stress from components Sxx Syy Sxy Szz Sxz Syz.
-   * \note Uses default arguments to maintain compatibility with legacy calls.
    */
   template<class T>
   static su2double VonMisesStress(unsigned short nDim, const T& stress, su2double Nu = 0.0, bool isPlaneStrain = false) {
