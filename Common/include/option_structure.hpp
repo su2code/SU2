@@ -1836,6 +1836,18 @@ static const MapType<std::string, RIEMANN_TYPE> Giles_Map = {
 };
 
 /*!
+ * \brief Types of wall species boundary conditions.
+ */
+enum class WALL_SPECIES_TYPE {
+  FLUX,   /*!< \brief Neumann flux boundary condition for wall species. */
+  VALUE   /*!< \brief Dirichlet value boundary condition for wall species. */
+};
+static const MapType<std::string, WALL_SPECIES_TYPE> Wall_Map = {
+  MakePair("FLUX", WALL_SPECIES_TYPE::FLUX)
+  MakePair("VALUE", WALL_SPECIES_TYPE::VALUE)
+};
+
+/*!
  * \brief Types of mixing process for averaging quantities at the boundaries.
  */
 enum AVERAGEPROCESS_TYPE {
@@ -2352,9 +2364,10 @@ static const MapType<std::string, ENUM_FFD_BLENDING> Blending_Map = {
  */
 enum ENUM_LINEAR_SOLVER {
   CONJUGATE_GRADIENT,   /*!< \brief Preconditionated conjugate gradient method for grid deformation. */
-  FGMRES,               /*!< \brief Flexible Generalized Minimal Residual method. */
   BCGSTAB,              /*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
+  FGMRES,               /*!< \brief Flexible Generalized Minimal Residual method. */
   RESTARTED_FGMRES,     /*!< \brief Flexible Generalized Minimal Residual method with restart. */
+  FGCRODR,              /*!< \brief Flexible Generalized Conjugate Residual Method with Inner Orthogonalization and Deflated Restarting. */
   SMOOTHER,             /*!< \brief Iterative smoother. */
   PASTIX_LDLT,          /*!< \brief PaStiX LDLT (complete) factorization. */
   PASTIX_LU,            /*!< \brief PaStiX LU (complete) factorization. */
@@ -2364,6 +2377,7 @@ static const MapType<std::string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
   MakePair("BCGSTAB", BCGSTAB)
   MakePair("FGMRES", FGMRES)
   MakePair("RESTARTED_FGMRES", RESTARTED_FGMRES)
+  MakePair("FGCRODR", FGCRODR)
   MakePair("SMOOTHER", SMOOTHER)
   MakePair("PASTIX_LDLT", PASTIX_LDLT)
   MakePair("PASTIX_LU", PASTIX_LU)

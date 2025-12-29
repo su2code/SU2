@@ -75,7 +75,7 @@ def function(func_name, config, state=None):
     state = su2io.State(state)
 
     # check for multiple objectives
-    multi_objective = type(func_name) == list
+    multi_objective = isinstance(func_name, list)
 
     # func_name_string is only used to check whether the function has already been evaluated.
     func_name_string = func_name

@@ -302,8 +302,8 @@ def main():
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
-    tutorial_unst_naca0012.test_vals         = [520.000000, 0.000000, -5.295170, 0.000000, 0.318434, 0.813975, 0.002902, 0.015444]
-    tutorial_unst_naca0012.test_vals_aarch64 = [520.000000, 0.000000, -5.292359, 0.000000, 0.284720, 0.766329, 0.000954, 0.007565]
+    tutorial_unst_naca0012.test_vals         = [520, 0, -5.298821, 0, 0.269405, 0.724098, 0.002630, 0.015827]
+    tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.292359, 0, 0.284720, 0.766329, 0.000954, 0.007565]
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
 
