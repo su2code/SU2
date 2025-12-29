@@ -1843,8 +1843,8 @@ enum class WALL_SPECIES_TYPE {
   VALUE   /*!< \brief Dirichlet value boundary condition for wall species. */
 };
 static const MapType<std::string, WALL_SPECIES_TYPE> Wall_Map = {
-  MakePair("FLUX", WALL_SPECIES_TYPE::WALL_SPECIES_FLUX)
-  MakePair("VALUE", WALL_SPECIES_TYPE::WALL_SPECIES_VALUE)
+  MakePair("FLUX", WALL_SPECIES_TYPE::FLUX)
+  MakePair("VALUE", WALL_SPECIES_TYPE::VALUE)
 };
 
 /*!

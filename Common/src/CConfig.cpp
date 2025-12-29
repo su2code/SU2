@@ -9286,7 +9286,7 @@ WALL_SPECIES_TYPE CConfig::GetWall_SpeciesType(const string& val_marker, unsigne
     }
   }
   /*--- If marker not found (MARKER_WALL_SPECIES=NONE), return FLUX type (zero flux BC) ---*/
-  return WALL_SPECIES_TYPE::WALL_SPECIES_FLUX;
+  return WALL_SPECIES_TYPE::FLUX;
 }
 
 const su2double* CConfig::GetInlet_TurbVal(const string& val_marker) const {

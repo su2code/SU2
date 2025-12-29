@@ -7171,7 +7171,7 @@ public:
    * \brief Get the species boundary condition type at a wall boundary for a specific species
    * \param[in] val_marker - Marker tag corresponding to the wall boundary.
    * \param[in] iSpecies - Species index.
-   * \return The wall species type (WALL_SPECIES_FLUX or WALL_SPECIES_VALUE).
+   * \return The wall species type (FLUX or VALUE).
    */
   WALL_SPECIES_TYPE GetWall_SpeciesType(const string& val_marker, unsigned short iSpecies) const;
 

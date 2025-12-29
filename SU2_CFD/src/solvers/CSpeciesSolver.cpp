@@ -463,11 +463,11 @@ void CSpeciesSolver::BC_Wall_Generic(CGeometry* geometry, CSolver** solver_conta
       }
 
       switch(wallspeciestype) {
-        case WALL_SPECIES_TYPE::WALL_SPECIES_FLUX:
+        case WALL_SPECIES_TYPE::FLUX:
           //Flux Boundary condition
           LinSysRes(iPoint, iVar) -= WallSpecies * Area;
         break;
-        case WALL_SPECIES_TYPE::WALL_SPECIES_VALUE:
+        case WALL_SPECIES_TYPE::VALUE:
           //Dirichlet Strong Boundary Condition
           nodes->SetSolution(iPoint, iVar, WallSpecies);
           nodes->SetSolution_Old(iPoint, iVar, WallSpecies);
