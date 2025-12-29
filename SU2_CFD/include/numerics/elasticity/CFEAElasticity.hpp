@@ -181,18 +181,23 @@ public:
 
   /*!
    * \brief Compute VonMises stress from components Sxx Syy Sxy Szz Sxz Syz.
+   * \note Uses default arguments to maintain compatibility with legacy calls.
    */
   template<class T>
-  static su2double VonMisesStress(unsigned short nDim, const T& stress) {
+  static su2double VonMisesStress(unsigned short nDim, const T& stress, su2double Nu = 0.0, bool isPlaneStrain = false) {
     if (nDim == 2) {
       su2double Sxx = stress[0], Syy = stress[1], Sxy = stress[2];
 
-      su2double S1, S2; S1 = S2 = (Sxx+Syy)/2;
-      su2double tauMax = sqrt(pow((Sxx-Syy)/2, 2) + pow(Sxy,2));
-      S1 += tauMax;
-      S2 -= tauMax;
+      /*--- In Plane Strain, Szz is not zero. It is determined by Poisson's ratio. ---*/
+      su2double Szz = 0.0;
+      if (isPlaneStrain) {
+        Szz = Nu * (Sxx + Syy);
+      }
 
-      return sqrt(S1*S1 + S2*S2 - S1*S2);
+      /*--- General 3D Von Mises formula reduced to 2D components + Szz ---*/
+      /*--- Sigma_vm = sqrt( 0.5 * [ (Sxx-Syy)^2 + (Syy-Szz)^2 + (Szz-Sxx)^2 + 6*Sxy^2 ] ) ---*/
+      
+      return sqrt(0.5 * (pow(Sxx - Syy, 2) + pow(Syy - Szz, 2) + pow(Szz - Sxx, 2) + 6.0 * pow(Sxy, 2)));
     }
     else {
       su2double Sxx = stress[0], Syy = stress[1], Szz = stress[3];
@@ -201,7 +206,7 @@ public:
       return sqrt(0.5*(pow(Sxx - Syy, 2) +
                        pow(Syy - Szz, 2) +
                        pow(Szz - Sxx, 2) +
-                       6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)));
+                       6.0*(pow(Sxy, 2) + pow(Syz, 2) + pow(Sxz, 2))));
     }
   }
 

@@ -1286,10 +1286,17 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
     /*--- Compute the von Misses stress at each point, and the maximum for the domain. ---*/
     su2double maxVonMises = 0.0;
 
+    /*--- Pre-fetch configuration for 2D Plane Strain check ---*/
+    bool isPlaneStrain = (config->GetElas2D_Formulation() == STRUCT_2DFORM::PLANE_STRAIN);
+    
+    /*--- Note: For multi-zone/material problems, Nu should vary per point.
+     * Here we use the first material's Poisson ratio as the reference. ---*/
+    su2double Nu = config->GetPoissonRatio(0);
+
     SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
-      const auto vms = CFEAElasticity::VonMisesStress(nDim, nodes->GetStress_FEM(iPoint));
+      const auto vms = CFEAElasticity::VonMisesStress(nDim, nodes->GetStress_FEM(iPoint), Nu, isPlaneStrain);
 
       nodes->SetVonMises_Stress(iPoint, vms);
 
