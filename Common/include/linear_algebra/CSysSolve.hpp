@@ -55,6 +55,15 @@ class CPreconditioner;
 enum class LinearToleranceType { RELATIVE, ABSOLUTE };
 
 /*!
+ * \brief Modes of using FGCRODR.
+ * \ingroup SpLinSys
+ */
+enum class FgcrodrMode {
+  NORMAL,   /*!< \brief Solve the linear system. */
+  SAME_MAT, /*!< \brief "NORMAL" but knowing the matrix did not change. */
+};
+
+/*!
  * \class CSysSolve
  * \ingroup SpLinSys
  * \brief Class for solving linear systems using classical and Krylov-subspace iterative methods
@@ -83,8 +92,8 @@ class CSysSolve {
   ScalarType Residual = 1e-20;  /*!< \brief Residual at the end of a call to Solve or Solve_b. */
   unsigned long Iterations = 0; /*!< \brief Iterations done in Solve or Solve_b. */
 
-  LINEAR_SOLVER_MODE
-  lin_sol_mode; /*!< \brief Type of operation for the linear system solver, changes the source of solver options. */
+  /*!< \brief Type of operation for the linear system solver, changes the source of solver options. */
+  LINEAR_SOLVER_MODE lin_sol_mode;
 
   mutable bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
   mutable bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
@@ -98,23 +107,24 @@ class CSysSolve {
   mutable VectorType r_0; /*!< \brief The "arbitrary" vector in BCGSTAB. */
   mutable VectorType v;   /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
 
-  mutable std::vector<VectorType> W; /*!< \brief Large matrix used by FGMRES, w^i+1 = A * z^i. */
-  mutable std::vector<VectorType> Z; /*!< \brief Large matrix used by FGMRES, preconditioned W. */
+  mutable unsigned long k = 0;
+  mutable std::vector<VectorType> Z, V; /*!< \brief Large matrices used by FGMRES, v^i+1 = A * z^i. */
+  mutable std::vector<VectorType> W, T; /*!< \brief Large matrices used by FGCRODR for deflation vectors. */
 
-  VectorType
-      LinSysSol_tmp; /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
-  VectorType
-      LinSysRes_tmp; /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
-  VectorType*
-      LinSysSol_ptr; /*!< \brief Pointer to appropriate LinSysSol (set to original or temporary in call to Solve). */
-  const VectorType*
-      LinSysRes_ptr; /*!< \brief Pointer to appropriate LinSysRes (set to original or temporary in call to Solve). */
+  /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
+  VectorType LinSysSol_tmp;
+  /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
+  VectorType LinSysRes_tmp;
+  /*!< \brief Pointer to appropriate LinSysSol (set to original or temporary in call to Solve). */
+  VectorType* LinSysSol_ptr;
+  /*!< \brief Pointer to appropriate LinSysRes (set to original or temporary in call to Solve). */
+  const VectorType* LinSysRes_ptr;
 
-  LinearToleranceType tol_type =
-      LinearToleranceType::ABSOLUTE; /*!< \brief How the linear solvers interpret the tolerance. */
-  bool xIsZero = false;              /*!< \brief If true assume the initial solution is always 0. */
-  bool recomputeRes = false;         /*!< \brief Recompute the residual after inner iterations, if monitoring. */
-  unsigned long monitorFreq = 10;    /*!< \brief Monitoring frequency. */
+  /*!< \brief How the linear solvers interpret the tolerance. */
+  mutable LinearToleranceType tol_type = LinearToleranceType::ABSOLUTE;
+  mutable bool xIsZero = false;   /*!< \brief If true assume the initial solution is always 0. */
+  bool recomputeRes = false;      /*!< \brief Recompute the residual after inner iterations, if monitoring. */
+  unsigned long monitorFreq = 10; /*!< \brief Monitoring frequency. */
 
   /*!< \brief Inner solver for nested preconditioning. */
   std::unique_ptr<CSysSolve<ScalarType>> inner_solver;
@@ -225,72 +235,65 @@ class CSysSolve {
 
   /*!
    * \brief Used by Solve for compatibility between passive and active CSysVector.
-   * \note Same type specialization, temporary variables are not required.
    * \param[in] LinSysRes - Linear system residual
    * \param[in,out] LinSysSol - Linear system solution
    */
-  template <class OtherType, su2enable_if<std::is_same<ScalarType, OtherType>::value> = 0>
+  template <class OtherType>
   void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol) {
-    /*--- Set the pointers. ---*/
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      LinSysRes_ptr = &LinSysRes;
-      LinSysSol_ptr = &LinSysSol;
+    if constexpr (std::is_same_v<ScalarType, OtherType>) {
+      /*--- Same type specialization, temporary variables are not required. ---*/
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        LinSysRes_ptr = &LinSysRes;
+        LinSysSol_ptr = &LinSysSol;
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+    } else {
+      /*--- Copy data, the solution is also copied as it serves as initial condition. ---*/
+      LinSysRes_tmp.PassiveCopy(LinSysRes);
+      LinSysSol_tmp.PassiveCopy(LinSysSol);
+
+      /*--- Set the pointers. ---*/
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        LinSysRes_ptr = &LinSysRes_tmp;
+        LinSysSol_ptr = &LinSysSol_tmp;
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
   /*!
    * \brief Used by Solve for compatibility between passive and active CSysVector.
-   * \note Different type specialization, copy data into temporary solution and residual vectors.
-   * \param[in] LinSysRes - Linear system residual
-   * \param[in,out] LinSysSol - Linear system solution
-   */
-  template <class OtherType, su2enable_if<!std::is_same<ScalarType, OtherType>::value> = 0>
-  void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol) {
-    /*--- Copy data, the solution is also copied as it serves as initial condition. ---*/
-    LinSysRes_tmp.PassiveCopy(LinSysRes);
-    LinSysSol_tmp.PassiveCopy(LinSysSol);
-
-    /*--- Set the pointers. ---*/
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      LinSysRes_ptr = &LinSysRes_tmp;
-      LinSysSol_ptr = &LinSysSol_tmp;
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-  }
-
-  /*!
-   * \brief Used by Solve for compatibility between passive and active CSysVector.
-   * \note Same type specialization, temporary variables are not required.
    * \param[out] LinSysSol - Linear system solution
    */
-  template <class OtherType, su2enable_if<std::is_same<ScalarType, OtherType>::value> = 0>
+  template <class OtherType>
   void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
-    /*--- Reset the pointers. ---*/
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      LinSysRes_ptr = nullptr;
-      LinSysSol_ptr = nullptr;
+    if constexpr (std::is_same_v<ScalarType, OtherType>) {
+      /*--- Same type specialization, temporary variables are not required. ---*/
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        LinSysRes_ptr = nullptr;
+        LinSysSol_ptr = nullptr;
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+    } else {
+      /*--- Copy data, only the temporary solution needs to be copied. ---*/
+      LinSysSol.PassiveCopy(LinSysSol_tmp);
+
+      /*--- Reset the pointers. ---*/
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        LinSysRes_ptr = nullptr;
+        LinSysSol_ptr = nullptr;
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
-  /*!
-   * \brief Used by Solve for compatibility between passive and active CSysVector.
-   * \note Different type specialization, copy data from the temporary solution vector.
-   * \param[out] LinSysSol - Linear system solution
-   */
-  template <class OtherType, su2enable_if<!std::is_same<ScalarType, OtherType>::value> = 0>
-  void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
-    /*--- Copy data, only the temporary solution needs to be copied. ---*/
-    LinSysSol.PassiveCopy(LinSysSol_tmp);
-
-    /*--- Reset the pointers. ---*/
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      LinSysRes_ptr = nullptr;
-      LinSysSol_ptr = nullptr;
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-  }
+  /*--- TODO(pedro): The deflation part using Eigen does not compile in forward AD mode.
+   * So we need a dummy template to avoid instantiating this function for directdiff. ---*/
+  template <class Dummy = int>
+  unsigned long FGCRODR_LinSolverImpl(const VectorType& b, VectorType& x, const ProductType& mat_vec,
+                                      const PrecondType& precond, ScalarType tol, unsigned long max_iter,
+                                      ScalarType& residual, bool monitoring, const CConfig* config,
+                                      FgcrodrMode mode) const;
 
  public:
   /*!
@@ -335,7 +338,25 @@ class CSysSolve {
    */
   unsigned long RFGMRES_LinSolver(const VectorType& b, VectorType& x, const ProductType& mat_vec,
                                   const PrecondType& precond, ScalarType tol, unsigned long m, ScalarType& residual,
-                                  bool monitoring, const CConfig* config);
+                                  bool monitoring, const CConfig* config) const;
+
+  /*!
+   * \brief Flexible Generalized Conjugate Residual Method with Inner Orthogonalization and Deflated Restarting.
+   * \param[in] b - the right hand size vector
+   * \param[in,out] x - on entry the intial guess, on exit the solution
+   * \param[in] mat_vec - object that defines matrix-vector product
+   * \param[in] precond - object that defines preconditioner
+   * \param[in] tol - tolerance with which to solve the system
+   * \param[in] max_iter - maximum number of iterations
+   * \param[out] residual - final normalized residual
+   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] mode - See FgcrodrMode.
+   */
+  unsigned long FGCRODR_LinSolver(const VectorType& b, VectorType& x, const ProductType& mat_vec,
+                                  const PrecondType& precond, ScalarType tol, unsigned long max_iter,
+                                  ScalarType& residual, bool monitoring, const CConfig* config,
+                                  FgcrodrMode mode = FgcrodrMode::NORMAL) const;
 
   /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -390,7 +411,7 @@ class CSysSolve {
    * \param[in] directCall - If this method is called directly, or in AD context.
    */
   unsigned long Solve_b(MatrixType& Jacobian, const CSysVector<su2double>& LinSysRes, CSysVector<su2double>& LinSysSol,
-                        CGeometry* geometry, const CConfig* config, const bool directCall = true);
+                        CGeometry* geometry, const CConfig* config, bool directCall = true);
 
   /*!
    * \brief Get the number of iterations.
@@ -423,4 +444,9 @@ class CSysSolve {
    * \brief Set the screen output frequency during monitoring.
    */
   inline void SetMonitoringFrequency(bool frequency) { monitorFreq = frequency; }
+
+  /*!
+   * \brief Discard FGCRODR's deflation vectors for the next solve.
+   */
+  inline void ResetDeflation() const { k = 0; }
 };

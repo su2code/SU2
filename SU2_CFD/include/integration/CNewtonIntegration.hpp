@@ -68,6 +68,7 @@ private:
 
   bool setup = false;
   bool autoRelaxation = false;
+  bool useDeflation = false;
   Scalar finDiffStepND = 0.0;
   Scalar finDiffStep = 0.0; /*!< \brief Based on RMS(solution), used in matrix-free products. */
   Scalar nkRelaxation = 1.0;
