@@ -49,7 +49,7 @@ private:
   MeanDensity, MeanPressure,
   MeanBetaInc2, MeanEnthalpy,
   MeanCp, MeanTemperature,         /*!< \brief Mean values of primitive variables. */
-  MeandRhodT,                      /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
+  MeandRhodh,                      /*!< \brief Derivative of density w.r.t. enthalpy (variable density flows). */
   Param_p, Param_Kappa_0,          /*!< \brief Artificial dissipation parameters. */
   Local_Lambda_i, Local_Lambda_j,
   MeanLambda,                      /*!< \brief Local eingenvalues. */
@@ -109,7 +109,7 @@ private:
   MeanDensity, MeanPressure,
   MeanBetaInc2, MeanEnthalpy,
   MeanCp, MeanTemperature,        /*!< \brief Mean values of primitive variables. */
-  MeandRhodT,                     /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
+  MeandRhodh,                     /*!< \brief Derivative of density w.r.t. enthalpy (variable density flows). */
   Param_p, Param_Kappa_2,
   Param_Kappa_4,                  /*!< \brief Artificial dissipation parameters. */
   Local_Lambda_i, Local_Lambda_j,

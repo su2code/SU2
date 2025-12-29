@@ -4651,7 +4651,7 @@ void CPhysicalGeometry::SetElement_Connectivity() {
 
           if ((elem[iElem]->GetNeighbor_Elements(iFace) == -1) && (iElem < Test_Elem) &&
               FindFace(iElem, Test_Elem, first_elem_face, second_elem_face)) {
-            /*--- Localice which faces are sharing both elements ---*/
+            /*--- Localize which faces are sharing both elements ---*/
 
             elem[iElem]->SetNeighbor_Elements(Test_Elem, first_elem_face);
 
@@ -4675,7 +4675,7 @@ void CPhysicalGeometry::SetBoundVolume() {
       CheckVol = false;
 
       for (iElem = 0; iElem < nodes->GetnElem(Point); iElem++) {
-        /*--- Look for elements surronding that point --*/
+        /*--- Look for elements surrounding that point --*/
         cont = 0;
         iElem_Domain = nodes->GetElem(Point, iElem);
         for (iNode_Domain = 0; iNode_Domain < elem[iElem_Domain]->GetnNodes(); iNode_Domain++) {
@@ -4784,10 +4784,10 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
   nSpan_loc = 0;
   if (nDim == 2) {
     nSpanWiseSections[marker_flag - 1] = 1;
-    // TODO (turbo) make it more genral
+    // TODO (turbo) make it more general
     if (marker_flag == OUTFLOW) config->SetnSpanWiseSections(1);
 
-    /*---Initilize the vector of span-wise values that will be ordered ---*/
+    /*---Initialize the vector of span-wise values that will be ordered ---*/
     SpanWiseValue[marker_flag - 1] = new su2double[1];
     for (iSpan = 0; iSpan < 1; iSpan++) {
       SpanWiseValue[marker_flag - 1][iSpan] = 0;
@@ -4801,7 +4801,7 @@ void CPhysicalGeometry::ComputeNSpan(CConfig* config, unsigned short val_iZone, 
           if (config->GetMarker_All_TurbomachineryFlag(iMarker) != marker_flag) continue;
 
           /*--- loop to find the vertex that ar both of inflow or outflow marker and on the periodic
-           * in order to caount the number of Span ---*/
+           * in order to count the number of Span ---*/
           for (jMarker = 0; jMarker < nMarker; jMarker++) {
             if (config->GetMarker_All_KindBC(jMarker) != PERIODIC_BOUNDARY) continue;
 
