@@ -242,6 +242,9 @@ void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_contain
 
 su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
 
+  su2double Nu = config->GetPoissonRatio(0);
+  bool isPlaneStrain = (config->GetElas2D_Formulation() == STRUCT_2DFORM::PLANE_STRAIN);
+
   unsigned short iVar, jVar;
   unsigned short iGauss, nGauss;
   unsigned short iNode, nNode;
@@ -341,9 +344,14 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
       su2double Ni_Extrap = element->GetNi_Extrap(iNode, iGauss);
 
       if (nDim == 2) {
-        for(iVar = 0; iVar < 3; ++iVar)
-          element->Add_NodalStress(iNode, iVar, Stress[iVar] * Ni_Extrap);
+      for(iVar = 0; iVar < 3; ++iVar)
+        element->Add_NodalStress(iNode, iVar, Stress[iVar] * Ni_Extrap);
+
+      if (isPlaneStrain) {
+        su2double Szz = Nu * (Stress[0] + Stress[1]);
+        element->Add_NodalStress(iNode, 3, Szz * Ni_Extrap);
       }
+    }
       else {
         /*--- If nDim is 3 and we compute it this way, the 3rd component is the Szz,
          *    while in the output it is the 4th component for practical reasons. ---*/
@@ -359,7 +367,7 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
   }
 
   if (nDim == 3) std::swap(avgStress[2], avgStress[3]);
-  auto elStress = VonMisesStress(nDim, avgStress);
+  auto elStress = VonMisesStress(nDim, avgStress, Nu, isPlaneStrain);
 
   /*--- We only differentiate w.r.t. an avg VM stress for the element as
    * considering all nodal stresses would use too much memory. ---*/

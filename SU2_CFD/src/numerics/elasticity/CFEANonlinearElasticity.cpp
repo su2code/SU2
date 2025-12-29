@@ -746,6 +746,9 @@ void CFEANonlinearElasticity::Assign_cijkl_D_Mat() {
 
 su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
 
+  su2double Nu = config->GetPoissonRatio(0);
+  bool isPlaneStrain = (config->GetElas2D_Formulation() == STRUCT_2DFORM::PLANE_STRAIN);
+
   unsigned short iVar, jVar, kVar;
   unsigned short iGauss, nGauss;
   unsigned short iDim, iNode, nNode;
@@ -893,7 +896,7 @@ su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *elemen
 
   }
 
-  auto elStress = VonMisesStress(nDim, avgStress);
+  auto elStress = VonMisesStress(nDim, avgStress, Nu, isPlaneStrain);
 
   /*--- We only differentiate w.r.t. an avg VM stress for the element as
    * considering all nodal stresses would use too much memory. ---*/
