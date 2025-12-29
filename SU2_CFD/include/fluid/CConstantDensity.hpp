@@ -39,10 +39,11 @@ class CConstantDensity final : public CFluidModel {
   /*!
    * \brief Constructor of the class.
    */
-  CConstantDensity(su2double val_Density, su2double val_Cp) {
+  CConstantDensity(su2double val_Density, su2double val_Cp, su2double val_Temperature_Ref) {
     Density = val_Density;
     Cp = val_Cp;
     Cv = val_Cp;
+    Std_Ref_Temp_ND = val_Temperature_Ref;
   }
 
   /*!
@@ -56,7 +57,7 @@ class CConstantDensity final : public CFluidModel {
        decoupled equation. Hence, we update the value.
        Note Cp = Cv, (gamma = 1).*/
     Temperature = t;
-    Enthalpy = Cp * (Temperature - STD_REF_TEMP);  // Sensible enthalpy relative to STD_REF_TEMP
+    Enthalpy = Cp * (Temperature - Std_Ref_Temp_ND);  // Sensible enthalpy relative to STD_REF_TEMP
   }
 
   /*!
@@ -66,6 +67,9 @@ class CConstantDensity final : public CFluidModel {
    */
   void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override {
     Enthalpy = val_enthalpy;
-    Temperature = Enthalpy / Cp + STD_REF_TEMP;  // Temperature from sensible enthalpy
+    Temperature = Enthalpy / Cp + Std_Ref_Temp_ND;  // Temperature from sensible enthalpy
   }
+
+ private:
+  su2double Std_Ref_Temp_ND{0.0}; /*!< \brief Nondimensional standard reference temperature for enthalpy. */
 };

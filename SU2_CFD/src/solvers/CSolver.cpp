@@ -1834,8 +1834,6 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       }
     }
 
-    cout << reduceCFL << resetCFL << "\n";
-
     } /* End safe global access, now all threads update the CFL number. */
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 

@@ -39,7 +39,7 @@ class CIncIdealGas final : public CFluidModel {
   /*!
    * \brief Constructor of the class.
    */
-  CIncIdealGas(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure) {
+  CIncIdealGas(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, su2double val_Temperature_Ref) {
     /*--- In the incompressible ideal gas model, the thermodynamic pressure
   is decoupled from the governing equations and held constant. The
   density is therefore only a function of temperature variations. ---*/
@@ -48,6 +48,7 @@ class CIncIdealGas final : public CFluidModel {
     Gamma = 1.0;
     Cp = val_Cp;
     Cv = Cp;
+    Std_Ref_Temp_ND = STD_REF_TEMP / val_Temperature_Ref;
   }
 
   /*!
@@ -58,7 +59,7 @@ class CIncIdealGas final : public CFluidModel {
     /*--- The EoS only depends upon temperature. ---*/
     Temperature = t;
     Density = Pressure / (Temperature * Gas_Constant);
-    Enthalpy = Cp * (Temperature - STD_REF_TEMP);  // Sensible enthalpy relative to REF_TEMP
+    Enthalpy = Cp * (Temperature - Std_Ref_Temp_ND);  // Sensible enthalpy relative to REF_TEMP
   }
 
   /*!
@@ -67,11 +68,12 @@ class CIncIdealGas final : public CFluidModel {
    */
   void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override {
     Enthalpy = val_enthalpy;
-    Temperature = Enthalpy / Cp + STD_REF_TEMP;  // Temperature from sensible enthalpy
+    Temperature = Enthalpy / Cp + Std_Ref_Temp_ND;  // Temperature from sensible enthalpy
     Density = Pressure / (Temperature * Gas_Constant);
   }
 
  private:
   su2double Gas_Constant{0.0}; /*!< \brief Gas Constant. */
   su2double Gamma{0.0};        /*!< \brief Heat Capacity Ratio. */
+  su2double Std_Ref_Temp_ND{0.0}; /*!< \brief Nondimensional standard reference temperature for enthalpy. */
 };

@@ -289,7 +289,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     case CONSTANT_DENSITY:
 
-      auxFluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp());
+      auxFluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp(), Temperature_FreeStream);
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
       break;
 
@@ -297,7 +297,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      auxFluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic);
+      auxFluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic, Temperature_FreeStream);
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
       Pressure_Thermodynamic = auxFluidModel->GetPressure();
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
@@ -307,12 +307,12 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic);
+      auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic, Temperature_FreeStream);
       if (viscous) {
         /*--- Variable Cp model via polynomial. ---*/
         for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
           config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar), iVar);
-        auxFluidModel->SetCpModel(config);
+        auxFluidModel->SetCpModel(config, Temperature_FreeStream);
       }
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
       Pressure_Thermodynamic = auxFluidModel->GetPressure();
@@ -480,11 +480,11 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     switch (config->GetKind_FluidModel()) {
 
       case CONSTANT_DENSITY:
-        fluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND);
+        fluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND, STD_REF_TEMP / config->GetTemperature_Ref());
         break;
 
       case INC_IDEAL_GAS:
-        fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
+        fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND, Temperature_FreeStreamND);
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 
@@ -499,13 +499,13 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
 
       case INC_IDEAL_GAS_POLY:
-        fluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND);
+        fluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref());
         if (viscous) {
           /*--- Variable Cp model via polynomial. ---*/
           config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
           for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
             config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
-          fluidModel->SetCpModel(config);
+          fluidModel->SetCpModel(config, Temperature_FreeStreamND);
         }
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
