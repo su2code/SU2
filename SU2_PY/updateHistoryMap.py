@@ -55,8 +55,13 @@ def parse_output(files):
             s = f.readline().strip(" ")
             if not s:
                 break
-            if s.startswith("AddHistoryOutput("):
-                s = s.replace("AddHistoryOutput", "").strip("()").split(",")
+            if "AddHistoryOutput(" in s:
+                # Extract the AddHistoryOutput(...) portion
+                idx = s.find("AddHistoryOutput(")
+                s = s[idx:].replace("AddHistoryOutput", "").strip("()").split(",")
+                # Skip lines with insufficient arguments (e.g., comments mentioning AddHistoryOutput)
+                if len(s) < 5:
+                    continue
                 curOutputField = dict()
                 name = s[0].strip(' ()"\n;')
                 curOutputField["HEADER"] = s[1].strip(' ()"\n;')

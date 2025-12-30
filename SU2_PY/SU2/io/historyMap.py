@@ -54,9 +54,9 @@ history_header_map = {
         "TYPE": "COEFFICIENT",
     },
     "AVG_TEMPERATURE": {
-        "DESCRIPTION": "Average temperature on all surfaces set with MARKER_MONITORING.",
+        "DESCRIPTION": "Average temperature on all surfaces defined in MARKER_MONITORING",
         "GROUP": "HEAT",
-        "HEADER": "Temp",
+        "HEADER": "AvgTemp",
         "TYPE": "COEFFICIENT",
     },
     'AbsFlowAngleIn_" + tag': {
@@ -269,6 +269,12 @@ history_header_map = {
         "HEADER": "bgs[RhoV]",
         "TYPE": "RESIDUAL",
     },
+    "BGS_MOMENTUM-Z": {
+        "DESCRIPTION": "BGS residual of the z-component.",
+        "GROUP": "BGS_RES",
+        "HEADER": "bgs[RhoW]",
+        "TYPE": "RESIDUAL",
+    },
     "BGS_NU_TILDE": {
         "DESCRIPTION": "BGS residual of nu tilde (SA model).",
         "GROUP": "BGS_RES",
@@ -279,6 +285,12 @@ history_header_map = {
         "DESCRIPTION": "BGS residual of the pressure.",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[P]",
+        "TYPE": "RESIDUAL",
+    },
+    "BGS_RAD_ENERGY": {
+        "DESCRIPTION": "BGS residual of the radiative energy.",
+        "GROUP": "BGS_RES",
+        "HEADER": "bgs[E_Rad]",
         "TYPE": "RESIDUAL",
     },
     "BGS_RE_THETA_T": {
@@ -294,7 +306,7 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "BGS_TEMPERATURE": {
-        "DESCRIPTION": "BGS residual of the temperature.",
+        "DESCRIPTION": "Block-Gauss-Seidel residual of the temperature",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[T]",
         "TYPE": "RESIDUAL",
@@ -349,6 +361,12 @@ history_header_map = {
     },
     "COMBO": {
         "DESCRIPTION": "Combined obj. function value.",
+        "GROUP": "COMBO",
+        "HEADER": "ComboObj",
+        "TYPE": "COEFFICIENT",
+    },
+    "CUSTOM_OBJFUNC": {
+        "DESCRIPTION": "Custom obj. function value.",
         "GROUP": "COMBO",
         "HEADER": "ComboObj",
         "TYPE": "COEFFICIENT",
@@ -416,7 +434,7 @@ history_header_map = {
     "D_AVG_TEMPERATURE": {
         "DESCRIPTION": "Derivative value",
         "GROUP": "D_HEAT",
-        "HEADER": "d[Temp]",
+        "HEADER": "d[AvgTemp]",
         "TYPE": "D_COEFFICIENT",
     },
     "D_BUFFET": {
@@ -426,6 +444,12 @@ history_header_map = {
         "TYPE": "D_COEFFICIENT",
     },
     "D_COMBO": {
+        "DESCRIPTION": "Derivative value",
+        "GROUP": "D_COMBO",
+        "HEADER": "d[ComboObj]",
+        "TYPE": "D_COEFFICIENT",
+    },
+    "D_CUSTOM_OBJFUNC": {
         "DESCRIPTION": "Derivative value",
         "GROUP": "D_COMBO",
         "HEADER": "d[ComboObj]",
@@ -1049,6 +1073,12 @@ history_header_map = {
         "HEADER": "max[RhoV]",
         "TYPE": "RESIDUAL",
     },
+    "MAX_MOMENTUM-Z": {
+        "DESCRIPTION": "Maximum residual of the z-component.",
+        "GROUP": "MAX_RES",
+        "HEADER": "max[RhoW]",
+        "TYPE": "RESIDUAL",
+    },
     "MAX_NU_TILDE": {
         "DESCRIPTION": "Maximum residual of nu tilde (SA model).",
         "GROUP": "MAX_RES",
@@ -1074,7 +1104,7 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "MAX_TEMPERATURE": {
-        "DESCRIPTION": "Root-mean square residual of the temperature.",
+        "DESCRIPTION": "Maximum residual of the temperature",
         "GROUP": "MAX_RES",
         "HEADER": "max[T]",
         "TYPE": "RESIDUAL",
@@ -1373,6 +1403,12 @@ history_header_map = {
         "HEADER": "rms[RhoE]",
         "TYPE": "RESIDUAL",
     },
+    "RMS_ENTHALPY": {
+        "DESCRIPTION": "Root-mean square residual of the enthalpy.",
+        "GROUP": "RMS_RES",
+        "HEADER": "rms[h]",
+        "TYPE": "RESIDUAL",
+    },
     "RMS_ETOL": {
         "DESCRIPTION": "Norm of energy/work increment",
         "GROUP": "RMS_RES",
@@ -1397,6 +1433,12 @@ history_header_map = {
         "HEADER": "rms[RhoV]",
         "TYPE": "RESIDUAL",
     },
+    "RMS_MOMENTUM-Z": {
+        "DESCRIPTION": "Root-mean square residual of the momentum z-component.",
+        "GROUP": "RMS_RES",
+        "HEADER": "rms[RhoW]",
+        "TYPE": "RESIDUAL",
+    },
     "RMS_NU_TILDE": {
         "DESCRIPTION": "Root-mean square residual of nu tilde (SA model).",
         "GROUP": "RMS_RES",
@@ -1407,6 +1449,12 @@ history_header_map = {
         "DESCRIPTION": "Root-mean square residual of the pressure.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[P]",
+        "TYPE": "RESIDUAL",
+    },
+    "RMS_RAD_ENERGY": {
+        "DESCRIPTION": "Root-mean square residual of the radiative energy.",
+        "GROUP": "RMS_RES",
+        "HEADER": "rms[E_Rad]",
         "TYPE": "RESIDUAL",
     },
     "RMS_RE_THETA_T": {
@@ -1425,6 +1473,12 @@ history_header_map = {
         "DESCRIPTION": "Root-mean square residual of transported species.",
         "GROUP": "RMS_RES",
         "HEADER": 'rms[rho*Y_" + std::to_string(iVar)+"]',
+        "TYPE": "RESIDUAL",
+    },
+    "RMS_TEMPERATURE": {
+        "DESCRIPTION": "Root mean square residual of the temperature",
+        "GROUP": "RMS_RES",
+        "HEADER": "rms[T]",
         "TYPE": "RESIDUAL",
     },
     "RMS_TKE": {
@@ -1449,6 +1503,12 @@ history_header_map = {
         "DESCRIPTION": "Root-mean square residual of the velocity y-component.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[V]",
+        "TYPE": "RESIDUAL",
+    },
+    "RMS_VELOCITY-Z": {
+        "DESCRIPTION": "Root-mean square residual of the velocity z-component.",
+        "GROUP": "RMS_RES",
+        "HEADER": "rms[W]",
         "TYPE": "RESIDUAL",
     },
     "SENS_AOA": {
@@ -1658,7 +1718,7 @@ history_header_map = {
     "TAVG_AVG_TEMPERATURE": {
         "DESCRIPTION": "weighted time average value",
         "GROUP": "TAVG_HEAT",
-        "HEADER": "tavg[Temp]",
+        "HEADER": "tavg[AvgTemp]",
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_BUFFET": {
@@ -1668,6 +1728,12 @@ history_header_map = {
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_COMBO": {
+        "DESCRIPTION": "weighted time average value",
+        "GROUP": "TAVG_COMBO",
+        "HEADER": "tavg[ComboObj]",
+        "TYPE": "TAVG_COEFFICIENT",
+    },
+    "TAVG_CUSTOM_OBJFUNC": {
         "DESCRIPTION": "weighted time average value",
         "GROUP": "TAVG_COMBO",
         "HEADER": "tavg[ComboObj]",
@@ -1712,7 +1778,7 @@ history_header_map = {
     "TAVG_D_AVG_TEMPERATURE": {
         "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_HEAT",
-        "HEADER": "dtavg[Temp]",
+        "HEADER": "dtavg[AvgTemp]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_BUFFET": {
@@ -1722,6 +1788,12 @@ history_header_map = {
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_COMBO": {
+        "DESCRIPTION": "weighted time average derivative value",
+        "GROUP": "TAVG_D_COMBO",
+        "HEADER": "dtavg[ComboObj]",
+        "TYPE": "TAVG_D_COEFFICIENT",
+    },
+    "TAVG_D_CUSTOM_OBJFUNC": {
         "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_COMBO",
         "HEADER": "dtavg[ComboObj]",
@@ -2268,7 +2340,7 @@ history_header_map = {
         "TYPE": "COEFFICIENT",
     },
     "TOTAL_HEATFLUX": {
-        "DESCRIPTION": "Total heatflux on all surfaces set with MARKER_MONITORING.",
+        "DESCRIPTION": "Total heatflux on all surfaces defined in MARKER_MONITORING",
         "GROUP": "HEAT",
         "HEADER": "HF",
         "TYPE": "COEFFICIENT",
