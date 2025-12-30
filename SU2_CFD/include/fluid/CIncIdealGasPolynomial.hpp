@@ -59,14 +59,9 @@ class CIncIdealGasPolynomial final : public CFluidModel {
    * \param[in] config - configuration container for the problem.
    */
   void SetCpModel(const CConfig* config, su2double val_Temperature_Ref) override {
-    const su2double t_ref = val_Temperature_Ref;
-    Enthalpy_Ref = 0.0;
-    su2double t_i = 1.0;
     for (int i = 0; i < N; ++i) {
       /*--- Note that we use cp = dh/dt here. ---*/
-      t_i *= t_ref - Std_Ref_Temp_ND;
       coeffs_[i] = config->GetCp_PolyCoeffND(i);
-      Enthalpy_Ref += coeffs_[i] * t_i / (i + 1);
     }
     Temperature_Min = config->GetTemperatureLimits(0);
   }
@@ -114,12 +109,14 @@ class CIncIdealGasPolynomial final : public CFluidModel {
     while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
       /* Evaluate the new Cp and enthalpy from the coefficients and temperature. */
       Cp_iter = coeffs_[0];
-      su2double Enthalpy_iter = coeffs_[0] * temp_iter - Enthalpy_Ref;
+      su2double tref_i = temp_iter - Std_Ref_Temp_ND;
+      su2double Enthalpy_iter = coeffs_[0] * tref_i;
       su2double t_i = 1.0;
       for (int i = 1; i < N; ++i) {
         t_i *= temp_iter;
+        tref_i *= (temp_iter - Std_Ref_Temp_ND);
         Cp_iter += coeffs_[i] * t_i;
-        Enthalpy_iter += coeffs_[i] * t_i * temp_iter / (i + 1);
+        Enthalpy_iter += coeffs_[i] * tref_i / (i + 1);
       }
 
       delta_enthalpy_iter = Enthalpy - Enthalpy_iter;
@@ -133,6 +130,7 @@ class CIncIdealGasPolynomial final : public CFluidModel {
         break;
       }
     }
+
     Temperature = temp_iter;
     Cp = Cp_iter;
     if (counter == counter_limit) {
@@ -147,6 +145,5 @@ class CIncIdealGasPolynomial final : public CFluidModel {
   su2double Gamma{0.0};        /*!< \brief Ratio of specific heats. */
   su2double Std_Ref_Temp_ND{0.0}; /*!< \brief Nondimensional standard reference temperature for enthalpy. */
   array<su2double, N> coeffs_; /*!< \brief Polynomial coefficients for heat capacity as a function of temperature. */
-  su2double Enthalpy_Ref;      /*!< \brief Enthalpy computed at the reference temperature. */
   su2double Temperature_Min;   /*!< \brief Minimum temperature value allowed in Newton-Raphson iterations. */
 };
