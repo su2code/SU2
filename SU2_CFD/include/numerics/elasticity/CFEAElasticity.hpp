@@ -182,27 +182,32 @@ public:
   /*!
    * \brief Compute VonMises stress from components Sxx Syy Sxy Szz Sxz Syz.
    */
-  template<class T>
+  template <class T>
   static su2double VonMisesStress(unsigned short nDim, const T& stress) {
+    su2double VM = 0.0;
+
     if (nDim == 2) {
-      su2double Sxx = stress[0], Syy = stress[1], Sxy = stress[2];
+      /*--- In 2D, we expect 4 components: Sxx, Syy, Sxy, Szz ---*/
+      su2double Sxx = stress[0];
+      su2double Syy = stress[1];
+      su2double Sxy = stress[2];
+      su2double Szz = stress[3]; // <--- Critical: Input must have size 4!
 
-      su2double S1, S2; S1 = S2 = (Sxx+Syy)/2;
-      su2double tauMax = sqrt(pow((Sxx-Syy)/2, 2) + pow(Sxy,2));
-      S1 += tauMax;
-      S2 -= tauMax;
-
-      return sqrt(S1*S1+S2*S2-2*S1*S2);
+      VM = sqrt( 0.5 * ( (Sxx-Syy)*(Sxx-Syy) + (Syy-Szz)*(Syy-Szz) + (Szz-Sxx)*(Szz-Sxx) + 6.0*Sxy*Sxy ) );
     }
     else {
-      su2double Sxx = stress[0], Syy = stress[1], Szz = stress[3];
-      su2double Sxy = stress[2], Sxz = stress[4], Syz = stress[5];
+      /*--- 3D: Sxx, Syy, Szz, Sxy, Syz, Szx ---*/
+      su2double Sxx = stress[0];
+      su2double Syy = stress[1];
+      su2double Szz = stress[2];
+      su2double Sxy = stress[3];
+      su2double Syz = stress[4];
+      su2double Szx = stress[5];
 
-      return sqrt(0.5*(pow(Sxx - Syy, 2) +
-                       pow(Syy - Szz, 2) +
-                       pow(Szz - Sxx, 2) +
-                       6.0*(Sxy*Sxy+Sxz*Sxz+Syz*Syz)));
+      VM = sqrt( 0.5 * ( (Sxx-Syy)*(Sxx-Syy) + (Syy-Szz)*(Syy-Szz) + (Szz-Sxx)*(Szz-Sxx) + 6.0*(Sxy*Sxy + Syz*Syz + Szx*Szx) ) );
     }
+
+    return VM;
   }
 
 protected:

@@ -242,6 +242,9 @@ void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_contain
 
 su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
 
+  su2double Nu = config->GetPoissonRatio(0);
+  bool isPlaneStrain = (config->GetElas2D_Formulation() == STRUCT_2DFORM::PLANE_STRAIN);
+
   unsigned short iVar, jVar;
   unsigned short iGauss, nGauss;
   unsigned short iNode, nNode;
@@ -341,9 +344,14 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
       su2double Ni_Extrap = element->GetNi_Extrap(iNode, iGauss);
 
       if (nDim == 2) {
-        for(iVar = 0; iVar < 3; ++iVar)
-          element->Add_NodalStress(iNode, iVar, Stress[iVar] * Ni_Extrap);
+      for(iVar = 0; iVar < 3; ++iVar)
+        element->Add_NodalStress(iNode, iVar, Stress[iVar] * Ni_Extrap);
+
+      if (isPlaneStrain) {
+        su2double Szz = Nu * (Stress[0] + Stress[1]);
+        element->Add_NodalStress(iNode, 3, Szz * Ni_Extrap);
       }
+    }
       else {
         /*--- If nDim is 3 and we compute it this way, the 3rd component is the Szz,
          *    while in the output it is the 4th component for practical reasons. ---*/
@@ -359,7 +367,25 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
   }
 
   if (nDim == 3) std::swap(avgStress[2], avgStress[3]);
-  auto elStress = VonMisesStress(nDim, avgStress);
+  /*--- Pack Average Stress Vector ---*/
+  su2double avgStress_VM[6] = {0.0};
+
+  if (nDim == 2) {
+      avgStress_VM[0] = avgStress[0];
+      avgStress_VM[1] = avgStress[1];
+      avgStress_VM[2] = avgStress[2];
+
+      if (isPlaneStrain) {
+          avgStress_VM[3] = Nu * (avgStress[0] + avgStress[1]);
+      } else {
+          avgStress_VM[3] = 0.0;
+      }
+  } 
+  else {
+      for (unsigned short k = 0; k < 6; k++) avgStress_VM[k] = avgStress[k];
+  }
+
+  auto elStress = CFEAElasticity::VonMisesStress(nDim, avgStress_VM);
 
   /*--- We only differentiate w.r.t. an avg VM stress for the element as
    * considering all nodal stresses would use too much memory. ---*/
