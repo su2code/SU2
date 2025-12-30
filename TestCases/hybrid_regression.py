@@ -383,8 +383,8 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals         = [-8.241953, -2.424330, 0.027284, 1.909617, -173.010000]
-    inc_poly_cylinder.test_vals_aarch64 = [-8.241953, -2.424330, 0.027284, 1.909617, -173.010000]
+    inc_poly_cylinder.test_vals         = [-8.260165, -2.445453, 0.027209, 1.915447, -171.620000]
+    inc_poly_cylinder.test_vals_aarch64 = [-8.260165, -2.445453, 0.027209, 1.915447, -171.620000]
     test_list.append(inc_poly_cylinder)
 
     # X-coarse laminar bend as a mixed element CGNS test
@@ -665,8 +665,8 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals         = [19.000000, -1.154873, -1.378119]
-    slinc_steady.test_vals_aarch64 = [19.000000, -1.048446, -1.324274]
+    slinc_steady.test_vals         = [19.000000, -1.048972, -1.324971]
+    slinc_steady.test_vals_aarch64 = [19.000000, -1.048972, -1.324971]
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
 

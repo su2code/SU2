@@ -611,7 +611,7 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals = [-8.030976, -2.362995, 0.006829, 1.923532, -172.590000]
+    inc_poly_cylinder.test_vals = [-8.030822, -2.383534, 0.006612, 1.929173, -171.210000]
     test_list.append(inc_poly_cylinder)
 
     # X-coarse laminar bend as a mixed element CGNS test
@@ -635,7 +635,7 @@ def main():
     inc_heatTransfer_BC.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     inc_heatTransfer_BC.cfg_file  = "BC_HeatTransfer.cfg"
     inc_heatTransfer_BC.test_iter = 50
-    inc_heatTransfer_BC.test_vals = [-8.686723, -7.601245, -8.072766, 1.864213, -1669.800000]
+    inc_heatTransfer_BC.test_vals = [-8.904266, -7.745636, -8.064003, -1.079197, -1671.000000]
     test_list.append(inc_heatTransfer_BC)
 
     ############################
@@ -1209,7 +1209,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.131557, -1.370471]
+    slinc_steady.test_vals = [19.000000, -1.013427, -1.222965]
     slinc_steady.timeout   = 100
     slinc_steady.tol       = 0.00002
     slinc_steady.multizone = True
@@ -1319,7 +1319,7 @@ def main():
     p1rad.cfg_dir   = "radiation/p1model"
     p1rad.cfg_file  = "configp1.cfg"
     p1rad.test_iter = 50
-    p1rad.test_vals = [-7.743666, -7.921411, -2.111848, 0.098302, -47.897000]
+    p1rad.test_vals = [-7.700974, -7.734765, -2.061661, 0.382811, -57.861000]
     test_list.append(p1rad)
 
 

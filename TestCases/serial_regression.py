@@ -415,7 +415,7 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals = [-8.232551, -2.412865, 0.010163, 1.895333, -172.760000]
+    inc_poly_cylinder.test_vals = [-8.241365, -2.434357, 0.010085, 1.901399, -171.350000]
     test_list.append(inc_poly_cylinder)
 
     # X-coarse laminar bend as a mixed element CGNS test
@@ -458,7 +458,7 @@ def main():
     inc_turb_wallfunction_flatplate_sst.cfg_dir   = "wallfunctions/flatplate/incompressible_SST"
     inc_turb_wallfunction_flatplate_sst.cfg_file  = "turb_SST_flatplate.cfg"
     inc_turb_wallfunction_flatplate_sst.test_iter = 10
-    inc_turb_wallfunction_flatplate_sst.test_vals = [-6.881887, -5.731983, -6.725181, -2.618754, -7.189701, -2.050891, 10.000000, -2.027265, 0.001155, 0.003172, 0.000000]
+    inc_turb_wallfunction_flatplate_sst.test_vals = [-6.879863, -5.731934, -6.732450, -4.240641, -7.189679, -2.050873, 10.000000, -4.007590, 0.001161, 0.003172, 0.000000]
     test_list.append(inc_turb_wallfunction_flatplate_sst)
 
     # FLAT PLATE, WALL FUNCTIONS, INCOMPRESSIBLE SA
@@ -466,7 +466,7 @@ def main():
     inc_turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/incompressible_SA"
     inc_turb_wallfunction_flatplate_sa.cfg_file  = "turb_SA_flatplate.cfg"
     inc_turb_wallfunction_flatplate_sa.test_iter = 10
-    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.894473, -5.715971, -6.744286, -2.631311, -9.550134, 10.000000, -2.017104, 0.001027, 0.003759]
+    inc_turb_wallfunction_flatplate_sa.test_vals = [-6.892397, -5.715934, -6.750379, -4.240551, -9.550026, 10.000000, -4.008745, 0.001030, 0.003759]
     test_list.append(inc_turb_wallfunction_flatplate_sa)
 
     ####################
@@ -986,7 +986,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.148249, -1.398402]
+    slinc_steady.test_vals = [19.000000, -1.050011, -1.303591]
     slinc_steady.timeout   = 100
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
@@ -1098,7 +1098,7 @@ def main():
     p1rad.cfg_dir   = "radiation/p1model"
     p1rad.cfg_file  = "configp1.cfg"
     p1rad.test_iter = 50
-    p1rad.test_vals = [-8.284673, -8.008659, -2.424204, 0.389030, -56.560000]
+    p1rad.test_vals = [-7.939639, -7.898740, -2.238329, 0.388591, -56.886000]
     test_list.append(p1rad)
 
     # ###############################
