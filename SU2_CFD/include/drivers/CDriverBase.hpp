@@ -116,7 +116,13 @@ class CDriverBase {
    * \return Value of the output.
    */
   inline passivedouble GetOutputValue(const std::string& output_name) const {
-    return SU2_TYPE::GetValue(output_container[MESH_0]->GetHistoryFieldValue(output_name));
+    const auto& list = output_container[MESH_0]->GetHistoryOutputList();
+    for (const auto& val : list) {
+       if (val == output_name) {
+          return SU2_TYPE::GetValue(output_container[MESH_0]->GetHistoryFieldValue(output_name));
+       }
+    }
+    return 0.0; 
   }
 
   /*!
@@ -133,6 +139,11 @@ class CDriverBase {
    */
   inline passivedouble GetMarkerMonitoringOutputValue(const std::string& output_name,
                                                       const std::string& marker_monitoring) const {
+    const auto& list = output_container[MESH_0]->GetHistoryOutputPerSurfaceList();
+    bool found = false;
+    for (const auto& val : list) { if (val == output_name) { found = true; break; } }
+    if (!found) return 0.0;
+
     for (auto iMarker = 0u; iMarker < main_config->GetnMarker_Monitoring(); ++iMarker) {
       if (marker_monitoring == main_config->GetMarker_Monitoring_TagBound(iMarker))
         return SU2_TYPE::GetValue(output_container[MESH_0]->GetHistoryFieldValuePerSurface(output_name, iMarker));
@@ -147,6 +158,11 @@ class CDriverBase {
    */
   inline passivedouble GetMarkerAnalyzeOutputValue(const std::string& output_name,
                                                    const std::string& marker_analyze) const {
+    const auto& list = output_container[MESH_0]->GetHistoryOutputPerSurfaceList();
+    bool found = false;
+    for (const auto& val : list) { if (val == output_name) { found = true; break; } }
+    if (!found) return 0.0;
+
     for (auto iMarker = 0u; iMarker < main_config->GetnMarker_Analyze(); ++iMarker) {
       if (marker_analyze == main_config->GetMarker_Analyze_TagBound(iMarker))
         return SU2_TYPE::GetValue(output_container[MESH_0]->GetHistoryFieldValuePerSurface(output_name, iMarker));
