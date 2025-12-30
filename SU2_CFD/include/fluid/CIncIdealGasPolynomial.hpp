@@ -105,7 +105,7 @@ class CIncIdealGasPolynomial final : public CFluidModel {
 
     int counter = 0;
 
-    /*--- Computing temperature given enthalpy using Newton-Raphson. ---*/
+    /*--- Compute temperature given enthalpy using Newton-Raphson. ---*/
     while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
       /* Evaluate the new Cp and enthalpy from the coefficients and temperature. */
       Cp_iter = coeffs_[0];
@@ -125,7 +125,7 @@ class CIncIdealGasPolynomial final : public CFluidModel {
 
       temp_iter += delta_temp_iter;
       if (temp_iter < Temperature_Min) {
-        cout << "Warning: Negative temperature has been found during Newton-Raphson" << endl;
+        cout << "Warning: Negative temperature has been found during Newton-Raphson." << endl;
         temp_iter = Temperature_Min;
         break;
       }
@@ -134,7 +134,7 @@ class CIncIdealGasPolynomial final : public CFluidModel {
     Temperature = temp_iter;
     Cp = Cp_iter;
     if (counter == counter_limit) {
-      cout << "Warning Newton-Raphson exceed number of max iteration in temperature computation" << endl;
+      cout << "Warning: Newton-Raphson exceeds max. iterations in temperature computation." << endl;
     }
     Density = Pressure / (Temperature * Gas_Constant);
     Cv = Cp / Gamma;
