@@ -159,10 +159,16 @@ private:
     auto product = CSysMatrixVectorProduct<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
     v = MixedScalar(0.0);
     MixedScalar eps_t = eps;
-    if (config->GetKind_Linear_Solver_Inner() == LINEAR_SOLVER_INNER::NONE) {
-      iters = solvers[FLOW_SOL]->System.FGMRES_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
-    } else {
-      iters = solvers[FLOW_SOL]->System.BCGSTAB_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
+    switch (config->GetKind_Linear_Solver_Inner()) {
+      case LINEAR_SOLVER_INNER::NONE:
+        iters = solvers[FLOW_SOL]->System.FGMRES_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
+        break;
+      case LINEAR_SOLVER_INNER::BCGSTAB:
+        iters = solvers[FLOW_SOL]->System.BCGSTAB_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
+        break;
+      case LINEAR_SOLVER_INNER::SMOOTHER:
+        iters = solvers[FLOW_SOL]->System.Smoother_LinSolver(u, v, product, *preconditioner, 0, iters, eps_t, false, config);
+        break;
     }
     eps = eps_t;
     return iters;
