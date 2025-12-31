@@ -152,14 +152,16 @@ private:
   template<class T, su2enable_if<std::is_same<T,MixedScalar>::value> = 0>
   inline unsigned long Preconditioner_impl(const CSysVector<T>& u, CSysVector<T>& v,
                                            unsigned long iters, Scalar& eps) const {
-    if (iters == 0) {
+    const auto inner_solver = config->GetKind_Linear_Solver_Inner();
+
+    if (iters == 0 || (iters == 1 && inner_solver == LINEAR_SOLVER_INNER::SMOOTHER)) {
       (*preconditioner)(u, v);
       return 0;
     }
     auto product = CSysMatrixVectorProduct<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
     v = MixedScalar(0.0);
     MixedScalar eps_t = eps;
-    switch (config->GetKind_Linear_Solver_Inner()) {
+    switch (inner_solver) {
       case LINEAR_SOLVER_INNER::NONE:
         iters = solvers[FLOW_SOL]->System.FGMRES_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
         break;
