@@ -206,26 +206,18 @@ void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_contain
 
   /*--- Compute the D Matrix (for plane stress and 2-D)---*/
 
-
   if (nDim == 2) {
     if (plane_stress) {
-      /*--- We enable plane stress cases ---*/
-
-      D_Mat[0][0] = E/(1-Nu*Nu);        D_Mat[0][1] = (E*Nu)/(1-Nu*Nu);  D_Mat[0][2] = 0.0;
-      D_Mat[1][0] = (E*Nu)/(1-Nu*Nu);   D_Mat[1][1] = E/(1-Nu*Nu);       D_Mat[1][2] = 0.0;
-      D_Mat[2][0] = 0.0;                D_Mat[2][1] = 0.0;               D_Mat[2][2] = ((1-Nu)*E)/(2*(1-Nu*Nu));
-    }
-    else {
-      /*--- Assuming plane strain as a general case ---*/
-
+      su2double D = E / (1 - Nu * Nu);
+      D_Mat[0][0] = D;        D_Mat[0][1] = Nu * D;  D_Mat[0][2] = 0.0;
+      D_Mat[1][0] = Nu * D;   D_Mat[1][1] = D;       D_Mat[1][2] = 0.0;
+      D_Mat[2][0] = 0.0;      D_Mat[2][1] = 0.0;     D_Mat[2][2] = (1 - Nu) * D / 2;
+    } else {
       D_Mat[0][0] = Lambda + 2.0*Mu;  D_Mat[0][1] = Lambda;           D_Mat[0][2] = 0.0;
       D_Mat[1][0] = Lambda;           D_Mat[1][1] = Lambda + 2.0*Mu;  D_Mat[1][2] = 0.0;
       D_Mat[2][0] = 0.0;              D_Mat[2][1] = 0.0;              D_Mat[2][2] = Mu;
     }
-
-  }
-  else {
-
+  } else {
     su2double Lbda_2Mu = Lambda + 2.0*Mu;
 
     D_Mat[0][0] = Lbda_2Mu;  D_Mat[0][1] = Lambda;    D_Mat[0][2] = Lambda;    D_Mat[0][3] = 0.0;  D_Mat[0][4] = 0.0;  D_Mat[0][5] = 0.0;
@@ -234,16 +226,12 @@ void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_contain
     D_Mat[3][0] = 0.0;       D_Mat[3][1] = 0.0;       D_Mat[3][2] = 0.0;       D_Mat[3][3] = Mu;   D_Mat[3][4] = 0.0;  D_Mat[3][5] = 0.0;
     D_Mat[4][0] = 0.0;       D_Mat[4][1] = 0.0;       D_Mat[4][2] = 0.0;       D_Mat[4][3] = 0.0;  D_Mat[4][4] = Mu;   D_Mat[4][5] = 0.0;
     D_Mat[5][0] = 0.0;       D_Mat[5][1] = 0.0;       D_Mat[5][2] = 0.0;       D_Mat[5][3] = 0.0;  D_Mat[5][4] = 0.0;  D_Mat[5][5] = Mu;
-
   }
 
 }
 
 
 su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
-
-  su2double Nu = config->GetPoissonRatio(0);
-  bool isPlaneStrain = (config->GetElas2D_Formulation() == STRUCT_2DFORM::PLANE_STRAIN);
 
   unsigned short iVar, jVar;
   unsigned short iGauss, nGauss;
@@ -339,53 +327,27 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
       avgStress[iVar] += Stress[iVar] / nGauss;
     }
 
+    if (nDim == 2 && config->GetElas2D_Formulation() == STRUCT_2DFORM::PLANE_STRAIN) {
+      Stress[3] = Nu * (Stress[0] + Stress[1]) + (1 - 2 * Nu) * thermalStress;
+      avgStress[3] += Stress[3] / nGauss;
+    }
+
+    /*--- If nDim is 3 and we compute it this way, the 3rd component is the Szz,
+     *    while in the output it is the 4th component for practical reasons. ---*/
+    if (nDim == 3) std::swap(Stress[2], Stress[3]);
+
     for (iNode = 0; iNode < nNode; iNode++) {
-
       su2double Ni_Extrap = element->GetNi_Extrap(iNode, iGauss);
-
-      if (nDim == 2) {
-      for(iVar = 0; iVar < 3; ++iVar)
+      for (iVar = 0; iVar < DIM_STRAIN_3D; ++iVar) {
         element->Add_NodalStress(iNode, iVar, Stress[iVar] * Ni_Extrap);
-
-      if (isPlaneStrain) {
-        su2double Szz = Nu * (Stress[0] + Stress[1]);
-        element->Add_NodalStress(iNode, 3, Szz * Ni_Extrap);
-      }
-    }
-      else {
-        /*--- If nDim is 3 and we compute it this way, the 3rd component is the Szz,
-         *    while in the output it is the 4th component for practical reasons. ---*/
-        element->Add_NodalStress(iNode, 0, Stress[0] * Ni_Extrap);
-        element->Add_NodalStress(iNode, 1, Stress[1] * Ni_Extrap);
-        element->Add_NodalStress(iNode, 2, Stress[3] * Ni_Extrap);
-        element->Add_NodalStress(iNode, 3, Stress[2] * Ni_Extrap);
-        element->Add_NodalStress(iNode, 4, Stress[4] * Ni_Extrap);
-        element->Add_NodalStress(iNode, 5, Stress[5] * Ni_Extrap);
       }
     }
 
   }
 
+  /*--- See note regarding output order above. ---*/
   if (nDim == 3) std::swap(avgStress[2], avgStress[3]);
-  /*--- Pack Average Stress Vector ---*/
-  su2double avgStress_VM[6] = {0.0};
-
-  if (nDim == 2) {
-      avgStress_VM[0] = avgStress[0];
-      avgStress_VM[1] = avgStress[1];
-      avgStress_VM[2] = avgStress[2];
-
-      if (isPlaneStrain) {
-          avgStress_VM[3] = Nu * (avgStress[0] + avgStress[1]);
-      } else {
-          avgStress_VM[3] = 0.0;
-      }
-  } 
-  else {
-      for (unsigned short k = 0; k < 6; k++) avgStress_VM[k] = avgStress[k];
-  }
-
-  auto elStress = CFEAElasticity::VonMisesStress(nDim, avgStress_VM);
+  auto elStress = CFEAElasticity::VonMisesStress(nDim, avgStress);
 
   /*--- We only differentiate w.r.t. an avg VM stress for the element as
    * considering all nodal stresses would use too much memory. ---*/

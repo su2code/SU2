@@ -80,7 +80,8 @@ protected:
   su2double *DV_Val = nullptr;            /*!< \brief For optimization cases, value of the design variables. */
   unsigned short n_DV = 0;                /*!< \brief For optimization cases, number of design variables. */
 
-  bool plane_stress = false;              /*!< \brief Checks if we are solving a plane stress case */
+  bool plane_stress = false;              /*!< \brief Checks if we are solving a plane stress case. */
+  bool linear = false;                    /*!< \brief Checks if we are solving a linear elasticity case. */
 
 public:
   /*!
@@ -181,33 +182,21 @@ public:
 
   /*!
    * \brief Compute VonMises stress from components Sxx Syy Sxy Szz Sxz Syz.
+   * \note Szz is required in 2D whereas Sxz and Syz are assumed to be 0.
    */
   template <class T>
   static su2double VonMisesStress(unsigned short nDim, const T& stress) {
-    su2double VM = 0.0;
-
-    if (nDim == 2) {
-      /*--- In 2D, we expect 4 components: Sxx, Syy, Sxy, Szz ---*/
-      su2double Sxx = stress[0];
-      su2double Syy = stress[1];
-      su2double Sxy = stress[2];
-      su2double Szz = stress[3]; // <--- Critical: Input must have size 4!
-
-      VM = sqrt( 0.5 * ( (Sxx-Syy)*(Sxx-Syy) + (Syy-Szz)*(Syy-Szz) + (Szz-Sxx)*(Szz-Sxx) + 6.0*Sxy*Sxy ) );
+    /*--- In 2D, we only have 4 components: Sxx, Syy, Sxy, Szz. ---*/
+    const auto& Sxx = stress[0];
+    const auto& Syy = stress[1];
+    const auto& Sxy = stress[2];
+    const auto& Szz = stress[3];
+    su2double Sxz = 0, Syz = 0;
+    if (nDim == 3) {
+      Sxz = stress[4];
+      Syz = stress[5];
     }
-    else {
-      /*--- 3D: Sxx, Syy, Szz, Sxy, Syz, Szx ---*/
-      su2double Sxx = stress[0];
-      su2double Syy = stress[1];
-      su2double Szz = stress[2];
-      su2double Sxy = stress[3];
-      su2double Syz = stress[4];
-      su2double Szx = stress[5];
-
-      VM = sqrt( 0.5 * ( (Sxx-Syy)*(Sxx-Syy) + (Syy-Szz)*(Syy-Szz) + (Szz-Sxx)*(Szz-Sxx) + 6.0*(Sxy*Sxy + Syz*Syz + Szx*Szx) ) );
-    }
-
-    return VM;
+    return sqrt(0.5 * (pow(Sxx - Syy, 2) + pow(Syy - Szz, 2) + pow(Szz - Sxx, 2) + 6 * (Sxy * Sxy + Sxz * Sxz + Syz * Syz)));
   }
 
 protected:
@@ -238,8 +227,12 @@ protected:
     Mu     = E / (2.0*(1.0 + Nu));
     Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
     Kappa  = Lambda + (2/3)*Mu;
-    /*--- https://solidmechanics.org/Text/Chapter3_2/Chapter3_2.php ---*/
-    ThermalStressTerm = -Alpha * E / (1 - (plane_stress ? 1 : 2) * Nu);
+    /*--- https://solidmechanics.org/Text/Chapter3_2/Chapter3_2.php
+     * The stress tensor for nonlinear problems is still 3x3 and plane stress is imposed
+     * by determining the deformation that makes sigma_33 = 0, hence this denominator is
+     * only changed for linear elasticity. ---*/
+    const auto nu_mult = (linear && plane_stress) ? 1 : 2;
+    ThermalStressTerm = -Alpha * E / (1 - nu_mult * Nu);
   }
 
   /*!

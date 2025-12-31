@@ -626,14 +626,15 @@ unsigned long CSysSolve<ScalarType>::RFGMRES_LinSolver(const CSysVector<ScalarTy
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  for (auto totalIter = 0ul; totalIter < MaxIter;) {
+  auto totalIter = 0ul;
+  while (totalIter < MaxIter) {
     /*--- Enforce a hard limit on total number of iterations ---*/
     auto iterLimit = min(restartIter, MaxIter - totalIter);
     auto iter = FGMRES_LinSolver(b, x, mat_vec, precond, tol, iterLimit, residual, monitoring, config);
     totalIter += iter;
-    if (residual <= tol || iter < iterLimit) return totalIter;
+    if (residual <= tol || iter < iterLimit) break;
   }
-  return 0;
+  return totalIter;
 }
 
 template <class ScalarType>

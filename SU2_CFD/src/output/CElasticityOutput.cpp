@@ -232,9 +232,9 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
 
   SetVolumeOutputValue("STRESS-XX", iPoint, Node_Struc->GetStress_FEM(iPoint)[0]);
   SetVolumeOutputValue("STRESS-YY", iPoint, Node_Struc->GetStress_FEM(iPoint)[1]);
+  SetVolumeOutputValue("STRESS-ZZ", iPoint, Node_Struc->GetStress_FEM(iPoint)[3]);
   SetVolumeOutputValue("STRESS-XY", iPoint, Node_Struc->GetStress_FEM(iPoint)[2]);
-  if (nDim == 3){
-    SetVolumeOutputValue("STRESS-ZZ", iPoint, Node_Struc->GetStress_FEM(iPoint)[3]);
+  if (nDim == 3) {
     SetVolumeOutputValue("STRESS-XZ", iPoint, Node_Struc->GetStress_FEM(iPoint)[4]);
     SetVolumeOutputValue("STRESS-YZ", iPoint, Node_Struc->GetStress_FEM(iPoint)[5]);
   }
@@ -260,17 +260,17 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
   if (nDim == 3) AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
-  AddVolumeOutput("DISPLACEMENT-X",    "Displacement_x", "SOLUTION", "x-component of the displacement vector");
-  AddVolumeOutput("DISPLACEMENT-Y",    "Displacement_y", "SOLUTION", "y-component of the displacement vector");
+  AddVolumeOutput("DISPLACEMENT-X", "Displacement_x", "SOLUTION", "x-component of the displacement vector");
+  AddVolumeOutput("DISPLACEMENT-Y", "Displacement_y", "SOLUTION", "y-component of the displacement vector");
   if (nDim == 3) AddVolumeOutput("DISPLACEMENT-Z", "Displacement_z", "SOLUTION", "z-component of the displacement vector");
 
   if (dynamic) {
-    AddVolumeOutput("VELOCITY-X",    "Velocity_x", "SOLUTION", "x-component of the velocity vector");
-    AddVolumeOutput("VELOCITY-Y",    "Velocity_y", "SOLUTION", "y-component of the velocity vector");
+    AddVolumeOutput("VELOCITY-X", "Velocity_x", "SOLUTION", "x-component of the velocity vector");
+    AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
     if (nDim == 3) AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
 
-    AddVolumeOutput("ACCELERATION-X",    "Acceleration_x", "SOLUTION", "x-component of the acceleration vector");
-    AddVolumeOutput("ACCELERATION-Y",    "Acceleration_y", "SOLUTION", "y-component of the acceleration vector");
+    AddVolumeOutput("ACCELERATION-X", "Acceleration_x", "SOLUTION", "x-component of the acceleration vector");
+    AddVolumeOutput("ACCELERATION-Y", "Acceleration_y", "SOLUTION", "y-component of the acceleration vector");
     if (nDim == 3) AddVolumeOutput("ACCELERATION-Z", "Acceleration_z", "SOLUTION", "z-component of the acceleration vector");
   }
 
@@ -278,14 +278,13 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
   }
 
-  AddVolumeOutput("STRESS-XX",    "Sxx", "STRESS", "x-component of the normal stress vector");
-  AddVolumeOutput("STRESS-YY",    "Syy", "STRESS", "y-component of the normal stress vector");
-  AddVolumeOutput("STRESS-XY",    "Sxy", "STRESS", "xy shear stress component");
-
+  AddVolumeOutput("STRESS-XX", "Sxx", "STRESS", "x-component of the normal stress vector");
+  AddVolumeOutput("STRESS-YY", "Syy", "STRESS", "y-component of the normal stress vector");
+  AddVolumeOutput("STRESS-ZZ", "Szz", "STRESS", "z-component of the normal stress vector");
+  AddVolumeOutput("STRESS-XY", "Sxy", "STRESS", "xy shear stress component");
   if (nDim == 3) {
-    AddVolumeOutput("STRESS-ZZ",    "Szz", "STRESS", "z-component of the normal stress vector");
-    AddVolumeOutput("STRESS-XZ",    "Sxz", "STRESS", "xz shear stress component");
-    AddVolumeOutput("STRESS-YZ",    "Syz", "STRESS", "yz shear stress component");
+    AddVolumeOutput("STRESS-XZ", "Sxz", "STRESS", "xz shear stress component");
+    AddVolumeOutput("STRESS-YZ", "Syz", "STRESS", "yz shear stress component");
   }
 
   AddVolumeOutput("VON_MISES_STRESS", "Von_Mises_Stress", "STRESS", "von-Mises stress");

@@ -1262,6 +1262,23 @@ def main():
     rotating_cylinder_fea.test_vals_aarch64 = [-6.861939, -6.835539, -6.895498, 22, -8.313847, 1.6502e+08]
     test_list.append(rotating_cylinder_fea)
 
+    # 2D beam in plain strain with thermal expansion. This tests fixes to the 2D Von Misses stress calculation.
+    linear_plane_strain = TestCase('linear_plane_strain')
+    linear_plane_strain.cfg_dir = "fea_fsi/VonMissesVerif"
+    linear_plane_strain.cfg_file = "linear_plane_strain_2d.cfg"
+    linear_plane_strain.test_iter = 0
+    linear_plane_strain.test_vals = [-6.038376, -5.972195, 0, 1.2014e+05, 125, -8.009476]
+    test_list.append(linear_plane_strain)
+
+    # 2D beam in plain stress with thermal expansion. This tests fixes to the 2D Von Misses stress calculation,
+    # and to the plane stress formulation with thermal expansion for nonlinear materials.
+    nonlinear_plane_stress = TestCase('nonlinear_plane_stress')
+    nonlinear_plane_stress.cfg_dir = "fea_fsi/VonMissesVerif"
+    nonlinear_plane_stress.cfg_file = "nonlinear_plane_stress_2d.cfg"
+    nonlinear_plane_stress.test_iter = 19
+    nonlinear_plane_stress.test_vals = [-7.444178, -3.365607, -13.998049, 1.6248e+05, 43, -4.095522]
+    test_list.append(nonlinear_plane_stress)
+
     # Dynamic beam, 2d
     dynbeam2d           = TestCase('dynbeam2d')
     dynbeam2d.cfg_dir   = "fea_fsi/DynBeam_2d"
@@ -1662,7 +1679,7 @@ def main():
     species3_primitiveVenturi_inletFile.test_vals = [-5.537438, -4.503863, -4.553632, -5.400874, -0.945967, -5.818774, -5.945211, 5.000000, -0.544749, 5.000000, -2.599435, 5.000000, -0.596360]
     test_list.append(species3_primitiveVenturi_inletFile)
 
-    # 3 species (2 eq) primitive venturi mixing with new flux and value boundary conditions 
+    # 3 species (2 eq) primitive venturi mixing with new flux and value boundary conditions
     species3_primitiveVenturi_fluxvalue           = TestCase('species3_primitiveVenturi_fluxvalue')
     species3_primitiveVenturi_fluxvalue.cfg_dir   = "species_transport/venturi_primitive_3species"
     species3_primitiveVenturi_fluxvalue.cfg_file  = "species3_primitiveVenturi_flux_value.cfg"
