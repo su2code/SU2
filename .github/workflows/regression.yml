@@ -127,7 +127,7 @@ jobs:
           - config_set: BaseNoMPI-asan
             flags: '--buildtype=debugoptimized -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true --warnlevel=3 --werror'
           - config_set: ReverseNoMPI-asan
-            flags: '--buildtype=debugoptimized -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled --warnlevel=3 --werror'
+            flags: '--buildtype=debugoptimized --optimization=1 -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files

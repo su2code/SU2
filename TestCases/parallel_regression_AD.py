@@ -91,7 +91,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals         = [-2.226852, -0.253100, -2.299300, -0.003164]
+    discadj_rans_naca0012_sst.test_vals         = [-2.226820, -0.256327, -2.299900, -0.003171]
     discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.226852, -0.253100, -2.299300, -0.003164]
     test_list.append(discadj_rans_naca0012_sst)
 
@@ -116,7 +116,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [20.000000, -2.082673, -2.013587, 0.000000]
+    discadj_incomp_cylinder.test_vals = [20.000000, -5.181765, -3.840710, 0.000000]
     test_list.append(discadj_incomp_cylinder)
 
     ######################################
@@ -150,7 +150,7 @@ def main():
     discadj_axisymmetric_rans_nozzle.cfg_dir    = "axisymmetric_rans/air_nozzle"
     discadj_axisymmetric_rans_nozzle.cfg_file   = "air_nozzle_restart.cfg"
     discadj_axisymmetric_rans_nozzle.test_iter  = 10
-    discadj_axisymmetric_rans_nozzle.test_vals  = [ 9.738569, 5.143846, 7.118712, 2.501940]
+    discadj_axisymmetric_rans_nozzle.test_vals  = [9.737045, 5.142730, 7.107566, 2.491197]
     discadj_axisymmetric_rans_nozzle.no_restart = True
     test_list.append(discadj_axisymmetric_rans_nozzle)
 
@@ -204,7 +204,7 @@ def main():
     discadj_DT_1ST_cylinder.cfg_dir   = "disc_adj_rans/cylinder_DT_1ST"
     discadj_DT_1ST_cylinder.cfg_file  = "cylinder.cfg"
     discadj_DT_1ST_cylinder.test_iter = 9
-    discadj_DT_1ST_cylinder.test_vals = [1.196413, -3.339027, -0.006212, 0.000020] #last 4 columns
+    discadj_DT_1ST_cylinder.test_vals = [1.196414, -3.339025, -0.006212, 0.000020]
     discadj_DT_1ST_cylinder.unsteady  = True
     test_list.append(discadj_DT_1ST_cylinder)
 
@@ -230,7 +230,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, 0.667030, 0.483921, 0.518403, -1.013538]
+    discadj_trans_stator.test_vals = [79.000000, 0.667037, 0.483920, 0.518405, -1.013536]
     discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.696755, 0.485950, 0.569475, -0.990065]
     test_list.append(discadj_trans_stator)
 
@@ -256,7 +256,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals         = [-2.001337, 0.655543, 0.000000, 0.006170]
+    discadj_heat.test_vals = [-1.928244, 0.730865, 0.000000, -3.993500]
     test_list.append(discadj_heat)
 
     ###################################
@@ -268,7 +268,7 @@ def main():
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 6
-    discadj_fsi.test_vals = [6.000000, -7.017369, -7.872619, 0.000000, -0.000024]
+    discadj_fsi.test_vals = [6.000000, -7.017370, -7.872620, 0.000000, -0.000024]
     test_list.append(discadj_fsi)
 
     # Multi physics framework
@@ -276,7 +276,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-4.772585, 0.918091, -3.863369, 0.295450, 3.841200]
+    discadj_fsi2.test_vals         = [-4.772623, 0.917211, -3.863369, 0.295450, 3.841200]
     discadj_fsi2.test_vals_aarch64 = [-4.773008, 0.916312, -3.863369, 0.295450, 3.841200]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
@@ -290,7 +290,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-2.955510, -3.085549, -3.085516, -3.085511]
+    discadj_cht.test_vals = [-6.131109, -2.564634, -2.565220, -2.565303]
     test_list.append(discadj_cht)
 
     # 2D DA cht streamwise periodic case, 2 zones, avg temp objective
@@ -298,7 +298,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-5.081814, -3.881868, -4.127717]
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-3.907317, -5.155811, -3.183956]
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
@@ -307,7 +307,7 @@ def main():
     da_sp_pinArray_cht_2d_mf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/dp-adjoint_chtPinArray_2d"
     da_sp_pinArray_cht_2d_mf.cfg_file  = "configMaster.cfg"
     da_sp_pinArray_cht_2d_mf.test_iter = 100
-    da_sp_pinArray_cht_2d_mf.test_vals = [-4.512241, -1.154741, -1.436747, -18.499579, 0.148431, -5.675770, -19.074432, -50.463572]
+    da_sp_pinArray_cht_2d_mf.test_vals = [-4.512241, -1.154741, -1.436747, 0.148439, -5.675767, -15.727696, -50.4635702]
     da_sp_pinArray_cht_2d_mf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_mf)
 
@@ -316,8 +316,8 @@ def main():
     da_unsteadyCHT_cylinder.cfg_dir   = "coupled_cht/disc_adj_unsteadyCHT_cylinder"
     da_unsteadyCHT_cylinder.cfg_file  = "chtMaster.cfg"
     da_unsteadyCHT_cylinder.test_iter = 2
-    da_unsteadyCHT_cylinder.test_vals         = [-3.508906, -4.317739, -4.241558, -11.836892, -12.862640, 0.000000, 3.688000, 0.295190]
-    da_unsteadyCHT_cylinder.test_vals_aarch64 = [-3.508906, -4.317739, -4.241558, -11.836892, -12.862650, 0.000000, 3.688000, 0.295190]
+    da_unsteadyCHT_cylinder.test_vals         = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662012, 0.000000, 89.932000, 0.295190]
+    da_unsteadyCHT_cylinder.test_vals_aarch64 = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662012, 0.000000, 89.932000, 0.295190]
     da_unsteadyCHT_cylinder.unsteady  = True
     da_unsteadyCHT_cylinder.multizone = True
     test_list.append(da_unsteadyCHT_cylinder)
@@ -332,7 +332,7 @@ def main():
     discadj_flamelet_ch4_hx.cfg_file         = "lam_prem_ch4_hx_ad.cfg"
     discadj_flamelet_ch4_hx.multizone        = False
     discadj_flamelet_ch4_hx.test_iter        = 10
-    discadj_flamelet_ch4_hx.test_vals        = [-8.699008, -8.604699, -8.816298, -6.626855, -14.620943, -3.249062, -18.930953]
+    discadj_flamelet_ch4_hx.test_vals        = [-8.717448, -8.450564, -8.766800, -6.626764, -14.602479, -3.248656, -18.930954]
     test_list.append(discadj_flamelet_ch4_hx)
 
     # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)
@@ -341,7 +341,7 @@ def main():
     discadj_flamelet_ch4_cht.cfg_file         = "lam_prem_ch4_cht_ad_master.cfg"
     discadj_flamelet_ch4_cht.multizone        = True
     discadj_flamelet_ch4_cht.test_iter        = 10
-    discadj_flamelet_ch4_cht.test_vals        = [-2.760027, -1.999839, -2.096537, -0.153424, -7.289370, -18.655063, -18.622003, -4.847179]
+    discadj_flamelet_ch4_cht.test_vals        = [-2.764345, -1.998773, -2.082310, -0.140923, -7.287831, -18.655078, -18.622026, -4.847187]
     test_list.append(discadj_flamelet_ch4_cht)
 
     ######################################
@@ -528,7 +528,7 @@ def main():
     naca_restart_shape_opt.cfg_dir    = "optimization_rans/naca0012"
     naca_restart_shape_opt.cfg_file   = "naca0012.cfg"
     naca_restart_shape_opt.test_iter  = 1
-    naca_restart_shape_opt.test_vals  = [1.000000, 1.000000, 0.007046, 0.196671]
+    naca_restart_shape_opt.test_vals  = [1.000000, 1.000000, 0.007047, 0.196668]
     naca_restart_shape_opt.command    = TestCase.Command(exec = "shape_optimization.py", param = "-f")
     naca_restart_shape_opt.timeout    = 1600
     naca_restart_shape_opt.tol       = 0.00001
