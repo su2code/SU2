@@ -77,14 +77,14 @@ class CIncIdealGasPolynomial final : public CFluidModel {
 
     /* Evaluate the new Cp and enthalpy from the coefficients and temperature. */
     Cp = coeffs_[0];
-    su2double tref_i = t - Std_Ref_Temp_ND;
-    Enthalpy = coeffs_[0] * tref_i;
+    Enthalpy = coeffs_[0] * (t - Std_Ref_Temp_ND);
     su2double t_i = 1.0;
+    su2double tref_i = 1.0;
     for (int i = 1; i < N; ++i) {
       t_i *= t;
-      tref_i *= (t - Std_Ref_Temp_ND);
+      tref_i *= Std_Ref_Temp_ND;
       Cp += coeffs_[i] * t_i;
-      Enthalpy += coeffs_[i] * tref_i / (i + 1);
+      Enthalpy += coeffs_[i] * (t_i * t - tref_i * Std_Ref_Temp_ND) / (i + 1);
     }
     Cv = Cp / Gamma;
   }
@@ -109,14 +109,14 @@ class CIncIdealGasPolynomial final : public CFluidModel {
     while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
       /* Evaluate the new Cp and enthalpy from the coefficients and temperature. */
       Cp_iter = coeffs_[0];
-      su2double tref_i = temp_iter - Std_Ref_Temp_ND;
-      su2double Enthalpy_iter = coeffs_[0] * tref_i;
+      su2double Enthalpy_iter = coeffs_[0] * (temp_iter - Std_Ref_Temp_ND);
       su2double t_i = 1.0;
+      su2double tref_i = 1.0;
       for (int i = 1; i < N; ++i) {
         t_i *= temp_iter;
-        tref_i *= (temp_iter - Std_Ref_Temp_ND);
+        tref_i *= Std_Ref_Temp_ND;
         Cp_iter += coeffs_[i] * t_i;
-        Enthalpy_iter += coeffs_[i] * tref_i / (i + 1);
+        Enthalpy_iter += coeffs_[i] * (t_i * temp_iter - tref_i * Std_Ref_Temp_ND) / (i + 1);
       }
 
       delta_enthalpy_iter = Enthalpy - Enthalpy_iter;

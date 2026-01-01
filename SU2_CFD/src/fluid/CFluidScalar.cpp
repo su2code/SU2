@@ -46,6 +46,7 @@ CFluidScalar::CFluidScalar(su2double value_pressure_operating, const CConfig* co
       n_species_mixture(config->GetnSpecies() + 1),
       Pressure_Thermodynamic(value_pressure_operating),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
+      Std_Ref_Temp_ND(STD_REF_TEMP / config->GetTemperature_Ref()),
       Prandtl_Turb_Number(config->GetPrandtl_Turb()),
       Schmidt_Turb_Number(config->GetSchmidt_Number_Turbulent()),
       wilke(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::WILKE),
@@ -218,14 +219,14 @@ su2double CFluidScalar::ComputeEnthalpyFromT(const su2double val_temperature, co
    * depend on temperature, but it does depend on mixture composition, enthalpy is directly computed from
    * the expression h_s = Cp(T - T_ref).
    */
-  su2double val_Enthalpy = Cp * (val_temperature - STD_REF_TEMP);
+  su2double val_Enthalpy = Cp * (val_temperature - Std_Ref_Temp_ND);
   return val_Enthalpy;
 }
 
 void CFluidScalar::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const {
-  const su2double enthalpy_species_N = specificHeat[n_species_mixture - 1] * (Temperature - STD_REF_TEMP);
+  const su2double enthalpy_species_N = specificHeat[n_species_mixture - 1] * (Temperature - Std_Ref_Temp_ND);
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
-    const su2double enthalpy_species_i = specificHeat[iVar] * (Temperature - STD_REF_TEMP);
+    const su2double enthalpy_species_i = specificHeat[iVar] * (Temperature - Std_Ref_Temp_ND);
     enthalpy_diffusions[iVar] = Density * (enthalpy_species_i * massDiffusivity[iVar] -
                                            enthalpy_species_N * massDiffusivity[n_species_mixture - 1]);
     enthalpy_diffusions[iVar] += Mu_Turb * (enthalpy_species_i - enthalpy_species_N) / Schmidt_Turb_Number;
@@ -270,7 +271,7 @@ void CFluidScalar::SetTDState_h(const su2double val_enthalpy, const su2double* v
    * depend on temperature, but it does depend on mixture composition, temperature is directly solved from the
    * expression h_s = Cp(T - T_ref).
    */
-  Temperature = val_enthalpy / Cp + STD_REF_TEMP;
+  Temperature = val_enthalpy / Cp + Std_Ref_Temp_ND;
   Density = Pressure_Thermodynamic / (Temperature * Gas_Constant);
   Cv = Cp - Gas_Constant;
 
