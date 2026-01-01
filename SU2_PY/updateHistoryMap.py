@@ -99,7 +99,7 @@ def parse_output(files):
 
     outputFields.update(addedOutputFields)
     out_path = os.path.join(su2_home, "SU2_PY/SU2/io/historyMap.py")
-    
+
     def _dq(s):
         if not isinstance(s, str):
             s = str(s)
