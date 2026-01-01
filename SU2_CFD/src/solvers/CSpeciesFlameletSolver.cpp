@@ -479,6 +479,9 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
         su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
         su2double dist_ij = sqrt(dist_ij_2);
 
+        /*--- Compute the normal gradient in temperature using Twall. ---*/
+        su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall) / dist_ij;
+
         /*--- Get thermal conductivity. ---*/
 
         su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
