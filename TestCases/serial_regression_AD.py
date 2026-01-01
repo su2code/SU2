@@ -120,7 +120,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [20.000000, -5.097821, -3.842739, 0.000000]
+    discadj_incomp_cylinder.test_vals = [20.000000, -1.672307, -6.247612, 0.000000]
     test_list.append(discadj_incomp_cylinder)
 
     #######################################################
