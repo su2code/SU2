@@ -479,13 +479,14 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
         su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
         su2double dist_ij = sqrt(dist_ij_2);
 
-        /*--- Compute the normal gradient in temperature using Twall. ---*/
-        ///TODO: Account for preferential diffusion in computation of the heat flux
-        su2double dTdn = -(flowNodes->GetTemperature(Point_Normal) - temp_wall) / dist_ij;
-
         /*--- Get thermal conductivity. ---*/
 
         su2double thermal_conductivity = flowNodes->GetThermalConductivity(iPoint);
+
+        /*--- Account for preferential diffusion in computation of the heat flux ---*/
+        if (flamelet_config_options.preferential_diffusion) {
+          thermal_conductivity *= nodes->GetAuxVar(iPoint, FLAMELET_PREF_DIFF_SCALARS::I_BETA_ENTH_THERMAL);
+        }
 
         /*--- Apply a weak boundary condition for the energy equation.
         Compute the residual due to the prescribed heat flux. ---*/

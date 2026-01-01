@@ -1696,16 +1696,16 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
           }
 
           SoundSpeed = solver_container[FLOW_SOL]->GetNodes()->GetSoundSpeed(iPoint);
-            if (Vn<SoundSpeed && Vn>0) {
-              /*TODO: MDO compatible*/
-            Sens_BPress[iMarker]+=Psi[nDim+1]*(SoundSpeed*SoundSpeed-Vn*Vn)/(Vn*Gamma_Minus_One);
-            if (config->GetKind_ObjFunc()==SURFACE_STATIC_PRESSURE)
-              Sens_BPress[iMarker]+=1;
-            if (config->GetKind_ObjFunc()==SURFACE_TOTAL_PRESSURE) {
-              for (iDim=0; iDim<nDim; iDim++)
-                Sens_BPress[iMarker]+=0.5*Velocity[iDim]*Velocity[iDim]/(Vn*Vn);
+            if (Vn < SoundSpeed && Vn > 0) {
+              /*--- Sensitivity contribution for MDO compatibility. ---*/
+              Sens_BPress[iMarker] += Psi[nDim + 1] * (SoundSpeed * SoundSpeed - Vn * Vn) / (Vn * Gamma_Minus_One);
+              if (config->GetKind_ObjFunc() == SURFACE_STATIC_PRESSURE)
+                Sens_BPress[iMarker] += 1.0;
+              if (config->GetKind_ObjFunc() == SURFACE_TOTAL_PRESSURE) {
+                for (iDim = 0; iDim < nDim; iDim++)
+                  Sens_BPress[iMarker] += 0.5 * Velocity[iDim] * Velocity[iDim] / (Vn * Vn);
+              }
             }
-          }
         }
         Total_Sens_BPress+= Sens_BPress[iMarker] * scale * factor;
       }

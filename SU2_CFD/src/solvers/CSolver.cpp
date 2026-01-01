@@ -2254,7 +2254,9 @@ void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
 
 void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) const {
 
-  /// TODO: No comms needed for this gradient? The Rmatrix should be allocated somewhere.
+  /*--- MPI communication before computing gradients. ---*/
+  geometry->InitiateComms(geometry, config, MPI_QUANTITIES::GRID_VELOCITY);
+  geometry->CompleteComms(geometry, config, MPI_QUANTITIES::GRID_VELOCITY);
 
   const auto& gridVel = geometry->nodes->GetGridVel();
   auto& gridVelGrad = geometry->nodes->GetGridVel_Grad();
@@ -3383,7 +3385,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
       position = text_line.find ("ITER=",0);
       if (position != string::npos) {
-       // TODO: 'ITER=' has 5 chars, not 9!
         text_line.erase (0,9); InnerIter_ = atoi(text_line.c_str());
       }
 
@@ -3440,7 +3441,6 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
       position = text_line.find ("STREAMWISE_PERIODIC_PRESSURE_DROP=",0);
       if (position != string::npos) {
-        // Erase the name from the line, 'STREAMWISE_PERIODIC_PRESSURE_DROP=' has 34 chars.
         text_line.erase (0,34); SPPressureDrop_ = atof(text_line.c_str());
       }
 
