@@ -312,8 +312,8 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType>& 
   /*--- Only compute the residuals in full communication mode. ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-    norm_r = r.norm();
     norm0 = b.norm();
+    norm_r = xIsZero ? norm0 : r.norm();
 
     /*--- Set the norm to the initial initial residual value ---*/
 
@@ -626,14 +626,15 @@ unsigned long CSysSolve<ScalarType>::RFGMRES_LinSolver(const CSysVector<ScalarTy
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  for (auto totalIter = 0ul; totalIter < MaxIter;) {
+  auto totalIter = 0ul;
+  while (totalIter < MaxIter) {
     /*--- Enforce a hard limit on total number of iterations ---*/
     auto iterLimit = min(restartIter, MaxIter - totalIter);
     auto iter = FGMRES_LinSolver(b, x, mat_vec, precond, tol, iterLimit, residual, monitoring, config);
     totalIter += iter;
-    if (residual <= tol || iter < iterLimit) return totalIter;
+    if (residual <= tol || iter < iterLimit) break;
   }
-  return 0;
+  return totalIter;
 }
 
 template <class ScalarType>
@@ -1032,8 +1033,8 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
   /*--- Only compute the residuals in full communication mode. ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-    norm_r = r.norm();
     norm0 = b.norm();
+    norm_r = xIsZero ? norm0 : r.norm();
 
     /*--- Set the norm to the initial initial residual value ---*/
 
@@ -1205,8 +1206,8 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
   /*--- Only compute the residuals in full communication mode. ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-    norm_r = r.norm();
     norm0 = b.norm();
+    norm_r = xIsZero ? norm0 : r.norm();
 
     /*--- Set the norm to the initial initial residual value ---*/
 
@@ -1246,7 +1247,9 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
      current residual, the system is linear so this saves some computation
      compared to re-evaluating r = b-A*x. ---*/
 
-    mat_vec(z, A_x);
+    if (!fix_iter_mode || i != m - 1) {
+      mat_vec(z, A_x);
+    }
 
     /*--- Update solution and residual with relaxation omega. Mathematically this
      is a modified Richardson iteration for the left-preconditioned system
@@ -1254,7 +1257,9 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
      with a Gauss-Seidel preconditioner and w>1 is NOT equivalent to SOR. ---*/
 
     x += omega * z;
-    r -= omega * A_x;
+    if (!fix_iter_mode || i != m - 1) {
+      r -= omega * A_x;
+    }
 
     /*--- Only compute the residuals in full communication mode. ---*/
     /*--- Check if solution has converged, else output the relative residual if necessary. ---*/
@@ -1280,6 +1285,33 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
 
   residual = norm_r / norm0;
   return i;
+}
+
+template <class ScalarType>
+bool CSysSolve<ScalarType>::SetupInnerSolver(unsigned short kind_solver, const CConfig* config) {
+  bool flexible = false;
+  switch (kind_solver) {
+    case FGMRES:
+    case FGCRODR:
+    case RESTARTED_FGMRES:
+    case SMOOTHER:
+      flexible = true;
+      break;
+    default:
+      flexible = false;
+  }
+  const bool is_linear = config->GetKind_Linear_Solver_Inner() == LINEAR_SOLVER_INNER::SMOOTHER;
+
+  if (config->GetKind_Linear_Solver_Inner() != LINEAR_SOLVER_INNER::NONE && (flexible || is_linear)) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    if (!inner_solver) {
+      inner_solver = std::make_unique<CSysSolve<ScalarType>>(LINEAR_SOLVER_MODE::STANDARD);
+      inner_solver->SetxIsZero(true);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+    return true;
+  }
+  return false;
 }
 
 template <class ScalarType>
@@ -1334,16 +1366,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
     }
   }
 
-  const bool nested = (KindSolver == FGMRES || KindSolver == RESTARTED_FGMRES || KindSolver == SMOOTHER) &&
-                      config->GetKind_Linear_Solver_Inner() != LINEAR_SOLVER_INNER::NONE;
-
-  if (nested && !inner_solver) {
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      inner_solver = std::make_unique<CSysSolve<ScalarType>>(LINEAR_SOLVER_MODE::STANDARD);
-      inner_solver->SetxIsZero(true);
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-  }
+  const bool nested = SetupInnerSolver(KindSolver, config);
 
   /*--- Stop the recording for the linear solver ---*/
   bool TapeActive = NO;
@@ -1389,11 +1412,15 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
       auto f = [&](const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) {
         /*--- Initialize to 0 to be safe. ---*/
         v = ScalarType{};
-        ScalarType unused{};
+        ScalarType res{};
         /*--- Handle other types here if desired but do not call Solve because
          * that will create issues with the AD external function. ---*/
-        (void)inner_solver->BCGSTAB_LinSolver(u, v, mat_vec, *normal_prec, sqrt(SolverTol), MaxIter, unused, false,
-                                              config);
+        if (config->GetKind_Linear_Solver_Inner() == LINEAR_SOLVER_INNER::BCGSTAB) {
+          inner_solver->BCGSTAB_LinSolver(u, v, mat_vec, *normal_prec, sqrt(SolverTol), MaxIter, res, false, config);
+        } else {
+          const auto smooth_iter = static_cast<unsigned long>(std::round(fmax(2, sqrt(MaxIter))));
+          inner_solver->Smoother_LinSolver(u, v, mat_vec, *normal_prec, 0, smooth_iter, res, false, config);
+        }
       };
       nested_prec = new CAbstractPreconditioner<ScalarType>(f);
     }
@@ -1545,16 +1572,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
     }
   }
 
-  const bool nested = (KindSolver == FGMRES || KindSolver == RESTARTED_FGMRES || KindSolver == SMOOTHER) &&
-                      config->GetKind_Linear_Solver_Inner() != LINEAR_SOLVER_INNER::NONE;
-
-  if (nested && !inner_solver) {
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      inner_solver = std::make_unique<CSysSolve<ScalarType>>(LINEAR_SOLVER_MODE::STANDARD);
-      inner_solver->SetxIsZero(true);
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-  }
+  const bool nested = SetupInnerSolver(KindSolver, config);
 
   /*--- Set up preconditioner and matrix-vector product ---*/
 
@@ -1572,13 +1590,15 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
   CPreconditioner<ScalarType>* nested_prec = nullptr;
   if (nested) {
     auto f = [&](const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) {
-      /*--- Initialize to 0 to be safe. ---*/
+      /*--- See "Solve". ---*/
       v = ScalarType{};
-      ScalarType unused{};
-      /*--- Handle other types here if desired but do not call Solve because
-       * that will create issues with the AD external function. ---*/
-      (void)inner_solver->BCGSTAB_LinSolver(u, v, mat_vec, *normal_prec, sqrt(SolverTol), MaxIter, unused, false,
-                                            config);
+      ScalarType res{};
+      if (config->GetKind_Linear_Solver_Inner() == LINEAR_SOLVER_INNER::BCGSTAB) {
+        inner_solver->BCGSTAB_LinSolver(u, v, mat_vec, *normal_prec, sqrt(SolverTol), MaxIter, res, false, config);
+      } else {
+        const auto smooth_iter = static_cast<unsigned long>(std::round(fmax(2, sqrt(MaxIter))));
+        inner_solver->Smoother_LinSolver(u, v, mat_vec, *normal_prec, 0, smooth_iter, res, false, config);
+      }
     };
     nested_prec = new CAbstractPreconditioner<ScalarType>(f);
   }
