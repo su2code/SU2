@@ -117,12 +117,24 @@ CFluidFlamelet::~CFluidFlamelet() {
 #endif
 }
 
+void CFluidFlamelet::SetTDState_h(su2double val_enthalpy, const su2double* val_scalars) {
+  /*--- For the fluid flamelet model, the enthalpy (and the temperature) are passive scalars.
+  val_scalars contains the enthalpy as the second variable: val_scalars= (Progress_variable, enthalpy,...).
+  Consequently, the energy equation is not solved when the fluid flamelet model is used; instead the energy equation for
+  enthalpy is solved in the species flamelet solver, and the enthalpy solution is overwritten in the CIncEulerSolver.
+  Likewise, The temperature is retrieved from the look up table. Then, the thermodynamics state is fully determined with
+  the val_scalars. This is the reason why enthalpy (or temperature) can be passed in either SetTDSTtate_T or
+  SetTDState_h without affecting the solution.---*/
+  SetTDState_T(val_enthalpy, val_scalars);
+}
+
 void CFluidFlamelet::SetTDState_T(su2double val_temperature, const su2double* val_scalars) {
   for (auto iVar = 0u; iVar < n_scalars; iVar++) scalars_vector[iVar] = val_scalars[iVar];
 
   /*--- Add all quantities and their names to the look up vectors. ---*/
   EvaluateDataSet(scalars_vector, FLAMELET_LOOKUP_OPS::THERMO, val_vars_TD);
 
+  Enthalpy = scalars_vector[1];
   Temperature = val_vars_TD[LOOKUP_TD::TEMPERATURE];
   Cp = val_vars_TD[LOOKUP_TD::HEATCAPACITY];
   Mu = val_vars_TD[LOOKUP_TD::VISCOSITY];
