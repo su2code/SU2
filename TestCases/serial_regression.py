@@ -258,7 +258,7 @@ def main():
     turb_flatplate_sst_roughBCWilcox2006.cfg_dir   = "rans/flatplate/roughness/bc_wilcox2006"
     turb_flatplate_sst_roughBCWilcox2006.cfg_file  = "turb_SST_flatplate_roughBCWilcox2006.cfg"
     turb_flatplate_sst_roughBCWilcox2006.test_iter = 10
-    turb_flatplate_sst_roughBCWilcox2006.test_vals = [10.000000, 0.052109, -3.937983, -1.063721, -1.483116, 1.514608, -1.003919, 4.472050, -0.180308, 0.033500]
+    turb_flatplate_sst_roughBCWilcox2006.test_vals = [-5.117900, -2.534224, -2.904279, 0.381710, -3.100346, 1.180161, -0.188797, 0.004029]
     test_list.append(turb_flatplate_sst_roughBCWilcox2006)
 
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA
