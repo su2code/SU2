@@ -763,6 +763,7 @@ private:
   SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
   SA_OPTIONS *SA_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
   LM_OPTIONS *LM_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
+  ROUGHSST_MODEL Kind_RoughSST_Model;         /*!< \brief List of modifications/corrections/versions of rough-wall boundary conditions for SST turbulence model.*/
   unsigned short nSST_Options;        /*!< \brief Number of SST options specified. */
   unsigned short nSA_Options;         /*!< \brief Number of SA options specified. */
   unsigned short nLM_Options;         /*!< \brief Number of SA options specified. */
@@ -1226,6 +1227,7 @@ private:
   SST_ParsedOptions sstParsedOptions; /*!< \brief Additional parameters for the SST turbulence model. */
   SA_ParsedOptions saParsedOptions;   /*!< \brief Additional parameters for the SA turbulence model. */
   LM_ParsedOptions lmParsedOptions;   /*!< \brief Additional parameters for the LM transition model. */
+  ROUGH_SST_ParsedOptions roughsstParsedOptions; /*!< \brief Additional parameters for the boundary conditions for rough walls for the SST turbulence model. */
   su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
@@ -10173,6 +10175,11 @@ public:
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
 
+  /*!
+   * \brief Get parsed rough-wall boundary conditions for SST option data structure.
+   * \return Rough-wall SST option data structure.
+   */
+  ROUGH_SST_ParsedOptions GetROUGHSSTParsedOptions() const { return roughsstParsedOptions; }
 
   /*!
    * \brief Get parsed option data structure for data-driven fluid model.
