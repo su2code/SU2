@@ -2389,10 +2389,12 @@ static const MapType<std::string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
 enum class LINEAR_SOLVER_INNER {
   NONE,     /*!< \brief Do not use a nested linear solver. */
   BCGSTAB,  /*!< \brief Use BCGSTAB as the preconditioning linear solver. */
+  SMOOTHER, /*!< \brief Iterative smoother. */
 };
 static const MapType<std::string, LINEAR_SOLVER_INNER> Inner_Linear_Solver_Map = {
   MakePair("NONE", LINEAR_SOLVER_INNER::NONE)
   MakePair("BCGSTAB", LINEAR_SOLVER_INNER::BCGSTAB)
+  MakePair("SMOOTHER", LINEAR_SOLVER_INNER::SMOOTHER)
 };
 
 
