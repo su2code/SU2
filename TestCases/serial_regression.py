@@ -253,6 +253,14 @@ def main():
     turb_wallfunction_flatplate_sst.test_vals = [-4.036299, -1.916263, -1.821788, 1.443878, -1.579554, 1.521534, 10.000000, -2.351461, 0.030011, 0.002409]
     test_list.append(turb_wallfunction_flatplate_sst)
 
+    # FLAT PLATE, ROUGHNESS BC WILCOX2006 SST
+    turb_flatplate_sst_roughBCWilcox2006           = TestCase('turb_sst_flatplate_roughBCWilcox2006')
+    turb_flatplate_sst_roughBCWilcox2006.cfg_dir   = "rans/flatplate/roughness/bc_wilcox2006"
+    turb_flatplate_sst_roughBCWilcox2006.cfg_file  = "turb_SST_flatplate_roughBCWilcox2006.cfg"
+    turb_flatplate_sst_roughBCWilcox2006.test_iter = 10
+    turb_flatplate_sst_roughBCWilcox2006.test_vals = [-5.117900, -2.534224, -2.904279, 0.381710, -3.100346, 1.180161, -0.188797, 0.004029]
+    test_list.append(turb_flatplate_sst_roughBCWilcox2006)
+
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA
     turb_wallfunction_flatplate_sa           = TestCase('turb_sa_wallfunction_flatplate')
     turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"

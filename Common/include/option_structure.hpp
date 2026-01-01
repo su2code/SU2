@@ -1102,6 +1102,22 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 }
 
 /*!
+ * \brief SST rough-wall boundary conditions Options
+ */
+enum class ROUGHSST_MODEL {
+  WILCOX1998,           /*!< \brief Wilcox 1998 boundary conditions for rough walls. */
+  WILCOX2006,           /*!< \brief Wilcox 2006 boundary conditions for rough walls / default version if roughness is applied. */
+  LIMITER_KNOPP,        /*!< \brief Knopp eddy viscosity limiter. */
+  LIMITER_AUPOIX,       /*!< \brief Aupoix eddy viscosity limiter. */
+};
+static const MapType<std::string, ROUGHSST_MODEL> RoughSST_Model_Map = {
+  MakePair("WILCOX1998", ROUGHSST_MODEL::WILCOX1998)
+  MakePair("WILCOX2006", ROUGHSST_MODEL::WILCOX2006)
+  MakePair("LIMITER_KNOPP", ROUGHSST_MODEL::LIMITER_KNOPP)
+  MakePair("LIMITER_AUPOIX", ROUGHSST_MODEL::LIMITER_AUPOIX)
+};
+
+/*!
  * \brief SA Options
  */
 enum class SA_OPTIONS {
