@@ -119,7 +119,15 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
       for (unsigned short iMarker = 0; iMarker < numberOfMarkers; iMarker++) {
         getline(mesh_file, text_line);
         text_line.erase(0, 11);
-        text_line.erase(std::remove_if(text_line.begin(), text_line.end(), ::isspace), text_line.end());
+        string::size_type position;
+        for (unsigned short iChar = 0; iChar < 20; iChar++) {
+          position = text_line.find(' ', 0);
+          if (position != string::npos) text_line.erase(position, 1);
+          position = text_line.find('\r', 0);
+          if (position != string::npos) text_line.erase(position, 1);
+          position = text_line.find('\n', 0);
+          if (position != string::npos) text_line.erase(position, 1);
+        }
         string Marker_Tag = text_line;
 
         getline(mesh_file, text_line);

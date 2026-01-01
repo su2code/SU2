@@ -2254,9 +2254,7 @@ void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
 
 void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) const {
 
-  /*--- MPI communication before computing gradients. ---*/
-  geometry->InitiateComms(geometry, config, MPI_QUANTITIES::GRID_VELOCITY);
-  geometry->CompleteComms(geometry, config, MPI_QUANTITIES::GRID_VELOCITY);
+  /// TODO: No comms needed for this gradient? The Rmatrix should be allocated somewhere.
 
   const auto& gridVel = geometry->nodes->GetGridVel();
   auto& gridVelGrad = geometry->nodes->GetGridVel_Grad();
@@ -2265,6 +2263,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) co
   computeGradientsLeastSquares(nullptr, MPI_QUANTITIES::GRID_VELOCITY, PERIODIC_NONE, *geometry, *config,
                                true, gridVel, 0, nDim, 0, gridVelGrad, rmatrix);
 }
+
 
 void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
 
