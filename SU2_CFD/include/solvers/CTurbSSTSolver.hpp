@@ -39,7 +39,6 @@ class CTurbSSTSolver final : public CTurbSolver {
 private:
   su2double constants[11] = {0.0}; /*!< \brief Constants for the model. */
   SST_ParsedOptions sstParsedOptions;
-  ROUGH_SST_ParsedOptions roughsstParsedOptions;
 
   /*!
    * \brief Compute nu tilde from the wall functions.
@@ -54,13 +53,13 @@ private:
                      CSolver **solver_container,
                      const CConfig *config,
                      unsigned short val_marker);
-                     
+
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
    * a nonlinear iteration for stability.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeUnderRelaxationFactor(const CConfig *config);
+  void ComputeUnderRelaxationFactor(const CConfig *config) override;
 
 public:
   /*!
