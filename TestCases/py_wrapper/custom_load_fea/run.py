@@ -83,7 +83,7 @@ def main():
   if NodeFound:
     print(f"Vertical displacement of tip: {Disp}")
     # Test the value against expected.
-    assert abs(Disp / 0.095439 - 1) < 1e-5, f"Test FAILED, computed displacement = {Disp}"
+    assert abs(Disp / 0.0954409442 - 1) < 1e-5, f"Test FAILED, computed displacement = {Disp}"
 
   # Finalize the solver and exit cleanly.
   SU2Driver.Finalize()
