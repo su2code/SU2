@@ -58,8 +58,9 @@ private:
    * \brief Compute the plane stress term.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
+   * \param[in] iGauss - Index of Gaussian integration point.
    */
-  void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config) override;
+  void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config, unsigned short iGauss) override;
 
   /*!
    * \brief Compute the constitutive matrix.
@@ -72,9 +73,9 @@ private:
    * \brief Compute the stress tensor.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
+   * \param[in] iGauss - Index of Gaussian integration point.
    */
   void Compute_Stress_Tensor(CElement *element_container, const CConfig *config, unsigned short iGauss) override;
-
 };
 
 
@@ -109,8 +110,9 @@ private:
    * \brief Compute the plane stress term.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
+   * \param[in] iGauss - Index of Gaussian integration point.
    */
-  void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config) override;
+  void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config, unsigned short iGauss) override;
 
   /*!
    * \brief Compute the constitutive matrix.
@@ -123,6 +125,7 @@ private:
    * \brief Compute the stress tensor.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
+   * \param[in] iGauss - Index of Gaussian integration point.
    */
   void Compute_Stress_Tensor(CElement *element_container, const CConfig *config, unsigned short iGauss) override;
 
@@ -157,8 +160,9 @@ private:
    * \brief Compute the plane stress term.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
+   * \param[in] iGauss - Index of Gaussian integration point.
    */
-  inline void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config) override { };
+  inline void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config, unsigned short iGauss) override { };
 
   /*!
    * \brief Compute the constitutive matrix.
@@ -171,6 +175,7 @@ private:
    * \brief Compute the stress tensor.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
+   * \param[in] iGauss - Index of Gaussian integration point.
    */
   void Compute_Stress_Tensor(CElement *element_container, const CConfig *config, unsigned short iGauss) override;
 
@@ -207,8 +212,9 @@ private:
    * \brief Compute the plane stress term.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
+   * \param[in] iGauss - Index of Gaussian integration point.
    */
-  void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config) override;
+  void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config, unsigned short iGauss) override;
 
   /*!
    * \brief Compute the constitutive matrix.
@@ -221,6 +227,7 @@ private:
    * \brief Compute the stress tensor.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
+   * \param[in] iGauss - Index of Gaussian integration point.
    */
   void Compute_Stress_Tensor(CElement *element_container, const CConfig *config, unsigned short iGauss) override;
 
