@@ -295,6 +295,12 @@ class CSysSolve {
                                       ScalarType& residual, bool monitoring, const CConfig* config,
                                       FgcrodrMode mode) const;
 
+  /*!
+   * \brief Creates the inner solver for nested preconditioning if the settings allow it.
+   * \returns True if the inner solver can be used.
+   */
+  bool SetupInnerSolver(unsigned short kind_solver, const CConfig* config);
+
  public:
   /*!
    * \brief default constructor of the class.
