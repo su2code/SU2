@@ -1273,17 +1273,34 @@ def main():
     rotating_cylinder_fea.test_iter = 0
     # For a thin disk with the inner and outer radius of this geometry, from
     # "Formulas for Stress, Strain, and Structural Matrices", 2nd Edition, figure 19-4,
-    # the maximum stress is 165.6MPa, we get a Von Misses stress very close to that.
+    # the maximum stress is 165.6MPa, we get a von Mises stress very close to that.
     rotating_cylinder_fea.test_vals = [-6.886145, -6.917148, -6.959634, 23, -8.369804, 1.6502e+08]
     rotating_cylinder_fea.test_vals_aarch64 = [-6.861939, -6.835539, -6.895498, 22, -8.313847, 1.6502e+08]
     test_list.append(rotating_cylinder_fea)
+
+    # 2D beam in plain strain with thermal expansion. This tests fixes to the 2D Von Mises stress calculation.
+    linear_plane_strain = TestCase('linear_plane_strain')
+    linear_plane_strain.cfg_dir = "fea_fsi/VonMissesVerif"
+    linear_plane_strain.cfg_file = "linear_plane_strain_2d.cfg"
+    linear_plane_strain.test_iter = 0
+    linear_plane_strain.test_vals = [-6.157686, -6.051735, 0, 120140, 325, -8.105017]
+    test_list.append(linear_plane_strain)
+
+    # 2D beam in plain stress with thermal expansion. This tests fixes to the 2D von Mises stress calculation,
+    # and to the plane stress formulation with thermal expansion for nonlinear materials.
+    nonlinear_plane_stress = TestCase('nonlinear_plane_stress')
+    nonlinear_plane_stress.cfg_dir = "fea_fsi/VonMissesVerif"
+    nonlinear_plane_stress.cfg_file = "nonlinear_plane_stress_2d.cfg"
+    nonlinear_plane_stress.test_iter = 19
+    nonlinear_plane_stress.test_vals = [-7.433102, -3.355151, -13.983258, 162480, 43, -4.071408]
+    test_list.append(nonlinear_plane_stress)
 
     # Dynamic beam, 2d
     dynbeam2d           = TestCase('dynbeam2d')
     dynbeam2d.cfg_dir   = "fea_fsi/DynBeam_2d"
     dynbeam2d.cfg_file  = "configBeam_2d.cfg"
     dynbeam2d.test_iter = 6
-    dynbeam2d.test_vals = [-3.240015, 2.895057, -0.353146, 66127.000000]
+    dynbeam2d.test_vals = [-3.240012, 2.895060, -0.353140, 76220]
     dynbeam2d.unsteady  = True
     test_list.append(dynbeam2d)
 
@@ -1292,7 +1309,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4.000000, 0.000000, -3.726013, -4.277768]
+    fsi2d.test_vals = [4, 0, -3.726013, -4.277529]
     fsi2d.command   = TestCase.Command(exec = "parallel_computation_fsi.py", param = "-f")
     fsi2d.multizone= True
     fsi2d.unsteady = True
@@ -1312,7 +1329,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.330741, -4.153001, 0.000000, 97.000000]
+    dyn_fsi.test_vals = [-4.330741, -4.152826, 0, 97]
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     test_list.append(dyn_fsi)
@@ -1442,8 +1459,7 @@ def main():
     pywrapper_custom_fea_load.cfg_dir = "py_wrapper/custom_load_fea"
     pywrapper_custom_fea_load.cfg_file = "config.cfg"
     pywrapper_custom_fea_load.test_iter = 13
-    pywrapper_custom_fea_load.test_vals = [-7.263559, -4.946814, -14.165142, 34.000000, -6.380144, 320.580000]
-    pywrapper_custom_fea_load.test_vals_aarch64 = [-7.263558, -4.946814, -14.165142, 35.000000, -6.802790, 320.580000]
+    pywrapper_custom_fea_load.test_vals = [-7.262040, -4.945686, -14.163208, 34, -6.009642, 362.23]
     pywrapper_custom_fea_load.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_custom_fea_load)
 
@@ -1452,7 +1468,7 @@ def main():
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
-    pywrapper_fsi2d.test_vals = [4.000000, 0.000000, -3.726013, -4.277768]
+    pywrapper_fsi2d.test_vals = [4.000000, 0.000000, -3.726013, -4.277529]
     pywrapper_fsi2d.command   = TestCase.Command("mpirun -np 2", "SU2_CFD.py", "--nZone 2 --fsi True --parallel -f")
     pywrapper_fsi2d.unsteady  = True
     pywrapper_fsi2d.multizone = True
@@ -1463,7 +1479,7 @@ def main():
     pywrapper_unsteadyFSI.cfg_dir = "py_wrapper/dyn_fsi"
     pywrapper_unsteadyFSI.cfg_file = "config.cfg"
     pywrapper_unsteadyFSI.test_iter = 4
-    pywrapper_unsteadyFSI.test_vals = [0.000000, 31.000000, 5.000000, 58.000000, -1.756677, -2.828286, -7.638545, -6.863959, 0.000156]
+    pywrapper_unsteadyFSI.test_vals = [0, 31, 5, 58, -1.756677, -2.828286, -7.638545, -6.863930, 0.000156]
     pywrapper_unsteadyFSI.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     pywrapper_unsteadyFSI.unsteady = True
     pywrapper_unsteadyFSI.multizone = True
@@ -1678,7 +1694,7 @@ def main():
     species3_primitiveVenturi_inletFile.test_vals = [-5.537438, -4.503863, -4.553632, -5.400874, -0.945967, -5.818774, -5.945211, 5.000000, -0.544749, 5.000000, -2.599435, 5.000000, -0.596360]
     test_list.append(species3_primitiveVenturi_inletFile)
 
-    # 3 species (2 eq) primitive venturi mixing with new flux and value boundary conditions 
+    # 3 species (2 eq) primitive venturi mixing with new flux and value boundary conditions
     species3_primitiveVenturi_fluxvalue           = TestCase('species3_primitiveVenturi_fluxvalue')
     species3_primitiveVenturi_fluxvalue.cfg_dir   = "species_transport/venturi_primitive_3species"
     species3_primitiveVenturi_fluxvalue.cfg_file  = "species3_primitiveVenturi_flux_value.cfg"

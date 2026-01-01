@@ -1045,7 +1045,7 @@ def main():
     dynbeam2d.cfg_file  = "configBeam_2d.cfg"
     dynbeam2d.unsteady  = True
     dynbeam2d.test_iter = 6
-    dynbeam2d.test_vals = [-3.240015, 2.895057, -0.353146, 66127.000000]
+    dynbeam2d.test_vals = [-3.240012, 2.895060, -0.353140, 76220]
     test_list.append(dynbeam2d)
 
     # # FSI, 2d
@@ -1053,7 +1053,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4.000000, 0.000000, -3.726014, -4.277767]
+    fsi2d.test_vals = [4, 0, -3.726015, -4.277528]
     fsi2d.multizone = True
     fsi2d.unsteady  = True
     test_list.append(fsi2d)
@@ -1081,7 +1081,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.330728, -4.152995, 0.000000, 86.000000]
+    dyn_fsi.test_vals = [-4.330728, -4.152820, 0, 85]
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     test_list.append(dyn_fsi)
@@ -1584,10 +1584,10 @@ def main():
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
-    pywrapper_fsi2d.test_vals = [4.000000, 0.000000, -3.726014, -4.277767]
+    pywrapper_fsi2d.test_vals = [4, 0, -3.726015, -4.277528]
     pywrapper_fsi2d.command   =  TestCase.Command(exec = "SU2_CFD.py", param = "--nZone 2 --fsi True -f")
     pywrapper_fsi2d.unsteady  = True
-    pywrapper_fsi2d.multizone   = True
+    pywrapper_fsi2d.multizone = True
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.tol       = 0.00001
     pywrapper_fsi2d.enabled_with_asan = False
