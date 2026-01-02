@@ -2046,10 +2046,6 @@ enum class WALL_TYPE {
   SMOOTH,  /*!< \brief Smooth wall */
   ROUGH,   /*!< \brief Rough wall */
 };
-static const MapType<std::string, WALL_TYPE> WallType_Map = {
-  MakePair("SMOOTH", WALL_TYPE::SMOOTH)
-  MakePair("ROUGH", WALL_TYPE::ROUGH)
-};
 
 /*!
  * \brief Types of objective functions
