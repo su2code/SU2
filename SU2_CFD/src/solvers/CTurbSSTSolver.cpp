@@ -408,7 +408,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   WALL_TYPE WallType; su2double Roughness_Height;
   tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-  const bool rough_wall = WallType == WALL_TYPE::ROUGH && Roughness_Height > 0;
+  const bool rough_wall = WallType == WALL_TYPE::ROUGH;
 
   /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
 
