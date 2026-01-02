@@ -265,7 +265,7 @@ def ordered_bunchify(x):
     nb. As dicts are not hashable, they cannot be nested in sets/frozensets.
     """
     if isinstance(x, dict):
-        return OrderedBunch((k, ordered_bunchify(v)) for k, v in x.iteritems())
+        return OrderedBunch((k, ordered_bunchify(v)) for k, v in x.items())
     elif isinstance(x, (list, tuple)):
         return type(x)(ordered_bunchify(v) for v in x)
     else:
@@ -291,9 +291,9 @@ def ordered_unbunchify(x):
     nb. As dicts are not hashable, they cannot be nested in sets/frozensets.
     """
     if isinstance(x, OrderedDict):
-        return OrderedDict((k, ordered_unbunchify(v)) for k, v in x.iteritems())
+        return OrderedDict((k, ordered_unbunchify(v)) for k, v in x.items())
     elif isinstance(x, dict):
-        return dict((k, ordered_unbunchify(v)) for k, v in x.iteritems())
+        return dict((k, ordered_unbunchify(v)) for k, v in x.items())
     elif isinstance(x, (list, tuple)):
         return type(x)(ordered_unbunchify(v) for v in x)
     else:
