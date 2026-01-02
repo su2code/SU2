@@ -4482,7 +4482,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
    * which is equivalent to incrementing an integer marking the end of the
    * result and the start of the queue. ---*/
   vector<char> InQueue(nPoint, false);
-  vector<unsigned long> AuxQueue, Result;
+  vector<unsigned long> Result;
   Result.reserve(nPoint);
   unsigned long QueueStart = 0;
 
@@ -4521,21 +4521,19 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
 
       /*--- Add all adjacent nodes to the queue in increasing order of their
        degree, checking if the element is already in the queue. ---*/
-      AuxQueue.clear();
+      auto currEnd = Result.end();
       for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
         const auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
         if (!InQueue[AdjPoint]) {
-          AuxQueue.push_back(AdjPoint);
+          Result.push_back(AdjPoint);
           InQueue[AdjPoint] = true;
         }
       }
-      if (AuxQueue.empty()) continue;
 
-      /*--- Sort the auxiliar queue based on the number of neighbors (degree). ---*/
-      stable_sort(AuxQueue.begin(), AuxQueue.end(), [&](unsigned long iPoint, unsigned long jPoint) {
+      /*--- Sort the new points based on the number of neighbors (degree). ---*/
+      stable_sort(currEnd, Result.end(), [&](unsigned long iPoint, unsigned long jPoint) {
         return nodes->GetnPoint(iPoint) < nodes->GetnPoint(jPoint);
       });
-      Result.insert(Result.end(), AuxQueue.begin(), AuxQueue.end());
     }
   }
   reverse(Result.begin(), Result.end());

@@ -1387,6 +1387,11 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 void CNEMOEulerSolver::SetReferenceValues(const CConfig& config) {
 
   DynamicPressureRef = 0.5 * Density_Inf * GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
+
+  if (DynamicPressureRef < EPS) {
+    DynamicPressureRef = 1.0;
+  }
+
   AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
 
 }

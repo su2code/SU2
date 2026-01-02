@@ -37,20 +37,20 @@ CSU2ASCIIMeshReaderFEM::CSU2ASCIIMeshReaderFEM(CConfig* val_config, unsigned sho
 
   /*--- Read the volume connectivity and distribute it
         linearly over the MPI ranks. ---*/
-  ReadVolumeElementConnectivity();
+  ReadVolumeElementConnectivity({});
 
   /*--- Read the coordinates of the points that are needed
         on this MPI rank. ---*/
-  ReadPointCoordinates();
+  ReadPointCoordinates({});
 
   /*--- Read the surface connectivity and store the surface elements whose
         corresponding volume element is stored on this MPI rank. ---*/
-  ReadSurfaceElementConnectivity();
+  ReadSurfaceElementConnectivity({});
 }
 
 CSU2ASCIIMeshReaderFEM::~CSU2ASCIIMeshReaderFEM() = default;
 
-void CSU2ASCIIMeshReaderFEM::ReadPointCoordinates() {
+void CSU2ASCIIMeshReaderFEM::ReadPointCoordinates(bool) {
   /*--- Loop over the local elements to determine the global
         point IDs to be stored on this rank. --*/
   unsigned long ind = 0;
@@ -113,7 +113,7 @@ void CSU2ASCIIMeshReaderFEM::ReadPointCoordinates() {
   mesh_file.close();
 }
 
-void CSU2ASCIIMeshReaderFEM::ReadVolumeElementConnectivity() {
+void CSU2ASCIIMeshReaderFEM::ReadVolumeElementConnectivity(bool) {
   /* Get a partitioner to help with linear partitioning. */
   CLinearPartitioner elemPartitioner(numberOfGlobalElements, 0);
 
@@ -213,7 +213,7 @@ void CSU2ASCIIMeshReaderFEM::ReadVolumeElementConnectivity() {
   mesh_file.close();
 }
 
-void CSU2ASCIIMeshReaderFEM::ReadSurfaceElementConnectivity() {
+void CSU2ASCIIMeshReaderFEM::ReadSurfaceElementConnectivity(bool) {
   /*--- Determine the vector to hold the faces of the local elements. ---*/
   vector<CFaceOfElement> localFaces;
   DetermineFacesVolumeElements(localFaces);
