@@ -1103,6 +1103,8 @@ private:
   su2double SBS_Ctau;                  /*!< \brief Stochastic Backscatter Model timescale coefficient. */
   su2double SBS_Cmag;                  /*!< \brief Stochastic Backscatter Model intensity coefficient. */
   bool stochSourceNu;                  /*!< \brief Option for including stochastic source term in turbulence model equation (Stochastic Backscatter Model). */
+  bool stochSourceDiagnostics;         /*!< \brief Option for writing diagnostics related to stochastic source terms in Langevin equations (Stochastic Backscatter Model). */
+  su2double stochSourceRelax;          /*!< \brief Relaxation factor for stochastic source term generation (Stochastic Backscatter Model). */
   bool enforceLES;                     /*!< \brief Option to enforce LES mode in hybrid RANS-LES simulations. */
   su2double LES_FilterWidth;           /*!< \brief LES filter width for hybrid RANS-LES simulations. */
   bool LD2_Scheme;                     /*!< \brief Use the LD2 scheme (incompressible flows, combined with JST discretization). */
@@ -9589,6 +9591,18 @@ public:
    * \return TRUE if the stochastic source term is included in the turbulence model equation.
    */
   bool GetStochSourceNu(void) const { return stochSourceNu; }
+
+  /*!
+   * \brief Get if the diagnostics of the stochastic source terms in Langevin equations must be computed.
+   * \return TRUE if the diagnostics of the stochastic source terms in Langevin equations are computed.
+   */
+  bool GetStochSourceDiagnostics(void) const { return stochSourceDiagnostics; }
+
+  /*!
+   * \brief Get the relaxation factor for stochastic source term generation.
+   * \return Relaxation factor for stochastic source term generation.
+   */
+  su2double GetStochSourceRelax(void) const { return stochSourceRelax; }
 
   /*!
    * \brief Get the LES Filter Width.

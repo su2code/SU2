@@ -2968,6 +2968,12 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Specify if the stochastic source term must be included in the turbulence model equation */
   addBoolOption("STOCH_SOURCE_NU", stochSourceNu, true);
 
+  /* DESCRIPTION: Enable diagnostics of the stochastic source term in Langevin equations. */
+  addBoolOption("STOCH_SOURCE_DIAGNOSTICS", stochSourceDiagnostics, false);
+
+  /* DESCRIPTION: Relaxation factor for the stochastic source term (Stochastic Backscatter Model). */
+  addDoubleOption("SBS_RELAXATION_FACTOR", stochSourceRelax, 0.0);
+
   /* DESCRIPTION: Filter width for LES (if negative, it is computed based on the local cell size) */
   addDoubleOption("LES_FILTER_WIDTH", LES_FilterWidth, -1.0);
 
@@ -6548,6 +6554,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
               cout << "Stochastic source term included in turbulence model equation." << endl;
             else
               cout << "Stochastic source term NOT included in turbulence model equation." << endl;
+            if (stochSourceRelax > 0.0)
+              cout << "Relaxation factor for stochastic source term: " << stochSourceRelax << endl;
+            else
+              cout << "No relaxation factor for stochastic source term." << endl;
           } else {
             cout << "OFF" << endl;
           }
@@ -7130,7 +7140,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         }
       }
 
-      if ((Kind_ConvNumScheme_Flow != SPACE_CENTERED || (Kind_ConvNumScheme_Flow == SPACE_CENTERED && Kind_Centered_Flow == CENTERED::LAX)) && LD2_Scheme) { {
+      if ((Kind_ConvNumScheme_Flow != SPACE_CENTERED || (Kind_ConvNumScheme_Flow == SPACE_CENTERED && Kind_Centered_Flow == CENTERED::LAX)) && LD2_Scheme) {
         SU2_MPI::Error("LD2 option available for JST scheme only.", CURRENT_FUNCTION);
       }
 

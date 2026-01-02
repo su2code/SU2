@@ -366,8 +366,23 @@ class CSourceBase_TurbSA : public CNumerics {
       /*--- Compute residual for Langevin equations (Stochastic Backscatter Model). ---*/
 
       if (backscatter) {
-        if (std::nearbyint(lesMode_i) == 1 && config->GetStochSourceNu())
-          AddStochSource(var, PrimVar_Grad_i + idx.Velocity(), config->GetSBS_Cmag());
+        if (std::nearbyint(lesMode_i) == 1 && config->GetStochSourceNu()) { 
+          su2double SBS_Cmag = config->GetSBS_Cmag();
+          su2double lesSensor = max(lesMode_i, lesMode_j);
+          su2double SBS_RelaxFactor = config->GetStochSourceRelax();
+          su2double intensityCoeff = SBS_Cmag;
+          if (SBS_RelaxFactor > 0.0) {
+            su2double FS_Vel = config->GetModVel_FreeStream();
+            su2double ReynoldsLength = config->GetLength_Reynolds();
+            su2double timeScale = ReynoldsLength / FS_Vel;
+            unsigned long timeIter = config->GetTimeIter();
+            unsigned long restartIter = config->GetRestart_Iter();
+            su2double timeStep = config->GetTime_Step();
+            su2double currentTime = (timeIter - restartIter) * timeStep;
+            intensityCoeff = SBS_Cmag * (1.0 - exp(-SBS_RelaxFactor * currentTime / timeScale));
+          }
+          AddStochSource(var, PrimVar_Grad_i + idx.Velocity(), intensityCoeff);
+        } 
         const su2double DES_const = config->GetConst_DES();
         const su2double ctau = config->GetSBS_Ctau();
         ResidualStochEquations(config->GetDelta_UnstTime(), ctau, dist_i, DES_const,
