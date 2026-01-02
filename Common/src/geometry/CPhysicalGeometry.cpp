@@ -4521,6 +4521,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
 
       /*--- Add all adjacent nodes to the queue in increasing order of their
        degree, checking if the element is already in the queue. ---*/
+      auto currEnd = Result.end();
       for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
         const auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
         if (!InQueue[AdjPoint]) {
@@ -4530,7 +4531,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
       }
 
       /*--- Sort the new points based on the number of neighbors (degree). ---*/
-      stable_sort(Result.begin() + QueueStart, Result.end(), [&](unsigned long iPoint, unsigned long jPoint) {
+      stable_sort(currEnd, Result.end(), [&](unsigned long iPoint, unsigned long jPoint) {
         return nodes->GetnPoint(iPoint) < nodes->GetnPoint(jPoint);
       });
     }
