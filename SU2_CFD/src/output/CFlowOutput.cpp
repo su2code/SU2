@@ -27,13 +27,14 @@
 
 #include <sstream>
 #include <string>
-#include <sstream>
 #include <iomanip>
+#include <memory>
 
 #include "../../include/output/CFlowOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../../Common/include/adt/CADTPointsOnlyClass.hpp"
 #include "../../include/solvers/CSolver.hpp"
 #include "../../include/variables/CPrimitiveIndices.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
@@ -819,6 +820,33 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
   const bool axisymmetric = config->GetAxisymmetric();
   const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
 
+  /*--- Check if we have any probes that need processing. If so, build ADT once for efficient nearest neighbor search. ---*/
+  bool hasProbes = false;
+  for (const auto& output : customOutputs) {
+    if (!output.skip && output.type == OperationType::PROBE && output.varIndices.empty()) {
+      hasProbes = true;
+      break;
+    }
+  }
+
+  /*--- Build ADT for probe nearest neighbor search if needed. ---*/
+  std::unique_ptr<CADTPointsOnlyClass> probeADT;
+  if (hasProbes) {
+    const unsigned long nPointDomain = geometry->GetnPointDomain();
+    vector<su2double> coords(nDim * nPointDomain);
+    vector<unsigned long> pointIDs(nPointDomain);
+
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+      pointIDs[iPoint] = iPoint;
+      for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+        coords[iPoint * nDim + iDim] = geometry->nodes->GetCoord(iPoint, iDim);
+      }
+    }
+
+    /*--- Build global ADT to find nearest nodes across all ranks. ---*/
+    probeADT = std::make_unique<CADTPointsOnlyClass>(nDim, nPointDomain, coords.data(), pointIDs.data(), true);
+  }
+
   for (auto& output : customOutputs) {
     if (output.skip) continue;
 
@@ -849,19 +877,35 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
         }
         su2double coord[3] = {};
         for (auto iDim = 0u; iDim < nDim; ++iDim) coord[iDim] = std::stod(output.markers[iDim]);
+
+        /*--- Use ADT for efficient nearest neighbor search instead of brute force. ---*/
         su2double minDist = std::numeric_limits<su2double>::max();
         unsigned long minPoint = 0;
-        for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
-          const su2double dist = GeometryToolbox::SquaredDistance(nDim, coord, geometry->nodes->GetCoord(iPoint));
-          if (dist < minDist) {
-            minDist = dist;
-            minPoint = iPoint;
+        int rankID = -1;
+        int rank;
+        SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+
+        if (probeADT && !probeADT->IsEmpty()) {
+          /*--- Use ADT to find the nearest node efficiently (O(log n) instead of O(n)). ---*/
+          probeADT->DetermineNearestNode(coord, minDist, minPoint, rankID);
+
+          /*--- Check if this rank owns the nearest point. ---*/
+          output.iPoint = (rankID == rank) ? minPoint : CustomOutput::PROBE_NOT_OWNED;
+        } else {
+          /*--- Fallback to brute force if ADT is not available (should not happen if hasProbes is true). ---*/
+          for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
+            const su2double dist = GeometryToolbox::SquaredDistance(nDim, coord, geometry->nodes->GetCoord(iPoint));
+            if (dist < minDist) {
+              minDist = dist;
+              minPoint = iPoint;
+            }
           }
+          /*--- Decide which rank owns the probe using Allreduce. ---*/
+          su2double globMinDist;
+          SU2_MPI::Allreduce(&minDist, &globMinDist, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+          output.iPoint = fabs(minDist - globMinDist) < EPS ? minPoint : CustomOutput::PROBE_NOT_OWNED;
         }
-        /*--- Decide which rank owns the probe. ---*/
-        su2double globMinDist;
-        SU2_MPI::Allreduce(&minDist, &globMinDist, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-        output.iPoint = fabs(minDist - globMinDist) < EPS ? minPoint : CustomOutput::PROBE_NOT_OWNED;
+
         if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
           std::cout << "Probe " << output.name << " is using global point "
                     << geometry->nodes->GetGlobalIndex(output.iPoint)
