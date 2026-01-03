@@ -40,6 +40,7 @@ class CIncNSVariable final : public CIncEulerVariable {
 private:
   VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;
+  const bool Energy;          /*!< \brief Flag for Energy equation in incompressible flows. */
 
 public:
   /*!

@@ -253,6 +253,14 @@ def main():
     turb_wallfunction_flatplate_sst.test_vals = [-4.036299, -1.916263, -1.821788, 1.443878, -1.579554, 1.521534, 10.000000, -2.351461, 0.030011, 0.002409]
     test_list.append(turb_wallfunction_flatplate_sst)
 
+    # FLAT PLATE, ROUGHNESS BC WILCOX2006 SST
+    turb_flatplate_sst_roughBCWilcox2006           = TestCase('turb_sst_flatplate_roughBCWilcox2006')
+    turb_flatplate_sst_roughBCWilcox2006.cfg_dir   = "rans/flatplate/roughness/bc_wilcox2006"
+    turb_flatplate_sst_roughBCWilcox2006.cfg_file  = "turb_SST_flatplate_roughBCWilcox2006.cfg"
+    turb_flatplate_sst_roughBCWilcox2006.test_iter = 10
+    turb_flatplate_sst_roughBCWilcox2006.test_vals = [-5.117900, -2.534224, -2.904279, 0.381710, -3.100346, 1.180161, -0.188797, 0.004029]
+    test_list.append(turb_flatplate_sst_roughBCWilcox2006)
+
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA
     turb_wallfunction_flatplate_sa           = TestCase('turb_sa_wallfunction_flatplate')
     turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
@@ -415,7 +423,7 @@ def main():
     inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
-    inc_poly_cylinder.test_vals = [-8.083556, -2.134369, 0.018999, 1.932938, -173.730000]
+    inc_poly_cylinder.test_vals = [-8.232551, -2.412865, 0.010163, 1.895333, -172.760000]
     test_list.append(inc_poly_cylinder)
 
     # X-coarse laminar bend as a mixed element CGNS test
@@ -442,7 +450,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.788495, -11.040895, 0.000023, 0.309502]
+    inc_turb_naca0012.test_vals = [-4.758064, -10.974498, -0.000003, -0.028654, 4, -6.049653, 2, -4.951206]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
@@ -986,7 +994,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.803732, -2.108492]
+    slinc_steady.test_vals = [19.000000, -1.049468, -1.303013]
     slinc_steady.timeout   = 100
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
@@ -1037,7 +1045,7 @@ def main():
     dynbeam2d.cfg_file  = "configBeam_2d.cfg"
     dynbeam2d.unsteady  = True
     dynbeam2d.test_iter = 6
-    dynbeam2d.test_vals = [-3.240015, 2.895057, -0.353146, 66127.000000]
+    dynbeam2d.test_vals = [-3.240012, 2.895060, -0.353140, 76220]
     test_list.append(dynbeam2d)
 
     # # FSI, 2d
@@ -1045,7 +1053,7 @@ def main():
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [4.000000, 0.000000, -3.726014, -4.277767]
+    fsi2d.test_vals = [4, 0, -3.726015, -4.277528]
     fsi2d.multizone = True
     fsi2d.unsteady  = True
     test_list.append(fsi2d)
@@ -1073,7 +1081,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.330728, -4.152995, 0.000000, 86.000000]
+    dyn_fsi.test_vals = [-4.330728, -4.152820, 0, 85]
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     test_list.append(dyn_fsi)
@@ -1117,7 +1125,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incomp_2d"
     cht_incompressible.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [-2.128826, -0.588813, -0.588813, -0.588813]
+    cht_incompressible.test_vals = [-1.376347, -0.591210, -0.591210, -0.591210]
     cht_incompressible.multizone = True
     test_list.append(cht_incompressible)
 
@@ -1576,10 +1584,10 @@ def main():
     pywrapper_fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     pywrapper_fsi2d.cfg_file  = "configFSI.cfg"
     pywrapper_fsi2d.test_iter = 4
-    pywrapper_fsi2d.test_vals = [4.000000, 0.000000, -3.726014, -4.277767]
+    pywrapper_fsi2d.test_vals = [4, 0, -3.726015, -4.277528]
     pywrapper_fsi2d.command   =  TestCase.Command(exec = "SU2_CFD.py", param = "--nZone 2 --fsi True -f")
     pywrapper_fsi2d.unsteady  = True
-    pywrapper_fsi2d.multizone   = True
+    pywrapper_fsi2d.multizone = True
     pywrapper_fsi2d.timeout   = 1600
     pywrapper_fsi2d.tol       = 0.00001
     pywrapper_fsi2d.enabled_with_asan = False

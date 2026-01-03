@@ -1102,6 +1102,22 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 }
 
 /*!
+ * \brief SST rough-wall boundary conditions Options
+ */
+enum class ROUGHSST_MODEL {
+  WILCOX1998,           /*!< \brief Wilcox 1998 boundary conditions for rough walls. */
+  WILCOX2006,           /*!< \brief Wilcox 2006 boundary conditions for rough walls / default version if roughness is applied. */
+  LIMITER_KNOPP,        /*!< \brief Knopp eddy viscosity limiter. */
+  LIMITER_AUPOIX,       /*!< \brief Aupoix eddy viscosity limiter. */
+};
+static const MapType<std::string, ROUGHSST_MODEL> RoughSST_Model_Map = {
+  MakePair("WILCOX1998", ROUGHSST_MODEL::WILCOX1998)
+  MakePair("WILCOX2006", ROUGHSST_MODEL::WILCOX2006)
+  MakePair("LIMITER_KNOPP", ROUGHSST_MODEL::LIMITER_KNOPP)
+  MakePair("LIMITER_AUPOIX", ROUGHSST_MODEL::LIMITER_AUPOIX)
+};
+
+/*!
  * \brief SA Options
  */
 enum class SA_OPTIONS {
@@ -1836,6 +1852,18 @@ static const MapType<std::string, RIEMANN_TYPE> Giles_Map = {
 };
 
 /*!
+ * \brief Types of wall species boundary conditions.
+ */
+enum class WALL_SPECIES_TYPE {
+  FLUX,   /*!< \brief Neumann flux boundary condition for wall species. */
+  VALUE   /*!< \brief Dirichlet value boundary condition for wall species. */
+};
+static const MapType<std::string, WALL_SPECIES_TYPE> Wall_Map = {
+  MakePair("FLUX", WALL_SPECIES_TYPE::FLUX)
+  MakePair("VALUE", WALL_SPECIES_TYPE::VALUE)
+};
+
+/*!
  * \brief Types of mixing process for averaging quantities at the boundaries.
  */
 enum AVERAGEPROCESS_TYPE {
@@ -2028,10 +2056,6 @@ static const MapType<std::string, ACTDISK_TYPE> ActDisk_Map = {
 enum class WALL_TYPE {
   SMOOTH,  /*!< \brief Smooth wall */
   ROUGH,   /*!< \brief Rough wall */
-};
-static const MapType<std::string, WALL_TYPE> WallType_Map = {
-  MakePair("SMOOTH", WALL_TYPE::SMOOTH)
-  MakePair("ROUGH", WALL_TYPE::ROUGH)
 };
 
 /*!
@@ -2363,9 +2387,10 @@ static const MapType<std::string, ENUM_FFD_BLENDING> Blending_Map = {
  */
 enum ENUM_LINEAR_SOLVER {
   CONJUGATE_GRADIENT,   /*!< \brief Preconditionated conjugate gradient method for grid deformation. */
-  FGMRES,               /*!< \brief Flexible Generalized Minimal Residual method. */
   BCGSTAB,              /*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
+  FGMRES,               /*!< \brief Flexible Generalized Minimal Residual method. */
   RESTARTED_FGMRES,     /*!< \brief Flexible Generalized Minimal Residual method with restart. */
+  FGCRODR,              /*!< \brief Flexible Generalized Conjugate Residual Method with Inner Orthogonalization and Deflated Restarting. */
   SMOOTHER,             /*!< \brief Iterative smoother. */
   PASTIX_LDLT,          /*!< \brief PaStiX LDLT (complete) factorization. */
   PASTIX_LU,            /*!< \brief PaStiX LU (complete) factorization. */
@@ -2375,10 +2400,26 @@ static const MapType<std::string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
   MakePair("BCGSTAB", BCGSTAB)
   MakePair("FGMRES", FGMRES)
   MakePair("RESTARTED_FGMRES", RESTARTED_FGMRES)
+  MakePair("FGCRODR", FGCRODR)
   MakePair("SMOOTHER", SMOOTHER)
   MakePair("PASTIX_LDLT", PASTIX_LDLT)
   MakePair("PASTIX_LU", PASTIX_LU)
 };
+
+/*!
+ * \brief Inner solver for nested linear solver, only compatible with "flexible" linear solvers.
+ */
+enum class LINEAR_SOLVER_INNER {
+  NONE,     /*!< \brief Do not use a nested linear solver. */
+  BCGSTAB,  /*!< \brief Use BCGSTAB as the preconditioning linear solver. */
+  SMOOTHER, /*!< \brief Iterative smoother. */
+};
+static const MapType<std::string, LINEAR_SOLVER_INNER> Inner_Linear_Solver_Map = {
+  MakePair("NONE", LINEAR_SOLVER_INNER::NONE)
+  MakePair("BCGSTAB", LINEAR_SOLVER_INNER::BCGSTAB)
+  MakePair("SMOOTHER", LINEAR_SOLVER_INNER::SMOOTHER)
+};
+
 
 /*!
  * \brief Types surface continuity at the intersection with the FFD
