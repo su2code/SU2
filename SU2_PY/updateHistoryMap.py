@@ -49,7 +49,7 @@ def parse_output(files):
     outputFields = dict()
 
     for file in files:
-        print("Parsing " + file)
+        print(f"Parsing {file}")
         f = open(file, "r")
         while 1:
             s = f.readline().strip(" ")
@@ -60,7 +60,9 @@ def parse_output(files):
                 if "//" in s[:idx]:
                     continue
                 try:
-                    s_args = s[idx:].replace("AddHistoryOutput", "").strip("()").split(",")
+                    s_args = (
+                        s[idx:].replace("AddHistoryOutput", "").strip("()").split(",")
+                    )
                     if len(s_args) < 2:
                         continue
                     curOutputField = dict()
