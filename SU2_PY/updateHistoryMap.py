@@ -26,6 +26,8 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 import os
 
+dummy_list = [1, 2, 3]
+
 su2_home = os.environ["SU2_HOME"]
 
 fileList = [
