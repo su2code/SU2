@@ -763,6 +763,7 @@ private:
   SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
   SA_OPTIONS *SA_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
   LM_OPTIONS *LM_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
+  ROUGHSST_MODEL Kind_RoughSST_Model;         /*!< \brief List of modifications/corrections/versions of rough-wall boundary conditions for SST turbulence model.*/
   unsigned short nSST_Options;        /*!< \brief Number of SST options specified. */
   unsigned short nSA_Options;         /*!< \brief Number of SA options specified. */
   unsigned short nLM_Options;         /*!< \brief Number of SA options specified. */
@@ -10173,6 +10174,10 @@ public:
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
 
+  /*!
+   * \brief Get rough-wall boundary conditions for SST.
+   */
+  ROUGHSST_MODEL GetKindRoughSSTModel() const { return Kind_RoughSST_Model; }
 
   /*!
    * \brief Get parsed option data structure for data-driven fluid model.
