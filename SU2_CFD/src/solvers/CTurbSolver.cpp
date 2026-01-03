@@ -135,6 +135,26 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 
     if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) skipVars--;
 
+    /*--- Determine number of turbulence variables in restart file ---*/
+    /*--- Total vars in restart = coordinates + flow vars + turbulence vars + grid velocities ---*/
+    unsigned short nVar_Restart = 0;
+    if (Restart_Vars[1] > skipVars) {
+      /*--- Estimate turbulence vars: total - skipVars, but cap at nVar ---*/
+      nVar_Restart = min(static_cast<unsigned short>(Restart_Vars[1] - skipVars), nVar);
+    }
+
+    /*--- Check if turbulence fields are present in restart file ---*/
+    /*--- Note: This is a simplified check. Full field-based lookup would require
+          knowing the specific turbulence model variable names (Nu_Tilde, Turb_Kin_Energy, etc.) ---*/
+    bool turb_fields_missing = false;
+    if (nVar_Restart < nVar) {
+      turb_fields_missing = true;
+      if (rank == MASTER_NODE) {
+        cout << "\nWARNING: The restart file appears to be missing turbulence variables." << endl;
+        cout << "Turbulence variables will be initialized from config defaults." << endl;
+      }
+    }
+
     /*--- Load data from the restart into correct containers. ---*/
 
     unsigned long counter = 0;
@@ -149,7 +169,18 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
          offset in the buffer of data from the restart file and load it. ---*/
 
         const auto index = counter * Restart_Vars[1] + skipVars;
-        for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        
+        /*--- Load available turbulence variables ---*/
+        for (auto iVar = 0u; iVar < nVar_Restart; iVar++) {
+          nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        }
+        
+        /*--- Initialize missing turbulence variables from defaults ---*/
+        if (turb_fields_missing) {
+          for (auto iVar = nVar_Restart; iVar < nVar; iVar++) {
+            nodes->SetSolution(iPoint_Local, iVar, Solution_Inf[iVar]);
+          }
+        }
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;

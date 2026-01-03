@@ -3419,6 +3419,13 @@ public:
                                string val_filename);
 
   /*!
+   * \brief Find the index of a field in the restart file fields vector.
+   * \param[in] fieldName - Name of the field to find (with or without quotes).
+   * \return Index of the field (0-based, excluding PointID), or -1 if not found.
+   */
+  int FindFieldIndex(const string& fieldName) const;
+
+  /*!
    * \brief Read the metadata from a native SU2 restart file (ASCII or binary).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
