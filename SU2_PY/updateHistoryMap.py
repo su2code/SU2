@@ -55,18 +55,31 @@ def parse_output(files):
             s = f.readline().strip(" ")
             if not s:
                 break
-            if s.startswith("AddHistoryOutput("):
-                s = s.replace("AddHistoryOutput", "").strip("()").split(",")
-                curOutputField = dict()
-                name = s[0].strip(' ()"\n;')
-                curOutputField["HEADER"] = s[1].strip(' ()"\n;')
-                curOutputField["GROUP"] = s[3].strip(' ()"\n;')
-                curOutputField["DESCRIPTION"] = s[4].strip(' ()"\n;')
-                if len(s) == 6:
-                    curOutputField["TYPE"] = s[5].strip(' ()"\n;').split("::")[1]
-                else:
-                    curOutputField["TYPE"] = "DEFAULT"
-                outputFields[name] = curOutputField
+            if "AddHistoryOutput(" in s:
+                idx = s.find("AddHistoryOutput(")
+                if "//" in s[:idx]:
+                    continue
+                try:
+                    s_args = s[idx:].replace("AddHistoryOutput", "").strip("()").split(",")
+                    if len(s_args) < 2:
+                        continue
+                    curOutputField = dict()
+                    name = s_args[0].strip(' ()"\n;')
+                    curOutputField["HEADER"] = s_args[1].strip(' ()"\n;')
+                    curOutputField["GROUP"] = s_args[3].strip(' ()"\n;')
+                    curOutputField["DESCRIPTION"] = s_args[4].strip(' ()"\n;')
+                    if len(s_args) == 6:
+                        type_str = s_args[5].strip(' ()"\n;')
+                        if "::" in type_str:
+                            curOutputField["TYPE"] = type_str.split("::")[1]
+                        else:
+                            curOutputField["TYPE"] = "DEFAULT"
+                    else:
+                        curOutputField["TYPE"] = "DEFAULT"
+                    outputFields[name] = curOutputField
+                except Exception as e:
+                    print(f"Error parsing line: {s.strip()} - {e}")
+                    continue
         f.close()
 
     addedOutputFields = dict()
