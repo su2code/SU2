@@ -320,7 +320,7 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CC
     if (nDim == 2) {
       if (plane_stress) {
         // Compute the value of the term 33 for the deformation gradient
-        Compute_Plane_Stress_Term(element, config);
+        Compute_Plane_Stress_Term(element, config, iGauss);
         F_Mat[2][2] = f33;
       }
       else { // plane strain
@@ -542,7 +542,7 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, const 
     if (nDim == 2) {
       if (plane_stress) {
         // Compute the value of the term 33 for the deformation gradient
-        Compute_Plane_Stress_Term(element, config);
+        Compute_Plane_Stress_Term(element, config, iGauss);
         F_Mat[2][2] = f33;
       }
       else { // plane strain
@@ -821,10 +821,10 @@ su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *elemen
     if (nDim == 2) {
       if (plane_stress) {
         // Compute the value of the term 33 for the deformation gradient
-        Compute_Plane_Stress_Term(element, config);
+        Compute_Plane_Stress_Term(element, config, iGauss);
         F_Mat[2][2] = f33;
-      }
-      else { // plane strain
+      } else {
+        // Plane strain
         F_Mat[2][2] = 1.0;
       }
     }
@@ -856,8 +856,8 @@ su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *elemen
     avgStress[0] += Stress_Tensor[0][0] / nGauss;
     avgStress[1] += Stress_Tensor[1][1] / nGauss;
     avgStress[2] += Stress_Tensor[0][1] / nGauss;
+    avgStress[3] += Stress_Tensor[2][2] / nGauss;
     if (nDim == 3) {
-      avgStress[3] += Stress_Tensor[2][2] / nGauss;
       avgStress[4] += Stress_Tensor[0][2] / nGauss;
       avgStress[5] += Stress_Tensor[1][2] / nGauss;
     }
@@ -883,8 +883,8 @@ su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *elemen
       element->Add_NodalStress(iNode, 0, Stress_Tensor[0][0] * Ni_Extrap);
       element->Add_NodalStress(iNode, 1, Stress_Tensor[1][1] * Ni_Extrap);
       element->Add_NodalStress(iNode, 2, Stress_Tensor[0][1] * Ni_Extrap);
+      element->Add_NodalStress(iNode, 3, Stress_Tensor[2][2] * Ni_Extrap);
       if (nDim == 3) {
-        element->Add_NodalStress(iNode, 3, Stress_Tensor[2][2] * Ni_Extrap);
         element->Add_NodalStress(iNode, 4, Stress_Tensor[0][2] * Ni_Extrap);
         element->Add_NodalStress(iNode, 5, Stress_Tensor[1][2] * Ni_Extrap);
       }
@@ -893,7 +893,7 @@ su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *elemen
 
   }
 
-  auto elStress = VonMisesStress(nDim, avgStress);
+  auto elStress = CFEAElasticity::VonMisesStress(nDim, avgStress);
 
   /*--- We only differentiate w.r.t. an avg VM stress for the element as
    * considering all nodal stresses would use too much memory. ---*/
