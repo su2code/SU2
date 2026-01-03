@@ -204,6 +204,19 @@ public:
                       unsigned short iMesh) final;
 
   /*!
+   * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
+   *        in a more thermodynamically consistent way.
+   * \note This method is static to improve the chances of it being used in a
+   *       thread-safe manner.
+   * \param[in,out] fluidModel - The fluid model.
+   * \param[in] nDim - Number of physical dimensions.
+   * \param[in] scalar - scalar variable.
+   * \param[in,out] primitive - Primitive variables.
+   */
+  static void ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim, const su2double* scalar,
+                                             su2double* primitive);
+
+  /*!
    * \brief Source term integration.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
