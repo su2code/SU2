@@ -1959,7 +1959,18 @@ enum TURBO_MARKER_TYPE{
 
 enum class RAMP_TYPE{
   GRID,       /*!< \brief flag for rotational/translational ramps */
-  BOUNDARY    /*!< \brief flag for pressure/mass flow ramps*/
+  BOUNDARY,   /*!< \brief flag for pressure/mass flow ramps*/
+  MUSCL       /*!< \brief flag for MUSCL ramps */
+};
+
+enum class MUSCL_RAMP_TYPE{
+  ITERATION,  /*!< \brief flag for linear iteration-based ramp */
+  SMOOTH_FUNCTION      /*!< \brief flag for smooth cosine ramp */
+};
+
+static const MapType<std::string, MUSCL_RAMP_TYPE> MUSCLRamp_Map = {
+  MakePair("ITERATION", MUSCL_RAMP_TYPE::ITERATION)
+  MakePair("SMOOTH_FUNCTION", MUSCL_RAMP_TYPE::SMOOTH_FUNCTION)
 };
 
 /*!
