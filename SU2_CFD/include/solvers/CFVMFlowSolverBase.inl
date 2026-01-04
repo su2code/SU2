@@ -89,10 +89,10 @@ template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   /*--- Define some auxiliar vector related with the residual ---*/
 
-  Residual_RMS.resize(nVar, 0.0);
-  Residual_Max.resize(nVar, 0.0);
-  Point_Max.resize(nVar, 0);
-  Point_Max_Coord.resize(nVar, nDim) = su2double(0.0);
+  Residual_RMS.resize(nVar,0.0);
+  Residual_Max.resize(nVar,0.0);
+  Point_Max.resize(nVar,0);
+  Point_Max_Coord.resize(nVar,nDim) = su2double(0.0);
 
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
 
@@ -144,15 +144,15 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Heat flux coefficients. ---*/
 
-  HF_Visc.resize(nMarker, 0.0);
-  MaxHF_Visc.resize(nMarker, 0.0);
+  HF_Visc.resize(nMarker,0.0);
+  MaxHF_Visc.resize(nMarker,0.0);
 
   Surface_HF_Visc.resize(config.GetnMarker_Monitoring());
   Surface_MaxHF_Visc.resize(config.GetnMarker_Monitoring());
 
   /*--- Supersonic coefficients ---*/
 
-  CNearFieldOF_Inv.resize(nMarker, 0.0);
+  CNearFieldOF_Inv.resize(nMarker,0.0);
 
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
@@ -161,8 +161,8 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     if (config.GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
-      SlidingState[iMarker].resize(nVertex[iMarker], nPrimVar + 1) = nullptr;
-      SlidingStateNodes[iMarker].resize(nVertex[iMarker], 0);
+      SlidingState[iMarker].resize(nVertex[iMarker], nPrimVar+1) = nullptr;
+      SlidingStateNodes[iMarker].resize(nVertex[iMarker],0);
     }
   }
 
@@ -199,7 +199,8 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   if (MGLevel == MESH_0) {
     auto nSolidVertex = nVertex;
     for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
-      if (!config.GetSolid_Wall(iMarker)) nSolidVertex[iMarker] = 0;
+      if (!config.GetSolid_Wall(iMarker))
+        nSolidVertex[iMarker] = 0;
 
     AllocVectorOfMatrices(nSolidVertex, nDim, VertexTraction);
 
@@ -208,10 +209,10 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
   if (config.GetMultizone_Residual()) {
-    Residual_BGS.resize(nVar, 1.0);
-    Residual_Max_BGS.resize(nVar, 1.0);
-    Point_Max_BGS.resize(nVar, 0);
-    Point_Max_Coord_BGS.resize(nVar, nDim) = su2double(0.0);
+    Residual_BGS.resize(nVar,1.0);
+    Residual_Max_BGS.resize(nVar,1.0);
+    Point_Max_BGS.resize(nVar,0);
+    Point_Max_Coord_BGS.resize(nVar,nDim) = su2double(0.0);
   }
 }
 
@@ -295,7 +296,7 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
   /*--- For the discrete adjoint, the reducer strategy is costly. Prefer coloring, possibly with reduced edge color
    *    group size. Find the maximum edge color group size that yields an efficient coloring. Also, allow larger numbers
    *    of colors. ---*/
-  const bool relax = config.GetEdgeColoringRelaxDiscAdj();
+  const bool relax =  config.GetEdgeColoringRelaxDiscAdj();
   const auto& coloring = geometry.GetEdgeColoring(&parallelEff, relax);
 #else
   const auto& coloring = geometry.GetEdgeColoring(&parallelEff);
@@ -343,18 +344,15 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 
     const su2double coloredParallelEff = ReducerStrategy ? 1.0 : parallelEff;
     su2double minColoredParallelEff = 1.0;
-    SU2_MPI::Reduce(&coloredParallelEff, &minColoredParallelEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE,
-                    SU2_MPI::GetComm());
+    SU2_MPI::Reduce(&coloredParallelEff, &minColoredParallelEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
 
     const unsigned long coloredNumColors = ReducerStrategy ? 0 : coloring.getOuterSize();
     unsigned long maxColoredNumColors = 0;
-    SU2_MPI::Reduce(&coloredNumColors, &maxColoredNumColors, 1, MPI_UNSIGNED_LONG, MPI_MAX, MASTER_NODE,
-                    SU2_MPI::GetComm());
+    SU2_MPI::Reduce(&coloredNumColors, &maxColoredNumColors, 1, MPI_UNSIGNED_LONG, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
 
     const unsigned long coloredEdgeColorGroupSize = ReducerStrategy ? 1 << 30 : geometry.GetEdgeColorGroupSize();
     unsigned long minColoredEdgeColorGroupSize = 1 << 30;
-    SU2_MPI::Reduce(&coloredEdgeColorGroupSize, &minColoredEdgeColorGroupSize, 1, MPI_UNSIGNED_LONG, MPI_MIN,
-                    MASTER_NODE, SU2_MPI::GetComm());
+    SU2_MPI::Reduce(&coloredEdgeColorGroupSize, &minColoredEdgeColorGroupSize, 1, MPI_UNSIGNED_LONG, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
 
     if (SU2_MPI::GetRank() == MASTER_NODE && numRanksUsingReducer != SU2_MPI::GetSize()) {
       cout << "Among the ranks that use edge coloring,\n"
@@ -374,8 +372,9 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 
 template <class V, ENUM_REGIME R>
 CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
+
   for (auto& mat : SlidingState) {
-    for (auto ptr : mat) delete[] ptr;
+    for (auto ptr : mat) delete [] ptr;
   }
 
   delete nodes;
@@ -387,11 +386,10 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_GG(CGeometry* geometry, con
                                                         bool reconstruction) {
   const auto& primitives = nodes->GetPrimitive();
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-  const auto comm = reconstruction ? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
-  const auto commPer = reconstruction ? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
+  const auto comm = reconstruction? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
+  const auto commPer = reconstruction? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
 
-  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, prim_idx.Velocity(),
-                             gradient);
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, prim_idx.Velocity(), gradient);
 }
 
 template <class V, ENUM_REGIME R>
@@ -403,19 +401,20 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, con
 
   if (reconstruction) {
     weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
-    commPer = weighted ? PERIODIC_PRIM_LS_R : PERIODIC_PRIM_ULS_R;
-  } else {
+    commPer = weighted? PERIODIC_PRIM_LS_R : PERIODIC_PRIM_ULS_R;
+  }
+  else {
     weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
-    commPer = weighted ? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
+    commPer = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
   }
 
   const auto& primitives = nodes->GetPrimitive();
   auto& rmatrix = nodes->GetRmatrix();
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-  const auto comm = reconstruction ? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
+  const auto comm = reconstruction? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
 
-  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, primitives, 0, nPrimVarGrad,
-                               prim_idx.Velocity(), gradient, rmatrix);
+  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
+                               primitives, 0, nPrimVarGrad, prim_idx.Velocity(), gradient, rmatrix);
 }
 
 template <class V, ENUM_REGIME R>
@@ -433,9 +432,10 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const C
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeometry* geometry,
-                                                     CSolver** solver_container, CNumerics* numerics, CConfig* config) {
-  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                                                     CNumerics *numerics, CConfig *config) {
+
+  const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
 
   CVariable* turbNodes = nullptr;
@@ -443,30 +443,37 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
-  auto iPoint = geometry->edges->GetNode(iEdge, 0);
-  auto jPoint = geometry->edges->GetNode(iEdge, 1);
+  auto iPoint = geometry->edges->GetNode(iEdge,0);
+  auto jPoint = geometry->edges->GetNode(iEdge,1);
 
-  numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
+  numerics->SetCoord(geometry->nodes->GetCoord(iPoint),
+                     geometry->nodes->GetCoord(jPoint));
 
   numerics->SetNormal(geometry->edges->GetNormal(iEdge));
 
   /*--- Primitive and secondary variables. ---*/
 
-  numerics->SetPrimitive(nodes->GetPrimitive(iPoint), nodes->GetPrimitive(jPoint));
+  numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
+                         nodes->GetPrimitive(jPoint));
 
-  numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(jPoint));
+  numerics->SetSecondary(nodes->GetSecondary(iPoint),
+                         nodes->GetSecondary(jPoint));
 
   /*--- Gradients. ---*/
 
-  numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(jPoint));
+  numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                               nodes->GetGradient_Primitive(jPoint));
 
   /*--- Turbulent kinetic energy. ---*/
 
-  if (tkeNeeded) numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint, 0), turbNodes->GetSolution(jPoint, 0));
+  if (tkeNeeded)
+    numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
+                                   turbNodes->GetSolution(jPoint,0));
 
   /*--- Wall shear stress values (wall functions) ---*/
 
-  numerics->SetTau_Wall(nodes->GetTau_Wall(iPoint), nodes->GetTau_Wall(jPoint));
+  numerics->SetTau_Wall(nodes->GetTau_Wall(iPoint),
+                        nodes->GetTau_Wall(jPoint));
 
   /*--- Compute and update residual ---*/
 
@@ -474,17 +481,22 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
-    if (implicit) Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
-  } else {
+    if (implicit)
+      Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
+  }
+  else {
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
 
-    if (implicit) Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+    if (implicit)
+      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
   }
+
 }
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CConfig* config) {
+
   /*--- The errors only need to be computed on the finest grid. ---*/
   if (MGLevel != MESH_0) return;
 
@@ -500,45 +512,47 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
   if (!write_heads) return;
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    /*--- Check if there actually is an exact solution for this
-          verification case, if computed at all. ---*/
-    if (VerificationSolution && VerificationSolution->ExactSolutionKnown()) {
-      /*--- Get the physical time if necessary. ---*/
-      su2double time = 0.0;
-      if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
-      /*--- Reset the global error measures to zero. ---*/
-      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        VerificationSolution->SetError_RMS(iVar, 0.0);
-        VerificationSolution->SetError_Max(iVar, 0.0, 0);
-      }
+  /*--- Check if there actually is an exact solution for this
+        verification case, if computed at all. ---*/
+  if (VerificationSolution && VerificationSolution->ExactSolutionKnown()) {
+    /*--- Get the physical time if necessary. ---*/
+    su2double time = 0.0;
+    if (config->GetTime_Marching() != TIME_MARCHING::STEADY) time = config->GetPhysicalTime();
 
-      /*--- Loop over all owned points. ---*/
-      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-        /* Set the pointers to the coordinates and solution of this DOF. */
-        const su2double* coor = geometry->nodes->GetCoord(iPoint);
-        su2double* solDOF = nodes->GetSolution(iPoint);
-
-        /* Get local error from the verification solution class. */
-        vector<su2double> error(nVar, 0.0);
-        VerificationSolution->GetLocalError(coor, time, solDOF, error.data());
-
-        /* Increment the global error measures */
-        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-          VerificationSolution->AddError_RMS(iVar, error[iVar] * error[iVar]);
-          VerificationSolution->AddError_Max(iVar, fabs(error[iVar]), geometry->nodes->GetGlobalIndex(iPoint),
-                                             geometry->nodes->GetCoord(iPoint));
-        }
-      }
-
-      /* Finalize the calculation of the global error measures. */
-      VerificationSolution->SetVerificationError(geometry->GetGlobal_nPointDomain(), config);
-
-      /*--- Screen output of the error metrics. This can be improved
-       once the new output classes are in place. ---*/
-
-      PrintVerificationError(config);
+    /*--- Reset the global error measures to zero. ---*/
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      VerificationSolution->SetError_RMS(iVar, 0.0);
+      VerificationSolution->SetError_Max(iVar, 0.0, 0);
     }
+
+    /*--- Loop over all owned points. ---*/
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      /* Set the pointers to the coordinates and solution of this DOF. */
+      const su2double* coor = geometry->nodes->GetCoord(iPoint);
+      su2double* solDOF = nodes->GetSolution(iPoint);
+
+      /* Get local error from the verification solution class. */
+      vector<su2double> error(nVar, 0.0);
+      VerificationSolution->GetLocalError(coor, time, solDOF, error.data());
+
+      /* Increment the global error measures */
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        VerificationSolution->AddError_RMS(iVar, error[iVar] * error[iVar]);
+        VerificationSolution->AddError_Max(iVar, fabs(error[iVar]), geometry->nodes->GetGlobalIndex(iPoint),
+                                           geometry->nodes->GetCoord(iPoint));
+      }
+    }
+
+    /* Finalize the calculation of the global error measures. */
+    VerificationSolution->SetVerificationError(geometry->GetGlobal_nPointDomain(), config);
+
+    /*--- Screen output of the error metrics. This can be improved
+     once the new output classes are in place. ---*/
+
+    PrintVerificationError(config);
+  }
+
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -581,12 +595,13 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* confi
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry* geometry, CSolver**, CConfig* config) {
+void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSolver**, CConfig *config) {
+
   PrepareImplicitIteration(geometry, nullptr, config);
 
   /*--- Solve or smooth the linear system. ---*/
 
-  SU2_OMP_FOR_(schedule(static, OMP_MIN_SIZE) SU2_NOWAIT)
+  SU2_OMP_FOR_(schedule(static,OMP_MIN_SIZE) SU2_NOWAIT)
   for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     LinSysRes.SetBlock_Zero(iPoint);
     LinSysSol.SetBlock_Zero(iPoint);
@@ -605,16 +620,17 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry* geometry, CSol
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& config, const CGeometry* geometry,
-                                                            unsigned short iMesh) {
+void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& config, const CGeometry *geometry, unsigned short iMesh) {
+
   auto& StrainMag = nodes->GetStrainMag();
 
-  ompMasterAssignBarrier(StrainMag_Max, 0.0, Omega_Max, 0.0);
+  ompMasterAssignBarrier(StrainMag_Max,0.0, Omega_Max,0.0);
 
   su2double strainMax = 0.0, omegaMax = 0.0;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
     const auto VelocityGradient = nodes->GetVelocityGradient(iPoint);
     auto Vorticity = nodes->GetVorticity(iPoint);
 
@@ -622,11 +638,11 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
 
     Vorticity[0] = 0.0;
     Vorticity[1] = 0.0;
-    Vorticity[2] = VelocityGradient(1, 0) - VelocityGradient(0, 1);
+    Vorticity[2] = VelocityGradient(1,0)-VelocityGradient(0,1);
 
     if (nDim == 3) {
-      Vorticity[0] = VelocityGradient(2, 1) - VelocityGradient(1, 2);
-      Vorticity[1] = -(VelocityGradient(2, 0) - VelocityGradient(0, 2));
+      Vorticity[0] = VelocityGradient(2,1)-VelocityGradient(1,2);
+      Vorticity[1] = -(VelocityGradient(2,0)-VelocityGradient(0,2));
     }
 
     /*--- Strain Magnitude ---*/
@@ -650,14 +666,14 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
 
     /*--- Add off diagonals ---*/
 
-    StrainMag(iPoint) += 2.0 * pow(0.5 * (VelocityGradient(0, 1) + VelocityGradient(1, 0)), 2);
+    StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(0,1) + VelocityGradient(1,0)), 2);
 
     if (nDim == 3) {
-      StrainMag(iPoint) += 2.0 * pow(0.5 * (VelocityGradient(0, 2) + VelocityGradient(2, 0)), 2);
-      StrainMag(iPoint) += 2.0 * pow(0.5 * (VelocityGradient(1, 2) + VelocityGradient(2, 1)), 2);
+      StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(0,2) + VelocityGradient(2,0)), 2);
+      StrainMag(iPoint) += 2.0*pow(0.5*(VelocityGradient(1,2) + VelocityGradient(2,1)), 2);
     }
 
-    StrainMag(iPoint) = sqrt(2.0 * StrainMag(iPoint));
+    StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
     AD::SetPreaccOut(StrainMag(iPoint));
     AD::EndPreacc();
 
@@ -676,7 +692,8 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
     }
     END_SU2_OMP_CRITICAL
 
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
       su2double MyOmega_Max = Omega_Max;
       su2double MyStrainMag_Max = StrainMag_Max;
 
@@ -685,6 +702,7 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
+
 }
 
 template <class V, ENUM_REGIME R>
@@ -697,6 +715,7 @@ void CFVMFlowSolverBase<V, R>::SetInletAtVertex(const su2double* val_inlet, unsi
   unsigned short FlowDir_position = nDim + 2;
 
   /*--- Note that it is not necessary anymore to use normalized normals for the inlet velocity ---*/
+
 
   /*--- Store the values in our inlet data structures. ---*/
 
@@ -762,8 +781,8 @@ void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned s
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::UpdateCustomBoundaryConditions(CGeometry** geometry_container,
-                                                              CSolver*** solver_container, CConfig* config) {
+void CFVMFlowSolverBase<V, R>::UpdateCustomBoundaryConditions(
+    CGeometry** geometry_container, CSolver*** solver_container, CConfig *config) {
   struct {
     const CSolver* fine_solver{nullptr};
     CSolver* coarse_solver{nullptr};
@@ -1134,14 +1153,15 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry** geometry, CSolver***
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int iter,
-                                           bool update_geo) {
+void CFVMFlowSolverBase<V, R>::LoadRestart(CGeometry **geometry, CSolver ***solver,
+                                           CConfig *config, int iter, bool update_geo) {
   LoadRestart_impl(geometry, solver, config, iter, update_geo);
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
-                                                   unsigned long TimeIter) {
+void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
+                                                   CConfig *config, unsigned long TimeIter) {
+
   const bool restart = (config->GetRestart() || config->GetRestart_Flow());
   const bool rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
   const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
@@ -1150,36 +1170,42 @@ void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry** geometry, CSolver
   /*--- Start OpenMP parallel region. ---*/
 
   SU2_OMP_PARALLEL {
-    unsigned long iPoint;
-    unsigned short iMesh;
 
-    /*--- Check if a verification solution is to be computed. ---*/
-    if ((VerificationSolution) && (TimeIter == 0) && !restart) {
-      /*--- Loop over the multigrid levels. ---*/
-      for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-        /*--- Loop over all grid points. ---*/
-        SU2_OMP_FOR_STAT(omp_chunk_size)
-        for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-          /* Set the pointers to the coordinates and solution of this DOF. */
-          const su2double* coor = geometry[iMesh]->nodes->GetCoord(iPoint);
-          su2double* solDOF = solver_container[iMesh][FLOW_SOL]->GetNodes()->GetSolution(iPoint);
+  unsigned long iPoint;
+  unsigned short iMesh;
 
-          /* Set the solution in this DOF to the initial condition provided by
-             the verification solution class. This can be the exact solution,
-             but this is not necessary. */
-          VerificationSolution->GetInitialCondition(coor, solDOF);
-        }
-        END_SU2_OMP_FOR
+  /*--- Check if a verification solution is to be computed. ---*/
+  if ((VerificationSolution) && (TimeIter == 0) && !restart) {
+
+    /*--- Loop over the multigrid levels. ---*/
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+
+      /*--- Loop over all grid points. ---*/
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+
+        /* Set the pointers to the coordinates and solution of this DOF. */
+        const su2double *coor = geometry[iMesh]->nodes->GetCoord(iPoint);
+        su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->GetNodes()->GetSolution(iPoint);
+
+        /* Set the solution in this DOF to the initial condition provided by
+           the verification solution class. This can be the exact solution,
+           but this is not necessary. */
+        VerificationSolution->GetInitialCondition(coor, solDOF);
       }
-    }
-
-    /*--- The value of the solution for the first iteration of the dual time ---*/
-
-    if (dual_time && TimeIter == config->GetRestart_Iter()) {
-      PushSolutionBackInTime(TimeIter, restart, rans, solver_container, geometry, config);
+      END_SU2_OMP_FOR
     }
   }
+
+  /*--- The value of the solution for the first iteration of the dual time ---*/
+
+  if (dual_time && TimeIter == config->GetRestart_Iter()) {
+    PushSolutionBackInTime(TimeIter, restart, rans, solver_container, geometry, config);
+  }
+
+  }
   END_SU2_OMP_PARALLEL
+
 }
 
 template <class V, ENUM_REGIME R>
@@ -1209,12 +1235,14 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
   }
 
   if (restart && (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
+
     /*--- Load an additional restart file for a 2nd-order restart. ---*/
 
-    solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, TimeIter - 1, true);
+    solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, true);
 
     /*--- Load an additional restart file for the turbulence model. ---*/
-    if (rans) solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, TimeIter - 1, false);
+    if (rans)
+      solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, TimeIter-1, false);
 
     /*--- Push back this new solution to time level N. ---*/
 
@@ -1229,9 +1257,8 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
 }
 
 template <class V, ENUM_REGIME FlowRegime>
-void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container,
-                                                     CNumerics* conv_numerics, CNumerics* visc_numerics,
-                                                     CConfig* config, unsigned short val_marker) {
+void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                                     CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto iVel = prim_idx.Velocity();
 
@@ -1267,13 +1294,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     if (dynamic_grid) {
       su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
 
-      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                geometry->nodes->GetGridVel(iPoint));
 
       /*--- Normal vector for this vertex (negate for outward convention). ---*/
       for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      for (auto iVar = 0u; iVar < nPrimVar; iVar++) V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
+      for (auto iVar = 0u; iVar < nPrimVar; iVar++)
+        V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
 
       su2double ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
       /*--- Adjustment to v.n due to grid movement. ---*/
@@ -1323,7 +1352,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
         gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
       }
       if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
+        for(auto iDim = 0u; iDim < nDim; iDim++) {
           /*--- Multiply by density since we are correcting conservative variables. ---*/
           gridVel[iDim] *= nodes->GetDensity(iPoint);
         }
@@ -1352,7 +1381,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
        * J_new = (I - n * n^T) * J where n = {0, nx, ny, nz, 0, ...} ---*/
       su2double mat[MAXNVAR * MAXNVAR] = {};
 
-      for (auto iVar = 0u; iVar < nVar; iVar++) mat[iVar * nVar + iVar] = 1;
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        mat[iVar * nVar + iVar] = 1;
       for (auto iDim = 0u; iDim < nDim; iDim++)
         for (auto jDim = 0u; jDim < nDim; jDim++)
           mat[(iDim + iVel) * nVar + jDim + iVel] -= UnitNormal[iDim] * UnitNormal[jDim];
@@ -1364,7 +1394,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
         CBlasStructure().gemm(nVar, nVar, nVar, mat, jac, newJac, config);
 
-        for (auto iVar = 0u; iVar < nVar * nVar; iVar++) block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
+        for (auto iVar = 0u; iVar < nVar * nVar; iVar++)
+          block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
       };
       ModifyJacobian(iPoint);
       for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
@@ -1383,6 +1414,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     }
   }
   END_SU2_OMP_FOR
+
 }
 
 template <class V, ENUM_REGIME R>
@@ -1521,7 +1553,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
               visc_numerics->SetNormal(Normal);
               su2double Coord_Reflected[MAXNDIM];
               GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-                                                 geometry->nodes->GetCoord(iPoint), Coord_Reflected);
+                                                        geometry->nodes->GetCoord(iPoint), Coord_Reflected);
               visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), Coord_Reflected);
 
               /*--- Primitive variables, and gradient ---*/
@@ -1628,16 +1660,14 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry* geometry, const CSolver* const* solvers,
-                                                CConfig* config) {
-  using Double = typename V::Double;
-  using Int = typename V::Int;
+void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
+                                                const CSolver* const* solvers,
+                                                CConfig *config) {
   if (!edgeNumerics) {
-    if (!ReducerStrategy && (omp_get_max_threads() > 1) && (config->GetEdgeColoringGroupSize() % Double::Size != 0)) {
-      SU2_MPI::Error(
-          "When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
-          "by the SIMD length (2, 4, or 8).",
-          CURRENT_FUNCTION);
+    if (!ReducerStrategy && (omp_get_max_threads() > 1) &&
+        (config->GetEdgeColoringGroupSize() % Double::Size != 0)) {
+      SU2_MPI::Error("When using vectorization, the EDGE_COLORING_GROUP_SIZE must be divisible "
+                     "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
     }
     InstantiateEdgeNumerics(solvers, config);
 
@@ -1654,24 +1684,22 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry* geometry, const
   END_SU2_OMP_MASTER
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
-   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
+  * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
   bool pausePreacc = false;
-  if (ReducerStrategy)
-    pausePreacc = AD::PausePreaccumulation();
-  else
-    AD::StartNoSharedReading();
+  if (ReducerStrategy) pausePreacc = AD::PausePreaccumulation();
+  else AD::StartNoSharedReading();
 
   /*--- Loop over edge colors. ---*/
   for (auto color : EdgeColoring) {
     /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
     SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-    for (auto k = 0ul; k < color.size; k += Double::Size) {
+    for(auto k = 0ul; k < color.size; k += Double::Size) {
       Int iEdge;
       Double mask;
       for (auto j = 0ul; j < Double::Size; ++j) {
-        bool in = (k + j < color.size);
+        bool in = (k+j < color.size);
         mask[j] = in;
-        iEdge[j] = color.indices[k + j * in];
+        iEdge[j] = color.indices[k+j*in];
       }
 
       if (ReducerStrategy) {
@@ -1680,7 +1708,8 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry* geometry, const
         edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
       }
       if (MGLevel == MESH_0) {
-        for (auto j = 0ul; j < Double::Size; ++j) counterLocal += (nodes->NonPhysicalEdgeCounter[iEdge[j]] > 0);
+        for (auto j = 0ul; j < Double::Size; ++j)
+          counterLocal += (nodes->NonPhysicalEdgeCounter[iEdge[j]] > 0);
       }
     }
     END_SU2_OMP_FOR
@@ -1691,12 +1720,14 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry* geometry, const
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SumEdgeFluxes(const CGeometry* geometry) {
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
     LinSysRes.SetBlock_Zero(iPoint);
 
     for (auto iEdge : geometry->nodes->GetEdges(iPoint)) {
-      if (iPoint == geometry->edges->GetNode(iEdge, 0))
+      if (iPoint == geometry->edges->GetNode(iEdge,0))
         LinSysRes.AddBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
       else
         LinSysRes.SubtractBlock(iPoint, EdgeFluxes.GetBlock(iEdge));
@@ -1706,9 +1737,9 @@ void CFVMFlowSolverBase<V, R>::SumEdgeFluxes(const CGeometry* geometry) {
 }
 
 template <class V, ENUM_REGIME FlowRegime>
-void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container,
-                                                             CConfig* config, unsigned short iRKStep,
-                                                             unsigned short iMesh, unsigned short RunTime_EqSystem) {
+void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container,
+                                                             CConfig *config, unsigned short iRKStep, unsigned short iMesh,
+                                                             unsigned short RunTime_EqSystem) {
   /*--- Local variables ---*/
 
   unsigned short iVar, iMarker, iDim, iNeigh;
@@ -1730,18 +1761,20 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry* geometry
   /*--- Compute the dual time-stepping source term for static meshes ---*/
 
   if (!dynamic_grid) {
+
     /*--- Loop over all nodes (excluding halos) ---*/
 
     AD::StartNoSharedReading();
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
       /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
        we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
        previous solutions that are stored in memory. ---*/
 
       U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
-      U_time_n = nodes->GetSolution_time_n(iPoint);
+      U_time_n   = nodes->GetSolution_time_n(iPoint);
       U_time_nP1 = nodes->GetSolution(iPoint);
 
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
@@ -1753,16 +1786,17 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry* geometry
        time discretization scheme (1st- or 2nd-order).---*/
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        if (first_order) LinSysRes(iPoint, iVar) += (U_time_nP1[iVar] - U_time_n[iVar]) * Volume_nP1 / TimeStep;
+        if (first_order)
+          LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*Volume_nP1 / TimeStep;
         if (second_order)
-          LinSysRes(iPoint, iVar) +=
-              (3.0 * U_time_nP1[iVar] - 4.0 * U_time_n[iVar] + 1.0 * U_time_nM1[iVar]) * Volume_nP1 / (2.0 * TimeStep);
+          LinSysRes(iPoint,iVar) += ( 3.0*U_time_nP1[iVar] - 4.0*U_time_n[iVar]
+                                     +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
       }
 
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
       if (implicit) {
-        if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1 / TimeStep);
-        if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1 * 3.0) / (2.0 * TimeStep));
+        if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1/TimeStep);
+        if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
       }
     }
     END_SU2_OMP_FOR
@@ -1772,6 +1806,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry* geometry
   }
 
   else {
+
     /*--- For unsteady flows on dynamic meshes (rigidly transforming or
      dynamically deforming), the Geometric Conservation Law (GCL) should be
      satisfied in conjunction with the ALE formulation of the governing
@@ -1782,10 +1817,12 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry* geometry
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+
       GridVel_i = geometry->nodes->GetGridVel(iPoint);
       U_time_n = nodes->GetSolution_time_n(iPoint);
 
       for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+
         iEdge = geometry->nodes->GetEdge(iPoint, iNeigh);
         Normal = geometry->edges->GetNormal(iEdge);
 
@@ -1793,12 +1830,14 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry* geometry
         GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
         /*--- Determine whether to consider the normal outward or inward. ---*/
-        su2double dir = (iPoint < jPoint) ? 0.5 : -0.5;
+        su2double dir = (iPoint < jPoint)? 0.5 : -0.5;
 
         Residual_GCL = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Residual_GCL += dir * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
+        for (iDim = 0; iDim < nDim; iDim++)
+          Residual_GCL += dir*(GridVel_i[iDim]+GridVel_j[iDim])*Normal[iDim];
 
-        for (iVar = 0; iVar < nVar; iVar++) LinSysRes(iPoint, iVar) += U_time_n[iVar] * Residual_GCL;
+        for (iVar = 0; iVar < nVar; iVar++)
+          LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
       }
     }
     END_SU2_OMP_FOR
@@ -1809,8 +1848,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry* geometry
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+
         SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
           /*--- Get the index for node i plus the boundary face normal ---*/
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1824,12 +1865,14 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry* geometry
            normal. The normal is negated to match the boundary convention. ---*/
 
           Residual_GCL = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) Residual_GCL -= 0.5 * (GridVel_i[iDim] + GridVel_i[iDim]) * Normal[iDim];
+          for (iDim = 0; iDim < nDim; iDim++)
+            Residual_GCL -= 0.5*(GridVel_i[iDim]+GridVel_i[iDim])*Normal[iDim];
 
           /*--- Compute the GCL component of the source term for node i ---*/
 
           U_time_n = nodes->GetSolution_time_n(iPoint);
-          for (iVar = 0; iVar < nVar; iVar++) LinSysRes(iPoint, iVar) += U_time_n[iVar] * Residual_GCL;
+          for (iVar = 0; iVar < nVar; iVar++)
+            LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
         }
         END_SU2_OMP_FOR
       }
@@ -1842,12 +1885,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry* geometry
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
       /*--- Retrieve the solution at time levels n-1, n, and n+1. Note that
        we are currently iterating on U^n+1 and that U^n & U^n-1 are fixed,
        previous solutions that are stored in memory. ---*/
 
       U_time_nM1 = nodes->GetSolution_time_n1(iPoint);
-      U_time_n = nodes->GetSolution_time_n(iPoint);
+      U_time_n   = nodes->GetSolution_time_n(iPoint);
       U_time_nP1 = nodes->GetSolution(iPoint);
 
       /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
@@ -1862,22 +1906,24 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry* geometry
        due to the time discretization has a new form.---*/
 
       for (iVar = 0; iVar < nVar; iVar++) {
-        if (first_order) LinSysRes(iPoint, iVar) += (U_time_nP1[iVar] - U_time_n[iVar]) * (Volume_nP1 / TimeStep);
+        if (first_order)
+          LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(Volume_nP1/TimeStep);
         if (second_order)
-          LinSysRes(iPoint, iVar) += (U_time_nP1[iVar] - U_time_n[iVar]) * (3.0 * Volume_nP1 / (2.0 * TimeStep)) +
-                                     (U_time_nM1[iVar] - U_time_n[iVar]) * (Volume_nM1 / (2.0 * TimeStep));
+          LinSysRes(iPoint,iVar) += (U_time_nP1[iVar] - U_time_n[iVar])*(3.0*Volume_nP1/(2.0*TimeStep))
+                                     + (U_time_nM1[iVar] - U_time_n[iVar])*(Volume_nM1/(2.0*TimeStep));
       }
 
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
       if (implicit) {
-        if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1 / TimeStep);
-        if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1 * 3.0) / (2.0 * TimeStep));
+        if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1/TimeStep);
+        if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1*3.0)/(2.0*TimeStep));
       }
     }
     END_SU2_OMP_FOR
 
     AD::EndNoSharedReading();
   }
+
 }
 
 template <class V, ENUM_REGIME FlowRegime>
@@ -2071,8 +2117,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
               SurfaceInvCoeff.CL[iMarker_Monitoring] += InvCoeff.CL[iMarker];
               SurfaceInvCoeff.CD[iMarker_Monitoring] += InvCoeff.CD[iMarker];
               SurfaceInvCoeff.CSF[iMarker_Monitoring] += InvCoeff.CSF[iMarker];
-              SurfaceInvCoeff.CEff[iMarker_Monitoring] =
-                  SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
+              SurfaceInvCoeff.CEff[iMarker_Monitoring] = SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
               SurfaceInvCoeff.CFx[iMarker_Monitoring] += InvCoeff.CFx[iMarker];
               SurfaceInvCoeff.CFy[iMarker_Monitoring] += InvCoeff.CFy[iMarker];
               SurfaceInvCoeff.CFz[iMarker_Monitoring] += InvCoeff.CFz[iMarker];
@@ -2363,8 +2408,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
             SurfaceMntCoeff.CL[iMarker_Monitoring] += MntCoeff.CL[iMarker];
             SurfaceMntCoeff.CD[iMarker_Monitoring] += MntCoeff.CD[iMarker];
             SurfaceMntCoeff.CSF[iMarker_Monitoring] += MntCoeff.CSF[iMarker];
-            SurfaceMntCoeff.CEff[iMarker_Monitoring] =
-                SurfaceMntCoeff.CL[iMarker_Monitoring] / (SurfaceMntCoeff.CD[iMarker_Monitoring] + EPS);
+            SurfaceMntCoeff.CEff[iMarker_Monitoring] = SurfaceMntCoeff.CL[iMarker_Monitoring] / (SurfaceMntCoeff.CD[iMarker_Monitoring] + EPS);
             SurfaceMntCoeff.CFx[iMarker_Monitoring] += MntCoeff.CFx[iMarker];
             SurfaceMntCoeff.CFy[iMarker_Monitoring] += MntCoeff.CFy[iMarker];
             SurfaceMntCoeff.CFz[iMarker_Monitoring] += MntCoeff.CFz[iMarker];
@@ -2491,8 +2535,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
-  su2double Viscosity = 0.0, Area, Density = 0.0, FrictionVel, UnitNormal[3] = {0.0}, TauElem[3] = {0.0},
-            Tau[3][3] = {{0.0}}, thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
+  su2double Viscosity = 0.0, Area, Density = 0.0, FrictionVel,
+            UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}},
+            thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
             Grad_Temp_ve[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
   const su2double minYPlus = config->GetwallModel_MinYPlus();
@@ -2529,6 +2574,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   /*--- Loop over the Navier-Stokes markers ---*/
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
+
     if (!config->GetViscous_Wall(iMarker)) continue;
     const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
@@ -2615,7 +2661,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       /*--- For wall functions, the wall stresses need to be scaled by the wallfunction stress Tau_Wall---*/
       su2double Tau_Wall, scale;
-      if (wallfunctions && (YPlus[iMarker][iVertex] > minYPlus)) {
+      if (wallfunctions && (YPlus[iMarker][iVertex] > minYPlus)){
         Tau_Wall = nodes->GetTau_Wall(iPoint);
         scale = Tau_Wall / WallShearStress[iMarker][iVertex];
         for (iDim = 0; iDim < nDim; iDim++) {
@@ -2627,7 +2673,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       }
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        CSkinFriction[iMarker](iVertex, iDim) = TauTangent[iDim] * factorFric;
+        CSkinFriction[iMarker](iVertex,iDim) = TauTangent[iDim] * factorFric;
       }
 
       /*--- Compute non-dimensional velocity and y+ ---*/
@@ -2674,6 +2720,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           HeatFlux[iMarker][iVertex] = thermal_conductivity * dTdn * RefHeatFlux;
         }
       } else {
+
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
 
@@ -2681,11 +2728,12 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         const su2double dTvedn = -GeometryToolbox::DotProduct(nDim, Grad_Temp_ve, UnitNormal);
 
         /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux ---*/
-        HeatFlux[iMarker][iVertex] = -(thermal_conductivity_tr * dTdn + thermal_conductivity_ve * dTvedn);
+        HeatFlux[iMarker][iVertex] = -(thermal_conductivity_tr*dTdn + thermal_conductivity_ve*dTvedn);
 
         /*--- Compute enthalpy transport to surface due to mass diffusion ---*/
         bool catalytic = config->GetCatalytic_Wall(iMarker);
-        if (catalytic) {
+        if (catalytic){
+
           const auto nSpecies = config->GetnSpecies();
           const auto& Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
           const auto& PrimVar = nodes->GetPrimitive(iPoint);
@@ -2696,14 +2744,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           su2double sumJhs = 0.0;
           for (auto iSpecies = 0u; iSpecies < nSpecies; iSpecies++) {
             for (auto iDim = 0u; iDim < nDim; iDim++) {
-              su2double dYdn =
-                  1.0 / rho *
-                  (Grad_PrimVar[iSpecies][iDim] - PrimVar[iSpecies] * Grad_PrimVar[prim_idx.Density()][iDim] / rho);
-              sumJhs += rho * Ds[iSpecies] * hs[iSpecies] * dYdn * UnitNormal[iDim];
+              su2double dYdn = 1.0/rho*(Grad_PrimVar[iSpecies][iDim] - PrimVar[iSpecies]*Grad_PrimVar[prim_idx.Density()][iDim]/rho);
+              sumJhs += rho*Ds[iSpecies]*hs[iSpecies]*dYdn*UnitNormal[iDim];
             }
           }
           /*--- Surface energy balance: mass diffusion ---*/
           HeatFlux[iMarker][iVertex] += sumJhs;
+
         }
       }
 
@@ -2810,8 +2857,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           SurfaceViscCoeff.CL[iMarker_Monitoring] += ViscCoeff.CL[iMarker];
           SurfaceViscCoeff.CD[iMarker_Monitoring] += ViscCoeff.CD[iMarker];
           SurfaceViscCoeff.CSF[iMarker_Monitoring] += ViscCoeff.CSF[iMarker];
-          SurfaceViscCoeff.CEff[iMarker_Monitoring] =
-              SurfaceViscCoeff.CL[iMarker_Monitoring] / (SurfaceViscCoeff.CD[iMarker_Monitoring] + EPS);
+          SurfaceViscCoeff.CEff[iMarker_Monitoring] = SurfaceViscCoeff.CL[iMarker_Monitoring] / (SurfaceViscCoeff.CD[iMarker_Monitoring] + EPS);
           SurfaceViscCoeff.CFx[iMarker_Monitoring] += ViscCoeff.CFx[iMarker];
           SurfaceViscCoeff.CFy[iMarker_Monitoring] += ViscCoeff.CFy[iMarker];
           SurfaceViscCoeff.CFz[iMarker_Monitoring] += ViscCoeff.CFz[iMarker];
@@ -2950,15 +2996,18 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   }
 
   Buffet_Monitoring(geometry, config);
+
 }
 
-template <class V, ENUM_REGIME R>
-su2double CFVMFlowSolverBase<V, R>::EvaluateCommonObjFunc(const CConfig& config) const {
+template<class V, ENUM_REGIME R>
+su2double CFVMFlowSolverBase<V,R>::EvaluateCommonObjFunc(const CConfig& config) const {
+
   su2double objFun = 0.0;
 
   /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
 
   for (auto iMarker = 0u; iMarker < config.GetnMarker_Monitoring(); iMarker++) {
+
     const auto weight = config.GetWeight_ObjFunc(iMarker);
 
     switch (config.GetKind_ObjFunc(iMarker)) {
@@ -3018,7 +3067,7 @@ su2double CFVMFlowSolverBase<V, R>::EvaluateCommonObjFunc(const CConfig& config)
       objFun += weight * Total_HeatFluxDiff;
       break;
     case EQUIVALENT_AREA:
-      objFun += weight * Total_CEquivArea;
+      objFun += weight*Total_CEquivArea;
       break;
     case THRUST_COEFFICIENT:
       objFun += weight * TotalCoeff.CT;
@@ -3073,20 +3122,21 @@ su2double CFVMFlowSolverBase<V, R>::EvaluateCommonObjFunc(const CConfig& config)
 }
 
 template <class V, ENUM_REGIME FlowRegime>
-void CFVMFlowSolverBase<V, FlowRegime>::ComputeAxisymmetricAuxGradients(CGeometry* geometry, const CConfig* config) {
+void CFVMFlowSolverBase<V, FlowRegime>::ComputeAxisymmetricAuxGradients(CGeometry *geometry, const CConfig* config) {
+
   /*--- Loop through all points to set the auxvargrad --*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    su2double yCoord = geometry->nodes->GetCoord(iPoint, 1);
-    su2double yVelocity = nodes->GetVelocity(iPoint, 1);
-    su2double xVelocity = nodes->GetVelocity(iPoint, 0);
+    su2double yCoord          = geometry->nodes->GetCoord(iPoint, 1);
+    su2double yVelocity       = nodes->GetVelocity(iPoint,1);
+    su2double xVelocity       = nodes->GetVelocity(iPoint,0);
     su2double Total_Viscosity = nodes->GetLaminarViscosity(iPoint) + nodes->GetEddyViscosity(iPoint);
 
-    if (yCoord > EPS) {
-      su2double nu_v_on_y = Total_Viscosity * yVelocity / yCoord;
+    if (yCoord > EPS){
+      su2double nu_v_on_y = Total_Viscosity*yVelocity/yCoord;
       nodes->SetAuxVar(iPoint, 0, nu_v_on_y);
-      nodes->SetAuxVar(iPoint, 1, nu_v_on_y * yVelocity);
-      nodes->SetAuxVar(iPoint, 2, nu_v_on_y * xVelocity);
+      nodes->SetAuxVar(iPoint, 1, nu_v_on_y*yVelocity);
+      nodes->SetAuxVar(iPoint, 2, nu_v_on_y*xVelocity);
     }
   }
   END_SU2_OMP_FOR
