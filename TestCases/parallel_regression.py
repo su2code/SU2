@@ -315,9 +315,9 @@ def main():
     test_list.append(flatplate_udobj)
 
     # Probe performance test (15 probes, ADT path) - tests issue #2546 fix
-    probe_performance           = TestCase('probe_performance_15')
-    probe_performance.cfg_dir   = "user_defined_functions"
-    probe_performance.cfg_file  = "lam_flatplate_probes.cfg"
+    probe_performance = TestCase('probe_performance_15')
+    probe_performance.cfg_dir = "user_defined_functions"
+    probe_performance.cfg_file = "lam_flatplate_probes.cfg"
     probe_performance.test_iter = 20
     probe_performance.test_vals = [-6.676934, 99047.0, 98854.0, 98775.0]  # RMS_DENSITY, probe1, probe8, probe15
     test_list.append(probe_performance)
