@@ -120,11 +120,9 @@ class Driver:
         # write inputs
         self._write_input(x)
 
-        # clear previous output and run direct solver
-        try:
+        # clear previous output if present and run direct solver
+        if os.path.exists(self._objValFile):
             os.remove(self._objValFile)
-        except:
-            pass
 
         try:
             sp.call(self._objValCommand, shell=True)
@@ -136,7 +134,7 @@ class Driver:
                     break
             # the return code of mpirun is useless, we test the value of the function
             self._assert_isfinite(val)
-        except:
+        except Exception:
             raise RuntimeError("Objective function evaluation failed")
         # end
 
@@ -147,11 +145,9 @@ class Driver:
     def obj_der(self, x):
         # inputs written in obj_val_driver
 
-        # clear previous output and run direct solver
-        try:
+        # clear previous output if present and run direct solver
+        if os.path.exists(self._objDerFile):
             os.remove(self._objDerFile)
-        except:
-            pass
         N = x.shape[0]
         y = np.ndarray((N,))
 
@@ -167,7 +163,7 @@ class Driver:
                 self._assert_isfinite(val)
                 y[i] = val * obj_scale / var_scale
             # end
-        except:
+        except Exception:
             raise RuntimeError("Objective gradient evaluation failed")
         # end
 
@@ -186,7 +182,7 @@ class Driver:
                     val = float(lines[1].split(",")[col])
                     break
             self._assert_isfinite(val)
-        except:
+        except Exception:
             raise RuntimeError("Constraint function evaluation failed")
         # end
 
@@ -197,11 +193,9 @@ class Driver:
     def con_der(self, x):
         # inputs written in obj_val_driver
 
-        # clear previous output and run solver
-        try:
+        # clear previous output if present and run solver
+        if os.path.exists(self._conDerFile):
             os.remove(self._conDerFile)
-        except:
-            pass
         N = x.shape[0]
         y = np.ndarray((N,))
 
@@ -217,7 +211,7 @@ class Driver:
                 self._assert_isfinite(val)
                 y[i] = val * con_scale / var_scale
             # end
-        except:
+        except Exception:
             raise RuntimeError("Constraint function evaluation failed")
         # end
 
@@ -295,7 +289,7 @@ class IncrParam:
         return self._value == self._maxi
 
     def value(self):
-        if self._func == None:
+        if self._func is None:
             return self._value
         else:
             return self._func(self._value)

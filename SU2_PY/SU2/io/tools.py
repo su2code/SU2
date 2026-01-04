@@ -45,18 +45,17 @@ def read_gradients(Grad_filename, scale=1.0):
     """
 
     # open file and skip first line
-    gradfile = open(Grad_filename)
-    gradfile.readline()
+    with open(Grad_filename) as gradfile:
+        gradfile.readline()
 
-    # read values
-    grad_vals = []
-    for line in gradfile:
-        line = line.strip()
-        if len(line) == 0:
-            break
-        grad_vals.append(float(line) * scale)
-    #: for each line
-
+        # read values
+        grad_vals = []
+        for line in gradfile:
+            line = line.strip()
+            if len(line) == 0:
+                break
+            grad_vals.append(float(line) * scale)
+    # done
     return grad_vals
 
 
@@ -387,7 +386,7 @@ def read_aerodynamics(
                 Func_Values[key] = history_data["TAVG_" + key][-1]
     else:
         # in steady cases take only last value.
-        for key, value in Func_Values.iteritems():
+        for key, value in Func_Values.items():
             if not history_data.get(key):
                 raise KeyError(
                     "Key "
@@ -641,7 +640,7 @@ def get_dvID(kindName):
     try:
         return id_map[kindName]
     except KeyError:
-        raise Exception("Unrecognized Design Variable Name: %s", kindName)
+        raise Exception("Unrecognized Design Variable Name: %s" % kindName)
 
 
 #: def get_dvID()
@@ -652,7 +651,10 @@ def get_dvID(kindName):
 # -------------------------------------------------------------------
 
 
-def get_gradFileFormat(grad_type, plot_format, kindID, special_cases=[]):
+def get_gradFileFormat(grad_type, plot_format, kindID, special_cases=None):
+
+    if special_cases is None:
+        special_cases = []
 
     # start header, build a list of strings and join at the end
     header = []
@@ -731,7 +733,7 @@ def get_gradFileFormat(grad_type, plot_format, kindID, special_cases=[]):
         write_format.append(r", %s, %s, %s")
     elif kindID == "CST":
         header.append(r',"Up/Down","Kulfan number", "Total Kulfan numbers"')
-        write_format.append(r", %s, %s", "%s")
+        write_format.append(r", %s, %s, %s")
     elif kindID == "FAIRING":
         header.append(r',"ControlPoint_Index","Theta_Disp","R_Disp"')
         write_format.append(r", %s, %s, %s")
@@ -1062,9 +1064,11 @@ def expand_time(name, config):
             name_pat = add_suffix(name, "%05d")
             names = [name_pat % i for i in range(n_start_time, n_time)]
         else:
+            names = []  # Initialize empty list before loop
             for n in range(len(name)):
                 name_pat = add_suffix(name[n], "%05d")
-                names = [name_pat % i for i in range(n_start_time, n_time)]
+                # Use extend() to accumulate all filenames (consistent with expand_zones)
+                names.extend([name_pat % i for i in range(n_start_time, n_time)])
     else:
         if not isinstance(name, list):
             names = [name]
@@ -1170,8 +1174,8 @@ def make_link(src, dst):
             os.symlink(src, dst)
 
 
-def restart2solution(config, state={}):
-    """restart2solution(config,state={})
+def restart2solution(config, state=None):
+    """restart2solution(config, state=None)
     moves restart file to solution file,
     optionally updates state
     direct or adjoint is read from config

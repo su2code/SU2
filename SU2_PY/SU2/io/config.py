@@ -94,7 +94,7 @@ class Config(ordered_bunch):
                 self.read(filename)
             except IOError:
                 print("Could not find config file: %s" % filename)
-            except:
+            except Exception:
                 print("Unexpected error: ", sys.exc_info()[0])
                 raise
         self._filename = filename

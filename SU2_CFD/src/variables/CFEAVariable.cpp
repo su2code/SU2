@@ -54,9 +54,8 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   const bool fsi_analysis       = config->GetFSI_Simulation() || multizone;
 
   VonMises_Stress.resize(nPoint) = su2double(0.0);
-
-  if (nDim==2) Stress.resize(nPoint,3);
-  else         Stress.resize(nPoint,6);
+  /*--- For completeness we also output sigma_zz in 2D. ---*/
+  Stress.resize(nPoint, 2 * nDim);
 
   /*--- Initialization of variables ---*/
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
