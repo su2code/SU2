@@ -1142,7 +1142,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [1.084454, 1.526942, -2.895082, 2.607570, -2.479664, 3.063779, 106380.000000, 106380.000000, 5.733600, 64.737000]
+    axial_stage2D.test_vals = [1.065803, 1.519598, -2.928278, 2.573906, -2.526640, 3.017138, 106370.000000, 106370.000000, 5.726800, 64.383000]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart

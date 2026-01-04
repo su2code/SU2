@@ -123,7 +123,7 @@ public:
 
     /*--- Recompute density and enthalpy instead of reconstructing. ---*/
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umusclKappa, nkRelax, typeLimiter, V1st, vector_ij, solution);
+        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umusclKappa, nkRelax, typeLimiter, V1st, vector_ij, solution, config.GetMUSCLRampValue());
 
     /*--- Compute conservative variables. ---*/
 
