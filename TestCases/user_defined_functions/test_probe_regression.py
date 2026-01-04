@@ -68,8 +68,8 @@ def main():
             expected_map = {
                 'probe_1_linear': {'probe1': 101325},
                 'probe_5_linear': {'probe1': 101343, 'probe3': 101326, 'probe5': 101323},
-                'probe_11_adt':   {'probe1': 101406, 'probe6': 101325,  'probe11': 100928},
-                'probe_100_adt':  {'probe1': 101406, 'probe51': 101436, 'probe100': 101231}
+                'probe_11_adt': {'probe1': 101406, 'probe6': 101325, 'probe11': 100928},
+                'probe_100_adt': {'probe1': 101406, 'probe51': 101436, 'probe100': 101231}
             }
             
             try:
