@@ -125,10 +125,14 @@ def parse_output(files):
 
     _field_order = ("DESCRIPTION", "GROUP", "HEADER", "TYPE")
 
+    # IMPORTANT: Preserve insertion order.
+    # Some fields intentionally share the same HEADER string (e.g. COMBO vs CUSTOM_OBJFUNC both map to "ComboObj").
+    # SU2.io.read_history resolves header->field by iterating the Python dict in file order and letting the last match win.
+    # Therefore we must emit entries in the same order that they appear in the C++ source so that COMBO comes AFTER
+    # CUSTOM_OBJFUNC and takes precedence. Sorting the keys breaks this and makes tests fail.
     with open(out_path, "w", encoding="utf-8") as f:
         f.write("history_header_map = {\n")
-        for key in sorted(outputFields.keys()):
-            val = outputFields[key]
+        for key, val in outputFields.items():
             f.write(f"    {_dq(key)}: {{\n")
             for name in _field_order:
                 if name in val:
