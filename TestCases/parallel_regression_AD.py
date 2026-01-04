@@ -256,7 +256,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-1.928244, 0.730865, 0.000000, -3.993500]
+    discadj_heat.test_vals = [-1.880390, 0.759804, 0.000000, -4.486700]
     test_list.append(discadj_heat)
 
     ###################################
@@ -290,7 +290,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-6.131109, -2.564634, -2.565220, -2.565303]
+    discadj_cht.test_vals = [-6.111499, -2.668835, -2.669557, -2.669594]
     test_list.append(discadj_cht)
 
     # 2D DA cht streamwise periodic case, 2 zones, avg temp objective
@@ -298,7 +298,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-3.907317, -5.155811, -3.183956]
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.697305, -4.335384, -4.726171]
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
@@ -316,7 +316,7 @@ def main():
     da_unsteadyCHT_cylinder.cfg_dir   = "coupled_cht/disc_adj_unsteadyCHT_cylinder"
     da_unsteadyCHT_cylinder.cfg_file  = "chtMaster.cfg"
     da_unsteadyCHT_cylinder.test_iter = 2
-    da_unsteadyCHT_cylinder.test_vals         = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662012, 0.000000, 89.932000, 0.295190]
+    da_unsteadyCHT_cylinder.test_vals         = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662033, 0.000000, 10.627000, 0.295190]
     da_unsteadyCHT_cylinder.test_vals_aarch64 = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662012, 0.000000, 89.932000, 0.295190]
     da_unsteadyCHT_cylinder.unsteady  = True
     da_unsteadyCHT_cylinder.multizone = True

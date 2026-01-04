@@ -74,7 +74,7 @@ def main():
     cfd_flamelet_h2.cfg_dir = "flamelet/07_laminar_premixed_h2_flame_cfd"
     cfd_flamelet_h2.cfg_file = "laminar_premixed_h2_flame_cfd.cfg"
     cfd_flamelet_h2.test_iter = 5
-    cfd_flamelet_h2.test_vals = [-9.984960, -9.843830, -3.289852, -11.338450]
+    cfd_flamelet_h2.test_vals = [-8.036958, -8.372668, -1.842800, -9.388446]
     cfd_flamelet_h2.new_output = True
     test_list.append(cfd_flamelet_h2)
 

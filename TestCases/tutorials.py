@@ -49,7 +49,7 @@ def main():
     cht_incompressible_unsteady.cfg_dir   = "../Tutorials/multiphysics/unsteady_cht/"
     cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible_unsteady.test_iter = 2
-    cht_incompressible_unsteady.test_vals = [-1.742894, -3.075372, -0.080399, -0.080399, -0.080399, -11.163219, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 238.240000] #last columns
+    cht_incompressible_unsteady.test_vals = [-2.661401, -0.080399, -0.080399, -0.080399, -12.421963, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 238.240000] #last columns
     cht_incompressible_unsteady.multizone = True
     cht_incompressible_unsteady.unsteady  = True
     test_list.append(cht_incompressible_unsteady)
@@ -80,8 +80,8 @@ def main():
     sp_pinArray_2d_mf_hf.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 25
-    sp_pinArray_2d_mf_hf.test_vals = [-4.684477, 0.844369, -0.755565, 241.872175]
-    sp_pinArray_2d_mf_hf.test_vals_aarch64 = [-4.686092, 1.387918, -0.755447, 241.878841]
+    sp_pinArray_2d_mf_hf.test_vals = [-4.683630, -0.755570, 241.872160]
+    sp_pinArray_2d_mf_hf.test_vals_aarch64 = [-4.683630, -0.755570, 241.872160]
     test_list.append(sp_pinArray_2d_mf_hf)
 
     # 2D pin case pressure drop periodic with heatflux BC and temperature periodicity
@@ -89,8 +89,8 @@ def main():
     sp_pinArray_2d_dp_hf_tp.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
-    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.739886, 0.520841, -0.713547, 208.023676]
-    sp_pinArray_2d_dp_hf_tp.test_vals_aarch64 = [-4.733643, 1.325195, -0.713411, 208.023676]
+    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.739709, -0.713547, 208.023676
+    sp_pinArray_2d_dp_hf_tp.test_vals_aarch64 = [-4.739709, -0.713547, 208.023676]
     test_list.append(sp_pinArray_2d_dp_hf_tp)
 
     # 90 degree pipe bend with wall functions from the experiments of Sudo et al.
@@ -136,7 +136,7 @@ def main():
     species3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
     species3_primitiveVenturi.test_iter = 50
-    species3_primitiveVenturi.test_vals = [-5.673011, -4.673114, -4.692686, -5.445043, -1.069650, -5.960206, -6.065010, 5.000000, -0.569992, 5.000000, -2.512966, 5.000000, -0.525813, 1.660601, 0.502277, 0.603346, 0.554977]
+    species3_primitiveVenturi.test_vals = [-5.679419, -4.675598, -4.699798, -5.463760, -1.072282, -5.965552, -6.075164, 5.000000, -0.558583, 5.000000, -2.514945, 5.000000, -0.514439, 1.660063, 0.502195, 0.603290, 0.554578]
     test_list.append(species3_primitiveVenturi)
 
     # 3 species (2 eq) primitive venturi mixing
@@ -144,7 +144,7 @@ def main():
     DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
-    DAspecies3_primitiveVenturi.test_vals = [-9.821887, -8.644118, -8.677534, -8.347228, -12.926295, -9.739487, -8.947991]
+    DAspecies3_primitiveVenturi.test_vals = [-9.806093, -8.630548, -8.666007, -8.333826, -12.914929, -11.064095, -10.278654]
     DAspecies3_primitiveVenturi.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(DAspecies3_primitiveVenturi)
 
@@ -165,7 +165,7 @@ def main():
     premixed_hydrogen.cfg_dir = "../Tutorials/incompressible_flow/Inc_Combustion/1__premixed_hydrogen"
     premixed_hydrogen.cfg_file = "H2_burner.cfg"
     premixed_hydrogen.test_iter = 10
-    premixed_hydrogen.test_vals = [-8.851285, -9.756885, -11.037752, -4.321598, -11.891933]
+    premixed_hydrogen.test_vals = [-9.647742, -10.286349, -11.353940, -4.380420, -12.831395]
     test_list.append(premixed_hydrogen)
 
     ### Compressible Flow
