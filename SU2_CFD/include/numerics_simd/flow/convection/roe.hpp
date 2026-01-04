@@ -98,7 +98,7 @@ public:
     AD::StartPreacc();
 
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    const auto umusclRamp = config.GetMUSCLRampValue() * config.GetNewtonKrylovRelaxation();
+    const su2double umusclRamp = config.GetMUSCLRampValue() * config.GetNewtonKrylovRelaxation();
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
 
     const auto iPoint = geometry.edges->GetNode(iEdge,0);
