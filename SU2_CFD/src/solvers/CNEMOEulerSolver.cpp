@@ -466,9 +466,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
-  const su2double nkRelax     = config->GetNewtonKrylovRelaxation();
 
   const su2double kappa       = config->GetMUSCL_Kappa_Flow();
+  const su2double musclRamp   = config->GetMUSCLRampValue() * config->GetNewtonKrylovRelaxation();
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
@@ -542,8 +542,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
         const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-        Project_Grad_i[iVar] = nkRelax * MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa, config->GetMUSCLRampValue());
-        Project_Grad_j[iVar] = nkRelax * MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa, config->GetMUSCLRampValue());
+        Project_Grad_i[iVar] = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa, musclRamp);
+        Project_Grad_j[iVar] = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa, musclRamp);
 
         if (limiter) {
           if (van_albada) {

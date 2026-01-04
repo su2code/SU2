@@ -587,10 +587,11 @@ public:
    * \param[in] vector_ij - Distance vector.
    * \param[in] delta_ij - Centered difference.
    * \param[in] kappa - Blending coefficient for U-MUSCL reconstruction.
-   * \param[in] ramp_val - Value of the ramp
+   * \param[in] ramp_val - Value of the 1st-2nd order MUSCL ramp.
    * \return - Projected variable.
    */
-  inline su2double MUSCL_Reconstruction(const su2double* grad, const su2double* vector_ij, su2double delta_ij, su2double kappa, su2double ramp_val) {
+  FORCEINLINE su2double MUSCL_Reconstruction(const su2double* grad, const su2double* vector_ij, su2double delta_ij,
+                                             su2double kappa, su2double ramp_val) const {
     su2double project_grad = GeometryToolbox::DotProduct(nDim, grad, vector_ij);
     return ramp_val * LimiterHelpers<>::umusclProjection(project_grad, delta_ij, kappa);
   }
