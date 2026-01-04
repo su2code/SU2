@@ -384,13 +384,23 @@ def main():
     turb_flatplate.test_vals = [-4.297192, -6.731227, -0.187632, 0.057700]
     test_list.append(turb_flatplate)
 
-    # Flat plate Restart with SST from SA
-    turb_SST_flatplate_restart = TestCase('turb_SST_flatplate_restart')
-    turb_SST_flatplate_restart.cfg_dir = "rans/flatplate"
-    turb_SST_flatplate_restart.cfg_file = "turb_SST_flatplate_restart.cfg"
-    turb_SST_flatplate_restart.test_iter = 10
-    turb_SST_flatplate_restart.test_vals = [] 
-    test_list.append(turb_SST_flatplate_restart)
+    test_list.append(turb_flatplate)
+
+    # Euler precursor for restart test
+    euler_NACA0012_precursor           = TestCase('euler_NACA0012_precursor')
+    euler_NACA0012_precursor.cfg_dir   = "rans/naca0012"
+    euler_NACA0012_precursor.cfg_file  = "euler_NACA0012_precursor.cfg"
+    euler_NACA0012_precursor.test_iter = 10
+    euler_NACA0012_precursor.test_vals = [0.132688, 0.056260, -1.210312, 1.164664] # CL, CD, rho, rho*v
+    test_list.append(euler_NACA0012_precursor)
+
+    # SA Restart from Euler (tests missing field initialization)
+    turb_SA_restart_test           = TestCase('turb_SA_restart_test')
+    turb_SA_restart_test.cfg_dir   = "rans/naca0012"
+    turb_SA_restart_test.cfg_file  = "turb_SA_restart_test.cfg"
+    turb_SA_restart_test.test_iter = 10
+    turb_SA_restart_test.test_vals = [0.169344, -0.030184, 0.051485, 1.474687] # CL, CD, rho, nu
+    test_list.append(turb_SA_restart_test)
 
     # Flat plate (compressible) with species inlet
     turb_flatplate_species           = TestCase('turb_flatplate_species')
