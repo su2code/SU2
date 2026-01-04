@@ -385,9 +385,9 @@ def main():
     test_list.append(turb_flatplate)
 
     # Flat plate Restart with SST from SA
-    turb_SST_flatplate_restart           = TestCase('turb_SST_flatplate_restart')
-    turb_SST_flatplate_restart.cfg_dir   = "rans/flatplate"
-    turb_SST_flatplate_restart.cfg_file  = "turb_SST_flatplate_restart.cfg"
+    turb_SST_flatplate_restart = TestCase('turb_SST_flatplate_restart')
+    turb_SST_flatplate_restart.cfg_dir = "rans/flatplate"
+    turb_SST_flatplate_restart.cfg_file = "turb_SST_flatplate_restart.cfg"
     turb_SST_flatplate_restart.test_iter = 10
     turb_SST_flatplate_restart.test_vals = [] 
     test_list.append(turb_SST_flatplate_restart)
