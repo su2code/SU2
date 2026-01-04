@@ -429,9 +429,7 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const C
   auto& limiter = nodes->GetLimiter_Primitive();
 
   computeLimiters(kindLimiter, this, MPI_QUANTITIES::PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2,
-<<<<<<< HEAD
                   *geometry, *config, 0, nPrimVarGrad, umusclKappa, primitives, gradient, primMin, primMax, limiter);
->>>>>>> 848802452b (Refactor restart loading to use static polymorphism and existing node defaults)
 }
 
 template <class V, ENUM_REGIME R>
@@ -1632,6 +1630,8 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry* geometry, const CSolver* const* solvers,
                                                 CConfig* config) {
+  using Double = typename V::Double;
+  using Int = typename V::Int;
   if (!edgeNumerics) {
     if (!ReducerStrategy && (omp_get_max_threads() > 1) && (config->GetEdgeColoringGroupSize() % Double::Size != 0)) {
       SU2_MPI::Error(
@@ -2491,15 +2491,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
-<<<<<<< HEAD
   su2double Viscosity = 0.0, Area, Density = 0.0, FrictionVel, UnitNormal[3] = {0.0}, TauElem[3] = {0.0},
             Tau[3][3] = {{0.0}}, thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
             Grad_Temp_ve[3] = {0.0}, AxiFactor;
-=======
-  su2double Viscosity = 0.0, Area, Density = 0.0, FrictionVel, UnitNormal[3] = {0.0}, TauElem[3] = {0.0},
-            Tau[3][3] = {{0.0}}, Cp, thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}},
-            Grad_Temp[3] = {0.0}, Grad_Temp_ve[3] = {0.0}, AxiFactor;
->>>>>>> 848802452b (Refactor restart loading to use static polymorphism and existing node defaults)
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
   const su2double minYPlus = config->GetwallModel_MinYPlus();
 
