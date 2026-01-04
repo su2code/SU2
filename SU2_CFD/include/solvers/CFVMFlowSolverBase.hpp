@@ -363,6 +363,35 @@ class CFVMFlowSolverBase : public CSolver {
                         su2double* RestartSolution = nullptr, unsigned short nVar_Restart = 0);
 
   /*!
+   * \brief Load restart solution fields using template specialization based on flow regime.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] update_geo - Flag for updating coords and grid velocity.
+   * \param[in] static_fsi - Flag for static FSI problems.
+   * \param[in] steady_restart - Flag for steady restart.
+   * \param[in] SolutionRestart - Optional solution restart buffer.
+   * \param[in] nVar_Restart - Number of restart variables.
+   * \param[in] restart_filename - Name of the restart file.
+   */
+  void LoadRestartSolutionFields(CGeometry **geometry, CSolver ***solver, CConfig *config,
+                                  bool update_geo, bool static_fsi, bool steady_restart,
+                                  su2double* SolutionRestart, unsigned short nVar_Restart,
+                                  const string& restart_filename);
+
+  /*!
+   * \brief Helper function to load grid data (coordinates and velocities) from restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint_Local - Local point index.
+   * \param[in] baseIndex - Base index in restart data array.
+   * \param[in] update_geo - Flag for updating coords and grid velocity.
+   * \param[in] static_fsi - Flag for static FSI problems.
+   * \param[in] steady_restart - Flag for steady restart.
+   */
+  void LoadRestartGridData(CGeometry **geometry, long iPoint_Local, unsigned long baseIndex,
+                           bool update_geo, bool static_fsi, bool steady_restart);
+
+  /*!
    * \brief Generic implementation to compute the time step based on CFL and conv/visc eigenvalues.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
