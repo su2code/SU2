@@ -820,18 +820,23 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
   const bool axisymmetric = config->GetAxisymmetric();
   const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
 
-  /*--- Check if we have any probes that need processing. If so, build ADT once for efficient nearest neighbor search. ---*/
-  bool hasProbes = false;
+  /*--- Count probes that need processing and use heuristic to decide ADT vs linear search.
+        ADT overhead is only worth it for larger numbers of probes. ---*/
+  unsigned long nProbes = 0;
   for (const auto& output : customOutputs) {
     if (!output.skip && output.type == OperationType::PROBE && output.varIndices.empty()) {
-      hasProbes = true;
-      break;
+      ++nProbes;
     }
   }
 
-  /*--- Build ADT for probe nearest neighbor search if needed. ---*/
+  /*--- Heuristic: Build ADT if we have more than 10 probes. For small numbers of probes,
+        the overhead of building the ADT may not be worth it compared to linear search. ---*/
+  const unsigned long ADT_THRESHOLD = 10;
+  const bool useADT = (nProbes > ADT_THRESHOLD);
+
+  /*--- Build ADT for probe nearest neighbor search if heuristic suggests it. ---*/
   std::unique_ptr<CADTPointsOnlyClass> probeADT;
-  if (hasProbes) {
+  if (useADT) {
     const unsigned long nPointDomain = geometry->GetnPointDomain();
     vector<su2double> coords(nDim * nPointDomain);
     vector<unsigned long> pointIDs(nPointDomain);
@@ -885,14 +890,14 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
         int rank;
         SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
 
-        if (probeADT && !probeADT->IsEmpty()) {
+        if (useADT && probeADT && !probeADT->IsEmpty()) {
           /*--- Use ADT to find the nearest node efficiently (O(log n) instead of O(n)). ---*/
           probeADT->DetermineNearestNode(coord, minDist, minPoint, rankID);
 
           /*--- Check if this rank owns the nearest point. ---*/
           output.iPoint = (rankID == rank) ? minPoint : CustomOutput::PROBE_NOT_OWNED;
         } else {
-          /*--- Fallback to brute force if ADT is not available (should not happen if hasProbes is true). ---*/
+          /*--- Use linear search for small numbers of probes or when ADT is not available. ---*/
           for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
             const su2double dist = GeometryToolbox::SquaredDistance(nDim, coord, geometry->nodes->GetCoord(iPoint));
             if (dist < minDist) {
@@ -943,13 +948,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
     };
 
     if (output.type == OperationType::PROBE) {
-      su2double value = std::numeric_limits<su2double>::max();
-      if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
-        value = output.Eval(MakeFunctor(output.iPoint));
-      }
-      su2double tmp = value;
-      SU2_MPI::Allreduce(&tmp, &value, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-      SetHistoryOutputValue(output.name, value);
+      /*--- Probe evaluation will be done after all outputs are processed, with batched AllReduce. ---*/
       continue;
     }
 
@@ -997,6 +996,46 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       integral[0] /= integral[1];
     }
     SetHistoryOutputValue(output.name, integral[0]);
+  }
+
+  /*--- Batch AllReduce for all probe values to reduce MPI communication overhead. ---*/
+  if (nProbes > 0) {
+    /*--- Evaluate all probe values locally first. ---*/
+    vector<su2double> probeValues(nProbes);
+    unsigned long iProbe = 0;
+    for (auto& output : customOutputs) {
+      if (output.skip || output.type != OperationType::PROBE) continue;
+      su2double value = std::numeric_limits<su2double>::max();
+      if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
+        auto MakeFunctor = [&](unsigned long iPoint) {
+          return [&, iPoint](unsigned long i) {
+            if (i < CustomOutput::NOT_A_VARIABLE) {
+              const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
+              const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
+              if (solIdx == FLOW_SOL) {
+                return flowNodes->GetPrimitive(iPoint, varIdx);
+              }
+              return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
+            } else {
+              return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
+            }
+          };
+        };
+        value = output.Eval(MakeFunctor(output.iPoint));
+      }
+      probeValues[iProbe++] = value;
+    }
+
+    /*--- Single AllReduce for all probe values. ---*/
+    vector<su2double> probeValuesGlobal(nProbes);
+    SU2_MPI::Allreduce(probeValues.data(), probeValuesGlobal.data(), nProbes, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+
+    /*--- Set history output values for all probes. ---*/
+    iProbe = 0;
+    for (auto& output : customOutputs) {
+      if (output.skip || output.type != OperationType::PROBE) continue;
+      SetHistoryOutputValue(output.name, probeValuesGlobal[iProbe++]);
+    }
   }
 }
 
