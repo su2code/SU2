@@ -34,12 +34,12 @@
 
 /*!
  * \brief Blended difference for U-MUSCL reconstruction.
- * \param[in] grad_proj - Gradient projection at point i: dot(grad_i, vector_ij).
+ * \param[in] gradProj - Gradient projection at point i: dot(grad_i, vector_ij).
  * \param[in] delta - Centered difference: V_j - V_i.
  * \param[in] kappa - Blending parameter.
  * \return Blended difference for reconstruction from point i.
  */
-FORCEINLINE Double umusclProjection(Double grad_proj,
+FORCEINLINE Double umusclProjection(Double gradProj,
                                     Double delta,
                                     Double kappa) {
   /*-------------------------------------------------------------------*/
@@ -51,7 +51,7 @@ FORCEINLINE Double umusclProjection(Double grad_proj,
   /*--- To maintain proper scaling for edge limiters, the result of ---*/
   /*--- this function is 0.5 * dV_ij^kap.                           ---*/
   /*-------------------------------------------------------------------*/
-  return (1.0 - kappa) * grad_proj + kappa * delta;
+  return (1.0 - kappa) * gradProj + kappa * delta;
 }
 
 /*!
@@ -62,7 +62,7 @@ FORCEINLINE Double umusclProjection(Double grad_proj,
  * \param[in] delta - Centered difference: V_j - V_i.
  * \param[in] iVar - Variable index.
  * \param[in] kappa - Blending coefficient.
- * \param[in] relax - Newton-Krylov relaxation.
+ * \param[in] umusclRamp - MUSCL 1st-2nd order ramp times Newton-Krylov relaxation.
  * \return Variable reconstructed from point i.
  */
 template<class GradType, size_t nDim>
@@ -71,10 +71,9 @@ FORCEINLINE Double musclReconstruction(const GradType& grad,
                                        const Double delta,
                                        size_t iVar,
                                        Double kappa,
-                                       Double relax,
-                                       Double ramp_val) {
+                                       Double umusclRamp) {
   const Double proj = dot(grad[iVar], vector_ij);
-  return ramp_val * relax * umusclProjection(proj, delta, kappa);
+  return umusclRamp * umusclProjection(proj, delta, kappa);
 }
 
 /*!
@@ -87,8 +86,7 @@ FORCEINLINE void musclUnlimited(Int iPoint,
                                 const Gradient_t& gradient,
                                 CPair<VarType>& V,
                                 Double kappa,
-                                Double relax,
-                                Double ramp_val) {
+                                Double umusclRamp) {
   constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
   auto grad_i = gatherVariables<nVarGrad,nDim>(iPoint, gradient);
@@ -99,8 +97,8 @@ FORCEINLINE void musclUnlimited(Int iPoint,
     const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
 
     /*--- U-MUSCL reconstructed variables ---*/
-    const Double proj_i = musclReconstruction(grad_i, vector_ij, delta_ij, iVar, kappa, relax, ramp_val);
-    const Double proj_j = musclReconstruction(grad_j, vector_ij, delta_ij, iVar, kappa, relax, ramp_val);
+    const Double proj_i = musclReconstruction(grad_i, vector_ij, delta_ij, iVar, kappa, umusclRamp);
+    const Double proj_j = musclReconstruction(grad_j, vector_ij, delta_ij, iVar, kappa, umusclRamp);
 
     /*--- Apply reconstruction: V_L = V_i + 0.5 * dV_ij^kap ---*/
     V.i.all(iVar) += 0.5 * proj_i;
@@ -119,8 +117,7 @@ FORCEINLINE void musclPointLimited(Int iPoint,
                                    const Gradient_t& gradient,
                                    CPair<VarType>& V,
                                    Double kappa,
-                                   Double relax,
-                                   Double ramp_val) {
+                                   Double umusclRamp) {
   constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
   auto lim_i = gatherVariables<nVarGrad>(iPoint, limiter);
@@ -134,8 +131,8 @@ FORCEINLINE void musclPointLimited(Int iPoint,
     const Double delta_ij = V.j.all(iVar) - V.i.all(iVar);
 
     /*--- U-MUSCL reconstructed variables ---*/
-    const Double proj_i = musclReconstruction(grad_i, vector_ij, delta_ij, iVar, kappa, relax, ramp_val);
-    const Double proj_j = musclReconstruction(grad_j, vector_ij, delta_ij, iVar, kappa, relax, ramp_val);
+    const Double proj_i = musclReconstruction(grad_i, vector_ij, delta_ij, iVar, kappa, umusclRamp);
+    const Double proj_j = musclReconstruction(grad_j, vector_ij, delta_ij, iVar, kappa, umusclRamp);
 
     /*--- Apply reconstruction: V_L = V_i + 0.5 * lim * dV_ij^kap ---*/
     V.i.all(iVar) += 0.5 * lim_i(iVar) * proj_i;
@@ -153,8 +150,7 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
                                   const Gradient_t& gradient,
                                   CPair<VarType>& V,
                                   Double kappa,
-                                  Double relax,
-                                  Double ramp_val) {
+                                  Double umusclRamp) {
   constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
   auto grad_i = gatherVariables<nVarGrad,nDim>(iPoint, gradient);
@@ -166,8 +162,8 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
     const Double delta_ij_2 = pow(delta_ij, 2) + 1e-6;
 
     /*--- U-MUSCL reconstructed variables ---*/
-    const Double proj_i = musclReconstruction(grad_i, vector_ij, delta_ij, iVar, kappa, relax, ramp_val);
-    const Double proj_j = musclReconstruction(grad_j, vector_ij, delta_ij, iVar, kappa, relax, ramp_val);
+    const Double proj_i = musclReconstruction(grad_i, vector_ij, delta_ij, iVar, kappa, umusclRamp);
+    const Double proj_j = musclReconstruction(grad_j, vector_ij, delta_ij, iVar, kappa, umusclRamp);
 
     /// TODO: Customize the limiter function.
     const Double lim_i = (delta_ij_2 + proj_i*delta_ij) / (pow(proj_i,2) + delta_ij_2);
@@ -187,7 +183,7 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
  * \param[in] gasConst - Specific gas constant.
  * \param[in] muscl - If true, reconstruct, else simply fetch.
  * \param[in] kappa - Blending coefficient for MUSCL reconstruction.
- * \param[in] relax - Newton-Krylov relaxation.
+ * \param[in] umusclRamp - MUSCL 1st-2nd order ramp times Newton-Krylov relaxation.
  * \param[in] limiterType - Type of flux limiter.
  * \param[in] V1st - Pair of compressible flow primitives for nodes i,j.
  * \param[in] vector_ij - Distance vector from i to j.
@@ -200,12 +196,11 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
                                                       const su2double& gasConst,
                                                       bool muscl,
                                                       const su2double& kappa,
-                                                      const su2double& relax,
+                                                      const su2double& umusclRamp,
                                                       LIMITER limiterType,
                                                       const CPair<PrimVarType>& V1st,
                                                       const VectorDbl<nDim>& vector_ij,
-                                                      const VariableType& solution,
-                                                      const su2double& ramp_val) {
+                                                      const VariableType& solution) {
   static_assert(ReconVarType::nVar <= PrimVarType::nVar);
 
   const auto& gradients = solution.GetGradient_Reconstruction();
@@ -223,13 +218,13 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
     constexpr auto nVarGrad = ReconVarType::nVar - 2;
     switch (limiterType) {
     case LIMITER::NONE:
-      musclUnlimited<nVarGrad>(iPoint, jPoint, vector_ij, gradients, V, kappa, relax, ramp_val);
+      musclUnlimited<nVarGrad>(iPoint, jPoint, vector_ij, gradients, V, kappa, umusclRamp);
       break;
     case LIMITER::VAN_ALBADA_EDGE:
-      musclEdgeLimited<nVarGrad>(iPoint, jPoint, vector_ij, gradients, V, kappa, relax, ramp_val);
+      musclEdgeLimited<nVarGrad>(iPoint, jPoint, vector_ij, gradients, V, kappa, umusclRamp);
       break;
     default:
-      musclPointLimited<nVarGrad>(iPoint, jPoint, vector_ij, limiters, gradients, V, kappa, relax, ramp_val);
+      musclPointLimited<nVarGrad>(iPoint, jPoint, vector_ij, limiters, gradients, V, kappa, umusclRamp);
       break;
     }
     /*--- Recompute density using the reconstructed pressure and temperature. ---*/

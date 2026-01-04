@@ -98,7 +98,7 @@ public:
     AD::StartPreacc();
 
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    const auto nkRelax = config.GetNewtonKrylovRelaxation();
+    const auto umusclRamp = config.GetMUSCLRampValue() * config.GetNewtonKrylovRelaxation();
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
 
     const auto iPoint = geometry.edges->GetNode(iEdge,0);
@@ -123,7 +123,7 @@ public:
 
     /*--- Recompute density and enthalpy instead of reconstructing. ---*/
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umusclKappa, nkRelax, typeLimiter, V1st, vector_ij, solution, config.GetMUSCLRampValue());
+        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umusclKappa, umusclRamp, typeLimiter, V1st, vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 
