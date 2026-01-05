@@ -348,7 +348,7 @@ void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** con
           config->SetMUSCLRampValue(std::pow(std::min<double>(1.0, iterFrac), RampMUSCLParam.RampMUSCLPower));
           break;
         case MUSCL_RAMP_TYPE::SMOOTH_FUNCTION:
-          config->SetMUSCLRampValue(std::pow((0.5 * (1 -  cos(M_PI * std::min(1.0, iterFrac)))), RampMUSCLParam.RampMUSCLPower));
+          config->SetMUSCLRampValue(std::pow((0.5 * (1 -  cos(PI_NUMBER * std::min(1.0, iterFrac)))), RampMUSCLParam.RampMUSCLPower));
           break;
         default:
           break;
