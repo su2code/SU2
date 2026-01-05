@@ -1037,7 +1037,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
         if (smallYPlusCounter)
           cout << "y+ < " << config->GetwallModel_MinYPlus() << " in " << smallYPlusCounter
-               << " points. No problem, but you can increase your near-wallmesh size." << endl;
+               << " points. No problem, but you can increase your near-wall mesh size." << endl;
       }
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
