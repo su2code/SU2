@@ -314,15 +314,7 @@ def main():
     flatplate_udobj.test_vals = [-6.760101, -1.283906, -0.745653, 0.000587, -0.000038, 0.000977, -0.001015, 596.450000, 299.550000, 296.900000, 21.318000, 0.586640, 36.553000, 2.188800]
     test_list.append(flatplate_udobj)
 
-    # Probe performance test (15 probes, ADT path) - tests issue #2546 fix
-    probe_performance = TestCase('probe_performance_15')
-    probe_performance.cfg_dir = "user_defined_functions"
-    probe_performance.cfg_file = "lam_flatplate_probes.cfg"
-    probe_performance.test_iter = 20
-    probe_performance.test_vals = [-6.676934, 99047.0, 98854.0, 98775.0]  # RMS_DENSITY, probe1, probe8, probe15
-    test_list.append(probe_performance)
-
-    # Probe performance test (11 probes, ADT path) - additional check
+    # Probe performance test (11 probes, ADT path)
     probe_performance_11 = TestCase('probe_performance_11')
     probe_performance_11.cfg_dir = "user_defined_functions"
     probe_performance_11.cfg_file = "test_11_probes.cfg"

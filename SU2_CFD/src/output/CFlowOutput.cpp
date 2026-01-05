@@ -819,6 +819,20 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
   const bool adjoint = config->GetDiscrete_Adjoint();
   const bool axisymmetric = config->GetAxisymmetric();
   const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
+  auto GetPointValue = [&](const auto& output, unsigned long iPoint) {
+    return [&](unsigned long i) {
+      if (i < CustomOutput::NOT_A_VARIABLE) {
+        const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
+        const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
+        if (solIdx == FLOW_SOL) {
+          return flowNodes->GetPrimitive(iPoint, varIdx);
+        }
+        return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
+      } else {
+        return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
+      }
+    };
+  };
 
   /*--- Count probes that need processing and use heuristic to decide ADT vs linear search.
         ADT overhead is only worth it for larger numbers of probes. ---*/
@@ -830,7 +844,9 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
   }
 
   /*--- Heuristic: Build ADT if we have more than 10 probes. For small numbers of probes,
-        the overhead of building the ADT may not be worth it compared to linear search. ---*/
+        the overhead of building the ADT may not be worth it compared to linear search.
+        Note: If this threshold is increased, the regression test (probe_performance_11)
+        must be updated to ensure the ADT path is still tested. ---*/
   const unsigned long ADT_THRESHOLD = 10;
   const bool useADT = (nProbes > ADT_THRESHOLD);
 
@@ -930,19 +946,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
      * (see ConvertVariableSymbolsToIndices). ---*/
 
     auto MakeFunctor = [&](unsigned long iPoint) {
-      /*--- This returns another lambda that captures iPoint by value. ---*/
-      return [&, iPoint](unsigned long i) {
-        if (i < CustomOutput::NOT_A_VARIABLE) {
-          const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
-          const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
-          if (solIdx == FLOW_SOL) {
-            return flowNodes->GetPrimitive(iPoint, varIdx);
-          }
-          return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
-        } else {
-          return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
-        }
-      };
+      return GetPointValue(output, iPoint);
     };
 
     if (output.type == OperationType::PROBE) {
@@ -1006,18 +1010,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       su2double value = std::numeric_limits<su2double>::max();
       if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
         auto MakeFunctor = [&](unsigned long iPoint) {
-          return [&, iPoint](unsigned long i) {
-            if (i < CustomOutput::NOT_A_VARIABLE) {
-              const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
-              const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
-              if (solIdx == FLOW_SOL) {
-                return flowNodes->GetPrimitive(iPoint, varIdx);
-              }
-              return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
-            } else {
-              return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
-            }
-          };
+          return GetPointValue(output, iPoint);
         };
         value = output.Eval(MakeFunctor(output.iPoint));
       }
