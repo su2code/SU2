@@ -1243,9 +1243,9 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool bounded_scalar = config->GetBounded_Scalar();
   const bool multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
-  const su2double nkRelax = config->GetNewtonKrylovRelaxation();
 
   const su2double kappa = config->GetMUSCL_Kappa_Flow();
+  const su2double musclRamp = config->GetMUSCLRampValue() * config->GetNewtonKrylovRelaxation();
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1293,8 +1293,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
       for (auto iVar = 0u; iVar < nPrimVarGrad; iVar++) {
         const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-        const su2double Project_Grad_i = nkRelax * MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa);
-        const su2double Project_Grad_j = nkRelax * MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa);
+        const su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa, musclRamp);
+        const su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa, musclRamp);
 
         su2double lim_i = 1.0;
         su2double lim_j = 1.0;
