@@ -908,6 +908,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
         if (useADT && probeADT && !probeADT->IsEmpty()) {
           /*--- Use ADT to find the nearest node efficiently (O(log n) instead of O(n)). ---*/
           probeADT->DetermineNearestNode(coord, minDist, minPoint, rankID);
+          minDist = pow(minDist, 2);
 
           /*--- Check if this rank owns the nearest point. ---*/
           output.iPoint = (rankID == rank) ? minPoint : CustomOutput::PROBE_NOT_OWNED;
