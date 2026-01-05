@@ -820,7 +820,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
   const bool axisymmetric = config->GetAxisymmetric();
   const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
   auto GetPointValue = [&](const auto& output, unsigned long iPoint) {
-    return [&](unsigned long i) {
+    return [&, iPoint](unsigned long i) {
       if (i < CustomOutput::NOT_A_VARIABLE) {
         const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
         const auto varIdx = i % CustomOutput::MAX_VARS_PER_SOLVER;
