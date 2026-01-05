@@ -383,14 +383,10 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     Pressure_Ref    = 1.0;
   }
   else if (config->GetRef_Inc_NonDim() == INITIAL_VALUES) {
-    Density_Ref     = Density_FreeStream;
-    cout << "Density_Ref: " << Density_Ref << endl;
-    Velocity_Ref    = ModVel_FreeStream;
-    cout << "Velocity_Ref: " << Velocity_Ref << endl;
-    Temperature_Ref = Temperature_FreeStream;
-    cout << "Temperature_Ref: " << Temperature_Ref << endl;
-    Pressure_Ref    = Density_Ref*Velocity_Ref*Velocity_Ref;
-    cout << "Pressure_Ref: " << Pressure_Ref << endl;
+Density_Ref     = Density_FreeStream;
+Velocity_Ref    = ModVel_FreeStream;
+Temperature_Ref = Temperature_FreeStream;
+Pressure_Ref    = Density_Ref*Velocity_Ref*Velocity_Ref;
   }
   else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
     Density_Ref     = config->GetInc_Density_Ref();
