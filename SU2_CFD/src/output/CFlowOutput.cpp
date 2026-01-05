@@ -1009,10 +1009,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       if (output.skip || output.type != OperationType::PROBE) continue;
       su2double value = std::numeric_limits<su2double>::max();
       if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
-        auto MakeFunctor = [&](unsigned long iPoint) {
-          return GetPointValue(output, iPoint);
-        };
-        value = output.Eval(MakeFunctor(output.iPoint));
+        value = output.Eval(GetPointValue(output, output.iPoint));
       }
       probeValues[iProbe++] = value;
     }

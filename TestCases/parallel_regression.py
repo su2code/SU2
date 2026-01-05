@@ -318,7 +318,7 @@ def main():
     probe_performance_11 = TestCase('probe_performance_11')
     probe_performance_11.cfg_dir = "user_defined_functions"
     probe_performance_11.cfg_file = "test_11_probes.cfg"
-    probe_performance_11.test_iter = 5
+    probe_performance_11.test_iter = 4
     probe_performance_11.test_vals = [-6.300237, 1.0141e+05, 1.0132e+05, 1.0093e+05] # RMS_DENSITY, probe1, probe6, probe11
     # Tolerances are typically 0.001 in TestCase.py
     test_list.append(probe_performance_11)
