@@ -91,23 +91,23 @@ const unsigned int ZONE_0 = 0;  /*!< \brief Definition of the first grid domain.
 const unsigned int ZONE_1 = 1;  /*!< \brief Definition of the second grid domain. */
 const unsigned int INST_0 = 0;  /*!< \brief Definition of the first instance per grid level. */
 
-const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
-const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*!< \brief Boltzmann's constant [J K^-1] */
-const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogadro's constant, number of particles in one kmole. */
-const su2double FUND_ELEC_CHARGE_CGS = 4.8032047E-10; /*!< \brief Fundamental electric charge in CGS units, cm^(3/2) g^(1/2) s^(-1). */
+constexpr passivedouble STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
+constexpr passivedouble UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
+constexpr passivedouble BOLTZMANN_CONSTANT = 1.3806503E-23;   /*!< \brief Boltzmann's constant [J K^-1] */
+constexpr passivedouble AVOGAD_CONSTANT = 6.0221415E26;       /*!< \brief Avogadro's constant, number of particles in one kmole. */
+constexpr passivedouble FUND_ELEC_CHARGE_CGS = 4.8032047E-10; /*!< \brief Fundamental electric charge in CGS units, cm^(3/2) g^(1/2) s^(-1). */
 
-const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
-const su2double TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
+constexpr passivedouble EPS = 1.0E-16;        /*!< \brief Error scale. */
+constexpr passivedouble TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
 
-const su2double ONE2 = 0.5;         /*!< \brief One divided by two. */
-const su2double ONE3 = 1.0 / 3.0;   /*!< \brief One divided by three. */
-const su2double TWO3 = 2.0 / 3.0;   /*!< \brief Two divided by three. */
-const su2double FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
+constexpr passivedouble ONE2 = 0.5;         /*!< \brief One divided by two. */
+constexpr passivedouble ONE3 = 1.0 / 3.0;   /*!< \brief One divided by three. */
+constexpr passivedouble TWO3 = 2.0 / 3.0;   /*!< \brief Two divided by three. */
+constexpr passivedouble FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
 
-const su2double PI_NUMBER = 4.0 * atan(1.0);  /*!< \brief Pi number. */
+constexpr passivedouble PI_NUMBER = 3.14159265358979323846;  /*!< \brief Pi number (not using M_PI to avoid Windows issues). */
 
-const su2double STEFAN_BOLTZMANN = 5.670367E-08;  /*!< \brief Stefan-Boltzmann constant in W/(m^2*K^4). */
+constexpr passivedouble STEFAN_BOLTZMANN = 5.670367E-08;  /*!< \brief Stefan-Boltzmann constant in W/(m^2*K^4). */
 
 const int MASTER_NODE = 0;      /*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;      /*!< \brief There is only a node in the MPI parallelization. */
@@ -195,7 +195,7 @@ const int SU2_CONN_SIZE   = 10;  /*!< \brief Size of the connectivity array that
                                              that we read from a mesh file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
 const int SU2_CONN_SKIP   = 2;   /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
 
-const su2double COLORING_EFF_THRESH = 0.875;  /*!< \brief Below this value fallback strategies are used instead. */
+constexpr passivedouble COLORING_EFF_THRESH = 0.875;  /*!< \brief Below this value fallback strategies are used instead. */
 
 /*--- All temperature polynomial fits for the fluid models currently
    assume a quartic form (5 coefficients). For example,
@@ -1959,7 +1959,18 @@ enum TURBO_MARKER_TYPE{
 
 enum class RAMP_TYPE{
   GRID,       /*!< \brief flag for rotational/translational ramps */
-  BOUNDARY    /*!< \brief flag for pressure/mass flow ramps*/
+  BOUNDARY,   /*!< \brief flag for pressure/mass flow ramps*/
+  MUSCL       /*!< \brief flag for MUSCL ramps */
+};
+
+enum class MUSCL_RAMP_TYPE{
+  ITERATION,  /*!< \brief flag for linear iteration-based ramp */
+  SMOOTH_FUNCTION      /*!< \brief flag for smooth cosine ramp */
+};
+
+static const MapType<std::string, MUSCL_RAMP_TYPE> MUSCLRamp_Map = {
+  MakePair("ITERATION", MUSCL_RAMP_TYPE::ITERATION)
+  MakePair("SMOOTH_FUNCTION", MUSCL_RAMP_TYPE::SMOOTH_FUNCTION)
 };
 
 /*!
