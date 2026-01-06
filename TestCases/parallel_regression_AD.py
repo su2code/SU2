@@ -116,7 +116,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [20.000000, -5.181765, -3.840710, 0.000000]
+    discadj_incomp_cylinder.test_vals = [20.000000, -1.652493, -6.202452, 0.000000]
     test_list.append(discadj_incomp_cylinder)
 
     ######################################
@@ -256,7 +256,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-1.928244, 0.730865, 0.000000, -3.993500]
+    discadj_heat.test_vals = [-1.880390, 0.759804, 0.000000, -4.486700]
     test_list.append(discadj_heat)
 
     ###################################
@@ -276,7 +276,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-4.772585, 0.918091, -3.863369, 0.295450, 3.841200]
+    discadj_fsi2.test_vals         = [-4.772676, 0.917733, -3.863369, 0.295450, 3.839800]
     discadj_fsi2.test_vals_aarch64 = [-4.773008, 0.916312, -3.863369, 0.295450, 3.841200]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
@@ -290,7 +290,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-6.131109, -2.564634, -2.565220, -2.565303]
+    discadj_cht.test_vals = [-6.111499, -2.668835, -2.669557, -2.669594]
     test_list.append(discadj_cht)
 
     # 2D DA cht streamwise periodic case, 2 zones, avg temp objective
@@ -298,7 +298,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-3.907317, -5.155811, -3.183956]
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.697305, -4.335384, -4.726171]
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
@@ -316,7 +316,7 @@ def main():
     da_unsteadyCHT_cylinder.cfg_dir   = "coupled_cht/disc_adj_unsteadyCHT_cylinder"
     da_unsteadyCHT_cylinder.cfg_file  = "chtMaster.cfg"
     da_unsteadyCHT_cylinder.test_iter = 2
-    da_unsteadyCHT_cylinder.test_vals         = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662012, 0.000000, 89.932000, 0.295190]
+    da_unsteadyCHT_cylinder.test_vals         = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662033, 0.000000, 10.627000, 0.295190]
     da_unsteadyCHT_cylinder.test_vals_aarch64 = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662012, 0.000000, 89.932000, 0.295190]
     da_unsteadyCHT_cylinder.unsteady  = True
     da_unsteadyCHT_cylinder.multizone = True
@@ -332,7 +332,7 @@ def main():
     discadj_flamelet_ch4_hx.cfg_file         = "lam_prem_ch4_hx_ad.cfg"
     discadj_flamelet_ch4_hx.multizone        = False
     discadj_flamelet_ch4_hx.test_iter        = 10
-    discadj_flamelet_ch4_hx.test_vals        = [-8.717448, -8.450564, -8.766800, -6.626764, -14.602479, -3.248656, -18.930954]
+    discadj_flamelet_ch4_hx.test_vals        = [-12.782056, -13.049168, -13.441039, -11.710302, -18.821992, -8.887596, -18.882447]
     test_list.append(discadj_flamelet_ch4_hx)
 
     # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)
@@ -341,7 +341,7 @@ def main():
     discadj_flamelet_ch4_cht.cfg_file         = "lam_prem_ch4_cht_ad_master.cfg"
     discadj_flamelet_ch4_cht.multizone        = True
     discadj_flamelet_ch4_cht.test_iter        = 10
-    discadj_flamelet_ch4_cht.test_vals        = [-2.764345, -1.998773, -2.082310, -0.140923, -7.287831, -18.655078, -18.622026, -4.847187]
+    discadj_flamelet_ch4_cht.test_vals        = [-1.543982, 0.628666, -6.533516, -18.651097, -18.648552, -3.794724, -6.561913, 11.000000]
     test_list.append(discadj_flamelet_ch4_cht)
 
     ######################################
@@ -472,7 +472,7 @@ def main():
     pywrapper_Unst_FEA_AD.cfg_dir = "py_wrapper/custom_load_fea"
     pywrapper_Unst_FEA_AD.cfg_file = "config.cfg"
     pywrapper_Unst_FEA_AD.test_iter = 100
-    pywrapper_Unst_FEA_AD.test_vals = [0.256684, 0.256684, 0.319877, 0.320149, -0.184491, -0.184509]
+    pywrapper_Unst_FEA_AD.test_vals = [0.262441, 0.262444, 0.324361, 0.324640, -0.188221, -0.188238]
     pywrapper_Unst_FEA_AD.command = TestCase.Command("mpirun -n 2", "python", "run_ad.py")
     pywrapper_Unst_FEA_AD.timeout = 1600
     pywrapper_Unst_FEA_AD.tol = 0.00001

@@ -37,23 +37,23 @@
  * \brief Reads a native SU2 ASCII grid into linear partitions for the finite element solver (FEM).
  * \author T. Economon, E. van der Weide
  */
-class CSU2ASCIIMeshReaderFEM : public CSU2ASCIIMeshReaderBase {
+class CSU2ASCIIMeshReaderFEM final : public CSU2ASCIIMeshReaderBase {
  private:
   /*!
    * \brief Reads the grid points from an SU2 zone into linear partitions across all ranks.
    */
-  void ReadPointCoordinates();
+  void ReadPointCoordinates(bool) override;
 
   /*!
    * \brief Reads the interior volume elements from one section of an SU2 zone into linear partitions across all ranks.
    */
-  void ReadVolumeElementConnectivity();
+  void ReadVolumeElementConnectivity(bool) override;
 
   /*!
    * \brief Reads the surface (boundary) elements from one section of an SU2 zone into linear partitions across all
    * ranks.
    */
-  void ReadSurfaceElementConnectivity();
+  void ReadSurfaceElementConnectivity(bool) override;
 
  public:
   /*!

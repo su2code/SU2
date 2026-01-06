@@ -92,6 +92,7 @@ def run(
     own_mel=True,
     own_fado=True,
     own_mlpcpp=True,
+    own_eigen=True,
 ):
     # Set up the build environment, i.e. clone or download submodules
     init_submodules(
@@ -105,6 +106,7 @@ def run(
         own_mel=own_mel,
         own_fado=own_fado,
         own_mlpcpp=own_mlpcpp,
+        own_eigen=own_eigen,
     )
 
     if own_meson:
@@ -155,6 +157,9 @@ if __name__ == "__main__":
         help="do not download copy of MLpCpp",
         action="store_false",
     )
+    parser.add_argument(
+        "--no-eigen", help="do not download copy of Eigen", action="store_false"
+    )
     args = parser.parse_args()
 
     run(
@@ -167,4 +172,5 @@ if __name__ == "__main__":
         own_mel=args.no_mel,
         own_fado=args.no_fado,
         own_mlpcpp=args.no_mlpcpp,
+        own_eigen=args.no_eigen,
     )
