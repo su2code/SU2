@@ -89,7 +89,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
         cout << "***   (Memory-efficient trapezoidal map)    ***" << endl;
         cout << "**************************************************" << endl;
       }
-      look_up_table = new CLookUpTable(config->GetDataDriven_FileNames()[0], table_scalar_names[I_PROGVAR],
+      look_up_table = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], table_scalar_names[I_PROGVAR],
                                        table_scalar_names[I_ENTH]);
       /*--- Build Memory-efficient trapezoidal map (O(n) memory) ---*/
       look_up_table->EnableFastTrapMap();
