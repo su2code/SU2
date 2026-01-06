@@ -1163,7 +1163,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
   const su2double stress_scale = 1.0 / stressParam[0];
   const su2double ks_mult = stressParam[1];
 
-  const unsigned short nStress = (nDim == 2) ? 3 : 6;
+  const unsigned short nStress = 2 * nDim;
 
   su2double StressPenalty = 0.0;
   su2double MaxVonMises_Stress = 0.0;

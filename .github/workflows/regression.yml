@@ -65,7 +65,7 @@ jobs:
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
@@ -76,7 +76,7 @@ jobs:
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   build_tsan:
     name: Build SU2 (tsan)
-    if: inputs.runner != 'ARM64'
+    if: ${{ !contains(inputs.runner, 'arm') }}
     strategy:
       fail-fast: false
       matrix:
@@ -108,7 +108,7 @@ jobs:
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
@@ -127,7 +127,7 @@ jobs:
           - config_set: BaseNoMPI-asan
             flags: '--buildtype=debugoptimized -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true --warnlevel=3 --werror'
           - config_set: ReverseNoMPI-asan
-            flags: '--buildtype=debugoptimized -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled --warnlevel=3 --werror'
+            flags: '--buildtype=debugoptimized --optimization=1 -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
@@ -146,7 +146,7 @@ jobs:
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
@@ -218,7 +218,7 @@ jobs:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   discadj_tape_tests:
-    if: inputs.runner != 'ARM64'
+    if: ${{ !contains(inputs.runner, 'arm') }}
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     name: Tape Tests
     needs: build
@@ -236,7 +236,7 @@ jobs:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Download All artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
       - name: Uncompress and Move Binaries
         run: |
           BIN_FOLDER="$PWD/install/bin"
@@ -267,7 +267,7 @@ jobs:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   thread_sanitizer_tests:
-    if: inputs.runner != 'ARM64'
+    if: ${{ !contains(inputs.runner, 'arm') }}
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     name: Thread Sanitizer Tests
     needs: build_tsan

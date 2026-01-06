@@ -33,14 +33,14 @@
 /*!
  * \class CIncEulerVariable
  * \brief Class for defining the variables of the incompressible Euler solver.
- * \note Primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv)
- * \note Gradients of primitives (P, vx, vy, vz, T, rho, beta)
+ * \note Primitive variables (P, vx, vy, vz, T, rho, h, beta, lamMu, EddyMu, Kt_eff, Cp, Cv)
+ * \note Gradients of primitives (P, vx, vy, vz, T, rho, h)
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon, T. Albring
  */
 class CIncEulerVariable : public CFlowVariable {
 public:
-  static constexpr size_t MAXNVAR = 12;
+  static constexpr size_t MAXNVAR = 13;
 
   template <class IndexType>
   struct CIndices {
@@ -52,18 +52,18 @@ public:
     inline IndexType Velocity() const { return 1; }
     inline IndexType Temperature() const { return nDim+1; }
     inline IndexType Density() const { return nDim+2; }
-    inline IndexType Beta() const { return nDim+3; }
+    inline IndexType Enthalpy() const { return nDim+3; }
+    inline IndexType Beta() const { return nDim+4; }
     inline IndexType SoundSpeed() const { return Beta(); }
-    inline IndexType LaminarViscosity() const { return nDim+4; }
-    inline IndexType EddyViscosity() const { return nDim+5; }
-    inline IndexType ThermalConductivity() const { return nDim+6; }
-    inline IndexType CpTotal() const { return nDim+7; }
-    inline IndexType CvTotal() const { return nDim+8; }
+    inline IndexType LaminarViscosity() const { return nDim+5; }
+    inline IndexType EddyViscosity() const { return nDim+6; }
+    inline IndexType ThermalConductivity() const { return nDim+7; }
+    inline IndexType CpTotal() const { return nDim+8; }
+    inline IndexType CvTotal() const { return nDim+9; }
 
     /*--- For compatible interface with NEMO. ---*/
     inline IndexType SpeciesDensities() const { return std::numeric_limits<IndexType>::max(); }
     inline IndexType Temperature_ve() const { return std::numeric_limits<IndexType>::max(); }
-    inline IndexType Enthalpy() const { return std::numeric_limits<IndexType>::max(); }
   };
 
  protected:
@@ -71,18 +71,20 @@ public:
 
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
+  su2double TemperatureLimits[2];                      /*!< \brief Temperature limits [K]. */
  public:
   /*!
    * \brief Constructor of the class.
    * \param[in] val_pressure - value of the pressure.
    * \param[in] velocity - Value of the flow velocity (initialization value).
-   * \param[in] temperature - Value of the temperature (initialization value).
+   * \param[in] enthalpy - Value of the enthalpy (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
    * \param[in] ndim - Number of dimensions of the problem.
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CIncEulerVariable(su2double pressure, const su2double *velocity, su2double temperature,
+
+  CIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
@@ -116,9 +118,17 @@ public:
    * \brief Set the value of the temperature for incompressible flows with energy equation.
    * \param[in] iPoint - Point index.
    */
-  inline bool SetTemperature(unsigned long iPoint, su2double val_temperature) final {
+  inline bool SetTemperature(unsigned long iPoint, su2double val_temperature, const su2double *val_temp_limits) {
     Primitive(iPoint, indices.Temperature()) = val_temperature;
-    return val_temperature <= 0.0;
+    return (val_temperature <= val_temp_limits[0]) || (val_temperature >= val_temp_limits[1]);
+  }
+
+  /*!
+   * \brief Set the value of the enthalpy for incompressible flows with energy equation.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetEnthalpy(unsigned long iPoint, su2double val_enthalpy) {
+    Primitive(iPoint, indices.Enthalpy()) = val_enthalpy;
   }
 
   /*!
@@ -152,6 +162,12 @@ public:
    * \return Value of the temperature of the flow.
    */
   inline su2double GetTemperature(unsigned long iPoint) const final { return Primitive(iPoint, indices.Temperature()); }
+
+  /*!
+   * \brief Get the enthalpy of the flow.
+   * \return Value of the enthalpy of the flow.
+   */
+  inline su2double GetEnthalpy(unsigned long iPoint) const final { return Primitive(iPoint, indices.Enthalpy()); }
 
   /*!
    * \brief Get the velocity of the flow.

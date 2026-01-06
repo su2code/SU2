@@ -31,7 +31,6 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../include/fluid/CMutationTCLib.hpp"
 #include "../../include/fluid/CSU2TCLib.hpp"
-#include "../../include/limiters/CLimiterDetails.hpp"
 
 CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
@@ -147,7 +146,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   Temperature_Inf     = config->GetTemperature_FreeStreamND();
   Temperature_ve_Inf  = config->GetTemperature_ve_FreeStreamND();
 
-  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+  /*--- Initialize the secondary values for direct derivative approximations ---*/
   switch(direct_diff) {
   case NO_DERIVATIVE:
     /*--- Default ---*/
@@ -468,6 +467,9 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
+  const su2double kappa       = config->GetMUSCL_Kappa_Flow();
+  const su2double musclRamp   = config->GetMUSCLRampValue() * config->GetNewtonKrylovRelaxation();
+
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
@@ -520,9 +522,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 
       /*--- High order reconstruction using MUSCL strategy ---*/
       su2double Vector_ij[MAXNDIM] = {0.0};
-      for (auto iDim = 0ul; iDim < nDim; iDim++) {
-        Vector_ij[iDim] = 0.5*(Coord_j[iDim] - Coord_i[iDim]);
-      }
+      GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Vector_ij);
 
       /*--- Retrieve gradient information ---*/
       auto Gradient_i = nodes->GetGradient_Reconstruction(iPoint);
@@ -540,18 +540,15 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       su2double lim_j = 2.0;
 
       for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
-        Project_Grad_i[iVar] = 0.0; Project_Grad_j[iVar] = 0.0;
+        const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-        for (auto iDim = 0ul; iDim < nDim; iDim++) {
-          Project_Grad_i[iVar] += Vector_ij[iDim]*Gradient_i[iVar][iDim];
-          Project_Grad_j[iVar] -= Vector_ij[iDim]*Gradient_j[iVar][iDim];
-        }
+        Project_Grad_i[iVar] = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa, musclRamp);
+        Project_Grad_j[iVar] = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa, musclRamp);
 
         if (limiter) {
           if (van_albada) {
-            su2double V_ij = V_j[iVar] - V_i[iVar];
             su2double va_lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i[iVar], V_ij, EPS);
-            su2double va_lim_j = LimiterHelpers<>::vanAlbadaFunction(-Project_Grad_j[iVar], V_ij, EPS);
+            su2double va_lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j[iVar], V_ij, EPS);
             lim_i = min(lim_i, va_lim_i);
             lim_j = min(lim_j, va_lim_j);
           } else {
@@ -565,8 +562,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
       su2double lim_ij = min(lim_i, lim_j);
 
       for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
-        Primitive_i[iVar] = V_i[iVar] + lim_ij*Project_Grad_i[iVar];
-        Primitive_j[iVar] = V_j[iVar] + lim_ij*Project_Grad_j[iVar];
+        Primitive_i[iVar] = V_i[iVar] + 0.5 * lim_ij * Project_Grad_i[iVar];
+        Primitive_j[iVar] = V_j[iVar] - 0.5 * lim_ij * Project_Grad_j[iVar];
       }
 
       /*--- Check for non-physical solutions after reconstruction. If found, use the
@@ -933,7 +930,7 @@ void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
-  const su2double allowableRatio = 0.2;
+  const su2double allowableRatio = config->GetMaxUpdateFractionFlow();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
@@ -1390,6 +1387,11 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 void CNEMOEulerSolver::SetReferenceValues(const CConfig& config) {
 
   DynamicPressureRef = 0.5 * Density_Inf * GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
+
+  if (DynamicPressureRef < EPS) {
+    DynamicPressureRef = 1.0;
+  }
+
   AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
 
 }
