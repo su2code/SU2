@@ -75,11 +75,10 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   SetPressure(iPoint);
 
-  /*--- Set the value of the enthalpy directly ---*/
-
   su2double Enthalpy = Solution(iPoint, nDim +1);
   FluidModel->SetTDState_h(Enthalpy);
   su2double Temperature = FluidModel->GetTemperature();
+
   const auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
   /*--- Use the fluid model to compute the new value of density.
@@ -103,8 +102,7 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
     Enthalpy = Solution(iPoint, nDim+1);
     FluidModel->SetTDState_h(Enthalpy);
-    Temperature = FluidModel->GetTemperature();
-    SetTemperature(iPoint, Temperature, TemperatureLimits);
+    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
     SetDensity(iPoint, FluidModel->GetDensity());
 
     /*--- Flag this point as non-physical. ---*/
@@ -117,10 +115,13 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   SetVelocity(iPoint);
 
-  /*--- Set enthalpy and specific heats (only necessary for consistency with preconditioning). ---*/
+  /*--- Set specific heats ---*/
 
   SetSpecificHeatCp(iPoint, FluidModel->GetCp());
   SetSpecificHeatCv(iPoint, FluidModel->GetCv());
+
+  /*--- Set enthalpy ---*/
+
   SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
 
   return physical;
