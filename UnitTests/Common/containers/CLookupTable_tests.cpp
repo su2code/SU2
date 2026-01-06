@@ -248,4 +248,3 @@ TEST_CASE("LUTreader_3D_FAST", "[tabulated chemistry]") {
   look_up_table.LookUp_XYZ(idx_tag, &look_up_dat, prog, enth, mfrac);
   CHECK(look_up_dat == Approx(1.1738796125));
 }
-

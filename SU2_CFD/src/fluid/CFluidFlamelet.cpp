@@ -55,7 +55,8 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
   scalars_vector.resize(n_scalars);
 
   table_scalar_names.resize(n_scalars);
-  for (auto iCV = 0u; iCV < n_control_vars; iCV++) table_scalar_names[iCV] = flamelet_options.controlling_variable_names[iCV];
+  for (auto iCV = 0u; iCV < n_control_vars; iCV++)
+    table_scalar_names[iCV] = flamelet_options.controlling_variable_names[iCV];
 
   /*--- auxiliary species transport equations---*/
   for (auto i_aux = 0u; i_aux < n_user_scalars; i_aux++) {
@@ -64,10 +65,11 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 
   controlling_variable_names.resize(n_control_vars);
   for (auto iCV = 0u; iCV < n_control_vars; iCV++)
-    controlling_variable_names[iCV] =flamelet_options.controlling_variable_names[iCV];
+    controlling_variable_names[iCV] = flamelet_options.controlling_variable_names[iCV];
 
   passive_specie_names.resize(n_user_scalars);
-  for (auto i_aux = 0u; i_aux < n_user_scalars; i_aux++) passive_specie_names[i_aux] = flamelet_options.user_scalar_names[i_aux];
+  for (auto i_aux = 0u; i_aux < n_user_scalars; i_aux++)
+    passive_specie_names[i_aux] = flamelet_options.user_scalar_names[i_aux];
 
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
@@ -81,7 +83,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
       /*--- Build the original trapezoidal map (can use lots of memory!) ---*/
       look_up_table->BuildOriginalTrapMap();
       break;
-      
+
     case ENUM_DATADRIVEN_METHOD::LUT_FAST:
       if (rank == MASTER_NODE) {
         cout << "**************************************************" << endl;
@@ -94,7 +96,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
       /*--- Build Memory-efficient trapezoidal map (O(n) memory) ---*/
       look_up_table->EnableFastTrapMap();
       break;
-      
+
     default:
       if (rank == MASTER_NODE) {
         cout << "***********************************************" << endl;
@@ -102,7 +104,8 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
         cout << "***********************************************" << endl;
       }
 #ifdef USE_MLPCPP
-      lookup_mlp = new MLPToolbox::CLookUp_ANN(datadriven_fluid_options.n_filenames, datadriven_fluid_options.datadriven_filenames);
+      lookup_mlp = new MLPToolbox::CLookUp_ANN(datadriven_fluid_options.n_filenames,
+                                               datadriven_fluid_options.datadriven_filenames);
       if ((rank == MASTER_NODE)) lookup_mlp->DisplayNetworkInfo();
 #else
       SU2_MPI::Error("SU2 was not compiled with MLPCpp enabled (-Denable-mlpcpp=true).", CURRENT_FUNCTION);
@@ -120,7 +123,7 @@ CFluidFlamelet::CFluidFlamelet(CConfig* config, su2double value_pressure_operati
 }
 
 CFluidFlamelet::~CFluidFlamelet() {
-  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT || 
+  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT ||
       Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT_FAST)
     delete look_up_table;
 
@@ -202,8 +205,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   size_t n_sources = n_control_vars + 2 * n_user_scalars;
   varnames_Sources.resize(n_sources);
   val_vars_Sources.resize(n_sources);
-  for (auto iCV = 0u; iCV < n_control_vars; iCV++)
-    varnames_Sources[iCV] = flamelet_options.cv_source_names[iCV];
+  for (auto iCV = 0u; iCV < n_control_vars; iCV++) varnames_Sources[iCV] = flamelet_options.cv_source_names[iCV];
   /*--- No source term for enthalpy ---*/
 
   /*--- For the auxiliary equations, we use a positive (production) and a negative (consumption) term:
@@ -224,7 +226,8 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   } else {
     varnames_LookUp.resize(n_lookups);
     val_vars_LookUp.resize(n_lookups);
-    for (auto iLookup = 0u; iLookup < n_lookups; iLookup++) varnames_LookUp[iLookup] = flamelet_options.lookup_names[iLookup];
+    for (auto iLookup = 0u; iLookup < n_lookups; iLookup++)
+      varnames_LookUp[iLookup] = flamelet_options.lookup_names[iLookup];
   }
 
   /*--- Preferential diffusion scalars ---*/
@@ -246,7 +249,7 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
     case ENUM_DATADRIVEN_METHOD::LUT:
     case ENUM_DATADRIVEN_METHOD::LUT_FAST:
       if (preferential_diffusion) {
-      preferential_diffusion = look_up_table->CheckForVariables(varnames_PD);
+        preferential_diffusion = look_up_table->CheckForVariables(varnames_PD);
       }
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
@@ -280,10 +283,10 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
     }
 #endif
   } else {
-    for (auto iVar=0u; iVar < varnames_TD.size(); iVar++) {
+    for (auto iVar = 0u; iVar < varnames_TD.size(); iVar++) {
       LUT_idx_TD.push_back(look_up_table->GetIndexOfVar(varnames_TD[iVar]));
     }
-    for (auto iVar=0u; iVar < varnames_Sources.size(); iVar++) {
+    for (auto iVar = 0u; iVar < varnames_Sources.size(); iVar++) {
       unsigned long LUT_idx;
       if (noSource(varnames_Sources[iVar])) {
         LUT_idx = look_up_table->GetNullIndex();
@@ -292,16 +295,16 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
       }
       LUT_idx_Sources.push_back(LUT_idx);
     }
-    for (auto iVar=0u; iVar < varnames_LookUp.size(); iVar++) {
+    for (auto iVar = 0u; iVar < varnames_LookUp.size(); iVar++) {
       unsigned long LUT_idx;
       if (noSource(varnames_LookUp[iVar]))
         LUT_idx = look_up_table->GetNullIndex();
-      else 
+      else
         LUT_idx = look_up_table->GetIndexOfVar(varnames_LookUp[iVar]);
       LUT_idx_LookUp.push_back(LUT_idx);
     }
     if (preferential_diffusion) {
-      for (auto iVar=0u; iVar < varnames_PD.size(); iVar++) {
+      for (auto iVar = 0u; iVar < varnames_PD.size(); iVar++) {
         LUT_idx_PD.push_back(look_up_table->GetIndexOfVar(varnames_PD[iVar]));
       }
     }
@@ -312,7 +315,7 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
                                               vector<su2double>& output_refs) {
   AD::StartPreacc();
   for (auto iVar = 0u; iVar < input_scalar.size(); iVar++) AD::SetPreaccIn(input_scalar[iVar]);
-  
+
   su2double val_enth = input_scalar[I_ENTH];
   su2double val_prog = input_scalar[I_PROGVAR];
   su2double val_mixfrac = include_mixture_fraction ? input_scalar[I_MIXFRAC] : 0.0;
@@ -347,7 +350,6 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
     default:
       break;
   }
-  
 
   /*--- Add all quantities and their names to the look up vectors. ---*/
   bool inside;
@@ -361,8 +363,10 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
       } else {
         inside = look_up_table->LookUp_XY(LUT_idx, output_refs, val_prog, val_enth);
       }
-      if (inside) extrapolation = 0;
-      else extrapolation = 1;
+      if (inside)
+        extrapolation = 0;
+      else
+        extrapolation = 1;
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
       refs_vars.resize(output_refs.size());

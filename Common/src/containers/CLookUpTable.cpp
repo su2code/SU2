@@ -46,8 +46,7 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, string name_CV1_in, 
 
   FindTableLimits(name_CV1, name_CV2);
 
-  if (rank == MASTER_NODE)
-    cout << "Detecting all unique edges and setting edge to triangle connectivity ..." << endl;
+  if (rank == MASTER_NODE) cout << "Detecting all unique edges and setting edge to triangle connectivity ..." << endl;
 
   IdentifyUniqueEdges();
 
@@ -61,7 +60,7 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, string name_CV1_in, 
   /*--- NOTE: Trapezoidal map is NOT built here anymore! ---*/
   /*--- Call EnableFastTrapMap() for LUT_FAST (efficient O(n) memory) ---*/
   /*--- Call BuildOriginalTrapMap() for standard LUT (original SU2 implementation) ---*/
-  
+
   ComputeInterpCoeffs();
 
   if (rank == MASTER_NODE) cout << "LUT fluid model ready for use" << endl;
@@ -70,15 +69,13 @@ CLookUpTable::CLookUpTable(const string& var_file_name_lut, string name_CV1_in, 
 void CLookUpTable::BuildOriginalTrapMap() {
   /*--- Build the original SU2 trapezoidal map (DAG-based, O(n log n) memory) ---*/
   /*--- WARNING: This can use a lot of memory for large tables! ---*/
-  
+
   if (rank == MASTER_NODE) switch (table_dim) {
       case 2:
-        cout << "Building a trapezoidal map for the (" + name_CV1 + ", " + name_CV2 +
-                    ") space ..." << endl;
+        cout << "Building a trapezoidal map for the (" + name_CV1 + ", " + name_CV2 + ") space ..." << endl;
         break;
       case 3:
-        cout << "Building trapezoidal map stack for the (" + name_CV1 + ", " + name_CV2 +
-                    ") space ..." << endl;
+        cout << "Building trapezoidal map stack for the (" + name_CV1 + ", " + name_CV2 + ") space ..." << endl;
         break;
       default:
         break;
@@ -89,13 +86,13 @@ void CLookUpTable::BuildOriginalTrapMap() {
   unsigned short barwidth = 65;
   bool display_map_info = (n_table_levels < 2);
   double tmap_memory_footprint = 0;
-  
+
   for (auto i_level = 0ul; i_level < n_table_levels; i_level++) {
     trap_map_x_y[i_level] =
         CTrapezoidalMap(GetDataP(name_CV1, i_level), GetDataP(name_CV2, i_level), table_data[i_level].cols(),
                         edges[i_level], edge_to_triangle[i_level], display_map_info);
     tmap_memory_footprint += trap_map_x_y[i_level].GetMemoryFootprint();
-    
+
     /* Display a progress bar to monitor table generation process */
     if (rank == MASTER_NODE) {
       su2double progress = su2double(i_level) / n_table_levels;
@@ -127,11 +124,11 @@ void CLookUpTable::BuildOriginalTrapMap() {
 
 void CLookUpTable::EnableFastTrapMap() {
   /*--- Build Memory-efficient trapezoidal map (band-based, O(n) memory) ---*/
-  
+
   use_fast_trap_map_ = true;
-  
+
   trap_map_x_y_FAST.resize(n_table_levels);
-  
+
   if (rank == MASTER_NODE) {
     cout << endl;
     cout << "+--------------------------------------------------+" << endl;
@@ -139,28 +136,26 @@ void CLookUpTable::EnableFastTrapMap() {
     cout << "|  (O(n) memory, O(log n) queries)                 |" << endl;
     cout << "+--------------------------------------------------+" << endl;
   }
-  
+
   su2double startTime = SU2_MPI::Wtime();
-  
+
   for (unsigned long i_level = 0; i_level < n_table_levels; ++i_level) {
-    
     const auto n_pts = n_points[i_level];
     const auto n_tris = n_triangles[i_level];
-    
+
     if (rank == MASTER_NODE) {
-      cout << "  Level " << i_level << ": " << n_pts << " points, " 
-           << n_tris << " triangles ... " << flush;
+      cout << "  Level " << i_level << ": " << n_pts << " points, " << n_tris << " triangles ... " << flush;
     }
-    
+
     // Get point coordinates
     std::vector<su2double> x_coords(n_pts);
     std::vector<su2double> y_coords(n_pts);
-    
+
     for (unsigned long i_point = 0; i_point < n_pts; ++i_point) {
       x_coords[i_point] = table_data[i_level][idx_CV1][i_point];
       y_coords[i_point] = table_data[i_level][idx_CV2][i_point];
     }
-    
+
     // Get triangle connectivity
     std::vector<unsigned long> tri_conn(3 * n_tris);
     for (unsigned long i_tri = 0; i_tri < n_tris; ++i_tri) {
@@ -168,24 +163,22 @@ void CLookUpTable::EnableFastTrapMap() {
       tri_conn[3 * i_tri + 1] = triangles[i_level][i_tri][1];
       tri_conn[3 * i_tri + 2] = triangles[i_level][i_tri][2];
     }
-    
+
     // Build FAST trapezoidal map for this level
-    trap_map_x_y_FAST[i_level].Build(n_pts, n_tris, 
-                                      x_coords.data(), y_coords.data(), 
-                                      tri_conn.data());
-    
+    trap_map_x_y_FAST[i_level].Build(n_pts, n_tris, x_coords.data(), y_coords.data(), tri_conn.data());
+
     if (rank == MASTER_NODE) {
       cout << "done." << endl;
     }
   }
-  
+
   su2double stopTime = SU2_MPI::Wtime();
-  
+
   if (rank == MASTER_NODE) {
     cout << "+--------------------------------------------------+" << endl;
     cout << "|  FAST trapezoidal maps built successfully!    |" << endl;
-    cout << "|  Build time: " << setw(10) << setprecision(3) << (stopTime - startTime) 
-         << " seconds                   |" << endl;
+    cout << "|  Build time: " << setw(10) << setprecision(3) << (stopTime - startTime) << " seconds                   |"
+         << endl;
     cout << "+--------------------------------------------------+" << endl;
     cout << endl;
   }
@@ -711,7 +704,7 @@ bool CLookUpTable::FindInclusionTriangle(const su2double val_CV1, const su2doubl
       return IsInTriangle(val_CV1, val_CV2, id_triangle, iLevel);
     }
   }
-  
+
   return false;
 }
 
