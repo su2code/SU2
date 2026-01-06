@@ -279,7 +279,7 @@ class CFluidModel {
   /*!
    * \brief Set specific heat Cp model.
    */
-  virtual void SetCpModel(const CConfig* config) {}
+  virtual void SetCpModel(const CConfig* config, su2double val_Temperature_Ref) {}
 
   /*!
    * \brief Set viscosity model.
@@ -372,7 +372,7 @@ class CFluidModel {
   /*!
    * \brief Virtual member.
    * \param[in] val_enthalpy - Enthalpy value at the point.
-   * \param[in] val_scalars - Scalar mass fractions. 
+   * \param[in] val_scalars - Scalar mass fractions.
    */
   virtual void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) {}
 
