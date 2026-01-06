@@ -253,6 +253,14 @@ def main():
     turb_wallfunction_flatplate_sst.test_vals = [-4.036299, -1.916263, -1.821788, 1.443878, -1.579554, 1.521534, 10.000000, -2.351461, 0.030011, 0.002409]
     test_list.append(turb_wallfunction_flatplate_sst)
 
+    # FLAT PLATE, ROUGHNESS BC WILCOX2006 SST
+    turb_flatplate_sst_roughBCWilcox2006           = TestCase('turb_sst_flatplate_roughBCWilcox2006')
+    turb_flatplate_sst_roughBCWilcox2006.cfg_dir   = "rans/flatplate/roughness/bc_wilcox2006"
+    turb_flatplate_sst_roughBCWilcox2006.cfg_file  = "turb_SST_flatplate_roughBCWilcox2006.cfg"
+    turb_flatplate_sst_roughBCWilcox2006.test_iter = 10
+    turb_flatplate_sst_roughBCWilcox2006.test_vals = [-5.117900, -2.534224, -2.904279, 0.381710, -3.100346, 1.180161, -0.188797, 0.004029]
+    test_list.append(turb_flatplate_sst_roughBCWilcox2006)
+
     # FLAT PLATE, WALL FUNCTIONS, COMPRESSIBLE SA
     turb_wallfunction_flatplate_sa           = TestCase('turb_sa_wallfunction_flatplate')
     turb_wallfunction_flatplate_sa.cfg_dir   = "wallfunctions/flatplate/compressible_SA"
@@ -875,7 +883,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [1.084452, 1.526941, -2.895084, 2.607568, -2.479664, 3.063779, 106380.000000, 106380.000000, 5.733600, 64.737000]
+    axial_stage2D.test_vals = [1.065801, 1.519596, -2.928281, 2.573903, -2.526639, 3.017139, 106370.000000, 106370.000000, 5.726800, 64.383000]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
