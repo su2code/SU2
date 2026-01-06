@@ -1535,17 +1535,13 @@ def main():
     test_list.append(pywrapper_zimont)
 
     # Heat solver unsteady with source
-    pywrapper_Unst_Heat_AD = TestCase('pywrapper_Unst_Heat_Source')
-    pywrapper_Unst_Heat_AD.cfg_dir = "py_wrapper/custom_heat_source"
-    pywrapper_Unst_Heat_AD.cfg_file = "run.py"
-    pywrapper_Unst_Heat_AD.test_iter = 100
-    pywrapper_Unst_Heat_AD.test_vals = [0.776365, 0.776430, 1.000003]
-    pywrapper_Unst_Heat_AD.command = TestCase.Command("mpirun -n 2", "python", "run.py")
-    pywrapper_Unst_Heat_AD.timeout = 1600
-    pywrapper_Unst_Heat_AD.tol = 0.00001
-    pywrapper_Unst_Heat_AD.new_output = False
-    test_list.append(pywrapper_Unst_Heat_AD)
-    pass_list.append(pywrapper_Unst_Heat_AD.run_test())
+    pywrapper_Unst_Heat_Source = TestCase('pywrapper_Unst_Heat_Source')
+    pywrapper_Unst_Heat_Source.cfg_dir = "py_wrapper/custom_heat_source"
+    pywrapper_Unst_Heat_Source.cfg_file = "run.py"
+    pywrapper_Unst_Heat_Source.test_iter = 100
+    pywrapper_Unst_Heat_Source.test_vals = [0.776365, 0.776430, 1.000003]
+    pywrapper_Unst_Heat_Source.command = TestCase.Command("mpirun -n 2", "python", "run.py")
+    test_list.append(pywrapper_Unst_Heat_Source)
     ##############################################
     ### Method of Manufactured Solutions (MMS) ###
     ##############################################

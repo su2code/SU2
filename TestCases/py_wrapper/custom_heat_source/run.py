@@ -80,7 +80,6 @@ HISTORY_OUTPUT= ITER, RMS_RES, HEAT, TAVG_HEAT
 def HeatSource(time, driver, iPoint):
   """Applies a source in the lower left quadrant for a period of time."""
   allCoords = driver.Coordinates()
-  iHEATSOLVER = driver.GetSolverIndices()['HEAT']
   coord = allCoords.Get(iPoint)
   x = coord[0]
   y = coord[1]
@@ -161,9 +160,9 @@ def RunPrimal(size):
 
 def main():
   comm = MPI.COMM_WORLD
-  rank = comm.Get_rank()
+  #rank = comm.Get_rank()
 
-  avg_temperature = RunPrimal(0.1)
+  RunPrimal(0.1)
 
 if __name__ == '__main__':
   main()
