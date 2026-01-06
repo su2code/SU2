@@ -18,10 +18,13 @@
 #include <utility>
 #include <vector>
 
+#include "../basic_types/datatype_structure.hpp"
+
 namespace su2_lut {
 
 using IntT = int32_t;
 using RealT = su2double;
+using PassiveReal = passivedouble;
 
 /*--- Simple Matrix container (row-major) ---*/
 template <typename T, size_t N>
@@ -211,7 +214,7 @@ inline auto DetectBands(const VectorReal& x, IntT max_bands = 0) {
     // Map each point to its band
     std::vector<IntT> pt_to_band(x.size());
     for (IntT i = 0; i < static_cast<IntT>(x.size()); ++i) {
-      IntT band = static_cast<IntT>((x[i] - x_min) / band_width);
+      IntT band = static_cast<IntT>(SU2_TYPE::GetValue((x[i] - x_min) / band_width));
       band = std::max(IntT{0}, std::min(band, max_bands - 1));
       pt_to_band[i] = band;
     }
@@ -393,7 +396,7 @@ inline auto QueryTrapezoidalMap(const TrapezoidalMap& map, const Matrix2i& edge_
       // Compute y-position of edge at query x
       RealT edge_y_at_x;
       const RealT dx = x1 - x0;
-      if (std::abs(dx) < 1e-30) {
+      if (std::abs(SU2_TYPE::GetValue(dx)) < 1e-30) {
         edge_y_at_x = (y0 + y1) / 2.0;
       } else {
         const RealT t = (x - x0) / dx;
@@ -461,15 +464,15 @@ inline auto TriangleCoords(const IntT i_tri, const Matrix3i& triangles, const Ve
   auto cross = [](const RealT ux, const RealT uy, const RealT vx, const RealT vy) { return ux * vy - uy * vx; };
 
   const RealT det = cross(dx1, dy1, dx2, dy2);
-  if (std::abs(det) < 1e-30) {
-    return std::array{RealT{0}, RealT{0}, RealT{0}};
+  if (std::abs(SU2_TYPE::GetValue(det)) < 1e-30) {
+    return std::array<RealT, 3>{RealT{0}, RealT{0}, RealT{0}};
   }
 
   const RealT inv_det = 1.0 / det;
   const RealT a = (cross(x_q, y_q, dx2, dy2) - cross(x0, y0, dx2, dy2)) * inv_det;
   const RealT b = (cross(x0, y0, dx1, dy1) - cross(x_q, y_q, dx1, dy1)) * inv_det;
 
-  return std::array{1 - a - b, a, b};
+  return std::array<RealT, 3>{1 - a - b, a, b};
 }
 
 /*!
@@ -488,7 +491,7 @@ inline IntT FindTriangle(const TrapezoidalMap& map, const Matrix3i& triangles, c
   const auto [e_below, e_above] = QueryTrapezoidalMap(map, edge_pts, x, y, x_q, y_q);
   const auto candidates = AdjacentTriangles(e_below, e_above, edge_faces);
 
-  constexpr RealT tol = 1e-12;
+  const RealT tol = 1e-12;
   for (const auto t : candidates) {
     if (t < 0) continue;
 
