@@ -242,7 +242,6 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
     unsigned long restartIter = config->GetRestart_Iter();
 
     if (backscatter && innerIter==0) {
-      SetLangevinGen(config, geometry);
       SetLangevinSourceTerms(config, geometry);
       const unsigned short maxIter = config->GetSBS_maxIterSmooth();
       bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
@@ -443,7 +442,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
       if (config->GetStochastic_Backscatter()) {
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           numerics->SetStochSource(nodes->GetLangevinSourceTerms(iPoint, iDim), iDim);
-          numerics->SetLES_Mode(nodes->GetLES_Mode(iPoint), 0.0);
+        numerics->SetLES_Mode(nodes->GetLES_Mode(iPoint), 0.0);
       }
 
     }
@@ -1643,31 +1642,18 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
 void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry) {
 
-  SU2_OMP_FOR_DYN(omp_chunk_size)
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++){
-    for (auto iDim = 0u; iDim < nDim; iDim++){
-      auto gen = nodes->GetLangevinGen(iPoint, iDim);
-      su2double lesSensor = nodes->GetLES_Mode(iPoint);
-      su2double rnd = RandomToolbox::GetRandomNormal(gen) * std::nearbyint(lesSensor);
-      nodes->SetLangevinSourceTermsOld(iPoint, iDim, rnd);
-      nodes->SetLangevinSourceTerms(iPoint, iDim, rnd);
-    }
-  }
-  END_SU2_OMP_FOR
-
-}
-
-void CTurbSASolver::SetLangevinGen(CConfig* config, CGeometry* geometry) {
-
-  unsigned long timeStep = config->GetTimeIter();
+  unsigned long timeIter = config->GetTimeIter();
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++){
     const auto iGlobalPoint = geometry->nodes->GetGlobalIndex(iPoint);
     for (auto iDim = 0u; iDim < nDim; iDim++){
-      unsigned long seed = RandomToolbox::GetSeed(iGlobalPoint+1,iDim+1);
-      std::mt19937 gen(seed + timeStep);
-      nodes->SetLangevinGen(iPoint, iDim, gen);
+      unsigned long seed = RandomToolbox::GetSeed(iGlobalPoint+1, iDim+1, timeIter+1);
+      std::mt19937 gen(seed);
+      su2double lesSensor = nodes->GetLES_Mode(iPoint);
+      su2double rnd = RandomToolbox::GetRandomNormal(gen) * std::nearbyint(lesSensor);
+      nodes->SetLangevinSourceTermsOld(iPoint, iDim, rnd);
+      nodes->SetLangevinSourceTerms(iPoint, iDim, rnd);
     }
   }
   END_SU2_OMP_FOR

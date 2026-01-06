@@ -45,7 +45,6 @@ private:
   MatrixType stochSource;
   MatrixType stochSource_old;
   VectorType Vortex_Tilting;
-  MatrixTypeGen stochGen;
   VectorType besselIntegral;
 
 public:
@@ -135,22 +134,6 @@ public:
    * \return Value of the DES length Scale
    */
   inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
-
-  /*!
-   * \brief Get the seed for the stochastic equations.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Dimension index.
-   * \return Value of the seed for the stochastic equations.
-   */
-  inline std::mt19937 GetLangevinGen(unsigned long iPoint, unsigned short iDim) const override { return stochGen(iPoint, iDim); }
-
-  /*!
-   * \brief Set the seed for the stochastic equations.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Dimension index.
-   * \param[in] val_stochGen - Value of the seed for the stochastic equations.
-   */
-  inline void SetLangevinGen(unsigned long iPoint, unsigned short iDim, std::mt19937 val_stochGen) override { stochGen(iPoint, iDim) = val_stochGen; }
 
   /*!
    * \brief Set the integral of the product of three Bessel functions appearing in Laplacian smoothing.

@@ -52,7 +52,6 @@ class CVariable {
 protected:
   using VectorType = C2DContainer<unsigned long, su2double, StorageType::ColumnMajor, 64, DynamicSize, 1>;
   using MatrixType = C2DContainer<unsigned long, su2double, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
-  using MatrixTypeGen = C2DContainer<unsigned long, std::mt19937, StorageType::RowMajor,    64, DynamicSize, DynamicSize>;
 
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
@@ -445,13 +444,6 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \param[in] iDim - Dimension index.
-   */
-  inline virtual std::mt19937 GetLangevinGen(unsigned long iPoint, unsigned short iDim) const {std::mt19937 gen(123); return gen; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
    * \param[in] val_integral - Value of the integral.
    */
   inline virtual void SetBesselIntegral(unsigned long iPoint, su2double val_integral) {}
@@ -460,14 +452,6 @@ public:
    * \brief A virtual member.
    */
   inline virtual su2double GetBesselIntegral(unsigned long iPoint) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] iPoint - Point index.
-   * \param[in] iDim - Dimension index.
-   * \param[in] val_stochGen - Pseudo-random number generator for Langevin equations.
-   */
-  inline virtual void SetLangevinGen(unsigned long iPoint, unsigned short iDim, std::mt19937 val_stochGen) {}
 
   /*!
    * \brief A virtual member.

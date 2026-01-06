@@ -171,13 +171,15 @@ class CSourceBase_TurbSA : public CNumerics {
   inline void AddStochSource(const CSAVariables& var, const MatrixType& velGrad, const su2double Cmag) {
 
     su2double dist2 = dist_i * dist_i;
-    const su2double eps = 1.0e-12;
+    const su2double eps = 1e-10;
     su2double xi3 = pow(var.Ji, 3);
 
     su2double factor = dist2 / (2.0 * var.fv1 * ScalarVar_i[0] + eps);
     factor /= (3.0 * xi3 * var.cv1_3 / pow(xi3 + var.cv1_3, 2) + var.fv1 + eps);
 
-    su2double tke = pow(var.fv1*ScalarVar_i[0]/dist_i, 2); 
+    su2double tke = 0.0;
+    if (dist_i >= eps)
+      tke = pow(var.fv1*ScalarVar_i[0]/dist_i, 2);
 
     su2double R12 = (nDim==3 ?   Cmag * tke * ScalarVar_i[3] : 0.0);
     su2double R13 =            - Cmag * tke * ScalarVar_i[2];

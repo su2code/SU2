@@ -57,9 +57,12 @@ inline unsigned long ToUInt64(double x) { return std::hash<double>{}(x); }
  * \brief Build a deterministic seed from physical time.
  * \param[in] x First integer value.
  * \param[in] y Second integer value.
+ * \param[in] z Third integer value.
  * \return 64-bit seed value.
  */
-inline unsigned long GetSeed(unsigned long x, unsigned long y) { return HashCombine(x, y); }
+inline unsigned long GetSeed(unsigned long x, unsigned long y, unsigned long z) {
+  return HashCombine(HashCombine(x, y), z);
+}
 
 /*!
  * \brief Generate a standard normally-distributed random number.
@@ -68,7 +71,7 @@ inline unsigned long GetSeed(unsigned long x, unsigned long y) { return HashComb
  * \param[in] stddev Standard deviation of the normal distribution (default 1).
  * \return Normally-distributed random number.
  */
-inline double GetRandomNormal(std::mt19937 gen, double mean = 0.0, double stddev = 1.0) {
+inline double GetRandomNormal(std::mt19937& gen, double mean = 0.0, double stddev = 1.0) {
   std::normal_distribution<double> rnd(mean, stddev);
   return rnd(gen);
 }
@@ -80,7 +83,7 @@ inline double GetRandomNormal(std::mt19937 gen, double mean = 0.0, double stddev
  * \param[in] xmax Upper bounary of the interval (default 1).
  * \return Uniformly-distributed random number.
  */
-inline double GetRandomUniform(std::mt19937 gen, double xmin = 0.0, double xmax = 1.0) {
+inline double GetRandomUniform(std::mt19937& gen, double xmin = 0.0, double xmax = 1.0) {
   std::uniform_real_distribution<double> rnd(xmin, xmax);
   return rnd(gen);
 }
@@ -134,8 +137,6 @@ inline double GetBesselIntegral(double beta_x, double beta_y, double beta_z) {
 
   for (int i = 1; i < N; i++) {
     double t = i * dt;
-
-    double e = exp(-A * t);
 
     double lx = GetBesselZero(Bx * t);
     double ly = GetBesselZero(By * t);

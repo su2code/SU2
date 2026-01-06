@@ -484,7 +484,7 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
     DES_length_j = turbNodes->GetDES_LengthScale(jPoint);
     lesMode_i = turbNodes->GetLES_Mode(iPoint);
     lesMode_j = turbNodes->GetLES_Mode(jPoint);
-    const su2double tol = 1e-12;
+    const su2double tol = 1e-10;
     if (DES_length_i < tol || DES_length_j < tol) {
       tke_i = tke_j = 0.0;
     } else {
