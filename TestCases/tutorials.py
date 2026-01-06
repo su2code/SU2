@@ -49,7 +49,7 @@ def main():
     cht_incompressible_unsteady.cfg_dir   = "../Tutorials/multiphysics/unsteady_cht/"
     cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible_unsteady.test_iter = 2
-    cht_incompressible_unsteady.test_vals = [-2.661440, -2.534489, -0.080399, -0.080399, -0.080399, -12.421979, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 238.240000] #last columns
+    cht_incompressible_unsteady.test_vals = [-2.661401, -0.080399, -0.080399, -0.080399, -12.421963, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 238.240000] #last columns
     cht_incompressible_unsteady.multizone = True
     cht_incompressible_unsteady.unsteady  = True
     test_list.append(cht_incompressible_unsteady)
@@ -69,7 +69,7 @@ def main():
     cht_CR.cfg_dir   = "../Tutorials/multiphysics/contact_resistance_cht"
     cht_CR.cfg_file  = "master.cfg"
     cht_CR.test_iter = 80
-    cht_CR.test_vals = [-8.606916, -9.227614, -10.411674, -2.116659]
+    cht_CR.test_vals = [-8.606938, -9.227901, -10.410107, -2.129377]
     cht_CR.multizone = True
     test_list.append(cht_CR)
 
@@ -80,8 +80,8 @@ def main():
     sp_pinArray_2d_mf_hf.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 25
-    sp_pinArray_2d_mf_hf.test_vals = [-4.684377, 1.389344, -0.755475, 241.878086]
-    sp_pinArray_2d_mf_hf.test_vals_aarch64 = [-4.686092, 1.387918, -0.755447, 241.878841]
+    sp_pinArray_2d_mf_hf.test_vals = [-4.683630, -0.755570, 241.872160]
+    sp_pinArray_2d_mf_hf.test_vals_aarch64 = [-4.683630, -0.755570, 241.872160]
     test_list.append(sp_pinArray_2d_mf_hf)
 
     # 2D pin case pressure drop periodic with heatflux BC and temperature periodicity
@@ -89,8 +89,8 @@ def main():
     sp_pinArray_2d_dp_hf_tp.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
-    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.736222, 1.323245, -0.713370, 208.023676]
-    sp_pinArray_2d_dp_hf_tp.test_vals_aarch64 = [-4.733643, 1.325195, -0.713411, 208.023676]
+    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.739709, -0.713547, 208.023676]
+    sp_pinArray_2d_dp_hf_tp.test_vals_aarch64 = [-4.739709, -0.713547, 208.023676]
     test_list.append(sp_pinArray_2d_dp_hf_tp)
 
     # 90 degree pipe bend with wall functions from the experiments of Sudo et al.
@@ -136,7 +136,7 @@ def main():
     species3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     species3_primitiveVenturi.cfg_file  = "species3_primitiveVenturi.cfg"
     species3_primitiveVenturi.test_iter = 50
-    species3_primitiveVenturi.test_vals = [-5.673008, -4.673131, -4.692722, -5.445021, -1.069687, -5.960203, -6.065022, 5.000000, -0.570021, 5.000000, -2.512831, 5.000000, -0.525792, 1.660602, 0.502278, 0.603347, 0.554978]
+    species3_primitiveVenturi.test_vals = [-5.679419, -4.675598, -4.699798, -5.463760, -1.072282, -5.965552, -6.075164, 5.000000, -0.558583, 5.000000, -2.514945, 5.000000, -0.514439, 1.660063, 0.502195, 0.603290, 0.554578]
     test_list.append(species3_primitiveVenturi)
 
     # 3 species (2 eq) primitive venturi mixing
@@ -144,7 +144,7 @@ def main():
     DAspecies3_primitiveVenturi.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport"
     DAspecies3_primitiveVenturi.cfg_file  = "DAspecies3_primitiveVenturi.cfg"
     DAspecies3_primitiveVenturi.test_iter = 50
-    DAspecies3_primitiveVenturi.test_vals = [-9.819097, -8.643457, -8.676919, -8.347340, -12.926241, -9.739487, -8.947991]
+    DAspecies3_primitiveVenturi.test_vals = [-9.806093, -8.630548, -8.666007, -8.333826, -12.914929, -11.064095, -10.278654]
     DAspecies3_primitiveVenturi.command   = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
     test_list.append(DAspecies3_primitiveVenturi)
 
@@ -153,7 +153,7 @@ def main():
     kenics_mixer_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport_Composition_Dependent_Model"
     kenics_mixer_tutorial.cfg_file  = "kenics_mixer_tutorial.cfg"
     kenics_mixer_tutorial.test_iter = 10
-    kenics_mixer_tutorial.test_vals = [-7.490303, -6.823796, -6.838369, -6.383332, -7.907780, -3.062276, -7.451176, 5.000000, -1.858354, 4.000000, -5.318193, 3.000000, -6.371744, 0.025671, 0.000000, 0.025671, 0.000000, 62.846000, 8.470600, 46.847000, 7.527900]
+    kenics_mixer_tutorial.test_vals = [-7.490472, -6.823803, -6.838373, -6.383764, -7.907928, -3.062404, -7.452184, 5.000000, -1.858094, 4.000000, -5.318066, 3.000000, -6.371967, 0.025661, 0.000000, 0.025661, 0.000000, 62.736000, 8.470600, 46.738000, 7.527900]
     kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(kenics_mixer_tutorial)
 
@@ -165,7 +165,7 @@ def main():
     premixed_hydrogen.cfg_dir = "../Tutorials/incompressible_flow/Inc_Combustion/1__premixed_hydrogen"
     premixed_hydrogen.cfg_file = "H2_burner.cfg"
     premixed_hydrogen.test_iter = 10
-    premixed_hydrogen.test_vals = [-8.851285, -9.756885, -11.037752, -4.321598, -11.891933]
+    premixed_hydrogen.test_vals = [-9.647741, -10.286349, -11.353961, -4.380211, -12.831110]
     test_list.append(premixed_hydrogen)
 
     ### Compressible Flow

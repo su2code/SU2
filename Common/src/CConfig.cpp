@@ -409,6 +409,13 @@ void CConfig::addULongListOption(const string& name, unsigned short & size, unsi
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+void CConfig::addULongArrayOption(const string& name, const int size, const bool allow_fewer, unsigned long* option_field) {
+  assert(option_map.find(name) == option_map.end());
+  all_options.insert(pair<string, bool>(name, true));
+  COptionBase* val = new COptionArray<unsigned long>(name, size, allow_fewer, option_field);
+  option_map.insert(pair<string, COptionBase *>(name, val));
+}
+
 void CConfig::addStringListOption(const string& name, unsigned short & num_marker, string* & option_field) {
   assert(option_map.find(name) == option_map.end());
   all_options.insert(pair<string, bool>(name, true));
@@ -1241,9 +1248,6 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("GAMMA_VALUE", Gamma, 1.4);
   /*!\brief THERMODYNAMIC_PRESSURE  \n DESCRIPTION: Thermodynamics(operating) Pressure (101325 Pa), only for incompressible flows) \ingroup Config*/
   addDoubleOption("THERMODYNAMIC_PRESSURE", Pressure_Thermodynamic, 101325.0);
-  /*!\brief STANDARD_REFERENCE_TEMPERATURE  \n DESCRIPTION: Standard reference temperature (298.15K), only for
-   * multicomponent incompressible flows) \ingroup Config*/
-  addDoubleOption("STANDARD_REFERENCE_TEMPERATURE", Standard_Ref_Temperature, 298.15);
   /*!\brief CP_VALUE  \n DESCRIPTION: Specific heat at constant pressure, Cp (1004.703 J/kg*K (air), constant density incompressible fluids only) \ingroup Config*/
   addDoubleListOption("SPECIFIC_HEAT_CP", nSpecific_Heat_Cp, Specific_Heat_Cp);
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
@@ -2009,6 +2013,16 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MUSCL_FLOW", MUSCL_Flow, true);
   /*!\brief MUSCL_KAPPA_FLOW \n DESCRIPTION: Blending coefficient for the U-MUSCL scheme \ingroup Config*/
   addDoubleOption("MUSCL_KAPPA_FLOW", MUSCL_Kappa_Flow, 0.0);
+  /*!\brief RAMP_MUSCL \n DESCRIPTION: Enable ramping of the MUSCL scheme from 1st to 2nd order using specified method*/
+  addBoolOption("RAMP_MUSCL", RampMUSCL, false);
+  /*! brief RAMP_OUTLET_COEFF \n DESCRIPTION: the 1st coeff is the ramp start iteration,
+   * the 2nd coeff is the iteration update frequenct, 3rd coeff is the total number of iterations */
+  RampMUSCLParam.rampMUSCLCoeff[0] = 0.0; RampMUSCLParam.rampMUSCLCoeff[1] = 1.0; RampMUSCLParam.rampMUSCLCoeff[2] = 500.0;
+  addULongArrayOption("RAMP_MUSCL_COEFF", 3, false, RampMUSCLParam.rampMUSCLCoeff);
+  /*!\brief RAMP_MUSCL_POWER \n DESRCIPTION: Exponent of the MUSCL ramp formulation */
+  addDoubleOption("RAMP_MUSCL_POWER", RampMUSCLParam.RampMUSCLPower, 1.0);
+  /*!\brief KIND_MUSCL_RAMP \n DESCRIPTION: The kind of MUSCL Ramp to be applied */
+  addEnumOption("KIND_MUSCL_RAMP", RampMUSCLParam.Kind_MUSCLRamp, MUSCLRamp_Map, MUSCL_RAMP_TYPE::ITERATION);
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_FLOW", Kind_SlopeLimit_Flow, Limiter_Map, LIMITER::VENKATAKRISHNAN);
@@ -4533,6 +4547,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         Giles_Var1[iMarker] = rampOutletCoeff[RAMP_COEFF::INITIAL_VALUE];
       }
     }
+  }
+
+  if(RampMUSCL && !DiscreteAdjoint){
+    if (RampMUSCLParam.RampMUSCLPower <= 0.0) SU2_MPI::Error("RAMP_MUSCL_POWER cannot be less than or equal to zero!", CURRENT_FUNCTION);
+    rampMUSCLValue = 0.0;
+  } else {
+    rampMUSCLValue = 1.0;
   }
 
   /*--- Check on extra Relaxation factor for Giles---*/
@@ -7064,6 +7085,21 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     auto PrintLimiterInfo = [&](const LIMITER kind_limiter, const su2double kappa) {
       cout << "Second order integration in space, with slope limiter.\n";
+      if (RampMUSCL) {
+        cout << "Ramping MUSCL sheme from first to second order starting at iter " << RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::INITIAL_VALUE]
+          << ", ending at iter " << RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::FINAL_ITER] + RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::INITIAL_VALUE]
+          << ", updating every " << RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::UPDATE_FREQ] << " iterations." << endl;
+        string MUSCLRampType;
+        switch (RampMUSCLParam.Kind_MUSCLRamp) {
+          case MUSCL_RAMP_TYPE::ITERATION:
+            MUSCLRampType = "linear";
+            break;
+          case MUSCL_RAMP_TYPE::SMOOTH_FUNCTION:
+            MUSCLRampType = "cosine";
+            break;
+        }
+        cout << "Ramp applied according to a " << MUSCLRampType << " function, raised to the power " << RampMUSCLParam.RampMUSCLPower << "." << endl;
+      }
       if (kappa != 0.0) cout << "U-MUSCL reconstruction, with coefficient: " << kappa << ".\n";
       switch (kind_limiter) {
         case LIMITER::NONE:
