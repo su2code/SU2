@@ -112,7 +112,7 @@ def RunPrimal(size):
 
  # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
-    driver = pysu2.CSinglezoneDriver("config_unsteady.cfg", 1, comm);
+    driver = pysu2.CSinglezoneDriver("config_unsteady.cfg", 1, comm)
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
 
