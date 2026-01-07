@@ -125,9 +125,6 @@ def RunPrimal(size):
   
 
   for time_iter in range(driver.GetNumberTimeIter()):
-    # Custom heat flux.
-    #ApplyHeatFlux(time_iter * dt, driver, marker_ids)
-
     # set the source term, per point
     for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
       # add source term:
