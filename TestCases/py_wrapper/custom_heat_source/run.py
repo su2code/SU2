@@ -155,7 +155,6 @@ def RunPrimal(size):
 
 
 def main():
-  comm = MPI.COMM_WORLD
 
   RunPrimal(0.1)
 
