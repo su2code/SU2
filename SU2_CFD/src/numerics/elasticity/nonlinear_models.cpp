@@ -34,38 +34,33 @@ CFEM_NeoHookean_Comp::CFEM_NeoHookean_Comp(unsigned short val_nDim,
                                            CFEANonlinearElasticity(val_nDim, val_nVar, config) {
 }
 
-void CFEM_NeoHookean_Comp::Compute_Plane_Stress_Term(CElement *element, const CConfig *config) {
+void CFEM_NeoHookean_Comp::Compute_Plane_Stress_Term(CElement *element, const CConfig *config, unsigned short iGauss) {
 
-  su2double j_red = 1.0;
-  su2double fx = 0.0, fpx = 1.0;
-  su2double xkm1 = 1.0, xk = 1.0;
-  su2double cte = 0.0;
+  const su2double thermalStress = ThermalStressTerm * (element->GetTemperature(iGauss) - ReferenceTemperature);
 
-  unsigned short iNR, nNR;
-  su2double NRTOL;
+  // Tolerate for NR method.
+  const su2double NRTOL = 1E-14;
 
-  // Maximum number of iterations and tolerance (relative)
-  nNR = 10;
-  NRTOL = 1E-25;
-
-  // j_red: reduced jacobian, for the 2x2 submatrix of F
-  j_red = F_Mat[0][0] * F_Mat[1][1] - F_Mat[1][0] * F_Mat[0][1];
+  // j_red: reduced jacobian, for the 2x2 submatrix of F.
+  const su2double j_red = F_Mat[0][0] * F_Mat[1][1] - F_Mat[1][0] * F_Mat[0][1];
   // cte: constant term in the NR method
-  cte = Lambda*log(j_red) - Mu;
+  const su2double cte = Lambda*log(j_red) - Mu + thermalStress;
 
-  // f(f33)  = mu*f33^2 + lambda*ln(f33) + (lambda*ln(j_red)-mu) = 0
+  // f(f33) = mu*f33^2 + lambda*ln(f33) + (lambda*ln(j_red)-mu+thermalStress) = 0
   // f'(f33) = 2*mu*f33 + lambda/f33
 
-  for (iNR = 0; iNR < nNR; iNR++) {
-    fx  = Mu*pow(xk,2.0) + Lambda*log(xk) + cte;
-    fpx = 2*Mu*xk + (Lambda / xk);
-    xkm1 = xk - fx / fpx;
-    if (((xkm1 - xk) / xk) < NRTOL) break;
-    xk = xkm1;
+  // Initialize as plane strain.
+  su2double xk = 1.0;
+  for (auto iNR = 0; iNR < 20; ++iNR) {
+    const su2double fx = Mu * pow(xk, 2) + Lambda * log(xk) + cte;
+    const su2double fpx = 2 * Mu * xk + Lambda / xk;
+    f33 = xk - fx / fpx;
+    if (fabs(f33 - xk) < NRTOL) break;
+    xk = f33;
   }
-
-  f33 = xkm1;
-
+  if (fabs(f33 - xk) >= NRTOL) {
+    std::cout << "WARNING: Plane Stress term did not converge (residual = " << fabs(f33 - xk) << ")\n";
+  }
 }
 
 void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element, const CConfig *config) {
@@ -140,7 +135,7 @@ CFEM_Knowles_NearInc::CFEM_Knowles_NearInc(unsigned short val_nDim, unsigned sho
 
 }
 
-void CFEM_Knowles_NearInc::Compute_Plane_Stress_Term(CElement *element, const CConfig *config) {
+void CFEM_Knowles_NearInc::Compute_Plane_Stress_Term(CElement *element, const CConfig *config, unsigned short iGauss) {
 
   SU2_MPI::Error("This material model cannot (yet) be used for plane stress.",CURRENT_FUNCTION);
 
@@ -286,7 +281,7 @@ CFEM_IdealDE::CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar,
 
 }
 
-void CFEM_IdealDE::Compute_Plane_Stress_Term(CElement *element, const CConfig *config) {
+void CFEM_IdealDE::Compute_Plane_Stress_Term(CElement *element, const CConfig *config, unsigned short iGauss) {
 
   SU2_MPI::Error("This material model cannot (yet) be used for plane stress.", CURRENT_FUNCTION);
 

@@ -68,6 +68,7 @@ private:
 
   bool setup = false;
   bool autoRelaxation = false;
+  bool useDeflation = false;
   Scalar finDiffStepND = 0.0;
   Scalar finDiffStep = 0.0; /*!< \brief Based on RMS(solution), used in matrix-free products. */
   Scalar nkRelaxation = 1.0;
@@ -151,17 +152,25 @@ private:
   template<class T, su2enable_if<std::is_same<T,MixedScalar>::value> = 0>
   inline unsigned long Preconditioner_impl(const CSysVector<T>& u, CSysVector<T>& v,
                                            unsigned long iters, Scalar& eps) const {
-    if (iters == 0) {
+    const auto inner_solver = config->GetKind_Linear_Solver_Inner();
+
+    if (iters == 0 || (iters == 1 && inner_solver == LINEAR_SOLVER_INNER::SMOOTHER)) {
       (*preconditioner)(u, v);
       return 0;
     }
     auto product = CSysMatrixVectorProduct<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
     v = MixedScalar(0.0);
     MixedScalar eps_t = eps;
-    if (config->GetKind_Linear_Solver_Inner() == LINEAR_SOLVER_INNER::NONE) {
-      iters = solvers[FLOW_SOL]->System.FGMRES_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
-    } else {
-      iters = solvers[FLOW_SOL]->System.BCGSTAB_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
+    switch (inner_solver) {
+      case LINEAR_SOLVER_INNER::NONE:
+        iters = solvers[FLOW_SOL]->System.FGMRES_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
+        break;
+      case LINEAR_SOLVER_INNER::BCGSTAB:
+        iters = solvers[FLOW_SOL]->System.BCGSTAB_LinSolver(u, v, product, *preconditioner, eps, iters, eps_t, false, config);
+        break;
+      case LINEAR_SOLVER_INNER::SMOOTHER:
+        iters = solvers[FLOW_SOL]->System.Smoother_LinSolver(u, v, product, *preconditioner, 0, iters, eps_t, false, config);
+        break;
     }
     eps = eps_t;
     return iters;

@@ -330,7 +330,8 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
     AddVolumeOutput("HEAT_CAPACITY", "Heat_Capacity", "PRIMITIVE", "Heat capacity");
     AddVolumeOutput("THERMAL_CONDUCTIVITY", "Thermal_Conductivity", "PRIMITIVE", "Thermal conductivity");
-    if (heat || flamelet) AddVolumeOutput("TEMPERATURE", "Temperature", "PRIMITIVE", "Temperature");
+    if (!weakly_coupled_heat)
+      AddVolumeOutput("TEMPERATURE", "Temperature", "PRIMITIVE", "Temperature");
 
     AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE", "x-component of the skin friction vector");
     AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE", "y-component of the skin friction vector");
@@ -354,7 +355,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_VELOCITY-Y", "Residual_Velocity_y", "RESIDUAL", "Residual of the y-velocity component");
   if (nDim == 3)
     AddVolumeOutput("RES_VELOCITY-Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
-  if (config->GetEnergy_Equation()){
+  if (heat){
     AddVolumeOutput("RES_ENTHALPY", "Residual_Enthalpy", "RESIDUAL", "Residual of the enthalpy");
   }
   SetVolumeOutputFieldsScalarResidual(config);
@@ -440,7 +441,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
     SetVolumeOutputValue("HEAT_CAPACITY", iPoint, Node_Flow->GetSpecificHeatCp(iPoint));
     SetVolumeOutputValue("THERMAL_CONDUCTIVITY", iPoint, Node_Flow->GetThermalConductivity(iPoint));
-    if (heat || flamelet) SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
+    if (!weakly_coupled_heat)
+      SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature(iPoint));
   }
 
   SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
