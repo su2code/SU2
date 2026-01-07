@@ -96,7 +96,7 @@ def HeatSource(time, driver, iPoint):
 
 def RunPrimal(size):
   """
-  Run the heat solver with a custom heat (function of time) flux on all boundaries.
+  Run the heat solver with a custom heat source.
   Returns the final average boundary temperature.
   """
   comm = MPI.COMM_WORLD
