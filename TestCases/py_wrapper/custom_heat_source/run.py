@@ -115,6 +115,7 @@ def RunPrimal(size):
     driver = pysu2.CSinglezoneDriver("config_unsteady.cfg", 1, comm)
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
+    raise
 
   # Run the time loop in python to vary the heat flux.
   dt = driver.GetUnsteadyTimeStep()
