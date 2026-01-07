@@ -1028,14 +1028,16 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&globalCounter2, &smallYPlusCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
-      if (rank == MASTER_NODE) {
+      const bool write_iter = (config->GetInnerIter() % config->GetVolumeOutputFrequency(0) == 0);
+
+      if (rank == MASTER_NODE && write_iter) {
         if (notConvergedCounter)
           cout << "Warning: Computation of wall coefficients (y+) did not converge in "
                << notConvergedCounter << " points." << endl;
 
         if (smallYPlusCounter)
-          cout << "Warning: y+ < " << config->GetwallModel_MinYPlus() << " in " << smallYPlusCounter
-               << " points, for which the wall model is not active." << endl;
+          cout << "y+ < " << config->GetwallModel_MinYPlus() << " in " << smallYPlusCounter
+               << " points. No problem, but you can increase your near-wall mesh size." << endl;
       }
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS

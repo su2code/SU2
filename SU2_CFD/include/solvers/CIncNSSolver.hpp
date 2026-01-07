@@ -94,8 +94,19 @@ class CIncNSSolver final : public CIncEulerSolver {
    */
   void Compute_Streamwise_Periodic_Recovered_Values(CConfig *config, const CGeometry *geometry,
                                                     const unsigned short iMesh);
+  /*!
+   * \brief Compute the enthalpy due to species diffusion contribution for multicomponent and reacting flows.
+   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] n_species - Number of species in the mixture that a transport equation is solved.
+   * \param[in] implicit - Boolean for implicit iterations.
+   */
+  void Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
+                                  CNumerics* numerics, const int n_species, const bool implicit);
 
-public:
+ public:
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry - Geometrical definition of the problem.

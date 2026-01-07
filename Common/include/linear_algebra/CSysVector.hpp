@@ -66,6 +66,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
  private:
   enum { OMP_MAX_SIZE = 4096 }; /*!< \brief Maximum chunk size used in parallel for loops. */
 
+  /// NOTE: Update swap() if you add member variables.
   unsigned long omp_chunk_size = OMP_MAX_SIZE; /*!< \brief Static chunk size used in loops. */
   ScalarType* vec_val = nullptr;               /*!< \brief Storage, 64 byte aligned (do not use normal new/delete). */
   unsigned long nElm = 0;       /*!< \brief Total number of elements (or number elements on this processor). */
@@ -154,6 +155,18 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] u - Vector being copied.
    */
   CSysVector(const CSysVector& u) { Initialize(u.GetNBlk(), u.GetNBlkDomain(), u.nVar, u.vec_val, true); }
+
+  /*!
+   * \brief Swap contents with another vector.
+   */
+  void swap(CSysVector& other) {
+    std::swap(omp_chunk_size, other.omp_chunk_size);
+    std::swap(vec_val, other.vec_val);
+    std::swap(d_vec_val, other.d_vec_val);
+    std::swap(nElm, other.nElm);
+    std::swap(nElmDomain, other.nElmDomain);
+    std::swap(nVar, other.nVar);
+  }
 
   /*!
    * \brief Initialize the class with a scalar.

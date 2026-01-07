@@ -28,9 +28,10 @@
 #include "../../include/variables/CIncNSVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
-CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
+CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
                                unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) :
-                               CIncEulerVariable(pressure, velocity, temperature, npoint, ndim, nvar, config) {
+                               CIncEulerVariable(pressure, velocity, enthalpy, npoint, ndim, nvar, config),
+                               Energy(config->GetEnergy_Equation()) {
 
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
@@ -56,24 +57,15 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   SetPressure(iPoint);
 
-  /*--- Set the value of the temperature directly ---*/
+  su2double Enthalpy = Solution(iPoint, nDim + 1);
+  FluidModel->SetTDState_h(Enthalpy, scalar);
+  su2double Temperature = FluidModel->GetTemperature();
 
-  su2double Temperature = Solution(iPoint, indices.Temperature());
   auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
   from the dynamic pressure being iterated. ---*/
-
-  /*--- Use the fluid model to compute the new value of density. ---*/
-
-  FluidModel->SetTDState_T(Temperature, scalar);
-
-  /*--- for FLAMELET: copy the LUT temperature into the solution ---*/
-  Solution(iPoint,nDim+1) = FluidModel->GetTemperature();
-  /*--- for FLAMELET: update the local temperature using LUT variables ---*/
-  Temperature = Solution(iPoint,indices.Temperature());
-  check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
   /*--- Set the value of the density ---*/
 
@@ -90,9 +82,9 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
     /*--- Recompute the primitive variables ---*/
 
-    Temperature = Solution(iPoint, indices.Temperature());
-    SetTemperature(iPoint, Temperature, TemperatureLimits);
-    FluidModel->SetTDState_T(Temperature, scalar);
+    Enthalpy = Solution(iPoint, nDim + 1);
+    FluidModel->SetTDState_h(Enthalpy, scalar);
+    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
     SetDensity(iPoint, FluidModel->GetDensity());
 
     /*--- Flag this point as non-physical. ---*/
@@ -122,6 +114,10 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   SetSpecificHeatCp(iPoint, FluidModel->GetCp());
   SetSpecificHeatCv(iPoint, FluidModel->GetCv());
+
+  /*--- Set enthalpy ---*/
+
+  SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
 
   return physical;
 

@@ -36,6 +36,7 @@ rank = comm.Get_rank()
 # without mpi:
 #  comm = 0
 
+Tref = 298.15
 # flame temperature of the methane-air mixture (phi=0.5, P=5)
 Tf = 1777
 
@@ -48,7 +49,7 @@ rho_u = 2.52
 # unburnt thermal conductivity of methane-air (phi=0.5, P=5)
 k_u = 0.0523
 # unburnt heat capacity of methane-air (phi=0.5, P=5)
-cp_u = 1311.0
+cp_u = 1350.0
 
 # P = rho*R*T
 # 5 = 2.55 * R * 673
@@ -92,11 +93,23 @@ def update_temperature(SU2Driver, iPoint):
     # Note: returns a list
     C = SU2Driver.Solution(iSPECIESSOLVER)(iPoint,0)
     T = Tu*(1-C) + Tf*C
+
+    #iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
+    #solindex = getsolvar(SU2Driver)
+    #iTEMP = solindex.get("TEMPERATURE")
+    #T = SU2Driver.Solution(iFLOWSOLVER)(iPoint,iTEMP)
+    #SU2Driver.Solution(iFLOWSOLVER).Set(iPoint,iTEMP,cp_u*T)
+
+    prim_indices = SU2Driver.GetPrimitiveIndices()
+    iTemp = prim_indices['TEMPERATURE']
+    SU2Driver.Primitives().Set(iPoint,iTemp, T)
+    #ih = prim_indices['ENTHALPY']
+    #SU2Driver.Primitives().Set(iPoint,ih, cp_u*(T-Tref))
+        
     iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
-    # the list with names
-    solindex = getsolvar(SU2Driver)
-    iTEMP = solindex.get("TEMPERATURE")
-    SU2Driver.Solution(iFLOWSOLVER).Set(iPoint,iTEMP,T)
+    iENTH = 3
+    #h = 
+    SU2Driver.Solution(iFLOWSOLVER).Set(iPoint,iENTH, cp_u*(T-Tref))
 
 
 # ################################################################## #
@@ -210,11 +223,9 @@ def main():
   sys.stdout.flush()
 
   # run N iterations
-  for inner_iter in range(2):
+  for inner_iter in range(10):
     if (rank==0):
       print("python iteration ", inner_iter)
-    driver.Preprocess(inner_iter)
-    driver.Run()
 
     Source = driver.UserDefinedSource(iSPECIESSOLVER)
 
@@ -229,6 +240,10 @@ def main():
     for i_node in range(driver.GetNumberNodes()):
       # set the temperature to T = c*Tf + (1-c)*Tu
       update_temperature(driver, i_node)
+
+
+    driver.Preprocess(inner_iter)
+    driver.Run()
 
     driver.Postprocess()
     driver.Update()
