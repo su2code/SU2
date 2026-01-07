@@ -24,8 +24,9 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import pysu2ad
 from mpi4py import MPI
+import sys
+import pysu2			            # imports the SU2 wrapped module
 
 common_settings = """
 SOLVER= HEAT_EQUATION
@@ -104,21 +105,16 @@ def RunPrimal(size):
   if rank == 0:
     with open('config_unsteady.cfg', 'w') as f:
       f.write(common_settings.replace('__SIZE__', str(size)) + primal_settings)
+    print("\n------------------------------ Begin Solver -----------------------------\n")
+  sys.stdout.flush()
+
   comm.Barrier()
 
-  # Initialize the primal driver of SU2, this includes solver preprocessing.
+ # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
-    driver = pysu2ad.CSinglezoneDriver('config_unsteady.cfg', 1, comm)
+    driver = pysu2.CSinglezoneDriver("config_unsteady.cfg", 1, comm);
   except TypeError as exception:
-    print('A TypeError occured in pysu2ad.CSinglezoneDriver : ', exception)
-    raise
-
-  # Get the ID of the markers where the heat flux is applied.
-  all_marker_ids = driver.GetMarkerIndices()
-  marker_names = ['x_minus', 'x_plus', 'y_minus', 'y_plus']
-  marker_ids = []
-  for name in marker_names:
-    marker_ids.append(all_marker_ids[name] if name in all_marker_ids else -1)
+    print('A TypeError occured in pysu2.CDriver : ',exception)
 
   # Run the time loop in python to vary the heat flux.
   dt = driver.GetUnsteadyTimeStep()
