@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ## \file run.py
-#  \brief Unsteady adjoint heat transfer case with custom heat flux.
+#  \brief Unsteady heat transfer case with custom source term.
 #  \version 8.3.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
