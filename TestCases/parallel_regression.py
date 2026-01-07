@@ -1541,7 +1541,7 @@ def main():
     pywrapper_Unst_Heat_Source.cfg_file = "run.py" 
     pywrapper_Unst_Heat_Source.test_iter = 10 
     pywrapper_Unst_Heat_Source.unsteady = True 
-    pywrapper_Unst_Heat_Source.test_vals = [0.776365, 0.776430, 1.000003] 
+    pywrapper_Unst_Heat_Source.test_vals = [-5.235402, 300.010000, 300.000000]
     pywrapper_Unst_Heat_Source.command = TestCase.Command("mpirun -n 2", "python", "run.py")
     test_list.append(pywrapper_Unst_Heat_Source)
     
