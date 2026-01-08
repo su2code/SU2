@@ -4367,7 +4367,8 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig* config) {
       config->SetRefArea(TotalPositiveYArea);
 
     if (config->GetRefArea() < 1.0e-10) {
-      SU2_MPI::Error("Computed reference area is zero. Please set REF_AREA explicitly in the config file.", "SetPositive_ZArea");
+      SU2_MPI::Error("Computed reference area is zero. Please set REF_AREA explicitly in the config file.",
+                     "SetPositive_ZArea");
     }
 
     if (rank == MASTER_NODE) {
@@ -7021,9 +7022,9 @@ void CPhysicalGeometry::FindUniqueNode_PeriodicBound(const CConfig* config) {
            * ---*/
         }
         break;  // Actually no more than one streamwise periodic marker pair is allowed
-      }         // receiver conditional
-    }           // periodic conditional
-  }             // marker loop
+      }  // receiver conditional
+    }  // periodic conditional
+  }  // marker loop
 
   /*--- Copy the Coordinates and norm into send buffer. ---*/
   for (unsigned short iDim = 0; iDim < nDim; iDim++) Buffer_Send_RefNode[iDim] = nodes->GetCoord(iPointMin, iDim);
