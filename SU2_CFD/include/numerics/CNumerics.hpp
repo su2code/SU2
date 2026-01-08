@@ -660,24 +660,20 @@ public:
    * \param[out] stochReynStress - Stochastic tensor (to be added to the Reynolds stress tensor).
    */
   template<class Mat, class Scalar, class Vector>
-  NEVERINLINE static void ComputeStochReynStress(size_t nDim, Scalar density, Scalar eddyVis,
-                                                 Scalar turbKE, Vector rndVec, Scalar lesSensor,
-                                                 Mat& stochReynStress, Scalar Cmag) {
+  NEVERINLINE static void ComputeStochReynStress(size_t nDim, Scalar density, Scalar tke,
+                                                 Vector rndVec, Mat& stochReynStress, Scalar Cmag) {
 
     /* --- Calculate stochastic tensor --- */
 
-    stochReynStress[1][0] = - std::nearbyint(lesSensor) * Cmag * density * turbKE * rndVec[2];
-    stochReynStress[2][0] =   std::nearbyint(lesSensor) * Cmag * density * turbKE * rndVec[1];
-    stochReynStress[2][1] = - std::nearbyint(lesSensor) * Cmag * density * turbKE * rndVec[0];
-    for (size_t iDim = 0; iDim < nDim; iDim++) {
-      for (size_t jDim = 0; jDim <= iDim; jDim++) {
-        if (iDim==jDim) {
-          stochReynStress[iDim][jDim] = 0.0;
-        } else {
-          stochReynStress[jDim][iDim] = - stochReynStress[iDim][jDim];
-        }
-      }
-    }
+    stochReynStress[0][0] = 0.0;
+    stochReynStress[1][1] = 0.0;
+    stochReynStress[2][2] = 0.0;
+    stochReynStress[0][1] =   Cmag * density * tke * rndVec[2];
+    stochReynStress[0][2] = - Cmag * density * tke * rndVec[1];
+    stochReynStress[1][2] =   Cmag * density * tke * rndVec[0];
+    stochReynStress[1][0] = - stochReynStress[1][0];
+    stochReynStress[2][0] = - stochReynStress[2][0];
+    stochReynStress[2][1] = - stochReynStress[2][1];
 
   }
 

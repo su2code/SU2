@@ -65,13 +65,6 @@ private:
   void SetLangevinSourceTerms(CConfig *config, CGeometry* geometry);
 
   /*!
-   * \brief Set seed for Langevin equations (Stochastic Backscatter Model).
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition.
-   */
-  void SetLangevinGen(CConfig* config, CGeometry* geometry);
-
-  /*!
    * \brief Apply Laplacian smoothing to the source terms in Langevin equations (Stochastic Backscatter Model).
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition.

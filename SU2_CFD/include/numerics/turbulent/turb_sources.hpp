@@ -123,44 +123,47 @@ class CSourceBase_TurbSA : public CNumerics {
 
     const su2double& nue = ScalarVar_i[0];
     const auto& density = V_i[idx.Density()];
+    const su2double threshold = 0.9;
+    const su2double nut = max(nue*var.fv1, 1e-10);
+    const su2double delta = lengthScale/DES_const;
 
-    const su2double nut_small = 1.0e-12;
-    
-    const su2double nut = max(nue * var.fv1, nut_small);
-
-    su2double tLES = ct * pow(lengthScale/DES_const, 2) / nut;
-    su2double tRANS = pow(lengthScale, 2) / nut;
-    su2double tLR = tLES / tRANS;
-    su2double tTurb = tLES / (lesMode_i + (1.0-lesMode_i)*tLR);
-    su2double tRat = timeStep / tTurb;
-    
-    su2double corrFac = 1.0;
-    if (time_marching == TIME_MARCHING::DT_STEPPING_2ND) {
-      corrFac = sqrt(0.5*(1.0+tRat)*(4.0+tRat)/(2.0+tRat));
-    } else if (time_marching == TIME_MARCHING::DT_STEPPING_1ST) {
-      corrFac = sqrt(1.0+0.5*tRat);
+    for (unsigned short iVar = 0; iVar < nVar; iVar++ ) {
+      ResidSB[iVar] = 0.0;
     }
-    
-    su2double scaleFactor = 0.0;
-    if (std::nearbyint(lesMode_i) == 1) scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * density * corrFac;
-
     ResidSB[0] = Residual;
-    for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
-      ResidSB[iVar] = scaleFactor * stochSource[iVar-1] - 1.0/tTurb * density * ScalarVar_i[iVar];
-      ResidSB[iVar] *= Volume;
-    }
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++ ) {
       for (unsigned short jVar = 0; jVar < nVar; jVar++ ) {
         JacobianSB_i[iVar][jVar] = 0.0;
       }
     }
-
-    for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
-      JacobianSB_i[iVar][iVar] = -1.0/tTurb * density * Volume;
-    }
-
     JacobianSB_i[0][0] = Jacobian_i[0];
+
+    if (delta > 1e-10) {
+
+      su2double tTurb = ct*pow(delta, 2)/nut;
+      su2double tRat = timeStep / tTurb;
+    
+      su2double corrFac = 1.0;
+      if (time_marching == TIME_MARCHING::DT_STEPPING_2ND) {
+        corrFac = sqrt(0.5*(1.0+tRat)*(4.0+tRat)/(2.0+tRat));
+      } else if (time_marching == TIME_MARCHING::DT_STEPPING_1ST) {
+        corrFac = sqrt(1.0+0.5*tRat);
+      }
+    
+      su2double scaleFactor = 0.0;
+      if (lesMode_i > threshold) scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * density * corrFac;
+
+      for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
+        ResidSB[iVar] = scaleFactor * stochSource[iVar-1] - 1.0/tTurb * density * ScalarVar_i[iVar];
+        ResidSB[iVar] *= Volume;
+      }
+
+      for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
+        JacobianSB_i[iVar][iVar] = -1.0/tTurb * density * Volume;
+      }
+
+    }
 
   }
 
@@ -171,15 +174,13 @@ class CSourceBase_TurbSA : public CNumerics {
   inline void AddStochSource(const CSAVariables& var, const MatrixType& velGrad, const su2double Cmag) {
 
     su2double dist2 = dist_i * dist_i;
-    const su2double eps = 1e-10;
     su2double xi3 = pow(var.Ji, 3);
-
-    su2double factor = dist2 / (2.0 * var.fv1 * ScalarVar_i[0] + eps);
-    factor /= (3.0 * xi3 * var.cv1_3 / pow(xi3 + var.cv1_3, 2) + var.fv1 + eps);
+    su2double factor = dist2 / (2.0 * var.fv1 * ScalarVar_i[0]);
+    factor /= (3.0 * xi3 * var.cv1_3 / pow(xi3 + var.cv1_3, 2) + var.fv1);
 
     su2double tke = 0.0;
-    if (dist_i >= eps)
-      tke = pow(var.fv1*ScalarVar_i[0]/dist_i, 2);
+    const su2double threshold = 0.9;
+    if (lesMode_i > threshold) tke = pow(var.fv1*ScalarVar_i[0]/dist_i, 2);
 
     su2double R12 = (nDim==3 ?   Cmag * tke * ScalarVar_i[3] : 0.0);
     su2double R13 =            - Cmag * tke * ScalarVar_i[2];
@@ -368,9 +369,8 @@ class CSourceBase_TurbSA : public CNumerics {
       /*--- Compute residual for Langevin equations (Stochastic Backscatter Model). ---*/
 
       if (backscatter) {
-        if (std::nearbyint(lesMode_i) == 1 && config->GetStochSourceNu()) { 
+        if (config->GetStochSourceNu()) { 
           su2double SBS_Cmag = config->GetSBS_Cmag();
-          su2double lesSensor = max(lesMode_i, lesMode_j);
           su2double SBS_RelaxFactor = config->GetStochSourceRelax();
           su2double intensityCoeff = SBS_Cmag;
           if (SBS_RelaxFactor > 0.0) {
@@ -381,7 +381,7 @@ class CSourceBase_TurbSA : public CNumerics {
             unsigned long restartIter = config->GetRestart_Iter();
             su2double timeStep = config->GetTime_Step();
             su2double currentTime = (timeIter - restartIter) * timeStep;
-            intensityCoeff = SBS_Cmag * (1.0 - exp(-SBS_RelaxFactor * currentTime / timeScale));
+            intensityCoeff = SBS_Cmag * (1.0 - exp(- currentTime / (timeScale*SBS_RelaxFactor)));
           }
           AddStochSource(var, PrimVar_Grad_i + idx.Velocity(), intensityCoeff);
         } 

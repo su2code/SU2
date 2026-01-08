@@ -1631,16 +1631,18 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       if (nDim==3) SetVolumeOutputValue("STOCHSOURCE_Z", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 2));
       const su2double rho = Node_Flow->GetDensity(iPoint);
       const su2double nu_t = Node_Flow->GetEddyViscosity(iPoint) / rho;
-      const su2double DES_lengthscale = max(Node_Flow->GetDES_LengthScale(iPoint), 1.0E-10);
+      const su2double DES_lengthscale = max(Node_Flow->GetDES_LengthScale(iPoint), 1e-10);
       const su2double lesSensor = Node_Flow->GetLES_Mode(iPoint);
       const su2double mag = config->GetSBS_Cmag();
-      const su2double tke_estim = pow(nu_t/DES_lengthscale, 2.0);
+      const su2double threshold = 0.9;
+      su2double tke_estim = 0.0;
+      if (lesSensor > threshold) tke_estim = pow(nu_t/DES_lengthscale, 2.0);
       const su2double csi_x = Node_Turb->GetSolution(iPoint, 1);
       const su2double csi_y = Node_Turb->GetSolution(iPoint, 2);
       const su2double csi_z = (nDim==3) ? Node_Turb->GetSolution(iPoint, 3) : 0.0;
-      const su2double R_xy =   mag * tke_estim * csi_z * std::nearbyint(lesSensor);
-      const su2double R_xz = - mag * tke_estim * csi_y * std::nearbyint(lesSensor);
-      const su2double R_yz =   mag * tke_estim * csi_x * std::nearbyint(lesSensor);
+      const su2double R_xy =   mag * tke_estim * csi_z;
+      const su2double R_xz = - mag * tke_estim * csi_y;
+      const su2double R_yz =   mag * tke_estim * csi_x;
       const auto vel_grad = Node_Flow->GetVelocityGradient(iPoint);
       const su2double vel_div = vel_grad(0,0) + vel_grad(1,1) + (nDim ==3 ? vel_grad(2,2) : 0.0);
       const su2double tau_xx = nu_t * (2*vel_grad(0,0) - (2.0/3.0)*vel_div);
@@ -1685,16 +1687,18 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_23", iPoint, -tau_yz);
     }
     if (config->GetKind_HybridRANSLES()!=NO_HYBRIDRANSLES && config->GetStochastic_Backscatter()) {
-      const su2double DES_lengthscale = max(Node_Flow->GetDES_LengthScale(iPoint), 1.0E-10);
+      const su2double DES_lengthscale = max(Node_Flow->GetDES_LengthScale(iPoint), 1e-10);
       const su2double lesSensor = Node_Flow->GetLES_Mode(iPoint);
       const su2double mag = config->GetSBS_Cmag();
-      const su2double tke_estim = pow(nu_t/DES_lengthscale, 2.0);
+      const su2double threshold = 0.9;
+      su2double tke_estim = 0.0;
+      if (lesSensor > threshold) tke_estim = pow(nu_t/DES_lengthscale, 2.0);
       const su2double csi_x = Node_Turb->GetSolution(iPoint, 1);
       const su2double csi_y = Node_Turb->GetSolution(iPoint, 2);
       const su2double csi_z = (nDim==3) ? Node_Turb->GetSolution(iPoint, 3) : 0.0;
-      const su2double R_xy =   mag * tke_estim * csi_z * std::nearbyint(lesSensor);
-      const su2double R_xz = - mag * tke_estim * csi_y * std::nearbyint(lesSensor);
-      const su2double R_yz =   mag * tke_estim * csi_x * std::nearbyint(lesSensor);
+      const su2double R_xy =   mag * tke_estim * csi_z;
+      const su2double R_xz = - mag * tke_estim * csi_y;
+      const su2double R_yz =   mag * tke_estim * csi_x;
       SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_12", iPoint, -R_xy);
       SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_13", iPoint, -R_xz);
       SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_23", iPoint, -R_yz);

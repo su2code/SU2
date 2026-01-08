@@ -1643,15 +1643,19 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry) {
 
   unsigned long timeIter = config->GetTimeIter();
+  const su2double threshold = 0.9;
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++){
-    const auto iGlobalPoint = geometry->nodes->GetGlobalIndex(iPoint);
+    const auto coord = geometry->nodes->GetCoord(iPoint);
+    su2double coordSum = (coord[0] + coord[1] + ((nDim == 3) ? coord[2] : 0.0)) * 1e6;
+    unsigned long coordHash = std::nearbyint(coordSum);
     for (auto iDim = 0u; iDim < nDim; iDim++){
-      unsigned long seed = RandomToolbox::GetSeed(iGlobalPoint+1, iDim+1, timeIter+1);
+      unsigned long seed = RandomToolbox::GetSeed(coordHash, iDim+1, timeIter+1);
       std::mt19937 gen(seed);
       su2double lesSensor = nodes->GetLES_Mode(iPoint);
-      su2double rnd = RandomToolbox::GetRandomNormal(gen) * std::nearbyint(lesSensor);
+      su2double rnd = 0.0;
+      if (lesSensor > threshold) rnd = RandomToolbox::GetRandomNormal(gen);
       nodes->SetLangevinSourceTermsOld(iPoint, iDim, rnd);
       nodes->SetLangevinSourceTerms(iPoint, iDim, rnd);
     }
@@ -1671,6 +1675,7 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
   const su2double omega = 0.8;
   unsigned long timeIter = config->GetTimeIter();
   unsigned long restartIter = config->GetRestart_Iter();
+  const su2double threshold = 0.9;
 
   /*--- Start SOR algorithm for the Laplacian smoothing. ---*/
 
@@ -1689,7 +1694,7 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
       SU2_OMP_FOR_DYN(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         const su2double lesSensor = nodes->GetLES_Mode(iPoint);
-        if (std::nearbyint(lesSensor) == 0.0) continue;
+        if (lesSensor < threshold) continue;
         local_nPointLES += 1;
         const su2double DES_LengthScale = nodes->GetDES_LengthScale(iPoint);
         su2double maxDelta = DES_LengthScale / constDES;
@@ -1774,7 +1779,7 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
         su2double mean_check_notSmoothed = 0.0;
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
           const su2double lesSensor = nodes->GetLES_Mode(iPoint);
-          if (std::nearbyint(lesSensor) == 0.0) continue;
+          if (lesSensor < threshold) continue;
           su2double source = nodes->GetLangevinSourceTerms(iPoint, iDim);
           su2double source_notSmoothed = nodes->GetLangevinSourceTermsOld(iPoint, iDim);
           mean_check_old += source;
