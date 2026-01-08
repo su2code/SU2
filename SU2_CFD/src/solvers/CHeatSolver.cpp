@@ -311,6 +311,20 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
   }
 }
 
+void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                                  CConfig *config, unsigned short iMesh) {
+
+  /*--- Regular source terms go here. ---*/
+  /*--- ... ---*/
+
+ /*--- Custom user defined source term (from the python wrapper) ---*/
+  if (config->GetPyCustomSource()) {
+    CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
+  }
+
+}
+
+
 void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
