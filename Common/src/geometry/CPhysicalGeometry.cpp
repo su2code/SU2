@@ -4366,6 +4366,10 @@ void CPhysicalGeometry::SetPositive_ZArea(CConfig* config) {
     else
       config->SetRefArea(TotalPositiveYArea);
 
+    if (config->GetRefArea() < 1.0e-10) {
+      SU2_MPI::Error("Computed reference area is zero. Please set REF_AREA explicitly in the config file.", "SetPositive_ZArea");
+    }
+
     if (rank == MASTER_NODE) {
       if (D3)
         cout << "Reference area = " << TotalPositiveZArea << A << ".\n";
