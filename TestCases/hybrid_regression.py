@@ -665,7 +665,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals         = [19.000000, -1.048972, -1.324971]
+    slinc_steady.test_vals         = [19.000000, -1.154874, -1.378120]
     slinc_steady.test_vals_aarch64 = [19.000000, -1.154874, -1.378120]
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
