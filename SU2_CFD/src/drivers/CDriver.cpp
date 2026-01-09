@@ -2738,112 +2738,108 @@ void CDriver::PrintDirectResidual(RECORDING kind_recording) {
   if (rank != MASTER_NODE || kind_recording != RECORDING::SOLUTION_VARIABLES) return;
 
   const bool multizone = config_container[ZONE_0]->GetMultizone_Problem();
+  const unsigned short fieldWidth = 25;
 
-  /*--- Helper lambda func to return lenghty [iVar][iZone] string.  ---*/
-  auto iVar_iZone2string = [&](unsigned short ivar, unsigned short izone) {
-    if (multizone)
-      return "[" + std::to_string(ivar) + "][" + std::to_string(izone) + "]";
-          return "[" + std::to_string(ivar) + "]";
-  };
+  /*--- Table for Residual Values ---*/
+  PrintingToolbox::CTablePrinter ResidualTable(&std::cout);
+  ResidualTable.SetPrecision(config_container[ZONE_0]->GetOutput_Precision());
+  ResidualTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
 
-  /*--- Print residuals in the first iteration ---*/
+  std::cout << "\n-- Direct Residual Summary:" << std::endl;
 
-  const unsigned short fieldWidth = 15;
-  PrintingToolbox::CTablePrinter RMSTable(&std::cout);
-  RMSTable.SetPrecision(config_container[ZONE_0]->GetOutput_Precision());
+  /*--- Setup table columns ---*/
+  ResidualTable.AddColumn("Residual", fieldWidth);
+  ResidualTable.AddColumn("log10(RMS)", fieldWidth);
+  ResidualTable.PrintHeader();
 
-  /*--- The CTablePrinter requires two sweeps:
-    *--- 0. Add the colum names (addVals=0=false) plus CTablePrinter.PrintHeader()
-    *--- 1. Add the RMS-residual values (addVals=1=true) plus CTablePrinter.PrintFooter() ---*/
-  for (int addVals = 0; addVals < 2; addVals++) {
+  /*--- Loop through each zone ---*/
+  for (unsigned short iZone = 0; iZone < nZone; iZone++) {
 
-    for (unsigned short iZone = 0; iZone < nZone; iZone++) {
+    auto solvers = solver_container[iZone][INST_0][MESH_0];
+    auto configs = config_container[iZone];
 
-      auto solvers = solver_container[iZone][INST_0][MESH_0];
-      auto configs = config_container[iZone];
+    /*--- Print zone header ---*/
+    if (multizone) {
+      ResidualTable << "ZONE " + std::to_string(iZone) << "";
+      ResidualTable.PrintFooter();
+    }
 
-      /*--- Note: the FEM-Flow solvers are availalbe for disc. adjoint runs only for SingleZone. ---*/
-      if (configs->GetFluidProblem() || configs->GetFEMSolver()) {
+    /*--- Fluid or FEM-Flow Problems ---*/
+    if (configs->GetFluidProblem() || configs->GetFEMSolver()) {
 
-        for (unsigned short iVar = 0; iVar < solvers[FLOW_SOL]->GetnVar(); iVar++) {
-          if (!addVals)
-            RMSTable.AddColumn("rms_Flow" + iVar_iZone2string(iVar, iZone), fieldWidth);
-          else
-            RMSTable << log10(solvers[FLOW_SOL]->GetRes_RMS(iVar));
-        }
-
-        if (configs->GetKind_Turb_Model() != TURB_MODEL::NONE && !configs->GetFrozen_Visc_Disc()) {
-          for (unsigned short iVar = 0; iVar < solvers[TURB_SOL]->GetnVar(); iVar++) {
-            if (!addVals)
-              RMSTable.AddColumn("rms_Turb" + iVar_iZone2string(iVar, iZone), fieldWidth);
-            else
-              RMSTable << log10(solvers[TURB_SOL]->GetRes_RMS(iVar));
-          }
-        }
-
-        if (configs->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-          for (unsigned short iVar = 0; iVar < solvers[SPECIES_SOL]->GetnVar(); iVar++) {
-            if (!addVals)
-              RMSTable.AddColumn("rms_Spec" + iVar_iZone2string(iVar, iZone), fieldWidth);
-            else
-              RMSTable << log10(solvers[SPECIES_SOL]->GetRes_RMS(iVar));
-          }
-        }
-
-        if (!multizone && configs->GetWeakly_Coupled_Heat()){
-          if (!addVals) RMSTable.AddColumn("rms_Heat" + iVar_iZone2string(0, iZone), fieldWidth);
-          else RMSTable << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
-        }
-
-        if (configs->AddRadiation()) {
-          if (!addVals) RMSTable.AddColumn("rms_Rad" + iVar_iZone2string(0, iZone), fieldWidth);
-          else RMSTable << log10(solvers[RAD_SOL]->GetRes_RMS(0));
-        }
-
+      /*--- Flow residuals ---*/
+      for (unsigned short iVar = 0; iVar < solvers[FLOW_SOL]->GetnVar(); iVar++) {
+        std::string varName = "rms_Flow[" + std::to_string(iVar) + "]";
+        ResidualTable << varName << log10(solvers[FLOW_SOL]->GetRes_RMS(iVar));
       }
-      else if (configs->GetStructuralProblem()) {
 
-        if (configs->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE){
-          if (!addVals) {
-            RMSTable.AddColumn("UTOL-A", fieldWidth);
-            RMSTable.AddColumn("RTOL-A", fieldWidth);
-            RMSTable.AddColumn("ETOL-A", fieldWidth);
-          }
-          else {
-            RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(0))
-                     << log10(solvers[FEA_SOL]->GetRes_FEM(1))
-                     << log10(solvers[FEA_SOL]->GetRes_FEM(2));
-          }
+      /*--- Turbulence residuals ---*/
+      if (configs->GetKind_Turb_Model() != TURB_MODEL::NONE && !configs->GetFrozen_Visc_Disc()) {
+        for (unsigned short iVar = 0; iVar < solvers[TURB_SOL]->GetnVar(); iVar++) {
+          std::string varName = "rms_Turb[" + std::to_string(iVar) + "]";
+          ResidualTable << varName << log10(solvers[TURB_SOL]->GetRes_RMS(iVar));
         }
-        else{
-          if (!addVals) {
-            RMSTable.AddColumn("log10[RMS Ux]", fieldWidth);
-            RMSTable.AddColumn("log10[RMS Uy]", fieldWidth);
-            if (nDim == 3) RMSTable.AddColumn("log10[RMS Uz]", fieldWidth);
-          }
-          else {
-            RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(0))
-                     << log10(solvers[FEA_SOL]->GetRes_FEM(1));
-            if (nDim == 3) RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(2));
-          }
+      }
+
+      /*--- Species residuals ---*/
+      if (configs->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+        for (unsigned short iVar = 0; iVar < solvers[SPECIES_SOL]->GetnVar(); iVar++) {
+          std::string varName = "rms_Spec[" + std::to_string(iVar) + "]";
+          ResidualTable << varName << log10(solvers[SPECIES_SOL]->GetRes_RMS(iVar));
         }
-
       }
-      else if (configs->GetHeatProblem()) {
 
-        if (!addVals) RMSTable.AddColumn("rms_Heat" + iVar_iZone2string(0, iZone), fieldWidth);
-        else RMSTable << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
-      } else {
-        SU2_MPI::Error("Invalid KindSolver for CDiscAdj-MultiZone/SingleZone-Driver.", CURRENT_FUNCTION);
+      /*--- Heat residuals (weakly coupled) ---*/
+      if (!multizone && configs->GetWeakly_Coupled_Heat()) {
+        ResidualTable << "rms_Heat[0]" << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
       }
-    } // loop iZone
 
-    if (!addVals) RMSTable.PrintHeader();
-    else RMSTable.PrintFooter();
+      /*--- Radiation residuals ---*/
+      if (configs->AddRadiation()) {
+        ResidualTable << "rms_Rad[0]" << log10(solvers[RAD_SOL]->GetRes_RMS(0));
+      }
 
-  } // for addVals
+    }
+    /*--- Structural Problems ---*/
+    else if (configs->GetStructuralProblem()) {
 
-  cout << "\n-------------------------------------------------------------------------\n" << endl;
+      if (configs->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE) {
+        ResidualTable << "UTOL-A" << log10(solvers[FEA_SOL]->GetRes_FEM(0));
+        ResidualTable << "RTOL-A" << log10(solvers[FEA_SOL]->GetRes_FEM(1));
+        ResidualTable << "ETOL-A" << log10(solvers[FEA_SOL]->GetRes_FEM(2));
+      }
+      else {
+        ResidualTable << "RMS Ux" << log10(solvers[FEA_SOL]->GetRes_FEM(0));
+        ResidualTable << "RMS Uy" << log10(solvers[FEA_SOL]->GetRes_FEM(1));
+        if (nDim == 3) {
+          ResidualTable << "RMS Uz" << log10(solvers[FEA_SOL]->GetRes_FEM(2));
+        }
+      }
+
+    }
+    /*--- Heat Problems ---*/
+    else if (configs->GetHeatProblem()) {
+
+      ResidualTable << "rms_Heat[0]" << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
+
+    }
+    else {
+      SU2_MPI::Error("Invalid KindSolver for CDiscAdj-MultiZone/SingleZone-Driver.", CURRENT_FUNCTION);
+    }
+
+    /*--- Print zone footer ---*/
+    if (multizone) {
+      ResidualTable.PrintFooter();
+    }
+
+  }
+
+  /*--- Print final footer for single zone ---*/
+  if (!multizone) {
+    ResidualTable.PrintFooter();
+  }
+
+  std::cout << "\n-------------------------------------------------------------------------\n" << std::endl;
 
 }
 
