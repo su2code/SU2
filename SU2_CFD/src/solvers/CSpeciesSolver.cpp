@@ -220,12 +220,11 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
     const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
     const bool energy = config->GetEnergy_Equation();
-    const bool flamelet = (config->GetKind_FluidModel() == FLUID_FLAMELET);
     const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
     /*--- for the flamelet model, the temperature is saved to file, but the energy equation is off ---*/
 
-   if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) skipVars--;
+   if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -309,22 +308,23 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
                                    bool Output) {
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
-  /*--- Set the laminar mass Diffusivity for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
     const su2double temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
     const su2double* scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
     solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
     solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_T(temperature, scalar);
+    /*--- Recompute viscosity, important  to get diffusivity correct across MPI ranks. ---*/
+    nodes->SetLaminarViscosity(iPoint, solver_container[FLOW_SOL]->GetFluidModel()->GetLaminarViscosity());
+    /*--- Set the laminar mass Diffusivity for the species solver. ---*/
     for (auto iVar = 0u; iVar <= nVar; iVar++) {
       const su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
     }
-
   }  // iPoint
   END_SU2_OMP_FOR
 
-  /*--- Clear Residual and Jacobian. Upwind second order reconstruction and gradients ---*/
+  /*--- Clear Residual and Jacobian. Upwind second order reconstruction and gradients. ---*/
   CommonPreprocessing(geometry, config, Output);
 }
 

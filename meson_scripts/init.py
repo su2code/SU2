@@ -74,7 +74,7 @@ def init_submodules(
     github_repo_mel = "https://github.com/pcarruscag/MEL"
     sha_version_fado = "ce7ee018e4e699af5028d69baa1939fea290e18a"
     github_repo_fado = "https://github.com/pcarruscag/FADO"
-    sha_version_mlpcpp = "e19ca0cafb28c4b7ba5b8cffef42883259b00dc0"
+    sha_version_mlpcpp = "ff57e0cf9e60127196d3f1be71e711d47ff646ef"
     github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
     sha_version_eigen = "d71c30c47858effcbd39967097a2d99ee48db464"
     github_repo_eigen = "https://gitlab.com/libeigen/eigen.git"

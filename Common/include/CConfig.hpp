@@ -927,7 +927,6 @@ private:
   Initial_BCThrust,                /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Pressure_FreeStream,             /*!< \brief Total pressure of the fluid. */
   Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
-  Standard_Ref_Temperature,        /*!< \brief Standard reference temperature for multicomponent flows. */
   Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   unsigned short wallModel_MaxIter; /*!< \brief maximum number of iterations for the Newton method for the wall model */
@@ -1106,6 +1105,7 @@ private:
   bool SpatialFourier;              /*!< \brief option for computing the fourier transforms for subsonic non-reflecting BC. */
   bool RampMotionFrame;             /*!< \brief option for ramping up or down the motion Frame values */
   bool RampOutlet;                  /*!< \brief option for ramping up or down the outlet values */
+  bool RampMUSCL;
   bool RampRotatingFrame;           /*!< \brief option for ramping up or down the motion Frame values */
   bool RampTranslationFrame;        /*!< \brief option for ramping up or down the outlet values */
   bool RampOutletMassFlow;          /*!< \brief option for ramping up or down the motion Frame values */
@@ -1121,6 +1121,13 @@ private:
   array<su2double, N_POLY_COEFFS> mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
+
+  struct CMUSCLRampParam {
+    su2double RampMUSCLPower; /*!< \brief Exponent by which to raise the MUSCL ramp to the power of */
+    MUSCL_RAMP_TYPE Kind_MUSCLRamp; /*!< \brief The kind of MUSCL ramp */
+    unsigned long rampMUSCLCoeff[3];     /*!< \brief ramp MUSCL value coefficients for the COption class. */
+  } RampMUSCLParam;
+  su2double rampMUSCLValue; /*!< \brief Current value of the MUSCL ramp */
 
   ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
   bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
@@ -1351,6 +1358,8 @@ private:
   void addDoubleArrayOption(const string& name, int size, bool allow_fewer, su2double* option_field);
 
   void addUShortArrayOption(const string& name, int size, bool allow_fewer, unsigned short* option_field);
+
+  void addULongArrayOption(const string& name, int size, bool allow_fewer, unsigned long* option_field);
 
   void addDoubleListOption(const string& name, unsigned short & size, su2double * & option_field);
 
@@ -1971,12 +1980,6 @@ public:
    * \return Thermodynamic pressure.
    */
   su2double GetPressure_Thermodynamic(void) const { return Pressure_Thermodynamic; }
-
-  /*!
-   * \brief Get the value of the standard reference temperature for multicomponent flows.
-   * \return Standard reference temperature, Non-dimensionalized if it is needed for Non-Dimensional problems.
-   */
-  su2double GetStandard_RefTemperatureND(void) const { return Standard_Ref_Temperature / Temperature_Ref; }
 
   /*!
    * \brief Get the value of the non-dimensionalized thermodynamic pressure.
@@ -5209,6 +5212,12 @@ public:
   bool GetRampOutflow(void) const { return RampOutlet; }
 
   /*!
+   * \brief Get MUSCL ramp option.
+   * \return Ramp MUSCL option
+  */
+  bool GetMUSCLRamp(void) const { return RampMUSCL; }
+
+  /*!
    * \brief General interface for accessing ramp coefficient information
    * \return coeff for ramps
   */
@@ -5217,6 +5226,23 @@ public:
     else if (ramp_flag == RAMP_TYPE::BOUNDARY) return rampOutletCoeff[val_coeff];
     else return 0;
   };
+
+  /*!
+   * \brief Set MUSCL ramp value.
+  */
+  void SetMUSCLRampValue(su2double ramp_value) { rampMUSCLValue = ramp_value; }
+
+  /*!
+   * \brief Get MUSCL ramp value.
+   * \return Ramp MUSCL value
+  */
+  su2double GetMUSCLRampValue(void) const { return rampMUSCLValue; }
+
+  /*!
+   * \brief Get MUSCL ramp paramaters.
+   * \return Ramp MUSCL kind
+  */
+  const CMUSCLRampParam& GetMUSCLRampParam(void) const { return RampMUSCLParam; }
 
   /*!
    * \brief Generic interface for setting monitor outlet values for the ramp.

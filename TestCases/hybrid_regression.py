@@ -375,7 +375,7 @@ def main():
     inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
     inc_buoyancy.cfg_file  = "lam_buoyancy_cavity.cfg"
     inc_buoyancy.test_iter = 20
-    inc_buoyancy.test_vals = [-4.432484, 0.507522, 0.000000, 0.000000]
+    inc_buoyancy.test_vals = [-3.860443, -3.122399, 4.074529, -23.413000]
     test_list.append(inc_buoyancy)
 
     # Laminar heated cylinder with polynomial fluid model
@@ -384,7 +384,7 @@ def main():
     inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
     inc_poly_cylinder.test_iter = 20
     inc_poly_cylinder.test_vals         = [-8.241953, -2.424330, 0.027284, 1.909617, -173.010000]
-    inc_poly_cylinder.test_vals_aarch64 = [-8.241953, -2.424330, 0.027284, 1.909617, -173.010000]
+    inc_poly_cylinder.test_vals_aarch64 = [-8.260165, -2.445453, 0.027209, 1.915447, -171.620000]
     test_list.append(inc_poly_cylinder)
 
     # X-coarse laminar bend as a mixed element CGNS test
@@ -564,7 +564,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [1.084448, 1.526930, -2.895083, 2.607569, -2.479664, 3.063779, 106380.000000, 106380.000000, 5.733600, 64.737000]
+    axial_stage2D.test_vals = [1.065797, 1.519589, -2.928280, 2.573904, -2.526637, 3.017140, 106370.000000, 106370.000000, 5.726800, 64.383000]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -665,8 +665,8 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals         = [19.000000, -1.048446, -1.324274]
-    slinc_steady.test_vals_aarch64 = [19.000000, -1.048446, -1.324274]
+    slinc_steady.test_vals         = [19.000000, -1.048972, -1.324971]
+    slinc_steady.test_vals_aarch64 = [19.000000, -1.048972, -1.324971]
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
 
