@@ -297,7 +297,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      auxFluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic, Temperature_FreeStream);
+      auxFluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic, STD_REF_TEMP);
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
       Pressure_Thermodynamic = auxFluidModel->GetPressure();
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
@@ -307,7 +307,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic, Temperature_FreeStream);
+      auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic, STD_REF_TEMP);
       if (viscous) {
         /*--- Variable Cp model via polynomial. ---*/
         for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
@@ -383,10 +383,10 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     Pressure_Ref    = 1.0;
   }
   else if (config->GetRef_Inc_NonDim() == INITIAL_VALUES) {
-Density_Ref     = Density_FreeStream;
-Velocity_Ref    = ModVel_FreeStream;
-Temperature_Ref = Temperature_FreeStream;
-Pressure_Ref    = Density_Ref*Velocity_Ref*Velocity_Ref;
+    Density_Ref     = Density_FreeStream;
+    Velocity_Ref    = ModVel_FreeStream;
+    Temperature_Ref = Temperature_FreeStream;
+    Pressure_Ref    = Density_Ref*Velocity_Ref*Velocity_Ref;
   }
   else if (config->GetRef_Inc_NonDim() == REFERENCE_VALUES) {
     Density_Ref     = config->GetInc_Density_Ref();
@@ -484,7 +484,7 @@ Pressure_Ref    = Density_Ref*Velocity_Ref*Velocity_Ref;
         break;
 
       case INC_IDEAL_GAS:
-        fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND, Temperature_FreeStreamND);
+        fluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref());
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
         break;
 

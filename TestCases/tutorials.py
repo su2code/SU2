@@ -49,7 +49,7 @@ def main():
     cht_incompressible_unsteady.cfg_dir   = "../Tutorials/multiphysics/unsteady_cht/"
     cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible_unsteady.test_iter = 2
-    cht_incompressible_unsteady.test_vals = [-2.536012, -0.080399, -0.080399, -0.080399, -12.421963, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 238.240000]
+    cht_incompressible_unsteady.test_vals = [-3.075372, -0.080399, -0.080399, -0.080399, -11.163219, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 238.240000]
     cht_incompressible_unsteady.multizone = True
     cht_incompressible_unsteady.unsteady  = True
     test_list.append(cht_incompressible_unsteady)
