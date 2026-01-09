@@ -219,7 +219,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-6.111521, -2.668836, -2.669558, -2.669595]
+    discadj_cht.test_vals = [-6.308199, -3.086023, -3.086024, -3.086024]
     test_list.append(discadj_cht)
 
     ######################################

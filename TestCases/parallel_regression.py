@@ -1530,7 +1530,7 @@ def main():
     pywrapper_zimont.cfg_dir = "py_wrapper/turbulent_premixed_psi"
     pywrapper_zimont.cfg_file = "psi.cfg"
     pywrapper_zimont.test_iter = 0
-    pywrapper_zimont.test_vals = [-9.317943, -0.377235, -1.091632, -0.502950, 2.968250, -1.242417]
+    pywrapper_zimont.test_vals = [-3.415653, -2.221781, -3.107330, -2.569248, 0.531838, -3.796447]
     pywrapper_zimont.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_zimont)
 

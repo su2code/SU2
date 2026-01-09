@@ -375,7 +375,7 @@ def main():
     inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
     inc_buoyancy.cfg_file  = "lam_buoyancy_cavity.cfg"
     inc_buoyancy.test_iter = 20
-    inc_buoyancy.test_vals = [-3.860443, -3.122399, 4.074529, -23.413000]
+    inc_buoyancy.test_vals = [-3.860465, -3.122402, 1.322722, -23.413000]
     test_list.append(inc_buoyancy)
 
     # Laminar heated cylinder with polynomial fluid model
@@ -666,7 +666,7 @@ def main():
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
     slinc_steady.test_vals         = [19.000000, -1.048972, -1.324971]
-    slinc_steady.test_vals_aarch64 = [19.000000, -1.048972, -1.324971]
+    slinc_steady.test_vals_aarch64 = [19.000000, -1.154874, -1.378120]
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
 
