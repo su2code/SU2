@@ -56,6 +56,15 @@ namespace RestartFieldNames {
   constexpr const char* GRID_VELOCITY_Y = "Grid_Velocity_y";
   constexpr const char* GRID_VELOCITY_Z = "Grid_Velocity_z";
   
+  /*--- Turbulence variable field names ---*/
+  constexpr const char* NU_TILDE = "Nu_Tilde";
+  constexpr const char* TURB_KIN_ENERGY = "Turb_Kin_Energy";
+  constexpr const char* OMEGA = "Omega";
+  constexpr const char* LM_GAMMA = "LM_gamma";
+  constexpr const char* LM_RET = "LM_Re_t";
+  constexpr const char* LM_GAMMA_SEP = "LM_gamma_sep";
+  constexpr const char* LM_GAMMA_EFF = "LM_gamma_eff";
+  
   /*!
    * \brief Get velocity field name for a given dimension index.
    * \param[in] iDim - Dimension index (0=x, 1=y, 2=z)

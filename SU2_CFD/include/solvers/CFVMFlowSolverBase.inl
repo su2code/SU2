@@ -1056,9 +1056,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry** geometry, CSolver***
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     if (nVar_Restart == 0) nVar_Restart = nVar;
 
-    /*--- Skip coordinates ---*/
 
-    unsigned short skipVars = nDim;
 
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
     if (config->GetRead_Binary_Restart()) {

@@ -31,6 +31,7 @@
 #include "../../include/variables/CTurbSAVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../../include/solvers/CRestartFieldNames.hpp"
 
 /*---  This is the implementation of the Langtry-Menter transition model.
        The main reference for this model is:Langtry, Menter, AIAA J. 47(12) 2009
@@ -515,21 +516,16 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 
-    /*--- Skip flow variables ---*/
+    /*--- Identify indices for LM transition variables ---*/
+    long idx_gamma = solver[MESH_0][TRANS_SOL]->FindFieldIndex(RestartFieldNames::LM_GAMMA);
+    long idx_ret   = solver[MESH_0][TRANS_SOL]->FindFieldIndex(RestartFieldNames::LM_RET);
+    long idx_sep   = solver[MESH_0][TRANS_SOL]->FindFieldIndex(RestartFieldNames::LM_GAMMA_SEP);
+    long idx_eff   = solver[MESH_0][TRANS_SOL]->FindFieldIndex(RestartFieldNames::LM_GAMMA_EFF);
 
-    unsigned short skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar() + solver[MESH_0][TURB_SOL] ->GetnVar();
-
-    /*--- Adjust the number of solution variables in the incompressible
-     restart. We always carry a space in nVar for the energy equation in the
-     mean flow solver, but we only write it to the restart if it is active.
-     Therefore, we must reduce skipVars here if energy is inactive so that
-     the turbulent variables are read correctly. ---*/
-
-    const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-    const bool energy = config->GetEnergy_Equation();
-    const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
-    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+    if (rank == MASTER_NODE) {
+      if (idx_gamma == -1) cout << "WARNING: Variable '" << RestartFieldNames::LM_GAMMA << "' not found. Initializing with default.\n";
+      if (idx_ret == -1)   cout << "WARNING: Variable '" << RestartFieldNames::LM_RET << "' not found. Initializing with default.\n";
+    }
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -541,13 +537,21 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
       const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
       if (iPoint_Local > -1) {
-        /*--- We need to store this point's data, so jump to the correct
-         offset in the buffer of data from the restart file and load it. ---*/
+        // Load Gamma
+        if (idx_gamma != -1) nodes->SetSolution(iPoint_Local, 0, Restart_Data[counter * Restart_Vars[1] + idx_gamma]);
+        else nodes->SetSolution(iPoint_Local, 0, Solution_Inf[0]);
 
-        const auto index = counter * Restart_Vars[1] + skipVars;
-        for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-        nodes->SetIntermittencySep(iPoint_Local,  Restart_Data[index + 2]);
-        nodes->SetIntermittencyEff(iPoint_Local,  Restart_Data[index + 3]);
+        // Load Re_Theta_t
+        if (idx_ret != -1) nodes->SetSolution(iPoint_Local, 1, Restart_Data[counter * Restart_Vars[1] + idx_ret]);
+        else nodes->SetSolution(iPoint_Local, 1, Solution_Inf[1]);
+
+        // Load Intermittency Sep
+        if (idx_sep != -1) nodes->SetIntermittencySep(iPoint_Local, Restart_Data[counter * Restart_Vars[1] + idx_sep]);
+        else nodes->SetIntermittencySep(iPoint_Local, 0.0);
+
+        // Load Intermittency Eff
+        if (idx_eff != -1) nodes->SetIntermittencyEff(iPoint_Local, Restart_Data[counter * Restart_Vars[1] + idx_eff]);
+        else nodes->SetIntermittencyEff(iPoint_Local, 0.0);
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;

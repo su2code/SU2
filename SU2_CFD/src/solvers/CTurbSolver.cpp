@@ -29,6 +29,7 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CScalarSolver.inl"
+#include "../../include/solvers/CRestartFieldNames.hpp"
 
 /*--- Explicit instantiation of the parent class of CTurbSolver. ---*/
 template class CScalarSolver<CTurbVariable>;
@@ -118,39 +119,53 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 
-    /*--- Skip flow variables ---*/
+    /*--- Identify which turbulence variables to look for based on the model. ---*/
+    struct TurbFieldInfo {
+      string name;
+      unsigned short model_var_index;
+    };
+    vector<TurbFieldInfo> target_fields;
 
-    unsigned short skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar();
-
-    /*--- Adjust the number of solution variables in the incompressible
-     restart. We always carry a space in nVar for the energy equation in the
-     mean flow solver, but we only write it to the restart if it is active.
-     Therefore, we must reduce skipVars here if energy is inactive so that
-     the turbulent variables are read correctly. ---*/
-
-    const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-    const bool energy = config->GetEnergy_Equation();
-    const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
-    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
-
-    /*--- Determine number of turbulence variables in restart file ---*/
-    /*--- Total vars in restart = coordinates + flow vars + turbulence vars + grid velocities ---*/
-    unsigned short nVar_Restart = 0;
-    if (Restart_Vars[1] > skipVars) {
-      /*--- Estimate turbulence vars: total - skipVars, but cap at nVar ---*/
-      nVar_Restart = min(static_cast<unsigned short>(Restart_Vars[1] - skipVars), nVar);
+    TURB_MODEL kind_turb = config->GetKind_Turb_Model();
+    if (kind_turb == TURB_MODEL::SA) {
+      target_fields.push_back({RestartFieldNames::NU_TILDE, 0});
+    } else if (kind_turb == TURB_MODEL::SST) {
+      target_fields.push_back({RestartFieldNames::TURB_KIN_ENERGY, 0});
+      target_fields.push_back({RestartFieldNames::OMEGA, 1});
     }
 
-    /*--- Check if turbulence fields are present in restart file ---*/
-    /*--- Note: This is a simplified check. Full field-based lookup would require
-          knowing the specific turbulence model variable names (Nu_Tilde, Turb_Kin_Energy, etc.) ---*/
-    bool turb_fields_missing = false;
-    if (nVar_Restart < nVar) {
-      turb_fields_missing = true;
-      if (rank == MASTER_NODE) {
-        cout << "\nWARNING: The restart file appears to be missing turbulence variables." << endl;
-        cout << "Turbulence variables will be initialized from config defaults." << endl;
+    /*--- Fallback variables for legacy loading ---*/
+    unsigned short skipVars = 0;
+    unsigned short nVar_Restart_Legacy = 0;
+
+    if (target_fields.empty()) {
+      /*--- Skip flow variables ---*/
+      skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar();
+
+      const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
+      const bool energy = config->GetEnergy_Equation();
+      const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+      const bool flamelet = (config->GetKind_FluidModel() == FLUID_FLAMELET);
+
+      if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) {
+        skipVars--;
+      }
+
+      /*--- Determine number of turbulence variables in restart file ---*/
+      if (Restart_Vars[1] > skipVars) {
+        nVar_Restart_Legacy = min(static_cast<unsigned short>(Restart_Vars[1] - skipVars), nVar);
+      }
+    }
+
+    /*--- Find indices for named fields ---*/
+    vector<long> field_indices;
+    if (!target_fields.empty()) {
+      for (const auto& field : target_fields) {
+        long idx = solver[MESH_0][TURB_SOL]->FindFieldIndex(field.name);
+        field_indices.push_back(idx);
+        if (idx == -1 && rank == MASTER_NODE) {
+          cout << "WARNING: Turbulence variable '" << field.name << "' not found in restart file. Initializing with default.\n";
+        }
       }
     }
 
@@ -166,17 +181,28 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
       if (iPoint_Local > -1) {
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
+        const auto base_idx = counter * Restart_Vars[1];
+        
+        if (!target_fields.empty()) {
+          /*--- Named field loading ---*/
+          for (size_t i = 0; i < target_fields.size(); ++i) {
+            long r_idx = field_indices[i];
+            unsigned short v_idx = target_fields[i].model_var_index;
 
-        const auto index = counter * Restart_Vars[1] + skipVars;
-        
-        /*--- Load available turbulence variables ---*/
-        for (auto iVar = 0u; iVar < nVar_Restart; iVar++) {
-          nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-        }
-        
-        /*--- Initialize missing turbulence variables from defaults ---*/
-        if (turb_fields_missing) {
-          for (auto iVar = nVar_Restart; iVar < nVar; iVar++) {
+            if (r_idx != -1 && r_idx < Restart_Vars[1]) {
+              nodes->SetSolution(iPoint_Local, v_idx, Restart_Data[base_idx + r_idx]);
+            } else {
+              nodes->SetSolution(iPoint_Local, v_idx, Solution_Inf[v_idx]);
+            }
+          }
+        } else {
+          /*--- Positional loading (Legacy) ---*/
+          const auto index = base_idx + skipVars;
+          for (auto iVar = 0u; iVar < nVar_Restart_Legacy; iVar++) {
+            nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+          }
+          /*--- Initialize missing turbulence variables from defaults (legacy only) ---*/
+          for (auto iVar = nVar_Restart_Legacy; iVar < nVar; iVar++) {
             nodes->SetSolution(iPoint_Local, iVar, Solution_Inf[iVar]);
           }
         }
