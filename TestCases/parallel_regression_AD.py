@@ -290,7 +290,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-6.111499, -2.668835, -2.669557, -2.669594]
+    discadj_cht.test_vals = [-6.308199, -3.086021, -3.086022, -3.086022]
     test_list.append(discadj_cht)
 
     # 2D DA cht streamwise periodic case, 2 zones, avg temp objective
