@@ -838,7 +838,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
         ADT overhead is only worth it for larger numbers of probes. ---*/
   unsigned long nProbes = 0;
   for (const auto& output : customOutputs) {
-    if (!output.skip && output.type == OperationType::PROBE && output.varIndices.empty()) {
+    if (!output.skip && output.type == OperationType::PROBE) {
       ++nProbes;
     }
   }
@@ -1004,23 +1004,24 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
   /*--- Batch AllReduce for all probe values to reduce MPI communication overhead. ---*/
   if (nProbes > 0) {
     /*--- Evaluate all probe values locally first. ---*/
-    vector<su2double> probeValues(nProbes);
-    unsigned long iProbe = 0;
+    vector<su2double> probeValues;
+    probeValues.reserve(nProbes);
     for (auto& output : customOutputs) {
       if (output.skip || output.type != OperationType::PROBE) continue;
       su2double value = std::numeric_limits<su2double>::max();
       if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
         value = output.Eval(GetPointValue(output, output.iPoint));
       }
-      probeValues[iProbe++] = value;
+      probeValues.push_back(value);
     }
 
     /*--- Single AllReduce for all probe values. ---*/
-    vector<su2double> probeValuesGlobal(nProbes);
-    SU2_MPI::Allreduce(probeValues.data(), probeValuesGlobal.data(), nProbes, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+    unsigned long nProbesActual = probeValues.size();
+    vector<su2double> probeValuesGlobal(nProbesActual);
+    SU2_MPI::Allreduce(probeValues.data(), probeValuesGlobal.data(), nProbesActual, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
 
     /*--- Set history output values for all probes. ---*/
-    iProbe = 0;
+    unsigned long iProbe = 0;
     for (auto& output : customOutputs) {
       if (output.skip || output.type != OperationType::PROBE) continue;
       SetHistoryOutputValue(output.name, probeValuesGlobal[iProbe++]);
