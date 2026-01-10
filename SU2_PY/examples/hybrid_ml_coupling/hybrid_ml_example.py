@@ -6,11 +6,9 @@ from mpi4py import MPI
 import torch
 import torch.nn as nn
 
-# Initialize MPI
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 
-# Define ML Surrogate Model
 class SimpleSurrogate(nn.Module):
     def __init__(self, input_dim, output_dim):
         super(SimpleSurrogate, self).__init__()
@@ -24,13 +22,18 @@ class SimpleSurrogate(nn.Module):
 if rank == 0:
     print("Initializing SU2-PyTorch Hybrid Coupling Example...")
     
-    # Initialize ML model
-    surrogate_model = SimpleSurrogate(input_features=1, output_features=1)
+    surrogate_model = SimpleSurrogate(input_dim=1, output_dim=1)
     optimizer = torch.optim.Adam(surrogate_model.parameters(), lr=0.001)
     criterion = nn.MSELoss()
     
-    # TODO: Initialize SU2 solver with CSinglezoneDriver
-    # solver = CSinglezoneDriver('config.cfg', comm)
+    for i in range(10):
+        dummy_input = torch.randn(1, 1)
+        dummy_target = torch.randn(1, 1)
+        optimizer.zero_grad()
+        output = surrogate_model(dummy_input)
+        loss = criterion(output, dummy_target)
+        loss.backward()
+        optimizer.step()
     
     print("Setup complete. Ready for hybrid simulation.")
 
