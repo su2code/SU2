@@ -521,10 +521,7 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
     long idx_sep   = solver[MESH_0][TRANS_SOL]->FindFieldIndex("LM_gamma_sep");
     long idx_eff   = solver[MESH_0][TRANS_SOL]->FindFieldIndex("LM_gamma_eff");
 
-    if (rank == MASTER_NODE) {
-      if (idx_gamma == -1) cout << "WARNING: Variable 'LM_gamma' not found. Initializing with default.\n";
-      if (idx_ret == -1)   cout << "WARNING: Variable 'LM_Re_t' not found. Initializing with default.\n";
-    }
+
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -538,19 +535,15 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
       if (iPoint_Local > -1) {
         // Load Gamma
         if (idx_gamma != -1) nodes->SetSolution(iPoint_Local, 0, Restart_Data[counter * Restart_Vars[1] + idx_gamma]);
-        else nodes->SetSolution(iPoint_Local, 0, Solution_Inf[0]);
 
         // Load Re_Theta_t
         if (idx_ret != -1) nodes->SetSolution(iPoint_Local, 1, Restart_Data[counter * Restart_Vars[1] + idx_ret]);
-        else nodes->SetSolution(iPoint_Local, 1, Solution_Inf[1]);
 
         // Load Intermittency Sep
         if (idx_sep != -1) nodes->SetIntermittencySep(iPoint_Local, Restart_Data[counter * Restart_Vars[1] + idx_sep]);
-        else nodes->SetIntermittencySep(iPoint_Local, 0.0);
 
         // Load Intermittency Eff
         if (idx_eff != -1) nodes->SetIntermittencyEff(iPoint_Local, Restart_Data[counter * Restart_Vars[1] + idx_eff]);
-        else nodes->SetIntermittencyEff(iPoint_Local, 0.0);
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;

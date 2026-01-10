@@ -827,16 +827,6 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
                                                          bool update_geo, bool static_fsi, bool steady_restart,
                                                          su2double* SolutionRestart, unsigned short nVar_Restart,
                                                          const string& restart_filename) {
-  /*--- Helper lambda to find field index ---*/
-  auto FindFieldIndex = [&](const string& name) -> int {
-    auto it = std::find(this->fields.begin(), this->fields.end(), name);
-    if (it != this->fields.end()) return (int)std::distance(this->fields.begin(), it);
-    string qname = "\"" + name + "\"";
-    it = std::find(this->fields.begin(), this->fields.end(), qname);
-    if (it != this->fields.end()) return (int)std::distance(this->fields.begin(), it);
-    return -1;
-  };
-
   auto GetVelocityName = [](unsigned short i) {
     if (i == 0) return "Velocity_x";
     if (i == 1) return "Velocity_y";
@@ -866,10 +856,6 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
     int fieldIdx_Temperature = -1;
     if (energy || weakly_coupled_heat || flamelet) {
       fieldIdx_Temperature = FindFieldIndex("Temperature");
-      if (fieldIdx_Temperature < 0 && rank == MASTER_NODE) {
-        cout << "\nWARNING: The restart file does not contain " << "Temperature" << " field." << endl;
-        cout << "Temperature will be initialized from existing solution values." << endl;
-      }
     }
 
     /*--- Load data from the restart into correct containers. ---*/
@@ -895,22 +881,12 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
         /*--- Load Pressure (index 0) ---*/
         if (fieldIdx_Pressure >= 0) {
           targetBuffer[0] = Restart_Data[baseIndex + fieldIdx_Pressure];
-        } else {
-          if (rank == MASTER_NODE && counter == 0) {
-            cout << "WARNING: " << "Pressure"
-                 << " field not found in restart file, using existing solution value." << endl;
-          }
         }
 
         /*--- Load Velocity components (indices 1..nDim) ---*/
         for (auto iDim = 0u; iDim < nDim; iDim++) {
           if (fieldIdx_Velocity[iDim] >= 0) {
             targetBuffer[iDim + 1] = Restart_Data[baseIndex + fieldIdx_Velocity[iDim]];
-          } else {
-            if (rank == MASTER_NODE && counter == 0) {
-              cout << "WARNING: " << GetVelocityName(iDim)
-                   << " field not found in restart file, using existing solution value." << endl;
-            }
           }
         }
 
@@ -918,11 +894,6 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
         if (energy || weakly_coupled_heat || flamelet) {
           if (fieldIdx_Temperature >= 0) {
             targetBuffer[nDim + 1] = Restart_Data[baseIndex + fieldIdx_Temperature];
-          } else {
-            if (rank == MASTER_NODE && counter == 0) {
-              cout << "WARNING: " << "Temperature"
-                   << " field not found in restart file, using existing solution value." << endl;
-            }
           }
         }
 
@@ -969,33 +940,18 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
         /*--- Load Density (index 0) ---*/
         if (fieldIdx_Density >= 0) {
           targetBuffer[0] = Restart_Data[baseIndex + fieldIdx_Density];
-        } else {
-          if (rank == MASTER_NODE && counter == 0) {
-            cout << "WARNING: " << "Density"
-                 << " field not found in restart file, using existing solution value." << endl;
-          }
         }
 
         /*--- Load Momentum components (indices 1..nDim) ---*/
         for (auto iDim = 0u; iDim < nDim; iDim++) {
           if (fieldIdx_Momentum[iDim] >= 0) {
             targetBuffer[iDim + 1] = Restart_Data[baseIndex + fieldIdx_Momentum[iDim]];
-          } else {
-            if (rank == MASTER_NODE && counter == 0) {
-              cout << "WARNING: " << GetMomentumName(iDim)
-                   << " field not found in restart file, using existing solution value." << endl;
-            }
           }
         }
 
         /*--- Load Energy (index nDim+1) ---*/
         if (fieldIdx_Energy >= 0) {
           targetBuffer[nDim + 1] = Restart_Data[baseIndex + fieldIdx_Energy];
-        } else {
-          if (rank == MASTER_NODE && counter == 0) {
-            cout << "WARNING: " << "Energy"
-                 << " field not found in restart file, using existing solution value." << endl;
-          }
         }
 
         if (SolutionRestart != nullptr) {

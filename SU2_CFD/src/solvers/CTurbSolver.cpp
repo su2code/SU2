@@ -162,9 +162,6 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
       for (const auto& field : target_fields) {
         long idx = solver[MESH_0][TURB_SOL]->FindFieldIndex(field.name);
         field_indices.push_back(idx);
-        if (idx == -1 && rank == MASTER_NODE) {
-          cout << "WARNING: Turbulence variable '" << field.name << "' not found in restart file. Initializing with default.\n";
-        }
       }
     }
 
@@ -190,8 +187,6 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 
             if (r_idx != -1 && r_idx < Restart_Vars[1]) {
               nodes->SetSolution(iPoint_Local, v_idx, Restart_Data[base_idx + r_idx]);
-            } else {
-              nodes->SetSolution(iPoint_Local, v_idx, Solution_Inf[v_idx]);
             }
           }
         } else {
