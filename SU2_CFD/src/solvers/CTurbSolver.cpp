@@ -29,7 +29,6 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CScalarSolver.inl"
-#include "../../include/solvers/CRestartFieldNames.hpp"
 
 /*--- Explicit instantiation of the parent class of CTurbSolver. ---*/
 template class CScalarSolver<CTurbVariable>;
@@ -128,10 +127,10 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 
     TURB_MODEL kind_turb = config->GetKind_Turb_Model();
     if (kind_turb == TURB_MODEL::SA) {
-      target_fields.push_back({RestartFieldNames::NU_TILDE, 0});
+      target_fields.push_back({"Nu_Tilde", 0});
     } else if (kind_turb == TURB_MODEL::SST) {
-      target_fields.push_back({RestartFieldNames::TURB_KIN_ENERGY, 0});
-      target_fields.push_back({RestartFieldNames::OMEGA, 1});
+      target_fields.push_back({"Turb_Kin_Energy", 0});
+      target_fields.push_back({"Omega", 1});
     }
 
     /*--- Fallback variables for legacy loading ---*/

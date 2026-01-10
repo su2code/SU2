@@ -31,7 +31,6 @@
 #include "../../include/variables/CTurbSAVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
-#include "../../include/solvers/CRestartFieldNames.hpp"
 
 /*---  This is the implementation of the Langtry-Menter transition model.
        The main reference for this model is:Langtry, Menter, AIAA J. 47(12) 2009
@@ -517,14 +516,14 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
     }
 
     /*--- Identify indices for LM transition variables ---*/
-    long idx_gamma = solver[MESH_0][TRANS_SOL]->FindFieldIndex(RestartFieldNames::LM_GAMMA);
-    long idx_ret   = solver[MESH_0][TRANS_SOL]->FindFieldIndex(RestartFieldNames::LM_RET);
-    long idx_sep   = solver[MESH_0][TRANS_SOL]->FindFieldIndex(RestartFieldNames::LM_GAMMA_SEP);
-    long idx_eff   = solver[MESH_0][TRANS_SOL]->FindFieldIndex(RestartFieldNames::LM_GAMMA_EFF);
+    long idx_gamma = solver[MESH_0][TRANS_SOL]->FindFieldIndex("LM_gamma");
+    long idx_ret   = solver[MESH_0][TRANS_SOL]->FindFieldIndex("LM_Re_t");
+    long idx_sep   = solver[MESH_0][TRANS_SOL]->FindFieldIndex("LM_gamma_sep");
+    long idx_eff   = solver[MESH_0][TRANS_SOL]->FindFieldIndex("LM_gamma_eff");
 
     if (rank == MASTER_NODE) {
-      if (idx_gamma == -1) cout << "WARNING: Variable '" << RestartFieldNames::LM_GAMMA << "' not found. Initializing with default.\n";
-      if (idx_ret == -1)   cout << "WARNING: Variable '" << RestartFieldNames::LM_RET << "' not found. Initializing with default.\n";
+      if (idx_gamma == -1) cout << "WARNING: Variable 'LM_gamma' not found. Initializing with default.\n";
+      if (idx_ret == -1)   cout << "WARNING: Variable 'LM_Re_t' not found. Initializing with default.\n";
     }
 
     /*--- Load data from the restart into correct containers. ---*/

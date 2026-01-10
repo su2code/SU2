@@ -33,7 +33,6 @@
 #include "../../Common/include/CConfig.hpp"
 #include "../../Common/include/geometry/CGeometry.hpp"
 #include "CFVMFlowSolverBase.hpp"
-#include "CRestartFieldNames.hpp"
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::allocate(int size) {
@@ -838,6 +837,18 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
     return -1;
   };
 
+  auto GetVelocityName = [](unsigned short i) {
+    if (i == 0) return "Velocity_x";
+    if (i == 1) return "Velocity_y";
+    return "Velocity_z";
+  };
+
+  auto GetMomentumName = [](unsigned short i) {
+    if (i == 0) return "Momentum_x";
+    if (i == 1) return "Momentum_y";
+    return "Momentum_z";
+  };
+
   unsigned long counter = 0;
 
   /*--- Incompressible Flow Logic ---*/
@@ -847,16 +858,16 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
     const bool flamelet = (config->GetKind_FluidModel() == FLUID_FLAMELET);
 
     /*--- Find field indices for solution variables ---*/
-    int fieldIdx_Pressure = FindFieldIndex(RestartFieldNames::PRESSURE);
+    int fieldIdx_Pressure = FindFieldIndex("Pressure");
     vector<int> fieldIdx_Velocity(nDim, -1);
     for (auto iDim = 0u; iDim < nDim; iDim++) {
-      fieldIdx_Velocity[iDim] = FindFieldIndex(RestartFieldNames::GetVelocityName(iDim));
+      fieldIdx_Velocity[iDim] = FindFieldIndex(GetVelocityName(iDim));
     }
     int fieldIdx_Temperature = -1;
     if (energy || weakly_coupled_heat || flamelet) {
-      fieldIdx_Temperature = FindFieldIndex(RestartFieldNames::TEMPERATURE);
+      fieldIdx_Temperature = FindFieldIndex("Temperature");
       if (fieldIdx_Temperature < 0 && rank == MASTER_NODE) {
-        cout << "\nWARNING: The restart file does not contain " << RestartFieldNames::TEMPERATURE << " field." << endl;
+        cout << "\nWARNING: The restart file does not contain " << "Temperature" << " field." << endl;
         cout << "Temperature will be initialized from existing solution values." << endl;
       }
     }
@@ -886,7 +897,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
           targetBuffer[0] = Restart_Data[baseIndex + fieldIdx_Pressure];
         } else {
           if (rank == MASTER_NODE && counter == 0) {
-            cout << "WARNING: " << RestartFieldNames::PRESSURE
+            cout << "WARNING: " << "Pressure"
                  << " field not found in restart file, using existing solution value." << endl;
           }
         }
@@ -897,7 +908,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
             targetBuffer[iDim + 1] = Restart_Data[baseIndex + fieldIdx_Velocity[iDim]];
           } else {
             if (rank == MASTER_NODE && counter == 0) {
-              cout << "WARNING: " << RestartFieldNames::GetVelocityName(iDim)
+              cout << "WARNING: " << GetVelocityName(iDim)
                    << " field not found in restart file, using existing solution value." << endl;
             }
           }
@@ -909,7 +920,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
             targetBuffer[nDim + 1] = Restart_Data[baseIndex + fieldIdx_Temperature];
           } else {
             if (rank == MASTER_NODE && counter == 0) {
-              cout << "WARNING: " << RestartFieldNames::TEMPERATURE
+              cout << "WARNING: " << "Temperature"
                    << " field not found in restart file, using existing solution value." << endl;
             }
           }
@@ -931,12 +942,12 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
   /*--- Compressible Flow Logic ---*/
   else if constexpr (R == ENUM_REGIME::COMPRESSIBLE) {
     /*--- Find field indices for solution variables ---*/
-    int fieldIdx_Density = FindFieldIndex(RestartFieldNames::DENSITY);
+    int fieldIdx_Density = FindFieldIndex("Density");
     vector<int> fieldIdx_Momentum(nDim, -1);
     for (auto iDim = 0u; iDim < nDim; iDim++) {
-      fieldIdx_Momentum[iDim] = FindFieldIndex(RestartFieldNames::GetMomentumName(iDim));
+      fieldIdx_Momentum[iDim] = FindFieldIndex(GetMomentumName(iDim));
     }
-    int fieldIdx_Energy = FindFieldIndex(RestartFieldNames::ENERGY);
+    int fieldIdx_Energy = FindFieldIndex("Energy");
 
     /*--- Load data from the restart into correct containers. ---*/
     for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
@@ -960,7 +971,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
           targetBuffer[0] = Restart_Data[baseIndex + fieldIdx_Density];
         } else {
           if (rank == MASTER_NODE && counter == 0) {
-            cout << "WARNING: " << RestartFieldNames::DENSITY
+            cout << "WARNING: " << "Density"
                  << " field not found in restart file, using existing solution value." << endl;
           }
         }
@@ -971,7 +982,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
             targetBuffer[iDim + 1] = Restart_Data[baseIndex + fieldIdx_Momentum[iDim]];
           } else {
             if (rank == MASTER_NODE && counter == 0) {
-              cout << "WARNING: " << RestartFieldNames::GetMomentumName(iDim)
+              cout << "WARNING: " << GetMomentumName(iDim)
                    << " field not found in restart file, using existing solution value." << endl;
             }
           }
@@ -982,7 +993,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, C
           targetBuffer[nDim + 1] = Restart_Data[baseIndex + fieldIdx_Energy];
         } else {
           if (rank == MASTER_NODE && counter == 0) {
-            cout << "WARNING: " << RestartFieldNames::ENERGY
+            cout << "WARNING: " << "Energy"
                  << " field not found in restart file, using existing solution value." << endl;
           }
         }
@@ -1019,11 +1030,17 @@ void CFVMFlowSolverBase<V, R>::LoadRestartGridData(CGeometry** geometry, long iP
   auto index = baseIndex;
   const auto* Coord = &Restart_Data[index];
 
+  auto GetGridVelocityName = [](unsigned short i) {
+    if (i == 0) return "Grid_Velocity_x";
+    if (i == 1) return "Grid_Velocity_y";
+    return "Grid_Velocity_z";
+  };
+
   if (dynamic_grid && update_geo) {
     su2double GridVel[MAXNDIM] = {0.0};
     if (!steady_restart) {
       for (auto iDim = 0u; iDim < nDim; iDim++) {
-        int fieldIdx_GridVel = FindFieldIndex(RestartFieldNames::GetGridVelocityName(iDim));
+        int fieldIdx_GridVel = FindFieldIndex(GetGridVelocityName(iDim));
         if (fieldIdx_GridVel >= 0) {
           GridVel[iDim] = Restart_Data[baseIndex + fieldIdx_GridVel];
         }
@@ -1070,7 +1087,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry** geometry, CSolver***
     bool steady_restart = config->GetSteadyRestart();
     if (update_geo && dynamic_grid) {
       auto notFound = fields.end();
-      string gridVelName = "\"" + string(RestartFieldNames::GRID_VELOCITY_X) + "\"";
+      string gridVelName = "\"" + string("Grid_Velocity_x") + "\"";
       if (find(fields.begin(), notFound, gridVelName) == notFound) {
         if (rank == MASTER_NODE)
           cout << "\nWARNING: The restart file does not contain grid velocities, these will be set to zero.\n" << endl;
