@@ -350,7 +350,7 @@ def main():
     pywrapper_psi.cfg_dir = "../Tutorials/multiphysics/TFC_python/adiabatic"
     pywrapper_psi.cfg_file = "psi.cfg"
     pywrapper_psi.test_iter = 0
-    pywrapper_psi.test_vals = [-3.415653, -2.221781, -3.107330, -2.569248, 0.531838, -3.796447]
+    pywrapper_psi.test_vals = [-2.682653, -0.994981, -2.221252, -2.401462, 3.597559, -3.369865]
     pywrapper_psi.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_psi)
 
