@@ -30,6 +30,8 @@
 #include "../gradients/computeGradientsLeastSquares.hpp"
 #include "../limiters/computeLimiters.hpp"
 #include "../numerics_simd/CNumericsSIMD.hpp"
+#include "../../Common/include/CConfig.hpp"
+#include "../../Common/include/geometry/CGeometry.hpp"
 #include "CFVMFlowSolverBase.hpp"
 
 template <class V, ENUM_REGIME R>
@@ -417,14 +419,15 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, con
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) {
   const auto kindLimiter = config->GetKind_SlopeLimit_Flow();
+  const auto umusclKappa = config->GetMUSCL_Kappa_Flow();
   const auto& primitives = nodes->GetPrimitive();
   const auto& gradient = nodes->GetGradient_Reconstruction();
   auto& primMin = nodes->GetSolution_Min();
   auto& primMax = nodes->GetSolution_Max();
   auto& limiter = nodes->GetLimiter_Primitive();
 
-  computeLimiters(kindLimiter, this, MPI_QUANTITIES::PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2, *geometry, *config, 0,
-                  nPrimVarGrad, primitives, gradient, primMin, primMax, limiter);
+  computeLimiters(kindLimiter, this, MPI_QUANTITIES::PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2,
+                  *geometry, *config, 0, nPrimVarGrad, umusclKappa, primitives, gradient, primMin, primMax, limiter);
 }
 
 template <class V, ENUM_REGIME R>
@@ -820,7 +823,201 @@ void CFVMFlowSolverBase<V, R>::UpdateCustomBoundaryConditions(
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver ***solver, CConfig *config, int iter,
+void CFVMFlowSolverBase<V, R>::LoadRestartSolutionFields(CGeometry** geometry, CSolver*** solver, CConfig* config,
+                                                         bool update_geo, bool static_fsi, bool steady_restart,
+                                                         su2double* SolutionRestart, unsigned short nVar_Restart,
+                                                         const string& restart_filename) {
+  auto GetVelocityName = [](unsigned short i) {
+    if (i == 0) return "Velocity_x";
+    if (i == 1) return "Velocity_y";
+    return "Velocity_z";
+  };
+
+  auto GetMomentumName = [](unsigned short i) {
+    if (i == 0) return "Momentum_x";
+    if (i == 1) return "Momentum_y";
+    return "Momentum_z";
+  };
+
+  unsigned long counter = 0;
+
+  /*--- Incompressible Flow Logic ---*/
+  if constexpr (R == ENUM_REGIME::INCOMPRESSIBLE) {
+    const bool energy = config->GetEnergy_Equation();
+    const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+    const bool flamelet = (config->GetKind_FluidModel() == FLUID_FLAMELET);
+
+    /*--- Find field indices for solution variables ---*/
+    int fieldIdx_Pressure = FindFieldIndex("Pressure");
+    vector<int> fieldIdx_Velocity(nDim, -1);
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      fieldIdx_Velocity[iDim] = FindFieldIndex(GetVelocityName(iDim));
+    }
+    int fieldIdx_Temperature = -1;
+    if (energy || weakly_coupled_heat || flamelet) {
+      fieldIdx_Temperature = FindFieldIndex("Temperature");
+    }
+
+    /*--- Load data from the restart into correct containers. ---*/
+    for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
+      const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+      if (iPoint_Local > -1) {
+        auto baseIndex = counter * Restart_Vars[1];
+
+        su2double* targetBuffer;
+
+        /*--- If SolutionRestart is provided (non-null), use it.
+              Otherwise, write directly to nodes (which already contain defaults). ---*/
+        if (SolutionRestart != nullptr) {
+          targetBuffer = SolutionRestart;  // Caution: assumes SolutionRestart is per-point or advanced externally?
+          // But if SolutionRestart is provided, we should probably initialize it with defaults too.
+          const su2double* existingSolution = nodes->GetSolution(iPoint_Local);
+          for (auto iVar = 0u; iVar < nVar; iVar++) targetBuffer[iVar] = existingSolution[iVar];
+        } else {
+          targetBuffer = nodes->GetSolution(iPoint_Local);
+        }
+
+        /*--- Load Pressure (index 0) ---*/
+        if (fieldIdx_Pressure >= 0) {
+          targetBuffer[0] = Restart_Data[baseIndex + fieldIdx_Pressure];
+        }
+
+        /*--- Load Velocity components (indices 1..nDim) ---*/
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          if (fieldIdx_Velocity[iDim] >= 0) {
+            targetBuffer[iDim + 1] = Restart_Data[baseIndex + fieldIdx_Velocity[iDim]];
+          }
+        }
+
+        /*--- Load Temperature (index nDim+1) if energy equation is enabled ---*/
+        if (energy || weakly_coupled_heat || flamelet) {
+          if (fieldIdx_Temperature >= 0) {
+            targetBuffer[nDim + 1] = Restart_Data[baseIndex + fieldIdx_Temperature];
+          }
+        }
+
+        /*--- If we used a separate buffer, copy it back if needed (only if SolutionRestart logic requires it) ---*/
+        if (SolutionRestart != nullptr) {
+          nodes->SetSolution(iPoint_Local, targetBuffer);
+        }
+
+        /*--- Handle grid velocities and coordinates ---*/
+        LoadRestartGridData(geometry, iPoint_Local, baseIndex, update_geo, static_fsi, steady_restart);
+
+        counter++;
+      }
+    }
+  }
+
+  /*--- Compressible Flow Logic ---*/
+  else if constexpr (R == ENUM_REGIME::COMPRESSIBLE) {
+    /*--- Find field indices for solution variables ---*/
+    int fieldIdx_Density = FindFieldIndex("Density");
+    vector<int> fieldIdx_Momentum(nDim, -1);
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      fieldIdx_Momentum[iDim] = FindFieldIndex(GetMomentumName(iDim));
+    }
+    int fieldIdx_Energy = FindFieldIndex("Energy");
+
+    /*--- Load data from the restart into correct containers. ---*/
+    for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
+      const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+      if (iPoint_Local > -1) {
+        auto baseIndex = counter * Restart_Vars[1];
+
+        su2double* targetBuffer;
+
+        if (SolutionRestart != nullptr) {
+          targetBuffer = SolutionRestart;
+          const su2double* existingSolution = nodes->GetSolution(iPoint_Local);
+          for (auto iVar = 0u; iVar < nVar; iVar++) targetBuffer[iVar] = existingSolution[iVar];
+        } else {
+          targetBuffer = nodes->GetSolution(iPoint_Local);
+        }
+
+        /*--- Load Density (index 0) ---*/
+        if (fieldIdx_Density >= 0) {
+          targetBuffer[0] = Restart_Data[baseIndex + fieldIdx_Density];
+        }
+
+        /*--- Load Momentum components (indices 1..nDim) ---*/
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          if (fieldIdx_Momentum[iDim] >= 0) {
+            targetBuffer[iDim + 1] = Restart_Data[baseIndex + fieldIdx_Momentum[iDim]];
+          }
+        }
+
+        /*--- Load Energy (index nDim+1) ---*/
+        if (fieldIdx_Energy >= 0) {
+          targetBuffer[nDim + 1] = Restart_Data[baseIndex + fieldIdx_Energy];
+        }
+
+        if (SolutionRestart != nullptr) {
+          nodes->SetSolution(iPoint_Local, targetBuffer);
+        }
+
+        /*--- Handle grid velocities and coordinates ---*/
+        LoadRestartGridData(geometry, iPoint_Local, baseIndex, update_geo, static_fsi, steady_restart);
+
+        counter++;
+      }
+    }
+  } else {
+    /*--- Enforce specialization expectation ---*/
+    static_assert(R == ENUM_REGIME::INCOMPRESSIBLE || R == ENUM_REGIME::COMPRESSIBLE,
+                  "LoadRestartSolutionFields must be specialized for the flow regime");
+  }
+
+  if (counter != nPointDomain) {
+    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" does not match with the mesh file.\n") +
+                       string("This can be caused by empty lines at the end of the file."),
+                   CURRENT_FUNCTION);
+  }
+}
+
+/*!
+ * \brief Helper function to load grid data (coordinates and velocities) from restart file.
+ */
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::LoadRestartGridData(CGeometry** geometry, long iPoint_Local, unsigned long baseIndex,
+                                                   bool update_geo, bool static_fsi, bool steady_restart) {
+  auto index = baseIndex;
+  const auto* Coord = &Restart_Data[index];
+
+  auto GetGridVelocityName = [](unsigned short i) {
+    if (i == 0) return "Grid_Velocity_x";
+    if (i == 1) return "Grid_Velocity_y";
+    return "Grid_Velocity_z";
+  };
+
+  if (dynamic_grid && update_geo) {
+    su2double GridVel[MAXNDIM] = {0.0};
+    if (!steady_restart) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        int fieldIdx_GridVel = FindFieldIndex(GetGridVelocityName(iDim));
+        if (fieldIdx_GridVel >= 0) {
+          GridVel[iDim] = Restart_Data[baseIndex + fieldIdx_GridVel];
+        }
+      }
+    }
+
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
+      geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, GridVel[iDim]);
+    }
+  }
+
+  if (static_fsi && update_geo) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
+    }
+  }
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry** geometry, CSolver*** solver, CConfig* config, int iter,
                                                 bool update_geo, su2double* SolutionRestart,
                                                 unsigned short nVar_Restart) {
   /*--- Restart the solution from file information ---*/
@@ -830,12 +1027,9 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-
     if (nVar_Restart == 0) nVar_Restart = nVar;
 
-    /*--- Skip coordinates ---*/
 
-    unsigned short skipVars = nDim;
 
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
     if (config->GetRead_Binary_Restart()) {
@@ -849,105 +1043,30 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
     bool steady_restart = config->GetSteadyRestart();
     if (update_geo && dynamic_grid) {
       auto notFound = fields.end();
-      if (find(fields.begin(), notFound, string("\"Grid_Velocity_x\"")) == notFound) {
+      string gridVelName = "\"" + string("Grid_Velocity_x") + "\"";
+      if (find(fields.begin(), notFound, gridVelName) == notFound) {
         if (rank == MASTER_NODE)
           cout << "\nWARNING: The restart file does not contain grid velocities, these will be set to zero.\n" << endl;
         steady_restart = true;
       }
     }
 
-    /*--- Load data from the restart into correct containers. ---*/
-
-    unsigned long counter = 0;
-    for (auto iPoint_Global = 0ul; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
-
-      /*--- Retrieve local index. If this node from the restart file lives
-      on the current processor, we will load and instantiate the vars. ---*/
-
-      const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
-
-      if (iPoint_Local > -1) {
-
-        /*--- We need to store this point's data, so jump to the correct
-        offset in the buffer of data from the restart file and load it. ---*/
-
-        auto index = counter * Restart_Vars[1] + skipVars;
-
-        if (SolutionRestart == nullptr) {
-          for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
-            nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
-        }
-        else {
-          /*--- Used as buffer, allows defaults for nVar > nVar_Restart. ---*/
-          for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
-            SolutionRestart[iVar] = Restart_Data[index + iVar];
-          nodes->SetSolution(iPoint_Local, SolutionRestart);
-        }
-
-        /*--- For dynamic meshes, read in and store the
-        grid coordinates and grid velocities for each node. ---*/
-
-        if (dynamic_grid && update_geo) {
-
-          /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
-          /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
-          /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
-
-          /*--- Rewind the index to retrieve the Coords. ---*/
-          index = counter * Restart_Vars[1];
-          const auto* Coord = &Restart_Data[index];
-
-          su2double GridVel[MAXNDIM] = {0.0};
-          if (!steady_restart) {
-            /*--- Move the index forward to get the grid velocities. ---*/
-            index += skipVars + nVar_Restart + config->GetnTurbVar();
-            for (auto iDim = 0u; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
-          }
-
-          for (auto iDim = 0u; iDim < nDim; iDim++) {
-            geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
-            geometry[MESH_0]->nodes->SetGridVel(iPoint_Local, iDim, GridVel[iDim]);
-          }
-        }
-
-        /*--- For static FSI problems, grid_movement is 0 but we need to read in and store the
-        grid coordinates for each node (but not the grid velocities, as there are none). ---*/
-
-        if (static_fsi && update_geo) {
-        /*--- Rewind the index to retrieve the Coords. ---*/
-          index = counter*Restart_Vars[1];
-          const auto* Coord = &Restart_Data[index];
-
-          for (auto iDim = 0u; iDim < nDim; iDim++) {
-            geometry[MESH_0]->nodes->SetCoord(iPoint_Local, iDim, Coord[iDim]);
-          }
-        }
-
-        /*--- Increment the overall counter for how many points have been loaded. ---*/
-        counter++;
-      }
-    }
-
-    /*--- Detect a wrong solution file ---*/
-
-    if (counter != nPointDomain) {
-      SU2_MPI::Error(string("The solution file ") + restart_filename + string(" does not match with the mesh file.\n") +
-                     string("This can be caused by empty lines at the end of the file."), CURRENT_FUNCTION);
-    }
+    /*--- Use template specialization to load solution based on flow regime ---*/
+    LoadRestartSolutionFields(geometry, solver, config, update_geo, static_fsi, steady_restart, SolutionRestart,
+                              nVar_Restart, restart_filename);
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Update the geometry for flows on deforming meshes. ---*/
 
   if ((dynamic_grid || static_fsi) && update_geo) {
-
     CGeometry::UpdateGeometry(geometry, config);
 
     if (dynamic_grid) {
       for (auto iMesh = 0u; iMesh <= config->GetnMGLevels(); iMesh++) {
-
         /*--- Compute the grid velocities on the coarser levels. ---*/
-        if (iMesh) geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMesh - 1]);
+        if (iMesh)
+          geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMesh - 1]);
         else {
           geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::GRID_VELOCITY);
           geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::GRID_VELOCITY);
@@ -967,22 +1086,22 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   /*--- For turbulent/species simulations the flow preprocessing is done by the turbulence/species solver
    *    after it loads its variables (they are needed to compute flow primitives). In case turbulence and species, the
    *    species solver does all the Pre-/Postprocessing. ---*/
-  if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
-      config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
-    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  if (config->GetKind_Turb_Model() == TURB_MODEL::NONE && config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
+    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
+                                            RUNTIME_FLOW_SYS, false);
   }
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
 
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
-    MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][FLOW_SOL]->GetNodes()->GetSolution(),
-                         *geometry[iMesh], solver[iMesh][FLOW_SOL]->GetNodes()->GetSolution());
+    MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][FLOW_SOL]->GetNodes()->GetSolution(), *geometry[iMesh],
+                         solver[iMesh][FLOW_SOL]->GetNodes()->GetSolution());
     solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
     solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
 
-    if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
-        config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
-      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    if (config->GetKind_Turb_Model() == TURB_MODEL::NONE && config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
+      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER,
+                                             RUNTIME_FLOW_SYS, false);
     }
   }
 
@@ -995,9 +1114,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   }
 
   /*--- Go back to single threaded execution. ---*/
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  {
-  /*--- Delete the class memory that is used to load the restart. ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    /*--- Delete the class memory that is used to load the restart. ---*/
 
     Restart_Vars = decltype(Restart_Vars){};
     Restart_Data = decltype(Restart_Data){};
@@ -2389,7 +2507,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
   su2double Viscosity = 0.0, Area, Density = 0.0, FrictionVel,
-            UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
+            UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}},
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
             Grad_Temp_ve[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
@@ -2400,10 +2518,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   const su2double RefLength = config->GetRefLength();
   const su2double RefHeatFlux = config->GetHeat_Flux_Ref();
   const su2double RefTemperature = config->GetTemperature_Ref();
-  const su2double Gas_Constant = config->GetGas_ConstantND();
   auto Origin = config->GetRefOriginMoment(0);
 
-  const su2double Prandtl_Lam = config->GetPrandtl_Lam();
   const bool energy = config->GetEnergy_Equation();
   const bool QCR = config->GetSAParsedOptions().qcr2000;
   const bool axisymmetric = config->GetAxisymmetric();
@@ -2544,11 +2660,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute total and maximum heat flux on the wall ---*/
 
       if (!nemo) {
-        if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-          Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-          thermal_conductivity = Cp * Viscosity / Prandtl_Lam;
-        }
-        if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) {
+        if ((FlowRegime == ENUM_REGIME::COMPRESSIBLE) || (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE)) {
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
         }
 
