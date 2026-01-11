@@ -39,7 +39,7 @@ class CIncIdealGas final : public CFluidModel {
   /*!
    * \brief Constructor of the class.
    */
-  CIncIdealGas(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, su2double val_Temperature_Ref) {
+  CIncIdealGas(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, su2double val_Std_Ref_Temp_ND) {
     /*--- In the incompressible ideal gas model, the thermodynamic pressure
   is decoupled from the governing equations and held constant. The
   density is therefore only a function of temperature variations. ---*/
@@ -48,7 +48,7 @@ class CIncIdealGas final : public CFluidModel {
     Gamma = 1.0;
     Cp = val_Cp;
     Cv = Cp;
-    Std_Ref_Temp_ND = STD_REF_TEMP / val_Temperature_Ref;
+    Std_Ref_Temp_ND = val_Std_Ref_Temp_ND;
   }
 
   /*!
