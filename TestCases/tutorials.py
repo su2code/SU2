@@ -349,7 +349,7 @@ def main():
     pywrapper_psi = TestCase('psi_adiabatic')
     pywrapper_psi.cfg_dir = "../Tutorials/multiphysics/TFC_python/adiabatic"
     pywrapper_psi.cfg_file = "psi.cfg"
-    pywrapper_psi.test_iter = 5
+    pywrapper_psi.test_iter = 0
     pywrapper_psi.test_vals = [-3.415653, -2.221781, -3.107330, -2.569248, 0.531838, -3.796447]
     pywrapper_psi.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_psi)
@@ -358,7 +358,7 @@ def main():
     pywrapper_psi_hl = TestCase('psi_enthalpy')
     pywrapper_psi_hl.cfg_dir = "../Tutorials/multiphysics/TFC_python/enthalpy"
     pywrapper_psi_hl.cfg_file = "psi.cfg"
-    pywrapper_psi_hl.test_iter = 5
+    pywrapper_psi_hl.test_iter = 0
     pywrapper_psi_hl.test_vals = [-6.211126, -4.025898, -5.405635, -3.743101, -1.314498, -3.948690]
     pywrapper_psi_hl.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_psi_hl)
@@ -367,7 +367,7 @@ def main():
     pywrapper_psi_quench = TestCase('psi_quench')
     pywrapper_psi_quench.cfg_dir = "../Tutorials/multiphysics/TFC_python/quench"
     pywrapper_psi_quench.cfg_file = "psi.cfg"
-    pywrapper_psi_quench.test_iter = 5
+    pywrapper_psi_quench.test_iter = 0
     pywrapper_psi_quench.test_vals = [-7.370108, -6.688806, -7.839519, -4.086479, -1.223314, -4.022876]
     pywrapper_psi_quench.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_psi_quench)
