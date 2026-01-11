@@ -814,7 +814,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             Cvector.resize(ICOUNT,nDim) = su2double(0.0);
 
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
-            r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
+            r13 = 0.0; r23_a = 0.0;  r33 = 0.0;
 
             for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
@@ -866,8 +866,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                               (rotCoord_j[2]-rotCoord_i[2])/weight);
                     r23_a += ((rotCoord_j[1]-rotCoord_i[1])*
                               (rotCoord_j[2]-rotCoord_i[2])/weight);
-                    r23_b += ((rotCoord_j[0]-rotCoord_i[0])*
-                              (rotCoord_j[2]-rotCoord_i[2])/weight);
+                    // r23_b calculation removed (duplicate of r13 and incorrect for usage)
                     r33   += ((rotCoord_j[2]-rotCoord_i[2])*
                               (rotCoord_j[2]-rotCoord_i[2])/weight);
                   }
@@ -904,8 +903,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               bufDSend[buf_offset] = r23_a; buf_offset++;
 
               bufDSend[buf_offset] = 0.0;   buf_offset++;
-              bufDSend[buf_offset] = r23_b; buf_offset++;
+              bufDSend[buf_offset] = 0.0;   buf_offset++;
               bufDSend[buf_offset] = r33;   buf_offset++;
+
             }
 
             for (iVar = 0; iVar < ICOUNT; iVar++) {
