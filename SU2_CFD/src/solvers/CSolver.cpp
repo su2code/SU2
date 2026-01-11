@@ -2913,6 +2913,38 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 
 }
 
+int CSolver::FindFieldIndex(const string& fieldName) const {
+  /*--- Search for the field name in the fields vector.
+        Fields are stored with quotes, e.g., "Temperature", so we need to check
+        both with and without quotes. The first field is "PointID" which we skip. ---*/
+  
+  string fieldNameWithQuotes = "\"" + fieldName + "\"";
+  string fieldNameNoQuotes = fieldName;
+  
+  /*--- Search starting from index 1 (skip PointID) ---*/
+  for (size_t i = 1; i < fields.size(); i++) {
+    string field = fields[i];
+    PrintingToolbox::trim(field);
+    
+    /*--- Check if field matches (with or without quotes) ---*/
+    if (field == fieldNameWithQuotes || field == fieldNameNoQuotes) {
+      /*--- Return index excluding PointID (0-based) ---*/
+      return static_cast<int>(i - 1);
+    }
+  }
+  
+  /*--- Field not found ---*/
+  return -1;
+}
+
+vector<int> CSolver::FindFieldIndices(const vector<string>& fieldNames) const {
+  vector<int> indices;
+  for (const auto& name : fieldNames) {
+    indices.push_back(FindFieldIndex(name));
+  }
+  return indices;
+}
+
 void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config, string val_filename) {
 
   char str_buf[CGNS_STRING_SIZE], fname[100];

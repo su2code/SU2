@@ -587,10 +587,11 @@ public:
    * \param[in] vector_ij - Distance vector.
    * \param[in] delta_ij - Centered difference.
    * \param[in] kappa - Blending coefficient for U-MUSCL reconstruction.
-   * \param[in] ramp_val - Value of the ramp
+   * \param[in] ramp_val - Value of the 1st-2nd order MUSCL ramp.
    * \return - Projected variable.
    */
-  inline su2double MUSCL_Reconstruction(const su2double* grad, const su2double* vector_ij, su2double delta_ij, su2double kappa, su2double ramp_val) {
+  FORCEINLINE su2double MUSCL_Reconstruction(const su2double* grad, const su2double* vector_ij, su2double delta_ij,
+                                             su2double kappa, su2double ramp_val) const {
     su2double project_grad = GeometryToolbox::DotProduct(nDim, grad, vector_ij);
     return ramp_val * LimiterHelpers<>::umusclProjection(project_grad, delta_ij, kappa);
   }
@@ -3418,6 +3419,14 @@ public:
   void Read_SU2_Restart_Binary(CGeometry *geometry,
                                const CConfig *config,
                                string val_filename);
+
+  /*!
+   * \brief Find the index of a field in the restart file fields vector.
+   * \param[in] fieldName - Name of the field to find (with or without quotes).
+   * \return Index of the field (0-based, excluding PointID), or -1 if not found.
+   */
+  int FindFieldIndex(const string& fieldName) const;
+  vector<int> FindFieldIndices(const vector<string>& fieldNames) const;
 
   /*!
    * \brief Read the metadata from a native SU2 restart file (ASCII or binary).
