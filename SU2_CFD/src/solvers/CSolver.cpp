@@ -814,7 +814,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             Cvector.resize(ICOUNT,nDim) = su2double(0.0);
 
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
-            r13 = 0.0; r23_a = 0.0;  r33 = 0.0;
+            r13 = 0.0; r23_a = 0.0; r33 = 0.0;
 
             for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
