@@ -275,7 +275,7 @@ public:
   }
 
   /*!
-   * \brief Set the current working dimension, if the seperate dimension option is set.
+   * \brief Set the current working dimension, if the separate dimension option is set.
    * \param[in] iDim - the dimension we are currently working in.
    */
   inline void SetCurrentDim(unsigned int iDim) {

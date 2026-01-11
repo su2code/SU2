@@ -41,7 +41,7 @@ from .interface import DOT as SU2_DOT
 # ----------------------------------------------------------------------
 
 
-def projection(config, state={}, step=1e-3):
+def projection(config, state=None, step=1e-3):
     """info = SU2.run.projection(config,state,step=1e-3)
 
     Runs an gradient projection with:
@@ -54,7 +54,7 @@ def projection(config, state={}, step=1e-3):
 
     Inputs:
         config - an SU2 config
-        state  - only required when using external custom DV
+        state  - accepted for API compatibility; currently unused by this function
         step   - a float or list of floats for geometry sensitivity
                  finite difference step
 

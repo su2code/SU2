@@ -67,7 +67,6 @@ protected:
     if (!geometry->nodes->GetDomain(iPoint)) return;
 
     const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
-    const su2double prandtl_lam = config->GetPrandtl_Lam();
     const su2double const_diffusivity = config->GetThermalDiffusivity();
 
     const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
@@ -83,7 +82,8 @@ protected:
 
     su2double thermal_diffusivity = const_diffusivity;
     if (flow) {
-      thermal_diffusivity = flow_solver->GetNodes()->GetLaminarViscosity(iPoint) / prandtl_lam;
+      thermal_diffusivity =
+          flow_solver->GetNodes()->GetThermalConductivity(iPoint) / flow_solver->GetNodes()->GetSpecificHeatCp(iPoint);
     }
     LinSysRes(iPoint, 0) -= thermal_diffusivity * dTdn * Area;
 
@@ -107,7 +107,6 @@ protected:
     const CVariable* flow_nodes = flow ? solver_container[FLOW_SOL]->GetNodes() : nullptr;
 
     const su2double const_diffusivity = config->GetThermalDiffusivity();
-    const su2double pr_lam = config->GetPrandtl_Lam();
     const su2double pr_turb = config->GetPrandtl_Turb();
 
     su2double thermal_diffusivity_i{}, thermal_diffusivity_j{};
@@ -115,13 +114,12 @@ protected:
     /*--- Computes the thermal diffusivity to use in the viscous numerics. ---*/
     auto compute_thermal_diffusivity = [&](unsigned long iPoint, unsigned long jPoint) {
       if (flow) {
-        thermal_diffusivity_i = flow_nodes->GetLaminarViscosity(iPoint) / pr_lam +
+        thermal_diffusivity_i = flow_nodes->GetThermalConductivity(iPoint) / flow_nodes->GetSpecificHeatCp(iPoint) +
                                 flow_nodes->GetEddyViscosity(iPoint) / pr_turb;
-        thermal_diffusivity_j = flow_nodes->GetLaminarViscosity(jPoint) / pr_lam +
+        thermal_diffusivity_j = flow_nodes->GetThermalConductivity(jPoint) / flow_nodes->GetSpecificHeatCp(jPoint) +
                                 flow_nodes->GetEddyViscosity(jPoint) / pr_turb;
         numerics->SetDiffusionCoeff(&thermal_diffusivity_i, &thermal_diffusivity_j);
-      }
-      else {
+      } else {
         numerics->SetDiffusionCoeff(&const_diffusivity, &const_diffusivity);
       }
     };
@@ -197,6 +195,17 @@ public:
                         CConfig *config,
                         unsigned short iMesh,
                         unsigned short iRKStep) override;
+
+ /*!
+   * \brief Source term computation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Source_Residual(CGeometry *geometry, CSolver **solver_container,  CNumerics **numerics_container,
+                       CConfig *config, unsigned short iMesh) override ;
 
 
   void Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) override;

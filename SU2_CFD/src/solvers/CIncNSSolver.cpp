@@ -275,8 +275,86 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
 
 void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *numerics, CConfig *config) {
+  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
+
+  /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
+  if (energy_multicomponent) {
+    const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+    const int n_species = config->GetnSpecies();
+    Compute_Enthalpy_Diffusion(iEdge, geometry, solver_container, numerics, n_species, implicit);
+  }
 
   Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
+}
+
+void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
+                                            CNumerics* numerics, const int n_species, const bool implicit) {
+
+  CVariable* speciesNodes = solver_container[SPECIES_SOL]->GetNodes();
+  /*--- Points in edge ---*/
+
+  auto iPoint = geometry->edges->GetNode(iEdge, 0);
+  auto jPoint = geometry->edges->GetNode(iEdge, 1);
+
+  /*--- Points coordinates, and normal vector ---*/
+
+  const su2double* Normal = geometry->edges->GetNormal(iEdge);
+  const su2double* Coord_i = geometry->nodes->GetCoord(iPoint);
+  const su2double* Coord_j = geometry->nodes->GetCoord(jPoint);
+
+  /*--- Obtain fluid model for computing the enthalpy diffusion terms. ---*/
+
+  CFluidModel* FluidModel = solver_container[FLOW_SOL]->GetFluidModel();
+
+  /*--- Helper function that retrieves enthalpy diffusion terms. ---*/
+  auto GetEnthalpyDiffusionTerms = [&](unsigned long Point, const su2double* Species, su2double* EnthalpyDiffusion,
+                                       su2double* GradEnthalpyDiffusion) {
+    FluidModel->SetTDState_T(nodes->GetPrimitive(Point)[prim_idx.Temperature()], Species);
+    FluidModel->SetEddyViscosity(nodes->GetPrimitive(Point)[prim_idx.EddyViscosity()]);
+    FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion);
+    if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion);
+  };
+
+  /*--- set maximum static array ---*/
+
+  static constexpr size_t MAXNVAR_SPECIES = 20UL;
+
+  /*--- Species variables, and its gradients ---*/
+  const su2double* Species_i = speciesNodes->GetSolution(iPoint);
+  const su2double* Species_j = speciesNodes->GetSolution(jPoint);
+  CMatrixView<const su2double> Species_Grad_i = speciesNodes->GetGradient(iPoint);
+  CMatrixView<const su2double> Species_Grad_j = speciesNodes->GetGradient(jPoint);
+
+  /*--- Compute Projected gradient for species variables ---*/
+  su2double ProjGradScalarVarNoCorr[MAXNVAR_SPECIES]{0.0};
+  su2double Proj_Mean_GradScalarVar[MAXNVAR_SPECIES]{0.0};
+  numerics->ComputeProjectedGradient(nDim, n_species, Normal, Coord_i, Coord_j, Species_Grad_i, Species_Grad_j, true,
+                                     Species_i, Species_j, ProjGradScalarVarNoCorr, Proj_Mean_GradScalarVar);
+
+  /*--- Get enthalpy diffusion terms and its gradient(for implicit) for each species at iPoint and jPoint. ---*/
+
+  su2double EnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
+  su2double GradEnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
+  su2double EnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
+  su2double GradEnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
+  GetEnthalpyDiffusionTerms(iPoint, Species_i, EnthalpyDiffusion_i, GradEnthalpyDiffusion_i);
+  GetEnthalpyDiffusionTerms(jPoint, Species_j, EnthalpyDiffusion_j, GradEnthalpyDiffusion_j);
+
+  /*--- Compute Enthalpy diffusion flux and its jacobian (for implicit iterations) ---*/
+  su2double flux_enthalpy_diffusion = 0.0;
+  su2double jac_flux_enthalpy_diffusion = 0.0;
+  for (int i_species = 0; i_species < n_species; i_species++) {
+    flux_enthalpy_diffusion +=
+        0.5 * (EnthalpyDiffusion_i[i_species] + EnthalpyDiffusion_j[i_species]) * Proj_Mean_GradScalarVar[i_species];
+    if (implicit)
+      jac_flux_enthalpy_diffusion += 0.5 * (GradEnthalpyDiffusion_i[i_species] + GradEnthalpyDiffusion_j[i_species]) *
+                                     Proj_Mean_GradScalarVar[i_species];
+  }
+
+  /*--- Set heat flux and jacobian (for implicit) due to enthalpy diffusion ---*/
+
+  numerics->SetHeatFluxDiffusion(flux_enthalpy_diffusion);
+  if (implicit) numerics->SetJacHeatFluxDiffusion(jac_flux_enthalpy_diffusion);
 }
 
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
@@ -459,7 +537,8 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       LinSysRes(iPoint, nDim+1) -= Wall_HeatFlux*Area;
 
       if (implicit) {
-        Jacobian.AddVal2Diag(iPoint, nDim+1, Transfer_Coefficient*Area);
+        const su2double Cp = nodes->GetSpecificHeatCp(iPoint);
+        Jacobian.AddVal2Diag(iPoint, nDim+1, Transfer_Coefficient*Area/Cp);
       }
       break;
 
@@ -482,7 +561,6 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       const su2double dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
 
       /*--- Get thermal conductivity ---*/
-
       const su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
       /*--- Apply a weak boundary condition for the energy equation.
@@ -493,7 +571,8 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       /*--- Jacobian contribution for temperature equation. ---*/
 
       if (implicit) {
-        Jacobian.AddVal2Diag(iPoint, nDim+1, thermal_conductivity * Area / dist_ij);
+        const su2double Cp = nodes->GetSpecificHeatCp(iPoint);
+        Jacobian.AddVal2Diag(iPoint, nDim + 1, thermal_conductivity * Area / (dist_ij * Cp));
       }
       break;
     } // switch
@@ -524,6 +603,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
   const su2double Temperature_Ref = config->GetTemperature_Ref();
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool energy = config->GetEnergy_Equation();
+  const su2double* scalars = nullptr;
 
   /*--- Identify the boundary ---*/
 
@@ -609,7 +689,17 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
     /*--- Strong imposition of the temperature on the fluid zone. ---*/
 
     LinSysRes(iPoint, nDim+1) = 0.0;
-    nodes->SetSolution_Old(iPoint, nDim+1, Twall);
+
+    /*--- Retrieve scalars at wall node. ---*/
+    if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE && solver_container[SPECIES_SOL] != nullptr) {
+      scalars = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
+    }
+    /*--- Retrieve fluid model. ---*/
+    CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+    /*--- Set thermodynamic state given wall temperature and species composition. ---*/
+    fluid_model_local->SetTDState_T(Twall, scalars);
+    /*--- Set enthalpy obtained from fluid model. ---*/
+    nodes->SetSolution_Old(iPoint, nDim + 1, fluid_model_local->GetEnthalpy());
     nodes->SetEnergy_ResTruncError_Zero(iPoint);
   }
   END_SU2_OMP_FOR
@@ -802,14 +892,15 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&globalCounter2, &smallYPlusCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
-      if (rank == MASTER_NODE) {
+      const bool write_iter = (config->GetTimeIter() % config->GetVolumeOutputFrequency(0) == 0);
+      if (rank == MASTER_NODE && write_iter) {
         if (notConvergedCounter)
           cout << "Warning: Computation of wall coefficients (y+) did not converge in "
                << notConvergedCounter << " points." << endl;
 
         if (smallYPlusCounter)
-          cout << "Warning: y+ < " << config->GetwallModel_MinYPlus() << " in " << smallYPlusCounter
-               << " points, for which the wall model is not active." << endl;
+          cout << "y+ < " << config->GetwallModel_MinYPlus() << " in " << smallYPlusCounter
+               << " points. No problem, but you can increase your near-wall mesh size." << endl;
       }
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
