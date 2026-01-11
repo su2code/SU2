@@ -69,8 +69,7 @@ class CFVMFlowSolverBase : public CSolver {
   su2double Mach_Inf = 0.0;          /*!< \brief Mach number at the infinity. */
   su2double Density_Inf = 0.0;       /*!< \brief Density at the infinity. */
   su2double Energy_Inf = 0.0;        /*!< \brief Energy at the infinity. */
-  su2double Temperature_Inf = 0.0;   /*!< \brief Temperature at the infinity. */
-  su2double Enthalpy_Inf = 0.0;      /*!< \brief Enthalpy at the infinity. */
+  su2double Temperature_Inf = 0.0;   /*!< \brief Energy at the infinity. */
   su2double Pressure_Inf = 0.0;      /*!< \brief Pressure at the infinity. */
   su2double* Velocity_Inf = nullptr; /*!< \brief Flow Velocity vector at the infinity. */
 

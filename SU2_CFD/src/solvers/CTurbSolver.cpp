@@ -118,21 +118,18 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 
-    /*--- Skip flow variables ---*/
+    /*--- Identify which turbulence variables to look for based on the model. ---*/
+    vector<string> target_fields;
+    TURB_MODEL kind_turb = config->GetKind_Turb_Model();
+    if (kind_turb == TURB_MODEL::SA) {
+      target_fields.push_back("Nu_Tilde");
+    } else if (kind_turb == TURB_MODEL::SST) {
+      target_fields.push_back("Turb_Kin_Energy");
+      target_fields.push_back("Omega");
+    }
 
-    unsigned short skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar();
-
-    /*--- Adjust the number of solution variables in the incompressible
-     restart. We always carry a space in nVar for the energy equation in the
-     mean flow solver, but we only write it to the restart if it is active.
-     Therefore, we must reduce skipVars here if energy is inactive so that
-     the turbulent variables are read correctly. ---*/
-
-    const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-    const bool energy = config->GetEnergy_Equation();
-    const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
-    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+    /*--- Find indices for named fields ---*/
+    vector<int> field_indices = solver[MESH_0][TURB_SOL]->FindFieldIndices(target_fields);
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -146,9 +143,15 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
       if (iPoint_Local > -1) {
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
+        const auto base_idx = counter * Restart_Vars[1];
 
-        const auto index = counter * Restart_Vars[1] + skipVars;
-        for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        /*--- Named field loading ---*/
+        for (unsigned short v_idx = 0; v_idx < (unsigned short)target_fields.size(); ++v_idx) {
+          int r_idx = field_indices[v_idx];
+          if (r_idx != -1 && r_idx < (int)Restart_Vars[1]) {
+            nodes->SetSolution(iPoint_Local, v_idx, Restart_Data[base_idx + r_idx]);
+          }
+        }
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;

@@ -515,21 +515,13 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 
-    /*--- Skip flow variables ---*/
-
-    unsigned short skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar() + solver[MESH_0][TURB_SOL] ->GetnVar();
-
-    /*--- Adjust the number of solution variables in the incompressible
-     restart. We always carry a space in nVar for the energy equation in the
-     mean flow solver, but we only write it to the restart if it is active.
-     Therefore, we must reduce skipVars here if energy is inactive so that
-     the turbulent variables are read correctly. ---*/
-
-    const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-    const bool energy = config->GetEnergy_Equation();
-    const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
-    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+    /*--- Identify indices for LM transition variables ---*/
+    vector<string> target_fields = {"LM_gamma", "LM_Re_t", "LM_gamma_sep", "LM_gamma_eff"};
+    vector<int> field_indices = solver[MESH_0][TRANS_SOL]->FindFieldIndices(target_fields);
+    int idx_gamma = field_indices[0];
+    int idx_ret   = field_indices[1];
+    int idx_sep   = field_indices[2];
+    int idx_eff   = field_indices[3];
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -544,10 +536,19 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        const auto index = counter * Restart_Vars[1] + skipVars;
-        for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-        nodes->SetIntermittencySep(iPoint_Local,  Restart_Data[index + 2]);
-        nodes->SetIntermittencyEff(iPoint_Local,  Restart_Data[index + 3]);
+        const auto base_idx = counter * Restart_Vars[1];
+
+        // Load Gamma
+        if (idx_gamma != -1) nodes->SetSolution(iPoint_Local, 0, Restart_Data[base_idx + idx_gamma]);
+
+        // Load Re_Theta_t
+        if (idx_ret != -1) nodes->SetSolution(iPoint_Local, 1, Restart_Data[base_idx + idx_ret]);
+
+        // Load Intermittency Sep
+        if (idx_sep != -1) nodes->SetIntermittencySep(iPoint_Local, Restart_Data[base_idx + idx_sep]);
+
+        // Load Intermittency Eff
+        if (idx_eff != -1) nodes->SetIntermittencyEff(iPoint_Local, Restart_Data[base_idx + idx_eff]);
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
