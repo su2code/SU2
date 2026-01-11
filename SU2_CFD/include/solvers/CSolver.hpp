@@ -3426,6 +3426,7 @@ public:
    * \return Index of the field (0-based, excluding PointID), or -1 if not found.
    */
   int FindFieldIndex(const string& fieldName) const;
+  vector<int> FindFieldIndices(const vector<string>& fieldNames) const;
 
   /*!
    * \brief Read the metadata from a native SU2 restart file (ASCII or binary).

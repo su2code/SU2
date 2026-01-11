@@ -516,12 +516,12 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
     }
 
     /*--- Identify indices for LM transition variables ---*/
-    long idx_gamma = solver[MESH_0][TRANS_SOL]->FindFieldIndex("LM_gamma");
-    long idx_ret   = solver[MESH_0][TRANS_SOL]->FindFieldIndex("LM_Re_t");
-    long idx_sep   = solver[MESH_0][TRANS_SOL]->FindFieldIndex("LM_gamma_sep");
-    long idx_eff   = solver[MESH_0][TRANS_SOL]->FindFieldIndex("LM_gamma_eff");
-
-
+    vector<string> target_fields = {"LM_gamma", "LM_Re_t", "LM_gamma_sep", "LM_gamma_eff"};
+    vector<int> field_indices = solver[MESH_0][TRANS_SOL]->FindFieldIndices(target_fields);
+    int idx_gamma = field_indices[0];
+    int idx_ret   = field_indices[1];
+    int idx_sep   = field_indices[2];
+    int idx_eff   = field_indices[3];
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -533,17 +533,22 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
       const auto iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
       if (iPoint_Local > -1) {
+        /*--- We need to store this point's data, so jump to the correct
+         offset in the buffer of data from the restart file and load it. ---*/
+
+        const auto base_idx = counter * Restart_Vars[1];
+
         // Load Gamma
-        if (idx_gamma != -1) nodes->SetSolution(iPoint_Local, 0, Restart_Data[counter * Restart_Vars[1] + idx_gamma]);
+        if (idx_gamma != -1) nodes->SetSolution(iPoint_Local, 0, Restart_Data[base_idx + idx_gamma]);
 
         // Load Re_Theta_t
-        if (idx_ret != -1) nodes->SetSolution(iPoint_Local, 1, Restart_Data[counter * Restart_Vars[1] + idx_ret]);
+        if (idx_ret != -1) nodes->SetSolution(iPoint_Local, 1, Restart_Data[base_idx + idx_ret]);
 
         // Load Intermittency Sep
-        if (idx_sep != -1) nodes->SetIntermittencySep(iPoint_Local, Restart_Data[counter * Restart_Vars[1] + idx_sep]);
+        if (idx_sep != -1) nodes->SetIntermittencySep(iPoint_Local, Restart_Data[base_idx + idx_sep]);
 
         // Load Intermittency Eff
-        if (idx_eff != -1) nodes->SetIntermittencyEff(iPoint_Local, Restart_Data[counter * Restart_Vars[1] + idx_eff]);
+        if (idx_eff != -1) nodes->SetIntermittencyEff(iPoint_Local, Restart_Data[base_idx + idx_eff]);
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;

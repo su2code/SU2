@@ -119,51 +119,17 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     }
 
     /*--- Identify which turbulence variables to look for based on the model. ---*/
-    struct TurbFieldInfo {
-      string name;
-      unsigned short model_var_index;
-    };
-    vector<TurbFieldInfo> target_fields;
-
+    vector<string> target_fields;
     TURB_MODEL kind_turb = config->GetKind_Turb_Model();
     if (kind_turb == TURB_MODEL::SA) {
-      target_fields.push_back({"Nu_Tilde", 0});
+      target_fields.push_back("Nu_Tilde");
     } else if (kind_turb == TURB_MODEL::SST) {
-      target_fields.push_back({"Turb_Kin_Energy", 0});
-      target_fields.push_back({"Omega", 1});
-    }
-
-    /*--- Fallback variables for legacy loading ---*/
-    unsigned short skipVars = 0;
-    unsigned short nVar_Restart_Legacy = 0;
-
-    if (target_fields.empty()) {
-      /*--- Skip flow variables ---*/
-      skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar();
-
-      const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-      const bool energy = config->GetEnergy_Equation();
-      const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-      const bool flamelet = (config->GetKind_FluidModel() == FLUID_FLAMELET);
-
-      if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) {
-        skipVars--;
-      }
-
-      /*--- Determine number of turbulence variables in restart file ---*/
-      if (Restart_Vars[1] > skipVars) {
-        nVar_Restart_Legacy = min(static_cast<unsigned short>(Restart_Vars[1] - skipVars), nVar);
-      }
+      target_fields.push_back("Turb_Kin_Energy");
+      target_fields.push_back("Omega");
     }
 
     /*--- Find indices for named fields ---*/
-    vector<long> field_indices;
-    if (!target_fields.empty()) {
-      for (const auto& field : target_fields) {
-        long idx = solver[MESH_0][TURB_SOL]->FindFieldIndex(field.name);
-        field_indices.push_back(idx);
-      }
-    }
+    vector<int> field_indices = solver[MESH_0][TURB_SOL]->FindFieldIndices(target_fields);
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -178,26 +144,12 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
         const auto base_idx = counter * Restart_Vars[1];
-        
-        if (!target_fields.empty()) {
-          /*--- Named field loading ---*/
-          for (size_t i = 0; i < target_fields.size(); ++i) {
-            long r_idx = field_indices[i];
-            unsigned short v_idx = target_fields[i].model_var_index;
 
-            if (r_idx != -1 && r_idx < Restart_Vars[1]) {
-              nodes->SetSolution(iPoint_Local, v_idx, Restart_Data[base_idx + r_idx]);
-            }
-          }
-        } else {
-          /*--- Positional loading (Legacy) ---*/
-          const auto index = base_idx + skipVars;
-          for (auto iVar = 0u; iVar < nVar_Restart_Legacy; iVar++) {
-            nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-          }
-          /*--- Initialize missing turbulence variables from defaults (legacy only) ---*/
-          for (auto iVar = nVar_Restart_Legacy; iVar < nVar; iVar++) {
-            nodes->SetSolution(iPoint_Local, iVar, Solution_Inf[iVar]);
+        /*--- Named field loading ---*/
+        for (unsigned short v_idx = 0; v_idx < (unsigned short)target_fields.size(); ++v_idx) {
+          int r_idx = field_indices[v_idx];
+          if (r_idx != -1 && r_idx < (int)Restart_Vars[1]) {
+            nodes->SetSolution(iPoint_Local, v_idx, Restart_Data[base_idx + r_idx]);
           }
         }
 

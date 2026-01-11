@@ -2937,6 +2937,14 @@ int CSolver::FindFieldIndex(const string& fieldName) const {
   return -1;
 }
 
+vector<int> CSolver::FindFieldIndices(const vector<string>& fieldNames) const {
+  vector<int> indices;
+  for (const auto& name : fieldNames) {
+    indices.push_back(FindFieldIndex(name));
+  }
+  return indices;
+}
+
 void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config, string val_filename) {
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
