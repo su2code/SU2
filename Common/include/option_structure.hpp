@@ -96,7 +96,7 @@ constexpr passivedouble UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Univer
 constexpr passivedouble BOLTZMANN_CONSTANT = 1.3806503E-23;   /*!< \brief Boltzmann's constant [J K^-1] */
 constexpr passivedouble AVOGAD_CONSTANT = 6.0221415E26;       /*!< \brief Avogadro's constant, number of particles in one kmole. */
 constexpr passivedouble FUND_ELEC_CHARGE_CGS = 4.8032047E-10; /*!< \brief Fundamental electric charge in CGS units, cm^(3/2) g^(1/2) s^(-1). */
-
+constexpr passivedouble STD_REF_TEMP = 298.15;  /*!< \brief Standard reference temperature for enthalpy in Kelvin. */
 constexpr passivedouble EPS = 1.0E-16;        /*!< \brief Error scale. */
 constexpr passivedouble TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
 
