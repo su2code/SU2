@@ -88,6 +88,8 @@ if omp
   omp_dep = dependency('openmp', language:'cpp')
 endif
 
+su2_deps += declare_dependency(include_directories: 'externals/eigen')
+
 if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
   codi_rev_args = ['-DCODI_REVERSE_TYPE']

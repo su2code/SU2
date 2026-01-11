@@ -41,6 +41,8 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   unsigned short Inlet_Position;             /*!< \brief Column index for scalar variables in inlet files. */
   vector<su2activematrix> Inlet_SpeciesVars; /*!< \brief Species variables at inlet profiles. */
   FluidFlamelet_ParsedOptions flamelet_config_options;
+  vector<su2activematrix> Wall_SpeciesVars; /*!< \brief Species variables at  profiles. */
+  vector<su2matrix<su2double>> CustomBoundaryScalar;
 
  public:
   /*!
@@ -147,6 +149,42 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   void BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
                  CConfig* config, unsigned short val_marker) final;
 
+  /*!
+   * \brief Impose the isothermal wall Dirichlet boundary condition (value).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container,
+                          CNumerics* conv_numerics, CNumerics* visc_numerics,
+                          CConfig* config, unsigned short val_marker) override;
+
+  /*!
+   * \brief Impose the heat flux Neumann wall boundary condition (flux).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container,
+                        CNumerics* conv_numerics, CNumerics* visc_numerics,
+                        CConfig* config, unsigned short val_marker) override;
+
+  /*!
+   * \brief Generic wall boundary condition implementation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
+                       CConfig* config, unsigned short val_marker);
+
   /*--- Note that BC_Sym_Plane, BC_HeatFlux_Wall, BC_Isothermal_Wall are all treated as zero-flux BC for the
    * mass-factions, which can be fulfilled by no additional residual contribution on these nodes.
    * If a specified mass-fractions flux (like BC_HeatFlux_Wall) or a constant mass-fraction on the boundary
@@ -194,6 +232,19 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
         visc_numerics->SetDiffusionCoeff(nodes->GetDiffusivity(iPoint), nodes->GetDiffusivity(iPoint));
       },
       geometry, solver_container, conv_numerics, visc_numerics, config);
+  }
+
+  /*!
+   * \brief Set custom boundary scalar values from Python.
+   * \param[in] val_marker - Boundary marker index
+   * \param[in] val_vertex - Boundary vertex index
+   * \param[in] val_customBoundaryScalar - Vector of scalar values
+   */
+  inline void SetCustomBoundaryScalar(unsigned short val_marker, unsigned long val_vertex,
+                                      vector<passivedouble> val_customBoundaryScalar) final {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
+      CustomBoundaryScalar[val_marker](val_vertex, iVar) = val_customBoundaryScalar[iVar];
+    }
   }
 
 };

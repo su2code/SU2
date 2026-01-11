@@ -134,8 +134,9 @@ protected:
    * \brief Compute the plane stress term.
    * \param[in,out] element_container - The finite element.
    * \param[in] config - Definition of the problem.
+   * \param[in] iGauss - Index of Gaussian integration point.
    */
-  virtual void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config) = 0;
+  virtual void Compute_Plane_Stress_Term(CElement *element_container, const CConfig *config, unsigned short iGauss) = 0;
 
   /*!
    * \brief Compute the stress tensor.

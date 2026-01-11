@@ -64,9 +64,10 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   Alpha = Alpha_i[0];
   ReferenceTemperature = config->GetMaterialReferenceTemperature();
 
-  Compute_Lame_Parameters();
-
   plane_stress = (nDim == 2) && (config->GetElas2D_Formulation() == STRUCT_2DFORM::PLANE_STRESS);
+  linear = config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL;
+
+  Compute_Lame_Parameters();
 
   KAux_ab = new su2double* [nDim];
   for (iVar = 0; iVar < nDim; iVar++) {
