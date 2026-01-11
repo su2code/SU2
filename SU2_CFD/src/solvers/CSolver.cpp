@@ -814,7 +814,9 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             Cvector.resize(ICOUNT,nDim) = su2double(0.0);
 
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
-            r13 = 0.0; r23_a = 0.0; r33 = 0.0;
+            r13 = 0.0;
+            r23_a = 0.0;
+            r33 = 0.0;
 
             for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
@@ -888,25 +890,38 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              calculation for each periodic point. ---*/
 
             if (nDim == 2) {
-              bufDSend[buf_offset] = r11;   buf_offset++;
-              bufDSend[buf_offset] = r12;   buf_offset++;
-              bufDSend[buf_offset] = 0.0;   buf_offset++;
-              bufDSend[buf_offset] = r22;   buf_offset++;
+              bufDSend[buf_offset] = r11;
+              buf_offset++;
+              bufDSend[buf_offset] = r12;
+              buf_offset++;
+              bufDSend[buf_offset] = 0.0;
+              buf_offset++;
+              bufDSend[buf_offset] = r22;
+              buf_offset++;
             }
             if (nDim == 3) {
-              bufDSend[buf_offset] = r11;   buf_offset++;
-              bufDSend[buf_offset] = r12;   buf_offset++;
-              bufDSend[buf_offset] = r13;   buf_offset++;
+              bufDSend[buf_offset] = r11;
+              buf_offset++;
+              bufDSend[buf_offset] = r12;
+              buf_offset++;
+              bufDSend[buf_offset] = r13;
+              buf_offset++;
 
-              bufDSend[buf_offset] = 0.0;   buf_offset++;
-              bufDSend[buf_offset] = r22;   buf_offset++;
-              bufDSend[buf_offset] = r23_a; buf_offset++;
+              bufDSend[buf_offset] = 0.0;
+              buf_offset++;
+              bufDSend[buf_offset] = r22;
+              buf_offset++;
+              bufDSend[buf_offset] = r23_a;
+              buf_offset++;
 
-              bufDSend[buf_offset] = 0.0;   buf_offset++;
-              bufDSend[buf_offset] = 0.0;   buf_offset++;
-              bufDSend[buf_offset] = r33;   buf_offset++;
-
+              bufDSend[buf_offset] = 0.0;
+              buf_offset++;
+              bufDSend[buf_offset] = 0.0;
+              buf_offset++;
+              bufDSend[buf_offset] = r33;
+              buf_offset++;
             }
+
 
             for (iVar = 0; iVar < ICOUNT; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {

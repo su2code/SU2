@@ -255,7 +255,7 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
             }
 
             sort(ActDiskPoint_Front.begin(), ActDiskPoint_Front.end());
-            // unique call removed to preserve frequency information for perimeter detection
+            /* unique call removed to preserve frequency information for perimeter detection */
 
             /*--- Check the begning of the list ---*/
 
@@ -273,7 +273,8 @@ void CSU2ASCIIMeshReaderFVM::SplitActuatorDiskSurface() {
 
             /*--- Check the  end of the list ---*/
 
-            if (!((ActDiskPoint_Front[ActDiskPoint_Front.size() - 1] == ActDiskPoint_Front[ActDiskPoint_Front.size() - 2]))) {
+            if (!((ActDiskPoint_Front[ActDiskPoint_Front.size() - 1] ==
+                   ActDiskPoint_Front[ActDiskPoint_Front.size() - 2]))) {
               PerimeterPoint.push_back(ActDiskPoint_Front[ActDiskPoint_Front.size() - 1]);
             }
 
