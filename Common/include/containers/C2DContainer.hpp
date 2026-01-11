@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,9 +62,8 @@ namespace container_details {
  */
 template <typename Index_t, class Scalar_t, StorageType Store, size_t AlignSize, size_t StaticRows, size_t StaticCols>
 class AccessorImpl {
-  static_assert(!(StaticRows == 1 && Store == StorageType::ColumnMajor), "Row vector should have row-major storage.");
-  static_assert(!(StaticCols == 1 && Store == StorageType::RowMajor),
-                "Column vector should have column-major storage.");
+  static_assert(StaticRows != 1 || Store != StorageType::ColumnMajor, "Row vector should have row-major storage.");
+  static_assert(StaticCols != 1 || Store != StorageType::RowMajor, "Column vector should have column-major storage.");
 
  protected:
   /*!
@@ -164,7 +163,11 @@ class AccessorImpl {
                                                                                 \
   const Scalar_t& operator()(const Index_t i, const Index_t j) const noexcept { \
     assert(i >= 0 && i < M && j >= 0 && j < N);                                 \
-    return m_data[(Store == StorageType::RowMajor) ? i * N + j : i + j * M];    \
+    if constexpr (Store == StorageType::RowMajor) {                             \
+      return m_data[i * N + j];                                                 \
+    } else {                                                                    \
+      return m_data[i + j * M];                                                 \
+    }                                                                           \
   }                                                                             \
                                                                                 \
   Scalar_t& operator()(const Index_t i, const Index_t j) noexcept {             \
@@ -173,7 +176,7 @@ class AccessorImpl {
   }                                                                             \
                                                                                 \
   const Scalar_t* operator[](const Index_t k) const noexcept {                  \
-    if (Store == StorageType::RowMajor) {                                       \
+    if constexpr (Store == StorageType::RowMajor) {                             \
       assert(k >= 0 && k < M);                                                  \
       return &m_data[k * N];                                                    \
     } else {                                                                    \
@@ -224,8 +227,7 @@ class AccessorImpl {
  */
 template <typename Index_t, class Scalar_t, StorageType Store, size_t AlignSize, size_t StaticCols>
 class AccessorImpl<Index_t, Scalar_t, Store, AlignSize, DynamicSize, StaticCols> {
-  static_assert(!(StaticCols == 1 && Store == StorageType::RowMajor),
-                "Column vector should have column-major storage.");
+  static_assert(StaticCols != 1 || Store != StorageType::RowMajor, "Column vector should have column-major storage.");
 
  protected:
   Index_t m_rows;
@@ -244,7 +246,7 @@ class AccessorImpl<Index_t, Scalar_t, Store, AlignSize, DynamicSize, StaticCols>
  */
 template <typename Index_t, class Scalar_t, StorageType Store, size_t AlignSize, size_t StaticRows>
 class AccessorImpl<Index_t, Scalar_t, Store, AlignSize, StaticRows, DynamicSize> {
-  static_assert(!(StaticRows == 1 && Store == StorageType::ColumnMajor), "Row vector should have row-major storage.");
+  static_assert(StaticRows != 1 || Store != StorageType::ColumnMajor, "Row vector should have row-major storage.");
 
  protected:
   Index_t m_cols;
@@ -370,7 +372,7 @@ class AccessorImpl<Index_t, Scalar_t, StorageType::RowMajor, AlignSize, 1, Dynam
 template <typename Index_t, class Scalar_t, StorageType Store, size_t AlignSize, size_t StaticRows, size_t StaticCols>
 class C2DContainer
     : public container_details::AccessorImpl<Index_t, Scalar_t, Store, AlignSize, StaticRows, StaticCols> {
-  static_assert(std::is_integral<Index_t>::value, "");
+  static_assert(std::is_integral<Index_t>::value);
 
  private:
   using Base = container_details::AccessorImpl<Index_t, Scalar_t, Store, AlignSize, StaticRows, StaticCols>;
