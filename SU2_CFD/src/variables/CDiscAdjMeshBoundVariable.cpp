@@ -29,14 +29,7 @@
 #include "../../include/variables/CDiscAdjMeshBoundVariable.hpp"
 
 
-CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(unsigned long npoint, unsigned long ndim, CConfig *config) {
-
-  nPoint = npoint;
-  nVar = ndim;
-  nDim = ndim;
-
-  /*--- Allocate the solution array. ---*/
-  Solution.resize(nPoint,nVar) = su2double(0.0);
+CDiscAdjMeshBoundVariable::CDiscAdjMeshBoundVariable(unsigned long npoint, unsigned long ndim, CConfig *config): CVariable(npoint, ndim, ndim, config, true) {
 
   VertexMap.Reset(nPoint);
 }

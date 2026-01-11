@@ -1091,7 +1091,8 @@ private:
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
-  bool DiscreteAdjoint,                /*!< \brief AD-based discrete adjoint mode. */
+  bool DiscreteAdjoint;                /*!< \brief AD-based discrete adjoint mode. */
+  ENUM_DISC_ADJ_TYPE Kind_DiscreteAdjoint; /*!< \brief AD-based discrete adjoint formulation. */
   DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
@@ -9145,6 +9146,12 @@ public:
    * \return the discrete adjoint indicator.
    */
   bool GetDiscrete_Adjoint(void) const { return DiscreteAdjoint; }
+
+  /*!
+   * \brief Get the kind of discrete adjoint solver formulation.
+   * \return the discrete adjoint indicator.
+   */
+  ENUM_DISC_ADJ_TYPE GetKind_DiscreteAdjoint(void) const { return Kind_DiscreteAdjoint; }
 
   /*!
    * \brief Get the indicator whether a debug run for the discrete adjoint solver will be started.

@@ -59,6 +59,47 @@ class CDiscAdjDeformationDriver : public CDriverBase {
    */
   void Finalize() override;
 
+  /*!
+   * \brief Get total sensitivity of the objective function w.r.t. surface coordinates or displacements at mesh
+   * vertices. \return Total sensitivity of the objective function w.r.t. the un-deformed coordinates.
+   */
+  vector<vector<passivedouble>> GetObjectiveCoordinatesTotalSensitivities() const;
+
+  /*!
+   * \brief Get total sensitivity of the objective function w.r.t. surface coordinates or displacements at a mesh
+   * vertex. \param[in] iPoint - Mesh vertex index. \return Total sensitivity of the objective function w.r.t. the
+   * un-deformed coordinates.
+   */
+  vector<passivedouble> GetObjectiveCoordinatesTotalSensitivities(unsigned long iPoint) const;
+
+  /*!
+   * \brief Get total sensitivity of the objective function w.r.t. surface coordinates or displacements at marker
+   * vertices. \param[in] iMarker - Marker identifier. \return Total sensitivity of the objective function w.r.t. the
+   * surface coordinates.
+   */
+  vector<vector<passivedouble>> GetMarkerObjectiveCoordinatesTotalSensitivities(unsigned short iMarker) const;
+
+  /*!
+   * \brief Get total sensitivity of the objective function w.r.t. surface coordinates or displacements at a marker
+   * vertex. \param[in] iMarker - Marker identifier. \param[in] iVertex - Marker vertex index. \return Total sensitivity
+   * of the objective function w.r.t. the surface coordinates.
+   */
+  vector<passivedouble> GetMarkerObjectiveCoordinatesTotalSensitivities(unsigned short iMarker,
+                                                                        unsigned long iVertex) const;
+
+  /*!
+   * \brief Get total sensitivity of the objective function w.r.t. the design variables.
+   * \return Total sensitivity of the objective function w.r.t. the design variables.
+   */
+  vector<vector<passivedouble>> GetObjectiveDesignVariablesTotalSensitivities() const;
+
+  /*!
+   * \brief Get total sensitivity of the objective function w.r.t. a design variable.
+   * \param[in] iDV - Design Variable index.
+   * \return Total sensitivity of the objective function w.r.t. a design variable.
+   */
+  vector<passivedouble> GetObjectiveDesignVariablesTotalSensitivities(unsigned short iDV) const;
+
  protected:
   /*!
    * \brief Read in the config and mesh files.

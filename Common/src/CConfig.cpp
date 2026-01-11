@@ -1140,6 +1140,8 @@ void CConfig::SetConfig_Options() {
 #endif
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, discAdjDefault, Restart_Flow, discAdjDefault);
+  /*!\brief DISC_ADJ_TYPE  \n DESCRIPTION: Discrete adjoint problem formulation \n  Options: FIXED_POINT, RESIDUALS \ingroup Config*/
+  addEnumOption("KIND_DISC_ADJ", Kind_DiscreteAdjoint, DiscreteAdjoint_Map, ENUM_DISC_ADJ_TYPE::FIXED_POINT);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, TURB_MODEL::NONE);
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SST turbulence model options/corrections. \n Options: see \link SST_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/

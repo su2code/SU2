@@ -52,7 +52,7 @@ CDiscAdjDeformationDriver::CDiscAdjDeformationDriver(char* confFile, SU2_Comm MP
   Gradient = new su2double*[nDV];
 
   for (auto iDV = 0u; iDV < nDV; iDV++) {
-    /*--- Initialize to zero ---*/
+    /*--- structure to store the gradient. ---*/
     unsigned short nValue = config_container[ZONE_0]->GetnDV_Value(iDV);
 
     Gradient[iDV] = new su2double[nValue];
@@ -290,10 +290,11 @@ void CDiscAdjDeformationDriver::Preprocess() {
 
       /*--- Read in sensitivities from file. ---*/
 
-      if (config_container[ZONE_0]->GetSensitivity_Format() == UNORDERED_ASCII)
+      if (config_container[ZONE_0]->GetSensitivity_Format() == UNORDERED_ASCII) {
         geometry_container[iZone][INST_0][MESH_0]->ReadUnorderedSensitivity(config_container[iZone]);
-      else
+      } else {
         geometry_container[iZone][INST_0][MESH_0]->SetSensitivity(config_container[iZone]);
+      }
     }
   }
 }
@@ -303,6 +304,7 @@ void CDiscAdjDeformationDriver::Run() {
     if (!config_container[iZone]->GetDiscrete_Adjoint()) {
       continue;
     }
+
     if (rank == MASTER_NODE)
       cout << "\n---------------------- Mesh sensitivity computation ---------------------" << endl;
     if (config_container[iZone]->GetDiscrete_Adjoint() && config_container[iZone]->GetSmoothGradient() &&
@@ -379,7 +381,7 @@ void CDiscAdjDeformationDriver::Finalize() {
   /*--- Exit the solver cleanly. ---*/
 
   if (rank == MASTER_NODE)
-    cout << "\n------------------------- Exit Success (SU2_DOT) ------------------------" << endl << endl;
+    cout << "\n------------------------- Exit Success (SU2_DEF_AD) ------------------------" << endl << endl;
 }
 
 void CDiscAdjDeformationDriver::SetProjection_FD(CGeometry* geometry, CConfig* config,
@@ -931,6 +933,7 @@ void CDiscAdjDeformationDriver::DerivativeTreatment_MeshSensitivity(CGeometry* g
     if (rank == MASTER_NODE) cout << "  working on mesh level" << endl;
 
     /*--- Work with the surface derivatives. ---*/
+
     if (config->GetSmoothOnSurface()) {
       /*--- Project to surface and then smooth on surface. ---*/
 
@@ -1000,4 +1003,87 @@ void CDiscAdjDeformationDriver::DerivativeTreatment_Gradient(CGeometry* geometry
              config->GetSobMode() == ENUM_SOBOLEV_MODUS::MESH_LEVEL) {
     solver->RecordTapeAndCalculateOriginalGradient(geometry, surface_movement, grid_movement, config, Gradient);
   }
+}
+
+vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSensitivities() const {
+  const auto nPoint = GetNumberNodes();
+
+  vector<vector<passivedouble>> values;
+
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    values.push_back(GetObjectiveCoordinatesTotalSensitivities(iPoint));
+  }
+
+  return values;
+}
+
+vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSensitivities(unsigned long iPoint) const {
+  if (iPoint >= GetNumberNodes()) {
+    SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
+  }
+
+  vector<passivedouble> values(nDim, 0.0);
+
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
+    const su2double value = geometry_container[ZONE_0][INST_0][MESH_0]->GetSensitivity(iPoint, iDim);
+
+    values[iDim] = SU2_TYPE::GetValue(value);
+  }
+
+  return values;
+}
+
+vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivities(
+    unsigned short iMarker) const {
+  const auto nVertex = GetNumberMarkerNodes(iMarker);
+
+  vector<vector<passivedouble>> values;
+
+  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+    values.push_back(GetMarkerObjectiveCoordinatesTotalSensitivities(iMarker, iVertex));
+  }
+
+  return values;
+}
+
+vector<passivedouble> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivities(
+    unsigned short iMarker, unsigned long iVertex) const {
+  const auto iPoint = GetMarkerNode(iMarker, iVertex);
+  vector<passivedouble> values(nDim, 0.0);
+
+  for (auto iDim = 0u; iDim < nDim; iDim++) {
+    const su2double value = geometry_container[ZONE_0][INST_0][MESH_0]->GetSensitivity(iPoint, iDim);
+
+    values[iDim] = SU2_TYPE::GetValue(value);
+  }
+
+  return values;
+}
+
+vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetObjectiveDesignVariablesTotalSensitivities() const {
+  const auto nDV = GetNumberDesignVariables();
+
+  vector<vector<passivedouble>> values;
+
+  for (auto iDV = 0ul; iDV < nDV; iDV++) {
+    values.push_back(GetObjectiveDesignVariablesTotalSensitivities(iDV));
+  }
+
+  return values;
+}
+
+vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveDesignVariablesTotalSensitivities(
+    unsigned short iDV) const {
+  if (iDV >= GetNumberDesignVariables()) {
+    SU2_MPI::Error("Design Variable index exceeds size.", CURRENT_FUNCTION);
+  }
+
+  unsigned short nValue = config_container[ZONE_0]->GetnDV_Value(iDV);
+  vector<passivedouble> values(nValue, 0.0);
+
+  for (auto iValue = 0ul; iValue < nValue; iValue++) {
+    values[iValue] = SU2_TYPE::GetValue(Gradient[iDV][iValue]);
+  }
+
+  return values;
 }

@@ -334,6 +334,12 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
+  void ComputeResidual_RMS(const CGeometry* geometry, const CConfig* config);
+
+  /*!
+   * \brief Set the value of the max residual and RMS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
   void ComputeResidual_Multizone(const CGeometry *geometry, const CConfig *config);
 
   /*!
@@ -1767,6 +1773,133 @@ public:
                                           CSolver **solver_container,
                                           CNumerics *numerics,
                                           CConfig *config) { }
+
+  /*!
+   * \brief Get sensitivity of deformed volume coordinates with respect to surface coordinates as a matrix-vector
+   *        product with the adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \return Sensitivity of volume coordinates with respect to surface coordinates.
+   */
+  inline virtual su2double GetProd_dCoordinates_dCoordinates(unsigned long iPoint, unsigned short iDim) const { return su2double(0.0); }
+
+  /*!
+   * \brief Get sensitivity of deformed volume coordinates with respect to surface displacements as a matrix-vector
+   *        product with the adjoint variable.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] iDim - Dimension index.
+   * \return Sensitivity of volume coordinates with respect to surface displacements.
+   */
+  inline virtual su2double GetProd_dCoordinates_dDisplacements(unsigned short iMarker, unsigned long iVertex,
+                                                               unsigned short iDim) const { return su2double(0.0); }
+
+  /*!
+   * \brief Get sensitivity of objective function with respect to farfield design variables as a partial derivative.
+   * \param[in] iTrim - Trim variable index.
+   * \return Sensitivity of aerodynamic function with respect to design variable (Mach and AoA for now).
+   */
+  inline virtual su2double GetSens_dObjective_dVariables(unsigned short iTrim) const { return su2double(0.0); }
+
+  /*!
+   * \brief Get sensitivity of flow residuals with respect to farfield design variables as a matrix-vector product with
+   *        the adjoint variable.
+   * \param[in] iTrim - Trim variable index.
+   * \return Sensitivity of aerodynamic residuals with respect to design variable (Mach and AoA for now).
+   */
+  inline virtual su2double GetProd_dResiduals_dVariables(unsigned short iTrim) const { return su2double(0.0); }
+
+  /*!
+   * \brief Get sensitivity of objective function with respect to conservative flow variables as a partial derivative.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Variable index.
+   * \return Sensitivity of aerodynamic function with respect to flow states.
+   */
+  inline virtual su2double GetSens_dObjective_dStates(unsigned long iPoint, unsigned short iVar) const { return su2double(0.0); }
+
+  /*!
+   * \brief Get sensitivity of flow residuals with respect to conservative flow variables as a matrix-vector product with
+   *        the adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Variable index.
+   * \return Sensitivity of aerodynamic residuals with respect to flow states.
+   */
+  inline virtual su2double GetProd_dResiduals_dStates(unsigned long iPoint, unsigned short iVar) const { return su2double(0.0); }
+
+  /*!
+   * \brief Get sensitivity of flow tractions with respect to conservative flow variables as a matrix-vector product with
+   *        the adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Variable index.
+   * \return Sensitivity of aerodynamic tractions with respect to flow states.
+   */
+  inline virtual su2double GetProd_dTractions_dStates(unsigned long iPoint, unsigned short iVar) const { return su2double(0.0); }
+
+  /*!
+   * \brief Get sensitivity of objective function with respect to volume coordinates as a partial derivative.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \return Sensitivity of aerodynamic function with respect to volume coordinates.
+   */
+  inline virtual su2double GetSens_dObjective_dCoordinates(unsigned long iPoint, unsigned short iDim) const { return su2double(0.0); }
+
+  /*!
+   * \brief Get sensitivity of flow residuals with respect to volume coordinates as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \return Sensitivity of aerodynamic residuals with respect to volume coordinates.
+   */
+  inline virtual su2double GetProd_dResiduals_dCoordinates(unsigned long iPoint, unsigned short iDim) const { return su2double(0.0); }
+
+  /*!
+   * \brief Get sensitivity of flow tractions with respect to volume coordinates as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \return Sensitivity of aerodynamic tractions with respect to volume coordinates.
+   */
+  inline virtual su2double GetProd_dTractions_dCoordinates(unsigned long iPoint, unsigned short iDim) const { return su2double(0.0); }
+
+  /*!
+   * \brief Get sensitivity of objective function with respect to surface displacements as a partial derivative.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] iDim - Dimensions index.
+   * \return Sensitivity of aerodynamic function with respect to surface displacements.
+   */
+  inline virtual su2double GetSens_dObjective_dDisplacements(unsigned short iMarker, unsigned long iVertex,
+                                                             unsigned short iDim) const { return su2double(0.0); }
+
+  /*!
+   * \brief Get sensitivity of flow residuals with respect to surface displacements as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] iDim - Dimension index.
+   * \return Sensitivity of aerodynamic residuals with respect to surface displacements.
+   */
+  inline virtual su2double GetProd_dResiduals_dDisplacements(unsigned short iMarker, unsigned long iVertex,
+                                                             unsigned short iDim) const { return su2double(0.0); }
+
+  /*!
+   * \brief Get sensitivity of flow tractions with respect to surface displacements as a matrix-vector product with the
+   *        adjoint variable.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Marker vertex index.
+   * \param[in] iDim - Dimension index.
+   * \return Sensitivity of aerodynamic tractions with respect to surface displacements.
+   */
+  inline virtual su2double GetProd_dTractions_dDisplacements(unsigned short iMarker, unsigned long iVertex,
+                                                             unsigned short iDim) const { return su2double(0.0); }
+
+  /*!
+   * \brief Set the right-hand side adjoint source term.
+   * \param[in] iPoint - Point index.
+   * \param[in] iVar - Variable index.
+   * \param[in] value - Value of the adjoint source term.
+   */
+  inline virtual void SetAdjoint_SourceTerm(unsigned long iPoint, unsigned short iVar, su2double value){};
 
   /*!
    * \author H. Kline
@@ -3557,6 +3690,35 @@ public:
   inline virtual void ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){}
 
   /*!
+   * \brief A virtual member (overloaded for CDiscAdjResidualSolver).
+   * \param[in] geometry - The geometrical definition of the problem.
+   * \param[in] solver_container - The solver container holding all solutions.
+   * \param[in] config - The particular config.
+   * \param[in] output - Kind of output variables.
+   */
+  inline virtual void ExtractAdjoint_Solution(CGeometry* geometry, CConfig* config, ENUM_VARIABLE variable) {}
+
+  /*!
+   * \brief A virtual member (overloaded for CDiscAdjResidualSolver).
+   * \param[in] geometry - The geometrical definition of the problem.
+   * \param[in] solver_container - The solver container holding all solutions.
+   * \param[in] config - The particular config = false.
+   * \param[in] objective - Kind of output variables.
+   */
+  inline virtual void ExtractAdjoint_Coordinates(CGeometry* geometry, CConfig* config, CSolver* mesh_solver,
+                                                 ENUM_VARIABLE variable) {}
+
+  /*!
+   * \brief A virtual member (overloaded for CDiscAdjResidualSolver).
+   * \param[in] geometry - The geometrical definition of the problem.
+   * \param[in] solver_container - The solver container holding all solutions.
+   * \param[in] config - The particular config = false.
+   * \param[in] objective - Kind of output variables.
+   */
+  inline virtual void ExtractAdjoint_Displacements(CGeometry* geometry, CConfig* config, CSolver* mesh_solver,
+                                                   ENUM_VARIABLE variable) {}
+
+  /*!
    * \brief Register In- or Output.
    * \param[in] input - Boolean whether In- or Output should be registered.
    * \param[in] config - The particular config.
@@ -3757,6 +3919,15 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) { }
+
+  /*!
+   * \brief A virtual member (overloaded for CDiscAdjResidualSolver).
+   * \param[in] geometry - The geometrical definition of the problem.
+   * \param[in] solver_container - The solver container holding all solutions.
+   * \param[in] config - The particular config.
+   * \param[in] output - Kind of output variables.
+   */
+  inline virtual void ExtractAdjoint_Variables(CGeometry* geometry, CConfig* config, ENUM_VARIABLE variable) {}
 
   /*!
    * \brief A virtual member.
@@ -4269,6 +4440,16 @@ public:
    */
   inline su2double GetVertexTractions(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
     return VertexTraction[iMarker][iVertex][iDim];
+  }
+
+  /*!
+   * \brief Get the adjoints of the vertex tractions.
+   * \param[in] iMarker - Index of the marker.
+   * \param[in] iVertex - Index of the relevant vertex.
+   * \param[in] iDim - Dimension.
+   */
+  inline su2double GetAdjointVertexTractions(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
+    return VertexTractionAdjoint[iMarker][iVertex][iDim];
   }
 
   /*!

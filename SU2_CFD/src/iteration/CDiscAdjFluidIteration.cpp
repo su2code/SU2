@@ -540,7 +540,9 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** g
   if (config[iZone]->GetFluidProblem() && !config[iZone]->GetMultizone_Problem()) {
     solvers0[FLOW_SOL]->RegisterVertexTractions(geometry0, config[iZone]);
   }
-
+  if (config[iZone]->GetDeform_Mesh()) {
+      solver[iZone][iInst][MESH_0][ADJMESH_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
+  }
   }
   END_SU2_OMP_PARALLEL
 }

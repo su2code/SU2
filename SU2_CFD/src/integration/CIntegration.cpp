@@ -265,3 +265,65 @@ void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver
   }
   END_SU2_OMP_PARALLEL
 }
+
+void CIntegration::ComputeResiduals(CGeometry**** geometry_container, CSolver***** solvers_container,
+                                    CNumerics****** numerics_container, CConfig** config_container,
+                                    unsigned short EqSystem, unsigned short iZone, unsigned short iInst) {
+  CGeometry* geometry = geometry_container[iZone][iInst][MESH_0];
+  CConfig* config = config_container[iZone];
+  CSolver** solvers = solvers_container[iZone][iInst][MESH_0];
+  CNumerics** numerics = numerics_container[iZone][iInst][MESH_0][EqSystem];
+
+  /*--- Update global parameters. ---*/
+
+  switch (config->GetKind_Solver()) {
+    case MAIN_SOLVER::EULER:
+    case MAIN_SOLVER::DISC_ADJ_EULER:
+    case MAIN_SOLVER::INC_EULER:
+    case MAIN_SOLVER::DISC_ADJ_INC_EULER:
+    case MAIN_SOLVER::NEMO_EULER:
+      config->SetGlobalParam(MAIN_SOLVER::EULER, RUNTIME_FLOW_SYS);
+      break;
+
+    case MAIN_SOLVER::NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES:
+    case MAIN_SOLVER::INC_NAVIER_STOKES:
+    case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
+    case MAIN_SOLVER::NEMO_NAVIER_STOKES:
+      config->SetGlobalParam(MAIN_SOLVER::NAVIER_STOKES, RUNTIME_FLOW_SYS);
+      break;
+
+    case MAIN_SOLVER::RANS:
+    case MAIN_SOLVER::DISC_ADJ_RANS:
+    case MAIN_SOLVER::INC_RANS:
+    case MAIN_SOLVER::DISC_ADJ_INC_RANS:
+      config->SetGlobalParam(MAIN_SOLVER::RANS, RUNTIME_FLOW_SYS);
+      break;
+
+    default:
+      break;
+  }
+
+  /*--- Pre-processing re-sets the residuals before each evaluation. ---*/
+
+  solvers[EqSystem]->Preprocessing(geometry, solvers, config, MESH_0, 0, EqSystem, false);
+
+  /*--- Space integration computes the residuals. ---*/
+
+  /*--- Set the Jacobian to zero since this is not done inside the fluid iteration
+   when running the discrete adjoint solver. ---*/
+
+  solvers[EqSystem]->Jacobian.SetValZero();  // TODO: Check if actually necessary (already done in Preprocessing)
+
+  Space_Integration(geometry, solvers, numerics, config, MESH_0, NO_RK_ITER, EqSystem);
+
+  solvers[EqSystem]->ComputeResidual_RMS(geometry, config);
+
+  /*--- Post-processing. ---*/
+
+  solvers[EqSystem]->Postprocessing(geometry, solvers, config, MESH_0);
+
+  solvers[EqSystem]->Pressure_Forces(geometry, config);
+  solvers[EqSystem]->Momentum_Forces(geometry, config);
+  solvers[EqSystem]->Friction_Forces(geometry, config);
+}
