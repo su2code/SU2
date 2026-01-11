@@ -347,7 +347,7 @@ def main():
 
     # custom source: turbulent flamespeed closure (Zimont model) for PSI testcase
     pywrapper_psi = TestCase('psi_adiabatic')
-    pywrapper_psi.cfg_dir = "../Tutorials/TFC_python/adiabatic"
+    pywrapper_psi.cfg_dir = "../Tutorials/multiphysics/TFC_python/adiabatic"
     pywrapper_psi.cfg_file = "psi.cfg"
     pywrapper_psi.test_iter = 0
     pywrapper_psi.test_vals = [-3.415653, -2.221781, -3.107330, -2.569248, 0.531838, -3.796447]
@@ -356,7 +356,7 @@ def main():
 
     # custom source: including source term for enthalpy equations 
     pywrapper_psi_hl = TestCase('psi_enthalpy')
-    pywrapper_psi_hl.cfg_dir = "../Tutorials/TFC_python/enthalpy"
+    pywrapper_psi_hl.cfg_dir = "../Tutorials/multiphysics/TFC_python/enthalpy"
     pywrapper_psi_hl.cfg_file = "psi.cfg"
     pywrapper_psi_hl.test_iter = 0
     pywrapper_psi_hl.test_vals = [-3.415653, -2.221781, -3.107330, -2.569248, 0.531838, -3.796447]
@@ -365,7 +365,7 @@ def main():
 
     # custom source: including custom BC and source term 
     pywrapper_psi_quench = TestCase('psi_quench')
-    pywrapper_psi_quench.cfg_dir = "../Tutorials/TFC_python/quench"
+    pywrapper_psi_quench.cfg_dir = "../Tutorials/multiphysics/TFC_python/quench"
     pywrapper_psi_quench.cfg_file = "psi.cfg"
     pywrapper_psi_quench.test_iter = 0
     pywrapper_psi_quench.test_vals = [-3.415653, -2.221781, -3.107330, -2.569248, 0.531838, -3.796447]
