@@ -89,7 +89,7 @@ TEST_CASE("Fluid_Cantera_Combustion", "[Reacting_flow]") {
   auxFluidModel->SetTDState_T(Temperature, scalar);
 
   /*--- Compute chemical source terms ---*/
-  auxFluidModel->ComputeChemicalSourceTerm(scalar);
+  auxFluidModel->ComputeChemicalSourceTerm();
 
   /*--- check values for source terms ---*/
 

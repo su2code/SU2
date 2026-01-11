@@ -310,11 +310,11 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
   }
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
-  /*--- Set the laminar mass Diffusivity for the species solver. ---*/
+  /*--- Set the laminar mass Diffusivity and chemical source term for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
     if (ignition) {
-      /*--- Apply source terms within spark radius. ---*/
+      /*--- Apply ignition temperature within spark radius. ---*/
       su2double dist_from_center = 0, spark_radius = flamelet_config_options.spark_init[3];
       dist_from_center =
           GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(iPoint), flamelet_config_options.spark_init.data());
@@ -330,6 +330,9 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
     solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
     solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_T(temperature, scalar);
     if (config->GetCombustion() == true) {
+      /*--- Call function to compute chemical source term. ---*/
+      solver_container[FLOW_SOL]->GetFluidModel()->ComputeChemicalSourceTerm();
+      /*--- Get and set heat release due to combustion. ---*/
       const su2double heat_release = solver_container[FLOW_SOL]->GetFluidModel()->GetHeatRelease();
       nodes->SetHeatRelease(iPoint, heat_release);
     }
@@ -337,9 +340,8 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
       const su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
       if (config->GetCombustion() == true) {
-        /*--- call function integrate chemical source term ---*/
-        solver_container[FLOW_SOL]->GetFluidModel()->ComputeChemicalSourceTerm(scalar);
-        const su2double chemical_source_term=solver_container[FLOW_SOL]->GetFluidModel()->GetChemicalSourceTerm(iVar);
+        /*--- Get and Set chemical source term. ---*/
+        const su2double chemical_source_term = solver_container[FLOW_SOL]->GetFluidModel()->GetChemicalSourceTerm(iVar);
         nodes->SetChemicalSourceTerm(iPoint, chemical_source_term, iVar);
       }
     }

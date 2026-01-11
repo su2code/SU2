@@ -194,9 +194,8 @@ class CFluidModel {
 
   /*!
    * \brief Compute chemical source term for species.
-   * \param[in] val_scalars - Scalar mass fractions.
    */
-  virtual void ComputeChemicalSourceTerm(const su2double* val_scalars = nullptr) {};
+  virtual void ComputeChemicalSourceTerm() {};
 
   /*!
    * \brief Get Chemical source term species.

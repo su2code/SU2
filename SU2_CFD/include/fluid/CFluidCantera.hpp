@@ -68,13 +68,9 @@ class CFluidCantera final : public CFluidModel {
   std::array<su2double, ARRAYSIZE> enthalpyFormation;  /*!< \brief Enthalpy of Formation of all species. */
   std::array<su2double, ARRAYSIZE> massFractions;      /*!< \brief Mass fractions of all species. */
   std::array<su2double, ARRAYSIZE> massDiffusivity;    /*!< \brief mass diffusivity of all species. */
+  vector<su2double> netProductionRates;                /*!< \brief Net chemical production rates of all species*/
   mutable vector<su2double> enthalpiesSpecies;         /*!< \brief Molar enthalpies of all species. */
   mutable vector<su2double> specificHeatSpecies;       /*!< \brief Molar heat capacities of all species. */
-
-  /*!
-   * \brief Compute mass diffusivity for species.
-   */
-  void ComputeMassDiffusivity();
 
   /*!
    * \brief Compute heat release due to combustion.
@@ -113,14 +109,14 @@ class CFluidCantera final : public CFluidModel {
 
   /*!
    * \brief Get fluid mass diffusivity.
+   * \param[in] ivar - index of species.
    */
-  inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
+  inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[speciesIndices[ivar]]; }
 
   /*!
    * \brief Compute chemical source term for species.
-   * \param[in] val_scalars - Scalar mass fractions.
    */
-  void ComputeChemicalSourceTerm(const su2double* val_scalars) override;
+  void ComputeChemicalSourceTerm() override;
 
   /*!
    * \brief Get Chemical source term species.
@@ -150,7 +146,8 @@ class CFluidCantera final : public CFluidModel {
 
   /*!
    * \brief Set the Dimensionless State using Temperature.
-   * \param[in] t - Temperature value at the point.
+   * \param[in] val_temperature - Temperature value at the point.
+   * \param[in] val_scalars - Scalar mass fractions.
    */
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
 
@@ -159,6 +156,6 @@ class CFluidCantera final : public CFluidModel {
    * \param[in] val_enthalpy - Enthalpy value at the point.
    * \param[in] val_scalars - Scalar mass fractions.
    */
-  void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override;
+  void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars) override;
   #endif
 };

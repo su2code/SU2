@@ -95,18 +95,18 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     if (ignition) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (auto i_point = 0u; i_point < nPoint; i_point++) {
-        /*--- retrieve fluid model. ---*/
+        /*--- Retrieve fluid model. ---*/
         CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
         /*--- Apply ignition temperature within spark radius. ---*/
         su2double dist_from_center = 0, spark_radius = flamelet_config_options.spark_init[3];
         dist_from_center =
             GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.spark_init.data());
         if (dist_from_center < pow(spark_radius, 2)) {
-          /*--- retrieve scalars solution. ---*/
+          /*--- Retrieve scalars solution. ---*/
           su2double* scalars = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(i_point);
           /*--- Set high temperature for ignition. ---*/
           nodes->SetTemperature(i_point, config->GetSpark_Temperature(), TemperatureLimits);
-          /*--- Set thermodynamic state at high temeprature. ---*/
+          /*--- Set thermodynamic state at high temperature. ---*/
           fluid_model_local->SetTDState_T(config->GetSpark_Temperature(), scalars);
           /*--- Set total enthalpy at high temperature. ---*/
           nodes->SetSolution(i_point, nDim + 1, fluid_model_local->GetEnthalpy());

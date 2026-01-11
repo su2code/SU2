@@ -60,8 +60,9 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     speciesIndices[iVar] = sol->thermo()->speciesIndex(config->GetChemical_GasComposition(iVar));
   }
-  enthalpiesSpecies.resize(ARRAYSIZE);
-  specificHeatSpecies.resize(ARRAYSIZE);
+  enthalpiesSpecies.resize(sol->thermo()->nSpecies());
+  specificHeatSpecies.resize(sol->thermo()->nSpecies());
+  netProductionRates.resize(sol->thermo()->nSpecies());
   if (Combustion) SetEnthalpyFormation(config);
 }
 
@@ -70,34 +71,22 @@ void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
   sol->thermo()->setMassFractions(massFractions.data());
   su2double T_ref = 298.15;
   sol->thermo()->setState_TP(T_ref, Pressure_Thermodynamic);
-  // The universal gas constant times temperature is retrieved from cantera.
-  const su2double uni_gas_constant_temp = sol->thermo()->RT();
   sol->thermo()->getEnthalpy_RT_ref(enthalpiesSpecies.data());
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     enthalpyFormation[iVar] =
-        uni_gas_constant_temp * enthalpiesSpecies[speciesIndices[iVar]] / molarMasses[speciesIndices[iVar]];
+        GasConstant * T_ref * enthalpiesSpecies[speciesIndices[iVar]] / molarMasses[speciesIndices[iVar]];
   }
 }
 
-void CFluidCantera::ComputeMassDiffusivity() {
-  vector<su2double> diffusivities(ARRAYSIZE);
-  sol->transport()->getMixDiffCoeffsMass(&diffusivities[0]);
-  for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    massDiffusivity[iVar] = diffusivities[speciesIndices[iVar]];
-  }
-}
-
-void CFluidCantera::ComputeChemicalSourceTerm(const su2double* val_scalars) {
-  vector<su2double> netProductionRates(ARRAYSIZE);
-  sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
+void CFluidCantera::ComputeChemicalSourceTerm() {
+  sol->kinetics()->getNetProductionRates(netProductionRates.data());
   for (int iVar = 0; iVar < n_species_mixture - 1.0; iVar++) {
     chemicalSourceTerm[iVar] = molarMasses[speciesIndices[iVar]] * netProductionRates[speciesIndices[iVar]];
   }
 }
 
 void CFluidCantera::ComputeHeatRelease() {
-  vector<su2double> netProductionRates(ARRAYSIZE);
-  sol->kinetics()->getNetProductionRates(&netProductionRates[0]);
+  sol->kinetics()->getNetProductionRates(netProductionRates.data());
   Heat_Release = 0.0;
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     Heat_Release +=
@@ -106,40 +95,36 @@ void CFluidCantera::ComputeHeatRelease() {
 }
 
 void CFluidCantera::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const {
-  // The universal gas constant times temperature is retrieved from cantera.
-  const su2double uni_gas_constant_temp = sol->thermo()->RT();
   sol->thermo()->getEnthalpy_RT_ref(enthalpiesSpecies.data());
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     enthalpy_diffusions[iVar] =
-        Density * uni_gas_constant_temp *
-        ((enthalpiesSpecies[speciesIndices[iVar]] * massDiffusivity[iVar] / molarMasses[speciesIndices[iVar]]) -
-         (enthalpiesSpecies[speciesIndices[n_species_mixture - 1]] * massDiffusivity[n_species_mixture - 1] /
+        Density * GasConstant * Temperature *
+        ((enthalpiesSpecies[speciesIndices[iVar]] * massDiffusivity[speciesIndices[iVar]] / molarMasses[speciesIndices[iVar]]) -
+         (enthalpiesSpecies[speciesIndices[n_species_mixture - 1]] * massDiffusivity[speciesIndices[n_species_mixture - 1]] /
           molarMasses[speciesIndices[n_species_mixture - 1]]));
     enthalpy_diffusions[iVar] +=
-        Mu_Turb * uni_gas_constant_temp *
+        Mu_Turb * GasConstant * Temperature *
         ((enthalpiesSpecies[speciesIndices[iVar]] / molarMasses[speciesIndices[iVar]]) -
-         (enthalpiesSpecies[speciesIndices[n_species_mixture - 1]] * massDiffusivity[n_species_mixture - 1] /
+         (enthalpiesSpecies[speciesIndices[n_species_mixture - 1]] /
           molarMasses[speciesIndices[n_species_mixture - 1]])) / Schmidt_Turb_Number;
   }
 }
 
 void CFluidCantera::GetMassCorrectionDiffusivity(su2double* massCorrection_diffusions) {
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
-    massCorrection_diffusions[iVar] = Density * (massDiffusivity[iVar] - massDiffusivity[n_species_mixture - 1]);
+    massCorrection_diffusions[iVar] = Density * (massDiffusivity[speciesIndices[iVar]] - massDiffusivity[speciesIndices[n_species_mixture - 1]]);
   }
 }
 
 void CFluidCantera::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) const {
-  // The universal gas constant is retrieved from cantera,in order to keep consistency with the values retrieve from it.
-  const su2double universal_gas_constant = (sol->thermo()->RT()) / Temperature;
   sol->thermo()->getCp_R_ref(specificHeatSpecies.data());
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
     grad_enthalpy_diffusions[iVar] =
-        Density * universal_gas_constant *
-        ((specificHeatSpecies[speciesIndices[iVar]] * massDiffusivity[iVar] / molarMasses[speciesIndices[iVar]]) -
-         (specificHeatSpecies[speciesIndices[n_species_mixture - 1]] * massDiffusivity[n_species_mixture - 1] /
+        Density * GasConstant *
+        ((specificHeatSpecies[speciesIndices[iVar]] * massDiffusivity[speciesIndices[iVar]] / molarMasses[speciesIndices[iVar]]) -
+         (specificHeatSpecies[speciesIndices[n_species_mixture - 1]] * massDiffusivity[speciesIndices[n_species_mixture - 1]] /
           molarMasses[speciesIndices[n_species_mixture - 1]]));
-    grad_enthalpy_diffusions[iVar] += Mu_Turb * universal_gas_constant *
+    grad_enthalpy_diffusions[iVar] += Mu_Turb * GasConstant *
                                       ((specificHeatSpecies[speciesIndices[iVar]] / molarMasses[speciesIndices[iVar]]) -
                                        (specificHeatSpecies[speciesIndices[n_species_mixture - 1]] /
                                         molarMasses[speciesIndices[n_species_mixture - 1]])) /
@@ -170,7 +155,7 @@ void CFluidCantera::SetTDState_T(const su2double val_temperature, const su2doubl
   Mu = sol->transport()->viscosity();
   Kt = sol->transport()->thermalConductivity();
 
-  ComputeMassDiffusivity();
+  sol->transport()->getMixDiffCoeffsMass(massDiffusivity.data());
   if (Combustion) ComputeHeatRelease();
 }
 
