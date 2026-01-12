@@ -370,7 +370,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
   const su2double *Coord_i, *Coord_j;
-  su2double r11, r12, r13, r22, r23_a, r33, weight;
+  su2double r11, r12, r13, r22, r23_a, r23_b, r33, weight;
   const su2double *center, *angles, *trans;
   su2double rotMatrix2D[2][2] = {{1.0,0.0},{0.0,1.0}};
   su2double rotMatrix3D[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
@@ -814,9 +814,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             Cvector.resize(ICOUNT,nDim) = su2double(0.0);
 
             r11 = 0.0;   r12 = 0.0;   r22 = 0.0;
-            r13 = 0.0;
-            r23_a = 0.0;
-            r33 = 0.0;
+            r13 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
 
             for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
@@ -868,7 +866,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                               (rotCoord_j[2]-rotCoord_i[2])/weight);
                     r23_a += ((rotCoord_j[1]-rotCoord_i[1])*
                               (rotCoord_j[2]-rotCoord_i[2])/weight);
-                    // r23_b calculation removed (duplicate of r13 and incorrect for usage)
+                    r23_b += ((rotCoord_j[0]-rotCoord_i[0])*
+                              (rotCoord_j[2]-rotCoord_i[2])/weight);
                     r33   += ((rotCoord_j[2]-rotCoord_i[2])*
                               (rotCoord_j[2]-rotCoord_i[2])/weight);
                   }
@@ -890,38 +889,24 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
              calculation for each periodic point. ---*/
 
             if (nDim == 2) {
-              bufDSend[buf_offset] = r11;
-              buf_offset++;
-              bufDSend[buf_offset] = r12;
-              buf_offset++;
-              bufDSend[buf_offset] = 0.0;
-              buf_offset++;
-              bufDSend[buf_offset] = r22;
-              buf_offset++;
+              bufDSend[buf_offset] = r11;   buf_offset++;
+              bufDSend[buf_offset] = r12;   buf_offset++;
+              bufDSend[buf_offset] = 0.0;   buf_offset++;
+              bufDSend[buf_offset] = r22;   buf_offset++;
             }
             if (nDim == 3) {
-              bufDSend[buf_offset] = r11;
-              buf_offset++;
-              bufDSend[buf_offset] = r12;
-              buf_offset++;
-              bufDSend[buf_offset] = r13;
-              buf_offset++;
+              bufDSend[buf_offset] = r11;   buf_offset++;
+              bufDSend[buf_offset] = r12;   buf_offset++;
+              bufDSend[buf_offset] = r13;   buf_offset++;
 
-              bufDSend[buf_offset] = 0.0;
-              buf_offset++;
-              bufDSend[buf_offset] = r22;
-              buf_offset++;
-              bufDSend[buf_offset] = r23_a;
-              buf_offset++;
+              bufDSend[buf_offset] = 0.0;   buf_offset++;
+              bufDSend[buf_offset] = r22;   buf_offset++;
+              bufDSend[buf_offset] = r23_a; buf_offset++;
 
-              bufDSend[buf_offset] = 0.0;
-              buf_offset++;
-              bufDSend[buf_offset] = 0.0;
-              buf_offset++;
-              bufDSend[buf_offset] = r33;
-              buf_offset++;
+              bufDSend[buf_offset] = 0.0;   buf_offset++;
+              bufDSend[buf_offset] = r23_b; buf_offset++;
+              bufDSend[buf_offset] = r33;   buf_offset++;
             }
-
 
             for (iVar = 0; iVar < ICOUNT; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++) {
