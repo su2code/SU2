@@ -2,7 +2,7 @@
  * \file CElementProperty.hpp
  * \brief Light classes to define finite element properties.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,7 +32,7 @@
  * \ingroup Elasticity_Equations
  * \brief Base class for defining element properties.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CProperty {
  protected:
@@ -106,7 +106,7 @@ class CProperty {
  * \ingroup Elasticity_Equations
  * \brief Class for defining element properties for the structural solver.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CElementProperty final : public CProperty {
  private:

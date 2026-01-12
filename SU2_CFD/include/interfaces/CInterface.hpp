@@ -3,7 +3,7 @@
  * \brief Declarations and inlines of the transfer structure.
  *        The subroutines and functions are in the physics folders.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -51,7 +51,7 @@ using namespace std;
  * \ingroup Interfaces
  * \brief Main class for defining the physical transfer of information.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 
 class CInterface {

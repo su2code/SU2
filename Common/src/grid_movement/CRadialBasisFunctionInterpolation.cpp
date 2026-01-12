@@ -2,7 +2,7 @@
  * \file CRadialBasisFunctionInterpolation.cpp
  * \brief Subroutines for moving mesh volume elements using Radial Basis Function interpolation.
  * \author F. van Steen
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

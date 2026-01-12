@@ -2,7 +2,7 @@
  * \file CFEAElasticity.hpp
  * \brief Declaration and inlines of the base class for elasticity problems.
  * \author Ruben Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,7 @@
  *        The methods we override in this class with an empty implementation are here just to better
  *        document the public interface of this class hierarchy.
  * \author R.Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CFEAElasticity : public CNumerics {
 

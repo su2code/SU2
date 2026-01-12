@@ -3,7 +3,7 @@
  * \brief Header of the multigrid queue class for the FVM solver.
  *        The subroutines and functions are in the <i>CMultiGridQueue.cpp</i> file.
  * \author F. Palacios
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

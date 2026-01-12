@@ -2,7 +2,7 @@
  * \file CStructuralIntegration.hpp
  * \brief Declaration of class for numerical integration of structural problems.
  * \author R. Sanchez.
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

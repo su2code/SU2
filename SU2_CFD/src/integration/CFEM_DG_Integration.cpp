@@ -2,7 +2,7 @@
  * \file CFEM_DG_Integration.cpp
  * \brief Definition of time and space integration for the DG solver.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

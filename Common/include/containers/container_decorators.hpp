@@ -3,7 +3,7 @@
  * \brief Collection of small classes that decorate C2DContainer to
  * augment its functionality, e.g. give it extra dimensions.
  * \author P. Gomes
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

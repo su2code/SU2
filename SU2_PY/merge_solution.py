@@ -3,7 +3,7 @@
 ## \file merge_solution.py
 #  \brief Python script for merging of the solution files.
 #  \author F. Palacios
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #

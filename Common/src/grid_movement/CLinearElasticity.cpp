@@ -2,7 +2,7 @@
  * \file CLinearElasticity.cpp
  * \brief Subroutines for moving mesh volume elements using the linear elasticity analogy
  * \author F. Palacios, T. Economon, S. Padron
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
