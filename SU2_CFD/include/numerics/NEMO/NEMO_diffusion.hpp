@@ -2,7 +2,7 @@
  * \file NEMO_diffusion.hpp
  * \brief Declarations of numerics classes for viscous flux computation.
  * \author S.R. Copeland, W. Maier, C. Garbacz.
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,7 +34,7 @@
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author S.R. Copeland, W. Maier, C. Garbacz
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CAvgGrad_NEMO : public CNEMONumerics {
 private:
@@ -90,7 +90,7 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author C. Garbacz, W. Maier, S.R. Copeland.
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CAvgGradCorrected_NEMO : public CNEMONumerics {
 private:

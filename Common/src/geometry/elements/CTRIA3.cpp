@@ -2,7 +2,7 @@
  * \file CTRIA3.cpp
  * \brief Definition of the 3-node triangular element with three Gauss points.
  * \author T. Dick
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

@@ -2,7 +2,7 @@
  * \file CGaussVariable.hpp
  * \brief Light-weight class to store Gaussian point information.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
  * \class CGaussVariable
  * \ingroup FemAlgos
  * \brief Main class for defining the gaussian points.
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CGaussVariable {
  protected:

@@ -2,7 +2,7 @@
  * \file CMMSNSUnitQuadSolutionWallBC.cpp
  * \brief Implementations of the member functions of CMMSNSUnitQuadSolutionWallBC.
  * \author T. Economon, E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

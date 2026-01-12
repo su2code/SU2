@@ -2,7 +2,7 @@
  * \file CGridMovement.cpp
  * \brief Parent class for grid movement classes
  * \author F. Palacios, T. Economon, S. Padron
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

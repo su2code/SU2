@@ -2,7 +2,7 @@
  * \file classes_multiple_integers.hpp
  * \brief Header file for the classes that consists of multiple integer types.
  * \author E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -72,7 +72,7 @@ struct CUnsignedShort2T {
 /*!
  * \class CLong3T
  * \brief Help class used to store three longs as one entity.
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 struct CLong3T {
   long long0 = 0; /*!< \brief First long to store in this class. */

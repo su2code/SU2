@@ -2,7 +2,7 @@
  * \file CADTElemClass.hpp
  * \brief Class for storing an ADT of (linear) elements in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,7 @@
  * \ingroup ADT
  * \brief  Class for storing an ADT of (linear) elements in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CADTElemClass : public CADTBaseClass {
  private:

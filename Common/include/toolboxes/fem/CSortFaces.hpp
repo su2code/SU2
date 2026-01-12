@@ -3,7 +3,7 @@
  * \brief Header file for the class CSortFaces.
  *        The implementations are in the <i>CSortFaces.cpp</i> file.
  * \author E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,7 +37,7 @@ using namespace std;
  * \brief Functor, used for a different sorting of the faces than the < operator
  *        of CFaceOfElement.
  * \author E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CVolumeElementFEM;  // Forward declaration to avoid problems.
 class CSortFaces {

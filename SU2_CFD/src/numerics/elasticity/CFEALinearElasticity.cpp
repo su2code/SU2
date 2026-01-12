@@ -2,7 +2,7 @@
  * \file CFEALinearElasticity.cpp
  * \brief Classes for linear elasticity problems.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

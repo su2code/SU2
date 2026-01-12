@@ -2,7 +2,7 @@
  * \file sgs_model.hpp
  * \brief Headers of the LES subgrid scale models of the SU2 solvers.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,7 +38,7 @@ using namespace std;
  * \class CSGSModel
  * \brief Base class for defining the LES subgrid scale model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CSGSModel {
 
@@ -224,7 +224,7 @@ public:
  * \class CSmagorinskyModel
  * \brief Derived class for defining the Smagorinsky SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CSmagorinskyModel : public CSGSModel {
 
@@ -413,7 +413,7 @@ public:
  * \class CWALEModel
  * \brief Derived class for defining the WALE SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CWALEModel : public CSGSModel {
 
@@ -601,7 +601,7 @@ public:
  * \class CVremanModel
  * \brief Derived class for defining the WALE SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk, E. Molina
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CVremanModel : public CSGSModel {
 

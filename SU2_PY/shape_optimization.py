@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -106,7 +106,7 @@ def main():
         "|    ___ _   _ ___                                                      |\n"
     )
     sys.stdout.write(
-        '|   / __| | | |_  )   Release 8.3.0 "Harrier"                           |\n'
+        '|   / __| | | |_  )   Release 8.4.0 "Harrier"                           |\n'
     )
     sys.stdout.write(
         "|   \\__ \\ |_| |/ /                                                      |\n"
