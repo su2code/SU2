@@ -2,14 +2,14 @@
  * \file CFlowOutput.cpp
  * \brief Common functions for flow output.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -837,7 +837,10 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
   const bool adjoint = config->GetDiscrete_Adjoint();
   const bool axisymmetric = config->GetAxisymmetric();
   const auto* flowNodes = su2staticcast_p<const CFlowVariable*>(solver[FLOW_SOL]->GetNodes());
-  auto GetPointValue = [&](const auto& output, unsigned long iPoint) {
+
+  /*--- Prepares the functor that maps symbol indices to values at a given point
+   * (see ConvertVariableSymbolsToIndices). ---*/
+  auto MakeFunctor = [&](const auto& output, unsigned long iPoint) {
     return [&, iPoint](unsigned long i) {
       if (i < CustomOutput::NOT_A_VARIABLE) {
         const auto solIdx = i / CustomOutput::MAX_VARS_PER_SOLVER;
@@ -846,9 +849,8 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
           return flowNodes->GetPrimitive(iPoint, varIdx);
         }
         return solver[solIdx]->GetNodes()->GetSolution(iPoint, varIdx);
-      } else {
-        return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
       }
+      return *output.otherOutputs[i - CustomOutput::NOT_A_VARIABLE];
     };
   };
 
@@ -961,13 +963,6 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       continue;
     }
 
-    /*--- Prepares the functor that maps symbol indices to values at a given point
-     * (see ConvertVariableSymbolsToIndices). ---*/
-
-    auto MakeFunctor = [&](unsigned long iPoint) {
-      return GetPointValue(output, iPoint);
-    };
-
     if (output.type == OperationType::PROBE) {
       /*--- Probe evaluation will be done after all outputs are processed, with batched AllReduce. ---*/
       continue;
@@ -998,7 +993,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
           }
           weight *= GetAxiFactor(axisymmetric, *geometry->nodes, iPoint, iMarker);
           local_integral[1] += weight;
-          local_integral[0] += weight * output.Eval(MakeFunctor(iPoint));
+          local_integral[0] += weight * output.Eval(MakeFunctor(output, iPoint));
         }
         END_SU2_OMP_FOR
       }
@@ -1028,7 +1023,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
       if (output.skip || output.type != OperationType::PROBE) continue;
       su2double value = std::numeric_limits<su2double>::max();
       if (output.iPoint != CustomOutput::PROBE_NOT_OWNED) {
-        value = output.Eval(GetPointValue(output, output.iPoint));
+        value = output.Eval(MakeFunctor(output, output.iPoint));
       }
       probeValues.push_back(value);
     }
@@ -2766,7 +2761,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   file << "\n";
   file << "-------------------------------------------------------------------------\n";
   file << "|    ___ _   _ ___                                                      |\n";
-  file << "|   / __| | | |_  )   Release 8.3.0 \"Harrier\"                           |\n";
+  file << "|   / __| | | |_  )   Release 8.4.0 \"Harrier\"                           |\n";
   file << "|   \\__ \\ |_| |/ /                                                      |\n";
   file << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n";
   file << "|                                                                       |\n";
@@ -2776,7 +2771,7 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
   file << "| The SU2 Project is maintained by the SU2 Foundation                   |\n";
   file << "| (http://su2foundation.org)                                            |\n";
   file << "-------------------------------------------------------------------------\n";
-  file << "| Copyright 2012-2025, SU2 Contributors                                 |\n";
+  file << "| Copyright 2012-2026, SU2 Contributors                                 |\n";
   file << "|                                                                       |\n";
   file << "| SU2 is free software; you can redistribute it and/or                  |\n";
   file << "| modify it under the terms of the GNU Lesser General Public            |\n";
