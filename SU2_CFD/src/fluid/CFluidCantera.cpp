@@ -29,17 +29,12 @@
 
 #include <cmath>
 
-#include <numeric>
+// #include <numeric>
 #ifdef USE_CANTERA
-#include "../../Common/include/basic_types/ad_structure.hpp"
-
 #include <cantera/core.h>
 #include <cantera/kinetics/Reaction.h>
-#include <fstream>
-#include <iostream>
 
 using namespace Cantera;
-using namespace SU2_TYPE;
 
 CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* config)
     : CFluidModel(),
@@ -69,12 +64,11 @@ CFluidCantera::CFluidCantera(su2double value_pressure_operating, const CConfig* 
 void CFluidCantera::SetEnthalpyFormation(const CConfig* config) {
   SetMassFractions(config->GetSpecies_Init());
   sol->thermo()->setMassFractions(massFractions.data());
-  su2double T_ref = 298.15;
-  sol->thermo()->setState_TP(T_ref, Pressure_Thermodynamic);
+  sol->thermo()->setState_TP(STD_REF_TEMP, Pressure_Thermodynamic);
   sol->thermo()->getEnthalpy_RT_ref(enthalpiesSpecies.data());
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
     enthalpyFormation[iVar] =
-        GasConstant * T_ref * enthalpiesSpecies[speciesIndices[iVar]] / molarMasses[speciesIndices[iVar]];
+        GasConstant * STD_REF_TEMP * enthalpiesSpecies[speciesIndices[iVar]] / molarMasses[speciesIndices[iVar]];
   }
 }
 

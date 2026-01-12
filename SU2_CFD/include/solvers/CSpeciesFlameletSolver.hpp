@@ -37,7 +37,6 @@
  */
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
-  FluidFlamelet_ParsedOptions flamelet_config_options;
   bool include_mixture_fraction = false; /*!< \brief include mixture fraction as a controlling variable. */
   /*!
    * \brief Compute the preconditioner for low-Mach flows.
