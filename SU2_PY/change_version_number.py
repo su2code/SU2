@@ -10,7 +10,7 @@
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -59,9 +59,9 @@ oldvers = '8.3.0 "Harrier"'
 oldvers_q = r"8.3.0 \"Harrier\""
 newvers = str(options.version) + ' "' + str(options.releasename) + '"'
 newvers_q = str(options.version) + ' \\"' + str(options.releasename) + '\\"'
-# oldvers = 'Copyright 2012-2025, SU2'
+# oldvers = 'Copyright 2012-2026, SU2'
 # oldvers_q = oldvers
-# newvers = 'Copyright 2012-2025, SU2'
+# newvers = 'Copyright 2012-2026, SU2'
 # newvers_q = newvers
 
 if sys.version_info[0] > 2:

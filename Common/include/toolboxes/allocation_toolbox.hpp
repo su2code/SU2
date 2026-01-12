@@ -12,7 +12,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -67,16 +67,18 @@ inline T* aligned_alloc(size_t alignment, size_t size) noexcept {
 
   void* ptr = nullptr;
 
+  if (size > 0) {
 #if defined(__APPLE__)
-  if (::posix_memalign(&ptr, alignment, size) != 0) {
-    ptr = nullptr;
-  }
+    if (::posix_memalign(&ptr, alignment, size) != 0) {
+      ptr = nullptr;
+    }
 #elif defined(_WIN32)
-  ptr = _aligned_malloc(size, alignment);
+    ptr = _aligned_malloc(size, alignment);
 #else
-  ptr = ::aligned_alloc(alignment, size);
+    ptr = ::aligned_alloc(alignment, size);
 #endif
-  if (ZeroInit) memset(ptr, 0, size);
+    if (ZeroInit) memset(ptr, 0, size);
+  }
   return static_cast<T*>(ptr);
 }
 
