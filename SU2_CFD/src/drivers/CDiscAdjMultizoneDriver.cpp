@@ -838,6 +838,15 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
           solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         }
 
+        if(config->GetBoolTurbomachinery()){
+          solvers[FLOW_SOL]->TurboAverageProcess(solvers, geometry, config, INFLOW);
+          solvers[FLOW_SOL]->TurboAverageProcess(solvers, geometry, config, OUTFLOW);
+
+          /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
+          solvers[FLOW_SOL]->GatherInOutAverageValues(config, geometry);
+          solvers[FLOW_SOL]->ComputeTurboBladePerformance(geometry, config, iZone);
+        }
+
         direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
         ObjFunc += solvers[FLOW_SOL]->GetTotal_ComboObj();
         break;

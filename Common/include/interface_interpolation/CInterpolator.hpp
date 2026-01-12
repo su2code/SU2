@@ -101,6 +101,12 @@ class CInterpolator {
   };
   vector<vector<CDonorInfo> > targetVertices; /*! \brief Donor information per marker per vertex of the target. */
 
+  struct CSpanDonorInfo {
+      unsigned long donorSpan; // Refers to donor span
+      su2double coefficient; // Refers to coefficient
+  };
+  vector<vector<CSpanDonorInfo>> targetSpans; // <iMarkerInt<TargetSpan<CSpanDonorInfo>>
+
   /*!
    * \brief Constructor of the class.
    * \param[in] geometry_container - Geometrical definition of the problem.
@@ -125,12 +131,17 @@ class CInterpolator {
    * \note Main method that derived classes must implement.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetTransferCoeff(const CConfig* const* config) = 0;
+  virtual void SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) = 0;
 
   /*!
    * \brief Print information about the interpolation.
    */
   virtual void PrintStatistics(void) const {}
+
+  /*!
+   * \brief Write mixing plane interpolation details to file
+   */
+  inline virtual void WriteInterpolationDetails(const string& filename, const CConfig* const* config) {};
 
   /*!
    * \brief Check whether an interface should be processed or not, i.e. if it is part of the zones.

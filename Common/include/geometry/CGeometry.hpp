@@ -777,7 +777,7 @@ class CGeometry {
   inline virtual void GatherInOutAverageValues(CConfig* config, bool allocate) {}
 
   /*!
-   * \brief Store all the turboperformance in the solver in ZONE_0.
+   * \brief Store all the turboperformance in the solver in final zone.
    * \param[in] donor_geometry  - Solution from the donor mesh.
    * \param[in] target_geometry - Solution from the target mesh.
    * \param[in] donorZone       - counter of the donor solution

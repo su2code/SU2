@@ -221,13 +221,13 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
 
-    BPressure = config->GetPressureOut_BC();
-    Temperature = config->GetTotalTemperatureIn_BC();
-
     if (!reset){
       AD::RegisterInput(BPressure);
       AD::RegisterInput(Temperature);
     }
+
+    BPressure = config->GetPressureOut_BC();
+    Temperature = config->GetTotalTemperatureIn_BC();
 
     config->SetPressureOut_BC(BPressure);
     config->SetTotalTemperatureIn_BC(Temperature);
@@ -302,6 +302,24 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   direct_solver->GetNodes()->RegisterSolution(false);
 
   direct_solver->RegisterSolutionExtra(false, config);
+}
+
+void CDiscAdjSolver::Register_VertexNormals(CGeometry *geometry, CConfig *config, bool input) {
+  // Only need vertex normals for boundaries declared as turbomachinery markers?
+  
+  for (auto iMarker=0ul; iMarker < nMarker; iMarker++) {
+    for (auto iMarkerTP = 1; iMarkerTP < config->GetnMarker_Turbomachinery() + 1; iMarkerTP++) {
+      if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP) {
+        for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+          const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          for (auto iDim = 0u; iDim < nDim; iDim++) {
+            if (input) AD::RegisterInput(Normal[iDim]);
+            else AD::RegisterOutput(Normal[iDim]);
+          }
+        }
+      }
+    }
+  }
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {

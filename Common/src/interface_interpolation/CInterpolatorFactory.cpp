@@ -32,11 +32,12 @@
 #include "../../include/interface_interpolation/CNearestNeighbor.hpp"
 #include "../../include/interface_interpolation/CRadialBasisFunction.hpp"
 #include "../../include/interface_interpolation/CSlidingMesh.hpp"
+#include "../../include/interface_interpolation/CMixingPlane.hpp"
 
 namespace CInterpolatorFactory {
 CInterpolator* CreateInterpolator(CGeometry**** geometry_container, const CConfig* const* config,
                                   const CInterpolator* transpInterpolator, unsigned iZone, unsigned jZone,
-                                  bool verbose) {
+                                  bool mixing_plane, bool verbose) {
   CInterpolator* interpolator = nullptr;
 
   /*--- Only print information on master node. ---*/
@@ -47,36 +48,41 @@ CInterpolator* CreateInterpolator(CGeometry**** geometry_container, const CConfi
 
   if (verbose) cout << " Setting coupling ";
 
-  /*--- Conservative interpolation is not applicable to the sliding
-   *    mesh approach so that case is handled first. Then we either
-   *    return a CMirror if the target requires conservative inter-
-   *    polation, or the type of interpolator defined by "type". ---*/
+  if (mixing_plane) {
+    if (verbose) cout << "using a mixing plane interpolation." << endl;
+    interpolator = new CMixingPlane(geometry_container, config, iZone, jZone);
+  } else { // Really awful thing to do
+    /*--- Conservative interpolation is not applicable to the sliding
+    *    mesh approach so that case is handled first. Then we either
+    *    return a CMirror if the target requires conservative inter-
+    *    polation, or the type of interpolator defined by "type". ---*/
 
-  if (type == INTERFACE_INTERPOLATOR::WEIGHTED_AVERAGE) {
-    if (verbose) cout << "using a sliding mesh approach." << endl;
-    interpolator = new CSlidingMesh(geometry_container, config, iZone, jZone);
-  } else if (config[jZone]->GetConservativeInterpolation()) {
-    if (verbose) cout << "using the mirror approach, \"transposing\" coefficients from opposite mesh." << endl;
-    interpolator = new CMirror(geometry_container, config, transpInterpolator, iZone, jZone);
-  } else {
-    switch (type) {
-      case INTERFACE_INTERPOLATOR::ISOPARAMETRIC:
-        if (verbose) cout << "using the isoparametric approach." << endl;
-        interpolator = new CIsoparametric(geometry_container, config, iZone, jZone);
-        break;
+    if (type == INTERFACE_INTERPOLATOR::WEIGHTED_AVERAGE) {
+      if (verbose) cout << "using a sliding mesh approach." << endl;
+      interpolator = new CSlidingMesh(geometry_container, config, iZone, jZone);
+    } else if (config[jZone]->GetConservativeInterpolation()) {
+      if (verbose) cout << "using the mirror approach, \"transposing\" coefficients from opposite mesh." << endl;
+      interpolator = new CMirror(geometry_container, config, transpInterpolator, iZone, jZone);
+    } else {
+      switch (type) {
+        case INTERFACE_INTERPOLATOR::ISOPARAMETRIC:
+          if (verbose) cout << "using the isoparametric approach." << endl;
+          interpolator = new CIsoparametric(geometry_container, config, iZone, jZone);
+          break;
 
-      case INTERFACE_INTERPOLATOR::NEAREST_NEIGHBOR:
-        if (verbose) cout << "using a nearest neighbor approach." << endl;
-        interpolator = new CNearestNeighbor(geometry_container, config, iZone, jZone);
-        break;
+        case INTERFACE_INTERPOLATOR::NEAREST_NEIGHBOR:
+          if (verbose) cout << "using a nearest neighbor approach." << endl;
+          interpolator = new CNearestNeighbor(geometry_container, config, iZone, jZone);
+          break;
 
-      case INTERFACE_INTERPOLATOR::RADIAL_BASIS_FUNCTION:
-        if (verbose) cout << "using a radial basis function approach." << endl;
-        interpolator = new CRadialBasisFunction(geometry_container, config, iZone, jZone);
-        break;
+        case INTERFACE_INTERPOLATOR::RADIAL_BASIS_FUNCTION:
+          if (verbose) cout << "using a radial basis function approach." << endl;
+          interpolator = new CRadialBasisFunction(geometry_container, config, iZone, jZone);
+          break;
 
-      default:
-        SU2_MPI::Error("Unknown type of interpolation.", CURRENT_FUNCTION);
+        default:
+          SU2_MPI::Error("Unknown type of interpolation.", CURRENT_FUNCTION);
+      }
     }
   }
 

@@ -668,20 +668,6 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
 
-      /*--- Calculate the turbo performance ---*/
-      if (config->GetBoolTurbomachinery()){
-
-        /*--- Average quantities at the inflow and outflow boundaries ---*/
-
-        solver_container[FinestMesh][FLOW_SOL]->TurboAverageProcess(solver_container[FinestMesh], geometry[FinestMesh],config,INFLOW);
-        solver_container[FinestMesh][FLOW_SOL]->TurboAverageProcess(solver_container[FinestMesh], geometry[FinestMesh], config, OUTFLOW);
-
-        /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
-
-        solver_container[FinestMesh][FLOW_SOL]->GatherInOutAverageValues(config, geometry[FinestMesh]);
-
-      }
-
       break;
 
     case RUNTIME_ADJFLOW_SYS:

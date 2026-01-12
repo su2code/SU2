@@ -33,7 +33,7 @@
 CNearestNeighbor::CNearestNeighbor(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone,
                                    unsigned int jZone)
     : CInterpolator(geometry_container, config, iZone, jZone) {
-  SetTransferCoeff(config);
+  SetTransferCoeff(geometry_container, config);
 }
 
 void CNearestNeighbor::PrintStatistics() const {
@@ -41,7 +41,7 @@ void CNearestNeighbor::PrintStatistics() const {
   cout << "  Avg/max distance to closest donor point: " << AvgDistance << "/" << MaxDistance << endl;
 }
 
-void CNearestNeighbor::SetTransferCoeff(const CConfig* const* config) {
+void CNearestNeighbor::SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) {
   /*--- Desired number of donor points. ---*/
   const auto nDonor = max<unsigned long>(config[donorZone]->GetNumNearestNeighbors(), 1);
 

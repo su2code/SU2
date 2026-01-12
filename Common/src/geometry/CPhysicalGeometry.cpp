@@ -50,6 +50,8 @@
 #include "../../include/geometry/primal_grid/CPrism.hpp"
 #include "../../include/geometry/primal_grid/CVertexMPI.hpp"
 
+#include "../../../Common/include/tracy_structure.hpp"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iterator>
@@ -5682,9 +5684,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
       }
     }
     if (marker_flag == INFLOW) {
-      multizone_filename = "TURBOMACHINERY/spanwise_division_inflow.dat";
+      multizone_filename = "TURBOMACHINERY/spanwise_division_inflow";
     } else {
-      multizone_filename = "TURBOMACHINERY/spanwise_division_outflow.dat";
+      multizone_filename = "TURBOMACHINERY/spanwise_division_outflow";
     }
     char buffer[50];
 
@@ -6324,6 +6326,7 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig* config, bool allocate)
 
 void CPhysicalGeometry::SetAvgTurboGeoValues(const CConfig* donor_config, CGeometry* donor_geometry,
                                              unsigned short donorZone) {
+  
   unsigned short iSpan;
   unsigned short nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
 

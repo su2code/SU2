@@ -822,8 +822,8 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
   for (auto iSpan = 0u; iSpan < nSpanWiseSections ; iSpan++){
 
-    su2double extAverageKine = solver_container[FLOW_SOL]->GetExtAverageKine(val_marker, iSpan);
-    su2double extAverageOmega = solver_container[FLOW_SOL]->GetExtAverageOmega(val_marker, iSpan);
+    const auto extAverageKine = solver_container[FLOW_SOL]->GetMixingState(val_marker, iSpan, 6);
+    const auto extAverageOmega = solver_container[FLOW_SOL]->GetMixingState(val_marker, iSpan, 7);
     su2double solution_j[] = {extAverageKine, extAverageOmega};
 
     /*--- Loop over all the vertices on this boundary marker ---*/

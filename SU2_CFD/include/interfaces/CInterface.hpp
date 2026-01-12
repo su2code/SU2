@@ -36,6 +36,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iostream>
+#include <vector>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -64,6 +65,8 @@ protected:
   su2double *Donor_Variable = nullptr;
   su2double *Target_Variable = nullptr;
   bool valAggregated = false;
+
+  unsigned short InterfaceType; /*!< \brief The type of interface. */
 
   /*--- Mixing Plane interface variable ---*/
   su2double *SpanValueCoeffTarget = nullptr;
@@ -146,6 +149,12 @@ protected:
     for (auto iVar = 0u; iVar < nVar; iVar++) Target_Variable[iVar] += donorCoeff * bcastVariable[iVar];
   }
 
+  inline virtual void RecoverTarget_Span_Endwall(const vector<su2double> &bcastVariable, unsigned long idx) { }
+
+  inline virtual void RecoverTarget_Span(const vector<su2double> &bcastVariable, unsigned long idx, su2double donorCoeff) { }
+
+
+
   /*!
    * \brief A virtual member.
    * \param[in] target_solution - Solution from the target mesh.
@@ -177,13 +186,19 @@ public:
   inline virtual void SetSpanWiseLevels(const CConfig *donor_config, const CConfig *target_config) { }
 
   /*!
-   * \brief A virtual member.
+   * \brief Interpolate data and broadcast it into all processors, for nonmatching meshes.
+   * \param[in] interpolator - Object defining the interpolation.
+   * \param[in] donor_solution - Solution from the donor mesh.
    * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] donor_zone - Index of the donorZone.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] target_geometry - Geometry of the target mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh.
+   * \param[in] target_config - Definition of the problem at the target mesh.
    */
-  inline virtual void SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
-                                       unsigned short donorZone) { }
+  inline virtual void BroadcastData_MixingPlane(const CInterpolator& interpolator,
+                     CSolver *donor_solution, CSolver *target_solution,
+                     CGeometry *donor_geometry, CGeometry *target_geometry,
+                     const CConfig *donor_config, const CConfig *target_config) { };
 
   /*!
    * \brief Transfer pre-processing for the mixing plane inteface.
@@ -224,4 +239,15 @@ public:
    * \param[in] val_contact_resistance - Contact resistance value in m^2/W
    */
   inline virtual void SetContactResistance(su2double val_contact_resistance) {};
+
+  /*!
+   * \brief Set the type of an interface
+   * \param[in] interface_type - The type of interface
+   */
+  void SetInterfaceType(unsigned short interface_type) { InterfaceType = interface_type; }
+
+  /*!
+   * \brief Get the type of an interface
+   */
+  unsigned short GetInterfaceType(void) const { return InterfaceType; }
 };

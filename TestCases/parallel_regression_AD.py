@@ -234,6 +234,15 @@ def main():
     discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.696755, 0.485950, 0.569475, -0.990065]
     test_list.append(discadj_trans_stator)
 
+    # Axial stage 2D
+    discadj_axial_stage           = TestCase('axial_stage_2D')
+    discadj_axial_stage.cfg_dir   = "disc_adj_turbomachinery/axial_stage_2D"
+    discadj_axial_stage.cfg_file  = "Axial_stage2D.cfg"
+    discadj_axial_stage.test_iter = 79
+    discadj_axial_stage.test_vals = [79, 0.668058, 0.483608, 0.518789, -1.013227]
+    discadj_axial_stage.test_vals_aarch64 = [79, 0.668058, 0.483608, 0.518789, -1.013227]
+    test_list.append(discadj_axial_stage)
+
     ###################################
     ### Structural Adjoint          ###
     ###################################

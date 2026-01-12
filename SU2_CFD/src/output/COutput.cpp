@@ -228,7 +228,7 @@ void COutput::SetHistoryOutput(CGeometry *geometry,
 
 }
 
-void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CConfig **config, std::shared_ptr<CTurbomachineryStagePerformance>(TurboStagePerf), std::shared_ptr<CTurboOutput> TurboPerf, unsigned short val_iZone, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst){
+void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CConfig **config, std::shared_ptr<CTurbomachineryStagePerformance>(TurboStagePerf), std::vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, unsigned short val_iZone, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst){
 
   unsigned long Iter= InnerIter;
 
@@ -237,19 +237,19 @@ void COutput::SetHistoryOutput(CGeometry ****geometry, CSolver *****solver, CCon
 
   /*--- Turbomachinery Performance Screen summary output---*/
   if (Iter%100 == 0 && rank == MASTER_NODE) {
-    SetTurboPerformance_Output(TurboPerf, config[val_iZone], TimeIter, OuterIter, InnerIter);
-    SetTurboMultiZonePerformance_Output(TurboStagePerf, TurboPerf, config[val_iZone]);
+    SetTurboPerformance_Output(TurboBladePerfs, config[val_iZone], TimeIter, OuterIter, InnerIter); //Blade-row index scree
+    SetTurboMultiZonePerformance_Output(TurboStagePerf, TurboBladePerfs, config[val_iZone]); //Stage performance screen
   }
 
   for (int iZone = 0; iZone < config[ZONE_0]->GetnZone(); iZone ++){
     if (rank == MASTER_NODE) {
-      WriteTurboSpanwisePerformance(TurboPerf, geometry[iZone][val_iInst][MESH_0], config, iZone);
+      WriteTurboSpanwisePerformance(TurboBladePerfs, geometry[iZone][val_iInst][MESH_0], config, iZone); //Spanwise files
     }
   }
 
   /*--- Update turboperformance history file*/
   if (rank == MASTER_NODE){
-    LoadTurboHistoryData(TurboStagePerf, TurboPerf, config[val_iZone]);
+    LoadTurboHistoryData(TurboStagePerf, TurboBladePerfs, config[val_iZone]); //History files
   }
 
 }

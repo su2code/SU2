@@ -2102,6 +2102,9 @@ enum ENUM_OBJECTIVE {
   TOPOL_DISCRETENESS = 63,      /*!< \brief Measure of the discreteness of the current topology. */
   TOPOL_COMPLIANCE = 64,        /*!< \brief Measure of the discreteness of the current topology. */
   STRESS_PENALTY = 65,          /*!< \brief Penalty function of VM stresses above a maximum value. */
+  ENTROPY_GENERATION = 80,      /*!< \brief Entropy generation turbomachinery objective function. */
+  TOTAL_PRESSURE_LOSS = 81,     /*!< \brief Total pressure loss turbomachinery objective function. */
+  KINETIC_ENERGY_LOSS = 82      /*!< \breif Kinetic energy loss coefficient turbomachinery objective function. */
 };
 static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("DRAG", DRAG_COEFFICIENT)
@@ -2144,6 +2147,9 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
   MakePair("TOPOL_DISCRETENESS", TOPOL_DISCRETENESS)
   MakePair("TOPOL_COMPLIANCE", TOPOL_COMPLIANCE)
   MakePair("STRESS_PENALTY", STRESS_PENALTY)
+  MakePair("ENTROPY_GENERATION", ENTROPY_GENERATION)
+  MakePair("TOTAL_PRESSURE_LOSS", TOTAL_PRESSURE_LOSS)
+  MakePair("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
 };
 
 /*!

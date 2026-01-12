@@ -209,3 +209,23 @@ void CIteration::Output(COutput* output, CGeometry**** geometry, CSolver***** so
   output->SetResultFiles(geometry[val_iZone][INST_0][MESH_0], config[val_iZone], solver[val_iZone][INST_0][MESH_0],
                           InnerIter);
 }
+
+void CIteration::InitTurboPerformance(CGeometry* geometry, CConfig** config, CFluidModel* fluid, unsigned short val_iZone) {
+  TurbomachineryStagePerformance = std::make_shared<CTurbomachineryStagePerformance>(*fluid);
+}
+
+void CIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container) {
+  // Computes the turboperformance per blade in zone iBlade
+  const auto nZone = config_container[ZONE_0]->GetnZone();
+
+  if (rank == MASTER_NODE) {
+    auto TurbomachineryBladePerformances = GetBladesPerformanceVector(solver, nZone);
+
+    auto nSpan = config_container[ZONE_0]->GetnSpanWiseSections();
+    auto InState = TurbomachineryBladePerformances.at(ZONE_0)->GetBladesPerformances().at(nSpan)->GetInletState();
+    nSpan = config_container[nZone-1]->GetnSpanWiseSections();
+    auto OutState =  TurbomachineryBladePerformances.at(nZone-1)->GetBladesPerformances().at(nSpan)->GetOutletState();
+    
+    TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[nZone-1]);
+  }
+}

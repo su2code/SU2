@@ -34,6 +34,7 @@
 CDiscAdjFlowTractionInterface::CDiscAdjFlowTractionInterface(unsigned short val_nVar, unsigned short val_nConst,
                                                              const CConfig *config, bool conservative_) :
   CFlowTractionInterface(val_nVar, val_nConst, config, conservative_) {
+  InterfaceType = ENUM_TRANSFER::FLOW_TRACTION;
 }
 
 void CDiscAdjFlowTractionInterface::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,

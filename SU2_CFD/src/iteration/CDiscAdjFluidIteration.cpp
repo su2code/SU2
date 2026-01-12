@@ -399,6 +399,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
 
 void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                            unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
+
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
@@ -421,6 +422,10 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 
     if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
       solvers0[ADJTURB_SOL]->RegisterSolution(geometry0, config[iZone]);
+    }
+    if (config[iZone]->GetBoolTurbomachinery()) {
+      geometry0->RegisterCoordinates();
+      solvers0[ADJFLOW_SOL]->Register_VertexNormals(geometry0, config[iZone], true);
     }
     if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
       solvers0[ADJSPECIES_SOL]->RegisterSolution(geometry0, config[iZone]);
@@ -458,12 +463,15 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                              CConfig** config, unsigned short iZone, unsigned short iInst,
                                              RECORDING kind_recording) {
+  
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
   if ((kind_recording == RECORDING::MESH_COORDS) ||
       (kind_recording == RECORDING::CLEAR_INDICES) ||
-      (kind_recording == RECORDING::SOLUTION_AND_MESH)) {
+      (kind_recording == RECORDING::SOLUTION_AND_MESH) ||
+      (kind_recording == RECORDING::TAG_INIT_SOLVER_AND_MESH) ||
+      (kind_recording == RECORDING::TAG_CHECK_SOLVER_AND_MESH)) {
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
     SU2_OMP_PARALLEL
@@ -480,15 +488,22 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
   solvers0[FLOW_SOL]->InitiateComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
   solvers0[FLOW_SOL]->CompleteComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
 
-  if (config[iZone]->GetBoolTurbomachinery()) {
-    solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], INFLOW);
-    solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], OUTFLOW);
-  }
   if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
     solvers0[TURB_SOL]->Postprocessing(geometry0, solvers0,
                                                            config[iZone], MESH_0);
     solvers0[TURB_SOL]->InitiateComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
     solvers0[TURB_SOL]->CompleteComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
+  }
+  if (config[iZone]->GetBoolTurbomachinery()) {
+    solvers0[FLOW_SOL]->PreprocessAverage(solvers0, geometry0, config[iZone], INFLOW);
+    solvers0[FLOW_SOL]->PreprocessAverage(solvers0, geometry0, config[iZone], OUTFLOW);
+    solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], INFLOW);
+    solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], OUTFLOW);
+    if (config[iZone]->GetBoolGiles() && config[iZone]->GetSpatialFourier()){
+      auto conv_bound_numerics = numerics[iZone][iInst][MESH_0][FLOW_SOL][CONV_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
+      solvers0[FLOW_SOL]->PreprocessBC_Giles(geometry0, config[iZone], conv_bound_numerics, INFLOW);
+      solvers0[FLOW_SOL]->PreprocessBC_Giles(geometry0, config[iZone], conv_bound_numerics, OUTFLOW);
+    }
   }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     solvers0[SPECIES_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
