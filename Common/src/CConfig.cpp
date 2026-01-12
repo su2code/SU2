@@ -1221,17 +1221,19 @@ void CConfig::SetConfig_Options() {
   addEnumOption("FLUID_MODEL", Kind_FluidModel, FluidModel_Map, STANDARD_AIR);
   /*!\brief FLUID_NAME \n DESCRIPTION: Fluid name \n OPTIONS: see coolprop homepage \n DEFAULT: nitrogen \ingroup Config*/
   addStringOption("FLUID_NAME", FluidName, string("nitrogen"));
-  /*!\brief TRANSPORT_MODEL \n DESCRIPTION: Transport model \n OPTIONS: see cantera homepage \n DEFAULT: mixture-averaged\ingroup Config*/
+
+  /*!\par CONFIG_CATEGORY: Cantera fluid model \ingroup Config*/
+  /*!\brief TRANSPORT_MODEL \n DESCRIPTION: Transport model \n OPTIONS: see Cantera homepage \n DEFAULT: mixture-averaged \ingroup Config*/
   addStringOption("TRANSPORT_MODEL", TransportModel, string("mixture-averaged"));
-  /*!\brief CHEMICAL_MECHANISM_FILE \n DESCRIPTION: Chemical reaction mechanism \n OPTIONS: see cantera homepage \n DEFAULT: gri30.yaml \ingroup Config*/
-  addStringOption("CHEMICAL_MECHANISM_FILE", ChemicalMechanismFile, string("gri30.yaml"));
-  /*!\brief PHASE_NAME\n DESCRIPTION: name of the phase in the chemical mechanism file \n OPTIONS: see cantera homepage \n DEFAULT: gri30 \ingroup Config*/
-  addStringOption("PHASE_NAME", PhaseName, string("gri30"));
-  /*!\brief GAS_COMPOSITION \n DESCRIPTION: Gas composition names \n OPTIONS: see cantera homepage \n DEFAULT: \ingroup Config*/
+  /*!\brief CHEMICAL_MECHANISM_FILE \n DESCRIPTION: Chemical reaction mechanism \n OPTIONS: see Cantera homepage \n DEFAULT: h2o2.yaml \ingroup Config*/
+  addStringOption("CHEMICAL_MECHANISM_FILE", ChemicalMechanismFile, string("h2o2.yaml"));
+  /*!\brief PHASE_NAME \n DESCRIPTION: name of the phase in the chemical mechanism file \n OPTIONS: see Cantera homepage \n DEFAULT: gri30 \ingroup Config*/
+  addStringOption("PHASE_NAME", PhaseName, string("ohmech"));
+  /*!\brief GAS_COMPOSITION_NAMES \n DESCRIPTION: Gas composition names \n OPTIONS: see Cantera homepage \n DEFAULT: \ingroup Config*/
   addStringListOption("GAS_COMPOSITION_NAMES", n_GasCompositionNames, GasCompositionNames);
-  /*\brief COMBUSTION \n DESCRIPTION: Combustion Detailed chemistry using Cantera \n DEFAULT: false \ingroup Config */
+  /*\brief COMBUSTION \n DESCRIPTION: Combustion Detailed chemistry using Cantera \n DEFAULT: false \ingroup Config*/
   addBoolOption("COMBUSTION", Combustion, false);
-  /*!\brief SCHMIDT_LAM \n DESCRIPTION: Laminar Schmidt number of mass diffusion \n DEFAULT 1.0 (~for Gases) \ingroup Config*/
+  /*!\brief SPARK_TEMPERATURE \n DESCRIPTION: Spark temperature used for ignition in detailed chemistry using Cantera \n DEFAULT: 1000 K \ingroup Config*/
   addDoubleOption("SPARK_TEMPERATURE", Spark_Temperature, 1000.0);
 
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/

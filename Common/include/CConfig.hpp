@@ -80,14 +80,14 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
-  string FluidName;              /*!< \brief name of the applied fluid. */
-  string TransportModel;          /*!< \brief name transport model used in cantera*/
-  string* GasCompositionNames;         /*!< \brief gas composition used in cantera*/
-  string ChemicalMechanismFile;     /*!< \brief Chemical Reaction mechanism used in cantera*/
-  string PhaseName;                 /*!< \brief Name of the phase in the chemical mechanism file used in cantera*/
-  unsigned short n_GasCompositionNames; /*!<\brief number of gases in mixture composition for cantera */
-  bool Combustion;                    /*!< \brief Flag for Combustion Detailed chemistry problems using Cantera */         
-  su2double Spark_Temperature;        /*!< \bried Spark temperature used for ignition in detailed chemistry using Cantera*/
+  string FluidName;               /*!< \brief name of the applied fluid. */
+  string TransportModel;          /*!< \brief name transport model used in Cantera. */
+  string* GasCompositionNames;    /*!< \brief gas composition used in Cantera. */
+  string ChemicalMechanismFile;   /*!< \brief Chemical Reaction mechanism used in Cantera. */
+  string PhaseName;               /*!< \brief Name of the phase in the chemical mechanism file used in Cantera. */
+  unsigned short n_GasCompositionNames; /*!<\brief Number of gases in mixture composition for Cantera. */
+  bool Combustion;                      /*!< \brief Flag for Combustion Detailed chemistry problems using Cantera. */
+  su2double Spark_Temperature; /*!< \bried Spark temperature used for ignition in detailed chemistry using Cantera. */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -4057,6 +4057,7 @@ public:
 
   /*!
    * \brief Get High temperature applied during spark ignition.
+   * \return Spark Temperature.
    */
   const su2double GetSpark_Temperature(void) const {
     return Spark_Temperature;
