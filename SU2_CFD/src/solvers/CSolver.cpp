@@ -370,7 +370,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
   su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
   const su2double *Coord_i, *Coord_j;
-  su2double r11, r12, r13, r22, r23_a, r23_b, r33, weight;
+  su2double r11, r12, r13, r22, r23_a, r33, weight;
   const su2double *center, *angles, *trans;
   su2double rotMatrix2D[2][2] = {{1.0,0.0},{0.0,1.0}};
   su2double rotMatrix3D[3][3] = {{1.0,0.0,0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
