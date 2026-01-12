@@ -195,17 +195,16 @@ if get_option('enable-gprof')
   profiling_args = ['-pg','-no-pie']
 endif
 
-su2_common_deps = [su2_deps, common_dep]
-
-if get_option('enable-cantera')
-  su2_common_deps += cantera_dep
-endif
 
 if get_option('enable-normal')
+  dependencies_default = [su2_deps, common_dep]
+  if get_option('enable-cantera')
+    dependencies_default += cantera_dep
+  endif
   su2_cfd_lib = static_library('SU2core',
                                su2_cfd_src,
                                install : false,
-		               dependencies : su2_common_deps,
+		               dependencies : dependencies_default,
 		               cpp_args:  [default_warning_flags, su2_cpp_args])
   su2_cfd_dep = declare_dependency(link_with: su2_cfd_lib,
                                    include_directories: su2_cfd_include)
@@ -217,17 +216,15 @@ if get_option('enable-normal')
                        link_args: profiling_args)
 endif
 
-su2_common_deps_AD = [su2_deps, codi_dep, commonAD_dep]
-
-if get_option('enable-cantera') and get_option('enable-autodiff')
-  su2_common_deps_AD += cantera_ad_dep
-endif
-
 if get_option('enable-autodiff')
+  dependencies_default_AD = [su2_deps, codi_dep, commonAD_dep]
+  if get_option('enable-cantera')
+    dependencies_default_AD += cantera_ad_dep
+  endif
   su2_cfd_lib_ad = static_library('SU2core_AD',
                                su2_cfd_src,
                                install : false,
-		               dependencies : su2_common_deps_AD,
+		               dependencies : dependencies_default_AD,
                                cpp_args: [default_warning_flags, su2_cpp_args, codi_rev_args])
   su2_cfd_dep_ad = declare_dependency(link_with: su2_cfd_lib_ad,
                                    include_directories: su2_cfd_include)

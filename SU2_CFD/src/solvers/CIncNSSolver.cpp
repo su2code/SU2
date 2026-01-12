@@ -72,12 +72,11 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool wall_functions = config->GetWall_Functions();
-  const bool energy_multicomponent = config->GetEnergy_Equation() && (config->GetKind_FluidModel() == FLUID_MIXTURE ||
-                                                                      config->GetKind_FluidModel() == FLUID_CANTERA);
+  const bool energy = config->GetEnergy_Equation();
   const bool combustion = config->GetCombustion();
 
-  /*--- Setting temperature, enthalpy and themorchemical properties for ignition in reacting flows. ---*/
-  if (energy_multicomponent && combustion) {
+  /*--- Setting temperature, enthalpy and thermophysical properties for ignition in reacting flows. ---*/
+  if (energy && combustion) {
     unsigned long spark_iter_start, spark_duration;
     bool ignition = false;
 
@@ -110,12 +109,12 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
           fluid_model_local->SetTDState_T(config->GetSpark_Temperature(), scalars);
           /*--- Set total enthalpy at high temperature. ---*/
           nodes->SetSolution(i_point, nDim + 1, fluid_model_local->GetEnthalpy());
-          /*--- Set thermochemical properties at high temperature for consistency. ---*/
+          /*--- Set thermodynamics and transport properties at high temperature for consistency. ---*/
           nodes->SetDensity(i_point, fluid_model_local->GetDensity());
           nodes->SetSpecificHeatCp(i_point, fluid_model_local->GetCp());
           nodes->SetSpecificHeatCv(i_point, fluid_model_local->GetCv());
           nodes->SetThermalConductivity(i_point, fluid_model_local->GetThermalConductivity());
-          nodes->SetLaminarViscosity(i_point, fluid_model_local->GetThermalConductivity());
+          nodes->SetLaminarViscosity(i_point, fluid_model_local->GetLaminarViscosity());
         }
       }
       END_SU2_OMP_FOR
