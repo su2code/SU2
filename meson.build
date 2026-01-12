@@ -1,6 +1,6 @@
 
 project('SU2', 'c', 'cpp',
-        version: '8.3.0 "Harrier"',
+        version: '8.4.0 "Harrier"',
         meson_version: '>=1.8.2',
         license: 'LGPL2',
         default_options: ['buildtype=release',
@@ -84,6 +84,8 @@ omp = get_option('with-omp')
 if omp
   omp_dep = dependency('openmp', language:'cpp')
 endif
+
+su2_deps += declare_dependency(include_directories: 'externals/eigen')
 
 if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
@@ -357,7 +359,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 8.3.0 "Harrier"                           |
+         |   / __| | | |_  )   Release 8.4.0 "Harrier"                           |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |

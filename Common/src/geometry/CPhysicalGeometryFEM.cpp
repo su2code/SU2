@@ -2,14 +2,14 @@
  * \file CPhysicalGeometryFEM.cpp
  * \brief Implementation of the FEM related functions of CPhysicalGeometry.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2228,11 +2228,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
           step is based on free stream values at the moment, but this is easy
           to change, if needed. ---*/
     const su2double Gamma = config->GetGamma();
-    const su2double Prandtl = config->GetPrandtl_Lam();
 
     const su2double Density = config->GetDensity_FreeStreamND();
     const su2double* Vel = config->GetVelocity_FreeStreamND();
     const su2double Viscosity = config->GetViscosity_FreeStreamND();
+    const su2double Thermal_Conductivity = config->GetThermalConductivity_FreeStreamND();
+    const su2double Cp = config->GetSpecificHeatCp_FreeStreamND();
 
     su2double VelMag = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; ++iDim) VelMag += Vel[iDim] * Vel[iDim];
@@ -2253,7 +2254,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
     const su2double charVel = sqrt(charVel2);
 
     /* Also the viscous contribution to the time step is constant. Compute it. */
-    const su2double factHeatFlux = Gamma / Prandtl;
+    const su2double factHeatFlux = (Thermal_Conductivity * Gamma) / (Cp * Viscosity);
     const su2double lambdaOverMu = -TWO3;
     const su2double radVisc = max(max(1.0, 2.0 + lambdaOverMu), factHeatFlux) * Viscosity / Density;
 

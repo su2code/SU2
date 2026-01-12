@@ -3,14 +3,14 @@
  * \brief Declaration of numerics classes for centered schemes,
  *        the implementation is in centered.cpp.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,7 +49,7 @@ private:
   MeanDensity, MeanPressure,
   MeanBetaInc2, MeanEnthalpy,
   MeanCp, MeanTemperature,         /*!< \brief Mean values of primitive variables. */
-  MeandRhodT,                      /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
+  MeandRhodh,                      /*!< \brief Derivative of density w.r.t. enthalpy (variable density flows). */
   Param_p, Param_Kappa_0,          /*!< \brief Artificial dissipation parameters. */
   Local_Lambda_i, Local_Lambda_j,
   MeanLambda,                      /*!< \brief Local eingenvalues. */
@@ -109,7 +109,7 @@ private:
   MeanDensity, MeanPressure,
   MeanBetaInc2, MeanEnthalpy,
   MeanCp, MeanTemperature,        /*!< \brief Mean values of primitive variables. */
-  MeandRhodT,                     /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
+  MeandRhodh,                     /*!< \brief Derivative of density w.r.t. enthalpy (variable density flows). */
   Param_p, Param_Kappa_2,
   Param_Kappa_4,                  /*!< \brief Artificial dissipation parameters. */
   Local_Lambda_i, Local_Lambda_j,

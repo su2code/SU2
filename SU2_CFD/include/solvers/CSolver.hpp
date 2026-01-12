@@ -2,14 +2,14 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,6 +55,8 @@
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../limiters/CLimiterDetails.hpp"
 #include "../variables/CVariable.hpp"
 
 #ifdef HAVE_LIBROM
@@ -577,6 +579,22 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
+
+  /*!
+   * \brief Compute the projection of a variable for MUSCL reconstruction.
+   * \note The result should be halved when added to i (or subtracted from j).
+   * \param[in] grad - Gradient vector.
+   * \param[in] vector_ij - Distance vector.
+   * \param[in] delta_ij - Centered difference.
+   * \param[in] kappa - Blending coefficient for U-MUSCL reconstruction.
+   * \param[in] ramp_val - Value of the 1st-2nd order MUSCL ramp.
+   * \return - Projected variable.
+   */
+  FORCEINLINE su2double MUSCL_Reconstruction(const su2double* grad, const su2double* vector_ij, su2double delta_ij,
+                                             su2double kappa, su2double ramp_val) const {
+    su2double project_grad = GeometryToolbox::DotProduct(nDim, grad, vector_ij);
+    return ramp_val * LimiterHelpers<>::umusclProjection(project_grad, delta_ij, kappa);
+  }
 
   /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
@@ -2839,6 +2857,16 @@ public:
   inline virtual su2double GetInletFlowDir(unsigned short val_marker,
                                            unsigned long val_vertex,
                                            unsigned short val_dim) const { return 0; }
+
+
+  /*!
+   * \brief Set the value of the customized normal scalar values/flux at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   */
+  inline virtual void SetCustomBoundaryScalar(unsigned short val_marker, unsigned long val_vertex,
+    vector<passivedouble> val_customBoundaryScalar) {  }
+
 
   /*!
    * \brief A virtual member

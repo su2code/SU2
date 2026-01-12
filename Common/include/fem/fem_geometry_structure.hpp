@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for creating the geometrical structure for the FEM solver.
  *        The subroutines and functions are in the <i>fem_geometry_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,7 @@ using namespace std;
  * \class CVolumeElementFEM
  * \brief Class to store a volume element for the FEM solver.
  * \author E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CVolumeElementFEM {
  public:
@@ -131,7 +131,7 @@ class CVolumeElementFEM {
  * \class CPointFEM
  * \brief Class to store a point for the FEM solver.
  * \author E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 struct CPointFEM {
   unsigned long globalID;    /*!< \brief The global ID of this point in the grid. */
@@ -155,7 +155,7 @@ struct CPointFEM {
  * \class CInternalFaceElementFEM
  * \brief Class to store an internal face for the FEM solver.
  * \author E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 struct CInternalFaceElementFEM {
   unsigned short VTK_Type; /*!< \brief Element type using the VTK convention. */
@@ -199,7 +199,7 @@ struct CInternalFaceElementFEM {
  * \class CSurfaceElementFEM
  * \brief Class to store a surface element for the FEM solver.
  * \author E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 struct CSurfaceElementFEM {
   unsigned short VTK_Type;  /*!< \brief Element type using the VTK convention. */
@@ -260,7 +260,7 @@ struct CSurfaceElementFEM {
  * \class CBoundaryFEM
  * \brief Class to store a boundary for the FEM solver.
  * \author E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 struct CBoundaryFEM {
   string markerTag; /*!< \brief Marker tag of this boundary. */
@@ -283,7 +283,7 @@ struct CBoundaryFEM {
  * \class CMeshFEM
  * \brief Base class for the FEM solver.
  * \author E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CMeshFEM : public CGeometry {
  protected:
@@ -548,7 +548,7 @@ class CMeshFEM : public CGeometry {
  * \class CMeshFEM_DG
  * \brief Class which contains all the variables for the DG FEM solver.
  * \author E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CMeshFEM_DG : public CMeshFEM {
  protected:

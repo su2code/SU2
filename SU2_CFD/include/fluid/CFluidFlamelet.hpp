@@ -2,14 +2,14 @@
  * \file CFluidFlamelet.hpp
  * \brief  Defines the flamelet fluid model
  * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -117,6 +117,13 @@ class CFluidFlamelet final : public CFluidModel {
    * \param[in] val_scalars - pointer to species mass fractions
    */
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars = nullptr) override;
+
+  /*!
+   * \brief Set the thermodynamic state.
+   * \param[in] val_enthalpy - enthalpy
+   * \param[in] val_scalars - pointer to species mass fractions
+   */
+  void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override;
 
   /*!
    * \brief Evaluate data-set for flamelet simulations.

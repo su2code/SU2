@@ -3,14 +3,14 @@
  * \brief Classes related to linear preconditioner wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <functional>
 #include "../CConfig.hpp"
 #include "../geometry/CGeometry.hpp"
 #include "CSysVector.hpp"
@@ -303,6 +304,25 @@ class CPastixPreconditioner final : public CPreconditioner<ScalarType> {
    * \note Request the associated matrix to build the preconditioner.
    */
   inline void Build() override { sparse_matrix.BuildPastixPreconditioner(geometry, config, kind_fact); }
+};
+
+/*!
+ * \class CAbstractPreconditioner
+ * \brief Applies a std::function as the preconditioning operation.
+ * \note This can be used to treat almost anything as a preconditioner.
+ */
+template <class ScalarType>
+class CAbstractPreconditioner final : public CPreconditioner<ScalarType> {
+ private:
+  std::function<void(const CSysVector<ScalarType>&, CSysVector<ScalarType>&)> impl;
+
+ public:
+  CAbstractPreconditioner() = delete;
+
+  template <class F>
+  explicit CAbstractPreconditioner(const F& function) : impl(function) {}
+
+  inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override { impl(u, v); }
 };
 
 template <class ScalarType>

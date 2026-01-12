@@ -3,14 +3,14 @@
 ## \file data.py
 #  \brief python package for data utility functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -115,7 +115,7 @@ def load_data(file_name, var_names=None, file_format="infer", core_name="python_
     #: with filelock
 
     # load specified varname into dictionary
-    if var_names != None:
+    if var_names is not None:
         # check for one item name array
         if isinstance(var_names, str):
             var_names = [
@@ -196,7 +196,7 @@ def save_data(
                 core_name=core_name,
             )
             # check for keys not in new data
-            for key, value in data_dict_old.iteritems():
+            for key, value in data_dict_old.items():
                 if not (key in data_dict):
                     data_dict[key] = value
             #: for each dict item
@@ -359,13 +359,13 @@ def rec2dict(array_in):
         value = array_in[key].tolist()[0][0]
 
         # convert string
-        if isinstance(value[0], unicode):
+        if isinstance(value[0], str):
             value = str(value[0])
 
         # convert array
         elif isinstance(value, numpy.ndarray):
             # check for another struct level
-            if value.dtype.names == None:
+            if value.dtype.names is None:
                 value = value.tolist()
             # telescoping
             else:
@@ -418,7 +418,7 @@ def append_nestdict(base_dict, add_dict):
     for key in add_dict.keys():
 
         # ensure base_dict key exists and is a list
-        if not base_dict.has_key(key):
+        if key not in base_dict:
             if isinstance(add_dict[key], dict):
                 base_dict[key] = {}
             else:

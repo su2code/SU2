@@ -2,14 +2,14 @@
 
 ## \file run.py
 #  \brief FEA case with custom load.
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -83,7 +83,7 @@ def main():
   if NodeFound:
     print(f"Vertical displacement of tip: {Disp}")
     # Test the value against expected.
-    assert abs(Disp / 0.095439 - 1) < 1e-5, "Test FAILED"
+    assert abs(Disp / 0.0954409442 - 1) < 1e-5, f"Test FAILED, computed displacement = {Disp}"
 
   # Finalize the solver and exit cleanly.
   SU2Driver.Finalize()

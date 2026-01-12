@@ -3,14 +3,14 @@
  * \brief File, which contains the implementation for the wall model functions
  *        for large eddy simulations.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -306,9 +306,11 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange, const
     if (y_cv[0] * sqrt(tauWall / rho) / (mu_lam / rho) > 1.0)
       SU2_MPI::Error("Y+ greater than one: Increase the number of points or growth ratio.", CURRENT_FUNCTION);
 
-    /* Define a norm
-     */
-    if (abs(1.0 - tauWall / tauWall_prev) < tol && abs(1.0 - qWall / qWall_prev) < tol) {
+    /* Define a norm */
+    bool tau_converged = abs(tauWall - tauWall_prev) < fmax(tol * abs(tauWall), EPS);
+    bool q_converged = abs(qWall - qWall_prev) < fmax(tol * abs(qWall), EPS);
+
+    if (tau_converged && q_converged) {
       converged = true;
     }
   }
@@ -369,7 +371,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange, con
                                  (-(1.0 / 11.0) * h_wm * exp(-0.33 * y_plus) / nu_wall +
                                   (1.0 / 11.0) * h_wm * exp(-(1.0 / 11.0) * y_plus) / nu_wall +
                                   (1.0 / 33.0) * u_tau0 * pow(h_wm, 2.0) * exp(-0.33 * y_plus) / pow(nu_wall, 2.0)) -
-                             1.0 * h_wm / (nu_wall * (karman * y_plus + 1.0));
+                             h_wm / (nu_wall * (karman * y_plus + 1.0));
 
     /* Newton method
      */
@@ -392,7 +394,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange, con
     const su2double rhs_1 = Pr_lam * y_plus * exp(Gamma);
     const su2double rhs_2 =
         (2.12 * log(1.0 + y_plus) + pow((3.85 * pow(Pr_lam, (1.0 / 3.0)) - 1.3), 2.0) + 2.12 * log(Pr_lam)) *
-        exp(1. / Gamma);
+        exp(1.0 / fmin(Gamma, -EPS));
     qWall = lhs / (rhs_1 + rhs_2);
   } else {
     qWall = Wall_HeatFlux;

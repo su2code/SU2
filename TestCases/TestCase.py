@@ -3,14 +3,14 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -124,6 +124,7 @@ class TestCase:
         self.command = self.Command()
         self.timeout = 0
         self.tol = 0.0
+        self.tol_aarch64 = 0.0
         self.tapetest_tol = 0
         self.tol_file_percent = 0.0
         self.comp_threshold = 0.0
@@ -386,6 +387,9 @@ class TestCase:
 
                         # If file tolerance is set to 0, make regular diff
                         if self.tol_file_percent == 0.0:
+                            # Strip trailing whitespace but keep newline for difflib
+                            fromlines = [line.rstrip() + '\n' for line in fromlines]
+                            tolines = [line.rstrip() + '\n' for line in tolines]
                             diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
 
                         # Else test word by word with given tolerance
@@ -1034,3 +1038,6 @@ class TestCase:
 
             if len(self.reference_file_aarch64) != 0:
                 self.reference_file = self.reference_file_aarch64
+
+            if self.tol_aarch64 != 0:
+                self.tol = self.tol_aarch64

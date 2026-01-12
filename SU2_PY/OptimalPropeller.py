@@ -1,14 +1,14 @@
 ## \file OptimalPropeller.py
 #  \brief Python script for generating the ActuatorDisk.dat file.
 #  \author E. Saetta, L. Russo, R. Tognaccini
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -344,20 +344,20 @@ write_external_file(dCt_optimal, dCp)
 # Automatically plot the computed propeller performance.
 
 pl.figure(1)
-pl.plot(r, dCt_optimal, "r", markersize=4, label="$\\frac{dCT}{d\overline{r}}$")
-pl.plot(r, dCp, "k", markersize=4, label="$\\frac{dCP}{d\overline{r}}$")
+pl.plot(r, dCt_optimal, "r", markersize=4, label=r"$\frac{dCT}{d\overline{r}}$")
+pl.plot(r, dCp, "k", markersize=4, label=r"$\frac{dCP}{d\overline{r}}$")
 pl.grid(True)
 pl.legend(numpoints=3)
-pl.xlabel("$\overline{r}$")
+pl.xlabel(r"$\overline{r}$")
 pl.ylabel("")
 pl.title("Load Distribution")
 
 pl.figure(2)
-pl.plot(chi, a_optimal, "r", markersize=4, label="$a$")
-pl.plot(chi, ap_optimal, "k", markersize=4, label="$a^1$")
+pl.plot(chi, a_optimal, "r", markersize=4, label=r"$a$")
+pl.plot(chi, ap_optimal, "k", markersize=4, label=r"$a^1$")
 pl.grid(True)
 pl.legend(numpoints=3)
-pl.xlabel("$\chi$")
+pl.xlabel(r"$\chi$")
 pl.ylabel("")
 pl.title("Interference Factors")
 
@@ -365,8 +365,8 @@ if prandtl_correction:
     pl.figure(3)
     pl.plot(r, F, "k", markersize=4)
     pl.grid(True)
-    pl.xlabel("$\overline{r}$")
-    pl.ylabel("$F(\overline{r})$")
+    pl.xlabel(r"$\overline{r}$")
+    pl.ylabel(r"$F(\overline{r})$")
     pl.title("Tip Loss Prandtl Correction Function")
 
 pl.show()

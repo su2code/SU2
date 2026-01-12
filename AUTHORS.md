@@ -56,6 +56,7 @@ Aniket C. Aranake
 Antonio Rubino
 Arne Bachmann
 Arne Voß
+Ayush Kumar
 Beckett Y. Zhou
 Benjamin S. Kirk
 Brendan Tracey
@@ -71,6 +72,7 @@ Eduardo Molina
 Edwin van der Weide
 Eitan Aberman
 Ethan Alan Hereth
+Ezgi Orbay Akcengiz
 Florian Dittmann
 Filip Hahs
 Francesco Poli
@@ -121,6 +123,7 @@ Paul Zhang
 Pedro Gomes
 Peng Yan
 Pete Bachant
+Pratyksh Gupta
 RaulFeijo55
 Ruben Sanchez
 Ryan Barrett

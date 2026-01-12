@@ -2,14 +2,14 @@
  * \file CAdjFlowIncOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -111,9 +111,13 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config) {
   if (nDim == 3) {
     AddHistoryOutput("RMS_ADJ_VELOCITY-Z", "rms[A_W]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint Velocity z-component.", HistoryFieldType::RESIDUAL);
   }
-  /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) {
+  /// DESCRIPTION: Root-mean square residual of the adjoint temperature.
+  if (weakly_coupled_heat) {
     AddHistoryOutput("RMS_ADJ_TEMPERATURE", "rms[A_T]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  }
+  /// DESCRIPTION: Root-mean square residual of the adjoint enthalpy.
+  if (heat) {
+    AddHistoryOutput("RMS_ADJ_ENTHALPY", "rms[A_h]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the enthalpy.", HistoryFieldType::RESIDUAL);
   }
 
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
@@ -139,9 +143,13 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config) {
   if (nDim == 3) {
     AddHistoryOutput("MAX_ADJ_VELOCITY-Z", "max[A_RhoW]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL);
   }
-  /// DESCRIPTION: Maximum residual of the temperature.
-  if (heat || weakly_coupled_heat) {
+  /// DESCRIPTION: Maximum residual of the adjoint temperature.
+  if (weakly_coupled_heat) {
     AddHistoryOutput("MAX_ADJ_TEMPERATURE", "max[A_T]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the temperature.", HistoryFieldType::RESIDUAL);
+  }
+  /// DESCRIPTION: Maximum residual of the adjoint enthalpy.
+  if (heat) {
+    AddHistoryOutput("MAX_ADJ_ENTHALPY", "max[A_h]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the enthalpy.", HistoryFieldType::RESIDUAL);
   }
 
   AddHistoryOutputFields_AdjScalarMAX_RES(config);
@@ -158,9 +166,13 @@ void CAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config) {
   if (nDim == 3) {
     AddHistoryOutput("BGS_ADJ_VELOCITY-Z", "bgs[A_RhoW]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Velocity z-component", HistoryFieldType::RESIDUAL);
   }
-  /// DESCRIPTION: BGS residual of the temperature.
-  if (heat || weakly_coupled_heat) {
+  /// DESCRIPTION: BGS residual of the adjoint temperature.
+  if (weakly_coupled_heat) {
     AddHistoryOutput("BGS_ADJ_TEMPERATURE", "bgs[A_T]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  }
+  /// DESCRIPTION: BGS residual of the adjoint enthalpy.
+  if (heat) {
+    AddHistoryOutput("BGS_ADJ_ENTHALPY", "bgs[A_h]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint enthalpy.", HistoryFieldType::RESIDUAL);
   }
 
   AddHistoryOutputFields_AdjScalarBGS_RES(config);
@@ -213,8 +225,7 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     SetHistoryOutputValue("RMS_ADJ_TEMPERATURE",         log10(adjheat_solver->GetRes_RMS(0)));
   }
   if (heat) {
-    if (nDim == 3) SetHistoryOutputValue("RMS_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_RMS(4)));
-    else           SetHistoryOutputValue("RMS_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_RMS(3)));
+    SetHistoryOutputValue("RMS_ADJ_ENTHALPY", log10(adjflow_solver->GetRes_RMS(nDim + 1)));
   }
 
   if (config->AddRadiation()) {
@@ -235,8 +246,10 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     SetHistoryOutputValue("MAX_ADJ_TEMPERATURE",         log10(adjheat_solver->GetRes_Max(0)));
   }
   if (heat) {
-    if (nDim == 3) SetHistoryOutputValue("MAX_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_Max(4)));
-    else           SetHistoryOutputValue("MAX_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_Max(3)));
+    if (nDim == 3)
+      SetHistoryOutputValue("MAX_ADJ_ENTHALPY", log10(adjflow_solver->GetRes_Max(4)));
+    else
+      SetHistoryOutputValue("MAX_ADJ_ENTHALPY", log10(adjflow_solver->GetRes_Max(3)));
   }
 
   if (multiZone) {
@@ -250,8 +263,10 @@ void CAdjFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
       SetHistoryOutputValue("BGS_ADJ_TEMPERATURE",         log10(adjheat_solver->GetRes_BGS(0)));
     }
     if (heat) {
-      if (nDim == 3) SetHistoryOutputValue("BGS_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_BGS(4)));
-      else           SetHistoryOutputValue("BGS_ADJ_TEMPERATURE",         log10(adjflow_solver->GetRes_BGS(3)));
+      if (nDim == 3)
+        SetHistoryOutputValue("BGS_ADJ_ENTHALPY", log10(adjflow_solver->GetRes_BGS(4)));
+      else
+        SetHistoryOutputValue("BGS_ADJ_ENTHALPY", log10(adjflow_solver->GetRes_BGS(3)));
     }
 
     if (config->AddRadiation()) {
@@ -298,7 +313,13 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config) {
     /// DESCRIPTION: Adjoint Velocity z-component.
     AddVolumeOutput("ADJ_VELOCITY-Z", "Adjoint_Velocity_z", "SOLUTION", "z-component of the adjoint velocity vector");
   }
-  AddVolumeOutput("ADJ_TEMPERATURE", "Adjoint_Temperature", "SOLUTION",  "Adjoint temperature");
+  if (weakly_coupled_heat) {
+    /// DESCRIPTION: Adjoint Temperature.
+    AddVolumeOutput("ADJ_TEMPERATURE", "Adjoint_Temperature", "SOLUTION", "Adjoint temperature");
+  } else {
+    /// DESCRIPTION: Adjoint Enthalpy.
+    AddVolumeOutput("ADJ_ENTHALPY", "Adjoint_Enthalpy", "SOLUTION", "Adjoint_Enthalpy");
+  }
 
   SetVolumeOutputFieldsAdjScalarSolution(config);
 
@@ -328,7 +349,11 @@ void CAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config) {
     AddVolumeOutput("RES_ADJ_VELOCITY-Z", "Residual_Adjoint_Velocity_z", "RESIDUAL", "Residual of the adjoint z-velocity");
   }
   /// DESCRIPTION: Residual of the adjoint energy.
-  AddVolumeOutput("RES_ADJ_TEMPERATURE", "Residual_Adjoint_Heat", "RESIDUAL", "Residual of the adjoint temperature");
+  if (weakly_coupled_heat) {
+    AddVolumeOutput("RES_ADJ_TEMPERATURE", "Residual_Adjoint_Heat", "RESIDUAL", "Residual of the adjoint temperature");
+  } else {
+    AddVolumeOutput("RES_ADJ_ENTHALPY", "Residual_Adjoint_Heat", "RESIDUAL", "Residual of the adjoint enthalpy");
+  }
 
   SetVolumeOutputFieldsAdjScalarResidual(config);
 
@@ -381,10 +406,11 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
 
   if (weakly_coupled_heat) {
     SetVolumeOutputValue("ADJ_TEMPERATURE", iPoint, Node_AdjHeat->GetSolution(iPoint, 0));
-  }
-  else {
-    if (nDim == 3) SetVolumeOutputValue("ADJ_TEMPERATURE", iPoint, Node_AdjFlow->GetSolution(iPoint, 4));
-    else           SetVolumeOutputValue("ADJ_TEMPERATURE", iPoint, Node_AdjFlow->GetSolution(iPoint, 3));
+  } else {
+    if (nDim == 3)
+      SetVolumeOutputValue("ADJ_ENTHALPY", iPoint, Node_AdjFlow->GetSolution(iPoint, 4));
+    else
+      SetVolumeOutputValue("ADJ_ENTHALPY", iPoint, Node_AdjFlow->GetSolution(iPoint, 3));
   }
 
   // Radiation
@@ -397,10 +423,15 @@ void CAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   SetVolumeOutputValue("RES_ADJ_VELOCITY-X", iPoint, Node_AdjFlow->GetSolution(iPoint, 1) - Node_AdjFlow->GetSolution_Old(iPoint, 1));
   SetVolumeOutputValue("RES_ADJ_VELOCITY-Y", iPoint, Node_AdjFlow->GetSolution(iPoint, 2) - Node_AdjFlow->GetSolution_Old(iPoint, 2));
   if (nDim == 3) {
-    SetVolumeOutputValue("RES_ADJ_VELOCITY-Z", iPoint, Node_AdjFlow->GetSolution(iPoint, 3) - Node_AdjFlow->GetSolution_Old(iPoint, 3));
-    SetVolumeOutputValue("RES_ADJ_TEMPERATURE",     iPoint, Node_AdjFlow->GetSolution(iPoint, 4) - Node_AdjFlow->GetSolution_Old(iPoint, 4));
+    SetVolumeOutputValue("RES_ADJ_VELOCITY-Z", iPoint,
+                         Node_AdjFlow->GetSolution(iPoint, 3) - Node_AdjFlow->GetSolution_Old(iPoint, 3));
+    if (heat)
+      SetVolumeOutputValue("RES_ADJ_ENTHALPY", iPoint,
+                           Node_AdjFlow->GetSolution(iPoint, 4) - Node_AdjFlow->GetSolution_Old(iPoint, 4));
   } else {
-    SetVolumeOutputValue("RES_ADJ_TEMPERATURE",     iPoint, Node_AdjFlow->GetSolution(iPoint, 3) - Node_AdjFlow->GetSolution_Old(iPoint, 3));
+    if (heat)
+      SetVolumeOutputValue("RES_ADJ_ENTHALPY", iPoint,
+                           Node_AdjFlow->GetSolution(iPoint, 3) - Node_AdjFlow->GetSolution_Old(iPoint, 3));
   }
 
   if (config->AddRadiation()) {

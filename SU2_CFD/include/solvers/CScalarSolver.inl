@@ -1,14 +1,14 @@
 /*!
  * \file CScalarSolver.inl
  * \brief Main subroutines of CScalarSolver class
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -142,6 +142,11 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
   const bool limiterFlow =
       (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE);
 
+  /*--- U-MUSCL reconstruction ---*/
+  const su2double kappa     = config->GetMUSCL_Kappa();
+  const su2double kappaFlow = config->GetMUSCL_Kappa_Flow();
+  const su2double musclRamp = config->GetMUSCLRampValue();
+
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
   const auto& edgeMassFluxes = *(solver_container[FLOW_SOL]->GetEdgeMassFluxes());
 
@@ -169,8 +174,6 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
     SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
     for (auto k = 0ul; k < color.size; ++k) {
       auto iEdge = color.indices[k];
-
-      unsigned short iDim, iVar;
 
       /*--- Points in edge and normal vectors ---*/
 
@@ -202,9 +205,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         const auto Coord_j = geometry->nodes->GetCoord(jPoint);
 
         su2double Vector_ij[MAXNDIM] = {0.0};
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Vector_ij[iDim] = 0.5 * (Coord_j[iDim] - Coord_i[iDim]);
-        }
+        GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Vector_ij);
 
         if (musclFlow && !bounded_scalar) {
           /*--- Reconstruct mean flow primitive variables, note that in bounded scalar mode this is
@@ -219,19 +220,19 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
           }
 
-          for (iVar = 0; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-            su2double Project_Grad_i = 0.0;
-            su2double Project_Grad_j = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Project_Grad_i += Vector_ij[iDim] * Gradient_i[iVar][iDim];
-              Project_Grad_j -= Vector_ij[iDim] * Gradient_j[iVar][iDim];
-            }
+          for (auto iVar = 0u; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
+            const su2double V_ij = V_j[iVar] - V_i[iVar];
+
+            su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappaFlow, musclRamp);
+            su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappaFlow, musclRamp);
+
             if (limiterFlow) {
               Project_Grad_i *= Limiter_i[iVar];
               Project_Grad_j *= Limiter_j[iVar];
             }
-            flowPrimVar_i[iVar] = V_i[iVar] + Project_Grad_i;
-            flowPrimVar_j[iVar] = V_j[iVar] + Project_Grad_j;
+
+            flowPrimVar_i[iVar] = V_i[iVar] + 0.5 * Project_Grad_i;
+            flowPrimVar_j[iVar] = V_j[iVar] - 0.5 * Project_Grad_j;
           }
 
           numerics->SetPrimitive(flowPrimVar_i, flowPrimVar_j);
@@ -248,18 +249,19 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
             Limiter_j = nodes->GetLimiter(jPoint);
           }
 
-          for (iVar = 0; iVar < nVar; iVar++) {
-            su2double Project_Grad_i = 0.0, Project_Grad_j = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
-              Project_Grad_i += Vector_ij[iDim] * Gradient_i[iVar][iDim];
-              Project_Grad_j -= Vector_ij[iDim] * Gradient_j[iVar][iDim];
-            }
+          for (auto iVar = 0u; iVar < nVar; iVar++) {
+            const su2double U_ij = Scalar_j[iVar] - Scalar_i[iVar];
+
+            su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, U_ij, kappa, musclRamp);
+            su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, U_ij, kappa, musclRamp);
+
             if (limiter) {
               Project_Grad_i *= Limiter_i[iVar];
               Project_Grad_j *= Limiter_j[iVar];
             }
-            solution_i[iVar] = Scalar_i[iVar] + Project_Grad_i;
-            solution_j[iVar] = Scalar_j[iVar] + Project_Grad_j;
+
+            solution_i[iVar] = Scalar_i[iVar] + 0.5 * Project_Grad_i;
+            solution_j[iVar] = Scalar_j[iVar] - 0.5 * Project_Grad_j;
           }
 
           numerics->SetScalarVar(solution_i, solution_j);

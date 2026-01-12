@@ -3,14 +3,14 @@
  * \brief Reads a native SU2 ASCII grid into linear partitions for the
  *        finite element solver (FEM).
  * \author T. Economon, E. van der Weide
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,20 +37,20 @@ CSU2ASCIIMeshReaderFEM::CSU2ASCIIMeshReaderFEM(CConfig* val_config, unsigned sho
 
   /*--- Read the volume connectivity and distribute it
         linearly over the MPI ranks. ---*/
-  ReadVolumeElementConnectivity();
+  ReadVolumeElementConnectivity({});
 
   /*--- Read the coordinates of the points that are needed
         on this MPI rank. ---*/
-  ReadPointCoordinates();
+  ReadPointCoordinates({});
 
   /*--- Read the surface connectivity and store the surface elements whose
         corresponding volume element is stored on this MPI rank. ---*/
-  ReadSurfaceElementConnectivity();
+  ReadSurfaceElementConnectivity({});
 }
 
 CSU2ASCIIMeshReaderFEM::~CSU2ASCIIMeshReaderFEM() = default;
 
-void CSU2ASCIIMeshReaderFEM::ReadPointCoordinates() {
+void CSU2ASCIIMeshReaderFEM::ReadPointCoordinates(bool) {
   /*--- Loop over the local elements to determine the global
         point IDs to be stored on this rank. --*/
   unsigned long ind = 0;
@@ -113,7 +113,7 @@ void CSU2ASCIIMeshReaderFEM::ReadPointCoordinates() {
   mesh_file.close();
 }
 
-void CSU2ASCIIMeshReaderFEM::ReadVolumeElementConnectivity() {
+void CSU2ASCIIMeshReaderFEM::ReadVolumeElementConnectivity(bool) {
   /* Get a partitioner to help with linear partitioning. */
   CLinearPartitioner elemPartitioner(numberOfGlobalElements, 0);
 
@@ -213,7 +213,7 @@ void CSU2ASCIIMeshReaderFEM::ReadVolumeElementConnectivity() {
   mesh_file.close();
 }
 
-void CSU2ASCIIMeshReaderFEM::ReadSurfaceElementConnectivity() {
+void CSU2ASCIIMeshReaderFEM::ReadSurfaceElementConnectivity(bool) {
   /*--- Determine the vector to hold the faces of the local elements. ---*/
   vector<CFaceOfElement> localFaces;
   DetermineFacesVolumeElements(localFaces);

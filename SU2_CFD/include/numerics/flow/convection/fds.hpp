@@ -3,14 +3,14 @@
  * \brief Declarations of classes for Flux-Difference-Spliting schemes,
  *        the implementations are in fds.cpp
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,7 +49,7 @@ private:
   su2double **Precon, **invPrecon_A;
   su2double Proj_ModJac_Tensor_ij, Pressure_i,
   Pressure_j, ProjVelocity,
-  MeandRhodT, dRhodT_i, dRhodT_j, /*!< \brief Derivative of density w.r.t. temperature (variable density flows). */
+  MeandRhodh, dRhodh_i, dRhodh_j, /*!< \brief Derivative of density w.r.t. enthalpy (variable density flows). */
   Temperature_i, Temperature_j,   /*!< \brief Temperature at node 0 and 1. */
   MeanDensity, MeanPressure, MeanSoundSpeed, MeanBetaInc2, MeanEnthalpy, MeanCp, MeanTemperature; /*!< \brief Mean values of primitive variables. */
   unsigned short iDim, iVar, jVar, kVar;
