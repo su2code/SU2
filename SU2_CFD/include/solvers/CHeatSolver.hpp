@@ -2,14 +2,14 @@
  * \file CHeatSolver.hpp
  * \brief Headers of the CHeatSolver class
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@
  * \class CHeatSolver
  * \brief Main class for defining the finite-volume heat solver.
  * \author O. Burghardt
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  */
 class CHeatSolver final : public CScalarSolver<CHeatVariable> {
 protected:
@@ -195,6 +195,17 @@ public:
                         CConfig *config,
                         unsigned short iMesh,
                         unsigned short iRKStep) override;
+
+ /*!
+   * \brief Source term computation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Source_Residual(CGeometry *geometry, CSolver **solver_container,  CNumerics **numerics_container,
+                       CConfig *config, unsigned short iMesh) override ;
 
 
   void Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) override;

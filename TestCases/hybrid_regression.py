@@ -3,14 +3,14 @@
 ## \file hybrid_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -375,7 +375,7 @@ def main():
     inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
     inc_buoyancy.cfg_file  = "lam_buoyancy_cavity.cfg"
     inc_buoyancy.test_iter = 20
-    inc_buoyancy.test_vals = [-3.860443, -3.122399, 4.074529, -23.413000]
+    inc_buoyancy.test_vals = [-3.860465, -3.122402, 1.322722, -23.413000]
     test_list.append(inc_buoyancy)
 
     # Laminar heated cylinder with polynomial fluid model
@@ -665,8 +665,8 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals         = [19.000000, -1.048972, -1.324971]
-    slinc_steady.test_vals_aarch64 = [19.000000, -1.048972, -1.324971]
+    slinc_steady.test_vals         = [19.000000, -1.154874, -1.378120]
+    slinc_steady.test_vals_aarch64 = [19.000000, -1.154874, -1.378120]
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
 

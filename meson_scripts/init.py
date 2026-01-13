@@ -4,14 +4,14 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring and F. Poli
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -74,7 +74,7 @@ def init_submodules(
     github_repo_mel = "https://github.com/pcarruscag/MEL"
     sha_version_fado = "ce7ee018e4e699af5028d69baa1939fea290e18a"
     github_repo_fado = "https://github.com/pcarruscag/FADO"
-    sha_version_mlpcpp = "e19ca0cafb28c4b7ba5b8cffef42883259b00dc0"
+    sha_version_mlpcpp = "ff57e0cf9e60127196d3f1be71e711d47ff646ef"
     github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
     sha_version_eigen = "d71c30c47858effcbd39967097a2d99ee48db464"
     github_repo_eigen = "https://gitlab.com/libeigen/eigen.git"
