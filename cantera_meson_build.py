@@ -42,11 +42,7 @@ if not os.path.exists(meson_build_path):
                                "cantera_inc = include_directories('install/include')\n",
                                "cantera_lib = cc.find_library('cantera', dirs: [meson.current_source_dir() / 'install' / 'lib'], required: false, static: true)\n",
                                "cantera_dep = declare_dependency(include_directories: cantera_inc, dependencies: cantera_lib)\n",
-                               "meson.override_dependency('cantera', cantera_dep)\n",
-                               "cantera_ad_inc = include_directories('install_ad/include')\n",
-                               "cantera_ad_lib = cc.find_library('cantera', dirs: [meson.current_source_dir() / 'install_ad' / 'lib'], required: false, static: true)\n",
-                               "cantera_ad_dep = declare_dependency(include_directories: cantera_ad_inc, dependencies: cantera_ad_lib)\n",
-                               "meson.override_dependency('cantera_ad', cantera_ad_dep)"]
+                               "meson.override_dependency('cantera', cantera_dep)"]
    # Write the meson.build file
    with open(meson_build_path, 'w') as f:
       f.writelines(meson_build_content)

@@ -217,14 +217,10 @@ if get_option('enable-normal')
 endif
 
 if get_option('enable-autodiff')
-  dependencies_default_AD = [su2_deps, codi_dep, commonAD_dep]
-  if get_option('enable-cantera')
-    dependencies_default_AD += cantera_ad_dep
-  endif
   su2_cfd_lib_ad = static_library('SU2core_AD',
                                su2_cfd_src,
                                install : false,
-		               dependencies : dependencies_default_AD,
+		               dependencies : [su2_deps, codi_dep, commonAD_dep],
                                cpp_args: [default_warning_flags, su2_cpp_args, codi_rev_args])
   su2_cfd_dep_ad = declare_dependency(link_with: su2_cfd_lib_ad,
                                    include_directories: su2_cfd_include)
