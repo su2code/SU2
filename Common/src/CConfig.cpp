@@ -1339,6 +1339,17 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Definition of the temperature polynomial coefficients for specific heat Cp. */
   addDoubleArrayOption("KT_POLYCOEFFS", N_POLY_COEFFS, false, kt_polycoeffs.data());
 
+  /* DESCRIPTION: NASA polynomial coefficients (low temp range) */
+  addDoubleArrayOption("NASA_POLYCOEFFS_LOW", 7, false, NASA_Coeffs_Low.data());
+  /* DESCRIPTION: NASA polynomial coefficients (high temp range) */
+  addDoubleArrayOption("NASA_POLYCOEFFS_HIGH", 7, false, NASA_Coeffs_High.data());
+  /* DESCRIPTION: NASA polynomial low temperature bound */
+  addDoubleOption("NASA_TEMP_LOW", NASA_Temp_Low, 0.0);
+  /* DESCRIPTION: NASA polynomial mid temperature break */
+  addDoubleOption("NASA_TEMP_MID", NASA_Temp_Mid, 0.0);
+  /* DESCRIPTION: NASA polynomial high temperature bound */
+  addDoubleOption("NASA_TEMP_HIGH", NASA_Temp_High, 0.0);
+
   /*!\brief REYNOLDS_NUMBER \n DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values). Needed for viscous solvers. For incompressible solvers the Reynolds length will always be 1.0 \n DEFAULT: 0.0 \ingroup Config */
   addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
   /*!\brief REYNOLDS_LENGTH \n DESCRIPTION: Reynolds length (1 m by default). Used for compressible solver: incompressible solver will use 1.0. \ingroup Config */
