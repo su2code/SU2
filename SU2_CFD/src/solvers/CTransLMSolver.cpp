@@ -515,9 +515,38 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 
-    /*--- Identify indices for LM transition variables ---*/
+    /*--- Find indices for LM transition variables ---*/
     vector<string> target_fields = {"LM_gamma", "LM_Re_t", "LM_gamma_sep", "LM_gamma_eff"};
     vector<int> field_indices = FindFieldIndices(target_fields);
+
+    /*--- Fallback: Use legacy offset if name not found ---*/
+    /*--- nDim + 2 covers Density + Momentum + Energy (Compressible) 
+          and Pressure + Velocity + Temperature (Incompressible) ---*/
+    const unsigned short flow_offset = geometry[MESH_0]->GetnDim() + 2;
+
+    int turb_offset = flow_offset;
+    switch(config->GetKind_Turb_Model()) {
+        case TURB_MODEL::SA:
+            turb_offset += 1;
+            break;
+        case TURB_MODEL::SST:
+            turb_offset += 2;
+            break;
+        default: break;
+    }
+
+    for (size_t i = 0; i < target_fields.size(); ++i) {
+      if (field_indices[i] == -1) {
+        const int fallback_idx = turb_offset + i;
+        if (Restart_Vars.size() > 1 && fallback_idx < Restart_Vars[1]) {
+          field_indices[i] = fallback_idx;
+          if (rank == MASTER_NODE) {
+            cout << "WARNING: " << target_fields[i] << " field not found in restart file. "
+                 << "Using fallback index " << fallback_idx << ".\n";
+          }
+        }
+      }
+    }
 
     /*--- Warn if any fields are missing (Master node only) ---*/
     if (rank == MASTER_NODE) {

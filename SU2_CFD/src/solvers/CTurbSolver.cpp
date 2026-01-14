@@ -134,6 +134,24 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     /*--- Find indices for all turbulence variables at once ---*/
     vector<int> field_indices = FindFieldIndices(varNames);
 
+    /*--- Fallback: Use legacy offset if name not found ---*/
+    /*--- nDim + 2 covers Density + Momentum + Energy (Compressible) 
+          and Pressure + Velocity + Temperature (Incompressible) ---*/
+    const unsigned short flow_offset = geometry[MESH_0]->GetnDim() + 2;
+
+    for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+      if (field_indices[iVar] == -1 && !varNames[iVar].empty()) {
+        const int fallback_idx = flow_offset + iVar;
+        if (Restart_Vars.size() > 1 && fallback_idx < Restart_Vars[1]) {
+          field_indices[iVar] = fallback_idx;
+          if (rank == MASTER_NODE) {
+            cout << "WARNING: " << varNames[iVar] << " field not found in restart file. "
+                 << "Using fallback index " << fallback_idx << ".\n";
+          }
+        }
+      }
+    }
+
     /*--- Warn if any fields are missing (Master node only) ---*/
     if (rank == MASTER_NODE) {
       for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
