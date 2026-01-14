@@ -235,6 +235,13 @@ public:
   }
 
   /*!
+   * \brief Find the indices of fields by name.
+   * \param[in] target_fields - Vector of field names to find (with or without quotes).
+   * \return Vector of indices (0-based), or -1 for fields not found.
+   */
+  vector<int> FindFieldIndices(const vector<string>& target_fields) const;
+
+  /*!
    * \brief Helper function to define the type and number of variables per point for each communication type.
    * \param[in] config - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.

@@ -188,6 +188,32 @@ CSolver::~CSolver() {
   delete VerificationSolution;
 }
 
+vector<int> CSolver::FindFieldIndices(const vector<string>& target_fields) const {
+  /*--- Search for field names in the fields vector.
+        Fields are stored with quotes, e.g., "Temperature", so we need to check
+        both with and without quotes. ---*/
+
+  vector<int> indices;
+  indices.reserve(target_fields.size());
+
+  for (const auto& search : target_fields) {
+    /*--- Prepare both quoted and unquoted versions ---*/
+    string fieldNameWithQuotes = "\"" + search + "\"";
+    
+    /*--- Search for the field (try both with and without quotes) ---*/
+    auto it = std::find(fields.begin(), fields.end(), fieldNameWithQuotes);
+    if (it == fields.end()) {
+      it = std::find(fields.begin(), fields.end(), search);
+    }
+    
+    /*--- Store the index or -1 if not found ---*/
+    indices.push_back(it != fields.end() ? std::distance(fields.begin(), it) : -1);
+  }
+
+  return indices;
+}
+
+
 void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
                                           unsigned short commType,
                                           unsigned short &COUNT_PER_POINT,

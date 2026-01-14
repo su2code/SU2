@@ -118,21 +118,31 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 
-    /*--- Skip flow variables ---*/
+    /*--- Identify turbulence variable names based on the model ---*/
+    vector<string> varNames(nVar);
 
-    unsigned short skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar();
+    const auto kind_turb_model = config->GetKind_Turb_Model();
+    if (kind_turb_model == TURB_MODEL::SA) {
+      if (nVar > 0) varNames[0] = "Nu_Tilde";
+    }
+    else if (kind_turb_model == TURB_MODEL::SST) {
+      if (nVar > 0) varNames[0] = "Turb_Kin_Energy";
+      if (nVar > 1) varNames[1] = "Omega";
+    }
+    /*--- Add other turbulence models as needed ---*/
 
-    /*--- Adjust the number of solution variables in the incompressible
-     restart. We always carry a space in nVar for the energy equation in the
-     mean flow solver, but we only write it to the restart if it is active.
-     Therefore, we must reduce skipVars here if energy is inactive so that
-     the turbulent variables are read correctly. ---*/
+    /*--- Find indices for all turbulence variables at once ---*/
+    vector<int> field_indices = FindFieldIndices(varNames);
 
-    const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-    const bool energy = config->GetEnergy_Equation();
-    const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
-    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+    /*--- Warn if any fields are missing (Master node only) ---*/
+    if (rank == MASTER_NODE) {
+      for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+        if (field_indices[iVar] == -1 && !varNames[iVar].empty()) {
+          cout << "WARNING: " << varNames[iVar] << " field not found in restart file. "
+               << "Using initialized default.\n";
+        }
+      }
+    }
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -147,8 +157,12 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        const auto index = counter * Restart_Vars[1] + skipVars;
-        for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        const auto baseIndex = counter * Restart_Vars[1];
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          if (field_indices[iVar] != -1) {
+            nodes->SetSolution(iPoint_Local, iVar, Restart_Data[baseIndex + field_indices[iVar]]);
+          }
+        }
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
@@ -165,6 +179,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 
   }  // end safe global access, pre and postprocessing are thread-safe.
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
 
   /*--- MPI solution and compute the eddy viscosity ---*/
 

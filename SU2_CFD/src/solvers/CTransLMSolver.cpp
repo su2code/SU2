@@ -515,21 +515,19 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 
-    /*--- Skip flow variables ---*/
+    /*--- Identify indices for LM transition variables ---*/
+    vector<string> target_fields = {"LM_gamma", "LM_Re_t", "LM_gamma_sep", "LM_gamma_eff"};
+    vector<int> field_indices = FindFieldIndices(target_fields);
 
-    unsigned short skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar() + solver[MESH_0][TURB_SOL] ->GetnVar();
-
-    /*--- Adjust the number of solution variables in the incompressible
-     restart. We always carry a space in nVar for the energy equation in the
-     mean flow solver, but we only write it to the restart if it is active.
-     Therefore, we must reduce skipVars here if energy is inactive so that
-     the turbulent variables are read correctly. ---*/
-
-    const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
-    const bool energy = config->GetEnergy_Equation();
-    const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
-    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+    /*--- Warn if any fields are missing (Master node only) ---*/
+    if (rank == MASTER_NODE) {
+      for (size_t i = 0; i < target_fields.size(); ++i) {
+        if (field_indices[i] == -1) {
+          cout << "WARNING: " << target_fields[i] << " field not found in restart file. "
+               << "Using initialized default.\n";
+        }
+      }
+    }
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -544,10 +542,27 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        const auto index = counter * Restart_Vars[1] + skipVars;
-        for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-        nodes->SetIntermittencySep(iPoint_Local,  Restart_Data[index + 2]);
-        nodes->SetIntermittencyEff(iPoint_Local,  Restart_Data[index + 3]);
+        const auto base_idx = counter * Restart_Vars[1];
+        
+        /*--- Load Gamma (LM_gamma) ---*/
+        if (field_indices[0] != -1) {
+          nodes->SetSolution(iPoint_Local, 0, Restart_Data[base_idx + field_indices[0]]);
+        }
+        
+        /*--- Load Re_Theta_t (LM_Re_t) ---*/
+        if (field_indices[1] != -1) {
+          nodes->SetSolution(iPoint_Local, 1, Restart_Data[base_idx + field_indices[1]]);
+        }
+        
+        /*--- Load Intermittency Sep (LM_gamma_sep) ---*/
+        if (field_indices[2] != -1) {
+          nodes->SetIntermittencySep(iPoint_Local, Restart_Data[base_idx + field_indices[2]]);
+        }
+        
+        /*--- Load Intermittency Eff (LM_gamma_eff) ---*/
+        if (field_indices[3] != -1) {
+          nodes->SetIntermittencyEff(iPoint_Local, Restart_Data[base_idx + field_indices[3]]);
+        }
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
