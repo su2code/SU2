@@ -546,8 +546,11 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
         const auto index = counter * Restart_Vars[1] + skipVars;
         for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-        nodes->SetIntermittencySep(iPoint_Local,  Restart_Data[index + 2]);
-        nodes->SetIntermittencyEff(iPoint_Local,  Restart_Data[index + 3]);
+        
+        /*--- Note: Intermittency_Sep and Intermittency_Eff are derived variables computed in Postprocessing,
+         *    not solution variables stored in the restart file. They will be recomputed after this function
+         *    completes. Previously, this code incorrectly tried to read them from indices [index+2] and [index+3],
+         *    which caused a buffer overflow since only nVar=2 solution variables are stored per point. ---*/
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
