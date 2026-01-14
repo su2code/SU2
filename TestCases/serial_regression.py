@@ -569,6 +569,16 @@ def main():
     schubauer_klebanoff_transition.test_iter    = 10
     schubauer_klebanoff_transition.test_vals    = [-8.284308, -13.239421, 0.000057, 0.007982]
     test_list.append(schubauer_klebanoff_transition)
+ 
+    # LM Transition model restart
+    lm_transition_restart           = TestCase('lm_transition_restart')
+    lm_transition_restart.cfg_dir   = "transition/LM_NACA0012"
+    lm_transition_restart.cfg_file  = "trans_LM_restart.cfg"
+    lm_transition_restart.test_iter = 4
+    lm_transition_restart.test_vals = [-1.654301, -5.151570, -2.075488, 0.000000, 0.000000]
+    lm_transition_restart.tol = 0.001
+    test_list.append(lm_transition_restart)
+
 
     #####################################
     ### Cont. adj. compressible Euler ###
