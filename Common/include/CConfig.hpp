@@ -1121,11 +1121,7 @@ private:
   array<su2double, N_POLY_COEFFS> mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
 
-  array<su2double, 7> NASA_Coeffs_Low{{0.0}};   /*!< \brief NASA polynomial coefficients (low temp range). */
-  array<su2double, 7> NASA_Coeffs_High{{0.0}};  /*!< \brief NASA polynomial coefficients (high temp range). */
-  su2double NASA_Temp_Low;             /*!< \brief NASA polynomial low temperature bound. */
-  su2double NASA_Temp_Mid;             /*!< \brief NASA polynomial mid temperature break. */
-  su2double NASA_Temp_High;            /*!< \brief NASA polynomial high temperature bound. */
+  bool Cp_NASA_Format{false}; /*!< \brief Flag to use NASA polynomial format for Cp. */
 
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
 
@@ -2599,43 +2595,16 @@ public:
   void SetEnergy_Ref(su2double val_energy_ref) { Energy_Ref = val_energy_ref; }
 
   /*!
-   * \brief Get the value of the NASA polynomial coefficient (low temp range).
-   * \param[in] val_index - Index of the coefficient.
-   * \return Value of the coefficient.
+   * \brief Get the flag for using NASA polynomial format for Cp.
+   * \return True if NASA format is used.
    */
-  su2double GetNASA_CoeffLowND(unsigned short val_index) const { return NASA_Coeffs_Low[val_index]; }
+  bool GetCp_NASA_Format(void) const { return Cp_NASA_Format; }
 
   /*!
-   * \brief Get the value of the NASA polynomial coefficient (high temp range).
-   * \param[in] val_index - Index of the coefficient.
-   * \return Value of the coefficient.
+   * \brief Set the flag for using NASA polynomial format for Cp.
+   * \param[in] val - Value of the flag.
    */
-  su2double GetNASA_CoeffHighND(unsigned short val_index) const { return NASA_Coeffs_High[val_index]; }
-
-  /*!
-   * \brief Get the value of the NASA polynomial low temperature bound.
-   * \return Value of the temperature.
-   */
-  su2double GetNASA_TempLow() const { return NASA_Temp_Low; }
-
-  /*!
-   * \brief Get the value of the NASA polynomial mid temperature break.
-   * \return Value of the temperature.
-   */
-  su2double GetNASA_TempMid() const { return NASA_Temp_Mid; }
-
-  /*!
-   * \brief Get the value of the NASA polynomial high temperature bound.
-   * \return Value of the temperature.
-   */
-  su2double GetNASA_TempHigh() const { return NASA_Temp_High; }
-
-  // Setters for NASA polynomials (useful for testing)
-  void SetNASA_CoeffLowND(unsigned short val_index, su2double val) { NASA_Coeffs_Low[val_index] = val; }
-  void SetNASA_CoeffHighND(unsigned short val_index, su2double val) { NASA_Coeffs_High[val_index] = val; }
-  void SetNASA_TempLow(su2double val) { NASA_Temp_Low = val; }
-  void SetNASA_TempMid(su2double val) { NASA_Temp_Mid = val; }
-  void SetNASA_TempHigh(su2double val) { NASA_Temp_High = val; }
+  void SetCp_NASA_Format(bool val) { Cp_NASA_Format = val; }
 
   // Setter for TemperatureLimits (for testing)
   void SetTemperatureLimits(unsigned short val_index, su2double val) { TemperatureLimits[val_index] = val; }
@@ -4303,6 +4272,7 @@ public:
    * \param[in] val_index - Index of the array with all polynomial coefficients.
    */
   void SetCp_PolyCoeffND(su2double val_coeff, unsigned short val_index) { CpPolyCoefficientsND[val_index] = val_coeff; }
+  void SetCp_PolyCoeff(unsigned short val_index, su2double val) { cp_polycoeffs[val_index] = val; }
 
   /*!
    * \brief Set the temperature polynomial coefficient for viscosity.
