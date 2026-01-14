@@ -39,7 +39,7 @@ void ConfigureNASA(CConfig& config) {
   for (int i = 0; i < 7; ++i) {
     config.SetCp_PolyCoeff(i, nasa_coeffs[i]);
   }
-  
+
   // Ensure we set the temperature limits that SetCpModel reads
   // Note: These limits are usually set via TEMPERATURE_LIMITS option, here manually.
   config.SetTemperatureLimits(0, 200.0);
@@ -95,11 +95,11 @@ TEST_CASE("NASA polynomial enthalpy-temperature inversion", "[CIncIdealGasNASA]"
 
     // Reset state to something else
     nasa_model.SetTDState_T(300.0);
-    
+
     // Invert from H_target
     nasa_model.SetTDState_h(H_target);
     su2double T_recovered = nasa_model.GetTemperature();
-    
+
     CHECK(T_recovered == Approx(T_target).margin(0.001));
   }
 }
