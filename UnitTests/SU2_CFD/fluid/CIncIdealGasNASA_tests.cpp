@@ -32,11 +32,22 @@
 
 // Helper to config an already constructed CConfig object
 void ConfigureNASA(CConfig& config) {
-  // Nitrogen (N2) Low Range Coefficients (200K - 1000K)
-  su2double nasa_coeffs[7] = {3.298677, 1.4082404e-3, -3.963222e-6, 5.641515e-9, -2.444854e-12, -1020.8999, 3.950372};
+  // Nitrogen (N2) Low Range Coefficients (200K - 1000K) in NASA-7 format
+  // NASA-9 indexing: a1=0, a2=0 (no inverse T terms), a3-a7 (polynomial), a8-a9 (integration constants)
+  su2double nasa_coeffs[9] = {
+      0.0,            // a1 (T^-2 term, not used in NASA-7)
+      0.0,            // a2 (T^-1 term, not used in NASA-7)
+      3.298677,       // a3 (constant term)
+      1.4082404e-3,   // a4 (T term)
+      -3.963222e-6,   // a5 (T^2 term)
+      5.641515e-9,    // a6 (T^3 term)
+      -2.444854e-12,  // a7 (T^4 term)
+      -1020.8999,     // a8 (H integration constant)
+      3.950372        // a9 (S integration constant)
+  };
 
   config.SetCp_NASA_Format(true);
-  for (int i = 0; i < 7; ++i) {
+  for (int i = 0; i < 9; ++i) {
     config.SetCp_PolyCoeff(i, nasa_coeffs[i]);
   }
 
@@ -64,7 +75,7 @@ TEST_CASE("NASA polynomial Cp calculation", "[CIncIdealGasNASA]") {
   CConfig config(ss, SU2_COMPONENT::SU2_CFD, false);
   ConfigureNASA(config);
 
-  CIncIdealGasNASA<7> nasa_model(R_N2, P, T_ref);
+  CIncIdealGasNASA<9> nasa_model(R_N2, P, T_ref);
   nasa_model.SetCpModel(&config, T_ref);
 
   SECTION("Valid temperature range (300K)") {
@@ -85,7 +96,7 @@ TEST_CASE("NASA polynomial enthalpy-temperature inversion", "[CIncIdealGasNASA]"
   CConfig config(ss, SU2_COMPONENT::SU2_CFD, false);
   ConfigureNASA(config);
 
-  CIncIdealGasNASA<7> nasa_model(R_N2, P, T_ref);
+  CIncIdealGasNASA<9> nasa_model(R_N2, P, T_ref);
   nasa_model.SetCpModel(&config, T_ref);
 
   SECTION("Inversion Consistency") {

@@ -309,8 +309,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
       if (config->GetCp_NASA_Format()) {
-        /*--- Use the NASA polynomial model (requires 7 coefficients) ---*/
-        auxFluidModel = new CIncIdealGasNASA<7>(config->GetGas_Constant(), Pressure_Thermodynamic, STD_REF_TEMP);
+        /*--- Use the NASA polynomial model (supports NASA-9 format with 9 coefficients, backward compatible with NASA-7) ---*/
+        auxFluidModel = new CIncIdealGasNASA<9>(config->GetGas_Constant(), Pressure_Thermodynamic, STD_REF_TEMP);
       } else {
         /*--- Use the standard polynomial model ---*/
         auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic, STD_REF_TEMP);
@@ -511,7 +511,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case INC_IDEAL_GAS_POLY:
         if (config->GetCp_NASA_Format()) {
-             fluidModel = new CIncIdealGasNASA<7>(Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref());
+             fluidModel = new CIncIdealGasNASA<9>(Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref());
         } else {
              fluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref());
         }

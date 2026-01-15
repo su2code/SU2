@@ -37,15 +37,19 @@
  * \brief Child class for defining an incompressible ideal gas model with NASA polynomials.
  * \author Pratyksh Gupta
  * 
- * Implements NASA 7-coefficient polynomial format (NASA SP-273) for thermodynamic properties:
+ * Implements NASA 9-coefficient polynomial format for thermodynamic properties with backward compatibility for NASA-7.
  * Ref: McBride, B.J., Zehe, M.J., and Gordon, S., "NASA Glenn Coefficients for Calculating Thermodynamic Properties of Individual Species", NASA/TP-2002-211556, 2002.
- *   Cp/R = a1 + a2*T + a3*T^2 + a4*T^3 + a5*T^4
- *   H/(R*T) = a1 + a2*T/2 + a3*T^2/3 + a4*T^3/4 + a5*T^4/5 + a6/T
- *   S/R = a1*ln(T) + a2*T + a3*T^2/2 + a4*T^3/3 + a5*T^4/4 + a7
  * 
- * Uses a single temperature range provided via CP_POLYCOEFFS (indices 0-6).
+ * NASA-9 format (full):
+ *   Cp/R = a1*T^-2 + a2*T^-1 + a3 + a4*T + a5*T^2 + a6*T^3 + a7*T^4
+ *   H/(RT) = -a1*T^-2 + a2*ln(T)/T + a3 + a4*T/2 + a5*T^2/3 + a6*T^3/4 + a7*T^4/5 + a8/T
+ *   S/R = -a1*T^-2/2 - a2*T^-1 + a3*ln(T) + a4*T + a5*T^2/2 + a6*T^3/3 + a7*T^4/4 + a9
+ * 
+ * NASA-7 format (subset): Set a1=a2=0 to recover the traditional 7-coefficient format.
+ * 
+ * Uses a single temperature range provided via CP_POLYCOEFFS (indices 0-8).
  */
-template <int N_COEFFS = 7>
+template <int N_COEFFS = 9>
 class CIncIdealGasNASA final : public CFluidModel {
  public:
   /*!
@@ -68,9 +72,13 @@ class CIncIdealGasNASA final : public CFluidModel {
   void SetCpModel(const CConfig* config, su2double val_Temperature_Ref) override {
     
     /*--- Read NASA coefficients from the standard polynomial coefficient array (CP_POLYCOEFFS).
-          Indices 0-4: Cp coefficients (a1-a5)
-          Index 5: Enthalpy constant (a6)
-          Index 6: Entropy constant (a7) ---*/
+          NASA-9 format uses indices 0-8:
+          Indices 0-1: Inverse temperature terms (a1*T^-2, a2*T^-1)
+          Indices 2-6: Polynomial terms (a3, a4*T, a5*T^2, a6*T^3, a7*T^4)
+          Index 7: Enthalpy constant (a8)
+          Index 8: Entropy constant (a9)
+          
+          For NASA-7 compatibility: Set indices 0-1 to zero. ---*/
     for (int i = 0; i < N_COEFFS; ++i) {
       if (i < config->GetnPolyCoeffs()) {
         coeffs_[i] = config->GetCp_PolyCoeff(i);
@@ -97,12 +105,20 @@ class CIncIdealGasNASA final : public CFluidModel {
     const su2double a4 = coeffs_[3];
     const su2double a5 = coeffs_[4];
     const su2double a6 = coeffs_[5];
+    const su2double a7 = coeffs_[6];
+    const su2double a8 = coeffs_[7];
 
-    su2double Cp_over_R = a1 + a2*t + a3*t*t + a4*t*t*t + a5*t*t*t*t;
+    const su2double t_inv = 1.0 / t;
+    const su2double t_inv2 = t_inv * t_inv;
+
+    // NASA-9: Cp/R = a1*T^-2 + a2*T^-1 + a3 + a4*T + a5*T^2 + a6*T^3 + a7*T^4
+    su2double Cp_over_R = a1*t_inv2 + a2*t_inv + a3 + a4*t + a5*t*t + a6*t*t*t + a7*t*t*t*t;
     
     Cp = Cp_over_R * Gas_Constant;
     
-    su2double H_over_RT = a1 + a2*t/2.0 + a3*t*t/3.0 + a4*t*t*t/4.0 + a5*t*t*t*t/5.0 + a6/t;
+    // NASA-9: H/(RT) = -a1*T^-2 + a2*ln(T)/T + a3 + a4*T/2 + a5*T^2/3 + a6*T^3/4 + a7*T^4/5 + a8/T
+    su2double H_over_RT = -a1*t_inv2 + a2*std::log(t)*t_inv + a3 + a4*t/2.0 + a5*t*t/3.0 + 
+                          a6*t*t*t/4.0 + a7*t*t*t*t/5.0 + a8*t_inv;
     
     Enthalpy = H_over_RT * Gas_Constant * t;
     Cv = Cp / Gamma;
@@ -125,6 +141,8 @@ class CIncIdealGasNASA final : public CFluidModel {
     const su2double a4 = coeffs_[3];
     const su2double a5 = coeffs_[4];
     const su2double a6 = coeffs_[5];
+    const su2double a7 = coeffs_[6];
+    const su2double a8 = coeffs_[7];
 
     su2double Cp_iter = 0.0;
     su2double delta_temp_iter = 1e10;
@@ -134,14 +152,19 @@ class CIncIdealGasNASA final : public CFluidModel {
     
     while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
       
-      su2double Cp_over_R = a1 + a2*temp_iter + a3*temp_iter*temp_iter + 
-                            a4*temp_iter*temp_iter*temp_iter + a5*temp_iter*temp_iter*temp_iter*temp_iter;
+      const su2double t_inv = 1.0 / temp_iter;
+      const su2double t_inv2 = t_inv * t_inv;
+      
+      // NASA-9: Cp/R = a1*T^-2 + a2*T^-1 + a3 + a4*T + a5*T^2 + a6*T^3 + a7*T^4
+      su2double Cp_over_R = a1*t_inv2 + a2*t_inv + a3 + a4*temp_iter + a5*temp_iter*temp_iter + 
+                            a6*temp_iter*temp_iter*temp_iter + a7*temp_iter*temp_iter*temp_iter*temp_iter;
       
       Cp_iter = Cp_over_R * Gas_Constant;
       
-      su2double H_over_RT = a1 + a2*temp_iter/2.0 + a3*temp_iter*temp_iter/3.0 + 
-                            a4*temp_iter*temp_iter*temp_iter/4.0 + 
-                            a5*temp_iter*temp_iter*temp_iter*temp_iter/5.0 + a6/temp_iter;
+      // NASA-9: H/(RT) = -a1*T^-2 + a2*ln(T)/T + a3 + a4*T/2 + a5*T^2/3 + a6*T^3/4 + a7*T^4/5 + a8/T
+      su2double H_over_RT = -a1*t_inv2 + a2*std::log(temp_iter)*t_inv + a3 + a4*temp_iter/2.0 + 
+                            a5*temp_iter*temp_iter/3.0 + a6*temp_iter*temp_iter*temp_iter/4.0 + 
+                            a7*temp_iter*temp_iter*temp_iter*temp_iter/5.0 + a8*t_inv;
       
       su2double Enthalpy_iter = H_over_RT * Gas_Constant * temp_iter;
       
