@@ -138,9 +138,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
 template <class T>
 CSourceCombustion_Species<T>::CSourceCombustion_Species(unsigned short val_nDim, unsigned short val_nVar,
                                                         const CConfig* config)
-    : CSourceBase_Species(val_nDim, val_nVar, config),
-      idx(val_nDim, config->GetnSpecies()),
-      incompressible(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {}
+    : CSourceBase_Species(val_nDim, val_nVar, config) {}
 
 template <class T>
 CNumerics::ResidualType<> CSourceCombustion_Species<T>::ComputeResidual(const CConfig* config) {
