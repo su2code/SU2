@@ -243,12 +243,6 @@ void CFluidScalar::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusion
   }
 }
 
-// void CFluidScalar::GetMassCorrectionDiffusivity(su2double* massCorrection_diffusions) {
-//   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
-//     massCorrection_diffusions[iVar] = Density * (massDiffusivity[iVar] - massDiffusivity[n_species_mixture - 1]);
-//   }
-// }
-
 void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();

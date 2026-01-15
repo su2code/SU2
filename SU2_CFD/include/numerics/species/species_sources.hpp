@@ -100,9 +100,6 @@ class CSourceAxisymmetric_Species : public CSourceBase_Species {
  */
 template <class FlowIndices>
 class CSourceCombustion_Species : public CSourceBase_Species {
- protected:
-  const FlowIndices idx;  /*!< \brief Object to manage the access to the flow primitives. */
-  const bool incompressible;
 
  public:
   /*!
@@ -114,7 +111,7 @@ class CSourceCombustion_Species : public CSourceBase_Species {
   CSourceCombustion_Species(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
 
   /*!
-   * \brief Residual of the axisymmetric source term.
+   * \brief Residual of the combustion source term.
    * \param[in] config - Definition of the particular problem.
    * \return Lightweight const-view of residual and Jacobian.
    */
