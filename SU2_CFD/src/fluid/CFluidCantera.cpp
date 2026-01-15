@@ -104,12 +104,6 @@ void CFluidCantera::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const
   }
 }
 
-void CFluidCantera::GetMassCorrectionDiffusivity(su2double* massCorrection_diffusions) {
-  for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
-    massCorrection_diffusions[iVar] = Density * (massDiffusivity[speciesIndices[iVar]] - massDiffusivity[speciesIndices[n_species_mixture - 1]]);
-  }
-}
-
 void CFluidCantera::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) const {
   sol->thermo()->getCp_R_ref(specificHeatSpecies.data());
   for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {

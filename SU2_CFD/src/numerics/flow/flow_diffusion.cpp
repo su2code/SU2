@@ -554,7 +554,6 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   AD::SetPreaccIn(Normal, nDim);
   if (energy_multicomponent) {
     AD::SetPreaccIn(HeatFluxDiffusion);
-    AD::SetPreaccIn(MassCorrFluxDiffusion);
   }
 
   unsigned short iVar, jVar, iDim;
@@ -629,7 +628,6 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
 
   if (energy_multicomponent) {
-    Proj_Flux_Tensor[0] += MassCorrFluxDiffusion;
     Proj_Flux_Tensor[nVar - 1] += HeatFluxDiffusion;
   }
 

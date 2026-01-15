@@ -361,11 +361,10 @@ void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* ge
 
   /*--- Helper function that retrieves enthalpy diffusion terms. ---*/
   auto GetEnthalpyDiffusionTerms = [&](unsigned long Point, const su2double* Species, su2double* EnthalpyDiffusion,
-                                       su2double* MassCorrectionDiffusion, su2double* GradEnthalpyDiffusion) {
+                                       su2double* GradEnthalpyDiffusion) {
     FluidModel->SetTDState_T(nodes->GetPrimitive(Point)[prim_idx.Temperature()], Species);
     FluidModel->SetEddyViscosity(nodes->GetPrimitive(Point)[prim_idx.EddyViscosity()]);
     FluidModel->GetEnthalpyDiffusivity(EnthalpyDiffusion);
-    FluidModel->GetMassCorrectionDiffusivity(MassCorrectionDiffusion);
     if (implicit) FluidModel->GetGradEnthalpyDiffusivity(GradEnthalpyDiffusion);
   };
 
@@ -388,24 +387,18 @@ void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* ge
   /*--- Get enthalpy diffusion terms and its gradient(for implicit) for each species at iPoint and jPoint. ---*/
 
   su2double EnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
-  su2double MassCorrectionDiffusion_i[MAXNVAR_SPECIES]{0.0};
   su2double GradEnthalpyDiffusion_i[MAXNVAR_SPECIES]{0.0};
   su2double EnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
-  su2double MassCorrectionDiffusion_j[MAXNVAR_SPECIES]{0.0};
   su2double GradEnthalpyDiffusion_j[MAXNVAR_SPECIES]{0.0};
-  GetEnthalpyDiffusionTerms(iPoint, Species_i, EnthalpyDiffusion_i, MassCorrectionDiffusion_i, GradEnthalpyDiffusion_i);
-  GetEnthalpyDiffusionTerms(jPoint, Species_j, EnthalpyDiffusion_j, MassCorrectionDiffusion_j, GradEnthalpyDiffusion_j);
+  GetEnthalpyDiffusionTerms(iPoint, Species_i, EnthalpyDiffusion_i, GradEnthalpyDiffusion_i);
+  GetEnthalpyDiffusionTerms(jPoint, Species_j, EnthalpyDiffusion_j, GradEnthalpyDiffusion_j);
 
   /*--- Compute Enthalpy diffusion flux and its jacobian (for implicit iterations) ---*/
   su2double flux_enthalpy_diffusion = 0.0;
-  su2double flux_massCorrection_diffusion = 0.0;
   su2double jac_flux_enthalpy_diffusion = 0.0;
   for (int i_species = 0; i_species < n_species; i_species++) {
     flux_enthalpy_diffusion +=
         0.5 * (EnthalpyDiffusion_i[i_species] + EnthalpyDiffusion_j[i_species]) * Proj_Mean_GradScalarVar[i_species];
-    flux_massCorrection_diffusion += 0.5 *
-                                     (MassCorrectionDiffusion_i[i_species] + MassCorrectionDiffusion_j[i_species]) *
-                                     Proj_Mean_GradScalarVar[i_species];
     if (implicit)
       jac_flux_enthalpy_diffusion += 0.5 * (GradEnthalpyDiffusion_i[i_species] + GradEnthalpyDiffusion_j[i_species]) *
                                      Proj_Mean_GradScalarVar[i_species];
@@ -414,7 +407,6 @@ void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* ge
   /*--- Set heat flux and jacobian (for implicit) due to enthalpy diffusion ---*/
 
   numerics->SetHeatFluxDiffusion(flux_enthalpy_diffusion);
-  numerics->SetMassCorrFluxDiffusion(flux_massCorrection_diffusion);
   if (implicit) numerics->SetJacHeatFluxDiffusion(jac_flux_enthalpy_diffusion);
 }
 

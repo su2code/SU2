@@ -209,11 +209,6 @@ class CFluidModel {
   inline virtual su2double GetHeatRelease() { return 0.0; }
 
   /*!
-   * \brief Get heat diffusivity terms.
-   */
-  virtual void GetMassCorrectionDiffusivity(su2double* massCorrection_diffusions = nullptr) {}
-
-  /*!
    * \brief Get the enthalpy diffusivity terms for all species being solved.
    *
    * This function computes and retrieves the enthalpy diffusion terms required in the energy equation

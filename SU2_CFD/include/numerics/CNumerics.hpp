@@ -134,8 +134,6 @@ protected:
   su2double
   HeatFluxDiffusion;   /*!< \brief Heat flux due to enthalpy diffusion for multicomponent. */
   su2double
-  MassCorrFluxDiffusion;   /*!< \brief Mass flux correction due to species diffusion for multicomponent. */
-  su2double
   JacHeatFluxDiffusion;   /*!< \brief Heat flux jacobian due to enthalpy diffusion for multicomponent. */
   const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
@@ -775,12 +773,6 @@ public:
    * \param[in] val_heatfluxdiffusion - Value of the heat flux due to enthalpy diffusion.
    */
   inline void SetHeatFluxDiffusion(su2double val_heatfluxdiffusion) { HeatFluxDiffusion = val_heatfluxdiffusion; }
-
-  /*!
-   * \brief Set the mass flux correction due to species diffusion
-   * \param[in] val_masscorrfluxdiffusion - Value of the mass flux correction due to species diffusion.
-   */
-  inline void SetMassCorrFluxDiffusion(su2double val_masscorrfluxdiffusion) { MassCorrFluxDiffusion = val_masscorrfluxdiffusion; }
 
   /*!
    * \brief Set Jacobian of the heat flux due to enthalpy diffusion

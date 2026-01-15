@@ -135,11 +135,6 @@ class CFluidCantera final : public CFluidModel {
   void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const override;
 
   /*!
-   * \brief Get enthalpy diffusivity terms.
-   */
-  void GetMassCorrectionDiffusivity(su2double* MassCorrection_diffusions) override;
-
-  /*!
    * \brief Get gradient enthalpy diffusivity terms.
    */
   void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) const override;
