@@ -2,7 +2,25 @@
 from mpi4py import MPI
 import torch
 import torch.nn as nn
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    print("PyTorch not available - ML features disabled")
 
+try:
+    import mpi4py.MPI as MPI
+    MPI_AVAILABLE = True
+except ImportError:
+    MPI_AVAILABLE = False
+    print("mpi4py not available - MPI features disabled")
+
+# Later in main execution:
+if __name__ == "__main__":
+    if not TORCH_AVAILABLE or not MPI_AVAILABLE:
+        print("Skipping example - missing dependencies")
+        sys.exit(0)
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 
