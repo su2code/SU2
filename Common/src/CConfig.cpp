@@ -1369,6 +1369,10 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
   /*!\brief INIT_OPTION \n DESCRIPTION: Init option to choose between Reynolds or thermodynamics quantities for initializing the solution \n OPTIONS: see \link InitOption_Map \endlink \n DEFAULT REYNOLDS \ingroup Config*/
   addEnumOption("INIT_OPTION", Kind_InitOption, InitOption_Map, REYNOLDS);
+  /*!\brief INIT_OPTION_INC \n DESCRIPTION: Init option for incompressible solver to choose between initial density or
+   * operating pressure initialization of the solution \n OPTIONS: see \link InitOption_Map \endlink \n DEFAULT REYNOLDS
+   * \ingroup Config*/
+  addEnumOption("INIT_OPTION_INC", Kind_InitOption_Inc, InitOptionInc_Map, DENSITY_INIT);
   /* DESCRIPTION: Free-stream option to choose between density and temperature for initializing the solution */
   addEnumOption("FREESTREAM_OPTION", Kind_FreeStreamOption, FreeStreamOption_Map, FREESTREAM_OPTION::TEMPERATURE_FS);
   /*!\brief FREESTREAM_PRESSURE\n DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) \ingroup Config*/

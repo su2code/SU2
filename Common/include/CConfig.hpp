@@ -523,6 +523,7 @@ private:
   LINEAR_SOLVER_INNER Kind_Linear_Solver_Inner; /*!< \brief Inner solver used in nested Krylov schemes. */
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
+  Kind_InitOption_Inc,                 /*!< \brief Kind of Init option for incompressible solver, initializing with initial density or operating pressure   */
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
   *Kind_SurfaceMovement,           /*!< \brief Kind of the static mesh movement. */
   nKind_SurfaceMovement,           /*!< \brief Kind of the dynamic mesh movement. */
@@ -4044,6 +4045,13 @@ public:
    * \return free stream option
    */
   unsigned short GetKind_InitOption(void) const { return Kind_InitOption; }
+
+  /*!
+   * \brief Get kind of initialization option for incompressible flows.
+   * \return Kind initialization option for incompressible flows.
+   */
+  unsigned short GetKind_InitOptionInc(void) const { return Kind_InitOption_Inc; }
+  
   /*!
    * \brief Get the value of the critical pressure.
    * \return Critical pressure.

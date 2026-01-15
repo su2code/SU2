@@ -652,6 +652,18 @@ static const MapType<std::string, ENUM_INIT_OPTION> InitOption_Map = {
 };
 
 /*!
+ * \brief Types of initialization option incompressible solver
+ */
+enum ENUM_INIT_OPTION_INC {
+  DENSITY_INIT = 0,      /*!< \brief Density initalization. */
+  OPERATING_PRESSURE = 1 /*!< \brief Operating pressure initalization. */
+};
+static const MapType<std::string, ENUM_INIT_OPTION_INC> InitOptionInc_Map = {
+  MakePair("DENSITY_INIT", DENSITY_INIT)
+  MakePair("OPERATING_PRESSURE", OPERATING_PRESSURE)
+};
+
+/*!
  * \brief Types of freestream specification
  */
 enum class FREESTREAM_OPTION {
