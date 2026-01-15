@@ -37,7 +37,8 @@
  * \brief Child class for defining an incompressible ideal gas model with NASA polynomials.
  * \author Pratyksh Gupta
  * 
- * Implements NASA 7-coefficient polynomial format for thermodynamic properties:
+ * Implements NASA 7-coefficient polynomial format (NASA SP-273) for thermodynamic properties:
+ * Ref: McBride, B.J., Zehe, M.J., and Gordon, S., "NASA Glenn Coefficients for Calculating Thermodynamic Properties of Individual Species", NASA/TP-2002-211556, 2002.
  *   Cp/R = a1 + a2*T + a3*T^2 + a4*T^3 + a5*T^4
  *   H/(R*T) = a1 + a2*T/2 + a3*T^2/3 + a4*T^3/4 + a5*T^4/5 + a6/T
  *   S/R = a1*ln(T) + a2*T + a3*T^2/2 + a4*T^3/3 + a5*T^4/4 + a7
@@ -90,13 +91,18 @@ class CIncIdealGasNASA final : public CFluidModel {
     Temperature = t;
     Density = Pressure / (Temperature * Gas_Constant);
 
-    su2double Cp_over_R = coeffs_[0] + coeffs_[1]*t + coeffs_[2]*t*t + 
-                          coeffs_[3]*t*t*t + coeffs_[4]*t*t*t*t;
+    const su2double a1 = coeffs_[0];
+    const su2double a2 = coeffs_[1];
+    const su2double a3 = coeffs_[2];
+    const su2double a4 = coeffs_[3];
+    const su2double a5 = coeffs_[4];
+    const su2double a6 = coeffs_[5];
+
+    su2double Cp_over_R = a1 + a2*t + a3*t*t + a4*t*t*t + a5*t*t*t*t;
     
     Cp = Cp_over_R * Gas_Constant;
     
-    su2double H_over_RT = coeffs_[0] + coeffs_[1]*t/2.0 + coeffs_[2]*t*t/3.0 + 
-                          coeffs_[3]*t*t*t/4.0 + coeffs_[4]*t*t*t*t/5.0 + coeffs_[5]/t;
+    su2double H_over_RT = a1 + a2*t/2.0 + a3*t*t/3.0 + a4*t*t*t/4.0 + a5*t*t*t*t/5.0 + a6/t;
     
     Enthalpy = H_over_RT * Gas_Constant * t;
     Cv = Cp / Gamma;
@@ -113,6 +119,13 @@ class CIncIdealGasNASA final : public CFluidModel {
     su2double temp_iter = (Temperature_Min + Temperature_Max) / 2.0; /* Start in middle of allowed range */
     if (temp_iter < 1.0) temp_iter = 300.0; /* Fallback if limits are not set or zero */
     
+    const su2double a1 = coeffs_[0];
+    const su2double a2 = coeffs_[1];
+    const su2double a3 = coeffs_[2];
+    const su2double a4 = coeffs_[3];
+    const su2double a5 = coeffs_[4];
+    const su2double a6 = coeffs_[5];
+
     su2double Cp_iter = 0.0;
     su2double delta_temp_iter = 1e10;
     su2double delta_enthalpy_iter;
@@ -121,15 +134,14 @@ class CIncIdealGasNASA final : public CFluidModel {
     
     while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
       
-      su2double Cp_over_R = coeffs_[0] + coeffs_[1]*temp_iter + coeffs_[2]*temp_iter*temp_iter + 
-                            coeffs_[3]*temp_iter*temp_iter*temp_iter + 
-                            coeffs_[4]*temp_iter*temp_iter*temp_iter*temp_iter;
+      su2double Cp_over_R = a1 + a2*temp_iter + a3*temp_iter*temp_iter + 
+                            a4*temp_iter*temp_iter*temp_iter + a5*temp_iter*temp_iter*temp_iter*temp_iter;
       
       Cp_iter = Cp_over_R * Gas_Constant;
       
-      su2double H_over_RT = coeffs_[0] + coeffs_[1]*temp_iter/2.0 + coeffs_[2]*temp_iter*temp_iter/3.0 + 
-                            coeffs_[3]*temp_iter*temp_iter*temp_iter/4.0 + 
-                            coeffs_[4]*temp_iter*temp_iter*temp_iter*temp_iter/5.0 + coeffs_[5]/temp_iter;
+      su2double H_over_RT = a1 + a2*temp_iter/2.0 + a3*temp_iter*temp_iter/3.0 + 
+                            a4*temp_iter*temp_iter*temp_iter/4.0 + 
+                            a5*temp_iter*temp_iter*temp_iter*temp_iter/5.0 + a6/temp_iter;
       
       su2double Enthalpy_iter = H_over_RT * Gas_Constant * temp_iter;
       
