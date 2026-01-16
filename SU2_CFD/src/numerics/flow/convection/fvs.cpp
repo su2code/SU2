@@ -45,6 +45,11 @@ CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, con
 
 CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
 
+  AD::StartPreacc();
+  AD::SetPreaccIn(V_i, nDim + 4);
+  AD::SetPreaccIn(V_j, nDim + 4);
+  AD::SetPreaccIn(Normal, nDim);
+
   /*--- Set parameters in the numerical method ---*/
   const su2double alpha = 6.0;
 
@@ -147,16 +152,19 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
     Lambda[iDim] = fmin(ProjVelst_j, 0);
   }
   Lambda[nDim] = fmin(ProjVelst_j + Vst_j[nDim + 4], 0);
-  Lambda[nDim + 1] = fmin(ProjVelst_j - Vst_j[nDim+4], 0);
+  Lambda[nDim + 1] = fmin(ProjVelst_j - Vst_j[nDim + 4], 0);
 
   /*--- Compute projected P, invP, and Lambda ---*/
 
-  GetPMatrix(&Vst_j[nDim+2], Velst_j, &Vst_j[nDim+4], UnitNormal, P_Tensor);
-  GetPMatrix_inv(&Vst_j[nDim+2], Velst_j, &Vst_j[nDim+4], UnitNormal, invP_Tensor);
+  GetPMatrix(&Vst_j[nDim + 2], Velst_j, &Vst_j[nDim + 4], UnitNormal, P_Tensor);
+  GetPMatrix_inv(&Vst_j[nDim + 2], Velst_j, &Vst_j[nDim + 4], UnitNormal, invP_Tensor);
 
   /*--- Projected flux (f-) ---*/
 
   UpdateFlux(U_j, Jacobian_j);
+
+  AD::SetPreaccOut(Fc, nVar);
+  AD::EndPreacc();
 
   return ResidualType<>(Fc, Jacobian_i, Jacobian_j);
 
