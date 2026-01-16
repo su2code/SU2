@@ -47,6 +47,15 @@ CIncNSVariable::CIncNSVariable(su2double density, su2double pressure, const su2d
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
     Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
   }
+
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) {
+    Unsteady = true;
+    //Density_unsteady.resize(nPoint);
+    //Density_time_n.resize(nPoint);
+    //Density_time_n1.resize(nPoint);
+  }
+
+
 }
 
 bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
@@ -94,9 +103,9 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
   }
 
 /*--- Set density for unsteady problems ---*/
- if (Unsteady) {
-    SetDensity_unsteady(iPoint, FluidModel->GetDensity();)
-  }
+ if (Unsteady)
+    SetDensity_unsteady(iPoint, FluidModel->GetDensity());
+
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
 
   SetVelocity(iPoint);
