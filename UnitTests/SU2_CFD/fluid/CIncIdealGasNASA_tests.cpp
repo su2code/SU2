@@ -114,3 +114,40 @@ TEST_CASE("NASA polynomial enthalpy-temperature inversion", "[CIncIdealGasNASA]"
     CHECK(T_recovered == Approx(T_target).margin(0.001));
   }
 }
+
+TEST_CASE("NASA polynomial non-dimensional scaling", "[CIncIdealGasNASA]") {
+  const su2double R_N2_dim = 296.8;
+  const su2double P_dim = 101325.0;
+  const su2double T_ref_dim = 288.15;  // Reference Temperature
+
+  // Non-dimensional Gas Constant set to 1.0 for simplicity (Cp output will be Cp/R)
+  const su2double R_nd = 1.0;
+  const su2double P_nd = 1.0;                               // Arbitrary for Cp check
+  const su2double T_ref_nd_for_class = 298.15 / T_ref_dim;  // Std_Ref_Temp_ND
+
+  std::stringstream ss;
+  SetupConfigStream(ss);
+  CConfig config(ss, SU2_COMPONENT::SU2_CFD, false);
+  ConfigureNASA(config);
+
+  // Initialize with dimensional T_ref passed as 4th argument
+  CIncIdealGasNASA<9> nasa_model(R_nd, P_nd, T_ref_nd_for_class, T_ref_dim);
+  nasa_model.SetCpModel(&config, T_ref_nd_for_class);
+
+  SECTION("Correct scaling for T = 300K") {
+    const su2double T_target_dim = 300.0;
+    const su2double T_target_nd = T_target_dim / T_ref_dim;
+
+    nasa_model.SetTDState_T(T_target_nd);
+
+    const su2double cp_nd = nasa_model.GetCp();
+    // Expected Cp/R at 300K for N2 from coeffs:
+    // a1=a2=0, a3=3.298677, a4=1.4082404e-3, a5=-3.963222e-6, a6=5.641515e-9, a7=-2.444854e-12
+    // Cp/R = 3.298677 + 1.4082404e-3*300 - 3.963222e-6*300^2 + 5.641515e-9*300^3 - 2.444854e-12*300^4
+    //      = 3.298677 + 0.422472 - 0.356690 + 0.152321 - 0.019803
+    //      = ~3.497
+
+    // Check if Cp output (which is Cp/R * 1.0) matches approx 3.5
+    CHECK(cp_nd == Approx(3.497).epsilon(0.01));
+  }
+}

@@ -55,7 +55,7 @@ class CIncIdealGasNASA final : public CFluidModel {
   /*!
    * \brief Constructor of the class.
    */
-  CIncIdealGasNASA(su2double val_gas_constant, su2double val_operating_pressure, su2double val_Temperature_Ref) {
+  CIncIdealGasNASA(su2double val_gas_constant, su2double val_operating_pressure, su2double val_Temperature_Ref, su2double val_Ref_Temp_Dim = 1.0) {
     /*--- In the incompressible ideal gas model, the thermodynamic pressure is decoupled
     from the governing equations and held constant. The density is therefore only a
     function of temperature variations. The gas is incompressible, so Cp = Cv (gamma = 1). ---*/
@@ -63,6 +63,7 @@ class CIncIdealGasNASA final : public CFluidModel {
     Pressure = val_operating_pressure;
     Gamma = 1.0;
     Std_Ref_Temp_ND = val_Temperature_Ref;
+    Ref_Temp_Dim = val_Ref_Temp_Dim;
   }
 
   /*!
@@ -87,8 +88,8 @@ class CIncIdealGasNASA final : public CFluidModel {
       }
     }
     
-    Temperature_Min = config->GetTemperatureLimits(0);
-    Temperature_Max = config->GetTemperatureLimits(1);
+    Temperature_Min = config->GetTemperatureLimits(0) / Ref_Temp_Dim;
+    Temperature_Max = config->GetTemperatureLimits(1) / Ref_Temp_Dim;
   }
 
   /*!
@@ -108,17 +109,19 @@ class CIncIdealGasNASA final : public CFluidModel {
     const su2double a7 = coeffs_[6];
     const su2double a8 = coeffs_[7];
 
-    const su2double t_inv = 1.0 / t;
+    // Convert to dimensional temperature for polynomial evaluation (NASA coeffs expect Kelvin)
+    const su2double T_dim = t * Ref_Temp_Dim;
+    const su2double t_inv = 1.0 / T_dim;
     const su2double t_inv2 = t_inv * t_inv;
 
     // NASA-9: Cp/R = a1*T^-2 + a2*T^-1 + a3 + a4*T + a5*T^2 + a6*T^3 + a7*T^4
-    su2double Cp_over_R = a1*t_inv2 + a2*t_inv + a3 + a4*t + a5*t*t + a6*t*t*t + a7*t*t*t*t;
+    su2double Cp_over_R = a1*t_inv2 + a2*t_inv + a3 + a4*T_dim + a5*T_dim*T_dim + a6*T_dim*T_dim*T_dim + a7*T_dim*T_dim*T_dim*T_dim;
     
     Cp = Cp_over_R * Gas_Constant;
     
     // NASA-9: H/(RT) = -a1*T^-2 + a2*ln(T)/T + a3 + a4*T/2 + a5*T^2/3 + a6*T^3/4 + a7*T^4/5 + a8/T
-    su2double H_over_RT = -a1*t_inv2 + a2*std::log(t)*t_inv + a3 + a4*t/2.0 + a5*t*t/3.0 + 
-                          a6*t*t*t/4.0 + a7*t*t*t*t/5.0 + a8*t_inv;
+    su2double H_over_RT = -a1*t_inv2 + a2*std::log(T_dim)*t_inv + a3 + a4*T_dim/2.0 + a5*T_dim*T_dim/3.0 + 
+                          a6*T_dim*T_dim*T_dim/4.0 + a7*T_dim*T_dim*T_dim*T_dim/5.0 + a8*t_inv;
     
     Enthalpy = H_over_RT * Gas_Constant * t;
     Cv = Cp / Gamma;
@@ -152,19 +155,20 @@ class CIncIdealGasNASA final : public CFluidModel {
     
     while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
       
-      const su2double t_inv = 1.0 / temp_iter;
+      const su2double T_dim = temp_iter * Ref_Temp_Dim;
+      const su2double t_inv = 1.0 / T_dim;
       const su2double t_inv2 = t_inv * t_inv;
       
       // NASA-9: Cp/R = a1*T^-2 + a2*T^-1 + a3 + a4*T + a5*T^2 + a6*T^3 + a7*T^4
-      su2double Cp_over_R = a1*t_inv2 + a2*t_inv + a3 + a4*temp_iter + a5*temp_iter*temp_iter + 
-                            a6*temp_iter*temp_iter*temp_iter + a7*temp_iter*temp_iter*temp_iter*temp_iter;
+      su2double Cp_over_R = a1*t_inv2 + a2*t_inv + a3 + a4*T_dim + a5*T_dim*T_dim + 
+                            a6*T_dim*T_dim*T_dim + a7*T_dim*T_dim*T_dim*T_dim;
       
       Cp_iter = Cp_over_R * Gas_Constant;
       
       // NASA-9: H/(RT) = -a1*T^-2 + a2*ln(T)/T + a3 + a4*T/2 + a5*T^2/3 + a6*T^3/4 + a7*T^4/5 + a8/T
-      su2double H_over_RT = -a1*t_inv2 + a2*std::log(temp_iter)*t_inv + a3 + a4*temp_iter/2.0 + 
-                            a5*temp_iter*temp_iter/3.0 + a6*temp_iter*temp_iter*temp_iter/4.0 + 
-                            a7*temp_iter*temp_iter*temp_iter*temp_iter/5.0 + a8*t_inv;
+      su2double H_over_RT = -a1*t_inv2 + a2*std::log(T_dim)*t_inv + a3 + a4*T_dim/2.0 + 
+                            a5*T_dim*T_dim/3.0 + a6*T_dim*T_dim*T_dim/4.0 + 
+                            a7*T_dim*T_dim*T_dim*T_dim/5.0 + a8*t_inv;
       
       su2double Enthalpy_iter = H_over_RT * Gas_Constant * temp_iter;
       
@@ -199,6 +203,7 @@ class CIncIdealGasNASA final : public CFluidModel {
   su2double Gas_Constant{0.0};     /*!< \brief Specific Gas Constant. */
   su2double Gamma{0.0};            /*!< \brief Ratio of specific heats. */
   su2double Std_Ref_Temp_ND{0.0};  /*!< \brief Nondimensional standard reference temperature for enthalpy. */
+  su2double Ref_Temp_Dim{1.0};     /*!< \brief Dimensional reference temperature for evaluating polynomials. */
   
   std::array<su2double, N_COEFFS> coeffs_;  /*!< \brief NASA polynomial coefficients. */
   

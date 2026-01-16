@@ -511,7 +511,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       case INC_IDEAL_GAS_POLY:
         if (config->GetCp_NASA_Format()) {
-             fluidModel = new CIncIdealGasNASA<9>(Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref());
+             fluidModel = new CIncIdealGasNASA<9>(Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref(), config->GetTemperature_Ref());
         } else {
              fluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref());
         }
