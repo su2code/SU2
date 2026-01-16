@@ -3,14 +3,14 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -49,7 +49,7 @@ def main():
     cht_incompressible_unsteady.cfg_dir   = "../Tutorials/multiphysics/unsteady_cht/"
     cht_incompressible_unsteady.cfg_file  = "cht_2d_3cylinders.cfg"
     cht_incompressible_unsteady.test_iter = 2
-    cht_incompressible_unsteady.test_vals = [-2.536012, -0.080399, -0.080399, -0.080399, -12.421963, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 238.240000]
+    cht_incompressible_unsteady.test_vals = [-3.075372, -0.080399, -0.080399, -0.080399, -11.163219, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 238.240000]
     cht_incompressible_unsteady.multizone = True
     cht_incompressible_unsteady.unsteady  = True
     test_list.append(cht_incompressible_unsteady)

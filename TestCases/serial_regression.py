@@ -3,14 +3,14 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -415,7 +415,7 @@ def main():
     inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
     inc_buoyancy.cfg_file  = "lam_buoyancy_cavity.cfg"
     inc_buoyancy.test_iter = 20
-    inc_buoyancy.test_vals = [-3.860463, -3.122402, 4.074509, -23.414000]
+    inc_buoyancy.test_vals = [-3.860466, -3.122403, 1.322721, -23.413000]
     test_list.append(inc_buoyancy)
 
     # Laminar heated cylinder with polynomial fluid model
@@ -994,7 +994,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals = [19.000000, -1.050011, -1.303591]
+    slinc_steady.test_vals = [19.000000, -1.148249, -1.398402]
     slinc_steady.timeout   = 100
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
@@ -1106,7 +1106,7 @@ def main():
     p1rad.cfg_dir   = "radiation/p1model"
     p1rad.cfg_file  = "configp1.cfg"
     p1rad.test_iter = 50
-    p1rad.test_vals = [-7.939639, -7.898740, -2.238329, 0.388591, -56.886000]
+    p1rad.test_vals = [-8.284674, -8.008659, -2.424204, 0.389030, -56.560000]
     test_list.append(p1rad)
 
     # ###############################
