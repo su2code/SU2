@@ -88,7 +88,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+  //for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+  for (auto i_point = 0u; i_point < nPoint; i_point++) {
     CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
     su2double* scalars = nodes->GetSolution(i_point);
     for (auto iVar = 0u; iVar < nVar; iVar++) scalars_vector[iVar] = scalars[iVar];
@@ -222,7 +223,8 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
       prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
       SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (unsigned long i_point = 0; i_point < geometry[i_mesh]->GetnPointDomain(); i_point++) {
+      //for (unsigned long i_point = 0; i_point < geometry[i_mesh]->GetnPointDomain(); i_point++) {
+      for (unsigned long i_point = 0; i_point < nPoint; i_point++) {
         auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
         if (flame_front_ignition) {
