@@ -46,7 +46,7 @@ class CFluidModel;
  */
 class CNumerics {
 protected:
-  enum : size_t {MAXNDIM = 3}; /*!< \brief Max number of space dimensions, used in some static arrays. */
+  static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
 
   unsigned short nDim, nVar;  /*!< \brief Number of dimensions and variables. */
   su2double Gamma;            /*!< \brief Fluid's Gamma constant (ratio of specific heats). */

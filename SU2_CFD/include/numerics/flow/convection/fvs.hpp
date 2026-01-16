@@ -38,15 +38,16 @@
  */
 class CUpwMSW_Flow final : public CNumerics {
 private:
-  bool implicit;
-  su2double *u_i, *u_j, *ust_i, *ust_j;
-  su2double *Fc_i, *Fc_j;
-  su2double *Lambda_i, *Lambda_j;
-  su2double *Vst_i, *Vst_j, *Velst_i, *Velst_j;
-  su2double **P_Tensor, **invP_Tensor;
+  static constexpr auto MAXNVAR = MAXNDIM + 2;
 
-  su2double** Jacobian_i; /*!< \brief The Jacobian w.r.t. point i after computation. */
-  su2double** Jacobian_j; /*!< \brief The Jacobian w.r.t. point j after computation. */
+  su2double buf_P_Tensor[MAXNVAR * MAXNVAR], buf_invP_Tensor[MAXNVAR * MAXNVAR];
+  su2double *P_Tensor[MAXNVAR], *invP_Tensor[MAXNVAR];
+
+  su2double buf_Jacobian_i[MAXNVAR * MAXNVAR], buf_Jacobian_j[MAXNVAR * MAXNVAR];
+  su2double* Jacobian_i[MAXNVAR]; /*!< \brief The Jacobian w.r.t. point i after computation. */
+  su2double* Jacobian_j[MAXNVAR]; /*!< \brief The Jacobian w.r.t. point j after computation. */
+
+  su2double Fc[MAXNVAR];
 
 public:
   /*!
@@ -56,11 +57,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CUpwMSW_Flow(void) override;
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
