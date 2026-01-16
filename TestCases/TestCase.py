@@ -564,8 +564,8 @@ class TestCase:
                 passed    = False
 
         # Examine the output
-        f = open(logfilename,'r')
-        output = f.readlines()
+        with open(logfilename,'r') as f:
+            output = f.readlines()
         delta_vals = []
         sim_vals = []
         if not timed_out:
@@ -703,8 +703,8 @@ class TestCase:
 
         if not with_tsan and not with_asan: # sanitizer findings result in non-zero return code, no need to examine the output
             # Examine the output
-            f = open(logfilename,'r')
-            output = f.readlines()
+            with open(logfilename,'r') as f:
+                output = f.readlines()
             data = []
             if not timed_out:
                 start_solver = False
@@ -838,8 +838,8 @@ class TestCase:
 
         if not with_tsan and not with_asan: # sanitizer findings result in non-zero return code, no need to examine the output
             # Examine the output
-            f = open(logfilename,'r')
-            output = f.readlines()
+            with open(logfilename,'r') as f:
+                output = f.readlines()
             if not timed_out:
                 start_solver = False
                 for line in output:
@@ -1028,7 +1028,7 @@ class TestCase:
         if not tapetests_compatible:
             print('Ignoring test "%s" because it is not enabled to run a test of the tape.' % self.tag)
 
-        return is_enabled_on_arch and tsan_compatible and asan_compatible and tapetests_compatible and tapetests_compatible
+        return is_enabled_on_arch and tsan_compatible and asan_compatible and tapetests_compatible
 
     def adjust_test_data(self):
 

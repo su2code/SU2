@@ -30,11 +30,14 @@ from __future__ import print_function
 
 import sys
 from TestCase import TestCase
+from TestCase import parse_args
 
 def main():
     '''This program runs SU2 and ensures that the output matches specified values.
        This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
+
+    args = parse_args('Parallel Regression AD Tests')
 
     test_list = []
 
