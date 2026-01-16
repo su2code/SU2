@@ -950,6 +950,11 @@ void CIncEulerSolver::SetReferenceValues(const CConfig& config) {
     DynamicPressureRef = 1.0;
   }
 
+  if (config.GetRefArea() <= 0.0) {
+    SU2_MPI::Error("REF_AREA must be > 0.0 for aerodynamic solvers to compute force coefficients.\n"
+                   "Please check your geometry projection or configuration file.");
+  }
+
   AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
 
 }
