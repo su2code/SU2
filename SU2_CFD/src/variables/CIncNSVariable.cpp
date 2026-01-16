@@ -50,9 +50,6 @@ CIncNSVariable::CIncNSVariable(su2double density, su2double pressure, const su2d
 
   if (config->GetTime_Marching() != TIME_MARCHING::STEADY) {
     Unsteady = true;
-    //Density_unsteady.resize(nPoint);
-    //Density_time_n.resize(nPoint);
-    //Density_time_n1.resize(nPoint);
   }
 
 
