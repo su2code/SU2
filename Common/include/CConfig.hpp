@@ -501,6 +501,7 @@ private:
   unsigned short *MG_PreSmooth,       /*!< \brief Multigrid Pre smoothing. */
   *MG_PostSmooth,                     /*!< \brief Multigrid Post smoothing. */
   *MG_CorrecSmooth;                   /*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
+  bool MG_DebugHaloCoordinates; /*!< \brief Enable halo CV coordinate validation for multigrid. */
   su2double *LocationStations;        /*!< \brief Airfoil sections in wing slicing subroutine. */
 
   ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
@@ -3838,6 +3839,13 @@ public:
     if (nMG_CorrecSmooth == 0) return 0;
     return MG_CorrecSmooth[val_mesh];
   }
+
+  /*!\
+   * \brief Get whether halo CV coordinate validation is enabled for multigrid.
+   * \return True if halo coordinate validation is enabled.
+   */
+  bool GetMG_DebugHaloCoordinates() const { return MG_DebugHaloCoordinates; }
+
 
   /*!
    * \brief plane of the FFD (I axis) that should be fixed.
