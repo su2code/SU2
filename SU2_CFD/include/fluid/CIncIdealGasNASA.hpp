@@ -180,7 +180,7 @@ class CIncIdealGasNASA final : public CFluidModel {
     
     if (counter == counter_limit) {
       if (SU2_MPI::GetRank() == MASTER_NODE)
-          std::cout << "Warning: Newton-Raphson exceeds max. iterations in temperature computation (NASA Model)." << std::endl;
+          std::cout << "Warning: Newton-Raphson exceeds max. iterations in temperature computation (NASA Model).\n";
     }
     
     Density = Pressure / (Temperature * Gas_Constant);
