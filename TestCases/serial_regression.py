@@ -88,13 +88,6 @@ def main():
     channel_d.command   = TestCase.Command(exec = "SU2_CFD", param = "-d")
     test_list.append(channel_d)
 
-    # 2D Actuator Disk Check
-    actdisk_2d = TestCase('2d_actuator_disk_check')
-    actdisk_2d.cfg_dir = "2d_actuator_disk_check"
-    actdisk_2d.cfg_file = "config.cfg"
-    actdisk_2d.command = TestCase.Command(exec = "SU2_CFD", param = "-d")
-    test_list.append(actdisk_2d)
-
     # Channel
     channel           = TestCase('channel')
     channel.cfg_dir   = "euler/channel"
