@@ -111,17 +111,15 @@ class CIncIdealGasNASA final : public CFluidModel {
 
     // Convert to dimensional temperature for polynomial evaluation (NASA coeffs expect Kelvin)
     const su2double T_dim = t * Ref_Temp_Dim;
-    const su2double t_inv = 1.0 / T_dim;
-    const su2double t_inv2 = t_inv * t_inv;
-
+    
     // NASA-9: Cp/R = a1*T^-2 + a2*T^-1 + a3 + a4*T + a5*T^2 + a6*T^3 + a7*T^4
-    su2double Cp_over_R = a1*t_inv2 + a2*t_inv + a3 + a4*T_dim + a5*T_dim*T_dim + a6*T_dim*T_dim*T_dim + a7*T_dim*T_dim*T_dim*T_dim;
+    su2double Cp_over_R = a1 * pow(T_dim, -2.0) + a2 * pow(T_dim, -1.0) + a3 + a4 * T_dim + a5 * pow(T_dim, 2.0) + a6 * pow(T_dim, 3.0) + a7 * pow(T_dim, 4.0);
     
     Cp = Cp_over_R * Gas_Constant;
     
     // NASA-9: H/(RT) = -a1*T^-2 + a2*ln(T)/T + a3 + a4*T/2 + a5*T^2/3 + a6*T^3/4 + a7*T^4/5 + a8/T
-    su2double H_over_RT = -a1*t_inv2 + a2*std::log(T_dim)*t_inv + a3 + a4*T_dim/2.0 + a5*T_dim*T_dim/3.0 + 
-                          a6*T_dim*T_dim*T_dim/4.0 + a7*T_dim*T_dim*T_dim*T_dim/5.0 + a8*t_inv;
+    su2double H_over_RT = -a1 * pow(T_dim, -2.0) + a2 * std::log(T_dim) / T_dim + a3 + a4 * T_dim / 2.0 + a5 * pow(T_dim, 2.0) / 3.0 + 
+                          a6 * pow(T_dim, 3.0) / 4.0 + a7 * pow(T_dim, 4.0) / 5.0 + a8 / T_dim;
     
     Enthalpy = H_over_RT * Gas_Constant * t;
     Cv = Cp / Gamma;
@@ -156,19 +154,17 @@ class CIncIdealGasNASA final : public CFluidModel {
     while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
       
       const su2double T_dim = temp_iter * Ref_Temp_Dim;
-      const su2double t_inv = 1.0 / T_dim;
-      const su2double t_inv2 = t_inv * t_inv;
       
       // NASA-9: Cp/R = a1*T^-2 + a2*T^-1 + a3 + a4*T + a5*T^2 + a6*T^3 + a7*T^4
-      su2double Cp_over_R = a1*t_inv2 + a2*t_inv + a3 + a4*T_dim + a5*T_dim*T_dim + 
-                            a6*T_dim*T_dim*T_dim + a7*T_dim*T_dim*T_dim*T_dim;
+      su2double Cp_over_R = a1 * pow(T_dim, -2.0) + a2 * pow(T_dim, -1.0) + a3 + a4 * T_dim + a5 * pow(T_dim, 2.0) + 
+                            a6 * pow(T_dim, 3.0) + a7 * pow(T_dim, 4.0);
       
       Cp_iter = Cp_over_R * Gas_Constant;
       
       // NASA-9: H/(RT) = -a1*T^-2 + a2*ln(T)/T + a3 + a4*T/2 + a5*T^2/3 + a6*T^3/4 + a7*T^4/5 + a8/T
-      su2double H_over_RT = -a1*t_inv2 + a2*std::log(T_dim)*t_inv + a3 + a4*T_dim/2.0 + 
-                            a5*T_dim*T_dim/3.0 + a6*T_dim*T_dim*T_dim/4.0 + 
-                            a7*T_dim*T_dim*T_dim*T_dim/5.0 + a8*t_inv;
+      su2double H_over_RT = -a1 * pow(T_dim, -2.0) + a2 * std::log(T_dim) / T_dim + a3 + a4 * T_dim / 2.0 + 
+                            a5 * pow(T_dim, 2.0) / 3.0 + a6 * pow(T_dim, 3.0) / 4.0 + 
+                            a7 * pow(T_dim, 4.0) / 5.0 + a8 / T_dim;
       
       su2double Enthalpy_iter = H_over_RT * Gas_Constant * temp_iter;
       
@@ -176,15 +172,7 @@ class CIncIdealGasNASA final : public CFluidModel {
       delta_temp_iter = delta_enthalpy_iter / Cp_iter;
       temp_iter += delta_temp_iter;
       
-      if (temp_iter < Temperature_Min) {
-        // Clamp to min but don't break immediately to allow recovery if simple overshoot
-         if (abs(delta_temp_iter) < toll) break; 
-         temp_iter = Temperature_Min;
-      }
-      if (temp_iter > Temperature_Max) {
-         if (abs(delta_temp_iter) < toll) break;
-         temp_iter = Temperature_Max;
-      }
+      temp_iter = std::fmin(std::fmax(Temperature_Min, temp_iter), Temperature_Max);
     }
     
     Temperature = temp_iter;
