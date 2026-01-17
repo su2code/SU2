@@ -1161,7 +1161,7 @@ public:
     const su2double rhoxc = density * soundspeed;
 
     if (nDim == 2) {
-      const su2double sqvel = GeometryToolbox::SquaredNorm(2, velocity);
+      const su2double ke = 0.5 * GeometryToolbox::SquaredNorm(2, velocity);
       const su2double projvel = GeometryToolbox::DotProduct(2, velocity, normal);
 
       p_tensor[0][0] = 1.0;
@@ -1179,12 +1179,12 @@ public:
       p_tensor[2][2] = 0.5 * (velocity[1] * rhooc + normal[1] * density);
       p_tensor[2][3] = 0.5 * (velocity[1] * rhooc - normal[1] * density);
 
-      p_tensor[3][0] = 0.5 * sqvel;
+      p_tensor[3][0] = ke;
       p_tensor[3][1] = density * (velocity[0] * normal[1] - velocity[1] * normal[0]);
-      p_tensor[3][2] = 0.5 * (0.5 * sqvel * rhooc + density * projvel + rhoxc / Gamma_Minus_One);
-      p_tensor[3][3] = 0.5 * (0.5 * sqvel * rhooc - density * projvel + rhoxc / Gamma_Minus_One);
+      p_tensor[3][2] = 0.5 * (ke * rhooc + density * projvel + rhoxc / Gamma_Minus_One);
+      p_tensor[3][3] = 0.5 * (ke * rhooc - density * projvel + rhoxc / Gamma_Minus_One);
     } else {
-      const su2double sqvel = GeometryToolbox::SquaredNorm(3, velocity);
+      const su2double ke = 0.5 * GeometryToolbox::SquaredNorm(3, velocity);
       const su2double projvel = GeometryToolbox::DotProduct(3, velocity, normal);
 
       p_tensor[0][0] = normal[0];
@@ -1211,11 +1211,11 @@ public:
       p_tensor[3][3] = 0.5 * (velocity[2] * rhooc + density * normal[2]);
       p_tensor[3][4] = 0.5 * (velocity[2] * rhooc - density * normal[2]);
 
-      p_tensor[4][0] = 0.5 * sqvel * normal[0] + density * (velocity[1] * normal[2] - velocity[2] * normal[1]);
-      p_tensor[4][1] = 0.5 * sqvel * normal[1] + density * (velocity[2] * normal[0] - velocity[0] * normal[2]);
-      p_tensor[4][2] = 0.5 * sqvel * normal[2] + density * (velocity[0] * normal[1] - velocity[1] * normal[0]);
-      p_tensor[4][3] = 0.5 * (0.5 * sqvel * rhooc + density * projvel + rhoxc / Gamma_Minus_One);
-      p_tensor[4][4] = 0.5 * (0.5 * sqvel * rhooc - density * projvel + rhoxc / Gamma_Minus_One);
+      p_tensor[4][0] = ke * normal[0] + density * (velocity[1] * normal[2] - velocity[2] * normal[1]);
+      p_tensor[4][1] = ke * normal[1] + density * (velocity[2] * normal[0] - velocity[0] * normal[2]);
+      p_tensor[4][2] = ke * normal[2] + density * (velocity[0] * normal[1] - velocity[1] * normal[0]);
+      p_tensor[4][3] = 0.5 * (ke * rhooc + density * projvel + rhoxc / Gamma_Minus_One);
+      p_tensor[4][4] = 0.5 * (ke * rhooc - density * projvel + rhoxc / Gamma_Minus_One);
     }
   }
 
