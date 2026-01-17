@@ -92,7 +92,7 @@ def main():
     actdisk_2d = TestCase('2d_actuator_disk_check')
     actdisk_2d.cfg_dir = "2d_actuator_disk_check"
     actdisk_2d.cfg_file = "config.cfg"
-    actdisk_2d.command = TestCase.Command(exec="SU2_CFD", param="-d")
+    actdisk_2d.command = TestCase.Command(exec = "SU2_CFD", param = "-d")
     test_list.append(actdisk_2d)
 
     # Channel
