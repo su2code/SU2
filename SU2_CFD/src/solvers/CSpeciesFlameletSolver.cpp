@@ -154,14 +154,16 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
                                                  unsigned long ExtIter) {
   const bool restart = (config->GetRestart() || config->GetRestart_Flow());
 
-  if ((!restart) && ExtIter == 0) {
+  bool flame_front_ignition = (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::FLAME_FRONT);
+
+  /*--- Also allow flame ignition when restarting. ---*/
+  if (((!restart) && ExtIter == 0) || (restart && (flamelet_config_options.ignition_method != FLAMELET_INIT_TYPE::NONE))) {
     if (rank == MASTER_NODE) {
       cout << "Initializing progress variable and total enthalpy (using temperature)" << endl;
     }
 
     su2double flame_offset[3] = {0, 0, 0}, flame_normal[3] = {0, 0, 0}, flame_thickness = 0, flame_burnt_thickness = 0,
               flamenorm = 0;
-    bool flame_front_ignition = (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::FLAME_FRONT);
 
     if (flame_front_ignition) {
       /*--- Collect flame front ignition parameters. ---*/
@@ -212,7 +214,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
       prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
-
       for (auto iVar = 0u; iVar < nVar; iVar++) scalar_init[iVar] = config->GetSpecies_Init()[iVar];
 
       /*--- Set enthalpy based on initial temperature and scalars. ---*/
@@ -270,6 +271,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
         solver_container[i_mesh][SPECIES_SOL]->GetNodes()->SetSolution(i_point, scalar_init);
       }
+      END_SU2_OMP_FOR
 
       solver_container[i_mesh][SPECIES_SOL]->InitiateComms(geometry[i_mesh], config, MPI_QUANTITIES::SOLUTION);
       solver_container[i_mesh][SPECIES_SOL]->CompleteComms(geometry[i_mesh], config, MPI_QUANTITIES::SOLUTION);
@@ -279,7 +281,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
       solver_container[i_mesh][FLOW_SOL]->Preprocessing(geometry[i_mesh], solver_container[i_mesh], config, i_mesh,
                                                         NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-      END_SU2_OMP_FOR
     }
 
     /* --- Sum up some global counters over processes. --- */
