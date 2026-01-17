@@ -40,8 +40,7 @@ class CUpwMSW_Flow final : public CNumerics {
 private:
   static constexpr auto MAXNVAR = MAXNDIM + 2;
 
-  su2double buf_P_Tensor[MAXNVAR * MAXNVAR], buf_invP_Tensor[MAXNVAR * MAXNVAR];
-  su2double *P_Tensor[MAXNVAR], *invP_Tensor[MAXNVAR];
+  const su2double alpha;
 
   su2double buf_Jacobian_i[MAXNVAR * MAXNVAR], buf_Jacobian_j[MAXNVAR * MAXNVAR];
   su2double* Jacobian_i[MAXNVAR]; /*!< \brief The Jacobian w.r.t. point i after computation. */

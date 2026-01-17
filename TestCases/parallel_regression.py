@@ -294,6 +294,13 @@ def main():
     ramp.test_vals_aarch64 = [-13.648406, -8.014579, -0.076277, 0.054839]
     test_list.append(ramp)
 
+    ramp_msw = TestCase('ramp_msw')
+    ramp_msw.cfg_dir = "euler/ramp"
+    ramp_msw.cfg_file = "inv_ramp_msw.cfg"
+    ramp_msw.test_iter = 100
+    ramp_msw.test_vals = [-12.875776, -7.122734, -0.077832, 0.054528]
+    test_list.append(ramp_msw)
+
     ##########################
     ###  Compressible N-S  ###
     ##########################
@@ -1544,16 +1551,16 @@ def main():
     test_list.append(pywrapper_zimont)
 
 
-    # Heat solver unsteady with source 
-    pywrapper_Unst_Heat_Source = TestCase('pywrapper_Unst_Heat_Source') 
-    pywrapper_Unst_Heat_Source.cfg_dir = "py_wrapper/custom_heat_source" 
-    pywrapper_Unst_Heat_Source.cfg_file = "run.py" 
-    pywrapper_Unst_Heat_Source.test_iter = 10 
-    pywrapper_Unst_Heat_Source.unsteady = True 
+    # Heat solver unsteady with source
+    pywrapper_Unst_Heat_Source = TestCase('pywrapper_Unst_Heat_Source')
+    pywrapper_Unst_Heat_Source.cfg_dir = "py_wrapper/custom_heat_source"
+    pywrapper_Unst_Heat_Source.cfg_file = "run.py"
+    pywrapper_Unst_Heat_Source.test_iter = 10
+    pywrapper_Unst_Heat_Source.unsteady = True
     pywrapper_Unst_Heat_Source.test_vals = [-5.235402, 300.010000, 300.000000]
     pywrapper_Unst_Heat_Source.command = TestCase.Command("mpirun -n 2", "python", "run.py")
     test_list.append(pywrapper_Unst_Heat_Source)
-    
+
     ##############################################
     ### Method of Manufactured Solutions (MMS) ###
     ##############################################

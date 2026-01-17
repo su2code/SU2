@@ -28,7 +28,8 @@
 #include "../../../../include/numerics/flow/convection/fvs.hpp"
 #include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
-CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
+  CNumerics(val_nDim, val_nVar, config), alpha(config->GetMSW_Alpha()) {
 
   if (config->GetDynamic_Grid() && SU2_MPI::GetRank() == MASTER_NODE) {
     std::cout << "WARNING: Grid velocities are NOT yet considered in the MSW scheme." << std::endl;
@@ -36,8 +37,6 @@ CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, con
 
   /*--- Allocate arrays ---*/
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    P_Tensor[iVar] = &buf_P_Tensor[iVar * MAXNVAR];
-    invP_Tensor[iVar] =&buf_invP_Tensor[iVar * MAXNVAR];
     Jacobian_i[iVar] = &buf_Jacobian_i[iVar * MAXNVAR];
     Jacobian_j[iVar] = &buf_Jacobian_j[iVar * MAXNVAR];
   }
@@ -49,9 +48,6 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   AD::SetPreaccIn(V_i, nDim + 4);
   AD::SetPreaccIn(V_j, nDim + 4);
   AD::SetPreaccIn(Normal, nDim);
-
-  /*--- Set parameters in the numerical method ---*/
-  const su2double alpha = 6.0;
 
   /*--- Calculate supporting geometry parameters ---*/
 
@@ -69,6 +65,7 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   const su2double rho_j = V_j[nDim + 2];
   const su2double H_i = V_i[nDim + 3];
   const su2double H_j = V_j[nDim + 3];
+  /*--- Recompute the speed of sound because it is not MUSCL-reconstructed. ---*/
   const su2double sqvel_i = GeometryToolbox::SquaredNorm(nDim, V_i + 1);
   const su2double sqvel_j = GeometryToolbox::SquaredNorm(nDim, V_j + 1);
   const su2double c_i = sqrt(fmax((Gamma - 1) * (H_i - 0.5 * sqvel_i), EPS));
@@ -121,8 +118,9 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
 
   /*--- Compute projected P, invP, and Lambda ---*/
 
-  GetPMatrix(&Vst_i[nDim + 2], Velst_i, &Vst_i[nDim + 4], UnitNormal, P_Tensor);
-  GetPMatrix_inv(&Vst_i[nDim + 2], Velst_i, &Vst_i[nDim + 4], UnitNormal, invP_Tensor);
+  su2double P_Tensor[MAXNVAR][MAXNVAR], invP_Tensor[MAXNVAR][MAXNVAR];
+  GetPMatrix(Vst_i[nDim + 2], Velst_i, Vst_i[nDim + 4], UnitNormal, P_Tensor);
+  GetPMatrix_inv(Vst_i[nDim + 2], Velst_i, Vst_i[nDim + 4], UnitNormal, invP_Tensor);
 
   /*--- Projected flux (f+) at i ---*/
 
@@ -156,8 +154,8 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
 
   /*--- Compute projected P, invP, and Lambda ---*/
 
-  GetPMatrix(&Vst_j[nDim + 2], Velst_j, &Vst_j[nDim + 4], UnitNormal, P_Tensor);
-  GetPMatrix_inv(&Vst_j[nDim + 2], Velst_j, &Vst_j[nDim + 4], UnitNormal, invP_Tensor);
+  GetPMatrix(Vst_j[nDim + 2], Velst_j, Vst_j[nDim + 4], UnitNormal, P_Tensor);
+  GetPMatrix_inv(Vst_j[nDim + 2], Velst_j, Vst_j[nDim + 4], UnitNormal, invP_Tensor);
 
   /*--- Projected flux (f-) ---*/
 
