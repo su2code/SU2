@@ -1451,11 +1451,13 @@ void CEulerSolver::SetReferenceValues(const CConfig& config) {
   }
 
   if (config.GetRefArea() <= 0.0) {
-    SU2_MPI::Error("REF_AREA must be > 0.0 for aerodynamic solvers to compute force coefficients.\n"
-                   "Please check your geometry projection or configuration file.", "SetReferenceValues");
+    if (rank == MASTER_NODE) {
+      std::cout << "Warning: REF_AREA <= 0.0. Force coefficients will be non-dimensionalized by 1.0.\n";
+    }
+    AeroCoeffForceRef = DynamicPressureRef * 1.0;
+  } else {
+    AeroCoeffForceRef = DynamicPressureRef * config.GetRefArea();
   }
-
-  AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
 
 }
 
