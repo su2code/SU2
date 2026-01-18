@@ -28,6 +28,60 @@
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
+namespace {
+/*!
+ * \brief Helper function to enforce Euler wall BC by projecting momentum to tangent plane.
+ * \param[in] geo_coarse - Coarse grid geometry.
+ * \param[in] config - Problem configuration.
+ * \param[in,out] sol_coarse - Coarse grid solver (to access and modify solution/correction).
+ * \param[in] use_solution_old - If true, project Solution_Old (corrections); if false, project Solution.
+ */
+void ProjectEulerWallToTangentPlane(CGeometry* geo_coarse, const CConfig* config, CSolver* sol_coarse,
+                                    bool use_solution_old) {
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+
+      SU2_OMP_FOR_STAT(32)
+      for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        const auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+
+        if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
+
+        /*--- Get coarse grid normal ---*/
+        su2double Normal[3] = {0.0};
+        geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
+        const auto nDim = geo_coarse->GetnDim();
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+        if (Area < 1e-12) continue;
+
+        /*--- Normalize normal vector ---*/
+        su2double UnitNormal[3] = {0.0};
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          UnitNormal[iDim] = Normal[iDim] / Area;
+        }
+
+        /*--- Get current solution or correction ---*/
+        su2double* Data = use_solution_old ?
+          sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse) :
+          sol_coarse->GetNodes()->GetSolution(Point_Coarse);
+
+        /*--- Compute normal component of momentum (v·n or correction·n) ---*/
+        su2double momentum_n = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          momentum_n += Data[iDim + 1] * UnitNormal[iDim];
+        }
+
+        /*--- Project to tangent plane: Data -= (Data·n)n ---*/
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Data[iDim + 1] -= momentum_n * UnitNormal[iDim];
+        }
+      }
+      END_SU2_OMP_FOR
+    }
+  }
+}
+}  // anonymous namespace
 
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
 
@@ -344,47 +398,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   delete [] Solution;
 
   /*--- OPTION C: Enforce Euler wall BC on corrections by projecting to tangent plane ---*/
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
-
-      SU2_OMP_FOR_STAT(32)
-      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-
-        if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
-
-        /*--- Get coarse grid normal ---*/
-        su2double Normal[3] = {0.0};
-        geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
-        const auto nDim = geo_coarse->GetnDim();
-        su2double Area = GeometryToolbox::Norm(nDim, Normal);
-
-        if (Area < 1e-12) continue;
-
-        /*--- Normalize normal vector ---*/
-        su2double UnitNormal[3] = {0.0};
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          UnitNormal[iDim] = Normal[iDim] / Area;
-        }
-
-        /*--- Get correction (stored in Solution_Old) ---*/
-        auto* Correction = sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse);
-
-        /*--- Compute normal component of momentum correction ---*/
-        su2double corr_n = 0.0;
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          corr_n += Correction[iDim + 1] * UnitNormal[iDim];
-        }
-
-        /*--- Project correction to tangent plane: correction -= (correction·n)n ---*/
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          Correction[iDim + 1] -= corr_n * UnitNormal[iDim];
-        }
-      }
-      END_SU2_OMP_FOR
-    }
-  }
+  ProjectEulerWallToTangentPlane(geo_coarse, config, sol_coarse, true);
 
   /*--- Remove any contributions from no-slip walls. ---*/
 
@@ -650,47 +664,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   }
 
   /*--- OPTION B: Enforce Euler wall BC by projecting velocity to tangent plane ---*/
-
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
-
-      SU2_OMP_FOR_STAT(32)
-      for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        const auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-
-        if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
-
-        /*--- Get coarse grid normal ---*/
-        su2double Normal[3] = {0.0};
-        geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
-        const auto nDim = geo_coarse->GetnDim();
-        su2double Area = GeometryToolbox::Norm(nDim, Normal);
-
-        if (Area < 1e-12) continue;
-
-        /*--- Normalize normal vector ---*/
-        su2double UnitNormal[3] = {0.0};
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          UnitNormal[iDim] = Normal[iDim] / Area;
-        }
-
-        /*--- Get current solution ---*/
-        auto* Solution = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
-
-        /*--- Compute v·n ---*/
-        su2double vn = 0.0;
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          vn += Solution[iDim + 1] * UnitNormal[iDim];  // Solution layout: [rho, rho*u, rho*v, (rho*w), E]
-        }
-
-        /*--- Project velocity to tangent plane: v_new = v - (v·n)n ---*/
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          Solution[iDim + 1] -= vn * UnitNormal[iDim];
-        }
-      }
-      END_SU2_OMP_FOR
-    }
-  }
+  ProjectEulerWallToTangentPlane(geo_coarse, config, sol_coarse, false);
 
   /*--- MPI the new interpolated solution ---*/
 
