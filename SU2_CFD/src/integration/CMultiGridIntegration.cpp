@@ -344,7 +344,47 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   delete [] Solution;
 
   /*--- OPTION C: Enforce Euler wall BC on corrections by projecting to tangent plane ---*/
-  ProjectEulerWallVelocity(geo_coarse, sol_coarse, config, false);
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+
+      SU2_OMP_FOR_STAT(32)
+      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+
+        if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
+
+        /*--- Get coarse grid normal ---*/
+        su2double Normal[3] = {0.0};
+        geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
+        const auto nDim = geo_coarse->GetnDim();
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+        if (Area < 1e-12) continue;
+
+        /*--- Normalize normal vector ---*/
+        su2double UnitNormal[3] = {0.0};
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          UnitNormal[iDim] = Normal[iDim] / Area;
+        }
+
+        /*--- Get correction (stored in Solution_Old) ---*/
+        auto* Correction = sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse);
+
+        /*--- Compute normal component of momentum correction ---*/
+        su2double corr_n = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          corr_n += Correction[iDim + 1] * UnitNormal[iDim];
+        }
+
+        /*--- Project correction to tangent plane: correction -= (correction·n)n ---*/
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Correction[iDim + 1] -= corr_n * UnitNormal[iDim];
+        }
+      }
+      END_SU2_OMP_FOR
+    }
+  }
 
   /*--- Remove any contributions from no-slip walls. ---*/
 
@@ -610,7 +650,47 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   }
 
   /*--- OPTION B: Enforce Euler wall BC by projecting velocity to tangent plane ---*/
-  ProjectEulerWallVelocity(geo_coarse, sol_coarse, config, true);
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+
+      SU2_OMP_FOR_STAT(32)
+      for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        const auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+
+        if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
+
+        /*--- Get coarse grid normal ---*/
+        su2double Normal[3] = {0.0};
+        geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
+        const auto nDim = geo_coarse->GetnDim();
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+        if (Area < 1e-12) continue;
+
+        /*--- Normalize normal vector ---*/
+        su2double UnitNormal[3] = {0.0};
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          UnitNormal[iDim] = Normal[iDim] / Area;
+        }
+
+        /*--- Get current solution ---*/
+        auto* Solution = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
+
+        /*--- Compute v·n ---*/
+        su2double vn = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          vn += Solution[iDim + 1] * UnitNormal[iDim];  // Solution layout: [rho, rho*u, rho*v, (rho*w), E]
+        }
+
+        /*--- Project velocity to tangent plane: v_new = v - (v·n)n ---*/
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Solution[iDim + 1] -= vn * UnitNormal[iDim];
+        }
+      }
+      END_SU2_OMP_FOR
+    }
+  }
 
   /*--- MPI the new interpolated solution ---*/
 
@@ -753,52 +833,4 @@ void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****s
 
   }
 
-}
-
-void CMultiGridIntegration::ProjectEulerWallVelocity(CGeometry *geo_coarse, CSolver *sol_coarse, 
-                                                      const CConfig *config, bool use_solution) {
-  /*--- Enforce Euler wall boundary condition by projecting velocity to tangent plane ---*/
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
-      for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-        if (geo_coarse->nodes->GetDomain(Point_Coarse)) {
-          
-          /*--- Get coarse grid normal vector ---*/
-          auto Normal = geo_coarse->vertex[iMarker][iVertex]->GetNormal();
-          su2double Area = GeometryToolbox::Norm(nDim, Normal);
-          su2double UnitNormal[MAXNDIM] = {0.0};
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            UnitNormal[iDim] = Normal[iDim] / Area;
-          
-          /*--- Get density from solution container ---*/
-          const su2double *Sol = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
-          su2double Density = Sol[0];
-          
-          /*--- Get velocity vector from solution or corrections ---*/
-          su2double Velocity[MAXNDIM] = {0.0};
-          if (use_solution) {
-            for (auto iDim = 0u; iDim < nDim; iDim++)
-              Velocity[iDim] = Sol[iDim+1] / Density;
-          } else {
-            const su2double *SolOld = sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse);
-            for (auto iDim = 0u; iDim < nDim; iDim++)
-              Velocity[iDim] = (Sol[iDim+1] - SolOld[iDim+1]) / Density;
-          }
-          
-          /*--- Compute normal component and project to tangent plane ---*/
-          su2double VelNormal = GeometryToolbox::DotProduct(nDim, Velocity, UnitNormal);
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            Velocity[iDim] -= VelNormal * UnitNormal[iDim];
-          
-          /*--- Update momentum components in solution container ---*/
-          su2double Solution_Proj[MAXNVAR] = {0.0};
-          Solution_Proj[0] = Density;
-          for (auto iDim = 0u; iDim < nDim; iDim++)
-            Solution_Proj[iDim+1] = Velocity[iDim] * Density;
-          sol_coarse->GetNodes()->SetSolution(Point_Coarse, Solution_Proj);
-        }
-      }
-    }
-  }
 }
