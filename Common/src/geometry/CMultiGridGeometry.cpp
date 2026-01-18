@@ -59,7 +59,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    //the interface or not. Nishikawa chooses not to agglomerate over interfaces.
 
   /*--- Set a marker to indicate indirect agglomeration, for quads and hexs,
-   i.e. consider up to neighbors of neighbors of neighbors.
+   i.e. consider up to neighbors of neighbors.
    For other levels this information is propagated down during their construction. ---*/
   if (iMesh == MESH_1) {
     for (auto iPoint = 0ul; iPoint < fine_grid->GetnPoint(); iPoint++)
@@ -127,7 +127,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
          that are in that point ---*/
 
         for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker(); jMarker++) {
-          const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);  // fine_grid->GetMarker_Tag(jMarker);
+          const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
           if (fine_grid->nodes->GetVertex(iPoint, jMarker) != -1) {
             copy_marker[counter] = jMarker;
             counter++;
@@ -138,7 +138,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           }
         }
 
-        /*--- To agglomerate a vertex it must have only one physical bc!!
+        /*--- To agglomerate a vertex it must have only one physical bc.
          This can be improved. If there is only one marker, it is a good
          candidate for agglomeration ---*/
 
@@ -151,7 +151,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
                << ", marker name = " << config->GetMarker_All_TagBound(marker_seed[0]);
           cout << ", marker type = " << config->GetMarker_All_KindBC(marker_seed[0]) << endl;
           // The seed/parent is one valley, so we set this part to true
-          // if the child is only on this same valley, we set it to true as well.
+          // if the child is on the same valley, we set it to true as well.
           agglomerate_seed = true;
           /*--- Euler walls: check curvature-based agglomeration criterion ---*/
           if (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL) {
@@ -160,7 +160,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
               /*--- Compute local curvature at this point ---*/
               su2double local_curvature = ComputeLocalCurvature(fine_grid, iPoint, marker_seed[0]);
               // limit to 30 degrees
-              if (local_curvature >= 30.0) {
+              if (local_curvature >= 5.0) {
                 agglomerate_seed = false;  // High curvature: do not agglomerate
                 euler_wall_rejected_curvature[marker_seed[0]]++;
               } else {
@@ -171,37 +171,41 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
               euler_wall_agglomerated[marker_seed[0]]++;
             }
           }
-          /*--- Note that if the marker is a SEND_RECEIVE, then the node is actually an interior point.
+          /*--- Note that if the (single) marker is a SEND_RECEIVE, then the node is actually an interior point.
                 In that case it can only be agglomerated with another interior point. ---*/
-          /*--- Temporarily don't agglomerate SEND_RECEIVE markers---*/
           if (config->GetMarker_All_KindBC(marker_seed[0]) == SEND_RECEIVE) {
-            agglomerate_seed = false;
+            agglomerate_seed = true;
           }
         }
 
-        /*--- If there are two markers, we will agglomerate if any of the
-         markers is SEND_RECEIVE ---*/
-
-        /*--- Note that in 2D, this is a corner and we do not agglomerate. ---*/
+        /*--- Note that in 2D, this is a corner and we do not agglomerate unless they both are SEND_RECEIVE. ---*/
         /*--- In 3D, we agglomerate if the 2 markers are the same. ---*/
         if (counter == 2) {
 
-          /*--- Only agglomerate if one of the 2 markers are MPI markers. ---*/
-          //agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
-          //                   (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
+          /*--- agglomerate if one of the 2 markers are MPI markers. ---*/
+          if (nDim==2)
+            agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
+                               (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
+
+          /*--- agglomerate if both markers are the same. ---*/
+          if (nDim==3)
+            agglomerate_seed = (copy_marker[0] == copy_marker[1]);
+
+
           /*--- Do not agglomerate if one of the 2 markers are MPI markers. ---*/
-          agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) != SEND_RECEIVE) &&
-                             (config->GetMarker_All_KindBC(copy_marker[1]) != SEND_RECEIVE);
+          //agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) != SEND_RECEIVE) &&
+          //                   (config->GetMarker_All_KindBC(copy_marker[1]) != SEND_RECEIVE);
 
           /*--- Euler walls: check curvature-based agglomeration criterion for both markers ---*/
+          // only in 3d because in 2d it's a corner
           bool euler_wall_rejected_here = false;
           for (unsigned short i = 0; i < 2; i++) {
-            if (config->GetMarker_All_KindBC(copy_marker[i]) == EULER_WALL) {
+            if ((nDim == 3) && (config->GetMarker_All_KindBC(copy_marker[i]) == EULER_WALL)) {
               if (!boundIsStraight[copy_marker[i]]) {
                 /*--- Compute local curvature at this point ---*/
                 su2double local_curvature = ComputeLocalCurvature(fine_grid, iPoint, copy_marker[i]);
                 // limit to 30 degrees
-                if (local_curvature >= 30.0) {
+                if (local_curvature >= 5.0) {
                   agglomerate_seed = false;  // High curvature: do not agglomerate
                   euler_wall_rejected_curvature[copy_marker[i]]++;
                   euler_wall_rejected_here = true;
@@ -214,16 +218,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
             }
           }
 
-          /*--- In 2D, corners are not agglomerated, but in 3D counter=2 means we are on the
-                edge of a 2D face. In that case, agglomerate if both nodes are the same. ---*/
-          // if (nDim == 2) agglomerate_seed = false;
         }
 
         /*--- If there are more than 2 markers, the aglomeration will be discarded ---*/
-
         if (counter > 2) agglomerate_seed = false;
-        // note that if one of the markers is SEND_RECEIVE, then we could allow agglomeration since
-        // the real number of markers is then 2.
 
         /*--- If the seed (parent) can be agglomerated, we try to agglomerate connected childs to the parent ---*/
         /*--- Note that in 2D we allow a maximum of 4 nodes to be agglomerated ---*/
