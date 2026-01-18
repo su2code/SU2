@@ -39,7 +39,6 @@
 
 /*--- Nijso says: this could perhaps be replaced by metis partitioning? ---*/
 CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, unsigned short iMesh) : CGeometry() {
-
   nDim = fine_grid->GetnDim();  // Write the number of dimensions of the coarse grid.
 
   /*--- Maximum agglomeration size in 2D is 4 nodes, in 3D is 8 nodes. ---*/
@@ -55,8 +54,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    3rd) One marker ---> Surface (always agglomerate)
    4th) No marker ---> Internal Volume (always agglomerate) ---*/
 
-   //note that for MPI, we introduce interfaces and we can choose to have agglomeration over
-   //the interface or not. Nishikawa chooses not to agglomerate over interfaces.
+  // note that for MPI, we introduce interfaces and we can choose to have agglomeration over
+  // the interface or not. Nishikawa chooses not to agglomerate over interfaces.
 
   /*--- Set a marker to indicate indirect agglomeration, for quads and hexs,
    i.e. consider up to neighbors of neighbors.
@@ -181,20 +180,17 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         /*--- Note that in 2D, this is a corner and we do not agglomerate unless they both are SEND_RECEIVE. ---*/
         /*--- In 3D, we agglomerate if the 2 markers are the same. ---*/
         if (counter == 2) {
-
           /*--- agglomerate if one of the 2 markers are MPI markers. ---*/
-          if (nDim==2)
+          if (nDim == 2)
             agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
                                (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE);
 
           /*--- agglomerate if both markers are the same. ---*/
-          if (nDim==3)
-            agglomerate_seed = (copy_marker[0] == copy_marker[1]);
-
+          if (nDim == 3) agglomerate_seed = (copy_marker[0] == copy_marker[1]);
 
           /*--- Do not agglomerate if one of the 2 markers are MPI markers. ---*/
-          //agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) != SEND_RECEIVE) &&
-          //                   (config->GetMarker_All_KindBC(copy_marker[1]) != SEND_RECEIVE);
+          // agglomerate_seed = (config->GetMarker_All_KindBC(copy_marker[0]) != SEND_RECEIVE) &&
+          //                    (config->GetMarker_All_KindBC(copy_marker[1]) != SEND_RECEIVE);
 
           /*--- Euler walls: check curvature-based agglomeration criterion for both markers ---*/
           // only in 3d because in 2d it's a corner
@@ -217,7 +213,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
               }
             }
           }
-
         }
 
         /*--- If there are more than 2 markers, the aglomeration will be discarded ---*/
@@ -339,8 +334,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       MGQueue_InnerCV.MoveCV(iPoint, priority);
     }
   }
-
-
 
   /*--- STEP 2: Agglomerate the domain points. ---*/
   // cout << "*********** STEP 2 ***" << endl;
@@ -562,8 +555,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     cout << " marker type = " << config->GetMarker_All_KindBC(iMarker) << endl;
     cout << " send/recv = " << config->GetMarker_All_SendRecv(iMarker) << endl;
     if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) && (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-      const auto MarkerS = iMarker; // sending marker
-      const auto MarkerR = iMarker + 1; // receiving marker
+      const auto MarkerS = iMarker;      // sending marker
+      const auto MarkerR = iMarker + 1;  // receiving marker
 
       const auto send_to = config->GetMarker_All_SendRecv(MarkerS) - 1;
       const auto receive_from = abs(config->GetMarker_All_SendRecv(MarkerR)) - 1;
@@ -652,9 +645,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
         /*--- Validate that parent mapping was found (only matters if not skipped later) ---*/
         if (Parent_Local[iVertex] == ULONG_MAX) {
-          SU2_MPI::Error(string("MPI agglomeration failed to map parent index ") +
-                         to_string(Parent_Remote[iVertex]) +
-                         string(" for vertex ") + to_string(iVertex),
+          SU2_MPI::Error(string("MPI agglomeration failed to map parent index ") + to_string(Parent_Remote[iVertex]) +
+                             string(" for vertex ") + to_string(iVertex),
                          CURRENT_FUNCTION);
         }
 
@@ -662,7 +654,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       }
 
       /*--- Debug: Track state before updating Index_CoarseCV ---*/
-      //auto Index_CoarseCV_Before = Index_CoarseCV;
+      // auto Index_CoarseCV_Before = Index_CoarseCV;
 
       /*--- Only increment by the number of parents that will actually be used ---*/
       Index_CoarseCV += nUsedParents;
@@ -678,9 +670,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         /*--- Debug: Check for out-of-bounds access ---*/
         if (iPoint_Coarse >= Index_CoarseCV) {
           cout << "ERROR [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR
-               << "]: Out-of-bounds coarse CV index " << iPoint_Coarse
-               << " >= " << Index_CoarseCV
-               << " (vertex " << iVertex << ", fine point " << iPoint_Fine << ")" << endl;
+               << "]: Out-of-bounds coarse CV index " << iPoint_Coarse << " >= " << Index_CoarseCV << " (vertex "
+               << iVertex << ", fine point " << iPoint_Fine << ")" << endl;
           nOutOfBounds++;
           continue;
         }
@@ -694,12 +685,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
             /*--- Only print detailed info for first few conflicts or if suspicious ---*/
             if (nConflicts <= 5 || existing_parent < nPointDomain) {
-              cout << "INFO [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR
-                   << "]: Halo point " << iPoint_Fine
-                   << " already agglomerated to parent " << existing_parent
-                   << (existing_parent < nPointDomain ? " (DOMAIN CV!)" : " (halo CV)")
-                   << ", skipping reassignment to " << iPoint_Coarse
-                   << " (from rank " << receive_from << ")" << endl;
+              cout << "INFO [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR << "]: Halo point "
+                   << iPoint_Fine << " already agglomerated to parent " << existing_parent
+                   << (existing_parent < nPointDomain ? " (DOMAIN CV!)" : " (halo CV)") << ", skipping reassignment to "
+                   << iPoint_Coarse << " (from rank " << receive_from << ")" << endl;
             }
           } else {
             /*--- Same parent from different interface (duplicate) - just skip silently ---*/
@@ -721,9 +710,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       }
 
       /*--- Debug: Report statistics for this marker pair ---*/
-      cout << "MPI Agglomeration [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR
-           << " (rank " << send_to << " <-> " << receive_from << ")]: "
-           << nSuccess << " assigned, " << nSkipped << " duplicates, "
+      cout << "MPI Agglomeration [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR << " (rank " << send_to
+           << " <-> " << receive_from << ")]: " << nSuccess << " assigned, " << nSkipped << " duplicates, "
            << nConflicts << " conflicts";
       if (nOutOfBounds > 0) {
         cout << ", " << nOutOfBounds << " OUT-OF-BOUNDS (CRITICAL!)";
@@ -737,8 +725,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       /*--- Debug: Validate buffer size assumption ---*/
       if (nVertexS != nVertexR) {
         cout << "WARNING [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR
-             << "]: Asymmetric interface - nVertexS=" << nVertexS
-             << " != nVertexR=" << nVertexR << endl;
+             << "]: Asymmetric interface - nVertexS=" << nVertexS << " != nVertexR=" << nVertexR << endl;
       }
     }
   }
@@ -1091,7 +1078,6 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_In
   // auto it2 = unique(Suitable_Indirect_Neighbors.begin(), Suitable_Indirect_Neighbors.end());
   // Suitable_Indirect_Neighbors.resize(it2 - Suitable_Indirect_Neighbors.begin());
 }
-
 
 void CMultiGridGeometry::SetPoint_Connectivity(const CGeometry* fine_grid) {
   /*--- Temporary, CPoint (nodes) then compresses this structure. ---*/
