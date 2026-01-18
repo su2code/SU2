@@ -181,4 +181,14 @@ private:
   void Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
+private:
+  /*!  
+   * \brief Enforce Euler wall BC by projecting momentum to tangent plane.
+   * \param[in] geo_coarse - Coarse grid geometry.
+   * \param[in] sol_coarse - Coarse grid solution.
+   * \param[in] config - Problem configuration.
+   * \param[in] use_solution - True to project Solution, false to project Solution_Old (corrections).
+   */
+  void ProjectEulerWallVelocity(CGeometry *geo_coarse, CSolver *sol_coarse, const CConfig *config, bool use_solution);
+
 };
