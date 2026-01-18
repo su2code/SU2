@@ -170,5 +170,4 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] val_marker - Index of the boundary marker.
    */
   void SetMultiGridWallTemperature(const CGeometry* fine_grid, unsigned short val_marker) override;
-
 };

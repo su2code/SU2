@@ -966,7 +966,6 @@ void CMultiGridGeometry::SetPoint_Connectivity(const CGeometry* fine_grid) {
 }
 
 void CMultiGridGeometry::SetVertex(const CGeometry* fine_grid, const CConfig* config) {
-
   nMarker = fine_grid->GetnMarker();
   unsigned short nMarker_Max = config->GetnMarker_Max();
 
@@ -1082,7 +1081,6 @@ void CMultiGridGeometry::MatchPeriodic(const CConfig* config, unsigned short val
 
 void CMultiGridGeometry::SetControlVolume(const CGeometry* fine_grid, unsigned short action) {
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-
     /*--- Compute the area of the coarse volume ---*/
     for (auto iCoarsePoint = 0u; iCoarsePoint < nPoint; iCoarsePoint++) {
       nodes->SetVolume(iCoarsePoint, 0.0);
@@ -1259,7 +1257,6 @@ void CMultiGridGeometry::SetRestricted_GridVelocity(const CGeometry* fine_grid) 
 }
 
 void CMultiGridGeometry::FindNormal_Neighbor(const CConfig* config) {
-
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
         config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
