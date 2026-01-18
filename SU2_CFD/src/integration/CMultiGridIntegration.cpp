@@ -240,7 +240,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     /*--- Compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$ ---*/
 
-    SetRestricted_Solution(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
+    SetRestricted_Solution(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh);
 
     solver_coarse->Preprocessing(geometry_coarse, solver_container_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem, false);
 
@@ -341,7 +341,144 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   }
   END_SU2_OMP_FOR
 
+  /*--- DIAGNOSTIC: Check corrections at Euler walls before BC enforcement ---*/
+
+  su2double max_correction_normal = 0.0, avg_correction_normal = 0.0;
+  su2double max_correction_pressure = 0.0, avg_correction_pressure = 0.0;
+  unsigned long count_euler_prolong = 0;
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+
+      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+
+        if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
+
+        /*--- Get coarse grid normal ---*/
+        su2double Normal[3] = {0.0};
+        geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
+        const auto nDim = geo_coarse->GetnDim();
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+        if (Area < 1e-12) continue;
+
+        /*--- Get correction (stored in Solution_Old) ---*/
+        const auto* Correction = sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse);
+
+        /*--- Compute normal component of momentum correction ---*/
+        su2double corr_n = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          corr_n += Correction[iDim + 1] * Normal[iDim];
+        }
+        corr_n /= Area;
+
+        max_correction_normal = max(max_correction_normal, fabs(corr_n));
+        avg_correction_normal += fabs(corr_n);
+        max_correction_pressure = max(max_correction_pressure, fabs(Correction[0]));
+        avg_correction_pressure += fabs(Correction[0]);
+        count_euler_prolong++;
+      }
+    }
+  }
+
+  if (count_euler_prolong > 0) {
+    avg_correction_normal /= count_euler_prolong;
+    avg_correction_pressure /= count_euler_prolong;
+    cout << "[MG DIAGNOSTIC] Before prolongation: Euler wall corrections - "
+         << "Max normal momentum = " << max_correction_normal
+         << ", Avg normal momentum = " << avg_correction_normal
+         << ", Max pressure = " << max_correction_pressure
+         << ", Avg pressure = " << avg_correction_pressure << endl;
+  }
+
   delete [] Solution;
+
+  /*--- OPTION C: Enforce Euler wall BC on corrections by projecting to tangent plane ---*/
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+
+      SU2_OMP_FOR_STAT(32)
+      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+
+        if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
+
+        /*--- Get coarse grid normal ---*/
+        su2double Normal[3] = {0.0};
+        geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
+        const auto nDim = geo_coarse->GetnDim();
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+        if (Area < 1e-12) continue;
+
+        /*--- Normalize normal vector ---*/
+        su2double UnitNormal[3] = {0.0};
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          UnitNormal[iDim] = Normal[iDim] / Area;
+        }
+
+        /*--- Get correction (stored in Solution_Old) ---*/
+        auto* Correction = sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse);
+
+        /*--- Compute normal component of momentum correction ---*/
+        su2double corr_n = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          corr_n += Correction[iDim + 1] * UnitNormal[iDim];
+        }
+
+        /*--- Project correction to tangent plane: correction -= (correction·n)n ---*/
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Correction[iDim + 1] -= corr_n * UnitNormal[iDim];
+        }
+      }
+      END_SU2_OMP_FOR
+    }
+  }
+
+  /*--- DIAGNOSTIC: Verify correction projection worked ---*/
+
+  max_correction_normal = 0.0;
+  avg_correction_normal = 0.0;
+  count_euler_prolong = 0;
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+
+      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+
+        if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
+
+        su2double Normal[3] = {0.0};
+        geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
+        const auto nDim = geo_coarse->GetnDim();
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+        if (Area < 1e-12) continue;
+
+        const auto* Correction = sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse);
+
+        su2double corr_n = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          corr_n += Correction[iDim + 1] * Normal[iDim];
+        }
+        corr_n /= Area;
+
+        max_correction_normal = max(max_correction_normal, fabs(corr_n));
+        avg_correction_normal += fabs(corr_n);
+        count_euler_prolong++;
+      }
+    }
+  }
+
+  if (count_euler_prolong > 0) {
+    avg_correction_normal /= count_euler_prolong;
+    cout << "[MG DIAGNOSTIC] After Option C enforcement: Euler wall corrections - "
+         << "Max normal momentum = " << max_correction_normal
+         << ", Avg normal momentum = " << avg_correction_normal << endl;
+  }
 
   /*--- Remove any contributions from no-slip walls. ---*/
 
@@ -528,6 +665,51 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   }
   END_SU2_OMP_FOR
 
+  /*--- DIAGNOSTIC: Check truncation error normal component at Euler walls before zeroing ---*/
+
+  su2double max_trunc_normal = 0.0, avg_trunc_normal = 0.0;
+  unsigned long count_euler_forcing = 0;
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+
+      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+
+        if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
+
+        /*--- Get coarse grid normal ---*/
+        su2double Normal[3] = {0.0};
+        geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
+        const auto nDim = geo_coarse->GetnDim();
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+        if (Area < 1e-12) continue;
+
+        /*--- Get truncation error ---*/
+        const auto* TruncError = sol_coarse->GetNodes()->GetResTruncError(Point_Coarse);
+
+        /*--- Compute normal component ---*/
+        su2double trunc_n = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          trunc_n += TruncError[iDim + 1] * Normal[iDim];
+        }
+        trunc_n /= Area;
+
+        max_trunc_normal = max(max_trunc_normal, fabs(trunc_n));
+        avg_trunc_normal += fabs(trunc_n);
+        count_euler_forcing++;
+      }
+    }
+  }
+
+  if (count_euler_forcing > 0) {
+    avg_trunc_normal /= count_euler_forcing;
+    cout << "[MG DIAGNOSTIC] Forcing term mesh " << iMesh
+         << ": Euler wall truncation error - Max normal = " << max_trunc_normal
+         << ", Avg normal = " << avg_trunc_normal << endl;
+  }
+
   delete [] Residual;
 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -561,7 +743,7 @@ void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solve
 }
 
 void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
-                                                   CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+                                                   CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config, unsigned short iMesh) {
 
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
   const bool grid_movement = config->GetGrid_Movement();
@@ -604,6 +786,138 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
       }
       END_SU2_OMP_FOR
     }
+  }
+
+  /*--- DIAGNOSTIC: Check Euler wall BC violation after restriction ---*/
+
+  su2double max_normal_vel = 0.0, avg_normal_vel = 0.0;
+  unsigned long count_euler = 0;
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+
+      for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        const auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+
+        if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
+
+        /*--- Get coarse grid normal ---*/
+        su2double Normal[3] = {0.0};
+        geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
+        const auto nDim = geo_coarse->GetnDim();
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+        if (Area < 1e-12) continue;
+
+        /*--- Get velocity from restricted solution ---*/
+        const auto* Solution = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
+
+        /*--- Compute v·n (should be zero for Euler wall) ---*/
+        su2double vn = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          vn += Solution[iDim + 1] * Normal[iDim];  // Solution layout: [rho, rho*u, rho*v, (rho*w), E]
+        }
+        vn /= Area;  // Normalize by area
+
+        max_normal_vel = max(max_normal_vel, fabs(vn));
+        avg_normal_vel += fabs(vn);
+        count_euler++;
+      }
+    }
+  }
+
+  if (count_euler > 0) {
+    avg_normal_vel /= count_euler;
+    cout << "[MG DIAGNOSTIC] After restriction on mesh " << iMesh
+         << ": Euler wall BC violation - Max |v·n| = " << max_normal_vel
+         << ", Avg |v·n| = " << avg_normal_vel
+         << " (" << count_euler << " vertices)" << endl;
+  }
+
+  /*--- OPTION B: Enforce Euler wall BC by projecting velocity to tangent plane ---*/
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+
+      SU2_OMP_FOR_STAT(32)
+      for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        const auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+
+        if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
+
+        /*--- Get coarse grid normal ---*/
+        su2double Normal[3] = {0.0};
+        geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
+        const auto nDim = geo_coarse->GetnDim();
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+        if (Area < 1e-12) continue;
+
+        /*--- Normalize normal vector ---*/
+        su2double UnitNormal[3] = {0.0};
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          UnitNormal[iDim] = Normal[iDim] / Area;
+        }
+
+        /*--- Get current solution ---*/
+        auto* Solution = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
+
+        /*--- Compute v·n ---*/
+        su2double vn = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          vn += Solution[iDim + 1] * UnitNormal[iDim];  // Solution layout: [rho, rho*u, rho*v, (rho*w), E]
+        }
+
+        /*--- Project velocity to tangent plane: v_new = v - (v·n)n ---*/
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Solution[iDim + 1] -= vn * UnitNormal[iDim];
+        }
+      }
+      END_SU2_OMP_FOR
+    }
+  }
+
+  /*--- DIAGNOSTIC: Verify BC enforcement worked ---*/
+
+  max_normal_vel = 0.0;
+  avg_normal_vel = 0.0;
+  count_euler = 0;
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+
+      for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        const auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+
+        if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
+
+        su2double Normal[3] = {0.0};
+        geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
+        const auto nDim = geo_coarse->GetnDim();
+        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+        if (Area < 1e-12) continue;
+
+        const auto* Solution = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
+
+        su2double vn = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          vn += Solution[iDim + 1] * Normal[iDim];
+        }
+        vn /= Area;
+
+        max_normal_vel = max(max_normal_vel, fabs(vn));
+        avg_normal_vel += fabs(vn);
+        count_euler++;
+      }
+    }
+  }
+
+  if (count_euler > 0) {
+    avg_normal_vel /= count_euler;
+    cout << "[MG DIAGNOSTIC] After Option B enforcement on mesh " << iMesh
+         << ": Euler wall BC - Max |v·n| = " << max_normal_vel
+         << ", Avg |v·n| = " << avg_normal_vel << endl;
   }
 
   /*--- MPI the new interpolated solution ---*/

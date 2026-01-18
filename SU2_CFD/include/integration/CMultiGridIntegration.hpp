@@ -168,7 +168,7 @@ private:
    * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
    */
   void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
-                              CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+                              CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config, unsigned short iMesh = 999);
 
   /*!
    * \brief Initialize the adjoint solution using the primal problem.

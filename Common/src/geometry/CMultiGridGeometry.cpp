@@ -160,7 +160,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
               /*--- Compute local curvature at this point ---*/
               su2double local_curvature = ComputeLocalCurvature(fine_grid, iPoint, marker_seed[0]);
               // limit to 30 degrees
-              if (local_curvature >= 5.0) {
+              if (local_curvature >= 45.0) {
                 agglomerate_seed = false;  // High curvature: do not agglomerate
                 euler_wall_rejected_curvature[marker_seed[0]]++;
               } else {
@@ -205,7 +205,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
                 /*--- Compute local curvature at this point ---*/
                 su2double local_curvature = ComputeLocalCurvature(fine_grid, iPoint, copy_marker[i]);
                 // limit to 30 degrees
-                if (local_curvature >= 5.0) {
+                if (local_curvature >= 45.0) {
                   agglomerate_seed = false;  // High curvature: do not agglomerate
                   euler_wall_rejected_curvature[copy_marker[i]]++;
                   euler_wall_rejected_here = true;
