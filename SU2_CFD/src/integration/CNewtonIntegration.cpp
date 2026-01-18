@@ -68,6 +68,7 @@ void CNewtonIntegration::Setup() {
 
   startupIters = iter = iparam[0];
   startupResidual = dparam[0];
+  useDeflation = iparam[3] > 0;
   precondIters = iparam[1];
   precondTol = dparam[1];
   tolRelaxFactor = iparam[2];
@@ -183,15 +184,11 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   if (!setup) { Setup(); setup = true; }
 
-  // Ramp from 1st to 2nd order during the startup.
-  su2double baseNkRelaxation = 1;
-  if (startupPeriod && startupIters > 0 && !config->GetRestart()) {
-    baseNkRelaxation = su2double(startupIters - iter) / startupIters;
-  }
-  config->SetNewtonKrylovRelaxation(baseNkRelaxation);
+  /*--- Remove NK relaxation to compute the current residual. ---*/
+  config->SetNewtonKrylovRelaxation(1.0);
 
-  // When using NK relaxation (not fully 2nd order Jacobian products) we need an additional
-  // residual evaluation that is used as the reference for finite differences.
+  /*--- When using NK relaxation (not fully 2nd order Jacobian products) we need an additional
+   * residual evaluation that is used as the reference for finite differences. ---*/
   LinSysRes0 = (!startupPeriod && nkRelaxation < 1) ? &LinSysResRelax : &LinSysRes;
 
   SU2_OMP_PARALLEL_(if(solvers[FLOW_SOL]->GetHasHybridParallel())) {
@@ -265,8 +262,13 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
     ComputeFinDiffStep();
 
     eps *= toleranceFactor;
-    iter = LinSolver.FGMRES_LinSolver(LinSysRes, linSysSol, CMatrixFreeProductWrapper(this),
-                                      CPreconditionerWrapper(this), eps, iter, eps, false, config);
+    if (useDeflation) {
+      iter = LinSolver.FGCRODR_LinSolver(LinSysRes, linSysSol, CMatrixFreeProductWrapper(this),
+                                         CPreconditionerWrapper(this), eps, iter, eps, false, config);
+    } else {
+      iter = LinSolver.FGMRES_LinSolver(LinSysRes, linSysSol, CMatrixFreeProductWrapper(this),
+                                        CPreconditionerWrapper(this), eps, iter, eps, false, config);
+    }
     /*--- Scale back the residual to trick the CFL adaptation. ---*/
     eps /= toleranceFactor;
   }
@@ -281,7 +283,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
       if (eps > fmax(config->GetLinear_Solver_Error(), adaptTol)) {
         nkRelaxation *= 0.9;
       } else if (eps < 0.9 * fmax(config->GetLinear_Solver_Error(), adaptTol)) {
-        nkRelaxation = fmin(nkRelaxation * 1.05, 1);
+        nkRelaxation = fmin(fmax(nkRelaxation * 1.05, 0.05), 1);
       }
     }
   }
@@ -312,6 +314,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
     SU2_OMP_MASTER {
       startupPeriod = false;
       firstResidual = residual;
+      if (autoRelaxation) nkRelaxation = 0;
     }
     END_SU2_OMP_MASTER
     SU2_OMP_FOR_STAT(omp_chunk_size)

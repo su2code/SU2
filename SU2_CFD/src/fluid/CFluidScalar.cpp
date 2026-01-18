@@ -46,7 +46,9 @@ CFluidScalar::CFluidScalar(su2double value_pressure_operating, const CConfig* co
       n_species_mixture(config->GetnSpecies() + 1),
       Pressure_Thermodynamic(value_pressure_operating),
       GasConstant_Ref(config->GetGas_Constant_Ref()),
-      Prandtl_Number(config->GetPrandtl_Turb()),
+      Std_Ref_Temp_ND(STD_REF_TEMP / config->GetTemperature_Ref()),
+      Prandtl_Turb_Number(config->GetPrandtl_Turb()),
+      Schmidt_Turb_Number(config->GetSchmidt_Number_Turbulent()),
       wilke(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::WILKE),
       davidson(config->GetKind_MixingViscosityModel() == MIXINGVISCOSITYMODEL::DAVIDSON) {
   if (n_species_mixture > ARRAYSIZE) {
@@ -168,7 +170,7 @@ su2double CFluidScalar::DavidsonViscosity(const su2double* val_scalars) {
 su2double CFluidScalar::WilkeConductivity(const su2double* val_scalars) {
 
   for (int iVar = 0; iVar < n_species_mixture; iVar++) {
-    ThermalConductivityPointers[iVar]->SetConductivity(Temperature, Density, Mu, 0.0, 0.0, 0.0, 0.0);
+    ThermalConductivityPointers[iVar]->SetConductivity(Temperature, Density, Mu, 0.0, Cp, 0.0, 0.0);
     laminarThermalConductivity[iVar] = ThermalConductivityPointers[iVar]->GetConductivity();
   }
 
@@ -212,12 +214,65 @@ su2double CFluidScalar::ComputeMeanSpecificHeatCp(const su2double* val_scalars) 
   return mean_cp;
 }
 
+su2double CFluidScalar::ComputeEnthalpyFromT(const su2double val_temperature, const su2double* val_scalars){
+  /* In future implementations, enthalpy should be computed using numerical integration. For now, as Cp does not
+   * depend on temperature, but it does depend on mixture composition, enthalpy is directly computed from
+   * the expression h_s = Cp(T - T_ref).
+   */
+  su2double val_Enthalpy = Cp * (val_temperature - Std_Ref_Temp_ND);
+  return val_Enthalpy;
+}
+
+void CFluidScalar::GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const {
+  const su2double enthalpy_species_N = specificHeat[n_species_mixture - 1] * (Temperature - Std_Ref_Temp_ND);
+  for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
+    const su2double enthalpy_species_i = specificHeat[iVar] * (Temperature - Std_Ref_Temp_ND);
+    enthalpy_diffusions[iVar] = Density * (enthalpy_species_i * massDiffusivity[iVar] -
+                                           enthalpy_species_N * massDiffusivity[n_species_mixture - 1]);
+    enthalpy_diffusions[iVar] += Mu_Turb * (enthalpy_species_i - enthalpy_species_N) / Schmidt_Turb_Number;
+  }
+}
+
+void CFluidScalar::GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) const {
+  for (int iVar = 0; iVar < n_species_mixture - 1; iVar++) {
+    grad_enthalpy_diffusions[iVar] = Density *
+                               (specificHeat[iVar] * massDiffusivity[iVar] -
+                                specificHeat[n_species_mixture - 1] * massDiffusivity[n_species_mixture - 1]);
+    grad_enthalpy_diffusions[iVar] +=
+        Mu_Turb * (specificHeat[iVar] - specificHeat[n_species_mixture - 1]) / Schmidt_Turb_Number;
+  }
+}
+
 void CFluidScalar::SetTDState_T(const su2double val_temperature, const su2double* val_scalars) {
   MassToMoleFractions(val_scalars);
   ComputeGasConstant();
   Temperature = val_temperature;
   Density = Pressure_Thermodynamic / (Temperature * Gas_Constant);
   Cp = ComputeMeanSpecificHeatCp(val_scalars);
+  Cv = Cp - Gas_Constant;
+  Enthalpy = ComputeEnthalpyFromT(Temperature, val_scalars);
+
+  if (wilke) {
+    Mu = WilkeViscosity(val_scalars);
+  } else if (davidson) {
+    Mu = DavidsonViscosity(val_scalars);
+  }
+
+  Kt = WilkeConductivity(val_scalars);
+  ComputeMassDiffusivity();
+}
+
+void CFluidScalar::SetTDState_h(const su2double val_enthalpy, const su2double* val_scalars) {
+  MassToMoleFractions(val_scalars);
+  ComputeGasConstant();
+  Enthalpy = val_enthalpy;
+  Cp = ComputeMeanSpecificHeatCp(val_scalars);
+  /* In future implementations, temperature should be computed using Newton-Raphson. For now, as Cp does not
+   * depend on temperature, but it does depend on mixture composition, temperature is directly solved from the
+   * expression h_s = Cp(T - T_ref).
+   */
+  Temperature = val_enthalpy / Cp + Std_Ref_Temp_ND;
+  Density = Pressure_Thermodynamic / (Temperature * Gas_Constant);
   Cv = Cp - Gas_Constant;
 
   if (wilke) {

@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file CGeometry.hpp
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
@@ -51,6 +51,7 @@ extern "C" {
 #include <climits>
 #include <memory>
 #include <unordered_map>
+#include <cstdint>
 
 #include "primal_grid/CPrimalGrid.hpp"
 #include "dual_grid/CDualGrid.hpp"

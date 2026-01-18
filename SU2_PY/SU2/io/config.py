@@ -94,7 +94,7 @@ class Config(ordered_bunch):
                 self.read(filename)
             except IOError:
                 print("Could not find config file: %s" % filename)
-            except:
+            except Exception:
                 print("Unexpected error: ", sys.exc_info()[0])
                 raise
         self._filename = filename
@@ -729,9 +729,9 @@ def read_config(filename):
 
     # hack - twl
     if "DV_VALUE_NEW" not in data_dict:
-        data_dict["DV_VALUE_NEW"] = [0]
+        data_dict["DV_VALUE_NEW"] = data_dict.get("DV_VALUE", [0])
     if "DV_VALUE_OLD" not in data_dict:
-        data_dict["DV_VALUE_OLD"] = [0]
+        data_dict["DV_VALUE_OLD"] = data_dict.get("DV_VALUE", [0])
     if "OPT_ITERATIONS" not in data_dict:
         data_dict["OPT_ITERATIONS"] = 100
     if "OPT_ACCURACY" not in data_dict:
