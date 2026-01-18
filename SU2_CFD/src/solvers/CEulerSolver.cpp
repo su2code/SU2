@@ -1450,7 +1450,7 @@ void CEulerSolver::SetReferenceValues(const CConfig& config) {
     DynamicPressureRef = 1.0;
   }
 
-  AeroCoeffForceRef = DynamicPressureRef * config.GetRefArea();
+  AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
 
 }
 
