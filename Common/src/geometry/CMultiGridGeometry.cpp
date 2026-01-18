@@ -212,13 +212,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         /*--- If the seed (parent) can be agglomerated, we try to agglomerate connected childs to the parent ---*/
         /*--- Note that in 2D we allow a maximum of 4 nodes to be agglomerated ---*/
         if (agglomerate_seed) {
-
           /*--- Now we do a sweep over all the nodes that surround the seed point ---*/
           for (auto CVPoint : fine_grid->nodes->GetPoints(iPoint)) {
-
             /*--- The new point can be agglomerated ---*/
             if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config)) {
-
               /*--- We set the value of the parent ---*/
               fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
 
@@ -243,10 +240,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
             /*--- Now we do a sweep over all the indirect nodes that can be added ---*/
             for (auto CVPoint : Suitable_Indirect_Neighbors) {
-
               /*--- The new point can be agglomerated ---*/
               if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config)) {
-
                 /*--- We set the value of the parent ---*/
                 fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
 
@@ -281,7 +276,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
 
       if ((!fine_grid->nodes->GetAgglomerate(iPoint)) && (fine_grid->nodes->GetDomain(iPoint))) {
-
         fine_grid->nodes->SetParent_CV(iPoint, Index_CoarseCV);
         nodes->SetChildren_CV(Index_CoarseCV, 0, iPoint);
         nodes->SetnChildren_CV(Index_CoarseCV, 1);
@@ -371,7 +365,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         if (nChildren == maxAgglomSize) break;
         /*--- The new point can be agglomerated ---*/
         if ((!fine_grid->nodes->GetAgglomerate(CVPoint)) && (fine_grid->nodes->GetDomain(CVPoint))) {
-
           /*--- We set the value of the parent ---*/
           fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
 
@@ -435,7 +428,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
       /*--- If the total would exceed maxAgglomSize, try to redistribute children to neighbors ---*/
       if (nChildren_Total > maxAgglomSize) {
-
         /*--- Find neighbors of the target coarse point that have room ---*/
         unsigned short nChildrenToRedistribute = nChildren_Total - maxAgglomSize;
 
@@ -487,7 +479,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       /*--- Update the number of children control volumes ---*/
       nodes->SetnChildren_CV(iCoarsePoint_Complete, nChildren);
       nodes->SetnChildren_CV(iCoarsePoint, 0);
-
     }
   }
 
@@ -613,7 +604,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
         Children_Local[iVertex] = fine_grid->vertex[MarkerR][iVertex]->GetNode();
       }
-
 
       /*--- Only increment by the number of parents that will actually be used ---*/
       Index_CoarseCV += nUsedParents;
@@ -879,8 +869,6 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
 
         /*--- Note: If there is only one marker, but the marker is the SEND_RECEIVE, then the point is actually an
               interior point and we do not agglomerate.  ---*/
-
-
       }
 
       /*--- If there are two markers in the vertex that is going to be aglomerated ---*/
@@ -899,9 +887,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
     /*--- If the element belongs to the domain, it is never agglomerated with a boundary node. ---*/
     else {
       agglomerate_CV = false;
-
     }
-
   }
 
   return agglomerate_CV;
@@ -958,7 +944,6 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_In
   sort(Suitable_Second_Neighbors.begin(), Suitable_Second_Neighbors.end());
   auto it1 = unique(Suitable_Second_Neighbors.begin(), Suitable_Second_Neighbors.end());
   Suitable_Second_Neighbors.resize(it1 - Suitable_Second_Neighbors.begin());
-
 }
 
 void CMultiGridGeometry::SetPoint_Connectivity(const CGeometry* fine_grid) {
