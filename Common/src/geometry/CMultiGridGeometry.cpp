@@ -37,7 +37,6 @@
 #include <cstdlib>
 #include <map>
 
-/*--- Nijso says: this could perhaps be replaced by metis partitioning? ---*/
 CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, unsigned short iMesh) : CGeometry() {
   nDim = fine_grid->GetnDim();  // Write the number of dimensions of the coarse grid.
 
@@ -699,14 +698,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
            << " orphaned halo coarse CVs found - this indicates a logic error!" << endl;
     }
   }
-
-  /*--- Debug validation: Verify halo CV coordinates match domain CVs on remote ranks ---*/
-  /*--- Note: This validation is deferred until after SetVertex() is called, as vertices ---*/
-  /*--- are not yet initialized at the end of the constructor. The validation is performed ---*/
-  /*--- by calling ValidateHaloCoordinates() after SetVertex() in the driver. ---*/
-
-  /*--- For now, we skip this validation in the constructor to avoid segfaults. ---*/
-  /*--- TODO: Move this to a separate validation function called after SetVertex(). ---*/
 
 #endif  // HAVE_MPI
 
