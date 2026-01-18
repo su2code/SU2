@@ -950,14 +950,7 @@ void CIncEulerSolver::SetReferenceValues(const CConfig& config) {
     DynamicPressureRef = 1.0;
   }
 
-  if (config.GetRefArea() <= 0.0) {
-    if (rank == MASTER_NODE) {
-      std::cout << "Warning: REF_AREA <= 0.0. Force coefficients will be non-dimensionalized by 1.0.\n";
-    }
-    AeroCoeffForceRef = DynamicPressureRef * 1.0;
-  } else {
-    AeroCoeffForceRef = DynamicPressureRef * config.GetRefArea();
-  }
+  AeroCoeffForceRef = DynamicPressureRef * config.GetRefArea();
 
 }
 
