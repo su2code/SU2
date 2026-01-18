@@ -966,17 +966,15 @@ void CMultiGridGeometry::SetPoint_Connectivity(const CGeometry* fine_grid) {
 }
 
 void CMultiGridGeometry::SetVertex(const CGeometry* fine_grid, const CConfig* config) {
-  unsigned long iVertex, iFinePoint, iCoarsePoint;
-  unsigned short iMarker, iMarker_Tag, iChildren;
 
   nMarker = fine_grid->GetnMarker();
   unsigned short nMarker_Max = config->GetnMarker_Max();
 
   /*--- If any children node belong to the boundary then the entire control
    volume will belong to the boundary ---*/
-  for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint++)
-    for (iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
-      iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPoint; iCoarsePoint++)
+    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
+      auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
       if (fine_grid->nodes->GetBoundary(iFinePoint)) {
         nodes->SetBoundary(iCoarsePoint, nMarker);
         break;
@@ -987,20 +985,20 @@ void CMultiGridGeometry::SetVertex(const CGeometry* fine_grid, const CConfig* co
   nVertex = new unsigned long[nMarker];
 
   Tag_to_Marker = new string[nMarker_Max];
-  for (iMarker_Tag = 0; iMarker_Tag < nMarker_Max; iMarker_Tag++)
+  for (auto iMarker_Tag = 0u; iMarker_Tag < nMarker_Max; iMarker_Tag++)
     Tag_to_Marker[iMarker_Tag] = fine_grid->GetMarker_Tag(iMarker_Tag);
 
   /*--- Compute the number of vertices to do the dimensionalization ---*/
-  for (iMarker = 0; iMarker < nMarker; iMarker++) nVertex[iMarker] = 0;
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) nVertex[iMarker] = 0;
 
-  for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint++) {
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPoint; iCoarsePoint++) {
     if (nodes->GetBoundary(iCoarsePoint)) {
-      for (iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
-        iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
-        for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
+        auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+        for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
           if ((fine_grid->nodes->GetVertex(iFinePoint, iMarker) != -1) &&
               (nodes->GetVertex(iCoarsePoint, iMarker) == -1)) {
-            iVertex = nVertex[iMarker];
+            auto iVertex = nVertex[iMarker];
             nodes->SetVertex(iCoarsePoint, iVertex, iMarker);
             nVertex[iMarker]++;
           }
@@ -1009,25 +1007,25 @@ void CMultiGridGeometry::SetVertex(const CGeometry* fine_grid, const CConfig* co
     }
   }
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
     vertex[iMarker] = new CVertex*[fine_grid->GetnVertex(iMarker) + 1];
     nVertex[iMarker] = 0;
   }
 
-  for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint++)
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPoint; iCoarsePoint++)
     if (nodes->GetBoundary(iCoarsePoint))
-      for (iMarker = 0; iMarker < nMarker; iMarker++) nodes->SetVertex(iCoarsePoint, -1, iMarker);
+      for (auto iMarker = 0u; iMarker < nMarker; iMarker++) nodes->SetVertex(iCoarsePoint, -1, iMarker);
 
-  for (iMarker = 0; iMarker < nMarker; iMarker++) nVertex[iMarker] = 0;
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) nVertex[iMarker] = 0;
 
-  for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint++) {
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPoint; iCoarsePoint++) {
     if (nodes->GetBoundary(iCoarsePoint)) {
-      for (iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
-        iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
-        for (iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker++) {
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
+        auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+        for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
           if ((fine_grid->nodes->GetVertex(iFinePoint, iMarker) != -1) &&
               (nodes->GetVertex(iCoarsePoint, iMarker) == -1)) {
-            iVertex = nVertex[iMarker];
+            auto iVertex = nVertex[iMarker];
             vertex[iMarker][iVertex] = new CVertex(iCoarsePoint, nDim);
             nodes->SetVertex(iCoarsePoint, iVertex, iMarker);
 
@@ -1044,15 +1042,13 @@ void CMultiGridGeometry::SetVertex(const CGeometry* fine_grid, const CConfig* co
 }
 
 void CMultiGridGeometry::MatchActuator_Disk(const CConfig* config) {
-  unsigned short iMarker;
-  unsigned long iVertex, iPoint;
   int iProcessor = size;
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
         (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
+      for (auto iVertex = 0u; iVertex < nVertex[iMarker]; iVertex++) {
+        auto iPoint = vertex[iMarker][iVertex]->GetNode();
         if (nodes->GetDomain(iPoint)) {
           vertex[iMarker][iVertex]->SetDonorPoint(iPoint, nodes->GetGlobalIndex(iPoint), iVertex, iMarker, iProcessor);
         }
@@ -1062,20 +1058,18 @@ void CMultiGridGeometry::MatchActuator_Disk(const CConfig* config) {
 }
 
 void CMultiGridGeometry::MatchPeriodic(const CConfig* config, unsigned short val_periodic) {
-  unsigned short iMarker, iPeriodic, nPeriodic;
-  unsigned long iVertex, iPoint;
   int iProcessor = rank;
 
   /*--- Evaluate the number of periodic boundary conditions ---*/
 
-  nPeriodic = config->GetnMarker_Periodic();
+  auto nPeriodic = config->GetnMarker_Periodic();
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      auto iPeriodic = config->GetMarker_All_PerBound(iMarker);
       if ((iPeriodic == val_periodic) || (iPeriodic == val_periodic + nPeriodic / 2)) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-          iPoint = vertex[iMarker][iVertex]->GetNode();
+        for (auto iVertex = 0u; iVertex < nVertex[iMarker]; iVertex++) {
+          auto iPoint = vertex[iMarker][iVertex]->GetNode();
           if (nodes->GetDomain(iPoint)) {
             vertex[iMarker][iVertex]->SetDonorPoint(iPoint, nodes->GetGlobalIndex(iPoint), iVertex, iMarker,
                                                     iProcessor);
@@ -1088,18 +1082,13 @@ void CMultiGridGeometry::MatchPeriodic(const CConfig* config, unsigned short val
 
 void CMultiGridGeometry::SetControlVolume(const CGeometry* fine_grid, unsigned short action) {
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    unsigned long iFinePoint, iCoarsePoint, iEdge, iParent;
-    long FineEdge, CoarseEdge;
-    unsigned short iChildren;
-    bool change_face_orientation;
-    su2double Coarse_Volume, Area;
 
     /*--- Compute the area of the coarse volume ---*/
-    for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint++) {
+    for (auto iCoarsePoint = 0u; iCoarsePoint < nPoint; iCoarsePoint++) {
       nodes->SetVolume(iCoarsePoint, 0.0);
-      Coarse_Volume = 0.0;
-      for (iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
-        iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+      su2double Coarse_Volume = 0.0;
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
+        auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
         Coarse_Volume += fine_grid->nodes->GetVolume(iFinePoint);
       }
       nodes->SetVolume(iCoarsePoint, Coarse_Volume);
@@ -1110,19 +1099,19 @@ void CMultiGridGeometry::SetControlVolume(const CGeometry* fine_grid, unsigned s
       edges->SetZeroValues();
     }
 
-    for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint++)
-      for (iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
-        iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+    for (auto iCoarsePoint = 0u; iCoarsePoint < nPoint; iCoarsePoint++)
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
+        auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
 
         for (auto iFinePoint_Neighbor : fine_grid->nodes->GetPoints(iFinePoint)) {
-          iParent = fine_grid->nodes->GetParent_CV(iFinePoint_Neighbor);
+          auto iParent = fine_grid->nodes->GetParent_CV(iFinePoint_Neighbor);
           if ((iParent != iCoarsePoint) && (iParent < iCoarsePoint)) {
-            FineEdge = fine_grid->FindEdge(iFinePoint, iFinePoint_Neighbor);
+            auto FineEdge = fine_grid->FindEdge(iFinePoint, iFinePoint_Neighbor);
 
-            change_face_orientation = false;
+            bool change_face_orientation = false;
             if (iFinePoint < iFinePoint_Neighbor) change_face_orientation = true;
 
-            CoarseEdge = FindEdge(iParent, iCoarsePoint);
+            auto CoarseEdge = FindEdge(iParent, iCoarsePoint);
 
             const auto Normal = fine_grid->edges->GetNormal(FineEdge);
 
@@ -1137,9 +1126,9 @@ void CMultiGridGeometry::SetControlVolume(const CGeometry* fine_grid, unsigned s
 
     /*--- Check if there is a normal with null area ---*/
 
-    for (iEdge = 0; iEdge < nEdge; iEdge++) {
+    for (auto iEdge = 0u; iEdge < nEdge; iEdge++) {
       const auto NormalFace = edges->GetNormal(iEdge);
-      Area = GeometryToolbox::Norm(nDim, NormalFace);
+      su2double Area = GeometryToolbox::Norm(nDim, NormalFace);
       if (Area == 0.0) {
         su2double DefaultNormal[3] = {EPS * EPS};
         edges->SetNormal(iEdge, DefaultNormal);
@@ -1151,24 +1140,23 @@ void CMultiGridGeometry::SetControlVolume(const CGeometry* fine_grid, unsigned s
 
 void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, const CConfig* config,
                                                unsigned short action) {
-  unsigned long iCoarsePoint, iFinePoint, FineVertex, iVertex;
-  su2double Normal[MAXNDIM] = {0.0}, Area, *NormalFace = nullptr;
+  su2double Normal[MAXNDIM] = {0.0}, *NormalFace = nullptr;
 
   if (action != ALLOCATE) {
     SU2_OMP_FOR_DYN(1)
-    for (auto iMarker = 0; iMarker < nMarker; iMarker++)
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) vertex[iMarker][iVertex]->SetZeroValues();
+    for (auto iMarker = 0u; iMarker < nMarker; iMarker++)
+      for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) vertex[iMarker][iVertex]->SetZeroValues();
     END_SU2_OMP_FOR
   }
 
   SU2_OMP_FOR_DYN(1)
-  for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
-    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-      iCoarsePoint = vertex[iMarker][iVertex]->GetNode();
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
+      auto iCoarsePoint = vertex[iMarker][iVertex]->GetNode();
       for (auto iChildren = 0; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
-        iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+        auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
         if (fine_grid->nodes->GetVertex(iFinePoint, iMarker) != -1) {
-          FineVertex = fine_grid->nodes->GetVertex(iFinePoint, iMarker);
+          auto FineVertex = fine_grid->nodes->GetVertex(iFinePoint, iMarker);
           fine_grid->vertex[iMarker][FineVertex]->GetNormal(Normal);
           vertex[iMarker][iVertex]->AddNormal(Normal);
         }
@@ -1179,10 +1167,10 @@ void CMultiGridGeometry::SetBoundControlVolume(const CGeometry* fine_grid, const
 
   /*--- Check if there is a normal with null area ---*/
   SU2_OMP_FOR_DYN(1)
-  for (auto iMarker = 0; iMarker < nMarker; iMarker++) {
-    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
+    for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
       NormalFace = vertex[iMarker][iVertex]->GetNormal();
-      Area = GeometryToolbox::Norm(nDim, NormalFace);
+      su2double Area = GeometryToolbox::Norm(nDim, NormalFace);
       if (Area == 0.0)
         for (auto iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS * EPS;
     }
@@ -1271,15 +1259,13 @@ void CMultiGridGeometry::SetRestricted_GridVelocity(const CGeometry* fine_grid) 
 }
 
 void CMultiGridGeometry::FindNormal_Neighbor(const CConfig* config) {
-  unsigned short iMarker, iDim;
-  unsigned long iPoint, iVertex;
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
         config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
         config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
+      for (auto iVertex = 0ul; iVertex < nVertex[iMarker]; iVertex++) {
+        auto iPoint = vertex[iMarker][iVertex]->GetNode();
 
         /*--- If the node belong to the domain ---*/
         if (nodes->GetDomain(iPoint)) {
@@ -1292,7 +1278,7 @@ void CMultiGridGeometry::FindNormal_Neighbor(const CConfig* config) {
             scalar_prod = 0.0;
             norm_vect = 0.0;
             norm_Normal = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) {
+            for (auto iDim = 0u; iDim < nDim; iDim++) {
               diff_coord = nodes->GetCoord(jPoint, iDim) - nodes->GetCoord(iPoint, iDim);
               scalar_prod += diff_coord * Normal[iDim];
               norm_vect += diff_coord * diff_coord;
@@ -1304,7 +1290,7 @@ void CMultiGridGeometry::FindNormal_Neighbor(const CConfig* config) {
 
             /*--- Get maximum cosine (not minimum because normals are oriented inwards) ---*/
             if (cos_alpha >= cos_max) {
-              Point_Normal = jPoint;
+              auto Point_Normal = jPoint;
               cos_max = cos_alpha;
             }
           }
@@ -1329,7 +1315,7 @@ su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, 
   fine_grid->vertex[iMarker][iVertex]->GetNormal(Normal_i);
   su2double Area_i = GeometryToolbox::Norm(int(nDim), Normal_i);
 
-  if (Area_i < 1e-12) return 0.0;  // Skip degenerate vertices
+  if (Area_i < EPS) return 0.0;  // Skip degenerate vertices
 
   /*--- Normalize the normal ---*/
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
@@ -1352,7 +1338,7 @@ su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, 
     fine_grid->vertex[iMarker][jVertex]->GetNormal(Normal_j);
     su2double Area_j = GeometryToolbox::Norm(int(nDim), Normal_j);
 
-    if (Area_j < 1e-12) continue;  // Skip degenerate neighbor
+    if (Area_j < EPS) continue;  // Skip degenerate neighbor
 
     /*--- Normalize the neighbor normal ---*/
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {

@@ -53,28 +53,28 @@ void ProjectEulerWallToTangentPlane(CGeometry* geo_coarse, const CConfig* config
         const auto nDim = geo_coarse->GetnDim();
         su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-        if (Area < 1e-12) continue;
+        if (Area < EPS) continue;
 
         /*--- Normalize normal vector ---*/
         su2double UnitNormal[3] = {0.0};
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
           UnitNormal[iDim] = Normal[iDim] / Area;
         }
 
         /*--- Get current solution or correction ---*/
-        su2double* Data = use_solution_old ?
+        su2double* solution_coarse = use_solution_old ?
           sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse) :
           sol_coarse->GetNodes()->GetSolution(Point_Coarse);
 
         /*--- Compute normal component of momentum (v·n or correction·n) ---*/
         su2double momentum_n = 0.0;
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          momentum_n += Data[iDim + 1] * UnitNormal[iDim];
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          momentum_n += solution_coarse[iDim + 1] * UnitNormal[iDim];
         }
 
-        /*--- Project to tangent plane: Data -= (Data·n)n ---*/
-        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          Data[iDim + 1] -= momentum_n * UnitNormal[iDim];
+        /*--- Project to tangent plane: solution_coarse -= (solution_coarse·n)n ---*/
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          solution_coarse[iDim + 1] -= momentum_n * UnitNormal[iDim];
         }
       }
       END_SU2_OMP_FOR
@@ -361,9 +361,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
 void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                       CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
-  unsigned long Point_Fine, Point_Coarse, iVertex;
-  unsigned short iMarker, iChildren, iVar;
-  su2double Area_Parent, Area_Children;
   const su2double *Solution_Fine = nullptr, *Solution_Coarse = nullptr;
 
   const unsigned short nVar = sol_coarse->GetnVar();
@@ -371,44 +368,43 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   auto *Solution = new su2double[nVar];
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
-  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
 
-    Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
+    su2double Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
 
-    for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+    for (auto iVar = 0u; iVar < nVar; iVar++) Solution[iVar] = 0.0;
 
-    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-      Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+      su2double Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
       Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
-      for (iVar = 0; iVar < nVar; iVar++)
+      for (auto iVar = 0u; iVar < nVar; iVar++)
         Solution[iVar] -= Solution_Fine[iVar]*Area_Children/Area_Parent;
     }
 
     Solution_Coarse = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
 
-    for (iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       Solution[iVar] += Solution_Coarse[iVar];
 
-    for (iVar = 0; iVar < nVar; iVar++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
       sol_coarse->GetNodes()->SetSolution_Old(Point_Coarse,Solution);
   }
   END_SU2_OMP_FOR
 
   delete [] Solution;
 
-  /*--- OPTION C: Enforce Euler wall BC on corrections by projecting to tangent plane ---*/
+  /*--- Enforce Euler wall BC on corrections by projecting to tangent plane ---*/
   ProjectEulerWallToTangentPlane(geo_coarse, config, sol_coarse, true);
 
   /*--- Remove any contributions from no-slip walls. ---*/
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetViscous_Wall(iMarker)) {
 
       SU2_OMP_FOR_STAT(32)
-      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+      for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 
         /*--- For dirichlet boundary condtions, set the correction to zero.
          Note that Solution_Old stores the correction not the actual value ---*/
@@ -427,9 +423,9 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   sol_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_OLD);
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
-  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
-    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
       sol_fine->LinSysRes.SetBlock(Point_Fine, sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse));
     }
   }
@@ -444,13 +440,11 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   if (val_nSmooth == 0) return;
 
   const su2double *Residual_Old, *Residual_Sum, *Residual_j;
-  unsigned short iVar, iSmooth, iMarker, iNeigh;
-  unsigned long iPoint, jPoint, iVertex;
 
   const unsigned short nVar = solver->GetnVar();
 
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+  for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
     Residual_Old = solver->LinSysRes.GetBlock(iPoint);
     solver->GetNodes()->SetResidual_Old(iPoint,Residual_Old);
   }
@@ -458,17 +452,17 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
   /*--- Jacobi iterations. ---*/
 
-  for (iSmooth = 0; iSmooth < val_nSmooth; iSmooth++) {
+  for (auto iSmooth = 0u; iSmooth < val_nSmooth; iSmooth++) {
 
     /*--- Loop over all mesh points (sum the residuals of direct neighbors). ---*/
 
     SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); ++iPoint) {
+    for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint) {
 
       solver->GetNodes()->SetResidualSumZero(iPoint);
 
-      for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
-        jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+      for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+        auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
         Residual_j = solver->LinSysRes.GetBlock(jPoint);
         solver->GetNodes()->AddResidual_Sum(iPoint, Residual_j);
       }
@@ -479,28 +473,28 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
     /*--- Loop over all mesh points (update residuals with the neighbor averages). ---*/
 
     SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); ++iPoint) {
+    for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint) {
 
       su2double factor = 1.0/(1.0+val_smooth_coeff*su2double(geometry->nodes->GetnPoint(iPoint)));
 
       Residual_Sum = solver->GetNodes()->GetResidual_Sum(iPoint);
       Residual_Old = solver->GetNodes()->GetResidual_Old(iPoint);
 
-      for (iVar = 0; iVar < nVar; iVar++)
+      for (auto iVar = 0u; iVar < nVar; iVar++)
         solver->LinSysRes(iPoint,iVar) = (Residual_Old[iVar] + val_smooth_coeff*Residual_Sum[iVar])*factor;
     }
     END_SU2_OMP_FOR
 
     /*--- Restore original residuals (without average) at boundary points. ---*/
 
-    for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
 
         SU2_OMP_FOR_STAT(32)
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+          auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Residual_Old = solver->GetNodes()->GetResidual_Old(iPoint);
           solver->LinSysRes.SetBlock(iPoint, Residual_Old);
         }
@@ -514,18 +508,16 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
 void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine,
                                                       CConfig *config, unsigned short iMesh) {
-  unsigned long Point_Fine;
-  unsigned short iVar;
   su2double *Solution_Fine, *Residual_Fine;
 
   const unsigned short nVar = sol_fine->GetnVar();
   const su2double factor = config->GetDamp_Correc_Prolong();
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
-  for (Point_Fine = 0; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
+  for (auto Point_Fine = 0ul; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
     Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
     Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
-    for (iVar = 0; iVar < nVar; iVar++) {
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
       /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
       if (Residual_Fine[iVar] != Residual_Fine[iVar])
         Residual_Fine[iVar] = 0.0;
@@ -543,13 +535,11 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
 
 void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                     CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
-  unsigned long Point_Fine, Point_Coarse;
-  unsigned short iChildren;
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
-  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
-    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
       sol_fine->GetNodes()->SetSolution(Point_Fine, sol_coarse->GetNodes()->GetSolution(Point_Coarse));
     }
   }
@@ -559,8 +549,6 @@ void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSys
 void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
                                             CGeometry *geo_coarse, CConfig *config, unsigned short iMesh) {
 
-  unsigned long Point_Fine, Point_Coarse, iVertex;
-  unsigned short iMarker, iVar, iChildren;
   const su2double *Residual_Fine;
 
   const unsigned short nVar = sol_coarse->GetnVar();
@@ -569,16 +557,15 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   auto *Residual = new su2double[nVar];
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
-  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
 
     sol_coarse->GetNodes()->SetRes_TruncErrorZero(Point_Coarse);
 
-    for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
-
-    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+    for (auto iVar = 0u; iVar < nVar; iVar++) Residual[iVar] = 0.0;
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
       Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
-      for (iVar = 0; iVar < nVar; iVar++)
+      for (auto iVar = 0u; iVar < nVar; iVar++)
         Residual[iVar] += factor*Residual_Fine[iVar];
     }
     sol_coarse->GetNodes()->AddRes_TruncError(Point_Coarse, Residual);
@@ -587,11 +574,11 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
 
   delete [] Residual;
 
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetViscous_Wall(iMarker)) {
       SU2_OMP_FOR_STAT(32)
-      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+      for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+        auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
         sol_coarse->GetNodes()->SetVel_ResTruncError_Zero(Point_Coarse);
       }
       END_SU2_OMP_FOR
@@ -599,7 +586,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   }
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
-  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
     sol_coarse->GetNodes()->SubtractRes_TruncError(Point_Coarse, sol_coarse->LinSysRes.GetBlock(Point_Coarse));
   }
   END_SU2_OMP_FOR
@@ -610,7 +597,7 @@ void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solve
 
   AD::StartNoSharedReading();
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPointDomain(), omp_get_num_threads()))
-  for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
+  for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); iPoint++)
     solver->LinSysRes.AddBlock(iPoint, solver->GetNodes()->GetResTruncError(iPoint));
   END_SU2_OMP_FOR
   AD::EndNoSharedReading();
@@ -663,7 +650,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
     }
   }
 
-  /*--- OPTION B: Enforce Euler wall BC by projecting velocity to tangent plane ---*/
+  /*--- Enforce Euler wall BC by projecting velocity to tangent plane ---*/
   ProjectEulerWallToTangentPlane(geo_coarse, config, sol_coarse, false);
 
   /*--- MPI the new interpolated solution ---*/
@@ -675,39 +662,36 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
 void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
-  unsigned long Point_Fine, Point_Coarse;
-  unsigned short iVar, iDim, iChildren;
-  su2double Area_Parent, Area_Children;
 
   const unsigned short nDim = geo_coarse->GetnDim();
   const unsigned short nVar = sol_coarse->GetnVar();
 
   auto **Gradient = new su2double* [nVar];
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0u; iVar < nVar; iVar++)
     Gradient[iVar] = new su2double [nDim];
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPoint(), omp_get_num_threads()))
-  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPoint(); Point_Coarse++) {
-    Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPoint(); Point_Coarse++) {
+    su2double Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
 
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (iDim = 0; iDim < nDim; iDim++)
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      for (auto iDim = 0u; iDim < nDim; iDim++)
         Gradient[iVar][iDim] = 0.0;
 
-    for (iChildren = 0; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-      Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-      Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      unsigned long Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+      su2double Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
       auto Gradient_fine = sol_fine->GetNodes()->GetGradient(Point_Fine);
 
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (iDim = 0; iDim < nDim; iDim++)
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        for (auto iDim = 0u; iDim < nDim; iDim++)
           Gradient[iVar][iDim] += Gradient_fine[iVar][iDim]*Area_Children/Area_Parent;
     }
     sol_coarse->GetNodes()->SetGradient(Point_Coarse,Gradient);
   }
   END_SU2_OMP_FOR
 
-  for (iVar = 0; iVar < nVar; iVar++)
+  for (auto iVar = 0u; iVar < nVar; iVar++)
     delete [] Gradient[iVar];
   delete [] Gradient;
 
