@@ -1917,7 +1917,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Relaxation of the CHT coupling */
   addDoubleOption("RELAXATION_FACTOR_CHT", Relaxation_Factor_CHT, 1.0);
   /* DESCRIPTION: MSW alpha coefficient */
-  addDoubleOption("MSW_ALPHA", MSW_Alpha, 6.0);
+  addDoubleOption("MSW_ALPHA", MSW_Alpha, 5.0);
   /* DESCRIPTION: Roe coefficient */
   addDoubleOption("ROE_KAPPA", Roe_Kappa, 0.5);
   /* DESCRIPTION: Roe-Turkel preconditioning for low Mach number flows */
