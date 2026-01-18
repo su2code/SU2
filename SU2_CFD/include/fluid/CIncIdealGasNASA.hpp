@@ -97,6 +97,8 @@ class CIncIdealGasNASA final : public CFluidModel {
    * \param[in] t - Temperature value at the point.
    */
   void SetTDState_T(su2double t, const su2double *val_scalars = nullptr) override {
+    using std::pow;
+    using std::log;
     Temperature = t;
     Density = Pressure / (Temperature * Gas_Constant);
 
@@ -108,6 +110,7 @@ class CIncIdealGasNASA final : public CFluidModel {
     const su2double a6 = coeffs_[5];
     const su2double a7 = coeffs_[6];
     const su2double a8 = coeffs_[7];
+    const su2double a9 = coeffs_[8];
 
     // Convert to dimensional temperature for polynomial evaluation (NASA coeffs expect Kelvin)
     const su2double T_dim = t * Ref_Temp_Dim;
@@ -118,10 +121,17 @@ class CIncIdealGasNASA final : public CFluidModel {
     Cp = Cp_over_R * Gas_Constant;
     
     // NASA-9: H/(RT) = -a1*T^-2 + a2*ln(T)/T + a3 + a4*T/2 + a5*T^2/3 + a6*T^3/4 + a7*T^4/5 + a8/T
-    su2double H_over_RT = -a1 * pow(T_dim, -2.0) + a2 * std::log(T_dim) / T_dim + a3 + a4 * T_dim / 2.0 + a5 * pow(T_dim, 2.0) / 3.0 + 
+    su2double H_over_RT = -a1 * pow(T_dim, -2.0) + a2 * log(T_dim) / T_dim + a3 + a4 * T_dim / 2.0 + a5 * pow(T_dim, 2.0) / 3.0 + 
                           a6 * pow(T_dim, 3.0) / 4.0 + a7 * pow(T_dim, 4.0) / 5.0 + a8 / T_dim;
     
     Enthalpy = H_over_RT * Gas_Constant * t;
+
+    // NASA-9: S/R = -a1*T^-2/2 - a2*T^-1 + a3*ln(T) + a4*T + a5*T^2/2 + a6*T^3/3 + a7*T^4/4 + a9
+    su2double S_over_R = -a1 * pow(T_dim, -2.0) / 2.0 - a2 * pow(T_dim, -1.0) + a3 * log(T_dim) + a4 * T_dim + 
+                         a5 * pow(T_dim, 2.0) / 2.0 + a6 * pow(T_dim, 3.0) / 3.0 + a7 * pow(T_dim, 4.0) / 4.0 + a9;
+    
+    Entropy = S_over_R * Gas_Constant;
+
     Cv = Cp / Gamma;
   }
 
@@ -130,6 +140,11 @@ class CIncIdealGasNASA final : public CFluidModel {
    * \param[in] val_enthalpy - Enthalpy value at the point.
    */
   void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override {
+    using std::pow;
+    using std::log;
+    using std::fmin;
+    using std::fmax;
+    using std::fabs;
     Enthalpy = val_enthalpy;
     
     const su2double toll = 1e-5;
@@ -144,6 +159,7 @@ class CIncIdealGasNASA final : public CFluidModel {
     const su2double a6 = coeffs_[5];
     const su2double a7 = coeffs_[6];
     const su2double a8 = coeffs_[7];
+    const su2double a9 = coeffs_[8];
 
     su2double Cp_iter = 0.0;
     su2double delta_temp_iter = 1e10;
@@ -151,7 +167,7 @@ class CIncIdealGasNASA final : public CFluidModel {
     const int counter_limit = 50;
     int counter = 0;
     
-    while ((abs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
+    while ((fabs(delta_temp_iter) > toll) && (counter++ < counter_limit)) {
       
       const su2double T_dim = temp_iter * Ref_Temp_Dim;
       
@@ -162,7 +178,7 @@ class CIncIdealGasNASA final : public CFluidModel {
       Cp_iter = Cp_over_R * Gas_Constant;
       
       // NASA-9: H/(RT) = -a1*T^-2 + a2*ln(T)/T + a3 + a4*T/2 + a5*T^2/3 + a6*T^3/4 + a7*T^4/5 + a8/T
-      su2double H_over_RT = -a1 * pow(T_dim, -2.0) + a2 * std::log(T_dim) / T_dim + a3 + a4 * T_dim / 2.0 + 
+      su2double H_over_RT = -a1 * pow(T_dim, -2.0) + a2 * log(T_dim) / T_dim + a3 + a4 * T_dim / 2.0 + 
                             a5 * pow(T_dim, 2.0) / 3.0 + a6 * pow(T_dim, 3.0) / 4.0 + 
                             a7 * pow(T_dim, 4.0) / 5.0 + a8 / T_dim;
       
@@ -172,11 +188,18 @@ class CIncIdealGasNASA final : public CFluidModel {
       delta_temp_iter = delta_enthalpy_iter / Cp_iter;
       temp_iter += delta_temp_iter;
       
-      temp_iter = std::fmin(std::fmax(Temperature_Min, temp_iter), Temperature_Max);
+      temp_iter = fmin(fmax(Temperature_Min, temp_iter), Temperature_Max);
     }
     
     Temperature = temp_iter;
     Cp = Cp_iter;
+
+    // Evaluate Entropy at final state
+    const su2double T_dim_final = Temperature * Ref_Temp_Dim;
+    su2double S_over_R = -a1 * pow(T_dim_final, -2.0) / 2.0 - a2 * pow(T_dim_final, -1.0) + a3 * log(T_dim_final) + 
+                         a4 * T_dim_final + a5 * pow(T_dim_final, 2.0) / 2.0 + a6 * pow(T_dim_final, 3.0) / 3.0 + 
+                         a7 * pow(T_dim_final, 4.0) / 4.0 + a9;
+    Entropy = S_over_R * Gas_Constant;
     
     if (counter == counter_limit) {
       if (SU2_MPI::GetRank() == MASTER_NODE)
