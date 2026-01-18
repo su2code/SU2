@@ -41,6 +41,7 @@ private:
   static constexpr auto MAXNVAR = MAXNDIM + 2;
 
   const su2double alpha;
+  const bool dynamic_grid;
 
   su2double buf_Jacobian_i[MAXNVAR * MAXNVAR], buf_Jacobian_j[MAXNVAR * MAXNVAR];
   su2double* Jacobian_i[MAXNVAR]; /*!< \brief The Jacobian w.r.t. point i after computation. */

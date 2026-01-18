@@ -29,11 +29,7 @@
 #include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-  CNumerics(val_nDim, val_nVar, config), alpha(config->GetMSW_Alpha()) {
-
-  if (config->GetDynamic_Grid() && SU2_MPI::GetRank() == MASTER_NODE) {
-    std::cout << "WARNING: Grid velocities are NOT yet considered in the MSW scheme." << std::endl;
-  }
+  CNumerics(val_nDim, val_nVar, config), alpha(config->GetMSW_Alpha()), dynamic_grid(config->GetDynamic_Grid()) {
 
   /*--- Allocate arrays ---*/
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -48,6 +44,10 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   AD::SetPreaccIn(V_i, nDim + 4);
   AD::SetPreaccIn(V_j, nDim + 4);
   AD::SetPreaccIn(Normal, nDim);
+  if (dynamic_grid) {
+    AD::SetPreaccIn(GridVel_i, nDim);
+    AD::SetPreaccIn(GridVel_j, nDim);
+  }
 
   /*--- Calculate supporting geometry parameters ---*/
 
@@ -100,12 +100,14 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   Vst_j[nDim + 4] = onemw * c_j + w * c_i;
 
   su2double Velst_i[MAXNDIM] = {}, Velst_j[MAXNDIM] = {};
+  su2double ProjVelst_i{}, ProjVelst_j{};
   for (auto iDim = 0u; iDim < nDim; ++iDim) {
     Velst_i[iDim] = Vst_i[iDim + 1];
     Velst_j[iDim] = Vst_j[iDim + 1];
+
+    ProjVelst_i += (Velst_i[iDim] - (dynamic_grid ? GridVel_i[iDim] : 0)) * UnitNormal[iDim];
+    ProjVelst_j += (Velst_j[iDim] - (dynamic_grid ? GridVel_j[iDim] : 0)) * UnitNormal[iDim];
   }
-  const su2double ProjVelst_i = GeometryToolbox::DotProduct(MAXNDIM, Velst_i, UnitNormal);
-  const su2double ProjVelst_j = GeometryToolbox::DotProduct(MAXNDIM, Velst_j, UnitNormal);
 
   /*--- Flow eigenvalues at i (Lambda+) ---*/
 
