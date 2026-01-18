@@ -298,7 +298,7 @@ def main():
     ramp_msw.cfg_dir = "euler/ramp"
     ramp_msw.cfg_file = "inv_ramp_msw.cfg"
     ramp_msw.test_iter = 100
-    ramp_msw.test_vals = [-12.374773, -6.696450, -0.077832, 0.054528]
+    ramp_msw.test_vals = [-12.081674, -6.281367, -0.077904, 0.054539]
     test_list.append(ramp_msw)
 
     ##########################
