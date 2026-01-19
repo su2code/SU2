@@ -1267,27 +1267,26 @@ void CMultiGridGeometry::FindNormal_Neighbor(const CConfig* config) {
         /*--- If the node belong to the domain ---*/
         if (nodes->GetDomain(iPoint)) {
           /*--- Compute closest normal neighbor ---*/
-          su2double cos_max, scalar_prod, norm_vect, norm_Normal, cos_alpha, diff_coord;
           unsigned long Point_Normal = 0;
           su2double* Normal = vertex[iMarker][iVertex]->GetNormal();
-          cos_max = -1.0;
+          su2double cos_max = -1.0;
           for (auto jPoint : nodes->GetPoints(iPoint)) {
-            scalar_prod = 0.0;
-            norm_vect = 0.0;
-            norm_Normal = 0.0;
+            su2double scalar_prod = 0.0;
+            su2double norm_vect = 0.0;
+            su2double norm_Normal = 0.0;
             for (auto iDim = 0u; iDim < nDim; iDim++) {
-              diff_coord = nodes->GetCoord(jPoint, iDim) - nodes->GetCoord(iPoint, iDim);
+              su2double diff_coord = nodes->GetCoord(jPoint, iDim) - nodes->GetCoord(iPoint, iDim);
               scalar_prod += diff_coord * Normal[iDim];
               norm_vect += diff_coord * diff_coord;
               norm_Normal += Normal[iDim] * Normal[iDim];
             }
             norm_vect = sqrt(norm_vect);
             norm_Normal = sqrt(norm_Normal);
-            cos_alpha = scalar_prod / (norm_vect * norm_Normal);
+            su2double cos_alpha = scalar_prod / (norm_vect * norm_Normal);
 
             /*--- Get maximum cosine (not minimum because normals are oriented inwards) ---*/
             if (cos_alpha >= cos_max) {
-              auto Point_Normal = jPoint;
+              Point_Normal = jPoint;
               cos_max = cos_alpha;
             }
           }

@@ -93,7 +93,7 @@ class CMultiGridQueue {
   void IncrPriorityCV(unsigned long incrPoint);
 
   /*!
-   * \brief Increase the priority of the CV.
+   * \brief Reduce the priority of the CV.
    * \param[in] redPoint - Index of the control volume.
    */
   void RedPriorityCV(unsigned long redPoint);
