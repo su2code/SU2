@@ -528,7 +528,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   /*--- Apply level-dependent damping: more aggressive damping on deeper coarse levels ---*/
   const su2double base_damp = config->GetDamp_Correc_Prolong();
   const su2double level_factor = pow(0.75, iMesh);  // 0.75^iMesh reduces damping progressively
-  const su2double factor = base_damp * level_factor;
+  const su2double factor = base_damp; // * level_factor;
 
   /*--- Track maximum correction magnitude for monitoring ---*/
   su2double max_correction_local = 0.0;
