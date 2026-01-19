@@ -2590,17 +2590,14 @@ void CGeometry::ComputeSurfStraightness(const CConfig* config, bool print_on_scr
   su2double Area;
   string Local_TagBound, Global_TagBound;
 
-  vector<su2double> Normal(nDim), UnitNormal(nDim), RefUnitNormal(nDim);
-
-  /*--- Assume now that this boundary marker is straight. As soon as one
-        AreaElement is found that is not aligend with a Reference then it is
-        certain that the boundary marker is not straight and one can stop
-        searching. Another possibility is that this process doesn't own
-        any nodes of that boundary, in that case we also have to assume the
-        boundary is straight.
-        Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets
-        the value false (or see cases specified in the conditional below)
-        which could be wrong. ---*/
+  vector<su2double> Normal(nDim), UnitNormal(nDim), RefUnitNormal(nDim); /*--- Assume now that this boundary marker is
+       straight. As soon as one AreaElement is found that is not aligned with a Reference then it is certain that the
+       boundary marker is not straight and one can stop searching. Another possibility is that this process doesn't own
+       any nodes of that boundary, in that case we also have to assume the
+       boundary is straight.
+       Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets
+       the value false (or see cases specified in the conditional below)
+       which could be wrong. ---*/
   boundIsStraight.resize(nMarker);
   fill(boundIsStraight.begin(), boundIsStraight.end(), true);
 
@@ -3902,11 +3899,13 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
     for (auto step = 0u; step < iMesh; ++step) {
       auto coarseMesh = geometry[iMesh - 1 - step];
       if (step)
-        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint) {
           CoarseGridColor_(iPoint, step) = CoarseGridColor_(coarseMesh->nodes->GetParent_CV(iPoint), step - 1);
+        }
       else
-        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint) {
           CoarseGridColor_(iPoint, step) = color[coarseMesh->nodes->GetParent_CV(iPoint)];
+        }
     }
   }
 }
