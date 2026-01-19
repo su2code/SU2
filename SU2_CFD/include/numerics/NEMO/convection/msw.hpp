@@ -38,6 +38,8 @@
  */
 class CUpwMSW_NEMO : public CNEMONumerics {
 private:
+    const su2double alpha;
+
     su2double *Diff_U;
     su2double *ust_i, *ust_j;
     su2double *Fc_i, *Fc_j;
