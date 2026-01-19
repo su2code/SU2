@@ -365,13 +365,12 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       su2double CFL_coarse_current = config->GetCFL(iMesh+1);
       su2double current_coeff = CFL_fine / CFL_coarse_current;
 
-      /*--- Track convergence per MG level using simple counters ---*/
-      constexpr int MAX_MG_LEVELS = 10;  // Support up to 10 MG levels
-      static int consecutive_convergence[MAX_MG_LEVELS] = {};  // Counter of consecutive good iterations
-      static su2double avg_conv_rate[MAX_MG_LEVELS] = {};  // Exponential moving average
-      static su2double prev_fine_res[MAX_MG_LEVELS] = {};  // Previous fine grid residual
-      static su2double min_fine_res[MAX_MG_LEVELS] = {};  // Best (minimum) fine grid residual seen
-      static int iterations_since_improvement[MAX_MG_LEVELS] = {};  // Iterations since fine grid improved
+      /*--- Adaptive CFL for coarse multigrid levels ---*/
+      constexpr int MAX_MG_LEVELS = 10;
+      static int consecutive_decreasing[MAX_MG_LEVELS] = {};
+      static su2double prev_fine_res[MAX_MG_LEVELS] = {};
+      static su2double min_fine_res[MAX_MG_LEVELS] = {};
+      static int iterations_since_improvement[MAX_MG_LEVELS] = {};
       static bool initialized = false;
 
       const unsigned short nMGLevels = config->GetnMGLevels();
@@ -379,109 +378,64 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
       if (!initialized) {
         for (int lvl = 0; lvl < MAX_MG_LEVELS; lvl++) {
-          consecutive_convergence[lvl] = 0;
-          avg_conv_rate[lvl] = 0.5;  // Initialize to good convergence
+          consecutive_decreasing[lvl] = 0;
           prev_fine_res[lvl] = 0.0;
-          min_fine_res[lvl] = 1e10;  // Initialize to large value
+          min_fine_res[lvl] = 1e10;
           iterations_since_improvement[lvl] = 0;
         }
         initialized = true;
       }
 
-      /*--- Update convergence tracking for this MG level ---*/
-      unsigned short lvl = min(iMesh, (unsigned short)(max_lvl - 1));  // Cap at valid index
+      unsigned short lvl = min(iMesh, (unsigned short)(max_lvl - 1));
 
-      /*--- Get RMS residual from fine grid solver (tracks actual convergence) ---*/
-      su2double rms_res_fine = solver_fine->GetRes_RMS(0);  // Primary residual (density for flow)
-
-      /*--- Use light smoothing for fine grid residual to filter noise but preserve responsiveness ---*/
+      /*--- Track fine grid RMS residual ---*/
+      su2double rms_res_fine = solver_fine->GetRes_RMS(0);
       static su2double smoothed_fine_res[MAX_MG_LEVELS] = {};
+
       if (smoothed_fine_res[lvl] < 1e-30) {
-        smoothed_fine_res[lvl] = rms_res_fine;  // Initialize
+        smoothed_fine_res[lvl] = rms_res_fine;
+        prev_fine_res[lvl] = rms_res_fine;
         min_fine_res[lvl] = rms_res_fine;
       } else {
-        smoothed_fine_res[lvl] = 0.9 * rms_res_fine + 0.1 * smoothed_fine_res[lvl];  // Light smoothing
+        smoothed_fine_res[lvl] = 0.9 * rms_res_fine + 0.1 * smoothed_fine_res[lvl];
       }
 
-      /*--- Track if fine grid residual is making progress (decreasing) ---*/
-      bool fine_grid_improving = false;
-      if (smoothed_fine_res[lvl] < 0.99 * min_fine_res[lvl]) {  // 1% improvement threshold
-        min_fine_res[lvl] = smoothed_fine_res[lvl];  // Update best residual
+      /*--- Track consecutive decreasing iterations ---*/
+      if (smoothed_fine_res[lvl] < prev_fine_res[lvl]) {
+        consecutive_decreasing[lvl] = min(consecutive_decreasing[lvl] + 1, 10);
+      } else {
+        consecutive_decreasing[lvl] = 0;
+      }
+      prev_fine_res[lvl] = smoothed_fine_res[lvl];
+
+      /*--- Track best residual for divergence detection only ---*/
+      if (smoothed_fine_res[lvl] < min_fine_res[lvl]) {
+        min_fine_res[lvl] = smoothed_fine_res[lvl];
         iterations_since_improvement[lvl] = 0;
-        fine_grid_improving = true;
       } else {
         iterations_since_improvement[lvl]++;
       }
 
-      /*--- Detect stalled/diverging convergence using multiple criteria ---*/
-      bool fine_grid_stalled = false;
-      bool fine_grid_diverging = false;
+      /*--- Detect actual divergence (not stall during slow convergence) ---*/
+      bool fine_grid_diverging = (smoothed_fine_res[lvl] > 1.5 * min_fine_res[lvl] && min_fine_res[lvl] > 1e-30);
 
-      // Case 1: Quick response - residual stopped improving for >10 iterations
-      if (iterations_since_improvement[lvl] > 10) {
-        fine_grid_stalled = true;
-      }
+      /*--- Sustained convergence: residual decreasing for 5 consecutive iterations ---*/
+      bool sustained_convergence = (consecutive_decreasing[lvl] >= 5);
 
-      // Case 2: Residual degraded significantly (>50%) from best value
-      if (smoothed_fine_res[lvl] > 1.5 * min_fine_res[lvl] && min_fine_res[lvl] > 1e-30) {
-        fine_grid_diverging = true;
-      }
-
-      // Case 3: Short-term trend check - consistent increase over last few iterations
-      if (prev_fine_res[lvl] > 1e-30) {
-        su2double fine_trend = smoothed_fine_res[lvl] / prev_fine_res[lvl];
-        if (fine_trend > 1.01) {  // Increasing by >1% (smoothed, so represents persistent trend)
-          fine_grid_diverging = true;
-        }
-      }
-      prev_fine_res[lvl] = smoothed_fine_res[lvl];  // Store smoothed value
-
-      /*--- Reset consecutive counter if fine grid is stalled or diverging ---*/
-      if (fine_grid_stalled || fine_grid_diverging) {
-        consecutive_convergence[lvl] = 0;
-      }
-
-      /*--- Increment consecutive counter only if coarse grid converging AND fine grid not stalled/diverging ---*/
-      if (convergence_rate < 1.0 && !fine_grid_stalled && !fine_grid_diverging) {
-        consecutive_convergence[lvl] = min(consecutive_convergence[lvl] + 1, 10);  // Cap at 10
-      } else if (convergence_rate >= 1.0) {
-        consecutive_convergence[lvl] = 0;  // Reset on coarse grid divergence
-      }
-
-      /*--- Update exponential moving average (alpha = 0.3 for responsiveness) ---*/
-      avg_conv_rate[lvl] = 0.3 * convergence_rate + 0.7 * avg_conv_rate[lvl];
-
-      /*--- Check if last iterations show sustained convergence ---*/
-      bool sustained_convergence = (consecutive_convergence[lvl] >= 5 && avg_conv_rate[lvl] < 0.8);  // Require 5 consecutive + good avg
-
-
-      /*--- Compact adaptive strategy using continuous functions ---*/
+      /*--- Adapt coefficient based on convergence state ---*/
       su2double new_coeff = current_coeff;
 
       if (fine_grid_diverging) {
-        /*--- Fine grid actively diverging: drop coarse CFL by factor of 2 ---*/
-        new_coeff = current_coeff * 2.0;  // Double coefficient = halve CFL
-      } else if (fine_grid_stalled) {
-        /*--- Fine grid stalled: moderately reduce coarse CFL ---*/
-        su2double increase_factor = 1.5;  // 33% CFL reduction
-        new_coeff = current_coeff * increase_factor;
+        new_coeff = current_coeff * 1.1;
       } else if (convergence_rate > 1.0) {
-        /*--- Coarse grid diverging: increase damping proportionally to severity ---*/
-        su2double factor = 1.0 + 0.10 * min(convergence_rate - 1.0, 1.0);  // Range: [1.01, 1.10]
-        new_coeff = current_coeff * factor;
-      } else if (sustained_convergence && avg_conv_rate[lvl] < 0.8) {
-        /*--- Good convergence: reduce damping very slowly proportionally to quality ---*/
-        su2double factor = 0.98 + 0.015 * (avg_conv_rate[lvl] / 0.8);  // Range: [0.98, 0.995] - slower increase
-        new_coeff = current_coeff * factor;
+        new_coeff = current_coeff * (1.0 + 0.10 * min(convergence_rate - 1.0, 1.0));
+      } else if (sustained_convergence) {
+        new_coeff = current_coeff * 0.99;
       }
-      /*--- else: maintain current CFL ---*/
 
-      /*--- Clamp coefficient to safe range [1.0, 4.0], ensuring coarse CFL <= fine CFL ---*/
-      new_coeff = min(4.0, max(1.0, new_coeff));
-
-      /*--- Ensure coarse grid CFL never exceeds 0.95 * fine mesh CFL ---*/
-      su2double max_allowed_coarse_CFL = 0.95 * CFL_fine;
-      su2double min_safe_coeff = CFL_fine / max_allowed_coarse_CFL;  // coeff >= 1.0526
+      /*--- Clamp and enforce hierarchy ---*/
+      new_coeff = min(3.0, max(1.0, new_coeff));
+      su2double min_safe_coeff = CFL_fine / (0.95 * CFL_fine);
       new_coeff = max(new_coeff, min_safe_coeff);
 
       /*--- Update coarse grid CFL if changed significantly ---*/
@@ -501,7 +455,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       /*--- Output monitoring information periodically ---*/
       if (SU2_MPI::GetRank() == 0 && config->GetTimeIter() % 50 == 0) {
         cout << "  MG Level " << iMesh+1 << ": conv_rate = " << convergence_rate
-             << ", avg_ema = " << avg_conv_rate[lvl] << ", consecutive = " << consecutive_convergence[lvl]
+             << ", consecutive = " << consecutive_decreasing[lvl]
              << ", sustained = " << (sustained_convergence ? "YES" : "NO")
              << ", coeff = " << new_coeff << ", CFL = " << CFL_coarse_new << endl;
       }
