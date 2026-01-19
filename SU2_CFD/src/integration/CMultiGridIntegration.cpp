@@ -300,6 +300,18 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     Space_Integration(geometry_coarse, solver_container_coarse, numerics_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem);
 
+    /*--- Monitor coarse grid residual magnitude before forcing term ---*/
+    if (SU2_MPI::GetRank() == 0) {
+      su2double max_res_coarse = 0.0;
+      for (unsigned long iPoint = 0; iPoint < geometry_coarse->GetnPointDomain(); iPoint++) {
+        const su2double* res = solver_coarse->LinSysRes.GetBlock(iPoint);
+        for (unsigned short iVar = 0; iVar < solver_coarse->GetnVar(); iVar++) {
+          max_res_coarse = max(max_res_coarse, fabs(res[iVar]));
+        }
+      }
+      cout << "  MG Level " << iMesh+1 << ": Max coarse residual before forcing = " << max_res_coarse << endl;
+    }
+
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
 
     SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
@@ -511,7 +523,16 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   su2double *Solution_Fine, *Residual_Fine;
 
   const unsigned short nVar = sol_fine->GetnVar();
-  const su2double factor = config->GetDamp_Correc_Prolong();
+  //const su2double factor = config->GetDamp_Correc_Prolong();
+
+  /*--- Apply level-dependent damping: more aggressive damping on deeper coarse levels ---*/
+  const su2double base_damp = config->GetDamp_Correc_Prolong();
+  const su2double level_factor = pow(0.75, iMesh);  // 0.75^iMesh reduces damping progressively
+  const su2double factor = base_damp * level_factor;
+
+  /*--- Track maximum correction magnitude for monitoring ---*/
+  su2double max_correction_local = 0.0;
+  su2double max_correction_global = 0.0;
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Fine = 0ul; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
@@ -521,10 +542,26 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
       /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
       if (Residual_Fine[iVar] != Residual_Fine[iVar])
         Residual_Fine[iVar] = 0.0;
-      Solution_Fine[iVar] += factor*Residual_Fine[iVar];
+
+      su2double correction = factor * Residual_Fine[iVar];
+      Solution_Fine[iVar] += correction;
+
+     /*--- Track maximum correction ---*/
+      SU2_OMP_CRITICAL
+      max_correction_local = max(max_correction_local, fabs(correction));
     }
   }
   END_SU2_OMP_FOR
+
+  /*--- Reduce maximum correction across all ranks ---*/
+  SU2_MPI::Allreduce(&max_correction_local, &max_correction_global, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+
+  /*--- Output correction magnitude for monitoring ---*/
+  if (SU2_MPI::GetRank() == 0) {
+    cout << "  MG Level " << iMesh << ": Max correction = " << max_correction_global
+         << ", Damping factor = " << factor << " (base=" << base_damp
+         << " × level_factor=" << level_factor << ")" << endl;
+  }
 
   /*--- MPI the new interpolated solution ---*/
 
