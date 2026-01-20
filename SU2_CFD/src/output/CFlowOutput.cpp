@@ -1787,7 +1787,9 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
 
   /// DESCRIPTION: Angle of attack
   AddHistoryOutput("AOA", "AoA", ScreenOutputFormat::FIXED, "AOA", "Angle of attack");
-
+  
+  // CUSTOM_OBJFUNC is added here so historyMap.py knows how to get its value, the actual output is COMBO.
+  if (false) AddHistoryOutput("CUSTOM_OBJFUNC", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Custom obj. function value.", HistoryFieldType::COEFFICIENT);
   AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 }
 

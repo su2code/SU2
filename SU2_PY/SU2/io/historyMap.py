@@ -1,27 +1,24 @@
 history_header_map = {
     "ADJOINT_DISP_X": {
-        "DESCRIPTION": "Root-mean square residual of the adjoint "
-        "of the X displacements.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint of the X displacements.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[Ux_adj]",
         "TYPE": "RESIDUAL",
     },
     "ADJOINT_DISP_Y": {
-        "DESCRIPTION": "Root-mean square residual of the adjoint "
-        "of the Y displacements.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint of the Y displacements.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[Uy_adj]",
         "TYPE": "RESIDUAL",
     },
     "ADJOINT_DISP_Z": {
-        "DESCRIPTION": "Root-mean square residual of the adjoint "
-        "of the Z displacements.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint of the Z displacements.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[Uz_adj]",
         "TYPE": "RESIDUAL",
     },
     "ADJOINT_SOLEXTRA": {
-        "DESCRIPTION": "Adjoint value of the first extra " "Solution.",
+        "DESCRIPTION": "Adjoint value of the first extra Solution.",
         "GROUP": "ADJOINT_SOLEXTRA",
         "HEADER": "Adjoint_SolExtra",
         "TYPE": "COEFFICIENT",
@@ -39,30 +36,64 @@ history_header_map = {
         "TYPE": "DEFAULT",
     },
     "AVG_DENSITY": {
-        "DESCRIPTION": "Total average density on all markers set in " "MARKER_ANALYZE",
+        "DESCRIPTION": "Total average density on all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Avg_Density",
         "TYPE": "COEFFICIENT",
     },
     "AVG_ENTHALPY": {
-        "DESCRIPTION": "Total average enthalpy on all markers set in " "MARKER_ANALYZE",
+        "DESCRIPTION": "Total average enthalpy on all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Avg_Enthalpy",
         "TYPE": "COEFFICIENT",
     },
     "AVG_NORMALVEL": {
-        "DESCRIPTION": "Total average normal velocity on all "
-        "markers set in MARKER_ANALYZE",
+        "DESCRIPTION": "Total average normal velocity on all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Avg_NormalVel",
         "TYPE": "COEFFICIENT",
     },
     "AVG_TEMPERATURE": {
-        "DESCRIPTION": "Average temperature on all surfaces "
-        "defined in MARKER_MONITORING",
+        "DESCRIPTION": "Average temperature on all surfaces set with MARKER_MONITORING.",
         "GROUP": "HEAT",
-        "HEADER": "AvgTemp",
+        "HEADER": "Temp",
         "TYPE": "COEFFICIENT",
+    },
+    'AbsFlowAngleIn_" + tag': {
+        "DESCRIPTION": 'Absolute flow angle in " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'AbsFlowAngleIn_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'AbsFlowAngleOut_" + tag': {
+        "DESCRIPTION": 'Absolute flow angle out " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'AbsFlowAngleOut_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'BGS_" + cv_name': {
+        "DESCRIPTION": 'BGS residual of the " + cv_name + " controlling variable equation.',
+        "GROUP": "BGS_RES",
+        "HEADER": 'bgs[" + cv_name + "]',
+        "TYPE": "RESIDUAL",
+    },
+    'BGS_"+scalar_name': {
+        "DESCRIPTION": 'BGS residual of the "+scalar_name+" mass fraction equation.',
+        "GROUP": "BGS_RES",
+        "HEADER": 'bgs["+scalar_name+"]',
+        "TYPE": "RESIDUAL",
+    },
+    'BGS_ADJ_" + cv_name': {
+        "DESCRIPTION": 'BGS residual of the adjoint " + cv_name',
+        "GROUP": "BGS_RES",
+        "HEADER": 'bgs[" + cv_name + "]',
+        "TYPE": "RESIDUAL",
+    },
+    'BGS_ADJ_" + scalar_name': {
+        "DESCRIPTION": 'BGS residual of the adjoint of " + scalar_name + " .',
+        "GROUP": "BGS_RES",
+        "HEADER": 'bgs[" + scalar_name + "]',
+        "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_DENSITY": {
         "DESCRIPTION": "BGS residual of the adjoint density.",
@@ -71,25 +102,25 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_DISP_X": {
-        "DESCRIPTION": "BGS residual of the adjoint X " "displacement.",
+        "DESCRIPTION": "BGS residual of the adjoint X displacement.",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[A_Ux]",
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_DISP_Y": {
-        "DESCRIPTION": "BGS residual of the adjoint Y " "displacement.",
+        "DESCRIPTION": "BGS residual of the adjoint Y displacement.",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[A_Uy]",
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_DISP_Z": {
-        "DESCRIPTION": "BGS residual of the adjoint Z " "displacement.",
+        "DESCRIPTION": "BGS residual of the adjoint Z displacement.",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[A_Uz]",
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_DISSIPATION": {
-        "DESCRIPTION": "BGS residual of the adjoint " "dissipation.",
+        "DESCRIPTION": "BGS residual of the adjoint dissipation.",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[A_w]",
         "TYPE": "RESIDUAL",
@@ -101,19 +132,19 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_MOMENTUM-X": {
-        "DESCRIPTION": "BGS residual of the adjoint momentum " "x-component",
+        "DESCRIPTION": "BGS residual of the adjoint momentum x-component",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[A_RhoU]",
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_MOMENTUM-Y": {
-        "DESCRIPTION": "BGS residual of the adjoint momentum " "y-component",
+        "DESCRIPTION": "BGS residual of the adjoint momentum y-component",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[A_RhoV]",
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_MOMENTUM-Z": {
-        "DESCRIPTION": "BGS residual of the adjoint momentum " "z-component",
+        "DESCRIPTION": "BGS residual of the adjoint momentum z-component",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[A_RhoW]",
         "TYPE": "RESIDUAL",
@@ -131,19 +162,19 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_RAD_ENERGY": {
-        "DESCRIPTION": "BGS residual  of the P1 radiative " "energy.",
+        "DESCRIPTION": "BGS residual  of the P1 radiative energy.",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[A_P1]",
         "TYPE": "RESIDUAL",
     },
     'BGS_ADJ_SPECIES_" + std::to_string(iVar': {
-        "DESCRIPTION": "BGS residual of " "the adjoint " "transported " "species.",
+        "DESCRIPTION": "BGS residual of the adjoint transported species.",
         "GROUP": "BGS_RES",
-        "HEADER": 'bgs[A_rho*Y_" + ' "std::to_string(iVar) + " '"]',
+        "HEADER": 'bgs[A_rho*Y_" + std::to_string(iVar) + "]',
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_TEMPERATURE": {
-        "DESCRIPTION": "BGS residual of the adjoint " "temperature.",
+        "DESCRIPTION": "BGS residual of the adjoint temperature.",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[A_T]",
         "TYPE": "RESIDUAL",
@@ -161,19 +192,19 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_VELOCITY-X": {
-        "DESCRIPTION": "BGS residual of the adjoint Velocity " "x-component",
+        "DESCRIPTION": "BGS residual of the adjoint Velocity x-component",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[A_RhoU]",
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_VELOCITY-Y": {
-        "DESCRIPTION": "BGS residual of the adjoint Velocity " "y-component",
+        "DESCRIPTION": "BGS residual of the adjoint Velocity y-component",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[A_RhoV]",
         "TYPE": "RESIDUAL",
     },
     "BGS_ADJ_VELOCITY-Z": {
-        "DESCRIPTION": "BGS residual of the adjoint Velocity " "z-component",
+        "DESCRIPTION": "BGS residual of the adjoint Velocity z-component",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[A_RhoW]",
         "TYPE": "RESIDUAL",
@@ -214,6 +245,12 @@ history_header_map = {
         "HEADER": "bgs[RhoE]",
         "TYPE": "RESIDUAL",
     },
+    "BGS_INTERMITTENCY": {
+        "DESCRIPTION": "BGS residual of the intermittency (LM model).",
+        "GROUP": "BGS_RES",
+        "HEADER": "bgs[LM_1]",
+        "TYPE": "RESIDUAL",
+    },
     "BGS_MOMENTUM-X": {
         "DESCRIPTION": "BGS residual of the momentum x-component.",
         "GROUP": "BGS_RES",
@@ -238,14 +275,20 @@ history_header_map = {
         "HEADER": "bgs[P]",
         "TYPE": "RESIDUAL",
     },
-    'BGS_SPECIES_" + std::to_string(iVar': {
-        "DESCRIPTION": "BGS residual of " "transported species.",
+    "BGS_RE_THETA_T": {
+        "DESCRIPTION": "BGS residual of the momentum thickness Reynolds number (LM model).",
         "GROUP": "BGS_RES",
-        "HEADER": 'bgs[rho*Y_" + ' 'std::to_string(iVar)+"]',
+        "HEADER": "bgs[LM_2]",
+        "TYPE": "RESIDUAL",
+    },
+    'BGS_SPECIES_" + std::to_string(iVar': {
+        "DESCRIPTION": "Maximum residual of transported species.",
+        "GROUP": "BGS_RES",
+        "HEADER": 'bgs[rho*Y_" + std::to_string(iVar)+"]',
         "TYPE": "RESIDUAL",
     },
     "BGS_TEMPERATURE": {
-        "DESCRIPTION": "Block-Gauss-Seidel residual of the " "temperature",
+        "DESCRIPTION": "BGS residual of the temperature.",
         "GROUP": "BGS_RES",
         "HEADER": "bgs[T]",
         "TYPE": "RESIDUAL",
@@ -293,7 +336,7 @@ history_header_map = {
         "TYPE": "DEFAULT",
     },
     "CHANGE_IN_AOA": {
-        "DESCRIPTION": "Last change in Angle of Attack by Fixed CL " "Driver",
+        "DESCRIPTION": "Last change in Angle of Attack by Fixed CL Driver",
         "GROUP": "FIXED_CL",
         "HEADER": "Change_in_AOA",
         "TYPE": "RESIDUAL",
@@ -310,8 +353,14 @@ history_header_map = {
         "HEADER": "ComboObj",
         "TYPE": "COEFFICIENT",
     },
+    "CUSTOM_OBJFUNC": {
+        "DESCRIPTION": "Custom obj. function value.",
+        "GROUP": "COMBO",
+        "HEADER": "ComboObj",
+        "TYPE": "COEFFICIENT",
+    },
     "DEFORM_ITER": {
-        "DESCRIPTION": "Linear solver iterations for the mesh " "deformation",
+        "DESCRIPTION": "Linear solver iterations for the mesh deformation",
         "GROUP": "DEFORM",
         "HEADER": "DeformIter",
         "TYPE": "DEFAULT",
@@ -329,7 +378,7 @@ history_header_map = {
         "TYPE": "DEFAULT",
     },
     "DEFORM_RESIDUAL": {
-        "DESCRIPTION": "Residual of the linear solver for the " "mesh deformation",
+        "DESCRIPTION": "Residual of the linear solver for the mesh deformation",
         "GROUP": "DEFORM",
         "HEADER": "DeformRes",
         "TYPE": "DEFAULT",
@@ -341,8 +390,7 @@ history_header_map = {
         "TYPE": "COEFFICIENT",
     },
     "DRAG": {
-        "DESCRIPTION": "Total drag coefficient on all surfaces set with "
-        "MARKER_MONITORING",
+        "DESCRIPTION": "Total drag coefficient on all surfaces set with MARKER_MONITORING",
         "GROUP": "AERO_COEFF",
         "HEADER": "CD",
         "TYPE": "COEFFICIENT",
@@ -374,7 +422,7 @@ history_header_map = {
     "D_AVG_TEMPERATURE": {
         "DESCRIPTION": "Derivative value",
         "GROUP": "D_HEAT",
-        "HEADER": "d[AvgTemp]",
+        "HEADER": "d[Temp]",
         "TYPE": "D_COEFFICIENT",
     },
     "D_BUFFET": {
@@ -384,6 +432,12 @@ history_header_map = {
         "TYPE": "D_COEFFICIENT",
     },
     "D_COMBO": {
+        "DESCRIPTION": "Derivative value",
+        "GROUP": "D_COMBO",
+        "HEADER": "d[ComboObj]",
+        "TYPE": "D_COEFFICIENT",
+    },
+    "D_CUSTOM_OBJFUNC": {
         "DESCRIPTION": "Derivative value",
         "GROUP": "D_COMBO",
         "HEADER": "d[ComboObj]",
@@ -452,7 +506,7 @@ history_header_map = {
     "D_MAXIMUM_HEATFLUX": {
         "DESCRIPTION": "Derivative value",
         "GROUP": "D_HEAT",
-        "HEADER": "d[MaxHF]",
+        "HEADER": "d[maxHF]",
         "TYPE": "D_COEFFICIENT",
     },
     "D_MOMENT_X": {
@@ -576,9 +630,9 @@ history_header_map = {
         "TYPE": "D_COEFFICIENT",
     },
     'D_SURFACE_SPECIES_" + std::to_string(iVar': {
-        "DESCRIPTION": "Derivative " "value",
+        "DESCRIPTION": "Derivative value",
         "GROUP": "D_SPECIES_COEFF",
-        "HEADER": 'd[Avg_Species_" + ' "std::to_string(iVar]",
+        "HEADER": 'd[Avg_Species_" + std::to_string(iVar]',
         "TYPE": "D_COEFFICIENT",
     },
     "D_SURFACE_STATIC_PRESSURE": {
@@ -647,9 +701,20 @@ history_header_map = {
         "HEADER": "d[VolFrac]",
         "TYPE": "D_COEFFICIENT",
     },
+    'DensityIn_" + tag': {
+        "DESCRIPTION": 'Flow angle out " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'DensityIn_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'DensityOut_" + tag': {
+        "DESCRIPTION": 'Absolute flow angle in " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'DensityOut_" + tag',
+        "TYPE": "DEFAULT",
+    },
     "EFFICIENCY": {
-        "DESCRIPTION": "Total lift-to-drag ratio on all surfaces set "
-        "with MARKER_MONITORING",
+        "DESCRIPTION": "Total lift-to-drag ratio on all surfaces set with MARKER_MONITORING",
         "GROUP": "AERO_COEFF",
         "HEADER": "CEff",
         "TYPE": "COEFFICIENT",
@@ -660,6 +725,30 @@ history_header_map = {
         "HEADER": "CEquiv_Area",
         "TYPE": "COEFFICIENT",
     },
+    "EntropyGeneration": {
+        "DESCRIPTION": "Machine entropy generation",
+        "GROUP": "TURBO_PERF",
+        "HEADER": "EntropyGen",
+        "TYPE": "DEFAULT",
+    },
+    'EntropyIn_" + tag': {
+        "DESCRIPTION": 'Total pressure loss " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'EntropyIn_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'EntropyOut_" + tag': {
+        "DESCRIPTION": 'Kinetic energy loss " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'EntropyOut_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    "EulerianWork": {
+        "DESCRIPTION": "Machine Eulerian work",
+        "GROUP": "TURBO_PERF",
+        "HEADER": "EulerianWork",
+        "TYPE": "DEFAULT",
+    },
     "FIGURE_OF_MERIT": {
         "DESCRIPTION": "Thrust over torque",
         "GROUP": "ROTATING_FRAME",
@@ -667,22 +756,19 @@ history_header_map = {
         "TYPE": "COEFFICIENT",
     },
     "FORCE_X": {
-        "DESCRIPTION": "Total force x-component on all surfaces set with "
-        "MARKER_MONITORING",
+        "DESCRIPTION": "Total force x-component on all surfaces set with MARKER_MONITORING",
         "GROUP": "AERO_COEFF",
         "HEADER": "CFx",
         "TYPE": "COEFFICIENT",
     },
     "FORCE_Y": {
-        "DESCRIPTION": "Total force y-component on all surfaces set with "
-        "MARKER_MONITORING",
+        "DESCRIPTION": "Total force y-component on all surfaces set with MARKER_MONITORING",
         "GROUP": "AERO_COEFF",
         "HEADER": "CFy",
         "TYPE": "COEFFICIENT",
     },
     "FORCE_Z": {
-        "DESCRIPTION": "Total force z-component on all surfaces set with "
-        "MARKER_MONITORING",
+        "DESCRIPTION": "Total force z-component on all surfaces set with MARKER_MONITORING",
         "GROUP": "AERO_COEFF",
         "HEADER": "CFz",
         "TYPE": "COEFFICIENT",
@@ -693,9 +779,20 @@ history_header_map = {
         "HEADER": "Cp_Diff",
         "TYPE": "COEFFICIENT",
     },
+    'KineticEnergyLoss_" + tag': {
+        "DESCRIPTION": "Blade Kinetic Energy Loss Coefficient",
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'KELC_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    "KineticEnergyLoss_Stage": {
+        "DESCRIPTION": "Machine Kinetic Energy Loss Coefficient",
+        "GROUP": "TURBO_PERF",
+        "HEADER": "KELC_all",
+        "TYPE": "DEFAULT",
+    },
     "LIFT": {
-        "DESCRIPTION": "Total lift coefficient on all surfaces set with "
-        "MARKER_MONITORING",
+        "DESCRIPTION": "Total lift coefficient on all surfaces set with MARKER_MONITORING",
         "GROUP": "AERO_COEFF",
         "HEADER": "CL",
         "TYPE": "COEFFICIENT",
@@ -706,15 +803,32 @@ history_header_map = {
         "HEADER": "LinSolIter",
         "TYPE": "DEFAULT",
     },
+    "LINSOL_ITER_FLAMELET": {
+        "DESCRIPTION": "Number of iterations of the linear solver for scalar solver.",
+        "GROUP": "LINSOL",
+        "HEADER": "LinSolIterScalar",
+        "TYPE": "DEFAULT",
+    },
+    "LINSOL_ITER_HEAT": {
+        "DESCRIPTION": "Number of iterations of the linear solver.",
+        "GROUP": "LINSOL",
+        "HEADER": "LinSolIterHeat",
+        "TYPE": "DEFAULT",
+    },
     "LINSOL_ITER_SPECIES": {
-        "DESCRIPTION": "Number of iterations of the linear "
-        "solver for species solver.",
+        "DESCRIPTION": "Number of iterations of the linear solver for species solver.",
         "GROUP": "LINSOL",
         "HEADER": "LinSolIterSpecies",
         "TYPE": "DEFAULT",
     },
+    "LINSOL_ITER_TRANS": {
+        "DESCRIPTION": "Number of iterations of the linear solver for transition solver.",
+        "GROUP": "LINSOL",
+        "HEADER": "LinSolIterTrans",
+        "TYPE": "DEFAULT",
+    },
     "LINSOL_ITER_TURB": {
-        "DESCRIPTION": "Number of iterations of the linear " "solver for turbulence.",
+        "DESCRIPTION": "Number of iterations of the linear solver for turbulence.",
         "GROUP": "LINSOL",
         "HEADER": "LinSolIterTurb",
         "TYPE": "DEFAULT",
@@ -725,14 +839,32 @@ history_header_map = {
         "HEADER": "LinSolRes",
         "TYPE": "DEFAULT",
     },
+    "LINSOL_RESIDUAL_FLAMELET": {
+        "DESCRIPTION": "Residual of the linear solver for scalar solver.",
+        "GROUP": "LINSOL",
+        "HEADER": "LinSolResScalar",
+        "TYPE": "DEFAULT",
+    },
+    "LINSOL_RESIDUAL_HEAT": {
+        "DESCRIPTION": "Residual of the linear solver.",
+        "GROUP": "LINSOL",
+        "HEADER": "LinSolResHeat",
+        "TYPE": "DEFAULT",
+    },
     "LINSOL_RESIDUAL_SPECIES": {
-        "DESCRIPTION": "Residual of the linear solver for " "species solver.",
+        "DESCRIPTION": "Residual of the linear solver for species solver.",
         "GROUP": "LINSOL",
         "HEADER": "LinSolResSpecies",
         "TYPE": "DEFAULT",
     },
+    "LINSOL_RESIDUAL_TRANS": {
+        "DESCRIPTION": "Residual of the linear solver for transition solver.",
+        "GROUP": "LINSOL",
+        "HEADER": "LinSolResTrans",
+        "TYPE": "DEFAULT",
+    },
     "LINSOL_RESIDUAL_TURB": {
-        "DESCRIPTION": "Residual of the linear solver for " "turbulence.",
+        "DESCRIPTION": "Residual of the linear solver for turbulence.",
         "GROUP": "LINSOL",
         "HEADER": "LinSolResTurb",
         "TYPE": "DEFAULT",
@@ -750,11 +882,34 @@ history_header_map = {
         "TYPE": "DEFAULT",
     },
     "MAXIMUM_HEATFLUX": {
-        "DESCRIPTION": "Maximum heatflux on all surfaces defined "
-        "in MARKER_MONITORING",
+        "DESCRIPTION": "Maximum heatflux across all surfaces set with MARKER_MONITORING.",
         "GROUP": "HEAT",
-        "HEADER": "MaxHF",
+        "HEADER": "maxHF",
         "TYPE": "COEFFICIENT",
+    },
+    'MAX_" + cv_name': {
+        "DESCRIPTION": 'Maximum residual of the " + cv_name + " equation.',
+        "GROUP": "MAX_RES",
+        "HEADER": 'max[" + cv_name + "]',
+        "TYPE": "RESIDUAL",
+    },
+    'MAX_" + scalar_name': {
+        "DESCRIPTION": 'Maximum residual of the " + scalar_name + " mass fraction equation.',
+        "GROUP": "MAX_RES",
+        "HEADER": 'max[" + scalar_name + "]',
+        "TYPE": "RESIDUAL",
+    },
+    'MAX_ADJ_" + cv_name': {
+        "DESCRIPTION": 'Maximum residual of the adjoint " + cv_name',
+        "GROUP": "MAX_RES",
+        "HEADER": 'max["+cv_name +"]',
+        "TYPE": "RESIDUAL",
+    },
+    'MAX_ADJ_" + scalar_name': {
+        "DESCRIPTION": 'Maximum residual of the adjoint of " + scalar_name + " .',
+        "GROUP": "MAX_RES",
+        "HEADER": 'max[scalar_" + scalar_name + "]',
+        "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_DENSITY": {
         "DESCRIPTION": "Maximum residual of the adjoint density.",
@@ -763,7 +918,7 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_DISSIPATION": {
-        "DESCRIPTION": "Maximum residual of the adjoint " "dissipation.",
+        "DESCRIPTION": "Maximum residual of the adjoint dissipation.",
         "GROUP": "MAX_RES",
         "HEADER": "max[A_w]",
         "TYPE": "RESIDUAL",
@@ -775,39 +930,39 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_MOMENTUM-X": {
-        "DESCRIPTION": "Maximum residual of the adjoint " "momentum x-component",
+        "DESCRIPTION": "Maximum residual of the adjoint momentum x-component",
         "GROUP": "MAX_RES",
         "HEADER": "max[A_RhoU]",
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_MOMENTUM-Y": {
-        "DESCRIPTION": "Maximum residual of the adjoint " "momentum y-component",
+        "DESCRIPTION": "Maximum residual of the adjoint momentum y-component",
         "GROUP": "MAX_RES",
         "HEADER": "max[A_RhoV]",
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_MOMENTUM-Z": {
-        "DESCRIPTION": "Maximum residual of the adjoint " "momentum z-component",
+        "DESCRIPTION": "Maximum residual of the adjoint momentum z-component",
         "GROUP": "MAX_RES",
         "HEADER": "max[A_RhoW]",
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_NU_TILDE": {
-        "DESCRIPTION": "Maximum residual of the adjoint nu " "tilde.",
+        "DESCRIPTION": "Maximum residual of the adjoint nu tilde.",
         "GROUP": "MAX_RES",
         "HEADER": "max[A_nu]",
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_PRESSURE": {
-        "DESCRIPTION": "Maximum residual of the adjoint " "Pressure.",
+        "DESCRIPTION": "Maximum residual of the adjoint Pressure.",
         "GROUP": "MAX_RES",
         "HEADER": "max[A_Rho]",
         "TYPE": "RESIDUAL",
     },
     'MAX_ADJ_SPECIES_" + std::to_string(iVar': {
-        "DESCRIPTION": "Maximum residual " "of the adjoint " "transported " "species.",
+        "DESCRIPTION": "Maximum residual of the adjoint transported species.",
         "GROUP": "MAX_RES",
-        "HEADER": 'max[A_rho*Y_" + ' "std::to_string(iVar) + " '"]',
+        "HEADER": 'max[A_rho*Y_" + std::to_string(iVar) + "]',
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_TEMPERATURE": {
@@ -823,25 +978,25 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_TKE": {
-        "DESCRIPTION": "Maximum residual of the adjoint kinetic " "energy.",
+        "DESCRIPTION": "Maximum residual of the adjoint kinetic energy.",
         "GROUP": "MAX_RES",
         "HEADER": "max[A_k]",
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_VELOCITY-X": {
-        "DESCRIPTION": "Maximum residual of the adjoint " "Velocity x-component",
+        "DESCRIPTION": "Maximum residual of the adjoint Velocity x-component",
         "GROUP": "MAX_RES",
         "HEADER": "max[A_RhoU]",
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_VELOCITY-Y": {
-        "DESCRIPTION": "Maximum residual of the adjoint " "Velocity y-component",
+        "DESCRIPTION": "Maximum residual of the adjoint Velocity y-component",
         "GROUP": "MAX_RES",
         "HEADER": "max[A_RhoV]",
         "TYPE": "RESIDUAL",
     },
     "MAX_ADJ_VELOCITY-Z": {
-        "DESCRIPTION": "Maximum residual of the adjoint " "Velocity z-component",
+        "DESCRIPTION": "Maximum residual of the adjoint Velocity z-component",
         "GROUP": "MAX_RES",
         "HEADER": "max[A_RhoW]",
         "TYPE": "RESIDUAL",
@@ -865,7 +1020,7 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "MAX_DISSIPATION": {
-        "DESCRIPTION": "Maximum residual of dissipation (SST " "model).",
+        "DESCRIPTION": "Maximum residual of dissipation (SST model).",
         "GROUP": "MAX_RES",
         "HEADER": "max[w]",
         "TYPE": "RESIDUAL",
@@ -876,14 +1031,20 @@ history_header_map = {
         "HEADER": "max[RhoE]",
         "TYPE": "RESIDUAL",
     },
+    "MAX_INTERMITTENCY": {
+        "DESCRIPTION": "Maximum residual of the intermittency (LM model).",
+        "GROUP": "MAX_RES",
+        "HEADER": "max[LM_1]",
+        "TYPE": "RESIDUAL",
+    },
     "MAX_MOMENTUM-X": {
-        "DESCRIPTION": "Maximum square residual of the momentum " "x-component.",
+        "DESCRIPTION": "Maximum square residual of the momentum x-component.",
         "GROUP": "MAX_RES",
         "HEADER": "max[RhoU]",
         "TYPE": "RESIDUAL",
     },
     "MAX_MOMENTUM-Y": {
-        "DESCRIPTION": "Maximum square residual of the momentum " "y-component.",
+        "DESCRIPTION": "Maximum square residual of the momentum y-component.",
         "GROUP": "MAX_RES",
         "HEADER": "max[RhoV]",
         "TYPE": "RESIDUAL",
@@ -900,14 +1061,20 @@ history_header_map = {
         "HEADER": "max[P]",
         "TYPE": "RESIDUAL",
     },
-    'MAX_SPECIES_" + std::to_string(iVar': {
-        "DESCRIPTION": "Maximum residual of " "transported species.",
+    "MAX_RE_THETA_T": {
+        "DESCRIPTION": "Maximum residual of the momentum thickness Reynolds number (LM model).",
         "GROUP": "MAX_RES",
-        "HEADER": 'max[rho*Y_" + ' 'std::to_string(iVar)+"]',
+        "HEADER": "max[LM_2]",
+        "TYPE": "RESIDUAL",
+    },
+    'MAX_SPECIES_" + std::to_string(iVar': {
+        "DESCRIPTION": "Maximum residual of transported species.",
+        "GROUP": "MAX_RES",
+        "HEADER": 'max[rho*Y_" + std::to_string(iVar)+"]',
         "TYPE": "RESIDUAL",
     },
     "MAX_TEMPERATURE": {
-        "DESCRIPTION": "Maximum residual of the temperature",
+        "DESCRIPTION": "Root-mean square residual of the temperature.",
         "GROUP": "MAX_RES",
         "HEADER": "max[T]",
         "TYPE": "RESIDUAL",
@@ -925,19 +1092,19 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "MAX_VELOCITY-X": {
-        "DESCRIPTION": "Maximum residual of the velocity " "x-component.",
+        "DESCRIPTION": "Maximum residual of the velocity x-component.",
         "GROUP": "MAX_RES",
         "HEADER": "max[U]",
         "TYPE": "RESIDUAL",
     },
     "MAX_VELOCITY-Y": {
-        "DESCRIPTION": "Maximum residual of the velocity " "y-component.",
+        "DESCRIPTION": "Maximum residual of the velocity y-component.",
         "GROUP": "MAX_RES",
         "HEADER": "max[V]",
         "TYPE": "RESIDUAL",
     },
     "MAX_VELOCITY-Z": {
-        "DESCRIPTION": "Maximum residual of the velocity " "z-component.",
+        "DESCRIPTION": "Maximum residual of the velocity z-component.",
         "GROUP": "MAX_RES",
         "HEADER": "max[W]",
         "TYPE": "RESIDUAL",
@@ -955,35 +1122,91 @@ history_header_map = {
         "TYPE": "DEFAULT",
     },
     "MOMENT_X": {
-        "DESCRIPTION": "Total momentum x-component on all surfaces set "
-        "with MARKER_MONITORING",
+        "DESCRIPTION": "Total momentum x-component on all surfaces set with MARKER_MONITORING",
         "GROUP": "AERO_COEFF",
         "HEADER": "CMx",
         "TYPE": "COEFFICIENT",
     },
     "MOMENT_Y": {
-        "DESCRIPTION": "Total momentum y-component on all surfaces set "
-        "with MARKER_MONITORING",
+        "DESCRIPTION": "Total momentum y-component on all surfaces set with MARKER_MONITORING",
         "GROUP": "AERO_COEFF",
         "HEADER": "CMy",
         "TYPE": "COEFFICIENT",
     },
     "MOMENT_Z": {
-        "DESCRIPTION": "Total momentum z-component on all surfaces set "
-        "with MARKER_MONITORING",
+        "DESCRIPTION": "Total momentum z-component on all surfaces set with MARKER_MONITORING",
         "GROUP": "AERO_COEFF",
         "HEADER": "CMz",
         "TYPE": "COEFFICIENT",
     },
+    'MachIn_" + tag': {
+        "DESCRIPTION": 'Total-to-Static efficiency " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'MachIn_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'MachOut_" + tag': {
+        "DESCRIPTION": 'Total-to-Static efficiency " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'MachOut_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'MassFlowIn_" + tag': {
+        "DESCRIPTION": 'Mach out " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'MassFlowIn_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'MassFlowOut_" + tag': {
+        "DESCRIPTION": 'Total efficiency " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'MassFlowOut_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'NormalVelocityIn_" + tag': {
+        "DESCRIPTION": 'Absolute flow angle out " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'NormalVelocityIn_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'NormalVelocityOut_" + tag': {
+        "DESCRIPTION": 'Mass flow in " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'NormalVelocityOut_" + tag',
+        "TYPE": "DEFAULT",
+    },
     "PREV_AOA": {
-        "DESCRIPTION": "Angle of Attack at the previous iteration of the "
-        "Fixed CL driver",
+        "DESCRIPTION": "Angle of Attack at the previous iteration of the Fixed CL driver",
         "GROUP": "FIXED_CL",
         "HEADER": "Previous_AOA",
         "TYPE": "DEFAULT",
     },
+    'PressureIn_" + tag': {
+        "DESCRIPTION": 'Pressure ratio " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'PressureIn_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'PressureOut_" + tag': {
+        "DESCRIPTION": 'Flow angle in " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'PressureOut_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    "PressureRatioTS": {
+        "DESCRIPTION": "Machine total-to-static pressure ratio",
+        "GROUP": "TURBO_PERF",
+        "HEADER": "PRTS",
+        "TYPE": "DEFAULT",
+    },
+    "PressureRatioTT": {
+        "DESCRIPTION": "Machine total-to-toal pressure ratio",
+        "GROUP": "TURBO_PERF",
+        "HEADER": "PRTT",
+        "TYPE": "DEFAULT",
+    },
     "REFERENCE_GEOMETRY": {
-        "DESCRIPTION": "L2 norm of difference wrt reference " "geometry",
+        "DESCRIPTION": "L2 norm of difference wrt reference geometry",
         "GROUP": "STRUCT_COEFF",
         "HEADER": "RefGeom",
         "TYPE": "COEFFICIENT",
@@ -994,75 +1217,92 @@ history_header_map = {
         "HEADER": "RefNode",
         "TYPE": "COEFFICIENT",
     },
+    'RMS_"+CV_name': {
+        "DESCRIPTION": 'Root-mean squared residual of " + CV_name + " controlling variable equation.',
+        "GROUP": "RMS_RES",
+        "HEADER": 'rms["+CV_name+"]',
+        "TYPE": "RESIDUAL",
+    },
+    'RMS_"+scalar_name': {
+        "DESCRIPTION": 'Root-mean squared residual of the "+scalar_name+" mass fraction equation.',
+        "GROUP": "RMS_RES",
+        "HEADER": 'rms["+scalar_name+"]',
+        "TYPE": "RESIDUAL",
+    },
+    'RMS_ADJ_" + scalar_name': {
+        "DESCRIPTION": 'Root-mean square residual of the adjoint of " + scalar_name + " .',
+        "GROUP": "RMS_RES",
+        "HEADER": 'rms[" + scalar_name + "]',
+        "TYPE": "RESIDUAL",
+    },
+    'RMS_ADJ_"+cv_name': {
+        "DESCRIPTION": 'Root-mean square residual of the adjoint " + cv_name',
+        "GROUP": "RMS_RES",
+        "HEADER": 'rms[" + cv_name + "]',
+        "TYPE": "RESIDUAL",
+    },
     "RMS_ADJ_DENSITY": {
-        "DESCRIPTION": "Root-mean square residual of the adjoint " "density.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint density.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_Rho]",
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_DISSIPATION": {
-        "DESCRIPTION": "Root-mean square residual of the " "adjoint dissipation.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint dissipation.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_w]",
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_ENERGY": {
-        "DESCRIPTION": "Root-mean square residual of the adjoint " "energy.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint energy.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_E]",
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_MOMENTUM-X": {
-        "DESCRIPTION": "Root-mean square residual of the "
-        "adjoint momentum x-component.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint momentum x-component.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_RhoU]",
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_MOMENTUM-Y": {
-        "DESCRIPTION": "Root-mean square residual of the "
-        "adjoint momentum y-component.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint momentum y-component.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_RhoV]",
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_MOMENTUM-Z": {
-        "DESCRIPTION": "Root-mean square residual of the "
-        "adjoint momentum z-component.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint momentum z-component.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_RhoW]",
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_NU_TILDE": {
-        "DESCRIPTION": "Root-mean square residual of the adjoint " "nu tilde.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint nu tilde.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_nu]",
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_PRESSURE": {
-        "DESCRIPTION": "Root-mean square residual of the adjoint " "Pressure.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint Pressure.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_P]",
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_RAD_ENERGY": {
-        "DESCRIPTION": "Root-mean square residual of the P1 " "radiative energy.",
+        "DESCRIPTION": "Root-mean square residual of the P1 radiative energy.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_P1]",
         "TYPE": "RESIDUAL",
     },
     'RMS_ADJ_SPECIES_" + std::to_string(iVar': {
-        "DESCRIPTION": "Root-mean square "
-        "residual of the "
-        "adjoint "
-        "transported "
-        "species.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint transported species.",
         "GROUP": "RMS_RES",
-        "HEADER": 'rms[A_rho*Y_" + ' "std::to_string(iVar) + " '"]',
+        "HEADER": 'rms[A_rho*Y_" + std::to_string(iVar) + "]',
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_TEMPERATURE": {
-        "DESCRIPTION": "Root-mean square residual of the " "adjoint temperature.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint temperature.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_T]",
         "TYPE": "RESIDUAL",
@@ -1074,28 +1314,25 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_TKE": {
-        "DESCRIPTION": "Root-mean square residual of the adjoint " "kinetic energy.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint kinetic energy.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_k]",
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_VELOCITY-X": {
-        "DESCRIPTION": "Root-mean square residual of the "
-        "adjoint Velocity x-component.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint Velocity x-component.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_U]",
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_VELOCITY-Y": {
-        "DESCRIPTION": "Root-mean square residual of the "
-        "adjoint Velocity y-component.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint Velocity y-component.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_V]",
         "TYPE": "RESIDUAL",
     },
     "RMS_ADJ_VELOCITY-Z": {
-        "DESCRIPTION": "Root-mean square residual of the "
-        "adjoint Velocity z-component.",
+        "DESCRIPTION": "Root-mean square residual of the adjoint Velocity z-component.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[A_W]",
         "TYPE": "RESIDUAL",
@@ -1125,7 +1362,7 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "RMS_DISSIPATION": {
-        "DESCRIPTION": "Root-mean square residual of dissipation " "(SST model).",
+        "DESCRIPTION": "Root-mean square residual of dissipation (SST model).",
         "GROUP": "RMS_RES",
         "HEADER": "rms[w]",
         "TYPE": "RESIDUAL",
@@ -1142,20 +1379,26 @@ history_header_map = {
         "HEADER": "rms[E]",
         "TYPE": "RESIDUAL",
     },
+    "RMS_INTERMITTENCY": {
+        "DESCRIPTION": "Root-mean square residual of intermittency (LM model).",
+        "GROUP": "RMS_RES",
+        "HEADER": "rms[LM_1]",
+        "TYPE": "RESIDUAL",
+    },
     "RMS_MOMENTUM-X": {
-        "DESCRIPTION": "Root-mean square residual of the momentum " "x-component.",
+        "DESCRIPTION": "Root-mean square residual of the momentum x-component.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[RhoU]",
         "TYPE": "RESIDUAL",
     },
     "RMS_MOMENTUM-Y": {
-        "DESCRIPTION": "Root-mean square residual of the momentum " "y-component.",
+        "DESCRIPTION": "Root-mean square residual of the momentum y-component.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[RhoV]",
         "TYPE": "RESIDUAL",
     },
     "RMS_NU_TILDE": {
-        "DESCRIPTION": "Root-mean square residual of nu tilde (SA " "model).",
+        "DESCRIPTION": "Root-mean square residual of nu tilde (SA model).",
         "GROUP": "RMS_RES",
         "HEADER": "rms[nu]",
         "TYPE": "RESIDUAL",
@@ -1166,6 +1409,12 @@ history_header_map = {
         "HEADER": "rms[P]",
         "TYPE": "RESIDUAL",
     },
+    "RMS_RE_THETA_T": {
+        "DESCRIPTION": "Root-mean square residual of momentum thickness Reynolds number (LM model).",
+        "GROUP": "RMS_RES",
+        "HEADER": "rms[LM_2]",
+        "TYPE": "RESIDUAL",
+    },
     "RMS_RTOL": {
         "DESCRIPTION": "Norm of residual",
         "GROUP": "RMS_RES",
@@ -1173,15 +1422,9 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     'RMS_SPECIES_" + std::to_string(iVar': {
-        "DESCRIPTION": "Root-mean square " "residual of " "transported species.",
+        "DESCRIPTION": "Root-mean square residual of transported species.",
         "GROUP": "RMS_RES",
-        "HEADER": 'rms[rho*Y_" + ' 'std::to_string(iVar)+"]',
-        "TYPE": "RESIDUAL",
-    },
-    "RMS_TEMPERATURE": {
-        "DESCRIPTION": "Root mean square residual of the " "temperature",
-        "GROUP": "RMS_RES",
-        "HEADER": "rms[T]",
+        "HEADER": 'rms[rho*Y_" + std::to_string(iVar)+"]',
         "TYPE": "RESIDUAL",
     },
     "RMS_ENTHALPY": {
@@ -1191,7 +1434,7 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "RMS_TKE": {
-        "DESCRIPTION": "Root-mean square residual of kinetic energy (SST " "model).",
+        "DESCRIPTION": "Root-mean square residual of kinetic energy (SST model).",
         "GROUP": "RMS_RES",
         "HEADER": "rms[k]",
         "TYPE": "RESIDUAL",
@@ -1203,83 +1446,91 @@ history_header_map = {
         "TYPE": "RESIDUAL",
     },
     "RMS_VELOCITY-X": {
-        "DESCRIPTION": "Root-mean square residual of the velocity " "x-component.",
+        "DESCRIPTION": "Root-mean square residual of the velocity x-component.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[U]",
         "TYPE": "RESIDUAL",
     },
     "RMS_VELOCITY-Y": {
-        "DESCRIPTION": "Root-mean square residual of the velocity " "y-component.",
+        "DESCRIPTION": "Root-mean square residual of the velocity y-component.",
         "GROUP": "RMS_RES",
         "HEADER": "rms[V]",
         "TYPE": "RESIDUAL",
     },
     "SENS_AOA": {
-        "DESCRIPTION": "Sensitivity of the objective function with "
-        "respect to the angle of attack (only for "
-        "compressible solver).",
+        "DESCRIPTION": "Sensitivity of the objective function with respect to the angle of attack (only for compressible solver).",
         "GROUP": "SENSITIVITY",
         "HEADER": "Sens_AoA",
         "TYPE": "COEFFICIENT",
     },
-    "SENS_E_0": {
+    'SENS_EFIELD_" + iVarS': {
+        "DESCRIPTION": "d Objective / d Electric field",
+        "GROUP": "SENSITIVITY",
+        "HEADER": "Sens[EField\" + iVarS + ']'",
+        "TYPE": "DEFAULT",
+    },
+    'SENS_E_" + iVarS': {
         "DESCRIPTION": "d Objective / d Elasticity modulus",
         "GROUP": "SENSITIVITY",
-        "HEADER": "Sens[E_0]",
+        "HEADER": "Sens[E\" + iVarS + ']'",
         "TYPE": "DEFAULT",
     },
     "SENS_GEO": {
-        "DESCRIPTION": "Sum of the geometrical sensitivities on all "
-        "markers set in MARKER_MONITORING.",
+        "DESCRIPTION": "Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.",
         "GROUP": "SENSITIVITY",
         "HEADER": "Sens_Geo",
         "TYPE": "COEFFICIENT",
     },
     "SENS_MACH": {
-        "DESCRIPTION": "Sensitivity of the objective function with "
-        "respect to the Mach number (only of "
-        "compressible solver).",
+        "DESCRIPTION": "Sensitivity of the objective function with respect to the Mach number (only of compressible solver).",
         "GROUP": "SENSITIVITY",
         "HEADER": "Sens_Mach",
         "TYPE": "COEFFICIENT",
     },
-    "SENS_NU_0": {
+    'SENS_NU_" + iVarS': {
         "DESCRIPTION": "d Objective / d Poisson ratio",
         "GROUP": "SENSITIVITY",
-        "HEADER": "Sens[Nu_0]",
+        "HEADER": "Sens[Nu\" + iVarS + ']'",
         "TYPE": "DEFAULT",
     },
     "SENS_PRESS": {
-        "DESCRIPTION": "Sensitivity of the objective function with "
-        "respect to the far-field pressure.",
+        "DESCRIPTION": "Sensitivity of the objective function with respect to the far-field pressure.",
         "GROUP": "SENSITIVITY",
         "HEADER": "Sens_Press",
         "TYPE": "COEFFICIENT",
     },
     "SENS_PRESS_OUT": {
-        "DESCRIPTION": "Sensitivity of the objective function with "
-        "respect to the outlet pressure.",
+        "DESCRIPTION": "Sensitivity of the objective function with respect to the outlet pressure.",
         "GROUP": "SENSITIVITY",
         "HEADER": "Sens_Pout",
         "TYPE": "COEFFICIENT",
     },
+    'SENS_RHO_" + iVarS': {
+        "DESCRIPTION": "d Objective / d Material density",
+        "GROUP": "SENSITIVITY",
+        "HEADER": "Sens[Rho\" + iVarS + ']'",
+        "TYPE": "DEFAULT",
+    },
+    'SENS_RHO_DL_" + iVarS': {
+        "DESCRIPTION": "d Objective / d Dead load density",
+        "GROUP": "SENSITIVITY",
+        "HEADER": "Sens[RhoDL\" + iVarS + ']'",
+        "TYPE": "DEFAULT",
+    },
     "SENS_TEMP": {
-        "DESCRIPTION": "Sensitivity of the objective function with "
-        "respect to the far-field temperature.",
+        "DESCRIPTION": "Sensitivity of the objective function with respect to the far-field temperature.",
         "GROUP": "SENSITIVITY",
         "HEADER": "Sens_Temp",
         "TYPE": "COEFFICIENT",
     },
     "SENS_VEL_IN": {
-        "DESCRIPTION": "Sensitivity of the objective function with "
-        "respect to the inlet velocity.",
+        "DESCRIPTION": "Sensitivity of the objective function with respect to the inlet velocity.",
         "GROUP": "SENSITIVITY",
         "HEADER": "Sens_Vin",
         "TYPE": "COEFFICIENT",
     },
     "SIDEFORCE": {
-        "DESCRIPTION": "Total sideforce coefficient on all surfaces set "
-        "with MARKER_MONITORING",
+        "DESCRIPTION": "Total sideforce coefficient on all surfaces set with MARKER_MONITORING",
         "GROUP": "AERO_COEFF",
         "HEADER": "CSF",
         "TYPE": "COEFFICIENT",
@@ -1291,7 +1542,7 @@ history_header_map = {
         "TYPE": "DEFAULT",
     },
     "STREAMWISE_HEAT": {
-        "DESCRIPTION": "Integrated heat for streamwise periodic " "flow",
+        "DESCRIPTION": "Integrated heat for streamwise periodic flow",
         "GROUP": "STREAMWISE_PERIODIC",
         "HEADER": "SWHeat",
         "TYPE": "DEFAULT",
@@ -1309,56 +1560,45 @@ history_header_map = {
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_MACH": {
-        "DESCRIPTION": "Total average mach number on all markers set "
-        "in MARKER_ANALYZE",
+        "DESCRIPTION": "Total average mach number on all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Avg_Mach",
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_MASSFLOW": {
-        "DESCRIPTION": "Total average mass flow on all markers "
-        "set in MARKER_ANALYZE",
+        "DESCRIPTION": "Total average mass flow on all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Avg_Massflow",
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_MOM_DISTORTION": {
-        "DESCRIPTION": "Total momentum distortion on all "
-        "markers set in MARKER_ANALYZE",
+        "DESCRIPTION": "Total momentum distortion on all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Momentum_Distortion",
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_PRESSURE_DROP": {
-        "DESCRIPTION": "Total pressure drop on all markers " "set in MARKER_ANALYZE",
+        "DESCRIPTION": "Total pressure drop on all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Pressure_Drop",
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_SECONDARY": {
-        "DESCRIPTION": "Total secondary strength on all markers "
-        "set in MARKER_ANALYZE",
+        "DESCRIPTION": "Total secondary strength on all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Secondary_Strength",
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_SECOND_OVER_UNIFORM": {
-        "DESCRIPTION": "Total secondary over "
-        "uniformity on all markers set "
-        "in MARKER_ANALYZE",
+        "DESCRIPTION": "Total secondary over uniformity on all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Secondary_Over_Uniformity",
         "TYPE": "COEFFICIENT",
     },
     'SURFACE_SPECIES_" + std::to_string(iVar': {
-        "DESCRIPTION": "Total average "
-        'species " + '
-        "std::to_string(iVar) "
-        '+ " on all '
-        "markers set in "
-        "MARKER_ANALYZE",
+        "DESCRIPTION": 'Total average species " + std::to_string(iVar) + " on all markers set in MARKER_ANALYZE',
         "GROUP": "SPECIES_COEFF",
-        "HEADER": 'Avg_Species_" + ' "std::to_string(iVar",
+        "HEADER": 'Avg_Species_" + std::to_string(iVar',
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_SPECIES_VARIANCE": {
@@ -1368,36 +1608,31 @@ history_header_map = {
         "TYPE": "DEFAULT",
     },
     "SURFACE_STATIC_PRESSURE": {
-        "DESCRIPTION": "Total average pressure on all " "markers set in MARKER_ANALYZE",
+        "DESCRIPTION": "Total average pressure on all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Avg_Press",
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_STATIC_TEMPERATURE": {
-        "DESCRIPTION": "Total average temperature on "
-        "all markers set in "
-        "MARKER_ANALYZE",
+        "DESCRIPTION": "Total average temperature on all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Avg_Temp",
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_TOTAL_PRESSURE": {
-        "DESCRIPTION": "Total average total pressure on "
-        "all markers set in MARKER_ANALYZE",
+        "DESCRIPTION": "Total average total pressure on all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Avg_TotalPress",
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_TOTAL_TEMPERATURE": {
-        "DESCRIPTION": "Total average total temperature "
-        "all markers set in "
-        "MARKER_ANALYZE",
+        "DESCRIPTION": "Total average total temperature all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Avg_TotalTemp",
         "TYPE": "COEFFICIENT",
     },
     "SURFACE_UNIFORMITY": {
-        "DESCRIPTION": "Total flow uniformity on all markers " "set in MARKER_ANALYZE",
+        "DESCRIPTION": "Total flow uniformity on all markers set in MARKER_ANALYZE",
         "GROUP": "FLOW_COEFF",
         "HEADER": "Uniformity",
         "TYPE": "COEFFICIENT",
@@ -1429,7 +1664,7 @@ history_header_map = {
     "TAVG_AVG_TEMPERATURE": {
         "DESCRIPTION": "weighted time average value",
         "GROUP": "TAVG_HEAT",
-        "HEADER": "tavg[AvgTemp]",
+        "HEADER": "tavg[Temp]",
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_BUFFET": {
@@ -1439,6 +1674,12 @@ history_header_map = {
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_COMBO": {
+        "DESCRIPTION": "weighted time average value",
+        "GROUP": "TAVG_COMBO",
+        "HEADER": "tavg[ComboObj]",
+        "TYPE": "TAVG_COEFFICIENT",
+    },
+    "TAVG_CUSTOM_OBJFUNC": {
         "DESCRIPTION": "weighted time average value",
         "GROUP": "TAVG_COMBO",
         "HEADER": "tavg[ComboObj]",
@@ -1457,7 +1698,7 @@ history_header_map = {
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_D_ADJOINT_SOLEXTRA": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_ADJOINT_SOLEXTRA",
         "HEADER": "dtavg[Adjoint_SolExtra]",
         "TYPE": "TAVG_D_COEFFICIENT",
@@ -1469,21 +1710,21 @@ history_header_map = {
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_AVG_ENTHALPY": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
         "HEADER": "dtavg[Avg_Enthalpy]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_AVG_NORMALVEL": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
         "HEADER": "dtavg[Avg_NormalVel]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_AVG_TEMPERATURE": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_HEAT",
-        "HEADER": "dtavg[AvgTemp]",
+        "HEADER": "dtavg[Temp]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_BUFFET": {
@@ -1493,6 +1734,12 @@ history_header_map = {
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_COMBO": {
+        "DESCRIPTION": "weighted time average derivative value",
+        "GROUP": "TAVG_D_COMBO",
+        "HEADER": "dtavg[ComboObj]",
+        "TYPE": "TAVG_D_COEFFICIENT",
+    },
+    "TAVG_D_CUSTOM_OBJFUNC": {
         "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_COMBO",
         "HEADER": "dtavg[ComboObj]",
@@ -1517,13 +1764,13 @@ history_header_map = {
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_EQUIVALENT_AREA": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_EQUIVALENT_AREA",
         "HEADER": "dtavg[CEquiv_Area]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_FIGURE_OF_MERIT": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_ROTATING_FRAME",
         "HEADER": "dtavg[CMerit]",
         "TYPE": "TAVG_D_COEFFICIENT",
@@ -1547,7 +1794,7 @@ history_header_map = {
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_INVERSE_DESIGN_PRESSURE": {
-        "DESCRIPTION": "weighted time average " "derivative value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_CP_DIFF",
         "HEADER": "dtavg[Cp_Diff]",
         "TYPE": "TAVG_D_COEFFICIENT",
@@ -1559,9 +1806,9 @@ history_header_map = {
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_MAXIMUM_HEATFLUX": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_HEAT",
-        "HEADER": "dtavg[MaxHF]",
+        "HEADER": "dtavg[maxHF]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_MOMENT_X": {
@@ -1583,13 +1830,13 @@ history_header_map = {
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_REFERENCE_GEOMETRY": {
-        "DESCRIPTION": "weighted time average " "derivative value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_STRUCT_COEFF",
         "HEADER": "dtavg[RefGeom]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_REFERENCE_NODE": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_STRUCT_COEFF",
         "HEADER": "dtavg[RefNode]",
         "TYPE": "TAVG_D_COEFFICIENT",
@@ -1619,7 +1866,7 @@ history_header_map = {
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SENS_PRESS_OUT": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_SENSITIVITY",
         "HEADER": "dtavg[Sens_Pout]",
         "TYPE": "TAVG_D_COEFFICIENT",
@@ -1643,79 +1890,79 @@ history_header_map = {
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_STRESS_PENALTY": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_STRUCT_COEFF",
         "HEADER": "dtavg[StressPen]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SURFACE_MACH": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
         "HEADER": "dtavg[Avg_Mach]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SURFACE_MASSFLOW": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
         "HEADER": "dtavg[Avg_Massflow]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SURFACE_MOM_DISTORTION": {
-        "DESCRIPTION": "weighted time average " "derivative value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
         "HEADER": "dtavg[Momentum_Distortion]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SURFACE_PRESSURE_DROP": {
-        "DESCRIPTION": "weighted time average " "derivative value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
         "HEADER": "dtavg[Pressure_Drop]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SURFACE_SECONDARY": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
         "HEADER": "dtavg[Secondary_Strength]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SURFACE_SECOND_OVER_UNIFORM": {
-        "DESCRIPTION": "weighted time average " "derivative value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
         "HEADER": "dtavg[Secondary_Over_Uniformity]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     'TAVG_D_SURFACE_SPECIES_" + std::to_string(iVar': {
-        "DESCRIPTION": "weighted " "time " "average " "derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_SPECIES_COEFF",
-        "HEADER": 'dtavg[Avg_Species_" ' "+ " "std::to_string(iVar]",
+        "HEADER": 'dtavg[Avg_Species_" + std::to_string(iVar]',
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SURFACE_STATIC_PRESSURE": {
-        "DESCRIPTION": "weighted time average " "derivative value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
         "HEADER": "dtavg[Avg_Press]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SURFACE_STATIC_TEMPERATURE": {
-        "DESCRIPTION": "weighted time average " "derivative value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
         "HEADER": "dtavg[Avg_Temp]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SURFACE_TOTAL_PRESSURE": {
-        "DESCRIPTION": "weighted time average " "derivative value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
         "HEADER": "dtavg[Avg_TotalPress]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SURFACE_TOTAL_TEMPERATURE": {
-        "DESCRIPTION": "weighted time average " "derivative value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
         "HEADER": "dtavg[Avg_TotalTemp]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_SURFACE_UNIFORMITY": {
-        "DESCRIPTION": "weighted time average " "derivative value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_FLOW_COEFF",
         "HEADER": "dtavg[Uniformity]",
         "TYPE": "TAVG_D_COEFFICIENT",
@@ -1727,13 +1974,13 @@ history_header_map = {
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_TOPOL_COMPLIANCE": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_STRUCT_COEFF",
         "HEADER": "dtavg[TopComp]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_TOPOL_DISCRETENESS": {
-        "DESCRIPTION": "weighted time average " "derivative value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_STRUCT_COEFF",
         "HEADER": "dtavg[TopDisc]",
         "TYPE": "TAVG_D_COEFFICIENT",
@@ -1745,13 +1992,13 @@ history_header_map = {
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_TOTAL_HEATFLUX": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_HEAT",
         "HEADER": "dtavg[HF]",
         "TYPE": "TAVG_D_COEFFICIENT",
     },
     "TAVG_D_VOLUME_FRACTION": {
-        "DESCRIPTION": "weighted time average derivative " "value",
+        "DESCRIPTION": "weighted time average derivative value",
         "GROUP": "TAVG_D_STRUCT_COEFF",
         "HEADER": "dtavg[VolFrac]",
         "TYPE": "TAVG_D_COEFFICIENT",
@@ -1807,7 +2054,7 @@ history_header_map = {
     "TAVG_MAXIMUM_HEATFLUX": {
         "DESCRIPTION": "weighted time average value",
         "GROUP": "TAVG_HEAT",
-        "HEADER": "tavg[MaxHF]",
+        "HEADER": "tavg[maxHF]",
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_MOMENT_X": {
@@ -1925,15 +2172,15 @@ history_header_map = {
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_SURFACE_SECOND_OVER_UNIFORM": {
-        "DESCRIPTION": "weighted time average " "value",
+        "DESCRIPTION": "weighted time average value",
         "GROUP": "TAVG_FLOW_COEFF",
         "HEADER": "tavg[Secondary_Over_Uniformity]",
         "TYPE": "TAVG_COEFFICIENT",
     },
     'TAVG_SURFACE_SPECIES_" + std::to_string(iVar': {
-        "DESCRIPTION": "weighted " "time average " "value",
+        "DESCRIPTION": "weighted time average value",
         "GROUP": "TAVG_SPECIES_COEFF",
-        "HEADER": 'tavg[Avg_Species_" ' "+ " "std::to_string(iVar]",
+        "HEADER": 'tavg[Avg_Species_" + std::to_string(iVar]',
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_SURFACE_STATIC_PRESSURE": {
@@ -1943,7 +2190,7 @@ history_header_map = {
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_SURFACE_STATIC_TEMPERATURE": {
-        "DESCRIPTION": "weighted time average " "value",
+        "DESCRIPTION": "weighted time average value",
         "GROUP": "TAVG_FLOW_COEFF",
         "HEADER": "tavg[Avg_Temp]",
         "TYPE": "TAVG_COEFFICIENT",
@@ -1955,7 +2202,7 @@ history_header_map = {
         "TYPE": "TAVG_COEFFICIENT",
     },
     "TAVG_SURFACE_TOTAL_TEMPERATURE": {
-        "DESCRIPTION": "weighted time average " "value",
+        "DESCRIPTION": "weighted time average value",
         "GROUP": "TAVG_FLOW_COEFF",
         "HEADER": "tavg[Avg_TotalTemp]",
         "TYPE": "TAVG_COEFFICIENT",
@@ -2015,7 +2262,7 @@ history_header_map = {
         "TYPE": "COEFFICIENT",
     },
     "TOPOL_DISCRETENESS": {
-        "DESCRIPTION": "Discreteness of the material " "distribution",
+        "DESCRIPTION": "Discreteness of the material distribution",
         "GROUP": "STRUCT_COEFF",
         "HEADER": "TopDisc",
         "TYPE": "COEFFICIENT",
@@ -2027,10 +2274,94 @@ history_header_map = {
         "TYPE": "COEFFICIENT",
     },
     "TOTAL_HEATFLUX": {
-        "DESCRIPTION": "Total heatflux on all surfaces defined in " "MARKER_MONITORING",
+        "DESCRIPTION": "Total heatflux on all surfaces set with MARKER_MONITORING.",
         "GROUP": "HEAT",
         "HEADER": "HF",
         "TYPE": "COEFFICIENT",
+    },
+    'TangentialVelocityIn_" + tag': {
+        "DESCRIPTION": 'Mass flow out " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'TangentialVelocityIn_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'TangentialVelocityOut_" + tag': {
+        "DESCRIPTION": 'Mach in " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'TangentialVelocityOut_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'TemperatureIn_" + tag': {
+        "DESCRIPTION": 'Temperature ratio " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'TemperatureIn_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'TemperatureOut_" + tag': {
+        "DESCRIPTION": 'Flow angle in " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'TemperatureOut_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'TotPressureLoss_" + tag': {
+        "DESCRIPTION": "Blade Pressure Loss Coefficient",
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'TPLC_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    "TotPressureLoss_Stage": {
+        "DESCRIPTION": "Machine Pressure Loss Coefficient",
+        "GROUP": "TURBO_PERF",
+        "HEADER": "TPLC_all",
+        "TYPE": "DEFAULT",
+    },
+    'TotalEntahalpyIn_" + tag': {
+        "DESCRIPTION": 'Entropy generation " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'TotalEntahalpyIn_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'TotalEnthalpyOut_" + tag': {
+        "DESCRIPTION": 'Eulerian work " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'TotalEnthalpyOut_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'TotalPressureIn_" + tag': {
+        "DESCRIPTION": 'Pressure ratio " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'TotPressureIn_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'TotalPressureOut_" + tag': {
+        "DESCRIPTION": 'Flow angle in " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'TotPressureOut_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    "TotalStaticEfficiency": {
+        "DESCRIPTION": "Machine total-to-static efficiency",
+        "GROUP": "TURBO_PERF",
+        "HEADER": "TotStaticEff",
+        "TYPE": "DEFAULT",
+    },
+    'TotalTemperatureIn_" + tag': {
+        "DESCRIPTION": 'Temperature ratio " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'TotTemperatureIn_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    'TotalTemperatureOut_" + tag': {
+        "DESCRIPTION": 'Flow angle in " + tag',
+        "GROUP": "TURBO_PERF",
+        "HEADER": 'TotTemperatureOut_" + tag',
+        "TYPE": "DEFAULT",
+    },
+    "TotalTotalEfficiency": {
+        "DESCRIPTION": "Machine total-to-total efficiency",
+        "GROUP": "TURBO_PERF",
+        "HEADER": "TotTotEff",
+        "TYPE": "DEFAULT",
     },
     "VMS": {
         "DESCRIPTION": "VMS",
