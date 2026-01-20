@@ -1130,6 +1130,35 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
     /*--- Halo points do not need to be considered. ---*/
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
+    /*--- On coarse multigrid levels with agglomerated Euler walls, skip flux computation
+     *    and directly zero momentum residuals to avoid errors from averaged normals. ---*/
+    if (config->GetMarker_All_KindBC(val_marker) == EULER_WALL && geometry->GetMGLevel() > MESH_0) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        LinSysRes(iPoint, iVel + iDim) = 0.0;
+      }
+      if (implicit) {
+        /*--- Zero momentum rows in Jacobian ---*/
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          auto* block = Jacobian.GetBlock(iPoint, iPoint);
+          for (auto jVar = 0u; jVar < nVar; jVar++) {
+            block[(iVel + iDim) * nVar + jVar] = 0.0;
+          }
+          block[(iVel + iDim) * nVar + (iVel + iDim)] = 1.0;  // Diagonal
+        }
+        /*--- Zero momentum columns in off-diagonal blocks ---*/
+        for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+          auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+          auto* block = Jacobian.GetBlock(iPoint, jPoint);
+          for (auto iDim = 0u; iDim < nDim; iDim++) {
+            for (auto jVar = 0u; jVar < nVar; jVar++) {
+              block[(iVel + iDim) * nVar + jVar] = 0.0;
+            }
+          }
+        }
+      }
+      continue;  // Skip normal flux computation
+    }
+
     /*--- Get the normal of the current symmetry. This may be the original normal of the vertex
      * or a modified normal if there are intersecting symmetries. ---*/
 

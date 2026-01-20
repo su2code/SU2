@@ -847,6 +847,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 
     for (auto iPoint = begin; iPoint < end; ++iPoint) {
       auto idx = iPoint * nVar;
+
       LowerProduct(prod, iPoint, begin, low_prod);         // Compute L.x*
       VectorSubtraction(&vec[idx], low_prod, &prod[idx]);  // Compute y = b - L.x*
       Gauss_Elimination(iPoint, &prod[idx]);               // Solve D.x* = y
@@ -873,6 +874,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
     for (auto iPoint = row_end; iPoint > begin;) {
       iPoint--;  // because of unsigned type
       auto idx = iPoint * nVar;
+
       DiagonalProduct(prod, iPoint, dia_prod);           // Compute D.x*
       UpperProduct(prod, iPoint, row_end, up_prod);      // Compute U.x_(n+1)
       VectorSubtraction(dia_prod, up_prod, &prod[idx]);  // Compute y = D.x*-U.x_(n+1)

@@ -105,6 +105,33 @@
 #endif
 #include <cfenv>
 
+// Compute the runtime effective number of multigrid levels for a zone.
+// This helper does the MPI Allreduce of the local point count and returns
+// the effective number of MG levels using the same algorithm used elsewhere
+// in the codebase. It returns 0 if multigrid is disabled by the user.
+static unsigned short getEffectiveMGLevels(CConfig* config, unsigned long local_nPoint, unsigned short nDim, unsigned long &Global_nPointFine) {
+  const unsigned short user_req = config->GetnMGLevels();
+  if (user_req == 0) return 0; // user explicitly disabled multigrid
+
+  Global_nPointFine = 0ul;
+  SU2_MPI::Allreduce(&local_nPoint, &Global_nPointFine, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+
+  const unsigned long mg_min = config->GetMG_Min_MeshSize();
+  const unsigned short reduction = (nDim == 2) ? 4u : 8u;
+
+  unsigned short computed_max_levels = 1;
+  if ((mg_min > 0) && (Global_nPointFine > mg_min)) {
+    const double ratio = static_cast<double>(Global_nPointFine) / static_cast<double>(mg_min);
+    const double levels = floor(log(ratio) / log(static_cast<double>(reduction)));
+    computed_max_levels = (levels < 1.0) ? 1 : static_cast<unsigned short>(levels);
+  }
+
+  unsigned short effective = user_req;
+  if (computed_max_levels < effective) effective = computed_max_levels;
+
+  return effective;
+}
+
 CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator, bool dummy_geo) :
 CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), fem_solver(false), dry_run(dummy_geo) {
 
@@ -701,6 +728,29 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
   nDim = geometry_aux->GetnDim();
 
+  /*--- Compute effective MG levels from mesh size here so that we overwrite
+       the configured MG levels before any subsequent calls to
+       config->GetnMGLevels() (which are used to size arrays). ---*/
+  {
+    const unsigned short user_req = config->GetnMGLevels();
+    if (user_req != 0) {
+      unsigned long Global_nPointFine = 0ul;
+      const unsigned short effective = getEffectiveMGLevels(config, geometry_aux->GetnPoint(), nDim, Global_nPointFine);
+
+      if (effective != user_req) {
+        if (rank == MASTER_NODE) {
+          const unsigned long mg_min = config->GetMG_Min_MeshSize();
+          cout << "WARNING: MGLEVEL=" << user_req << " treated as maximum. "
+               << "Effective MG levels set to " << effective
+               << " (Global points=" << Global_nPointFine << ", MG_MIN_MESHSIZE=" << mg_min << ").\n";
+        }
+        config->SetMGLevels(effective);
+        requestedMGlevels = config->GetnMGLevels();
+      }
+    }
+  }
+
+
   /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
   geometry_aux->SetColorGrid_Parallel(config);
@@ -791,6 +841,8 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     geometry[MESH_0]->ComputeSurf_Curvature(config);
   }
 
+
+
   /*--- Compute the global surface areas for all markers. ---*/
 
   geometry[MESH_0]->ComputeSurfaceAreaCfgFile(config);
@@ -810,7 +862,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
   geometry[MESH_0]->SetMGLevel(MESH_0);
   if ((config->GetnMGLevels() != 0) && (rank == MASTER_NODE))
-    cout << "Setting the multigrid structure." << endl;
+    cout << "Setting the multigrid structure. NMG="<< config->GetnMGLevels() << endl;
 
   /*--- Loop over all the new grid ---*/
 
@@ -828,6 +880,11 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
     geometry[iMGlevel]->SetEdges();
     geometry[iMGlevel]->SetVertex(geometry[iMGlevel-1], config);
+
+    /*--- Validate halo CV coordinates if debug option enabled ---*/
+    if (auto* mg_geometry = dynamic_cast<CMultiGridGeometry*>(geometry[iMGlevel])) {
+      mg_geometry->ValidateHaloCoordinates(config, iMGlevel);
+    }
 
     /*--- Create the control volume structures ---*/
 

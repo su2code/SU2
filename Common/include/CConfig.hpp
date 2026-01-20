@@ -488,7 +488,7 @@ private:
   unsigned short **DegreeFFDBox;      /*!< \brief Degree of the FFD boxes. */
   string *FFDTag;                     /*!< \brief Parameters of the design variable. */
   string *TagFFDBox;                  /*!< \brief Tag of the FFD box. */
-  unsigned short GeometryMode;        /*!< \brief Gemoetry mode (analysis or gradient computation). */
+  unsigned short GeometryMode;        /*!< \brief Geometry mode (analysis or gradient computation). */
   unsigned short MGCycle;             /*!< \brief Kind of multigrid cycle. */
   unsigned short FinestMesh;          /*!< \brief Finest mesh for the full multigrid approach. */
   unsigned short nFFD_Fix_IDir,
@@ -496,11 +496,20 @@ private:
   unsigned short nMG_PreSmooth,       /*!< \brief Number of MG pre-smooth parameters found in config file. */
   nMG_PostSmooth,                     /*!< \brief Number of MG post-smooth parameters found in config file. */
   nMG_CorrecSmooth;                   /*!< \brief Number of MG correct-smooth parameters found in config file. */
+  unsigned long MG_Min_MeshSize;      /*!< \brief Minimum mesh size per coarsest level to allow another MG level. */
+
   short *FFD_Fix_IDir,
   *FFD_Fix_JDir, *FFD_Fix_KDir;       /*!< \brief Exact sections. */
   unsigned short *MG_PreSmooth,       /*!< \brief Multigrid Pre smoothing. */
   *MG_PostSmooth,                     /*!< \brief Multigrid Post smoothing. */
   *MG_CorrecSmooth;                   /*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
+  bool MG_Smooth_EarlyExit; /*!< \brief Enable early exit for MG smoothing. */
+  su2double MG_Smooth_Res_Threshold; /*!< \brief Residual reduction threshold for early exit. */
+  bool MG_Smooth_Output; /*!< \brief Output per-iteration multigrid smoothing info. */
+  bool MG_Implicit_Lines; /*!< \\brief Enable implicit-lines agglomeration from walls. */
+  bool MG_Implicit_Debug; /*!< \brief Enable debug output for implicit-lines agglomeration. */
+  bool MG_DebugHaloCoordinates; /*!< \brief Enable halo CV coordinate validation for multigrid. */
+  su2double MG_Smooth_Coeff; /*!< \brief Smoothing coefficient for multigrid correction smoothing. */
   su2double *LocationStations;        /*!< \brief Airfoil sections in wing slicing subroutine. */
 
   ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
@@ -2912,7 +2921,7 @@ public:
   unsigned short GetFinestMesh(void) const { return FinestMesh; }
 
   /*!
-   * \brief Get the kind of multigrid (V or W).
+   * \brief Get the kind of multigrid (V, W or FULLMG).
    * \note This variable is used in a recursive way to perform the different kind of cycles
    * \return 0 or 1 depending of we are dealing with a V or W cycle.
    */
@@ -3055,7 +3064,28 @@ public:
    * \brief Get the number of Runge-Kutta steps.
    * \return Number of Runge-Kutta steps.
    */
-  unsigned short GetnRKStep(void) const { return nRKStep; }
+ unsigned short GetnRKStep(void) const {
+
+    unsigned short iRKLimit = 1;
+
+    switch (GetKind_TimeIntScheme()) {
+      case RUNGE_KUTTA_EXPLICIT:
+        iRKLimit = GetnRKStep();
+        break;
+      case CLASSICAL_RK4_EXPLICIT:
+        iRKLimit = 4;
+        break;
+      case EULER_EXPLICIT:
+      case EULER_IMPLICIT:
+        iRKLimit = 1;
+        break;
+      default:
+        iRKLimit = 1;
+        break;
+    }
+  //return nRKStep;
+  return iRKLimit;
+}
 
   /*!
    * \brief Get the number of time levels for time accurate local time stepping.
@@ -3839,6 +3869,55 @@ public:
     if (nMG_CorrecSmooth == 0) return 0;
     return MG_CorrecSmooth[val_mesh];
   }
+
+  /*!
+   * \brief Get whether early exit is enabled for MG smoothing.
+   * \return True if early exit is enabled.
+   */
+  bool GetMG_Smooth_EarlyExit() const { return MG_Smooth_EarlyExit; }
+
+  /*!
+   * \brief Get the residual threshold for early exit in MG smoothing.
+   * \return Residual threshold.
+   */
+  su2double GetMG_Smooth_Res_Threshold() const { return MG_Smooth_Res_Threshold; }
+
+  /*!
+   * \brief Get whether per-iteration output is enabled for MG smoothing.
+   * \return True if output is enabled.
+   */
+  bool GetMG_Smooth_Output() const { return MG_Smooth_Output; }
+
+  /*!\
+   * \brief Get whether implicit-lines agglomeration is enabled.
+   * \return True if implicit-lines agglomeration is enabled.
+   */
+  bool GetMG_Implicit_Lines() const { return MG_Implicit_Lines; }
+
+  /*!\
+   * \brief Get whether implicit-lines debug output is enabled.
+   * \return True if implicit-lines debug output is enabled.
+   */
+  bool GetMG_Implicit_Debug() const { return MG_Implicit_Debug; }
+
+  /*!\
+   * \brief Get whether halo CV coordinate validation is enabled for multigrid.
+   * \return True if halo coordinate validation is enabled.
+   */
+  bool GetMG_DebugHaloCoordinates() const { return MG_DebugHaloCoordinates; }
+
+  /*!\
+   * \brief Get the minimum mesh size threshold used to compute effective MG levels.
+   * \return Minimum mesh size per coarsest level.
+   */
+  unsigned long GetMG_Min_MeshSize() const { return MG_Min_MeshSize; }
+
+
+  /*!
+   * \brief Get the smoothing coefficient for MG correction smoothing.
+   * \return Smoothing coefficient.
+   */
+  su2double GetMG_Smooth_Coeff() const { return MG_Smooth_Coeff; }
 
   /*!
    * \brief plane of the FFD (I axis) that should be fixed.
@@ -6796,6 +6875,9 @@ public:
    * \return Value of the damping factor.
    */
   su2double GetDamp_Res_Restric(void) const { return Damp_Res_Restric; }
+
+  /*!\n+   * \brief Set the damping factor for the residual restriction.\n+   * \param[in] val New value for the damping factor.\n+   */
+  void SetDamp_Res_Restric(su2double val) { Damp_Res_Restric = val; }
 
   /*!
    * \brief Value of the damping factor for the correction prolongation.

@@ -37,6 +37,8 @@
 #include <algorithm>
 #include <iostream>
 #include <set>
+#include <deque>
+#include <utility>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -79,6 +81,14 @@ protected:
   vector<su2double> NonLinRes_Series; /*!< \brief Vector holding the nonlinear residual indicator series. */
   su2double Old_Func,  /*!< \brief Old value of the nonlinear residual indicator. */
   New_Func;            /*!< \brief Current value of the nonlinear residual indicator. */
+
+  /*--- Adaptive CFL State Variables ---*/
+  unsigned long consecutiveReduceIters;   /*!< \brief Counter for consecutive iterations requiring CFL reduction. */
+  unsigned long consecutiveIncreaseIters; /*!< \brief Counter for consecutive iterations allowing CFL increase. */
+  unsigned long oscillationCounter;       /*!< \brief Counter for oscillation detection. */
+  bool previousOscillation;               /*!< \brief Flag for previous oscillation state. */
+  std::deque<std::pair<unsigned long, su2double>> peaks;   /*!< \brief History of residual peaks. */
+  std::deque<std::pair<unsigned long, su2double>> valleys; /*!< \brief History of residual valleys. */
   unsigned short nVar,           /*!< \brief Number of variables of the problem. */
   nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */
@@ -1432,6 +1442,63 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    */
   void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config);
+
+private:
+
+  /*! \brief Data structures for modular CFL adaptation */
+
+  struct CFLAdaptParams {
+    su2double CFLFactorDecrease, CFLFactorIncrease;
+    su2double CFLMin, CFLMax;
+    su2double acceptableLinTol, startingIter;
+    unsigned long Res_Count, stallWindow;
+  };
+
+  su2double ComputeAdjustedCFL(su2double currentCFL, su2double underRelaxation,
+                                bool reduceCFL, bool resetCFL, bool canIncrease,
+                                unsigned long iter, su2double startingIter,
+                                su2double CFLMin, su2double CFLMax,
+                                su2double CFLFactorDecrease, su2double CFLFactorIncrease);
+
+  /*! \brief Helper methods for modular CFL adaptation */
+
+  CFLAdaptParams InitializeCFLAdaptParams(CConfig *config);
+
+  su2double ComputeMaxLinearResidual(CSolver *solverFlow, CSolver *solverTurb, CSolver *solverSpecies);
+
+  bool DetectFlipFlop(const CFLAdaptParams &params, CConfig *config);
+
+  void DetermineLinearSolverBasedCFLFlags(const CFLAdaptParams &params, CConfig *config,
+                                          su2double linRes, su2double linTol,
+                                          bool &reduceCFL, bool &resetCFL, bool &canIncrease);
+
+  void TrackResidualHistory(const CFLAdaptParams &params, CConfig *config,
+                            CSolver **solver_container, unsigned short iMesh,
+                            su2double &New_Func, su2double &Old_Func,
+                            bool &reduceCFL, bool &resetCFL);
+
+  void DetectFastDivergence(const CFLAdaptParams &params, CConfig *config,
+                            su2double New_Func, su2double Old_Func,
+                            bool &reduceCFL, bool &resetCFL);
+
+  void DetectPeakValley(const CFLAdaptParams &params, CConfig *config,
+                        su2double New_Func, bool &reduceCFL, bool &resetCFL);
+
+  void ApplyCFLToAllPoints(CGeometry *geometry, CSolver **solver_container,
+                           CConfig *config, unsigned short iMesh,
+                           bool reduceCFL, bool resetCFL, bool canIncrease,
+                           su2double startingIter);
+
+  void PerformCFLReductions(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+
+  void SynchronizeCFLFlags(bool &reduceCFL, bool &resetCFL, bool &canIncrease);
+
+  void ApplyCFLToCoarseGrid(CGeometry *geometry, CSolver **solver_container,
+                           CConfig *config, unsigned short iMesh,
+                           bool reduceCFL, bool resetCFL, bool canIncrease,
+                           su2double startingIter);
+
+public:
 
   /*!
    * \brief Reset the local CFL adaption variables
@@ -4350,8 +4417,8 @@ public:
       }
       const su2double scale = 1 / geoCoarse.nodes->GetVolume(iPointCoarse);
 
-      for (auto iChildren = 0ul; iChildren < geoCoarse.nodes->GetnChildren_CV(iPointCoarse); ++iChildren) {
-        const auto iPointFine = geoCoarse.nodes->GetChildren_CV(iPointCoarse, iChildren);
+      for (auto iChild = 0ul; iChild < geoCoarse.nodes->GetnChildren_CV(iPointCoarse); ++iChild) {
+        const auto iPointFine = geoCoarse.nodes->GetChildren_CV(iPointCoarse, iChild);
         const su2double w = geoFine.nodes->GetVolume(iPointFine) * scale;
         for (auto iVar = 0ul; iVar < varsCoarse.cols(); ++iVar) {
           varsCoarse(iPointCoarse, iVar) += w * varsFine(iPointFine, iVar);

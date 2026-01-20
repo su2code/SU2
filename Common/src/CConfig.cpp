@@ -1984,6 +1984,31 @@ void CConfig::SetConfig_Options() {
   /*!\brief MG_DAMP_PROLONGATION\n DESCRIPTION: Damping factor for the correction prolongation. DEFAULT 0.75 \ingroup Config*/
   addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.75);
 
+  /*!\brief MG_SMOOTH_EARLY_EXIT\n DESCRIPTION: Enable early exit for MG smoothing iterations based on RMS residual. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_SMOOTH_EARLY_EXIT", MG_Smooth_EarlyExit, false);
+  /*!\brief MG_SMOOTH_RES_THRESHOLD\n DESCRIPTION: RMS residual threshold for early exit in MG smoothing. DEFAULT: 1e-2 \ingroup Config*/
+  addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MG_Smooth_Res_Threshold, 1e-2);
+
+  /*!\brief MG_SMOOTH_OUTPUT\n DESCRIPTION: Output per-iteration RMS for MG smoothing. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_SMOOTH_OUTPUT", MG_Smooth_Output, false);
+
+  /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_IMPLICIT_LINES", MG_Implicit_Lines, false);
+
+  /*!\brief MG_IMPLICIT_DEBUG\n DESCRIPTION: Enable debug output for implicit-lines agglomeration. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_IMPLICIT_DEBUG", MG_Implicit_Debug, false);
+
+  /*!\brief MG_DEBUG_HALO_COORDINATES\n DESCRIPTION: Enable halo CV coordinate validation for multigrid (expensive MPI check). DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_DEBUG_HALO_COORDINATES", MG_DebugHaloCoordinates, false);
+
+  /*!\brief MG_MIN_MESHSIZE
+   \ DESCRIPTION: Minimum global mesh size (points) to allow another multigrid level. DEFAULT: 1000 \ingroup Config*/
+  addUnsignedLongOption("MG_MIN_MESHSIZE", MG_Min_MeshSize, 1000);
+
+
+  /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for MG correction smoothing. DEFAULT: 1.25 \ingroup Config*/
+  addDoubleOption("MG_SMOOTH_COEFF", MG_Smooth_Coeff, 1.25);
+
   /*!\par CONFIG_CATEGORY: Spatial Discretization \ingroup Config*/
   /*--- Options related to the spatial discretization ---*/
 
@@ -3577,7 +3602,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   /*--- Check if MULTIGRID is requested in VOLUME_OUTPUT and set the config boolean accordingly. ---*/
-  Wrt_MultiGrid = false;
+  Wrt_MultiGrid = true;
   for (unsigned short iField = 0; iField < nVolumeOutput; iField++) {
     if(VolumeOutput[iField].find("MULTIGRID") != string::npos) {
       Wrt_MultiGrid = true;

@@ -28,6 +28,15 @@
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
+#include "ComputeLinSysResRMS.hpp"
+#include <algorithm>
+
+// Forward declaration of the adaptive damping helper so it can be used by
+// MultiGrid_Cycle before the helper's definition further down the file.
+static su2double Damp_Restric_Adapt(const unsigned short *lastPreSmoothIters,
+                                   unsigned short lastPreSmoothCount,
+                                   CConfig *config);
+
 
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
 
@@ -104,8 +113,16 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   /*--- Perform the Full Approximation Scheme multigrid ---*/
 
+  // Allocate per-MG-run storage for the number of pre-smoothing iterations
+  const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
+  unsigned short *lastPreSmoothIters = new unsigned short[nMGLevels + 1];
+  for (unsigned short ii = 0; ii <= nMGLevels; ++ii) lastPreSmoothIters[ii] = 0;
+
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
-                  FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
+                  FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst,
+                  lastPreSmoothIters);
+
+  delete [] lastPreSmoothIters;
 
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
@@ -134,12 +151,12 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
                                             unsigned short RecursiveParam,
                                             unsigned short RunTime_EqSystem,
                                             unsigned short iZone,
-                                            unsigned short iInst) {
+                                            unsigned short iInst,
+                                            unsigned short *lastPreSmoothIters) {
 
   CConfig* config = config_container[iZone];
 
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
-  const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Shorter names to refer to fine grid entities. ---*/
@@ -151,71 +168,18 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
   /*--- Number of RK steps. ---*/
 
-  unsigned short iRKLimit = 1;
+  unsigned short iRKLimit = config->GetnRKStep();
 
-  switch (config->GetKind_TimeIntScheme()) {
-    case RUNGE_KUTTA_EXPLICIT:
-      iRKLimit = config->GetnRKStep();
-      break;
-    case CLASSICAL_RK4_EXPLICIT:
-      iRKLimit = 4;
-      break;
-    case EULER_EXPLICIT:
-    case EULER_IMPLICIT:
-      iRKLimit = 1;
-      break;
-  }
+  // standard multigrid: pre-smoothing
+  // start with solution on fine grid h
+  // apply nonlinear smoother (e.g. Gauss-Seidel) to system to damp high-frequency errors.
+  PreSmoothing(RunTime_EqSystem, geometry, solver_container, config_container, solver_fine, numerics_fine, geometry_fine, solver_container_fine, config, iMesh, iZone, iRKLimit, lastPreSmoothIters);
 
-  /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
-
-  for (unsigned short iPreSmooth = 0; iPreSmooth < config->GetMG_PreSmooth(iMesh); iPreSmooth++) {
-
-    /*--- Time and space integration ---*/
-
-    for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
-
-      /*--- Send-Receive boundary conditions, and preprocessing ---*/
-
-      solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
-
-
-      if (iRKStep == 0) {
-
-        /*--- Set the old solution ---*/
-
-        solver_fine->Set_OldSolution();
-
-        if (classical_rk4) solver_fine->Set_NewSolution();
-
-        /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
-
-        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh, config->GetTimeIter());
-
-        /*--- Restrict the solution and gradient for the adjoint problem ---*/
-
-        Adjoint_Setup(geometry, solver_container, config_container, RunTime_EqSystem, config->GetTimeIter(), iZone);
-
-      }
-
-      /*--- Space integration ---*/
-
-      Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
-
-      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
-
-      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
-
-      /*--- Send-Receive boundary conditions, and postprocessing ---*/
-
-      solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
-
-    }
-
-  }
 
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
 
   if ( iMesh < config->GetnMGLevels() ) {
+    //cout << "imesh =" << iMesh << " " << config->GetnMGLevels() << endl;
 
     /*--- Shorter names to refer to coarse grid entities. ---*/
 
@@ -239,16 +203,31 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     SetResidual_Term(geometry_fine, solver_fine);
 
     /*--- Compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$ ---*/
-
+    // restrict the fine-grid solution to the coarser grid. This must be FAS multigrid, because else we restrict the residual.
     SetRestricted_Solution(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
     solver_coarse->Preprocessing(geometry_coarse, solver_container_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem, false);
 
     Space_Integration(geometry_coarse, solver_container_coarse, numerics_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem);
 
+    /*--- Monitor coarse grid residual magnitude before forcing term ---*/
+    if (SU2_MPI::GetRank() == 0) {
+      su2double max_res_coarse = 0.0;
+      for (unsigned long iPoint = 0; iPoint < geometry_coarse->GetnPointDomain(); iPoint++) {
+        const su2double* res = solver_coarse->LinSysRes.GetBlock(iPoint);
+        for (unsigned short iVar = 0; iVar < solver_coarse->GetnVar(); iVar++) {
+          max_res_coarse = max(max_res_coarse, fabs(res[iVar]));
+        }
+      }
+      cout << "  MG Level " << iMesh+1 << ": Max coarse residual before forcing = " << max_res_coarse << endl;
+    }
+
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
 
-    SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
+    // Adapt damping based on recorded pre-smoothing iterations and apply to forcing term
+    //cout << "calling damp_restric_Adapt" << endl;
+    su2double adapted_factor = Damp_Restric_Adapt(lastPreSmoothIters, config->GetnMGLevels() + 1, config);
+    SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1, adapted_factor);
 
     /*--- Restore the time integration settings. ---*/
 
@@ -265,45 +244,166 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
         nextRecurseParam = 0;
 
       MultiGrid_Cycle(geometry, solver_container, numerics_container, config_container,
-                      iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst);
+              iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst, lastPreSmoothIters);
     }
 
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
 
     GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
-
-    SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), 1.25, config);
-
+    SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), config->GetMG_Smooth_Coeff(), config, iMesh);
     SetProlongated_Correction(solver_fine, geometry_fine, config, iMesh);
 
 
     /*--- Solution post-smoothing in the prolongated grid. ---*/
+    PostSmoothing(RunTime_EqSystem, solver_fine, numerics_fine, geometry_fine, solver_container_fine, config, iMesh, iRKLimit);
 
-    for (unsigned short iPostSmooth = 0; iPostSmooth < config->GetMG_PostSmooth(iMesh); iPostSmooth++) {
+  }
 
-      for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
+}
 
-        solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
 
-        if (iRKStep == 0) {
-          solver_fine->Set_OldSolution();
+void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
+CGeometry**** geometry,
+CSolver***** solver_container,
+CConfig **config_container,
+CSolver* solver_fine,
+CNumerics** numerics_fine,
+CGeometry* geometry_fine,
+CSolver** solver_container_fine,
+CConfig *config,
+unsigned short iMesh,
+unsigned short iZone,
+unsigned short iRKLimit,
+unsigned short *lastPreSmoothIters) {
+  const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
+  const unsigned short nPreSmooth = config->GetMG_PreSmooth(iMesh);
+  const unsigned long timeIter = config->GetTimeIter();
 
-          if (classical_rk4) solver_fine->Set_NewSolution();
+  // Early exit settings from config
+  const bool early_exit_enabled = config->GetMG_Smooth_EarlyExit();
+  const su2double early_exit_threshold = config->GetMG_Smooth_Res_Threshold();
+  const bool output_enabled = config->GetMG_Smooth_Output();
 
-          solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  config->GetTimeIter());
+  su2double initial_rms = 0.0;
+  if (early_exit_enabled || output_enabled) {
+    initial_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
+    if (output_enabled) {
+      cout << "MG Pre-Smoothing Level " << iMesh << " Initial RMS: " << initial_rms << endl;
+    }
+  }
+
+  /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
+  unsigned short actual_iterations = nPreSmooth;
+  for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
+    /*--- Time and space integration ---*/
+    for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
+      /*--- Send-Receive boundary conditions, and preprocessing ---*/
+      solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
+      if (iRKStep == 0) {
+        /*--- Set the old solution ---*/
+        solver_fine->Set_OldSolution();
+        if (classical_rk4) solver_fine->Set_NewSolution();
+        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh, timeIter);
+        Adjoint_Setup(geometry, solver_container, config_container, RunTime_EqSystem, timeIter, iZone);
+      }
+      /*--- Space integration ---*/
+      Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
+      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
+      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+      /*--- Send-Receive boundary conditions, and postprocessing ---*/
+      solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
+    }
+
+    /*--- MPI sync after RK stage to ensure halos have updated solution for next smoothing iteration ---*/
+    solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+    solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+
+    // Early exit check and output
+    if (early_exit_enabled || output_enabled) {
+      su2double current_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
+      if (output_enabled) {
+        cout << "MG Pre-Smoothing Level " << iMesh << " Iteration " << iPreSmooth + 1 << "/" << nPreSmooth << " RMS: " << current_rms << endl;
+      }
+      if (early_exit_enabled && current_rms < early_exit_threshold * initial_rms) {
+        if (output_enabled) {
+          cout << "MG Pre-Smoothing Level " << iMesh << " Early exit at iteration " << iPreSmooth + 1 << endl;
         }
-
-        Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
-
-        Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
-
-        solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
-
+        actual_iterations = iPreSmooth + 1;
+        break;
       }
     }
   }
 
+  // Record actual iterations performed for this MG level
+  if (lastPreSmoothIters != nullptr) lastPreSmoothIters[iMesh] = actual_iterations;
+
+  /*--- MPI communication after presmoothing to update solution at halo/boundary points ---*/
+  solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+  solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
 }
+
+
+void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem, CSolver* solver_fine,CNumerics** numerics_fine, CGeometry* geometry_fine, CSolver** solver_container_fine, CConfig *config, unsigned short iMesh,unsigned short iRKLimit)
+{
+  const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
+  const unsigned short nPostSmooth = config->GetMG_PostSmooth(iMesh);
+  const unsigned long timeIter = config->GetTimeIter();
+
+  // Early exit settings from config
+  const bool early_exit_enabled = config->GetMG_Smooth_EarlyExit();
+  const su2double early_exit_threshold = config->GetMG_Smooth_Res_Threshold();
+  const bool output_enabled = config->GetMG_Smooth_Output();
+
+  su2double initial_rms = 0.0;
+  if (early_exit_enabled || output_enabled) {
+    initial_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
+    if (output_enabled) {
+      cout << "MG Post-Smoothing Level " << iMesh << " Initial RMS: " << initial_rms << endl;
+    }
+  }
+
+  /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
+  for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
+    for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
+      solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
+      if (iRKStep == 0) {
+        /*--- Set the old solution ---*/
+        solver_fine->Set_OldSolution();
+        if (classical_rk4) solver_fine->Set_NewSolution();
+        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  timeIter);
+      }
+      /*--- Space integration ---*/
+      Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
+      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
+      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+      /*--- Send-Receive boundary conditions, and postprocessing ---*/
+      solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
+    }
+
+    /*--- MPI sync after RK stage to ensure halos have updated solution for next smoothing iteration ---*/
+    solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+    solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+
+    // Early exit check and output
+    if (early_exit_enabled || output_enabled) {
+      su2double current_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
+      if (output_enabled) {
+        cout << "MG Post-Smoothing Level " << iMesh << " Iteration " << iPostSmooth + 1 << "/" << nPostSmooth << " RMS: " << current_rms << endl;
+      }
+      if (early_exit_enabled && current_rms < early_exit_threshold * initial_rms) {
+        if (output_enabled) {
+          cout << "MG Post-Smoothing Level " << iMesh << " Early exit at iteration " << iPostSmooth + 1 << endl;
+        }
+        break;
+      }
+    }
+  }
+
+  /*--- MPI communication after postsmoothing to update solution at halo/boundary points ---*/
+  solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+  solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+}
+
 
 void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                       CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
@@ -353,8 +453,8 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- For dirichlet boundary condtions, set the correction to zero.
-         Note that Solution_Old stores the correction not the actual value ---*/
+        /*--- For dirichlet boundary conditions, set the correction to zero.
+         Note that Solution_Old stores the correction, not the actual value ---*/
 
         su2double zero[3] = {0.0};
         sol_coarse->GetNodes()->SetVelocity_Old(Point_Coarse, zero);
@@ -381,7 +481,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 }
 
 void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-                                                         unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) {
+                                                         unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config, unsigned short iMesh) {
 
   /*--- Check if there is work to do. ---*/
   if (val_nSmooth == 0) return;
@@ -399,32 +499,57 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   }
   END_SU2_OMP_FOR
 
-  /*--- Jacobi iterations. ---*/
+  /*--- Compute initial RMS for adaptive smoothing ---*/
+  su2double initial_rms = 0.0;
+  if (config->GetMG_Smooth_EarlyExit()) {
+    initial_rms = ComputeLinSysResRMS(solver, geometry);
+  }
+
+  /*--- Output initial RMS if enabled ---*/
+  if (config->GetMG_Smooth_Output()) {
+    cout << "MG Correction-Smoothing Level " << iMesh << " Initial RMS: " << initial_rms << endl;
+  }
+
+  /*--- Jacobi iterations with adaptive early exit ---*/
+  unsigned short actual_iterations = val_nSmooth;
 
   for (iSmooth = 0; iSmooth < val_nSmooth; iSmooth++) {
 
-    /*--- Loop over all mesh points (sum the residuals of direct neighbors). ---*/
+    /*--- Loop over domain points only (sum the residuals of direct neighbors). ---*/
 
-    SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); ++iPoint) {
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPointDomain(), omp_get_num_threads()))
+    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); ++iPoint) {
 
       solver->GetNodes()->SetResidualSumZero(iPoint);
 
       for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
         jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-        Residual_j = solver->LinSysRes.GetBlock(jPoint);
-        solver->GetNodes()->AddResidual_Sum(iPoint, Residual_j);
+
+        /*--- Only include domain neighbors (skip halo points with stale LinSysRes) ---*/
+        if (geometry->nodes->GetDomain(jPoint)) {
+          Residual_j = solver->LinSysRes.GetBlock(jPoint);
+          solver->GetNodes()->AddResidual_Sum(iPoint, Residual_j);
+        }
       }
 
     }
     END_SU2_OMP_FOR
 
-    /*--- Loop over all mesh points (update residuals with the neighbor averages). ---*/
+    /*--- Loop over domain points only (update residuals with the neighbor averages). ---*/
 
-    SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
-    for (iPoint = 0; iPoint < geometry->GetnPoint(); ++iPoint) {
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPointDomain(), omp_get_num_threads()))
+    for (iPoint = 0; iPoint < geometry->GetnPointDomain(); ++iPoint) {
 
-      su2double factor = 1.0/(1.0+val_smooth_coeff*su2double(geometry->nodes->GetnPoint(iPoint)));
+      /*--- Count domain neighbors for proper averaging ---*/
+      unsigned short nDomainNeighbors = 0;
+      for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+        jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+        if (geometry->nodes->GetDomain(jPoint)) {
+          nDomainNeighbors++;
+        }
+      }
+
+      su2double factor = 1.0/(1.0+val_smooth_coeff*su2double(nDomainNeighbors));
 
       Residual_Sum = solver->GetNodes()->GetResidual_Sum(iPoint);
       Residual_Old = solver->GetNodes()->GetResidual_Old(iPoint);
@@ -451,8 +576,36 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
       }
     }
 
+    /*--- Output RMS residual if enabled ---*/
+    if (config->GetMG_Smooth_Output()) {
+      const su2double RMS_Res = ComputeLinSysResRMS(solver, geometry);
+      cout << "MG Correction-Smoothing Level " << iMesh << " Iteration " << iSmooth+1 << "/" << val_nSmooth << " RMS: " << RMS_Res << endl;
+    }
+
+    /*--- Adaptive early exit check after first iteration ---*/
+    if (config->GetMG_Smooth_EarlyExit() && iSmooth == 0 && val_nSmooth > 1) {
+      su2double current_rms = ComputeLinSysResRMS(solver, geometry);
+      su2double reduction_ratio = current_rms / initial_rms;
+
+      // If RMS reduction is sufficient (ratio <= threshold), additional iterations may not be necessary
+      if (reduction_ratio <= config->GetMG_Smooth_Res_Threshold()) {
+        if (config->GetMG_Smooth_Output()) {
+          cout << "MG Correction-Smoothing Level " << iMesh << " Early exit: sufficient RMS reduction ("
+               << reduction_ratio << " <= " << config->GetMG_Smooth_Res_Threshold() << ")" << endl;
+        }
+        actual_iterations = 1;  // Only do this one iteration
+        break;
+      }
+      // If reduction is insufficient (ratio > threshold), continue with remaining iterations
+    }
+
   }
 
+  /*--- Log if iterations were skipped ---*/
+  if (config->GetMG_Smooth_Output() && actual_iterations < val_nSmooth) {
+    cout << "MG Correction-Smoothing Level " << iMesh << " completed " << actual_iterations
+         << "/" << val_nSmooth << " iterations (adaptive early exit)" << endl;
+  }
 }
 
 void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine,
@@ -462,7 +615,15 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   su2double *Solution_Fine, *Residual_Fine;
 
   const unsigned short nVar = sol_fine->GetnVar();
-  const su2double factor = config->GetDamp_Correc_Prolong();
+
+  /*--- Apply level-dependent damping: more aggressive damping on deeper coarse levels ---*/
+  const su2double base_damp = config->GetDamp_Correc_Prolong();
+  const su2double level_factor = pow(0.75, iMesh);  // 0.75^iMesh reduces damping progressively
+  const su2double factor = base_damp * level_factor;
+
+  /*--- Track maximum correction magnitude for monitoring ---*/
+  su2double max_correction_local = 0.0;
+  su2double max_correction_global = 0.0;
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
   for (Point_Fine = 0; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
@@ -472,10 +633,26 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
       /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
       if (Residual_Fine[iVar] != Residual_Fine[iVar])
         Residual_Fine[iVar] = 0.0;
-      Solution_Fine[iVar] += factor*Residual_Fine[iVar];
+
+      su2double correction = factor * Residual_Fine[iVar];
+      Solution_Fine[iVar] += correction;
+
+      /*--- Track maximum correction ---*/
+      SU2_OMP_CRITICAL
+      max_correction_local = max(max_correction_local, fabs(correction));
     }
   }
   END_SU2_OMP_FOR
+
+  /*--- Reduce maximum correction across all ranks ---*/
+  SU2_MPI::Allreduce(&max_correction_local, &max_correction_global, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+
+  /*--- Output correction magnitude for monitoring ---*/
+  if (SU2_MPI::GetRank() == 0) {
+    cout << "  MG Level " << iMesh << ": Max correction = " << max_correction_global
+         << ", Damping factor = " << factor << " (base=" << base_damp
+         << " × level_factor=" << level_factor << ")" << endl;
+  }
 
   /*--- MPI the new interpolated solution ---*/
 
@@ -500,7 +677,8 @@ void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSys
 }
 
 void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
-                                            CGeometry *geo_coarse, CConfig *config, unsigned short iMesh) {
+                                            CGeometry *geo_coarse, CConfig *config, unsigned short iMesh,
+                                            su2double val_factor) {
 
   unsigned long Point_Fine, Point_Coarse, iVertex;
   unsigned short iMarker, iVar, iChildren;
@@ -508,6 +686,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
 
   const unsigned short nVar = sol_coarse->GetnVar();
   su2double factor = config->GetDamp_Res_Restric();
+  if (val_factor > 0.0) factor = val_factor;
 
   auto *Residual = new su2double[nVar];
 
@@ -530,6 +709,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
 
   delete [] Residual;
 
+  /*--- Zero momentum components of truncation error on viscous walls ---*/
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetViscous_Wall(iMarker)) {
       SU2_OMP_FOR_STAT(32)
@@ -548,6 +728,121 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   END_SU2_OMP_FOR
 
 }
+
+/*
+ * Damp_Restric_Adapt
+ * ------------------
+ * Compute an adapted restriction damping factor (Damp_Res_Restric) based on the
+ * number of pre-smoothing iterations actually performed on each multigrid level.
+ *
+ * Arguments:
+ *  - lastPreSmoothIters: array of length at least (nMGLevels+1) containing the
+ *    recorded number of pre-smoothing iterations performed at each MG level.
+ *    The convention used here is that index == level (0..nMGLevels).
+ *  - lastPreSmoothCount: length of the array passed in (for safety checks).
+ *  - config: the CConfig pointer used to read current settings (no write performed).
+ *
+ * Returns:
+ *  - the adapted damping factor (may be equal to current factor if no change).
+ *
+ * Notes:
+ *  - This routine performs MPI Allreduce operations to make the adapt decision
+ *    globally consistent across ranks.
+ *  - The function intentionally does NOT write back into CConfig; it returns the
+ *    new factor so the caller can decide how to apply it (e.g., via a setter
+ *    once available or by passing it into the next call).
+ */
+static su2double Damp_Restric_Adapt(const unsigned short *lastPreSmoothIters,
+                                   unsigned short lastPreSmoothCount,
+                                   CConfig *config) {
+  //cout << "starting Damp_Restric_Adapt" << endl;
+  if (config == nullptr) return 0.0;
+
+  const unsigned short nMGLevels = config->GetnMGLevels();
+
+  // Safety: require the provided array to have at least nMGLevels+1 entries
+  if (lastPreSmoothIters == nullptr || lastPreSmoothCount < (nMGLevels + 1)) {
+    // Not enough information to adapt; return current factor unchanged
+    return config->GetDamp_Res_Restric();
+  }
+
+  int local_any_full = 0; // true if any inspected coarse level reached configured max
+  int local_all_one = 1;  // true if all inspected coarse levels performed exactly 1 iter
+  int local_inspected = 0; // number of coarse levels that have recorded a pre-smooth value
+
+  // Inspect all coarse-grid levels (levels 1..nMGLevels). Ignore entries
+  // that are still zero (not yet visited during this MG run).
+  for (unsigned short lvl = 1; lvl <= nMGLevels; ++lvl) {
+    const unsigned short performed = lastPreSmoothIters[lvl];
+    const unsigned short configured = config->GetMG_PreSmooth(lvl);
+    //cout << "  Level " << lvl << ": performed=" << performed
+    //     << " configured=" << configured << endl;
+    if (performed == 0) continue; // skip un-inspected level
+    ++local_inspected;
+    if (performed >= configured) local_any_full = 1;
+    if (performed != 1) local_all_one = 0;
+  }
+  //cout << "local_inspected=" << local_inspected
+  //     << " local_any_full=" << local_any_full
+  //     << " local_all_one=" << local_all_one << endl;
+
+
+    // Debug output: local decision stats
+    //cout << "Damp_Restric_Adapt local: inspected=" << local_inspected
+    //  << " any_full=" << local_any_full << " all_one=" << local_all_one << endl;
+
+    // Make decision globally consistent across MPI ranks
+  int global_any_full = 0;
+  int global_all_one = 0;
+  int global_inspected = 0;
+
+  // Sum inspected counts across ranks; if nobody inspected any levels, skip adaptation
+  SU2_MPI::Allreduce(&local_inspected, &global_inspected, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
+
+  if (global_inspected == 0) {
+    // No ranks have inspected coarse levels yet — do not adapt
+    return config->GetDamp_Res_Restric();
+  }
+
+    SU2_MPI::Allreduce(&local_any_full, &global_any_full, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&local_all_one, &global_all_one, 1, MPI_INT, MPI_MIN, SU2_MPI::GetComm());
+
+
+  const su2double current = config->GetDamp_Res_Restric();
+  //cout << "Current Damp_Res_Restric: " << current << endl;
+  su2double new_factor = current;
+
+  const su2double scale_down = 0.99;
+  const su2double scale_up = 1.01;
+  const su2double clamp_min = 0.1;
+  // larger than this is bad for stability
+  const su2double clamp_max = 0.95;
+
+  if (global_any_full) {
+    new_factor = current * scale_down;
+  } else if (global_all_one) {
+    new_factor = current * scale_up;
+  } else {
+    // no change
+    return current;
+  }
+
+  // Clamp result
+  new_factor = std::min(std::max(new_factor, clamp_min), clamp_max);
+
+  // Optionally log the change on all ranks (config controls verbosity)
+  if (config->GetMG_Smooth_Output()) {
+    cout << "Adaptive Damp_Res_Restric: " << current << " -> " << new_factor << endl;
+  }
+  // Persist the adapted factor into the runtime config so subsequent cycles
+  // observe the updated value. This is safe because the adapt decision was
+  // already made through global MPI reductions, so calling the setter on all
+  // ranks yields the same value everywhere.
+  config->SetDamp_Res_Restric(new_factor);
+  //cout << "ending Damp_Restric_Adapt, damping = " <<config->GetDamp_Res_Restric()  << endl;
+  return new_factor;
+}
+
 
 void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solver) {
 
@@ -590,6 +885,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
             sol_coarse->GetNodes()->SetVelSolutionVector(Point_Coarse, Grid_Vel);
           }
           else {
+            // nijso asks: why only for the velocity?
             /*--- For stationary no-slip walls, set the velocity to zero. ---*/
             su2double zero[3] = {0.0};
             sol_coarse->GetNodes()->SetVelSolutionVector(Point_Coarse, zero);

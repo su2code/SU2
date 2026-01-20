@@ -68,7 +68,8 @@ private:
   void MultiGrid_Cycle(CGeometry ****geometry, CSolver *****solver_container,
                        CNumerics ******numerics_container, CConfig **config,
                        unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                       unsigned short iZone, unsigned short iInst);
+                       unsigned short iZone, unsigned short iInst,
+                       unsigned short *lastPreSmoothIters);
 
   /*!
    * \brief Compute the forcing term.
@@ -79,7 +80,8 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
-                       CGeometry *geo_coarse, CConfig *config, unsigned short iMesh);
+                       CGeometry *geo_coarse, CConfig *config, unsigned short iMesh,
+                       su2double val_factor = -1.0);
 
   /*!
    * \brief Add the truncation error to the residual.
@@ -133,6 +135,30 @@ private:
   void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
+
+  void PostSmoothing(unsigned short RunTime_EqSystem,
+  CSolver* solver_fine,
+  CNumerics** numerics_fine,
+  CGeometry* geometry_fine,
+  CSolver** solver_container_fine,
+  CConfig *config,
+  unsigned short iMesh,
+  unsigned short iRKLimit);
+
+  void PreSmoothing(unsigned short RunTime_EqSystem,
+  CGeometry**** geometry,
+  CSolver***** solver_container,
+  CConfig **config_container,
+  CSolver* solver_fine,
+  CNumerics** numerics_fine,
+  CGeometry* geometry_fine,
+  CSolver** solver_container_fine,
+  CConfig *config,
+  unsigned short iMesh,
+  unsigned short iZone,
+  unsigned short iRKLimit,
+  unsigned short *lastPreSmoothIters);
+
   /*!
    * \brief Compute the fine grid correction from the coarse solution.
    * \param[out] sol_fine - Pointer to the solution on the fine grid.
@@ -154,7 +180,7 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-                                    unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config);
+                                    unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief Restrict solution from fine grid to a coarse grid.
