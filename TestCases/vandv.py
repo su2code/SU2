@@ -106,6 +106,22 @@ def main():
     ### Incompressible RANS ###
     ##########################
 
+    # axisymmetric round jet (sst)
+    jet_sst           = TestCase('jet_sst')
+    jet_sst.cfg_dir   = "vandv/inc_rans/jet"
+    jet_sst.cfg_file  = "config_sst.cfg"
+    jet_sst.test_iter = 20
+    jet_sst.test_vals         = [-10.806343, -10.326374, -10.559106, -10.432754, -13.517105, 0.050962, 2.828563, 1.317849, -0.228843]
+    test_list.append(jet_sst)
+
+    # axisymmetric round jet (sa)
+    jet_sst           = TestCase('jet_sa')
+    jet_sst.cfg_dir   = "vandv/inc_rans/jet"
+    jet_sst.cfg_file  = "config_sa.cfg"
+    jet_sst.test_iter = 20
+    jet_sst.test_vals         = [-10.806343, -10.326374, -10.559106, -10.432754, -13.517105, 0.050962, 2.828563, 1.317849, -0.228843]
+    test_list.append(jet_sa)
+
     # Sandia jet - sst-v2003m
     sandiajet_sst           = TestCase('sandiajet_sst')
     sandiajet_sst.cfg_dir   = "vandv/species_transport/sandia_jet"
