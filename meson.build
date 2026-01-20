@@ -8,6 +8,9 @@ project('SU2', 'c', 'cpp',
                           'b_ndebug=true',
                           'c_std=c99',
                           'cpp_std=c++17'])
+if get_option('enable-cantera')
+  add_global_arguments('-lcantera', language: 'cpp')
+endif
 
 fsmod = import('fs')
 if not fsmod.exists('su2preconfig.timestamp')
@@ -322,6 +325,17 @@ if get_option('enable-coolprop')
   else
     message('WARNING: CPU is not x86, skipping CoolProp dependency.')
   endif
+endif
+
+if get_option('enable-cantera')
+  py = find_program('python3','python')
+  cantera_meson_path = join_paths(meson.current_source_dir(), 'cantera_meson_build.py')
+  p = run_command(py, cantera_meson_path, check: true)
+  if p.returncode() != 0
+    error(p.stdout())
+  endif
+  su2_cpp_args +='-DHAVE_CANTERA'
+  cantera_dep = dependency('cantera')
 endif
 
 if get_option('enable-mlpcpp')

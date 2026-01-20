@@ -13,7 +13,8 @@ su2_cfd_src += files(['fluid/CFluidModel.cpp',
                       'fluid/CNEMOGas.cpp',
                       'fluid/CMutationTCLib.cpp',
                       'fluid/CSU2TCLib.cpp',
-                      'fluid/CDataDrivenFluid.cpp'])
+                      'fluid/CDataDrivenFluid.cpp',
+                      'fluid/CFluidCantera.cpp'])
 
 su2_cfd_src += files(['output/COutputFactory.cpp',
                       'output/CAdjElasticityOutput.cpp',
@@ -194,11 +195,16 @@ if get_option('enable-gprof')
   profiling_args = ['-pg','-no-pie']
 endif
 
+
 if get_option('enable-normal')
+  dependencies_default = [su2_deps, common_dep]
+  if get_option('enable-cantera')
+    dependencies_default += cantera_dep
+  endif
   su2_cfd_lib = static_library('SU2core',
                                su2_cfd_src,
                                install : false,
-		               dependencies : [su2_deps, common_dep],
+		               dependencies : dependencies_default,
 		               cpp_args:  [default_warning_flags, su2_cpp_args])
   su2_cfd_dep = declare_dependency(link_with: su2_cfd_lib,
                                    include_directories: su2_cfd_include)

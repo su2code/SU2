@@ -80,7 +80,14 @@ private:
   su2double EA_ScaleFactor;       /*!< \brief Equivalent Area scaling factor */
   su2double AdjointLimit;         /*!< \brief Adjoint variable limit */
   string* ConvField;              /*!< \brief Field used for convergence check.*/
-  string FluidName;              /*!< \brief name of the applied fluid. */
+  string FluidName;               /*!< \brief name of the applied fluid. */
+  string TransportModel;          /*!< \brief name transport model used in Cantera. */
+  string* GasCompositionNames;    /*!< \brief gas composition used in Cantera. */
+  string ChemicalMechanismFile;   /*!< \brief Chemical Reaction mechanism used in Cantera. */
+  string PhaseName;               /*!< \brief Name of the phase in the chemical mechanism file used in Cantera. */
+  unsigned short n_GasCompositionNames; /*!<\brief Number of gases in mixture composition for Cantera. */
+  bool Combustion;                      /*!< \brief Flag for Combustion Detailed chemistry problems using Cantera. */
+  su2double Spark_Temperature; /*!< \bried Spark temperature used for ignition in detailed chemistry using Cantera. */
 
   string* WndConvField;              /*!< \brief Function where to apply the windowed convergence criteria for the time average of the unsteady (single zone) flow problem. */
   unsigned short nConvField;         /*!< \brief Number of fields used to monitor convergence.*/
@@ -4015,6 +4022,47 @@ public:
    * \brief Returns the name of the fluid we are using in CoolProp.
    */
   string GetFluid_Name(void) const { return FluidName; }
+
+  /*!
+   * \brief Returns the transport model used in Cantera.
+   */
+  string GetTransport_Model(void) const { return TransportModel; }
+
+  /*!
+   * \brief Returns the chemical reaction mechanism (mechanism.yaml) used in Cantera.
+   */
+  string GetChemical_MechanismFile(void) const { return ChemicalMechanismFile; }
+
+  /*!
+   * \brief Returns the name of the pase in the chemical reaction mechanism file used in Cantera.
+   */
+  string GetPhase_Name(void) const { return PhaseName; }
+
+  /*!
+   * \brief Returns the gas composition used in Cantera.
+   */
+  string GetChemical_GasComposition(unsigned short val_index = 0) const { return GasCompositionNames[val_index]; }
+
+  /*!
+   * \brief Set the gas composition used in Cantera.
+   */
+  void SetChemical_GasComposition(unsigned short val_index, string gas_composition) const {
+    GasCompositionNames[val_index] = gas_composition;
+  }
+
+  /*!
+   * \brief Get information about the Combustion-Detailed chemistry using Cantera.
+   * \return <code>TRUE</code> if combustion-detailed chemistry using Cantera is used; otherwise <code>FALSE</code>.
+   */
+  bool GetCombustion(void) const { return Combustion; }
+
+  /*!
+   * \brief Get High temperature applied during spark ignition.
+   * \return Spark Temperature.
+   */
+  const su2double GetSpark_Temperature(void) const {
+    return Spark_Temperature;
+  }
 
   /*!
    * \brief Option to define the density model for incompressible flows.

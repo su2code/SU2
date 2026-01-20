@@ -40,6 +40,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
  protected:
   unsigned short Inlet_Position;             /*!< \brief Column index for scalar variables in inlet files. */
   vector<su2activematrix> Inlet_SpeciesVars; /*!< \brief Species variables at inlet profiles. */
+  FluidFlamelet_ParsedOptions flamelet_config_options;
   vector<su2activematrix> Wall_SpeciesVars; /*!< \brief Species variables at  profiles. */
   vector<su2matrix<su2double>> CustomBoundaryScalar;
 

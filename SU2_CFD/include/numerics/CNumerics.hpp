@@ -62,7 +62,9 @@ protected:
   const su2double delta [3][3] = {{1.0, 0.0, 0.0},{0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}; /*!< \brief Identity matrix. */
   const su2double
   *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
-  *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
+  *Diffusion_Coeff_j, /*!< \brief Species diffusion coefficients at point j. */
+  *Chemical_Source_Term_i,     /*!< \brief Species diffusion coefficients at point i. */
+  *Chemical_Source_Term_j;     /*!< \brief Species diffusion coefficients at point j. */
   su2double
   Laminar_Viscosity_i,   /*!< \brief Laminar viscosity at point i. */
   Laminar_Viscosity_j;   /*!< \brief Laminar viscosity at point j. */
@@ -755,6 +757,16 @@ public:
                                 const su2double* val_diffusioncoeff_j) {
     Diffusion_Coeff_i = val_diffusioncoeff_i;
     Diffusion_Coeff_j = val_diffusioncoeff_j;
+  }
+
+  /*!
+   * \brief Set the Chemical source term
+   * \param[in] val_source_term_i - Value of the chemical source term at i.
+   * \param[in] val_source_term_j - Value of the chemical source term at j
+   */
+  inline void SetChemicalSourceTerm(const su2double* val_source_term_i, const su2double* val_source_term_j) {
+    Chemical_Source_Term_i = val_source_term_i;
+    Chemical_Source_Term_j = val_source_term_j;
   }
 
   /*!

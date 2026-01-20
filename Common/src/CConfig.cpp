@@ -1222,6 +1222,20 @@ void CConfig::SetConfig_Options() {
   /*!\brief FLUID_NAME \n DESCRIPTION: Fluid name \n OPTIONS: see coolprop homepage \n DEFAULT: nitrogen \ingroup Config*/
   addStringOption("FLUID_NAME", FluidName, string("nitrogen"));
 
+  /*!\par CONFIG_CATEGORY: Cantera fluid model \ingroup Config*/
+  /*!\brief TRANSPORT_MODEL \n DESCRIPTION: Transport model \n OPTIONS: see Cantera homepage \n DEFAULT: mixture-averaged \ingroup Config*/
+  addStringOption("TRANSPORT_MODEL", TransportModel, string("mixture-averaged"));
+  /*!\brief CHEMICAL_MECHANISM_FILE \n DESCRIPTION: Chemical reaction mechanism \n OPTIONS: see Cantera homepage \n DEFAULT: h2o2.yaml \ingroup Config*/
+  addStringOption("CHEMICAL_MECHANISM_FILE", ChemicalMechanismFile, string("h2o2.yaml"));
+  /*!\brief PHASE_NAME \n DESCRIPTION: name of the phase in the chemical mechanism file \n OPTIONS: see Cantera homepage \n DEFAULT: gri30 \ingroup Config*/
+  addStringOption("PHASE_NAME", PhaseName, string("ohmech"));
+  /*!\brief GAS_COMPOSITION_NAMES \n DESCRIPTION: Gas composition names \n OPTIONS: see Cantera homepage \n DEFAULT: \ingroup Config*/
+  addStringListOption("GAS_COMPOSITION_NAMES", n_GasCompositionNames, GasCompositionNames);
+  /*\brief COMBUSTION \n DESCRIPTION: Combustion Detailed chemistry using Cantera \n DEFAULT: false \ingroup Config*/
+  addBoolOption("COMBUSTION", Combustion, false);
+  /*!\brief SPARK_TEMPERATURE \n DESCRIPTION: Spark temperature used for ignition in detailed chemistry using Cantera \n DEFAULT: 1000 K \ingroup Config*/
+  addDoubleOption("SPARK_TEMPERATURE", Spark_Temperature, 1000.0);
+
   /*!\par CONFIG_CATEGORY: Data-driven fluid model parameters \ingroup Config*/
   /*!\brief INTERPOLATION_METHOD \n DESCRIPTION: Interpolation method used to determine the thermodynamic state of the fluid. \n OPTIONS: See \link DataDrivenMethod_Map \endlink DEFAULT: MLP \ingroup Config*/
   addEnumOption("INTERPOLATION_METHOD",datadriven_ParsedOptions.interp_algorithm_type, DataDrivenMethod_Map, ENUM_DATADRIVEN_METHOD::LUT);
@@ -3485,7 +3499,8 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                     (Kind_FluidModel == FLUID_MIXTURE) ||
                     (Kind_FluidModel == FLUID_FLAMELET) ||
                     (Kind_FluidModel == INC_IDEAL_GAS_POLY) ||
-                    (Kind_FluidModel == CONSTANT_DENSITY));
+                    (Kind_FluidModel == CONSTANT_DENSITY)||
+                    (Kind_FluidModel == FLUID_CANTERA));
   bool noneq_gas = ((Kind_FluidModel == MUTATIONPP) ||
                     (Kind_FluidModel == SU2_NONEQ));
   bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
@@ -4152,6 +4167,67 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         default:
           if (nSpecies_Init + 1 != 1) SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
           break;
+      }
+    }
+
+    if ((Kind_FluidModel != FLUID_CANTERA) && (Combustion == true)) {
+      SU2_MPI::Error(
+          "The use of COMBUSTION=YES requires the use of FLUID_MIXTURE=FLUID_CANTERA,\n"
+          "detailed chemistry cannot be performed with other fluid models",
+          CURRENT_FUNCTION);
+    }
+
+    if ((flamelet_ParsedOptions.ignition_method != FLAMELET_INIT_TYPE::SPARK) && (Combustion == true)) {
+      SU2_MPI::Error(
+          "The use of COMBUSTION=YES requires the use of FLAME_INIT_METHOD=SPARK,\n"
+          "Other ignition methods are not currently available",
+          CURRENT_FUNCTION);
+    }
+
+    if (Kind_FluidModel == FLUID_CANTERA) {
+      /*--- Check whether the number of entries of the GAS_COMPOSITION_NAMES equals the number of transported scalar
+       equations solved + 1.--- */
+      if (n_GasCompositionNames != nSpecies_Init + 1) {
+        SU2_MPI::Error(
+            "The use of FLUID_CANTERA requires the number of entries for GAS_COMPOSITION_NAMES,\n"
+            "to be equal to the number of entries of SPECIES_INIT + 1",
+            CURRENT_FUNCTION);
+      }
+      /*--- Check whether the density model used is correct, in the case of FLUID_CANTERA the density model must be
+       VARIABLE. Otherwise, if the density model is CONSTANT, the scalars will not have influence the mixture density
+       and it will remain constant through the complete domain. --- */
+      if (Kind_DensityModel != INC_DENSITYMODEL::VARIABLE) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the INC_DENSITY_MODEL option to be VARIABLE",
+                       CURRENT_FUNCTION);
+      }
+      /*--- Check whether the Kind scalar model used is correct, in the case of FLUID_CANTERA the kind scalar model must
+       be SPECIES_TRANSPORT. Otherwise, if the scalar model is NONE, the species transport equations will not be solved.
+       --- */
+      if (Kind_Species_Model != SPECIES_MODEL::SPECIES_TRANSPORT) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the KIND_SCALAR_MODEL option to be SPECIES_TRANSPORT",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Ref_Inc_NonDim != DIMENSIONAL) {
+        SU2_MPI::Error(
+            "The use of FLUID_CANTERA requiere the option INC_NONDIM= DIMENSIONAL, the nondimensionalization is "
+            "currently unavailable.",
+            CURRENT_FUNCTION);
+      }
+
+      if (Kind_ConductivityModel != CONDUCTIVITYMODEL::CANTERA) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the CONDUCTIVITY_MODEL option to be CANTERA",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_ViscosityModel != VISCOSITYMODEL::CANTERA) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the VISCOSITY_MODEL option to be CANTERA",
+                       CURRENT_FUNCTION);
+      }
+
+      if (Kind_Diffusivity_Model != DIFFUSIVITYMODEL::CANTERA) {
+        SU2_MPI::Error("The use of FLUID_CANTERA requires the DIFFUSIVITY_MODEL option to be CANTERA",
+                       CURRENT_FUNCTION);
       }
     }
 
@@ -5221,7 +5297,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if (Kind_DensityModel == INC_DENSITYMODEL::VARIABLE) {
-    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE && Kind_FluidModel != FLUID_FLAMELET) {
+    if (Kind_FluidModel != INC_IDEAL_GAS && Kind_FluidModel != INC_IDEAL_GAS_POLY && Kind_FluidModel != FLUID_MIXTURE && Kind_FluidModel != FLUID_FLAMELET && Kind_FluidModel != FLUID_CANTERA) {
       SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS, INC_IDEAL_GAS_POLY).", CURRENT_FUNCTION);
     }
   }

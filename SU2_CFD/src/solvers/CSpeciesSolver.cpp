@@ -42,6 +42,8 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
   nVar = config->GetnSpecies();
 
+  if (config->GetCombustion()) flamelet_config_options = config->GetFlameletParsedOptions();
+
   Initialize(geometry, config, iMesh, nVar);
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
@@ -306,20 +308,57 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                    unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem,
                                    bool Output) {
+  unsigned long spark_iter_start, spark_duration;
+  bool ignition = false;
+  su2double temperature;
+
+  /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
+  if (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK) {
+    auto spark_init = flamelet_config_options.spark_init;
+    spark_iter_start = ceil(spark_init[4]);
+    spark_duration = ceil(spark_init[5]);
+    unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+    ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
+  }
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
+  /*--- Set the laminar mass Diffusivity and chemical source term for the species solver. ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
-    const su2double temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
+    if (ignition) {
+      /*--- Apply ignition temperature within spark radius. ---*/
+      su2double dist_from_center = 0, spark_radius = flamelet_config_options.spark_init[3];
+      dist_from_center =
+          GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(iPoint), flamelet_config_options.spark_init.data());
+      if (dist_from_center < pow(spark_radius, 2)) {
+        temperature = config->GetSpark_Temperature();
+      } else {
+        temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
+      }
+    } else {
+      temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
+    }
     const su2double* scalar = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(iPoint);
     solver_container[FLOW_SOL]->GetFluidModel()->SetMassDiffusivityModel(config);
     solver_container[FLOW_SOL]->GetFluidModel()->SetTDState_T(temperature, scalar);
+    if (config->GetCombustion() == true) {
+      /*--- Call function to compute chemical source term. ---*/
+      solver_container[FLOW_SOL]->GetFluidModel()->ComputeChemicalSourceTerm();
+      /*--- Get and set heat release due to combustion. ---*/
+      const su2double heat_release = solver_container[FLOW_SOL]->GetFluidModel()->GetHeatRelease();
+      nodes->SetHeatRelease(iPoint, heat_release);
+    }
     /*--- Recompute viscosity, important  to get diffusivity correct across MPI ranks. ---*/
     nodes->SetLaminarViscosity(iPoint, solver_container[FLOW_SOL]->GetFluidModel()->GetLaminarViscosity());
     /*--- Set the laminar mass Diffusivity for the species solver. ---*/
     for (auto iVar = 0u; iVar <= nVar; iVar++) {
       const su2double mass_diffusivity = solver_container[FLOW_SOL]->GetFluidModel()->GetMassDiffusivity(iVar);
       nodes->SetDiffusivity(iPoint, mass_diffusivity, iVar);
+      if (config->GetCombustion() == true) {
+        /*--- Get and Set chemical source term. ---*/
+        const su2double chemical_source_term = solver_container[FLOW_SOL]->GetFluidModel()->GetChemicalSourceTerm(iVar);
+        nodes->SetChemicalSourceTerm(iPoint, chemical_source_term, iVar);
+      }
     }
   }  // iPoint
   END_SU2_OMP_FOR
@@ -603,6 +642,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool axisymmetric = config->GetAxisymmetric();
+  const bool combustion =config->GetCombustion();
 
   if (axisymmetric) {
     CNumerics *numerics  = numerics_container[SOURCE_FIRST_TERM  + omp_get_thread_num()*MAX_TERMS];
@@ -652,7 +692,34 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   if (config->GetPyCustomSource()) {
     CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
   }
+  
+  if (combustion) {
+    CNumerics* numerics = numerics_container[SOURCE_SECOND_TERM + omp_get_thread_num() * MAX_TERMS];
 
+    SU2_OMP_FOR_DYN(omp_chunk_size)
+    for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
+      /*--- Set Chemical Source Term  ---*/
+
+      numerics->SetChemicalSourceTerm(nodes->GetChemicalSourceTerm(iPoint), nullptr);
+
+      /*--- Set volume of the dual cell. ---*/
+
+      numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
+
+      /*--- Update scalar sources in the fluidmodel ---*/
+
+      auto residual = numerics->ComputeResidual(config);
+
+      /*--- Add Residual ---*/
+
+      LinSysRes.SubtractBlock(iPoint, residual);
+
+      /*--- Implicit part ---*/
+
+      if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
+    }
+    END_SU2_OMP_FOR
+  }
 }
 
 void CSpeciesSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {

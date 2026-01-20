@@ -47,7 +47,7 @@
 template <class FlowIndices>
 class CUpwScalar : public CNumerics {
  protected:
-  enum : unsigned short {MAXNVAR = 8};
+  enum : unsigned short {MAXNVAR = 20};
 
   const FlowIndices idx;            /*!< \brief Object to manage the access to the flow primitives. */
   su2double a0 = 0.0;               /*!< \brief The maximum of the face-normal velocity and 0. */

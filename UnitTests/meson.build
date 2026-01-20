@@ -12,6 +12,7 @@ su2_cfd_tests = files(['Common/geometry/primal_grid/CPrimalGrid_tests.cpp',
                        'Common/vectorization.cpp',
                        'Common/toolboxes/ndflattener_tests.cpp',
                        'Common/containers/CLookupTable_tests.cpp',
+                       'SU2_CFD/fluid/CFluidCantera_tests.cpp',
                        'Common/toolboxes/multilayer_perceptron/CLookUp_ANN_tests.cpp',
                        'SU2_CFD/numerics/CNumerics_tests.cpp',
                        'SU2_CFD/fluid/CFluidModel_tests.cpp',
@@ -31,14 +32,20 @@ su2_cfd_tests_dd = files(['Common/simple_directdiff_test.cpp'])
 # End of unit test listings
 # -------------------------------------------------------------------------
 
+
 if get_option('enable-tests')
   if get_option('enable-normal')
     unit_test_files = su2_cfd_tests + files(['test_driver.cpp'])
+    dependencies_default = [su2_cfd_dep, common_dep, su2_deps, catch2_dep]
+    if get_option('enable-cantera')
+      su2_cpp_args += '-DHAVE_CANTERA'
+      dependencies_default += dependency('cantera')
+    endif
     test_driver = executable(
         'test_driver',
         unit_test_files,
         install : true,
-        dependencies : [su2_cfd_dep, common_dep, su2_deps, catch2_dep],
+        dependencies : dependencies_default,
         cpp_args: ['-fPIC', default_warning_flags, su2_cpp_args]
     )
     test('Catch2 test driver', test_driver)

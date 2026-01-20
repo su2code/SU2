@@ -36,6 +36,8 @@
 class CSpeciesVariable : public CScalarVariable {
  protected:
   MatrixType Diffusivity; /*!< \brief Matrix (nPoint,nVar) of mass diffusivities for scalar transport. */
+  MatrixType SpeciesSourceTerm; /*!< \brief Matrix (nPoint, nVar) of chemical source terms for species transport*/
+  VectorType HeatRelease; /*!< \brief Vector of heat release due to combustion for species transport*/
 
  public:
   static constexpr size_t MAXNVAR = 20; /*!< \brief Max number of variables for static arrays. Increase, if necessary. */
@@ -74,4 +76,41 @@ class CSpeciesVariable : public CScalarVariable {
    * \return Pointer to the mass diffusivities
    */
   inline const su2double* GetDiffusivity(unsigned long iPoint) const { return Diffusivity[iPoint]; }
+
+  /*!
+   * \brief Set the value of the chemical source term for species transport
+   * \param[in] val_sourceTerm - the chemical source term.
+   * \param[in] val_ivar        - eqn. index to the chemical source term.
+   */
+  inline void SetChemicalSourceTerm(unsigned long iPoint, su2double val_sourceTerm, unsigned short val_ivar) {
+    SpeciesSourceTerm(iPoint, val_ivar) = val_sourceTerm;
+  }
+
+  /*!
+   * \brief Get the value of the chemical source term for species transport
+   * \param[in] val_ivar - eqn. index to the chemical source term.
+   * \return Value of the chemical source term.
+   */
+  inline su2double GetChemicalSourceTerm(unsigned long iPoint, unsigned short val_ivar) const {
+    return SpeciesSourceTerm(iPoint, val_ivar);
+  }
+
+  /*!
+   * \brief Get the value of the chemical source term for species transport
+   * \return Pointer to the chemical source term
+   */
+  inline const su2double* GetChemicalSourceTerm(unsigned long iPoint) const { return SpeciesSourceTerm[iPoint]; }
+
+  /*!
+   * \brief Get heat release due to combustion
+   * \param[in] iPoint - Point index.
+   * \return Value of the heat release due to combustion.
+   */
+  inline su2double GetHeatRelease(unsigned long iPoint) const { return HeatRelease(iPoint); }
+
+  /*!
+   * \brief Set heat release due to combustion.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetHeatRelease(unsigned long iPoint, su2double val_heatRelease) { HeatRelease(iPoint) = val_heatRelease; }
 };

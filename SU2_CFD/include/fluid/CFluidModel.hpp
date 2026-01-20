@@ -193,6 +193,22 @@ class CFluidModel {
   }
 
   /*!
+   * \brief Compute chemical source term for species.
+   */
+  virtual void ComputeChemicalSourceTerm() {};
+
+  /*!
+   * \brief Get Chemical source term species.
+   * \param[in] iVar - index of species.
+   */
+  inline virtual su2double GetChemicalSourceTerm(int iVar) { return 0.0; }
+
+  /*!
+   * \brief Get Heat release due to combustion.
+   */
+  inline virtual su2double GetHeatRelease() { return 0.0; }
+
+  /*!
    * \brief Get the enthalpy diffusivity terms for all species being solved.
    *
    * This function computes and retrieves the enthalpy diffusion terms required in the energy equation

@@ -551,6 +551,7 @@ enum ENUM_FLUIDMODEL {
   COOLPROP = 10,          /*!< \brief Thermodynamics library. */
   FLUID_FLAMELET = 11,    /*!< \brief lookup table (LUT) method for premixed flamelets. */
   DATADRIVEN_FLUID = 12,  /*!< \brief multi-layer perceptron driven fluid model. */
+  FLUID_CANTERA = 13,     /*!< \brief Reacting flows model. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -566,6 +567,7 @@ static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("COOLPROP", COOLPROP)
   MakePair("DATADRIVEN_FLUID", DATADRIVEN_FLUID)
   MakePair("FLUID_FLAMELET", FLUID_FLAMELET)
+  MakePair("FLUID_CANTERA", FLUID_CANTERA)
 };
 
 /*!
@@ -672,6 +674,7 @@ enum class VISCOSITYMODEL {
   POLYNOMIAL, /*!< \brief Polynomial viscosity. */
   FLAMELET, /*!< \brief LUT method for flamelets */
   COOLPROP, /*!< \brief CoolProp viscosity. */
+  CANTERA,  /*!< \brief Cantera viscosity. */
 };
 static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
   MakePair("CONSTANT_VISCOSITY", VISCOSITYMODEL::CONSTANT)
@@ -679,6 +682,7 @@ static const MapType<std::string, VISCOSITYMODEL> ViscosityModel_Map = {
   MakePair("POLYNOMIAL_VISCOSITY", VISCOSITYMODEL::POLYNOMIAL)
   MakePair("FLAMELET", VISCOSITYMODEL::FLAMELET)
   MakePair("COOLPROP", VISCOSITYMODEL::COOLPROP)
+  MakePair("CANTERA", VISCOSITYMODEL::CANTERA)
 };
 
 /*!
@@ -702,6 +706,7 @@ enum class CONDUCTIVITYMODEL {
   POLYNOMIAL, /*!< \brief Polynomial thermal conductivity. */
   FLAMELET, /*!< \brief LUT method for flamelets */
   COOLPROP, /*!< \brief COOLPROP thermal conductivity. */
+  CANTERA,  /*!< \brief CANTERA thermal conductivity. */
 };
 static const MapType<std::string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
   MakePair("CONSTANT_CONDUCTIVITY", CONDUCTIVITYMODEL::CONSTANT)
@@ -709,6 +714,7 @@ static const MapType<std::string, CONDUCTIVITYMODEL> ConductivityModel_Map = {
   MakePair("POLYNOMIAL_CONDUCTIVITY", CONDUCTIVITYMODEL::POLYNOMIAL)
   MakePair("FLAMELET", CONDUCTIVITYMODEL::FLAMELET)
   MakePair("COOLPROP", CONDUCTIVITYMODEL::COOLPROP)
+  MakePair("CANTERA", CONDUCTIVITYMODEL::CANTERA)
 };
 
 /*!
@@ -732,6 +738,7 @@ enum class DIFFUSIVITYMODEL {
   UNITY_LEWIS,          /*!< \brief Unity Lewis model for mass diffusion in scalar transport. */
   CONSTANT_LEWIS,      /*!< \brief Different Lewis number model for mass diffusion in scalar transport. */
   FLAMELET,            /*!< \brief flamelet model for tabulated chemistry, diffusivity from lookup table */
+  CANTERA,    /*!< \brief Mixture average diffusivity from CANTERA */
 };
 
 static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
@@ -740,6 +747,7 @@ static const MapType<std::string, DIFFUSIVITYMODEL> Diffusivity_Model_Map = {
   MakePair("UNITY_LEWIS", DIFFUSIVITYMODEL::UNITY_LEWIS)
   MakePair("CONSTANT_LEWIS", DIFFUSIVITYMODEL::CONSTANT_LEWIS)
   MakePair("FLAMELET", DIFFUSIVITYMODEL::FLAMELET)
+  MakePair("CANTERA", DIFFUSIVITYMODEL::CANTERA)
 };
 
 /*!

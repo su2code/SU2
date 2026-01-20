@@ -135,7 +135,41 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
   return ResidualType<>(residual, jacobian, nullptr);
 }
 
+template <class T>
+CSourceCombustion_Species<T>::CSourceCombustion_Species(unsigned short val_nDim, unsigned short val_nVar,
+                                                        const CConfig* config)
+    : CSourceBase_Species(val_nDim, val_nVar, config) {}
+
+template <class T>
+CNumerics::ResidualType<> CSourceCombustion_Species<T>::ComputeResidual(const CConfig* config) {
+  /*--- Preaccumulation ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(Volume);
+  AD::SetPreaccIn(Chemical_Source_Term_i, nVar);
+
+  /*--- Initialization. ---*/
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+    residual[iVar] = 0.0;
+    for (auto jVar = 0; jVar < nVar; jVar++) {
+      jacobian[iVar][jVar] = 0.0;
+    }
+  }
+
+  for (auto iVar = 0u; iVar < nVar; iVar++) {
+    residual[iVar] += Volume * Chemical_Source_Term_i[iVar];
+  }
+
+
+  AD::SetPreaccOut(residual, nVar);
+  AD::EndPreacc();
+
+  return ResidualType<>(residual, jacobian, nullptr);
+}
+
 /*--- Explicit instantiations until we don't move this to the hpp. ---*/
 template class CSourceAxisymmetric_Species<CEulerVariable::CIndices<unsigned short> >;
 template class CSourceAxisymmetric_Species<CIncEulerVariable::CIndices<unsigned short> >;
 template class CSourceAxisymmetric_Species<CNEMOEulerVariable::CIndices<unsigned short> >;
+template class CSourceCombustion_Species<CIncEulerVariable::CIndices<unsigned short> >;
+template class CSourceCombustion_Species<CEulerVariable::CIndices<unsigned short> >;
+template class CSourceCombustion_Species<CNEMOEulerVariable::CIndices<unsigned short> >;

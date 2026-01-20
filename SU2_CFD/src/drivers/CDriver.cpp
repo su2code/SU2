@@ -1417,7 +1417,11 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
     else {
       numerics[iMGlevel][SPECIES_SOL][source_first_term] = new CSourceNothing(nDim, nVar_Species, config);
     }
-    numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
+    if (config->GetCombustion() == YES) {
+      numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceCombustion_Species<Indices>(nDim, nVar_Species, config);
+    } else {
+      numerics[iMGlevel][SPECIES_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Species, config);
+    }
   }
 }
 

@@ -42,6 +42,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
   Tke_Inf         = config->GetTke_FreeStreamND();
+  TemperatureLimits[0]= config->GetTemperatureLimits(0);
+  TemperatureLimits[1]= config->GetTemperatureLimits(1);
 
   /*--- Initialize the secondary values for direct derivative approximations ---*/
 
@@ -52,6 +54,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     default:
       break;
   }
+  if (config->GetCombustion()) flamelet_config_options = config->GetFlameletParsedOptions();
 
   /*--- Set the initial Streamwise periodic pressure drop value. ---*/
 
@@ -69,6 +72,54 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
   const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
   const bool wall_functions = config->GetWall_Functions();
+  const bool energy = config->GetEnergy_Equation();
+  const bool combustion = config->GetCombustion();
+
+  /*--- Setting temperature, enthalpy and thermophysical properties for ignition in reacting flows. ---*/
+  if (energy && combustion) {
+    unsigned long spark_iter_start, spark_duration;
+    bool ignition = false;
+
+    /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
+    if (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK) {
+      auto spark_init = flamelet_config_options.spark_init;
+      spark_iter_start = ceil(spark_init[4]);
+      spark_duration = ceil(spark_init[5]);
+      unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+      ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
+    }
+
+    SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
+
+    if (ignition) {
+      SU2_OMP_FOR_STAT(omp_chunk_size)
+      for (auto i_point = 0u; i_point < nPoint; i_point++) {
+        /*--- Retrieve fluid model. ---*/
+        CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
+        /*--- Apply ignition temperature within spark radius. ---*/
+        su2double dist_from_center = 0, spark_radius = flamelet_config_options.spark_init[3];
+        dist_from_center =
+            GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.spark_init.data());
+        if (dist_from_center < pow(spark_radius, 2)) {
+          /*--- Retrieve scalars solution. ---*/
+          su2double* scalars = solver_container[SPECIES_SOL]->GetNodes()->GetSolution(i_point);
+          /*--- Set high temperature for ignition. ---*/
+          nodes->SetTemperature(i_point, config->GetSpark_Temperature(), TemperatureLimits);
+          /*--- Set thermodynamic state at high temperature. ---*/
+          fluid_model_local->SetTDState_T(config->GetSpark_Temperature(), scalars);
+          /*--- Set total enthalpy at high temperature. ---*/
+          nodes->SetSolution(i_point, nDim + 1, fluid_model_local->GetEnthalpy());
+          /*--- Set thermodynamics and transport properties at high temperature for consistency. ---*/
+          nodes->SetDensity(i_point, fluid_model_local->GetDensity());
+          nodes->SetSpecificHeatCp(i_point, fluid_model_local->GetCp());
+          nodes->SetSpecificHeatCv(i_point, fluid_model_local->GetCv());
+          nodes->SetThermalConductivity(i_point, fluid_model_local->GetThermalConductivity());
+          nodes->SetLaminarViscosity(i_point, fluid_model_local->GetLaminarViscosity());
+        }
+      }
+      END_SU2_OMP_FOR
+    }
+  }
 
   /*--- Common preprocessing steps (implemented by CEulerSolver) ---*/
 
@@ -275,7 +326,9 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
 
 void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *numerics, CConfig *config) {
-  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
+  const bool energy_multicomponent =
+      (config->GetKind_FluidModel() == FLUID_MIXTURE || config->GetKind_FluidModel() == FLUID_CANTERA) &&
+      config->GetEnergy_Equation();
 
   /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
   if (energy_multicomponent) {
