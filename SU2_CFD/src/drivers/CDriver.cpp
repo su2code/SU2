@@ -1321,7 +1321,8 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   const int visc_bound_term = VISC_BOUND_TERM + offset;
 
   const bool LM = config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM;
-
+  LM_ParsedOptions options;
+  if (LM) options = config->GetLMParsedOptions();
   /*--- Definition of the convective scheme for each equation and mesh level ---*/
 
   switch (config->GetKind_ConvNumScheme_Turb()) {
@@ -1330,7 +1331,10 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
       break;
     case SPACE_UPWIND :
       for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        if (LM) numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
+        if (LM) {
+          if (options.LMROUGH)  numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransLMROUGH<Indices>(nDim,nVar_Trans, config);
+          else numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
+        }
       }
       break;
     default:
@@ -1341,7 +1345,10 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   /*--- Definition of the viscous scheme for each equation and mesh level ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (LM) numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, true, config);
+    if (LM) {
+      if (options.LMROUGH) numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransLMROUGH<Indices>(nDim, nVar_Trans, true, config);  
+      else numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, true, config);
+    }
   }
 
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1349,15 +1356,21 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     auto& trans_source_first_term = numerics[iMGlevel][TRANS_SOL][source_first_term];
 
-    if (LM) trans_source_first_term = new CSourcePieceWise_TransLM<Indices>(nDim, nVar_Trans, config);
-
+    if (LM) {
+      if (options.LMROUGH) trans_source_first_term = new CSourcePieceWise_TransLMROUGH<Indices>(nDim, nVar_Trans, config);
+      else trans_source_first_term = new CSourcePieceWise_TransLM<Indices>(nDim, nVar_Trans, config);
+    }
     numerics[iMGlevel][TRANS_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Trans, config);
   }
 
   /*--- Definition of the boundary condition method ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (LM) {
+    if (options.LMROUGH) {
+      numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwSca_TransLMROUGH<Indices>(nDim, nVar_Trans, config);
+      numerics[iMGlevel][TRANS_SOL][visc_bound_term] = new CAvgGrad_TransLMROUGH<Indices>(nDim, nVar_Trans, false, config);
+    }
+    else {
       numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
       numerics[iMGlevel][TRANS_SOL][visc_bound_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, false, config);
     }

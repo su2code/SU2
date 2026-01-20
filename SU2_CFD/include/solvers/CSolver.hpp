@@ -3197,6 +3197,12 @@ public:
    */
   inline virtual su2double GetReThetaT_Inf() const { return 0; }
 
+  /*! 
+  * \brief Get value of the roughness amplification factor in the freestream.
+   * \return Value of the roughness amplification factor in the freestream.
+   */
+  inline virtual su2double GetA_r_Inf() const { return 0.0; }
+
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E

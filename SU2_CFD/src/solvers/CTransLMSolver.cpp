@@ -49,6 +49,13 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Dimension of the problem --> 2 Transport equations (intermittency, Reth) ---*/
   nVar = 2;
   nPrimVar = 2;
+
+  options = config->GetLMParsedOptions();
+  if (options.LMROUGH) {
+    nVar = 3;
+    nPrimVar = 3;
+  }
+
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
@@ -101,14 +108,21 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   lowerlimit[0] = 1.0e-4;
   upperlimit[0] = 5.0;
 
-  lowerlimit[1] = 1.0e-4;
+  lowerlimit[1] = 20.0; //Suggested lower limit to ensure robustness from Langtry Menter reference
   upperlimit[1] = 1.0e15;
+  if (options.LMROUGH) {
+    lowerlimit[1] = 20.0;
+    upperlimit[1] = 1.0e15;
 
+    lowerlimit[2] = 1.0e-4;  
+    upperlimit[2] = 1.0e4;    
+  }
   /*--- Far-field flow state quantities and initialization. ---*/
   const su2double Intensity = config->GetTurbulenceIntensity_FreeStream()*100.0;
 
   const su2double Intermittency_Inf  = 1.0;
   su2double ReThetaT_Inf = 100.0;
+  const su2double A_r_Inf = 1.0e-4;
 
   /*--- Momentum thickness Reynolds number, initialized from freestream turbulent intensity*/
   if (Intensity <= 1.3) {
@@ -125,9 +139,12 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   Solution_Inf[0] = Intermittency_Inf;
   Solution_Inf[1] = ReThetaT_Inf;
+  if (options.LMROUGH) {  
+    Solution_Inf[2] = A_r_Inf;        
+  }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
-  nodes = new CTransLMVariable(Intermittency_Inf, ReThetaT_Inf, 1.0, 1.0, nPoint, nDim, nVar, config);
+  nodes = new CTransLMVariable(Intermittency_Inf, ReThetaT_Inf, 1.0, 1.0, A_r_Inf, nPoint, nDim, nVar, config);
   SetBaseClassPointerToNodes();
 
   /*--- MPI solution ---*/
@@ -156,6 +173,9 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; ++iVertex) {
       Inlet_TurbVars[iMarker](iVertex,0) = Intermittency_Inf;
       Inlet_TurbVars[iMarker](iVertex,1) = ReThetaT_Inf;
+      if (options.LMROUGH) {
+        Inlet_TurbVars[iMarker](iVertex, 2) = A_r_Inf;
+      }
     }
   }
 
@@ -367,6 +387,12 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
+  bool rough_wall = false;
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  WALL_TYPE WallType; su2double Roughness_Height;
+  tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
+  if (WallType == WALL_TYPE::ROUGH) rough_wall = true;
+
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
@@ -411,7 +437,50 @@ void CTransLMSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       /*--- Add residuals and Jacobians ---*/
 
       LinSysRes.AddBlock(iPoint, residual);
-      if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      //if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+    
+      options = config->GetLMParsedOptions();
+      if (rough_wall) {
+        
+        /*--- Set wall values ---*/
+        su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+        su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+        su2double WallShearStress = solver_container[FLOW_SOL]->GetWallShearStress(val_marker, iVertex);
+
+        /*--- Compute non-dimensional velocity ---*/
+        su2double FrictionVel = sqrt(fabs(WallShearStress)/density);
+
+        /*--- Compute roughness in wall units. ---*/
+        su2double kPlus = FrictionVel*Roughness_Height*density/laminar_viscosity;
+        su2double Solution[3];
+        Solution[0] = nodes->GetSolution(iPoint, 0); // Intermittency remains unchanged
+        Solution[1] = nodes->GetSolution(iPoint, 1); // ReThetaT remains unchanged
+        Solution[2] = 8.0*kPlus;               // Set A_r explicitly
+
+        // Apply the solution values at the wall
+        
+        nodes->SetSolution_Old(iPoint, Solution);
+        nodes->SetSolution(iPoint, Solution);
+        //LinSysRes.SetBlock_Zero(iPoint);
+
+        LinSysRes.AddBlock(iPoint, residual); 
+
+        
+
+      
+        if (implicit) {
+          Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+        }
+       
+      }  else {
+        /*--- Compute residuals and Jacobians ---*/
+        auto residual = conv_numerics->ComputeResidual(config);
+        /*--- Add residuals and Jacobians ---*/
+
+        LinSysRes.AddBlock(iPoint, residual);
+
+        if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+      }
     }
   }
   END_SU2_OMP_FOR
@@ -463,6 +532,9 @@ void CTransLMSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
       su2double Inlet_Vars[MAXNVAR];
       Inlet_Vars[0] = Inlet_TurbVars[val_marker][iVertex][0];
       Inlet_Vars[1] = Inlet_TurbVars[val_marker][iVertex][1];
+      if (options.LMROUGH) {
+        Inlet_Vars[2] = Inlet_TurbVars[val_marker][iVertex][2];
+      }
       if (config->GetInlet_Profile_From_File()) {
         Inlet_Vars[0] /= pow(config->GetVelocity_Ref(), 2);
         Inlet_Vars[1] *= config->GetViscosity_Ref() / (config->GetDensity_Ref() * pow(config->GetVelocity_Ref(), 2));

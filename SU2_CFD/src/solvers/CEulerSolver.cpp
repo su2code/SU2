@@ -1387,6 +1387,10 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
           Unit.str("");
           NonDimTable << "Moment. Thick. Re"  << "-" << "-" << "-" << config->GetReThetaT_FreeStream();
           Unit.str("");
+          if ((config->GetLMParsedOptions()).LMROUGH) {
+          NonDimTable << "Amplification Factor"  << "-" << "-" << "-" << config->GetA_r_FreeStream();
+          Unit.str("");
+          }
         }
       }
       if (config->GetKind_Species_Model() != SPECIES_MODEL::NONE) {

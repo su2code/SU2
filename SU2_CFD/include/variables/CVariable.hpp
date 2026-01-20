@@ -1679,6 +1679,18 @@ public:
    */
   inline virtual su2double GetmuT(unsigned long iPoint) const { return 0.0; }
 
+   /*!
+   * \brief Get the value of the roughness amplification factor for LMROUGH transition model.
+   * \return the value of the roughness amplification factor.
+   */
+  inline virtual su2double GetA_r(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the roughness amplification factor, modification for the LMROUGH transition model.
+   * \param[in] val_dist - Value of the  A_r.
+   */
+  inline virtual void SetA_r(unsigned long iPoint, su2double val_A_r) {}
+
   /*!
    * \brief Get the value of the intermittency.
    * \return the value of the intermittency.

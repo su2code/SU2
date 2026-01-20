@@ -487,6 +487,7 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
 
       /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
       ResidualReductions_PerThread(iPoint, iVar, LinSysRes[total_index], resRMS, resMax, idxMax);
+      if ( idxMax[iVar] > nPointDomain ) idxMax[iVar] = nPointDomain-1;   
     }
   }
   END_SU2_OMP_FOR

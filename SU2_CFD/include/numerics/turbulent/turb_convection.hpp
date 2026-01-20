@@ -128,3 +128,70 @@ public:
   CUpwSca_TurbSST(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
     : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) { bounded_scalar = config->GetBounded_Turb(); }
 };
+/*!
+ * \class CUpwSca_TurbLMROUGH
+ * \brief Class for doing a scalar upwind solver for the LMROUGH transition model equations.
+ * \ingroup ConvDiscr
+ * \author M. Schifone.
+ */
+template <class FlowIndices>
+class CUpwSca_TurbLMROUGH final : public CUpwScalar<FlowIndices> {
+private:
+  using Base = CUpwScalar<FlowIndices>;
+  using Base::nDim;
+  using Base::V_i;
+  using Base::V_j;
+  using Base::a0;
+  using Base::a1;
+  using Base::Flux;
+  using Base::Jacobian_i;
+  using Base::Jacobian_j;
+  using Base::ScalarVar_i;
+  using Base::ScalarVar_j;
+  using Base::TransVar_i;
+  using Base::TransVar_j;
+  using Base::idx;
+  using Base::bounded_scalar;
+
+  /*!
+   * \brief Adds any extra variables to AD
+   */
+  void ExtraADPreaccIn() override {}
+
+  /*!
+   * \brief SST specific steps in the ComputeResidual method
+   * \param[in] config - Definition of the particular problem.
+   */
+
+  void FinishResidualCalc(const CConfig* config) override {
+
+
+
+
+
+    Flux[0] = a0*V_i[idx.Density()]*ScalarVar_i[0] + a1*V_j[idx.Density()]*ScalarVar_j[0];
+    Flux[1] = a0*V_i[idx.Density()]*ScalarVar_i[1] + a1*V_j[idx.Density()]*ScalarVar_j[1];
+    Flux[2] = a0*V_i[idx.Density()]*ScalarVar_i[2] + a1*V_j[idx.Density()]*ScalarVar_j[2];
+
+
+
+    Jacobian_i[0][0] = a0;    Jacobian_i[0][1] = 0.0;  Jacobian_i[0][2] = 0.0;
+    Jacobian_i[1][0] = 0.0;   Jacobian_i[1][1] = a0;   Jacobian_i[1][2] = 0.0;
+    Jacobian_i[2][0] = 0.0;   Jacobian_i[2][1] = 0.0;  Jacobian_i[2][2] = a0;
+
+    Jacobian_j[0][0] = a1;    Jacobian_j[0][1] = 0.0;  Jacobian_j[0][2] = 0.0;
+    Jacobian_j[1][0] = 0.0;   Jacobian_j[1][1] = a1;   Jacobian_j[1][2] = 0.0;
+    Jacobian_j[2][0] = 0.0;   Jacobian_j[2][1] = 0.0;  Jacobian_j[2][2] = a1;
+
+  }
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwSca_TurbLMROUGH(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config)
+    : CUpwScalar<FlowIndices>(val_nDim, val_nVar, config) { bounded_scalar = config->GetBounded_Turb(); }
+};
