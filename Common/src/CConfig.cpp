@@ -1369,6 +1369,10 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
   /*!\brief INIT_OPTION \n DESCRIPTION: Init option to choose between Reynolds or thermodynamics quantities for initializing the solution \n OPTIONS: see \link InitOption_Map \endlink \n DEFAULT REYNOLDS \ingroup Config*/
   addEnumOption("INIT_OPTION", Kind_InitOption, InitOption_Map, REYNOLDS);
+  /*!\brief INIT_OPTION_INC \n DESCRIPTION: Init option for incompressible solver to choose between initial density or
+   * operating pressure initialization of the solution \n OPTIONS: see \link InitOption_Map \endlink \n DEFAULT REYNOLDS
+   * \ingroup Config*/
+  addEnumOption("INIT_OPTION_INC", Kind_InitOption_Inc, InitOptionInc_Map, DENSITY_INIT);
   /* DESCRIPTION: Free-stream option to choose between density and temperature for initializing the solution */
   addEnumOption("FREESTREAM_OPTION", Kind_FreeStreamOption, FreeStreamOption_Map, FREESTREAM_OPTION::TEMPERATURE_FS);
   /*!\brief FREESTREAM_PRESSURE\n DESCRIPTION: Free-stream pressure (101325.0 N/m^2 by default) \ingroup Config*/
@@ -3556,6 +3560,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Check if CoolProp is used with non-dimensionalization. ---*/
   if (Kind_FluidModel == COOLPROP && Ref_NonDim != DIMENSIONAL) {
     SU2_MPI::Error("CoolProp can not be used with non-dimensionalization.", CURRENT_FUNCTION);
+  }
+
+  /*--- Check if CONSTANT_DENSITY model is used with INIT_OPTION_INC=OPERATING_PRESSURE. ---*/
+  if (Kind_FluidModel == CONSTANT_DENSITY && Kind_InitOption_Inc == OPERATING_PRESSURE) {
+    SU2_MPI::Error("CONSTANT_DENSITY fluid model can only be used with INIT_OPTION_INC=DENSITY_INIT.",
+                   CURRENT_FUNCTION);
   }
 
   /*--- STL_BINARY output not implemented yet, but already a value in option_structure.hpp---*/
