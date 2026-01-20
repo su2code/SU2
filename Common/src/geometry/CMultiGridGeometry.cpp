@@ -719,7 +719,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     /*--- Note: CFL at the coarse levels have a large impact on convergence,
           this should be rewritten to use adaptive CFL. ---*/
     const su2double factor = 1.0;
-    const su2double Coeff = 1.1; //pow(su2double(Global_nPointFine) / Global_nPointCoarse, 1.0 / nDim);
+    const su2double Coeff = 1.1;  // pow(su2double(Global_nPointFine) / Global_nPointCoarse, 1.0 / nDim);
     const su2double CFL = factor * config->GetCFL(iMesh - 1) / Coeff;
     config->SetCFL(iMesh, CFL);
   }
