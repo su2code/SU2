@@ -3073,6 +3073,55 @@ void CConfig::SetConfig_Options() {
   /*!\brief ROM_SAVE_FREQ \n DESCRIPTION: How often to save snapshots for unsteady problems.*/
   addUnsignedShortOption("ROM_SAVE_FREQ", rom_save_freq, 1);
 
+  /*--- options that are used for mesh adaptation ---*/
+  /*!\par CONFIG_CATEGORY:Adaptation Options \ingroup Config*/
+
+  /*!\brief COMPUTE_METRIC \n DESCRIPTION: Compute a metric tensor field */
+  addBoolOption("COMPUTE_METRIC", Compute_Metric, false);
+  /*!\brief NORMALIZE_METRIC \n DESCRIPTION: Normalize the metric tensor */
+  addBoolOption("NORMALIZE_METRIC", Normalize_Metric, true);
+  /*!\brief NUM_METHOD_HESS \n DESCRIPTION: Numerical method for Hessian computation \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: GREEN_GAUSS. \ingroup Config*/
+  addEnumOption("NUM_METHOD_HESS", Kind_Hessian_Method, Gradient_Map, GREEN_GAUSS);
+
+  /*!\brief METRIC_SENSOR \n DESCRIPTION: Sensors for mesh adaptation */
+  addEnumListOption("METRIC_SENSOR", nMetric_Sensor, Metric_Sensor, Metric_Sensor_Map);
+  /*!\brief METRIC_NORM \n DESCRIPTION: Lp-norm for mesh adaptation */
+  addUnsignedShortOption("METRIC_NORM", Metric_Norm, 2);
+  /*!\brief METRIC_COMPLEXITY \n DESCRIPTION: Constraint mesh complexity */
+  addUnsignedLongOption("METRIC_COMPLEXITY", Metric_Complexity, 10000);
+
+  /*!\brief METRIC_HMAX \n DESCRIPTION: Constraint maximum cell size */
+  addDoubleOption("METRIC_HMAX", Metric_Hmax, 10.0);
+  /*!\brief METRIC_HMIN \n DESCRIPTION: Constraint minimum cell size */
+  addDoubleOption("METRIC_HMIN", Metric_Hmin, 1.0E-8);
+  /*!\brief METRIC_ARMAX \n DESCRIPTION: Constraint maximum cell aspect ratio */
+  addDoubleOption("METRIC_ARMAX", Metric_ARmax, 1.0E6);
+
+  /*!\brief ADAP_ITER \n DESCRIPTION: Mesh adaptation inner iterations per complexity */
+  addPythonOption("ADAP_ITER");
+  /*!\brief ADAP_COMPLEXITIES \n DESCRIPTION: List of constraint (target) mesh complexities for mesh convergence study */
+  addPythonOption("ADAP_COMPLEXITIES");
+  /*!\brief ADAP_FLOW_ITERS \n DESCRIPTION: Primal solver iterations at each target complexity */
+  addPythonOption("ADAP_FLOW_ITERS");
+  /*!\brief ADAP_ADJ_ITERS \n DESCRIPTION: Adjoint solver iterations at each target complexity */
+  addPythonOption("ADAP_ADJ_ITERS");
+  /*!\brief ADAP_FLOW_CFLS \n DESCRIPTION: Primal solver CFL number at each target complexity */
+  addPythonOption("ADAP_FLOW_CFLS");
+  /*!\brief ADAP_ADJ_CFLS \n DESCRIPTION: Adjoint solver CFL number at each target complexity */
+  addPythonOption("ADAP_ADJ_CFLS");
+  /*!\brief ADAP_RESIDUAL_REDUCTIONS \n DESCRIPTION: Residual reduction at each target complexity */
+  addPythonOption("ADAP_RESIDUAL_REDUCTIONS");
+  /*!\brief ADAP_HMAXS \n DESCRIPTION: Maximum cell size at each target complexity */
+  addPythonOption("ADAP_HMAXS");
+  /*!\brief ADAP_HMINS \n DESCRIPTION: Minimum cell size at each target complexity */
+  addPythonOption("ADAP_HMINS");
+  /*!\brief ADAP_HGRAD \n DESCRIPTION: Size gradation smoothing parameter */
+  addPythonOption("ADAP_HGRAD");
+  /*!\brief ADAP_HAUSD \n DESCRIPTION: Hausdorff distance parameter for surface remeshing */
+  addPythonOption("ADAP_HAUSD");
+  /*!\brief ADAP_ANGLE \n DESCRIPTION: Sharp angle detection parameter for surface remeshing */
+  addPythonOption("ADAP_ANGLE");
+
   /* END_CONFIG_OPTIONS */
 
 }
@@ -5800,6 +5849,36 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("BOUNDED_SCALAR discretization can only be used for incompressible problems.", CURRENT_FUNCTION);
   }
 
+  /*--- Checks for mesh adaptation ---*/
+  if (Compute_Metric) {
+    /*--- Check that config is valid for requested sensor ---*/
+    for (auto iSensor = 0; iSensor < nMetric_Sensor; iSensor++) {
+      /*--- TODO: If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
+      /*--- For now, goal-oriented adaptation is unsupported ---*/
+      if (Metric_Sensor[iSensor] == METRIC_SENSOR::GOAL) {
+        SU2_MPI::Error("Adaptation sensor GOAL not yet supported.", CURRENT_FUNCTION);
+      }
+
+      if (Kind_Solver == MAIN_SOLVER::NEMO_EULER || Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) {
+          if (Metric_Sensor[iSensor] == METRIC_SENSOR::DENSITY || Metric_Sensor[iSensor] == METRIC_SENSOR::TOTAL_PRESSURE)
+            SU2_MPI::Error(string("Adaptation sensor ") + GetMetric_SensorString(iSensor) + string(" not available for NEMO problems."), CURRENT_FUNCTION);
+        }
+        if (Kind_Solver != MAIN_SOLVER::NEMO_EULER && Kind_Solver != MAIN_SOLVER::NEMO_NAVIER_STOKES) {
+          if (Metric_Sensor[iSensor] == METRIC_SENSOR::TEMPERATURE_VE || Metric_Sensor[iSensor] == METRIC_SENSOR::ENERGY_VE)
+            SU2_MPI::Error(string("Adaptation sensor ") + GetMetric_SensorString(iSensor) + string(" not available for non-NEMO problems."), CURRENT_FUNCTION);
+        }
+        if (Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) {
+          if (Metric_Sensor[iSensor] == METRIC_SENSOR::MACH)
+            SU2_MPI::Error(string("Adaptation sensor ") + GetMetric_SensorString(iSensor) + string(" not available for INC problems."), CURRENT_FUNCTION);
+        }
+    }
+
+    /*--- Only GG Hessians for now ---*/
+    if (Kind_Hessian_Method != GREEN_GAUSS) {
+      SU2_MPI::Error("NUM_METHOD_HESS must be GREEN_GAUSS.", CURRENT_FUNCTION);
+    }
+  }
+
 }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
@@ -7999,6 +8078,30 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     if (GetKind_ActDisk() == BLADE_ELEMENT) {
       cout << endl << "Actuator disk with blade element momentum (BEM) method." << endl;
       cout << "Actuator disk BEM method propeller data read from file: " << GetBEM_prop_filename() << endl;
+    }
+  }
+
+  if (val_software == SU2_COMPONENT::SU2_CFD || val_software == SU2_COMPONENT::SU2_SOL) {
+    if (Compute_Metric) {
+      cout << endl <<"---------------- Mesh Adaptation Information ( Zone "  << iZone << " ) -----------------" << endl;
+      cout << "Adaptation sensor(s): ";
+      for (auto iSensor = 0; iSensor < nMetric_Sensor; iSensor++) {
+        cout << GetMetric_SensorString(iSensor);
+        if (iSensor < nMetric_Sensor - 1 ) cout << ", ";
+      }
+      cout << endl;
+      switch (Kind_Hessian_Method) {
+        case GREEN_GAUSS: cout << "Hessian for adaptive metric: Green-Gauss." << endl; break;
+      }
+      if (Normalize_Metric) {
+        cout << "Target complexity: " << Metric_Complexity << endl;
+        cout << "Lp norm: " << Metric_Norm << endl;
+        cout << "Min. edge length: " << Metric_Hmin << endl;
+        cout << "Max. edge length: " << Metric_Hmax << endl;
+      }
+      else {
+        cout << "Output unnormalized metric field." << endl;
+      }
     }
   }
 }

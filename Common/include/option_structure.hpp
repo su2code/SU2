@@ -2673,6 +2673,8 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_PRIM_1 ,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 ,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_IMPLICIT   ,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+  PERIODIC_GRAD_ADAPT ,  /*!< \brief Gradient vectors for anisotropic sizing metric (periodic only). */
+  PERIODIC_HESSIAN    ,  /*!< \brief Hessian tensors for anisotropic sizing metric (periodic only). */
 };
 
 /*!
@@ -2704,6 +2706,8 @@ enum class MPI_QUANTITIES {
   MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
+  GRADIENT_ADAPT       ,  /*!< \brief Gradient vectors for anisotropic sizing metric tensor. */
+  HESSIAN              ,  /*!< \brief Hessian tensors for anisotropic sizing metric tensor. */
 };
 
 /*!
@@ -2847,6 +2851,32 @@ static const MapType<std::string, ENUM_SOBOLEV_MODUS> Sobolev_Modus_Map = {
   MakePair("PARAM_LEVEL_COMPLETE", ENUM_SOBOLEV_MODUS::PARAM_LEVEL_COMPLETE)
   MakePair("MESH_LEVEL",           ENUM_SOBOLEV_MODUS::MESH_LEVEL)
   MakePair("ONLY_GRADIENT",        ENUM_SOBOLEV_MODUS::ONLY_GRAD)
+};
+
+/*!
+ * \brief Types of sensors for anisotropic metric
+ */
+enum class METRIC_SENSOR {
+  DENSITY,         /*!< \brief Density feature-based metric. */
+  MACH,            /*!< \brief Mach feature-based metric. */
+  PRESSURE,        /*!< \brief Pressure feature-based metric. */
+  TOTAL_PRESSURE,  /*!< \brief Total pressure feature-based metric. */
+  TEMPERATURE,     /*!< \brief Temperature feature-based metric. */
+  TEMPERATURE_VE,  /*!< \brief Vibrational/electronic temperature feature-based metric. */
+  ENERGY,          /*!< \brief Energy feature-based metric. */
+  ENERGY_VE,       /*!< \brief Vibrational/electronic energy feature-based metric. */
+  GOAL,            /*!< \brief Goal-oriented metric. */
+};
+static const MapType<std::string, METRIC_SENSOR> Metric_Sensor_Map = {
+  MakePair("DENSITY", METRIC_SENSOR::DENSITY)
+  MakePair("MACH", METRIC_SENSOR::MACH)
+  MakePair("PRESSURE", METRIC_SENSOR::PRESSURE)
+  MakePair("TOTAL_PRESSURE", METRIC_SENSOR::TOTAL_PRESSURE)
+  MakePair("TEMPERATURE", METRIC_SENSOR::TEMPERATURE)
+  MakePair("TEMPERATURE_VE", METRIC_SENSOR::TEMPERATURE_VE)
+  MakePair("ENERGY", METRIC_SENSOR::ENERGY)
+  MakePair("ENERGY_VE", METRIC_SENSOR::ENERGY_VE)
+  MakePair("GOAL", METRIC_SENSOR::GOAL)
 };
 
 /*!

@@ -53,6 +53,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Define geometry constants in the solver structure ---*/
 
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
 
   /*--- Single grid simulation ---*/
 
@@ -301,7 +302,7 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
     /*--- Roughness heights. ---*/
     numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
   };
-  
+
   /*--- Now instantiate the generic non-conservative implementation with the functor above. ---*/
   Viscous_Residual_NonCons(iEdge, geometry, solver_container, numerics, config, SolverSpecificNumerics);
 

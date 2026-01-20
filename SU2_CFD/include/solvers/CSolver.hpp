@@ -85,7 +85,8 @@ protected:
   nSecondaryVar,                 /*!< \brief Number of primitive variables of the problem. */
   nSecondaryVarGrad,             /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nVarGrad,                      /*!< \brief Number of variables for deallocating the LS Cvector. */
-  nDim;                          /*!< \brief Number of dimensions of the problem. */
+  nDim,                          /*!< \brief Number of dimensions of the problem. */
+  nSymMat;                       /*!< \brief Number of symmetric matrix componenents for Hessian and metric tensor. */
   unsigned long nPoint;          /*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain;    /*!< \brief Number of points of the computational grid. */
   su2double Max_Delta_Time, /*!< \brief Maximum value of the delta time for all the control volumes. */
@@ -579,6 +580,22 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
+
+   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) { }
+
+  /*!
+   * \brief Compute the Green-Gauss Hessian of the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] idxVel - Index to velocity, -1 if no velocity is present in the solver.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetHessian_GG(CGeometry *geometry, const CConfig *config, short idxVel, const unsigned short Kind_Solver);
 
   /*!
    * \brief Compute the projection of a variable for MUSCL reconstruction.
@@ -4361,24 +4378,42 @@ public:
     END_SU2_OMP_FOR
   }
 
-inline void CustomSourceResidual(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  inline void CustomSourceResidual(CGeometry *geometry, CSolver **solver_container,
+                                  CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  AD::StartNoSharedReading();
+    AD::StartNoSharedReading();
 
-  SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain,2*omp_get_max_threads()))
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-    /*--- Get control volume size. ---*/
-    su2double Volume = geometry->nodes->GetVolume(iPoint);
-    /*--- Compute the residual for this control volume and subtract. ---*/
-    for (auto iVar = 0ul; iVar < nVar; iVar++) {
-      LinSysRes(iPoint,iVar) -= base_nodes->GetUserDefinedSource()(iPoint, iVar) * Volume;
+    SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain,2*omp_get_max_threads()))
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+      /*--- Get control volume size. ---*/
+      su2double Volume = geometry->nodes->GetVolume(iPoint);
+      /*--- Compute the residual for this control volume and subtract. ---*/
+      for (auto iVar = 0ul; iVar < nVar; iVar++) {
+        LinSysRes(iPoint,iVar) -= base_nodes->GetUserDefinedSource()(iPoint, iVar) * Volume;
+      }
     }
-  }
-  END_SU2_OMP_FOR
+    END_SU2_OMP_FOR
 
-  AD::EndNoSharedReading();
-}
+    AD::EndNoSharedReading();
+  }
+
+  /*!
+   * \brief Compute the metric tensor field.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Add contribution to the metric field.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iSensor - Index of the sensor to work on.
+   */
+  void AddMetrics(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                  const unsigned short iSensor);
 
 protected:
   /*!

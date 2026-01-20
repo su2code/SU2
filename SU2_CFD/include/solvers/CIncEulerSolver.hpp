@@ -87,6 +87,50 @@ protected:
   virtual unsigned long SetPrimitive_Variables(CSolver **solver_container, const CConfig *config);
 
   /*!
+   * \brief Store the primitive variables needed for adaptation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) final {
+    const auto nSensor = config->GetnMetric_Sensor();
+    for (auto iSensor = 0; iSensor < nSensor; iSensor++) {
+      switch (config->GetMetric_Sensor(iSensor)) {
+        case METRIC_SENSOR::DENSITY:
+          for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+            const su2double prim_var = nodes->GetDensity(iPoint);
+            nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
+          }
+          break;
+        case METRIC_SENSOR::TOTAL_PRESSURE:
+          for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+            const su2double prim_var = nodes->GetPressure(iPoint) + 0.5*nodes->GetDensity(iPoint)*nodes->GetVelocity2(iPoint);
+            nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
+          }
+          break;
+        case METRIC_SENSOR::TEMPERATURE:
+          for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+            const su2double prim_var = nodes->GetTemperature(iPoint);
+            nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
+          }
+          break;
+        case METRIC_SENSOR::ENERGY:
+          for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+            const su2double prim_var = nodes->GetEnergy(iPoint);
+            nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
+          }
+          break;
+        case METRIC_SENSOR::PRESSURE:
+        default:
+          for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+            const su2double prim_var = nodes->GetPressure(iPoint);
+            nodes->SetPrimitive_Adapt(iPoint, iSensor, prim_var);
+          }
+          break;
+      }
+    }
+  }
+
+  /*!
    * \brief Update the Beta parameter for the incompressible preconditioner.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
