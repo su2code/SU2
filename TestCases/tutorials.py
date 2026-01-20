@@ -345,6 +345,34 @@ def main():
     tutorial_design_multiobj.no_restart = True
     test_list.append(tutorial_design_multiobj)
 
+    # custom source: turbulent flamespeed closure (Zimont model) for PSI testcase
+    pywrapper_psi = TestCase('psi_adiabatic')
+    pywrapper_psi.cfg_dir = "../Tutorials/multiphysics/TFC_python/adiabatic"
+    pywrapper_psi.cfg_file = "psi.cfg"
+    pywrapper_psi.test_iter = 0
+    pywrapper_psi.test_vals = [-2.682653, -0.994981, -2.221252, -2.401462, 3.597559, -3.369865]
+    pywrapper_psi.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    test_list.append(pywrapper_psi)
+
+    # custom source: including source term for enthalpy equations 
+    pywrapper_psi_hl = TestCase('psi_enthalpy')
+    pywrapper_psi_hl.cfg_dir = "../Tutorials/multiphysics/TFC_python/enthalpy"
+    pywrapper_psi_hl.cfg_file = "psi.cfg"
+    pywrapper_psi_hl.test_iter = 0
+    pywrapper_psi_hl.test_vals = [-6.211126, -4.025898, -5.405635, -3.743101, -1.314498, -3.948690]
+    pywrapper_psi_hl.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    test_list.append(pywrapper_psi_hl)
+
+    # custom source: including custom BC and source term 
+    pywrapper_psi_quench = TestCase('psi_quench')
+    pywrapper_psi_quench.cfg_dir = "../Tutorials/multiphysics/TFC_python/quench"
+    pywrapper_psi_quench.cfg_file = "psi.cfg"
+    pywrapper_psi_quench.test_iter = 0
+    pywrapper_psi_quench.test_vals = [-7.370108, -6.688806, -7.839519, -4.086479, -1.223314, -4.022876]
+    pywrapper_psi_quench.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    test_list.append(pywrapper_psi_quench)
+
+
     ######################################
     ### RUN TESTS                      ###
     ######################################
