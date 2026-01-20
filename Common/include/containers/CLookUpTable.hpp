@@ -35,6 +35,7 @@
 #include "../../Common/include/option_structure.hpp"
 #include "CFileReaderLUT.hpp"
 #include "CTrapezoidalMap.hpp"
+#include "CTrapezoidalMapFAST.hpp"
 
 /*!
  * \brief Look up table.
@@ -100,9 +101,15 @@ class CLookUpTable {
   su2vector<su2vector<unsigned long>> hull;
 
   /*! \brief
-   * Trapezoidal map objects for the table levels.
+   * Trapezoidal map objects for the table levels (original SU2 implementation).
    */
   su2vector<CTrapezoidalMap> trap_map_x_y;
+
+  /*! \brief
+   * Memory-efficient trapezoidal map objects for LUT_FAST.
+   */
+  su2vector<CTrapezoidalMapFAST> trap_map_x_y_FAST;
+  bool use_fast_trap_map_{false};
 
   /*! \brief
    * Vector of all the weight factors for the interpolation.
@@ -318,6 +325,23 @@ class CLookUpTable {
 
  public:
   CLookUpTable(const std::string& file_name_lut, std::string name_CV1_in, std::string name_CV2_in);
+
+  /*!
+   * \brief Build the original SU2 trapezoidal map (DAG-based).
+   * Use EnableFastTrapMap() for large tables instead.
+   */
+  void BuildOriginalTrapMap();
+
+  /*!
+   * \brief Enable Memory-efficient trapezoidal map (LUT_FAST mode).
+   * This builds band-based maps with O(n) memory instead of the original O(n log n) DAG.
+   */
+  void EnableFastTrapMap();
+
+  /*!
+   * \brief Check if fast trapezoidal map is enabled.
+   */
+  inline bool UsingFastTrapMap() const { return use_fast_trap_map_; }
 
   /*!
    * \brief Print information to screen.
