@@ -294,6 +294,13 @@ def main():
     ramp.test_vals_aarch64 = [-13.648406, -8.014579, -0.076277, 0.054839]
     test_list.append(ramp)
 
+    ramp_msw = TestCase('ramp_msw')
+    ramp_msw.cfg_dir = "euler/ramp"
+    ramp_msw.cfg_file = "inv_ramp_msw.cfg"
+    ramp_msw.test_iter = 100
+    ramp_msw.test_vals = [-12.081674, -6.281367, -0.077904, 0.054539]
+    test_list.append(ramp_msw)
+
     ##########################
     ###  Compressible N-S  ###
     ##########################
@@ -766,7 +773,7 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
-    turbmod_sa_neg_rae2822.test_vals         = [-1.345531, 1.448387, 1.208638, -0.846585, 1.271362, 0.497475, 0.000000]
+    turbmod_sa_neg_rae2822.test_vals         = [-1.345454, 1.448536, 1.208684, -0.846029, 1.257859, 0.492608, 0.000000]
     turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.345593, 1.448310, 1.208721, -0.846597, 1.248410, 0.489117, 0.000000]
     test_list.append(turbmod_sa_neg_rae2822)
 
@@ -1544,16 +1551,16 @@ def main():
     test_list.append(pywrapper_zimont)
 
 
-    # Heat solver unsteady with source 
-    pywrapper_Unst_Heat_Source = TestCase('pywrapper_Unst_Heat_Source') 
-    pywrapper_Unst_Heat_Source.cfg_dir = "py_wrapper/custom_heat_source" 
-    pywrapper_Unst_Heat_Source.cfg_file = "run.py" 
-    pywrapper_Unst_Heat_Source.test_iter = 10 
-    pywrapper_Unst_Heat_Source.unsteady = True 
+    # Heat solver unsteady with source
+    pywrapper_Unst_Heat_Source = TestCase('pywrapper_Unst_Heat_Source')
+    pywrapper_Unst_Heat_Source.cfg_dir = "py_wrapper/custom_heat_source"
+    pywrapper_Unst_Heat_Source.cfg_file = "run.py"
+    pywrapper_Unst_Heat_Source.test_iter = 10
+    pywrapper_Unst_Heat_Source.unsteady = True
     pywrapper_Unst_Heat_Source.test_vals = [-5.235402, 300.010000, 300.000000]
     pywrapper_Unst_Heat_Source.command = TestCase.Command("mpirun -n 2", "python", "run.py")
     test_list.append(pywrapper_Unst_Heat_Source)
-    
+
     ##############################################
     ### Method of Manufactured Solutions (MMS) ###
     ##############################################
