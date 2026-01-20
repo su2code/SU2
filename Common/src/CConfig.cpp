@@ -3562,6 +3562,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     SU2_MPI::Error("CoolProp can not be used with non-dimensionalization.", CURRENT_FUNCTION);
   }
 
+  /*--- Check if CONSTANT_DENSITY model is used with INIT_OPTION_INC=OPERATING_PRESSURE. ---*/
+  if (Kind_FluidModel == CONSTANT_DENSITY && Kind_InitOption_Inc == OPERATING_PRESSURE) {
+    SU2_MPI::Error("CONSTANT_DENSITY fluid model can only be used with INIT_OPTION_INC=DENSITY_INIT.",
+                   CURRENT_FUNCTION);
+  }
+
   /*--- STL_BINARY output not implemented yet, but already a value in option_structure.hpp---*/
   for (unsigned short iVolumeFile = 0; iVolumeFile < nVolumeOutputFiles; iVolumeFile++) {
     if (VolumeOutputFiles[iVolumeFile] == OUTPUT_TYPE::STL_BINARY){
