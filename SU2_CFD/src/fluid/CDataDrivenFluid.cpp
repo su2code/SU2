@@ -64,7 +64,12 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
       if (use_MLP_derivatives && (rank == MASTER_NODE) && display)
         cout << "Physics-informed approach currently only works with MLP-based tabulation." << endl;
 
-      lookup_table = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], varname_rho, varname_e);
+      lookup_table_rhoe = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], varname_rho, varname_e);
+      lookup_table_PT = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], "p", "T");
+      lookup_table_Prho = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], "p", varname_rho);
+      lookup_table_rhoT = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], varname_rho, "T");
+      lookup_table_Ps = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], "p", "s");
+      lookup_table_hs = new CLookUpTable(datadriven_fluid_options.datadriven_filenames[0], "Enthalpy", "s");
       break;
     default:
       break;
@@ -77,9 +82,11 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
 
   /*--- Preprocessing of inputs and outputs for the interpolation method. ---*/
   MapInputs_to_Outputs();
-
+  
   /*--- Compute approximate ideal gas properties ---*/
   ComputeIdealGasQuantities();
+
+
 }
 
 CDataDrivenFluid::~CDataDrivenFluid() {
@@ -91,7 +98,12 @@ CDataDrivenFluid::~CDataDrivenFluid() {
 #endif
       break;
     case ENUM_DATADRIVEN_METHOD::LUT:
-      delete lookup_table;
+      delete lookup_table_rhoe;
+      delete lookup_table_PT;
+      delete lookup_table_Prho;
+      delete lookup_table_rhoT;
+      delete lookup_table_Ps;
+      delete lookup_table_hs;
       break;
     default:
       break;
@@ -108,6 +120,7 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
   /*--- Required outputs for the interpolation method are entropy and its partial derivatives with respect to energy and
    * density. ---*/
   size_t n_outputs, idx_s,idx_dsde_rho = 1, idx_dsdrho_e = 2, idx_d2sde2 = 3, idx_d2sdedrho = 4, idx_d2sdrho2 = 5;
+  if (Kind_DataDriven_Method==ENUM_DATADRIVEN_METHOD::MLP) {
   if (use_MLP_derivatives) {
     n_outputs = 1;
     idx_s = 0;
@@ -150,31 +163,53 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
     output_names_rhoe[idx_d2sdrho2] = "d2sdrho2";
     outputs_rhoe[idx_d2sdrho2] = &d2sdrho2;
   }
-  
-
-  /*--- Further preprocessing of input and output variables. ---*/
-  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
-/*--- Map MLP inputs to outputs. ---*/
-#ifdef USE_MLPCPP
-    iomap_rhoe = new MLPToolbox::CIOMap(input_names_rhoe, output_names_rhoe);
-    lookup_mlp->PairVariableswithMLPs(*iomap_rhoe);
-    MLP_inputs.resize(2);
-#endif
-  } else {
-    /*--- Retrieve column indices of LUT output variables ---*/
-    LUT_idx_s = lookup_table->GetIndexOfVar(output_names_rhoe[idx_s]);
-    LUT_idx_dsdrho_e = lookup_table->GetIndexOfVar(output_names_rhoe[idx_dsdrho_e]);
-    LUT_idx_dsde_rho = lookup_table->GetIndexOfVar(output_names_rhoe[idx_dsde_rho]);
-    LUT_idx_d2sde2 = lookup_table->GetIndexOfVar(output_names_rhoe[idx_d2sde2]);
-    LUT_idx_d2sdedrho= lookup_table->GetIndexOfVar(output_names_rhoe[idx_d2sdedrho]);
-    LUT_idx_d2sdrho2 = lookup_table->GetIndexOfVar(output_names_rhoe[idx_d2sdrho2]);
-
-    LUT_lookup_indices.push_back(LUT_idx_s);
-    LUT_lookup_indices.push_back(LUT_idx_dsde_rho);
-    LUT_lookup_indices.push_back(LUT_idx_dsdrho_e);
-    LUT_lookup_indices.push_back(LUT_idx_d2sde2);
-    LUT_lookup_indices.push_back(LUT_idx_d2sdedrho);
-    LUT_lookup_indices.push_back(LUT_idx_d2sdrho2);
+  #ifdef USE_MLPCPP
+      iomap_rhoe = new MLPToolbox::CIOMap(input_names_rhoe, output_names_rhoe);
+      lookup_mlp->PairVariableswithMLPs(*iomap_rhoe);
+      MLP_inputs.resize(2);
+  #endif
+} else {
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("Density"));
+    outputs_LUT.push_back(&Density);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("Energy"));
+    outputs_LUT.push_back(&StaticEnergy);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("T"));
+    outputs_LUT.push_back(&Temperature);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("p"));
+    outputs_LUT.push_back(&Pressure);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("s"));
+    outputs_LUT.push_back(&Entropy);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("c2"));
+    outputs_LUT.push_back(&SoundSpeed2);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("dTdrho_e"));
+    outputs_LUT.push_back(&dTdrho_e);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("dTde_rho"));
+    outputs_LUT.push_back(&dTde_rho);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("dpdrho_e"));
+    outputs_LUT.push_back(&dPdrho_e);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("dpde_rho"));
+    outputs_LUT.push_back(&dPde_rho);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("dhdrho_e"));
+    outputs_LUT.push_back(&dhdrho_e);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("dhde_rho"));
+    outputs_LUT.push_back(&dhde_rho);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("dhdp_rho"));
+    outputs_LUT.push_back(&dhdP_rho);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("dsdp_rho"));
+    outputs_LUT.push_back(&dsdP_rho);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("dsdrho_p"));
+    outputs_LUT.push_back(&dsdrho_P);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("cp"));
+    outputs_LUT.push_back(&Cp);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("cv"));
+    outputs_LUT.push_back(&Cv);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("Enthalpy"));
+    outputs_LUT.push_back(&Enthalpy);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("dsdrho_e"));
+    outputs_LUT.push_back(&dsdrho_e);
+    LUT_lookup_indices.push_back(lookup_table_rhoe->GetIndexOfVar("dsde_rho"));
+    outputs_LUT.push_back(&dsde_rho);
+    
   }
 }
 
@@ -193,42 +228,42 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   StaticEnergy = max(min(e, e_max), e_min);
 
   Evaluate_Dataset(Density, StaticEnergy);
+  if (Kind_DataDriven_Method==ENUM_DATADRIVEN_METHOD::MLP) {
+    const su2double rho_2 = Density * Density;
+    /*--- Compute primary flow variables. ---*/
+    Temperature = pow(dsde_rho, -1);
+    Pressure = -rho_2 * Temperature * dsdrho_e;
+    Enthalpy = StaticEnergy + Pressure / Density;
 
-  const su2double rho_2 = Density * Density;
-  /*--- Compute primary flow variables. ---*/
-  Temperature = pow(dsde_rho, -1);
-  Pressure = -rho_2 * Temperature * dsdrho_e;
-  Enthalpy = StaticEnergy + Pressure / Density;
+    /*--- Compute secondary flow variables ---*/
+    dTde_rho = -Temperature * Temperature * d2sde2;
+    dTdrho_e = -Temperature * Temperature * d2sdedrho;
 
-  /*--- Compute secondary flow variables ---*/
-  dTde_rho = -Temperature * Temperature * d2sde2;
-  dTdrho_e = -Temperature * Temperature * d2sdedrho;
+    /*--- Compute speed of sound. ---*/
+    const su2double blue_term = (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
+    const su2double green_term = (-Temperature * d2sde2 * dsdrho_e + d2sdedrho);
 
-  /*--- Compute speed of sound. ---*/
-  const su2double blue_term = (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
-  const su2double green_term = (-Temperature * d2sde2 * dsdrho_e + d2sdedrho);
+    SoundSpeed2 = -Density * Temperature * (blue_term - Density * green_term * (dsdrho_e / dsde_rho));
 
-  SoundSpeed2 = -Density * Temperature * (blue_term - Density * green_term * (dsdrho_e / dsde_rho));
+    dPde_rho = -rho_2 * Temperature * (-Temperature * (d2sde2 * dsdrho_e) + d2sdedrho);
+    dPdrho_e = - Density * Temperature * (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
 
-  dPde_rho = -rho_2 * Temperature * (-Temperature * (d2sde2 * dsdrho_e) + d2sdedrho);
-  dPdrho_e = - Density * Temperature * (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
+    /*--- Compute enthalpy and entropy derivatives required for Giles boundary conditions. ---*/
+    dhdrho_e = -Pressure * (1 / rho_2) + dPdrho_e / Density;
+    dhde_rho = 1 + dPde_rho / Density;
 
-  /*--- Compute enthalpy and entropy derivatives required for Giles boundary conditions. ---*/
-  dhdrho_e = -Pressure * (1 / rho_2) + dPdrho_e / Density;
-  dhde_rho = 1 + dPde_rho / Density;
+    /*--- Compute specific heat at constant volume and specific heat at constant pressure. ---*/
+    Cv = 1 / dTde_rho;
+    dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
+    dhdP_rho = dhde_rho * (1 / dPde_rho);
+    dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
+    dsdP_rho = dsde_rho / dPde_rho;
 
-  /*--- Compute specific heat at constant volume and specific heat at constant pressure. ---*/
-  Cv = 1 / dTde_rho;
-  dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
-  dhdP_rho = dhde_rho * (1 / dPde_rho);
-  dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
-  dsdP_rho = dsde_rho / dPde_rho;
-
-  const su2double drhode_p = -dPde_rho/dPdrho_e;
-  const su2double dTde_p = dTde_rho + dTdrho_e*drhode_p;
-  const su2double dhde_p = dhde_rho + drhode_p*dhdrho_e;
-  Cp = dhde_p / dTde_p;
-
+    const su2double drhode_p = -dPde_rho/dPdrho_e;
+    const su2double dTde_p = dTde_rho + dTdrho_e*drhode_p;
+    const su2double dhde_p = dhde_rho + drhode_p*dhdrho_e;
+    Cp = dhde_p / dTde_p;
+  } 
   AD::SetPreaccOut(Temperature);
   AD::SetPreaccOut(SoundSpeed2);
   AD::SetPreaccOut(dPde_rho);
@@ -244,30 +279,42 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
 
+  if (Kind_DataDriven_Method==ENUM_DATADRIVEN_METHOD::MLP){
   /*--- Approximate density and static energy with ideal gas law. ---*/
   rho_start = P / (R_idealgas * T);
   e_start = Cv_idealgas * T;
   
   /*--- Run 2D Newton solver for pressure and temperature ---*/
   Run_Newton_Solver(P, T, Pressure, Temperature, dPdrho_e, dPde_rho, dTdrho_e, dTde_rho);
+  } else {
+    lookup_table_PT->LookUp_XY(LUT_lookup_indices, outputs_LUT, P, T);
+    SetTDState_rhoe(Density, StaticEnergy);
+  }
 }
 
 void CDataDrivenFluid::SetTDState_Prho(su2double P, su2double rho) {
   /*--- Computing static energy according to pressure and density. ---*/
+
   SetEnergy_Prho(P, rho);
 }
 
 void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
   /*--- Run 1D Newton solver for pressure at constant density. ---*/
+  if (Kind_DataDriven_Method==ENUM_DATADRIVEN_METHOD::MLP){
   Density = rho;
 
   /*--- Approximate static energy through ideal gas law. ---*/
   StaticEnergy = Cv_idealgas * (P / (R_idealgas * rho));
 
   Run_Newton_Solver(P, Pressure, StaticEnergy, dPde_rho);
+  } else {
+    lookup_table_Prho->LookUp_XY(LUT_lookup_indices, outputs_LUT, P, rho);
+    SetTDState_rhoe(Density, StaticEnergy);
+  }
 }
 
 void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
+  if (Kind_DataDriven_Method==ENUM_DATADRIVEN_METHOD::MLP) {
   /*--- Run 1D Newton solver for temperature at constant density. ---*/
   Density = rho;
 
@@ -275,32 +322,47 @@ void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
   StaticEnergy = Cv_idealgas * T;
 
   Run_Newton_Solver(T, Temperature, StaticEnergy, dTde_rho);
+  } else {
+    lookup_table_rhoT->LookUp_XY(LUT_lookup_indices, outputs_LUT, rho, T);
+    SetTDState_rhoe(Density, StaticEnergy);
+  }
 }
 
 void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
+  if (Kind_DataDriven_Method==ENUM_DATADRIVEN_METHOD::MLP) {
   /*--- Run 2D Newton solver for enthalpy and entropy. ---*/
 
   e_start = StaticEnergy;
   rho_start = Density;
   Run_Newton_Solver(h, s, Enthalpy, Entropy, dhdrho_e, dhde_rho, dsdrho_e, dsde_rho);
+  } else {
+    lookup_table_hs->LookUp_XY(LUT_lookup_indices, outputs_LUT, h, s);
+    SetTDState_rhoe(Density, StaticEnergy);
+  }
 }
 
 void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
+  if (Kind_DataDriven_Method==ENUM_DATADRIVEN_METHOD::MLP) {
   /*--- Run 2D Newton solver for pressure and entropy ---*/
 
   e_start = StaticEnergy;
   rho_start = Density;
   Run_Newton_Solver(P, s, Pressure, Entropy, dPdrho_e, dPde_rho, dsdrho_e, dsde_rho);
+  } else {
+    lookup_table_Ps->LookUp_XY(LUT_lookup_indices, outputs_LUT, P, s);
+    SetTDState_rhoe(Density, StaticEnergy);
+  }
 }
 
 
 void CDataDrivenFluid::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
   SetTDState_Prho(P, rho);
-
+  if (Kind_DataDriven_Method==ENUM_DATADRIVEN_METHOD::MLP) {
   dhdrho_P = dhdrho_e - dhde_rho * (1 / dPde_rho) * dPdrho_e;
   dhdP_rho = dhde_rho * (1 / dPde_rho);
   dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
   dsdP_rho = dsde_rho / dPde_rho;
+  }
 }
 
 
@@ -321,7 +383,7 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
 }
 
 unsigned long CDataDrivenFluid::Predict_LUT(su2double rho, su2double e) {
-  bool inside = lookup_table->LookUp_XY(LUT_lookup_indices, outputs_rhoe, rho, e);
+  bool inside = lookup_table_rhoe->LookUp_XY(LUT_lookup_indices, outputs_LUT, rho, e);
   if (inside)
     return 0;
   return 1;
@@ -433,12 +495,12 @@ void CDataDrivenFluid::ComputeIdealGasQuantities() {
   switch (Kind_DataDriven_Method)
   {
   case ENUM_DATADRIVEN_METHOD::LUT:
-    rho_min = *lookup_table->GetTableLimitsX().first;
-    e_min = *lookup_table->GetTableLimitsY().first;
-    rho_max = *lookup_table->GetTableLimitsX().second;
-    e_max = *lookup_table->GetTableLimitsY().second;
-    rho_average = 0.5*(*lookup_table->GetTableLimitsX().first + *lookup_table->GetTableLimitsX().second);
-    e_average = 0.5*(*lookup_table->GetTableLimitsY().first + *lookup_table->GetTableLimitsY().second);
+    rho_min = *lookup_table_rhoe->GetTableLimitsX().first;
+    e_min = *lookup_table_rhoe->GetTableLimitsY().first;
+    rho_max = *lookup_table_rhoe->GetTableLimitsX().second;
+    e_max = *lookup_table_rhoe->GetTableLimitsY().second;
+    rho_average = 0.5*(*lookup_table_rhoe->GetTableLimitsX().first + *lookup_table_rhoe->GetTableLimitsX().second);
+    e_average = 0.5*(*lookup_table_rhoe->GetTableLimitsY().first + *lookup_table_rhoe->GetTableLimitsY().second);
     break;
   case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP

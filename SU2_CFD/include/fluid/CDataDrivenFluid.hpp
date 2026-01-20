@@ -93,7 +93,7 @@ class CDataDrivenFluid final : public CFluidModel {
       output_names_rhoe; /*!< \brief Output variable names listed in the data-driven method input file name. */
 
   vector<su2double*> outputs_rhoe; /*!< \brief Pointers to output variables. */
-
+  vector<su2double*> outputs_LUT;
   vector<vector<su2double*>> dsdrhoe;           /*!< \brief Entropy Jacobian terms. */
   vector<vector<vector<su2double*>>> d2sdrhoe2; /*!< \brief Entropy Hessian terms. */
 
@@ -106,7 +106,12 @@ class CDataDrivenFluid final : public CFluidModel {
 #endif
   vector<su2double> MLP_inputs; /*!< \brief Inputs for the multi-layer perceptron look-up operation. */
 
-  CLookUpTable* lookup_table; /*!< \brief Look-up table regression object. */
+  CLookUpTable* lookup_table_rhoe,
+              * lookup_table_PT,
+              * lookup_table_Prho,
+              * lookup_table_rhoT, 
+              * lookup_table_Ps,
+              * lookup_table_hs;
   unsigned long LUT_idx_s,
                 LUT_idx_dsde_rho,
                 LUT_idx_dsdrho_e,
