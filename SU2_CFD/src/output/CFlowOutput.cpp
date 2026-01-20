@@ -1793,38 +1793,40 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
 
 void CFlowOutput::SetAerodynamicCoefficients(const CConfig* config, const CSolver* flow_solver){
 
-  SetHistoryOutputValue("REFERENCE_FORCE", flow_solver->GetAeroCoeffsReferenceForce());
-  SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
-  SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
+  bool validRefArea = (config->GetRefArea() > 0.0);
+
+  SetHistoryOutputValue("REFERENCE_FORCE", validRefArea ? flow_solver->GetAeroCoeffsReferenceForce() : 0.0);
+  SetHistoryOutputValue("DRAG",       validRefArea ? flow_solver->GetTotal_CD() : 0.0);
+  SetHistoryOutputValue("LIFT",       validRefArea ? flow_solver->GetTotal_CL() : 0.0);
   if (nDim == 3)
-    SetHistoryOutputValue("SIDEFORCE", flow_solver->GetTotal_CSF());
+    SetHistoryOutputValue("SIDEFORCE", validRefArea ? flow_solver->GetTotal_CSF() : 0.0);
   if (nDim == 3){
-    SetHistoryOutputValue("MOMENT_X", flow_solver->GetTotal_CMx());
-    SetHistoryOutputValue("MOMENT_Y", flow_solver->GetTotal_CMy());
+    SetHistoryOutputValue("MOMENT_X", validRefArea ? flow_solver->GetTotal_CMx() : 0.0);
+    SetHistoryOutputValue("MOMENT_Y", validRefArea ? flow_solver->GetTotal_CMy() : 0.0);
   }
-  SetHistoryOutputValue("MOMENT_Z", flow_solver->GetTotal_CMz());
-  SetHistoryOutputValue("FORCE_X", flow_solver->GetTotal_CFx());
-  SetHistoryOutputValue("FORCE_Y", flow_solver->GetTotal_CFy());
+  SetHistoryOutputValue("MOMENT_Z",   validRefArea ? flow_solver->GetTotal_CMz() : 0.0);
+  SetHistoryOutputValue("FORCE_X",    validRefArea ? flow_solver->GetTotal_CFx() : 0.0);
+  SetHistoryOutputValue("FORCE_Y",    validRefArea ? flow_solver->GetTotal_CFy() : 0.0);
   if (nDim == 3)
-    SetHistoryOutputValue("FORCE_Z", flow_solver->GetTotal_CFz());
-  SetHistoryOutputValue("EFFICIENCY", flow_solver->GetTotal_CEff());
+    SetHistoryOutputValue("FORCE_Z",  validRefArea ? flow_solver->GetTotal_CFz() : 0.0);
+  SetHistoryOutputValue("EFFICIENCY", validRefArea ? flow_solver->GetTotal_CEff() : 0.0);
 
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    SetHistoryOutputPerSurfaceValue("DRAG_ON_SURFACE", flow_solver->GetSurface_CD(iMarker_Monitoring), iMarker_Monitoring);
-    SetHistoryOutputPerSurfaceValue("LIFT_ON_SURFACE", flow_solver->GetSurface_CL(iMarker_Monitoring), iMarker_Monitoring);
+    SetHistoryOutputPerSurfaceValue("DRAG_ON_SURFACE",       validRefArea ? flow_solver->GetSurface_CD(iMarker_Monitoring) : 0.0, iMarker_Monitoring);
+    SetHistoryOutputPerSurfaceValue("LIFT_ON_SURFACE",       validRefArea ? flow_solver->GetSurface_CL(iMarker_Monitoring) : 0.0, iMarker_Monitoring);
     if (nDim == 3)
-      SetHistoryOutputPerSurfaceValue("SIDEFORCE_ON_SURFACE", flow_solver->GetSurface_CSF(iMarker_Monitoring), iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("SIDEFORCE_ON_SURFACE", validRefArea ? flow_solver->GetSurface_CSF(iMarker_Monitoring) : 0.0, iMarker_Monitoring);
     if (nDim == 3){
-      SetHistoryOutputPerSurfaceValue("MOMENT-X_ON_SURFACE", flow_solver->GetSurface_CMx(iMarker_Monitoring), iMarker_Monitoring);
-      SetHistoryOutputPerSurfaceValue("MOMENT-Y_ON_SURFACE", flow_solver->GetSurface_CMy(iMarker_Monitoring), iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("MOMENT-X_ON_SURFACE",  validRefArea ? flow_solver->GetSurface_CMx(iMarker_Monitoring) : 0.0, iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("MOMENT-Y_ON_SURFACE",  validRefArea ? flow_solver->GetSurface_CMy(iMarker_Monitoring) : 0.0, iMarker_Monitoring);
     }
-    SetHistoryOutputPerSurfaceValue("MOMENT-Z_ON_SURFACE", flow_solver->GetSurface_CMz(iMarker_Monitoring), iMarker_Monitoring);
-    SetHistoryOutputPerSurfaceValue("FORCE-X_ON_SURFACE", flow_solver->GetSurface_CFx(iMarker_Monitoring), iMarker_Monitoring);
-    SetHistoryOutputPerSurfaceValue("FORCE-Y_ON_SURFACE", flow_solver->GetSurface_CFy(iMarker_Monitoring), iMarker_Monitoring);
+    SetHistoryOutputPerSurfaceValue("MOMENT-Z_ON_SURFACE",    validRefArea ? flow_solver->GetSurface_CMz(iMarker_Monitoring) : 0.0, iMarker_Monitoring);
+    SetHistoryOutputPerSurfaceValue("FORCE-X_ON_SURFACE",     validRefArea ? flow_solver->GetSurface_CFx(iMarker_Monitoring) : 0.0, iMarker_Monitoring);
+    SetHistoryOutputPerSurfaceValue("FORCE-Y_ON_SURFACE",     validRefArea ? flow_solver->GetSurface_CFy(iMarker_Monitoring) : 0.0, iMarker_Monitoring);
     if (nDim == 3)
-      SetHistoryOutputPerSurfaceValue("FORCE-Z_ON_SURFACE", flow_solver->GetSurface_CFz(iMarker_Monitoring), iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("FORCE-Z_ON_SURFACE",   validRefArea ? flow_solver->GetSurface_CFz(iMarker_Monitoring) : 0.0, iMarker_Monitoring);
 
-    SetHistoryOutputPerSurfaceValue("EFFICIENCY_ON_SURFACE", flow_solver->GetSurface_CEff(iMarker_Monitoring), iMarker_Monitoring);
+    SetHistoryOutputPerSurfaceValue("EFFICIENCY_ON_SURFACE",  validRefArea ? flow_solver->GetSurface_CEff(iMarker_Monitoring) : 0.0, iMarker_Monitoring);
     if (config->GetAeroelastic_Simulation()){
       SetHistoryOutputPerSurfaceValue("PITCH", config->GetAeroelastic_pitch(iMarker_Monitoring), iMarker_Monitoring);
       SetHistoryOutputPerSurfaceValue("PLUNGE", config->GetAeroelastic_plunge(iMarker_Monitoring), iMarker_Monitoring);
