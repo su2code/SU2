@@ -27,6 +27,7 @@
 
 
 #include "../../include/variables/CTurbVariable.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 
 CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
@@ -35,7 +36,45 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
     turb_index.resize(nPoint) = su2double(1.0);
     intermittency.resize(nPoint) = su2double(1.0);
 
+    DES_LengthScale.resize(nPoint) = su2double(0.0);
+    
+    Vortex_Tilting.resize(nPoint);
+
    }
+
+
+void CTurbVariable::SetVortex_Tilting(unsigned long iPoint, su2double **Strain,
+                                      const su2double* Vorticity, su2double LaminarViscosity) {
+
+  su2double Omega, StrainDotVort[3], numVecVort[3];
+  su2double numerator, trace0, trace1, denominator;
+
+  AD::StartPreacc();
+  AD::SetPreaccIn(Strain, nDim, nDim);
+  AD::SetPreaccIn(Vorticity, 3);
+  /*--- Eddy viscosity ---*/
+  AD::SetPreaccIn(muT(iPoint));
+  /*--- Laminar viscosity --- */
+  AD::SetPreaccIn(LaminarViscosity);
+
+  Omega = GeometryToolbox::Norm(3, Vorticity);
+
+  StrainDotVort[0] = GeometryToolbox::DotProduct(3, Strain[0], Vorticity);
+  StrainDotVort[1] = GeometryToolbox::DotProduct(3, Strain[1], Vorticity);
+  StrainDotVort[2] = GeometryToolbox::DotProduct(3, Strain[2], Vorticity);
+
+  GeometryToolbox::CrossProduct(StrainDotVort, Vorticity, numVecVort);
+
+  numerator = sqrt(6.0) * GeometryToolbox::Norm(3, numVecVort);
+  trace0 = 3.0*(pow(Strain[0][0],2.0) + pow(Strain[1][1],2.0) + pow(Strain[2][2],2.0));
+  trace1 = pow(Strain[0][0] + Strain[1][1] + Strain[2][2],2.0);
+  denominator = pow(Omega, 2.0) * sqrt(trace0-trace1);
+
+  Vortex_Tilting(iPoint) = (numerator/denominator) * max(1.0,0.2*LaminarViscosity/muT(iPoint));
+
+  AD::SetPreaccOut(Vortex_Tilting(iPoint));
+  AD::EndPreacc();
+}
 
 void CTurbVariable::RegisterEddyViscosity(bool input) {
   RegisterContainer(input, muT);

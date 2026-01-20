@@ -968,7 +968,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             }
 
             break;
-
+            
           default:
             SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                            CURRENT_FUNCTION);
@@ -1290,7 +1290,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                 limiter(iPoint, iVar) = min(limiter(iPoint, iVar), bufDRecv[buf_offset+iVar]);
 
               break;
-
+              
             default:
 
               SU2_MPI::Error("Unrecognized quantity for periodic communication.",

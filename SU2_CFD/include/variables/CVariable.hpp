@@ -2235,7 +2235,7 @@ public:
 
   inline virtual su2double GetTau_Wall(unsigned long iPoint) const { return 0.0; }
 
-  inline virtual void SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double> PrimGrad_Flow,
+  inline virtual void SetVortex_Tilting(unsigned long iPoint, su2double **Strain,
                                         const su2double* Vorticity, su2double LaminarViscosity) {}
 
   inline virtual su2double GetVortex_Tilting(unsigned long iPoint) const { return 0.0; }
