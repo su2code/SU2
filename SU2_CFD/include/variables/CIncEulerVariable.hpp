@@ -83,8 +83,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-
-  CIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
+  CIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
@@ -100,6 +99,26 @@ public:
   inline bool SetDensity(unsigned long iPoint, su2double val_density) final {
     Primitive(iPoint, indices.Density()) = val_density;
     return val_density <= 0.0;
+  }
+  
+  inline void SetDensity_time_n(unsigned long iPoint, su2double val) {
+    Density_time_n[iPoint] = val;
+  }
+
+  inline void SetDensity_time_n1(unsigned long iPoint, su2double val) {
+    Density_time_n1[iPoint] = val;
+  }
+
+  inline void SetDensity_Unsteady(unsigned long iPoint, su2double val) {
+    Density_unsteady[iPoint] = val;
+  }
+  
+  inline su2double GetDensity_time_n(unsigned long iPoint) const {
+    return Density_time_n[iPoint];
+  }
+
+  inline su2double GetDensity_time_n1(unsigned long iPoint) const {
+    return Density_time_n1[iPoint];
   }
 
   /*!

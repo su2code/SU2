@@ -39,6 +39,10 @@ CVariable::CVariable(unsigned long npoint, unsigned long nvar, const CConfig *co
   /*--- Allocate the solution array. ---*/
   Solution.resize(nPoint,nVar) = su2double(0.0);
 
+  Density_unsteady.resize(nPoint);
+  Density_time_n.resize(nPoint);
+  Density_time_n1.resize(nPoint);
+
   if (config->GetMultizone_Problem())
     Solution_BGS_k.resize(nPoint,nVar) = su2double(0.0);
 
@@ -55,11 +59,14 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
   /*--- Allocate fields common to all problems. Do not allocate fields
    that are specific to one solver, i.e. not common, in this class. ---*/
   Solution.resize(nPoint,nVar) = su2double(0.0);
-
   Solution_Old.resize(nPoint,nVar) = su2double(0.0);
 
-  if (config->GetTime_Domain())
+  if (config->GetTime_Domain()) {
     Solution_time_n.resize(nPoint,nVar) = su2double(0.0);
+    Density_unsteady.resize(nPoint);
+    Density_time_n.resize(nPoint);
+    Density_time_n1.resize(nPoint);
+  }
 
   if (config->GetTime_Marching() != TIME_MARCHING::STEADY)
     Solution_time_n1.resize(nPoint,nVar) = su2double(0.0);
@@ -96,6 +103,15 @@ void CVariable::Set_Solution_time_n() {
   parallelCopy(Solution.size(), Solution.data(), Solution_time_n.data());
 }
 
+void CVariable::SetDensity_time_n(){
+  assert(Density_time_n.size() == Density_unsteady.size());
+  parallelCopy(Density_unsteady.size(),Density_unsteady.data(), Density_time_n.data());
+}
+
+void CVariable::SetDensity_time_n1(){
+  assert(Density_time_n1.size() == Density_time_n.size());
+  parallelCopy(Density_time_n.size(),Density_time_n.data(), Density_time_n1.data());
+}
 void CVariable::Set_Solution_time_n1() {
   assert(Solution_time_n1.size() == Solution_time_n.size());
   parallelCopy(Solution_time_n.size(), Solution_time_n.data(), Solution_time_n1.data());

@@ -28,7 +28,7 @@
 #include "../../include/variables/CIncEulerVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
-CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
+CIncEulerVariable::CIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
                                      unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
   : CFlowVariable(npoint, ndim, nvar, ndim + 10,
                   ndim + (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ? 2 : 4), config),
@@ -48,7 +48,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = val_solution[iVar];
-
+  Density_unsteady = density;
   Solution_Old = Solution;
 
   if (classical_rk4) Solution_New = Solution;
@@ -58,6 +58,8 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   if (dual_time) {
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
+    Density_time_n = density;
+    Density_time_n1 = density;
   }
 
   if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE) {
@@ -67,7 +69,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   }
 }
 
-bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
+bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel)  {
 
   bool physical = true;
 
@@ -88,6 +90,7 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
   /*--- Set the value of the density ---*/
 
   const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
+  Density_unsteady[iPoint] = FluidModel->GetDensity();
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 

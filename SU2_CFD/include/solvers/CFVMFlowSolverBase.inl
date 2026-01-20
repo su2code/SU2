@@ -1071,9 +1071,13 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
+    // nijso asks: we are in first order here: can this be removed?
     solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
+    solver_container[iMesh][FLOW_SOL]->GetNodes()->SetDensity_time_n();
+    solver_container[iMesh][FLOW_SOL]->GetNodes()->SetDensity_time_n1();
     if (rans) {
       solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
+      // nijso asks: we are in first order here: can this be removed?
       solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1();
     }
 
@@ -1101,7 +1105,10 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
     /*--- Push back this new solution to time level N. ---*/
 
     for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      // nijso asks: now we are at second order, but we push solution to time_n instead of time_n1 ?
       solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
+      solver_container[iMesh][FLOW_SOL]->GetNodes()->SetDensity_time_n();
+      solver_container[iMesh][FLOW_SOL]->GetNodes()->SetDensity_time_n1();
       if (rans) solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
 
       geometry[iMesh]->nodes->SetVolume_n();

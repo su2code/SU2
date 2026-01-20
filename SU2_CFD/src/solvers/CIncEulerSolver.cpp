@@ -200,9 +200,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   if (navier_stokes) {
-    nodes = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
+    nodes = new CIncNSVariable(Density_Inf, Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
   } else {
-    nodes = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
+    nodes = new CIncEulerVariable(Density_Inf, Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
   }
   SetBaseClassPointerToNodes();
 
@@ -2804,7 +2804,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double U_time_nM1[MAXNVAR], U_time_n[MAXNVAR], U_time_nP1[MAXNVAR];
   su2double Volume_nM1, Volume_nP1, TimeStep;
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
-  su2double Density;
+  su2double Density, Density_time_n, Density_time_nM1;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
@@ -2843,12 +2843,14 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
       /*--- Access the density at this node (constant for now). ---*/
 
+      Density_time_nM1 = nodes->GetDensity_time_n1(iPoint);
+      Density_time_n = nodes->GetDensity_time_n(iPoint);
       Density = nodes->GetDensity(iPoint);
 
       /*--- Compute the conservative variable vector for all time levels. ---*/
 
-      V2U(Density, V_time_nM1, U_time_nM1);
-      V2U(Density, V_time_n, U_time_n);
+      V2U(Density_time_nM1, V_time_nM1, U_time_nM1);
+      V2U(Density_time_n, V_time_n, U_time_n);
       V2U(Density, V_time_nP1, U_time_nP1);
 
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
@@ -2897,7 +2899,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 
       V_time_n = nodes->GetSolution_time_n(iPoint);
       Density = nodes->GetDensity(iPoint);
-      V2U(Density, V_time_n, U_time_n);
+Density_time_n = nodes->GetDensity_time_n(iPoint);
+V2U(Density_time_n, V_time_n, U_time_n);
 
       GridVel_i = geometry->nodes->GetGridVel(iPoint);
 
@@ -2981,12 +2984,16 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Access the density at this node (constant for now). ---*/
 
       Density = nodes->GetDensity(iPoint);
+      Density_time_nM1 = nodes->GetDensity_time_n1(iPoint);
+      Density_time_n = nodes->GetDensity_time_n(iPoint);
 
       /*--- Compute the conservative variable vector for all time levels. ---*/
 
       V2U(Density, V_time_nM1, U_time_nM1);
       V2U(Density, V_time_n, U_time_n);
-      V2U(Density, V_time_nP1, U_time_nP1);
+V2U(Density_time_nM1, V_time_nM1, U_time_nM1);
+V2U(Density_time_n, V_time_n, U_time_n);
+V2U(Density, V_time_nP1, U_time_nP1);
 
       /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
        grids, the volumes will change. On rigidly transforming grids, the

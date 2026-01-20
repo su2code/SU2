@@ -28,9 +28,9 @@
 #include "../../include/variables/CIncNSVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
-CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
+CIncNSVariable::CIncNSVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
                                unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) :
-                               CIncEulerVariable(pressure, velocity, enthalpy, npoint, ndim, nvar, config),
+                               CIncEulerVariable(density, pressure, velocity, enthalpy, npoint, ndim, nvar, config),
                                Energy(config->GetEnergy_Equation()) {
 
   Vorticity.resize(nPoint,3);
@@ -47,6 +47,12 @@ CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su
     AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
     Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
   }
+
+  if (config->GetTime_Marching() != TIME_MARCHING::STEADY) {
+    Unsteady = true;
+  }
+
+
 }
 
 bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
@@ -92,6 +98,10 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
     physical = false;
 
   }
+
+/*--- Set density for unsteady problems ---*/
+ if (Unsteady)
+    SetDensity_unsteady(iPoint, FluidModel->GetDensity());
 
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
 

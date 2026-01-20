@@ -248,6 +248,8 @@ void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver
   /*--- Store old solution ---*/
   solver->GetNodes()->Set_Solution_time_n1();
   solver->GetNodes()->Set_Solution_time_n();
+  solver->GetNodes()->SetDensity_time_n();
+  solver->GetNodes()->SetDensity_time_n1();
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(solver->ResetCFLAdapt();)
 
