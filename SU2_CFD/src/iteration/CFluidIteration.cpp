@@ -427,6 +427,11 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
   Preprocess(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox,
              val_iZone, INST_0);
 
+  /*--- Spectral Radius Analysis ---*/
+  if (config[val_iZone]->GetSpectralRadius_Analysis()) {
+    PreRunSpectralRadius(geometry, solver, config, val_iZone, val_iInst);
+  }
+
   /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
   /*--- However, ExtIter is the number of FSI iterations, so nIntIter is used in this case ---*/
 
@@ -436,6 +441,17 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
     /*--- Run a single iteration of the solver ---*/
     Iterate(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone,
             INST_0);
+
+    /*--- Spectral Radius Analysis ---*/
+    // Spectral radius analysis
+    if (config[val_iZone]->GetSpectralRadius_Analysis()) {
+      PostRunSpectralRadius(output, integration, geometry, solver, numerics, config, 
+                            surface_movement, grid_movement, FFDBox, val_iZone, val_iInst);
+      
+      // After spectral radius analysis, we break out of the inner loop
+      // since we only want to run one iteration for the analysis
+      break;
+    }
 
     /*--- Monitor the pseudo-time ---*/
     StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox,
@@ -727,4 +743,239 @@ void CFluidIteration::SetDualTime_Aeroelastic(CConfig* config) const {
 #endif
   }
 
+}
+
+void CFluidIteration::SeedAllDerivatives(const su2matrix<passivedouble>& derivatives, CGeometry**** geometry, 
+                                        CSolver***** solver, unsigned short val_iZone, unsigned short val_iInst) {
+  unsigned short targetSolver = 2;
+  unsigned short targetVar = 0;
+  
+  // Only process the target solver
+  CSolver* solver_ptr = solver[val_iZone][val_iInst][MESH_0][targetSolver];
+  
+  CVariable* nodes = solver_ptr->GetNodes();
+  unsigned long nPoint = geometry[val_iZone][val_iInst][MESH_0]->GetnPointDomain();
+  
+  // Seed only the target variable
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    su2double* solution = nodes->GetSolution(iPoint);
+    double derivative_value = derivatives(iPoint, 0); // Only one column now
+    SU2_TYPE::SetDerivative(solution[targetVar], derivative_value);
+  }
+  
+  if (rank == MASTER_NODE) { 
+    std::cout << "Finished SeedAllDerivatives for solver " << targetSolver 
+              << ", variable " << targetVar << std::endl;
+  }
+}
+
+void CFluidIteration::GetAllDerivatives(su2matrix<passivedouble>& derivatives, CGeometry**** geometry, 
+                                       CSolver***** solver, unsigned short val_iZone, unsigned short val_iInst) {
+  unsigned short target_Solver = 2;
+  unsigned short target_Var = 0;
+  
+  //process the required solver
+  CSolver* solver_ptr = solver[val_iZone][val_iInst][MESH_0][target_Solver];
+  if (!solver_ptr) {
+    if (rank == MASTER_NODE) {std::cout << "Target solver " << target_Solver << " is not allocated." << std::endl;}
+    return;
+  }
+  
+  CVariable* nodes = solver_ptr->GetNodes();
+  unsigned long nPoint = geometry[val_iZone][val_iInst][MESH_0]->GetnPointDomain();
+  
+  //extract derivatives
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    su2double* solution = nodes->GetSolution(iPoint);
+    double derivative_value = SU2_TYPE::GetDerivative(solution[target_Var]);
+    derivatives(iPoint, 0) = derivative_value; // Only one column now
+  }
+  
+  if (rank == MASTER_NODE) { 
+    std::cout << "Finished GetAllDerivatives for solver " << target_Solver 
+              << ", variable " << target_Var << std::endl;
+  }
+}
+
+void CFluidIteration::PreRunSpectralRadius(CGeometry**** geometry, CSolver***** solver, CConfig** config, 
+                                          unsigned short val_iZone, unsigned short val_iInst) {
+  if (!config[val_iZone]->GetSpectralRadius_Analysis()) return;
+  
+  CGeometry* geom_ptr = geometry[val_iZone][val_iInst][MESH_0];
+  
+  //get total number of variables and points
+  unsigned long nPoint = geom_ptr->GetnPointDomain();
+  
+  //requested solver and variable
+  unsigned short targetSolver = 2;
+  unsigned short targetVar = 0;
+  unsigned long nVarTotal = 1;
+
+    //initialize power iteration matrix
+  if (v_estimate.rows() != nPoint || v_estimate.cols() != nVarTotal) {
+    v_estimate.resize(nPoint, nVarTotal);
+    
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      v_estimate(iPoint, 0) = static_cast<passivedouble>(1.0);
+    }
+    
+    //calculate norm
+    passivedouble local_norm = 0.0;
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      local_norm += v_estimate(iPoint, 0) * v_estimate(iPoint, 0);
+    }
+    
+    passivedouble global_norm;
+    SU2_MPI::Allreduce(&local_norm, &global_norm, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    global_norm = sqrt(global_norm);
+    
+    //normalise
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (unsigned long iVar = 0; iVar < nVarTotal; iVar++) {
+        v_estimate(iPoint, iVar) /= global_norm;
+      }
+    }
+  }
+
+  //seed all solvers
+  SeedAllDerivatives(v_estimate, geometry, solver, val_iZone, val_iInst);
+  
+  if (rank == MASTER_NODE) { 
+    std::cout << "Seeding done" << std::endl;
+  }
+}
+
+void CFluidIteration::PostRunSpectralRadius(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
+                            CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
+                            CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
+                            unsigned short val_iInst) {
+  if (!config[val_iZone]->GetSpectralRadius_Analysis()) return;
+  
+  CGeometry* geom_ptr = geometry[val_iZone][val_iInst][MESH_0];
+  
+  unsigned long nPoint = geom_ptr->GetnPointDomain();
+  unsigned long nVarTotal = 0;
+  
+  for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+    CSolver* solver_ptr = solver[val_iZone][val_iInst][MESH_0][iSol];
+    if (solver_ptr) nVarTotal += solver_ptr->GetnVar();
+  }
+  
+  if (rank == MASTER_NODE) {
+    std::cout << "Total variables: " << nVarTotal << ", Total points: " << nPoint << std::endl;
+  }
+  
+  su2matrix<passivedouble> w_k(nPoint, 1);
+  
+  if (rank == MASTER_NODE) {
+    std::cout << "Matrix w initialized with size: " << w_k.rows() << " x " << w_k.cols() << std::endl;
+  }
+  
+  //vector to store eigenvalue history
+  std::vector<std::pair<int, passivedouble>> eigenvalue_history;
+  
+  passivedouble rho_old = 0.0;
+  int max_iter = config[val_iZone]->GetnPowerMethodIter();
+  su2double tol = config[val_iZone]->GetPowerMethodTolerance();
+  int k = 0;
+  
+  //for Cauchy convergence criterion (turned off in current code)
+  const int cauchy_window = 10;
+  std::vector<passivedouble> recent_eigenvalues;
+  
+  //write matrix to CSV
+  auto write_matrix = [](const su2matrix<passivedouble>& matrix, const std::string& filename) {
+    std::ofstream outfile(filename);
+    outfile << std::scientific << std::setprecision(15);
+    for (unsigned long iPoint = 0; iPoint < matrix.rows(); ++iPoint) {
+      for (unsigned long iVar = 0; iVar < matrix.cols(); ++iVar) {
+        outfile << matrix(iPoint, iVar);
+        if (iVar < matrix.cols() - 1) outfile << ",";
+      }
+      outfile << "\n";
+    }
+    outfile.close();
+    std::cout << "Matrix written to " << filename << std::endl;
+  };
+  
+  //write eigenvalue history to CSV - written when converged or when solver ends
+  auto write_eigenvalue_history = [](const std::vector<std::pair<int, passivedouble>>& history, const std::string& filename) {
+    std::ofstream eigenvalue_file(filename);
+    eigenvalue_file << std::scientific << std::setprecision(15);
+    eigenvalue_file << "Iteration,Eigenvalue\n";
+    for (const auto& entry : history) {
+      eigenvalue_file << entry.first << "," << entry.second << "\n";
+    }
+    eigenvalue_file.close();
+    std::cout << "Eigenvalue history written to " << filename << std::endl;
+  };
+  
+  while (k < max_iter) {
+    if (rank == MASTER_NODE) {
+      std::cout << "Power iteration " << k << std::endl;
+    }
+    GetAllDerivatives(w_k, geometry, solver, val_iZone, val_iInst);
+    passivedouble rho_local = 0.0;
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      rho_local += w_k(iPoint, 0) * w_k(iPoint, 0); // Only column 0
+    }
+
+    passivedouble rho_global = 0.0;
+    SU2_MPI::Allreduce(&rho_local, &rho_global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    passivedouble rho_k = sqrt(rho_global);
+    
+    //store eigenvalue for this iteration with high precision
+    eigenvalue_history.emplace_back(k, rho_k);
+    
+    //store recent eigenvalues for Cauchy convergence criterion
+    recent_eigenvalues.push_back(rho_k);
+    if (recent_eigenvalues.size() > cauchy_window) {
+      recent_eigenvalues.erase(recent_eigenvalues.begin());
+    }
+    
+    if (rank == MASTER_NODE) {
+      std::cout << std::scientific << std::setprecision(15);
+      std::cout << "Spectral Radius Estimate for Iteration " << k << " is " << rho_k << std::endl;
+      std::cout << std::defaultfloat; // Reset to default formatting
+    }
+
+    //convergence criterion: Cauchy criterion over the last 10 iterations
+    if (std::abs(rho_k - rho_old) < tol) {
+      if (rank == MASTER_NODE) {
+        std::cout << "Converged Eigenvalue after " << k << " iterations is "
+                  << std::scientific << std::setprecision(15) << rho_k << std::endl;
+
+        write_matrix(w_k, "w_k.csv");
+
+        write_eigenvalue_history(eigenvalue_history, "eigenvalue_history.csv");
+      }
+      break;
+    }
+
+    //normalize w_k to form next seed v_estimate
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      v_estimate(iPoint, 0) = w_k(iPoint, 0) / rho_k;
+    }
+
+    //seed the derivatives for this iteration
+    SeedAllDerivatives(v_estimate, geometry, solver, val_iZone, val_iInst);
+    rho_old = rho_k;
+    k++;
+    
+    //run a single iteration of the solver to apply the Jacobian
+    Iterate(output, integration, geometry, solver, numerics, config, 
+            surface_movement, grid_movement, FFDBox, val_iZone, val_iInst);
+
+    if (k == max_iter) {
+      if (rank == MASTER_NODE) {
+        write_matrix(w_k, "w_k.csv");
+        write_eigenvalue_history(eigenvalue_history, "eigenvalue_history.csv");
+        
+        std::cout << "Reached maximum iterations without convergence. Final eigenvalue: " 
+                  << std::scientific << std::setprecision(15) << rho_k << std::endl;
+      }
+    }
+  }
+  
+  w_k.resize(0, 0);
 }

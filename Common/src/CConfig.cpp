@@ -2881,6 +2881,13 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Specify the tape which is checked in a tape debug run. */
   addEnumOption("CHECK_TAPE_VARIABLES", AD_CheckTapeVariables, CheckTapeVariables_Map, CHECK_TAPE_VARIABLES::SOLVER_VARIABLES);
 
+  /*!\par CONFIG_CATEGORY: Multi-grid \ingroup Config*/
+  /*!\brief POWER_ITERATION_ITERATION\n DESCRIPTION: Number of power iterations to perform when evaluating the dominant eigenvalue \n DEFAULT: 100 \ingroup Config*/
+  addIntegerOption("POWER_ITERATION_ITERATION", PowerIterations, 100);
+  /*!\brief POWER_ITERATION_TOLERANCE\n DESCRIPTION: Min value of the residual (log10 of the residual)\n DEFAULT: -14.0 \ingroup Config*/
+  addDoubleOption("POWER_ITERATION_TOLERANCE", PowerMethodTol, 1e-7);
+  addBoolOption("SPECTRAL_RADIUS", SpectralRadiusMethod, NO);
+
   /*--- options that are used in the python optimization scripts. These have no effect on the c++ toolsuite ---*/
   /*!\par CONFIG_CATEGORY:Python Options\ingroup Config*/
 

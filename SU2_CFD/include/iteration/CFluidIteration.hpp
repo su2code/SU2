@@ -133,7 +133,19 @@ class CFluidIteration : public CIteration {
                    CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                    unsigned short val_iInst) override;
 
+  /*--- Spectral radius analysis functions ---*/
+  void SeedAllDerivatives(const su2matrix<passivedouble>& derivatives, CGeometry**** geometry, CSolver***** solver, 
+                         unsigned short val_iZone, unsigned short val_iInst);
+  void GetAllDerivatives(su2matrix<passivedouble>& derivatives, CGeometry**** geometry, CSolver***** solver, 
+                        unsigned short val_iZone, unsigned short val_iInst);
+  void PreRunSpectralRadius(CGeometry**** geometry, CSolver***** solver, CConfig** config, 
+                           unsigned short val_iZone, unsigned short val_iInst);
+  void PostRunSpectralRadius(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
+                            CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
+                            CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
+                            unsigned short val_iInst);
  private:
+  su2matrix<passivedouble> v_estimate;
 
   /*!
    * \brief Imposes a gust via the grid velocities.

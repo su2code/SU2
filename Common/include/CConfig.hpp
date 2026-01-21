@@ -1098,7 +1098,9 @@ private:
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
-
+  int PowerIterations;              /*!< \brief Number of iterations for the power method>*/
+  su2double PowerMethodTol;         /*!< \brief Convergence criteria for the dominant eigenvalue using power method>*/
+  bool SpectralRadiusMethod;        /*!< \brief Option to perform spectral radius analysis>*/
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones;  /*!< \brief number of maximum span-wise sections for all zones */
   unsigned short *nSpan_iZones;     /*!< \brief number of span-wise sections for each zones */
@@ -10222,5 +10224,17 @@ public:
    * \return option data structure for the flamelet fluid model.
    */
   const FluidFlamelet_ParsedOptions& GetFlameletParsedOptions() const { return flamelet_ParsedOptions; }
+  
+  /*!
+   * \brief Get requested number of iterations for the Power Method
+   * \return Number of iterations for the Power Method.
+   */
+  int GetnPowerMethodIter(void) const { return PowerIterations; }
+  /*!
+   * \brief Get requested tolerance for the Power Method
+   * \return Value of the power method tolerance.
+   */
+  su2double GetPowerMethodTolerance(void) const { return PowerMethodTol; }
+  bool GetSpectralRadius_Analysis(void) const { return SpectralRadiusMethod; }
 
 };

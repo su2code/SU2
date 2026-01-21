@@ -58,7 +58,6 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../limiters/CLimiterDetails.hpp"
 #include "../variables/CVariable.hpp"
-
 #ifdef HAVE_LIBROM
 #include "librom.h"
 #endif
