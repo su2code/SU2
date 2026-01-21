@@ -27,6 +27,7 @@
 
 #include "../../include/variables/CIncEulerVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
 CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
                                      unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
@@ -58,6 +59,8 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   if (dual_time) {
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
+    Density_time_n.resize(nPoint) = su2double(0.0);
+    Density_time_n1.resize(nPoint) = su2double(0.0);
   }
 
   if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE) {
@@ -126,4 +129,31 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   return physical;
 
+}
+void CIncEulerVariable::Set_Solution_time_n() {
+  /*--- Set the solution at time n ---*/
+  CVariable::Set_Solution_time_n();
+
+  /*--- Store the current density at time n ---*/
+  if (Density_time_n.size() > 0) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      Density_time_n(iPoint) = GetDensity(iPoint);
+    }
+    END_SU2_OMP_FOR
+  }
+}
+
+void CIncEulerVariable::Set_Solution_time_n1() {
+  /*--- Set the solution at time n-1 ---*/
+  CVariable::Set_Solution_time_n1();
+
+  /*--- Store the density at time n-1 by copying from time n ---*/
+  if (Density_time_n1.size() > 0 && Density_time_n.size() > 0) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      Density_time_n1(iPoint) = Density_time_n(iPoint);
+    }
+    END_SU2_OMP_FOR
+  }
 }

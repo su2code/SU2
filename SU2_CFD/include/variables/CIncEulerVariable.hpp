@@ -71,6 +71,8 @@ public:
 
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
+  VectorType Density_time_n,                           /*!< \brief Density at time n for dual-time stepping. */
+             Density_time_n1;                          /*!< \brief Density at time n-1 for dual-time stepping. */
   su2double TemperatureLimits[2];                      /*!< \brief Temperature limits [K]. */
  public:
   /*!
@@ -86,6 +88,16 @@ public:
 
   CIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
+
+  /*!
+   * \brief Set all the solution at time level n to the current solution value (including density).
+   */
+  void Set_Solution_time_n() override;
+
+  /*!
+   * \brief Set all the solution at time level n-1 to the solution at time level n (including density).
+   */
+  void Set_Solution_time_n1() override;
 
   /*!
    * \brief Set the value of the pressure.
@@ -290,5 +302,33 @@ public:
   inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = val_vector[iDim];
   }
+
+  /*!
+   * \brief Get the density at time level n for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n.
+   */
+  inline su2double GetDensity_time_n(unsigned long iPoint) const { return Density_time_n(iPoint); }
+
+  /*!
+   * \brief Get the density at time level n-1 for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n-1.
+   */
+  inline su2double GetDensity_time_n1(unsigned long iPoint) const { return Density_time_n1(iPoint); }
+
+  /*!
+   * \brief Set the density at time level n for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_density - Density value.
+   */
+  inline void SetDensity_time_n(unsigned long iPoint, su2double val_density) { Density_time_n(iPoint) = val_density; }
+
+  /*!
+   * \brief Set the density at time level n-1 for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_density - Density value.
+   */
+  inline void SetDensity_time_n1(unsigned long iPoint, su2double val_density) { Density_time_n1(iPoint) = val_density; }
 
 };

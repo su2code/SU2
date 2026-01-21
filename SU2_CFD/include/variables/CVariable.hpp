@@ -284,12 +284,12 @@ public:
   /*!
    * \brief Set the variable solution at time n.
    */
-  void Set_Solution_time_n();
+  virtual void Set_Solution_time_n();
 
   /*!
    * \brief Set the variable solution at time n-1.
    */
-  void Set_Solution_time_n1();
+  virtual void Set_Solution_time_n1();
 
   /*!
    * \brief Set the variable solution at time n.
