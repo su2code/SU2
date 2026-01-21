@@ -37,6 +37,7 @@
 
 #include "../include/basic_types/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
+#include "../include/toolboxes/SwapBytes.hpp"
 
 using namespace PrintingToolbox;
 
@@ -646,6 +647,45 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
 
     }
 
+    case SU2_BIN: {
+
+      /*--- Check if the mesh file can be opened for binary reading. ---*/
+      FILE *mesh_file = fopen(val_mesh_filename.c_str(), "rb");
+      if ( !mesh_file )
+        SU2_MPI::Error(string("There is no geometry file called ") + val_mesh_filename,
+                              CURRENT_FUNCTION);
+
+      /*--- Read the size of the connectivity type and determine whether
+            or not byte swapping must be applied. The size of the connectivity
+            type must be either 4 or 8. ---*/
+      int size_conn_type;
+      auto ret = fread(&size_conn_type, sizeof(int), 1, mesh_file);
+      if (ret != 1)
+        SU2_MPI::Error(string("Error while reading the file ") + val_mesh_filename,
+                              CURRENT_FUNCTION);
+
+      bool swap_bytes = false;
+      if ((size_conn_type != 4) && (size_conn_type != 8)) {
+        SwapBytes((char *) &size_conn_type, sizeof(int), 1);
+        swap_bytes = true;
+      }
+
+      if ((size_conn_type != 4) && (size_conn_type != 8))
+        SU2_MPI::Error(string("The file ") + val_mesh_filename +
+                       string(" is not a valid SU2 binary file"), CURRENT_FUNCTION);
+
+      /*--- Read the number of zones. ---*/
+      ret = fread(&nZone, sizeof(int), 1, mesh_file);
+      if (ret != 1)
+        SU2_MPI::Error(string("Error while reading the file ") + val_mesh_filename,
+                              CURRENT_FUNCTION);
+      if ( swap_bytes)
+        SwapBytes((char *) &nZone, sizeof(int), 1);
+
+      fclose(mesh_file);
+      break;
+    }
+
     case CGNS_GRID: {
 
 #ifdef HAVE_CGNS
@@ -729,7 +769,7 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
 
 unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short val_format) {
 
-  short nDim = -1;
+  int nDim = -1;
 
   switch (val_format) {
     case SU2: {
@@ -770,6 +810,51 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
         SU2_MPI::Error(val_mesh_filename + string(" is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found). Please check."),
                        CURRENT_FUNCTION);
       }
+
+      break;
+    }
+
+    case SU2_BIN: {
+
+      /*--- Check if the mesh file can be opened for binary reading. ---*/
+      FILE *mesh_file = fopen(val_mesh_filename.c_str(), "rb");
+      if ( !mesh_file )
+        SU2_MPI::Error(string("There is no geometry file called ") + val_mesh_filename,
+                              CURRENT_FUNCTION);
+
+      /*--- Read the size of the connectivity type and determine whether
+            or not byte swapping must be applied. The size of the connectivity
+            type must be either 4 or 8. ---*/
+      int size_conn_type;
+      auto ret = fread(&size_conn_type, sizeof(int), 1, mesh_file);
+      if (ret != 1)
+        SU2_MPI::Error(string("Error while reading the file ") + val_mesh_filename,
+                              CURRENT_FUNCTION);
+
+      bool swap_bytes = false;
+      if ((size_conn_type != 4) && (size_conn_type != 8)) {
+        SwapBytes((char *) &size_conn_type, sizeof(int), 1);
+        swap_bytes = true;
+      }
+
+      if ((size_conn_type != 4) && (size_conn_type != 8))
+        SU2_MPI::Error(string("The file ") + val_mesh_filename +
+                       string(" is not a valid SU2 binary file"), CURRENT_FUNCTION);
+
+      /*--- Skip the number of zones and the zone ID. ---*/
+      if( fseek(mesh_file, 2*sizeof(int), SEEK_CUR) )
+        SU2_MPI::Error(string("Failed to jump forward in the file") + val_mesh_filename,
+                              CURRENT_FUNCTION);
+
+      /*--- Read the number of dimensions. ---*/
+      ret = fread(&nDim, sizeof(int), 1, mesh_file);
+      if (ret != 1)
+        SU2_MPI::Error(string("Error while reading the file ") + val_mesh_filename,
+                              CURRENT_FUNCTION);
+      if ( swap_bytes)
+        SwapBytes((char *) &nDim, sizeof(int), 1);
+
+      fclose(mesh_file);
 
       break;
     }

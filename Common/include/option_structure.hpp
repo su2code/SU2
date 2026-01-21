@@ -2151,12 +2151,14 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
  */
 enum ENUM_INPUT {
   SU2       = 1,  /*!< \brief SU2 input format. */
-  CGNS_GRID = 2,  /*!< \brief CGNS input format for the computational grid. */
-  RECTANGLE = 3,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
-  BOX       = 4   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
+  SU2_BIN   = 2,  /*!< \brief SU2 binary input format. */
+  CGNS_GRID = 3,  /*!< \brief CGNS input format for the computational grid. */
+  RECTANGLE = 4,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
+  BOX       = 5   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
 };
 static const MapType<std::string, ENUM_INPUT> Input_Map = {
   MakePair("SU2", SU2)
+  MakePair("SU2B", SU2_BIN)
   MakePair("CGNS", CGNS_GRID)
   MakePair("RECTANGLE", RECTANGLE)
   MakePair("BOX", BOX)
