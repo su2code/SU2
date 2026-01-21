@@ -395,6 +395,13 @@ def read_aerodynamics(
                 )
             Func_Values[key] = value[-1]
 
+    # If only COMBO is present in the history (which is the case when using
+    # CUSTOM_OBJFUNC as objective), expose it also under the logical
+    # name CUSTOM_OBJFUNC so that SU2.eval.functions(function_name="CUSTOM_OBJFUNC")
+    # can retrieve the value without needing a separate history column.
+    if "COMBO" in Func_Values and "CUSTOM_OBJFUNC" not in Func_Values:
+        Func_Values["CUSTOM_OBJFUNC"] = Func_Values["COMBO"]
+
     return Func_Values
 
 
