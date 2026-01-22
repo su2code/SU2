@@ -5794,6 +5794,22 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Number of initial species incompatible with number of controlling variables and user scalars.", CURRENT_FUNCTION);
     /*--- We can have additional user defined transported scalars ---*/
     flamelet_ParsedOptions.n_scalars = flamelet_ParsedOptions.n_control_vars + flamelet_ParsedOptions.n_user_scalars;
+
+    /*--- Check that spark ignition has required parameters defined ---*/
+    if (flamelet_ParsedOptions.ignition_method == FLAMELET_INIT_TYPE::SPARK) {
+      /*--- Check if SPARK_INIT was explicitly set in config file ---*/
+      if (all_options.find("SPARK_INIT") != all_options.end()) {
+        SU2_MPI::Error("FLAME_INIT_METHOD=SPARK requires SPARK_INIT to be defined in the config file.", CURRENT_FUNCTION);
+      }
+      /*--- Check if SPARK_REACTION_RATES was explicitly set in config file ---*/
+      if (all_options.find("SPARK_REACTION_RATES") != all_options.end()) {
+        SU2_MPI::Error("FLAME_INIT_METHOD=SPARK requires SPARK_REACTION_RATES to be defined in the config file.", CURRENT_FUNCTION);
+      }
+      if (flamelet_ParsedOptions.nspark < flamelet_ParsedOptions.n_scalars) {
+        SU2_MPI::Error("SPARK_REACTION_RATES must have at least " + to_string(flamelet_ParsedOptions.n_scalars) +
+                       " values (one for each scalar variable), but only " + to_string(flamelet_ParsedOptions.nspark) + " were provided.", CURRENT_FUNCTION);
+      }
+    }
   }
 
   if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
