@@ -961,6 +961,10 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   const bool center     = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
   const bool center_jst = (config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0);
   const bool outlet     = (config->GetnMarker_Outlet() != 0);
+  const bool dual_time  = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
+                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
+  const bool restart    = config->GetRestart() || config->GetRestart_Flow();
+  const auto TimeIter   = config->GetTimeIter();
 
   /*--- Set the primitive variables ---*/
 
@@ -968,6 +972,18 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
+
+  /*--- For the first time iteration without restart, update density time-levels after computing
+        actual density from SetPrimitive_Variables. This ensures time-accurate density values. ---*/
+  if (dual_time && TimeIter == 0 && !restart && iRKStep == 0 && iMesh == MESH_0) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      su2double density = nodes->GetDensity(iPoint);
+      nodes->SetDensity_time_n(iPoint, density);
+      nodes->SetDensity_time_n1(iPoint, density);
+    }
+    END_SU2_OMP_FOR
+  }
 
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
