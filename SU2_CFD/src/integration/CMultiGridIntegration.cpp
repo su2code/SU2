@@ -657,7 +657,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   su2double max_correction_local = 0.0;
   su2double max_correction_global = 0.0;
 
-  SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
+  SU2_OMP_FOR_(schedule(static, roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads())) reduction(max:max_correction_local))
   for (auto Point_Fine = 0ul; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
     Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
     Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
@@ -670,7 +670,6 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
       Solution_Fine[iVar] += correction;
 
      /*--- Track maximum correction ---*/
-      SU2_OMP_CRITICAL
       max_correction_local = max(max_correction_local, fabs(correction));
     }
   }
