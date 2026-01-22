@@ -2985,12 +2985,20 @@ void CFVMFlowSolverBase<V, FlowRegime>::ComputeAxisymmetricAuxGradients(CGeometr
     su2double yVelocity       = nodes->GetVelocity(iPoint,1);
     su2double xVelocity       = nodes->GetVelocity(iPoint,0);
     su2double Total_Viscosity = nodes->GetLaminarViscosity(iPoint) + nodes->GetEddyViscosity(iPoint);
+    const auto VelocityGradient = nodes->GetVelocityGradient(iPoint);
 
     if (yCoord > EPS){
       su2double nu_v_on_y = Total_Viscosity*yVelocity/yCoord;
       nodes->SetAuxVar(iPoint, 0, nu_v_on_y);
       nodes->SetAuxVar(iPoint, 1, nu_v_on_y*yVelocity);
       nodes->SetAuxVar(iPoint, 2, nu_v_on_y*xVelocity);
+    } else {
+      /*--- At the axis of symmetry, use L'Hôpital's rule instead of setting each to zero: lim(v/r) = dv/dr ---*/
+      su2double dv_dr = VelocityGradient(1,1);  // ∂v/∂r
+      su2double nu_dv_dr = Total_Viscosity * dv_dr;
+      nodes->SetAuxVar(iPoint, 0, nu_dv_dr);           // μ(∂v/∂r)
+      nodes->SetAuxVar(iPoint, 1, 0.0);                // μv(∂v/∂r) = 0 since v=0 at axis
+      nodes->SetAuxVar(iPoint, 2, nu_dv_dr*xVelocity); // μu(∂v/∂r)
     }
   }
   END_SU2_OMP_FOR
