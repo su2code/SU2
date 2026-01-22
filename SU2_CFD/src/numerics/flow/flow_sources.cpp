@@ -63,27 +63,65 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
   su2double Pressure_i, Enthalpy_i, Velocity_i, sq_vel;
   unsigned short iDim, iVar, jVar;
 
-  if (Coord_i[1] > EPS) {
+  /*--- Common calculations for both branches ---*/
+  su2double rho = U_i[0];                     // density
+  su2double u = U_i[1]/U_i[0];                // u-velocity
+  su2double v = U_i[2]/U_i[0];                // v-velocity
+  su2double r = Coord_i[1];                   // radial coordinate
+  su2double dv_dr = PrimVar_Grad_i[2][1];     // ∂v/∂r (radial velocity gradient)
+  
+  sq_vel = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Velocity_i = U_i[iDim+1] / U_i[0];
+    sq_vel += Velocity_i * Velocity_i;
+  }
+  Pressure_i = Gamma_Minus_One*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
+  Enthalpy_i = (U_i[nDim+1] + Pressure_i) / U_i[0];
 
-    yinv = 1.0/Coord_i[1];
+  /*--- Smooth blending between gradient formulation and standard formulation ---*/
+  su2double transition_width = 50.0 * EPS;  // Smooth transition over 50×EPS (much wider)
+  su2double alpha = 0.0;  // Blending factor: 0=gradient_form, 1=standard_form
+  
+  if (r > transition_width) {
+    alpha = 1.0;  // Far from axis: use standard v/r formulation
+  } else if (r > EPS) {
+    // Smooth transition zone: blend between formulations (gentler slope)
+    alpha = 0.5 * (1.0 + tanh(2.0 * (r - 0.5*(EPS + transition_width))/(transition_width - EPS)));
+  } else {
+    alpha = 0.0;  // Near axis: use gradient formulation
+  }
 
-    sq_vel = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Velocity_i = U_i[iDim+1] / U_i[0];
-      sq_vel += Velocity_i *Velocity_i;
-    }
+  /*--- Standard formulation (v/r) ---*/
+  su2double std_res[4];
+  if (r > EPS) {
+    yinv = 1.0/r;
+    std_res[0] = yinv*Volume*U_i[2];                    // ρv/r
+    std_res[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];     // ρuv/r
+    std_res[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);   // ρv²/r
+    std_res[3] = yinv*Volume*Enthalpy_i*U_i[2];        // ρHv/r
+  } else {
+    // Avoid division by zero, set to zero (will be blended out anyway)
+    std_res[0] = std_res[1] = std_res[2] = std_res[3] = 0.0;
+  }
 
-    Pressure_i = Gamma_Minus_One*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
-    Enthalpy_i = (U_i[nDim+1] + Pressure_i) / U_i[0];
+  /*--- Gradient formulation (∂v/∂r) ---*/
+  su2double grad_res[4];
+  grad_res[0] = Volume * rho * dv_dr;              // ρ(∂v/∂r)
+  grad_res[1] = Volume * rho * u * dv_dr;          // ρu(∂v/∂r)
+  grad_res[2] = 0.0;                               // ρv(∂v/∂r) = 0 since v→0 as r→0
+  grad_res[3] = Volume * rho * Enthalpy_i * dv_dr; // ρH(∂v/∂r)
 
-    residual[0] = yinv*Volume*U_i[2];
-    residual[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];
-    residual[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);
-    residual[3] = yinv*Volume*Enthalpy_i*U_i[2];
+  /*--- Blend the two formulations ---*/
+  residual[0] = (1.0 - alpha) * grad_res[0] + alpha * std_res[0];
+  residual[1] = (1.0 - alpha) * grad_res[1] + alpha * std_res[1];
+  residual[2] = (1.0 - alpha) * grad_res[2] + alpha * std_res[2];
+  residual[3] = (1.0 - alpha) * grad_res[3] + alpha * std_res[3];
 
-    /*--- Inviscid component of the source term. ---*/
-
-    if (implicit) {
+  /*--- Jacobian calculation ---*/
+  if (implicit) {
+    if (alpha > 0.5) {
+      // Use standard Jacobian when mostly in standard formulation
+      yinv = 1.0/r;
       jacobian[0][0] = 0.0;
       jacobian[0][1] = 0.0;
       jacobian[0][2] = 1.0;
@@ -107,28 +145,17 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
       for (iVar=0; iVar < nVar; iVar++)
         for (jVar=0; jVar < nVar; jVar++)
           jacobian[iVar][jVar] *= yinv*Volume;
-
-    }
-
-    /*--- Add the viscous terms if necessary. ---*/
-
-    if (viscous) ResidualDiffusion();
-
-  }
-
-  else {
-
-    for (iVar=0; iVar < nVar; iVar++)
-      residual[iVar] = 0.0;
-
-    if (implicit) {
+    } else {
+      // Near axis: set Jacobian to zero (gradient formulation is more complex)
       for (iVar=0; iVar < nVar; iVar++) {
         for (jVar=0; jVar < nVar; jVar++)
           jacobian[iVar][jVar] = 0.0;
       }
     }
-
   }
+
+  /*--- Add the viscous terms if necessary. ---*/
+  if (viscous) ResidualDiffusion();
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
