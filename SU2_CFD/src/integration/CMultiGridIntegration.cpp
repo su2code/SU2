@@ -300,21 +300,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     Space_Integration(geometry_coarse, solver_container_coarse, numerics_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem);
 
-    /*--- Store initial coarse grid residual before MG cycle ---*/
-    su2double max_res_coarse_before = 0.0;
-    for (unsigned long iPoint = 0; iPoint < geometry_coarse->GetnPointDomain(); iPoint++) {
-      const su2double* res = solver_coarse->LinSysRes.GetBlock(iPoint);
-      for (unsigned short iVar = 0; iVar < solver_coarse->GetnVar(); iVar++) {
-        max_res_coarse_before = max(max_res_coarse_before, fabs(res[iVar]));
-      }
-    }
-
-#ifdef HAVE_MPI
-    su2double global_max_res_coarse_before = 0.0;
-    SU2_MPI::Allreduce(&max_res_coarse_before, &global_max_res_coarse_before, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-    max_res_coarse_before = global_max_res_coarse_before;
-#endif
-
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
 
     SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
@@ -341,124 +326,98 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
-    /*--- Measure coarse grid residual after MG cycle to assess convergence rate ---*/
-    su2double max_res_coarse_after = 0.0;
-    for (unsigned long iPoint = 0; iPoint < geometry_coarse->GetnPointDomain(); iPoint++) {
-      const su2double* res = solver_coarse->LinSysRes.GetBlock(iPoint);
-      for (unsigned short iVar = 0; iVar < solver_coarse->GetnVar(); iVar++) {
-        max_res_coarse_after = max(max_res_coarse_after, fabs(res[iVar]));
+    /*--- Get current CFL values ---*/
+    su2double CFL_fine = config->GetCFL(iMesh);
+    su2double CFL_coarse_current = config->GetCFL(iMesh+1);
+    su2double current_coeff = CFL_fine / CFL_coarse_current;
+
+    /*--- Adaptive CFL for coarse multigrid levels ---*/
+    constexpr int MAX_MG_LEVELS = 10;
+    static int consecutive_decreasing[MAX_MG_LEVELS] = {};
+    static su2double prev_fine_res[MAX_MG_LEVELS] = {};
+    static su2double min_fine_res[MAX_MG_LEVELS] = {};
+    static int iterations_since_improvement[MAX_MG_LEVELS] = {};
+    static bool initialized = false;
+
+    const unsigned short nMGLevels = config->GetnMGLevels();
+    const unsigned short max_lvl = min(nMGLevels, (unsigned short)MAX_MG_LEVELS);
+
+    if (!initialized) {
+      for (int lvl = 0; lvl < MAX_MG_LEVELS; lvl++) {
+        consecutive_decreasing[lvl] = 0;
+        prev_fine_res[lvl] = 0.0;
+        min_fine_res[lvl] = 1e10;
+        iterations_since_improvement[lvl] = 0;
       }
+      initialized = true;
     }
 
-#ifdef HAVE_MPI
-    su2double global_max_res_coarse_after = 0.0;
-    SU2_MPI::Allreduce(&max_res_coarse_after, &global_max_res_coarse_after, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-    max_res_coarse_after = global_max_res_coarse_after;
-#endif
+    unsigned short lvl = min(iMesh, (unsigned short)(max_lvl - 1));
 
-    /*--- Adaptive CFL based on coarse grid convergence rate ---*/
-    if (max_res_coarse_before > 1e-16) {
-      su2double convergence_rate = max_res_coarse_after / max_res_coarse_before;
+    /*--- Track fine grid RMS residual ---*/
+    su2double rms_res_fine = solver_fine->GetRes_RMS(0);
+    static su2double smoothed_fine_res[MAX_MG_LEVELS] = {};
 
-      /*--- Get current CFL values ---*/
-      su2double CFL_fine = config->GetCFL(iMesh);
-      su2double CFL_coarse_current = config->GetCFL(iMesh+1);
-      su2double current_coeff = CFL_fine / CFL_coarse_current;
+    if (smoothed_fine_res[lvl] < EPS) {
+      smoothed_fine_res[lvl] = rms_res_fine;
+      prev_fine_res[lvl] = rms_res_fine;
+      min_fine_res[lvl] = rms_res_fine;
+    } else {
+      smoothed_fine_res[lvl] = 0.9 * rms_res_fine + 0.1 * smoothed_fine_res[lvl];
+    }
 
-      /*--- Adaptive CFL for coarse multigrid levels ---*/
-      constexpr int MAX_MG_LEVELS = 10;
-      static int consecutive_decreasing[MAX_MG_LEVELS] = {};
-      static su2double prev_fine_res[MAX_MG_LEVELS] = {};
-      static su2double min_fine_res[MAX_MG_LEVELS] = {};
-      static int iterations_since_improvement[MAX_MG_LEVELS] = {};
-      static bool initialized = false;
+    /*--- Track consecutive decreasing iterations ---*/
+    if (smoothed_fine_res[lvl] < prev_fine_res[lvl]) {
+      consecutive_decreasing[lvl] = min(consecutive_decreasing[lvl] + 1, 10);
+    } else {
+      consecutive_decreasing[lvl] = 0;
+    }
+    prev_fine_res[lvl] = smoothed_fine_res[lvl];
 
-      const unsigned short nMGLevels = config->GetnMGLevels();
-      const unsigned short max_lvl = min(nMGLevels, (unsigned short)MAX_MG_LEVELS);
+    /*--- Track best residual for divergence detection only ---*/
+    if (smoothed_fine_res[lvl] < min_fine_res[lvl]) {
+      min_fine_res[lvl] = smoothed_fine_res[lvl];
+      iterations_since_improvement[lvl] = 0;
+    } else {
+      iterations_since_improvement[lvl]++;
+    }
 
-      if (!initialized) {
-        for (int lvl = 0; lvl < MAX_MG_LEVELS; lvl++) {
-          consecutive_decreasing[lvl] = 0;
-          prev_fine_res[lvl] = 0.0;
-          min_fine_res[lvl] = 1e10;
-          iterations_since_improvement[lvl] = 0;
-        }
-        initialized = true;
+    /*--- Sustained convergence: residual decreasing for 5 consecutive iterations ---*/
+    bool sustained_convergence = (consecutive_decreasing[lvl] >= 5);
+
+    /*--- Adapt coefficient based on convergence state ---*/
+    su2double new_coeff = current_coeff;
+
+    if (sustained_convergence) {
+      new_coeff = current_coeff * 0.99;
+    } else
+      new_coeff = current_coeff * 1.1;
+
+    /*--- Clamp and enforce hierarchy ---*/
+    new_coeff = min(3.0, max(1.0, new_coeff));
+    su2double min_safe_coeff = CFL_fine / (0.95 * CFL_fine);
+    new_coeff = max(new_coeff, min_safe_coeff);
+
+    /*--- Update coarse grid CFL if changed significantly ---*/
+    su2double CFL_coarse_new = CFL_fine / new_coeff;
+
+    if (fabs(CFL_coarse_new - CFL_coarse_current) > EPS) {
+      config->SetCFL(iMesh+1, CFL_coarse_new);
+
+      /*--- Update LocalCFL at each coarse grid point ---*/
+      SU2_OMP_FOR_STAT(roundUpDiv(geometry_coarse->GetnPoint(), omp_get_num_threads()))
+      for (auto iPoint = 0ul; iPoint < geometry_coarse->GetnPoint(); iPoint++) {
+        solver_coarse->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
       }
+      END_SU2_OMP_FOR
+    }
 
-      unsigned short lvl = min(iMesh, (unsigned short)(max_lvl - 1));
-
-      /*--- Track fine grid RMS residual ---*/
-      su2double rms_res_fine = solver_fine->GetRes_RMS(0);
-      static su2double smoothed_fine_res[MAX_MG_LEVELS] = {};
-
-      if (smoothed_fine_res[lvl] < 1e-30) {
-        smoothed_fine_res[lvl] = rms_res_fine;
-        prev_fine_res[lvl] = rms_res_fine;
-        min_fine_res[lvl] = rms_res_fine;
-      } else {
-        smoothed_fine_res[lvl] = 0.9 * rms_res_fine + 0.1 * smoothed_fine_res[lvl];
-      }
-
-      /*--- Track consecutive decreasing iterations ---*/
-      if (smoothed_fine_res[lvl] < prev_fine_res[lvl]) {
-        consecutive_decreasing[lvl] = min(consecutive_decreasing[lvl] + 1, 10);
-      } else {
-        consecutive_decreasing[lvl] = 0;
-      }
-      prev_fine_res[lvl] = smoothed_fine_res[lvl];
-
-      /*--- Track best residual for divergence detection only ---*/
-      if (smoothed_fine_res[lvl] < min_fine_res[lvl]) {
-        min_fine_res[lvl] = smoothed_fine_res[lvl];
-        iterations_since_improvement[lvl] = 0;
-      } else {
-        iterations_since_improvement[lvl]++;
-      }
-
-      /*--- Detect actual divergence (not stall during slow convergence) ---*/
-      bool fine_grid_diverging = (smoothed_fine_res[lvl] > 1.5 * min_fine_res[lvl] && min_fine_res[lvl] > 1e-30);
-
-      /*--- Sustained convergence: residual decreasing for 5 consecutive iterations ---*/
-      bool sustained_convergence = (consecutive_decreasing[lvl] >= 5);
-
-      /*--- Adapt coefficient based on convergence state ---*/
-      su2double new_coeff = current_coeff;
-
-      if (fine_grid_diverging) {
-        new_coeff = current_coeff * 1.1;
-      } else if (convergence_rate > 1.0) {
-        new_coeff = current_coeff * (1.0 + 0.10 * min(convergence_rate - 1.0, 1.0));
-      } else if (sustained_convergence) {
-        new_coeff = current_coeff * 0.99;
-      }
-
-      /*--- Clamp and enforce hierarchy ---*/
-      new_coeff = min(3.0, max(1.0, new_coeff));
-      su2double min_safe_coeff = CFL_fine / (0.95 * CFL_fine);
-      new_coeff = max(new_coeff, min_safe_coeff);
-
-      /*--- Update coarse grid CFL if changed significantly ---*/
-      su2double CFL_coarse_new = CFL_fine / new_coeff;
-
-      if (fabs(CFL_coarse_new - CFL_coarse_current) > 1e-8) {
-        config->SetCFL(iMesh+1, CFL_coarse_new);
-
-        /*--- Update LocalCFL at each coarse grid point ---*/
-        SU2_OMP_FOR_STAT(roundUpDiv(geometry_coarse->GetnPoint(), omp_get_num_threads()))
-        for (auto iPoint = 0ul; iPoint < geometry_coarse->GetnPoint(); iPoint++) {
-          solver_coarse->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
-        }
-        END_SU2_OMP_FOR
-      }
-
-      /*--- Output monitoring information periodically ---*/
-      if (SU2_MPI::GetRank() == 0 && config->GetTimeIter() % 50 == 0) {
-        cout << "  MG Level " << iMesh+1 << ": conv_rate = " << convergence_rate
-             << ", consecutive = " << consecutive_decreasing[lvl]
-             << ", sustained = " << (sustained_convergence ? "YES" : "NO")
-             << ", coeff = " << new_coeff << ", CFL = " << CFL_coarse_new << endl;
-      }
+    /*--- Output monitoring information periodically ---*/
+    if (SU2_MPI::GetRank() == 0 && config->GetTimeIter() % 50 == 0) {
+      cout << "  MG Level " << iMesh+1
+            << ", consecutive = " << consecutive_decreasing[lvl]
+            << ", sustained = " << (sustained_convergence ? "YES" : "NO")
+            << ", coeff = " << new_coeff << ", CFL = " << CFL_coarse_new << endl;
     }
 
     SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), 1.25, config);
