@@ -651,6 +651,7 @@ private:
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
+  su2double MSW_Alpha;                  /*!< \brief Coefficient for blending states in the MSW scheme. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
@@ -4450,6 +4451,11 @@ public:
    * \brief Set the Newton-Krylov relaxation.
    */
   void SetNewtonKrylovRelaxation(const su2double& relaxation) { NK_Relaxation = relaxation; }
+
+  /*!
+   * \brief Returns the MSW alpha (coefficient of the state blending weight).
+   */
+  su2double GetMSW_Alpha(void) const { return MSW_Alpha; }
 
   /*!
    * \brief Returns the Roe kappa (multipler of the dissipation term).
