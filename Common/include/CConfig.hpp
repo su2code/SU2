@@ -1121,6 +1121,9 @@ private:
   array<su2double, N_POLY_COEFFS> cp_polycoeffs{{0.0}};  /*!< \brief Array for specific heat polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
+
+  bool Cp_NASA_Format{false}; /*!< \brief Flag to use NASA polynomial format for Cp. */
+
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
 
   struct CMUSCLRampParam {
@@ -2591,6 +2594,21 @@ public:
    * \param[in] val_energy_ref - Value of the reference energy.
    */
   void SetEnergy_Ref(su2double val_energy_ref) { Energy_Ref = val_energy_ref; }
+
+  /*!
+   * \brief Get the flag for using NASA polynomial format for Cp.
+   * \return True if NASA format is used.
+   */
+  bool GetCp_NASA_Format(void) const { return Cp_NASA_Format; }
+
+  /*!
+   * \brief Set the flag for using NASA polynomial format for Cp.
+   * \param[in] val - Value of the flag.
+   */
+  void SetCp_NASA_Format(bool val) { Cp_NASA_Format = val; }
+
+  // Setter for TemperatureLimits (for testing)
+  void SetTemperatureLimits(unsigned short val_index, su2double val) { TemperatureLimits[val_index] = val; }
 
   /*!
    * \brief Set the reference Omega for nondimensionalization.
@@ -4255,6 +4273,7 @@ public:
    * \param[in] val_index - Index of the array with all polynomial coefficients.
    */
   void SetCp_PolyCoeffND(su2double val_coeff, unsigned short val_index) { CpPolyCoefficientsND[val_index] = val_coeff; }
+  void SetCp_PolyCoeff(unsigned short val_index, su2double val) { cp_polycoeffs[val_index] = val; }
 
   /*!
    * \brief Set the temperature polynomial coefficient for viscosity.

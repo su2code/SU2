@@ -15,6 +15,7 @@ su2_cfd_tests = files(['Common/geometry/primal_grid/CPrimalGrid_tests.cpp',
                        'Common/toolboxes/multilayer_perceptron/CLookUp_ANN_tests.cpp',
                        'SU2_CFD/numerics/CNumerics_tests.cpp',
                        'SU2_CFD/fluid/CFluidModel_tests.cpp',
+                       'SU2_CFD/fluid/CIncIdealGasNASA_tests.cpp',
                        'SU2_CFD/gradients.cpp',
                        'SU2_CFD/windowing.cpp'])
 

@@ -201,7 +201,7 @@ constexpr passivedouble COLORING_EFF_THRESH = 0.875;  /*!< \brief Below this val
    assume a quartic form (5 coefficients). For example,
    Cp(T) = b0 + b1*T + b2*T^2 + b3*T^3 + b4*T^4. By default, all coeffs
    are set to zero and will be properly non-dim. in the solver. ---*/
-constexpr int N_POLY_COEFFS = 5; /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */
+constexpr int N_POLY_COEFFS = 10; /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */
 
 /*!
  * \brief Boolean answers

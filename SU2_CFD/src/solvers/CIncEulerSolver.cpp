@@ -30,6 +30,7 @@
 #include "../../include/fluid/CConstantDensity.hpp"
 #include "../../include/fluid/CIncIdealGas.hpp"
 #include "../../include/fluid/CIncIdealGasPolynomial.hpp"
+#include "../../include/fluid/CIncIdealGasNASA.hpp"
 #include "../../include/variables/CIncNSVariable.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/fluid/CFluidScalar.hpp"
@@ -307,11 +308,21 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
       config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic, STD_REF_TEMP);
+      if (config->GetCp_NASA_Format()) {
+        /*--- Use the NASA polynomial model (supports NASA-9 format with 9 coefficients, backward compatible with NASA-7) ---*/
+        auxFluidModel = new CIncIdealGasNASA<9>(config->GetGas_Constant(), Pressure_Thermodynamic, STD_REF_TEMP);
+      } else {
+        /*--- Use the standard polynomial model ---*/
+        auxFluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(config->GetGas_Constant(), Pressure_Thermodynamic, STD_REF_TEMP);
+      }
+      
       if (viscous) {
         /*--- Variable Cp model via polynomial. ---*/
-        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
-          config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar), iVar);
+        if (!config->GetCp_NASA_Format()) {
+             for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
+                config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar), iVar);
+        }
+        /*--- Both models refer to config for coeffs, so setup is handled inside SetCpModel ---*/
         auxFluidModel->SetCpModel(config, Temperature_FreeStream);
       }
       auxFluidModel->SetTDState_T(Temperature_FreeStream);
@@ -499,12 +510,19 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
 
       case INC_IDEAL_GAS_POLY:
-        fluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref());
+        if (config->GetCp_NASA_Format()) {
+             fluidModel = new CIncIdealGasNASA<9>(Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref(), config->GetTemperature_Ref());
+        } else {
+             fluidModel = new CIncIdealGasPolynomial<N_POLY_COEFFS>(Gas_ConstantND, Pressure_ThermodynamicND, STD_REF_TEMP / config->GetTemperature_Ref());
+        }
+        
         if (viscous) {
           /*--- Variable Cp model via polynomial. ---*/
-          config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
-          for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
-            config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
+          if (!config->GetCp_NASA_Format()) {
+              config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
+              for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+                config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
+          }
           fluidModel->SetCpModel(config, Temperature_FreeStreamND);
         }
         fluidModel->SetTDState_T(Temperature_FreeStreamND);
