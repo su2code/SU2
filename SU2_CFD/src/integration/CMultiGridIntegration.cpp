@@ -331,93 +331,155 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     su2double CFL_coarse_current = config->GetCFL(iMesh+1);
     su2double current_coeff = CFL_fine / CFL_coarse_current;
 
-    /*--- Adaptive CFL for coarse multigrid levels ---*/
+    /*--- Adaptive CFL using Exponential Moving Average (EMA) ---*/
+    constexpr int AVG_WINDOW = 5;
     constexpr int MAX_MG_LEVELS = 10;
-    static int consecutive_decreasing[MAX_MG_LEVELS] = {};
-    static su2double prev_fine_res[MAX_MG_LEVELS] = {};
-    static su2double min_fine_res[MAX_MG_LEVELS] = {};
-    static int iterations_since_improvement[MAX_MG_LEVELS] = {};
+    static su2double current_avg[MAX_MG_LEVELS] = {};
+    static su2double prev_avg[MAX_MG_LEVELS] = {};
+    static su2double last_res[MAX_MG_LEVELS] = {};
+    static bool last_was_increase[MAX_MG_LEVELS] = {};
+    static int oscillation_count[MAX_MG_LEVELS] = {};
+    static unsigned long last_check_iter[MAX_MG_LEVELS] = {};
     static bool initialized = false;
 
-    const unsigned short nMGLevels = config->GetnMGLevels();
-    const unsigned short max_lvl = min(nMGLevels, (unsigned short)MAX_MG_LEVELS);
-
     if (!initialized) {
-      for (int lvl = 0; lvl < MAX_MG_LEVELS; lvl++) {
-        consecutive_decreasing[lvl] = 0;
-        prev_fine_res[lvl] = 0.0;
-        min_fine_res[lvl] = 1e10;
-        iterations_since_improvement[lvl] = 0;
+      for (int i = 0; i < MAX_MG_LEVELS; i++) {
+        current_avg[i] = 0.0;
+        prev_avg[i] = 0.0;
+        last_res[i] = 0.0;
+        last_was_increase[i] = false;
+        oscillation_count[i] = 0;
+        last_check_iter[i] = 0;
       }
       initialized = true;
     }
 
-    unsigned short lvl = min(iMesh, (unsigned short)(max_lvl - 1));
+    unsigned short lvl = min(iMesh, (unsigned short)(MAX_MG_LEVELS - 1));
 
-    /*--- Track fine grid RMS residual ---*/
-    su2double rms_res_fine = solver_fine->GetRes_RMS(0);
-    static su2double smoothed_fine_res[MAX_MG_LEVELS] = {};
+    /*--- Use global iteration count ---*/
+    unsigned long iter;
+    if (config->GetTime_Domain())
+      iter = config->GetTimeIter();
+    else
+      iter = config->GetInnerIter();
 
-    if (smoothed_fine_res[lvl] < EPS) {
-      smoothed_fine_res[lvl] = rms_res_fine;
-      prev_fine_res[lvl] = rms_res_fine;
-      min_fine_res[lvl] = rms_res_fine;
-    } else {
-      smoothed_fine_res[lvl] = 0.9 * rms_res_fine + 0.1 * smoothed_fine_res[lvl];
+    /*--- Get sum of all RMS residuals for all variables ---*/
+    su2double rms_res_coarse = 0.0;
+    for (unsigned short iVar = 0; iVar < solver_coarse->GetnVar(); iVar++) {
+      rms_res_coarse += solver_coarse->GetRes_RMS(iVar);
     }
 
-    /*--- Track consecutive decreasing iterations ---*/
-    if (smoothed_fine_res[lvl] < prev_fine_res[lvl]) {
-      consecutive_decreasing[lvl] = min(consecutive_decreasing[lvl] + 1, 10);
-    } else {
-      consecutive_decreasing[lvl] = 0;
-    }
-    prev_fine_res[lvl] = smoothed_fine_res[lvl];
+    /*--- Flip-flop detection: detect oscillating residuals (once per outer iteration) ---*/
+    bool oscillation_detected = false;
+    if (iter != last_check_iter[lvl]) {
+      last_check_iter[lvl] = iter;
 
-    /*--- Track best residual for divergence detection only ---*/
-    if (smoothed_fine_res[lvl] < min_fine_res[lvl]) {
-      min_fine_res[lvl] = smoothed_fine_res[lvl];
-      iterations_since_improvement[lvl] = 0;
-    } else {
-      iterations_since_improvement[lvl]++;
-    }
-
-    /*--- Sustained convergence: residual decreasing for 5 consecutive iterations ---*/
-    bool sustained_convergence = (consecutive_decreasing[lvl] >= 5);
-
-    /*--- Adapt coefficient based on convergence state ---*/
-    su2double new_coeff = current_coeff;
-
-    if (sustained_convergence) {
-      new_coeff = current_coeff * 0.99;
-    } else
-      new_coeff = current_coeff * 1.1;
-
-    /*--- Clamp and enforce hierarchy ---*/
-    new_coeff = min(3.0, max(1.0, new_coeff));
-    su2double min_safe_coeff = CFL_fine / (0.95 * CFL_fine);
-    new_coeff = max(new_coeff, min_safe_coeff);
-
-    /*--- Update coarse grid CFL if changed significantly ---*/
-    su2double CFL_coarse_new = CFL_fine / new_coeff;
-
-    if (fabs(CFL_coarse_new - CFL_coarse_current) > EPS) {
-      config->SetCFL(iMesh+1, CFL_coarse_new);
-
-      /*--- Update LocalCFL at each coarse grid point ---*/
-      SU2_OMP_FOR_STAT(roundUpDiv(geometry_coarse->GetnPoint(), omp_get_num_threads()))
-      for (auto iPoint = 0ul; iPoint < geometry_coarse->GetnPoint(); iPoint++) {
-        solver_coarse->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
+      if (last_res[lvl] > EPS) {
+        bool current_is_increase = (rms_res_coarse > last_res[lvl]);
+        if (current_is_increase != last_was_increase[lvl]) {
+          /*--- Direction changed, increment oscillation counter ---*/
+          oscillation_count[lvl]++;
+          if (oscillation_count[lvl] >= 2) {
+            /*--- Detected 2 consecutive direction changes = oscillation ---*/
+            oscillation_detected = true;
+            oscillation_count[lvl] = 0;  // Reset counter after detecting
+          }
+        } else {
+          /*--- Same direction, reset counter ---*/
+          oscillation_count[lvl] = 0;
+        }
+        last_was_increase[lvl] = current_is_increase;
       }
-      END_SU2_OMP_FOR
+      last_res[lvl] = rms_res_coarse;
     }
+
+    /*--- Update exponential moving average ---*/
+    if (current_avg[lvl] < EPS) {
+      current_avg[lvl] = rms_res_coarse;  // Initialize with first value
+    } else {
+      current_avg[lvl] = (current_avg[lvl] * (AVG_WINDOW - 1) + rms_res_coarse) / AVG_WINDOW;
+    }
+
+    /*--- Check if we should compare and adapt CFL ---*/
+    su2double new_coeff = current_coeff;
+    constexpr su2double MIN_REDUCTION_FACTOR = 0.98;  // Require at least 2% reduction
+    constexpr int UPDATE_INTERVAL = 10;  // Update reference every N iterations
+
+    /*--- Initialize prev_avg on first use ---*/
+    if (prev_avg[lvl] < EPS) {
+      prev_avg[lvl] = current_avg[lvl];
+    }
+
+    /*--- Periodically update prev_avg to allow ratio to reflect accumulated decrease ---*/
+    static unsigned long last_update_iter[MAX_MG_LEVELS] = {};
+    bool should_update = (iter - last_update_iter[lvl] >= UPDATE_INTERVAL);
+
+    /*--- Calculate ratio before any updates for debug output ---*/
+    su2double ratio_for_display = (prev_avg[lvl] > EPS) ? (current_avg[lvl] / prev_avg[lvl]) : 1.0;
+
+    /*--- Immediate CFL reduction for oscillation detection ---*/
+    if (oscillation_detected) {
+      /*--- Oscillating residuals detected: reduce CFL aggressively ---*/
+      new_coeff = current_coeff * 2.0;
+      prev_avg[lvl] = current_avg[lvl];  // Update reference
+      last_update_iter[lvl] = iter;
+    }
+    /*--- Asymmetric adaptation for robustness ---*/
+    else if (prev_avg[lvl] > EPS) {
+      su2double ratio = current_avg[lvl] / prev_avg[lvl];
+      bool sufficient_decrease = (ratio < MIN_REDUCTION_FACTOR);
+      bool increasing_trend = (ratio >= 1.0);
+
+      if (increasing_trend) {
+        /*--- Residual increasing: reduce CFL immediately for robustness ---*/
+        new_coeff = current_coeff * 1.10;
+        prev_avg[lvl] = current_avg[lvl];  // Update reference immediately
+        last_update_iter[lvl] = iter;
+      } else if (sufficient_decrease && should_update) {
+        /*--- Residual decreasing sufficiently: increase CFL ---*/
+        new_coeff = current_coeff * 0.99;
+        prev_avg[lvl] = current_avg[lvl];  // Update reference
+        last_update_iter[lvl] = iter;
+      } else if (should_update && !sufficient_decrease) {
+        /*--- Update reference even if not changing CFL ---*/
+        prev_avg[lvl] = current_avg[lvl];
+        last_update_iter[lvl] = iter;
+      }
+      /*--- Else: wait for next update interval ---*/
+    }
+
+    /*--- Clamp coefficient between 1.0 and 2.0 ---*/
+    new_coeff = min(2.0, max(1.0, new_coeff));
+
+    /*--- Update coarse grid CFL ---*/
+    su2double CFL_coarse_new = max(CFL_fine / 2.0, min(CFL_fine/1.1, CFL_fine / new_coeff));
+    config->SetCFL(iMesh+1, CFL_coarse_new);
+
+    /*--- Update LocalCFL at each coarse grid point ---*/
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry_coarse->GetnPoint(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geometry_coarse->GetnPoint(); iPoint++) {
+      solver_coarse->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
+    }
+    END_SU2_OMP_FOR
+    //}
 
     /*--- Output monitoring information periodically ---*/
-    if (SU2_MPI::GetRank() == 0 && config->GetTimeIter() % 50 == 0) {
+    if (SU2_MPI::GetRank() == 0 && iter % 1 == 0) {
+      bool cfl_increased = (new_coeff < current_coeff);  // Lower coeff = higher CFL
+      bool cfl_decreased = (new_coeff > current_coeff);  // Higher coeff = lower CFL
+      string action = "unchanged";
+      if (cfl_increased) action = "increased";
+      else if (cfl_decreased) action = "decreased";
+
+      su2double percent_reduction = (1.0 - ratio_for_display) * 100.0;
+
       cout << "  MG Level " << iMesh+1
-            << ", consecutive = " << consecutive_decreasing[lvl]
-            << ", sustained = " << (sustained_convergence ? "YES" : "NO")
-            << ", coeff = " << new_coeff << ", CFL = " << CFL_coarse_new << endl;
+           << ", iter = " << iter
+           << ", percent reduction = " << percent_reduction
+           << ", action = " << action
+           << ", oscillation = " << (oscillation_detected ? "yes" : "no")
+           << ", coeff = " << new_coeff << " (was " << current_coeff << ")"
+           << ", CFL = " << CFL_coarse_new << endl;
     }
 
     SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), 1.25, config);
@@ -612,11 +674,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   const su2double level_factor = pow(0.75, iMesh);  // 0.75^iMesh reduces damping progressively
   const su2double factor = base_damp; // * level_factor;
 
-  /*--- Track maximum correction magnitude for monitoring ---*/
-  su2double max_correction_local = 0.0;
-  su2double max_correction_global = 0.0;
-
-  SU2_OMP_FOR_(schedule(static, roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads())) reduction(max:max_correction_local))
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Fine = 0ul; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
     Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
     Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
@@ -627,22 +685,9 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
 
       su2double correction = factor * Residual_Fine[iVar];
       Solution_Fine[iVar] += correction;
-
-     /*--- Track maximum correction ---*/
-      max_correction_local = max(max_correction_local, fabs(correction));
     }
   }
   END_SU2_OMP_FOR
-
-  /*--- Reduce maximum correction across all ranks ---*/
-  SU2_MPI::Allreduce(&max_correction_local, &max_correction_global, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-
-  /*--- Output correction magnitude for monitoring ---*/
-  if (SU2_MPI::GetRank() == 0) {
-    cout << "  MG Level " << iMesh << ": Max correction = " << max_correction_global
-         << ", Damping factor = " << factor << " (base=" << base_damp
-         << " × level_factor=" << level_factor << ")" << endl;
-  }
 
   /*--- MPI the new interpolated solution ---*/
 
