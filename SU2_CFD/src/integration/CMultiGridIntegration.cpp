@@ -27,6 +27,7 @@
 
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
+#include "ComputeLinSysResRMS.hpp"
 
 namespace {
 /*!
@@ -265,6 +266,10 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     }
 
+    /*--- MPI sync after RK stage to ensure halos have updated solution for next smoothing iteration ---*/
+    solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+    solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+
   }
 
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
@@ -334,13 +339,16 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Adaptive CFL using Exponential Moving Average (EMA) ---*/
     constexpr int AVG_WINDOW = 5;
     constexpr int MAX_MG_LEVELS = 10;
-    static su2double current_avg[MAX_MG_LEVELS] = {};
-    static su2double prev_avg[MAX_MG_LEVELS] = {};
-    static su2double last_res[MAX_MG_LEVELS] = {};
-    static bool last_was_increase[MAX_MG_LEVELS] = {};
-    static int oscillation_count[MAX_MG_LEVELS] = {};
-    static unsigned long last_check_iter[MAX_MG_LEVELS] = {};
-    static bool initialized = false;
+
+    /*--- Use thread-local storage instead of static to avoid MPI rank conflicts ---*/
+    /*--- Each MPI rank maintains its own independent adaptive CFL state ---*/
+    thread_local su2double current_avg[MAX_MG_LEVELS] = {};
+    thread_local su2double prev_avg[MAX_MG_LEVELS] = {};
+    thread_local su2double last_res[MAX_MG_LEVELS] = {};
+    thread_local bool last_was_increase[MAX_MG_LEVELS] = {};
+    thread_local int oscillation_count[MAX_MG_LEVELS] = {};
+    thread_local unsigned long last_check_iter[MAX_MG_LEVELS] = {};
+    thread_local bool initialized = false;
 
     if (!initialized) {
       for (int i = 0; i < MAX_MG_LEVELS; i++) {
@@ -363,11 +371,25 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     else
       iter = config->GetInnerIter();
 
-    /*--- Get sum of all RMS residuals for all variables ---*/
-    su2double rms_res_coarse = 0.0;
+    /*--- Get sum of all RMS residuals for all variables (local to this rank) ---*/
+    su2double rms_res_coarse_local = 0.0;
     for (unsigned short iVar = 0; iVar < solver_coarse->GetnVar(); iVar++) {
-      rms_res_coarse += solver_coarse->GetRes_RMS(iVar);
+      rms_res_coarse_local += solver_coarse->GetRes_RMS(iVar);
     }
+
+    /*--- MPI synchronization: ensure all ranks use the same global residual value ---*/
+    /*--- This is critical for consistent CFL adaptation across all ranks ---*/
+    su2double rms_res_coarse = rms_res_coarse_local;
+
+#ifdef HAVE_MPI
+    /*--- For coarse grids, residuals are not globally reduced by default ---*/
+    /*--- We need to synchronize them for consistent adaptive CFL decisions ---*/
+    if (geometry_coarse->GetMGLevel() > 0) {
+      su2double rms_global_sum = 0.0;
+      SU2_MPI::Allreduce(&rms_res_coarse_local, &rms_global_sum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      rms_res_coarse = rms_global_sum / static_cast<su2double>(SU2_MPI::GetSize());
+    }
+#endif
 
     /*--- Flip-flop detection: detect oscillating residuals (once per outer iteration) ---*/
     bool oscillation_detected = false;
@@ -411,7 +433,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     }
 
     /*--- Periodically update prev_avg to allow ratio to reflect accumulated decrease ---*/
-    static unsigned long last_update_iter[MAX_MG_LEVELS] = {};
+    thread_local unsigned long last_update_iter[MAX_MG_LEVELS] = {};
     bool should_update = (iter - last_update_iter[lvl] >= UPDATE_INTERVAL);
 
     /*--- Calculate ratio before any updates for debug output ---*/
@@ -453,6 +475,13 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     /*--- Update coarse grid CFL ---*/
     su2double CFL_coarse_new = max(CFL_fine / 2.0, min(CFL_fine/1.1, CFL_fine / new_coeff));
+
+#ifdef HAVE_MPI
+    /*--- Ensure all ranks use the same CFL value (broadcast from rank 0) ---*/
+    /*--- This prevents rank drift when residual variations are small ---*/
+    SU2_MPI::Bcast(&CFL_coarse_new, 1, MPI_DOUBLE, 0, SU2_MPI::GetComm());
+#endif
+
     config->SetCFL(iMesh+1, CFL_coarse_new);
 
     /*--- Update LocalCFL at each coarse grid point ---*/
@@ -464,6 +493,11 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     //}
 
     /*--- Output monitoring information periodically ---*/
+#ifdef HAVE_MPI
+    /*--- Synchronize all ranks before output to ensure consistent state ---*/
+    SU2_MPI::Barrier(SU2_MPI::GetComm());
+#endif
+
     if (SU2_MPI::GetRank() == 0 && iter % 1 == 0) {
       bool cfl_increased = (new_coeff < current_coeff);  // Lower coeff = higher CFL
       bool cfl_decreased = (new_coeff > current_coeff);  // Higher coeff = lower CFL
@@ -510,6 +544,11 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
         solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
 
       }
+
+      /*--- MPI sync after RK stage to ensure halos have updated solution for next smoothing iteration ---*/
+      solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+      solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+
     }
   }
 

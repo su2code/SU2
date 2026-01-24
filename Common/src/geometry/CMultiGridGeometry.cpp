@@ -502,9 +502,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    they are domain points. ---*/
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
-    cout << " marker name = " << config->GetMarker_All_TagBound(iMarker) << endl;
-    cout << " marker type = " << config->GetMarker_All_KindBC(iMarker) << endl;
-    cout << " send/recv = " << config->GetMarker_All_SendRecv(iMarker) << endl;
     if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) && (config->GetMarker_All_SendRecv(iMarker) > 0)) {
       const auto MarkerS = iMarker;      // sending marker
       const auto MarkerR = iMarker + 1;  // receiving marker
