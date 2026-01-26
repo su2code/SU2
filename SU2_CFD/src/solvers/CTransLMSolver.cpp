@@ -546,8 +546,10 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
         const auto index = counter * Restart_Vars[1] + skipVars;
         for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-        nodes->SetIntermittencySep(iPoint_Local,  Restart_Data[index + 2]);
-        nodes->SetIntermittencyEff(iPoint_Local,  Restart_Data[index + 3]);
+        
+        const su2double gamma = nodes->GetSolution(iPoint_Local, 0);
+        nodes->SetIntermittencySep(iPoint_Local, gamma);
+        nodes->SetIntermittencyEff(iPoint_Local, gamma);
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
