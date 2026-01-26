@@ -489,7 +489,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       solver_coarse->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
     }
     END_SU2_OMP_FOR
-    //}
 
     /*--- Output monitoring information periodically ---*/
 #ifdef HAVE_MPI
