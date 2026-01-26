@@ -27,7 +27,6 @@
 
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
-#include "ComputeLinSysResRMS.hpp"
 
 namespace {
 /*!
@@ -334,7 +333,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Get current CFL values ---*/
     su2double CFL_fine = config->GetCFL(iMesh);
     su2double CFL_coarse_current = config->GetCFL(iMesh+1);
-    su2double current_coeff = CFL_fine / CFL_coarse_current;
+    su2double current_coeff = CFL_coarse_current / CFL_fine;
 
     /*--- Adaptive CFL using Exponential Moving Average (EMA) ---*/
     constexpr int AVG_WINDOW = 5;
@@ -401,8 +400,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
         if (current_is_increase != last_was_increase[lvl]) {
           /*--- Direction changed, increment oscillation counter ---*/
           oscillation_count[lvl]++;
-          if (oscillation_count[lvl] >= 2) {
-            /*--- Detected 2 consecutive direction changes = oscillation ---*/
+          if (oscillation_count[lvl] >= 4) {
+            /*--- Detected 4 consecutive direction changes = oscillation ---*/
             oscillation_detected = true;
             oscillation_count[lvl] = 0;  // Reset counter after detecting
           }
@@ -425,7 +424,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Check if we should compare and adapt CFL ---*/
     su2double new_coeff = current_coeff;
     constexpr su2double MIN_REDUCTION_FACTOR = 0.98;  // Require at least 2% reduction
-    constexpr int UPDATE_INTERVAL = 10;  // Update reference every N iterations
+    constexpr int UPDATE_INTERVAL = 5;  // Update reference every N iterations
 
     /*--- Initialize prev_avg on first use ---*/
     if (prev_avg[lvl] < EPS) {
@@ -439,42 +438,42 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Calculate ratio before any updates for debug output ---*/
     su2double ratio_for_display = (prev_avg[lvl] > EPS) ? (current_avg[lvl] / prev_avg[lvl]) : 1.0;
 
-    /*--- Immediate CFL reduction for oscillation detection ---*/
-    if (oscillation_detected) {
-      /*--- Oscillating residuals detected: reduce CFL aggressively ---*/
-      new_coeff = current_coeff * 2.0;
-      prev_avg[lvl] = current_avg[lvl];  // Update reference
-      last_update_iter[lvl] = iter;
-    }
+
     /*--- Asymmetric adaptation for robustness ---*/
-    else if (prev_avg[lvl] > EPS) {
+    if (prev_avg[lvl] > EPS) {
       su2double ratio = current_avg[lvl] / prev_avg[lvl];
       bool sufficient_decrease = (ratio < MIN_REDUCTION_FACTOR);
       bool increasing_trend = (ratio >= 1.0);
 
       if (increasing_trend) {
         /*--- Residual increasing: reduce CFL immediately for robustness ---*/
-        new_coeff = current_coeff * 1.10;
-        prev_avg[lvl] = current_avg[lvl];  // Update reference immediately
+        new_coeff = current_coeff * 0.90;
+        /*--- Update reference since we're reacting immediately ---*/
+        prev_avg[lvl] = current_avg[lvl];
         last_update_iter[lvl] = iter;
       } else if (sufficient_decrease && should_update) {
         /*--- Residual decreasing sufficiently: increase CFL ---*/
-        new_coeff = current_coeff * 0.99;
-        prev_avg[lvl] = current_avg[lvl];  // Update reference
-        last_update_iter[lvl] = iter;
-      } else if (should_update && !sufficient_decrease) {
-        /*--- Update reference even if not changing CFL ---*/
+        new_coeff = current_coeff * 1.05;
+        /*--- Update reference only when we actually increase CFL ---*/
         prev_avg[lvl] = current_avg[lvl];
         last_update_iter[lvl] = iter;
       }
-      /*--- Else: wait for next update interval ---*/
     }
 
-    /*--- Clamp coefficient between 1.0 and 2.0 ---*/
-    new_coeff = min(2.0, max(1.0, new_coeff));
+    /*--- CFL reduction for oscillation detection ---*/
+    if (oscillation_detected) {
+      new_coeff = current_coeff * 0.75;
+      /*--- Update reference after oscillation response ---*/
+      prev_avg[lvl] = current_avg[lvl];
+      last_update_iter[lvl] = iter;
+    }
+
+    /*--- Clamp coefficient between 0.5 and 1.0 ---*/
+    new_coeff = max(0.5, min(1.0, new_coeff));
 
     /*--- Update coarse grid CFL ---*/
-    su2double CFL_coarse_new = max(CFL_fine / 2.0, min(CFL_fine/1.1, CFL_fine / new_coeff));
+    su2double CFL_coarse_new = max(0.5 * CFL_fine, min(CFL_fine, CFL_fine * new_coeff));
+
 
 #ifdef HAVE_MPI
     /*--- Ensure all ranks use the same CFL value (broadcast from rank 0) ---*/
@@ -706,12 +705,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   su2double *Solution_Fine, *Residual_Fine;
 
   const unsigned short nVar = sol_fine->GetnVar();
-  //const su2double factor = config->GetDamp_Correc_Prolong();
-
-  /*--- Apply level-dependent damping: more aggressive damping on deeper coarse levels ---*/
-  const su2double base_damp = config->GetDamp_Correc_Prolong();
-  const su2double level_factor = pow(0.75, iMesh);  // 0.75^iMesh reduces damping progressively
-  const su2double factor = base_damp; // * level_factor;
+  const su2double factor = config->GetDamp_Correc_Prolong();
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Fine = 0ul; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
