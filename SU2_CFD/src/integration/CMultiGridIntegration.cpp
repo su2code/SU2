@@ -423,8 +423,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     /*--- Check if we should compare and adapt CFL ---*/
     su2double new_coeff = current_coeff;
-    constexpr su2double MIN_REDUCTION_FACTOR = 0.98;  // Require at least 2% reduction
-    constexpr int UPDATE_INTERVAL = 5;  // Update reference every N iterations
+    const su2double MIN_REDUCTION_FACTOR = 0.98;  // Require at least 2% reduction
+    const int UPDATE_INTERVAL = 5;  // Update reference every N iterations
 
     /*--- Initialize prev_avg on first use ---*/
     if (prev_avg[lvl] < EPS) {
