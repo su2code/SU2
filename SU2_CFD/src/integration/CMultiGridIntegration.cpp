@@ -436,7 +436,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     bool should_update = (iter - last_update_iter[lvl] >= UPDATE_INTERVAL);
 
     /*--- Calculate ratio before any updates for debug output ---*/
-    su2double ratio_for_display = (prev_avg[lvl] > EPS) ? (current_avg[lvl] / prev_avg[lvl]) : 1.0;
+    su2double ratio_for_display = (prev_avg[lvl] > EPS) ? (current_avg[lvl] / prev_avg[lvl]) : su2double(1.0);
 
 
     /*--- Asymmetric adaptation for robustness ---*/
