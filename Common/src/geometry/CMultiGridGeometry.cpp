@@ -806,8 +806,6 @@ bool CMultiGridGeometry::GeometricalCheck(unsigned long iPoint, const CGeometry*
   return (Stretching && Volume);
 }
 
-void CMultiGridGeometry::ComputeSurfStraightness(CConfig* config) { CGeometry::ComputeSurfStraightness(config, true); }
-
 bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<short> marker_seed,
                                                const CGeometry* fine_grid, const CConfig* config) const {
   bool agglomerate_CV = false;

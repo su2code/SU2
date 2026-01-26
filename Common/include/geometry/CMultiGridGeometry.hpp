@@ -68,12 +68,6 @@ class CMultiGridGeometry final : public CGeometry {
                             unsigned long Index_CoarseCV, const CGeometry* fine_grid) const;
 
   /*!
-   * \brief Compute surface straightness for multigrid geometry.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeSurfStraightness(CConfig* config);
-
-  /*!
    * \brief Compute local curvature at a boundary vertex on Euler wall.
    * \param[in] fine_grid - Fine grid geometry.
    * \param[in] iPoint - Point index.
