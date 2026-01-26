@@ -571,9 +571,9 @@ def main():
     test_list.append(schubauer_klebanoff_transition)
  
     # LM Transition model restart
-    lm_transition_restart           = TestCase('lm_transition_restart')
-    lm_transition_restart.cfg_dir   = "transition/LM_NACA0012"
-    lm_transition_restart.cfg_file  = "trans_LM_restart.cfg"
+    lm_transition_restart = TestCase('lm_transition_restart')
+    lm_transition_restart.cfg_dir = "transition/LM_NACA0012"
+    lm_transition_restart.cfg_file = "trans_LM_restart.cfg"
     lm_transition_restart.test_iter = 4
     lm_transition_restart.test_vals = [-1.654301, -5.151570, -2.075488, 0.000000, 0.000000]
     lm_transition_restart.tol = 0.001
