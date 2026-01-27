@@ -177,8 +177,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           /*--- agglomerate if one of the 2 markers are MPI markers. ---*/
           if (nDim == 2)
             if ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
-                               (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE))
-                               agglomerate_seed = false;
+                (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE))
+              agglomerate_seed = false;
 
           /*--- agglomerate if both markers are the same. ---*/
           if (nDim == 3) agglomerate_seed = (copy_marker[0] == copy_marker[1]);
