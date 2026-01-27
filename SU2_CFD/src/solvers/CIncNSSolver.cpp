@@ -254,6 +254,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     su2double Volume_Local = 0.0, Volume_Global = 0.0;
     su2double Volume_VTemp_Local = 0.0, Volume_VTemp_Global = 0.0;
     su2double turb_b1_coeff_Local = 0.0, turb_b1_coeff_Global = 0.0;
+    su2double b1_coeff_new_Local = 0.0, b1_coeff_new_Global = 0.0;
 
     /*--- Loop over all heatflux Markers ---*/
     for (unsigned long iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
@@ -270,19 +271,34 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
       // coeff_b1 for turbulence
       if (turbulent && (config->GetnMarker_Isothermal() != 0)) {
-        su2double dot_product= 0.0;
+        su2double dot_product= 0.0, length= 0.0;
+              for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+                length += config->GetPeriodic_Translation(0)[iDim] * config->GetPeriodic_Translation(0)[iDim];
+        }
+
+        length = sqrt(length);
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          dot_product += config->GetPeriodic_Translation(0)[iDim]* nodes->GetAuxVarGradient(iPoint, 0, iDim);
+          dot_product += config->GetPeriodic_Translation(0)[iDim]* nodes->GetAuxVarGradient(iPoint, 0, iDim)/length;
         }
         // su2double dot_product = GeometryToolbox::DotProduct(nDim, config->GetPeriodic_Translation(0), nodes->GetAuxVarGradient(iPoint, 0));
         turb_b1_coeff_Local += Temp * dot_product * config->GetSpecific_Heat_Cp() * volume  / config->GetPrandtl_Turb();
       }
-        su2double dot_product_vel= 0.0;
+        su2double dot_product_vel= 0.0, length= 0.0;
         for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-          dot_product_vel += config->GetPeriodic_Translation(0)[iDim]* nodes->GetVelocity(iPoint, iDim);
+            length += config->GetPeriodic_Translation(0)[iDim] * config->GetPeriodic_Translation(0)[iDim];
+        }
+        length = sqrt(length);
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          dot_product_vel += config->GetPeriodic_Translation(0)[iDim]* nodes->GetVelocity(iPoint, iDim)/length;
+        }
+        su2double dot_product_theta= 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          dot_product_theta += config->GetPeriodic_Translation(0)[iDim] * nodes->GetGradient_Primitive(iPoint)[prim_idx.Temperature()][iDim]/length;
         }
 
       Volume_VTemp_Local += volume * Temp * dot_product_vel * nodes->GetDensity(iPoint) * config->GetSpecific_Heat_Cp();
+
+      b1_coeff_new_Local += 2 * nodes->GetThermalConductivity(iPoint) * dot_product_theta * volume;
 
     } // points
 
@@ -291,6 +307,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     SU2_MPI::Allreduce(&Volume_VTemp_Local, &Volume_VTemp_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&Volume_Local, &Volume_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     SU2_MPI::Allreduce(&Volume_TempS_Local, &Volume_TempS_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(&b1_coeff_new_Local, &b1_coeff_new_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
     if (turbulent && (config->GetnMarker_Isothermal() != 0))
       SU2_MPI::Allreduce(&turb_b1_coeff_Local, &turb_b1_coeff_Global, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
@@ -301,13 +318,18 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
     if (config->GetnMarker_Isothermal() > 0) {
       SPvals.Streamwise_Periodic_ThetaScaling = Volume_TempS_Global/Volume_Global;
       
-      for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+      for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         nodes->SetStreamwise_Periodic_RecoveredTemperature(iPoint, nodes->GetTemperature(iPoint)/SPvals.Streamwise_Periodic_ThetaScaling);
+        // nodes->SetTemperature(iPoint, nodes->GetTemperature(iPoint)/SPvals.Streamwise_Periodic_ThetaScaling);
+      }
 
       /*--- Set the solver variable Lambda_L for iso-thermal BCs ---*/
       const su2double b0_coeff =  Volume_Temp_Global; 
-      const su2double b1_coeff = Volume_VTemp_Global  + turb_b1_coeff_Global;
+      const su2double b1_coeff = Volume_VTemp_Global  - turb_b1_coeff_Global - b1_coeff_new_Global;
       const su2double b2_coeff = -dTdn_Global;
+
+      cout<<"b1_coeff_new_Global :: "<<b1_coeff_new_Global<<endl;
+      cout<<"turb_b1_coeff_Global :: "<<turb_b1_coeff_Global<<endl;
 
       /*--- Find the value of Lambda L by solving the quadratic equation ---*/
       const su2double pred_lambda = (- b1_coeff + sqrt(b1_coeff * b1_coeff - 4 * b0_coeff * b2_coeff))/(2 * b0_coeff);
