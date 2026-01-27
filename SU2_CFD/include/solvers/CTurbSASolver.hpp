@@ -39,7 +39,9 @@
 
 class CTurbSASolver final : public CTurbSolver {
 private:
-  su2double nu_tilde_Engine, nu_tilde_ActDisk;
+
+  su2double nu_tilde_Engine[4] = {0.0};
+  su2double nu_tilde_ActDisk[4] = {0.0};
 
   /*!
    * \brief A virtual member.
@@ -50,6 +52,20 @@ private:
   void SetDES_LengthScale(CSolver** solver,
                           CGeometry *geometry,
                           CConfig *config);
+
+  /*!
+   * \brief Update the source terms of the stochastic equations (Stochastic Backscatter Model).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition.
+   */
+  void SetLangevinSourceTerms(CConfig *config, CGeometry* geometry);
+
+  /*!
+   * \brief Apply Laplacian smoothing to the source terms in Langevin equations (Stochastic Backscatter Model).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition.
+   */
+  void SmoothLangevinSourceTerms(CConfig* config, CGeometry* geometry);
 
   /*!
    * \brief Compute nu tilde from the wall functions.

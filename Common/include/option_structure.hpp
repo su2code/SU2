@@ -820,7 +820,8 @@ enum class CENTERED {
   JST,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
   LAX,            /*!< \brief Lax-Friedrich centered numerical method. */
   JST_MAT,        /*!< \brief JST with matrix dissipation. */
-  JST_KE          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
+  JST_KE,         /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
+  LD2             /*!< \brief Low-Dissipation Low-Dispersion (LD2) centered scheme. */
 };
 static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("NONE", CENTERED::NONE)
@@ -828,6 +829,7 @@ static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("JST_KE", CENTERED::JST_KE)
   MakePair("JST_MAT", CENTERED::JST_MAT)
   MakePair("LAX-FRIEDRICH", CENTERED::LAX)
+  MakePair("LD2", CENTERED::LD2)
 };
 
 
@@ -2697,6 +2699,7 @@ enum class MPI_QUANTITIES {
   MAX_LENGTH           ,  /*!< \brief Maximum length communication. */
   GRID_VELOCITY        ,  /*!< \brief Grid velocity communication. */
   SOLUTION_EDDY        ,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
+  STOCH_SOURCE_LANG    ,  /*!< \brief Stochastic source term for Langevin equations communication. */
   SOLUTION_MATRIX      ,  /*!< \brief Matrix solution communication. */
   SOLUTION_MATRIXTRANS ,  /*!< \brief Matrix transposed solution communication. */
   NEIGHBORS            ,  /*!< \brief Neighbor point count communication (for JST). */

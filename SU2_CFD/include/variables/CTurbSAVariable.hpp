@@ -28,6 +28,7 @@
 #pragma once
 
 #include "CTurbVariable.hpp"
+#include <random>
 
 /*!
  * \class CTurbSAVariable
@@ -40,7 +41,11 @@ class CTurbSAVariable final : public CTurbVariable {
 
 private:
   VectorType DES_LengthScale;
+  VectorType lesMode;
+  MatrixType stochSource;
+  MatrixType stochSourceOld;
   VectorType Vortex_Tilting;
+  VectorType besselIntegral;
 
 public:
   /*!
@@ -74,6 +79,49 @@ public:
   inline void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) override { DES_LengthScale(iPoint) = val_des_lengthscale; }
 
   /*!
+   * \brief Get the source terms for the stochastic equations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \return Value of the source term for the stochastic equations.
+   */
+  inline su2double GetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim) const override { return stochSource(iPoint, iDim); }
+
+  /*!
+   * \brief Set the source terms for the stochastic equations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSource - Value of the source term for the stochastic equations.
+   */
+  inline void SetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim, su2double val_stochSource) override { stochSource(iPoint, iDim) = val_stochSource; }
+
+  /*!
+   * \brief Get the old value of the source terms for the stochastic equations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \return Old value of the source terms for the stochastic equations.
+   */
+  inline su2double GetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim) const override { return stochSourceOld(iPoint, iDim); }
+
+  /*!
+   * \brief Set the old value of source terms for the stochastic equations.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSource_old - Old value of the source term for the stochastic equations.
+   */
+  inline void SetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim, su2double val_stochSource_old) override { stochSourceOld(iPoint, iDim) = val_stochSource_old; }
+
+  /*!
+   * \brief Set the LES sensor.
+   */
+  inline void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) override { lesMode(iPoint) = val_les_mode; }
+
+  /*!
+   * \brief Get the LES sensor.
+   * \return Value of the LES sensor.
+   */
+  inline su2double GetLES_Mode(unsigned long iPoint) const override { return lesMode(iPoint); }
+
+  /*!
    * \brief Set the vortex tilting measure for computation of the EDDES length scale
    * \param[in] iPoint - Point index.
    */
@@ -86,5 +134,18 @@ public:
    * \return Value of the DES length Scale
    */
   inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
+
+  /*!
+   * \brief Set the integral of the product of three Bessel functions appearing in Laplacian smoothing.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_integral - Value of the integral.
+   */
+  inline void SetBesselIntegral(unsigned long iPoint, su2double val_integral) override { besselIntegral(iPoint) = val_integral; }
+
+  /*!
+   * \brief Get the the integral of the product of three Bessel functions appearing in Laplacian smoothing.
+   * \return Value of the integral.
+   */
+  inline su2double GetBesselIntegral(unsigned long iPoint) const override { return besselIntegral(iPoint); }
 
 };

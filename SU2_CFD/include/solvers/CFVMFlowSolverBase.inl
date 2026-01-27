@@ -434,9 +434,10 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool backscatter = config->GetStochastic_Backscatter();
 
   CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
+  if (tkeNeeded || backscatter) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
@@ -466,6 +467,29 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
   if (tkeNeeded)
     numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
                                    turbNodes->GetSolution(jPoint,0));
+
+  /*--- Stochastic variables from Langevin equations (Stochastic Backscatter Model). ---*/
+
+  if (backscatter) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      numerics->SetStochVar(iDim, turbNodes->GetSolution(iPoint, iDim+1),
+                                  turbNodes->GetSolution(jPoint, iDim+1));
+    su2double DES_length_i = turbNodes->GetDES_LengthScale(iPoint);
+    su2double DES_length_j = turbNodes->GetDES_LengthScale(jPoint);
+    su2double lesMode_i = (DES_length_i > 1e-10) ? turbNodes->GetLES_Mode(iPoint) : 0.0;
+    su2double lesMode_j = (DES_length_j > 1e-10) ? turbNodes->GetLES_Mode(jPoint) : 0.0;
+    const su2double threshold = 0.9;
+    su2double tke_i = 0.0, tke_j = 0.0;
+    if (max(lesMode_i, lesMode_j) > threshold) {
+      su2double eddyVisc_i = turbNodes->GetmuT(iPoint) / nodes->GetDensity(iPoint);
+      su2double eddyVisc_j = turbNodes->GetmuT(jPoint) / nodes->GetDensity(jPoint);
+      su2double strainMag_i = nodes->GetStrainMag(iPoint);
+      su2double strainMag_j = nodes->GetStrainMag(jPoint);
+      tke_i = strainMag_i * eddyVisc_i;
+      tke_j = strainMag_j * eddyVisc_j;
+    }
+    numerics->SetTurbKineticEnergy(tke_i, tke_j);
+  }
 
   /*--- Wall shear stress values (wall functions) ---*/
 

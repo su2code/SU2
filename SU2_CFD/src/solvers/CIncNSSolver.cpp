@@ -360,7 +360,7 @@ void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* ge
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
 
   unsigned long iPoint, nonPhysicalPoints = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0, LES_Mode = 0.0;
   const su2double* scalar = nullptr;
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
   const SPECIES_MODEL species_model = config->GetKind_Species_Model();
@@ -380,6 +380,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
         DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
+        LES_Mode = solver_container[TURB_SOL]->GetNodes()->GetLES_Mode(iPoint); 
       }
     }
 
@@ -399,6 +400,10 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
     /*--- Set the DES length scale ---*/
 
     nodes->SetDES_LengthScale(iPoint,DES_LengthScale);
+
+    /*--- Set the LES sensor ---*/
+
+    nodes->SetLES_Mode(iPoint, LES_Mode);
 
   }
   END_SU2_OMP_FOR

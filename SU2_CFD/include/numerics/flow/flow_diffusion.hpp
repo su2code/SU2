@@ -61,6 +61,7 @@ protected:
   Mean_Cp,                                /*!< \brief Mean value of the specific heat capacity at constant pressure. */
   Mean_turb_ke,                           /*!< \brief Mean value of the turbulent kinetic energy. */
   Mean_TauWall,                           /*!< \brief Mean wall shear stress (wall functions). */
+  Mean_StochVar[3],                       /*!< \brief Mean stochastic variables (Stochastic Backscatter Model). */
   TauWall_i, TauWall_j,                   /*!< \brief Wall shear stress at point i and j (wall functions). */
   dist_ij_2,                              /*!< \brief Length of the edge and face, squared */
   Edge_Vector[MAXNDIM] = {0.0};           /*!< \brief Vector from point i to point j. */
@@ -199,12 +200,14 @@ public:
    * \param[in] val_turb_ke - Turbulent kinetic energy
    * \param[in] val_laminar_viscosity - Laminar viscosity.
    * \param[in] val_eddy_viscosity - Eddy viscosity.
+   * \param[in] config - Definition of the particular problem.
    */
   void SetStressTensor(const su2double *val_primvar,
                        const su2double* const *val_gradprimvar,
                        su2double val_turb_ke,
                        su2double val_laminar_viscosity,
-                       su2double val_eddy_viscosity);
+                       su2double val_eddy_viscosity,
+                       const CConfig* config);
 
   /*!
    * \brief Get a component of the viscous stress tensor.

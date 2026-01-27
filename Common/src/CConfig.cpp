@@ -2960,8 +2960,38 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
+  /* DESCRIPTION: SBS lengthscale coefficient */
+  addDoubleOption("SBS_LENGTHSCALE_COEFF", SBS_Cdelta, 0.1);
+
+  /* DESCRIPTION: Maximum number of smoothing iterations for SBS model. */
+  addUnsignedShortOption("SBS_MAX_ITER_SMOOTH", SBS_maxIterSmooth, 100);
+
+  /* DESCRIPTION: SBS timescale coefficient */
+  addDoubleOption("SBS_TIMESCALE_COEFF", SBS_Ctau, 0.05);
+
+  /* DESCRIPTION: SBS intensity coefficient */
+  addDoubleOption("SBS_INTENSITY_COEFF", SBS_Cmag, 1.0);
+
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
   addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
+
+  /* DESCRIPTION: Specify if the Stochastic Backscatter Model must be activated */
+  addBoolOption("STOCHASTIC_BACKSCATTER", StochasticBackscatter, false);
+
+  /* DESCRIPTION: Specify if the LES mode must be enforced */
+  addBoolOption("ENFORCE_LES", enforceLES, false);
+
+  /* DESCRIPTION: Specify if the stochastic source term must be included in the turbulence model equation */
+  addBoolOption("STOCH_SOURCE_NU", stochSourceNu, true);
+
+  /* DESCRIPTION: Enable diagnostics of the stochastic source term in Langevin equations. */
+  addBoolOption("STOCH_SOURCE_DIAGNOSTICS", stochSourceDiagnostics, false);
+
+  /* DESCRIPTION: Relaxation factor for the stochastic source term (Stochastic Backscatter Model). */
+  addDoubleOption("SBS_RELAXATION_FACTOR", stochSourceRelax, 0.0);
+
+  /* DESCRIPTION: Filter width for LES (if negative, it is computed based on the local cell size) */
+  addDoubleOption("LES_FILTER_WIDTH", LES_FilterWidth, -1.0);
 
   /* DESCRIPTION: Roe with low dissipation for unsteady flows */
   addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
@@ -6522,6 +6552,44 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
+        if (Kind_HybridRANSLES != NO_HYBRIDRANSLES) {
+          if (LES_FilterWidth > 0.0) cout << "User-specified LES filter width: " << LES_FilterWidth << endl;
+          cout << "Stochastic Backscatter: ";
+          if (StochasticBackscatter) {
+            cout << "ON" << endl;
+            cout << "Backscatter intensity coefficient: " << SBS_Cmag << endl;
+            if (SBS_Cmag < 0.0)
+              SU2_MPI::Error("Backscatter intensity coefficient must be non-negative.", CURRENT_FUNCTION);
+            cout << "Backscatter lengthscale coefficient: " << SBS_Cdelta << endl;
+            if (SBS_Cdelta < 0.0)
+              SU2_MPI::Error("Backscatter lengthscale coefficient must be non-negative.", CURRENT_FUNCTION);
+            cout << "Backscatter timescale coefficient: " << SBS_Ctau << endl;
+            if (SBS_Ctau < 0.0)
+              SU2_MPI::Error("Backscatter timescale coefficient must be non-negative.", CURRENT_FUNCTION);
+            if (SBS_maxIterSmooth > 0)
+              cout << "Maximum number of iterations for implicit smoothing: " << SBS_maxIterSmooth << endl;
+            else
+              cout << "No smoothing applied to source terms in Langevin equations." << endl;
+            if (stochSourceNu)
+              cout << "Stochastic source term included in turbulence model equation." << endl;
+            else
+              cout << "Stochastic source term NOT included in turbulence model equation." << endl;
+            if (stochSourceRelax > 0.0)
+              cout << "Relaxation factor for stochastic source term: " << stochSourceRelax << endl;
+            else
+              cout << "No relaxation factor for stochastic source term." << endl;
+          } else {
+            cout << "OFF" << endl;
+          }
+        }
+        if (StochasticBackscatter && Kind_HybridRANSLES == NO_HYBRIDRANSLES)
+          SU2_MPI::Error("Stochastic Backscatter can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
+        if (enforceLES) {
+          if (Kind_HybridRANSLES == NO_HYBRIDRANSLES)
+            SU2_MPI::Error("ENFORCE_LES can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
+          else
+            cout << "LES enforced in the whole computational domain." << endl;
+        }
         break;
       case MAIN_SOLVER::NEMO_EULER:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
@@ -7090,11 +7158,20 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           cout << "Lax viscous coefficients (1st): " << Kappa_1st_Flow << ".\n";
           cout << "First order integration." << endl;
         }
-        else {
-          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms.\n";
-          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << ".\n";
-          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
+        else if (Kind_Centered_Flow == CENTERED::LD2) {
+          cout << "Low-Dissipation Low-Dispersion (LD2) scheme for the flow inviscid terms." << endl;
+          if (!(Kind_Solver==MAIN_SOLVER::INC_EULER || Kind_Solver==MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver==MAIN_SOLVER::INC_RANS))
+            SU2_MPI::Error("LD2 scheme not yet implemented for the compressible flow solver.", CURRENT_FUNCTION);
+          if (Kind_FluidModel != CONSTANT_DENSITY)
+            SU2_MPI::Error("LD2 scheme available for constant density flows only.", CURRENT_FUNCTION);
+          if (Energy_Equation)
+            cout << "WARNING: Current implementation of the LD2 scheme not compatible with the energy equation. JST employed in energy equation instead." << endl;
         }
+        else {
+            cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms.\n";
+        }
+        cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << ".\n";
+        cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
       }
 
       if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {

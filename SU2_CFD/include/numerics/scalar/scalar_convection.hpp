@@ -52,6 +52,7 @@ class CUpwScalar : public CNumerics {
   const FlowIndices idx;            /*!< \brief Object to manage the access to the flow primitives. */
   su2double a0 = 0.0;               /*!< \brief The maximum of the face-normal velocity and 0. */
   su2double a1 = 0.0;               /*!< \brief The minimum of the face-normal velocity and 0. */
+  su2double m_ij = 0.0;              /*!< \brief Face-normal momentum (Langevin equations). */
   su2double Flux[MAXNVAR];          /*!< \brief Final result, diffusive flux/residual. */
   su2double* Jacobian_i[MAXNVAR];   /*!< \brief Flux Jacobian w.r.t. node i. */
   su2double* Jacobian_j[MAXNVAR];   /*!< \brief Flux Jacobian w.r.t. node j. */
@@ -138,6 +139,13 @@ class CUpwScalar : public CNumerics {
       }
       a0 = fmax(0.0, q_ij);
       a1 = fmin(0.0, q_ij);
+    }
+
+    if (config->GetStochastic_Backscatter()) {
+      m_ij = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        m_ij += 0.5 * (V_i[idx.Density()]*V_i[iDim + idx.Velocity()] + V_j[idx.Density()]*V_j[iDim + idx.Velocity()]) * Normal[iDim];
+      }
     }
 
     FinishResidualCalc(config);

@@ -52,6 +52,7 @@ private:
 
   VectorType Tau_Wall;          /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale;   /*!< \brief DES Length Scale. */
+  VectorType lesMode;          /*!< \brief Sensor for local simulation mode (0=RANS, 1=LES). */
   VectorType Roe_Dissipation;   /*!< \brief Roe low dissipation coefficient. */
   VectorType Vortex_Tilting;    /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
 

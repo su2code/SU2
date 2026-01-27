@@ -34,6 +34,7 @@
 #include <cmath>
 #include <iostream>
 #include <cstdlib>
+#include <random>
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/containers/container_decorators.hpp"
@@ -396,6 +397,46 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline virtual void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   */
+  inline virtual su2double GetLES_Mode(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_les_mode - Value of the LES sensor.
+   */
+  inline virtual void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   */
+  inline virtual su2double GetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSource - Source term in Langevin equations.
+   */
+  inline virtual void SetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim, su2double val_stochSource) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_integral - Value of the integral.
+   */
+  inline virtual void SetBesselIntegral(unsigned long iPoint, su2double val_integral) {}
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double GetBesselIntegral(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member.

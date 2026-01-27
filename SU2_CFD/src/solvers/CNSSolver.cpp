@@ -150,6 +150,8 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
         su2double DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
         nodes->SetDES_LengthScale(iPoint, DES_LengthScale);
+        su2double LES_Mode = solver_container[TURB_SOL]->GetNodes()->GetLES_Mode(iPoint);
+        nodes->SetLES_Mode(iPoint, LES_Mode);
       }
     }
 

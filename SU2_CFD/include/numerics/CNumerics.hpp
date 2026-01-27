@@ -32,6 +32,7 @@
 #include <iostream>
 #include <limits>
 #include <cstdlib>
+#include <random>
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
@@ -184,6 +185,14 @@ protected:
   roughness_j = 0.0;                       /*!< \brief Roughness of the wall nearest to point j. */
 
   su2double MeanPerturbedRSM[3][3];   /*!< \brief Perturbed Reynolds stress tensor  */
+  su2double stochReynStress[3][3] = {{0.0}}; /*!< \brief Stochastic contribution to Reynolds stress tensor for Backscatter Model. */
+  su2double stochSource[3] = {0.0}; /*!< \brief Source term for Langevin equations in Stochastic Backscatter Model. */
+  su2double
+  stochVar_i[3] = {0.0}, /*!< \brief Stochastic variables at point i for Stochastic Backscatter Model. */
+  stochVar_j[3] = {0.0}; /*!< \brief Stochastic variables at point j for Stochastic Backscatter Model. */
+  su2double
+  lesMode_i = 0.0, /*!< \brief LES sensor at point i for hybrid RANS-LES methods. */
+  lesMode_j = 0.0; /*!< \brief LES sensor at point j for hybrid RANS-LES methods. */
   SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
@@ -640,6 +649,61 @@ public:
       }
     }
   }
+  
+  /*!
+   * \brief Compute a random contribution to the Reynolds stress tensor (Stochastic Backscatter Model).
+   * \details See: Kok, Johan C. "A stochastic backscatter model for grey-area mitigation in detached
+   * eddy simulations." Flow, Turbulence and Combustion 99.1 (2017): 119-150.
+   * \param[in] nDim - Dimension of the flow problem, 2 or 3.
+   * \param[in] density - Density.
+   * \param[in] tke - Turbulent kinetic energy.
+   * \param[in] rndVec - Vector of stochastic variables from Langevin equations.
+   * \param[in] Cmag - Stochastic backscatter intensity coefficient.
+   * \param[out] stochReynStress - Stochastic tensor (to be added to the Reynolds stress tensor).
+   */
+  template<class Mat, class Scalar, class Vector>
+  NEVERINLINE static void ComputeStochReynStress(size_t nDim, Scalar density, Scalar tke,
+                                                 Vector rndVec, Scalar Cmag, Mat& stochReynStress) {
+
+    /* --- Calculate stochastic tensor --- */
+
+    stochReynStress[0][0] = 0.0;
+    stochReynStress[1][1] = 0.0;
+    stochReynStress[2][2] = 0.0;
+    stochReynStress[0][1] =   Cmag * density * tke * rndVec[2];
+    stochReynStress[0][2] = - Cmag * density * tke * rndVec[1];
+    stochReynStress[1][2] =   Cmag * density * tke * rndVec[0];
+    stochReynStress[1][0] = - stochReynStress[1][0];
+    stochReynStress[2][0] = - stochReynStress[2][0];
+    stochReynStress[2][1] = - stochReynStress[2][1];
+
+  }
+
+    /*!
+   * \brief Compute relaxation factor for stochastic source term in momentum equations (Stochastic Backscatter Model).
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] intensityCoeff - Relaxation factor for backscatter intensity.
+   */
+  NEVERINLINE static su2double ComputeStochRelaxFactor(const CConfig* config) {
+
+    unsigned long timeIter = config->GetTimeIter();
+    unsigned long restartIter = config->GetRestart_Iter();
+    su2double SBS_Cmag = config->GetSBS_Cmag();
+    su2double SBS_RelaxFactor = config->GetStochSourceRelax();
+    su2double intensityCoeff = SBS_Cmag;
+    if (SBS_RelaxFactor > 0.0) {
+      su2double FS_Vel = config->GetModVel_FreeStream();
+      su2double ReynoldsLength = config->GetLength_Reynolds();
+      su2double timeScale = ReynoldsLength / FS_Vel;
+      unsigned long timeIter = config->GetTimeIter();
+      unsigned long restartIter = config->GetRestart_Iter();
+      su2double timeStep = config->GetTime_Step();
+      su2double currentTime = (timeIter - restartIter) * timeStep;
+      intensityCoeff = SBS_Cmag * (1.0 - exp(- currentTime / (timeScale*SBS_RelaxFactor)));
+    }
+    return intensityCoeff;
+
+  }
 
   /*!
    * \brief Project average gradient onto normal (with or w/o correction) for viscous fluxes of scalar quantities.
@@ -839,6 +903,27 @@ public:
   }
 
   /*!
+   * \brief Set the stochastic variables from Langevin equations (Stochastic Backscatter Model).
+   * \param[in] val_stochvar_i - Value of the stochastic variable at point i.
+   * \param[in] val_stochvar_j - Value of the stochastic variable at point j.
+   * \param[in] iDim - Index of Langevin equation.
+   */
+  inline void SetStochVar(unsigned short iDim, su2double val_stochvar_i, su2double val_stochvar_j) {
+    stochVar_i[iDim] = val_stochvar_i;
+    stochVar_j[iDim] = val_stochvar_j;
+  }
+
+  /*!
+   * \brief Set the LES sensor for hybrid RANS-LES methods.
+   * \param[in] val_lesMode_i - Value of the LES sensor at point i.
+   * \param[in] val_lesMode_j - Value of the LES sensor at point j.
+   */
+  inline void SetLES_Mode(su2double val_lesMode_i, su2double val_lesMode_j) {
+    lesMode_i = val_lesMode_i;
+    lesMode_j = val_lesMode_j;
+  }
+
+  /*!
    * \brief Set the value of the distance from the nearest wall.
    * \param[in] val_dist_i - Value of of the distance from point i to the nearest wall.
    * \param[in] val_dist_j - Value of of the distance from point j to the nearest wall.
@@ -846,6 +931,15 @@ public:
   void SetDistance(su2double val_dist_i, su2double val_dist_j) {
     dist_i = val_dist_i;
     dist_j = val_dist_j;
+  }
+
+  /*!
+   * \brief Set the stochastic source term for the Langevin equations (Backscatter Model).
+   * \param[in] val_stoch_source - Value of stochastic source term.
+   * \param[in] iDim - Index of Langevin equation.
+   */
+  void SetStochSource(su2double val_stoch_source, unsigned short iDim) {
+    stochSource[iDim] = val_stoch_source;
   }
 
   /*!
