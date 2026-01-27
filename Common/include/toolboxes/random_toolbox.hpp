@@ -25,67 +25,80 @@
  */
 
 #pragma once
-
-#include <random>
-#include <functional>
+#include <cstdint>
 
 namespace RandomToolbox {
 /// \addtogroup RandomToolbox
 /// @{
 
 /*!
- * \brief Combine two 64-bit integers into a single hash value.
- * \param[in] v1 Current hash value.
- * \param[in] v2 Value to mix in.
- * \return Combined hash value.
+ * \brief SplitMix64 hash function for 64-bit integers.
+ * \param[in] x Input value to hash.
+ * \return Hashed 64-bit output.
  */
-inline unsigned long HashCombine(unsigned long v1, unsigned long v2) {
-  const unsigned long prime = 1099511628211ULL;
-  v1 ^= v2;
-  v1 *= prime;
-  return v1;
+static inline uint64_t splitmix64(uint64_t x) {
+    x += 0x9e3779b97f4a7c15ULL;                  // golden ratio offset
+    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL; // first mixing step
+    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL; // second mixing step
+    return x ^ (x >> 31);                        // final avalanche
 }
 
 /*!
- * \brief Convert a double to a 64-bit integer suitable for hashing.
- * \param[in] x Double to integer.
- * \return Hash value of the double (not portable).
+ * \brief Generate a deterministic 64-bit hash from three integers.
+ * \param[in] nodeIndex Global node index.
+ * \param[in] iDim Dimension index.
+ * \param[in] timeIter Current time iteration of the simulation.
+ * \return 64-bit hash value.
  */
-inline unsigned long ToUInt64(double x) { return std::hash<double>{}(x); }
-
-/*!
- * \brief Build a deterministic seed from physical time.
- * \param[in] x First integer value.
- * \param[in] y Second integer value.
- * \param[in] z Third integer value.
- * \return 64-bit seed value.
- */
-inline unsigned long GetSeed(unsigned long x, unsigned long y, unsigned long z) {
-  return HashCombine(HashCombine(x, y), z);
+inline uint64_t GetHash(unsigned long nodeIndex, unsigned short iDim, unsigned long timeIter) {
+    uint64_t x = nodeIndex;
+    x ^= splitmix64(iDim);
+    x ^= splitmix64(timeIter);
+    return splitmix64(x);
 }
 
 /*!
- * \brief Generate a standard normally-distributed random number.
- * \param[in] gen Pseudo-random number generator.
- * \param[in] mean Mean of the normal distribution (default 0).
- * \param[in] stddev Standard deviation of the normal distribution (default 1).
- * \return Normally-distributed random number.
+ * \brief Convert a 64-bit hash into a uniform double in (0,1].
+ * Uses the top 53 bits of the hash to fill the mantissa of a double.
+ * Ensures the result is never zero, suitable for Box-Muller transform.
+ * \param[in] x 64-bit hash.
+ * \return Uniform double in the interval (0,1].
  */
-inline double GetRandomNormal(std::mt19937& gen, double mean = 0.0, double stddev = 1.0) {
-  std::normal_distribution<double> rnd(mean, stddev);
-  return rnd(gen);
+inline double HashToUniform(uint64_t x) {
+    constexpr double inv53 = 1.0 / 9007199254740992.0; // 1/2^53
+    uint64_t uInt = x >> 11;                           // top 53 bits
+    return (uInt + 1) * inv53;                         // map to (0,1]
 }
 
 /*!
- * \brief Generate a uniformly-distributed random number.
- * \param[in] gen Pseudo-random number generator.
- * \param[in] xmin Lower boundary of the interval (default 0).
- * \param[in] xmax Upper bounary of the interval (default 1).
- * \return Uniformly-distributed random number.
+ * \brief Generate a standard normal random number from a 64-bit hash.
+ * Uses two deterministic uniforms derived from the hash and its bitwise NOT
+ * as inputs to the Box-Muller transform.
+ * \param[in] x 64-bit hash.
+ * \return Standard normal random number (mean=0, stddev=1).
  */
-inline double GetRandomUniform(std::mt19937& gen, double xmin = 0.0, double xmax = 1.0) {
-  std::uniform_real_distribution<double> rnd(xmin, xmax);
-  return rnd(gen);
+inline double HashToNormal(uint64_t x) {
+    constexpr double pi = 3.14159265358979323846;
+    double u = HashToUniform(x);    // first uniform
+    double v = HashToUniform(~x);   // second uniform (bitwise NOT)
+    double r = sqrt(-2.0 * log(u));  
+    double theta = 2.0 * pi * v;
+    return r * cos(theta);          // one normal sample
+}
+
+/*!
+ * \brief Generate a deterministic standard normal number for a cell, dimension, and timestep.
+ * 
+ * Combines hashing and Box-Muller in one function.
+ * 
+ * \param[in] nodeIndex Global node index.
+ * \param[in] dim Dimension index.
+ * \param[in] timeIter Simulation timestep (1-based).
+ * \return Standard normal random number.
+ */
+inline double GetNormal(unsigned long nodeIndex, unsigned long dim, unsigned long timeIter) {
+    uint64_t hash = GetHash(nodeIndex, dim, timeIter);
+    return HashToNormal(hash);
 }
 
 /*!
@@ -95,29 +108,20 @@ inline double GetRandomUniform(std::mt19937& gen, double xmin = 0.0, double xmax
  */
 inline double GetBesselZero(double x) {
   double abx = fabs(x);
-
   if (abx < 3.75) {
-    double t = x / 3.75;
-    double p =
-        1.0 +
-        t * t *
-            (3.5156229 +
-             t * t * (3.0899424 + t * t * (1.2067492 + t * t * (0.2659732 + t * t * (0.0360768 + t * t * 0.0045813)))));
+    double t = abx / 3.75;
+    double p = 1.0 + t * t * (3.5156229 + t * t * (3.0899424 + t * t * (1.2067492 + t * t * (0.2659732 + t * t * (0.0360768 + t * t * 0.0045813)))));
     return log(p);
   } else {
     double t = 3.75 / abx;
-    double poly =
-        0.39894228 +
-        t * (0.01328592 +
-             t * (0.00225319 +
-                  t * (-0.00157565 +
-                       t * (0.00916281 + t * (-0.02057706 + t * (0.02635537 + t * (-0.01647633 + t * 0.00392377)))))));
+    double poly = 0.39894228 + t * (0.01328592 + t * (0.00225319 + t * (-0.00157565 + t * (0.00916281 + t * (-0.02057706 + t * (0.02635537 + t * (-0.01647633 + t * 0.00392377)))))));
     return abx - 0.5 * log(abx) + log(poly);
   }
 }
 
 /*!
- * \brief Compute integral involving product of three modified Bessel functions.
+ * \brief Compute integral involving the product of three modified Bessel functions. 
+ *  Useful for scaling the smoothed stochastic source terms in Langevin equations.
  * \param[in] beta_x Argument in x-direction.
  * \param[in] beta_y Argument in y-direction.
  * \param[in] beta_z Argument in z-direction.
@@ -128,26 +132,20 @@ inline double GetBesselIntegral(double beta_x, double beta_y, double beta_z) {
   const double Bx = 2.0 * beta_x;
   const double By = 2.0 * beta_y;
   const double Bz = 2.0 * beta_z;
-
   const int N = 4000;
-  const double t_max = 40.0;
+  const double t_max = 20.0;
   const double dt = t_max / N;
-
   double sum = 0.0;
-
-  for (int i = 1; i < N; i++) {
+  for (int i = 1; i <= N; i++) {
     double t = i * dt;
-
     double lx = GetBesselZero(Bx * t);
     double ly = GetBesselZero(By * t);
     double lz = GetBesselZero(Bz * t);
-
     double lin = log(t) - A * t + lx + ly + lz;
-
     double integrand = exp(lin);
+    if (i==N) integrand *= 0.5;
     sum += integrand;
   }
-
   return sum * dt;
 }
 

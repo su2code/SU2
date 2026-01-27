@@ -1703,34 +1703,29 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       const su2double lesSensor = Node_Flow->GetLES_Mode(iPoint);
       const su2double mag = config->GetSBS_Cmag();
       const su2double threshold = 0.9;
+      const auto VelocityGradient = Node_Flow->GetVelocityGradient(iPoint);
+      su2double strainMag2 = 0.0;
+      for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+        strainMag2 += pow(VelocityGradient(iDim, iDim), 2);
+      }
+      strainMag2 += 2.0*pow(0.5*(VelocityGradient(0,1) + VelocityGradient(1,0)), 2);
+      if (nDim == 3) {
+        strainMag2 += 2.0*pow(0.5*(VelocityGradient(0,2) + VelocityGradient(2,0)), 2);
+        strainMag2 += 2.0*pow(0.5*(VelocityGradient(1,2) + VelocityGradient(2,1)), 2);
+      }
+      strainMag2 *= 2.0;
       su2double tke_estim = 0.0;
-      if (lesSensor > threshold) tke_estim = pow(nu_t/DES_lengthscale, 2.0);
+      if (lesSensor > threshold) tke_estim = sqrt(strainMag2) * nu_t;
       const su2double csi_x = Node_Turb->GetSolution(iPoint, 1);
       const su2double csi_y = Node_Turb->GetSolution(iPoint, 2);
-      const su2double csi_z = (nDim==3) ? Node_Turb->GetSolution(iPoint, 3) : 0.0;
+      const su2double csi_z = Node_Turb->GetSolution(iPoint, 3);
       const su2double R_xy =   mag * tke_estim * csi_z;
       const su2double R_xz = - mag * tke_estim * csi_y;
       const su2double R_yz =   mag * tke_estim * csi_x;
-      const auto vel_grad = Node_Flow->GetVelocityGradient(iPoint);
-      const su2double vel_div = vel_grad(0,0) + vel_grad(1,1) + (nDim ==3 ? vel_grad(2,2) : 0.0);
-      const su2double tau_xx = nu_t * (2*vel_grad(0,0) - (2.0/3.0)*vel_div);
-      const su2double tau_yy = nu_t * (2*vel_grad(1,1) - (2.0/3.0)*vel_div);
-      const su2double tau_xy = nu_t * (vel_grad(0,1) + vel_grad(1,0));
-      su2double tau_zz=0.0, tau_xz=0.0, tau_yz=0.0;
-      if (nDim == 3){
-        tau_zz = nu_t * (2*vel_grad(2,2) - (2.0/3.0)*vel_div);
-        tau_xz = nu_t * (vel_grad(0,2) + vel_grad(2,0));
-        tau_yz = nu_t * (vel_grad(1,2) + vel_grad(2,1));
-      }
-      const su2double energy_res_to_mod = tau_xx * vel_grad(0,0) + tau_yy * vel_grad(1,1)
-                                        + (nDim==3 ? tau_zz * vel_grad(2,2) : 0.0)
-                                        + tau_xy * (vel_grad(0,1) + vel_grad(1,0))
-                                        + (nDim==3 ?  tau_xz * (vel_grad(0,2) + vel_grad(2,0))
-                                                    + tau_yz * (vel_grad(1,2) + vel_grad(2,1)) : 0.0);
-      const su2double energy_backscatter = R_xy * (vel_grad(0,1) - vel_grad(1,0))
-                                         + (nDim==3 ? R_xz * (vel_grad(0,2) - vel_grad(2,0)) +
-                                                      R_yz * (vel_grad(1,2) - vel_grad(2,1)) : 0.0);
-      const su2double energy_backscatter_ratio = energy_backscatter / (energy_res_to_mod + 1e-12);
+      const su2double energy_res_to_mod = nu_t * strainMag2;
+      const auto vorticity = Node_Flow->GetVorticity(iPoint);
+      const su2double energy_backscatter = R_xy*vorticity[2] - R_xz*vorticity[1] + R_yz*vorticity[0];
+      const su2double energy_backscatter_ratio = energy_backscatter / (energy_res_to_mod + 1e-10);
       SetVolumeOutputValue("ENERGY_BACKSCATTER_RATIO", iPoint, energy_backscatter_ratio);
     }
   }
@@ -1760,10 +1755,20 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       const su2double mag = config->GetSBS_Cmag();
       const su2double threshold = 0.9;
       su2double tke_estim = 0.0;
-      if (lesSensor > threshold) tke_estim = pow(nu_t/DES_lengthscale, 2.0);
+      su2double strainMag2 = 0.0;
+      for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+        strainMag2 += pow(vel_grad(iDim, iDim), 2);
+      }
+      strainMag2 += 2.0*pow(0.5*(vel_grad(0,1) + vel_grad(1,0)), 2);
+      if (nDim == 3) {
+        strainMag2 += 2.0*pow(0.5*(vel_grad(0,2) + vel_grad(2,0)), 2);
+        strainMag2 += 2.0*pow(0.5*(vel_grad(1,2) + vel_grad(2,1)), 2);
+      }
+      strainMag2 *= 2.0;
+      if (lesSensor > threshold) tke_estim = sqrt(strainMag2) * nu_t;
       const su2double csi_x = Node_Turb->GetSolution(iPoint, 1);
       const su2double csi_y = Node_Turb->GetSolution(iPoint, 2);
-      const su2double csi_z = (nDim==3) ? Node_Turb->GetSolution(iPoint, 3) : 0.0;
+      const su2double csi_z = Node_Turb->GetSolution(iPoint, 3);
       const su2double R_xy =   mag * tke_estim * csi_z;
       const su2double R_xz = - mag * tke_estim * csi_y;
       const su2double R_yz =   mag * tke_estim * csi_x;

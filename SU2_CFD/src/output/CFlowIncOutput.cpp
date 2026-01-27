@@ -322,8 +322,6 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("GRID_VELOCITY-Z", "Grid_Velocity_z", "GRID_VELOCITY", "z-component of the grid velocity vector");
   }
 
-  AddVolumeOutput("VELOCITY_DIVERGENCE", "Velocity_Divergence", "DERIVED", "Divergence of the velocity field");
-
   // Primitive variables
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
   AddVolumeOutput("DENSITY",        "Density",              "PRIMITIVE", "Density");
@@ -434,13 +432,6 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     if (nDim == 3)
       SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel(iPoint)[2]);
   }
-
-  const auto VelocityGradient = Node_Flow->GetVelocityGradient(iPoint);
-  su2double divVel = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    divVel += VelocityGradient[iDim][iDim];
-  }
-  SetVolumeOutputValue("VELOCITY_DIVERGENCE", iPoint, divVel);
 
   const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
   SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())/factor);

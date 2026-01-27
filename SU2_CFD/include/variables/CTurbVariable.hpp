@@ -111,4 +111,19 @@ public:
    * \param[in] input - Boolean whether In- or Output should be registered.
    */
   void RegisterEddyViscosity(bool input);
+
+    /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   */
+  inline virtual su2double GetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSource_old - Old value of source term in Langevin equations.
+   */
+  inline virtual void SetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim, su2double val_stochSource_old) {}
 };

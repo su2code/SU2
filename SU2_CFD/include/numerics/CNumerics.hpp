@@ -185,14 +185,14 @@ protected:
   roughness_j = 0.0;                       /*!< \brief Roughness of the wall nearest to point j. */
 
   su2double MeanPerturbedRSM[3][3];   /*!< \brief Perturbed Reynolds stress tensor  */
-  su2double stochReynStress[3][3];    /*!< \brief Stochastic contribution to Reynolds stress tensor for Backscatter Model. */
+  su2double stochReynStress[3][3] = {{0.0}}; /*!< \brief Stochastic contribution to Reynolds stress tensor for Backscatter Model. */
   su2double stochSource[3] = {0.0}; /*!< \brief Source term for Langevin equations in Stochastic Backscatter Model. */
   su2double
-  stochVar_i[3], /*!< \brief Stochastic variables at point i for Stochastic Backscatter Model. */
-  stochVar_j[3]; /*!< \brief Stochastic variables at point j for Stochastic Backscatter Model. */
+  stochVar_i[3] = {0.0}, /*!< \brief Stochastic variables at point i for Stochastic Backscatter Model. */
+  stochVar_j[3] = {0.0}; /*!< \brief Stochastic variables at point j for Stochastic Backscatter Model. */
   su2double
-  lesMode_i, /*!< \brief LES sensor at point i for hybrid RANS-LES methods. */
-  lesMode_j; /*!< \brief LES sensor at point j for hybrid RANS-LES methods. */
+  lesMode_i = 0.0, /*!< \brief LES sensor at point i for hybrid RANS-LES methods. */
+  lesMode_j = 0.0; /*!< \brief LES sensor at point j for hybrid RANS-LES methods. */
   SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
@@ -656,13 +656,14 @@ public:
    * eddy simulations." Flow, Turbulence and Combustion 99.1 (2017): 119-150.
    * \param[in] nDim - Dimension of the flow problem, 2 or 3.
    * \param[in] density - Density.
-   * \param[in] eddyVis - Eddy viscosity.
-   * \param[in] velGrad - Velocity gradient matrix.
+   * \param[in] tke - Turbulent kinetic energy.
+   * \param[in] rndVec - Vector of stochastic variables from Langevin equations.
+   * \param[in] Cmag - Stochastic backscatter intensity coefficient.
    * \param[out] stochReynStress - Stochastic tensor (to be added to the Reynolds stress tensor).
    */
   template<class Mat, class Scalar, class Vector>
   NEVERINLINE static void ComputeStochReynStress(size_t nDim, Scalar density, Scalar tke,
-                                                 Vector rndVec, Mat& stochReynStress, Scalar Cmag) {
+                                                 Vector rndVec, Scalar Cmag, Mat& stochReynStress) {
 
     /* --- Calculate stochastic tensor --- */
 
@@ -675,6 +676,32 @@ public:
     stochReynStress[1][0] = - stochReynStress[1][0];
     stochReynStress[2][0] = - stochReynStress[2][0];
     stochReynStress[2][1] = - stochReynStress[2][1];
+
+  }
+
+    /*!
+   * \brief Compute relaxation factor for stochastic source term in momentum equations (Stochastic Backscatter Model).
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] intensityCoeff - Relaxation factor for backscatter intensity.
+   */
+  NEVERINLINE static su2double ComputeStochRelaxFactor(const CConfig* config) {
+
+    unsigned long timeIter = config->GetTimeIter();
+    unsigned long restartIter = config->GetRestart_Iter();
+    su2double SBS_Cmag = config->GetSBS_Cmag();
+    su2double SBS_RelaxFactor = config->GetStochSourceRelax();
+    su2double intensityCoeff = SBS_Cmag;
+    if (SBS_RelaxFactor > 0.0) {
+      su2double FS_Vel = config->GetModVel_FreeStream();
+      su2double ReynoldsLength = config->GetLength_Reynolds();
+      su2double timeScale = ReynoldsLength / FS_Vel;
+      unsigned long timeIter = config->GetTimeIter();
+      unsigned long restartIter = config->GetRestart_Iter();
+      su2double timeStep = config->GetTime_Step();
+      su2double currentTime = (timeIter - restartIter) * timeStep;
+      intensityCoeff = SBS_Cmag * (1.0 - exp(- currentTime / (timeScale*SBS_RelaxFactor)));
+    }
+    return intensityCoeff;
 
   }
 
@@ -881,7 +908,7 @@ public:
    * \param[in] val_stochvar_j - Value of the stochastic variable at point j.
    * \param[in] iDim - Index of Langevin equation.
    */
-  inline void SetStochVar(su2double val_stochvar_i, su2double val_stochvar_j, unsigned short iDim) {
+  inline void SetStochVar(unsigned short iDim, su2double val_stochvar_i, su2double val_stochvar_j) {
     stochVar_i[iDim] = val_stochvar_i;
     stochVar_j[iDim] = val_stochvar_j;
   }

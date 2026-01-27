@@ -234,8 +234,6 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
       AddVolumeOutput("GRID_VELOCITY-Z", "Grid_Velocity_z", "GRID_VELOCITY", "z-component of the grid velocity vector");
   }
 
-  AddVolumeOutput("VELOCITY_DIVERGENCE", "Velocity_Divergence", "DERIVED", "Divergence of the velocity field");
-
   // Primitive variables
   AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure");
   AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE", "Temperature");
@@ -326,13 +324,6 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   } else {
     SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(iPoint, 3));
   }
-
-  const auto VelocityGradient = Node_Flow->GetVelocityGradient(iPoint);
-  su2double divVel = 0.0;
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    divVel += VelocityGradient[iDim][iDim];
-  }
-  SetVolumeOutputValue("VELOCITY_DIVERGENCE", iPoint, divVel);
 
   if (gridMovement){
     SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);

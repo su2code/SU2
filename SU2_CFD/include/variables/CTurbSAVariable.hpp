@@ -41,9 +41,9 @@ class CTurbSAVariable final : public CTurbVariable {
 
 private:
   VectorType DES_LengthScale;
-  VectorType LES_Mode;
+  VectorType lesMode;
   MatrixType stochSource;
-  MatrixType stochSource_old;
+  MatrixType stochSourceOld;
   VectorType Vortex_Tilting;
   VectorType besselIntegral;
 
@@ -100,7 +100,7 @@ public:
    * \param[in] iDim - Dimension index.
    * \return Old value of the source terms for the stochastic equations.
    */
-  inline su2double GetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim) const override { return stochSource_old(iPoint, iDim); }
+  inline su2double GetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim) const override { return stochSourceOld(iPoint, iDim); }
 
   /*!
    * \brief Set the old value of source terms for the stochastic equations.
@@ -108,18 +108,18 @@ public:
    * \param[in] iDim - Dimension index.
    * \param[in] val_stochSource_old - Old value of the source term for the stochastic equations.
    */
-  inline void SetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim, su2double val_stochSource_old) override { stochSource_old(iPoint, iDim) = val_stochSource_old; }
+  inline void SetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim, su2double val_stochSource_old) override { stochSourceOld(iPoint, iDim) = val_stochSource_old; }
 
   /*!
    * \brief Set the LES sensor.
    */
-  inline void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) override { LES_Mode(iPoint) = val_les_mode; }
+  inline void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) override { lesMode(iPoint) = val_les_mode; }
 
   /*!
    * \brief Get the LES sensor.
    * \return Value of the LES sensor.
    */
-  inline su2double GetLES_Mode(unsigned long iPoint) const override { return LES_Mode(iPoint); }
+  inline su2double GetLES_Mode(unsigned long iPoint) const override { return lesMode(iPoint); }
 
   /*!
    * \brief Set the vortex tilting measure for computation of the EDDES length scale

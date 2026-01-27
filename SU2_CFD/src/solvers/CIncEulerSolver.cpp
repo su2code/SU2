@@ -959,7 +959,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
   const bool implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool center     = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  const bool center_jst = (config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0);
+  const bool center_jst = (config->GetKind_Centered_Flow() == CENTERED::JST || config->GetKind_Centered_Flow() == CENTERED::LD2) && (iMesh == MESH_0);
   const bool outlet     = (config->GetnMarker_Outlet() != 0);
 
   /*--- Set the primitive variables ---*/
@@ -1132,9 +1132,9 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
   unsigned long iPoint, jPoint;
 
   const bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool jst_scheme  = ((config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0));
+  const bool jst_scheme  = ((config->GetKind_Centered_Flow() == CENTERED::JST || config->GetKind_Centered_Flow() == CENTERED::LD2) && (iMesh == MESH_0));
   const bool bounded_scalar = config->GetBounded_Scalar();
-  const bool LD2_Scheme = config->GetLD2_Scheme();
+  const bool LD2_Scheme = (config->GetKind_Centered_Flow() == CENTERED::LD2);
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/

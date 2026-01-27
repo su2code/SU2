@@ -471,13 +471,9 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
   /*--- Stochastic variables from Langevin equations (Stochastic Backscatter Model). ---*/
 
   if (backscatter) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      numerics->SetStochVar(turbNodes->GetSolution(iPoint, 1 + iDim),
-                            turbNodes->GetSolution(jPoint, 1 + iDim), iDim);
-    }
-    su2double rho = nodes->GetDensity(iPoint);
-    su2double eddy_visc_i = turbNodes->GetmuT(iPoint) / rho;
-    su2double eddy_visc_j = turbNodes->GetmuT(jPoint) / rho;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      numerics->SetStochVar(iDim, turbNodes->GetSolution(iPoint, iDim+1),
+                                  turbNodes->GetSolution(jPoint, iDim+1));
     su2double DES_length_i = turbNodes->GetDES_LengthScale(iPoint);
     su2double DES_length_j = turbNodes->GetDES_LengthScale(jPoint);
     su2double lesMode_i = (DES_length_i > 1e-10) ? turbNodes->GetLES_Mode(iPoint) : 0.0;
@@ -485,9 +481,12 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
     const su2double threshold = 0.9;
     su2double tke_i = 0.0, tke_j = 0.0;
     if (max(lesMode_i, lesMode_j) > threshold) {
-      tke_i = pow(eddy_visc_i/DES_length_i, 2);
-      tke_j = tke_i;
-      if (geometry->nodes->GetDomain(jPoint)) tke_j = pow(eddy_visc_j/DES_length_j, 2);
+      su2double eddyVisc_i = turbNodes->GetmuT(iPoint) / nodes->GetDensity(iPoint);
+      su2double eddyVisc_j = turbNodes->GetmuT(jPoint) / nodes->GetDensity(jPoint);
+      su2double strainMag_i = nodes->GetStrainMag(iPoint);
+      su2double strainMag_j = nodes->GetStrainMag(jPoint);
+      tke_i = strainMag_i * eddyVisc_i;
+      tke_j = strainMag_j * eddyVisc_j;
     }
     numerics->SetTurbKineticEnergy(tke_i, tke_j);
   }

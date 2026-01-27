@@ -1107,7 +1107,6 @@ private:
   su2double stochSourceRelax;          /*!< \brief Relaxation factor for stochastic source term generation (Stochastic Backscatter Model). */
   bool enforceLES;                     /*!< \brief Option to enforce LES mode in hybrid RANS-LES simulations. */
   su2double LES_FilterWidth;           /*!< \brief LES filter width for hybrid RANS-LES simulations. */
-  bool LD2_Scheme;                     /*!< \brief Use the LD2 scheme (incompressible flows, combined with JST discretization). */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
@@ -9643,12 +9642,6 @@ public:
   su2double GetLES_FilterWidth(void) const { return LES_FilterWidth; }
 
   /*!
-   * \brief Get if the LD2 scheme must be employed (incompressible flows, combined with JST discretization).
-   * \return TRUE if LD2 scheme is enabled.
-   */
-  bool GetLD2_Scheme(void) const { return LD2_Scheme; }
-
-  /*!
    * \brief Get the Kind of Roe Low Dissipation Scheme for Unsteady flows.
    * \return Value of Low dissipation approach.
    */
@@ -9670,7 +9663,7 @@ public:
    * \brief Get the SBS timescale coefficient.
    * \return Value of SBS timescale coefficient.
    */
-  su2double GetSBS_maxIterSmooth(void) const { return SBS_maxIterSmooth; }
+  unsigned short GetSBS_maxIterSmooth(void) const { return SBS_maxIterSmooth; }
 
   /*!
    * \brief Get the SBS timescale coefficient.

@@ -311,7 +311,7 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0;
-  bool LD2_Scheme = config->GetLD2_Scheme();
+  bool LD2_Scheme = (config->GetKind_Centered_Flow() == CENTERED::LD2);
   const su2double alpha_LD2 = 0.36;
 
   /*--- Primitive variables at point i and j ---*/
@@ -336,13 +336,19 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
       d_ij[iDim] = Coord_j[iDim]-Coord_i[iDim];
     su2double velGrad_i[3][3] = {{0.0}};
     su2double velGrad_j[3][3] = {{0.0}};
+    su2double pressGrad_i[3] = {0.0};
+    su2double pressGrad_j[3] = {0.0};
     for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+      pressGrad_i[jDim] = PrimVar_Grad_i[0][jDim];
+      pressGrad_j[jDim] = PrimVar_Grad_j[0][jDim];
       for (iDim = 0; iDim < nDim; iDim++) {
         velGrad_i[iDim][jDim] = PrimVar_Grad_i[iDim+1][jDim];
         velGrad_j[iDim][jDim] = PrimVar_Grad_j[iDim+1][jDim];
       }
     }
     for (iDim = 0; iDim < nDim; iDim++) {
+      Pressure_i += alpha_LD2 * pressGrad_i[iDim] * d_ij[iDim];
+      Pressure_j += alpha_LD2 * pressGrad_j[iDim] * d_ij[iDim];
       Velocity_i[iDim] += alpha_LD2 * (velGrad_i[iDim][0] * d_ij[0] +
                                        velGrad_i[iDim][1] * d_ij[1] +
                                        velGrad_i[iDim][2] * d_ij[2]);

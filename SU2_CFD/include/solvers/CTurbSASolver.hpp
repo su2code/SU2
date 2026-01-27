@@ -39,13 +39,9 @@
 
 class CTurbSASolver final : public CTurbSolver {
 private:
-  su2double* nu_tilde_Engine = nullptr;
-  su2double* nu_tilde_ActDisk = nullptr;
-  su2double* ext_AverageNu = nullptr;
-  su2double* Res_Wall = nullptr;
-  su2double** Jacobian_i = nullptr;
-  su2double* nu_tilde_inturb = nullptr;
-  su2double* nu_tilde_WF = nullptr;
+
+  su2double nu_tilde_Engine[4] = {0.0};
+  su2double nu_tilde_ActDisk[4] = {0.0};
 
   /*!
    * \brief A virtual member.
@@ -105,21 +101,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSASolver() {
-    
-    for(unsigned short iVar = 0; iVar < nVar; ++iVar) {
-      delete [] Jacobian_i[iVar];
-    }
-    delete [] Jacobian_i;
-    
-    delete [] Res_Wall;
-    delete [] nu_tilde_Engine;
-    delete [] nu_tilde_ActDisk;
-    delete [] ext_AverageNu;
-    delete [] nu_tilde_inturb;
-    delete [] nu_tilde_WF;
-    
-  }
+  ~CTurbSASolver() = default;
 
   /*!
    * \brief Restart residual and compute gradients.

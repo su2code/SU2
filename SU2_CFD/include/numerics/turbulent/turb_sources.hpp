@@ -72,10 +72,8 @@ class CSourceBase_TurbSA : public CNumerics {
  protected:
 
   /*--- Residual and Jacobian ---*/
-  su2double Residual, *Jacobian_i;
-  su2double Jacobian_Buffer; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */
-  su2double* ResidSB = nullptr;
-  su2double** JacobianSB_i = nullptr; 
+  su2double Residual[4], *Jacobian_i[4]; /*!< \brief Increase the size of residual and Jacobian for Langevin equations (Stochastic Backscatter Model).*/
+  su2double Jacobian_Buffer[16]; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */ 
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
@@ -111,7 +109,7 @@ class CSourceBase_TurbSA : public CNumerics {
     /* Diffusion source term */
     const su2double dv_axi = (1.0/sigma)*nu_e*ScalarVar_Grad_i[0][1];
 
-    Residual += yinv * dv_axi * Volume;
+    Residual[0] += yinv * dv_axi * Volume;
   }
 
   /*!
@@ -126,18 +124,6 @@ class CSourceBase_TurbSA : public CNumerics {
     const su2double threshold = 0.9;
     const su2double nut = max(nue*var.fv1, 1e-10);
     const su2double delta = lengthScale/DES_const;
-
-    for (unsigned short iVar = 0; iVar < nVar; iVar++ ) {
-      ResidSB[iVar] = 0.0;
-    }
-    ResidSB[0] = Residual;
-
-    for (unsigned short iVar = 0; iVar < nVar; iVar++ ) {
-      for (unsigned short jVar = 0; jVar < nVar; jVar++ ) {
-        JacobianSB_i[iVar][jVar] = 0.0;
-      }
-    }
-    JacobianSB_i[0][0] = Jacobian_i[0];
 
     if (delta > 1e-10) {
 
@@ -154,14 +140,13 @@ class CSourceBase_TurbSA : public CNumerics {
       su2double scaleFactor = 0.0;
       if (lesMode_i > threshold) scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * density * corrFac;
 
-      for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
-        ResidSB[iVar] = scaleFactor * stochSource[iVar-1] - 1.0/tTurb * density * ScalarVar_i[iVar];
-        ResidSB[iVar] *= Volume;
+      for (unsigned short iVar = 1; iVar < nVar; iVar++) {
+        Residual[iVar] = scaleFactor * stochSource[iVar-1] - 1.0/tTurb * density * ScalarVar_i[iVar];
+        Residual[iVar] *= Volume;
       }
 
-      for (unsigned short iVar = 1; iVar < nVar; iVar++ ) {
-        JacobianSB_i[iVar][iVar] = -1.0/tTurb * density * Volume;
-      }
+      for (unsigned short iVar = 1; iVar < nVar; iVar++ )
+        Jacobian_i[iVar][iVar] = -1.0/tTurb * density * Volume;
 
     }
 
@@ -170,30 +155,25 @@ class CSourceBase_TurbSA : public CNumerics {
   /*!
    * \brief Include stochastic source term in the Spalart-Allmaras turbulence model equation (Stochastic Backscatter Model).
    */
-  template <class MatrixType>
-  inline void AddStochSource(const CSAVariables& var, const MatrixType& velGrad, const su2double Cmag) {
+  inline void AddStochSource(CSAVariables& var, const su2double Cmag, su2double& prod) {
 
-    su2double dist2 = dist_i * dist_i;
-    su2double xi3 = pow(var.Ji, 3);
-    su2double factor = dist2 / (2.0 * var.fv1 * ScalarVar_i[0]);
-    factor /= (3.0 * xi3 * var.cv1_3 / pow(xi3 + var.cv1_3, 2) + var.fv1);
-
+    su2double nut = ScalarVar_i[0] * var.fv1;
     su2double tke = 0.0;
     const su2double threshold = 0.9;
-    if (lesMode_i > threshold) tke = pow(var.fv1*ScalarVar_i[0]/dist_i, 2);
+    const su2double limiter = 10.0;
+    if (lesMode_i > threshold) tke = nut * StrainMag_i;
 
-    su2double R12 = (nDim==3 ?   Cmag * tke * ScalarVar_i[3] : 0.0);
-    su2double R13 =            - Cmag * tke * ScalarVar_i[2];
-    su2double R23 =              Cmag * tke * ScalarVar_i[1];
+    su2double R12 =   Cmag * tke * ScalarVar_i[3];
+    su2double R13 = - Cmag * tke * ScalarVar_i[2];
+    su2double R23 =   Cmag * tke * ScalarVar_i[1];
 
-    su2double RGradU =            R12 * (velGrad[0][1] - velGrad[1][0]) +
-                       (nDim==3 ? R13 * (velGrad[0][2] - velGrad[2][0]) +
-                                  R23 * (velGrad[1][2] - velGrad[2][1]) : 0.0);
+    su2double RGradU = R12*Vorticity_i[2] - R13*Vorticity_i[1] + R23*Vorticity_i[0];
 
-    su2double source_k = - RGradU;
-    su2double source_nu = factor * source_k;
+    su2double stoch_prod_k = - RGradU;
+    su2double prod_k = nut * StrainMag_i * StrainMag_i;
+    su2double stoch_prod_nut = min(limiter, max(-limiter, stoch_prod_k/max(prod_k,1e-10)));
 
-    Residual += source_nu * Volume;
+    prod *= (1.0 + stoch_prod_nut);
 
   }
 
@@ -204,37 +184,17 @@ class CSourceBase_TurbSA : public CNumerics {
    * \param[in] config - Definition of the particular problem.
    */
   CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
-      : CNumerics(nDim, config->GetStochastic_Backscatter() ? 1+nDim : 1, config),
+      : CNumerics(nDim, config->GetStochastic_Backscatter() ? 4 : 1, config),
         idx(nDim, config->GetnSpecies()),
         options(config->GetSAParsedOptions()),
         axisymmetric(config->GetAxisymmetric()),
         transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
-    Jacobian_i = &Jacobian_Buffer;
-    /*--- Setup the Jacobian for Stochastic Backscatter Model. ---*/
-    if (config->GetStochastic_Backscatter()) {
-      ResidSB = new su2double [1+nDim] ();
-      JacobianSB_i = new su2double* [1+nDim];
-      for (unsigned short iVar = 0; iVar < 1+nDim; iVar++ ) {
-        JacobianSB_i[iVar] = new su2double [1+nDim] ();
-      }
-    }
-  }
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CSourceBase_TurbSA() {
-    if (JacobianSB_i) {
-        for (unsigned short iVar = 0; iVar < 1+nDim; iVar++) {
-            delete [] JacobianSB_i[iVar];
-        }
-        delete [] JacobianSB_i;
-    }
-    if (ResidSB) {
-        delete [] ResidSB;
-    }
+    //Jacobian_i = &Jacobian_Buffer;
+    /*--- Setup the Jacobian pointer (size increased for Stochastic Backscatter Model). ---*/
+    for (unsigned short iVar = 0; iVar < 4; iVar++)
+      Jacobian_i[iVar] = Jacobian_Buffer + 4*iVar;
   }
 
   /*!
@@ -252,17 +212,17 @@ class CSourceBase_TurbSA : public CNumerics {
     AD::SetPreaccIn(Vorticity_i, 3);
     AD::SetPreaccIn(PrimVar_Grad_i + idx.Velocity(), nDim, nDim);
     AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
-
-    bool backscatter = config->GetStochastic_Backscatter();
-    if (backscatter) {
-      AD::SetPreaccIn(stochSource, 3);
-    }
+    AD::SetPreaccIn(stochSource, 3);
 
     /*--- Common auxiliary variables and constants of the model. ---*/
     CSAVariables var;
 
-    Residual = 0.0;
-    Jacobian_i[0] = 0.0;
+    for (unsigned short iVar = 0; iVar < 4; iVar++) {
+      Residual[iVar] = 0.0;
+      for (unsigned short jVar = 0; jVar < 4; jVar++) {
+        Jacobian_i[iVar][jVar] = 0.0;
+      }
+    }
 
     if (dist_i > 1e-10) {
 
@@ -358,33 +318,22 @@ class CSourceBase_TurbSA : public CNumerics {
 
       /*--- Compute production, destruction and jacobian ---*/
       su2double Production = 0.0, Destruction = 0.0;
-      SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, Jacobian_i[0]);
+      SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, Jacobian_i[0][0]);
 
-      Residual = (Production - Destruction) * Volume;
+      if (config->GetStochastic_Backscatter() && config->GetStochSourceNu()) {
+        su2double intensityCoeff = ComputeStochRelaxFactor(config);
+        AddStochSource(var, intensityCoeff, Production);
+      }
+
+      Residual[0] = (Production - Destruction) * Volume;
 
       if (axisymmetric) ResidualAxisymmetricDiffusion(var.sigma);
 
-      Jacobian_i[0] *= Volume;
+      Jacobian_i[0][0] *= Volume;
 
       /*--- Compute residual for Langevin equations (Stochastic Backscatter Model). ---*/
 
-      if (backscatter) {
-        if (config->GetStochSourceNu()) { 
-          su2double SBS_Cmag = config->GetSBS_Cmag();
-          su2double SBS_RelaxFactor = config->GetStochSourceRelax();
-          su2double intensityCoeff = SBS_Cmag;
-          if (SBS_RelaxFactor > 0.0) {
-            su2double FS_Vel = config->GetModVel_FreeStream();
-            su2double ReynoldsLength = config->GetLength_Reynolds();
-            su2double timeScale = ReynoldsLength / FS_Vel;
-            unsigned long timeIter = config->GetTimeIter();
-            unsigned long restartIter = config->GetRestart_Iter();
-            su2double timeStep = config->GetTime_Step();
-            su2double currentTime = (timeIter - restartIter) * timeStep;
-            intensityCoeff = SBS_Cmag * (1.0 - exp(- currentTime / (timeScale*SBS_RelaxFactor)));
-          }
-          AddStochSource(var, PrimVar_Grad_i + idx.Velocity(), intensityCoeff);
-        } 
+      if (config->GetStochastic_Backscatter()) {
         const su2double DES_const = config->GetConst_DES();
         const su2double ctau = config->GetSBS_Ctau();
         ResidualStochEquations(config->GetDelta_UnstTime(), ctau, dist_i, DES_const,
@@ -392,17 +341,10 @@ class CSourceBase_TurbSA : public CNumerics {
       }
     }
 
-    if (backscatter) {
-      AD::SetPreaccOut(ResidSB, nVar);
-    } else {
-      AD::SetPreaccOut(Residual);
-    }
+    AD::SetPreaccOut(Residual, 4);
     AD::EndPreacc();
 
-    if (backscatter)
-      return ResidualType<>(ResidSB, JacobianSB_i, nullptr);
-    else
-      return ResidualType<>(&Residual, &Jacobian_i, nullptr);
+    return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
 };
 
@@ -698,14 +640,14 @@ class CCompressibilityCorrection final : public ParentClass {
       const su2double d_axiCorrection = 2.0 * c5 * nue * pow(v * yinv / sound_speed, 2) * Volume;
       const su2double axiCorrection = 0.5 * nue * d_axiCorrection;
 
-      this->Residual -= axiCorrection;
-      this->Jacobian_i[0] -= d_axiCorrection;
+      this->Residual[0] -= axiCorrection;
+      this->Jacobian_i[0][0] -= d_axiCorrection;
     }
 
-    this->Residual -= CompCorrection;
-    this->Jacobian_i[0] -= d_CompCorrection;
+    this->Residual[0] -= CompCorrection;
+    this->Jacobian_i[0][0] -= d_CompCorrection;
 
-    return ResidualType(&this->Residual, &this->Jacobian_i, nullptr);
+    return ResidualType(this->Residual, this->Jacobian_i, nullptr);
   }
 };
 

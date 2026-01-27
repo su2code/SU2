@@ -458,24 +458,15 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
 
+
+  unsigned long timeIter = config->GetTimeIter();
+  unsigned long restartIter = config->GetRestart_Iter();
   if (config->GetStochastic_Backscatter()) {
-    for (iVar = 0; iVar < nDim; iVar++)
-      Mean_StochVar[iVar] = 0.5*(stochVar_i[iVar] + stochVar_j[iVar]);
-    su2double SBS_Cmag = config->GetSBS_Cmag();
-    su2double SBS_RelaxFactor = config->GetStochSourceRelax();
-    su2double intensityCoeff = SBS_Cmag;
-    if (SBS_RelaxFactor > 0.0) {
-      su2double FS_Vel = config->GetModVel_FreeStream();
-      su2double ReynoldsLength = config->GetLength_Reynolds();
-      su2double timeScale = ReynoldsLength / FS_Vel;
-      unsigned long timeIter = config->GetTimeIter();
-      unsigned long restartIter = config->GetRestart_Iter();
-      su2double timeStep = config->GetTime_Step();
-      su2double currentTime = (timeIter - restartIter) * timeStep;
-      intensityCoeff = SBS_Cmag * (1.0 - exp(- currentTime / (timeScale*SBS_RelaxFactor)));
-    }
+    for (iDim = 0; iDim < nDim; iDim++)
+      Mean_StochVar[iDim] = 0.5*(stochVar_i[iDim] + stochVar_j[iDim]);
+    su2double intensityCoeff = ComputeStochRelaxFactor(config);
     ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_turb_ke,
-                           Mean_StochVar, stochReynStress, intensityCoeff);
+                           Mean_StochVar, intensityCoeff, stochReynStress);
   }
 
   /*--- Get projected flux tensor (viscous residual) ---*/
@@ -654,24 +645,15 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
 
+
+  unsigned long timeIter = config->GetTimeIter();
+  unsigned long restartIter = config->GetRestart_Iter();
   if (config->GetStochastic_Backscatter()) {
-    for (iVar = 0; iVar < nDim; iVar++)
-      Mean_StochVar[iVar] = 0.5*(stochVar_i[iVar] + stochVar_j[iVar]);
-    su2double SBS_Cmag = config->GetSBS_Cmag();
-    su2double SBS_RelaxFactor = config->GetStochSourceRelax();
-    su2double intensityCoeff = SBS_Cmag;
-    if (SBS_RelaxFactor > 0.0) {
-      su2double FS_Vel = config->GetModVel_FreeStream();
-      su2double ReynoldsLength = config->GetLength_Reynolds();
-      su2double timeScale = ReynoldsLength / FS_Vel;
-      unsigned long timeIter = config->GetTimeIter();
-      unsigned long restartIter = config->GetRestart_Iter();
-      su2double timeStep = config->GetTime_Step();
-      su2double currentTime = (timeIter - restartIter) * timeStep;
-      intensityCoeff = SBS_Cmag * (1.0 - exp(- currentTime / (timeScale*SBS_RelaxFactor)));
-    }
+    for (iDim = 0; iDim < nDim; iDim++)
+      Mean_StochVar[iDim] = 0.5*(stochVar_i[iDim] + stochVar_j[iDim]);
+    su2double intensityCoeff = ComputeStochRelaxFactor(config);
     ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_turb_ke,
-                           Mean_StochVar, stochReynStress, intensityCoeff);
+                           Mean_StochVar, intensityCoeff, stochReynStress);
   }
 
   /*--- Get projected flux tensor (viscous residual) ---*/
@@ -1002,24 +984,14 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
 
   /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
 
+  unsigned long timeIter = config->GetTimeIter();
+  unsigned long restartIter = config->GetRestart_Iter();
   if (config->GetStochastic_Backscatter()) {
-    for (iVar = 0; iVar < nDim; iVar++)
-      Mean_StochVar[iVar] = 0.5*(stochVar_i[iVar] + stochVar_j[iVar]);
-    su2double SBS_Cmag = config->GetSBS_Cmag();
-    su2double SBS_RelaxFactor = config->GetStochSourceRelax();
-    su2double intensityCoeff = SBS_Cmag;
-    if (SBS_RelaxFactor > 0.0) {
-      su2double FS_Vel = config->GetModVel_FreeStream();
-      su2double ReynoldsLength = config->GetLength_Reynolds();
-      su2double timeScale = ReynoldsLength / FS_Vel;
-      unsigned long timeIter = config->GetTimeIter();
-      unsigned long restartIter = config->GetRestart_Iter();
-      su2double timeStep = config->GetTime_Step();
-      su2double currentTime = (timeIter - restartIter) * timeStep;
-      intensityCoeff = SBS_Cmag * (1.0 - exp(- currentTime / (timeScale*SBS_RelaxFactor)));
-    }
+    for (iDim = 0; iDim < nDim; iDim++)
+      Mean_StochVar[iDim] = 0.5*(stochVar_i[iDim] + stochVar_j[iDim]);
+    su2double intensityCoeff = ComputeStochRelaxFactor(config);
     ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_turb_ke,
-                           Mean_StochVar, stochReynStress, intensityCoeff);
+                           Mean_StochVar, intensityCoeff, stochReynStress);
   }
 
   /*--- Get projected flux tensor (viscous residual) ---*/

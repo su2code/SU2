@@ -39,7 +39,7 @@ CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double
   StrainMag.resize(nPoint) = su2double(0.0);
   Tau_Wall.resize(nPoint) = su2double(-1.0);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
-  LES_Mode.resize(nPoint) = su2double(0.0);
+  lesMode.resize(nPoint) = su2double(0.0);
   Roe_Dissipation.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0);

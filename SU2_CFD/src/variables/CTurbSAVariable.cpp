@@ -39,7 +39,7 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
   } else {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       Solution_Old(iPoint, 0) = Solution(iPoint, 0) = val_nu_tilde;
-      for (unsigned short iVar = 1; iVar < nVar; iVar++) {
+      for (unsigned long iVar = 1; iVar < nVar; iVar++) {
         Solution_Old(iPoint, iVar) = Solution(iPoint, iVar) = 0.0;
       }
     }
@@ -57,10 +57,10 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
   }
 
   DES_LengthScale.resize(nPoint) = su2double(0.0);
-  LES_Mode.resize(nPoint) = su2double(0.0);
+  lesMode.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint);
   stochSource.resize(nPoint, nDim) = su2double(0.0);
-  stochSource_old.resize(nPoint, nDim) = su2double(0.0);
+  stochSourceOld.resize(nPoint, nDim) = su2double(0.0);
   besselIntegral.resize(nPoint);
 
 }
