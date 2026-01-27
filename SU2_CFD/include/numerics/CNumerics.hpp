@@ -36,6 +36,7 @@
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 class CElement;
 class CFluidModel;
@@ -47,7 +48,7 @@ class CFluidModel;
  */
 class CNumerics {
 protected:
-  enum : size_t {MAXNDIM = 3}; /*!< \brief Max number of space dimensions, used in some static arrays. */
+  static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
 
   unsigned short nDim, nVar;  /*!< \brief Number of dimensions and variables. */
   su2double Gamma;            /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
@@ -1213,15 +1214,77 @@ public:
   /*!
    * \brief Computation of the matrix P, this matrix diagonalize the conservative Jacobians in
    *        the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] val_soundspeed - Value of the sound speed.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_p_tensor - Pointer to the P matrix.
+   * \param[in] density - Value of the density.
+   * \param[in] velocity - Velocity vector.
+   * \param[in] soundspeed - Value of the sound speed.
+   * \param[in] normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] p_tensor - P matrix.
    */
-  void GetPMatrix(const su2double *val_density, const su2double *val_velocity,
-                  const su2double *val_soundspeed, const su2double *val_normal,
-                  su2double **val_p_tensor) const;
+  template <typename Matrix>
+  void GetPMatrix(const su2double& density, const su2double* velocity,
+                  const su2double& soundspeed, const su2double* normal,
+                  Matrix& p_tensor) const {
+    const su2double rhooc = density / soundspeed;
+    const su2double rhoxc = density * soundspeed;
+
+    if (nDim == 2) {
+      const su2double ke = 0.5 * GeometryToolbox::SquaredNorm(2, velocity);
+      const su2double projvel = GeometryToolbox::DotProduct(2, velocity, normal);
+
+      p_tensor[0][0] = 1.0;
+      p_tensor[0][1] = 0.0;
+      p_tensor[0][2] = 0.5 * rhooc;
+      p_tensor[0][3] = 0.5 * rhooc;
+
+      p_tensor[1][0] = velocity[0];
+      p_tensor[1][1] = density * normal[1];
+      p_tensor[1][2] = 0.5 * (velocity[0] * rhooc + normal[0] * density);
+      p_tensor[1][3] = 0.5 * (velocity[0] * rhooc - normal[0] * density);
+
+      p_tensor[2][0] = velocity[1];
+      p_tensor[2][1] = -density * normal[0];
+      p_tensor[2][2] = 0.5 * (velocity[1] * rhooc + normal[1] * density);
+      p_tensor[2][3] = 0.5 * (velocity[1] * rhooc - normal[1] * density);
+
+      p_tensor[3][0] = ke;
+      p_tensor[3][1] = density * (velocity[0] * normal[1] - velocity[1] * normal[0]);
+      p_tensor[3][2] = 0.5 * (ke * rhooc + density * projvel + rhoxc / Gamma_Minus_One);
+      p_tensor[3][3] = 0.5 * (ke * rhooc - density * projvel + rhoxc / Gamma_Minus_One);
+    } else {
+      const su2double ke = 0.5 * GeometryToolbox::SquaredNorm(3, velocity);
+      const su2double projvel = GeometryToolbox::DotProduct(3, velocity, normal);
+
+      p_tensor[0][0] = normal[0];
+      p_tensor[0][1] = normal[1];
+      p_tensor[0][2] = normal[2];
+      p_tensor[0][3] = 0.5 * rhooc;
+      p_tensor[0][4] = 0.5 * rhooc;
+
+      p_tensor[1][0] = velocity[0] * normal[0];
+      p_tensor[1][1] = velocity[0] * normal[1] - density * normal[2];
+      p_tensor[1][2] = velocity[0] * normal[2] + density * normal[1];
+      p_tensor[1][3] = 0.5 * (velocity[0] * rhooc + density * normal[0]);
+      p_tensor[1][4] = 0.5 * (velocity[0] * rhooc - density * normal[0]);
+
+      p_tensor[2][0] = velocity[1] * normal[0] + density * normal[2];
+      p_tensor[2][1] = velocity[1] * normal[1];
+      p_tensor[2][2] = velocity[1] * normal[2] - density * normal[0];
+      p_tensor[2][3] = 0.5 * (velocity[1] * rhooc + density * normal[1]);
+      p_tensor[2][4] = 0.5 * (velocity[1] * rhooc - density * normal[1]);
+
+      p_tensor[3][0] = velocity[2] * normal[0] - density * normal[1];
+      p_tensor[3][1] = velocity[2] * normal[1] + density * normal[0];
+      p_tensor[3][2] = velocity[2] * normal[2];
+      p_tensor[3][3] = 0.5 * (velocity[2] * rhooc + density * normal[2]);
+      p_tensor[3][4] = 0.5 * (velocity[2] * rhooc - density * normal[2]);
+
+      p_tensor[4][0] = ke * normal[0] + density * (velocity[1] * normal[2] - velocity[2] * normal[1]);
+      p_tensor[4][1] = ke * normal[1] + density * (velocity[2] * normal[0] - velocity[0] * normal[2]);
+      p_tensor[4][2] = ke * normal[2] + density * (velocity[0] * normal[1] - velocity[1] * normal[0]);
+      p_tensor[4][3] = 0.5 * (ke * rhooc + density * projvel + rhoxc / Gamma_Minus_One);
+      p_tensor[4][4] = 0.5 * (ke * rhooc - density * projvel + rhoxc / Gamma_Minus_One);
+    }
+  }
 
   /*!
    * \brief Computation of the matrix Rinv*Pe.
@@ -1328,15 +1391,83 @@ public:
   /*!
    * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
    *        in the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] val_soundspeed - Value of the sound speed.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+   * \param[in] density - Value of the density.
+   * \param[in] velocity - Velocity vector.
+   * \param[in] soundspeed - Value of the sound speed.
+   * \param[in] normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] inv_p_tensor - Pointer to inverse of the P matrix.
    */
-  void GetPMatrix_inv(const su2double *val_density, const su2double *val_velocity,
-                      const su2double *val_soundspeed, const su2double *val_normal,
-                      su2double **val_invp_tensor) const;
+  template <typename Matrix>
+  void GetPMatrix_inv(const su2double& density, const su2double* velocity,
+                      const su2double& soundspeed, const su2double* normal,
+                      Matrix& inv_p_tensor) const {
+    const su2double rhoxc = density * soundspeed;
+    const su2double c2 = pow(soundspeed, 2);
+    const su2double gm1 = Gamma_Minus_One;
+    const su2double k0orho = normal[0] / density;
+    const su2double k1orho = normal[1] / density;
+    const su2double gm1_o_c2 = gm1 / c2;
+    const su2double gm1_o_rhoxc = gm1 / rhoxc;
+
+    if (nDim == 3) {
+      const su2double k2orho = normal[2] / density;
+      const su2double ke = 0.5 * GeometryToolbox::SquaredNorm(3, velocity);
+      const su2double projvel_o_rho = GeometryToolbox::DotProduct(3, velocity, normal) / density;
+
+      inv_p_tensor[0][0] = normal[0] + k1orho * velocity[2] - k2orho * velocity[1] - normal[0] * gm1_o_c2 * ke;
+      inv_p_tensor[0][1] = normal[0] * gm1_o_c2 * velocity[0];
+      inv_p_tensor[0][2] = k2orho + normal[0] * gm1_o_c2 * velocity[1];
+      inv_p_tensor[0][3] = -k1orho + normal[0] * gm1_o_c2 * velocity[2];
+      inv_p_tensor[0][4] = -normal[0] * gm1_o_c2;
+
+      inv_p_tensor[1][0] = normal[1] + k2orho * velocity[0] - k0orho * velocity[2] - normal[1] * gm1_o_c2 * ke;
+      inv_p_tensor[1][1] = -k2orho + normal[1] * gm1_o_c2 * velocity[0];
+      inv_p_tensor[1][2] = normal[1] * gm1_o_c2 * velocity[1];
+      inv_p_tensor[1][3] = k0orho + normal[1] * gm1_o_c2 * velocity[2];
+      inv_p_tensor[1][4] = -normal[1] * gm1_o_c2;
+
+      inv_p_tensor[2][0] = normal[2] + k0orho * velocity[1] - k1orho * velocity[0] - normal[2] * gm1_o_c2 * ke;
+      inv_p_tensor[2][1] = k1orho + normal[2] * gm1_o_c2 * velocity[0];
+      inv_p_tensor[2][2] = -k0orho + normal[2] * gm1_o_c2 * velocity[1];
+      inv_p_tensor[2][3] = normal[2] * gm1_o_c2 * velocity[2];
+      inv_p_tensor[2][4] = -normal[2] * gm1_o_c2;
+
+      inv_p_tensor[3][0] = -projvel_o_rho + gm1_o_rhoxc * ke;
+      inv_p_tensor[3][1] = k0orho - gm1_o_rhoxc * velocity[0];
+      inv_p_tensor[3][2] = k1orho - gm1_o_rhoxc * velocity[1];
+      inv_p_tensor[3][3] = k2orho - gm1_o_rhoxc * velocity[2];
+      inv_p_tensor[3][4] = gm1_o_rhoxc;
+
+      inv_p_tensor[4][0] = projvel_o_rho + gm1_o_rhoxc * ke;
+      inv_p_tensor[4][1] = -k0orho - gm1_o_rhoxc * velocity[0];
+      inv_p_tensor[4][2] = -k1orho - gm1_o_rhoxc * velocity[1];
+      inv_p_tensor[4][3] = -k2orho - gm1_o_rhoxc * velocity[2];
+      inv_p_tensor[4][4] = gm1_o_rhoxc;
+    } else {
+      const su2double ke = 0.5 * GeometryToolbox::SquaredNorm(2, velocity);
+      const su2double projvel_o_rho = GeometryToolbox::DotProduct(2, velocity, normal) / density;
+
+      inv_p_tensor[0][0] = 1 - gm1_o_c2 * ke;
+      inv_p_tensor[0][1] = gm1_o_c2 * velocity[0];
+      inv_p_tensor[0][2] = gm1_o_c2 * velocity[1];
+      inv_p_tensor[0][3] = -gm1_o_c2;
+
+      inv_p_tensor[1][0] = -k1orho * velocity[0] + k0orho * velocity[1];
+      inv_p_tensor[1][1] = k1orho;
+      inv_p_tensor[1][2] = -k0orho;
+      inv_p_tensor[1][3] = 0;
+
+      inv_p_tensor[2][0] = -projvel_o_rho + gm1_o_rhoxc * ke;
+      inv_p_tensor[2][1] = k0orho - gm1_o_rhoxc * velocity[0];
+      inv_p_tensor[2][2] = k1orho - gm1_o_rhoxc * velocity[1];
+      inv_p_tensor[2][3] = gm1_o_rhoxc;
+
+      inv_p_tensor[3][0] = projvel_o_rho + gm1_o_rhoxc * ke;
+      inv_p_tensor[3][1] = -k0orho - gm1_o_rhoxc * velocity[0];
+      inv_p_tensor[3][2] = -k1orho - gm1_o_rhoxc * velocity[1];
+      inv_p_tensor[3][3] = gm1_o_rhoxc;
+    }
+  }
 
   /*!
    * \brief Compute viscous residual and jacobian.
