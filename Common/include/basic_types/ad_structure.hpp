@@ -1,7 +1,7 @@
 /*!
  * \file ad_structure.hpp
  * \brief Main routines for the algorithmic differentiation (AD) structure.
- * \author T. Albring, J. Blühdorn
+ * \author T. Albring, J. Blühdorn, 0. Burghardt
  * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -296,14 +296,14 @@ inline void ClearTagOnVariable(su2double& v) {}
 /*!
  * \brief Struct to store information about errors during a tag debug run.
  */
-struct ErrorReport {};
+struct DebugStatus {};
 
 /*!
- * \brief Set a reference to the output file of an ErrorReport.
- * \param[in] report - the ErrorReport whose output file is set.
+ * \brief Set a pointer to the output file of a DebugStatus.
+ * \param[in] status - the DebugStatus whose output file is set.
  * \param[in] output_file - pointer to the output file.
  */
-inline void SetDebugReportFile(ErrorReport& report, std::ostream* output_file) {}
+inline void SetDebugReportFile(DebugStatus& status, std::ostream* output_file) {}
 
 /*!
  * \brief Set the ErrorReport to which error information from a tag debug recording is written.
@@ -312,17 +312,17 @@ inline void SetDebugReportFile(ErrorReport& report, std::ostream* output_file) {
 inline void SetTagErrorCallback(ErrorReport& report) {}
 
 /*!
- * \brief Reset the error counter in an ErrorReport.
- * \param[in] report - the ErrorReport whose error counter is resetted.
+ * \brief Reset the error counter in a DebugStatus.
+ * \param[in] status - the DebugStatus whose error counter is resetted.
  */
-inline void ResetErrorCounter(ErrorReport& report) {}
+inline void ResetErrorCounter(DebugStatus& status) {}
 
 /*!
- * \brief Get the error count of an ErrorReport.
- * \param[in] report - the ErrorReport whose pointer to its error counter is returned.
+ * \brief Get the error count of a DebugStatus.
+ * \param[in] status - the DebugStatus whose error count is reported.
  * \return Value of the error counter.
  */
-inline unsigned long GetErrorCount(const ErrorReport& report) { return 0; }
+inline unsigned long GetErrorCount(const DebugStatus& status) { return 0; }
 
 /*!
  * \brief Pushes back the current tape position to the tape position's vector.
@@ -744,16 +744,21 @@ FORCEINLINE void ResumePreaccumulation(bool wasActive) {
   SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
 }
 
-struct ErrorReport {
+struct DebugStatus {
+  bool init_run = false;
+  bool ignore_preacc = false;
+  bool ignore_single_zone = false;
+  bool ignore_zones = false;
+  unsigned short ignore_izone = 0;
   unsigned long ErrorCounter = 0;
   std::ostream* out = &std::cout;
 };
 
-FORCEINLINE void ResetErrorCounter(ErrorReport& report) { report.ErrorCounter = 0; }
+FORCEINLINE void ResetErrorCounter(DebugStatus& status) { status.ErrorCounter = 0; }
 
-FORCEINLINE void SetDebugReportFile(ErrorReport& report, std::ostream* output_file) { report.out = output_file; }
+FORCEINLINE void SetDebugReportFile(DebugStatus& status, std::ostream* output_file) { status.out = output_file; }
 
-FORCEINLINE unsigned long GetErrorCount(const ErrorReport& report) { return report.ErrorCounter; }
+FORCEINLINE unsigned long GetErrorCount(const DebugStatus& status) { return status.ErrorCounter; }
 
 #ifdef CODI_TAG_TAPE
 
