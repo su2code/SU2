@@ -48,6 +48,10 @@ SU2_OMP(threadprivate(PreaccHelper))
 
 ExtFuncHelper FuncHelper;
 
+#ifdef CODI_TAG_TAPE
+DebugStatus* current_status = NULL;
+#endif // CODI_TAG_TAPE
+
 #endif
 
 void Initialize() {

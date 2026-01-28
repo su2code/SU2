@@ -299,6 +299,12 @@ inline void ClearTagOnVariable(su2double& v) {}
 struct DebugStatus {};
 
 /*!
+ * \brief Set a pointer to the current DebugStatus.
+ * \param[in] status - pointer to the current status.
+ */
+inline void SetCurrentStatus(DebugStatus *status) {}
+
+/*!
  * \brief Set a pointer to the output file of a DebugStatus.
  * \param[in] status - the DebugStatus whose output file is set.
  * \param[in] output_file - pointer to the output file.
@@ -762,6 +768,10 @@ FORCEINLINE unsigned long GetErrorCount(const DebugStatus& status) { return stat
 
 #ifdef CODI_TAG_TAPE
 
+extern DebugStatus* current_status;
+
+FORCEINLINE void SetCurrentStatus(DebugStatus* status) { current_status = status; }
+
 FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
 FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
 
@@ -777,6 +787,7 @@ FORCEINLINE void SetTagErrorCallback(ErrorReport& report) {
 }
 
 #else
+FORCEINLINE void SetCurrentStatus(DebugStatus* status) {}
 FORCEINLINE void SetTag(int tag) {}
 FORCEINLINE void ClearTagOnVariable(su2double& v) {}
 FORCEINLINE void SetTagErrorCallback(ErrorReport report) {}
