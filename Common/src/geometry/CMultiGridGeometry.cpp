@@ -167,7 +167,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           /*--- Note that if the (single) marker is a SEND_RECEIVE, then the node is actually an interior point.
                 In that case it can only be agglomerated with another interior point. ---*/
           if (config->GetMarker_All_KindBC(marker_seed[0]) == SEND_RECEIVE) {
-            // cout << "agglomerating a SEND_RECEIVE point at iPoint = " << iPoint << endl;
             agglomerate_seed = true;
           }
         }
