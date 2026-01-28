@@ -95,6 +95,9 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE)
     HB_Source.resize(nPoint,nVar) = su2double(0.0);
 
+  /*--- Allocate LocalCFL for multigrid support ---*/
+  LocalCFL.resize(nPoint) = su2double(0.0);
+
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();
 
