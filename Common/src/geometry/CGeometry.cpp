@@ -2573,7 +2573,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
 
         // Check if normals are nearly parallel (within ~2.5 degrees)
         // cos(2.5°) ≈ 0.999, so (1 - cos(2.5°)) ≈ 0.001
-        constexpr su2double PARALLEL_TOLERANCE = 0.001;  // ~2.5 degrees
+        const su2double PARALLEL_TOLERANCE = 0.001;  // ~2.5 degrees
         if (angleDiff < PARALLEL_TOLERANCE) {
           // These normals are nearly parallel - average them instead of orthogonalizing
           parallelMarkers.push_back(j);
