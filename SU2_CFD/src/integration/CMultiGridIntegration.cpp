@@ -436,7 +436,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     bool should_update = (iter - last_update_iter[lvl] >= UPDATE_INTERVAL);
 
     /*--- Calculate ratio before any updates for debug output ---*/
-    su2double ratio_for_display = (prev_avg[lvl] > EPS) ? (current_avg[lvl] / prev_avg[lvl]) : su2double(1.0);
+    //su2double ratio_for_display = (prev_avg[lvl] > EPS) ? (current_avg[lvl] / prev_avg[lvl]) : su2double(1.0);
 
 
     /*--- Asymmetric adaptation for robustness ---*/
@@ -491,11 +491,12 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     END_SU2_OMP_FOR
 
     /*--- Output monitoring information periodically ---*/
-#ifdef HAVE_MPI
-    /*--- Synchronize all ranks before output to ensure consistent state ---*/
-    SU2_MPI::Barrier(SU2_MPI::GetComm());
-#endif
-
+//
+////#ifdef HAVE_MPI
+////    /*--- Synchronize all ranks before output to ensure consistent state ---*/
+////    SU2_MPI::Barrier(SU2_MPI::GetComm());
+////#endif
+/*
     if (SU2_MPI::GetRank() == 0 && iter % 1 == 0) {
       bool cfl_increased = (new_coeff < current_coeff);  // Lower coeff = higher CFL
       bool cfl_decreased = (new_coeff > current_coeff);  // Higher coeff = lower CFL
@@ -513,7 +514,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
            << ", coeff = " << new_coeff << " (was " << current_coeff << ")"
            << ", CFL = " << CFL_coarse_new << endl;
     }
-
+*/
     SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), 1.25, config);
 
     SetProlongated_Correction(solver_fine, geometry_fine, config, iMesh);

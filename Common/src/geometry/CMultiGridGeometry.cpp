@@ -167,7 +167,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           /*--- Note that if the (single) marker is a SEND_RECEIVE, then the node is actually an interior point.
                 In that case it can only be agglomerated with another interior point. ---*/
           if (config->GetMarker_All_KindBC(marker_seed[0]) == SEND_RECEIVE) {
-            agglomerate_seed = false;
+            //cout << "agglomerating a SEND_RECEIVE point at iPoint = " << iPoint << endl;
+            agglomerate_seed = true;
           }
         }
 
@@ -175,11 +176,11 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         /*--- In 3D, we agglomerate if the 2 markers are the same. ---*/
         if (counter == 2) {
           /*--- agglomerate if one of the 2 markers are MPI markers. ---*/
-          if (nDim == 2)
-            if ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
-                               (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE))
-                               agglomerate_seed = false;
+          if (nDim == 2) {
+            //agglomerate_seed = ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
+            //                    (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE));
 
+          }
           /*--- agglomerate if both markers are the same. ---*/
           if (nDim == 3) agglomerate_seed = (copy_marker[0] == copy_marker[1]);
 
@@ -842,18 +843,19 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
         /*--- We agglomerate if there is only one marker and it is the same marker as the seed marker ---*/
         // So this is the case when in 2D we are on an edge, and in 3D we are in the interior of a surface.
         // note that this should be the same marker id, not just the same marker type.
-        // also note that the seed point can have 2 markers, one of them may be a send-receive.
         if ((marker_seed.size() == 1) && (copy_marker[0] == marker_seed[0])) agglomerate_CV = true;
-        if ((marker_seed.size() == 2) && (config->GetMarker_All_KindBC(marker_seed[0]) == SEND_RECEIVE)) {
-          if (copy_marker[0] == marker_seed[1]) {
-            agglomerate_CV = false;
-          }
-        }
-        if ((marker_seed.size() == 2) && (config->GetMarker_All_KindBC(marker_seed[1]) == SEND_RECEIVE)) {
-          if (copy_marker[0] == marker_seed[0]) {
-            agglomerate_CV = false;
-          }
-        }
+
+        // /*--- If seed has 2 markers and one is SEND_RECEIVE, do not agglomerate with physical boundary ---*/
+        // if ((marker_seed.size() == 2) && (config->GetMarker_All_KindBC(marker_seed[0]) == SEND_RECEIVE)) {
+        //   if (copy_marker[0] == marker_seed[1]) {
+        //     agglomerate_CV = false;
+        //   }
+        // }
+        // if ((marker_seed.size() == 2) && (config->GetMarker_All_KindBC(marker_seed[1]) == SEND_RECEIVE)) {
+        //   if (copy_marker[0] == marker_seed[0]) {
+        //     agglomerate_CV = false;
+        //   }
+        // }
 
         /*--- Note: If there is only one marker, but the marker is the SEND_RECEIVE, then the point is actually an
               interior point and we do not agglomerate.  ---*/
@@ -862,6 +864,11 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
       /*--- If there are two markers in the vertex that is going to be aglomerated ---*/
 
       if (counter == 2) {
+
+        /*--- In 2D this is a corner and we do not agglomerate ---*/
+        if (nDim==2) {
+          agglomerate_CV = false;
+        }
         /*--- Both markers have to be the same. ---*/
 
         if (marker_seed.size() == 2) {
