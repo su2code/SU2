@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <climits>
 #include "../../../include/geometry/dual_grid/CPoint.hpp"
 #include "../../../include/CConfig.hpp"
 #include "../../../include/parallelization/omp_structure.hpp"
@@ -73,7 +74,7 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig* config) {
 
   /*--- Multigrid structures. ---*/
   if (config->GetnMGLevels() > 0) {
-    Parent_CV.resize(npoint) = 0;
+    Parent_CV.resize(npoint) = ULONG_MAX;  // Initialize to ULONG_MAX to indicate unagglomerated
     Agglomerate.resize(npoint) = false;
     Agglomerate_Indirect.resize(npoint) = false;
     /*--- The finest grid does not have children CV's. ---*/
