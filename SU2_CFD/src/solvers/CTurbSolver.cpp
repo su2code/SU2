@@ -2,14 +2,14 @@
  * \file CTurbSolver.cpp
  * \brief Main subroutines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 8.2.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -104,15 +104,17 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
                               bool val_update_geo) {
   /*--- Restart the solution from file information ---*/
 
-  const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  string restart_filename = config->GetSolution_FileName();
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
     if (config->GetRead_Binary_Restart()) {
+      restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
       Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
     } else {
+      restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 
@@ -129,9 +131,8 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
     const bool energy = config->GetEnergy_Equation();
     const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-    const bool flamelet = (config->GetKind_FluidModel() == FLUID_FLAMELET);
 
-    if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) skipVars--;
+    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -250,7 +251,7 @@ void CTurbSolver::ComputeUnderRelaxationFactorHelper(su2double allowableRatio) {
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
-  
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     su2double localUnderRelaxation = 1.0;
@@ -263,16 +264,16 @@ void CTurbSolver::ComputeUnderRelaxationFactorHelper(su2double allowableRatio) {
       turbulence variables can change over a nonlinear iteration. */
       if (ratio > allowableRatio) {
         localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-      
+
       }
     }
 
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due
      to non-realizable states by canceling the update. */
-    
+
     if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
-    
+
     /* Store the under-relaxation factor for this point. */
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
