@@ -299,9 +299,9 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   }
 }
 
-int CDiscAdjMultizoneDriver::TapeTestGatherErrors(AD::ErrorReport& error_report) const {
+int CDiscAdjMultizoneDriver::TapeTestGatherErrors(AD::DebugStatus& debug_status) const {
 
-  int num_errors = AD::GetErrorCount(error_report);
+  int num_errors = AD::GetErrorCount(debug_status);
   int total_errors = 0;
   std::vector<int> process_error(size);
   SU2_MPI::Allreduce(&num_errors, &total_errors, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
@@ -317,6 +317,16 @@ int CDiscAdjMultizoneDriver::TapeTestGatherErrors(AD::ErrorReport& error_report)
     }
   }
   return total_errors;
+}
+
+int CDiscAdjMultizoneDriver::TapeTestGetTag(unsigned short iZone, bool init) const {
+
+  if (init) {
+    return (nZone > 1) ? ((int)iZone + 1) * 10 + 1 : 1;
+  }
+  else {
+    return (nZone > 1) ? ((int)iZone + 1) * 10 + 2 : 2;
+  }
 }
 
 bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode) {
