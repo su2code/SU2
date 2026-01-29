@@ -1792,7 +1792,10 @@ void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
 }
 
 void CFlowOutput::SetAerodynamicCoefficients(const CConfig* config, const CSolver* flow_solver){
-
+  if (config->GetRefArea() <= 0.0) {
+    return;
+  }
+  
   SetHistoryOutputValue("REFERENCE_FORCE", flow_solver->GetAeroCoeffsReferenceForce());
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
   SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());

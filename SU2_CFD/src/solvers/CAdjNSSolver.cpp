@@ -262,6 +262,14 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
      /*--- Objective scaling: a factor must be applied to certain objectives ---*/
      for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
          Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
+         ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
+
+         if ((ObjFunc == DRAG_COEFFICIENT) || (ObjFunc == LIFT_COEFFICIENT) || (ObjFunc == SIDEFORCE_COEFFICIENT) ||
+             (ObjFunc == MOMENT_X_COEFFICIENT) || (ObjFunc == MOMENT_Y_COEFFICIENT) || (ObjFunc == MOMENT_Z_COEFFICIENT)) {
+           if (RefArea <= 0.0) {
+             SU2_MPI::Error("The requested adjoint objective requires a valid REF_AREA, but it is currently 0.0.", CURRENT_FUNCTION);
+           }
+         }
 
          factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
 
@@ -643,6 +651,13 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
   factor = 1.0;
   /*-- For multi-objective problems these scaling factors are applied before solution ---*/
   if (config->GetnObj()==1) {
+    if ((ObjFunc == DRAG_COEFFICIENT) || (ObjFunc == LIFT_COEFFICIENT) || (ObjFunc == SIDEFORCE_COEFFICIENT) ||
+        (ObjFunc == MOMENT_X_COEFFICIENT) || (ObjFunc == MOMENT_Y_COEFFICIENT) || (ObjFunc == MOMENT_Z_COEFFICIENT)) {
+      if (RefArea <= 0.0) {
+        SU2_MPI::Error("REF_AREA is 0.0. Cannot compute viscous sensitivity for aerodynamic objective.", CURRENT_FUNCTION);
+      }
+    }
+
     factor = 1.0/(0.5*RefDensity*RefArea*RefVel2);
 
     if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
