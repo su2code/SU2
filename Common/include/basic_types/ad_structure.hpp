@@ -324,13 +324,6 @@ inline void SetCallbackMode(TAPE_TEST_MODE kind_test_mode, unsigned short izone 
 inline void SetDebugReportFile(DebugStatus& status, std::ostream* output_file) {}
 
 /*!
- * \brief Set the mode which kind of tag mismatches are considered errors and written to file.
- * \param[in] kind_test_mode - specification which kind of tag mismatches are considered.
- * \param[in] izone - the zone w.r.t. which a tag mismatch is allowed.
- */
-inline void SetCallbackMode(TAPE_TEST_MODE kind_test_mode, unsigned short izone = 0) {}
-
-/*!
  * \brief Reset the error counter in a DebugStatus.
  * \param[in] status - the DebugStatus whose error counter is resetted.
  */
