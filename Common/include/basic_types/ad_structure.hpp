@@ -36,7 +36,12 @@
  * In case there is no reverse type configured, they have no effect at all,
  * and so the real versions of the routined are after #else.
  */
+
 namespace AD {
+
+enum class TAPE_TEST_MODE { IGNORE_PREACC, ACTIVATE_PREACC, IGNORE_SINGLE_ZONE,
+                            ACTIVATE_SINGLE_ZONE, IGNORE_ZONES, ACTIVATE_ZONES, ACTIVATE_ALL};
+
 #ifndef CODI_REVERSE_TYPE
 
 using Identifier = int;
@@ -305,6 +310,13 @@ struct DebugStatus {};
 inline void SetCurrentStatus(DebugStatus *status) {}
 
 /*!
+ * \brief Set the mode which kind of tag mismatches are considered errors and written to file.
+ * \param[in] kind_test_mode - specification which kind of tag mismatches are considered.
+ * \param[in] izone - the zone w.r.t. which a tag mismatch is allowed.
+ */
+inline void SetCallbackMode(TAPE_TEST_MODE kind_test_mode, unsigned short izone = 0) {}
+
+/*!
  * \brief Set a pointer to the output file of a DebugStatus.
  * \param[in] status - the DebugStatus whose output file is set.
  * \param[in] output_file - pointer to the output file.
@@ -312,10 +324,11 @@ inline void SetCurrentStatus(DebugStatus *status) {}
 inline void SetDebugReportFile(DebugStatus& status, std::ostream* output_file) {}
 
 /*!
- * \brief Set the ErrorReport to which error information from a tag debug recording is written.
- * \param[in] report - the ErrorReport to which error information is written.
+ * \brief Set the mode which kind of tag mismatches are considered errors and written to file.
+ * \param[in] kind_test_mode - specification which kind of tag mismatches are considered.
+ * \param[in] izone - the zone w.r.t. which a tag mismatch is allowed.
  */
-inline void SetTagErrorCallback(ErrorReport& report) {}
+inline void SetCallbackMode(TAPE_TEST_MODE kind_test_mode, unsigned short izone = 0) {}
 
 /*!
  * \brief Reset the error counter in a DebugStatus.
@@ -811,15 +824,39 @@ static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* u
   }
 }
 
-FORCEINLINE void SetTagErrorCallback(ErrorReport& report) {
-  AD::getTape().setTagErrorCallback(tagErrorCallback, &report);
+FORCEINLINE void SetCallbackMode(TAPE_TEST_MODE kind_test_mode, unsigned short izone = 0) {
+
+  if (kind_test_mode == AD::TAPE_TEST_MODE::IGNORE_PREACC) {
+    current_status->ignore_preacc = true;
+  }
+  if (kind_test_mode == AD::TAPE_TEST_MODE::ACTIVATE_PREACC
+      || kind_test_mode == AD::TAPE_TEST_MODE::ACTIVATE_ALL) {
+    current_status->ignore_preacc = false;
+  }
+  if (kind_test_mode == AD::TAPE_TEST_MODE::IGNORE_SINGLE_ZONE) {
+    current_status->ignore_single_zone = true;
+    current_status->ignore_izone = izone;
+  }
+  if (kind_test_mode == AD::TAPE_TEST_MODE::ACTIVATE_SINGLE_ZONE
+      || kind_test_mode == AD::TAPE_TEST_MODE::ACTIVATE_ALL) {
+    current_status->ignore_single_zone = false;
+  }
+  if (kind_test_mode == AD::TAPE_TEST_MODE::IGNORE_ZONES) {
+    current_status->ignore_zones = true;
+  }
+  if (kind_test_mode == AD::TAPE_TEST_MODE::ACTIVATE_ZONES
+      || kind_test_mode == AD::TAPE_TEST_MODE::ACTIVATE_ALL) {
+    current_status->ignore_zones = false;
+  }
+
+  AD::getTape().setTagErrorCallback(tagErrorCallback, current_status);
 }
 
 #else
 FORCEINLINE void SetCurrentStatus(DebugStatus* status) {}
 FORCEINLINE void SetTag(int tag) {}
 FORCEINLINE void ClearTagOnVariable(su2double& v) {}
-FORCEINLINE void SetTagErrorCallback(ErrorReport report) {}
+FORCEINLINE void SetCallbackMode(TAPE_TEST_MODE kind_test_mode, unsigned short izone = 0) {}
 
 #endif  // CODI_TAG_TAPE
 
