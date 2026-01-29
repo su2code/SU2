@@ -2468,9 +2468,8 @@ su2double CGeometry::GetSurfaceArea(const CConfig* config, unsigned short val_ma
 }
 
 void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
-  const su2double MIN_AREA = 1e-12;  // minimum area to consider a normal valid
-  const su2double PARALLEL_TOLERANCE =
-      0.001;  // ~2.5 degrees, minimum angle between symmetry planes to consider them non-parallel
+  const su2double MIN_AREA = 1e-12;            // minimum area to consider a normal valid
+  const su2double PARALLEL_TOLERANCE = 0.001;  // min. angle between symm. planes to consider them non-parallel.
 
   /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against.
    * All nodes that are shared by multiple symmetries have to get a corrected normal. */
