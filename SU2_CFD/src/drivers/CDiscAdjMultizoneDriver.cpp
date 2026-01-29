@@ -231,21 +231,40 @@ void CDiscAdjMultizoneDriver::StartSolver() {
 
 void CDiscAdjMultizoneDriver::TapeTest() {
 
+  if (nZone > 100) {
+    SU2_MPI::Error("The tape debug mode tag system is limited to a maximum zone number of 100.", CURRENT_FUNCTION);
+  }
+
   if (rank == MASTER_NODE) {
     cout <<"\n---------------------------- Start Debug Run ----------------------------" << endl;
   }
 
   int total_errors = 0;
-  AD::ErrorReport error_report;
-  AD::SetTagErrorCallback(error_report);
-  std::ofstream out1("run1_process" + to_string(rank) + ".out");
-  std::ofstream out2("run2_process" + to_string(rank) + ".out");
 
-  AD::ResetErrorCounter(error_report);
-  AD::SetDebugReportFile(error_report, &out1);
+  /*--- Errors are reported to an instance of AD::DebugStatus that holds an error counter, a pointer to
+   *    an error log file and configurations determined by the TAPE_TEST_MODE settings. ---*/
+  AD::DebugStatus debug_status;
 
-  /*--- This recording will assign the initial (same) tag to each registered variable.
+  /*--- Set a pointer to the current status internally in the AD structure. ---*/
+  AD::SetCurrentStatus(&debug_status);
+
+  /*--- Set the default tag mismatch callback (consider every mismatch an error). ---*/
+  AD::SetCallbackMode(AD::TAPE_TEST_MODE::ACTIVATE_ALL);
+
+  // Make this a config option?
+  // AD::SetCallbackMode(AD::TAPE_TEST_MODE::IGNORE_ZONES);
+
+  /*--- Reset the error counter and set the error log file (each process writes its own). ---*/
+  AD::ResetErrorCounter(debug_status);
+  std::ofstream out("debug_run_process" + to_string(rank) + ".out");
+  AD::SetDebugReportFile(debug_status, &out);
+
+  /*--- This recording will assign an initial, zone-specific tag to each registered variable.
    *    During the recording, each dependent variable will be assigned the same tag. ---*/
+
+  out << "-----------------------------------------------------------------------------------------" << std::endl;
+  out << "INITIAL recording." << std::endl;
+  out << "Errors appearing in this recording are most likely preaccumulation errors (preaccumulation tag: 1337).\n" << std::endl;
 
   if(driver_config->GetAD_CheckTapeType() == CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
@@ -267,16 +286,23 @@ void CDiscAdjMultizoneDriver::TapeTest() {
       SetRecording(RECORDING::TAG_INIT_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
   }
-  total_errors = TapeTestGatherErrors(error_report);
 
-  AD::ResetErrorCounter(error_report);
-  AD::SetDebugReportFile(error_report, &out2);
+  /*--- Gather errors from all ranks from the initial recording (e.g. preaccumulation errors). ---*/
+  total_errors = TapeTestGatherErrors(debug_status);
+  AD::ResetErrorCounter(debug_status);
 
   /*--- This recording repeats the initial recording with a different tag.
    *    If a variable was used before it became dependent on the inputs, this variable will still carry the tag
    *    from the initial recording and a mismatch with the "check" recording tag will throw an error.
    *    In such a case, a possible reason could be that such a variable is set by a post-processing routine while
    *    for a mathematically correct recording this dependency must be included earlier. ---*/
+
+  out << "-------------------------------------------------------------------------------------------------" << std::endl;
+  out << "IZONE = " << iZone << ", SECOND recording." << std::endl;
+  out << "Errors appearing hereafter are most likely mathematical errors (e.g. check for circular dependencies)." << std::endl;
+
+  /*--- We ignore preaccumulation mismatches during the second recording as they have already been reported. ---*/
+  AD::SetCallbackMode(AD::TAPE_TEST_MODE::IGNORE_PREACC);
 
   if(driver_config->GetAD_CheckTapeType() == CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES)
@@ -290,7 +316,8 @@ void CDiscAdjMultizoneDriver::TapeTest() {
     else
       SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
   }
-  total_errors += TapeTestGatherErrors(error_report);
+  total_errors += TapeTestGatherErrors(debug_status);
+
 
   if (rank == MASTER_NODE) {
     cout << "\n------------------------- Tape Test Run Summary -------------------------" << endl;
@@ -710,16 +737,27 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     }
   }
 
+  /*--- Boolean only used for debug tape recordings. ---*/
+  bool tape_test_init = false;
+
   if (rank == MASTER_NODE) {
     cout << "\n-------------------------------------------------------------------------\n";
     switch(kind_recording) {
     case RECORDING::CLEAR_INDICES:      cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:        cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
     case RECORDING::SOLUTION_VARIABLES: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
-    case RECORDING::TAG_INIT_SOLVER_VARIABLES:    cout << "Simulating recording with tag 1 on conservative variables." << endl; AD::SetTag(1); break;
-    case RECORDING::TAG_CHECK_SOLVER_VARIABLES:   cout << "Checking first recording with tag 2 on conservative variables." << endl; AD::SetTag(2); break;
-    case RECORDING::TAG_INIT_SOLVER_AND_MESH:     cout << "Simulating recording with tag 1 on conservative variables and mesh coordinates." << endl; AD::SetTag(1); break;
-    case RECORDING::TAG_CHECK_SOLVER_AND_MESH:    cout << "Checking first recording with tag 2 on conservative variables and mesh coordinates." << endl; AD::SetTag(2); break;
+    case RECORDING::TAG_INIT_SOLVER_VARIABLES:
+      cout << "Simulating recording w.r.t. conservative variables ..." << endl;
+      tape_test_init = true; break;
+    case RECORDING::TAG_CHECK_SOLVER_VARIABLES:
+      cout << "Checking first recording w.r.t. conservative variables ..." << endl;
+      tape_test_init = false; break;
+    case RECORDING::TAG_INIT_SOLVER_AND_MESH:
+      cout << "Simulating recording w.r.t. conservative variables and mesh coordinates ..." << endl;
+      tape_test_init = true; break;
+    case RECORDING::TAG_CHECK_SOLVER_AND_MESH:
+      cout << "Checking first recording w.r.t. conservative variables and mesh coordinates ..." << endl;
+      tape_test_init = false; break;
     default: break;
     }
   }
@@ -744,6 +782,12 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
         type_recording = RECORDING::MESH_DEFORM;
       }
 
+      /*--- If we are in tape debug mode, set a global (but zone-specific) tag.
+       *    Every variable that we register below will be initialized with this tag. ---*/
+      int tag = TapeTestGetTag(iZone, tape_test_init);
+      cout << "    - with tag " << tag << " on zone " << iZone << "." << endl;
+      AD::SetTag(tag);
+
       iteration_container[iZone][INST_0]->RegisterInput(solver_container, geometry_container,
                                                         config_container, iZone, INST_0, type_recording);
     }
@@ -752,6 +796,10 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
   AD::Push_TapePosition(); /// REGISTERED
 
   for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- If in tape debug mode, set the zone-specific tag for computations in this zone. ---*/
+    AD::SetTag(TapeTestGetTag(iZone, tape_test_init));
+
     iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
                                                         config_container, iZone, INST_0, kind_recording);
   }
@@ -765,6 +813,10 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
   if ((tape_type == Kind_Tape::OBJECTIVE_FUNCTION_TAPE) || (kind_recording == RECORDING::MESH_COORDS)) {
     HandleDataTransfer();
     for (iZone = 0; iZone < nZone; iZone++) {
+
+      /*--- If in tape debug mode, set the zone-specific test tag for computations in this zone. ---*/
+      AD::SetTag(TapeTestGetTag(iZone, tape_test_init));
+
       if (Has_Deformation(iZone)) {
         iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
                                                             config_container, iZone, INST_0, kind_recording);
@@ -790,6 +842,9 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     for(iZone = 0; iZone < nZone; iZone++) {
 
       AD::Push_TapePosition(); /// enter_zone
+
+      /*--- If in tape debug mode, set the zone-specific test tag for computations in this zone. ---*/
+      AD::SetTag(TapeTestGetTag(iZone, tape_test_init));
 
       DirectIteration(iZone, kind_recording);
 
