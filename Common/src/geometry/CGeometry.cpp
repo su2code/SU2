@@ -2613,7 +2613,7 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
        * correction will have no effect since previous corrections will remove components in this direction). ---*/
       const su2double area = GeometryToolbox::Norm(int(MAXNDIM), iNormal.data());
 
-      if (area > 1e-12) {
+      if (area > MIN_AREA) {
         for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] /= area;
         symmetryNormals[iMarker][iVertex] = iNormal;
       }
