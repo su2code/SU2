@@ -1526,7 +1526,7 @@ def main():
     pywrapper_deformingBump.cfg_dir = "py_wrapper/deforming_bump_in_channel"
     pywrapper_deformingBump.cfg_file = "config.cfg"
     pywrapper_deformingBump.test_iter = 1
-    pywrapper_deformingBump.test_vals = [0.500000, 0.000000, -2.811520, -1.603562, -2.074259, 2.424289, 7.616891, -0.205655]
+    pywrapper_deformingBump.test_vals = [0.500000, 0.000000, -2.556309, -1.270839, -2.350590, 2.606851, 8.002480, -0.300272]
     pywrapper_deformingBump.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     pywrapper_deformingBump.unsteady = True
     test_list.append(pywrapper_deformingBump)

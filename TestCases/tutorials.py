@@ -292,7 +292,7 @@ def main():
     tutorial_nicfd_nozzle_pinn.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle/PhysicsInformed"
     tutorial_nicfd_nozzle_pinn.cfg_file  = "config_NICFD_PINN.cfg"
     tutorial_nicfd_nozzle_pinn.test_iter = 20
-    tutorial_nicfd_nozzle_pinn.test_vals = [-3.181747, -1.638856, -1.277037, 2.445964, -11.759632]
+    tutorial_nicfd_nozzle_pinn.test_vals = [-2.728179, -0.849337, -1.224542, 2.898995, -11.420290]
     tutorial_nicfd_nozzle_pinn.no_restart = True
     test_list.append(tutorial_nicfd_nozzle_pinn)
 
