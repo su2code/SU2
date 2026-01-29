@@ -776,10 +776,39 @@ FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
 FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
 
 static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* userData) {
-  auto* report = static_cast<ErrorReport*>(userData);
+  auto* status = static_cast<DebugStatus*>(userData);
 
-  report->ErrorCounter += 1;
-  *(report->out) << "Use of variable with bad tag '" << wrongTag << "', should be '" << correctTag << "'." << std::endl;
+  bool throw_mismatch_error = true;
+
+  if (status->ignore_preacc || status->ignore_single_zone || status->ignore_zones) {
+
+    /*--- The callback could be due to a preaccumulation tag mismatch, if not, we deduce
+     *    that it is either due to a zone index mismatch, or due to a mismatch in the least
+     *    significant bit that will always result in an error. ---*/
+
+    if (correctTag == 1337) {
+      if (status->ignore_preacc) {
+        throw_mismatch_error = false;
+      }
+    }
+    else if (correctTag % 10 == wrongTag % 10) {
+      if (status->ignore_single_zone) {
+        /*--- A mismatch with a specified zone index might be allowed. ---*/
+        if (wrongTag / 10 == status->ignore_single_zone) {
+          throw_mismatch_error = false;
+        }
+      }
+      if (status->ignore_zones) {
+        throw_mismatch_error = false;
+      }
+    }
+  }
+
+  if (throw_mismatch_error) {
+    status->ErrorCounter += 1;
+    *(status->out) << "Use of variable with bad tag '" << std::setw(2) << std::setfill('0') << wrongTag
+                   << "', should be '" << std::setw(2) << std::setfill('0') << correctTag << "'." << std::endl;
+  }
 }
 
 FORCEINLINE void SetTagErrorCallback(ErrorReport& report) {
