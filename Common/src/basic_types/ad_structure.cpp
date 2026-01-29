@@ -50,7 +50,7 @@ ExtFuncHelper FuncHelper;
 
 #ifdef CODI_TAG_TAPE
 DebugStatus* current_status = NULL;
-#endif // CODI_TAG_TAPE
+#endif  // CODI_TAG_TAPE
 
 #endif
 
