@@ -465,7 +465,7 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig **config_con
   MixingState.resize(nMarker);
   MixingStateNodes.resize(nMarker);
 
-  for (auto iMarkerInt = 1u; iMarkerInt < config->GetnMarker_MixingPlaneInterface()/2 + 1; iMarkerInt++) {
+  for (auto iMarkerInt = 1; iMarkerInt < config->GetnMarker_MixingPlaneInterface()/2 + 1; iMarkerInt++) {
     auto iMarkerMP = config->FindMixingPlaneInterfaceMarker(geometry->GetnMarker(), iMarkerInt);
     if (iMarkerMP != -1) {
       MixingState[iMarkerMP].resize(nSpanWiseSections+1);
