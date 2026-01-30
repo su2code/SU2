@@ -2961,7 +2961,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
   /* DESCRIPTION: SBS lengthscale coefficient */
-  addDoubleOption("SBS_LENGTHSCALE_COEFF", SBS_Cdelta, 0.1);
+  addDoubleOption("SBS_LENGTHSCALE_COEFF", SBS_Cdelta, 0.02);
 
   /* DESCRIPTION: Maximum number of smoothing iterations for SBS model. */
   addUnsignedShortOption("SBS_MAX_ITER_SMOOTH", SBS_maxIterSmooth, 100);
@@ -2982,7 +2982,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("ENFORCE_LES", enforceLES, false);
 
   /* DESCRIPTION: Specify if the stochastic source term must be included in the turbulence model equation */
-  addBoolOption("STOCH_SOURCE_NU", stochSourceNu, true);
+  addBoolOption("STOCH_SOURCE_NU", stochSourceNu, false);
 
   /* DESCRIPTION: Enable diagnostics of the stochastic source term in Langevin equations. */
   addBoolOption("STOCH_SOURCE_DIAGNOSTICS", stochSourceDiagnostics, false);

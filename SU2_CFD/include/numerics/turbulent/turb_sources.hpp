@@ -122,12 +122,17 @@ class CSourceBase_TurbSA : public CNumerics {
     const su2double& nue = ScalarVar_i[0];
     const auto& density = V_i[idx.Density()];
     const su2double threshold = 0.9;
+    const su2double limiterRANS = 0.1;
+    const su2double timeStepFrac = 0.2;
     const su2double nut = max(nue*var.fv1, 1e-10);
     const su2double delta = lengthScale/DES_const;
 
     if (delta > 1e-10) {
 
       su2double tTurb = ct*pow(delta, 2)/nut;
+      su2double blendingFactor = DES_const*DES_const/ct*(1.0-lesMode_i) + lesMode_i;
+      tTurb *= blendingFactor;
+      tTurb = max(timeStep*timeStepFrac, min(tTurb, timeStep/timeStepFrac));
       su2double tRat = timeStep / tTurb;
     
       su2double corrFac = 1.0;

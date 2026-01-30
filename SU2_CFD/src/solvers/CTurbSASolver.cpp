@@ -61,7 +61,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     if (nDim == 3) {
       nVar += nDim; nVarGrad = nPrimVar = nVar;
     } else {
-      SU2_MPI::Error("Stochastic Backscatter Model available for 3D flows only.", CURRENT_FUNCTION);;
+      SU2_MPI::Error("Stochastic Backscatter Model available for 3D flows only.", CURRENT_FUNCTION);
     }
   }
 
@@ -1829,15 +1829,24 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
           var_check_new += source * source;
           nodes->SetLangevinSourceTerms(iPoint, iDim, source);
         }
+        su2double mean_check_new_G = 0.0;
+        SU2_MPI::Allreduce(&mean_check_new, &mean_check_new_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        mean_check_new_G /= global_nPointLES;
+        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+          const su2double lesSensor = nodes->GetLES_Mode(iPoint);
+          su2double source_notSmoothed = nodes->GetLangevinSourceTermsOld(iPoint, iDim);
+          su2double source = nodes->GetLangevinSourceTerms(iPoint, iDim);
+          if (lesSensor < threshold || source_notSmoothed > 3.0*sourceLim) continue;
+          source -= mean_check_new_G;
+          nodes->SetLangevinSourceTerms(iPoint, iDim, source);
+        }
         if (config->GetStochSourceDiagnostics()) {
           su2double mean_check_old_G = 0.0;
-          su2double mean_check_new_G = 0.0;
           su2double mean_check_notSmoothed_G = 0.0;
           su2double var_check_old_G = 0.0;
           su2double var_check_new_G = 0.0;
           su2double var_check_notSmoothed_G = 0.0;
           SU2_MPI::Allreduce(&mean_check_old, &mean_check_old_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-          SU2_MPI::Allreduce(&mean_check_new, &mean_check_new_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
           SU2_MPI::Allreduce(&mean_check_notSmoothed, &mean_check_notSmoothed_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
           SU2_MPI::Allreduce(&var_check_old, &var_check_old_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
           SU2_MPI::Allreduce(&var_check_new, &var_check_new_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
@@ -1845,7 +1854,6 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
           mean_check_old_G /= global_nPointLES;
           var_check_old_G /= global_nPointLES;
           var_check_old_G -= mean_check_old_G * mean_check_old_G;
-          mean_check_new_G /= global_nPointLES;
           var_check_new_G /= global_nPointLES;
           var_check_new_G -= mean_check_new_G * mean_check_new_G;
           mean_check_notSmoothed_G /= global_nPointLES;
@@ -1853,22 +1861,14 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
           var_check_notSmoothed_G -= mean_check_notSmoothed_G * mean_check_notSmoothed_G;
           if (rank == MASTER_NODE) {
             cout << "Mean of stochastic source term in Langevin equations: " << endl;
-            cout << "   Uncorrelated            --> " << mean_check_notSmoothed_G << "." << endl;
-            cout << "   Smoothed before scaling --> " << mean_check_old_G << "." << endl;
-            cout << "   Smoothed after scaling  --> " << mean_check_new_G << "." << endl;
+            cout << "   Uncorrelated            --> " << mean_check_notSmoothed_G << endl;
+            cout << "   Smoothed before scaling --> " << mean_check_old_G << endl;
+            cout << "   Smoothed after scaling  --> " << mean_check_new_G << " (subtracted from stochastic field to guarantee zero mean)" << endl;
             cout << "Variance of stochastic source term in Langevin equations: " << endl;
-            cout << "   Uncorrelated            --> " << var_check_notSmoothed_G << "." << endl;
-            cout << "   Smoothed before scaling --> " << var_check_old_G << "." << endl;
-            cout << "   Smoothed after scaling  --> " << var_check_new_G << "." << endl;
+            cout << "   Uncorrelated            --> " << var_check_notSmoothed_G << endl;
+            cout << "   Smoothed before scaling --> " << var_check_old_G << endl;
+            cout << "   Smoothed after scaling  --> " << var_check_new_G << endl;
             cout << endl;
-          }
-          for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-            const su2double lesSensor = nodes->GetLES_Mode(iPoint);
-            su2double source_notSmoothed = nodes->GetLangevinSourceTermsOld(iPoint, iDim);
-            su2double source = nodes->GetLangevinSourceTerms(iPoint, iDim);
-            if (lesSensor < threshold || source_notSmoothed > 3.0*sourceLim) continue;
-            source -= mean_check_new_G;
-            nodes->SetLangevinSourceTerms(iPoint, iDim, source);
           }
         }
         break;
