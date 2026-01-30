@@ -462,15 +462,14 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig **config_con
   ExtAverageTurboVelocity.resize(nDim);
   for (auto iDim = 0u; iDim < nDim; iDim++) ExtAverageTurboVelocity[iDim] = su2double(0.0);
 
-  auto nMarkerInterface = config->GetnMarker_ZoneInterface();
+  MixingState.resize(nMarker);
+  MixingStateNodes.resize(nMarker);
 
-  MixingState.resize(nMarkerInterface);
-  MixingStateNodes.resize(nMarkerInterface);
-
-  for (unsigned long iMarker = 0; iMarker < nMarkerInterface; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == GILES_BOUNDARY) {
-      MixingState[iMarker].resize(nSpanWiseSections+1);
-      MixingStateNodes[iMarker].resize(nSpanWiseSections+1);
+  for (auto iMarkerInt = 1u; iMarkerInt < config->GetnMarker_MixingPlaneInterface()/2 + 1; iMarkerInt++) {
+    auto iMarkerMP = config->FindMixingPlaneInterfaceMarker(geometry->GetnMarker(), iMarkerInt);
+    if (iMarkerMP != -1) {
+      MixingState[iMarkerMP].resize(nSpanWiseSections+1);
+      MixingStateNodes[iMarkerMP].resize(nSpanWiseSections+1);
     }
   }
 
@@ -8919,35 +8918,34 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
 
 #ifdef HAVE_MPI
 
+    auto Allreduce = [](su2double x) {
+      su2double tmp = x; x = 0.0;
+      SU2_MPI::Allreduce(&tmp, &x, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      return x;
+    };
+
     /*--- Add information using all the nodes ---*/
 
-    su2double MyTotalAreaDensity = TotalAreaDensity;
-    su2double MyTotalAreaPressure  = TotalAreaPressure;
-    su2double MyTotalAreaNu = TotalAreaNu;
-    su2double MyTotalAreaKine = TotalAreaKine;
-    su2double MyTotalAreaOmega = TotalAreaOmega;
+    TotalAreaDensity = Allreduce(TotalAreaDensity);
+    TotalAreaPressure = Allreduce(TotalAreaPressure);
+    TotalAreaNu = Allreduce(TotalAreaNu);
+    TotalAreaKine = Allreduce(TotalAreaKine);
+    TotalAreaOmega = Allreduce(TotalAreaOmega);
 
-    SU2_MPI::Allreduce(&MyTotalAreaDensity, &TotalAreaDensity, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&MyTotalAreaPressure, &TotalAreaPressure, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&MyTotalAreaNu, &TotalAreaNu, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&MyTotalAreaKine, &TotalAreaKine, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    SU2_MPI::Allreduce(&MyTotalAreaOmega, &TotalAreaOmega, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    auto* buffer = new su2double[nDim];
 
-    auto* MyTotalAreaVelocity = new su2double[nDim];
+    auto Allreduce_inplace = [buffer](int size, su2double* x) {
+      SU2_MPI::Allreduce(x, buffer, size, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      for(int i=0; i<size; ++i) x[i] = buffer[i];
+    };
 
-    for (auto iDim = 0u; iDim < nDim; iDim++) {
-      MyTotalAreaVelocity[iDim] = TotalAreaVelocity[iDim];
-    }
+    Allreduce_inplace(nDim, TotalAreaVelocity);
 
-    SU2_MPI::Allreduce(MyTotalAreaVelocity, TotalAreaVelocity, nDim, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-
-    delete [] MyTotalAreaVelocity;
-
+    delete [] buffer;
+  
 #endif
 
     /*--- initialize spanwise average quantities ---*/
-
-
     for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++){
       for (auto iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
         if (config->GetMarker_All_Turbomachinery(iMarker) == iMarkerTP){

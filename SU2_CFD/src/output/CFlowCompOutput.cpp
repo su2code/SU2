@@ -542,6 +542,7 @@ void CFlowCompOutput::SetTurboPerformance_Output(std::vector<std::shared_ptr<CTu
     TurboInOut << "Mass Flow " << BladePerf->GetInletState().GetMassFlow() << BladePerf->GetOutletState().GetMassFlow();
     TurboInOut << "Mach " << BladePerf->GetInletState().GetMachValue() << BladePerf->GetOutletState().GetMachValue();
     TurboInOut << "Abs Flow Angle " << BladePerf->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER << BladePerf->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER;
+    TurboInOut << "Rel Flow Angle " << BladePerf->GetInletState().GetFlowAngle()*180/PI_NUMBER << BladePerf->GetOutletState().GetFlowAngle()*180/PI_NUMBER;
     TurboInOut.PrintFooter();
   }
   cout<<TurboInOutTable.str();
@@ -609,6 +610,8 @@ void CFlowCompOutput::LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStageP
     SetHistoryOutputValue("MachOut_" + tag.str(), BladePerf->GetOutletState().GetMachValue());
     SetHistoryOutputValue("AbsFlowAngleIn_" + tag.str(), BladePerf->GetInletState().GetAbsFlowAngle()*180/PI_NUMBER);
     SetHistoryOutputValue("AbsFlowAngleOut_" + tag.str(), BladePerf->GetOutletState().GetAbsFlowAngle()*180/PI_NUMBER);
+    SetHistoryOutputValue("RelFlowAngleIn_" + tag.str(), BladePerf->GetInletState().GetFlowAngle()*180/PI_NUMBER);
+    SetHistoryOutputValue("RelFlowAngleOut_" + tag.str(), BladePerf->GetOutletState().GetFlowAngle()*180/PI_NUMBER);
     SetHistoryOutputValue("KineticEnergyLoss_" + tag.str(), BladePerf->GetKineticEnergyLoss());
     SetHistoryOutputValue("TotPressureLoss_" + tag.str(), BladePerf->GetTotalPressureLoss());
   }
