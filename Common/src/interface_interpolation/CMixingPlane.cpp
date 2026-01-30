@@ -215,7 +215,6 @@ void CMixingPlane::WriteInterpolationDetails(const std::string& filename, const 
     }
     
     const auto donor_config = config[donorZone];
-    const auto target_config = config[targetZone];
     const auto nMarkerInt = config[donorZone]->GetnMarker_MixingPlaneInterface() / 2;
 
     outFile << "Mixing-Plane Interpolator Details. Donor Zone = " << donorZone << " Target Zone = " << targetZone << ". Interpolation Method = ";
