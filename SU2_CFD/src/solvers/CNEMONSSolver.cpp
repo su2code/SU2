@@ -2,14 +2,14 @@
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned shor
   Prandtl_Lam        = config->GetPrandtl_Lam();
   Prandtl_Turb       = config->GetPrandtl_Turb();
 
-  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+  /*--- Initialize the secondary values for direct derivative approximations ---*/
   switch(config->GetDirectDiff()) {
     case D_VISCOSITY:
       SU2_TYPE::SetDerivative(Viscosity_Inf, 1.0);

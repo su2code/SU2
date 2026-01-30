@@ -2,14 +2,14 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -3383,7 +3383,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
       position = text_line.find ("ITER=",0);
       if (position != string::npos) {
-        // TODO: 'ITER=' has 5 chars, not 9!
+       // TODO: 'ITER=' has 5 chars, not 9!
         text_line.erase (0,9); InnerIter_ = atoi(text_line.c_str());
       }
 

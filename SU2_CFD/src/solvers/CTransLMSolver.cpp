@@ -2,14 +2,14 @@
  * \file CTransLMSolver.cpp
  * \brief Main subroutines for Langtry-Menter Transition model solver.
  * \author A. Aranake, S. Kang.
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -214,7 +214,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double vel_u = flowNodes->GetVelocity(iPoint, 0);
     const su2double vel_v = flowNodes->GetVelocity(iPoint, 1);
     const su2double vel_w = (nDim ==3) ? flowNodes->GetVelocity(iPoint, 2) : 0.0;
-    const su2double VelocityMag = sqrt(vel_u*vel_u + vel_v*vel_v + vel_w*vel_w);
+    const su2double VelocityMag = max(sqrt(pow(vel_u, 2) + pow(vel_v, 2) + pow(vel_w, 2)), EPS);
     su2double omega = 0.0;
     su2double k = 0.0;
     if(TurbFamily == TURB_FAMILY::KW){
@@ -253,8 +253,8 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     su2double Intermittency_Sep = 2.0*max(0.0, Re_v/(3.235*Corr_Rec)-1.0)*f_reattach;
     Intermittency_Sep = min(Intermittency_Sep,2.0)*f_theta;
     Intermittency_Sep = min(max(0.0, Intermittency_Sep), 2.0);
-    nodes -> SetIntermittencySep(iPoint, Intermittency_Sep);
-    nodes -> SetIntermittencyEff(iPoint, Intermittency_Sep);
+    nodes->SetIntermittencySep(iPoint, Intermittency_Sep);
+    nodes->SetIntermittencyEff(iPoint, Intermittency_Sep);
 
   }
   END_SU2_OMP_FOR
@@ -282,7 +282,6 @@ void CTransLMSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  //auto* turbNodes = su2staticcast_p<CFlowVariable*>(solver_container[TURB_SOL]->GetNodes());
   CVariable* turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   /*--- Pick one numerics object per thread. ---*/
@@ -547,8 +546,8 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
         const auto index = counter * Restart_Vars[1] + skipVars;
         for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
-        nodes ->SetIntermittencySep(iPoint_Local,  Restart_Data[index + 2]);
-        nodes ->SetIntermittencyEff(iPoint_Local,  Restart_Data[index + 3]);
+        nodes->SetIntermittencySep(iPoint_Local,  Restart_Data[index + 2]);
+        nodes->SetIntermittencyEff(iPoint_Local,  Restart_Data[index + 3]);
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;

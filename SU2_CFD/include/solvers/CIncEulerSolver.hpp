@@ -2,14 +2,14 @@
  * \file CIncEulerSolver.hpp
  * \brief Headers of the CIncEulerSolver class
  * \author F. Palacios, T. Economon, T. Albring
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -202,6 +202,19 @@ public:
                       CNumerics **numerics_container,
                       CConfig *config,
                       unsigned short iMesh) final;
+
+  /*!
+   * \brief Recompute the extrapolated quantities, after MUSCL reconstruction,
+   *        in a more thermodynamically consistent way.
+   * \note This method is static to improve the chances of it being used in a
+   *       thread-safe manner.
+   * \param[in,out] fluidModel - The fluid model.
+   * \param[in] nDim - Number of physical dimensions.
+   * \param[in] scalar - scalar variable.
+   * \param[in,out] primitive - Primitive variables.
+   */
+  static void ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim, const su2double* scalar,
+                                             su2double* primitive);
 
   /*!
    * \brief Source term integration.

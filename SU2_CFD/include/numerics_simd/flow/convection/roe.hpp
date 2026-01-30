@@ -2,14 +2,14 @@
  * \file roe.hpp
  * \brief Roe-family of convective schemes.
  * \author P. Gomes, A. Bueno, F. Palacios
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -98,7 +98,7 @@ public:
     AD::StartPreacc();
 
     const bool implicit = (config.GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    const auto nkRelax = config.GetNewtonKrylovRelaxation();
+    const su2double umusclRamp = config.GetMUSCLRampValue() * config.GetNewtonKrylovRelaxation();
     const auto& solution = static_cast<const CEulerVariable&>(solution_);
 
     const auto iPoint = geometry.edges->GetNode(iEdge,0);
@@ -123,7 +123,7 @@ public:
 
     /*--- Recompute density and enthalpy instead of reconstructing. ---*/
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umusclKappa, nkRelax, typeLimiter, V1st, vector_ij, solution);
+        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umusclKappa, umusclRamp, typeLimiter, V1st, vector_ij, solution);
 
     /*--- Compute conservative variables. ---*/
 

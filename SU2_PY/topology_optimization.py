@@ -2,14 +2,14 @@
 
 ## \file topology_optimization.py
 #  \brief Python script to drive SU2 in topology optimization.
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -120,11 +120,9 @@ class Driver:
         # write inputs
         self._write_input(x)
 
-        # clear previous output and run direct solver
-        try:
+        # clear previous output if present and run direct solver
+        if os.path.exists(self._objValFile):
             os.remove(self._objValFile)
-        except OSError:
-            pass  # Ignore error if file does not exist
 
         try:
             sp.call(self._objValCommand, shell=True)
@@ -147,11 +145,9 @@ class Driver:
     def obj_der(self, x):
         # inputs written in obj_val_driver
 
-        # clear previous output and run direct solver
-        try:
+        # clear previous output if present and run direct solver
+        if os.path.exists(self._objDerFile):
             os.remove(self._objDerFile)
-        except OSError:
-            pass  # Ignore error if file does not exist
         N = x.shape[0]
         y = np.ndarray((N,))
 
@@ -197,11 +193,9 @@ class Driver:
     def con_der(self, x):
         # inputs written in obj_val_driver
 
-        # clear previous output and run solver
-        try:
+        # clear previous output if present and run solver
+        if os.path.exists(self._conDerFile):
             os.remove(self._conDerFile)
-        except OSError:
-            pass  # Ignore error if file does not exist
         N = x.shape[0]
         y = np.ndarray((N,))
 

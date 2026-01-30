@@ -2,14 +2,14 @@
  * \file CPhysicalGeometry.cpp
  * \brief Implementation of the physical geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -4484,7 +4484,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
    * which is equivalent to incrementing an integer marking the end of the
    * result and the start of the queue. ---*/
   vector<char> InQueue(nPoint, false);
-  vector<unsigned long> AuxQueue, Result;
+  vector<unsigned long> Result;
   Result.reserve(nPoint);
   unsigned long QueueStart = 0;
 
@@ -4523,21 +4523,19 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
 
       /*--- Add all adjacent nodes to the queue in increasing order of their
        degree, checking if the element is already in the queue. ---*/
-      AuxQueue.clear();
+      auto currEnd = Result.end();
       for (auto iNode = 0u; iNode < nodes->GetnPoint(AddPoint); iNode++) {
         const auto AdjPoint = nodes->GetPoint(AddPoint, iNode);
         if (!InQueue[AdjPoint]) {
-          AuxQueue.push_back(AdjPoint);
+          Result.push_back(AdjPoint);
           InQueue[AdjPoint] = true;
         }
       }
-      if (AuxQueue.empty()) continue;
 
-      /*--- Sort the auxiliar queue based on the number of neighbors (degree). ---*/
-      stable_sort(AuxQueue.begin(), AuxQueue.end(), [&](unsigned long iPoint, unsigned long jPoint) {
+      /*--- Sort the new points based on the number of neighbors (degree). ---*/
+      stable_sort(currEnd, Result.end(), [&](unsigned long iPoint, unsigned long jPoint) {
         return nodes->GetnPoint(iPoint) < nodes->GetnPoint(jPoint);
       });
-      Result.insert(Result.end(), AuxQueue.begin(), AuxQueue.end());
     }
   }
   reverse(Result.begin(), Result.end());

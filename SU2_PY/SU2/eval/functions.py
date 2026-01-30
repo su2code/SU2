@@ -3,14 +3,14 @@
 ## \file functions.py
 #  \brief python package for functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -75,7 +75,7 @@ def function(func_name, config, state=None):
     state = su2io.State(state)
 
     # check for multiple objectives
-    multi_objective = type(func_name) == list
+    multi_objective = isinstance(func_name, list)
 
     # func_name_string is only used to check whether the function has already been evaluated.
     func_name_string = func_name

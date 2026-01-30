@@ -2,14 +2,14 @@
  * \file fds.cpp
  * \brief Implementation of Flux-Difference-Splitting schemes.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -94,7 +94,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
   su2double ProjGridVel = 0.0;
 
   AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nDim+9); AD::SetPreaccIn(V_j, nDim+9); AD::SetPreaccIn(Normal, nDim);
+  AD::SetPreaccIn(V_i, nDim+10); AD::SetPreaccIn(V_j, nDim+10); AD::SetPreaccIn(Normal, nDim);
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim);
     AD::SetPreaccIn(GridVel_j, nDim);
@@ -116,9 +116,9 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
   Pressure_i    = V_i[0];             Pressure_j    = V_j[0];
   Temperature_i = V_i[nDim+1];        Temperature_j = V_j[nDim+1];
   DensityInc_i  = V_i[nDim+2];        DensityInc_j  = V_j[nDim+2];
-  BetaInc2_i    = V_i[nDim+3];        BetaInc2_j    = V_j[nDim+3];
-  Cp_i          = V_i[nDim+7];        Cp_j          = V_j[nDim+7];
-  Enthalpy_i    = Cp_i*Temperature_i; Enthalpy_j    = Cp_j*Temperature_j;
+  BetaInc2_i    = V_i[nDim+4];        BetaInc2_j    = V_j[nDim+4];
+  Cp_i          = V_i[nDim+8];        Cp_j          = V_j[nDim+8];
+  Enthalpy_i    = V_i[nDim+3];        Enthalpy_j    = V_j[nDim+3];
 
   ProjVelocity = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -155,11 +155,11 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
    preconditioning matrix. For now, the only option is the ideal gas
    law, but in the future, dRhodT should be in the fluid model. ---*/
 
-  MeandRhodT = 0.0; dRhodT_i = 0.0; dRhodT_j = 0.0;
+  MeandRhodh = 0.0; dRhodh_i = 0.0; dRhodh_j = 0.0;
   if (variable_density) {
-    MeandRhodT = -MeanDensity/MeanTemperature;
-    dRhodT_i   = -DensityInc_i/Temperature_i;
-    dRhodT_j   = -DensityInc_j/Temperature_j;
+    MeandRhodh = -MeanDensity / (MeanTemperature * MeanCp);
+    dRhodh_i = -DensityInc_i / (Temperature_i * Cp_i);
+    dRhodh_j = -DensityInc_j / (Temperature_j * Cp_j);
   }
 
   /*--- Compute ProjFlux_i ---*/
@@ -192,8 +192,7 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
     Lambda[iVar] = fabs(Lambda[iVar]);
 
   /*--- Build the preconditioning matrix using mean values ---*/
-
-  GetPreconditioner(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanTemperature, &MeandRhodT, Precon);
+  GetPreconditioner(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanEnthalpy, &MeandRhodh, Precon);
 
   /*--- Build the absolute value of the preconditioned Jacobian, i.e.,
    |A_precon| = P x |Lambda| x inv(P), where P diagonalizes the matrix
@@ -206,13 +205,15 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
   Diff_V[0] = Pressure_j - Pressure_i;
   for (iDim = 0; iDim < nDim; iDim++)
     Diff_V[iDim+1] = Velocity_j[iDim] - Velocity_i[iDim];
-  Diff_V[nDim+1] = Temperature_j - Temperature_i;
+  Diff_V[nDim + 1] = Enthalpy_j - Enthalpy_i;
 
   /*--- Build the inviscid Jacobian w.r.t. the primitive variables ---*/
 
   if (implicit) {
-    GetInviscidIncProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, &Cp_i, &Temperature_i, &dRhodT_i, Normal, 0.5, Jacobian_i);
-    GetInviscidIncProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, &Cp_j, &Temperature_j, &dRhodT_j, Normal, 0.5, Jacobian_j);
+    GetInviscidIncProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, &Enthalpy_i, &dRhodh_i, Normal, 0.5,
+                          Jacobian_i);
+    GetInviscidIncProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, &Enthalpy_j, &dRhodh_j, Normal, 0.5,
+                          Jacobian_j);
   }
 
   /*--- Compute dissipation as Precon x |A_precon| x dV. If implicit,
@@ -258,8 +259,8 @@ CNumerics::ResidualType<> CUpwFDSInc_Flow::ComputeResidual(const CConfig *config
           Jacobian_i[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_i;
           Jacobian_j[iDim+1][iDim+1] -= 0.5*ProjVelocity*DensityInc_j;
         }
-        Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i*Cp_i;
-        Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j*Cp_j;
+        Jacobian_i[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_i;
+        Jacobian_j[nDim+1][nDim+1] -= 0.5*ProjVelocity*DensityInc_j;
       }
     }
   }

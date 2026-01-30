@@ -3,14 +3,14 @@
 ## \file projection.py
 #  \brief python package for running gradient projection
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -41,7 +41,7 @@ from .interface import DOT as SU2_DOT
 # ----------------------------------------------------------------------
 
 
-def projection(config, state={}, step=1e-3):
+def projection(config, state=None, step=1e-3):
     """info = SU2.run.projection(config,state,step=1e-3)
 
     Runs an gradient projection with:
@@ -54,7 +54,7 @@ def projection(config, state={}, step=1e-3):
 
     Inputs:
         config - an SU2 config
-        state  - only required when using external custom DV
+        state  - accepted for API compatibility; currently unused by this function
         step   - a float or list of floats for geometry sensitivity
                  finite difference step
 

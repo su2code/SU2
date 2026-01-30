@@ -2,14 +2,14 @@
  * \file CFEM_DG_EulerSolver.cpp
  * \brief Main subroutines for solving finite element Euler flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1065,7 +1065,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND); config->SetModVel_FreeStreamND(ModVel_FreeStreamND);
 
   Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
-  Thermal_Conductivity_FreeStreamND = Thermal_Conductivity_FreeStream / Conductivity_Ref; 
+  Thermal_Conductivity_FreeStreamND = Thermal_Conductivity_FreeStream / Conductivity_Ref;
   config->SetThermalConductivity_FreeStreamND(Thermal_Conductivity_FreeStreamND);
   SpecificHeat_Cp_FreeStreamND = SpecificHeat_Cp_FreeStream / Gas_Constant_Ref;
   config->SetSpecificHeatCp_FreeStreamND(SpecificHeat_Cp_FreeStreamND);
@@ -9457,6 +9457,8 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config
           numerics->ComputeResidual(flux, Jacobian_i, Jacobian_j, config);
         }
       }
+      /*--- Just to avoid compilers complaining about dangling pointers. ---*/
+      numerics->SetPrimitive(nullptr, nullptr);
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         delete [] Jacobian_i[iVar];
