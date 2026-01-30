@@ -105,7 +105,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
     for (auto iSize = 0; iSize < size; iSize++){
       if (buffDonorMarker[static_cast<size_t>(iSize) * static_cast<unsigned long>(nSpanDonor + 1)] != -1) {
-        for (auto iSpan = 0ul; iSpan < nSpanDonor + 1; iSpan++){
+        for (auto iSpan = 0; iSpan < nSpanDonor + 1; iSpan++){
           for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = buffDonorVar[static_cast<size_t>(iSize) * nSpanDonorVars + iSpan * nMixingVars + iVar];
         }
         markDonor = buffDonorMarker[static_cast<unsigned long>(iSize) * static_cast<unsigned long>(nSpanDonor + 1)];
