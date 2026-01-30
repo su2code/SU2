@@ -64,7 +64,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
   /*--- Loop over interface markers. ---*/
 
-  for (auto iMarkerInt = 1u; iMarkerInt < donor_config->GetnMarker_MixingPlaneInterface()/2 + 1; iMarkerInt++) {
+  for (auto iMarkerInt = 1; iMarkerInt < donor_config->GetnMarker_MixingPlaneInterface()/2 + 1; iMarkerInt++) {
 
     /*--- Find the markers containing the interface ---*/
     short markDonor = donor_config->FindMixingPlaneInterfaceMarker(donor_geometry->GetnMarker(), iMarkerInt);
@@ -82,7 +82,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     vector<su2double> sendDonorVar(static_cast<size_t>(nSpanDonor + 1) * nMixingVars);
 
     if (markDonor != -1) {
-      for (auto iSpan = 0ul; iSpan < nSpanDonor + 1; iSpan++) {
+      for (auto iSpan = 0; iSpan < nSpanDonor + 1; iSpan++) {
         GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iSpan, 0);
         for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = Donor_Variable[iVar];
         sendDonorMarker[iSpan] = markDonor;
