@@ -624,9 +624,8 @@ def multipoint(config, state=None, step=1e-2):
             dst = os.path.abspath(dst).rstrip("/") + "/" + "DIRECT"
 
             # make unix link
-            string = "ln -s " + src + " " + dst
-            stringlist = string.split()
-            subprocess.Popen(stringlist)
+            if not os.path.exists(dst):
+                os.symlink(src, dst)
 
     for i in range(len(weight_list) - 1):
 

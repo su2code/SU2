@@ -623,9 +623,8 @@ def multipoint(func_name, config, state=None, step=1e-2):
             dst = os.path.abspath(dst).rstrip("/") + "/"
 
             # make unix link
-            string = "ln -s " + src + " " + dst
-            string_list = string.split()
-            subprocess.Popen(string_list)
+            if not os.path.exists(dst):
+                os.symlink(src, dst)
 
     for i in range(len(weight_list) - 1):
 
@@ -736,9 +735,8 @@ def multipoint(func_name, config, state=None, step=1e-2):
         src = os.path.abspath(src).rstrip("/") + "/" + ztate.FILES[ADJ_NAME]
 
         # make unix link
-        string = "ln -s " + src + " " + dst
-        string_list = string.split()
-        subprocess.Popen(string_list)
+        if not os.path.exists(dst):
+            os.symlink(src, dst)
 
     # Update MULTPOINT_ADJOINT files in state.FILES
     state.FILES[MULTIPOINT_ADJ_NAME] = solution_adj_list
