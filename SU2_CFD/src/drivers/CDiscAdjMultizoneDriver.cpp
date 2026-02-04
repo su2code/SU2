@@ -346,16 +346,6 @@ int CDiscAdjMultizoneDriver::TapeTestGatherErrors(AD::DebugStatus& debug_status)
   return total_errors;
 }
 
-int CDiscAdjMultizoneDriver::TapeTestGetTag(unsigned short iZone, bool init) const {
-
-  if (init) {
-    return (nZone > 1) ? ((int)iZone + 1) * 10 + 1 : 1;
-  }
-  else {
-    return (nZone > 1) ? ((int)iZone + 1) * 10 + 2 : 2;
-  }
-}
-
 bool CDiscAdjMultizoneDriver::Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode) {
 
   config_container[iZone]->SetInnerIter(iInnerIter);
@@ -769,7 +759,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
 
       /*--- If we are in tape debug mode, set a global (but zone-specific) tag.
        *    Every variable that we register below will be initialized with this tag. ---*/
-      int tag = TapeTestGetTag(iZone, tape_test_init);
+      int tag = AD::GetTag(iZone);
       cout << "    - with tag " << tag << " on zone " << iZone << "." << endl;
       AD::SetTag(tag);
 
@@ -783,7 +773,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
   for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- If in tape debug mode, set the zone-specific tag for computations in this zone. ---*/
-    AD::SetTag(TapeTestGetTag(iZone, tape_test_init));
+    AD::SetTag(AD::GetTag(iZone));
 
     iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
                                                         config_container, iZone, INST_0, kind_recording);
@@ -800,7 +790,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     for (iZone = 0; iZone < nZone; iZone++) {
 
       /*--- If in tape debug mode, set the zone-specific test tag for computations in this zone. ---*/
-      AD::SetTag(TapeTestGetTag(iZone, tape_test_init));
+      AD::SetTag(AD::GetTag(iZone));
 
       if (Has_Deformation(iZone)) {
         iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
@@ -829,7 +819,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
       AD::Push_TapePosition(); /// enter_zone
 
       /*--- If in tape debug mode, set the zone-specific test tag for computations in this zone. ---*/
-      AD::SetTag(TapeTestGetTag(iZone, tape_test_init));
+      AD::SetTag(AD::GetTag(iZone));
 
       DirectIteration(iZone, kind_recording);
 

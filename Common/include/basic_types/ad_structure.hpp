@@ -300,6 +300,13 @@ inline void SetIndex(Identifier& index, const su2double& data) {}
 inline void SetTag(int tag) {}
 
 /*!
+ * \brief Compute the zone-specific tag.
+ * \param[in] iZone - Zone index from which the zone-specific tag is formed.
+ * \return The zone-specific tag.
+ */
+inline int GetTag(unsigned short iZone) {}
+
+/*!
  * \brief Sets the tag of a variable to 0.
  * \param[in] v - the variable whose tag is cleared.
  */
@@ -786,6 +793,17 @@ extern DebugStatus* current_status;
 FORCEINLINE void SetCurrentStatus(DebugStatus* status) { current_status = status; }
 
 FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
+
+FORCEINLINE int GetTag(unsigned short iZone) {
+
+  if (current_control->init_run) {
+    return (current_control->multizone_index) ? ((int)iZone + 1) * 10 + 1 : 1;
+  }
+  else {
+    return (current_control->multizone_index) ? ((int)iZone + 1) * 10 + 2 : 2;
+  }
+}
+
 FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
 
 static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* userData) {
@@ -849,6 +867,7 @@ FORCEINLINE void SetCallbackMode(TAPE_TEST_MODE kind_mode, unsigned short izone 
 #else
 FORCEINLINE void SetCurrentStatus(DebugStatus* status) {}
 FORCEINLINE void SetTag(int tag) {}
+FORCEINLINE void GetTag(unsigned short iZone) {}
 FORCEINLINE void ClearTagOnVariable(su2double& v) {}
 FORCEINLINE void SetCallbackMode(TAPE_TEST_MODE kind_test_mode, unsigned short izone = 0) {}
 
