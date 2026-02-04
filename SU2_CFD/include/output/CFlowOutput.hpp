@@ -44,7 +44,7 @@ protected:
    */
   CFlowOutput(const CConfig *config, unsigned short nDim, bool femOutput);
 
-  /*
+  /*!
    * \brief Add turboperformance outputs as history field
    * \param[in] nZone - Number of zones in problem
   */

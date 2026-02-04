@@ -405,12 +405,15 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 
   SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
 
+  bool AD_debug_mesh_coordinates = false;
+  if (config[iZone]->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
+    cout << "Register additional SOLUTION VARIABLES for tag debug mode (zone " << iZone << ")." << endl;
+    AD_debug_mesh_coordinates = true;
+  }
+
   if (kind_recording == RECORDING::SOLUTION_VARIABLES ||
-      kind_recording == RECORDING::TAG_INIT_SOLVER_VARIABLES ||
-      kind_recording == RECORDING::TAG_CHECK_SOLVER_VARIABLES ||
-      kind_recording == RECORDING::TAG_INIT_SOLVER_AND_MESH ||
-      kind_recording == RECORDING::TAG_CHECK_SOLVER_AND_MESH ||
-      kind_recording == RECORDING::SOLUTION_AND_MESH) {
+      kind_recording == RECORDING::SOLUTION_AND_MESH ||
+      AD_debug_mesh_coordinates) {
 
     /*--- Register flow and turbulent variables as input ---*/
 
@@ -441,9 +444,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
   }
 
   if (kind_recording == RECORDING::MESH_COORDS ||
-      kind_recording == RECORDING::SOLUTION_AND_MESH ||
-      kind_recording == RECORDING::TAG_INIT_SOLVER_AND_MESH ||
-      kind_recording == RECORDING::TAG_CHECK_SOLVER_AND_MESH) {
+      kind_recording == RECORDING::SOLUTION_AND_MESH) {
 
     /*--- Register node coordinates as input ---*/
     geometry0->RegisterCoordinates();
@@ -469,9 +470,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
 
   if ((kind_recording == RECORDING::MESH_COORDS) ||
       (kind_recording == RECORDING::CLEAR_INDICES) ||
-      (kind_recording == RECORDING::SOLUTION_AND_MESH) ||
-      (kind_recording == RECORDING::TAG_INIT_SOLVER_AND_MESH) ||
-      (kind_recording == RECORDING::TAG_CHECK_SOLVER_AND_MESH)) {
+      (kind_recording == RECORDING::SOLUTION_AND_MESH)) {
     /*--- Update geometry to get the influence on other geometry variables (normals, volume etc) ---*/
 
     SU2_OMP_PARALLEL
