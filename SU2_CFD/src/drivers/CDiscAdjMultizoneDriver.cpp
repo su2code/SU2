@@ -306,15 +306,15 @@ void CDiscAdjMultizoneDriver::TapeTest() {
 
   if(driver_config->GetAD_CheckTapeType() == CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES)
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_AND_MESH, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     else
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
   }
   else {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES)
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_AND_MESH, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     else
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
   }
   total_errors += TapeTestGatherErrors(debug_status);
 
@@ -737,27 +737,12 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     }
   }
 
-  /*--- Boolean only used for debug tape recordings. ---*/
-  bool tape_test_init = false;
-
   if (rank == MASTER_NODE) {
     cout << "\n-------------------------------------------------------------------------\n";
     switch(kind_recording) {
     case RECORDING::CLEAR_INDICES:      cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:        cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
     case RECORDING::SOLUTION_VARIABLES: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
-    case RECORDING::TAG_INIT_SOLVER_VARIABLES:
-      cout << "Simulating recording w.r.t. conservative variables ..." << endl;
-      tape_test_init = true; break;
-    case RECORDING::TAG_CHECK_SOLVER_VARIABLES:
-      cout << "Checking first recording w.r.t. conservative variables ..." << endl;
-      tape_test_init = false; break;
-    case RECORDING::TAG_INIT_SOLVER_AND_MESH:
-      cout << "Simulating recording w.r.t. conservative variables and mesh coordinates ..." << endl;
-      tape_test_init = true; break;
-    case RECORDING::TAG_CHECK_SOLVER_AND_MESH:
-      cout << "Checking first recording w.r.t. conservative variables and mesh coordinates ..." << endl;
-      tape_test_init = false; break;
     default: break;
     }
   }
@@ -928,10 +913,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
     AD::RegisterOutput(ObjFunc);
     AD::SetIndex(ObjFunc_Index, ObjFunc);
     if (kind_recording == RECORDING::SOLUTION_VARIABLES ||
-        kind_recording == RECORDING::TAG_INIT_SOLVER_VARIABLES ||
-        kind_recording == RECORDING::TAG_CHECK_SOLVER_VARIABLES ||
-        kind_recording == RECORDING::TAG_INIT_SOLVER_AND_MESH ||
-        kind_recording == RECORDING::TAG_CHECK_SOLVER_AND_MESH) {
+        kind_recording == RECORDING::MESH_COORDS) {
       cout << " Objective function                   : " << ObjFunc << endl;
     }
   }
