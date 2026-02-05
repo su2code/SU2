@@ -39,7 +39,7 @@
 
 namespace AD {
 
-enum class TAPE_TEST_MODE {
+enum class TAPE_DEBUG_OPTION {
   IGNORE_PREACC,
   ACTIVATE_PREACC,
   IGNORE_SINGLE_ZONE,
@@ -315,40 +315,40 @@ inline void ClearTagOnVariable(su2double& v) {}
 /*!
  * \brief Struct to store information about errors during a tag debug run.
  */
-struct DebugStatus {};
+struct DebugControl {};
 
 /*!
- * \brief Set a pointer to the current DebugStatus.
- * \param[in] status - pointer to the current status.
+ * \brief Set a pointer to the current DebugControl.
+ * \param[in] control - pointer to the current debug control.
  */
-inline void SetCurrentStatus(DebugStatus* status) {}
+inline void SetDebugControl(DebugControl* control) {}
 
 /*!
- * \brief Set the mode which kind of tag mismatches are considered errors and written to file.
- * \param[in] kind_test_mode - specification which kind of tag mismatches are considered.
+ * \brief Set options which kind of tag mismatches are considered errors and written to file.
+ * \param[in] option - specification which kind of tag mismatches are considered.
  * \param[in] izone - the zone w.r.t. which a tag mismatch is allowed.
  */
-inline void SetCallbackMode(TAPE_TEST_MODE kind_test_mode, unsigned short izone = 0) {}
+inline void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izone = 0) {}
 
 /*!
- * \brief Set a pointer to the output file of a DebugStatus.
- * \param[in] status - the DebugStatus whose output file is set.
+ * \brief Set a pointer to the output file of a DebugControl.
+ * \param[in] control - the DebugControl whose output file is set.
  * \param[in] output_file - pointer to the output file.
  */
-inline void SetDebugReportFile(DebugStatus& status, std::ostream* output_file) {}
+inline void SetDebugReportFile(DebugControl& control, std::ostream* output_file) {}
 
 /*!
- * \brief Reset the error counter in a DebugStatus.
- * \param[in] status - the DebugStatus whose error counter is resetted.
+ * \brief Reset the error counter in a DebugControl.
+ * \param[in] control - the DebugControl whose error counter is resetted.
  */
-inline void ResetErrorCounter(DebugStatus& status) {}
+inline void ResetErrorCounter(DebugControl& control) {}
 
 /*!
- * \brief Get the error count of a DebugStatus.
- * \param[in] status - the DebugStatus whose error count is reported.
+ * \brief Get the error count of a DebugControl.
+ * \param[in] control - the DebugControl whose error count is reported.
  * \return Value of the error counter.
  */
-inline unsigned long GetErrorCount(const DebugStatus& status) { return 0; }
+inline unsigned long GetErrorCount(const DebugControl& control) { return 0; }
 
 /*!
  * \brief Pushes back the current tape position to the tape position's vector.
@@ -770,7 +770,10 @@ FORCEINLINE void ResumePreaccumulation(bool wasActive) {
   SU2_OMP_SAFE_GLOBAL_ACCESS(PreaccEnabled = true;)
 }
 
-struct DebugStatus {
+#ifdef CODI_TAG_TAPE
+
+struct DebugControl {
+  bool multizone_index = false;
   bool init_run = false;
   bool ignore_preacc = false;
   bool ignore_single_zone = false;
@@ -780,17 +783,15 @@ struct DebugStatus {
   std::ostream* out = &std::cout;
 };
 
-FORCEINLINE void ResetErrorCounter(DebugStatus& status) { status.ErrorCounter = 0; }
+FORCEINLINE void ResetErrorCounter(DebugControl& control) { control.ErrorCounter = 0; }
 
-FORCEINLINE void SetDebugReportFile(DebugStatus& status, std::ostream* output_file) { status.out = output_file; }
+FORCEINLINE void SetDebugReportFile(DebugControl& control, std::ostream* output_file) { control.out = output_file; }
 
-FORCEINLINE unsigned long GetErrorCount(const DebugStatus& status) { return status.ErrorCounter; }
+FORCEINLINE unsigned long GetErrorCount(const DebugControl& control) { return control.ErrorCounter; }
 
-#ifdef CODI_TAG_TAPE
+extern DebugControl* current_control;
 
-extern DebugStatus* current_status;
-
-FORCEINLINE void SetCurrentStatus(DebugStatus* status) { current_status = status; }
+FORCEINLINE void SetDebugControl(DebugControl* control) { current_control = control; }
 
 FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
 
@@ -807,7 +808,7 @@ FORCEINLINE int GetTag(unsigned short iZone) {
 FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
 
 static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* userData) {
-  auto* status = static_cast<DebugStatus*>(userData);
+  auto* status = static_cast<DebugControl*>(userData);
 
   bool throw_mismatch_error = true;
 
@@ -840,36 +841,38 @@ static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* u
   }
 }
 
-FORCEINLINE void SetCallbackMode(TAPE_TEST_MODE kind_mode, unsigned short izone = 0) {
-  if (kind_mode == AD::TAPE_TEST_MODE::IGNORE_PREACC) {
-    current_status->ignore_preacc = true;
+FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izone = 0) {
+  if (option == AD::TAPE_DEBUG_OPTION::IGNORE_PREACC) {
+    current_control->ignore_preacc = true;
   }
-  if (kind_mode == AD::TAPE_TEST_MODE::ACTIVATE_PREACC || kind_mode == AD::TAPE_TEST_MODE::ACTIVATE_ALL) {
-    current_status->ignore_preacc = false;
+  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_PREACC || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL) {
+    current_control->ignore_preacc = false;
   }
-  if (kind_mode == AD::TAPE_TEST_MODE::IGNORE_SINGLE_ZONE) {
-    current_status->ignore_single_zone = true;
-    current_status->ignore_izone = izone;
+  if (option == AD::TAPE_DEBUG_OPTION::IGNORE_SINGLE_ZONE) {
+    current_control->ignore_single_zone = true;
+    current_control->ignore_izone = izone;
   }
-  if (kind_mode == AD::TAPE_TEST_MODE::ACTIVATE_SINGLE_ZONE || kind_mode == AD::TAPE_TEST_MODE::ACTIVATE_ALL) {
-    current_status->ignore_single_zone = false;
+  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_SINGLE_ZONE || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL) {
+    current_control->ignore_single_zone = false;
   }
-  if (kind_mode == AD::TAPE_TEST_MODE::IGNORE_ZONES) {
-    current_status->ignore_zones = true;
+  if (option == AD::TAPE_DEBUG_OPTION::IGNORE_ZONES) {
+    current_control->ignore_zones = true;
   }
-  if (kind_mode == AD::TAPE_TEST_MODE::ACTIVATE_ZONES || kind_mode == AD::TAPE_TEST_MODE::ACTIVATE_ALL) {
-    current_status->ignore_zones = false;
+  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ZONES || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL) {
+    current_control->ignore_zones = false;
   }
-
-  AD::getTape().setTagErrorCallback(tagErrorCallback, current_status);
 }
 
 #else
-FORCEINLINE void SetCurrentStatus(DebugStatus* status) {}
+struct DebugControl {};
+FORCEINLINE void ResetErrorCounter(DebugControl& control) {}
+FORCEINLINE void SetDebugReportFile(DebugControl& control, std::ostream* output_file) {}
+FORCEINLINE unsigned long GetErrorCount(const DebugControl& control) {}
+FORCEINLINE void SetDebugControl(DebugControl* status) {}
 FORCEINLINE void SetTag(int tag) {}
 FORCEINLINE void GetTag(unsigned short iZone) {}
 FORCEINLINE void ClearTagOnVariable(su2double& v) {}
-FORCEINLINE void SetCallbackMode(TAPE_TEST_MODE kind_test_mode, unsigned short izone = 0) {}
+FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izone = 0) {}
 
 #endif  // CODI_TAG_TAPE
 

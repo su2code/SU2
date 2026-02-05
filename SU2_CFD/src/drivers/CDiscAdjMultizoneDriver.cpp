@@ -241,23 +241,23 @@ void CDiscAdjMultizoneDriver::TapeTest() {
 
   int total_errors = 0;
 
-  /*--- Errors are reported to an instance of AD::DebugStatus that holds an error counter, a pointer to
-   *    an error log file and configurations determined by the TAPE_TEST_MODE settings. ---*/
-  AD::DebugStatus debug_status;
+  /*--- Errors are reported to an instance of AD::DebugControl that holds an error counter, a pointer to
+   *    an error log file and configurations determined by the TAPE_DEBUG_OPTION settings. ---*/
+  AD::DebugControl debug_control;
 
   /*--- Set a pointer to the current status internally in the AD structure. ---*/
-  AD::SetCurrentStatus(&debug_status);
+  AD::SetDebugControl(&debug_control);
 
   /*--- Set the default tag mismatch callback (consider every mismatch an error). ---*/
-  AD::SetCallbackMode(AD::TAPE_TEST_MODE::ACTIVATE_ALL);
+  AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL);
 
   // Make this a config option?
   // AD::SetCallbackMode(AD::TAPE_TEST_MODE::IGNORE_ZONES);
 
   /*--- Reset the error counter and set the error log file (each process writes its own). ---*/
-  AD::ResetErrorCounter(debug_status);
+  AD::ResetErrorCounter(debug_control);
   std::ofstream out("debug_run_process" + to_string(rank) + ".out");
-  AD::SetDebugReportFile(debug_status, &out);
+  AD::SetDebugReportFile(debug_control, &out);
 
   /*--- This recording will assign an initial, zone-specific tag to each registered variable.
    *    During the recording, each dependent variable will be assigned the same tag. ---*/
@@ -288,8 +288,8 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   }
 
   /*--- Gather errors from all ranks from the initial recording (e.g. preaccumulation errors). ---*/
-  total_errors = TapeTestGatherErrors(debug_status);
-  AD::ResetErrorCounter(debug_status);
+  total_errors = TapeTestGatherErrors(debug_control);
+  AD::ResetErrorCounter(debug_control);
 
   /*--- This recording repeats the initial recording with a different tag.
    *    If a variable was used before it became dependent on the inputs, this variable will still carry the tag
@@ -302,7 +302,7 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   out << "Errors appearing hereafter are most likely mathematical errors (e.g. check for circular dependencies)." << std::endl;
 
   /*--- We ignore preaccumulation mismatches during the second recording as they have already been reported. ---*/
-  AD::SetCallbackMode(AD::TAPE_TEST_MODE::IGNORE_PREACC);
+  AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::IGNORE_PREACC);
 
   if(driver_config->GetAD_CheckTapeType() == CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES)
@@ -316,7 +316,7 @@ void CDiscAdjMultizoneDriver::TapeTest() {
     else
       SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
   }
-  total_errors += TapeTestGatherErrors(debug_status);
+  total_errors += TapeTestGatherErrors(debug_control);
 
 
   if (rank == MASTER_NODE) {
@@ -326,9 +326,9 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   }
 }
 
-int CDiscAdjMultizoneDriver::TapeTestGatherErrors(AD::DebugStatus& debug_status) const {
+int CDiscAdjMultizoneDriver::TapeTestGatherErrors(AD::DebugControl& debug_control) const {
 
-  int num_errors = AD::GetErrorCount(debug_status);
+  int num_errors = AD::GetErrorCount(debug_control);
   int total_errors = 0;
   std::vector<int> process_error(size);
   SU2_MPI::Allreduce(&num_errors, &total_errors, 1, MPI_INT, MPI_SUM, SU2_MPI::GetComm());
