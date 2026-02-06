@@ -306,7 +306,7 @@ inline void SetTag(int tag) {}
  * \param[in] iZone - Zone index from which the zone-specific tag is formed.
  * \return The zone-specific tag.
  */
-inline int GetTag(unsigned short iZone) {}
+inline int GetTag(unsigned short iZone) { return 0; }
 
 /*!
  * \brief Sets the tag of a variable to 0.
@@ -874,6 +874,7 @@ FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izo
   }
   if (option == AD::TAPE_DEBUG_OPTION::MULTIZONE_TAGS) {
     current_control->multizone_tags = true;
+  }
 }
 
 FORCEINLINE void ActivateTagErrorCallback() {
@@ -888,10 +889,10 @@ FORCEINLINE void ActivateTagErrorCallback() {
 struct DebugControl {};
 FORCEINLINE void ResetErrorCounter(DebugControl& control) {}
 FORCEINLINE void SetDebugReportFile(DebugControl& control, std::ostream* output_file) {}
-FORCEINLINE unsigned long GetErrorCount(const DebugControl& control) {}
+FORCEINLINE unsigned long GetErrorCount(const DebugControl& control) { return 0; }
 FORCEINLINE void SetDebugControl(DebugControl* status) {}
 FORCEINLINE void SetTag(int tag) {}
-FORCEINLINE void GetTag(unsigned short iZone) {}
+FORCEINLINE int GetTag(unsigned short iZone) { return 0; }
 FORCEINLINE void ClearTagOnVariable(su2double& v) {}
 FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izone = 0) {}
 FORCEINLINE void ActivateTagErrorCallback() {}
