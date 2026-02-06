@@ -331,6 +331,11 @@ inline void SetDebugControl(DebugControl* control) {}
 inline void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izone = 0) {}
 
 /*!
+ * \brief Activate the error callback by letting the tape call tagErrorCallback whenever a tag mismatch arises.
+ */
+inline void ActivateTagErrorCallback() {}
+
+/*!
  * \brief Set a pointer to the output file of a DebugControl.
  * \param[in] control - the DebugControl whose output file is set.
  * \param[in] output_file - pointer to the output file.
@@ -863,6 +868,14 @@ FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izo
   }
 }
 
+FORCEINLINE void ActivateTagErrorCallback() {
+  if (current_control != NULL) {
+    AD::getTape().setTagErrorCallback(tagErrorCallback, current_control);
+  } else {
+    std::cout << "No tape debug control set!" << std::endl;
+  }
+}
+
 #else
 struct DebugControl {};
 FORCEINLINE void ResetErrorCounter(DebugControl& control) {}
@@ -873,6 +886,7 @@ FORCEINLINE void SetTag(int tag) {}
 FORCEINLINE void GetTag(unsigned short iZone) {}
 FORCEINLINE void ClearTagOnVariable(su2double& v) {}
 FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izone = 0) {}
+FORCEINLINE void ActivateTagErrorCallback() {}
 
 #endif  // CODI_TAG_TAPE
 

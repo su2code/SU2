@@ -248,6 +248,8 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   /*--- Set a pointer to the current status internally in the AD structure. ---*/
   AD::SetDebugControl(&debug_control);
 
+  AD::ActivateTagErrorCallback();
+
   /*--- Set the default tag mismatch callback (consider every mismatch an error). ---*/
   AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL);
 
