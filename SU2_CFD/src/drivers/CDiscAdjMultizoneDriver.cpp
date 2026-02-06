@@ -251,7 +251,7 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   AD::ActivateTagErrorCallback();
 
   /*--- Set the default tag mismatch callback (consider every mismatch an error). ---*/
-  AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL);
+  AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS);
 
   // Make this a config option?
   // AD::SetCallbackMode(AD::TAPE_TEST_MODE::IGNORE_ZONES);
@@ -267,6 +267,8 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   out << "-----------------------------------------------------------------------------------------" << std::endl;
   out << "INITIAL recording." << std::endl;
   out << "Errors appearing in this recording are most likely preaccumulation errors (preaccumulation tag: 1337).\n" << std::endl;
+
+  AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::INIT_RUN);
 
   if(driver_config->GetAD_CheckTapeType() == CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
@@ -302,6 +304,8 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   out << "-------------------------------------------------------------------------------------------------" << std::endl;
   out << "IZONE = " << iZone << ", SECOND recording." << std::endl;
   out << "Errors appearing hereafter are most likely mathematical errors (e.g. check for circular dependencies)." << std::endl;
+
+  AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::CHECK_RUN);
 
   /*--- We ignore preaccumulation mismatches during the second recording as they have already been reported. ---*/
   AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::IGNORE_PREACC);

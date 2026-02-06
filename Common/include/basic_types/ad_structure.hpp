@@ -46,7 +46,9 @@ enum class TAPE_DEBUG_OPTION {
   ACTIVATE_SINGLE_ZONE,
   IGNORE_ZONES,
   ACTIVATE_ZONES,
-  ACTIVATE_ALL
+  ACTIVATE_ALL_ERRORS,
+  INIT_RUN,
+  CHECK_RUN
 };
 
 #ifndef CODI_REVERSE_TYPE
@@ -850,21 +852,27 @@ FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izo
   if (option == AD::TAPE_DEBUG_OPTION::IGNORE_PREACC) {
     current_control->ignore_preacc = true;
   }
-  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_PREACC || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL) {
+  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_PREACC || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS) {
     current_control->ignore_preacc = false;
   }
   if (option == AD::TAPE_DEBUG_OPTION::IGNORE_SINGLE_ZONE) {
     current_control->ignore_single_zone = true;
     current_control->ignore_izone = izone;
   }
-  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_SINGLE_ZONE || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL) {
+  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_SINGLE_ZONE || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS) {
     current_control->ignore_single_zone = false;
   }
   if (option == AD::TAPE_DEBUG_OPTION::IGNORE_ZONES) {
     current_control->ignore_zones = true;
   }
-  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ZONES || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL) {
+  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ZONES || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS) {
     current_control->ignore_zones = false;
+  }
+  if (option == AD::TAPE_DEBUG_OPTION::INIT_RUN) {
+    current_control->init_run = true;
+  }
+  if (option == AD::TAPE_DEBUG_OPTION::CHECK_RUN) {
+    current_control->init_run = false;
   }
 }
 
