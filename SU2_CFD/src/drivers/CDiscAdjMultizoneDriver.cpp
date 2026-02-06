@@ -250,6 +250,9 @@ void CDiscAdjMultizoneDriver::TapeTest() {
 
   AD::ActivateTagErrorCallback();
 
+  /*--- For multizone cases (nZone > 1), we use zone-specific tags. ---*/
+  if(nZone > 1) { AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::MULTIZONE_TAGS); }
+
   /*--- Set the default tag mismatch callback (consider every mismatch an error). ---*/
   AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS);
 

@@ -780,7 +780,7 @@ FORCEINLINE void ResumePreaccumulation(bool wasActive) {
 #ifdef CODI_TAG_TAPE
 
 struct DebugControl {
-  bool multizone_index = false;
+  bool multizone_tags = false;
   bool init_run = false;
   bool ignore_preacc = false;
   bool ignore_single_zone = false;
@@ -803,12 +803,10 @@ FORCEINLINE void SetDebugControl(DebugControl* control) { current_control = cont
 FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
 
 FORCEINLINE int GetTag(unsigned short iZone) {
-
   if (current_control->init_run) {
-    return (current_control->multizone_index) ? ((int)iZone + 1) * 10 + 1 : 1;
-  }
-  else {
-    return (current_control->multizone_index) ? ((int)iZone + 1) * 10 + 2 : 2;
+    return (current_control->multizone_tags) ? ((int)iZone + 1) * 10 + 1 : 1;
+  } else {
+    return (current_control->multizone_tags) ? ((int)iZone + 1) * 10 + 2 : 2;
   }
 }
 
@@ -874,6 +872,8 @@ FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izo
   if (option == AD::TAPE_DEBUG_OPTION::CHECK_RUN) {
     current_control->init_run = false;
   }
+  if (option == AD::TAPE_DEBUG_OPTION::MULTIZONE_TAGS) {
+    current_control->multizone_tags = true;
 }
 
 FORCEINLINE void ActivateTagErrorCallback() {
