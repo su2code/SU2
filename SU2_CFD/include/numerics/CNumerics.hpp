@@ -140,6 +140,7 @@ protected:
   const su2double
   *TurbPsi_i,  /*!< \brief Vector of adjoint turbulent variables at point i. */
   *TurbPsi_j;  /*!< \brief Vector of adjoint turbulent variables at point j. */
+  su2double lengthScale_i, lengthScale_j; /*!< \brief length scale for SST */
   CMatrixView<const su2double>
   ConsVar_Grad_i,  /*!< \brief Gradient of conservative variables at point i. */
   ConsVar_Grad_j,  /*!< \brief Gradient of conservative variables at point j. */
@@ -846,6 +847,16 @@ public:
   void SetDistance(su2double val_dist_i, su2double val_dist_j) {
     dist_i = val_dist_i;
     dist_j = val_dist_j;
+  }
+
+  /*!
+   * \brief Set the value of the length scale for SST.
+   * \param[in] val_lengthScale_i - Value of of the length scale for SST from point i.
+   * \param[in] val_lengthScale_j - Value of of the length scale for SST from point j.
+   */
+  void SetLengthScale(su2double val_lengthScale_i, su2double val_lengthScale_j) {
+    lengthScale_i = val_lengthScale_i;
+    lengthScale_j = val_lengthScale_j;
   }
 
   /*!

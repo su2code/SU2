@@ -1551,6 +1551,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
     AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
+    AddVolumeOutput("LESIQ", "LESIQ", "DDES", "LESIQ index for SRS simulations");
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
+      AddVolumeOutput("SRS_GRID_SIZE", "Srs_grid_size", "DDES", "desired grid size for Scale Resolving Simulations");
   }
 
   if (config->GetViscous()) {
@@ -1562,6 +1565,27 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
       AddVolumeOutput("VORTICITY", "Vorticity", "VORTEX_IDENTIFICATION", "Value of the vorticity");
     }
     AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
+    if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES) {
+      AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DEBUG", "Wall distance value");
+    }
+    AddVolumeOutput("GRAD_VEL_XX", "Grad_Vel_xx", "VELOCITY_GRADIENT", "X-Gradient of U");
+    AddVolumeOutput("GRAD_VEL_XY", "Grad_Vel_xy", "VELOCITY_GRADIENT", "Y-Gradient of U");
+    AddVolumeOutput("GRAD_VEL_YX", "Grad_Vel_yx", "VELOCITY_GRADIENT", "X-Gradient of U");
+    AddVolumeOutput("GRAD_VEL_YY", "Grad_Vel_yy", "VELOCITY_GRADIENT", "Y-Gradient of V");
+    if (nDim == 3) {
+      AddVolumeOutput("GRAD_VEL_XZ", "Grad_Vel_xz", "VELOCITY_GRADIENT", "Z-Gradient of U");
+      AddVolumeOutput("GRAD_VEL_YZ", "Grad_Vel_yz", "VELOCITY_GRADIENT", "Z-Gradient of V");
+      AddVolumeOutput("GRAD_VEL_ZX", "Grad_Vel_zx", "VELOCITY_GRADIENT", "X-Gradient of W");
+      AddVolumeOutput("GRAD_VEL_ZY", "Grad_Vel_zy", "VELOCITY_GRADIENT", "Y-Gradient of W");
+      AddVolumeOutput("GRAD_VEL_ZZ", "Grad_Vel_zz", "VELOCITY_GRADIENT", "Z-Gradient of W");
+    }
+
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST){
+      AddVolumeOutput("CDkw", "CDkw", "SST_QUANTITIES", "Cross-Diffusion term");
+      AddVolumeOutput("F1", "F1", "SST_QUANTITIES", "F1 blending function");
+      AddVolumeOutput("F2", "F2", "SST_QUANTITIES", "F2 blending function");
+    }
+
   }
 
   // Timestep info
@@ -1587,6 +1611,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   SetVolumeOutputValue("CFL", iPoint, Node_Flow->GetLocalCFL(iPoint));
 
   if (config->GetViscous()) {
+    const auto VelGrad = Node_Flow->GetVelocityGradient(iPoint);
     if (nDim == 3){
       SetVolumeOutputValue("VORTICITY_X", iPoint, Node_Flow->GetVorticity(iPoint)[0]);
       SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity(iPoint)[1]);
@@ -1594,7 +1619,27 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     } else {
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
-    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
+    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(VelGrad));
+    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
+
+    SetVolumeOutputValue("GRAD_VEL_XX", iPoint, VelGrad(0,0));
+    SetVolumeOutputValue("GRAD_VEL_XY", iPoint, VelGrad(0,1));
+    SetVolumeOutputValue("GRAD_VEL_YX", iPoint, VelGrad(1,0));
+    SetVolumeOutputValue("GRAD_VEL_YY", iPoint, VelGrad(1,1));
+    if (nDim == 3) {
+      SetVolumeOutputValue("GRAD_VEL_XZ", iPoint, VelGrad(0,2));
+      SetVolumeOutputValue("GRAD_VEL_YZ", iPoint, VelGrad(1,2));
+      SetVolumeOutputValue("GRAD_VEL_ZX", iPoint, VelGrad(2,0));
+      SetVolumeOutputValue("GRAD_VEL_ZY", iPoint, VelGrad(2,1));
+      SetVolumeOutputValue("GRAD_VEL_ZZ", iPoint, VelGrad(2,2));
+    }
+    
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST){
+      SetVolumeOutputValue("CDkw", iPoint, Node_Turb->GetCrossDiff(iPoint));
+      SetVolumeOutputValue("F1", iPoint, Node_Turb->GetF1blending(iPoint));
+      SetVolumeOutputValue("F2", iPoint, Node_Turb->GetF2blending(iPoint));
+    }
+
   }
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
@@ -1650,6 +1695,17 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
+    const su2double mut = Node_Flow->GetEddyViscosity(iPoint);
+    const su2double mu = Node_Flow->GetLaminarViscosity(iPoint); 
+    const su2double LESIQ = 1.0/(1.0+0.05*pow((mut+mu)/mu, 0.53));
+    SetVolumeOutputValue("LESIQ", iPoint, LESIQ);
+    if (config->GetKind_Turb_Model() == TURB_MODEL::SST) {
+      const su2double betaStar = 0.09; // constants[6]
+      const su2double RANSLength = sqrt(Node_Flow->GetSolution(iPoint, 0)) / max(1e-20, (betaStar * Node_Flow->GetSolution(iPoint, 1)));
+      const su2double RatioL = 0.1;  // TODO:: it should be less or equal than 0.2 - 0.1. Should be taken as input from config?
+      const su2double SRSGridSize = RANSLength * RatioL;
+      SetVolumeOutputValue("SRS_GRID_SIZE", iPoint, SRSGridSize);
+    }
   }
 
   switch (config->GetKind_Species_Model()) {

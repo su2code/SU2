@@ -186,15 +186,24 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
     /*--- Set the vortex tilting coefficient at every node if required ---*/
 
-    if (kind_hybridRANSLES == SA_EDDES){
+    if (kind_hybridRANSLES == SA_EDDES || kind_hybridRANSLES == SA_EDDES_UNSTR){
       auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
+        su2double **Grad_Vel = new su2double* [nDim];
+        su2double **StrainMat = new su2double* [nDim];
         auto Vorticity = flowNodes->GetVorticity(iPoint);
-        auto PrimGrad_Flow = flowNodes->GetGradient_Primitive(iPoint);
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Grad_Vel[iDim] = new su2double [nDim];
+          StrainMat[iDim] = new su2double [nDim];
+          for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+            Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Velocity() + iDim, jDim);
+          }
+        }
         auto Laminar_Viscosity = flowNodes->GetLaminarViscosity(iPoint);
-        nodes->SetVortex_Tilting(iPoint, PrimGrad_Flow, Vorticity, Laminar_Viscosity);
+        CNumerics::ComputeMeanRateOfStrainMatrix(3, StrainMat, Grad_Vel);
+        nodes->SetVortex_Tilting(iPoint, StrainMat, Vorticity, Laminar_Viscosity);
       }
       END_SU2_OMP_FOR
     }
@@ -1419,8 +1428,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
         const su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
 
-        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
-        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2));
+        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3));
 
         const su2double distDES = constDES * maxDelta;
         lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
@@ -1455,8 +1464,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
                                   pow(ratioOmega[1], 2)*delta[0]*delta[2] +
                                   pow(ratioOmega[2], 2)*delta[0]*delta[1]);
 
-        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
-        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2));
+        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3));
 
         if (f_d < 0.99){
           maxDelta = deltaDDES;
@@ -1479,7 +1488,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 
         su2double ratioOmega[MAXNDIM] = {};
 
-        for (auto iDim = 0; iDim < 3; iDim++){
+        for (auto iDim = 0u; iDim < MAXNDIM; iDim++){
           ratioOmega[iDim] = vorticity[iDim]/omega;
         }
 
@@ -1506,8 +1515,64 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
                                    min(f_max,
                                        f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
 
-        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
-        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
+        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2));
+        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3));
+
+        su2double maxDelta = (ln_max/sqrt(3.0)) * f_kh;
+        if (f_d < 0.999){
+          maxDelta = deltaDDES;
+        }
+
+        const su2double distDES = constDES * maxDelta;
+        lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
+
+        break;
+      }
+      case SA_EDDES_UNSTR: {
+        /*--- An Enhanced Version of DES with Rapid Transition from RANS to LES in Separated Flows.
+         Shur et al.
+         Flow Turbulence Combust - 2015
+         ---*/
+
+        su2double vortexTiltingMeasure = nodes->GetVortex_Tilting(iPoint);
+
+        const su2double omega = GeometryToolbox::Norm(3, vorticity);
+
+        su2double ratioOmega[MAXNDIM] = {};
+        for (auto iDim = 0u; iDim < MAXNDIM; iDim++){
+          ratioOmega[iDim] = vorticity[iDim]/omega;
+        }
+
+        const su2double deltaDDES = geometry->nodes->GetMaxLength(iPoint);
+        
+        // Introduced correction for unstructured grids
+        su2double ln_max = -1;
+        for (const auto jPoint : geometry->nodes->GetPoints(iPoint)){
+          const auto coord_j = geometry->nodes->GetCoord(jPoint);
+
+          for (const auto kPoint : geometry->nodes->GetPoints(iPoint)){
+            const auto coord_k = geometry->nodes->GetCoord(kPoint);
+
+            su2double delta[MAXNDIM] = {};
+            for (auto iDim = 0u; iDim < MAXNDIM; iDim++){
+              // TODO: Should I divide by 2 as I am interested in the dual volume (the edge is split at midpoint)?
+              delta[iDim] = (coord_j[iDim] - coord_k[iDim])/2.0; 
+            }
+            su2double l_n_minus_m[MAXNDIM];
+            GeometryToolbox::CrossProduct(delta, ratioOmega, l_n_minus_m);
+            ln_max = max(ln_max, GeometryToolbox::Norm(3, l_n_minus_m));
+          }
+          vortexTiltingMeasure += nodes->GetVortex_Tilting(jPoint);
+        }
+        
+        vortexTiltingMeasure /= (nNeigh + 1);
+
+        const su2double f_kh = max(f_min,
+                                   min(f_max,
+                                       f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
+
+        const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2));
+        const su2double f_d = 1.0-tanh(pow(8.0*r_d,3));
 
         su2double maxDelta = (ln_max/sqrt(3.0)) * f_kh;
         if (f_d < 0.999){

@@ -885,14 +885,17 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       }
 
       if (sstParsedOptions.production == SST_OPTIONS::COMP_Sarkar) {
-        const su2double Dilatation_Sarkar = -0.15 * pk * Mt + 0.2 * beta_star * (1.0 +zetaFMt) * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Mt * Mt;
+        const su2double Dilatation_Sarkar = -0.15 * pk * Mt + 0.2 * beta_star * (1.0 +zetaFMt) * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * pow(Mt, 2);
         pk += Dilatation_Sarkar;
       }
 
       /*--- Dissipation ---*/
 
       su2double dk = beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * (1.0 + zetaFMt);
-      su2double dw = beta_blended * Density_i * ScalarVar_i[1] * ScalarVar_i[1] * (1.0 - 0.09/beta_blended * zetaFMt);
+      if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES)
+        dk = Density_i * sqrt(pow(ScalarVar_i[0], 3)) / lengthScale_i;
+        
+      su2double dw = beta_blended * Density_i * pow(ScalarVar_i[1], 2) * (1.0 - 0.09/beta_blended * zetaFMt);
 
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {

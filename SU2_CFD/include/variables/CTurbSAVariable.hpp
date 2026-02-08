@@ -39,8 +39,6 @@
 class CTurbSAVariable final : public CTurbVariable {
 
 private:
-  VectorType DES_LengthScale;
-  VectorType Vortex_Tilting;
 
 public:
   /*!
@@ -59,32 +57,5 @@ public:
    * \brief Destructor of the class.
    */
   ~CTurbSAVariable() override = default;
-
-  /*!
-   * \brief Get the DES length scale
-   * \param[in] iPoint - Point index.
-   * \return Value of the DES length Scale.
-   */
-  inline su2double GetDES_LengthScale(unsigned long iPoint) const override { return DES_LengthScale(iPoint); }
-
-  /*!
-   * \brief Set the DES Length Scale.
-   * \param[in] iPoint - Point index.
-   */
-  inline void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) override { DES_LengthScale(iPoint) = val_des_lengthscale; }
-
-  /*!
-   * \brief Set the vortex tilting measure for computation of the EDDES length scale
-   * \param[in] iPoint - Point index.
-   */
-  void SetVortex_Tilting(unsigned long iPoint, CMatrixView<const su2double>,
-                         const su2double* Vorticity, su2double LaminarViscosity) override;
-
-  /*!
-   * \brief Get the vortex tilting measure for computation of the EDDES length scale
-   * \param[in] iPoint - Point index.
-   * \return Value of the DES length Scale
-   */
-  inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
 
 };

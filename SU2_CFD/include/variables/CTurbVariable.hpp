@@ -37,12 +37,14 @@
  */
 class CTurbVariable : public CScalarVariable {
 protected:
-  VectorType muT; /*!< \brief Eddy viscosity. */
+  VectorType muT;             /*!< \brief Eddy viscosity. */
+  VectorType DES_LengthScale; /*!< \brief DES Length scale. */
 
 public:
   static constexpr size_t MAXNVAR = 2;
-  VectorType turb_index;
-  VectorType intermittency;         /*!< \brief Value of the intermittency for the trans. model. */
+  VectorType turb_index;            /*!< \brief Value of the turbulence index for transition simulations. */
+  VectorType intermittency;         /*!< \brief Value of the intermittency for the transition model. */
+  VectorType Vortex_Tilting;        /*!< \brief Value of the vortex tilting measure for EDDES models. */
 
   /*!
    * \brief Constructor of the class.
@@ -100,6 +102,32 @@ public:
    */
   inline void SetIntermittency(unsigned long iPoint, su2double val_intermittency) final { intermittency(iPoint) = val_intermittency; }
 
+  /*!
+   * \brief Get the DES length scale
+   * \param[in] iPoint - Point index.
+   * \return Value of the DES length Scale.
+   */
+  inline su2double GetDES_LengthScale(unsigned long iPoint) const override { return DES_LengthScale(iPoint); }
+
+  /*!
+   * \brief Set the DES Length Scale.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) override { DES_LengthScale(iPoint) = val_des_lengthscale; }
+
+  /*!
+   * \brief Set the vortex tilting measure for computation of the EDDES length scale
+   * \param[in] iPoint - Point index.
+   */
+  void SetVortex_Tilting(unsigned long iPoint, su2double **Strain,
+                         const su2double* Vorticity, su2double LaminarViscosity) override;
+
+  /*!
+   * \brief Get the vortex tilting measure for computation of the EDDES length scale
+   * \param[in] iPoint - Point index.
+   * \return Value of the DES length Scale
+   */
+  inline su2double GetVortex_Tilting(unsigned long iPoint) const override { return Vortex_Tilting(iPoint); }
   /*!
    * \brief Set the Diffusion Coefficients of TKE and omega equations.
    * \param[in] iPoint - Point index.
