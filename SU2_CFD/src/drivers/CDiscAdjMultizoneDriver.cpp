@@ -248,6 +248,7 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   /*--- Set a pointer to the current status internally in the AD structure. ---*/
   AD::SetDebugControl(&debug_control);
 
+  /*--- Set the callback function that handles the event of a tag mismatch on the tape. ---*/
   AD::ActivateTagErrorCallback();
 
   /*--- For multizone cases (nZone > 1), we use zone-specific tags. ---*/
@@ -275,7 +276,7 @@ void CDiscAdjMultizoneDriver::TapeTest() {
 
   if(driver_config->GetAD_CheckTapeType() == CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
-      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES_AND_MESH_COORDINATES." << endl;
+      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for MESH_COORDINATES." << endl;
       SetRecording(RECORDING::MESH_COORDS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     }
     else {
@@ -285,7 +286,7 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   }
   else {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
-      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLVER_VARIABLES_AND_MESH_COORDINATES." << endl;
+      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for MESH_COORDINATES." << endl;
       SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
     else {
