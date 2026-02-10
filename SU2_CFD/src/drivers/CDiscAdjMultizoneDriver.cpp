@@ -770,7 +770,9 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
       /*--- If we are in tape debug mode, set a global (but zone-specific) tag.
        *    Every variable that we register below will be initialized with this tag. ---*/
       int tag = AD::GetTag(iZone);
-      cout << "    - with tag " << tag << " on zone " << iZone << "." << endl;
+      if(tag != 0) {
+        cout << "    - with tag " << tag << " on zone " << iZone << "." << endl;
+      }
       AD::SetTag(tag);
 
       iteration_container[iZone][INST_0]->RegisterInput(solver_container, geometry_container,

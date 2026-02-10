@@ -405,7 +405,8 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
   SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
 
   bool AD_debug_mesh_coordinates = false;
-  if (config[iZone]->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
+  if(config[iZone]->GetDiscrete_Adjoint_Debug() &&
+     config[iZone]->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
     cout << "Register additional SOLUTION VARIABLES for tag debug mode (zone " << iZone << ")." << endl;
     AD_debug_mesh_coordinates = true;
   }
