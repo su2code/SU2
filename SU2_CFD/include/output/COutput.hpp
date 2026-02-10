@@ -422,6 +422,15 @@ public:
                                   unsigned long TimeIter, unsigned long OuterIter);
 
   /*!
+   * \brief Evaluates objective functions in the (multiphysics) discrete adjoint solver.
+   * \note Uses the same subroutines for objective function evaluation as SetHistoryOutput, but omits unnecessary evaluations (e.g. residuals, convergence data) to avoid AD complications.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetObjectiveFunctionValues(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+
+  /*!
    * \brief Sets the volume output filename
    * \param[in] filename - the new filename
    */
@@ -961,6 +970,17 @@ protected:
    * \param[in] solver - The container holding all solution data.
    */
   inline virtual void LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {}
+
+  /*!
+   * \brief Recompute history output field values that can be used as objective functions in the (multiphysics) discrete adjoint solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - The container holding all solution data.
+   */
+  inline virtual void LoadCustomAndComboObjectiveFunctions(CConfig *config, CGeometry *geometry, CSolver **solver) {
+    /*--- Unless LoadCustomAndComboObjectiveFunctions is implemented in a derived output class, we use LoadHistoryData (not ideal for AD). ---*/
+    LoadHistoryData(config, geometry, solver);
+  }
 
   /*!
    * \brief Load the multizone history output field values

@@ -902,7 +902,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
 
       case MAIN_SOLVER::DISC_ADJ_FEM:
         solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
-        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
+        direct_output[iZone]->SetObjectiveFunctionValues(geometry, solvers, config);
         ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj();
         break;
 
