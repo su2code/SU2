@@ -3,14 +3,14 @@
  * \brief Header file for the class CSU2ASCIIMeshReaderFVM.
  *        The implementations are in the <i>CSU2ASCIIMeshReaderFVM.cpp</i> file.
  * \author T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,7 +37,7 @@
  * \brief Reads a native SU2 ASCII grid into linear partitions for the finite volume solver (FVM).
  * \author T. Economon
  */
-class CSU2ASCIIMeshReaderFVM : public CSU2ASCIIMeshReaderBase {
+class CSU2ASCIIMeshReaderFVM final : public CSU2ASCIIMeshReaderBase {
  private:
   /*!
    * \brief Splits a single surface actuator disk boundary into two separate markers (repeated points).

@@ -2,14 +2,14 @@
  * \file CFEAElasticity.cpp
  * \brief Base class for all elasticity problems.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -64,9 +64,10 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   Alpha = Alpha_i[0];
   ReferenceTemperature = config->GetMaterialReferenceTemperature();
 
-  Compute_Lame_Parameters();
-
   plane_stress = (nDim == 2) && (config->GetElas2D_Formulation() == STRUCT_2DFORM::PLANE_STRESS);
+  linear = config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL;
+
+  Compute_Lame_Parameters();
 
   KAux_ab = new su2double* [nDim];
   for (iVar = 0; iVar < nDim; iVar++) {

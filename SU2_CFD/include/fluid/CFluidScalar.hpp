@@ -2,14 +2,14 @@
  * \file CFluidScalar.hpp
  * \brief  Defines the multicomponent incompressible Ideal Gas model for mixtures.
  * \author T. Economon, Mark Heimgartner, Cristopher Morales Ubal
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,8 +42,8 @@ class CFluidScalar final : public CFluidModel {
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
   su2double Gas_Constant;                 /*!< \brief Specific gas constant. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
-  const su2double Ref_Temperature;        /*!< \brief Standard Reference temperature, usually set to 298.15 K. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
+  const su2double Std_Ref_Temp_ND;        /*!< \brief Nondimensional standard reference temperature for enthalpy. */
   const su2double Prandtl_Turb_Number;    /*!< \brief Prandlt turbulent number.*/
   const su2double Schmidt_Turb_Number;    /*!< \brief Schmidt turbulent number.*/
 
@@ -177,7 +177,7 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Virtual member.
    * \param[in] val_enthalpy - Enthalpy value at the point.
-   * \param[in] val_scalars - Scalar mass fractions. 
+   * \param[in] val_scalars - Scalar mass fractions.
    */
   void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override;
 };

@@ -3,14 +3,14 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -294,6 +294,12 @@ class CSysSolve {
                                       const PrecondType& precond, ScalarType tol, unsigned long max_iter,
                                       ScalarType& residual, bool monitoring, const CConfig* config,
                                       FgcrodrMode mode) const;
+
+  /*!
+   * \brief Creates the inner solver for nested preconditioning if the settings allow it.
+   * \returns True if the inner solver can be used.
+   */
+  bool SetupInnerSolver(unsigned short kind_solver, const CConfig* config);
 
  public:
   /*!

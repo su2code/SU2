@@ -2,14 +2,14 @@
  * \file CFEAVariable.cpp
  * \brief Definition of the variables for FEM elastic structural problems.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,9 +54,8 @@ CFEAVariable::CFEAVariable(const su2double *val_fea, unsigned long npoint, unsig
   const bool fsi_analysis       = config->GetFSI_Simulation() || multizone;
 
   VonMises_Stress.resize(nPoint) = su2double(0.0);
-
-  if (nDim==2) Stress.resize(nPoint,3);
-  else         Stress.resize(nPoint,6);
+  /*--- For completeness we also output sigma_zz in 2D. ---*/
+  Stress.resize(nPoint, 2 * nDim);
 
   /*--- Initialization of variables ---*/
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)

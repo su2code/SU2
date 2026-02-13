@@ -2,14 +2,14 @@
  * \file CNewtonIntegration.cpp
  * \brief Newton-Krylov integration.
  * \author P. Gomes
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -184,15 +184,11 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 
   if (!setup) { Setup(); setup = true; }
 
-  // Ramp from 1st to 2nd order during the startup.
-  su2double baseNkRelaxation = 1;
-  if (startupPeriod && startupIters > 0 && !config->GetRestart()) {
-    baseNkRelaxation = su2double(startupIters - iter) / startupIters;
-  }
-  config->SetNewtonKrylovRelaxation(baseNkRelaxation);
+  /*--- Remove NK relaxation to compute the current residual. ---*/
+  config->SetNewtonKrylovRelaxation(1.0);
 
-  // When using NK relaxation (not fully 2nd order Jacobian products) we need an additional
-  // residual evaluation that is used as the reference for finite differences.
+  /*--- When using NK relaxation (not fully 2nd order Jacobian products) we need an additional
+   * residual evaluation that is used as the reference for finite differences. ---*/
   LinSysRes0 = (!startupPeriod && nkRelaxation < 1) ? &LinSysResRelax : &LinSysRes;
 
   SU2_OMP_PARALLEL_(if(solvers[FLOW_SOL]->GetHasHybridParallel())) {

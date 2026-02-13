@@ -3,14 +3,14 @@
 ## \file hybrid_regression_AD.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -111,8 +111,8 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals         = [20.000000, -5.098033, -3.842740, 0.000000]
-    discadj_incomp_cylinder.test_vals_aarch64 = [20.000000, -5.098033, -3.842740, 0.000000]
+    discadj_incomp_cylinder.test_vals         = [20.000000, -1.671920, -6.254841, 0.000000]
+    discadj_incomp_cylinder.test_vals_aarch64 = [20.000000, -1.671920, -6.254841, 0.000000]
     discadj_incomp_cylinder.tol_aarch64 = 2e-1
     test_list.append(discadj_incomp_cylinder)
 

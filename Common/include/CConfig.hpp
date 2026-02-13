@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -651,6 +651,7 @@ private:
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
+  su2double MSW_Alpha;                  /*!< \brief Coefficient for blending states in the MSW scheme. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
@@ -763,6 +764,7 @@ private:
   SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
   SA_OPTIONS *SA_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
   LM_OPTIONS *LM_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
+  ROUGHSST_MODEL Kind_RoughSST_Model;         /*!< \brief List of modifications/corrections/versions of rough-wall boundary conditions for SST turbulence model.*/
   unsigned short nSST_Options;        /*!< \brief Number of SST options specified. */
   unsigned short nSA_Options;         /*!< \brief Number of SA options specified. */
   unsigned short nLM_Options;         /*!< \brief Number of SA options specified. */
@@ -926,7 +928,6 @@ private:
   Initial_BCThrust,                /*!< \brief Ratio of turbulent to laminar viscosity at the actuator disk. */
   Pressure_FreeStream,             /*!< \brief Total pressure of the fluid. */
   Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
-  Standard_Ref_Temperature,        /*!< \brief Standard reference temperature for multicomponent flows. */
   Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
   unsigned short wallModel_MaxIter; /*!< \brief maximum number of iterations for the Newton method for the wall model */
@@ -1105,6 +1106,7 @@ private:
   bool SpatialFourier;              /*!< \brief option for computing the fourier transforms for subsonic non-reflecting BC. */
   bool RampMotionFrame;             /*!< \brief option for ramping up or down the motion Frame values */
   bool RampOutlet;                  /*!< \brief option for ramping up or down the outlet values */
+  bool RampMUSCL;
   bool RampRotatingFrame;           /*!< \brief option for ramping up or down the motion Frame values */
   bool RampTranslationFrame;        /*!< \brief option for ramping up or down the outlet values */
   bool RampOutletMassFlow;          /*!< \brief option for ramping up or down the motion Frame values */
@@ -1120,6 +1122,13 @@ private:
   array<su2double, N_POLY_COEFFS> mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
+
+  struct CMUSCLRampParam {
+    su2double RampMUSCLPower; /*!< \brief Exponent by which to raise the MUSCL ramp to the power of */
+    MUSCL_RAMP_TYPE Kind_MUSCLRamp; /*!< \brief The kind of MUSCL ramp */
+    unsigned long rampMUSCLCoeff[3];     /*!< \brief ramp MUSCL value coefficients for the COption class. */
+  } RampMUSCLParam;
+  su2double rampMUSCLValue; /*!< \brief Current value of the MUSCL ramp */
 
   ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
   bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
@@ -1350,6 +1359,8 @@ private:
   void addDoubleArrayOption(const string& name, int size, bool allow_fewer, su2double* option_field);
 
   void addUShortArrayOption(const string& name, int size, bool allow_fewer, unsigned short* option_field);
+
+  void addULongArrayOption(const string& name, int size, bool allow_fewer, unsigned long* option_field);
 
   void addDoubleListOption(const string& name, unsigned short & size, su2double * & option_field);
 
@@ -1970,12 +1981,6 @@ public:
    * \return Thermodynamic pressure.
    */
   su2double GetPressure_Thermodynamic(void) const { return Pressure_Thermodynamic; }
-
-  /*!
-   * \brief Get the value of the standard reference temperature for multicomponent flows.
-   * \return Standard reference temperature, Non-dimensionalized if it is needed for Non-Dimensional problems.
-   */
-  su2double GetStandard_RefTemperatureND(void) const { return Standard_Ref_Temperature / Temperature_Ref; }
 
   /*!
    * \brief Get the value of the non-dimensionalized thermodynamic pressure.
@@ -4429,6 +4434,11 @@ public:
   void SetNewtonKrylovRelaxation(const su2double& relaxation) { NK_Relaxation = relaxation; }
 
   /*!
+   * \brief Returns the MSW alpha (coefficient of the state blending weight).
+   */
+  su2double GetMSW_Alpha(void) const { return MSW_Alpha; }
+
+  /*!
    * \brief Returns the Roe kappa (multipler of the dissipation term).
    */
   su2double GetRoe_Kappa(void) const { return Roe_Kappa; }
@@ -5208,6 +5218,12 @@ public:
   bool GetRampOutflow(void) const { return RampOutlet; }
 
   /*!
+   * \brief Get MUSCL ramp option.
+   * \return Ramp MUSCL option
+  */
+  bool GetMUSCLRamp(void) const { return RampMUSCL; }
+
+  /*!
    * \brief General interface for accessing ramp coefficient information
    * \return coeff for ramps
   */
@@ -5216,6 +5232,23 @@ public:
     else if (ramp_flag == RAMP_TYPE::BOUNDARY) return rampOutletCoeff[val_coeff];
     else return 0;
   };
+
+  /*!
+   * \brief Set MUSCL ramp value.
+  */
+  void SetMUSCLRampValue(su2double ramp_value) { rampMUSCLValue = ramp_value; }
+
+  /*!
+   * \brief Get MUSCL ramp value.
+   * \return Ramp MUSCL value
+  */
+  su2double GetMUSCLRampValue(void) const { return rampMUSCLValue; }
+
+  /*!
+   * \brief Get MUSCL ramp paramaters.
+   * \return Ramp MUSCL kind
+  */
+  const CMUSCLRampParam& GetMUSCLRampParam(void) const { return RampMUSCLParam; }
 
   /*!
    * \brief Generic interface for setting monitor outlet values for the ramp.
@@ -10173,6 +10206,10 @@ public:
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
 
+  /*!
+   * \brief Get rough-wall boundary conditions for SST.
+   */
+  ROUGHSST_MODEL GetKindRoughSSTModel() const { return Kind_RoughSST_Model; }
 
   /*!
    * \brief Get parsed option data structure for data-driven fluid model.
