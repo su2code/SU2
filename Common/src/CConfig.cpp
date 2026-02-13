@@ -2982,13 +2982,22 @@ void CConfig::SetConfig_Options() {
   addBoolOption("ENFORCE_LES", enforceLES, false);
 
   /* DESCRIPTION: Specify if the stochastic source term must be included in the turbulence model equation */
-  addBoolOption("STOCH_SOURCE_NU", stochSourceNu, false);
+  addBoolOption("SBS_SOURCE_NU_EQUATION", stochSourceNu, false);
 
-  /* DESCRIPTION: Enable diagnostics of the stochastic source term in Langevin equations. */
-  addBoolOption("STOCH_SOURCE_DIAGNOSTICS", stochSourceDiagnostics, false);
+  /* DESCRIPTION: Enable diagnostics of the stochastic source term in Langevin equation. */
+  addBoolOption("SBS_SOURCE_DIAGNOSTICS", stochSourceDiagnostics, false);
 
-  /* DESCRIPTION: Relaxation factor for the stochastic source term (Stochastic Backscatter Model). */
+  /* DESCRIPTION: Relaxation factor for the stochastic source term (Stochastic Backscatter Model) */
   addDoubleOption("SBS_RELAXATION_FACTOR", stochSourceRelax, 0.0);
+
+  /* DESCRIPTION: Apply Stochastic Backscatter Model only in a bounded box */
+  addBoolOption("SBS_IN_BOX", StochBackscatterInBox, false);
+
+  /* DESCRIPTION: Specify extents of box where Stochastic Backscatter Model is active */
+  addDoubleArrayOption("SBS_BOX_BOUNDS", 6, false, StochBackscatterBoxBounds);
+
+  /* DESCRIPTION: Shielding function lower threshold for application of Stochastic Backscatter Model */
+  addDoubleOption("SBS_FD_LOWER_THRESHOLD", stochFdThreshold, 0.9);
 
   /* DESCRIPTION: Filter width for LES (if negative, it is computed based on the local cell size) */
   addDoubleOption("LES_FILTER_WIDTH", LES_FilterWidth, -1.0);
@@ -6578,6 +6587,20 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
               cout << "Relaxation factor for stochastic source term: " << stochSourceRelax << endl;
             else
               cout << "No relaxation factor for stochastic source term." << endl;
+            if (StochBackscatterInBox) {
+              cout << "Stochastic Backscatter Model activated only in a bounded box." << endl;
+              cout << "Box bounds: " << endl;
+              cout << "  X: " << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[0] << " , "
+                              << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[1] << endl;
+              cout << "  Y: " << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[2] << " , "
+                              << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[3] << endl;
+              cout << "  Z: " << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[4] << " , "
+                              << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[5] << endl;
+            } else {
+              cout << "Stochastic Backscatter Model activated in the whole computational domain." << endl;
+            }
+            if (Kind_HybridRANSLES != SA_DES)
+              cout << "Stochastic source terms suppressed where the shielding function is lower than: " << setw(5) << setprecision(3) << stochFdThreshold << endl;
           } else {
             cout << "OFF" << endl;
           }

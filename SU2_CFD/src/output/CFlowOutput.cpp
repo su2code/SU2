@@ -1702,7 +1702,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       const su2double DES_lengthscale = max(Node_Flow->GetDES_LengthScale(iPoint), 1e-10);
       const su2double lesSensor = Node_Flow->GetLES_Mode(iPoint);
       const su2double mag = config->GetSBS_Cmag();
-      const su2double threshold = 0.9;
+      const su2double threshold = config->GetStochFdThreshold();
       const auto VelocityGradient = Node_Flow->GetVelocityGradient(iPoint);
       su2double strainMag2 = 0.0;
       for (unsigned long iDim = 0; iDim < nDim; iDim++) {
@@ -1753,7 +1753,7 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       const su2double DES_lengthscale = max(Node_Flow->GetDES_LengthScale(iPoint), 1e-10);
       const su2double lesSensor = Node_Flow->GetLES_Mode(iPoint);
       const su2double mag = config->GetSBS_Cmag();
-      const su2double threshold = 0.9;
+      const su2double threshold = config->GetStochFdThreshold();
       su2double tke_estim = 0.0;
       su2double strainMag2 = 0.0;
       for (unsigned long iDim = 0; iDim < nDim; iDim++) {

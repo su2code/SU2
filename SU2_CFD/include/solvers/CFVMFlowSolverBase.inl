@@ -478,9 +478,8 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
     su2double DES_length_j = turbNodes->GetDES_LengthScale(jPoint);
     su2double lesMode_i = (DES_length_i > 1e-10) ? turbNodes->GetLES_Mode(iPoint) : 0.0;
     su2double lesMode_j = (DES_length_j > 1e-10) ? turbNodes->GetLES_Mode(jPoint) : 0.0;
-    const su2double threshold = 0.9;
     su2double tke_i = 0.0, tke_j = 0.0;
-    if (max(lesMode_i, lesMode_j) > threshold) {
+    if (max(lesMode_i, lesMode_j) > config->GetStochFdThreshold()) {
       su2double eddyVisc_i = turbNodes->GetmuT(iPoint) / nodes->GetDensity(iPoint);
       su2double eddyVisc_j = turbNodes->GetmuT(jPoint) / nodes->GetDensity(jPoint);
       su2double strainMag_i = nodes->GetStrainMag(iPoint);

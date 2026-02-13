@@ -667,12 +667,14 @@ public:
 
     /* --- Calculate stochastic tensor --- */
 
+    su2double stochLim = 3.0; 
+
     stochReynStress[0][0] = 0.0;
     stochReynStress[1][1] = 0.0;
     stochReynStress[2][2] = 0.0;
-    stochReynStress[0][1] =   Cmag * density * tke * rndVec[2];
-    stochReynStress[0][2] = - Cmag * density * tke * rndVec[1];
-    stochReynStress[1][2] =   Cmag * density * tke * rndVec[0];
+    stochReynStress[0][1] =   Cmag * density * tke * max(-stochLim, min(stochLim, rndVec[2]));
+    stochReynStress[0][2] = - Cmag * density * tke * max(-stochLim, min(stochLim, rndVec[1]));
+    stochReynStress[1][2] =   Cmag * density * tke * max(-stochLim, min(stochLim, rndVec[0]));
     stochReynStress[1][0] = - stochReynStress[1][0];
     stochReynStress[2][0] = - stochReynStress[2][0];
     stochReynStress[2][1] = - stochReynStress[2][1];

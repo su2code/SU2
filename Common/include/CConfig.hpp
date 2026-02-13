@@ -1104,6 +1104,9 @@ private:
   su2double SBS_Cmag;                  /*!< \brief Stochastic Backscatter Model intensity coefficient. */
   bool stochSourceNu;                  /*!< \brief Option for including stochastic source term in turbulence model equation (Stochastic Backscatter Model). */
   bool stochSourceDiagnostics;         /*!< \brief Option for writing diagnostics related to stochastic source terms in Langevin equations (Stochastic Backscatter Model). */
+  bool StochBackscatterInBox;          /*!< \brief Option for activating the Stochastic Backscatter Model only in a bounded box. */
+  su2double StochBackscatterBoxBounds[6]; /*!< \brief Bounds of the box where the Stochastic Backscatter Model is active. */
+  su2double stochFdThreshold;          /*!< \brief Shielding function lower threshold for application of Stochastic Backscatter Model. */
   su2double stochSourceRelax;          /*!< \brief Relaxation factor for stochastic source term generation (Stochastic Backscatter Model). */
   bool enforceLES;                     /*!< \brief Option to enforce LES mode in hybrid RANS-LES simulations. */
   su2double LES_FilterWidth;           /*!< \brief LES filter width for hybrid RANS-LES simulations. */
@@ -9676,6 +9679,24 @@ public:
    * \return Value of SBS intensity coefficient.
    */
   su2double GetSBS_Cmag(void) const { return SBS_Cmag; }
+
+  /*!
+   * \brief Get if the Stochastic Backscatter Model must be applied only in a bounded box.
+   * \return True if the model is applied in a bounded box.
+   */
+  bool GetStochBackscatterInBox(void) const { return StochBackscatterInBox; }
+
+  /*!
+   * \brief Get the bounds of the box where the Stochastic Backscatter Model is active.
+   * \return Bounds of the box where the model is active.
+   */
+  const su2double* GetStochBackscatterBoxBounds(void) const { return StochBackscatterBoxBounds; }
+
+  /*!
+   * \brief Get shielding function lower threshold for application of Stochastic Backscatter Model.
+   * \return Shielding function threshold for application of the model.
+   */
+  su2double GetStochFdThreshold(void) const { return stochFdThreshold; }
 
   /*!
    * \brief Get the type of tape that will be checked in a tape debug run.

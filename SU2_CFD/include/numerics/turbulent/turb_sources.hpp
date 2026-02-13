@@ -117,11 +117,11 @@ class CSourceBase_TurbSA : public CNumerics {
    */
   inline void ResidualStochEquations(su2double timeStep, const su2double ct, 
                                      su2double lengthScale, su2double DES_const,
-                                     const CSAVariables& var, TIME_MARCHING time_marching) {
+                                     const CSAVariables& var, TIME_MARCHING time_marching,
+                                     su2double threshold) {
 
     const su2double& nue = ScalarVar_i[0];
     const auto& density = V_i[idx.Density()];
-    const su2double threshold = 0.9;
     const su2double limiterRANS = 0.1;
     const su2double timeStepFrac = 0.2;
     const su2double nut = max(nue*var.fv1, 1e-10);
@@ -160,12 +160,11 @@ class CSourceBase_TurbSA : public CNumerics {
   /*!
    * \brief Include stochastic source term in the Spalart-Allmaras turbulence model equation (Stochastic Backscatter Model).
    */
-  inline void AddStochSource(CSAVariables& var, const su2double Cmag, su2double& prod) {
+  inline void AddStochSource(CSAVariables& var, const su2double Cmag, su2double threshold, su2double& prod) {
 
     su2double nut = ScalarVar_i[0] * var.fv1;
     su2double tke = 0.0;
-    const su2double threshold = 0.9;
-    const su2double limiter = 10.0;
+    const su2double limiter = 5.0;
     if (lesMode_i > threshold) tke = nut * StrainMag_i;
 
     su2double R12 =   Cmag * tke * ScalarVar_i[3];
@@ -174,11 +173,14 @@ class CSourceBase_TurbSA : public CNumerics {
 
     su2double RGradU = R12*Vorticity_i[2] - R13*Vorticity_i[1] + R23*Vorticity_i[0];
 
-    su2double stoch_prod_k = - RGradU;
-    su2double prod_k = nut * StrainMag_i * StrainMag_i;
-    su2double stoch_prod_nut = min(limiter, max(-limiter, stoch_prod_k/max(prod_k,1e-10)));
+    su2double stochProdK = - RGradU;
+    su2double Ji_3 = pow(var.Ji, 3);
+    su2double Dfv1Dnut = 3.0 * var.fv1 * var.cv1_3 / (var.cv1_3 + Ji_3);
+    su2double fac = 1.0 / (var.fv1 + ScalarVar_i[0]*Dfv1Dnut);
+    su2double stochProdNut = stochProdK * dist_i*dist_i/(2.0*ScalarVar_i[0]) * fac;
+    stochProdNut = max(-limiter*prod, min(limiter*prod, stochProdNut));
 
-    prod *= (1.0 + stoch_prod_nut);
+    prod += stochProdNut;
 
   }
 
@@ -327,7 +329,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
       if (config->GetStochastic_Backscatter() && config->GetStochSourceNu()) {
         su2double intensityCoeff = ComputeStochRelaxFactor(config);
-        AddStochSource(var, intensityCoeff, Production);
+        AddStochSource(var, intensityCoeff, config->GetStochFdThreshold(), Production);
       }
 
       Residual[0] = (Production - Destruction) * Volume;
@@ -342,7 +344,7 @@ class CSourceBase_TurbSA : public CNumerics {
         const su2double DES_const = config->GetConst_DES();
         const su2double ctau = config->GetSBS_Ctau();
         ResidualStochEquations(config->GetDelta_UnstTime(), ctau, dist_i, DES_const,
-                               var, config->GetTime_Marching());
+                               var, config->GetTime_Marching(), config->GetStochFdThreshold());
       }
     }
 
