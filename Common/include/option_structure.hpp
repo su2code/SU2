@@ -1448,6 +1448,8 @@ struct FluidFlamelet_ParsedOptions {
   su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
   unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
+
+  su2double flame_lengthscale{1e-3}; /*!< \brief Lengthscale above which chemical source terms are dampened.*/
 };
 
 /*!

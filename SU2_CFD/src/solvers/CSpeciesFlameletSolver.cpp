@@ -213,7 +213,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
-      prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
       for (auto iVar = 0u; iVar < nVar; iVar++) scalar_init[iVar] = config->GetSpecies_Init()[iVar];
 
       /*--- Set enthalpy based on initial temperature and scalars. ---*/
@@ -227,6 +226,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
         if (flame_front_ignition) {
 
+          prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
           /*--- Determine if point is above or below the plane, assuming the normal
             is pointing towards the burned region. ---*/
           point_loc = 0.0;
@@ -382,12 +382,16 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
+   
+   const su2double flame_lengthscale = config->GetFlameletParsedOptions().flame_lengthscale;  
+   const su2double flame_vol = pow(flame_lengthscale, nDim); 
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+    const su2double fac = min(flame_vol/ geometry->nodes->GetVolume(i_point), 1.0);
     /*--- Add source terms from the lookup table directly to the residual. ---*/
     for (auto i_var = 0; i_var < nVar; i_var++) {
-      LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
+      LinSysRes(i_point, i_var) -= fac*nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
     }
   }
   END_SU2_OMP_FOR
