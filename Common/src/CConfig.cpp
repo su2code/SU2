@@ -5801,9 +5801,9 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- We can have additional user defined transported scalars ---*/
     flamelet_ParsedOptions.n_scalars = flamelet_ParsedOptions.n_control_vars + flamelet_ParsedOptions.n_user_scalars;
 
-    if (flamelet_ParsedOptions.flame_lengthscale <= 0.0) 
+    if (flamelet_ParsedOptions.flame_lengthscale <= 0.0)
       SU2_MPI::Error("Flame length scale value should be positive.", CURRENT_FUNCTION);
-      
+
   }
 
   if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
