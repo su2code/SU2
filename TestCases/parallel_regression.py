@@ -1276,11 +1276,19 @@ def main():
     thermal_beam_3d = TestCase('thermal_beam_3d')
     thermal_beam_3d.cfg_dir = "fea_fsi/ThermalBeam_3d"
     thermal_beam_3d.cfg_file = "configBeam_3d.cfg"
-    thermal_beam_3d.test_iter = 0
-    thermal_beam_3d.test_vals = [-6.140220, -5.842734, -5.972391, -8.091358, 262, -8.246755, 81, -8.298569, 135620, 144.65]
-    thermal_beam_3d.test_vals_aarch64 = [-6.131860, -5.845164, -5.964084, -8.091358, 262, -8.244325, 81, -8.298569, 135620, 144.65]
+    thermal_beam_3d.test_iter = 4
+    thermal_beam_3d.test_vals = [-8.137623, -7.840833, -7.903285, -13.978110, 217, -4.093241, 39, -4.072614, 1.3676e+05, 75.0]
     thermal_beam_3d.command = TestCase.Command(exec = "parallel_computation_fsi.py", param = "-f")
     test_list.append(thermal_beam_3d)
+
+    # Static beam, 3d with coupled temperature, nonlinear elasticity
+    thermal_beam_nl_3d = TestCase('thermal_beam_nl_3d')
+    thermal_beam_nl_3d.cfg_dir = "fea_fsi/ThermalBeam_3d"
+    thermal_beam_nl_3d.cfg_file = "configBeamNonlinear_3d.cfg"
+    thermal_beam_nl_3d.test_iter = 8
+    thermal_beam_nl_3d.test_vals = [-7.564309, -2.992893, -12.242503, -14.068322, 57, -4.017665, 24, -4.204804, 138710, 75.233]
+    thermal_beam_nl_3d.command = TestCase.Command(exec = "parallel_computation_fsi.py", param = "-f")
+    test_list.append(thermal_beam_nl_3d)
 
     # Rotating cylinder, 3d
     rotating_cylinder_fea           = TestCase('rotating_cylinder_fea')
