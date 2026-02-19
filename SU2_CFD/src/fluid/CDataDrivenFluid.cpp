@@ -199,13 +199,10 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   dTdrho_e = -Temperature * Temperature * d2sdedrho;
 
   /*--- Compute speed of sound. ---*/
-  const su2double blue_term = (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
-  const su2double green_term = (-Temperature * d2sde2 * dsdrho_e + d2sdedrho);
-
-  SoundSpeed2 = -Density * Temperature * (blue_term - Density * green_term * (dsdrho_e / dsde_rho));
-
   dPde_rho = -rho_2 * Temperature * (-Temperature * (d2sde2 * dsdrho_e) + d2sdedrho);
   dPdrho_e = - Density * Temperature * (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
+
+  SoundSpeed2 = dPdrho_e - (dsdrho_e / dsde_rho) * dPde_rho;
 
   /*--- Compute enthalpy and entropy derivatives required for Giles boundary conditions. ---*/
   dhdrho_e = -Pressure * (1 / rho_2) + dPdrho_e / Density;
@@ -218,9 +215,9 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
   dsdP_rho = dsde_rho / dPde_rho;
 
-  const su2double drhode_p = -dPde_rho/dPdrho_e;
-  const su2double dTde_p = dTde_rho + dTdrho_e*drhode_p;
-  const su2double dhde_p = dhde_rho + drhode_p*dhdrho_e;
+  const su2double drhode_p = -dPde_rho/dPdrho_e,
+                  dTde_p = dTde_rho + dTdrho_e*drhode_p,
+                  dhde_p = dhde_rho + drhode_p*dhdrho_e;
   Cp = dhde_p / dTde_p;
 
   AD::SetPreaccOut(Temperature);
