@@ -3172,6 +3172,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("RAMP_ROTATION_FRAME_COEFF is deprectaed. Use RAMP_MOTION_FRAME_COEFF instead");
           else if (!option_name.compare("INC_INLET_USENORMAL"))
             newString.append("INC_INLET_USENORMAL is deprecated. Use INLET_USE_NORMAL instead (compatible with all solvers).\n\n");
+          else if (!option_name.compare("DATADRIVEN_INITIAL_ENERGY") || !option_name.compare("DATADRIVEN_INITIAL_DENSITY"))
+            newString.append("DATADRIVEN_INITIAL_ENERGY and DATADRIVEN_INITIAL_DENSITY are deprecated, there are no replacements.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/

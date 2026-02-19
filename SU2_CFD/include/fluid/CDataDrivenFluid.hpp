@@ -45,8 +45,9 @@
 class MiniTable2D {
     size_t nP{5},
            n_vars;
-    vector<vector<su2double>> TD_data;
-    vector<su2double> TD_data_min,TD_data_max;
+    //vector<vector<su2double>> TD_data;
+    su2activematrix TD_data;
+    su2vector<su2double> TD_data_min,TD_data_max;
     public:
     MiniTable2D()=default;
     
@@ -149,9 +150,9 @@ class CDataDrivenFluid final : public CFluidModel {
 #endif
   vector<su2double> MLP_inputs; /*!< \brief Inputs for the multi-layer perceptron look-up operation. */
 
-  MiniTable2D* coarse_TD_table;                         /*!< \brief Small thermodynamic table used to identify the starting point of the Newton solver processes. */
+  MiniTable2D coarse_TD_table;                         /*!< \brief Small thermodynamic table used to identify the starting point of the Newton solver processes. */
   const size_t iRho{0},iE{1},iP{2},iT{3};   /*!< Indices of thermodynamic variables in the table. */
-  vector<su2double> vals_rho_table, vals_e_table;       /*!< Density and static energy values of the table nodes. */
+  su2vector<su2double> vals_rho_table, vals_e_table;    /*!< Density and static energy values of the table nodes. */
 
   CLookUpTable* lookup_table; /*!< \brief Look-up table regression object. */
   unsigned long LUT_idx_s,

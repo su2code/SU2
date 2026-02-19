@@ -76,7 +76,6 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
 }
 
 CDataDrivenFluid::~CDataDrivenFluid() {
-  delete coarse_TD_table;
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP
@@ -215,9 +214,9 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   dsdrho_P = dsdrho_e - dPdrho_e * (1 / dPde_rho) * dsde_rho;
   dsdP_rho = dsde_rho / dPde_rho;
 
-  const su2double drhode_p = -dPde_rho/dPdrho_e,
-                  dTde_p = dTde_rho + dTdrho_e*drhode_p,
-                  dhde_p = dhde_rho + drhode_p*dhdrho_e;
+  const su2double drhode_p = -dPde_rho/dPdrho_e;
+  const su2double dTde_p = dTde_rho + dTdrho_e*drhode_p;
+  const su2double dhde_p = dhde_rho + drhode_p*dhdrho_e;
   Cp = dhde_p / dTde_p;
 
   AD::SetPreaccOut(Temperature);
@@ -235,7 +234,7 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
   /*--- Find nearest neighbor on pressure-temperature thermodynamic table ---*/
-  const auto iNearest = coarse_TD_table->FindNode(iP, P, iT, T);
+  const auto iNearest = coarse_TD_table.FindNode(iP, P, iT, T);
   e_start = vals_e_table[iNearest];
   rho_start = vals_rho_table[iNearest];
   
@@ -250,7 +249,7 @@ void CDataDrivenFluid::SetTDState_Prho(su2double P, su2double rho) {
 
 void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
   /*--- Find nearest neighbor on pressure-density thermodynamic table ---*/
-  const auto iNearest = coarse_TD_table->FindNode(iP, P, iRho, rho);
+  const auto iNearest = coarse_TD_table.FindNode(iP, P, iRho, rho);
   StaticEnergy = vals_e_table[iNearest];
   Density = rho;
 
@@ -260,7 +259,7 @@ void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
 
 void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
   /*--- Find nearest neighbor on density-temperature thermodynamic table ---*/
-  const auto iNearest = coarse_TD_table->FindNode(iRho, rho, iT, T);
+  const auto iNearest = coarse_TD_table.FindNode(iRho, rho, iT, T);
   StaticEnergy = vals_e_table[iNearest];
   Density = rho;
 
@@ -365,11 +364,11 @@ void CDataDrivenFluid::Run_Newton_Solver(const su2double Y1_target, const su2dou
 
       extra_relaxation = 1.0;
       /*--- Check if updated values exceed the bounds. If so, apply extra relaxation. ---*/
-      if ((rho - delta_rho <= rho_min)) extra_relaxation = min(extra_relaxation, 0.5*(rho - rho_min) / (Newton_Relaxation * delta_rho));
-      if ((rho - delta_rho >= rho_max)) extra_relaxation = min(extra_relaxation, 0.5*(rho - rho_max) / (Newton_Relaxation * delta_rho));
+      if (rho - delta_rho <= rho_min) extra_relaxation = min(extra_relaxation, 0.5*(rho - rho_min) / (Newton_Relaxation * delta_rho));
+      if (rho - delta_rho >= rho_max) extra_relaxation = min(extra_relaxation, 0.5*(rho - rho_max) / (Newton_Relaxation * delta_rho));
       
-      if ((e - delta_e <= e_min)) extra_relaxation = min(extra_relaxation, 0.5*(e - e_min) / (Newton_Relaxation * delta_e));
-      if ((e - delta_e >= e_max)) extra_relaxation = min(extra_relaxation, 0.5*(e - e_max) / (Newton_Relaxation * delta_e));
+      if (e - delta_e <= e_min) extra_relaxation = min(extra_relaxation, 0.5*(e - e_min) / (Newton_Relaxation * delta_e));
+      if (e - delta_e >= e_max) extra_relaxation = min(extra_relaxation, 0.5*(e - e_max) / (Newton_Relaxation * delta_e));
 
       /*--- Update density and energy values. ---*/
       rho -= extra_relaxation * Newton_Relaxation * delta_rho;
@@ -446,13 +445,13 @@ void CDataDrivenFluid::ComputeIdealGasQuantities() {
     break;
   }
   /*--- Create a five-by-five thermodynamic table used to provide initial guess for Newton solver ---*/
-  coarse_TD_table = new MiniTable2D();
+  coarse_TD_table = MiniTable2D();
   const size_t nTable_coarse{5},
                nP_table = nTable_coarse*nTable_coarse;
   /*--- Variables included in table: density, static energy, pressure, temperature ---*/
-  coarse_TD_table->SetNVars(4);
-  coarse_TD_table->SetNPoints(nP_table);
-  coarse_TD_table->SizeTable();
+  coarse_TD_table.SetNVars(4);
+  coarse_TD_table.SetNPoints(nP_table);
+  coarse_TD_table.SizeTable();
   /*--- Discretize thermodynamic space in terms of density and static energy ---*/
   vals_rho_table.resize(nP_table);
   vals_e_table.resize(nP_table);
@@ -465,30 +464,27 @@ void CDataDrivenFluid::ComputeIdealGasQuantities() {
       vals_rho_table[kNode] = rho_min + delta_rho * iNode;
       vals_e_table[kNode] = e_min + delta_e * jNode;
       SetTDState_rhoe(vals_rho_table[kNode], vals_e_table[kNode]);
-      coarse_TD_table->SetTableData(iRho, kNode, vals_rho_table[kNode]);
-      coarse_TD_table->SetTableData(iE, kNode, vals_e_table[kNode]);
-      coarse_TD_table->SetTableData(iP, kNode, Pressure);
-      coarse_TD_table->SetTableData(iT, kNode, Temperature);
+      coarse_TD_table.SetTableData(iRho, kNode, vals_rho_table[kNode]);
+      coarse_TD_table.SetTableData(iE, kNode, vals_e_table[kNode]);
+      coarse_TD_table.SetTableData(iP, kNode, Pressure);
+      coarse_TD_table.SetTableData(iT, kNode, Temperature);
       kNode++;
     }
   }
-  coarse_TD_table->ScaleTableData();
+  coarse_TD_table.ScaleTableData();
 }
 
 void MiniTable2D::SizeTable() {
-    TD_data.resize(n_vars);
-    for (auto iVar=0u; iVar<TD_data.size(); iVar++) {
-        TD_data[iVar].resize(nP);
-    }
+    TD_data.resize(n_vars,nP);
 }
 
 void MiniTable2D::ScaleTableData() {
     TD_data_max.resize(n_vars);
     TD_data_min.resize(n_vars);
     for (auto iVar =0u; iVar<n_vars; iVar++) {
-        TD_data_min[iVar] = *min_element(TD_data[iVar].begin(), TD_data[iVar].end());
-        TD_data_max[iVar] = *max_element(TD_data[iVar].begin(), TD_data[iVar].end());
-        for (auto iX=0u; iX<TD_data[iVar].size(); iX++)
+        TD_data_min[iVar] = *min_element(TD_data[iVar], TD_data[iVar]+nP);
+        TD_data_max[iVar] = *max_element(TD_data[iVar], TD_data[iVar]+nP);
+        for (auto iX=0u; iX<nP; iX++)
             TD_data[iVar][iX] = (TD_data[iVar][iX]-TD_data_min[iVar])/(TD_data_max[iVar]-TD_data_min[iVar]);
     }
 }
@@ -499,7 +495,7 @@ size_t MiniTable2D::FindNode(const size_t iX, const su2double val_x, const size_
     const auto vals_table_x = TD_data[iX], vals_table_y = TD_data[iY];
     size_t iMin{0};
     su2double dist_max{1e3};
-    for (size_t iQ=0;iQ<vals_table_x.size();iQ++) {
+    for (size_t iQ=0;iQ<nP;iQ++) {
         su2double dist = pow(val_x_norm - vals_table_x[iQ],2) + pow(val_y_norm - vals_table_y[iQ],2);
         if (dist < dist_max) {
             iMin = iQ;
