@@ -91,10 +91,14 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   for (auto i_point = 0u; i_point < nPoint; i_point++) {
     CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
     su2double* scalars = nodes->GetSolution(i_point);
+
+    /*--- Calculate correction factor for flame propagation on coarse grids. ---*/
+    const su2double F = ThickenedFlameCorrection(geometry, i_point);
+
     for (auto iVar = 0u; iVar < nVar; iVar++) scalars_vector[iVar] = scalars[iVar];
 
     /*--- Compute total source terms from the production and consumption. ---*/
-    unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector);
+    unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector, F);
 
     if (ignition) {
       /*--- Apply source terms within spark radius. ---*/
@@ -103,7 +107,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
       dist_from_center = GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.spark_init.data());
       if (dist_from_center < pow(spark_radius,2)) {
         for (auto iVar = 0u; iVar < nVar; iVar++)
-          nodes->SetScalarSource(i_point, iVar, nodes->GetScalarSources(i_point)[iVar] + flamelet_config_options.spark_reaction_rates[iVar]);
+          nodes->SetScalarSource(i_point, iVar,  nodes->GetScalarSources(i_point)[iVar] + flamelet_config_options.spark_reaction_rates[iVar] / F);
       }
     }
 
@@ -115,9 +119,9 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     /*--- Set mass diffusivity based on thermodynamic state. ---*/
     auto T = flowNodes->GetTemperature(i_point);
     fluid_model_local->SetTDState_T(T, scalars);
-    /*--- set the diffusivity in the fluid model to the diffusivity obtained from the lookup table ---*/
+    /*--- set the diffusivity in the fluid model to the diffusivity obtained from the lookup table, multiplied by flame thickness correction factor ---*/
     for (auto i_scalar = 0u; i_scalar < nVar; ++i_scalar) {
-      nodes->SetDiffusivity(i_point, fluid_model_local->GetMassDiffusivity(i_scalar), i_scalar);
+      nodes->SetDiffusivity(i_point, F * (fluid_model_local->GetMassDiffusivity(i_scalar)), i_scalar);
     }
 
     /*--- Obtain preferential diffusion scalar values. ---*/
@@ -383,15 +387,11 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
    
-   const su2double flame_lengthscale = config->GetFlameletParsedOptions().flame_lengthscale;  
-   const su2double flame_vol = pow(flame_lengthscale, nDim); 
-
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
-    const su2double fac = min(flame_vol/ geometry->nodes->GetVolume(i_point), 1.0);
     /*--- Add source terms from the lookup table directly to the residual. ---*/
     for (auto i_var = 0; i_var < nVar; i_var++) {
-      LinSysRes(i_point, i_var) -= fac*nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
+      LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
     }
   }
   END_SU2_OMP_FOR
@@ -519,7 +519,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
 }
 
 unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CFluidModel* fluid_model_local,
-                                                       unsigned long iPoint, const vector<su2double>& scalars) {
+                                                       unsigned long iPoint, const vector<su2double>& scalars, const su2double F) {
   /*--- Compute total source terms from the production and consumption. ---*/
 
   vector<su2double> table_sources(flamelet_config_options.n_control_vars + 2 * flamelet_config_options.n_user_scalars);
@@ -541,8 +541,9 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
     su2double source_cons = table_sources[flamelet_config_options.n_control_vars + 2 * i_aux + 1];
     source_scalar[flamelet_config_options.n_control_vars + i_aux] = source_prod + source_cons * y_aux;
   }
+  /*--- Source term is divided by flame thickness correction factor to improve stability on coarse grids. ---*/
   for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
-    nodes->SetScalarSource(iPoint, i_scalar, source_scalar[i_scalar]);
+    nodes->SetScalarSource(iPoint, i_scalar,  source_scalar[i_scalar] / F);
   return misses;
 }
 
@@ -806,4 +807,11 @@ su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_mo
   }
   su2double pv_burnt = scalars[I_PROGVAR] - delta;
   return pv_burnt;
+}
+
+
+su2double CSpeciesFlameletSolver::ThickenedFlameCorrection(CGeometry const * geometry, const unsigned long iPoint) {
+  su2double flame_vol = pow(flamelet_config_options.flame_lengthscale,nDim);
+  su2double F = max(1.0, geometry->nodes->GetVolume(iPoint) / flame_vol);
+  return F;
 }
