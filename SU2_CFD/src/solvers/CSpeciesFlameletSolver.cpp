@@ -72,6 +72,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
                                            unsigned short RunTime_EqSystem, bool Output) {
   unsigned long n_not_in_domain_local = 0, n_not_in_domain_global = 0;
   vector<su2double> scalars_vector(nVar);
+  const su2double F_default{1.0};
   unsigned long spark_iter_start, spark_duration;
   bool ignition = false;
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
@@ -89,7 +90,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     } else {
       iter = config->GetInnerIter();
     }
-    //unsigned long iter = (config->GetMultizone_Problem() || config->GetTime_Domain()) ? config->GetOuterIter() : config->GetInnerIter();
     ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
   }
 
@@ -101,14 +101,14 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     su2double* scalars = nodes->GetSolution(i_point);
 
     /*--- Calculate correction factor for flame propagation on coarse grids. ---*/
-    const su2double F = ThickenedFlameCorrection(geometry, i_point);
+    su2double F = ThickenedFlameCorrection(geometry, i_point);
 
     for (auto iVar = 0u; iVar < nVar; iVar++) scalars_vector[iVar] = scalars[iVar];
 
     /*--- Compute total source terms from the production and consumption. ---*/
 
     /*--- Only apply thickened flame correction factor to sources for steady problems. ---*/
-    su2double F_source = config->GetTime_Domain() ? 1.0 : 1.0 / F;
+    su2double F_source = config->GetTime_Domain() ? F_default : 1.0 / F;
     unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector, F_source);
 
     if (ignition) {
@@ -554,7 +554,7 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
   }
   /*--- Source term is divided by flame thickness correction factor to improve stability on coarse grids. ---*/
   for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
-    nodes->SetScalarSource(iPoint, i_scalar,  source_scalar[i_scalar] / F);
+    nodes->SetScalarSource(iPoint, i_scalar,  F*source_scalar[i_scalar]);
   return misses;
 }
 
