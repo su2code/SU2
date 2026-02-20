@@ -61,6 +61,9 @@ CBoxMeshReaderFEM::CBoxMeshReaderFEM(const CConfig* val_config, unsigned short v
   ComputeBoxVolumeConnectivity();
   ComputeBoxPointCoordinates();
   ComputeBoxSurfaceConnectivity();
+
+  /*--- Duplicate some markers if requested. ---*/
+  CopyMarkers(val_config->GetMarkerCreateCopy());
 }
 
 CBoxMeshReaderFEM::~CBoxMeshReaderFEM() = default;

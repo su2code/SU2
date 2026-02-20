@@ -58,6 +58,9 @@ CCGNSMeshReaderFEM::CCGNSMeshReaderFEM(const CConfig* val_config, unsigned short
   /*--- We have extracted all CGNS data. Close the CGNS file. ---*/
   if (cg_close(cgnsFileID)) cg_error_exit();
 
+  /*--- Duplicate some markers if requested. ---*/
+  CopyMarkers(val_config->GetMarkerCreateCopy());
+
 #else
   SU2_MPI::Error(string(" SU2 built without CGNS support. \n") + string(" To use CGNS, build SU2 accordingly."),
                  CURRENT_FUNCTION);

@@ -40,140 +40,158 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
 
   const bool nonlinear = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
   const bool linear = (config[val_iZone]->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
+  const bool heat = config[val_iZone]->GetWeakly_Coupled_Heat();
   const bool disc_adj_fem = config[val_iZone]->GetDiscrete_Adjoint();
 
   /*--- Loads applied in steps (not used for discrete adjoint). ---*/
   const bool incremental_load = config[val_iZone]->GetIncrementalLoad() && !disc_adj_fem;
 
+  /*--- We need to restore the current inner iter in discrete adjoint cases because file output depends on it. ---*/
+  const auto CurIter = config[val_iZone]->GetInnerIter();
+
+  CGeometry** geo = geometry[val_iZone][val_iInst];
   CIntegration* feaIntegration = integration[val_iZone][val_iInst][FEA_SOL];
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
-  /*--- Add heat solver integration step. ---*/
-  if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
+  const auto nPoint = geo[MESH_0]->GetnPoint();
+  const auto nDim = geo[MESH_0]->GetnDim();
+
+  su2activematrix Coords;
+  if (nonlinear && heat && Coords.empty()) {
+    /*--- Save the mesh coordinates to solve the heat equations in the deformed configuration
+     * and then restore the coordinates for the FEA solver. We could use CoordsOld of CPoint but
+     * that would require accounting for a lot of physics-specific logic in a geometry class. ---*/
+    Coords = geo[MESH_0]->nodes->GetCoord();
+  }
+
+  auto IterateHeat = [&]() {
+    /*--- Update the FVM mesh for the heat solver based on the structural deformations. ---*/
+    if (nonlinear) {
+      SU2_OMP_PARALLEL_(for schedule(static))
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+        for (auto iDim = 0u; iDim < nDim; ++iDim) {
+          geo[MESH_0]->nodes->SetCoord(iPoint, iDim, Coords(iPoint, iDim) + feaSolver->GetNodes()->GetSolution(iPoint, iDim));
+        }
+      }
+      END_SU2_OMP_PARALLEL
+
+      CGeometry::UpdateGeometry(geo, config[val_iZone]);
+    }
+
     config[val_iZone]->SetGlobalParam(MAIN_SOLVER::HEAT_EQUATION, RUNTIME_HEAT_SYS);
     integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                       RUNTIME_HEAT_SYS, val_iZone, val_iInst);
-  }
 
-  /*--- FEA equations ---*/
-  config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_ELASTICITY, RUNTIME_FEA_SYS);
+    /*--- Restore the coordinates for the FEA solver. ---*/
+    if (nonlinear) {
+      SU2_OMP_PARALLEL_(for schedule(static))
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+        for (auto iDim = 0u; iDim < nDim; ++iDim) {
+          geo[MESH_0]->nodes->SetCoord(iPoint, iDim, Coords(iPoint, iDim));
+        }
+      }
+      END_SU2_OMP_PARALLEL
+    }
+  };
 
-  if (linear) {
-    /*--- Run the (one) iteration ---*/
+  auto Iterate = [&](unsigned long IntIter) {
+    config[val_iZone]->SetInnerIter(IntIter);
 
-    config[val_iZone]->SetInnerIter(0);
+    /*--- Heat transfer equations. ---*/
+    if (heat) IterateHeat();
 
+    /*--- FEA equations. ---*/
+    config[val_iZone]->SetGlobalParam(MAIN_SOLVER::FEM_ELASTICITY, RUNTIME_FEA_SYS);
     feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
 
     if (!disc_adj_fem) {
-      Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox,
-              val_iZone, INST_0);
-
-      /*--- Set the convergence monitor to true, to prevent the solver to stop in intermediate FSI subiterations ---*/
-      output->SetConvergence(true);
+      StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
+                         FFDBox, val_iZone, INST_0);
     }
+  };
 
-  } else if (nonlinear && !incremental_load) {
+
+  if (linear || (nonlinear && !incremental_load)) {
     /*--- THIS IS THE DIRECT APPROACH (NO INCREMENTAL LOAD APPLIED) ---*/
-
-    /*--- Keep the current inner iter, we need to restore it in discrete adjoint cases
-     * because file output depends on it. ---*/
-    const auto CurIter = config[val_iZone]->GetInnerIter();
-
     /*--- Newton-Raphson subiterations ---*/
 
     for (IntIter = 0; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
-      config[val_iZone]->SetInnerIter(IntIter);
-
-      feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
+      Iterate(IntIter);
 
       /*--- Limit to only one iteration for the discrete adjoint recording, restore inner iter (see above) ---*/
       if (disc_adj_fem) {
         config[val_iZone]->SetInnerIter(CurIter);
         break;
       }
-      StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
-                         FFDBox, val_iZone, INST_0);
-
-      if (StopCalc && (IntIter > 0)) break;
+      /*--- Linear elasticity without thermal effects only needs one iteration. ---*/
+      if (linear && !heat) {
+        output->SetConvergence(true);
+        break;
+      }
+      /*--- Normal stopping criteria. ---*/
+      if (StopCalc && IntIter > 0) break;
     }
+    return;
+  }
 
-  } else {
-    /*--- THIS IS THE INCREMENTAL LOAD APPROACH (only makes sense for nonlinear) ---*/
+  /*--- THIS IS THE INCREMENTAL LOAD APPROACH (only makes sense for nonlinear) ---*/
 
-    /*--- Assume the initial load increment as 1.0 ---*/
+  /*--- Assume the initial load increment as 1.0 ---*/
+  feaSolver->SetLoad_Increment(0, 1.0);
+  feaSolver->SetForceCoeff(1.0);
 
-    feaSolver->SetLoad_Increment(0, 1.0);
-    feaSolver->SetForceCoeff(1.0);
+  /*--- Run two nonlinear iterations to check if incremental loading can be skipped ---*/
+  for (IntIter = 0; IntIter < 2; ++IntIter) {
+    Iterate(IntIter);
+  }
 
-    /*--- Run two nonlinear iterations to check if incremental loading can be skipped ---*/
+  /*--- Early return if we already meet the convergence criteria. ---*/
+  if (StopCalc) return;
 
-    auto Iterate = [&](unsigned long IntIter) {
-      config[val_iZone]->SetInnerIter(IntIter);
-      feaIntegration->Structural_Iteration(geometry, solver, numerics, config, RUNTIME_FEA_SYS, val_iZone, val_iInst);
+  /*--- Check user-defined criteria to either increment loads or continue with NR iterations. ---*/
+  bool meetCriteria = true;
+  for (int i = 0; i < 3; ++i) {
+    meetCriteria &= (log10(feaSolver->GetRes_FEM(i)) < config[val_iZone]->GetIncLoad_Criteria(i));
+  }
 
-      StopCalc = Monitor(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement,
-                         FFDBox, val_iZone, INST_0);
-    };
-
-    for (IntIter = 0; IntIter < 2; ++IntIter) {
+  /*--- If the criteria is met, i.e. the load is not too large, continue the regular calculation. ---*/
+  if (meetCriteria) {
+    for (IntIter = 2; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
       Iterate(IntIter);
+      if (StopCalc) break;
     }
+    return;
+  }
 
-    /*--- Early return if we already meet the convergence criteria. ---*/
-    if (StopCalc) return;
+  /*--- If the criteria is not met, a whole set of subiterations for the different loads must be done.
+   * Restore solution to initial. Because we ramp the load from zero, in multizone cases it is not
+   * adequate to take "old values" as those will be for maximum loading on the previous outer iteration. ---*/
 
-    /*--- Check user-defined criteria to either increment loads or continue with NR iterations. ---*/
+  feaSolver->SetInitialCondition(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone],
+                                 TimeIter);
 
-    bool meetCriteria = true;
-    for (int i = 0; i < 3; ++i)
-      meetCriteria &= (log10(feaSolver->GetRes_FEM(i)) < config[val_iZone]->GetIncLoad_Criteria(i));
+  /*--- For the number of increments ---*/
+  for (auto iIncrement = 1ul; iIncrement <= nIncrements; iIncrement++) {
+    /*--- Set the load increment and the initial condition, and output the
+     * parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
 
-    /*--- If the criteria is met, i.e. the load is not too large, continue the regular calculation. ---*/
+    su2double loadIncrement = su2double(iIncrement) / nIncrements;
+    feaSolver->SetLoad_Increment(iIncrement, loadIncrement);
 
-    if (meetCriteria) {
-      /*--- Newton-Raphson subiterations ---*/
+    /*--- Set the convergence monitor to false, to force the solver to converge every subiteration. ---*/
+    output->SetConvergence(false);
 
-      for (IntIter = 2; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
-        Iterate(IntIter);
-        if (StopCalc) break;
-      }
+    if (rank == MASTER_NODE) cout << "\nIncremental load: increment " << iIncrement << endl;
 
-    }
+    /*--- Newton-Raphson subiterations ---*/
 
-    /*--- If the criteria is not met, a whole set of subiterations for the different loads must be done. ---*/
-
-    else {
-      /*--- Restore solution to initial. Because we ramp the load from zero, in multizone cases it is not
-       * adequate to take "old values" as those will be for maximum loading on the previous outer iteration. ---*/
-
-      feaSolver->SetInitialCondition(geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst], config[val_iZone],
-                                     TimeIter);
-
-      /*--- For the number of increments ---*/
-      for (auto iIncrement = 1ul; iIncrement <= nIncrements; iIncrement++) {
-        /*--- Set the load increment and the initial condition, and output the
-         *    parameters of UTOL, RTOL, ETOL for the previous iteration ---*/
-
-        su2double loadIncrement = su2double(iIncrement) / nIncrements;
-        feaSolver->SetLoad_Increment(iIncrement, loadIncrement);
-
-        /*--- Set the convergence monitor to false, to force the solver to converge every subiteration ---*/
-        output->SetConvergence(false);
-
-        if (rank == MASTER_NODE) cout << "\nIncremental load: increment " << iIncrement << endl;
-
-        /*--- Newton-Raphson subiterations ---*/
-
-        for (IntIter = 0; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
-          Iterate(IntIter);
-          if (StopCalc && (IntIter > 0)) break;
-        }
-      }
-      /*--- Just to be sure, set default increment settings. ---*/
-      feaSolver->SetLoad_Increment(0, 1.0);
+    for (IntIter = 0; IntIter < config[val_iZone]->GetnInner_Iter(); IntIter++) {
+      Iterate(IntIter);
+      if (StopCalc && IntIter > 0) break;
     }
   }
+  /*--- Just to be sure, set default increment settings. ---*/
+  feaSolver->SetLoad_Increment(0, 1.0);
 }
 
 void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,

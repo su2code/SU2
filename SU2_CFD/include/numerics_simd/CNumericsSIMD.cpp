@@ -28,7 +28,7 @@
  */
 
 #include "CNumericsSIMD.hpp"
-#include "flow/convection/roe.hpp"
+#include "flow/convection/upwind.hpp"
 #include "flow/convection/centered.hpp"
 #include "flow/diffusion/viscous_fluxes.hpp"
 
@@ -43,6 +43,9 @@ CNumericsSIMD* createUpwindIdealNumerics(const CConfig& config, int iMesh, const
   switch (config.GetKind_Upwind_Flow()) {
     case UPWIND::ROE:
       obj = new CRoeScheme<ViscousDecorator>(config, iMesh, turbVars);
+      break;
+    case UPWIND::MSW:
+      obj = new CMSWScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
     default:
       break;
