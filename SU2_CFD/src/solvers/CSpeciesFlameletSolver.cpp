@@ -81,7 +81,15 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     auto spark_init = flamelet_config_options.spark_init;
     spark_iter_start = ceil(spark_init[4]);
     spark_duration = ceil(spark_init[5]);
-    unsigned long iter = config->GetMultizone_Problem() ? config->GetOuterIter() : config->GetInnerIter();
+    unsigned long iter;
+    if (config->GetMultizone_Problem()) {
+      iter = config->GetOuterIter();
+    } else if (config->GetTime_Domain()) {
+      iter = config->GetTimeIter();
+    } else {
+      iter = config->GetInnerIter();
+    }
+    //unsigned long iter = (config->GetMultizone_Problem() || config->GetTime_Domain()) ? config->GetOuterIter() : config->GetInnerIter();
     ignition = ((iter >= spark_iter_start) && (iter <= (spark_iter_start + spark_duration)));
   }
 
@@ -98,7 +106,10 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     for (auto iVar = 0u; iVar < nVar; iVar++) scalars_vector[iVar] = scalars[iVar];
 
     /*--- Compute total source terms from the production and consumption. ---*/
-    unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector, F);
+
+    /*--- Only apply thickened flame correction factor to sources for steady problems. ---*/
+    su2double F_source = config->GetTime_Domain() ? 1.0 : 1.0 / F;
+    unsigned long misses = SetScalarSources(config, fluid_model_local, i_point, scalars_vector, F_source);
 
     if (ignition) {
       /*--- Apply source terms within spark radius. ---*/
