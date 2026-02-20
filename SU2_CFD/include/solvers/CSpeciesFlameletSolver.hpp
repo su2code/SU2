@@ -81,10 +81,11 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] iPoint - node ID.
    * \param[in] scalars - local scalar solution.
    * \param[in] table_source_names - variable names of scalar source terms.
+   * \param[in] F - flame thickness correction factor.
    * \return - within manifold bounds (0) or outside manifold bounds (1).
    */
   unsigned long SetScalarSources(const CConfig* config, CFluidModel* fluid_model_local, unsigned long iPoint,
-                                 const vector<su2double>& scalars);
+                                 const vector<su2double>& scalars, const su2double F=1.0);
 
   /*!
    * \brief Retrieve passive look-up data from manifold.
@@ -105,6 +106,14 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    */
   unsigned long SetPreferentialDiffusionScalars(CFluidModel* fluid_model_local,
                                                 unsigned long iPoint, const vector<su2double>& scalars);
+  
+  /*!
+   * \brief Calculate correction factor for flame propagation on coarse grids.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] iPoint - node ID.
+   * \return - flame thickness correction factor.
+   */                                              
+  su2double ThickenedFlameCorrection(CGeometry const * geometry, const unsigned long iPoint);   
 
  public:
   /*!
