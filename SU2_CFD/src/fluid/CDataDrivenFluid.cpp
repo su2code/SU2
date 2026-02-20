@@ -43,13 +43,6 @@ CDataDrivenFluid::CDataDrivenFluid(const CConfig* config, bool display) : CFluid
   /*--- Use physics-informed approach ---*/
   use_MLP_derivatives = datadriven_fluid_options.use_PINN;
 
-  /*--- Retrieve initial density and static energy values from config ---*/
-  val_custom_init_e = datadriven_fluid_options.rho_init_custom;
-  val_custom_init_rho = datadriven_fluid_options.e_init_custom;
-  custom_init_e = (val_custom_init_e != -1.0);
-  custom_init_rho = (val_custom_init_rho != -1.0);
-  
-
   /*--- Set up interpolation algorithm according to data-driven method. Currently only MLP's are supported. ---*/
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
@@ -205,13 +198,10 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   dTdrho_e = -Temperature * Temperature * d2sdedrho;
 
   /*--- Compute speed of sound. ---*/
-  const su2double blue_term = (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
-  const su2double green_term = (-Temperature * d2sde2 * dsdrho_e + d2sdedrho);
-
-  SoundSpeed2 = -Density * Temperature * (blue_term - Density * green_term * (dsdrho_e / dsde_rho));
-
   dPde_rho = -rho_2 * Temperature * (-Temperature * (d2sde2 * dsdrho_e) + d2sdedrho);
   dPdrho_e = - Density * Temperature * (dsdrho_e * (2 - Density * Temperature * d2sdedrho) + Density * d2sdrho2);
+
+  SoundSpeed2 = dPdrho_e - (dsdrho_e / dsde_rho) * dPde_rho;
 
   /*--- Compute enthalpy and entropy derivatives required for Giles boundary conditions. ---*/
   dhdrho_e = -Pressure * (1 / rho_2) + dPdrho_e / Density;
@@ -243,10 +233,10 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
 }
 
 void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
-
-  /*--- Approximate density and static energy with ideal gas law. ---*/
-  rho_start = P / (R_idealgas * T);
-  e_start = Cv_idealgas * T;
+  /*--- Find nearest neighbor on pressure-temperature thermodynamic table ---*/
+  const auto iNearest = coarse_TD_table.FindNode(iP, P, iT, T);
+  e_start = vals_e_table[iNearest];
+  rho_start = vals_rho_table[iNearest];
   
   /*--- Run 2D Newton solver for pressure and temperature ---*/
   Run_Newton_Solver(P, T, Pressure, Temperature, dPdrho_e, dPde_rho, dTdrho_e, dTde_rho);
@@ -258,41 +248,40 @@ void CDataDrivenFluid::SetTDState_Prho(su2double P, su2double rho) {
 }
 
 void CDataDrivenFluid::SetEnergy_Prho(su2double P, su2double rho) {
-  /*--- Run 1D Newton solver for pressure at constant density. ---*/
+  /*--- Find nearest neighbor on pressure-density thermodynamic table ---*/
+  const auto iNearest = coarse_TD_table.FindNode(iP, P, iRho, rho);
+  StaticEnergy = vals_e_table[iNearest];
   Density = rho;
 
-  /*--- Approximate static energy through ideal gas law. ---*/
-  StaticEnergy = Cv_idealgas * (P / (R_idealgas * rho));
-
+  /*--- Run 1D Newton solver for pressure at constant density. ---*/
   Run_Newton_Solver(P, Pressure, StaticEnergy, dPde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_rhoT(su2double rho, su2double T) {
-  /*--- Run 1D Newton solver for temperature at constant density. ---*/
+  /*--- Find nearest neighbor on density-temperature thermodynamic table ---*/
+  const auto iNearest = coarse_TD_table.FindNode(iRho, rho, iT, T);
+  StaticEnergy = vals_e_table[iNearest];
   Density = rho;
 
-  /*--- Approximate static energy through ideal gas law. ---*/
-  StaticEnergy = Cv_idealgas * T;
-
+  /*--- Run 1D Newton solver for temperature at constant density. ---*/
   Run_Newton_Solver(T, Temperature, StaticEnergy, dTde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_hs(su2double h, su2double s) {
-  /*--- Run 2D Newton solver for enthalpy and entropy. ---*/
-
+  /*--- Initial values for density and static energy from previous thermodynamic call. ---*/
   e_start = StaticEnergy;
   rho_start = Density;
+  /*--- Run 2D Newton solver for enthalpy and entropy. ---*/
   Run_Newton_Solver(h, s, Enthalpy, Entropy, dhdrho_e, dhde_rho, dsdrho_e, dsde_rho);
 }
 
 void CDataDrivenFluid::SetTDState_Ps(su2double P, su2double s) {
-  /*--- Run 2D Newton solver for pressure and entropy ---*/
-
+  /*--- Initial values for density and static energy from previous thermodynamic call. ---*/
   e_start = StaticEnergy;
-  rho_start = Density;
+  rho_start =  Density;
+  /*--- Run 2D Newton solver for pressure and entropy ---*/
   Run_Newton_Solver(P, s, Pressure, Entropy, dPdrho_e, dPde_rho, dsdrho_e, dsde_rho);
 }
-
 
 void CDataDrivenFluid::ComputeDerivativeNRBC_Prho(su2double P, su2double rho) {
   SetTDState_Prho(P, rho);
@@ -354,7 +343,7 @@ void CDataDrivenFluid::Run_Newton_Solver(const su2double Y1_target, const su2dou
 
   bool converged = false;
   unsigned long Iter = 0;
-
+  su2double extra_relaxation{1.0};
   /*--- Initiating Newton solver ---*/
   while (!converged && (Iter < MaxIter_Newton)) {
     /*--- Determine thermodynamic state based on current density and energy. ---*/
@@ -363,7 +352,7 @@ void CDataDrivenFluid::Run_Newton_Solver(const su2double Y1_target, const su2dou
     /*--- Determine residuals. ---*/
     const su2double delta_Y1 = Y1 - Y1_target;
     const su2double delta_Y2 = Y2 - Y2_target;
-
+    
     /*--- Continue iterative process if residuals are outside tolerances. ---*/
     if ((abs(delta_Y1 / Y1) < Newton_Tolerance) && (abs(delta_Y2 / Y2) < Newton_Tolerance)) {
       converged = true;
@@ -373,9 +362,17 @@ void CDataDrivenFluid::Run_Newton_Solver(const su2double Y1_target, const su2dou
       const su2double delta_rho = (dY2de * delta_Y1 - dY1de * delta_Y2) / determinant;
       const su2double delta_e = (-dY2drho * delta_Y1 + dY1drho * delta_Y2) / determinant;
 
+      extra_relaxation = 1.0;
+      /*--- Check if updated values exceed the bounds. If so, apply extra relaxation. ---*/
+      if (rho - delta_rho <= rho_min) extra_relaxation = min(extra_relaxation, 0.5*(rho - rho_min) / (Newton_Relaxation * delta_rho));
+      if (rho - delta_rho >= rho_max) extra_relaxation = min(extra_relaxation, 0.5*(rho - rho_max) / (Newton_Relaxation * delta_rho));
+      
+      if (e - delta_e <= e_min) extra_relaxation = min(extra_relaxation, 0.5*(e - e_min) / (Newton_Relaxation * delta_e));
+      if (e - delta_e >= e_max) extra_relaxation = min(extra_relaxation, 0.5*(e - e_max) / (Newton_Relaxation * delta_e));
+
       /*--- Update density and energy values. ---*/
-      rho -= Newton_Relaxation * delta_rho;
-      e -= Newton_Relaxation * delta_e;
+      rho -= extra_relaxation * Newton_Relaxation * delta_rho;
+      e -= extra_relaxation * Newton_Relaxation * delta_e;
     }
     Iter++;
   }
@@ -426,9 +423,7 @@ void CDataDrivenFluid::Run_Newton_Solver(const su2double Y_target, const su2doub
 }
 
 void CDataDrivenFluid::ComputeIdealGasQuantities() {
-  /*--- Compute approximate ideal gas properties from the middle of the reference data set. These properties are used to approximate the initial condition of the Newton solvers using the ideal gas law. ---*/
-  su2double rho_average = 1.0, e_average = 1.0;
-
+ 
   /*--- Obtain minimum and maximum density and static energy from data set. ---*/
   switch (Kind_DataDriven_Method)
   {
@@ -437,8 +432,6 @@ void CDataDrivenFluid::ComputeIdealGasQuantities() {
     e_min = *lookup_table->GetTableLimitsY().first;
     rho_max = *lookup_table->GetTableLimitsX().second;
     e_max = *lookup_table->GetTableLimitsY().second;
-    rho_average = 0.5*(*lookup_table->GetTableLimitsX().first + *lookup_table->GetTableLimitsX().second);
-    e_average = 0.5*(*lookup_table->GetTableLimitsY().first + *lookup_table->GetTableLimitsY().second);
     break;
   case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP
@@ -446,27 +439,68 @@ void CDataDrivenFluid::ComputeIdealGasQuantities() {
     e_min = lookup_mlp->GetInputNorm(iomap_rhoe, idx_e).first;
     rho_max = lookup_mlp->GetInputNorm(iomap_rhoe, idx_rho).second;
     e_max = lookup_mlp->GetInputNorm(iomap_rhoe, idx_e).second;
-    rho_average = lookup_mlp->GetInputOffset(iomap_rhoe, idx_rho);
-    e_average = lookup_mlp->GetInputOffset(iomap_rhoe, idx_e);
 #endif
     break;
   default:
     break;
   }
-  /*--- Compute thermodynamic state from middle of data set. ---*/
-  
-  su2double rho_init = custom_init_rho ? val_custom_init_rho : rho_average;
-  su2double e_init = custom_init_e ? val_custom_init_e : e_average;
-  
-  SetTDState_rhoe(rho_init, e_init);
-  rho_median = rho_init;
-  e_median = e_init;
-  P_middle = Pressure;
-  T_middle = Temperature;
-
-  R_idealgas = P_middle / (rho_init * T_middle);
-  Cv_idealgas = Cv;
-  Cp_idealgas = Cp;
-  
-  gamma_idealgas = (R_idealgas / Cv_idealgas) + 1;
+  /*--- Create a five-by-five thermodynamic table used to provide initial guess for Newton solver ---*/
+  coarse_TD_table = MiniTable2D();
+  const size_t nTable_coarse{5},
+               nP_table = nTable_coarse*nTable_coarse;
+  /*--- Variables included in table: density, static energy, pressure, temperature ---*/
+  coarse_TD_table.SetNVars(4);
+  coarse_TD_table.SetNPoints(nP_table);
+  coarse_TD_table.SizeTable();
+  /*--- Discretize thermodynamic space in terms of density and static energy ---*/
+  vals_rho_table.resize(nP_table);
+  vals_e_table.resize(nP_table);
+  const su2double delta_rho = (rho_max - rho_min) / (nTable_coarse-1);
+  const su2double delta_e = (e_max - e_min) / (nTable_coarse-1);
+  /*--- Calculate thermodynamic states on the table nodes ---*/
+  size_t kNode=0;
+  for (auto iNode=0u; iNode<nTable_coarse; iNode++) {
+    for (auto jNode=0u; jNode<nTable_coarse; jNode++) {
+      vals_rho_table[kNode] = rho_min + delta_rho * iNode;
+      vals_e_table[kNode] = e_min + delta_e * jNode;
+      SetTDState_rhoe(vals_rho_table[kNode], vals_e_table[kNode]);
+      coarse_TD_table.SetTableData(iRho, kNode, vals_rho_table[kNode]);
+      coarse_TD_table.SetTableData(iE, kNode, vals_e_table[kNode]);
+      coarse_TD_table.SetTableData(iP, kNode, Pressure);
+      coarse_TD_table.SetTableData(iT, kNode, Temperature);
+      kNode++;
+    }
+  }
+  coarse_TD_table.ScaleTableData();
 }
+
+void MiniTable2D::SizeTable() {
+    TD_data.resize(n_vars,nP);
+}
+
+void MiniTable2D::ScaleTableData() {
+    TD_data_max.resize(n_vars);
+    TD_data_min.resize(n_vars);
+    for (auto iVar =0u; iVar<n_vars; iVar++) {
+        TD_data_min[iVar] = *min_element(TD_data[iVar], TD_data[iVar]+nP);
+        TD_data_max[iVar] = *max_element(TD_data[iVar], TD_data[iVar]+nP);
+        for (auto iX=0u; iX<nP; iX++)
+            TD_data[iVar][iX] = (TD_data[iVar][iX]-TD_data_min[iVar])/(TD_data_max[iVar]-TD_data_min[iVar]);
+    }
+}
+
+size_t MiniTable2D::FindNode(const size_t iX, const su2double val_x, const size_t iY, const su2double val_y) const {
+    const su2double val_x_norm = (val_x - TD_data_min[iX])/(TD_data_max[iX] - TD_data_min[iX]),
+                    val_y_norm = (val_y - TD_data_min[iY])/(TD_data_max[iY] - TD_data_min[iY]);
+    const auto vals_table_x = TD_data[iX], vals_table_y = TD_data[iY];
+    size_t iMin{0};
+    su2double dist_max{1e3};
+    for (size_t iQ=0;iQ<nP;iQ++) {
+        su2double dist = pow(val_x_norm - vals_table_x[iQ],2) + pow(val_y_norm - vals_table_y[iQ],2);
+        if (dist < dist_max) {
+            iMin = iQ;
+            dist_max = dist;
+        }
+    }
+    return iMin;
+}  
