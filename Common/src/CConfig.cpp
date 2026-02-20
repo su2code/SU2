@@ -1229,10 +1229,6 @@ void CConfig::SetConfig_Options() {
   addStringListOption("FILENAMES_INTERPOLATOR", datadriven_ParsedOptions.n_filenames, datadriven_ParsedOptions.datadriven_filenames);
   /*!\brief DATADRIVEN_NEWTON_RELAXATION \n DESCRIPTION: Relaxation factor for Newton solvers in data-driven fluid model. \n \ingroup Config*/
   addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", datadriven_ParsedOptions.Newton_relaxation, 1.0);
-  /*!\brief DATADRIVEN_INITIAL_DENSITY \n DESCRIPTION: Optional initial value for fluid density used for the Newton solver processes in the data-driven fluid model. */
-  addDoubleOption("DATADRIVEN_INITIAL_DENSITY", datadriven_ParsedOptions.rho_init_custom, -1.0);
-  /*!\brief DATADRIVEN_INITIAL_ENERGY \n DESCRIPTION: Optional initial value for fluid static energy used for the Newton solver processes in the data-driven fluid model. */
-  addDoubleOption("DATADRIVEN_INITIAL_ENERGY", datadriven_ParsedOptions.e_init_custom, -1.0);
   /*!\biref USE_PINN \n DESCRIPTION: Use physics-informed approach for the entropy-based fluid model. \n \ingroup Config*/
   addBoolOption("USE_PINN",datadriven_ParsedOptions.use_PINN, false);
 
@@ -3179,6 +3175,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("RAMP_ROTATION_FRAME_COEFF is deprectaed. Use RAMP_MOTION_FRAME_COEFF instead");
           else if (!option_name.compare("INC_INLET_USENORMAL"))
             newString.append("INC_INLET_USENORMAL is deprecated. Use INLET_USE_NORMAL instead (compatible with all solvers).\n\n");
+          else if (!option_name.compare("DATADRIVEN_INITIAL_ENERGY") || !option_name.compare("DATADRIVEN_INITIAL_DENSITY"))
+            newString.append("DATADRIVEN_INITIAL_ENERGY and DATADRIVEN_INITIAL_DENSITY are deprecated, there are no replacements.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/
