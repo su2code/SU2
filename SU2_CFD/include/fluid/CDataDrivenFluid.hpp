@@ -45,7 +45,6 @@
 class MiniTable2D {
     size_t nP{5},
            n_vars;
-    //vector<vector<su2double>> TD_data;
     su2activematrix TD_data;
     su2vector<su2double> TD_data_min,TD_data_max;
     public:
