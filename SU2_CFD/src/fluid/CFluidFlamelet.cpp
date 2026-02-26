@@ -224,23 +224,6 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
   val_vars_PD[FLAMELET_PREF_DIFF_SCALARS::I_BETA_MIXFRAC] = beta_mixfrac;
 
   preferential_diffusion = flamelet_options.preferential_diffusion;
-  switch (Kind_DataDriven_Method) {
-    case ENUM_DATADRIVEN_METHOD::LUT:
-      preferential_diffusion = look_up_table->CheckForVariables(varnames_PD);
-      break;
-    case ENUM_DATADRIVEN_METHOD::MLP:
-#ifdef USE_MLPCPP
-      n_betas = 0;
-      for (auto iMLP = 0u; iMLP < datadriven_fluid_options.n_filenames; iMLP++) {
-        auto outputMap = lookup_mlp->FindVariableIndices(iMLP, varnames_PD, false);
-        n_betas += outputMap.size();
-      }
-      preferential_diffusion = (n_betas == varnames_PD.size());
-#endif
-      break;
-    default:
-      break;
-  }
 
   if (!preferential_diffusion && flamelet_options.preferential_diffusion)
     SU2_MPI::Error("Preferential diffusion scalars not included in flamelet manifold.", CURRENT_FUNCTION);
@@ -346,7 +329,7 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
       refs_vars.resize(output_refs.size());
       for (auto iVar = 0u; iVar < output_refs.size(); iVar++) refs_vars[iVar] = &output_refs[iVar];
 #ifdef USE_MLPCPP
-      extrapolation = lookup_mlp->PredictANN(iomap_Current, input_scalar, refs_vars);
+      lookup_mlp->Predict(*iomap_Current, input_scalar, refs_vars);
 #endif
       break;
     default:
