@@ -1,0 +1,63 @@
+name: Windows Native Build
+
+on:
+  push:
+    branches:
+      - develop
+      - master
+  pull_request:
+    branches:
+      - develop
+      - master
+
+jobs:
+  build:
+    name: Build SU2 (Windows native)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-meson
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-python
+            mingw-w64-x86_64-zlib
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure (no-MPI)
+        run: |
+          meson setup build \
+            --buildtype=release \
+            -Dwith-mpi=disabled \
+            -Denable-cgns=true \
+            -Denable-tecio=false \
+            --prefix="$PWD/install"
+
+      - name: Build
+        run: meson compile -C build -j2
+
+      - name: Install
+        run: meson install -C build
+
+      - name: Create archive
+        run: |
+          cd install
+          7z a -tzip ../SU2-windows-native.zip bin/*
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: SU2-windows-native
+          path: SU2-windows-native.zip
