@@ -328,8 +328,6 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
       const su2double b1_coeff = Volume_VTemp_Global  - turb_b1_coeff_Global - b1_coeff_new_Global;
       const su2double b2_coeff = -dTdn_Global;
 
-      cout<<"b1_coeff_new_Global :: "<<b1_coeff_new_Global<<endl;
-      cout<<"turb_b1_coeff_Global :: "<<turb_b1_coeff_Global<<endl;
 
       /*--- Find the value of Lambda L by solving the quadratic equation ---*/
       const su2double pred_lambda = (- b1_coeff + sqrt(b1_coeff * b1_coeff - 4 * b0_coeff * b2_coeff))/(2 * b0_coeff);
