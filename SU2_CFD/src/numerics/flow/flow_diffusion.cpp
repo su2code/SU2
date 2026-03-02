@@ -458,14 +458,17 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
 
-
-  unsigned long timeIter = config->GetTimeIter();
-  unsigned long restartIter = config->GetRestart_Iter();
   if (config->GetStochastic_Backscatter()) {
     for (iDim = 0; iDim < nDim; iDim++)
       Mean_StochVar[iDim] = 0.5*(stochVar_i[iDim] + stochVar_j[iDim]);
+    su2double tkeEstim_i = 0.0, tkeEstim_j = 0.0;
+    if (max(lesMode_i, lesMode_j) > config->GetStochFdThreshold()) {
+      tkeEstim_i = pow(Eddy_Viscosity_i/dist_i, 2);
+      tkeEstim_j = pow(Eddy_Viscosity_j/dist_j, 2);
+    }
+    su2double Mean_turb_ke_estim = 0.5*(tkeEstim_i + tkeEstim_j);
     su2double intensityCoeff = ComputeStochRelaxFactor(config);
-    ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_turb_ke,
+    ComputeStochReynStress(Mean_PrimVar[nDim+2], Mean_turb_ke_estim,
                            Mean_StochVar, intensityCoeff, stochReynStress);
   }
 
@@ -645,14 +648,17 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
 
-
-  unsigned long timeIter = config->GetTimeIter();
-  unsigned long restartIter = config->GetRestart_Iter();
   if (config->GetStochastic_Backscatter()) {
     for (iDim = 0; iDim < nDim; iDim++)
       Mean_StochVar[iDim] = 0.5*(stochVar_i[iDim] + stochVar_j[iDim]);
+    su2double tkeEstim_i = 0.0, tkeEstim_j = 0.0;
+    if (max(lesMode_i, lesMode_j) > config->GetStochFdThreshold()) {
+      tkeEstim_i = pow(Eddy_Viscosity_i/dist_i, 2);
+      tkeEstim_j = pow(Eddy_Viscosity_j/dist_j, 2);
+    }
+    su2double Mean_turb_ke_estim = 0.5*(tkeEstim_i + tkeEstim_j);
     su2double intensityCoeff = ComputeStochRelaxFactor(config);
-    ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_turb_ke,
+    ComputeStochReynStress(Mean_PrimVar[nDim+2], Mean_turb_ke_estim,
                            Mean_StochVar, intensityCoeff, stochReynStress);
   }
 
@@ -984,13 +990,17 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
 
   /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
 
-  unsigned long timeIter = config->GetTimeIter();
-  unsigned long restartIter = config->GetRestart_Iter();
   if (config->GetStochastic_Backscatter()) {
     for (iDim = 0; iDim < nDim; iDim++)
       Mean_StochVar[iDim] = 0.5*(stochVar_i[iDim] + stochVar_j[iDim]);
+    su2double tkeEstim_i = 0.0, tkeEstim_j = 0.0;
+    if (max(lesMode_i, lesMode_j) > config->GetStochFdThreshold()) {
+      tkeEstim_i = pow(Eddy_Viscosity_i/dist_i, 2);
+      tkeEstim_j = pow(Eddy_Viscosity_j/dist_j, 2);
+    }
+    su2double Mean_turb_ke_estim = 0.5*(tkeEstim_i + tkeEstim_j);
     su2double intensityCoeff = ComputeStochRelaxFactor(config);
-    ComputeStochReynStress(nDim, Mean_PrimVar[nDim+2], Mean_turb_ke,
+    ComputeStochReynStress(Mean_PrimVar[nDim+2], Mean_turb_ke_estim,
                            Mean_StochVar, intensityCoeff, stochReynStress);
   }
 

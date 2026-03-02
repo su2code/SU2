@@ -472,23 +472,21 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
   /*--- Stochastic variables from Langevin equations (Stochastic Backscatter Model). ---*/
 
   if (backscatter) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      numerics->SetStochVar(iDim, turbNodes->GetSolution(iPoint, iDim+1),
-                                  turbNodes->GetSolution(jPoint, iDim+1));
-    su2double DES_length_i = turbNodes->GetDES_LengthScale(iPoint);
-    su2double DES_length_j = turbNodes->GetDES_LengthScale(jPoint);
-    su2double lesMode_i = (DES_length_i > 1e-10) ? turbNodes->GetLES_Mode(iPoint) : 0.0;
-    su2double lesMode_j = (DES_length_j > 1e-10) ? turbNodes->GetLES_Mode(jPoint) : 0.0;
-    su2double tke_i = 0.0, tke_j = 0.0;
-    if (max(lesMode_i, lesMode_j) > config->GetStochFdThreshold()) {
-      su2double eddyVisc_i = turbNodes->GetmuT(iPoint) / nodes->GetDensity(iPoint);
-      su2double eddyVisc_j = turbNodes->GetmuT(jPoint) / nodes->GetDensity(jPoint);
-      su2double strainMag_i = nodes->GetStrainMag(iPoint);
-      su2double strainMag_j = nodes->GetStrainMag(jPoint);
-      tke_i = strainMag_i * eddyVisc_i;
-      tke_j = strainMag_j * eddyVisc_j;
+    if (config->GetSBS_Ctau() > 0.0) {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        numerics->SetStochVar(iDim, turbNodes->GetSolution(iPoint, iDim+1),
+                                    turbNodes->GetSolution(jPoint, iDim+1));
+    } else {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        numerics->SetStochVar(iDim, turbNodes->GetLangevinSourceTerms(iPoint, iDim),
+                                    turbNodes->GetLangevinSourceTerms(jPoint, iDim));
     }
-    numerics->SetTurbKineticEnergy(tke_i, tke_j);
+    su2double DES_length_i = max(turbNodes->GetDES_LengthScale(iPoint), 1e-10);
+    su2double DES_length_j = max(turbNodes->GetDES_LengthScale(jPoint), 1e-10);
+    su2double lesMode_i = turbNodes->GetLES_Mode(iPoint);
+    su2double lesMode_j = turbNodes->GetLES_Mode(jPoint);
+    numerics->SetDistance(DES_length_i, DES_length_j);
+    numerics->SetLES_Mode(lesMode_i, lesMode_j);
   }
 
   /*--- Wall shear stress values (wall functions) ---*/

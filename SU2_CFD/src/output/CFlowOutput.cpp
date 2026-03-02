@@ -1032,7 +1032,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
     case TURB_FAMILY::SA:
       /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
       AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
-      if (config->GetStochastic_Backscatter()) {
+      if (config->GetStochastic_Backscatter() && config->GetSBS_Ctau() > 0.0) {
         /// DESCRIPTION: Root-mean square residual of stochastic vector x-component (Stochastic Backscatter Model).
         AddHistoryOutput("RMS_STOCH_VAR-X", "rms[stoch_x]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
         /// DESCRIPTION: Root-mean square residual of stochastic vector y-component (Stochastic Backscatter Model).
@@ -1095,7 +1095,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
     case TURB_FAMILY::SA:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
       AddHistoryOutput("MAX_NU_TILDE", "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
-      if (config->GetStochastic_Backscatter()) {
+      if (config->GetStochastic_Backscatter() && config->GetSBS_Ctau() > 0.0) {
         /// DESCRIPTION: Maximum residual of stochastic vector x-component (Stochastic Backscatter Model).
         AddHistoryOutput("MAX_STOCH_VAR-X", "max[stoch_x]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
         /// DESCRIPTION: Maximum residual of stochastic vector y-component (Stochastic Backscatter Model).
@@ -1244,7 +1244,7 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
     case TURB_FAMILY::SA:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
       SetHistoryOutputValue("MAX_NU_TILDE", log10(solver[TURB_SOL]->GetRes_Max(0)));
-      if (config->GetStochastic_Backscatter()) {
+      if (config->GetStochastic_Backscatter() && config->GetSBS_Ctau() > 0.0) {
         SetHistoryOutputValue("RMS_STOCH_VAR-X", log10(solver[TURB_SOL]->GetRes_RMS(1)));
         SetHistoryOutputValue("RMS_STOCH_VAR-Y", log10(solver[TURB_SOL]->GetRes_RMS(2)));
         if (nDim==3) SetHistoryOutputValue("RMS_STOCH_VAR-Z", log10(solver[TURB_SOL]->GetRes_RMS(3)));
@@ -1254,7 +1254,7 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
       }
       if (multiZone) {
         SetHistoryOutputValue("BGS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_BGS(0)));
-        if (config->GetStochastic_Backscatter()) {
+        if (config->GetStochastic_Backscatter() && config->GetSBS_Ctau() > 0.0) {
           SetHistoryOutputValue("BGS_STOCH_VAR-X", log10(solver[TURB_SOL]->GetRes_BGS(1)));
           SetHistoryOutputValue("BGS_STOCH_VAR-Y", log10(solver[TURB_SOL]->GetRes_BGS(2)));
           if (nDim==3) SetHistoryOutputValue("BGS_STOCH_VAR-Z", log10(solver[TURB_SOL]->GetRes_BGS(3)));
@@ -1582,9 +1582,11 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
     AddVolumeOutput("LES_SENSOR","LES_Sensor","DDES","LES sensor value");
     if (config->GetStochastic_Backscatter()) {
-      AddVolumeOutput("STOCHVAR_X", "StochVar_x", "BACKSCATTER", "x-component of the stochastic vector potential");
-      AddVolumeOutput("STOCHVAR_Y", "StochVar_y", "BACKSCATTER", "y-component of the stochastic vector potential");
-      if (nDim==3) AddVolumeOutput("STOCHVAR_Z", "StochVar_z", "BACKSCATTER", "z-component of the stochastic vector potential");
+      if (config->GetSBS_Ctau() > 0.0) {
+        AddVolumeOutput("STOCHVAR_X", "StochVar_x", "BACKSCATTER", "x-component of the stochastic vector potential");
+        AddVolumeOutput("STOCHVAR_Y", "StochVar_y", "BACKSCATTER", "y-component of the stochastic vector potential");
+        if (nDim==3) AddVolumeOutput("STOCHVAR_Z", "StochVar_z", "BACKSCATTER", "z-component of the stochastic vector potential");
+      }
       AddVolumeOutput("STOCHSOURCE_X", "StochSource_x", "BACKSCATTER", "x-component of the stochastic source vector");
       AddVolumeOutput("STOCHSOURCE_Y", "StochSource_y", "BACKSCATTER", "y-component of the stochastic source vector");
       if (nDim==3) AddVolumeOutput("STOCHSOURCE_Z", "StochSource_z", "BACKSCATTER", "z-component of the stochastic source vector");
@@ -1691,9 +1693,11 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
     SetVolumeOutputValue("LES_SENSOR", iPoint, Node_Flow->GetLES_Mode(iPoint));
     if (config->GetStochastic_Backscatter()) {
-      SetVolumeOutputValue("STOCHVAR_X", iPoint, Node_Turb->GetSolution(iPoint, 1));
-      SetVolumeOutputValue("STOCHVAR_Y", iPoint, Node_Turb->GetSolution(iPoint, 2));
-      if (nDim==3) SetVolumeOutputValue("STOCHVAR_Z", iPoint, Node_Turb->GetSolution(iPoint, 3));
+      if (config->GetSBS_Ctau() > 0.0) {
+        SetVolumeOutputValue("STOCHVAR_X", iPoint, Node_Turb->GetSolution(iPoint, 1));
+        SetVolumeOutputValue("STOCHVAR_Y", iPoint, Node_Turb->GetSolution(iPoint, 2));
+        if (nDim==3) SetVolumeOutputValue("STOCHVAR_Z", iPoint, Node_Turb->GetSolution(iPoint, 3));
+      }
       SetVolumeOutputValue("STOCHSOURCE_X", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 0));
       SetVolumeOutputValue("STOCHSOURCE_Y", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 1));
       if (nDim==3) SetVolumeOutputValue("STOCHSOURCE_Z", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 2));
@@ -1715,13 +1719,13 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       }
       strainMag2 *= 2.0;
       su2double tke_estim = 0.0;
-      if (lesSensor > threshold) tke_estim = sqrt(strainMag2) * nu_t;
+      if (lesSensor > threshold) tke_estim = pow(nu_t/DES_lengthscale, 2);
       const su2double csi_x = Node_Turb->GetSolution(iPoint, 1);
       const su2double csi_y = Node_Turb->GetSolution(iPoint, 2);
       const su2double csi_z = Node_Turb->GetSolution(iPoint, 3);
-      const su2double R_xy =   mag * tke_estim * csi_z;
-      const su2double R_xz = - mag * tke_estim * csi_y;
-      const su2double R_yz =   mag * tke_estim * csi_x;
+      const su2double R_xy = - mag * tke_estim * csi_z;
+      const su2double R_xz = + mag * tke_estim * csi_y;
+      const su2double R_yz = - mag * tke_estim * csi_x;
       const su2double energy_res_to_mod = nu_t * strainMag2;
       const auto vorticity = Node_Flow->GetVorticity(iPoint);
       const su2double energy_backscatter = R_xy*vorticity[2] - R_xz*vorticity[1] + R_yz*vorticity[0];
@@ -1755,23 +1759,13 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       const su2double mag = config->GetSBS_Cmag();
       const su2double threshold = config->GetStochFdThreshold();
       su2double tke_estim = 0.0;
-      su2double strainMag2 = 0.0;
-      for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-        strainMag2 += pow(vel_grad(iDim, iDim), 2);
-      }
-      strainMag2 += 2.0*pow(0.5*(vel_grad(0,1) + vel_grad(1,0)), 2);
-      if (nDim == 3) {
-        strainMag2 += 2.0*pow(0.5*(vel_grad(0,2) + vel_grad(2,0)), 2);
-        strainMag2 += 2.0*pow(0.5*(vel_grad(1,2) + vel_grad(2,1)), 2);
-      }
-      strainMag2 *= 2.0;
-      if (lesSensor > threshold) tke_estim = sqrt(strainMag2) * nu_t;
+      if (lesSensor > threshold) tke_estim = pow(nu_t/DES_lengthscale, 2);
       const su2double csi_x = Node_Turb->GetSolution(iPoint, 1);
       const su2double csi_y = Node_Turb->GetSolution(iPoint, 2);
       const su2double csi_z = Node_Turb->GetSolution(iPoint, 3);
-      const su2double R_xy =   mag * tke_estim * csi_z;
-      const su2double R_xz = - mag * tke_estim * csi_y;
-      const su2double R_yz =   mag * tke_estim * csi_x;
+      const su2double R_xy = - mag * tke_estim * csi_z;
+      const su2double R_xz = + mag * tke_estim * csi_y;
+      const su2double R_yz = - mag * tke_estim * csi_x;
       SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_12", iPoint, -R_xy);
       SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_13", iPoint, -R_xz);
       SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_23", iPoint, -R_yz);

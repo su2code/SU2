@@ -121,18 +121,12 @@ class CSourceBase_TurbSA : public CNumerics {
                                      su2double threshold) {
 
     const su2double& nue = ScalarVar_i[0];
-    const auto& density = V_i[idx.Density()];
-    const su2double limiterRANS = 0.1;
-    const su2double timeStepFrac = 0.2;
     const su2double nut = max(nue*var.fv1, 1e-10);
     const su2double delta = lengthScale/DES_const;
 
     if (delta > 1e-10) {
 
       su2double tTurb = ct*pow(delta, 2)/nut;
-      su2double blendingFactor = DES_const*DES_const/ct*(1.0-lesMode_i) + lesMode_i;
-      tTurb *= blendingFactor;
-      tTurb = max(timeStep*timeStepFrac, min(tTurb, timeStep/timeStepFrac));
       su2double tRat = timeStep / tTurb;
     
       su2double corrFac = 1.0;
@@ -143,15 +137,15 @@ class CSourceBase_TurbSA : public CNumerics {
       }
     
       su2double scaleFactor = 0.0;
-      if (lesMode_i > threshold) scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * density * corrFac;
+      if (lesMode_i > threshold) scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * corrFac;
 
       for (unsigned short iVar = 1; iVar < nVar; iVar++) {
-        Residual[iVar] = scaleFactor * stochSource[iVar-1] - 1.0/tTurb * density * ScalarVar_i[iVar];
+        Residual[iVar] = scaleFactor * stochSource[iVar-1] - 1.0/tTurb * ScalarVar_i[iVar];
         Residual[iVar] *= Volume;
       }
 
       for (unsigned short iVar = 1; iVar < nVar; iVar++ )
-        Jacobian_i[iVar][iVar] = -1.0/tTurb * density * Volume;
+        Jacobian_i[iVar][iVar] = -1.0/tTurb * Volume;
 
     }
 
@@ -165,19 +159,18 @@ class CSourceBase_TurbSA : public CNumerics {
     su2double nut = ScalarVar_i[0] * var.fv1;
     su2double tke = 0.0;
     const su2double limiter = 5.0;
-    if (lesMode_i > threshold) tke = nut * StrainMag_i;
+    if (lesMode_i > threshold) tke = pow(nut/dist_i, 2);
 
-    su2double R12 =   Cmag * tke * ScalarVar_i[3];
-    su2double R13 = - Cmag * tke * ScalarVar_i[2];
-    su2double R23 =   Cmag * tke * ScalarVar_i[1];
+    su2double R12 = - Cmag * tke * ScalarVar_i[3];
+    su2double R13 = + Cmag * tke * ScalarVar_i[2];
+    su2double R23 = - Cmag * tke * ScalarVar_i[1];
 
     su2double RGradU = R12*Vorticity_i[2] - R13*Vorticity_i[1] + R23*Vorticity_i[0];
 
-    su2double stochProdK = - RGradU;
     su2double Ji_3 = pow(var.Ji, 3);
     su2double Dfv1Dnut = 3.0 * var.fv1 * var.cv1_3 / (var.cv1_3 + Ji_3);
     su2double fac = 1.0 / (var.fv1 + ScalarVar_i[0]*Dfv1Dnut);
-    su2double stochProdNut = stochProdK * dist_i*dist_i/(2.0*ScalarVar_i[0]) * fac;
+    su2double stochProdNut = RGradU * dist_i*dist_i/(2.0*ScalarVar_i[0]) * fac;
     stochProdNut = max(-limiter*prod, min(limiter*prod, stochProdNut));
 
     prod += stochProdNut;
@@ -191,7 +184,7 @@ class CSourceBase_TurbSA : public CNumerics {
    * \param[in] config - Definition of the particular problem.
    */
   CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
-      : CNumerics(nDim, config->GetStochastic_Backscatter() ? 4 : 1, config),
+      : CNumerics(nDim, (config->GetStochastic_Backscatter() && config->GetSBS_Ctau() > 0.0) ? 4 : 1, config),
         idx(nDim, config->GetnSpecies()),
         options(config->GetSAParsedOptions()),
         axisymmetric(config->GetAxisymmetric()),
@@ -248,11 +241,13 @@ class CSourceBase_TurbSA : public CNumerics {
       const su2double Ji_3 = Ji_2 * var.Ji;
 
       var.fv1 = Ji_3 / (Ji_3 + var.cv1_3);
+      if (config->GetStochastic_Backscatter() && lesMode_i > 0.0) var.fv1 = 1.0;
       var.d_fv1 = 3 * Ji_2 * var.cv1_3 / (nu * pow(Ji_3 + var.cv1_3, 2));
 
       /*--- Using a modified relation so as to not change the Shat that depends on fv2.
        * From NASA turb modeling resource and 2003 paper. ---*/
       var.fv2 = 1 - ScalarVar_i[0] / (nu + ScalarVar_i[0] * var.fv1);
+      if (config->GetStochastic_Backscatter() && lesMode_i > 0.0) var.fv2 = 0.0;
       var.d_fv2 = -(1 / nu - Ji_2 * var.d_fv1) / pow(1 + var.Ji * var.fv1, 2);
 
       /*--- Evaluate Omega with a rotational correction term. ---*/
@@ -281,6 +276,7 @@ class CSourceBase_TurbSA : public CNumerics {
       var.g_6 = pow(var.g, 6);
       var.glim = pow((1 + var.cw3_6) / (var.g_6 + var.cw3_6), 1.0 / 6.0);
       var.fw = var.g * var.glim;
+      if (config->GetStochastic_Backscatter() && lesMode_i > 0.0) var.fw = 1.0;
 
       var.d_g = var.d_r * (1 + var.cw2 * (6 * pow(var.r, 5) - 1));
       var.d_fw = var.d_g * var.glim * (1 - var.g_6 / (var.g_6 + var.cw3_6));
@@ -340,10 +336,9 @@ class CSourceBase_TurbSA : public CNumerics {
 
       /*--- Compute residual for Langevin equations (Stochastic Backscatter Model). ---*/
 
-      if (config->GetStochastic_Backscatter()) {
+      if (config->GetStochastic_Backscatter() && config->GetSBS_Ctau() > 0.0) {
         const su2double DES_const = config->GetConst_DES();
-        const su2double ctau = config->GetSBS_Ctau();
-        ResidualStochEquations(config->GetDelta_UnstTime(), ctau, dist_i, DES_const,
+        ResidualStochEquations(config->GetDelta_UnstTime(), config->GetSBS_Ctau(), dist_i, DES_const,
                                var, config->GetTime_Marching(), config->GetStochFdThreshold());
       }
     }

@@ -1367,6 +1367,10 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case MPI_QUANTITIES::DES_LENGTHSCALE:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     case MPI_QUANTITIES::SOLUTION_FEA:
       if (config->GetTime_Domain())
         COUNT_PER_POINT  = nVar*3;
@@ -1497,6 +1501,9 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case MPI_QUANTITIES::STOCH_SOURCE_LANG:
             for (iDim = 0; iDim < nDim; iDim++)
               bufDSend[buf_offset+iDim] = base_nodes->GetLangevinSourceTerms(iPoint, iDim);
+            break;
+          case MPI_QUANTITIES::DES_LENGTHSCALE:
+            bufDSend[buf_offset] = base_nodes->GetDES_LengthScale(iPoint);
             break;
           case MPI_QUANTITIES::UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)
@@ -1649,6 +1656,9 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case MPI_QUANTITIES::STOCH_SOURCE_LANG:
             for (iDim = 0; iDim < nDim; iDim++)
               base_nodes->SetLangevinSourceTerms(iPoint, iDim, bufDRecv[buf_offset+iDim]);
+            break;
+          case MPI_QUANTITIES::DES_LENGTHSCALE:
+            base_nodes->SetDES_LengthScale(iPoint, bufDRecv[buf_offset]);
             break;
           case MPI_QUANTITIES::UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)

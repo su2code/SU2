@@ -59,7 +59,9 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
   if (config->GetStochastic_Backscatter()) { 
     if (nDim == 3) {
-      nVar += nDim; nVarGrad = nPrimVar = nVar;
+      if (config->GetSBS_Ctau() > 0.0) {
+        nVar += 3; nVarGrad = nPrimVar = nVar;
+      }
     } else {
       SU2_MPI::Error("Stochastic Backscatter Model available for 3D flows only.", CURRENT_FUNCTION);
     }
@@ -120,7 +122,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   }
 
   Solution_Inf[0] = nu_tilde_Inf;
-  if (config->GetStochastic_Backscatter()) {
+  if (config->GetStochastic_Backscatter() && config->GetSBS_Ctau() > 0.0) {
     for (unsigned short iVar = 1; iVar < nVar; iVar++) {
       Solution_Inf[iVar] = 0.0;
     }
@@ -173,7 +175,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   Inlet_TurbVars.resize(nMarker);
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     Inlet_TurbVars[iMarker].resize(nVertex[iMarker],nVar) = nu_tilde_Inf;
-    if (config->GetStochastic_Backscatter()) {
+    if (config->GetStochastic_Backscatter() && config->GetSBS_Ctau() > 0.0) {
       for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
         for (unsigned short iVar = 1; iVar < nVar; iVar++) {
           Inlet_TurbVars[iMarker](iVertex,iVar) = 0.0;
@@ -227,6 +229,9 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
     SetDES_LengthScale(solver_container, geometry, config);
 
+    InitiateComms(geometry, config, MPI_QUANTITIES::DES_LENGTHSCALE);
+    CompleteComms(geometry, config, MPI_QUANTITIES::DES_LENGTHSCALE);
+
     /*--- Compute source terms for Langevin equations ---*/
 
     bool backscatter = config->GetStochastic_Backscatter();
@@ -240,7 +245,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
       bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                         (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
       if (maxIter>0) SmoothLangevinSourceTerms(config, geometry);
-      if (timeIter == restartIter) {
+      if (timeIter == restartIter && config->GetSBS_Ctau() > 0.0) {
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
           for (unsigned short iVar = 1; iVar < nVar; iVar++) {
             const su2double randomSource = nodes->GetLangevinSourceTerms(iPoint, iVar-1);
@@ -1678,6 +1683,9 @@ void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry)
     }
   }
   END_SU2_OMP_FOR
+
+  InitiateComms(geometry, config, MPI_QUANTITIES::STOCH_SOURCE_LANG);
+  CompleteComms(geometry, config, MPI_QUANTITIES::STOCH_SOURCE_LANG);
 
 }
 

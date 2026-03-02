@@ -6565,16 +6565,18 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             cout << "Backscatter intensity coefficient: " << SBS_Cmag << endl;
             if (SBS_Cmag < 0.0)
               SU2_MPI::Error("Backscatter intensity coefficient must be non-negative.", CURRENT_FUNCTION);
-            cout << "Backscatter lengthscale coefficient: " << SBS_Cdelta << endl;
-            if (SBS_Cdelta < 0.0)
-              SU2_MPI::Error("Backscatter lengthscale coefficient must be non-negative.", CURRENT_FUNCTION);
-            cout << "Backscatter timescale coefficient: " << SBS_Ctau << endl;
-            if (SBS_Ctau < 0.0)
-              SU2_MPI::Error("Backscatter timescale coefficient must be non-negative.", CURRENT_FUNCTION);
-            if (SBS_maxIterSmooth > 0)
-              cout << "Maximum number of iterations for implicit smoothing: " << SBS_maxIterSmooth << endl;
+            if (SBS_Ctau > 0.0)
+              cout << "Backscatter timescale coefficient: " << SBS_Ctau << endl;
             else
-              cout << "No smoothing applied to source terms in Langevin equations." << endl;
+              cout << "Langevin equations not integrated (temporally uncorrelated stochastic field)." << endl;
+            if (SBS_maxIterSmooth > 0) {
+              cout << "Maximum number of iterations for implicit smoothing: " << SBS_maxIterSmooth << endl;
+              cout << "Backscatter lengthscale coefficient: " << SBS_Cdelta << endl;
+              if (SBS_Cdelta < 0.0)
+                SU2_MPI::Error("Backscatter lengthscale coefficient must be non-negative.", CURRENT_FUNCTION);
+            } else {
+              cout << "No smoothing applied to stochastic source terms in Langevin equations." << endl;
+            }
             if (stochSourceNu)
               cout << "Stochastic source term included in turbulence model equation." << endl;
             else
@@ -6592,8 +6594,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                               << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[3] << endl;
               cout << "  Z: " << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[4] << " , "
                               << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[5] << endl;
-            } else {
-              cout << "Stochastic Backscatter Model activated in the whole computational domain." << endl;
             }
             if (Kind_HybridRANSLES != SA_DES)
               cout << "Stochastic source terms suppressed where the shielding function is lower than: " << setw(5) << setprecision(3) << stochFdThreshold << endl;

@@ -34,7 +34,7 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
 
   /*--- Initialize solution (check if the Stochastic Backscatter Model is active) ---*/
   bool backscatter = config->GetStochastic_Backscatter();
-  if (!backscatter) {
+  if (!(backscatter && config->GetSBS_Ctau() > 0.0)) {
     Solution_Old = Solution = val_nu_tilde;
   } else {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -61,7 +61,7 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
   Vortex_Tilting.resize(nPoint);
   stochSource.resize(nPoint, nDim) = su2double(0.0);
   stochSourceOld.resize(nPoint, nDim) = su2double(0.0);
-  besselIntegral.resize(nPoint);
+  besselIntegral.resize(nPoint) = su2double(0.0);
 
 }
 
