@@ -1708,6 +1708,9 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Set incompressible density ---*/
       numerics->SetDensity(nodes->GetDensity(iPoint), 0.0);
 
+      /*--- Set thermal conductivity ---*/
+      numerics->SetThermalConductivity(nodes->GetThermalConductivity(iPoint), nodes->GetThermalConductivity(iPoint));
+
       /*--- Load the volume of the dual mesh cell ---*/
       numerics->SetVolume(geometry->nodes->GetVolume(iPoint));
 
