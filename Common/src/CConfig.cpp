@@ -2981,7 +2981,7 @@ void CConfig::SetConfig_Options() {
   addBoolOption("ENFORCE_LES", enforceLES, false);
 
   /* DESCRIPTION: Specify if the stochastic source term must be included in the turbulence model equation */
-  addBoolOption("SBS_SOURCE_NU_EQUATION", stochSourceNu, false);
+  addBoolOption("SBS_SOURCE_NU_EQUATION", stochSourceNu, true);
 
   /* DESCRIPTION: Enable diagnostics of the stochastic source term in Langevin equation. */
   addBoolOption("SBS_SOURCE_DIAGNOSTICS", stochSourceDiagnostics, false);
