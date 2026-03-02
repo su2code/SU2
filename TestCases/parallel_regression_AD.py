@@ -247,6 +247,15 @@ def main():
     discadj_fea.test_vals_aarch64 = [-2.849646, -3.238577, -0.000364, -8.708700] #last 4 columns
     test_list.append(discadj_fea)
 
+    # Thermoelastic problem
+    # Derivative of heat flux wrt Poisson's ratio (due to increase in cross section) verified via finite differences.
+    discadj_thermoelastic = TestCase('discadj_thermoelastic')
+    discadj_thermoelastic.cfg_dir = "fea_fsi/ThermalBeam_3d"
+    discadj_thermoelastic.cfg_file = "configBeamNonlinear_3d_ad.cfg"
+    discadj_thermoelastic.test_iter = 10
+    discadj_thermoelastic.test_vals = [-5.355510, -5.293378, -6.164317, -6.433862, 43, -4.049556, 27, -4.164192, 0, 0.192640, 0]
+    test_list.append(discadj_thermoelastic)
+
     ###################################
     ### Disc. adj. heat             ###
     ###################################
