@@ -340,8 +340,11 @@ void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** con
     const long unsigned updateFreq = RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::UPDATE_FREQ];
     const long unsigned rampLength = RampMUSCLParam.rampMUSCLCoeff[RAMP_COEFF::FINAL_ITER];
     auto iterFrac = (static_cast<double>(iter - startIter)/static_cast<double>((rampLength + startIter) - startIter));
-    if (iter < startIter) return;
-    if ((iter == startIter) && (rank == MASTER_NODE)) cout << "Beginning to ramp MUSCL scheme..." << endl;
+    if (iter < startIter) {
+      config->SetMUSCLRampValue(0);
+      return;
+    }
+    if (iter == startIter && rank == MASTER_NODE) cout << "Beginning to ramp MUSCL scheme..." << endl;
     if ((iter % updateFreq == 0 && iter < (rampLength + startIter)) || (iter == (rampLength + startIter))) {
       switch (RampMUSCLParam.Kind_MUSCLRamp) {
         case MUSCL_RAMP_TYPE::ITERATION:

@@ -38,6 +38,62 @@
 #include "CFluidModel.hpp"
 
 /*!
+ * \class MiniTable2D
+ * \brief Simple 2D thermodynamic table used to identify the starting point for the Newton solver.
+ * \author: E.C.Bunschoten.
+ */
+class MiniTable2D {
+    size_t nP{5},
+           n_vars;
+    su2activematrix TD_data;
+    su2vector<su2double> TD_data_min,TD_data_max;
+    public:
+    MiniTable2D()=default;
+    
+   /*!
+   * \brief Set the number of table nodes
+   * \param[in] nP_in - Number of table nodes.
+   */
+    void SetNPoints(const size_t nP_in) { nP=nP_in; }
+
+    /*!
+   * \brief Set the number of thermodynamic variables in the table.
+   * \param[in] n_vars_in - Number of thermodynamic variables.
+   */
+    void SetNVars(const size_t n_vars_in) { n_vars = n_vars_in; }
+
+    /*!
+   * \brief Specify the thermodynamic data at a table node.
+   * \param[in] iVar - Variable index.
+   * \param[in] iX - Table node index.
+   * \param[in] val_var - Thermodynamic state value.
+   */
+    void SetTableData(const size_t iVar, const size_t iX, const su2double val_var) {
+        TD_data[iVar][iX] = val_var;
+    }
+
+    /*!
+   * \brief Size table data arrays.
+   */
+    void SizeTable();
+
+    /*!
+   * \brief Normalize thermodynamic data for regularization.
+   */
+    void ScaleTableData();
+
+    /*!
+   * \brief Find the node in the table closest to the query.
+   * \param[in] iX - Index of the first thermodynamic variable.
+   * \param[in] val_x - Query of the first thermodynamic variable.
+   * \param[in] iY - Index of the second thermodynamic variable.
+   * \param[in] val_y - Query of the second thermodynamic variable.
+   * \returns Nearest neighbor index.
+   */
+    size_t FindNode(const size_t iX, const su2double val_x, const size_t iY, const su2double val_y) const;
+};
+
+/*!
  * \class CDataDrivenFluid
  * \brief Template class for fluid model definition using multi-layer perceptrons for
  * fluid dynamic state definition.
@@ -61,13 +117,6 @@ class CDataDrivenFluid final : public CFluidModel {
       Newton_Tolerance,        /*!< \brief Normalized tolerance for Newton solvers. */
       rho_min, rho_max,        /*!< \brief Minimum and maximum density values in data set. */
       e_min, e_max;            /*!< \brief Minimum and maximum energy values in data set. */
-
-  bool custom_init_rho{false},
-       custom_init_e{false};
-  su2double val_custom_init_rho,
-            val_custom_init_e,
-            rho_median,
-            e_median;
             
   unsigned long MaxIter_Newton; /*!< \brief Maximum number of iterations for Newton solvers. */
 
@@ -76,13 +125,6 @@ class CDataDrivenFluid final : public CFluidModel {
       d2sde2,         /*!< \brief Entropy second derivative w.r.t. static energy. */
       d2sdedrho,      /*!< \brief Entropy second derivative w.r.t. density and static energy. */
       d2sdrho2;       /*!< \brief Entropy second derivative w.r.t. static density. */
-
-  su2double R_idealgas,     /*!< \brief Approximated ideal gas constant. */
-            Cp_idealgas,    /*!< \brief Approximated ideal gas specific heat at constant pressure. */
-            gamma_idealgas, /*!< \brief Approximated ideal gas specific heat ratio. */
-            Cv_idealgas,    /*!< \brief Approximated ideal gas specific heat at constant volume. */
-            P_middle,       /*!< \brief Pressure computed from the centre of the data set. */
-            T_middle;       /*!< \brief Temperature computed from the centre of the data set. */
 
   su2double Enthalpy, /*!< \brief Fluid enthalpy value [J kg^-1] */
       dhdrho_e,       /*!< \brief Enthalpy derivative w.r.t. density. */
@@ -99,12 +141,17 @@ class CDataDrivenFluid final : public CFluidModel {
 
   bool use_MLP_derivatives; /*!< \brief Use physics-informed model. */
 
+  bool display_Newton_process{false};
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
   MLPToolbox::CLookUp_ANN* lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
   MLPToolbox::CIOMap* iomap_rhoe;      /*!< \brief Input-output map. */
 #endif
   vector<su2double> MLP_inputs; /*!< \brief Inputs for the multi-layer perceptron look-up operation. */
+
+  MiniTable2D coarse_TD_table;                         /*!< \brief Small thermodynamic table used to identify the starting point of the Newton solver processes. */
+  const size_t iRho{0},iE{1},iP{2},iT{3};   /*!< Indices of thermodynamic variables in the table. */
+  su2vector<su2double> vals_rho_table, vals_e_table;    /*!< Density and static energy values of the table nodes. */
 
   CLookUpTable* lookup_table; /*!< \brief Look-up table regression object. */
   unsigned long LUT_idx_s,

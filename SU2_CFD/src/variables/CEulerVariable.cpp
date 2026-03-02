@@ -34,7 +34,9 @@ unsigned long EulerNPrimVarGrad(const CConfig *config, unsigned long ndim) {
 
   const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR ||
                          config->GetKind_FluidModel() == IDEAL_GAS;
-  if (ideal_gas && config->GetKind_Upwind_Flow() == UPWIND::ROE && !config->Low_Mach_Correction()) {
+  const bool low_mach = config->Low_Mach_Correction();
+  if (ideal_gas && !low_mach &&
+    (config->GetKind_Upwind_Flow() == UPWIND::ROE || config->GetKind_Upwind_Flow() == UPWIND::MSW)) {
     // Based on CRoeBase (numerics_simd).
     return ndim + 2;
   }

@@ -93,7 +93,8 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
 
-  if ((config.GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) && (MGLevel == MESH_0)) {
+  if ((config.GetKind_ConvNumScheme_Flow() == SPACE_CENTERED && MGLevel == MESH_0) ||
+      config.GetKind_Upwind_Flow() == UPWIND::MSW) {
     iPoint_UndLapl.resize(nPointDomain);
     jPoint_UndLapl.resize(nPointDomain);
   }
