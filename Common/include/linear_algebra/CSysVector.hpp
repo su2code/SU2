@@ -3,14 +3,14 @@
  * \brief Declararion and inlines of the vector class used in the
  * solution of large, distributed, sparse linear systems.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,7 @@
 #include "../parallelization/omp_structure.hpp"
 #include "../parallelization/vectorization.hpp"
 #include "vector_expressions.hpp"
+#include "../../include/CConfig.hpp"
 
 /*!
  * \brief OpenMP worksharing construct used in CSysVector for loops.
@@ -65,11 +66,14 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
  private:
   enum { OMP_MAX_SIZE = 4096 }; /*!< \brief Maximum chunk size used in parallel for loops. */
 
+  /// NOTE: Update swap() if you add member variables.
   unsigned long omp_chunk_size = OMP_MAX_SIZE; /*!< \brief Static chunk size used in loops. */
   ScalarType* vec_val = nullptr;               /*!< \brief Storage, 64 byte aligned (do not use normal new/delete). */
   unsigned long nElm = 0;       /*!< \brief Total number of elements (or number elements on this processor). */
   unsigned long nElmDomain = 0; /*!< \brief Total number of elements without Ghost cells. */
   unsigned long nVar = 1;       /*!< \brief Number of elements in a block. */
+
+  ScalarType* d_vec_val = nullptr; /*!< \brief Device Pointer to store the vector values on the GPU. */
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -153,6 +157,18 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   CSysVector(const CSysVector& u) { Initialize(u.GetNBlk(), u.GetNBlkDomain(), u.nVar, u.vec_val, true); }
 
   /*!
+   * \brief Swap contents with another vector.
+   */
+  void swap(CSysVector& other) {
+    std::swap(omp_chunk_size, other.omp_chunk_size);
+    std::swap(vec_val, other.vec_val);
+    std::swap(d_vec_val, other.d_vec_val);
+    std::swap(nElm, other.nElm);
+    std::swap(nElmDomain, other.nElmDomain);
+    std::swap(nVar, other.nVar);
+  }
+
+  /*!
    * \brief Initialize the class with a scalar.
    * \param[in] numBlk - number of blocks locally
    * \param[in] numBlkDomain - number of blocks locally (without g cells)
@@ -194,6 +210,29 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     for (auto i = 0ul; i < nElm; i++) vec_val[i] = SU2_TYPE::GetValue(other[i]);
     END_CSYSVEC_PARFOR
   }
+
+  /*!
+   * \brief Performs the memory copy from host to device.
+   * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
+   */
+  void HtDTransfer(bool trigger = true) const;
+
+  /*!
+   * \brief Performs the memory copy from device to host.
+   * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
+   */
+  void DtHTransfer(bool trigger = true) const;
+
+  /*!
+   * \brief Sets all the elements of the GPU vector to a certain value
+   * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
+   */
+  void GPUSetVal(ScalarType val, bool trigger = true) const;
+
+  /*!
+   * \brief return device pointer that points to the CSysVector values in GPU memory
+   */
+  inline ScalarType* GetDevicePointer() const { return d_vec_val; }
 
   /*!
    * \brief return the number of local elements in the CSysVector
