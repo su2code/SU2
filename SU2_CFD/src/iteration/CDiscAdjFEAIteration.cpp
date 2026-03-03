@@ -26,13 +26,20 @@
  */
 
 #include "../../include/iteration/CDiscAdjFEAIteration.hpp"
+#include "../../include/iteration/CDiscAdjHeatIteration.hpp"
 #include "../../include/iteration/CFEAIteration.hpp"
 #include "../../include/solvers/CFEASolver.hpp"
 #include "../../include/output/COutput.hpp"
 
-CDiscAdjFEAIteration::CDiscAdjFEAIteration(const CConfig *config) : CIteration(config), CurrentRecording(NONE) {}
+CDiscAdjFEAIteration::CDiscAdjFEAIteration(const CConfig *config) : CIteration(config), CurrentRecording(NONE) {
+  if (config->GetWeakly_Coupled_Heat()) {
+    DiscAdjHeatIteration = new CDiscAdjHeatIteration(config);
+  }
+}
 
-CDiscAdjFEAIteration::~CDiscAdjFEAIteration() {}
+CDiscAdjFEAIteration::~CDiscAdjFEAIteration() {
+  delete DiscAdjHeatIteration;
+}
 
 void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                       CSolver***** solver, CNumerics****** numerics, CConfig** config,
@@ -90,6 +97,10 @@ void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integrat
 
   solvers0[ADJFEA_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, 0, RUNTIME_ADJFEA_SYS, false);
 
+  if (DiscAdjHeatIteration) {
+    DiscAdjHeatIteration->Preprocess(output, integration, geometry, solver, numerics, config, surface_movement,
+                                     grid_movement, FFDBox, iZone, iInst);
+  }
 }
 
 void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
@@ -115,23 +126,23 @@ void CDiscAdjFEAIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** s
                                           unsigned short iZone, unsigned short iInst, bool CrossTerm) {
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
-
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone],
-                                                                    CrossTerm);
-
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
+  for (const auto iSol : {ADJFEA_SOL, ADJHEAT_SOL}) {
+    if (auto* sol = solver[iZone][iInst][MESH_0][iSol]; sol != nullptr) {
+      sol->ExtractAdjoint_Solution(geometry[iZone][iInst][MESH_0], config[iZone], CrossTerm);
+      sol->ExtractAdjoint_Variables(geometry[iZone][iInst][MESH_0], config[iZone]);
+    }
+  }
 }
 
 void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                          unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
   if (kind_recording != RECORDING::MESH_COORDS) {
-    /*--- Register structural displacements as input ---*/
-
-    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
-
-    /*--- Register variables as input ---*/
-
-    solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+    for (const auto iSol : {ADJFEA_SOL, ADJHEAT_SOL}) {
+      if (auto* sol = solver[iZone][iInst][MESH_0][iSol]; sol != nullptr) {
+        sol->RegisterSolution(geometry[iZone][iInst][MESH_0], config[iZone]);
+        sol->RegisterVariables(geometry[iZone][iInst][MESH_0], config[iZone]);
+      }
+    }
   } else {
     /*--- Register topology optimization densities (note direct solver) ---*/
 
@@ -146,6 +157,10 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geom
 void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                            CConfig** config, unsigned short iZone, unsigned short iInst,
                                            RECORDING kind_recording) {
+  if (DiscAdjHeatIteration) {
+    DiscAdjHeatIteration->SetDependencies(solver, geometry, numerics, config, iZone, iInst, kind_recording);
+  }
+
   auto dir_solver = solver[iZone][iInst][MESH_0][FEA_SOL];
   auto adj_solver = solver[iZone][iInst][MESH_0][ADJFEA_SOL];
   auto structural_geometry = geometry[iZone][iInst][MESH_0];
@@ -263,18 +278,25 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
 
 void CDiscAdjFEAIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                           unsigned short iZone, unsigned short iInst) {
-  /*--- Register conservative variables as output of the iteration ---*/
-
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
+  /*--- Register solution variables as output of the iteration. ---*/
+  for (const auto iSol : {ADJFEA_SOL, ADJHEAT_SOL}) {
+    if (auto* sol = solver[iZone][iInst][MESH_0][iSol]; sol != nullptr) {
+      sol->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
+    }
+  }
 }
 
 void CDiscAdjFEAIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                              unsigned short iZone, unsigned short iInst) {
-  /*--- Initialize the adjoints the conservative variables ---*/
+  /*--- Initialize the adjoints of the solution variables. ---*/
 
   AD::ResizeAdjoints();
   AD::BeginUseAdjoints();
-  solver[iZone][iInst][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+  for (const auto iSol : {ADJFEA_SOL, ADJHEAT_SOL}) {
+    if (auto* sol = solver[iZone][iInst][MESH_0][iSol]; sol != nullptr) {
+      sol->SetAdjoint_Output(geometry[iZone][iInst][MESH_0], config[iZone]);
+    }
+  }
   AD::EndUseAdjoints();
 }
 
@@ -285,8 +307,8 @@ bool CDiscAdjFEAIteration::Monitor(COutput* output, CIntegration**** integration
   /*--- Write the convergence history (only screen output) ---*/
 
   output->SetHistoryOutput(geometry[iZone][INST_0][MESH_0], solver[iZone][INST_0][MESH_0], config[iZone],
-                            config[iZone]->GetTimeIter(), config[iZone]->GetOuterIter(),
-                            config[iZone]->GetInnerIter());
+                           config[iZone]->GetTimeIter(), config[iZone]->GetOuterIter(),
+                           config[iZone]->GetInnerIter());
 
   return output->GetConvergence();
 }
