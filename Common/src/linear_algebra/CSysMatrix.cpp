@@ -2,14 +2,14 @@
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 8.2.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -67,6 +67,12 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   MemoryAllocation::aligned_free(ILU_matrix);
   MemoryAllocation::aligned_free(matrix);
   MemoryAllocation::aligned_free(invM);
+
+  if (useCuda) {
+    GPUMemoryAllocation::gpu_free(d_matrix);
+    GPUMemoryAllocation::gpu_free(d_row_ptr);
+    GPUMemoryAllocation::gpu_free(d_col_ind);
+  }
 
 #ifdef USE_MKL
   mkl_jit_destroy(MatrixMatrixProductJitter);
@@ -131,6 +137,30 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   col_ind = csr.innerIdx();
   dia_ptr = csr.diagPtr();
 
+  /*--- Allocate data. ---*/
+  auto allocAndInit = [](ScalarType*& ptr, unsigned long num) {
+    ptr = MemoryAllocation::aligned_alloc<ScalarType, true>(64, num * sizeof(ScalarType));
+  };
+
+  allocAndInit(matrix, nnz * nVar * nEqn);
+
+  useCuda = config->GetCUDA();
+
+  if (useCuda) {
+    /*--- Allocate GPU data. ---*/
+    auto GPUAllocAndInit = [](ScalarType*& ptr, unsigned long num) {
+      ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
+    };
+
+    auto GPUAllocAndCopy = [](const unsigned long*& ptr, const unsigned long*& src_ptr, unsigned long num) {
+      ptr = GPUMemoryAllocation::gpu_alloc_cpy<const unsigned long>(src_ptr, num * sizeof(const unsigned long));
+    };
+
+    GPUAllocAndInit(d_matrix, nnz * nVar * nEqn);
+    GPUAllocAndCopy(d_row_ptr, row_ptr, (nPointDomain + 1));
+    GPUAllocAndCopy(d_col_ind, col_ind, nnz);
+  }
+
   if (needTranspPtr) col_ptr = geometry->GetTransposeSparsePatternMap(type).data();
 
   if (type == ConnectivityType::FiniteVolume) {
@@ -150,13 +180,6 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     dia_ptr_ilu = csr_ilu.diagPtr();
     nnz_ilu = csr_ilu.getNumNonZeros();
   }
-
-  /*--- Allocate data. ---*/
-  auto allocAndInit = [](ScalarType*& ptr, unsigned long num) {
-    ptr = MemoryAllocation::aligned_alloc<ScalarType, true>(64, num * sizeof(ScalarType));
-  };
-
-  allocAndInit(matrix, nnz * nVar * nEqn);
 
   /*--- Preconditioners. ---*/
 
@@ -471,6 +494,18 @@ void CSysMatrix<ScalarType>::SetValDiagonalZero() {
   END_SU2_OMP_FOR
 }
 
+/*--- Helper function to regularize small pivots ---*/
+template <class ScalarType>
+inline void RegularizePivot(ScalarType& pivot, unsigned long row, unsigned long col, const char* context) {
+  const float eps = 1e-12;
+  if (std::abs(pivot) < eps) {
+    pivot = std::copysign(eps, SU2_TYPE::GetValue(pivot));
+#ifndef NDEBUG
+    std::cout << context << ": Regularized small pivot A(" << row << "," << col << ") to " << pivot << std::endl;
+#endif
+  }
+}
+
 template <class ScalarType>
 void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* vec) const {
 #ifdef USE_MKL_LAPACK
@@ -482,9 +517,14 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
 #define A(I, J) matrix[(I)*nVar + (J)]
 
   /*--- Transform system in Upper Matrix ---*/
+
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
+      /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
+      RegularizePivot(A(jVar, jVar), jVar, jVar, "DEBUG Gauss_Elimination");
+
       ScalarType weight = A(iVar, jVar) / A(jVar, jVar);
+
       for (auto kVar = jVar; kVar < nVar; kVar++) A(iVar, kVar) -= weight * A(jVar, kVar);
       vec[iVar] -= weight * vec[jVar];
     }
@@ -494,6 +534,10 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
   for (auto iVar = nVar; iVar > 0ul;) {
     iVar--;  // unsigned type
     for (auto jVar = iVar + 1; jVar < nVar; jVar++) vec[iVar] -= A(iVar, jVar) * vec[jVar];
+
+    /*--- Regularize diagonal if too small ---*/
+    RegularizePivot(A(iVar, iVar), iVar, iVar, "DEBUG Gauss_Elimination backsubst");
+
     vec[iVar] /= A(iVar, iVar);
   }
 #undef A
@@ -527,8 +571,10 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
   /*--- Transform system in Upper Matrix ---*/
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
-      ScalarType weight = A(iVar, jVar) / A(jVar, jVar);
+      /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
+      RegularizePivot(A(jVar, jVar), jVar, jVar, "MatrixInverse");
 
+      ScalarType weight = A(iVar, jVar) / A(jVar, jVar);
       for (auto kVar = jVar; kVar < nVar; kVar++) A(iVar, kVar) -= weight * A(jVar, kVar);
 
       /*--- at this stage M is lower triangular so not all cols need updating ---*/
@@ -542,7 +588,12 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
     for (auto jVar = iVar + 1; jVar < nVar; jVar++)
       for (auto kVar = 0ul; kVar < nVar; kVar++) M(iVar, kVar) -= A(iVar, jVar) * M(jVar, kVar);
 
-    for (auto kVar = 0ul; kVar < nVar; kVar++) M(iVar, kVar) /= A(iVar, iVar);
+    /*--- Regularize diagonal if too small ---*/
+    RegularizePivot(A(iVar, iVar), iVar, iVar, "DEBUG MatrixInverse backsubst");
+
+    for (auto kVar = 0ul; kVar < nVar; kVar++) {
+      M(iVar, kVar) /= A(iVar, iVar);
+    }
   }
 #undef A
 #endif
