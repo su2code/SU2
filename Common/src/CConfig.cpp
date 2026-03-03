@@ -3519,14 +3519,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Postprocess LM_OPTIONS into structure. ---*/
   if (Kind_Trans_Model == TURB_TRANS_MODEL::LM) {
-    lmParsedOptions = ParseLMOptions(LM_Options, nLM_Options, rank, Kind_Turb_Model);
+    lmParsedOptions = ParseLMOptions(LM_Options, nLM_Options, Kind_Turb_Model);
 
     /*--- Check if problem is 2D and LM2015 has been selected ---*/
     if (lmParsedOptions.LM2015 && val_nDim == 2) {
       SU2_MPI::Error("LM2015 is available only for 3D problems", CURRENT_FUNCTION);
     }
   } else if (Kind_Trans_Model == TURB_TRANS_MODEL::AFT) {
-    aftParsedOptions = ParseAFTOptions(AFT_Options, nAFT_Options, rank);
+    aftParsedOptions = ParseAFTOptions(AFT_Options, nAFT_Options);
   }
 
   /*--- Set the boolean Wall_Functions equal to true if there is a
@@ -6338,13 +6338,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if (Kind_Trans_Model == TURB_TRANS_MODEL::AFT) {
 
           switch (aftParsedOptions.Correlation) {
-            case AFT_CORRELATION::AFT2017b:
-              switch (Kind_Turb_Model) {
-                case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but AFT transition model is active.", CURRENT_FUNCTION); break;
-                case TURB_MODEL::SST: SU2_MPI::Error("k-w SST turbulence model has been selected but AFT transition model is active.", CURRENT_FUNCTION); break;
-              }
-              cout << "-2017b" << endl;  break;
-              if(!saParsedOptions.ft2) SU2_MPI::Error("ft2 option of SA model has been not selected.", CURRENT_FUNCTION);
             case AFT_CORRELATION::AFT2019b:
               switch (Kind_Turb_Model) {
                 case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but AFT transition model is active.", CURRENT_FUNCTION); break;

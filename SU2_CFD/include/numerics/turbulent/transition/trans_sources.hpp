@@ -419,19 +419,8 @@ class CSourcePieceWise_TransAFT final : public CNumerics {
         HLGradTerm += AuxVar_Grad_i[1][2] * AuxVar_Grad_i[0][2];
       }
       su2double HL = 0.0;
-      switch (options.Correlation)
-      {
-      case AFT_CORRELATION::AFT2017b :
-        HL = min( max(dist_i * dist_i * Density_i / Laminar_Viscosity_i  * HLGradTerm, -0.25), 200.0);
-        break;
-
-      case AFT_CORRELATION::AFT2019b :
-        HL = dist_i * dist_i * Density_i / Laminar_Viscosity_i  * HLGradTerm;
-        break;
+      HL = dist_i * dist_i * Density_i / Laminar_Viscosity_i  * HLGradTerm;
       
-      default: HL = 0.0;
-        break;
-      }
 
       
       /*--- Cal H12, dNdRet, Ret0, D_H12, l_H12, m_H12, kv ---*/
@@ -442,7 +431,7 @@ class CSourcePieceWise_TransAFT final : public CNumerics {
       const su2double l_H12 = TransCorrelations.l_Correlations(H12);
       const su2double m_H12 = TransCorrelations.m_Correlations(H12, l_H12);
       const su2double kv = TransCorrelations.kv_Correlations(H12);
-      const su2double Rev = Density_i * dist_i * dist_i * StrainMag_i / (Laminar_Viscosity_i + Eddy_Viscosity_i) * sqrt(2.0);
+      const su2double Rev = Density_i * dist_i * dist_i * StrainMag_i / (Laminar_Viscosity_i + Eddy_Viscosity_i) * 2.0;
       const su2double Rev0 = kv * Ret0;
 
 

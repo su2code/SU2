@@ -1268,10 +1268,10 @@ struct LM_ParsedOptions {
  * \brief Function to parse LM options.
  * \param[in] LM_Options - Selected LM option from config.
  * \param[in] nLM_Options - Number of options selected.
- * \param[in] rank - MPI rank.
- * \return Struct with SA options.
+ * \param[in] Kind_Turb_Model- Selected based turbulence model from config.
+ * \return Struct with LM options.
  */
-inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned short nLM_Options, int rank, TURB_MODEL Kind_Turb_Model) {
+inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned short nLM_Options, TURB_MODEL Kind_Turb_Model) {
   LM_ParsedOptions LMParsedOptions;
 
   auto IsPresent = [&](LM_OPTIONS option) {
@@ -1331,13 +1331,11 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
  */
 enum class AFT_OPTIONS {
   NONE,         /*!< \brief No option / default. */
-  AFT2017b,       /*!< \brief using AFT2017b model. */
-  AFT2019b       /*!< \brief using AFT2019b model. */
+  AFT2019b      /*!< \brief 2019b Coder SA-AFT model (https://doi.org/10.2514/6.2019-0039). */
 };
 
 static const MapType<std::string, AFT_OPTIONS> AFT_Options_Map = {
   MakePair("NONE", AFT_OPTIONS::NONE)
-  MakePair("AFT2017b", AFT_OPTIONS::AFT2017b)
   MakePair("AFT2019b", AFT_OPTIONS::AFT2019b)
 };
 
@@ -1346,7 +1344,6 @@ static const MapType<std::string, AFT_OPTIONS> AFT_Options_Map = {
  */
 enum class AFT_CORRELATION {
   NONE,         /*!< \brief No option / default. */
-  AFT2017b,      /*!< \brief Kind of transition correlation model (AFT2017b). */
   AFT2019b      /*!< \brief Kind of transition correlation model (AFT2019b). */
 };
 
@@ -1362,10 +1359,9 @@ struct AFT_ParsedOptions {
  * \brief Function to parse AFT options.
  * \param[in] AFT_Options - Selected AFT option from config.
  * \param[in] nAFT_Options - Number of options selected.
- * \param[in] rank - MPI rank.
  * \return Struct with AFT options.
  */
-inline AFT_ParsedOptions ParseAFTOptions(const AFT_OPTIONS *AFT_Options, unsigned short nAFT_Options, int rank) {
+inline AFT_ParsedOptions ParseAFTOptions(const AFT_OPTIONS *AFT_Options, unsigned short nAFT_Options) {
   AFT_ParsedOptions AFTParsedOptions;
 
   auto IsPresent = [&](AFT_OPTIONS option) {
@@ -1374,12 +1370,6 @@ inline AFT_ParsedOptions ParseAFTOptions(const AFT_OPTIONS *AFT_Options, unsigne
   };
 
   int NFoundCorrelations = 0;
-  if (IsPresent(AFT_OPTIONS::AFT2017b)) {
-    AFTParsedOptions.Correlation = AFT_CORRELATION::AFT2017b;
-    AFTParsedOptions.version = AFT_OPTIONS::AFT2017b;
-    NFoundCorrelations++;
-  }
-
   if (IsPresent(AFT_OPTIONS::AFT2019b)) {
     AFTParsedOptions.Correlation = AFT_CORRELATION::AFT2019b;
     AFTParsedOptions.version = AFT_OPTIONS::AFT2019b;

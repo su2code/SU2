@@ -31,14 +31,14 @@
 #include "../../scalar/scalar_diffusion.hpp"
 
 /*!
- * \class CAvgGrad_TransLM
- * \brief Class for computing viscous term using average of gradient with correction (LM transition model).
+ * \class CAvgGrad_Transition
+ * \brief Class for computing viscous term using average of gradient with correction (transition model).
  * \ingroup ViscDiscr
  * \author S. Kang.
  */
 template <class FlowIndices>
-class CAvgGrad_TransLM final : public CAvgGrad_Scalar<FlowIndices> {
-private:
+class CAvgGrad_Transition : public CAvgGrad_Scalar<FlowIndices> {
+protected:
   using Base = CAvgGrad_Scalar<FlowIndices>;
   using Base::Laminar_Viscosity_i;
   using Base::Laminar_Viscosity_j;
@@ -52,7 +52,12 @@ private:
   using Base::proj_vector_ij;
   using Base::Flux;
   using Base::Jacobian_i;
-  using Base::Jacobian_j;
+  using Base::Jacobian_j; 
+
+  su2double Laminar_DiffCoeffi_1 = 1.0, Eddy_DiffCoeffi_1 = 1.0;
+  su2double Laminar_DiffCoeffi_2 = 1.0, Eddy_DiffCoeffi_2 = 1.0;
+
+  unsigned short nVar;
 
   /*!
    * \brief Adds any extra variables to AD
@@ -67,29 +72,58 @@ private:
     const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
 
     /*--- Compute mean effective dynamic viscosity ---*/
-    const su2double diff_i_gamma = Laminar_Viscosity_i + Eddy_Viscosity_i;
-    const su2double diff_j_gamma = Laminar_Viscosity_j + Eddy_Viscosity_j;
-    const su2double diff_i_ReThetaT = 2.0*(Laminar_Viscosity_i + Eddy_Viscosity_i);
-    const su2double diff_j_ReThetaT = 2.0*(Laminar_Viscosity_j + Eddy_Viscosity_j);
+    const su2double diff_i_Vari_1 = Laminar_DiffCoeffi_1*Laminar_Viscosity_i+Eddy_DiffCoeffi_1*Eddy_Viscosity_i;
+    const su2double diff_j_Vari_1 = Laminar_DiffCoeffi_1*Laminar_Viscosity_j+Eddy_DiffCoeffi_1*Eddy_Viscosity_j;
+    const su2double diff_i_Vari_2 = Laminar_DiffCoeffi_2*Laminar_Viscosity_i+Eddy_DiffCoeffi_1*Eddy_Viscosity_i;
+    const su2double diff_j_Vari_2 = Laminar_DiffCoeffi_2*Laminar_Viscosity_j+Eddy_DiffCoeffi_1*Eddy_Viscosity_j;
 
-    const su2double diff_gamma = 0.5*(diff_i_gamma + diff_j_gamma);
-    const su2double diff_ReThetaT = 0.5*(diff_i_ReThetaT + diff_j_ReThetaT);
+    const su2double diff_Vari_1 = 0.5*(diff_i_Vari_1+diff_j_Vari_1);
+    const su2double diff_Vari_2 = 0.5*(diff_i_Vari_2+diff_j_Vari_2);
 
-    Flux[0] = diff_gamma*Proj_Mean_GradScalarVar[0];
-    Flux[1] = diff_ReThetaT*Proj_Mean_GradScalarVar[1];
+    Flux[0] = diff_Vari_1*Proj_Mean_GradScalarVar[0];
+    if(nVar == 2) {
+      Flux[1] = diff_Vari_2*Proj_Mean_GradScalarVar[1];
+    }
 
     /*--- For Jacobians -> Use of TSL (Thin Shear Layer) approx. to compute derivatives of the gradients ---*/
     if (implicit) {
       const su2double proj_on_rho_i = proj_vector_ij/Density_i;
-      Jacobian_i[0][0] = -diff_gamma*proj_on_rho_i;  Jacobian_i[0][1] = 0.0;
-      Jacobian_i[1][0] = 0.0;                        Jacobian_i[1][1] = -diff_ReThetaT*proj_on_rho_i;
-
       const su2double proj_on_rho_j = proj_vector_ij/Density_j;
-      Jacobian_j[0][0] = diff_gamma*proj_on_rho_j;   Jacobian_j[0][1] = 0.0;
-      Jacobian_j[1][0] = 0.0;                        Jacobian_j[1][1] = diff_ReThetaT*proj_on_rho_j;
+      Jacobian_i[0][0] = -diff_Vari_1*proj_on_rho_i;
+      Jacobian_j[0][0] = diff_Vari_1*proj_on_rho_j;
+      
+      if(nVar == 2) {
+                                Jacobian_i[0][1] = 0.0;
+        Jacobian_i[1][0] = 0.0; Jacobian_i[1][1] = -diff_Vari_2*proj_on_rho_i;
+
+                                Jacobian_j[0][1] = 0.0;
+        Jacobian_j[1][0] = 0.0; Jacobian_j[1][1] = diff_Vari_2*proj_on_rho_j;
+      }
     }
   }
 
+public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] correct_grad - Whether to correct gradient for skewness.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_Transition(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad, const CConfig* config)
+    : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config), nVar(val_nVar){
+  }
+
+};
+
+/*!
+ * \class CAvgGrad_TransLM
+ * \brief Class for computing viscous term using average of gradient with correction (LM model).
+ * \ingroup ViscDiscr
+ * \author S. Kang.
+ */
+template <class FlowIndices>
+class CAvgGrad_TransLM final : public CAvgGrad_Transition<FlowIndices> {
 public:
   /*!
    * \brief Constructor of the class.
@@ -99,72 +133,26 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TransLM(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad, const CConfig* config)
-    : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config){
+    : CAvgGrad_Transition<FlowIndices>(val_nDim, val_nVar, correct_grad, config){
+    this->Laminar_DiffCoeffi_1 = 1.0;
+    this->Laminar_DiffCoeffi_2 = 2.0;
+    this->Eddy_DiffCoeffi_1 = 1.0;
+    this->Eddy_DiffCoeffi_2 = 2.0;
   }
 
+  void FinishResidualCalc(const CConfig* config) override {
+    CAvgGrad_Transition<FlowIndices>::FinishResidualCalc(config);
+  }
 };
-
 
 /*!
  * \class CAvgGrad_TransAFT
- * \brief Class for computing viscous term using average of gradient with correction (AFT transition model).
+ * \brief Class for computing viscous term using average of gradient with correction (AFT model).
  * \ingroup ViscDiscr
  * \author S. Kang.
  */
 template <class FlowIndices>
-class CAvgGrad_TransAFT final : public CAvgGrad_Scalar<FlowIndices> {
-private:
-  using Base = CAvgGrad_Scalar<FlowIndices>;
-  using Base::Laminar_Viscosity_i;
-  using Base::Laminar_Viscosity_j;
-  using Base::Eddy_Viscosity_i;
-  using Base::Eddy_Viscosity_j;
-  using Base::Density_i;
-  using Base::Density_j;
-  using Base::ScalarVar_i;
-  using Base::ScalarVar_j;
-  using Base::Proj_Mean_GradScalarVar;
-  using Base::proj_vector_ij;
-  using Base::Flux;
-  using Base::Jacobian_i;
-  using Base::Jacobian_j;
-
-  /*!
-   * \brief Adds any extra variables to AD
-   */
-  void ExtraADPreaccIn() override {}
-
-  /*!
-   * \brief LM transition model specific steps in the ComputeResidual method
-   * \param[in] config - Definition of the particular problem.
-   */
-  void FinishResidualCalc(const CConfig* config) override {
-    const bool implicit = config->GetKind_TimeIntScheme() == EULER_IMPLICIT;
-
-    /*--- Compute mean effective dynamic viscosity ---*/
-    const su2double diff_i_AF = Laminar_Viscosity_i + Eddy_Viscosity_i;
-    const su2double diff_j_AF = Laminar_Viscosity_j + Eddy_Viscosity_j;
-    const su2double diff_i_Gamma = Laminar_Viscosity_i + Eddy_Viscosity_i;
-    const su2double diff_j_Gamma = Laminar_Viscosity_j + Eddy_Viscosity_j;
-
-    const su2double diff_AF = 0.5*(diff_i_AF + diff_j_AF);
-    const su2double diff_Gamma = 0.5*(diff_i_Gamma + diff_j_Gamma);
-
-    Flux[0] = diff_AF*Proj_Mean_GradScalarVar[0];
-    Flux[1] = diff_Gamma*Proj_Mean_GradScalarVar[1];
-
-    /*--- For Jacobians -> Use of TSL (Thin Shear Layer) approx. to compute derivatives of the gradients ---*/
-    if (implicit) {
-      const su2double proj_on_rho_i = proj_vector_ij/Density_i;
-      Jacobian_i[0][0] = -diff_AF*proj_on_rho_i;  Jacobian_i[0][1] = 0.0;
-      Jacobian_i[1][0] = 0.0;                        Jacobian_i[1][1] = -diff_Gamma*proj_on_rho_i;
-
-      const su2double proj_on_rho_j = proj_vector_ij/Density_j;
-      Jacobian_j[0][0] = diff_AF*proj_on_rho_j;   Jacobian_j[0][1] = 0.0;
-      Jacobian_j[1][0] = 0.0;                     Jacobian_j[1][1] = diff_Gamma*proj_on_rho_j;
-    }
-  }
-
+class CAvgGrad_TransAFT final : public CAvgGrad_Transition<FlowIndices> {
 public:
   /*!
    * \brief Constructor of the class.
@@ -174,7 +162,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_TransAFT(unsigned short val_nDim, unsigned short val_nVar, bool correct_grad, const CConfig* config)
-    : CAvgGrad_Scalar<FlowIndices>(val_nDim, val_nVar, correct_grad, config){
+    : CAvgGrad_Transition<FlowIndices>(val_nDim, val_nVar, correct_grad, config){
+    this->Laminar_DiffCoeffi_1 = 1.0;
+    this->Laminar_DiffCoeffi_2 = 1.0;
+    this->Eddy_DiffCoeffi_1 = 1.0;
+    this->Eddy_DiffCoeffi_2 = 1.0;
   }
 
+  void FinishResidualCalc(const CConfig* config) override {
+    CAvgGrad_Transition<FlowIndices>::FinishResidualCalc(config);
+  }
 };

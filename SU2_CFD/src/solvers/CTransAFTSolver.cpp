@@ -218,8 +218,8 @@ void CTransAFTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_conta
       HLGradTerm += nodes->GetAuxVarGradient(iPoint, 1, 2) * nodes->GetAuxVarGradient(iPoint, 0, 2);
     }
 
-    /*--- Cal H12, Hk, dNdRet, Ret0 ---*/
-    su2double HL = min( max(dist_i * dist_i * Density_i / Laminar_Viscosity_i  * HLGradTerm, -0.25), 200.0);
+    su2double HL = 0.0;
+    HL = dist_i * dist_i * Density_i / Laminar_Viscosity_i  * HLGradTerm;
     const su2double H12 = TransCorrelations.H12_Correlations(HL);
     const su2double dNdRet = TransCorrelations.dNdRet_Correlations(H12);
     const su2double Ret0 = TransCorrelations.Ret0_Correlations(H12);
@@ -227,7 +227,7 @@ void CTransAFTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_conta
     const su2double l_H12 = TransCorrelations.l_Correlations(H12);
     const su2double m_H12 = TransCorrelations.m_Correlations(H12, l_H12);
     const su2double kv = TransCorrelations.kv_Correlations(H12);
-    const su2double Rev = Density_i * dist_i * dist_i * StrainMag_i / (Laminar_Viscosity_i + Eddy_Viscosity_i);
+    const su2double Rev = Density_i * dist_i * dist_i * StrainMag_i / (Laminar_Viscosity_i + Eddy_Viscosity_i) * 2.0;
     const su2double Rev0 = kv * Ret0;
 
     /*--- production term of the amplification factor ---*/
