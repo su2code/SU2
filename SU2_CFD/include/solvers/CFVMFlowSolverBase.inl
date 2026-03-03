@@ -1073,6 +1073,8 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
     solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n1();
+    solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Density_time_n();
+    solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Density_time_n1();
     if (rans) {
       solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
       solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n1();
@@ -1103,6 +1105,7 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
 
     for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
+      solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Density_time_n();
       if (rans) solver_container[iMesh][TURB_SOL]->GetNodes()->Set_Solution_time_n();
 
       geometry[iMesh]->nodes->SetVolume_n();

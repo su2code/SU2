@@ -2804,7 +2804,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   su2double U_time_nM1[MAXNVAR], U_time_n[MAXNVAR], U_time_nP1[MAXNVAR];
   su2double Volume_nM1, Volume_nP1, TimeStep;
   const su2double *Normal = nullptr, *GridVel_i = nullptr, *GridVel_j = nullptr;
-  su2double Density;
+  su2double Density_nP1, Density_n, Density_nM1;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
@@ -2841,15 +2841,17 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       V_time_n   = nodes->GetSolution_time_n(iPoint);
       V_time_nP1 = nodes->GetSolution(iPoint);
 
-      /*--- Access the density at this node (constant for now). ---*/
+      /*--- Access the density at this node for each time level. ---*/
 
-      Density = nodes->GetDensity(iPoint);
+      Density_nP1 = nodes->GetDensity(iPoint);
+      Density_n   = nodes->GetDensity_time_n(iPoint);
+      Density_nM1 = nodes->GetDensity_time_n1(iPoint);
 
       /*--- Compute the conservative variable vector for all time levels. ---*/
 
-      V2U(Density, V_time_nM1, U_time_nM1);
-      V2U(Density, V_time_n, U_time_n);
-      V2U(Density, V_time_nP1, U_time_nP1);
+      V2U(Density_nM1, V_time_nM1, U_time_nM1);
+      V2U(Density_n, V_time_n, U_time_n);
+      V2U(Density_nP1, V_time_nP1, U_time_nP1);
 
       /*--- CV volume at time n+1. As we are on a static mesh, the volume
        of the CV will remained fixed for all time steps. ---*/
@@ -2870,7 +2872,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
 
       if (implicit) {
-        su2double delta = (second_order ? 1.5 : 1.0) * Volume_nP1 * Density / TimeStep;
+        su2double delta = (second_order ? 1.5 : 1.0) * Volume_nP1 * Density_nP1 / TimeStep;
 
         for (iVar = 1; iVar < nVar; ++iVar) Jacobian.AddVal2Diag(iPoint, iVar, delta);
       }
@@ -2896,8 +2898,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Compute the conservative variables. ---*/
 
       V_time_n = nodes->GetSolution_time_n(iPoint);
-      Density = nodes->GetDensity(iPoint);
-      V2U(Density, V_time_n, U_time_n);
+      Density_n = nodes->GetDensity_time_n(iPoint);
+      V2U(Density_n, V_time_n, U_time_n);
 
       GridVel_i = geometry->nodes->GetGridVel(iPoint);
 
@@ -2951,8 +2953,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           /*--- Compute the GCL component of the source term for node i ---*/
 
           V_time_n = nodes->GetSolution_time_n(iPoint);
-          Density = nodes->GetDensity(iPoint);
-          V2U(Density, V_time_n, U_time_n);
+          Density_n = nodes->GetDensity_time_n(iPoint);
+          V2U(Density_n, V_time_n, U_time_n);
 
           for (iVar = 0; iVar < nVar-!energy; iVar++)
             LinSysRes(iPoint,iVar) += U_time_n[iVar]*Residual_GCL;
@@ -2978,15 +2980,17 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       V_time_n   = nodes->GetSolution_time_n(iPoint);
       V_time_nP1 = nodes->GetSolution(iPoint);
 
-      /*--- Access the density at this node (constant for now). ---*/
+      /*--- Access the density at this node for each time level. ---*/
 
-      Density = nodes->GetDensity(iPoint);
+      Density_nP1 = nodes->GetDensity(iPoint);
+      Density_n   = nodes->GetDensity_time_n(iPoint);
+      Density_nM1 = nodes->GetDensity_time_n1(iPoint);
 
       /*--- Compute the conservative variable vector for all time levels. ---*/
 
-      V2U(Density, V_time_nM1, U_time_nM1);
-      V2U(Density, V_time_n, U_time_n);
-      V2U(Density, V_time_nP1, U_time_nP1);
+      V2U(Density_nM1, V_time_nM1, U_time_nM1);
+      V2U(Density_n, V_time_n, U_time_n);
+      V2U(Density_nP1, V_time_nP1, U_time_nP1);
 
       /*--- CV volume at time n-1 and n+1. In the case of dynamically deforming
        grids, the volumes will change. On rigidly transforming grids, the
@@ -3010,7 +3014,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
 
       if (implicit) {
-        su2double delta = (second_order? 1.5 : 1.0) * Volume_nP1 * Density / TimeStep;
+        su2double delta = (second_order? 1.5 : 1.0) * Volume_nP1 * Density_nP1 / TimeStep;
 
         for (iVar = 1; iVar < nVar; ++iVar)
           Jacobian.AddVal2Diag(iPoint, iVar, delta);

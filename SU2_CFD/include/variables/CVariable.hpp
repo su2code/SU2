@@ -971,6 +971,30 @@ public:
   inline virtual su2double GetDensity(unsigned long iPoint, unsigned long val_iSpecies) const { return 0.0; }
 
   /*!
+   * \brief Get the density at time level n (for incompressible unsteady flows with variable density).
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n. Defaults to current density.
+   */
+  inline virtual su2double GetDensity_time_n(unsigned long iPoint) const { return GetDensity(iPoint); }
+
+  /*!
+   * \brief Get the density at time level n-1 (for incompressible unsteady flows with variable density).
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n-1. Defaults to current density.
+   */
+  inline virtual su2double GetDensity_time_n1(unsigned long iPoint) const { return GetDensity(iPoint); }
+
+  /*!
+   * \brief Store current density into the time level n container: Density_time_n = Density.
+   */
+  inline virtual void Set_Density_time_n() {}
+
+  /*!
+   * \brief Store time level n density into the time level n-1 container: Density_time_n1 = Density_time_n.
+   */
+  inline virtual void Set_Density_time_n1() {}
+
+  /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    * \param[in] val_Species - Index of species s.

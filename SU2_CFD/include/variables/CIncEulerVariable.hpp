@@ -72,6 +72,10 @@ public:
   VectorType Streamwise_Periodic_RecoveredPressure,    /*!< \brief Recovered/Physical pressure [Pa] for streamwise periodic flow. */
              Streamwise_Periodic_RecoveredTemperature; /*!< \brief Recovered/Physical temperature [K] for streamwise periodic flow. */
   su2double TemperatureLimits[2];                      /*!< \brief Temperature limits [K]. */
+
+  VectorType Density_time_n;   /*!< \brief Density at time level n for dual-time stepping (variable-density flows). */
+  VectorType Density_time_n1;  /*!< \brief Density at time level n-1 for dual-time stepping (variable-density flows). */
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -281,6 +285,34 @@ public:
   inline su2double GetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint) const final {
     return Streamwise_Periodic_RecoveredTemperature(iPoint);
   }
+
+  /*!
+   * \brief Get the density at time level n.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n.
+   */
+  inline su2double GetDensity_time_n(unsigned long iPoint) const final {
+    return Density_time_n(iPoint);
+  }
+
+  /*!
+   * \brief Get the density at time level n-1.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n-1.
+   */
+  inline su2double GetDensity_time_n1(unsigned long iPoint) const final {
+    return Density_time_n1(iPoint);
+  }
+
+  /*!
+   * \brief Store current density into time level n: Density_time_n = Density.
+   */
+  void Set_Density_time_n() final;
+
+  /*!
+   * \brief Store time level n density into time level n-1: Density_time_n1 = Density_time_n.
+   */
+  void Set_Density_time_n1() final;
 
   /*!
    * \brief Specify a vector to set the velocity components of the solution.

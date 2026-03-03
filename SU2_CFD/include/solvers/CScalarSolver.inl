@@ -635,12 +635,9 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       if (Conservative) {
         if (incompressible) {
-          /*--- This is temporary and only valid for constant-density problems:
-          density could also be temperature dependent, but as it is not a part
-          of the solution vector it's neither stored for previous time steps
-          nor updated with the solution at the end of each iteration. */
-          Density_nM1 = flowNodes->GetDensity(iPoint);
-          Density_n = flowNodes->GetDensity(iPoint);
+          /*--- Use density at each time level for variable-density flows. ---*/
+          Density_nM1 = flowNodes->GetDensity_time_n1(iPoint);
+          Density_n = flowNodes->GetDensity_time_n(iPoint);
           Density_nP1 = flowNodes->GetDensity(iPoint);
         } else {
           Density_nM1 = flowNodes->GetSolution_time_n1(iPoint)[0];
@@ -701,7 +698,7 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
 
       if (Conservative) {
         if (incompressible)
-          Density_n = flowNodes->GetDensity(iPoint);  // Temporary fix
+          Density_n = flowNodes->GetDensity_time_n(iPoint);
         else
           Density_n = flowNodes->GetSolution_time_n(iPoint, 0);
       }
@@ -757,7 +754,7 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
 
           if (Conservative) {
             if (incompressible)
-              Density_n = flowNodes->GetDensity(iPoint);  // Temporary fix
+              Density_n = flowNodes->GetDensity_time_n(iPoint);
             else
               Density_n = flowNodes->GetSolution_time_n(iPoint, 0);
           }
@@ -798,12 +795,9 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/
         if (incompressible) {
-          /*--- This is temporary and only valid for constant-density problems:
-          density could also be temperature dependent, but as it is not a part
-          of the solution vector it's neither stored for previous time steps
-          nor updated with the solution at the end of each iteration. */
-          Density_nM1 = flowNodes->GetDensity(iPoint);
-          Density_n = flowNodes->GetDensity(iPoint);
+          /*--- Use density at each time level for variable-density flows. ---*/
+          Density_nM1 = flowNodes->GetDensity_time_n1(iPoint);
+          Density_n = flowNodes->GetDensity_time_n(iPoint);
           Density_nP1 = flowNodes->GetDensity(iPoint);
         } else {
           Density_nM1 = flowNodes->GetSolution_time_n1(iPoint)[0];

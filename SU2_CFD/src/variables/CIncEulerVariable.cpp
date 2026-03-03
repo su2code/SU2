@@ -58,6 +58,12 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
   if (dual_time) {
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
+
+    /*--- Allocate density storage for previous time levels.
+     *    This is needed for variable-density incompressible unsteady flows
+     *    (e.g. with energy equation or species transport). ---*/
+    Density_time_n.resize(nPoint) = su2double(0.0);
+    Density_time_n1.resize(nPoint) = su2double(0.0);
   }
 
   if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE) {
@@ -122,8 +128,22 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   /*--- Set enthalpy ---*/
 
-  SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
+    SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
 
   return physical;
 
+}
+
+void CIncEulerVariable::Set_Density_time_n() {
+  const auto nPoint = Density_time_n.size();
+  SU2_OMP_FOR_STAT(roundUpDiv(nPoint, omp_get_num_threads()))
+  for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+    Density_time_n(iPoint) = GetDensity(iPoint);
+  }
+  END_SU2_OMP_FOR
+}
+
+void CIncEulerVariable::Set_Density_time_n1() {
+  assert(Density_time_n1.size() == Density_time_n.size());
+  parallelCopy(Density_time_n.size(), Density_time_n.data(), Density_time_n1.data());
 }
