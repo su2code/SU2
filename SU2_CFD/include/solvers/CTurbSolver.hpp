@@ -2,14 +2,14 @@
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -140,4 +140,11 @@ public:
       Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
   }
 
+  /*!
+   * \brief Register additional In- or Outputs for RANS.
+   * \param[in] input - Boolean whether In- or Output should be registered.
+   * \param[in] config - The particular config.
+   * \returns The number of extra variables.
+   */
+  unsigned long RegisterSolutionExtra(bool input, const CConfig* config) final;
 };

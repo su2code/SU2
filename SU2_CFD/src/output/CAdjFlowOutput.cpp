@@ -2,14 +2,14 @@
  * \file CAdjFlowOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author T. Kattmann
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,12 +62,13 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarRMS_RES(const CConfig* conf
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
-      const auto& cv_name = config->GetControllingVariableName(iCV);
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
+    for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+      const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       AddHistoryOutput("RMS_ADJ_"+cv_name, "rms[" + cv_name + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint " + cv_name, HistoryFieldType::RESIDUAL);
     }
-    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      const auto& scalar_name = config->GetUserScalarName(i_scalar);
+    for (unsigned short i_scalar = 0; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++) {
+      const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
       AddHistoryOutput("RMS_ADJ_" + scalar_name, "rms[" + scalar_name + "]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
     }
   }
@@ -98,12 +99,13 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarMAX_RES(const CConfig* conf
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
-      const auto& cv_name = config->GetControllingVariableName(iCV);
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
+    for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+      const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       AddHistoryOutput("MAX_ADJ_" + cv_name, "max["+cv_name +"]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint " + cv_name, HistoryFieldType::RESIDUAL);
     }
-    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      const auto& scalar_name = config->GetUserScalarName(i_scalar);
+    for (unsigned short i_scalar = 0; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++) {
+      const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
       AddHistoryOutput("MAX_ADJ_" + scalar_name, "max[scalar_" + scalar_name + "]",ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
     }
   }
@@ -136,13 +138,14 @@ void CAdjFlowOutput::AddHistoryOutputFields_AdjScalarBGS_RES(const CConfig* conf
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
-      const auto& cv_name = config->GetControllingVariableName(iCV);
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
+    for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+      const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       AddHistoryOutput("BGS_ADJ_" + cv_name, "bgs[" + cv_name + "]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint " + cv_name, HistoryFieldType::RESIDUAL);
     }
 
-    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      const auto& scalar_name = config->GetUserScalarName(i_scalar);
+    for (unsigned short i_scalar = 0; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++) {
+      const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
       AddHistoryOutput("BGS_ADJ_" + scalar_name, "bgs[" + scalar_name + "]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint of " + scalar_name + " .", HistoryFieldType::RESIDUAL);
     }
   }
@@ -213,16 +216,17 @@ void CAdjFlowOutput::LoadHistoryDataAdjScalar(const CConfig* config, const CSolv
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-      for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
-        const auto& cv_name = config->GetControllingVariableName(iCV);
-        SetHistoryOutputValue("RMS_ADJ_"+cv_name, log10(adjspecies_solver->GetRes_RMS(iCV)));
-        SetHistoryOutputValue("MAX_ADJ_"+cv_name, log10(adjspecies_solver->GetRes_Max(iCV)));
-        if (multiZone)
-          SetHistoryOutputValue("BGS_ADJ_" + cv_name, log10(adjspecies_solver->GetRes_BGS(iCV)));
-      }
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
+    for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+      const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
+      SetHistoryOutputValue("RMS_ADJ_"+cv_name, log10(adjspecies_solver->GetRes_RMS(iCV)));
+      SetHistoryOutputValue("MAX_ADJ_"+cv_name, log10(adjspecies_solver->GetRes_Max(iCV)));
+      if (multiZone)
+        SetHistoryOutputValue("BGS_ADJ_" + cv_name, log10(adjspecies_solver->GetRes_BGS(iCV)));
+    }
 
-    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      const auto& scalar_name = config->GetUserScalarName(i_scalar);
+    for (unsigned short i_scalar = 0; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++) {
+      const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
       SetHistoryOutputValue("RMS_ADJ_" + scalar_name, log10(adjspecies_solver->GetRes_RMS(2 + i_scalar)));
       SetHistoryOutputValue("MAX_ADJ_" + scalar_name, log10(adjspecies_solver->GetRes_Max(2 + i_scalar)));
       if (multiZone) {
@@ -263,13 +267,14 @@ void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarSolution(const CConfig* confi
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
-      const auto& cv_name = config->GetControllingVariableName(iCV);
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
+    for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+      const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       AddVolumeOutput("ADJ_" + cv_name, "Adjoint_" + cv_name, "SOLUTION", "Adjoint of the " + cv_name + " controlling variable.");
     }
 
-    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      const auto& scalar_name = config->GetUserScalarName(i_scalar);
+    for (unsigned short i_scalar = 0; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++) {
+      const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
       AddVolumeOutput("ADJ_" + scalar_name, "Adjoint_" + scalar_name, "SOLUTION", "Adjoint of " + scalar_name);
     }
   }
@@ -304,12 +309,13 @@ void CAdjFlowOutput::SetVolumeOutputFieldsAdjScalarResidual(const CConfig* confi
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-    for(auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
-      const auto& cv_name = config->GetControllingVariableName(iCV);
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
+    for(auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+      const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       AddVolumeOutput("RES_ADJ_" + cv_name, "Residual_Adjoint_" + cv_name, "RESIDUAL", "Residual of the adjoint of " + cv_name);
     }
-    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      const auto& scalar_name = config->GetUserScalarName(i_scalar);
+    for (unsigned short i_scalar = 0; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++) {
+      const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
       AddVolumeOutput("RES_ADJ_" + scalar_name, "Residual_Adjoint_" + scalar_name, "RESIDUAL", "Residual of the adjoint of " + scalar_name);
     }
   }
@@ -351,16 +357,16 @@ void CAdjFlowOutput::LoadVolumeDataAdjScalar(const CConfig* config, const CSolve
   }
 
   if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET) {
-
-    for (auto iCV=0u; iCV < config->GetNControlVars(); iCV++) {
-      const auto& cv_name = config->GetControllingVariableName(iCV);
+    const auto& flamelet_config_options = config->GetFlameletParsedOptions();
+    for (auto iCV=0u; iCV < flamelet_config_options.n_control_vars; iCV++) {
+      const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       SetVolumeOutputValue("ADJ_" + cv_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, iCV));
       SetVolumeOutputValue("RES_ADJ_" + cv_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, iCV) - Node_AdjSpecies->GetSolution_Old(iPoint, iCV));
     }
-    for (unsigned short i_scalar = 0; i_scalar < config->GetNUserScalars(); i_scalar++) {
-      const auto& scalar_name = config->GetUserScalarName(i_scalar);
-      SetVolumeOutputValue("ADJ_" + scalar_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, config->GetNControlVars() + i_scalar));
-      SetVolumeOutputValue("RES_ADJ_" + scalar_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, config->GetNControlVars() + i_scalar) - Node_AdjSpecies->GetSolution_Old(iPoint, config->GetNControlVars() + i_scalar));
+    for (unsigned short i_scalar = 0; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++) {
+      const auto& scalar_name = flamelet_config_options.user_scalar_names[i_scalar];
+      SetVolumeOutputValue("ADJ_" + scalar_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, flamelet_config_options.n_control_vars + i_scalar));
+      SetVolumeOutputValue("RES_ADJ_" + scalar_name, iPoint, Node_AdjSpecies->GetSolution(iPoint, flamelet_config_options.n_control_vars + i_scalar) - Node_AdjSpecies->GetSolution_Old(iPoint, flamelet_config_options.n_control_vars + i_scalar));
     }
   }
 

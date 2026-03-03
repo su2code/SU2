@@ -2,14 +2,14 @@
  * \file CPrimalGridFEM.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,67 +26,27 @@
  */
 
 #include "../../../include/geometry/primal_grid/CPrimalGridFEM.hpp"
+#include "../../../include/fem/fem_standard_element.hpp"
 
-CPrimalGridFEM::CPrimalGridFEM(unsigned long val_elemGlobalID, unsigned short val_VTK_Type,
-                               unsigned short val_nPolyGrid, unsigned short val_nPolySol, unsigned short val_nDOFsGrid,
-                               unsigned short val_nDOFsSol, unsigned long val_offDOfsSol, std::istringstream& elem_line)
-    : CPrimalGrid(true, val_nDOFsGrid, nFacesOfElementType(val_VTK_Type)) {
-  /*--- Store the integer data in the member variables of this object. ---*/
-  VTK_Type = val_VTK_Type;
+CPrimalGridFEM::CPrimalGridFEM(const unsigned long* dataElem, unsigned long& offsetSolDOFs)
+    : CPrimalGrid(true, dataElem[3], nFacesOfElementType(dataElem[0])) {
+  /*--- Store the meta data for this element. ---*/
+  VTK_Type = static_cast<unsigned short>(dataElem[0]);
+  nPolyGrid = static_cast<unsigned short>(dataElem[1]);
+  nPolySol = static_cast<unsigned short>(dataElem[2]);
+  nDOFsGrid = static_cast<unsigned short>(dataElem[3]);
+  nDOFsSol = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type, nPolySol);
+  elemIDGlobal = dataElem[4];
+
+  offsetDOFsSolGlobal = offsetSolDOFs;
+  offsetSolDOFs += nDOFsSol;
+
   nFaces = nFacesOfElementType(VTK_Type);
 
-  nPolyGrid = val_nPolyGrid;
-  nPolySol = val_nPolySol;
-  nDOFsGrid = val_nDOFsGrid;
-  nDOFsSol = val_nDOFsSol;
+  /*--- Allocate the memory for the global nodes of the element to define
+        the geometry and copy the data from dataElem. ---*/
 
-  elemIDGlobal = val_elemGlobalID;
-  offsetDOFsSolGlobal = val_offDOfsSol;
-
-  /*--- Read face structure of the element from elem_line. ---*/
-
-  for (unsigned short i = 0; i < nDOFsGrid; i++) elem_line >> Nodes[i];
-
-  /*--- If a linear element is used, the node numbering for non-simplices
-        must be adapted. The reason is that compatability with the original
-        SU2 format is maintained for linear elements, but for the FEM solver
-        the nodes of the elements are stored row-wise.                       ---*/
-  if (nPolyGrid == 1) {
-    switch (VTK_Type) {
-      case QUADRILATERAL:
-        std::swap(Nodes[2], Nodes[3]);
-        break;
-
-      case HEXAHEDRON:
-        std::swap(Nodes[2], Nodes[3]);
-        std::swap(Nodes[6], Nodes[7]);
-        break;
-
-      case PYRAMID:
-        std::swap(Nodes[2], Nodes[3]);
-        break;
-    }
-  }
-}
-
-CPrimalGridFEM::CPrimalGridFEM(unsigned long val_elemGlobalID, unsigned short val_VTK_Type,
-                               unsigned short val_nPolyGrid, unsigned short val_nPolySol, unsigned short val_nDOFsGrid,
-                               unsigned short val_nDOFsSol, unsigned long val_offDOfsSol, const unsigned long* connGrid)
-    : CPrimalGrid(true, val_nDOFsGrid, nFacesOfElementType(val_VTK_Type)) {
-  /*--- Store the integer data in the member variables of this object. ---*/
-  VTK_Type = val_VTK_Type;
-  nFaces = nFacesOfElementType(VTK_Type);
-
-  nPolyGrid = val_nPolyGrid;
-  nPolySol = val_nPolySol;
-  nDOFsGrid = val_nDOFsGrid;
-  nDOFsSol = val_nDOFsSol;
-
-  elemIDGlobal = val_elemGlobalID;
-  offsetDOFsSolGlobal = val_offDOfsSol;
-
-  /*--- Copy face structure of the element from connGrid. ---*/
-  for (unsigned short i = 0; i < nDOFsGrid; i++) Nodes[i] = connGrid[i];
+  for (unsigned short i = 0; i < nDOFsGrid; ++i) Nodes[i] = dataElem[i + 5];
 }
 
 void CPrimalGridFEM::GetLocalCornerPointsAllFaces(unsigned short elementType, unsigned short nPoly,

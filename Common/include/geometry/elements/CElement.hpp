@@ -3,14 +3,14 @@
  * \brief Main header of the Finite Element structure declaring the abstract
  *        interface and the available finite element types.
  * \author R. Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -66,6 +66,8 @@ class CElement {
   su2activevector GaussWeight;  /*!< \brief Weight of the Gaussian Points for the integration. */
   su2activematrix NodalExtrap;  /*!< \brief Coordinates of the nodal points for Gaussian extrapolation. */
   su2activematrix NodalStress;  /*!< \brief Stress at the nodes. */
+
+  su2activevector NodalTemperature; /*!< \brief Temperature at the nodes. */
 
   /*--- Stiffness and load matrices. ---*/
   std::vector<su2activematrix> Kab; /*!< \brief Structure for the constitutive component of the tangent matrix. */
@@ -151,7 +153,7 @@ class CElement {
    * \param[in] iDim - Dimension.
    * \param[in] val_CoordRef - Value of the coordinate.
    */
-  inline void SetRef_Coord(unsigned short iNode, unsigned short iDim, su2double val_CoordRef) {
+  inline void SetRef_Coord(unsigned short iNode, unsigned short iDim, const su2double& val_CoordRef) {
     RefCoord(iNode, iDim) = val_CoordRef;
   }
 
@@ -161,9 +163,21 @@ class CElement {
    * \param[in] iDim - Dimension.
    * \param[in] val_CoordRef - Value of the coordinate.
    */
-  inline void SetCurr_Coord(unsigned short iNode, unsigned short iDim, su2double val_CoordCurr) {
+  inline void SetCurr_Coord(unsigned short iNode, unsigned short iDim, const su2double& val_CoordCurr) {
     CurrentCoord(iNode, iDim) = val_CoordCurr;
   }
+
+  /*!
+   * \brief Set the value of the temperature of a node.
+   */
+  inline void SetTemperature(unsigned short iNode, const su2double& val_Temperature) {
+    NodalTemperature[iNode] = val_Temperature;
+  }
+
+  /*!
+   * \brief Set the value of the temperature of all nodes.
+   */
+  inline void SetTemperature(const su2double& val_Temperature) { NodalTemperature = val_Temperature; }
 
   /*!
    * \brief Get the value of the coordinate of the nodes in the reference configuration.
@@ -180,6 +194,17 @@ class CElement {
    * \return Current coordinate.
    */
   inline su2double GetCurr_Coord(unsigned short iNode, unsigned short iDim) const { return CurrentCoord(iNode, iDim); }
+
+  /*!
+   * \brief Get the value of the temperature at a Gaussian integration point.
+   */
+  inline su2double GetTemperature(unsigned short iGauss) const {
+    su2double Temperature = 0;
+    for (auto iNode = 0u; iNode < nNodes; ++iNode) {
+      Temperature += GetNi(iNode, iGauss) * NodalTemperature[iNode];
+    }
+    return Temperature;
+  }
 
   /*!
    * \brief Get the weight of the corresponding Gaussian Point.
@@ -214,7 +239,9 @@ class CElement {
    * \param[in] nodeB - index of Node b.
    * \param[in] val_Ks_ab - value of the term that will constitute the diagonal of the stress contribution.
    */
-  inline void Add_Mab(unsigned short nodeA, unsigned short nodeB, su2double val_Mab) { Mab(nodeA, nodeB) += val_Mab; }
+  inline void Add_Mab(unsigned short nodeA, unsigned short nodeB, const su2double& val_Mab) {
+    Mab(nodeA, nodeB) += val_Mab;
+  }
 
   /*!
    * \brief Add the value of a submatrix K relating nodes a and b, for the constitutive term.
@@ -243,7 +270,7 @@ class CElement {
    * \param[in] nodeB - index of Node b.
    * \param[in] val_Ks_ab - value of the term that will constitute the diagonal of the stress contribution.
    */
-  inline void Add_Ks_ab(unsigned short nodeA, unsigned short nodeB, su2double val_Ks_ab) {
+  inline void Add_Ks_ab(unsigned short nodeA, unsigned short nodeB, const su2double& val_Ks_ab) {
     Ks_ab(nodeA, nodeB) += val_Ks_ab;
   }
 
@@ -354,7 +381,7 @@ class CElement {
    * \param[in] iVar - Variable index.
    * \param[in] val_Stress - Value of the stress added.
    */
-  inline void Add_NodalStress(unsigned short iNode, unsigned short iVar, su2double val_Stress) {
+  inline void Add_NodalStress(unsigned short iNode, unsigned short iVar, const su2double& val_Stress) {
     NodalStress(iNode, iVar) += val_Stress;
   }
 
@@ -789,7 +816,7 @@ class CQUAD4 final : public CElementWithKnownSizes<4, 4, 2> {
   /*!
    * \brief Shape functions (Ni) evaluated at point Xi,Eta.
    */
-  inline static void ShapeFunctions(su2double Xi, su2double Eta, su2double* Ni) {
+  inline static void ShapeFunctions(const su2double& Xi, const su2double& Eta, su2double* Ni) {
     Ni[0] = 0.25 * (1.0 - Xi) * (1.0 - Eta);
     Ni[1] = 0.25 * (1.0 + Xi) * (1.0 - Eta);
     Ni[2] = 0.25 * (1.0 + Xi) * (1.0 + Eta);
@@ -799,7 +826,7 @@ class CQUAD4 final : public CElementWithKnownSizes<4, 4, 2> {
   /*!
    * \brief Shape function Jacobian (dNi) evaluated at point Xi,Eta.
    */
-  inline static void ShapeFunctionJacobian(su2double Xi, su2double Eta, su2double dNi[][2]) {
+  inline static void ShapeFunctionJacobian(const su2double& Xi, const su2double& Eta, su2double dNi[][2]) {
     dNi[0][0] = -0.25 * (1.0 - Eta);
     dNi[0][1] = -0.25 * (1.0 - Xi);
     dNi[1][0] = 0.25 * (1.0 - Eta);
@@ -900,7 +927,7 @@ class CPYRAM5 final : public CElementWithKnownSizes<5, 5, 3> {
  * \ingroup FemAlgos
  * \brief Prism element with 6 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CPRISM6 final : public CElementWithKnownSizes<6, 6, 3> {
  private:

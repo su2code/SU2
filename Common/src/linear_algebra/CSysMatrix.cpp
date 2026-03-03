@@ -2,14 +2,14 @@
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1027,36 +1027,59 @@ void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, c
 
 template <class ScalarType>
 template <class OtherType>
-void CSysMatrix<ScalarType>::EnforceSolutionAtDOF(unsigned long node_i, unsigned long iVar, OtherType x_i,
-                                                  CSysVector<OtherType>& b) {
+void CSysMatrix<ScalarType>::EnforceZeroProjection(unsigned long node_i, const OtherType* n, CSysVector<OtherType>& b) {
   for (auto index = row_ptr[node_i]; index < row_ptr[node_i + 1]; ++index) {
     const auto node_j = col_ind[index];
 
-    /*--- Delete row iVar of block j on row i (bij) and ATTEMPT
-     *    to delete column iVar block i on row j (bji). ---*/
+    /*--- Remove product components of block j on row i (bij) and ATTEMPT
+     *    to remove solution components of block i on row j (bji).
+     *    This is identical to symmetry correction applied to gradients
+     *    but extended to the entire matrix. ---*/
 
     auto bij = &matrix[index * nVar * nVar];
     auto bji = GetBlock(node_j, node_i);
 
-    /*--- The "attempt" part. ---*/
+    /*--- Attempt to remove solution components. ---*/
+    ScalarType nbn{};
     if (bji != nullptr) {
-      for (auto jVar = 0ul; jVar < nVar; ++jVar) {
-        /*--- Column product. ---*/
-        b[node_j * nVar + jVar] -= bji[jVar * nVar + iVar] * x_i;
-        /*--- Delete entries. ---*/
-        bji[jVar * nVar + iVar] = 0.0;
+      for (auto iVar = 0ul; iVar < nVar; ++iVar) {
+        ScalarType proj{};
+        for (auto jVar = 0ul; jVar < nVar; ++jVar) {
+          proj += bji[iVar * nVar + jVar] * PassiveAssign(n[jVar]);
+        }
+        for (auto jVar = 0ul; jVar < nVar; ++jVar) {
+          bji[iVar * nVar + jVar] -= proj * PassiveAssign(n[jVar]);
+        }
+        nbn += proj * PassiveAssign(n[iVar]);
       }
     }
 
-    /*--- Delete row. ---*/
-    for (auto jVar = 0ul; jVar < nVar; ++jVar) bij[iVar * nVar + jVar] = 0.0;
+    /*--- Product components. ---*/
+    for (auto jVar = 0ul; jVar < nVar; ++jVar) {
+      ScalarType proj{};
+      for (auto iVar = 0ul; iVar < nVar; ++iVar) {
+        proj += bij[iVar * nVar + jVar] * PassiveAssign(n[iVar]);
+      }
+      for (auto iVar = 0ul; iVar < nVar; ++iVar) {
+        bij[iVar * nVar + jVar] -= proj * PassiveAssign(n[iVar]);
+      }
+    }
 
-    /*--- Set the diagonal entry of the block to 1. ---*/
-    if (node_j == node_i) bij[iVar * (nVar + 1)] = 1.0;
+    /*--- This part doesn't have the "*2" factor because the product components
+     *    were removed from the result of removing the solution components
+     *    instead of from the original block (bji == bij). ---*/
+    if (node_i == node_j) {
+      for (auto iVar = 0ul; iVar < nVar; ++iVar) {
+        for (auto jVar = 0ul; jVar < nVar; ++jVar) {
+          bij[iVar * nVar + jVar] += PassiveAssign(n[iVar]) * nbn * PassiveAssign(n[jVar]);
+        }
+      }
+    }
   }
 
-  /*--- Set known solution in rhs vector. ---*/
-  b(node_i, iVar) = x_i;
+  OtherType proj{};
+  for (auto iVar = 0ul; iVar < nVar; ++iVar) proj += b(node_i, iVar) * n[iVar];
+  for (auto iVar = 0ul; iVar < nVar; ++iVar) b(node_i, iVar) -= proj * n[iVar];
 }
 
 template <class ScalarType>
@@ -1203,8 +1226,7 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 #define INSTANTIATE_MATRIX(TYPE)                                                                                  \
   template class CSysMatrix<TYPE>;                                                                                \
   template void CSysMatrix<TYPE>::EnforceSolutionAtNode(unsigned long, const su2double*, CSysVector<su2double>&); \
-  template void CSysMatrix<TYPE>::EnforceSolutionAtDOF(unsigned long, unsigned long, su2double,                   \
-                                                       CSysVector<su2double>&);                                   \
+  template void CSysMatrix<TYPE>::EnforceZeroProjection(unsigned long, const su2double*, CSysVector<su2double>&); \
   INSTANTIATE_COMMS(TYPE)
 
 #ifdef CODI_FORWARD_TYPE

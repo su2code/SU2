@@ -2,14 +2,14 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -341,7 +341,6 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
   /*--- Variables for streamwise periodicity ---*/
   const bool streamwise_periodic = (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE);
   const bool streamwise_periodic_temperature = config->GetStreamwise_Periodic_Temperature();
-  su2double Cp, thermal_conductivity, dot_product, scalar_factor;
 
   /*--- Identify the boundary by string name ---*/
 
@@ -434,15 +433,17 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       /*--- With streamwise periodic flow and heatflux walls an additional term is introduced in the boundary formulation ---*/
       if (streamwise_periodic && streamwise_periodic_temperature) {
 
-        Cp = nodes->GetSpecificHeatCp(iPoint);
-        thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+        const su2double Cp = nodes->GetSpecificHeatCp(iPoint);
+        const su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
         /*--- Scalar factor of the residual contribution ---*/
         const su2double norm2_translation = GeometryToolbox::SquaredNorm(nDim, config->GetPeriodic_Translation(0));
-        scalar_factor = SPvals.Streamwise_Periodic_IntegratedHeatFlow*thermal_conductivity / (SPvals.Streamwise_Periodic_MassFlow * Cp * norm2_translation);
+        const su2double scalar_factor =
+            SPvals.Streamwise_Periodic_IntegratedHeatFlow*thermal_conductivity /
+            (SPvals.Streamwise_Periodic_MassFlow * Cp * norm2_translation);
 
         /*--- Dot product ---*/
-        dot_product = GeometryToolbox::DotProduct(nDim, config->GetPeriodic_Translation(0), Normal);
+        const su2double dot_product = GeometryToolbox::DotProduct(nDim, config->GetPeriodic_Translation(0), Normal);
 
         LinSysRes(iPoint, nDim+1) += scalar_factor*dot_product;
       } // if streamwise_periodic
@@ -472,18 +473,17 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
       const auto Coord_i = geometry->nodes->GetCoord(iPoint);
       const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
-      su2double Edge_Vector[MAXNDIM];
-      GeometryToolbox::Distance(nDim, Coord_j, Coord_i, Edge_Vector);
-      su2double dist_ij_2 = GeometryToolbox::SquaredNorm(nDim, Edge_Vector);
-      su2double dist_ij = sqrt(dist_ij_2);
+      su2double UnitNormal[MAXNDIM] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; ++iDim) UnitNormal[iDim] = Normal[iDim] / Area;
+      const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord_i, Coord_j);
 
       /*--- Compute the normal gradient in temperature using Twall ---*/
 
-      su2double dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
+      const su2double dTdn = -(nodes->GetTemperature(Point_Normal) - Twall)/dist_ij;
 
       /*--- Get thermal conductivity ---*/
 
-      su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
+      const su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
 
       /*--- Apply a weak boundary condition for the energy equation.
       Compute the residual due to the prescribed heat flux. ---*/
@@ -493,10 +493,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
       /*--- Jacobian contribution for temperature equation. ---*/
 
       if (implicit) {
-        su2double proj_vector_ij = 0.0;
-        if (dist_ij_2 > 0.0)
-          proj_vector_ij = GeometryToolbox::DotProduct(nDim, Edge_Vector, Normal) / dist_ij_2;
-        Jacobian.AddVal2Diag(iPoint, nDim+1, thermal_conductivity*proj_vector_ij);
+        Jacobian.AddVal2Diag(iPoint, nDim+1, thermal_conductivity * Area / dist_ij);
       }
       break;
     } // switch
@@ -688,11 +685,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
       const su2double VelTangMod = GeometryToolbox::Norm(int(MAXNDIM), VelTang);
 
       /*--- Compute normal distance of the interior point from the wall ---*/
-
-      su2double WallDist[MAXNDIM] = {0.0};
-      GeometryToolbox::Distance(nDim, Coord, Coord_Normal, WallDist);
-
-      su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
+      const su2double WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
 
       su2double Density_Wall = nodes->GetDensity(iPoint);
 

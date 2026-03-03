@@ -4,14 +4,14 @@
           operations, which are typically found in the BLAS libraries.
           The functions are in the <i>blass_structure.cpp</i> file.
  * \author E. van der Weide
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,11 +29,6 @@
 
 #pragma once
 
-/* LIBXSMM include files, if supported. */
-#ifdef HAVE_LIBXSMM
-#include "libxsmm.h"
-#endif
-
 class CConfig;
 
 /*!
@@ -41,7 +36,7 @@ class CConfig;
  * \ingroup BLAS
  * \brief Class, which serves as an interface to the BLAS functionalities needed.
  * \author: E. van der Weide
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CBlasStructure {
  public:
@@ -494,8 +489,7 @@ class CBlasStructure {
   }
 
  private:
-#if !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL)) || \
-    (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
+#if !(defined(HAVE_BLAS) || defined(HAVE_MKL)) || (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   /* Blocking parameters for the outer kernel.  We multiply mc x kc blocks of
    the matrix A with kc x nc panels of the matrix B (this approach is referred
    to as `gebp` in the literature). */

@@ -3,14 +3,14 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>CVertex.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,7 +45,8 @@ class CVertex : public CDualGrid {
   long PeriodicPoint[5] = {-1};  /*!< \brief Store the periodic point of a boundary (iProcessor, iPoint) */
   bool ActDisk_Perimeter = false;      /*!< \brief Identify nodes at the perimeter of the actuator disk */
   short Rotation_Type;                 /*!< \brief Type of rotation associated with the vertex (MPI and periodic) */
-  unsigned long Normal_Neighbor;       /*!< \brief Index of the closest neighbor. */
+  unsigned long Normal_Neighbor;       /*!< \brief Index of the closest, most normal, neighbor. */
+  su2double NearestNeighborDist = 0.0; /*!< \brief Distance to nearest internal neighbor that is not a wall. */
   su2double Basis_Function[3] = {0.0}; /*!< \brief Basis function values for interpolation across zones. */
 
  public:
@@ -98,7 +99,7 @@ class CVertex : public CDualGrid {
    * \brief Get the normal to a face of the control volume asociated with a vertex.
    * \return Dimensional normal vector, the modulus is the area of the face.
    */
-  inline su2double* GetNormal(void) override { return Normal; }
+  inline su2double* GetNormal() override { return Normal; }
 
   /*!
    * \brief Get the ith component of the normal.
@@ -108,7 +109,7 @@ class CVertex : public CDualGrid {
   /*!
    * \brief Initialize normal vector.
    */
-  inline void SetZeroValues(void) override {
+  inline void SetZeroValues() override {
     for (unsigned short iDim = 0; iDim < nDim; iDim++) Normal[iDim] = 0.0;
   }
 
@@ -122,7 +123,7 @@ class CVertex : public CDualGrid {
    * \brief Get the value of an auxiliary variable for gradient computation.
    * \return Value of the auxiliar variable.
    */
-  inline su2double GetAuxVar(void) const { return Aux_Var; }
+  inline su2double GetAuxVar() const { return Aux_Var; }
 
   /*!
    * \brief Add the value of an auxiliary variable for gradient computation.
@@ -167,7 +168,7 @@ class CVertex : public CDualGrid {
    * \brief Get the value of the coordinate variation due to a surface modification.
    * \return Variation of the coordinate.
    */
-  inline su2double* GetVarCoord(void) { return VarCoord; }
+  inline su2double* GetVarCoord() { return VarCoord; }
 
   /*!
    * \brief Set the value of the cartesian coordinate for the vertex.
@@ -181,7 +182,7 @@ class CVertex : public CDualGrid {
    * \brief Get the value of the cartesian coordinate for the vertex.
    * \return Value of the cartesian coordinate of the vertex.
    */
-  inline su2double* GetCoord(void) override { return CartCoord; }
+  inline su2double* GetCoord() override { return CartCoord; }
 
   /*!
    * \brief Get the value of the cartesian coordinate for the vertex.
@@ -200,7 +201,7 @@ class CVertex : public CDualGrid {
    * \brief Get the type of rotation associated to the vertex.
    * \return Value of the rotation that must be applied to the solution of the vertex
    */
-  inline short GetRotation_Type(void) const { return Rotation_Type; }
+  inline short GetRotation_Type() const { return Rotation_Type; }
 
   /*!
    * \overload
@@ -250,49 +251,49 @@ class CVertex : public CDualGrid {
    * \brief Get the value of the periodic point of a vertex.
    * \return Value of the periodic point of a vertex.
    */
-  inline long GetDonorPoint(void) const { return PeriodicPoint[0]; }
+  inline long GetDonorPoint() const { return PeriodicPoint[0]; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex.
    * \return Value of the periodic point of a vertex.
    */
-  inline long GetDonorMarker(void) const { return PeriodicPoint[4]; }
+  inline long GetDonorMarker() const { return PeriodicPoint[4]; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex.
    * \return Value of the periodic point of a vertex.
    */
-  inline long GetDonorVertex(void) const { return PeriodicPoint[3]; }
+  inline long GetDonorVertex() const { return PeriodicPoint[3]; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex.
    * \return Value of the periodic point of a vertex.
    */
-  inline long GetDonorGlobalIndex(void) const { return PeriodicPoint[2]; }
+  inline long GetDonorGlobalIndex() const { return PeriodicPoint[2]; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex.
    * \return Value of the periodic point of a vertex.
    */
-  inline long GetGlobalDonorPoint(void) const { return PeriodicPoint[2]; }
+  inline long GetGlobalDonorPoint() const { return PeriodicPoint[2]; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex.
    * \return Value of the periodic point of a vertex.
    */
-  inline long GetDonorProcessor(void) const { return PeriodicPoint[1]; }
+  inline long GetDonorProcessor() const { return PeriodicPoint[1]; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex, and its somain
    * \return Value of the periodic point of a vertex, and the domain.
    */
-  inline long* GetPeriodicPointDomain(void) { return PeriodicPoint; }
+  inline long* GetPeriodicPointDomain() { return PeriodicPoint; }
 
   /*!
    * \brief Get the value of the periodic point of a vertex, and its somain
    * \return Value of the periodic point of a vertex, and the domain.
    */
-  inline bool GetActDisk_Perimeter(void) const { return ActDisk_Perimeter; }
+  inline bool GetActDisk_Perimeter() const { return ActDisk_Perimeter; }
 
   /*!
    * \brief Set the finite element basis functions needed for interpolation.
@@ -318,5 +319,15 @@ class CVertex : public CDualGrid {
    * \brief Get the value of the closest neighbor.
    * \return Index of the closest neighbor.
    */
-  inline unsigned long GetNormal_Neighbor(void) const { return Normal_Neighbor; }
+  inline unsigned long GetNormal_Neighbor() const { return Normal_Neighbor; }
+
+  /*!
+   * \brief Set the distance of the nearest internal neighbor that is not a wall.
+   */
+  inline void SetNearestNeighborDistance(const su2double& val) { NearestNeighborDist = val; }
+
+  /*!
+   * \brief Get the distance to the nearest internal neighbor that is not a wall.
+   */
+  inline const su2double& GetNearestNeighborDistance() const { return NearestNeighborDist; }
 };

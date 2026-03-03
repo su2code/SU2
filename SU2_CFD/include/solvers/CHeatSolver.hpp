@@ -2,14 +2,14 @@
  * \file CHeatSolver.hpp
  * \brief Headers of the CHeatSolver class
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,7 @@
  * \class CHeatSolver
  * \brief Main class for defining the finite-volume heat solver.
  * \author O. Burghardt
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  */
 class CHeatSolver final : public CScalarSolver<CHeatVariable> {
 protected:
@@ -42,7 +42,6 @@ protected:
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
 
   const bool flow; /*!< \brief Use solver as a scalar transport equation of Temperature for the inc solver. */
-  const bool heat_equation; /*!< \brief use solver for heat conduction in solids. */
 
   su2double Global_Delta_Time = 0.0, Global_Delta_UnstTimeND = 0.0;
 

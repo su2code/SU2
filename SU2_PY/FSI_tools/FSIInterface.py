@@ -3,14 +3,14 @@
 ## \file FSIInterface.py
 #  \brief FSI interface class that handles fluid/solid solvers synchronisation and communication.
 #  \authors Nicola Fonzi, Vittorio Cavalieri based on the work of David Thomas
-#  \version 8.1.0 "Harrier"
+#  \version 8.2.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -307,7 +307,7 @@ class Interface:
             print("Fluid solver is initialized on process {}".format(myid))
             self.haveFluidSolver = True
             allMovingMarkersTags = FluidSolver.GetDeformableMarkerTags()
-            allMarkersID = FluidSolver.GetMarkerTags()
+            allMarkersID = FluidSolver.GetMarkerIndices()
             if not allMovingMarkersTags:
                 raise Exception("No interface for FSI was defined.")
             else:

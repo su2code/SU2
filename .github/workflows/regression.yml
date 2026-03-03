@@ -30,7 +30,7 @@ jobs:
           - config_set: ReverseMPI
             flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ForwardMPI
-            flags: '-Denable-directdiff=true -Denable-normal=false -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Denable-directdiff=true -Denable-normal=false -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 --werror'
           - config_set: BaseNoMPI
             flags: '-Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ReverseNoMPI

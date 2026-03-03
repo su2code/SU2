@@ -3,14 +3,14 @@
 ## \file change_version_number.py
 #  \brief Python script for updating the version number of the SU2 suite.
 #  \author A. Aranake
-#  \version 8.1.0 "Harrier"
+#  \version 8.2.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -55,13 +55,13 @@ parser.add_option(
 if not options.version:
     parser.error("new version number must be provided with -v option")
 
-oldvers = '8.1.0 "Harrier"'
-oldvers_q = r"8.1.0 \"Harrier\""
+oldvers = '8.2.0 "Harrier"'
+oldvers_q = r"8.2.0 \"Harrier\""
 newvers = str(options.version) + ' "' + str(options.releasename) + '"'
 newvers_q = str(options.version) + ' \\"' + str(options.releasename) + '\\"'
-# oldvers = 'Copyright 2012-2024, SU2'
+# oldvers = 'Copyright 2012-2025, SU2'
 # oldvers_q = oldvers
-# newvers = 'Copyright 2012-2024, SU2'
+# newvers = 'Copyright 2012-2025, SU2'
 # newvers_q = newvers
 
 if sys.version_info[0] > 2:

@@ -2,14 +2,14 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,6 +55,7 @@ class CSolver;
 class CFileWriter;
 class CParallelDataSorter;
 class CConfig;
+class CHeatOutput;
 
 using namespace std;
 
@@ -65,6 +66,7 @@ using namespace std;
  */
 class COutput {
 protected:
+  friend class CHeatOutput;
 
   /*----------------------------- General ----------------------------*/
 
@@ -241,15 +243,16 @@ protected:
 
   /*----------------------------- Volume output ----------------------------*/
 
-  CParallelDataSorter* volumeDataSorter;    //!< Volume data sorter
-  CParallelDataSorter* surfaceDataSorter;   //!< Surface data sorter
+  CParallelDataSorter* volumeDataSorter;        //!< Volume data sorter.
+  CParallelDataSorter* volumeDataSorterCompact; //!< Volume data sorter for compact files.
+  CParallelDataSorter* surfaceDataSorter;       //!< Surface data sorter.
 
-  vector<string> volumeFieldNames;     //!< Vector containing the volume field names
-  unsigned short nVolumeFields;        //!< Number of fields in the volume output
+  vector<string> volumeFieldNames;          //!< Vector containing the volume field names.
+  vector<string> requiredVolumeFieldNames;  //!< Vector containing the minimum required volume field names.
 
-  string volumeFilename,               //!< Volume output filename
-  surfaceFilename,                     //!< Surface output filename
-  restartFilename;                     //!< Restart output filename
+  string volumeFilename,               //!< Volume output filename.
+  surfaceFilename,                     //!< Surface output filename.
+  restartFilename;                     //!< Restart output filename.
 
   /** \brief Structure to store information for a volume output field.
    *
@@ -259,39 +262,47 @@ protected:
     /*! \brief The name of the field, i.e. the name that is printed in the file header.*/
     string fieldName;
     /*! \brief This value identifies the position of the values of this field at each node in the ::Local_Data array. */
-    short  offset;
+    short offset = -1;
+    /*! \brief This offset is used for the compact formulation. */
+    short offsetCompact = -1;
     /*! \brief The group this field belongs to. */
     string outputGroup;
-    /*! \brief String containing the description of the field */
+    /*! \brief String containing the description of the field. */
     string description;
     /*! \brief Default constructor. */
-    VolumeOutputField () {}
+    VolumeOutputField() = default;
     /*! \brief Constructor to initialize all members. */
-    VolumeOutputField(string fieldName_, int offset_, string volumeOutputGroup_, string description_):
-      fieldName(std::move(fieldName_)), offset(std::move(offset_)),
-      outputGroup(std::move(volumeOutputGroup_)), description(std::move(description_)){}
+    VolumeOutputField(string fieldName_, string volumeOutputGroup_, string description_):
+      fieldName(std::move(fieldName_)),
+      outputGroup(std::move(volumeOutputGroup_)),
+      description(std::move(description_)) {}
   };
 
   /*! \brief Associative map to access data stored in the volume output fields by a string identifier. */
-  std::map<string, VolumeOutputField >          volumeOutput_Map;
+  std::map<string, VolumeOutputField > volumeOutput_Map;
   /*! \brief Vector that contains the keys of the ::volumeOutput_Map in the order of their insertion. */
-  std::vector<string>                           volumeOutput_List;
+  std::vector<string> volumeOutput_List;
 
-  /*! \brief Vector to cache the positions of the field in the data array */
-  std::vector<short>                            fieldIndexCache;
-  /*! \brief Current value of the cache index */
-  unsigned short                                cachePosition;
-  /*! \brief Boolean to store whether the field index cache should be build. */
-  bool                                          buildFieldIndexCache;
-  /*! \brief Vector to cache the positions of the field in the data array */
-  std::vector<short>                            fieldGetIndexCache;
-  /*! \brief Current value of the cache index */
-  unsigned short                                curGetFieldIndex;
+  /*! \brief Whether the field index caches should be build. */
+  bool buildFieldIndexCache;
+
+  /*! \brief Vectors to cache the positions of the fields in the data array. */
+  std::vector<short> fieldIndexCache, fieldIndexCacheCompact;
+  /*! \brief Current value of the cache indices. */
+  unsigned short cachePosition;
+
+  /*! \brief Vector to cache the positions of the field in the data array. */
+  std::vector<short> fieldGetIndexCache;
+  /*! \brief Current value of the cache index. */
+  unsigned short curGetFieldIndex;
 
   /*! \brief Requested volume field names in the config file. */
   std::vector<string> requestedVolumeFields;
   /*! \brief Number of requested volume field names in the config file. */
   unsigned short nRequestedVolumeFields;
+
+  /*! \brief Minimum required volume fields for restart file. */
+  const std::vector<string> restartVolumeFields = {"COORDINATES", "SOLUTION", "SENSITIVITY", "GRID_VELOCITY"};
 
   /*----------------------------- Convergence monitoring ----------------------------*/
 
@@ -736,8 +747,9 @@ protected:
    * \param[in] groupname - The name of the group this field belongs to.
    * \param[in] description - Description of the volume field.
    */
-  inline void AddVolumeOutput(string name, string field_name, string groupname, string description){
-    volumeOutput_Map[name] = VolumeOutputField(field_name, -1, groupname, description);
+  inline void AddVolumeOutput(const string& name, const string& field_name,
+                              const string& group_name, const string& description) {
+    volumeOutput_Map[name] = VolumeOutputField(field_name, group_name, description);
     volumeOutput_List.push_back(name);
   }
 
@@ -959,14 +971,14 @@ protected:
 
   /*!
    * \brief Sets the turboperformance screen output
-   * \param[in] TurboPerf - Turboperformance class 
+   * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
    * \param[in] TimeIter - Index of the current time-step
    * \param[in] OuterIter - Index of current outer iteration
    * \param[in] InnerIter - Index of current inner iteration
    */
   inline virtual void SetTurboPerformance_Output(std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {}
-  
+
   /*!
    * \brief Sets the multizone turboperformacne screen output
    * \param[in] TurboStagePerf - Stage turboperformance class
@@ -982,7 +994,7 @@ protected:
    * \param[in] config - Definition of the particular problem
    */
   inline virtual void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::shared_ptr<CTurboOutput> TurboPerf, CConfig *config) {}
-                                  
+
   /*!
    * \brief Write the kinematic and thermodynamic variables at each spanwise division
    * \param[in] solver - The container hold all solution data

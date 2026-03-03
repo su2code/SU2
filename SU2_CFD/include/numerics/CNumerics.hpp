@@ -3,14 +3,14 @@
  * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1483,10 +1483,10 @@ public:
   inline virtual void Compute_Mass_Matrix(CElement *element_container, const CConfig* config) { }
 
   /*!
-   * \brief A virtual member to compute the residual component due to dead loads
+   * \brief A virtual member to compute the residual component due to body forces.
    * \param[in] element_container - Element structure for the particular element integrated.
    */
-  inline virtual void Compute_Dead_Load(CElement *element_container, const CConfig* config) { }
+  inline virtual void Compute_Body_Forces(CElement *element_container, const CConfig* config) { }
 
   /*!
    * \brief A virtual member to compute the averaged nodal stresses

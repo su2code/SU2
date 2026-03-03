@@ -2,14 +2,14 @@
  * \file CNEMOCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author W. Maier, R. Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -65,7 +65,7 @@ CNEMOCompOutput::CNEMOCompOutput(const CConfig *config, unsigned short nDim) : C
     auto notFound = requestedVolumeFields.end();
     if (find(requestedVolumeFields.begin(), notFound, string("GRID_VELOCITY")) == notFound) {
       requestedVolumeFields.emplace_back("GRID_VELOCITY");
-      nRequestedVolumeFields ++;
+      nRequestedVolumeFields++;
     }
   }
 

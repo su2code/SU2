@@ -2,14 +2,14 @@
  * \file CFlowIncOutput.cpp
  * \brief Main subroutines for incompressible flow output
  * \author R. Sanchez
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -70,7 +70,7 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
     auto notFound = requestedVolumeFields.end();
     if (find(requestedVolumeFields.begin(), notFound, string("GRID_VELOCITY")) == notFound) {
       requestedVolumeFields.emplace_back("GRID_VELOCITY");
-      nRequestedVolumeFields ++;
+      nRequestedVolumeFields++;
     }
   }
 
@@ -211,7 +211,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
   SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
-  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
+  if (nDim == 3) SetHistoryOutputValue("MAX_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
 
   if (multiZone){
     SetHistoryOutputValue("BGS_PRESSURE", log10(flow_solver->GetRes_BGS(0)));

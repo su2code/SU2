@@ -3,14 +3,14 @@
  * \brief Implementation of the functions that either simulate BLAS functionality
           or interface to an actual BLAS implementation.
  * \author E. van der Weide
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -43,8 +43,7 @@ extern "C" void dgemv_(char*, const int*, const int*, const passivedouble*, cons
 
 /* Constructor. Initialize the const member variables, if needed. */
 CBlasStructure::CBlasStructure()
-#if !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL)) || \
-    (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
+#if !(defined(HAVE_BLAS) || defined(HAVE_MKL)) || (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
     : mc(256),
       kc(128),
       nc(128)
@@ -61,38 +60,25 @@ void CBlasStructure::gemm(const int M, const int N, const int K, const su2double
   if (config) config->GEMM_Tick(&timeGemm);
 #endif
 
-#if (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)) || \
-    !(defined(HAVE_LIBXSMM) || defined(HAVE_MKL) || defined(HAVE_BLAS))
+#if (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)) || !(defined(HAVE_MKL) || defined(HAVE_BLAS))
   /* Native implementation of the matrix product. This optimized implementation
      assumes that the matrices are in column major order. This can be
      accomplished by swapping N and M and A and B. This implementation is based
      on https://github.com/flame/how-to-optimize-gemm. */
   gemm_imp(N, M, K, B, A, C);
 
-#else
-#ifdef HAVE_LIBXSMM
-
-  /* The gemm function of libxsmm is used to carry out the multiplication.
-     Note that libxsmm_gemm expects the matrices in column major order. That's
-     why the in the calling sequence A and B and M and N are reversed. */
-  su2double alpha = 1.0;
-  su2double beta = 0.0;
-  char trans = 'N';
-
-  libxsmm_dgemm(&trans, &trans, &N, &M, &K, &alpha, B, &N, A, &K, &beta, C, &N);
-
 #else  // MKL and BLAS
 
   /* The standard blas routine dgemm is used for the multiplication.
      Call dgemm without transposing the matrices. In that case dgemm expects
-     the matrices in column major order, see the comments for libxsmm. */
+     the matrices in column major order. That's why the in the calling
+     sequence A and B and M and N are reversed. */
   su2double alpha = 1.0;
   su2double beta = 0.0;
   char trans = 'N';
 
   dgemm_(&trans, &trans, &N, &M, &K, &alpha, B, &N, A, &K, &beta, C, &N);
 
-#endif
 #endif
 
   /* Store the profiling information, if needed. */
@@ -131,8 +117,7 @@ void CBlasStructure::gemv(const int M, const int N, const su2double* A, const su
 #endif
 }
 
-#if !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL)) || \
-    (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
+#if !(defined(HAVE_BLAS) || defined(HAVE_MKL)) || (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
 
 /* Macros for accessing submatrices of a matmul using the leading dimension. */
 #define A(i, j) a[(j)*lda + (i)]

@@ -2,7 +2,7 @@
 % SU2 configuration file                                                 %
 % PaStiX support build instructions.                                     %
 % Institution: Imperial College London                                   %
-% File Version 8.1.0 "Harrier"                                           %
+% File Version 8.2.0 "Harrier"                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % 1 - Download

@@ -2,14 +2,14 @@
  * \file CPrimalGridBoundFEM.cpp
  * \brief Main classes for defining the primal grid elements
  * \author F. Palacios
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,27 +27,17 @@
 
 #include "../../../include/geometry/primal_grid/CPrimalGridBoundFEM.hpp"
 
-CPrimalGridBoundFEM::CPrimalGridBoundFEM(unsigned long val_elemGlobalID, unsigned long val_domainElementID,
-                                         unsigned short val_VTK_Type, unsigned short val_nPolyGrid,
-                                         unsigned short val_nDOFsGrid, std::vector<unsigned long>& val_nodes)
-    : CPrimalGrid(true, val_nDOFsGrid, 1) {
-  /*--- Store the integer data in the member variables of this object. ---*/
-  VTK_Type = val_VTK_Type;
+CPrimalGridBoundFEM::CPrimalGridBoundFEM(const unsigned long* dataElem) : CPrimalGrid(true, dataElem[2], 1) {
+  /*--- Store the meta data for this element. ---*/
+  VTK_Type = static_cast<unsigned short>(dataElem[0]);
+  nPolyGrid = static_cast<unsigned short>(dataElem[1]);
+  nDOFsGrid = static_cast<unsigned short>(dataElem[2]);
+  boundElemIDGlobal = dataElem[3];
+  GlobalIndex_DomainElement = dataElem[4];
 
-  nPolyGrid = val_nPolyGrid;
-  nDOFsGrid = val_nDOFsGrid;
-
-  boundElemIDGlobal = val_elemGlobalID;
-  GlobalIndex_DomainElement = val_domainElementID;
-
-  /*--- Copy face structure of the element from val_nodes. ---*/
-
-  for (unsigned short i = 0; i < nDOFsGrid; i++) Nodes[i] = val_nodes[i];
-
-  /*--- For a linear quadrilateral the two last node numbers must be swapped,
-        such that the element numbering is consistent with the FEM solver.    ---*/
-
-  if (nPolyGrid == 1 && VTK_Type == QUADRILATERAL) std::swap(Nodes[2], Nodes[3]);
+  /*--- Allocate the memory for the global nodes of the element to define
+        the geometry and copy them from val_nodes.                        ---*/
+  for (unsigned short i = 0; i < nDOFsGrid; i++) Nodes[i] = dataElem[i + 5];
 }
 
 void CPrimalGridBoundFEM::GetLocalCornerPointsFace(unsigned short elementType, unsigned short nPoly,

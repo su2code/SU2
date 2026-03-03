@@ -2,14 +2,14 @@
  * \file fem_standard_element.cpp
  * \brief Functions for the FEM standard elements.
  * \author E. van der Weide
- * \version 8.1.0 "Harrier"
+ * \version 8.2.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -186,9 +186,9 @@ CFEMStandardElementBase::CFEMStandardElementBase(unsigned short val_VTK_Type, un
     orderExact = val_orderExact;
   } else {
     if (constJacobian)
-      orderExact = (unsigned short)ceil(val_nPoly * config->GetQuadrature_Factor_Straight());
+      orderExact = static_cast<unsigned short>(ceil(val_nPoly * config->GetQuadrature_Factor_Straight()));
     else
-      orderExact = (unsigned short)ceil(val_nPoly * config->GetQuadrature_Factor_Curved());
+      orderExact = static_cast<unsigned short>(ceil(val_nPoly * config->GetQuadrature_Factor_Curved()));
   }
 
   /*--- Determine the integration points. This depends on the element type. ---*/
@@ -903,7 +903,7 @@ void CFEMStandardElementBase::SubConnForPlottingLine(const unsigned short nPoly,
   /*--- Determine the local subconnectivity of the line element used for plotting
         purposes. This is rather trivial, because the line element is subdivided
         into nPoly linear line elements.                    ---*/
-  unsigned short nnPoly = max(nPoly, (unsigned short)1);
+  unsigned short nnPoly = max(nPoly, static_cast<unsigned short>(1));
   for (unsigned short i = 0; i < nnPoly; ++i) {
     subConn.push_back(i);
     subConn.push_back(i + 1);
@@ -916,7 +916,7 @@ void CFEMStandardElementBase::SubConnForPlottingQuadrilateral(const unsigned sho
         plotting purposes. Note that the connectivity of the linear subelements
         obey the VTK connectivity rule of a quadrilateral, which is different
         from the connectivity for the high order quadrilateral. ---*/
-  unsigned short nnPoly = max(nPoly, (unsigned short)1);
+  unsigned short nnPoly = max(nPoly, static_cast<unsigned short>(1));
   for (unsigned short j = 0; j < nnPoly; ++j) {
     unsigned short jj = j * (nnPoly + 1);
     for (unsigned short i = 0; i < nnPoly; ++i) {
