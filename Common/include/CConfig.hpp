@@ -10237,6 +10237,8 @@ public:
    * \return AFT option data structure.
    */
   AFT_ParsedOptions GetAFTParsedOptions() const { return aftParsedOptions; }
+
+  /*!
    * \brief Get rough-wall boundary conditions for SST.
    */
   ROUGHSST_MODEL GetKindRoughSSTModel() const { return Kind_RoughSST_Model; }

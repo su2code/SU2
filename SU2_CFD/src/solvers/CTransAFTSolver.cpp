@@ -163,11 +163,36 @@ void CTransAFTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
+ /*
+  AD::StartNoSharedReading();
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  //After wall normal unit vector is defined like other developer, Auxvar[1] become Auxvar[0].
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
+    su2double rhoud = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      rhoud += flowNodes->GetDensity(iPoint) * flowNodes->GetVelocity(iPoint, iDim) * nodes->GetAuxVarGradient(iPoint, 0, iDim);
+    }
+    nodes->SetAuxVar(iPoint, 1, rhoud);
+  }
+  END_SU2_OMP_FOR
+  AD::EndNoSharedReading();
+
+  switch (config->GetKind_Gradient_Method()) {
+    case GREEN_GAUSS:
+      SetAuxVar_Gradient_GG(geometry, config);
+      break;
+    case WEIGHTED_LEAST_SQUARES:
+      SetAuxVar_Gradient_LS(geometry, config);
+    default:
+      break;
+    }
+  */
 }
 
 void CTransAFTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
-  /*--- Compute LM model gradients. ---*/
+  /*--- Compute AFT model gradients. ---*/
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
     SetSolution_Gradient_GG(geometry, config, -1);
@@ -492,15 +517,17 @@ void CTransAFTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 void CTransAFTSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                                   bool val_update_geo) {
 
-  const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  string restart_filename = config->GetSolution_FileName();
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
     if (config->GetRead_Binary_Restart()) {
+      restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
       Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
     } else {
+      restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 

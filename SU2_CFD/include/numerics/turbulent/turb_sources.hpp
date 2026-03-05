@@ -58,7 +58,7 @@ struct CSAVariables {
   su2double Omega, dist_i_2, inv_k2_d2, inv_Shat, g_6, norm2_Grad;
 
   su2double intermittency, interDestrFactor;
-  su2double lnintermittecncy;
+  su2double AFT_intermittecncy;
 };
 
 /*!
@@ -197,10 +197,11 @@ class CSourceBase_TurbSA : public CNumerics {
 
       /*--- Compute ft2 term ---*/
       if(transition_AFT) {
-        var.lnintermittecncy = exp(intermittency_i);
+        /*--- The intermittency_i is a second variable in AFT equation. ---*/
+        var.AFT_intermittecncy = exp(intermittency_i);
       }
       else {
-        var.lnintermittecncy = 1.0;
+        var.AFT_intermittecncy = 1.0;
       }
       ft2::get(var, transition_AFT);
 
@@ -333,11 +334,14 @@ struct Zero {
 struct Nonzero {
   static void get(CSAVariables& var, bool transition_AFT) {
     const su2double xsi2 = pow(var.Ji, 2);
-    var.ft2 = var.ct3 * exp(-var.ct4 * xsi2);
-    var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji;
-    if(transition_AFT) {
-      var.ft2 = var.ct3 * (1.0 - var.lnintermittecncy);
+    
+    if (transition_AFT) {
+      var.ft2 = var.ct3 * (1.0 - var.AFT_intermittecncy);
       var.d_ft2 = 0.0;
+    }
+    else {
+      var.ft2 = var.ct3 * exp(-var.ct4 * xsi2);
+      var.d_ft2 = -2.0 * var.ct4 * var.Ji * var.ft2 * var.d_Ji;
     }
   }
 };

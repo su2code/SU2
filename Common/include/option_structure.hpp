@@ -1392,15 +1392,10 @@ inline AFT_ParsedOptions ParseAFTOptions(const AFT_OPTIONS *AFT_Options, unsigne
     AFTParsedOptions.version = AFT_OPTIONS::AFT2019b;
     NFoundCorrelations++;
   }
-
-  if (NFoundCorrelations > 1) {
-    SU2_MPI::Error("Two correlations selected for AFT_OPTIONS. Please choose only one.", CURRENT_FUNCTION);
-  }
-
   return AFTParsedOptions;
 }
 
- * \brief Structure containing parsed options for data-driven fluid model.
+ /* \brief Structure containing parsed options for data-driven fluid model.
  */
 struct DataDrivenFluid_ParsedOptions {
   su2double Newton_relaxation = 1.0;  /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
@@ -2112,6 +2107,10 @@ static const MapType<std::string, ACTDISK_TYPE> ActDisk_Map = {
 enum class WALL_TYPE {
   SMOOTH,  /*!< \brief Smooth wall */
   ROUGH,   /*!< \brief Rough wall */
+};
+static const MapType<std::string, WALL_TYPE> WallType_Map = {
+  MakePair("SMOOTH", WALL_TYPE::SMOOTH)
+  MakePair("ROUGH", WALL_TYPE::ROUGH)
 };
 
 /*!
