@@ -271,7 +271,7 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
 #ifdef USE_MLPCPP
   rho_query = rho;
   e_query = e;
-  lookup_mlp->Predict(iomap_rhoe);
+  if(!lookup_mlp->Predict(iomap_rhoe)) exit_code=1;
 #endif
   
   return exit_code;

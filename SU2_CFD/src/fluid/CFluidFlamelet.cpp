@@ -322,19 +322,20 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
       } else {
         inside = look_up_table->LookUp_XY(LUT_idx, output_refs, val_prog, val_enth);
       }
-      if (inside) extrapolation = 0;
-      else extrapolation = 1;
+      
       break;
     case ENUM_DATADRIVEN_METHOD::MLP:
       refs_vars.resize(output_refs.size());
       for (auto iVar = 0u; iVar < output_refs.size(); iVar++) refs_vars[iVar] = &output_refs[iVar];
 #ifdef USE_MLPCPP
-      lookup_mlp->Predict(*iomap_Current, input_scalar, refs_vars);
+      inside=lookup_mlp->Predict(*iomap_Current, input_scalar, refs_vars);
 #endif
       break;
     default:
       break;
   }
+  if (inside) extrapolation = 0;
+      else extrapolation = 1;
   for (auto iVar = 0u; iVar < output_refs.size(); iVar++) AD::SetPreaccOut(output_refs[iVar]);
   AD::EndPreacc();
   return extrapolation;
