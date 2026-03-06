@@ -312,7 +312,7 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
   
 
   /*--- Add all quantities and their names to the look up vectors. ---*/
-  bool inside;
+  bool inside{true};
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::LUT:
       if (output_refs.size() != LUT_idx.size())
