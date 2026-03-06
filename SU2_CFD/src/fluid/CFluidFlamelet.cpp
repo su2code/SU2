@@ -235,7 +235,8 @@ void CFluidFlamelet::PreprocessLookUp(CConfig* config) {
     iomap_LookUp = new MLPToolbox::CIOMap(controlling_variable_names, varnames_LookUp);
     lookup_mlp->PairVariableswithMLPs(*iomap_TD);
     lookup_mlp->PairVariableswithMLPs(*iomap_Sources);
-    lookup_mlp->PairVariableswithMLPs(*iomap_LookUp);
+    if (n_lookups > 1)
+      lookup_mlp->PairVariableswithMLPs(*iomap_LookUp);
     if (preferential_diffusion) {
       iomap_PD = new MLPToolbox::CIOMap(controlling_variable_names, varnames_PD);
       lookup_mlp->PairVariableswithMLPs(*iomap_PD);
