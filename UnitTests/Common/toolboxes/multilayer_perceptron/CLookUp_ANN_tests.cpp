@@ -37,7 +37,8 @@
 #ifdef USE_MLPCPP
 TEST_CASE("LookUp ANN test", "[LookUpANN]") {
   MLPToolbox::CLookUp_ANN ANN;
-  MLPToolbox::CNeuralNetwork mlp = MLPToolbox::CNeuralNetwork("src/SU2/UnitTests/Common/toolboxes/multilayer_perceptron/simple_mlp.mlp");
+  MLPToolbox::CNeuralNetwork mlp =
+      MLPToolbox::CNeuralNetwork("src/SU2/UnitTests/Common/toolboxes/multilayer_perceptron/simple_mlp.mlp");
 
   ANN.AddNetwork(&mlp);
   su2double x, y, z, z_alt;
@@ -89,6 +90,5 @@ TEST_CASE("LookUp ANN test", "[LookUpANN]") {
   y = -20.0;
   inside = ANN.Predict(iomap_ref);
   CHECK(!inside);
-
 }
 #endif
