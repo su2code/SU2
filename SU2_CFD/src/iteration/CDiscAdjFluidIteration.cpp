@@ -426,10 +426,6 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
     if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
       solvers0[ADJTURB_SOL]->RegisterSolution(geometry0, config[iZone]);
     }
-    if (config[iZone]->GetBoolTurbomachinery()) {
-      geometry0->RegisterCoordinates();
-      solvers0[ADJFLOW_SOL]->Register_VertexNormals(geometry0, config[iZone], true);
-    }
     if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
       solvers0[ADJSPECIES_SOL]->RegisterSolution(geometry0, config[iZone]);
     }
@@ -477,7 +473,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
     CGeometry::UpdateGeometry(geometry[iZone][iInst], config[iZone]);
     END_SU2_OMP_PARALLEL
 
-    CGeometry::ComputeWallDistance(config, geometry);
+    CGeometry::ComputeWallDistance(config, geometry, iZone);
   }
 
   SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {

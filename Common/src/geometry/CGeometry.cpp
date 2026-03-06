@@ -4153,7 +4153,7 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
 }
 }  // namespace
 
-void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container) {
+void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container, const int record_zone) {
   int nZone = config_container[ZONE_0]->GetnZone();
   bool allEmpty = true;
   vector<bool> wallDistanceNeeded(nZone, false);
@@ -4221,6 +4221,11 @@ void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeo
     }
 
     for (int iZone = 0; iZone < nZone; iZone++) {
+      /*--- When recording for a specific zone, only compute nearest-neighbor distances (which read vertex
+       *    normals) for that zone. Reading normals from other zones at this tape position would create
+       *    cross-zone AD dependencies before those zones have had their geometry updated. ---*/
+      if (record_zone >= 0 && iZone != record_zone) continue;
+
       /*--- For the FEM solver, we use a different mesh structure ---*/
       MAIN_SOLVER kindSolver = config_container[iZone]->GetKind_Solver();
       if (!wallDistanceNeeded[iZone] || kindSolver == MAIN_SOLVER::FEM_LES || kindSolver == MAIN_SOLVER::FEM_RANS) {
