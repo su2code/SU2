@@ -21,7 +21,7 @@ su2_cfd_tests = files(['Common/geometry/primal_grid/CPrimalGrid_tests.cpp',
 # Reverse-mode (algorithmic differentiation) tests:
 su2_cfd_tests_ad = files(['Common/simple_ad_test.cpp'])
 if get_option('enable-mlpcpp')
-  su2_cfd_tests_ad = su2_cfd_tests_ad + files(['SU2_CFD/fluid/CFluidModel_tests_AD.cpp'])
+  su2_cfd_tests_ad = su2_cfd_tests_ad + files(['SU2_CFD/fluid/CFluidModel_tests_AD.cpp', 'Common/toolboxes/multilayer_perceptron/MLP_Jacobian_tests.cpp'])
 endif
 
 # Forward-mode (direct differentiation) tests:
