@@ -23,8 +23,6 @@ su2_cfd_tests_ad = files(['Common/simple_ad_test.cpp',
                           'SU2_CFD/fluid/CFluidModel_tests_AD.cpp',
                           'Common/toolboxes/multilayer_perceptron/MLP_Jacobian_tests.cpp'])
 
-endif
-
 # Forward-mode (direct differentiation) tests:
 su2_cfd_tests_dd = files(['Common/simple_directdiff_test.cpp'])
 
