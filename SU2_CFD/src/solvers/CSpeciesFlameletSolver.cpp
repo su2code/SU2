@@ -211,7 +211,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
                   n_points_burnt_local = 0, n_points_flame_local = 0, n_not_iterated_global, n_not_in_domain_global,
                   n_points_burnt_global, n_points_flame_global, n_points_unburnt_global;
 
-    
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
       if (flame_front_ignition) prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
