@@ -2,14 +2,14 @@
  * \file CHeatSolver.cpp
  * \brief Main subroutines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -201,6 +201,10 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     // P, vx, vy (,vz)
     skipVars += 1 + nDim;
   }
+  if (config->GetStructuralProblem() && config->GetWeakly_Coupled_Heat()) {
+    skipVars += nDim;
+    if (config->GetTime_Domain()) skipVars += 2 * nDim;
+  }
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -310,6 +314,20 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     if (implicit) Jacobian.SetDiagonalAsColumnSum();
   }
 }
+
+void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                                  CConfig *config, unsigned short iMesh) {
+
+  /*--- Regular source terms go here. ---*/
+  /*--- ... ---*/
+
+ /*--- Custom user defined source term (from the python wrapper) ---*/
+  if (config->GetPyCustomSource()) {
+    CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
+  }
+
+}
+
 
 void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 

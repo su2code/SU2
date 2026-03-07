@@ -50,10 +50,9 @@ rho_u = 2.52
 k_u = 0.0523
 # unburnt heat capacity of methane-air (phi=0.5, P=5)
 cp_u = 1350.0
-
-# P = rho*R*T
-# 5 = 2.55 * R * 673
-# R = 0.0029
+# laminar burning velocity of methane-air at phi=0.5, P=5
+Slu = 0.232
+Le = 1.0
 
 
 # ################################################################## #
@@ -94,18 +93,6 @@ def update_temperature(SU2Driver, iPoint):
     C = SU2Driver.Solution(iSPECIESSOLVER)(iPoint,0)
     T = Tu*(1-C) + Tf*C
 
-    #iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
-    #solindex = getsolvar(SU2Driver)
-    #iTEMP = solindex.get("TEMPERATURE")
-    #T = SU2Driver.Solution(iFLOWSOLVER)(iPoint,iTEMP)
-    #SU2Driver.Solution(iFLOWSOLVER).Set(iPoint,iTEMP,cp_u*T)
-
-    prim_indices = SU2Driver.GetPrimitiveIndices()
-    iTemp = prim_indices['TEMPERATURE']
-    SU2Driver.Primitives().Set(iPoint,iTemp, T)
-    #ih = prim_indices['ENTHALPY']
-    #SU2Driver.Primitives().Set(iPoint,ih, cp_u*(T-Tref))
-        
     iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
     iENTH = 3
     #h = 
@@ -115,7 +102,7 @@ def update_temperature(SU2Driver, iPoint):
 # ################################################################## #
 # Source term according to Zimont
 # ################################################################## #
-def zimont(SU2Driver, iPoint):
+def zimont(SU2Driver, iPoint, nDim):
 
     iSSTSOLVER = SU2Driver.GetSolverIndices()['SST']
     tke, dissipation = SU2Driver.Solution(iSSTSOLVER)(iPoint)
@@ -127,9 +114,6 @@ def zimont(SU2Driver, iPoint):
     iDENSITY = primindex.get("DENSITY")
     iMU = primindex.get("LAMINAR_VISCOSITY")
 
-    # laminar burning velocity of methane-air at phi=0.5, P=5
-    Slu = 0.232
-
     rho = SU2Driver.Primitives()(iPoint,iDENSITY)
     mu = SU2Driver.Primitives()(iPoint,iMU)
     nu=mu/rho
@@ -137,9 +121,13 @@ def zimont(SU2Driver, iPoint):
     up = np.sqrt((2.0/3.0) * tke )
     lt = (0.09**0.75) * (tke**1.5) / dissipation
     Re = up*lt/nu
-    Le = 1.0
     Ut = Slu * (1.0 + (0.46/Le) * np.power(Re,0.25) * np.power(up/Slu,0.3) * np.power(Pu,0.2) )
-    norm_gradc = np.sqrt(gradc[0]*gradc[0] + gradc[1]*gradc[1])
+
+    norm_gradc = 0.0
+    for idim in range(nDim):
+      norm_gradc += gradc[idim]*gradc[idim]
+    norm_gradc = np.sqrt(norm_gradc)
+
     Sc = rho_u * Ut * norm_gradc
 
     return Sc
@@ -233,7 +221,7 @@ def main():
     for i_node in range(driver.GetNumberNodes() - driver.GetNumberHaloNodes()):
       # add source term:
       # default TFC of Zimont: rho*Sc = rho_u * U_t * grad(c)
-      S = zimont(driver,i_node)
+      S = zimont(driver,i_node, nDim)
       Source.Set(i_node,0,S)
 
     # for the update of temperature, we need to update also the halo nodes

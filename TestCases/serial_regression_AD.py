@@ -3,14 +3,14 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -206,8 +206,8 @@ def main():
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 6
-    discadj_fsi.test_vals = [6, -8.932959, -10.054580, 3.1054e-11, -1.7612e-06]
-    discadj_fsi.test_vals_aarch64 = [6, -8.928861, -10.122430, 3.0979e-11, -1.7585e-06]
+    discadj_fsi.test_vals = [6, -8.928820, -10.067497, 3.1052e-11, -1.7613e-06]
+    discadj_fsi.test_vals_aarch64 = [6, -8.928820, -10.067497, 3.0979e-11, -1.7585e-06]
     test_list.append(discadj_fsi)
 
     ###################################
@@ -219,7 +219,7 @@ def main():
     discadj_cht.cfg_dir   = "coupled_cht/disc_adj_incomp_2d"
     discadj_cht.cfg_file  = "cht_2d_3cylinders.cfg"
     discadj_cht.test_iter = 10
-    discadj_cht.test_vals = [-6.111521, -2.668836, -2.669558, -2.669595]
+    discadj_cht.test_vals = [-6.308199, -3.086023, -3.086024, -3.086024]
     test_list.append(discadj_cht)
 
     ######################################
