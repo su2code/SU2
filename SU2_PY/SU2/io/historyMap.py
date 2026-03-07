@@ -310,6 +310,20 @@ history_header_map = {
         "HEADER": "ComboObj",
         "TYPE": "COEFFICIENT",
     },
+    # Steady adjoint fix
+    "CUSTOM_OBJFUNC": {
+        "DESCRIPTION": "Custom objective function.",
+        "GROUP": "COMBO",
+        "HEADER": "ComboObj",
+        "TYPE": "COEFFICIENT",
+    },
+    # Unsteady adjoint fix
+    "TAVG_CUSTOM_OBJFUNC": {
+        "DESCRIPTION": "weighted time average value",
+        "GROUP": "TAVG_COMBO",
+        "HEADER": "tavg[ComboObj]",
+        "TYPE": "TAVG_COEFFICIENT",
+    },
     "DEFORM_ITER": {
         "DESCRIPTION": "Linear solver iterations for the mesh " "deformation",
         "GROUP": "DEFORM",
