@@ -36,7 +36,7 @@
 
 #include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/geometry/CGeometry.hpp"
-#include "../../include/linear_algebra/CLinearAlgebraUtils.hpp"
+#include "../../include/linear_algebra/CGraphPartitioning.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
 
 using namespace cudaKernelParameters;
@@ -328,7 +328,7 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
    prod.GPUSetVal(0.0);
 
    MatrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nColor,
-                                LinearAlgebraUtils::ComputeRowsPerCudaBlock(config->GetCuda_Block_Size()));
+                                GraphPartitioningUtils::ComputeRowsPerCudaBlock(config->GetCuda_Block_Size()));
 
   dim3 blockDim(config->GetCuda_Block_Size(),1,1);
    unsigned int gridx = roundUpDiv(matrixParam.totalRows * CUDA_WARP_SIZE, config->GetCuda_Block_Size());
@@ -353,7 +353,7 @@ void CSysMatrix<ScalarType>::GPUComputeLU_SGSPreconditioner(const CSysVector<Sca
       prod.HtDTransfer();
 
       MatrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nColor,
-                       LinearAlgebraUtils::ComputeRowsPerCudaBlock(config->GetCuda_Block_Size()));
+                                   GraphPartitioningUtils::ComputeRowsPerCudaBlock(config->GetCuda_Block_Size()));
 
       dim3 blockDim(matrixParam.rowsPerBlock * CUDA_WARP_SIZE,1,1);
       /*

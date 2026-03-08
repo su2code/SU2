@@ -27,7 +27,6 @@
 
 #include "../../include/geometry/CPhysicalGeometry.hpp"
 #include "../../include/linear_algebra/CGraphPartitioning.hpp"
-#include "../../include/linear_algebra/CLinearAlgebraUtils.hpp"
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
@@ -710,7 +709,7 @@ void CPhysicalGeometry::PartitionGraph(const CConfig* config, vector<ScalarType>
     case ENUM_GRAPH_PART_ALGORITHM::LEVEL_SCHEDULING:
       auto levelSchedule = CLevelScheduling<ScalarType>(nPointDomain, nodes);
       levelSchedule.Partition(pointList, partitionOffsets, chainPtr,
-                              LinearAlgebraUtils::ComputeRowsPerCudaBlock(config->GetCuda_Block_Size()));
+                              GraphPartitioningUtils::ComputeRowsPerCudaBlock(config->GetCuda_Block_Size()));
       nColor = levelSchedule.nLevels;
       maxPartitionSize = levelSchedule.maxLevelWidth;
       break;

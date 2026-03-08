@@ -30,6 +30,14 @@
 
 #include "../geometry/CGeometry.hpp"
 
+namespace GraphPartitioningUtils {
+
+inline unsigned short ComputeRowsPerCudaBlock(unsigned short cudaBlockSize) {
+  return static_cast<unsigned short>((cudaKernelParameters::CUDA_WARP_SIZE + cudaBlockSize - 1) / cudaBlockSize);
+}
+
+}  // namespace GraphPartitioningUtils
+
 /*!
  * \class CGraphPartitioning
  * \brief Abstract base class for defining graph partitioning algorithms.
