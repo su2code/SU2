@@ -1,16 +1,16 @@
-﻿/*!
+/*!
  * \file CGeometry.hpp
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +51,7 @@ extern "C" {
 #include <climits>
 #include <memory>
 #include <unordered_map>
+#include <cstdint>
 
 #include "primal_grid/CPrimalGrid.hpp"
 #include "dual_grid/CDualGrid.hpp"
@@ -960,6 +961,19 @@ class CGeometry {
    * \param[in] config - Definition of the particular problem.
    */
   void SetCustomBoundary(CConfig* config);
+
+  /*!
+   * \brief General interface for setting the velocity in the geometry during motion ramps
+   * \param[in] config - config class
+   * \param[in] ramp_flag - flag for type of ramp
+   * \param[in] print - bool to print update to screen
+   */
+  void SetVelocity(CConfig* config, bool print) {
+    if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::ROTATING_FRAME)
+      SetRotationalVelocity(config, print);
+    else if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::STEADY_TRANSLATION)
+      SetTranslationalVelocity(config, print);
+  };
 
   /*!
    * \brief Set cartesian grid velocity based on rotational speed and axis.

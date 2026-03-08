@@ -2,14 +2,14 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 8.2.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -284,9 +284,6 @@ void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {
 
 void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
-  const auto iZone = config->GetiZone();
-  const auto nZone = geometry->GetnZone();
-
   const bool topology_mode = config->GetTopology_Optimization();
 
   element_properties = new CProperty*[nElement];
@@ -295,9 +292,6 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
   auto filename = config->GetFEA_FileName();
 
-  /*--- If multizone, append zone name ---*/
-  if (nZone > 1)
-    filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
   if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
 
@@ -1169,7 +1163,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
   const su2double stress_scale = 1.0 / stressParam[0];
   const su2double ks_mult = stressParam[1];
 
-  const unsigned short nStress = (nDim == 2) ? 3 : 6;
+  const unsigned short nStress = 2 * nDim;
 
   su2double StressPenalty = 0.0;
   su2double MaxVonMises_Stress = 0.0;
@@ -3105,7 +3099,7 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CNumerics **numerics, CC
 
 void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
-  const bool dynamic = (config->GetTime_Domain());
+  const bool dynamic = config->GetTime_Domain();
   const bool fluid_structure = config->GetFSI_Simulation();
   const bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
@@ -3115,11 +3109,13 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
-  string filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  string filename = config->GetSolution_FileName();
 
   if (config->GetRead_Binary_Restart()) {
+    filename = config->GetFilename(filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
   } else {
+    filename = config->GetFilename(filename, ".csv", val_iter);
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
   }
 

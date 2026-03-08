@@ -2,14 +2,14 @@
  * \file CDriver.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
- * \version 8.2.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -95,6 +95,8 @@
 #include "../../include/iteration/CIterationFactory.hpp"
 
 #include "../../../Common/include/parallelization/omp_structure.hpp"
+
+#include "../../../Common/include/grid_movement/CVolumetricMovementFactory.hpp"
 
 #include <cassert>
 
@@ -2314,8 +2316,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
       ifstream properties_file;
 
       string filename = config->GetFEA_FileName();
-      if (nZone > 1)
-        filename = config->GetMultizone_FileName(filename, iZone, ".dat");
 
       properties_file.open(filename.data(), ios::in);
 
@@ -2375,7 +2375,7 @@ void CDriver::PreprocessDynamicMesh(CConfig *config, CGeometry **geometry, CSolv
   if (!fem_solver && (config->GetGrid_Movement() || (config->GetDirectDiff() == D_DESIGN))) {
     if (rank == MASTER_NODE)
       cout << "Setting dynamic mesh structure for zone "<< iZone + 1<<"." << endl;
-    grid_movement = new CVolumetricMovement(geometry[MESH_0], config);
+    grid_movement = CVolumetricMovementFactory::CreateCVolumetricMovement(geometry[MESH_0], config);
 
     if (surface_movement == nullptr)
       surface_movement = new CSurfaceMovement();
@@ -2769,9 +2769,10 @@ void CDriver::PrintDirectResidual(RECORDING kind_recording) {
 
   /*--- Helper lambda func to return lenghty [iVar][iZone] string.  ---*/
   auto iVar_iZone2string = [&](unsigned short ivar, unsigned short izone) {
-    if (multizone)
+    if (multizone) {
       return "[" + std::to_string(ivar) + "][" + std::to_string(izone) + "]";
-          return "[" + std::to_string(ivar) + "]";
+    }
+    return "[" + std::to_string(ivar) + "]";
   };
 
   /*--- Print residuals in the first iteration ---*/
@@ -2827,37 +2828,33 @@ void CDriver::PrintDirectResidual(RECORDING kind_recording) {
           if (!addVals) RMSTable.AddColumn("rms_Rad" + iVar_iZone2string(0, iZone), fieldWidth);
           else RMSTable << log10(solvers[RAD_SOL]->GetRes_RMS(0));
         }
-
-      }
-      else if (configs->GetStructuralProblem()) {
-
+      } else if (configs->GetStructuralProblem()) {
         if (configs->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE){
           if (!addVals) {
             RMSTable.AddColumn("UTOL-A", fieldWidth);
             RMSTable.AddColumn("RTOL-A", fieldWidth);
             RMSTable.AddColumn("ETOL-A", fieldWidth);
-          }
-          else {
+          } else {
             RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(0))
                      << log10(solvers[FEA_SOL]->GetRes_FEM(1))
                      << log10(solvers[FEA_SOL]->GetRes_FEM(2));
           }
-        }
-        else{
+        } else {
           if (!addVals) {
             RMSTable.AddColumn("log10[RMS Ux]", fieldWidth);
             RMSTable.AddColumn("log10[RMS Uy]", fieldWidth);
             if (nDim == 3) RMSTable.AddColumn("log10[RMS Uz]", fieldWidth);
-          }
-          else {
+          } else {
             RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(0))
                      << log10(solvers[FEA_SOL]->GetRes_FEM(1));
             if (nDim == 3) RMSTable << log10(solvers[FEA_SOL]->GetRes_FEM(2));
           }
         }
-
-      }
-      else if (configs->GetHeatProblem()) {
+        if (configs->GetWeakly_Coupled_Heat()){
+          if (!addVals) RMSTable.AddColumn("rms_Heat", fieldWidth);
+          else RMSTable << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
+        }
+      } else if (configs->GetHeatProblem()) {
 
         if (!addVals) RMSTable.AddColumn("rms_Heat" + iVar_iZone2string(0, iZone), fieldWidth);
         else RMSTable << log10(solvers[HEAT_SOL]->GetRes_RMS(0));
