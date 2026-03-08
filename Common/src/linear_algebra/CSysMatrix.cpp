@@ -165,7 +165,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     GPUAllocAndCopy(d_row_ptr, row_ptr, (nPointDomain + 1));
     GPUAllocAndCopy(d_col_ind, col_ind, nnz);
     GPUAllocAndCopy(d_dia_ptr, dia_ptr, nPointDomain);
-    GPUVectorAllocAndCopy(d_partition_offsets, geometry->partitionOffsets, geometry->nColor + 1);
+    GPUVectorAllocAndCopy(d_partition_offsets, geometry->partitionOffsets, geometry->nGraphPartition + 1);
   }
 
   if (needTranspPtr) col_ptr = geometry->GetTransposeSparsePatternMap(type).data();

@@ -710,7 +710,7 @@ void CPhysicalGeometry::PartitionGraph(const CConfig* config, vector<ScalarType>
       auto levelSchedule = CLevelScheduling<ScalarType>(nPointDomain, nodes);
       levelSchedule.Partition(pointList, partitionOffsets, chainPtr,
                               GraphPartitioningUtils::ComputeRowsPerCudaBlock(config->GetCuda_Block_Size()));
-      nColor = levelSchedule.nLevels;
+      nGraphPartition = levelSchedule.nLevels;
       maxPartitionSize = levelSchedule.maxLevelWidth;
       break;
   }

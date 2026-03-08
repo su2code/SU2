@@ -327,7 +327,7 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
    vec.HtDTransfer();
    prod.GPUSetVal(0.0);
 
-   MatrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nColor,
+   MatrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nGraphPartition,
                                 GraphPartitioningUtils::ComputeRowsPerCudaBlock(config->GetCuda_Block_Size()));
 
   dim3 blockDim(config->GetCuda_Block_Size(),1,1);
@@ -352,7 +352,7 @@ void CSysMatrix<ScalarType>::GPUComputeLU_SGSPreconditioner(const CSysVector<Sca
       vec.HtDTransfer();
       prod.HtDTransfer();
 
-      MatrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nColor,
+      MatrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nGraphPartition,
                                    GraphPartitioningUtils::ComputeRowsPerCudaBlock(config->GetCuda_Block_Size()));
 
       dim3 blockDim(matrixParam.rowsPerBlock * CUDA_WARP_SIZE,1,1);
