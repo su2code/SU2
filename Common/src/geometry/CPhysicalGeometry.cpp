@@ -27,6 +27,7 @@
 
 #include "../../include/geometry/CPhysicalGeometry.hpp"
 #include "../../include/linear_algebra/CGraphPartitioning.hpp"
+#include "../../include/linear_algebra/CLinearAlgebraUtils.hpp"
 #include "../../include/adt/CADTPointsOnlyClass.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../include/toolboxes/CLinearPartitioner.hpp"
@@ -702,14 +703,15 @@ void CPhysicalGeometry::DistributeColoring(const CConfig* config, CGeometry* geo
 
 template <class ScalarType>
 void CPhysicalGeometry::PartitionGraph(const CConfig* config, vector<ScalarType>& pointList) {
-  unsigned short KindAlgorithm = config->GetKind_Graph_Part_Algo();
+  auto KindAlgorithm = config->GetKind_Graph_Part_Algo();
   partitionOffsets.reserve(nPointDomain);
 
   switch (KindAlgorithm) {
-    case LEVEL_SCHEDULING:
+    case ENUM_GRAPH_PART_ALGORITHM::LEVEL_SCHEDULING:
       auto levelSchedule = CLevelScheduling<ScalarType>(nPointDomain, nodes);
-      levelSchedule.Partition(pointList, partitionOffsets, chainPtr, config->GetRows_Per_Cuda_Block());
-      nPartition = levelSchedule.nLevels;
+      levelSchedule.Partition(pointList, partitionOffsets, chainPtr,
+                              LinearAlgebraUtils::ComputeRowsPerCudaBlock(config->GetCuda_Block_Size()));
+      nColor = levelSchedule.nLevels;
       maxPartitionSize = levelSchedule.maxLevelWidth;
       break;
   }

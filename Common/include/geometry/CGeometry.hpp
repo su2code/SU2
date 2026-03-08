@@ -260,7 +260,7 @@ class CGeometry {
   unsigned long* nPointCumulative{nullptr}; /*!< \brief Cumulative storage array containing the total number of points
                                                on all prior ranks in the linear partitioning. */
 
-  unsigned long nPartition;       /*!< \brief Number of divisions of the matrix graph during execution of parallel
+  unsigned long nColor;       /*!< \brief Number of divisions of the matrix graph during execution of parallel
                                      partitioning algorithms. */
   unsigned long maxPartitionSize; /*!< \brief Size of the level with the maximum number of elements. */
   vector<unsigned long>

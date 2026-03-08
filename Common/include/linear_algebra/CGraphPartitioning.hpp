@@ -59,7 +59,6 @@ template <class ScalarType>
 CGraphPartitioning<ScalarType>::~CGraphPartitioning() {}
 
 template <class ScalarType>
-
 class CLevelScheduling final : public CGraphPartitioning<ScalarType> {
  private:
   ScalarType nPointDomain;
@@ -81,15 +80,13 @@ class CLevelScheduling final : public CGraphPartitioning<ScalarType> {
     maxLevelWidth = 0ul;
   }
 
-  CLevelScheduling() = delete;  // Removing default constructor
-
   /*!
    * \brief Divides the levels into groups of chains depending on the preset GPU block and warp size.
    * \param[in] levelOffsets - Represents the vector array containing the ordered list of starting rows of each level.
    * \param[in] chainPtr - Represents the vector array containing the ordered list of starting levels of each chain.
    * \param[in] rowsPerBlock - Represents the maximum number of rows that can be accomodated per CUDA block.
    */
-  void CalculateChain(vector<ScalarType> levelOffsets, vector<ScalarType>& chainPtr, unsigned short rowsPerBlock) {
+  void CalculateChain(const vector<ScalarType>& levelOffsets, vector<ScalarType>& chainPtr, unsigned short rowsPerBlock) {
     ScalarType levelWidth = 0;
 
     /*This is not a magic number. We are simply initializing
@@ -115,34 +112,33 @@ class CLevelScheduling final : public CGraphPartitioning<ScalarType> {
   /*!
    * \brief Reorders the points according to the levels
    * \param[in] pointList - Ordered array that contains the list of all mesh points.
-   * \param[in] inversePointList - Array utilized to access the index of each point in pointList.
    * \param[in] levelOffsets - Vector array containing the ordered list of starting rows of each level.
+   * \param[out] reorderedPointList - Reordered list of points after applying level scheduling.
    */
-  void Reorder(vector<ScalarType>& pointList, vector<ScalarType>& inversePointList, vector<ScalarType> levelOffsets) {
+  void Reorder(const vector<ScalarType>& pointList, const vector<ScalarType>& levelOffsets,
+               vector<ScalarType>& reorderedPointList) {
+    auto levelOffsetsCursor = levelOffsets;
+
     for (auto localPoint = 0ul; localPoint < nPointDomain; ++localPoint) {
       const auto globalPoint = pointList[localPoint];
-      inversePointList[levelOffsets[levels[localPoint]]++] = globalPoint;
+      reorderedPointList[levelOffsetsCursor[levels[localPoint]]++] = globalPoint;
     }
-
-    pointList = std::move(inversePointList);
   }
 
   /*!
    * \brief Reorders the points according to the levels
-   * \param[in] pointList - Ordered array that contains the list  of all mesh points.
+   * \param[in,out] pointList - Ordered array that contains the list of all mesh points.
    * \param[in] levelOffsets - Vector array containing the ordered list of starting rows of each level.
    * \param[in] chainPtr - Represents the vector array containing the ordered list of starting levels of each chain.
    * \param[in] rowsPerBlock - Represents the maximum number of rows that can be accomodated per CUDA block.
    */
   void Partition(vector<ScalarType>& pointList, vector<ScalarType>& levelOffsets, vector<ScalarType>& chainPtr,
                  unsigned short rowsPerBlock) override {
-    vector<ScalarType> inversePointList;
-    inversePointList.reserve(nPointDomain);
-    levels.reserve(nPointDomain);
+    vector<ScalarType> inversePointList(nPointDomain);
+    levels.resize(nPointDomain, 0ul);
 
     for (auto point = 0ul; point < nPointDomain; point++) {
       inversePointList[pointList[point]] = point;
-      levels[point] = 0;
     }
 
     //  Local Point - Ordering of the points post the RCM ordering
@@ -175,7 +171,8 @@ class CLevelScheduling final : public CGraphPartitioning<ScalarType> {
       levelOffsets[iLevel] += levelOffsets[iLevel - 1];
     }
 
-    Reorder(pointList, inversePointList, levelOffsets);
+    Reorder(pointList, levelOffsets, inversePointList);
+    pointList = std::move(inversePointList);
 
     CalculateChain(levelOffsets, chainPtr, rowsPerBlock);
   }

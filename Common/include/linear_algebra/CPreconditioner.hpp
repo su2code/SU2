@@ -208,12 +208,10 @@ class CLU_SGSPreconditioner final : public CPreconditioner<ScalarType> {
 #ifdef HAVE_CUDA
     if (config->GetCUDA()) {
       sparse_matrix.GPUComputeLU_SGSPreconditioner(u, v, geometry, config);
-    } else {
-      sparse_matrix.ComputeLU_SGSPreconditioner(u, v, geometry, config);
+      return;
     }
-#else
-    sparse_matrix.ComputeLU_SGSPreconditioner(u, v, geometry, config);
 #endif
+    sparse_matrix.ComputeLU_SGSPreconditioner(u, v, geometry, config);
   }
 };
 

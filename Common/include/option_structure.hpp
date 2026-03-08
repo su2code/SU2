@@ -78,16 +78,6 @@ enum class SU2_COMPONENT {
  */
 namespace cudaKernelParameters{
 
-  /*!
-   * \brief Returns the rounded up value of the decimal quotient to the next integer (in all cases).
-   */
-  inline unsigned int rounded_up_division(int divisor, int dividend) { return ((dividend + divisor - 1) / divisor); }
-
-  /*!
-   * \brief Returns the rounded down value of the decimal quotient to the previous integer (in all cases).
-   */
-  inline unsigned int rounded_down_division(int divisor, int dividend) { return ((dividend - divisor + 1) / divisor); }
-
   static constexpr short CUDA_WARP_SIZE = 32;  /*!< \brief Outlines the numbers of threads per warp for a CUDA GPU. */
 }
 
@@ -2368,11 +2358,11 @@ static const MapType<std::string, ENUM_FFD_BLENDING> Blending_Map = {
 /*!
  * \brief Types of graph partitioning algorithms for parallel computing
  */
-enum ENUM_GRAPH_PART_ALGORITHM {
+enum class ENUM_GRAPH_PART_ALGORITHM {
   LEVEL_SCHEDULING,   /*!< \brief  Partitions the graphs according to level-set algorithm. */
 };
 static const MapType<std::string, ENUM_GRAPH_PART_ALGORITHM> Graph_Part_Map = {
-  MakePair("LEVEL_SCHEDULING", LEVEL_SCHEDULING)
+  MakePair("LEVEL_SCHEDULING", ENUM_GRAPH_PART_ALGORITHM::LEVEL_SCHEDULING)
 };
 
 /*!

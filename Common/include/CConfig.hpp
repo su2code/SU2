@@ -521,7 +521,6 @@ private:
   Kind_Gradient_Method_Recon,      /*!< \brief Numerical method for computation of spatial gradients used for upwind reconstruction. */
   Kind_Deform_Linear_Solver,             /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver. */
-  Kind_Graph_Part_Algo,    /*!< \brief Algorithm for parallel partitioning of the matrix graph. */
   Kind_Linear_Solver,                    /*!< \brief Numerical solver for the implicit scheme. */
   Kind_Linear_Solver_Prec,               /*!< \brief Preconditioner of the linear solver. */
   Kind_DiscAdj_Linear_Solver,            /*!< \brief Linear solver for the discrete adjoint system. */
@@ -537,6 +536,8 @@ private:
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
   n_Datadriven_files;
+
+  ENUM_GRAPH_PART_ALGORITHM Kind_Graph_Part_Algo; /*!< \brief Algorithm for parallel partitioning of the matrix graph. */
 
   DataDrivenFluid_ParsedOptions datadriven_ParsedOptions; /*!< \brief Options for data-driven fluid analysis. */
 
@@ -4167,7 +4168,7 @@ public:
    * \brief Get the type of algorithm used for partitioning the matrix graph.
    * \return Algorithm that divides the matrix into partitions that are executed parallely.
    */
-  unsigned short GetKind_Graph_Part_Algo(void) const { return Kind_Graph_Part_Algo; }
+  ENUM_GRAPH_PART_ALGORITHM GetKind_Graph_Part_Algo(void) const { return Kind_Graph_Part_Algo; }
 
   /*!
    * \brief Get the kind of solver for the implicit solver.
@@ -4235,12 +4236,6 @@ public:
    * \return Thread block dimensions (X-axis) being used by the CUDA Kernels.
    */
   unsigned short GetCuda_Block_Size(void) const { return Cuda_Block_Size; }
-
-  /*!
-   * \brief Get the number of matrix rows assigned per CUDA Block.
-   * \return The number of matrix rows assigned per CUDA Block.
-   */
-  unsigned short GetRows_Per_Cuda_Block(void) const { return cudaKernelParameters::rounded_up_division(cudaKernelParameters::CUDA_WARP_SIZE, Cuda_Block_Size); }
 
   /*!
    * \brief Get the relaxation factor for solution updates of adjoint solvers.

@@ -31,8 +31,8 @@
 #include<iostream>
 #include "../option_structure.hpp"
 
-/*!
- * \struct matrixParameters
+/*! 
+ * \struct MatrixParameters
  * \brief Structure containing information related to the Jacobian Matrix which is utilized by any launched Kernel.
  *
  *  This implementation alleviates the need to pass an excessive number of arguments
@@ -40,7 +40,7 @@
  *  to data duplication for a short period of time, this is a much cleaner and resuable approach.
  * \author A. Raj
  */
-struct matrixParameters{
+struct MatrixParameters {
 
   public:
     unsigned long totalRows;        /*!< \brief Contains the total number of rows of the Jacbian Matrix. */
@@ -54,7 +54,7 @@ struct matrixParameters{
     unsigned short rowsPerBlock;     /*!< \brief Number of rows being processed by each thread block. This is equal to the number
                                         of warps present in the block as each row gets assigned a warp. */
 
-    matrixParameters(unsigned long nPointDomain, unsigned long nEqn, unsigned long nVar, unsigned long nPartitions, unsigned short rowsPrBlck){
+    MatrixParameters(unsigned long nPointDomain, unsigned long nEqn, unsigned long nVar, unsigned long nPartitions, unsigned short rowsPrBlck){
       totalRows = nPointDomain;
       blockRowSize = nEqn;
       blockColSize = nVar;

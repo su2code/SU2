@@ -36,25 +36,33 @@
 
 #include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/geometry/CGeometry.hpp"
+#include "../../include/linear_algebra/CLinearAlgebraUtils.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
 
 using namespace cudaKernelParameters;
 
-template<typename matrixType, typename vectorType>
-__device__ void DeviceGaussElimination(matrixType* matrixCopy, vectorType* prod, unsigned long row, unsigned int threadNo, bool rowInPartition, matrixParameters matrixParam)
+template<typename MatrixType, typename VectorType>
+__device__ void DeviceGaussElimination(MatrixType* matrixCopy, VectorType* prod, unsigned long row, unsigned int threadNo,
+                                       bool rowInPartition, MatrixParameters matrixParam)
 {
-   auto matrixIndex = [=](unsigned short x, unsigned short y){
-      return (x * matrixParam.blockColSize + y);
+   auto matrixIndex = [=](unsigned short blockRow, unsigned short blockCol){
+      return (blockRow * matrixParam.blockColSize + blockCol);
    };
 
    auto vectorIndex = [=](unsigned short row, unsigned short elemNo){
       return (row * matrixParam.blockRowSize + elemNo);
    };
 
-   unsigned short x = threadNo/matrixParam.blockRowSize;
-   unsigned short y = threadNo % matrixParam.blockColSize;
+   /*
+    * Thread-to-entry mapping within one dense block (row-major):
+    *   threadNo -> (blockRowThread, blockColThread)
+      *   blockRowThread = threadNo / blockRowSize
+    *   blockColThread = threadNo % blockColSize
+    */
+   unsigned short blockRowThread = threadNo / matrixParam.blockRowSize;
+   unsigned short blockColThread = threadNo % matrixParam.blockColSize;
 
-   matrixType pivot, weight = 0.0;
+   MatrixType pivot, weight = 0.0;
 
    __syncthreads();
 
@@ -67,18 +75,18 @@ __device__ void DeviceGaussElimination(matrixType* matrixCopy, vectorType* prod,
 
       if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockSize)){
 
-         if(x==currentRow)
+         if(blockRowThread == currentRow)
          {
-            matrixCopy[matrixIndex(currentRow, y)] /= pivot;
-            if(y==0) prod[vectorIndex(row, currentRow)] /= pivot;
+            matrixCopy[matrixIndex(currentRow, blockColThread)] /= pivot;
+            if(blockColThread == 0) prod[vectorIndex(row, currentRow)] /= pivot;
          }
 
-         weight = matrixCopy[matrixIndex(x, currentRow)];
+         weight = matrixCopy[matrixIndex(blockRowThread, currentRow)];
 
-         if(x!=currentRow)
+         if(blockRowThread != currentRow)
          {
-            matrixCopy[matrixIndex(x, y)] -= weight * matrixCopy[matrixIndex(currentRow, y)];
-            if(y==0) prod[vectorIndex(row, x)] -= weight * prod[vectorIndex(row, currentRow)];
+            matrixCopy[matrixIndex(blockRowThread, blockColThread)] -= weight * matrixCopy[matrixIndex(currentRow, blockColThread)];
+            if(blockColThread == 0) prod[vectorIndex(row, blockRowThread)] -= weight * prod[vectorIndex(row, currentRow)];
          }
       }
 
@@ -87,8 +95,11 @@ __device__ void DeviceGaussElimination(matrixType* matrixCopy, vectorType* prod,
 
 }
 
-template<typename matrixType, typename vectorType>
-__global__ void FirstSymmetricIterationKernel(matrixType* matrix, vectorType* vec, vectorType* prod, const unsigned long* d_partition_offsets, const unsigned long* d_row_ptr, const unsigned long* d_col_ind, const unsigned long* d_dia_ptr, matrixParameters matrixParam)
+template<typename MatrixType, typename VectorType>
+__global__ void FirstSymmetricIterationKernel(MatrixType* matrix, VectorType* vec, VectorType* prod,
+                                              const unsigned long* d_partition_offsets, const unsigned long* d_row_ptr,
+                                              const unsigned long* d_col_ind, const unsigned long* d_dia_ptr,
+                                              MatrixParameters matrixParam)
 {
    /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
 
@@ -110,7 +121,7 @@ __global__ void FirstSymmetricIterationKernel(matrixType* matrix, vectorType* ve
 
    unsigned short blockCol = threadNo % matrixParam.blockColSize;
 
-   extern __shared__ matrixType tempBuffer[];
+   extern __shared__ MatrixType tempBuffer[];
 
    /* Forward Substitution Algorithm with Gaussian Elimination. */
    for(auto iPartition = matrixParam.nChainStart; iPartition < matrixParam.nChainEnd; iPartition++)
@@ -132,10 +143,16 @@ __global__ void FirstSymmetricIterationKernel(matrixType* matrix, vectorType* ve
          for(unsigned long index = matrixIndex(row, threadNo, d_row_ptr); index < matrixIndex(row, 0, d_dia_ptr); index+=matrixParam.activeThreads)
          {
 
+            /*
+             * Flattened block storage -> logical dense-block indices:
+             *   blockNo  : sparse block id in CSR-like storage.
+             *   blockRow : row inside the dense block [0, blockRowSize).
+             */
             unsigned short blockNo = index/matrixParam.blockSize;
             unsigned short blockRow = (index/matrixParam.blockColSize) % matrixParam.blockRowSize;
 
-            atomicAdd(&tempBuffer[matrixParam.shrdMemIndex(localRow, blockRow)], matrix[index] * prod[vectorMultIndex(blockNo, blockCol)]);  // Compute L.x*
+            /* Compute L.x*. */
+            atomicAdd(&tempBuffer[matrixParam.shrdMemIndex(localRow, blockRow)], matrix[index] * prod[vectorMultIndex(blockNo, blockCol)]);
          }
       }
 
@@ -143,7 +160,10 @@ __global__ void FirstSymmetricIterationKernel(matrixType* matrix, vectorType* ve
 
       if(matrixParam.validParallelAccess(rowInPartition, threadNo, matrixParam.blockSize)) {
 
-         if(threadNo < matrixParam.blockRowSize) prod[vectorIndex(row, threadNo)] = vec[vectorIndex(row, threadNo)] - tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)];  // Compute y = b - L.x*
+         if(threadNo < matrixParam.blockRowSize) {
+            /* Compute y = b - L.x*. */
+            prod[vectorIndex(row, threadNo)] = vec[vectorIndex(row, threadNo)] - tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)];
+         }
 
          /* Reinitialize the shared memory to hold the matrix diagonal elements now. */
          tempBuffer[matrixParam.shrdMemIndex(localRow, threadNo)] = matrix[matrixIndex(row, threadNo, d_dia_ptr)];
@@ -157,8 +177,11 @@ __global__ void FirstSymmetricIterationKernel(matrixType* matrix, vectorType* ve
 }
 
 
-template<typename matrixType, typename vectorType>
-__global__ void SecondSymmetricIterationKernel(matrixType* matrix, vectorType* prod, const unsigned long* d_partition_offsets, const unsigned long* d_row_ptr, const unsigned long* d_col_ind, const unsigned long* d_dia_ptr, matrixParameters matrixParam)
+template<typename MatrixType, typename VectorType>
+__global__ void SecondSymmetricIterationKernel(MatrixType* matrix, VectorType* prod,
+                                               const unsigned long* d_partition_offsets, const unsigned long* d_row_ptr,
+                                               const unsigned long* d_col_ind, const unsigned long* d_dia_ptr,
+                                               MatrixParameters matrixParam)
 {
 
    /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
@@ -181,7 +204,7 @@ __global__ void SecondSymmetricIterationKernel(matrixType* matrix, vectorType* p
 
    unsigned short blockCol = threadNo % matrixParam.blockColSize;
 
-   extern __shared__ matrixType tempBuffer[];
+   extern __shared__ MatrixType tempBuffer[];
 
    /* Backward Substitution Algorithm with Gaussian Elimination. */
    for(auto iPartition = matrixParam.nChainStart; iPartition > matrixParam.nChainEnd; iPartition--)
@@ -206,7 +229,8 @@ __global__ void SecondSymmetricIterationKernel(matrixType* matrix, vectorType* p
             unsigned short blockNo = index/matrixParam.blockSize;
             unsigned short blockRow = (index/matrixParam.blockColSize) % matrixParam.blockRowSize;
 
-            atomicAdd(&tempBuffer[matrixParam.shrdMemIndex(localRow, blockRow)], matrix[index] * prod[vectorMultIndex(blockNo, blockCol)]);  // Compute D.x*
+            /* Compute D.x*. */
+            atomicAdd(&tempBuffer[matrixParam.shrdMemIndex(localRow, blockRow)], matrix[index] * prod[vectorMultIndex(blockNo, blockCol)]);
          }
 
          for(unsigned long index = matrixIndex(row, threadNo + matrixParam.blockSize, d_dia_ptr); index < matrixIndex(row + 1, 0, d_row_ptr); index+=matrixParam.activeThreads)
@@ -215,7 +239,8 @@ __global__ void SecondSymmetricIterationKernel(matrixType* matrix, vectorType* p
             unsigned short blockNo = index/matrixParam.blockSize;
             unsigned short blockRow = (index/matrixParam.blockColSize) % matrixParam.blockRowSize;
 
-            atomicAdd(&tempBuffer[matrixParam.shrdMemIndex(localRow, blockRow)], -(matrix[index] * prod[vectorMultIndex(blockNo, blockCol)]));  // Compute y = D.x*-U.x_(n+1)
+            /* Compute y = D.x* - U.x_(n+1). */
+            atomicAdd(&tempBuffer[matrixParam.shrdMemIndex(localRow, blockRow)], -(matrix[index] * prod[vectorMultIndex(blockNo, blockCol)]));
          }
       }
 
@@ -235,8 +260,10 @@ __global__ void SecondSymmetricIterationKernel(matrixType* matrix, vectorType* p
    }
 }
 
-template<typename matrixType, typename vectorType>
-__global__ void MatrixVectorProductKernel(matrixType* matrix, vectorType* vec, vectorType* prod, const unsigned long* d_row_ptr, const unsigned long* d_col_ind, matrixParameters matrixParam)
+template<typename MatrixType, typename VectorType>
+__global__ void MatrixVectorProductKernel(MatrixType* matrix, VectorType* vec, VectorType* prod,
+                                          const unsigned long* d_row_ptr, const unsigned long* d_col_ind,
+                                          MatrixParameters matrixParam)
 {
    auto matrixIndex = [=](unsigned long row, unsigned short threadNo) {
       return (d_row_ptr[row] * matrixParam.blockSize + threadNo);
@@ -252,7 +279,7 @@ __global__ void MatrixVectorProductKernel(matrixType* matrix, vectorType* vec, v
 
    unsigned short blockCol = threadNo % matrixParam.blockColSize;
 
-   extern __shared__ vectorType res[];
+   extern __shared__ VectorType res[];
 
    if(matrixParam.validAccess(row, threadNo, matrixParam.blockRowSize))
    {
@@ -300,10 +327,11 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
    vec.HtDTransfer();
    prod.GPUSetVal(0.0);
 
-   matrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nPartition, config->GetRows_Per_Cuda_Block());
+   MatrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nColor,
+                                LinearAlgebraUtils::ComputeRowsPerCudaBlock(config->GetCuda_Block_Size()));
 
   dim3 blockDim(config->GetCuda_Block_Size(),1,1);
-  unsigned int gridx = rounded_up_division(config->GetCuda_Block_Size(), matrixParam.totalRows * CUDA_WARP_SIZE);
+   unsigned int gridx = roundUpDiv(matrixParam.totalRows * CUDA_WARP_SIZE, config->GetCuda_Block_Size());
   dim3 gridDim(gridx, 1, 1);
 
   MatrixVectorProductKernel<<<gridDim, blockDim, matrixParam.rowsPerBlock * matrixParam.blockRowSize * sizeof(ScalarType)>>>(d_matrix, d_vec, d_prod, d_row_ptr, d_col_ind, matrixParam);
@@ -324,10 +352,16 @@ void CSysMatrix<ScalarType>::GPUComputeLU_SGSPreconditioner(const CSysVector<Sca
       vec.HtDTransfer();
       prod.HtDTransfer();
 
-      matrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nPartition, config->GetRows_Per_Cuda_Block());
+      MatrixParameters matrixParam(nPointDomain, nEqn, nVar, geometry->nColor,
+                       LinearAlgebraUtils::ComputeRowsPerCudaBlock(config->GetCuda_Block_Size()));
 
       dim3 blockDim(matrixParam.rowsPerBlock * CUDA_WARP_SIZE,1,1);
-      unsigned int gridx = rounded_up_division(matrixParam.rowsPerBlock, geometry->maxPartitionSize);
+      /*
+       * Launch over the widest level (maxPartitionSize) once.
+       * Narrower levels in the chain simply leave extra warps inactive via bounds checks,
+       * avoiding per-level launch reconfiguration inside the forward/backward loops.
+       */
+      unsigned int gridx = roundUpDiv(geometry->maxPartitionSize, matrixParam.rowsPerBlock);
       dim3 gridDim(gridx, 1, 1);
 
       for(auto elem = geometry->chainPtr.begin(); elem != geometry->chainPtr.end() - 1; elem++)
