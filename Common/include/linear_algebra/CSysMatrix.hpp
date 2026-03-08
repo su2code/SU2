@@ -3,14 +3,14 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 8.2.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -150,8 +150,8 @@ class CSysMatrix {
   const unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
   const unsigned long* d_dia_ptr; /*!< \brief Device Column index for each of the elements in val(). */
   unsigned long* d_partition_offsets;
-  bool useCuda; /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
-                   Mainly used to conditionally free GPU memory in the class destructor. */
+  bool useCuda = false;           /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
+                                     Mainly used to conditionally free GPU memory in the class destructor. */
 
   ScalarType* ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */

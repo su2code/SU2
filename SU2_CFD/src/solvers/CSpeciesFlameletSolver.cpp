@@ -2,14 +2,14 @@
  * \file CSpeciesFlameletSolver.cpp
  * \brief Main subroutines of CSpeciesFlameletSolver class
  * \author D. Mayer, T. Economon, N. Beishuizen, E. Bunschoten
- * \version 8.2.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -152,16 +152,18 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
 void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver*** solver_container, CConfig* config,
                                                  unsigned long ExtIter) {
-  const bool Restart = (config->GetRestart() || config->GetRestart_Flow());
+  const bool restart = (config->GetRestart() || config->GetRestart_Flow());
 
-  if ((!Restart) && ExtIter == 0) {
+  bool flame_front_ignition = (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::FLAME_FRONT);
+
+  /*--- Also allow flame ignition when restarting. ---*/
+  if (((!restart) && ExtIter == 0) || (restart && (flamelet_config_options.ignition_method != FLAMELET_INIT_TYPE::NONE))) {
     if (rank == MASTER_NODE) {
       cout << "Initializing progress variable and total enthalpy (using temperature)" << endl;
     }
 
     su2double flame_offset[3] = {0, 0, 0}, flame_normal[3] = {0, 0, 0}, flame_thickness = 0, flame_burnt_thickness = 0,
               flamenorm = 0;
-    bool flame_front_ignition = (flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::FLAME_FRONT);
 
     if (flame_front_ignition) {
       /*--- Collect flame front ignition parameters. ---*/
@@ -200,6 +202,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         default:
           break;
       }
+
     }
 
     CFluidModel* fluid_model_local;
@@ -210,7 +213,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
-
+      prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
       for (auto iVar = 0u; iVar < nVar; iVar++) scalar_init[iVar] = config->GetSpecies_Init()[iVar];
 
       /*--- Set enthalpy based on initial temperature and scalars. ---*/
@@ -223,8 +226,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
         if (flame_front_ignition) {
-
-          prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
 
           /*--- Determine if point is above or below the plane, assuming the normal
             is pointing towards the burned region. ---*/
@@ -270,6 +271,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
         solver_container[i_mesh][SPECIES_SOL]->GetNodes()->SetSolution(i_point, scalar_init);
       }
+      END_SU2_OMP_FOR
 
       solver_container[i_mesh][SPECIES_SOL]->InitiateComms(geometry[i_mesh], config, MPI_QUANTITIES::SOLUTION);
       solver_container[i_mesh][SPECIES_SOL]->CompleteComms(geometry[i_mesh], config, MPI_QUANTITIES::SOLUTION);
@@ -279,7 +281,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
       solver_container[i_mesh][FLOW_SOL]->Preprocessing(geometry[i_mesh], solver_container[i_mesh], config, i_mesh,
                                                         NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-      END_SU2_OMP_FOR
     }
 
     /* --- Sum up some global counters over processes. --- */
@@ -300,6 +301,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
         cout << " Number of points in unburnt region: " << n_points_unburnt_global << "." << endl;
         cout << " Number of points in burnt region  : " << n_points_burnt_global << "." << endl;
         cout << " Number of points in flame zone    : " << n_points_flame_global << "." << endl;
+        cout << " Burnt progress Variable           : " << prog_burnt << "." << endl;
       }
 
       if (n_not_in_domain_global > 0)
@@ -311,6 +313,9 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
              << n_not_iterated_global << " !!!" << endl;
     }
   }
+
+  /*--- All the unsteady initialization ---*/
+  PushSolutionBackInTime(ExtIter, restart, solver_container, geometry, config);
 }
 
 void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config) {
@@ -402,7 +407,6 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   su2double enth_inlet;
   GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet, config->GetInlet_SpeciesVal(Marker_Tag),
                   &enth_inlet);
-
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
@@ -436,7 +440,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
     /*--- Check if the node belongs to the domain (i.e., not a halo node). ---*/
 
     if (geometry->nodes->GetDomain(iPoint)) {
-      if (config->GetMarker_StrongBC(Marker_Tag) == true) {
+      if (config->GetMarker_StrongBC(Marker_Tag)) {
         /*--- Initial guess for enthalpy value. ---*/
         enth_wall = nodes->GetSolution(iPoint, I_ENTH);
 
@@ -754,6 +758,8 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
   su2double delta_temp_iter = 1e10;
   unsigned long exit_code = 0;
   const int counter_limit = 1000;
+  /*--- Relaxation factor for Newton iterations. ---*/
+  const su2double RelaxAlpha = 0.75;
 
   int counter = 0;
 
@@ -770,9 +776,10 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
 
     delta_temp_iter = val_temp - Temperature;
 
-    delta_enth = Cp * delta_temp_iter;
+    delta_enth = RelaxAlpha * Cp * delta_temp_iter;
 
     enth_iter += delta_enth;
+
   }
 
   *val_enth = enth_iter;
@@ -787,7 +794,6 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
 su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalar_solution) {
   su2double scalars[MAXNVAR], delta = 1e-3;
   for (auto iVar = 0u; iVar < nVar; iVar++) scalars[iVar] = scalar_solution[iVar];
-
   bool outside = false;
   while (!outside) {
     fluid_model->SetTDState_T(300, scalars);

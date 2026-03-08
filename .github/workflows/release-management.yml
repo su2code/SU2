@@ -35,7 +35,7 @@ jobs:
           key: ${{ matrix.os_bin }}-${{ github.sha }}
           restore-keys: ${{ matrix.os_bin }}
       - name: Build
-        uses: docker://ghcr.io/su2code/su2/build-su2-cross:230813-0103
+        uses: docker://ghcr.io/su2code/su2/build-su2-cross:250717-1402
         with:
           args: -b ${{ github.sha }} -f "${{matrix.flags}}"
       - name: Create Archive
@@ -44,7 +44,7 @@ jobs:
           zip -r ../${{matrix.os_bin}}.zip bin/*
         # Uploads binaries as artifacts (just as a backup)
       - name: Upload Binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{matrix.os_bin}}
           path: ${{matrix.os_bin}}.zip

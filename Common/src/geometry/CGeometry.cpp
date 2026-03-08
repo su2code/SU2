@@ -2,14 +2,14 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2468,6 +2468,9 @@ su2double CGeometry::GetSurfaceArea(const CConfig* config, unsigned short val_ma
 }
 
 void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
+  const su2double MIN_AREA = 1e-12;            // minimum area to consider a normal valid
+  const su2double PARALLEL_TOLERANCE = 0.001;  // min. angle between symm. planes to consider them non-parallel.
+
   /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against.
    * All nodes that are shared by multiple symmetries have to get a corrected normal. */
 
@@ -2558,6 +2561,8 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       /*--- Loop over previous symmetries and if this point shares them, make this normal orthogonal to them.
        * It's ok if we normalize merged normals against themselves, we get 0 area and this becomes a no-op. ---*/
 
+      std::vector<size_t> parallelMarkers;  // Track markers with nearly-parallel normals
+
       for (size_t j = 0; j < i; ++j) {
         const auto jMarker = symMarkers[j];
         const auto jVertex = nodes->GetVertex(iPoint, jMarker);
@@ -2567,14 +2572,48 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
         GetNormal(jMarker, jVertex, jNormal);
 
         const su2double proj = GeometryToolbox::DotProduct(int(MAXNDIM), jNormal.data(), iNormal.data());
+        const su2double angleDiff = std::abs(1.0 - std::abs(proj));
+
+        // Check if normals are nearly parallel (within ~2.5 degrees)
+        // cos(2.5°) ≈ 0.999, so (1 - cos(2.5°)) ≈ 0.001
+        if (angleDiff < PARALLEL_TOLERANCE) {
+          // These normals are nearly parallel - average them instead of orthogonalizing
+          parallelMarkers.push_back(j);
+          for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] += jNormal[iDim];
+          continue;
+        }
+
         for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] -= proj * jNormal[iDim];
+      }
+
+      /*--- If we found parallel markers, average and store the result for all involved markers ---*/
+      if (!parallelMarkers.empty()) {
+        // Normalize the averaged normal
+        const su2double avgArea = GeometryToolbox::Norm(int(MAXNDIM), iNormal.data());
+        if (avgArea > MIN_AREA) {
+          for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] /= avgArea;
+
+          // Store the averaged normal for the current marker
+          symmetryNormals[iMarker][iVertex] = iNormal;
+
+          // Also update all parallel markers with the same averaged normal
+          for (const auto j : parallelMarkers) {
+            const auto jMarker = symMarkers[j];
+            const auto jVertex = nodes->GetVertex(iPoint, jMarker);
+            if (jVertex >= 0) {
+              symmetryNormals[jMarker][jVertex] = iNormal;
+            }
+          }
+        }
+        continue;  // Skip the normal orthogonalization path below
       }
 
       /*--- Normalize. If the norm is close to zero it means the normal is a linear combination of previous
        * normals, in this case we don't need to store the corrected normal, using the original in the gradient
        * correction will have no effect since previous corrections will remove components in this direction). ---*/
       const su2double area = GeometryToolbox::Norm(int(MAXNDIM), iNormal.data());
-      if (area > 1e-12) {
+
+      if (area > MIN_AREA) {
         for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] /= area;
         symmetryNormals[iMarker][iVertex] = iNormal;
       }
@@ -2591,16 +2630,14 @@ void CGeometry::ComputeSurfStraightness(const CConfig* config, bool print_on_scr
   string Local_TagBound, Global_TagBound;
 
   vector<su2double> Normal(nDim), UnitNormal(nDim), RefUnitNormal(nDim);
-
   /*--- Assume now that this boundary marker is straight. As soon as one
-        AreaElement is found that is not aligend with a Reference then it is
-        certain that the boundary marker is not straight and one can stop
-        searching. Another possibility is that this process doesn't own
+        AreaElement is found that is not aligned with a Reference then it
+        is certain that the boundary marker is not straight and one can
+        stop searching. Another possibility is that this process doesn't own
         any nodes of that boundary, in that case we also have to assume the
-        boundary is straight.
-        Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets
-        the value false (or see cases specified in the conditional below)
-        which could be wrong. ---*/
+        boundary is straight. Any boundary type other than SYMMETRY_PLANE or
+        EULER_WALL gets the value false (or see cases specified in the
+        conditional below) which could be wrong. ---*/
   boundIsStraight.resize(nMarker);
   fill(boundIsStraight.begin(), boundIsStraight.end(), true);
 
@@ -3772,7 +3809,7 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
       bool admissibleColoring = false; /* keep track wether the last tested coloring is admissible */
 
       while (true) {
-        edgeColoring = colorSparsePattern(pattern, nextEdgeColorGroupSize, balanceColors);
+        edgeColoring = colorSparsePattern(pattern, nextEdgeColorGroupSize, false, balanceColors);
 
         /*--- If the coloring fails, reduce the color group size. ---*/
         if (edgeColoring.empty()) {
@@ -3809,12 +3846,12 @@ const CCompressedSparsePatternUL& CGeometry::GetEdgeColoring(su2double* efficien
 
       /*--- If the last tested coloring was not admissible, recompute the final coloring. ---*/
       if (!admissibleColoring) {
-        edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
+        edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, false, balanceColors);
       }
     }
     /*--- No adaptivity. ---*/
     else {
-      edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, balanceColors);
+      edgeColoring = colorSparsePattern(pattern, edgeColorGroupSize, false, balanceColors);
     }
 
     /*--- If the coloring fails use the natural coloring. This is a
@@ -3867,7 +3904,7 @@ const CCompressedSparsePatternUL& CGeometry::GetElementColoring(su2double* effic
 
     /*--- Color the elements. ---*/
     constexpr bool balanceColors = true;
-    elemColoring = colorSparsePattern(pattern, elemColorGroupSize, balanceColors);
+    elemColoring = colorSparsePattern(pattern, elemColorGroupSize, false, balanceColors);
 
     /*--- Same as for the edge coloring. ---*/
     if (elemColoring.empty()) SetNaturalElementColoring();
@@ -3896,17 +3933,19 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
     /*--- Color the coarse points. ---*/
     vector<tColor> color;
     const auto& adjacency = geometry[iMesh]->nodes->GetPoints();
-    if (colorSparsePattern<tColor, nColor>(adjacency, 1, false, &color).empty()) continue;
+    if (colorSparsePattern<tColor, nColor>(adjacency, 1, true, false, &color).empty()) continue;
 
     /*--- Propagate colors to fine mesh. ---*/
     for (auto step = 0u; step < iMesh; ++step) {
       auto coarseMesh = geometry[iMesh - 1 - step];
       if (step)
-        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint) {
           CoarseGridColor_(iPoint, step) = CoarseGridColor_(coarseMesh->nodes->GetParent_CV(iPoint), step - 1);
+        }
       else
-        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint) {
           CoarseGridColor_(iPoint, step) = color[coarseMesh->nodes->GetParent_CV(iPoint)];
+        }
     }
   }
 }
@@ -4042,8 +4081,8 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
     }
   }
 
-  const auto coloring =
-      colorSparsePattern<uint8_t, std::numeric_limits<uint8_t>::max()>(CCompressedSparsePatternUL(adjacency), 1, true);
+  const auto coloring = colorSparsePattern<uint8_t, std::numeric_limits<uint8_t>::max()>(
+      CCompressedSparsePatternUL(adjacency), 1, false, true);
   const auto nColors = coloring.getOuterSize();
 
   /*--- Sort linelets by color. ---*/
