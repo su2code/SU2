@@ -46,6 +46,9 @@ CSU2ASCIIMeshReaderFEM::CSU2ASCIIMeshReaderFEM(CConfig* val_config, unsigned sho
   /*--- Read the surface connectivity and store the surface elements whose
         corresponding volume element is stored on this MPI rank. ---*/
   ReadSurfaceElementConnectivity({});
+
+  /*--- Duplicate some markers if requested. ---*/
+  CopyMarkers(val_config->GetMarkerCreateCopy());
 }
 
 CSU2ASCIIMeshReaderFEM::~CSU2ASCIIMeshReaderFEM() = default;

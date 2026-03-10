@@ -89,6 +89,12 @@ class CMeshReaderBase {
   void GetCornerPointsAllFaces(const unsigned long* elemInfo, unsigned short& numFaces, unsigned short nPointsPerFace[],
                                unsigned long faceConn[6][4]);
 
+  /*!
+   * \brief Creates copies of some markers.
+   * \param[in] srcDstMarkers - List of marker names [src_1, dst_1, ..., src_n, dst_n].
+   */
+  void CopyMarkers(const std::vector<std::string>& srcDstMarkers);
+
  public:
   /*!
    * \brief Constructor of the CMeshReaderBase class.
