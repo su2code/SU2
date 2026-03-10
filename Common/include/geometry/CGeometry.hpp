@@ -1862,7 +1862,8 @@ class CGeometry {
    * \param[in] config_container - Definition of the particular problem.
    * \param[in] geometry_container - Geometrical definition of the problem.
    */
-  static void ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container, const int record_zone = -1);
+  static void ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container,
+                                  const int record_zone = -1);
 
   /*!
    * \brief Set the amount of nonconvex elements in the mesh.

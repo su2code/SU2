@@ -99,13 +99,13 @@ class CInterpolator {
       coefficient.resize(nDonor);
     }
   };
-  vector<vector<CDonorInfo> > targetVertices; /*! \brief Donor information per marker per vertex of the target. */
+  vector<vector<CDonorInfo>> targetVertices; /*! \brief Donor information per marker per vertex of the target. */
 
   struct CSpanDonorInfo {
-      unsigned long donorSpan; // Refers to donor span
-      su2double coefficient; // Refers to coefficient
+    unsigned long donorSpan;  // Refers to donor span
+    su2double coefficient;    // Refers to coefficient
   };
-  vector<vector<CSpanDonorInfo>> targetSpans; // <iMarkerInt<TargetSpan<CSpanDonorInfo>>
+  vector<vector<CSpanDonorInfo>> targetSpans;  // <iMarkerInt<TargetSpan<CSpanDonorInfo>>
 
   /*!
    * \brief Constructor of the class.
@@ -141,7 +141,7 @@ class CInterpolator {
   /*!
    * \brief Write mixing plane interpolation details to file
    */
-  inline virtual void WriteInterpolationDetails(const string& filename, const CConfig* const* config) {};
+  inline virtual void WriteInterpolationDetails(const string& filename, const CConfig* const* config){};
 
   /*!
    * \brief Check whether an interface should be processed or not, i.e. if it is part of the zones.

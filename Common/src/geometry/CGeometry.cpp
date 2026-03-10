@@ -4153,7 +4153,8 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
 }
 }  // namespace
 
-void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container, const int record_zone) {
+void CGeometry::ComputeWallDistance(const CConfig* const* config_container, CGeometry**** geometry_container,
+                                    const int record_zone) {
   int nZone = config_container[ZONE_0]->GetnZone();
   bool allEmpty = true;
   vector<bool> wallDistanceNeeded(nZone, false);

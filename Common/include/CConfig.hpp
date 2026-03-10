@@ -8238,7 +8238,7 @@ public:
    * \param[in] val_surface_species_variance - Value of the species variance.
    */
   void SetSurface_Species_Variance(unsigned short val_marker, su2double val_surface_species_variance) { Surface_Species_Variance[val_marker] = val_surface_species_variance; }
-  
+
   /*!
    * \brief Set entropy generation for a turbomachinery zone
    * \param[in] val_iZone - zone index

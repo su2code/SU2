@@ -6326,7 +6326,6 @@ void CPhysicalGeometry::GatherInOutAverageValues(CConfig* config, bool allocate)
 
 void CPhysicalGeometry::SetAvgTurboGeoValues(const CConfig* donor_config, CGeometry* donor_geometry,
                                              unsigned short donorZone) {
-  
   unsigned short iSpan;
   unsigned short nSpanMaxAllZones = donor_config->GetnSpanMaxAllZones();
 

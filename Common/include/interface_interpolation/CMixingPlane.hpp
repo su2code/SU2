@@ -25,8 +25,8 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
- #pragma once
- #include "CInterpolator.hpp"
+#pragma once
+#include "CInterpolator.hpp"
 
 /*!
  * \brief Mixing plane interpolation.
@@ -35,16 +35,15 @@
  * \ingroup Interfaces
  */
 class CMixingPlane final : public CInterpolator {
-    public:
-    CMixingPlane(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone,
-                                   unsigned int jZone);
+ public:
+  CMixingPlane(CGeometry**** geometry_container, const CConfig* const* config, unsigned int iZone, unsigned int jZone);
 
-    void SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) override;
+  void SetTransferCoeff(CGeometry**** geometry, const CConfig* const* config) override;
 
-    /*!
-     * \brief Write interpolation details to file.
-     * \param[in] filename - Name of output file.
-     * \param[in] config - Configuration for all zones.
-     */
-    void WriteInterpolationDetails(const string& filename, const CConfig* const* config) override;
+  /*!
+   * \brief Write interpolation details to file.
+   * \param[in] filename - Name of output file.
+   * \param[in] config - Configuration for all zones.
+   */
+  void WriteInterpolationDetails(const string& filename, const CConfig* const* config) override;
 };

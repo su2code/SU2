@@ -51,11 +51,11 @@ CInterpolator* CreateInterpolator(CGeometry**** geometry_container, const CConfi
   if (mixing_plane) {
     if (verbose) cout << "using a mixing plane interpolation." << endl;
     interpolator = new CMixingPlane(geometry_container, config, iZone, jZone);
-  } else { // Really awful thing to do
+  } else {  // Really awful thing to do
     /*--- Conservative interpolation is not applicable to the sliding
-    *    mesh approach so that case is handled first. Then we either
-    *    return a CMirror if the target requires conservative inter-
-    *    polation, or the type of interpolator defined by "type". ---*/
+     *    mesh approach so that case is handled first. Then we either
+     *    return a CMirror if the target requires conservative inter-
+     *    polation, or the type of interpolator defined by "type". ---*/
 
     if (type == INTERFACE_INTERPOLATOR::WEIGHTED_AVERAGE) {
       if (verbose) cout << "using a sliding mesh approach." << endl;
