@@ -70,6 +70,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   us_units(config->GetSystemMeasurements() == US) {
 
   cauchyTimeConverged = false;
+  maxTimeDelayActive = false;
 
   convergenceTable = new PrintingToolbox::CTablePrinter(&std::cout);
   multiZoneHeaderTable = new PrintingToolbox::CTablePrinter(&std::cout);
@@ -793,6 +794,7 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 }
 
 bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
+  // Handle Cauchy convergence delay for 2nd order time stepping
   if(!cauchyTimeConverged && TimeConvergence && config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND){
     // Change flags for 2nd order Time stepping: In case of convergence, this iter and next iter gets written out. then solver stops
     cauchyTimeConverged = TimeConvergence;
@@ -801,6 +803,25 @@ bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
   else if(cauchyTimeConverged){
     TimeConvergence = cauchyTimeConverged;
   }
+  
+  // Handle max time delay for 2nd order time stepping
+  // Delay stopping at max_time to ensure both timestep N and N-1 are written for proper restart
+  if(config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND){
+    const su2double cur_time = GetHistoryFieldValue("CUR_TIME");
+    const su2double max_time = config->GetMax_Time();
+    const bool final_time_reached = (cur_time >= max_time);
+    
+    // If max_time is reached on first detection, delay the stop
+    if(final_time_reached && !maxTimeDelayActive){
+      maxTimeDelayActive = true;
+      TimeConvergence = false;  // Delay stop to run one more iteration
+    }
+    else if(maxTimeDelayActive){
+      TimeConvergence = true;   // Now allow stop
+      maxTimeDelayActive = false;   // Reset for next run
+    }
+  }
+  
   return TimeConvergence;
 }
 

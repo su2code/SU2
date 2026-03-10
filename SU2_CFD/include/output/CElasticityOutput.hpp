@@ -37,7 +37,6 @@
 class CElasticityOutput final: public COutput {
 protected:
 
-  unsigned short nVar_FEM; //!< Number of FEM variables
   bool linear_analysis,    //!< Boolean indicating a linear analysis
        nonlinear_analysis, //!< Boolean indicating a nonlinear analysis
        coupled_heat,       //!< Boolean indicating a thermoelastic analysis

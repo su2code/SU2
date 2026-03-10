@@ -1046,9 +1046,9 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
 
 }
 
-void CTurbSSTSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+void CTurbSSTSolver::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) {
 
   const su2double allowableRatio = config->GetMaxUpdateFractionSST();
 
-  ComputeUnderRelaxationFactorHelper(allowableRatio);
+  ComputeUnderRelaxationFactorHelper(solver_container, allowableRatio);
 }

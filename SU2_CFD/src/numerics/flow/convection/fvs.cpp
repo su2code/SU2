@@ -29,7 +29,9 @@
 #include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CUpwMSW_Flow::CUpwMSW_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-  CNumerics(val_nDim, val_nVar, config), alpha(config->GetMSW_Alpha()), dynamic_grid(config->GetDynamic_Grid()) {
+  CNumerics(val_nDim, val_nVar, config),
+  alpha(config->GetMSW_Alpha()),
+  dynamic_grid(config->GetDynamic_Grid()) {
 
   /*--- Allocate arrays ---*/
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -43,6 +45,7 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim + 4);
   AD::SetPreaccIn(V_j, nDim + 4);
+  AD::SetPreaccIn(Sensor_i, Sensor_j);
   AD::SetPreaccIn(Normal, nDim);
   if (dynamic_grid) {
     AD::SetPreaccIn(GridVel_i, nDim);
@@ -85,8 +88,16 @@ CNumerics::ResidualType<> CUpwMSW_Flow::ComputeResidual(const CConfig* config) {
 
   /*--- Calculate the state weighting function ---*/
 
-  const su2double dp = fabs(P_j - P_i) / fmin(P_j, P_i);
-  const su2double w = 0.5 * (1 / (pow(alpha * dp, 2) + 1));
+  /*--- For completeness, the original formulation for the switch to unmodified Steger-Warming is:
+   * dp = fabs(P_j - P_i) / fmin(P_j, P_i)
+   * w = 0.5 * (1 / (pow(alpha * dp, 2) + 1))
+   * where alpha is a tuning constant to make the scheme switch sooner (large alpha).
+   * We're using a version of the switch based on the maximum "dp" over neighbors, from
+   * "Development of an Unstructured Navier-Stokes Solver For Hypersonic Nonequilibrium
+   * Aerothermodynamics". The 0.06 constant is to match our default alpha (5) to the threshold
+   * of 0.3 in the paper. ---*/
+  const su2double dp = fmax(Sensor_i, Sensor_j) - alpha * 0.06;
+  const su2double w = 0.25 * (1 - (dp > 0 ? 1 : -1) * (1 - exp(-100 *fabs(dp))));
   const su2double onemw = 1 - w;
 
   /*--- Calculate weighted state vector (*) for i & j ---*/

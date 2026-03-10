@@ -1662,6 +1662,9 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
       if (!center_jst_ke) SetUndivided_Laplacian(geometry, config);
     }
   }
+  if (config->GetKind_Upwind_Flow() == UPWIND::MSW && !Output) {
+    SetCentered_Dissipation_Sensor(geometry, config);
+  }
 
   /*--- Roe Low Dissipation Sensor ---*/
 
@@ -1675,7 +1678,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
    *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
 
-  if(!ReducerStrategy && !Output) {
+  if (!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
     if (implicit) Jacobian.SetValZero();
     else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
@@ -1812,13 +1815,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool low_mach_corr = config->Low_Mach_Correction();
 
   /*--- Use vectorization if the scheme supports it. ---*/
-  if (config->GetKind_Upwind_Flow() == UPWIND::ROE && ideal_gas && !low_mach_corr) {
-    EdgeFluxResidual(geometry, solver_container, config);
-    return;
+  if (ideal_gas && !low_mach_corr) {
+    if (config->GetKind_Upwind_Flow() == UPWIND::ROE || config->GetKind_Upwind_Flow() == UPWIND::MSW) {
+      EdgeFluxResidual(geometry, solver_container, config);
+      return;
+    }
   }
 
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
+  const bool msw              = (config->GetKind_Upwind_Flow() == UPWIND::MSW);
   const bool roe_turkel       = (config->GetKind_Upwind_Flow() == UPWIND::TURKEL);
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
@@ -1966,17 +1972,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Roe Low Dissipation Scheme ---*/
 
     if (kind_dissipation != NO_ROELOWDISS) {
-
       numerics->SetDissipation(nodes->GetRoe_Dissipation(iPoint),
                                nodes->GetRoe_Dissipation(jPoint));
-
-      if (kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS){
-        numerics->SetSensor(nodes->GetSensor(iPoint),
-                            nodes->GetSensor(jPoint));
-      }
-      if (kind_dissipation == NTS || kind_dissipation == NTS_DUCROS){
-        numerics->SetCoord(Coord_i, Coord_j);
-      }
+    }
+    if (msw || kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS){
+      numerics->SetSensor(nodes->GetSensor(iPoint),
+                          nodes->GetSensor(jPoint));
+    }
+    if (kind_dissipation == NTS || kind_dissipation == NTS_DUCROS){
+      numerics->SetCoord(Coord_i, Coord_j);
     }
 
     /*--- Compute the residual ---*/
