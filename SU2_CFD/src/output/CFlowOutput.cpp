@@ -1583,9 +1583,9 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     AddVolumeOutput("LES_SENSOR","LES_Sensor","DDES","LES sensor value");
     if (config->GetStochastic_Backscatter()) {
       if (config->GetSBS_Ctau() > 0.0) {
-        AddVolumeOutput("STOCHVAR_X", "StochVar_x", "BACKSCATTER", "x-component of the stochastic vector potential");
-        AddVolumeOutput("STOCHVAR_Y", "StochVar_y", "BACKSCATTER", "y-component of the stochastic vector potential");
-        if (nDim==3) AddVolumeOutput("STOCHVAR_Z", "StochVar_z", "BACKSCATTER", "z-component of the stochastic vector potential");
+        AddVolumeOutput("STOCHVAR_X", "StochVar_x", "SOLUTION", "x-component of the stochastic vector potential");
+        AddVolumeOutput("STOCHVAR_Y", "StochVar_y", "SOLUTION", "y-component of the stochastic vector potential");
+        if (nDim==3) AddVolumeOutput("STOCHVAR_Z", "StochVar_z", "SOLUTION", "z-component of the stochastic vector potential");
       }
       AddVolumeOutput("STOCHSOURCE_X", "StochSource_x", "BACKSCATTER", "x-component of the stochastic source vector");
       AddVolumeOutput("STOCHSOURCE_Y", "StochSource_y", "BACKSCATTER", "y-component of the stochastic source vector");

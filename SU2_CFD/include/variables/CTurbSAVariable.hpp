@@ -42,6 +42,7 @@ class CTurbSAVariable final : public CTurbVariable {
 private:
   VectorType DES_LengthScale;
   VectorType lesMode;
+  VectorType sbsInBox;
   MatrixType stochSource;
   MatrixType stochSourceOld;
   VectorType Vortex_Tilting;
@@ -109,6 +110,20 @@ public:
    * \param[in] val_stochSource_old - Old value of the source term for the stochastic equations.
    */
   inline void SetLangevinSourceTermsOld(unsigned long iPoint, unsigned short iDim, su2double val_stochSource_old) override { stochSourceOld(iPoint, iDim) = val_stochSource_old; }
+
+ /*!
+   * \brief Get if the Stochastic Backscatter Model must be applied only in a confined box.
+   * \param[in] iPoint - Point index.
+   * \return 1.0 if the Stochastic Backscatter Model must be applied only in a confined box.
+   */
+  inline su2double GetSbsInBox(unsigned long iPoint) const override { return sbsInBox(iPoint); }
+
+  /*!
+   * \brief Set if the Stochastic Backscatter Model must be applied only in a confined box.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_sbsInBox - 1.0 if the Stochastic Backscatter Model must be applied only in a confined box.
+   */
+  inline void SetSbsInBox(unsigned long iPoint, su2double val_sbsInBox) override { sbsInBox(iPoint) = val_sbsInBox; }
 
   /*!
    * \brief Set the LES sensor.

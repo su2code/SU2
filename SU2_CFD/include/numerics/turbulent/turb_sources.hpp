@@ -137,7 +137,10 @@ class CSourceBase_TurbSA : public CNumerics {
       }
     
       su2double scaleFactor = 0.0;
-      if (lesMode_i > threshold) scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * corrFac;
+      if (lesMode_i > threshold)
+        scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * corrFac;
+      else
+        tTurb = min(tTurb, 10.0*timeStep);
 
       for (unsigned short iVar = 1; iVar < nVar; iVar++) {
         Residual[iVar] = scaleFactor * stochSource[iVar-1] - 1.0/tTurb * ScalarVar_i[iVar];
@@ -154,7 +157,10 @@ class CSourceBase_TurbSA : public CNumerics {
   /*!
    * \brief Include stochastic source term in the Spalart-Allmaras turbulence model equation (Stochastic Backscatter Model).
    */
-  inline void AddStochSource(CSAVariables& var, const su2double Cmag, su2double threshold, su2double& prod) {
+  inline void AddStochSource(const CConfig* config, CSAVariables& var, su2double& prod) {
+
+    su2double Cmag = ComputeStochRelaxFactor(config);
+    su2double threshold = config->GetStochFdThreshold();
 
     su2double nut = ScalarVar_i[0] * var.fv1;
     su2double tke = 0.0;
@@ -171,6 +177,7 @@ class CSourceBase_TurbSA : public CNumerics {
     su2double Dfv1Dnut = 3.0 * var.fv1 * var.cv1_3 / (var.cv1_3 + Ji_3);
     su2double fac = 1.0 / (var.fv1 + ScalarVar_i[0]*Dfv1Dnut);
     su2double stochProdNut = RGradU * dist_i*dist_i/(2.0*ScalarVar_i[0]) * fac;
+    stochProdNut *= sbsInBox_i;
     stochProdNut = max(-limiter*prod, min(limiter*prod, stochProdNut));
 
     prod += stochProdNut;
@@ -323,10 +330,8 @@ class CSourceBase_TurbSA : public CNumerics {
       su2double Production = 0.0, Destruction = 0.0;
       SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, Jacobian_i[0][0]);
 
-      if (config->GetStochastic_Backscatter() && config->GetStochSourceNu()) {
-        su2double intensityCoeff = ComputeStochRelaxFactor(config);
-        AddStochSource(var, intensityCoeff, config->GetStochFdThreshold(), Production);
-      }
+      if (config->GetStochastic_Backscatter() && config->GetStochSourceNu())
+        AddStochSource(config, var, Production);
 
       Residual[0] = (Production - Destruction) * Volume;
 

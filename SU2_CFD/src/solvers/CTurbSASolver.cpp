@@ -245,19 +245,6 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
       bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                         (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND));
       if (maxIter>0) SmoothLangevinSourceTerms(config, geometry);
-      if (timeIter == restartIter && config->GetSBS_Ctau() > 0.0) {
-        for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-          for (unsigned short iVar = 1; iVar < nVar; iVar++) {
-            const su2double randomSource = nodes->GetLangevinSourceTerms(iPoint, iVar-1);
-            nodes->SetSolution(iPoint, iVar, randomSource);
-            nodes->SetSolution_Old(iPoint, iVar, randomSource);
-            if (dual_time) {
-              nodes->Set_Solution_time_n(iPoint, iVar, randomSource);
-              nodes->Set_Solution_time_n1(iPoint, iVar, randomSource);
-            }
-          }
-        }
-      }
     }
 
   }
@@ -441,6 +428,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           numerics->SetStochSource(nodes->GetLangevinSourceTerms(iPoint, iDim), iDim);
         numerics->SetLES_Mode(nodes->GetLES_Mode(iPoint), 0.0);
+        numerics->SetSbsInBoxSensor(std::nearbyint(nodes->GetSbsInBox(iPoint)), 0);
       }
 
     }
@@ -1640,24 +1628,32 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry) {
 
   unsigned long timeIter = config->GetTimeIter();
+  unsigned long restartIter = config->GetRestart_Iter();
   const su2double threshold = config->GetStochFdThreshold();
   const su2double dummySource = 1e3;
   bool stochBackscatterInBox = config->GetStochBackscatterInBox();
-  bool insideBox = true;
+  
+  SU2_OMP_FOR_DYN(omp_chunk_size)
+  if (stochBackscatterInBox && timeIter==restartIter) {
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      const auto coord = geometry->nodes->GetCoord(iPoint);
+      auto sbsBoxBounds = config->GetStochBackscatterBoxBounds();
+      bool insideBoxX = (coord[0]>=sbsBoxBounds[0] && coord[0]<=sbsBoxBounds[1]);
+      bool insideBoxY = (coord[1]>=sbsBoxBounds[2] && coord[1]<=sbsBoxBounds[3]);
+      bool insideBoxZ = (coord[2]>=sbsBoxBounds[4] && coord[2]<=sbsBoxBounds[5]);
+      bool insideBox = (insideBoxX && insideBoxY && insideBoxZ);
+      if (insideBox) nodes->SetSbsInBox(iPoint, 1.0);
+    }
+  }
+  END_SU2_OMP_FOR
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
     unsigned long iPointGlobal = geometry->nodes->GetGlobalIndex(iPoint);
     for (unsigned short iDim = 0; iDim < nDim; iDim++){
       su2double lesSensor = nodes->GetLES_Mode(iPoint);
-      const auto coord = geometry->nodes->GetCoord(iPoint);
-      if (stochBackscatterInBox) {
-        auto sbsBoxBounds = config->GetStochBackscatterBoxBounds();
-        bool insideBoxX = (coord[0]>=sbsBoxBounds[0] && coord[0]<=sbsBoxBounds[1]);
-        bool insideBoxY = (coord[1]>=sbsBoxBounds[2] && coord[1]<=sbsBoxBounds[3]);
-        bool insideBoxZ = (coord[2]>=sbsBoxBounds[4] && coord[2]<=sbsBoxBounds[5]);
-        insideBox = (insideBoxX && insideBoxY && insideBoxZ);
-      }
+      su2double inBoxSensor = nodes->GetSbsInBox(iPoint);
+      bool insideBox = (std::nearbyint(inBoxSensor) == 1);
       if (lesSensor>threshold && insideBox) {
         su2double rnd = RandomToolbox::GetNormal(iPointGlobal, iDim, timeIter);
         nodes->SetLangevinSourceTermsOld(iPoint, iDim, rnd);

@@ -193,6 +193,9 @@ protected:
   su2double
   lesMode_i = 0.0, /*!< \brief LES sensor at point i for hybrid RANS-LES methods. */
   lesMode_j = 0.0; /*!< \brief LES sensor at point j for hybrid RANS-LES methods. */
+  unsigned short
+  sbsInBox_i = 0, /*!< \brief Sensor to assess if point i lies inside the box where the Stochastic Backscatter Model is active. */
+  sbsInBox_j = 0; /*!< \brief Sensor to assess if point j lies inside the box where the Stochastic Backscatter Model is active. */
   SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
@@ -912,6 +915,16 @@ public:
   inline void SetStochVar(unsigned short iDim, su2double val_stochvar_i, su2double val_stochvar_j) {
     stochVar_i[iDim] = val_stochvar_i;
     stochVar_j[iDim] = val_stochvar_j;
+  }
+
+  /*!
+   * \brief Set the sensor to locate the box where the Stochastic Backscatter Model is active.
+   * \param[in] val_sbsInBox_i - 1 if point i lies inside the box where the model is active.
+   * \param[in] val_sbsInBox_j - 1 if point j lies inside the box where the model is active.
+   */
+  inline void SetSbsInBoxSensor(su2double val_sbsInBox_i, su2double val_sbsInBox_j) {
+    sbsInBox_i = val_sbsInBox_i;
+    sbsInBox_j = val_sbsInBox_j;
   }
 
   /*!
