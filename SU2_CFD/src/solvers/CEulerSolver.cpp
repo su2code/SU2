@@ -4784,15 +4784,16 @@ void CEulerSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
   Weight_ObjFunc = config->GetWeight_ObjFunc(0);
   Kind_ObjFunc   = config->GetKind_ObjFunc(0);
 
+  /*--- Turbomachinery specific objective functions ---*/
+  if (TurbomachineryPerformance && CTurboOutput::IsTurboObjective(Kind_ObjFunc))
+    Total_ComboObj += Weight_ObjFunc * TurbomachineryPerformance->GetObjectiveValue(Kind_ObjFunc);
+
   switch(Kind_ObjFunc) {
     case NEARFIELD_PRESSURE:
       Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
       break;
     case SURFACE_MACH:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
-      break;
-    case ENTROPY_GENERATION:
-      Total_ComboObj+=Weight_ObjFunc*EntropyGeneration;
       break;
     default:
       break;
@@ -9650,27 +9651,19 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
 }
 
 void CEulerSolver::ComputeTurboBladePerformance(CGeometry* geometry, CConfig* config, unsigned short iBlade) {
-  // Computes the turboperformance per blade in zone iBlade
+  // Computes the turboperformance per blade in zone iBlade and stores the results in TurbomachineryPerformance.
   const auto nDim = geometry->GetnDim();
   vector<su2double> TurboPrimitiveIn, TurboPrimitiveOut;
   if (rank == MASTER_NODE) {
-    /* Blade Primitive initialized per blade */
     std::vector<CTurbomachineryCombinedPrimitiveStates> bladePrimitives;
     auto nSpan = config->GetnSpanWiseSections();
     for (auto iSpan = 0; iSpan < nSpan + 1; iSpan++) {
-      TurboPrimitiveIn= GetTurboPrimitive(iBlade, iSpan, true);
-      TurboPrimitiveOut= GetTurboPrimitive(iBlade, iSpan, false);
+      TurboPrimitiveIn = GetTurboPrimitive(iBlade, iSpan, true);
+      TurboPrimitiveOut = GetTurboPrimitive(iBlade, iSpan, false);
       auto spanInletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveIn, nDim, GetTangGridVelIn(iBlade, iSpan));
       auto spanOutletPrimitive = CTurbomachineryPrimitiveState(TurboPrimitiveOut, nDim, GetTangGridVelOut(iBlade, iSpan));
-      auto spanCombinedPrimitive = CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive);
-      bladePrimitives.push_back(spanCombinedPrimitive);
+      bladePrimitives.push_back(CTurbomachineryCombinedPrimitiveStates(spanInletPrimitive, spanOutletPrimitive));
     }
     TurbomachineryPerformance->ComputeTurbomachineryPerformance(bladePrimitives, iBlade);
-
-    auto BladePerf = TurbomachineryPerformance->GetBladesPerformances().at(nSpan);
-
-    EntropyGeneration = BladePerf->GetEntropyGen();
-    TotalPressureLoss = BladePerf->GetTotalPressureLoss();
-    KineticEnergyLoss = BladePerf->GetKineticEnergyLoss();
   }
 }

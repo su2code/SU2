@@ -213,6 +213,22 @@ void CTurboOutput::ComputePerSpan(shared_ptr<CTurbomachineryBladePerformance> co
   spanPerformances->ComputePerformance(spanPrimitives);
 }
 
+bool CTurboOutput::IsTurboObjective(unsigned short kind) {
+  return kind == ENTROPY_GENERATION || kind == TOTAL_PRESSURE_LOSS || kind == KINETIC_ENERGY_LOSS;
+}
+
+su2double CTurboOutput::GetObjectiveValue(unsigned short kind) const {
+  /*--- Use the tip-span (last element) performance, consistent with how ComputeTurboBladePerformance
+   *    selects the representative blade performance for objective function evaluation. ---*/
+  const auto& perf = BladesPerformances.back();
+  switch (kind) {
+    case ENTROPY_GENERATION:  return perf->GetEntropyGen();
+    case TOTAL_PRESSURE_LOSS: return perf->GetTotalPressureLoss();
+    case KINETIC_ENERGY_LOSS: return perf->GetKineticEnergyLoss();
+    default:                  return 0.0;
+  }
+}
+
 CTurbomachineryStagePerformance::CTurbomachineryStagePerformance(CFluidModel& fluid) : fluidModel(fluid) {}
 
 void CTurbomachineryStagePerformance::ComputePerformanceStage(const CTurbomachineryState& InState,

@@ -264,4 +264,18 @@ class CTurboOutput {
   const vector<shared_ptr<CTurbomachineryBladePerformance>>& GetBladesPerformances() const { return BladesPerformances; }
 
   void ComputeTurbomachineryPerformance(vector<CTurbomachineryCombinedPrimitiveStates> const primitives, unsigned short iBladeRow);
+
+  /*!
+   * \brief Returns true if the given objective function kind is a turbomachinery objective
+   *        that can be evaluated via GetObjectiveValue.
+   * \param[in] kind - Objective function kind (ENUM_OBJECTIVE value).
+   */
+  static bool IsTurboObjective(unsigned short kind);
+
+  /*!
+   * \brief Get the value of a turbomachinery objective function from the tip span performance.
+   * \param[in] kind - Objective function kind (ENUM_OBJECTIVE value).
+   * \return The objective function value, or 0.0 for unrecognised kinds.
+   */
+  su2double GetObjectiveValue(unsigned short kind) const;
 };
