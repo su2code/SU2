@@ -42,9 +42,9 @@ namespace AD {
 enum class TAPE_DEBUG_OPTION {
   IGNORE_PREACC,
   ACTIVATE_PREACC,
-  IGNORE_SINGLE_ZONE,
+  ALLOW_ZONE,
   ACTIVATE_SINGLE_ZONE,
-  IGNORE_ZONES,
+  ALLOW_ZONES,
   ACTIVATE_ZONES,
   ACTIVATE_ALL_ERRORS,
   MULTIZONE_TAGS,
@@ -784,8 +784,8 @@ struct DebugControl {
   bool multizone_tags = false;
   bool init_run = false;
   bool ignore_preacc = false;
-  bool ignore_single_zone = false;
-  bool ignore_zones = false;
+  bool allow_zone = false;
+  bool allow_zones = false;
   unsigned short ignore_izone = 0;
   unsigned long ErrorCounter = 0;
   std::ostream* out = &std::cout;
@@ -818,7 +818,7 @@ static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* u
 
   bool throw_mismatch_error = true;
 
-  if (status->ignore_preacc || status->ignore_single_zone || status->ignore_zones) {
+  if (status->ignore_preacc || status->allow_zone || status->allow_zones) {
     /*--- The callback could be due to a preaccumulation tag mismatch, if not, we deduce
      *    that it is either due to a zone index mismatch, or due to a mismatch in the least
      *    significant bit that will always result in an error. ---*/
@@ -828,13 +828,13 @@ static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* u
         throw_mismatch_error = false;
       }
     } else if (correctTag % 10 == wrongTag % 10) {
-      if (status->ignore_single_zone) {
+      if (status->allow_zone) {
         /*--- A mismatch with a specified zone index might be allowed. ---*/
-        if (wrongTag / 10 == status->ignore_single_zone) {
+        if (wrongTag / 10 == status->allow_zone) {
           throw_mismatch_error = false;
         }
       }
-      if (status->ignore_zones) {
+      if (status->allow_zones) {
         throw_mismatch_error = false;
       }
     }
@@ -854,18 +854,18 @@ FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izo
   if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_PREACC || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS) {
     current_control->ignore_preacc = false;
   }
-  if (option == AD::TAPE_DEBUG_OPTION::IGNORE_SINGLE_ZONE) {
-    current_control->ignore_single_zone = true;
+  if (option == AD::TAPE_DEBUG_OPTION::ALLOW_ZONE) {
+    current_control->allow_zone = true;
     current_control->ignore_izone = izone;
   }
   if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_SINGLE_ZONE || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS) {
-    current_control->ignore_single_zone = false;
+    current_control->allow_zone = false;
   }
-  if (option == AD::TAPE_DEBUG_OPTION::IGNORE_ZONES) {
-    current_control->ignore_zones = true;
+  if (option == AD::TAPE_DEBUG_OPTION::ALLOW_ZONES) {
+    current_control->allow_zones = true;
   }
   if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ZONES || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS) {
-    current_control->ignore_zones = false;
+    current_control->allow_zones = false;
   }
   if (option == AD::TAPE_DEBUG_OPTION::INIT_RUN) {
     current_control->init_run = true;
