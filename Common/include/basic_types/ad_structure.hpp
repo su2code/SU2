@@ -842,7 +842,7 @@ static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* u
 
   bool throw_mismatch_error = true;
 
-  if (status->ignore_preacc || status->allow_zone || status->allow_zones) {
+  if (status->ignore_preacc || status->allow_izone > 0 || status->allow_zones) {
     /*--- The callback could be due to a preaccumulation tag mismatch, if not, we deduce
      *    that it is either due to a zone index mismatch, or due to a mismatch in the least
      *    significant bit that will always result in an error. ---*/

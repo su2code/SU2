@@ -258,7 +258,7 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS);
 
   // Make this a config option?
-  // AD::SetCallbackMode(AD::TAPE_TEST_MODE::IGNORE_ZONES);
+  // AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ALLOW_ALL_ZONES);
 
   /*--- Reset the error counter and set the error log file (each process writes its own). ---*/
   AD::ResetErrorCounter(debug_control);

@@ -119,8 +119,22 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
         /*--- If this processor owns the node. ---*/
         if (donor_geometry->nodes->GetDomain(iPoint)) {
 
+          /*--- Read variables from donor solver.
+           *    If in AD test recording mode, keep the current tag, but allow the donor tag while loading the donor variable into Donor_Variable. ---*/
+          // cout << "Loading variables from zone " << donor_config->GetiZone() << endl;
+          AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ALLOW_ZONE, donor_config->GetiZone());
+
           GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iVertex, iPoint);
-          for (auto iVar = 0u; iVar < nVar; iVar++) sendDonorVar(iSend, iVar) = Donor_Variable[iVar];
+
+          /*--- If in AD test recording mode, we manually adapt the tag to the target (this) zone and return to strict tag mismatch handling. ---*/
+          for (auto iVar = 0u; iVar < nVar; iVar++) {
+            AD::SetTagOnVariable(Donor_Variable[iVar], target_config->GetiZone());
+          }
+          AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ZONES);
+
+          for (auto iVar = 0u; iVar < nVar; iVar++) {
+            sendDonorVar(iSend, iVar) = Donor_Variable[iVar];
+          }
 
           sendDonorIdx[iSend] = donor_geometry->nodes->GetGlobalIndex(iPoint);
           ++iSend;

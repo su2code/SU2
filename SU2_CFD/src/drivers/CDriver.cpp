@@ -2787,6 +2787,8 @@ void CDriver::PrintDirectResidual(RECORDING kind_recording) {
 
     for (unsigned short iZone = 0; iZone < nZone; iZone++) {
 
+      AD::SetTag(AD::ComputeTag(iZone));
+
       auto solvers = solver_container[iZone][INST_0][MESH_0];
       auto configs = config_container[iZone];
 
