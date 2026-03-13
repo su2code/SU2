@@ -769,11 +769,9 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
 
       /*--- If we are in tape debug mode, set a global (but zone-specific) tag.
        *    Every variable that we register below will be initialized with this tag. ---*/
-      int tag = AD::GetTag(iZone);
-      if(tag != 0) {
-        cout << "    - with tag " << tag << " on zone " << iZone << "." << endl;
-      }
+      int tag = AD::ComputeTag(iZone);
       AD::SetTag(tag);
+      if(tag != 0) { cout << "    - register input variables with tag " << AD::GetTag() << " on zone " << iZone << "." << endl; }
 
       iteration_container[iZone][INST_0]->RegisterInput(solver_container, geometry_container,
                                                         config_container, iZone, INST_0, type_recording);
@@ -785,7 +783,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
   for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- If in tape debug mode, set the zone-specific tag for computations in this zone. ---*/
-    AD::SetTag(AD::GetTag(iZone));
+    AD::SetTag(AD::ComputeTag(iZone));
 
     iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
                                                         config_container, iZone, INST_0, kind_recording);
@@ -802,7 +800,7 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     for (iZone = 0; iZone < nZone; iZone++) {
 
       /*--- If in tape debug mode, set the zone-specific test tag for computations in this zone. ---*/
-      AD::SetTag(AD::GetTag(iZone));
+      AD::SetTag(AD::ComputeTag(iZone));
 
       if (Has_Deformation(iZone)) {
         iteration_container[iZone][INST_0]->SetDependencies(solver_container, geometry_container, numerics_container,
@@ -831,7 +829,9 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
       AD::Push_TapePosition(); /// enter_zone
 
       /*--- If in tape debug mode, set the zone-specific test tag for computations in this zone. ---*/
-      AD::SetTag(AD::GetTag(iZone));
+      int tag = AD::ComputeTag(iZone);
+      AD::SetTag(tag);
+      cout << "    - check solver of zone " << iZone << " against tag " << tag << endl;
 
       DirectIteration(iZone, kind_recording);
 
@@ -1018,10 +1018,15 @@ void CDiscAdjMultizoneDriver::HandleDataTransfer() {
     /*--- In principle, the mesh does not need to be updated ---*/
     bool DeformMesh = false;
 
+    int tag = AD::ComputeTag(iZone);
+    AD::SetTag(tag);
+    if(tag != 0) { cout << "    - check data transfer of variables into zone " << iZone << " against its (correct) tag " << tag << endl; }
+
     /*--- Transfer from all the remaining zones ---*/
     for (unsigned short jZone = 0; jZone < nZone; jZone++){
       /*--- The target zone is iZone ---*/
       if (jZone != iZone && interface_container[jZone][iZone] != nullptr) {
+        if(tag != 0) { cout << "        - From zone " << jZone << " into zone " << iZone << endl;}
         DeformMesh |= TransferData(jZone, iZone);
       }
     }
