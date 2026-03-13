@@ -302,6 +302,12 @@ inline void SetIndex(Identifier& index, const su2double& data) {}
 inline void SetTag(int tag) {}
 
 /*!
+ * \brief Gets the current tag.
+ * \param[in] tag - the number to which the tag is set.
+ */
+inline int GetTag() { return 0; }
+
+/*!
  * \brief Compute the zone-specific tag.
  * \param[in] iZone - Zone index from which the zone-specific tag is formed.
  * \return The zone-specific tag.
@@ -780,6 +786,7 @@ FORCEINLINE void ResumePreaccumulation(bool wasActive) {
 #ifdef CODI_TAG_TAPE
 
 struct DebugControl {
+  int current_tag;
   bool multizone_tags = false;
   bool init_run = false;
   bool ignore_preacc = false;
@@ -799,7 +806,12 @@ extern DebugControl* current_control;
 
 FORCEINLINE void SetDebugControl(DebugControl* control) { current_control = control; }
 
-FORCEINLINE void SetTag(int tag) { AD::getTape().setCurTag(tag); }
+FORCEINLINE void SetTag(int tag) {
+  current_control->current_tag = tag;
+  AD::getTape().setCurTag(tag);
+}
+
+FORCEINLINE int GetTag() { return current_control->current_tag; }
 
 FORCEINLINE int ComputeTag(unsigned short iZone) {
   if (current_control->init_run) {
@@ -887,6 +899,7 @@ FORCEINLINE void ResetErrorCounter(DebugControl& control) {}
 FORCEINLINE void SetDebugReportFile(DebugControl& control, std::ostream* output_file) {}
 FORCEINLINE unsigned long GetErrorCount(const DebugControl& control) { return 0; }
 FORCEINLINE void SetDebugControl(DebugControl* status) {}
+FORCEINLINE int GetTag() { return 0; }
 FORCEINLINE void SetTag(int tag) {}
 FORCEINLINE int ComputeTag(unsigned short iZone) { return 0; }
 FORCEINLINE void ClearTagOnVariable(su2double& v) {}
