@@ -321,6 +321,12 @@ inline int ComputeTag(unsigned short iZone) { return 0; }
 inline void ClearTagOnVariable(su2double& v) {}
 
 /*!
+ * \brief Sets the tag of a variable to a specified value.
+ * \param[in] v - the variable whose tag is set manually.
+ */
+inline void SetTagOnVariable(su2double& v, int zone_tag = 0, int run_tag = 0) {}
+
+/*!
  * \brief Struct to store information about errors during a tag debug run.
  */
 struct DebugControl {};
@@ -823,6 +829,14 @@ FORCEINLINE int ComputeTag(unsigned short iZone) {
 
 FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
 
+FORCEINLINE void SetTagOnVariable(su2double& v, int zone_tag = 0, int run_tag = 0) {
+
+  int tag = v.getIdentifier().tag;
+  int tens = (zone_tag > 0) ? zone_tag + 1 : tag / 10;
+  int ones = (run_tag > 0 && run_tag < 10) ? run_tag : tag % 10;
+  if(tag != 0) { v.getIdentifier().tag = tens*10 + ones; }
+}
+
 static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* userData) {
   auto* status = static_cast<DebugControl*>(userData);
 
@@ -903,6 +917,7 @@ FORCEINLINE int GetTag() { return 0; }
 FORCEINLINE void SetTag(int tag) {}
 FORCEINLINE int ComputeTag(unsigned short iZone) { return 0; }
 FORCEINLINE void ClearTagOnVariable(su2double& v) {}
+FORCEINLINE void SetTagOnVariable(su2double& v, int zone_tag = 0, int run_tag = 0) {}
 FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izone = 0) {}
 FORCEINLINE void ActivateTagErrorCallback() {}
 
