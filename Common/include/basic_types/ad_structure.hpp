@@ -43,9 +43,8 @@ enum class TAPE_DEBUG_OPTION {
   IGNORE_PREACC,
   ACTIVATE_PREACC,
   ALLOW_ZONE,
-  ACTIVATE_SINGLE_ZONE,
-  ALLOW_ZONES,
-  ACTIVATE_ZONES,
+  ALLOW_ALL_ZONES,
+  ACTIVATE_ALL_ZONES,
   ACTIVATE_ALL_ERRORS,
   MULTIZONE_TAGS,
   INIT_RUN,
@@ -784,9 +783,8 @@ struct DebugControl {
   bool multizone_tags = false;
   bool init_run = false;
   bool ignore_preacc = false;
-  bool allow_zone = false;
   bool allow_zones = false;
-  unsigned short ignore_izone = 0;
+  unsigned short allow_izone = 0;
   unsigned long ErrorCounter = 0;
   std::ostream* out = &std::cout;
 };
@@ -828,9 +826,9 @@ static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* u
         throw_mismatch_error = false;
       }
     } else if (correctTag % 10 == wrongTag % 10) {
-      if (status->allow_zone) {
+      if (status->allow_izone > 0) {
         /*--- A mismatch with a specified zone index might be allowed. ---*/
-        if (wrongTag / 10 == status->allow_zone) {
+        if (wrongTag / 10 == status->allow_izone) {
           throw_mismatch_error = false;
         }
       }
@@ -855,17 +853,14 @@ FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izo
     current_control->ignore_preacc = false;
   }
   if (option == AD::TAPE_DEBUG_OPTION::ALLOW_ZONE) {
-    current_control->allow_zone = true;
-    current_control->ignore_izone = izone;
+    current_control->allow_izone = izone + 1;
   }
-  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_SINGLE_ZONE || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS) {
-    current_control->allow_zone = false;
-  }
-  if (option == AD::TAPE_DEBUG_OPTION::ALLOW_ZONES) {
+  if (option == AD::TAPE_DEBUG_OPTION::ALLOW_ALL_ZONES) {
     current_control->allow_zones = true;
   }
-  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ZONES || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS) {
+  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ZONES || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS) {
     current_control->allow_zones = false;
+    current_control->allow_izone = 0;
   }
   if (option == AD::TAPE_DEBUG_OPTION::INIT_RUN) {
     current_control->init_run = true;
