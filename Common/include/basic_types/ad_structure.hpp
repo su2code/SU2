@@ -830,11 +830,12 @@ FORCEINLINE int ComputeTag(unsigned short iZone) {
 FORCEINLINE void ClearTagOnVariable(su2double& v) { AD::getTape().clearTagOnVariable(v); }
 
 FORCEINLINE void SetTagOnVariable(su2double& v, int zone_tag = 0, int run_tag = 0) {
-
   int tag = v.getIdentifier().tag;
   int tens = (zone_tag > 0) ? zone_tag + 1 : tag / 10;
   int ones = (run_tag > 0 && run_tag < 10) ? run_tag : tag % 10;
-  if(tag != 0) { v.getIdentifier().tag = tens*10 + ones; }
+  if (tag != 0) {
+    v.getIdentifier().tag = tens * 10 + ones;
+  }
 }
 
 static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* userData) {
