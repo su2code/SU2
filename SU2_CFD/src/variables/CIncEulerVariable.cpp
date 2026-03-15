@@ -150,7 +150,7 @@ void CIncEulerVariable::Set_Solution_time_n1() {
   /*--- Set the solution at time n-1 ---*/
   CVariable::Set_Solution_time_n1();
 
-  /*--- Store the density at time n-1 by copying from time n ---*/
+  /*--- Store the density at n-1 by copying from n ---*/
   if (Density_time_n1.size() > 0 && Density_time_n.size() > 0) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -158,4 +158,12 @@ void CIncEulerVariable::Set_Solution_time_n1() {
     }
     END_SU2_OMP_FOR
   }
+}
+
+void CIncEulerVariable::RegisterDensity_time_n() {
+  RegisterContainer(true, Density_time_n);
+}
+
+void CIncEulerVariable::RegisterDensity_time_n1() {
+  RegisterContainer(true, Density_time_n1);
 }
