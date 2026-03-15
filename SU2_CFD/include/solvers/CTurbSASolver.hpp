@@ -70,7 +70,7 @@ private:
    * a nonlinear iteration for stability.
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeUnderRelaxationFactor(const CConfig *config) final;
+  void ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) final;
 
 public:
   /*!

@@ -153,6 +153,8 @@ MAKE_BINARY_FUN(fmin, min_p)
     return res;                                \
   }
 
+MAKE_UNARY_FUN(exp, ::exp)
+
 #undef MAKE_UNARY_FUN
 
 /*--- Functions of two arguments, with arrays and scalars. ---*/

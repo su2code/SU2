@@ -1555,7 +1555,7 @@ void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarke
   }
 }
 
-void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+void CTurbSASolver::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) {
 
   /* Apply the turbulent under-relaxation to the SA variants. The
    SA_NEG model is more robust due to allowing for negative nu_tilde,
@@ -1568,6 +1568,6 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 
   const su2double allowableRatio =  config->GetMaxUpdateFractionSA();
 
-  ComputeUnderRelaxationFactorHelper(allowableRatio);
+  ComputeUnderRelaxationFactorHelper(solver_container, allowableRatio);
 
 }
