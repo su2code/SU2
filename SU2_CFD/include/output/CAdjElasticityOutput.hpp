@@ -36,6 +36,7 @@
  */
 class CAdjElasticityOutput final : public COutput {
 private:
+  bool coupled_heat; //!< Boolean indicating a thermoelastic analysis
   unsigned short nVar_FEM; //!< Number of FEM variables
 
 public:

@@ -65,6 +65,9 @@ CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(const CConfig* val_config, unsigned short
   ReformatCGNSVolumeConnectivity();
   ReformatCGNSSurfaceConnectivity();
 
+  /*--- Duplicate some markers if requested. ---*/
+  CopyMarkers(val_config->GetMarkerCreateCopy());
+
 #else
   SU2_MPI::Error(string(" SU2 built without CGNS support. \n") + string(" To use CGNS, build SU2 accordingly."),
                  CURRENT_FUNCTION);

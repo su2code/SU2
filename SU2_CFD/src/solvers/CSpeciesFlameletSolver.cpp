@@ -88,7 +88,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+  //for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+  for (auto i_point = 0u; i_point < nPoint; i_point++) {
     CFluidModel* fluid_model_local = solver_container[FLOW_SOL]->GetFluidModel();
     su2double* scalars = nodes->GetSolution(i_point);
     for (auto iVar = 0u; iVar < nVar; iVar++) scalars_vector[iVar] = scalars[iVar];
@@ -213,7 +214,8 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
-      prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
+      if (flame_front_ignition) prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
+      
       for (auto iVar = 0u; iVar < nVar; iVar++) scalar_init[iVar] = config->GetSpecies_Init()[iVar];
 
       /*--- Set enthalpy based on initial temperature and scalars. ---*/
@@ -222,7 +224,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
       prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
       SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (unsigned long i_point = 0; i_point < geometry[i_mesh]->GetnPointDomain(); i_point++) {
+      for (unsigned long i_point = 0; i_point < nPoint; i_point++) {
         auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
         if (flame_front_ignition) {
@@ -797,7 +799,7 @@ su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_mo
   bool outside = false;
   while (!outside) {
     fluid_model->SetTDState_T(300, scalars);
-    if (fluid_model->GetExtrapolation() == 1) outside = true;
+    if (fluid_model->GetExtrapolation() == 1 || (fluid_model->GetTemperature()>1000.)) outside = true;
     scalars[I_PROGVAR] += delta;
   }
   su2double pv_burnt = scalars[I_PROGVAR] - delta;

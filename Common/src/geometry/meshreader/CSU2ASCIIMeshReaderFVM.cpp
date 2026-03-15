@@ -69,6 +69,9 @@ CSU2ASCIIMeshReaderFVM::CSU2ASCIIMeshReaderFVM(CConfig* val_config, unsigned sho
     }
   }
   mesh_file.close();
+
+  /*--- Duplicate some markers if requested. ---*/
+  CopyMarkers(val_config->GetMarkerCreateCopy());
 }
 
 CSU2ASCIIMeshReaderFVM::~CSU2ASCIIMeshReaderFVM() = default;

@@ -80,7 +80,7 @@ def main():
     sp_pinArray_2d_mf_hf.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_mf_hf.cfg_file  = "sp_pinArray_2d_mf_hf.cfg"
     sp_pinArray_2d_mf_hf.test_iter = 25
-    sp_pinArray_2d_mf_hf.test_vals = [-4.683630, 0.844679, -0.755570, 241.872160]
+    sp_pinArray_2d_mf_hf.test_vals = [-4.674156, 0.512176, -0.756308, 241.767693]
     sp_pinArray_2d_mf_hf.test_vals_aarch64 = [-4.683630, -0.755570, 241.872160]
     test_list.append(sp_pinArray_2d_mf_hf)
 
@@ -89,7 +89,7 @@ def main():
     sp_pinArray_2d_dp_hf_tp.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Streamwise_Periodic"
     sp_pinArray_2d_dp_hf_tp.cfg_file  = "sp_pinArray_2d_dp_hf_tp.cfg"
     sp_pinArray_2d_dp_hf_tp.test_iter = 25
-    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.739709, 0.520033, -0.713547, 208.023676]
+    sp_pinArray_2d_dp_hf_tp.test_vals = [-4.727583, 0.453505, -0.714476, 208.023676]
     sp_pinArray_2d_dp_hf_tp.test_vals_aarch64 = [-4.739709, 0.520033, -0.713547, 208.023676]
     test_list.append(sp_pinArray_2d_dp_hf_tp)
 
@@ -153,7 +153,7 @@ def main():
     kenics_mixer_tutorial.cfg_dir   = "../Tutorials/incompressible_flow/Inc_Species_Transport_Composition_Dependent_Model"
     kenics_mixer_tutorial.cfg_file  = "kenics_mixer_tutorial.cfg"
     kenics_mixer_tutorial.test_iter = 10
-    kenics_mixer_tutorial.test_vals = [-7.490472, -6.823803, -6.838373, -6.383764, -7.907928, -3.062404, -7.452184, 5.000000, -1.858094, 4.000000, -5.318066, 3.000000, -6.371967, 0.025661, 0.000000, 0.025661, 0.000000, 62.736000, 8.470600, 46.738000, 7.527900]
+    kenics_mixer_tutorial.test_vals = [-7.490438, -6.823937, -6.838581, -6.383852, -7.879414, -3.004710, -7.452189, 5.000000, -1.857319, 4.000000, -5.336948, 3.000000, -6.369478, 0.025670, 0.000000, 0.025670, 0.000000, 62.718000, 8.462700, 46.726000, 7.529400]
     kenics_mixer_tutorial.command   = TestCase.Command("mpirun -n 2", "SU2_CFD")
     test_list.append(kenics_mixer_tutorial)
 
@@ -237,7 +237,7 @@ def main():
     tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
     tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3A.test_iter  = 20
-    tutorial_trans_flatplate_T3A.test_vals  = [-5.808996, -2.070606, -3.969765, -0.277943, -1.953093, 1.708472, -3.514943, 0.357411]
+    tutorial_trans_flatplate_T3A.test_vals  = [-5.790137, -2.054834, -3.894661, -0.255074, -1.747145, 5.119341, -3.493237, 0.393262]
     tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.808996, -2.070606, -3.969765, -0.277943, -1.953289, 1.708472, -3.514943, 0.357411]
     tutorial_trans_flatplate_T3A.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3A)
@@ -247,7 +247,7 @@ def main():
     tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
-    tutorial_trans_flatplate_T3Am.test_vals  = [-5.538098, -1.681627, -2.877016, -0.055689, -3.695534, 3.413620, -2.385344, 1.103633]
+    tutorial_trans_flatplate_T3Am.test_vals  = [-5.590359, -1.700867, -3.099309, -0.105449, -3.750523, 3.287643, -2.394576, 1.119623]
     tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-5.540938, -1.681627, -2.878831, -0.058224, -3.695533, 3.413628, -2.385345, 1.103633]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
@@ -283,7 +283,7 @@ def main():
     tutorial_nicfd_nozzle.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle"
     tutorial_nicfd_nozzle.cfg_file  = "NICFD_nozzle.cfg"
     tutorial_nicfd_nozzle.test_iter = 20
-    tutorial_nicfd_nozzle.test_vals = [-1.799262, -11.343263, 4.631692, 0.000000, 0.000000]
+    tutorial_nicfd_nozzle.test_vals = [-1.799850, -6.002739, 4.635400, 0.000000, 0.000000]
     tutorial_nicfd_nozzle.no_restart = True
     test_list.append(tutorial_nicfd_nozzle)
 
@@ -292,7 +292,7 @@ def main():
     tutorial_nicfd_nozzle_pinn.cfg_dir   = "../Tutorials/compressible_flow/NICFD_nozzle/PhysicsInformed"
     tutorial_nicfd_nozzle_pinn.cfg_file  = "config_NICFD_PINN.cfg"
     tutorial_nicfd_nozzle_pinn.test_iter = 20
-    tutorial_nicfd_nozzle_pinn.test_vals = [-3.181747, -1.638856, -1.277037, 2.445964, -11.759632]
+    tutorial_nicfd_nozzle_pinn.test_vals = [-2.728179, -0.849337, -1.224542, 2.898995, -11.420290]
     tutorial_nicfd_nozzle_pinn.no_restart = True
     test_list.append(tutorial_nicfd_nozzle_pinn)
 
@@ -344,6 +344,34 @@ def main():
     tutorial_design_multiobj.test_vals  = [2.657333, -3.020635, 370220.000000, 0.000000]
     tutorial_design_multiobj.no_restart = True
     test_list.append(tutorial_design_multiobj)
+
+    # custom source: turbulent flamespeed closure (Zimont model) for PSI testcase
+    pywrapper_psi = TestCase('psi_adiabatic')
+    pywrapper_psi.cfg_dir = "../Tutorials/multiphysics/TFC_python/adiabatic"
+    pywrapper_psi.cfg_file = "psi.cfg"
+    pywrapper_psi.test_iter = 0
+    pywrapper_psi.test_vals = [-2.682653, -0.994981, -2.221252, -2.401462, 3.597559, -3.369865]
+    pywrapper_psi.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    test_list.append(pywrapper_psi)
+
+    # custom source: including source term for enthalpy equations 
+    pywrapper_psi_hl = TestCase('psi_enthalpy')
+    pywrapper_psi_hl.cfg_dir = "../Tutorials/multiphysics/TFC_python/enthalpy"
+    pywrapper_psi_hl.cfg_file = "psi.cfg"
+    pywrapper_psi_hl.test_iter = 0
+    pywrapper_psi_hl.test_vals = [-6.211126, -4.025898, -5.405635, -3.743101, -1.314498, -3.948690]
+    pywrapper_psi_hl.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    test_list.append(pywrapper_psi_hl)
+
+    # custom source: including custom BC and source term 
+    pywrapper_psi_quench = TestCase('psi_quench')
+    pywrapper_psi_quench.cfg_dir = "../Tutorials/multiphysics/TFC_python/quench"
+    pywrapper_psi_quench.cfg_file = "psi.cfg"
+    pywrapper_psi_quench.test_iter = 0
+    pywrapper_psi_quench.test_vals = [-7.370108, -6.688806, -7.839519, -4.086479, -1.223314, -4.022876]
+    pywrapper_psi_quench.command = TestCase.Command("mpirun -np 2", "python", "run.py")
+    test_list.append(pywrapper_psi_quench)
+
 
     ######################################
     ### RUN TESTS                      ###

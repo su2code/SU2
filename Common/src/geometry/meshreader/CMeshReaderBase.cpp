@@ -93,3 +93,25 @@ void CMeshReaderBase::GetCornerPointsAllFaces(const unsigned long* elemInfo, uns
     }
   }
 }
+
+void CMeshReaderBase::CopyMarkers(const std::vector<std::string>& srcDstMarkers) {
+  for (size_t i = 0; i < srcDstMarkers.size(); i += 2) {
+    const auto& src = srcDstMarkers[i];
+    const auto& dst = srcDstMarkers[i + 1];
+
+    if (const auto it = std::find(markerNames.begin(), markerNames.end(), src); it != markerNames.end()) {
+      const auto j = std::distance(markerNames.begin(), it);
+
+      numberOfMarkers += 1;
+      markerNames.push_back(dst);
+      surfaceElementConnectivity.push_back(surfaceElementConnectivity[j]);
+
+      /*--- Only the FEM readers populate this vector. ---*/
+      if (!numberOfLocalSurfaceElements.empty()) {
+        numberOfLocalSurfaceElements.push_back(numberOfLocalSurfaceElements[j]);
+      }
+    } else if (rank == MASTER_NODE) {
+      std::cout << "WARNING: Not duplicating marker " << src << " because it was not found.\n";
+    }
+  }
+}

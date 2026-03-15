@@ -667,44 +667,46 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             break;
 
-          case PERIODIC_SENSOR:
+          case PERIODIC_SENSOR: {
+            const bool msw = config->GetKind_Upwind_Flow() == UPWIND::MSW;
 
             /*--- For the centered schemes, the sensor must be computed
              consistently using info from the entire control volume
              on both sides of the periodic face. ---*/
 
-            Sensor_i = 0.0; Sensor_j = 0.0;
+            Sensor_i = 0; Sensor_j = 0;
             for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
               /*--- Avoid halos and boundary points so that we don't
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
+              if (geometry->nodes->GetPeriodicBoundary(jPoint)) continue;
 
-                /*--- Use density instead of pressure for incomp. flows. ---*/
+              /*--- Use density instead of pressure for incomp. flows. ---*/
 
-                if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE)) {
-                  Pressure_i = base_nodes->GetDensity(iPoint);
-                  Pressure_j = base_nodes->GetDensity(jPoint);
-                } else {
-                  Pressure_i = base_nodes->GetPressure(iPoint);
-                  Pressure_j = base_nodes->GetPressure(jPoint);
-                }
-
-                boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
-                boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
-
-                /*--- Both points inside domain, or both on boundary ---*/
-                /*--- iPoint inside the domain, jPoint on the boundary ---*/
-
-                if (!boundary_i || boundary_j) {
-                  if (geometry->nodes->GetDomain(iPoint)) {
-                    Sensor_i += (Pressure_j - Pressure_i);
-                    Sensor_j += (Pressure_i + Pressure_j);
-                  }
-                }
-
+              if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
+                Pressure_i = base_nodes->GetDensity(iPoint);
+                Pressure_j = base_nodes->GetDensity(jPoint);
+              } else {
+                Pressure_i = base_nodes->GetPressure(iPoint);
+                Pressure_j = base_nodes->GetPressure(jPoint);
               }
+
+              boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+              boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
+
+              /*--- Both points inside domain, or both on boundary ---*/
+              /*--- iPoint inside the domain, jPoint on the boundary ---*/
+
+              if ((!boundary_i || boundary_j) && geometry->nodes->GetDomain(iPoint)) {
+                if (msw) {
+                  Sensor_i = fmax(Sensor_i, fabs(Pressure_j - Pressure_i)) / fmin(Pressure_i, Pressure_j);
+                } else {
+                  Sensor_i += (Pressure_j - Pressure_i);
+                  Sensor_j += (Pressure_i + Pressure_j);
+                }
+              }
+
             }
 
             /*--- Store the sensor increments to buffer. After summing
@@ -714,7 +716,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             buf_offset++;
             bufDSend[buf_offset] = Sensor_j;
 
-            break;
+          } break;
 
           case PERIODIC_SOL_GG:
           case PERIODIC_SOL_GG_R:
@@ -1213,8 +1215,13 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               /*--- Simple accumulation of the sensors on periodic faces. ---*/
 
-              iPoint_UndLapl[iPoint] += bufDRecv[buf_offset]; buf_offset++;
-              jPoint_UndLapl[iPoint] += bufDRecv[buf_offset];
+              if (config->GetKind_Upwind_Flow() == UPWIND::MSW) {
+                iPoint_UndLapl[iPoint] = fmax(iPoint_UndLapl[iPoint], bufDRecv[buf_offset++]);
+                jPoint_UndLapl[iPoint] = 1;
+              } else {
+                iPoint_UndLapl[iPoint] += bufDRecv[buf_offset++];
+                jPoint_UndLapl[iPoint] += bufDRecv[buf_offset];
+              }
 
               break;
 
