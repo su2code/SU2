@@ -869,7 +869,7 @@ void CConfig::SetPointersNull() {
   Marker_Designing            = nullptr;   Marker_GeoEval           = nullptr;    Marker_Plotting   = nullptr;
   Marker_Analyze              = nullptr;   Marker_PyCustom          = nullptr;    Marker_WallFunctions        = nullptr;
   Marker_CfgFile_KindBC       = nullptr;   Marker_All_KindBC        = nullptr;    Marker_SobolevBC  = nullptr;
-  Marker_StrongBC             = nullptr;
+  Marker_StrongBC             = nullptr;   Marker_Create_Copy       = nullptr;
 
   Kind_WallFunctions       = nullptr;
   IntInfo_WallFunctions    = nullptr;
@@ -1229,10 +1229,6 @@ void CConfig::SetConfig_Options() {
   addStringListOption("FILENAMES_INTERPOLATOR", datadriven_ParsedOptions.n_filenames, datadriven_ParsedOptions.datadriven_filenames);
   /*!\brief DATADRIVEN_NEWTON_RELAXATION \n DESCRIPTION: Relaxation factor for Newton solvers in data-driven fluid model. \n \ingroup Config*/
   addDoubleOption("DATADRIVEN_NEWTON_RELAXATION", datadriven_ParsedOptions.Newton_relaxation, 1.0);
-  /*!\brief DATADRIVEN_INITIAL_DENSITY \n DESCRIPTION: Optional initial value for fluid density used for the Newton solver processes in the data-driven fluid model. */
-  addDoubleOption("DATADRIVEN_INITIAL_DENSITY", datadriven_ParsedOptions.rho_init_custom, -1.0);
-  /*!\brief DATADRIVEN_INITIAL_ENERGY \n DESCRIPTION: Optional initial value for fluid static energy used for the Newton solver processes in the data-driven fluid model. */
-  addDoubleOption("DATADRIVEN_INITIAL_ENERGY", datadriven_ParsedOptions.e_init_custom, -1.0);
   /*!\biref USE_PINN \n DESCRIPTION: Use physics-informed approach for the entropy-based fluid model. \n \ingroup Config*/
   addBoolOption("USE_PINN",datadriven_ParsedOptions.use_PINN, false);
 
@@ -1528,6 +1524,9 @@ void CConfig::SetConfig_Options() {
   addStringListOption("MARKER_PLOTTING", nMarker_Plotting, Marker_Plotting);
   /*!\brief MARKER_MONITORING\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \ingroup Config*/
   addStringListOption("MARKER_MONITORING", nMarker_Monitoring, Marker_Monitoring);
+
+  /*!\brief MARKER_CREATE_COPY\n DESCRIPTION: Marker(s) for which to create copies when reading the mesh \ingroup Config*/
+  addStringListOption("MARKER_CREATE_COPY", nMarker_Create_Copy, Marker_Create_Copy);
 
   /*!\brief MARKER_CONTROL_VOLUME\n DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
   addStringListOption("MARKER_ANALYZE", nMarker_Analyze, Marker_Analyze);
@@ -1994,7 +1993,7 @@ void CConfig::SetConfig_Options() {
    *  \n DESCRIPTION: Numerical method for spatial gradients used only for upwind reconstruction \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: NO_GRADIENT. \ingroup Config*/
   addEnumOption("NUM_METHOD_GRAD_RECON", Kind_Gradient_Method_Recon, Gradient_Map, NO_GRADIENT);
   /*!\brief VENKAT_LIMITER_COEFF
-   *  \n DESCRIPTION: Coefficient for the limiter. DEFAULT value 0.5. Larger values decrease the extent of limiting, values approaching zero cause lower-order approximation to the solution. \ingroup Config */
+   *  \n DESCRIPTION: Coefficient for the limiter. DEFAULT value 0.05. Larger values decrease the extent of limiting, values approaching zero cause lower-order approximation to the solution. \ingroup Config */
   addDoubleOption("VENKAT_LIMITER_COEFF", Venkat_LimiterCoeff, 0.05);
   /*!\brief ADJ_SHARP_LIMITER_COEFF
    *  \n DESCRIPTION: Coefficient for detecting the limit of the sharp edges. DEFAULT value 3.0.  Use with sharp edges limiter. \ingroup Config*/
@@ -3173,6 +3172,8 @@ void CConfig::SetConfig_Parsing(istream& config_buffer){
             newString.append("RAMP_ROTATION_FRAME_COEFF is deprectaed. Use RAMP_MOTION_FRAME_COEFF instead");
           else if (!option_name.compare("INC_INLET_USENORMAL"))
             newString.append("INC_INLET_USENORMAL is deprecated. Use INLET_USE_NORMAL instead (compatible with all solvers).\n\n");
+          else if (!option_name.compare("DATADRIVEN_INITIAL_ENERGY") || !option_name.compare("DATADRIVEN_INITIAL_DENSITY"))
+            newString.append("DATADRIVEN_INITIAL_ENERGY and DATADRIVEN_INITIAL_DENSITY are deprecated, there are no replacements.\n\n");
           else {
             /*--- Find the most likely candidate for the unrecognized option, based on the length
              of start and end character sequences shared by candidates and the option. ---*/
@@ -4000,12 +4001,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Set the number of external iterations to 1 for the steady state problem ---*/
 
-  if (Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY) {
-    nMGLevels = 0;
-    if (Kind_Struct_Solver == STRUCT_DEFORMATION::SMALL){
-      MinLogResidual = log10(Linear_Solver_Error);
-    }
-  }
+  if (Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY) nMGLevels = 0;
 
   Radiation = (Kind_Radiation != RADIATION_MODEL::NONE);
 

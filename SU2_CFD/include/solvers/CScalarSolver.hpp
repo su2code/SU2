@@ -181,7 +181,7 @@ class CScalarSolver : public CSolver {
       numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
       numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
 
-      return numerics->ComputeResidual(config); 
+      return numerics->ComputeResidual(config);
     };
 
     /*--- Compute fluxes and jacobians i->j ---*/
@@ -241,7 +241,7 @@ class CScalarSolver : public CSolver {
       }
     }
   }
-  
+
   /*!
    * \brief Generic implementation of the fluid interface boundary condition for scalar solvers.
    * \tparam SolverSpecificNumericsFunc - lambda that implements solver specific contributions to viscous numerics.
@@ -427,7 +427,7 @@ class CScalarSolver : public CSolver {
    * a nonlinear iteration for stability. Default value 1.0 set in ctor of CScalarVariable.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void ComputeUnderRelaxationFactor(const CConfig* config) {}
+  virtual void ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig* config) {}
 
  public:
   /*!

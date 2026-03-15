@@ -59,6 +59,9 @@ CRectangularMeshReaderFVM::CRectangularMeshReaderFVM(const CConfig* val_config, 
   ComputeRectangularPointCoordinates();
   ComputeRectangularVolumeConnectivity();
   ComputeRectangularSurfaceConnectivity();
+
+  /*--- Duplicate some markers if requested. ---*/
+  CopyMarkers(val_config->GetMarkerCreateCopy());
 }
 
 CRectangularMeshReaderFVM::~CRectangularMeshReaderFVM() = default;

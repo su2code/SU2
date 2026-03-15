@@ -550,7 +550,7 @@ public:
    * \param[in] config - Definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void Evaluate_ObjFunc(const CConfig *config, CSolver**) final {
+  void Evaluate_ObjFunc(const CConfig *config, CSolver** solver) final {
     Total_ComboObj = 0.0;
     switch (config->GetKind_ObjFunc()) {
       case REFERENCE_GEOMETRY:
@@ -574,6 +574,10 @@ public:
       case CUSTOM_OBJFUNC:
         Total_ComboObj = Total_Custom_ObjFunc;
         break;
+    }
+    if (config->GetWeakly_Coupled_Heat()) {
+      solver[HEAT_SOL]->Evaluate_ObjFunc(config, solver);
+      Total_ComboObj += solver[HEAT_SOL]->GetTotal_ComboObj();
     }
   }
 

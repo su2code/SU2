@@ -37,10 +37,6 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
   coupled_heat = config->GetWeakly_Coupled_Heat();
   dynamic = config->GetTime_Domain();
 
-  /*--- Initialize number of variables ---*/
-  if (linear_analysis) nVar_FEM = nDim;
-  if (nonlinear_analysis) nVar_FEM = 3;
-
   /*--- Default fields for screen output ---*/
   if (nRequestedHistoryFields == 0){
     RequestCommonHistory(dynamic);

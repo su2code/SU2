@@ -138,6 +138,7 @@ namespace math = ::std;
 #define sign_impl(x) Scalar(1 - 2 * (x < 0))
 MAKE_UNARY_FUN(operator-, minus_, -)
 MAKE_UNARY_FUN(abs, abs_, math::abs)
+MAKE_UNARY_FUN(exp, exp_, math::exp)
 MAKE_UNARY_FUN(sqrt, sqrt_, math::sqrt)
 MAKE_UNARY_FUN(sign, sign_, sign_impl)
 #undef sign_impl
