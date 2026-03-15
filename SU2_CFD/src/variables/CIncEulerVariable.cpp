@@ -27,8 +27,9 @@
 
 #include "../../include/variables/CIncEulerVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 
-CIncEulerVariable::CIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
+CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
                                      unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
   : CFlowVariable(npoint, ndim, nvar, ndim + 10,
                   ndim + (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ? 2 : 4), config),
@@ -48,7 +49,7 @@ CIncEulerVariable::CIncEulerVariable(su2double density, su2double pressure, cons
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
       Solution(iPoint,iVar) = val_solution[iVar];
-  Density_unsteady = density;
+
   Solution_Old = Solution;
 
   if (classical_rk4) Solution_New = Solution;
@@ -58,8 +59,10 @@ CIncEulerVariable::CIncEulerVariable(su2double density, su2double pressure, cons
   if (dual_time) {
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
-    Density_time_n = density;
-    Density_time_n1 = density;
+    /*--- Allocate density storage for time levels.
+          Note: Actual density values will be set after SetPrimVar is called in Preprocessing. ---*/
+    Density_time_n.resize(nPoint) = su2double(0.0);
+    Density_time_n1.resize(nPoint) = su2double(0.0);
   }
 
   if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE) {
@@ -69,7 +72,7 @@ CIncEulerVariable::CIncEulerVariable(su2double density, su2double pressure, cons
   }
 }
 
-bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel)  {
+bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
   bool physical = true;
 
@@ -90,7 +93,6 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
   /*--- Set the value of the density ---*/
 
   const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
-  Density_unsteady[iPoint] = FluidModel->GetDensity();
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
@@ -129,4 +131,31 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
 
   return physical;
 
+}
+void CIncEulerVariable::Set_Solution_time_n() {
+  /*--- Set the solution at time n ---*/
+  CVariable::Set_Solution_time_n();
+
+  /*--- Store the current density at time n ---*/
+  if (Density_time_n.size() > 0) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      Density_time_n(iPoint) = GetDensity(iPoint);
+    }
+    END_SU2_OMP_FOR
+  }
+}
+
+void CIncEulerVariable::Set_Solution_time_n1() {
+  /*--- Set the solution at time n-1 ---*/
+  CVariable::Set_Solution_time_n1();
+
+  /*--- Store the density at time n-1 by copying from time n ---*/
+  if (Density_time_n1.size() > 0 && Density_time_n.size() > 0) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      Density_time_n1(iPoint) = Density_time_n(iPoint);
+    }
+    END_SU2_OMP_FOR
+  }
 }
