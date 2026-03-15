@@ -2,14 +2,14 @@
  * \file CFluidModel.hpp
  * \brief Defines the main fluid model class for thermophysical properties.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -279,7 +279,7 @@ class CFluidModel {
   /*!
    * \brief Set specific heat Cp model.
    */
-  virtual void SetCpModel(const CConfig* config) {}
+  virtual void SetCpModel(const CConfig* config, su2double val_Temperature_Ref) {}
 
   /*!
    * \brief Set viscosity model.
@@ -372,7 +372,7 @@ class CFluidModel {
   /*!
    * \brief Virtual member.
    * \param[in] val_enthalpy - Enthalpy value at the point.
-   * \param[in] val_scalars - Scalar mass fractions. 
+   * \param[in] val_scalars - Scalar mass fractions.
    */
   virtual void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) {}
 

@@ -2,14 +2,14 @@
  * \file CEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,9 @@ unsigned long EulerNPrimVarGrad(const CConfig *config, unsigned long ndim) {
 
   const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR ||
                          config->GetKind_FluidModel() == IDEAL_GAS;
-  if (ideal_gas && config->GetKind_Upwind_Flow() == UPWIND::ROE && !config->Low_Mach_Correction()) {
+  const bool low_mach = config->Low_Mach_Correction();
+  if (ideal_gas && !low_mach &&
+    (config->GetKind_Upwind_Flow() == UPWIND::ROE || config->GetKind_Upwind_Flow() == UPWIND::MSW)) {
     // Based on CRoeBase (numerics_simd).
     return ndim + 2;
   }

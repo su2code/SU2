@@ -2,14 +2,14 @@
  * \file CTurbSolver.cpp
  * \brief Main subroutines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -131,9 +131,8 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
     const bool energy = config->GetEnergy_Equation();
     const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-    const bool flamelet = (config->GetKind_FluidModel() == FLUID_FLAMELET);
 
-    if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) skipVars--;
+    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -248,33 +247,38 @@ unsigned long CTurbSolver::RegisterSolutionExtra(bool input, const CConfig* conf
   return 0;
 }
 
-void CTurbSolver::ComputeUnderRelaxationFactorHelper(su2double allowableRatio) {
+void CTurbSolver::ComputeUnderRelaxationFactorHelper(CSolver** solver_container, su2double allowableRatio) {
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
-  
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     su2double localUnderRelaxation = 1.0;
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      const unsigned long index = iPoint * nVar + iVar;
-      su2double ratio = fabs(LinSysSol[index])/(fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
+
+      su2double current_sol = nodes->GetSolution(iPoint, iVar);
+      if (Conservative) {
+        /* Need to multiply by density if this is a conservative variable */
+        current_sol *= solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      }
+
+      su2double ratio = fabs(LinSysSol(iPoint, iVar) / (current_sol + EPS));
 
       /* We impose a limit on the maximum percentage that the
       turbulence variables can change over a nonlinear iteration. */
       if (ratio > allowableRatio) {
         localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-      
       }
     }
 
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due
      to non-realizable states by canceling the update. */
-    
+
     if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
-    
+
     /* Store the under-relaxation factor for this point. */
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);

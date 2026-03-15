@@ -2,14 +2,14 @@
  * \file msw.cpp
  * \brief Implementations of the modified Steger-Warming scheme.
  * \author ADL Stanford, S.R. Copeland, W. Maier, C. Garbacz
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,8 +30,9 @@
 
 CUpwMSW_NEMO::CUpwMSW_NEMO(unsigned short val_nDim, unsigned short val_nVar,
                            unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,
-                           CConfig *config) : CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad,
-                                                          config) {
+                           CConfig *config) :
+  CNEMONumerics(val_nDim, val_nVar, val_nPrimVar, val_nPrimVarGrad, config),
+  alpha(config->GetMSW_Alpha()) {
 
   /*--- Allocate arrays ---*/
   Diff_U   = new su2double [nVar];
@@ -109,7 +110,6 @@ CUpwMSW_NEMO::~CUpwMSW_NEMO() {
 CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
 
   /*--- Set parameters in the numerical method ---*/
-  const su2double alpha   = 5.0;
   const su2double epsilon = 0.0;
 
   /*--- Calculate supporting geometry parameters ---*/
