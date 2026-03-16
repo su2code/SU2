@@ -843,25 +843,19 @@ static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* u
 
   bool throw_mismatch_error = true;
 
-  if (status->ignore_preacc || status->allow_izone > 0 || status->allow_zones) {
-    /*--- The callback could be due to a preaccumulation tag mismatch, if not, we deduce
-     *    that it is either due to a zone index mismatch, or due to a mismatch in the least
-     *    significant bit that will always result in an error. ---*/
-
+  /*--- The callback could be due to a preaccumulation tag mismatch that we maybe want to allow, ... ---*/
+  if(status->allow_preacc) {
     if (correctTag == 1337) {
-      if (status->ignore_preacc) {
-        throw_mismatch_error = false;
-      }
-    } else if (correctTag % 10 == wrongTag % 10) {
-      if (status->allow_izone > 0) {
-        /*--- A mismatch with a specified zone index might be allowed. ---*/
-        if (wrongTag / 10 == status->allow_izone) {
-          throw_mismatch_error = false;
-        }
-      }
-      if (status->allow_zones) {
-        throw_mismatch_error = false;
-      }
+      throw_mismatch_error = false;
+    }
+  }
+
+  /*--- ... or to a mismatch in the zone part of the tag. ---*/
+  if (status->allow_zones) {
+    throw_mismatch_error = false;
+  } else if (status->allow_izone > 0) {
+    if (wrongTag / 10 == status->allow_izone) {
+      throw_mismatch_error = false;
     }
   }
 
