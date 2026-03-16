@@ -121,7 +121,6 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
 
           /*--- Read variables from donor solver.
            *    If in AD test recording mode, keep the current tag, but allow the donor tag while loading the donor variable into Donor_Variable. ---*/
-          // cout << "Loading variables from zone " << donor_config->GetiZone() << endl;
           AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ALLOW_ZONE, donor_config->GetiZone());
 
           GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iVertex, iPoint);

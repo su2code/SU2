@@ -844,7 +844,7 @@ static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* u
   bool throw_mismatch_error = true;
 
   /*--- The callback could be due to a preaccumulation tag mismatch that we maybe want to allow, ... ---*/
-  if(status->allow_preacc) {
+  if (status->allow_preacc) {
     if (correctTag == 1337) {
       throw_mismatch_error = false;
     }
