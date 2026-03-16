@@ -312,7 +312,7 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::CHECK_RUN);
 
   /*--- We ignore preaccumulation mismatches during the second recording as they have already been reported. ---*/
-  AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::IGNORE_PREACC);
+  AD::SetTapeDebugOption(AD::TAPE_DEBUG_OPTION::ALLOW_PREACC);
 
   if(driver_config->GetAD_CheckTapeType() == CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES)

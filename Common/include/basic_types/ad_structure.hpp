@@ -40,7 +40,7 @@
 namespace AD {
 
 enum class TAPE_DEBUG_OPTION {
-  IGNORE_PREACC,
+  ALLOW_PREACC,
   ACTIVATE_PREACC,
   ALLOW_ZONE,
   ALLOW_ALL_ZONES,
@@ -795,7 +795,7 @@ struct DebugControl {
   int current_tag;
   bool multizone_tags = false;
   bool init_run = false;
-  bool ignore_preacc = false;
+  bool allow_preacc = false;
   bool allow_zones = false;
   unsigned short allow_izone = 0;
   unsigned long ErrorCounter = 0;
@@ -873,11 +873,11 @@ static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* u
 }
 
 FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izone = 0) {
-  if (option == AD::TAPE_DEBUG_OPTION::IGNORE_PREACC) {
-    current_control->ignore_preacc = true;
+  if (option == AD::TAPE_DEBUG_OPTION::ALLOW_PREACC) {
+    current_control->allow_preacc = true;
   }
   if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_PREACC || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS) {
-    current_control->ignore_preacc = false;
+    current_control->allow_preacc = false;
   }
   if (option == AD::TAPE_DEBUG_OPTION::ALLOW_ZONE) {
     current_control->allow_izone = izone + 1;
