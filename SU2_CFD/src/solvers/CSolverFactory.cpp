@@ -178,8 +178,12 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       }
       break;
     case MAIN_SOLVER::DISC_ADJ_FEM:
-      solver[FEA_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::FEA, solver, geometry, config, iMGLevel);
+      solver[FEA_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::FEA, solver, geometry, config, iMGLevel);
       solver[ADJFEA_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FEA, solver, geometry, config, iMGLevel);
+      if (config->GetWeakly_Coupled_Heat()) {
+        solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
+        solver[ADJHEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
+      }
       break;
     case MAIN_SOLVER::FEM_EULER:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DG_EULER, solver, geometry, config, iMGLevel);

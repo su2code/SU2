@@ -79,7 +79,6 @@ CDataDrivenFluid::~CDataDrivenFluid() {
   switch (Kind_DataDriven_Method) {
     case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP
-      delete iomap_rhoe;
       delete lookup_mlp;
 #endif
       break;
@@ -92,82 +91,55 @@ CDataDrivenFluid::~CDataDrivenFluid() {
 }
 void CDataDrivenFluid::MapInputs_to_Outputs() {
   /*--- Inputs of the data-driven method are density and internal energy. ---*/
-  input_names_rhoe.resize(2);
-  idx_rho = 0;
-  idx_e = 1;
-  input_names_rhoe[idx_rho] = varname_rho;
-  input_names_rhoe[idx_e] = varname_e;
 
   /*--- Required outputs for the interpolation method are entropy and its partial derivatives with respect to energy and
    * density. ---*/
-  size_t n_outputs, idx_s,idx_dsde_rho = 1, idx_dsdrho_e = 2, idx_d2sde2 = 3, idx_d2sdedrho = 4, idx_d2sdrho2 = 5;
-  if (use_MLP_derivatives) {
-    n_outputs = 1;
-    idx_s = 0;
+  const string name_entropy{"s"}, name_dsdrho{"dsdrho_e"}, name_dsde{"dsde"}, name_d2sdrho2{"d2sdrho2"}, name_d2sdedrho{"d2sdedrho"}, name_d2sde2{"d2sde2"};
 
-    outputs_rhoe.resize(n_outputs);
-    output_names_rhoe.resize(n_outputs);
-    output_names_rhoe[idx_s] = "s";
-    outputs_rhoe[idx_s] = &Entropy;
 
-    dsdrhoe.resize(n_outputs);
-    d2sdrhoe2.resize(n_outputs);
-    dsdrhoe[0].resize(2);
-    dsdrhoe[0][idx_rho] = &dsdrho_e;
-    dsdrhoe[0][idx_e] = &dsde_rho;
-
-    d2sdrhoe2[0].resize(2);
-    d2sdrhoe2[0][idx_rho].resize(2);
-    d2sdrhoe2[0][idx_e].resize(2);
-    d2sdrhoe2[0][idx_rho][idx_rho] = &d2sdrho2;
-    d2sdrhoe2[0][idx_rho][idx_e] = &d2sdedrho;
-    d2sdrhoe2[0][idx_e][idx_rho] = &d2sdedrho;
-    d2sdrhoe2[0][idx_e][idx_e] = &d2sde2;
-  } else {
-    n_outputs = 6;
-    idx_s = 0;
-    idx_dsde_rho = 1, idx_dsdrho_e = 2, idx_d2sde2 = 3, idx_d2sdedrho = 4, idx_d2sdrho2 = 5;
-
-    outputs_rhoe.resize(n_outputs);
-    output_names_rhoe.resize(n_outputs);
-    output_names_rhoe[idx_s] = "s";
-    outputs_rhoe[idx_s] = &Entropy;
-    output_names_rhoe[idx_dsde_rho] = "dsde_rho";
-    outputs_rhoe[idx_dsde_rho] = &dsde_rho;
-    output_names_rhoe[idx_dsdrho_e] = "dsdrho_e";
-    outputs_rhoe[idx_dsdrho_e] = &dsdrho_e;
-    output_names_rhoe[idx_d2sde2] = "d2sde2";
-    outputs_rhoe[idx_d2sde2] = &d2sde2;
-    output_names_rhoe[idx_d2sdedrho] = "d2sdedrho";
-    outputs_rhoe[idx_d2sdedrho] = &d2sdedrho;
-    output_names_rhoe[idx_d2sdrho2] = "d2sdrho2";
-    outputs_rhoe[idx_d2sdrho2] = &d2sdrho2;
-  }
-  
-
-  /*--- Further preprocessing of input and output variables. ---*/
   if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::MLP) {
-/*--- Map MLP inputs to outputs. ---*/
-#ifdef USE_MLPCPP
-    iomap_rhoe = new MLPToolbox::CIOMap(input_names_rhoe, output_names_rhoe);
-    lookup_mlp->PairVariableswithMLPs(*iomap_rhoe);
-    MLP_inputs.resize(2);
-#endif
+    #ifdef USE_MLPCPP
+    iomap_rhoe = MLPToolbox::CIOMap();
+    iomap_rhoe.AddQueryInput(varname_rho, &rho_query);
+    iomap_rhoe.AddQueryInput(varname_e, &e_query);
+    iomap_rhoe.AddQueryOutput(name_entropy, &Entropy);
+    
+    if (use_MLP_derivatives) {
+      iomap_rhoe.AddQueryJacobian(name_entropy, varname_rho, &dsdrho_e);
+      iomap_rhoe.AddQueryJacobian(name_entropy, varname_e, &dsde_rho);
+      iomap_rhoe.AddQueryHessian(name_entropy, varname_rho, varname_rho, &d2sdrho2);
+      iomap_rhoe.AddQueryHessian(name_entropy, varname_e, varname_rho, &d2sdedrho);
+      iomap_rhoe.AddQueryHessian(name_entropy, varname_e, varname_e, &d2sde2);
+    } else {
+      iomap_rhoe.AddQueryOutput(name_dsdrho, &dsdrho_e);
+      iomap_rhoe.AddQueryOutput(name_dsde, &dsde_rho);
+      iomap_rhoe.AddQueryOutput(name_d2sdrho2, &d2sdrho2);
+      iomap_rhoe.AddQueryOutput(name_d2sde2, &d2sde2);
+      iomap_rhoe.AddQueryOutput(name_d2sdedrho, &d2sdedrho);
+    }
+
+    lookup_mlp->PairVariableswithMLPs(iomap_rhoe);
+    #endif
   } else {
-    /*--- Retrieve column indices of LUT output variables ---*/
-    LUT_idx_s = lookup_table->GetIndexOfVar(output_names_rhoe[idx_s]);
-    LUT_idx_dsdrho_e = lookup_table->GetIndexOfVar(output_names_rhoe[idx_dsdrho_e]);
-    LUT_idx_dsde_rho = lookup_table->GetIndexOfVar(output_names_rhoe[idx_dsde_rho]);
-    LUT_idx_d2sde2 = lookup_table->GetIndexOfVar(output_names_rhoe[idx_d2sde2]);
-    LUT_idx_d2sdedrho= lookup_table->GetIndexOfVar(output_names_rhoe[idx_d2sdedrho]);
-    LUT_idx_d2sdrho2 = lookup_table->GetIndexOfVar(output_names_rhoe[idx_d2sdrho2]);
+    LUT_idx_s = lookup_table->GetIndexOfVar(name_entropy);
+    LUT_idx_dsdrho_e = lookup_table->GetIndexOfVar(name_dsdrho);
+    LUT_idx_dsde_rho = lookup_table->GetIndexOfVar(name_dsde);
+    LUT_idx_d2sde2 = lookup_table->GetIndexOfVar(name_d2sde2);
+    LUT_idx_d2sdedrho= lookup_table->GetIndexOfVar(name_d2sdedrho);
+    LUT_idx_d2sdrho2 = lookup_table->GetIndexOfVar(name_d2sdrho2);
 
     LUT_lookup_indices.push_back(LUT_idx_s);
+    outputs_rhoe.push_back(&Entropy);
     LUT_lookup_indices.push_back(LUT_idx_dsde_rho);
+    outputs_rhoe.push_back(&dsde_rho);
     LUT_lookup_indices.push_back(LUT_idx_dsdrho_e);
+    outputs_rhoe.push_back(&dsdrho_e);
     LUT_lookup_indices.push_back(LUT_idx_d2sde2);
+    outputs_rhoe.push_back(&d2sde2);
     LUT_lookup_indices.push_back(LUT_idx_d2sdedrho);
+    outputs_rhoe.push_back(&d2sdedrho);
     LUT_lookup_indices.push_back(LUT_idx_d2sdrho2);
+    outputs_rhoe.push_back(&d2sdrho2);
   }
 }
 
@@ -297,13 +269,9 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
   unsigned long exit_code = 0;
 /*--- Evaluate MLP collection for the given values for density and energy. ---*/
 #ifdef USE_MLPCPP
-  MLP_inputs[idx_rho] = rho;
-  MLP_inputs[idx_e] = e;
-  if (use_MLP_derivatives){
-    exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe, &dsdrhoe, &d2sdrhoe2);
-  } else {
-    exit_code = lookup_mlp->PredictANN(iomap_rhoe, MLP_inputs, outputs_rhoe);
-  }
+  rho_query = rho;
+  e_query = e;
+  if(!lookup_mlp->Predict(iomap_rhoe)) exit_code=1;
 #endif
   
   return exit_code;
@@ -435,10 +403,10 @@ void CDataDrivenFluid::ComputeIdealGasQuantities() {
     break;
   case ENUM_DATADRIVEN_METHOD::MLP:
 #ifdef USE_MLPCPP
-    rho_min = lookup_mlp->GetInputNorm(iomap_rhoe, idx_rho).first;
-    e_min = lookup_mlp->GetInputNorm(iomap_rhoe, idx_e).first;
-    rho_max = lookup_mlp->GetInputNorm(iomap_rhoe, idx_rho).second;
-    e_max = lookup_mlp->GetInputNorm(iomap_rhoe, idx_e).second;
+    rho_min = iomap_rhoe.GetInputNorm(varname_rho).first;
+    e_min = iomap_rhoe.GetInputNorm(varname_e).first;
+    rho_max = iomap_rhoe.GetInputNorm(varname_rho).second;
+    e_max = iomap_rhoe.GetInputNorm(varname_e).second;
 #endif
     break;
   default:
