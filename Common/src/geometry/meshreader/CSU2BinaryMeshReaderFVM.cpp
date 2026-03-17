@@ -60,5 +60,5 @@ CSU2BinaryMeshReaderFVM::CSU2BinaryMeshReaderFVM(CConfig* val_config, unsigned s
 CSU2BinaryMeshReaderFVM::~CSU2BinaryMeshReaderFVM() = default;
 
 void CSU2BinaryMeshReaderFVM::SplitActuatorDiskSurface() {
-  SU2_MPI::Error(string("Not implemented yet"), CURRENT_FUNCTION);
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }

@@ -1513,6 +1513,14 @@ public:
   void SetMPICommunicator(SU2_MPI::Comm Communicator);
 
   /*!
+   * \brief Helper function, which checks and opens a binary SU2 file.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] readnDim = Whether or not nDim must be read. If false nZone is read.
+   * \return Number of dimensions or number of zones in the grid.
+   */
+  static unsigned short CheckOpenSU2BinFile(const string& val_mesh_filename, bool readnDim);
+
+  /*!
    * \brief Gets the number of zones in the mesh file.
    * \param[in] val_mesh_filename - Name of the file with the grid information.
    * \param[in] val_format - Format of the file with the grid information.
