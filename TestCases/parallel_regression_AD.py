@@ -247,6 +247,15 @@ def main():
     discadj_fea.test_vals_aarch64 = [-2.849646, -3.238577, -0.000364, -8.708700] #last 4 columns
     test_list.append(discadj_fea)
 
+    # Thermoelastic problem
+    # Derivative of heat flux wrt Poisson's ratio (due to increase in cross section) verified via finite differences.
+    discadj_thermoelastic = TestCase('discadj_thermoelastic')
+    discadj_thermoelastic.cfg_dir = "fea_fsi/ThermalBeam_3d"
+    discadj_thermoelastic.cfg_file = "configBeamNonlinear_3d_ad.cfg"
+    discadj_thermoelastic.test_iter = 10
+    discadj_thermoelastic.test_vals = [-5.355510, -5.293378, -6.164317, -6.433862, 43, -4.049556, 27, -4.164192, 0, 0.192640, 0]
+    test_list.append(discadj_thermoelastic)
+
     ###################################
     ### Disc. adj. heat             ###
     ###################################
@@ -298,7 +307,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-4.697305, -4.335384, -4.726171]
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-2.508527, -3.227843, -2.608921]
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
@@ -307,7 +316,7 @@ def main():
     da_sp_pinArray_cht_2d_mf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/dp-adjoint_chtPinArray_2d"
     da_sp_pinArray_cht_2d_mf.cfg_file  = "configMaster.cfg"
     da_sp_pinArray_cht_2d_mf.test_iter = 100
-    da_sp_pinArray_cht_2d_mf.test_vals = [-4.512241, -1.154741, -1.436747, 0.148439, -5.675767, -15.727696, -50.4635702]
+    da_sp_pinArray_cht_2d_mf.test_vals = [-4.544489, -1.200740, -1.451677, -0.809551, -5.998322, -15.723654, -49.833480]
     da_sp_pinArray_cht_2d_mf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_mf)
 

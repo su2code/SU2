@@ -247,7 +247,7 @@ unsigned long CTurbSolver::RegisterSolutionExtra(bool input, const CConfig* conf
   return 0;
 }
 
-void CTurbSolver::ComputeUnderRelaxationFactorHelper(su2double allowableRatio) {
+void CTurbSolver::ComputeUnderRelaxationFactorHelper(CSolver** solver_container, su2double allowableRatio) {
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
@@ -257,14 +257,19 @@ void CTurbSolver::ComputeUnderRelaxationFactorHelper(su2double allowableRatio) {
     su2double localUnderRelaxation = 1.0;
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      const unsigned long index = iPoint * nVar + iVar;
-      su2double ratio = fabs(LinSysSol[index])/(fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
+
+      su2double current_sol = nodes->GetSolution(iPoint, iVar);
+      if (Conservative) {
+        /* Need to multiply by density if this is a conservative variable */
+        current_sol *= solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      }
+
+      su2double ratio = fabs(LinSysSol(iPoint, iVar) / (current_sol + EPS));
 
       /* We impose a limit on the maximum percentage that the
       turbulence variables can change over a nonlinear iteration. */
       if (ratio > allowableRatio) {
         localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-
       }
     }
 

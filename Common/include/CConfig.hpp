@@ -740,6 +740,7 @@ private:
   nMarker_ZoneInterface,              /*!< \brief Number of markers in the zone interface. */
   nMarker_Plotting,                   /*!< \brief Number of markers to plot. */
   nMarker_Analyze,                    /*!< \brief Number of markers to analyze. */
+  nMarker_Create_Copy,                /*!< \brief Number of markers to duplicate. */
   nMarker_Moving,                     /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL). */
   nMarker_PyCustom,                   /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,                         /*!< \brief Number of markers affected by the design variables. */
@@ -751,6 +752,7 @@ private:
   *Marker_GeoEval,                    /*!< \brief Markers to evaluate geometry. */
   *Marker_Plotting,                   /*!< \brief Markers to plot. */
   *Marker_Analyze,                    /*!< \brief Markers to analyze. */
+  *Marker_Create_Copy,                /*!< \brief Markers to duplicate. */
   *Marker_ZoneInterface,              /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,                     /*!< \brief Markers in motion (DEFORMING, MOVING_WALL). */
   *Marker_PyCustom,                   /*!< \brief Markers that are customizable in Python. */
@@ -930,6 +932,7 @@ private:
   Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
   Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  bool out2in_mdot_engine;         /*!< \brief Flag to use engine outlet mass flow as engine inlet mass flow. */
   unsigned short wallModel_MaxIter; /*!< \brief maximum number of iterations for the Newton method for the wall model */
   su2double wallModel_Kappa,        /*!< \brief von Karman constant kappa for turbulence wall modeling */
   wallModel_B,                      /*!< \brief constant B for turbulence wall modeling */
@@ -2115,6 +2118,12 @@ public:
    * \return Non-dimensionalized engine intensity.
    */
   su2double GetNuFactor_Engine(void) const { return NuFactor_Engine; }
+
+  /*!
+   * \brief Get the flag to use exhaust mass flow as inlet mass flow.
+   * \return TRUE if exhaust mass flow is used as inlet mass flow.
+   */
+  bool GetExhaustToInlet_Engine(void) const { return out2in_mdot_engine; }
 
   /*!
    * \brief Get the value of the non-dimensionalized actuator disk turbulence intensity.
@@ -3452,12 +3461,19 @@ public:
   string GetMarker_HeatFlux_TagBound(unsigned short val_marker) const { return Marker_HeatFlux[val_marker]; }
 
   /*!
+   * \brief Get the list of markers for which to create copies.
+   */
+  std::vector<string> GetMarkerCreateCopy() const {
+    return { Marker_Create_Copy, Marker_Create_Copy + nMarker_Create_Copy };
+  }
+
+  /*!
    * \brief Get the tag if the iMarker defined in the geometry file.
    * \param[in] val_tag - Value of the tag in which we are interested.
    * \return Value of the marker <i>val_marker</i> that is in the geometry file
    *         for the surface that has the tag.
    */
-  short GetMarker_All_TagBound(string val_tag)  {
+  short GetMarker_All_TagBound(const string& val_tag)  {
     for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
       if (val_tag == Marker_All_TagBound[iMarker]) return iMarker;
     }

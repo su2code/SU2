@@ -201,6 +201,10 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     // P, vx, vy (,vz)
     skipVars += 1 + nDim;
   }
+  if (config->GetStructuralProblem() && config->GetWeakly_Coupled_Heat()) {
+    skipVars += nDim;
+    if (config->GetTime_Domain()) skipVars += 2 * nDim;
+  }
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
