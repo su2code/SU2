@@ -1321,6 +1321,7 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   const int visc_bound_term = VISC_BOUND_TERM + offset;
 
   const bool LM = config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM;
+  const bool AFT = config->GetKind_Trans_Model() == TURB_TRANS_MODEL::AFT;
 
   /*--- Definition of the convective scheme for each equation and mesh level ---*/
 
@@ -1331,6 +1332,7 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
     case SPACE_UPWIND :
       for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
         if (LM) numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
+        if (AFT) numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransAFT<Indices>(nDim, nVar_Trans, config);
       }
       break;
     default:
@@ -1342,6 +1344,7 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
     if (LM) numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, true, config);
+    if (AFT) numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransAFT<Indices>(nDim, nVar_Trans, true, config);
   }
 
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1350,6 +1353,7 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
     auto& trans_source_first_term = numerics[iMGlevel][TRANS_SOL][source_first_term];
 
     if (LM) trans_source_first_term = new CSourcePieceWise_TransLM<Indices>(nDim, nVar_Trans, config);
+    if (AFT) trans_source_first_term = new CSourcePieceWise_TransAFT<Indices>(nDim, nVar_Trans, config);
 
     numerics[iMGlevel][TRANS_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Trans, config);
   }
@@ -1360,6 +1364,10 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
     if (LM) {
       numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
       numerics[iMGlevel][TRANS_SOL][visc_bound_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, false, config);
+    }
+    if (AFT) {
+      numerics[iMGlevel][TRANS_SOL][conv_bound_term] = new CUpwSca_TransAFT<Indices>(nDim, nVar_Trans, config);
+      numerics[iMGlevel][TRANS_SOL][visc_bound_term] = new CAvgGrad_TransAFT<Indices>(nDim, nVar_Trans, false, config);
     }
   }
 }
@@ -1488,7 +1496,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
     case MAIN_SOLVER::RANS:
     case MAIN_SOLVER::DISC_ADJ_RANS:
       ns = compressible = turbulent = true;
-      transition = (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM);
+      transition = (config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE);
       species = config->GetKind_Species_Model() != SPECIES_MODEL::NONE; break;
 
     case MAIN_SOLVER::INC_EULER:

@@ -38,3 +38,10 @@
 template <class FlowIndices>
 using CUpwSca_TransLM  = CUpwSca_TurbSST<FlowIndices>;
 
+/*!
+ * \class CUpwSca_TransAFT
+ * \brief Re-use the SST convective fluxes for the scalar upwind discretization of AFT transition model equations.
+ * \ingroup ConvDiscr
+ */
+template <class FlowIndices>
+using CUpwSca_TransAFT  = CUpwSca_TurbSST<FlowIndices>;
