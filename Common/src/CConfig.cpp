@@ -1430,7 +1430,7 @@ void CConfig::SetConfig_Options() {
   addDoubleListOption("SPARK_REACTION_RATES", flamelet_ParsedOptions.nspark, flamelet_ParsedOptions.spark_reaction_rates);
 
   /*!\brief FLAME_LENGTHSCALE \n DESCRIPTION: Lengthscale above which species source terms are dampened. \ingroup Config*/
-  addDoubleOption("FLAME_LENGTHSCALE", flamelet_ParsedOptions.flame_lengthscale, 1e-3);
+  addDoubleOption("FLAME_LENGTHSCALE", flamelet_ParsedOptions.flame_lengthscale, flamelet_ParsedOptions.default_lengthscale);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
@@ -5794,7 +5794,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- We can have additional user defined transported scalars ---*/
     flamelet_ParsedOptions.n_scalars = flamelet_ParsedOptions.n_control_vars + flamelet_ParsedOptions.n_user_scalars;
 
-    if (flamelet_ParsedOptions.flame_lengthscale <= 0.0)
+    if (flamelet_ParsedOptions.flame_lengthscale <= 0.0 && flamelet_ParsedOptions.flame_lengthscale != flamelet_ParsedOptions.default_lengthscale)
       SU2_MPI::Error("Flame length scale value should be positive.", CURRENT_FUNCTION);
 
   }
