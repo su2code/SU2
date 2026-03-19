@@ -834,7 +834,7 @@ su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_mo
   bool outside = false;
   while (!outside) {
     fluid_model->SetTDState_T(300, scalars);
-    if (fluid_model->GetExtrapolation() == 1) outside = true;
+    if (fluid_model->GetExtrapolation() == 1 || (fluid_model->GetTemperature()>1000.)) outside = true;
     scalars[I_PROGVAR] += delta;
   }
   su2double pv_burnt = scalars[I_PROGVAR] - delta;

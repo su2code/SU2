@@ -107,13 +107,12 @@ class CDataDrivenFluid final : public CFluidModel {
 
   string varname_rho,  /*!< \brief Controlling variable name for density. */
          varname_e;    /*!< \brief Controlling variable name for static energy. */
-         
-  size_t idx_rho, /*!< \brief Interpolator index for density input. */
-      idx_e;      /*!< \brief Interpolator index for energy input. */
 
   su2double Newton_Relaxation, /*!< \brief Relaxation factor for Newton solvers. */
       rho_start,               /*!< \brief Starting value for the density in Newton solver processes. */
       e_start,                 /*!< \brief Starting value for the energy in Newton solver processes. */
+      rho_query,
+      e_query,
       Newton_Tolerance,        /*!< \brief Normalized tolerance for Newton solvers. */
       rho_min, rho_max,        /*!< \brief Minimum and maximum density values in data set. */
       e_min, e_max;            /*!< \brief Minimum and maximum energy values in data set. */
@@ -130,10 +129,7 @@ class CDataDrivenFluid final : public CFluidModel {
       dhdrho_e,       /*!< \brief Enthalpy derivative w.r.t. density. */
       dhde_rho;       /*!< \brief Enthalpy derivative w.r.t. static energy. */
 
-  vector<string> input_names_rhoe, /*!< \brief Data-driven method input variable names of the independent variables
-                                      (density, energy). */
-      output_names_rhoe; /*!< \brief Output variable names listed in the data-driven method input file name. */
-
+  vector<string> output_names_rhoe; /*!< \brief Output variable names listed in the data-driven method input file name. */
   vector<su2double*> outputs_rhoe; /*!< \brief Pointers to output variables. */
 
   vector<vector<su2double*>> dsdrhoe;           /*!< \brief Entropy Jacobian terms. */
@@ -144,8 +140,8 @@ class CDataDrivenFluid final : public CFluidModel {
   bool display_Newton_process{false};
   /*--- Class variables for the multi-layer perceptron method ---*/
 #ifdef USE_MLPCPP
-  MLPToolbox::CLookUp_ANN* lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
-  MLPToolbox::CIOMap* iomap_rhoe;      /*!< \brief Input-output map. */
+  MLPToolbox::CLookUp_ANN *lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
+  MLPToolbox::CIOMap iomap_rhoe;      /*!< \brief Input-output map. */
 #endif
   vector<su2double> MLP_inputs; /*!< \brief Inputs for the multi-layer perceptron look-up operation. */
 

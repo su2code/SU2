@@ -7622,6 +7622,17 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
 
     Target_Inflow_MassFlow = config->GetEngineInflow_Target(Marker_Tag) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
 
+    if (config->GetExhaustToInlet_Engine()) {
+      su2double Outlet_MF = 0.0;
+      unsigned short nMarker_Global = config->GetnMarker_CfgFile();
+      for (unsigned short iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+        if (config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == ENGINE_EXHAUST) {
+          Outlet_MF = Outlet_MF + config->GetExhaust_MassFlow(config->GetMarker_CfgFile_TagBound(iMarker_Global));
+        }
+      }
+      Target_Inflow_MassFlow = Outlet_MF;
+    }
+
     if (config->GetSystemMeasurements() == US) Target_Inflow_MassFlow /= 32.174;
 
     if (Engine_HalfModel) Target_Inflow_MassFlow /= 2.0;
