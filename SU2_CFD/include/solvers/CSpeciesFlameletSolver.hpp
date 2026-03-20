@@ -37,6 +37,9 @@
  */
 class CSpeciesFlameletSolver final : public CSpeciesSolver {
  private:
+  const su2double default_flame_thickness{1.0};
+  su2double global_flame_thickness;
+  bool calc_flame_thickness{false};
   FluidFlamelet_ParsedOptions flamelet_config_options;
   bool include_mixture_fraction = false; /*!< \brief include mixture fraction as a controlling variable. */
   /*!
@@ -113,7 +116,15 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] iPoint - node ID.
    * \return - flame thickness correction factor.
    */                                              
-  su2double ThickenedFlameCorrection(CGeometry const * geometry, const unsigned long iPoint);   
+  su2double ThickenedFlameCorrection(CGeometry const * geometry, const unsigned long iPoint) const;   
+
+  /*!
+   * \brief Approximate the minimum flame thickness value used for the thickened flame model.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \return - approximate flame thickness value.
+   */
+  su2double GetOverallFlameThickness(CGeometry * geometry,  CSolver **solver_container) const;
 
  public:
   /*!
@@ -204,4 +215,10 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    */
   void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
                         const CConfig* config) final;
+
+  /*!
+   * \brief Obtain the overall flame thickness value.
+   * \return flame thickness value.
+   */
+  virtual su2double GetFlameThickness() const override {return global_flame_thickness;}
 };

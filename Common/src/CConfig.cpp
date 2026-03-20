@@ -1429,8 +1429,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
   addDoubleListOption("SPARK_REACTION_RATES", flamelet_ParsedOptions.nspark, flamelet_ParsedOptions.spark_reaction_rates);
 
-  /*!\brief FLAME_LENGTHSCALE \n DESCRIPTION: Lengthscale above which species source terms are dampened. \ingroup Config*/
-  addDoubleOption("FLAME_LENGTHSCALE", flamelet_ParsedOptions.flame_lengthscale, flamelet_ParsedOptions.default_lengthscale);
+  /*!\brief THICKENED_FLAME_CORRECTION \n DESCRIPTION: Dampen source terms and enhance diffusion based on the flame length scale. \ingroup Config*/
+  addBoolOption("THICKENED_FLAME_CORRECTION", flamelet_ParsedOptions.thickenedflame_correction, true);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
@@ -5795,10 +5795,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Number of initial species incompatible with number of controlling variables and user scalars.", CURRENT_FUNCTION);
     /*--- We can have additional user defined transported scalars ---*/
     flamelet_ParsedOptions.n_scalars = flamelet_ParsedOptions.n_control_vars + flamelet_ParsedOptions.n_user_scalars;
-
-    if (flamelet_ParsedOptions.flame_lengthscale <= 0.0 && flamelet_ParsedOptions.flame_lengthscale != flamelet_ParsedOptions.default_lengthscale)
-      SU2_MPI::Error("Flame length scale value should be positive.", CURRENT_FUNCTION);
-
   }
 
   if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
