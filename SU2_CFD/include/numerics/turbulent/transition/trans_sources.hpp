@@ -419,7 +419,7 @@ class CSourcePieceWise_TransAFT final : public CNumerics {
         HLGradTerm += AuxVar_Grad_i[1][2] * AuxVar_Grad_i[0][2];
       }
       su2double HL = 0.0;
-      HL = dist_i * dist_i * Density_i / Laminar_Viscosity_i  * HLGradTerm;
+      HL = dist_i * dist_i / Laminar_Viscosity_i  * HLGradTerm;
       
 
       

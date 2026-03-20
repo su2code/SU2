@@ -225,8 +225,8 @@ void CTransAFTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_conta
     const su2double c_1 = 100.0;
     const su2double c_2 = 0.06;
     const su2double c_3 = 50.0;
-    su2double Temp3 = flowNodes->GetVelocity(iPoint, 0) * nodes->GetAuxVarGradient(iPoint, 0, 0);
-    su2double Temp4 = flowNodes->GetVelocity(iPoint, 1) * nodes->GetAuxVarGradient(iPoint, 0, 1);
+    su2double Temp3 = flowNodes->GetDensity(iPoint) * flowNodes->GetVelocity(iPoint, 0) * nodes->GetAuxVarGradient(iPoint, 0, 0);
+    su2double Temp4 = flowNodes->GetDensity(iPoint) * flowNodes->GetVelocity(iPoint, 1) * nodes->GetAuxVarGradient(iPoint, 0, 1);
 
     if(nDim == 2) {
       nodes->SetAuxVar(iPoint, 1, Temp3 + Temp4);
@@ -244,7 +244,7 @@ void CTransAFTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_conta
     }
 
     su2double HL = 0.0;
-    HL = dist_i * dist_i * Density_i / Laminar_Viscosity_i  * HLGradTerm;
+    HL = dist_i * dist_i / Laminar_Viscosity_i  * HLGradTerm;
     const su2double H12 = TransCorrelations.H12_Correlations(HL);
     const su2double dNdRet = TransCorrelations.dNdRet_Correlations(H12);
     const su2double Ret0 = TransCorrelations.Ret0_Correlations(H12);
