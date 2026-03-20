@@ -220,5 +220,5 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \brief Obtain the overall flame thickness value.
    * \return flame thickness value.
    */
-  virtual su2double GetFlameThickness() const override {return global_flame_thickness;}
+  virtual su2double GetFlameThickness() const {return global_flame_thickness;}
 };
