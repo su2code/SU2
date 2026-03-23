@@ -111,6 +111,7 @@ class CPoint {
   su2activevector Curvature;          /*!< \brief Value of the surface curvature (SU2_GEO). */
   su2activevector MaxLength;          /*!< \brief The maximum cell-center to cell-center length. */
   su2activevector RoughnessHeight;    /*!< \brief Roughness of the nearest wall. */
+  su2activematrix Normals;         /*!< \brief Normal of the nearest wall element. */
 
   su2matrix<AD::Identifier>
       AD_InputIndex; /*!< \brief Indices of Coord variables in the adjoint vector before solver iteration. */
@@ -550,6 +551,26 @@ class CPoint {
   inline su2double GetMaxLength(unsigned long iPoint) const { return MaxLength(iPoint); }
 
   /*!
+   * \brief Set the value of the normal of the nearest wall element.
+   * \param[in] iPoint - Index of the point.
+   * \param[in] distance - Value of the normal.
+   */
+  template<typename Normals_type>
+  inline void SetNormal(unsigned long iPoint, Normals_type const&normalwall) { 
+    for (unsigned long iDim = 0; iDim <nDim; iDim++) {
+      Normals(iPoint, iDim) = normalwall[iDim];
+    } 
+  }
+
+  /*!
+   * \brief Get the value of the normal of the nearest wall element.
+   * \param[in] iPoint - Index of the point.
+   * \return Normal to the normal of the nearest wall element.
+   */
+  inline su2double *GetNormal(unsigned long iPoint) { return Normals[iPoint]; }
+
+
+  /*!
    * \brief Get area or volume of the control volume.
    * \param[in] iPoint - Index of the point.
    * \return Area or volume of the control volume.
@@ -883,6 +904,22 @@ class CPoint {
       if (rankID >= 0) {
         SetRoughnessHeight(iPoint, roughness[rankID][zoneID][markerID]);
       }
+    }
+  }
+
+  /*!
+   * \brief Set wall normal according to stored closest wall information.
+   * \param[in] normalwall - Mapping [rank][zone][marker][element] -> normalwall
+   */
+  template<typename Normals_type>
+  void SetWallNormals(Normals_type const&normalwall){
+    for (unsigned long iPoint = 0; iPoint < GlobalIndex.size(); ++iPoint) {
+      auto rankID = ClosestWall_Rank[iPoint];
+      auto zoneID = ClosestWall_Zone[iPoint];
+      auto markerID = ClosestWall_Marker[iPoint];
+      auto elementID = ClosestWall_Elem[iPoint];
+      if(rankID >= 0)
+        SetNormal(iPoint, normalwall[rankID][zoneID][markerID][elementID]);
     }
   }
 };

@@ -146,7 +146,7 @@ CTransAFTSolver::CTransAFTSolver(CGeometry *geometry, CConfig *config, unsigned 
    const su2double CFL = config->GetCFL(MGLevel)*config->GetCFLRedCoeff_Turb();
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     nodes->SetLocalCFL(iPoint, CFL);
-    nodes->SetAuxVar(iPoint, 0, geometry->nodes->GetWall_Distance(iPoint));
+    //nodes->SetAuxVar(iPoint, 0, geometry->nodes->GetWall_Distance(iPoint));
   }
   Min_CFL_Local = CFL;
   Max_CFL_Local = CFL;
@@ -163,17 +163,17 @@ void CTransAFTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Upwind second order reconstruction and gradients ---*/
   CommonPreprocessing(geometry, config, Output);
- /*
+
   AD::StartNoSharedReading();
-  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  //After wall normal unit vector is defined like other developer, Auxvar[1] become Auxvar[0].
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());  
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint ++) {
-    su2double rhoud = 0.0;
+    su2double rhoUd = 0.0; //
+    auto WallNormalUnitVector = geometry -> nodes -> GetNormal(iPoint);
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      rhoud += flowNodes->GetDensity(iPoint) * flowNodes->GetVelocity(iPoint, iDim) * nodes->GetAuxVarGradient(iPoint, 0, iDim);
+      rhoUd += flowNodes->GetDensity(iPoint) * flowNodes->GetVelocity(iPoint, iDim) * WallNormalUnitVector[iDim];
     }
-    nodes->SetAuxVar(iPoint, 1, rhoud);
+    nodes->SetAuxVar(iPoint, 0, rhoUd);
   }
   END_SU2_OMP_FOR
   AD::EndNoSharedReading();
@@ -187,7 +187,6 @@ void CTransAFTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     default:
       break;
     }
-  */
 }
 
 void CTransAFTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
@@ -225,6 +224,8 @@ void CTransAFTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_conta
     const su2double c_1 = 100.0;
     const su2double c_2 = 0.06;
     const su2double c_3 = 50.0;
+    auto WallNormalUnitVector = geometry -> nodes -> GetNormal(iPoint);
+    /*
     su2double Temp3 = flowNodes->GetDensity(iPoint) * flowNodes->GetVelocity(iPoint, 0) * nodes->GetAuxVarGradient(iPoint, 0, 0);
     su2double Temp4 = flowNodes->GetDensity(iPoint) * flowNodes->GetVelocity(iPoint, 1) * nodes->GetAuxVarGradient(iPoint, 0, 1);
 
@@ -234,17 +235,13 @@ void CTransAFTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_conta
     else {
       nodes->SetAuxVar(iPoint, 1, Temp3 + Temp4 + flowNodes->GetVelocity(iPoint, 2) * nodes->GetAuxVarGradient(iPoint, 0, 2));
     }
+    */
 
     su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
-    su2double HLGradTerm = 0.0;
-    HLGradTerm = nodes->GetAuxVarGradient(iPoint, 1, 0) * nodes->GetAuxVarGradient(iPoint, 0, 0) + nodes->GetAuxVarGradient(iPoint, 1, 1) * nodes->GetAuxVarGradient(iPoint, 0, 1);
-
-    if(nDim == 3) {
-      HLGradTerm += nodes->GetAuxVarGradient(iPoint, 1, 2) * nodes->GetAuxVarGradient(iPoint, 0, 2);
-    }
-
     su2double HL = 0.0;
-    HL = dist_i * dist_i / Laminar_Viscosity_i  * HLGradTerm;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      HL +=  dist_i * dist_i / Laminar_Viscosity_i * nodes->GetAuxVarGradient(iPoint, 0, iDim) * WallNormalUnitVector[iDim];
+    }
     const su2double H12 = TransCorrelations.H12_Correlations(HL);
     const su2double dNdRet = TransCorrelations.dNdRet_Correlations(H12);
     const su2double Ret0 = TransCorrelations.Ret0_Correlations(H12);
