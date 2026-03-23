@@ -9,4 +9,7 @@ from .filelock import filelock
 from .config import Config
 from .state import State_Factory as State
 from .historyMap import history_header_map as historyOutFields
-from .fwh import FWHData
+try:
+    from .fwh import FWHData
+except ImportError:
+    pass
