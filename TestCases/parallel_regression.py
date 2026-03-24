@@ -301,6 +301,14 @@ def main():
     ramp_msw.test_vals = [-7.522451, -1.791193, -0.077520, 0.054427]
     test_list.append(ramp_msw)
 
+    # MFR_coupling
+    MFR_coupling           = TestCase('MFR_coupling')
+    MFR_coupling.cfg_dir   = "euler/turbofan_MFR_coupling"
+    MFR_coupling.cfg_file  = "MFR_coupling.cfg"
+    MFR_coupling.test_iter = 100
+    MFR_coupling.test_vals = [-2.1124e+02, 1.5003e+02, 2.0151e+01]
+    test_list.append(MFR_coupling)
+
     ##########################
     ###  Compressible N-S  ###
     ##########################
