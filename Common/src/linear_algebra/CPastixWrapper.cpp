@@ -38,18 +38,15 @@
 
 template <class ScalarType>
 void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* config) {
-  using namespace PaStiX;
-
   if (isinitialized) return;  // only need to do this once
 
-  unsigned long nVar = matrix.nVar, nPoint = matrix.nPoint, nPointDomain = matrix.nPointDomain;
+  const unsigned long nVar = matrix.nVar, nPoint = matrix.nPoint, nPointDomain = matrix.nPointDomain;
   const unsigned long *row_ptr = matrix.rowptr, *col_ind = matrix.colidx;
-
-  unsigned long iPoint, offset = 0, nNonZero = row_ptr[nPointDomain];
+  const unsigned long nNonZero = row_ptr[nPointDomain];
 
   /*--- Allocate ---*/
 
-  nCols = pastix_int_t(nPointDomain);
+  nCols = static_cast<pastix_int_t>(nPointDomain);
   colptr.resize(nPointDomain + 1);
   rowidx.clear();
   rowidx.reserve(nNonZero);
@@ -60,53 +57,40 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
 
   /*--- Set default parameter values ---*/
 
-  pastix_int_t incomplete = iparm[IPARM_INCOMPLETE];
-
-  iparm[IPARM_MODIFY_PARAMETER] = API_NO;
-  Run();
+  const auto incomplete = iparm[IPARM_INCOMPLETE];
+  pastixInitParam(iparm, dparm);
 
   /*--- Customize important parameters ---*/
 
   switch (verb) {
     case 1:
-      iparm[IPARM_VERBOSE] = API_VERBOSE_NO;
+      iparm[IPARM_VERBOSE] = PastixVerboseNo;
       break;
     case 2:
-      iparm[IPARM_VERBOSE] = API_VERBOSE_YES;
+      iparm[IPARM_VERBOSE] = PastixVerboseYes;
       break;
     default:
-      iparm[IPARM_VERBOSE] = API_VERBOSE_NOT;
+      iparm[IPARM_VERBOSE] = PastixVerboseNot;
       break;
   }
-  iparm[IPARM_DOF_NBR] = pastix_int_t(nVar);
-  iparm[IPARM_MATRIX_VERIFICATION] = API_NO;
-  iparm[IPARM_FREE_CSCPASTIX] = API_CSC_FREE;
-  iparm[IPARM_CSCD_CORRECT] = API_NO;
-  iparm[IPARM_RHSD_CHECK] = API_NO;
-  iparm[IPARM_ORDERING] = API_ORDER_PTSCOTCH;
+  iparm[IPARM_ORDERING] = PastixOrderPtScotch;
   iparm[IPARM_INCOMPLETE] = incomplete;
-  iparm[IPARM_LEVEL_OF_FILL] = pastix_int_t(config->GetPastixFillLvl());
+  iparm[IPARM_LEVEL_OF_FILL] = static_cast<pastix_int_t>(config->GetPastixFillLvl());
   iparm[IPARM_THREAD_NBR] = omp_get_max_threads();
-#if defined(HAVE_MPI) && defined(HAVE_OMP)
-  int comm_mode = MPI_THREAD_SINGLE;
-  MPI_Query_thread(&comm_mode);
-  if (comm_mode == MPI_THREAD_MULTIPLE)
-    iparm[IPARM_THREAD_COMM_MODE] = API_THREAD_MULTIPLE;
-  else
-    iparm[IPARM_THREAD_COMM_MODE] = API_THREAD_FUNNELED;
-#endif
 
-    /*--- Prepare sparsity structure ---*/
+  pastixInit(&state, SU2_MPI::GetComm(), iparm, dparm);
 
-    /*--- We need it in global coordinates, i.e. shifted according to the position
-     of the current rank in the linear partitioning space, and "unpacked" halo part.
-     The latter forces us to re-sort the column indices of rows with halo points, which
-     in turn requires blocks to be swapped accordingly. Moreover we need "pointer" and
-     indices in Fortran-style numbering (start at 1), effectively the matrix is copied.
-     Here we prepare the pointer and index part, and map the required swaps. ---*/
+  /*--- Prepare sparsity structure ---*/
 
-    /*--- 1 - Determine position in the linear partitioning ---*/
+  /*--- We need it in global coordinates, i.e. shifted according to the position
+    of the current rank in the linear partitioning space, and "unpacked" halo part.
+    The latter forces us to re-sort the column indices of rows with halo points, which
+    in turn requires blocks to be swapped accordingly. Effectively the matrix is copied.
+    Here we prepare the pointer and index part, and map the required swaps. ---*/
 
+  /*--- 1 - Determine position in the linear partitioning ---*/
+
+  unsigned long offset = 0;
 #ifdef HAVE_MPI
   vector<unsigned long> domain_sizes(mpi_size);
   MPI_Allgather(&nPointDomain, 1, MPI_UNSIGNED_LONG, domain_sizes.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
@@ -151,54 +135,74 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
 
   /*--- 3 - Copy, map the sparsity, and put it in Fortran numbering ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    colptr[iPoint] = pastix_int_t(row_ptr[iPoint] + 1);
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+    colptr[iPoint] = static_cast<pastix_int_t>(row_ptr[iPoint] + 1);
 
-    unsigned long begin = row_ptr[iPoint], end = row_ptr[iPoint + 1], j;
+    const unsigned long begin = row_ptr[iPoint], end = row_ptr[iPoint + 1];
 
     /*--- If last point of row is halo ---*/
-    bool sort_required = (col_ind[end - 1] >= nPointDomain);
+    const bool sort_required = (col_ind[end - 1] >= nPointDomain);
 
     if (sort_required) {
-      unsigned long nnz_row = end - begin;
+      const unsigned long nnz_row = end - begin;
 
       sort_rows.push_back(iPoint);
-      sort_order.push_back(vector<unsigned long>(nnz_row));
+      sort_order.emplace_back(nnz_row);
 
       /*--- Sort mapped indices ("first") and keep track of source ("second")
             for when we later need to swap blocks for these rows. ---*/
 
       vector<pair<pastix_int_t, unsigned long> > aux(nnz_row);
 
-      for (j = begin; j < end; ++j) {
-        if (col_ind[j] < nPointDomain)
-          aux[j - begin].first = pastix_int_t(offset + col_ind[j] + 1);
-        else
-          aux[j - begin].first = pastix_int_t(map[col_ind[j] - nPointDomain] + 1);
+      for (auto j = begin; j < end; ++j) {
+        if (col_ind[j] < nPointDomain) {
+          aux[j - begin].first = static_cast<pastix_int_t>(offset + col_ind[j] + 1);
+        } else {
+          aux[j - begin].first = static_cast<pastix_int_t>(map[col_ind[j] - nPointDomain] + 1);
+        }
         aux[j - begin].second = j;
       }
       sort(aux.begin(), aux.end());
 
-      for (j = 0; j < nnz_row; ++j) {
+      for (auto j = 0ul; j < nnz_row; ++j) {
         rowidx.push_back(aux[j].first);
         sort_order.back()[j] = aux[j].second;
       }
     } else {
       /*--- These are all internal, no need to go through map. ---*/
-      for (j = begin; j < end; ++j) rowidx.push_back(pastix_int_t(offset + col_ind[j] + 1));
+      for (auto j = begin; j < end; ++j) rowidx.push_back(static_cast<pastix_int_t>(offset + col_ind[j] + 1));
     }
   }
-  colptr[nPointDomain] = pastix_int_t(nNonZero + 1);
+  colptr[nPointDomain] = static_cast<pastix_int_t>(nNonZero + 1);
 
   if (rowidx.size() != nNonZero) SU2_MPI::Error("Error during preparation of PaStiX data", CURRENT_FUNCTION);
 
   /*--- 4 - Perform ordering, symbolic factorization, and analysis steps ---*/
 
+  spmInitDist(&spm, SU2_MPI::GetComm());
+  spm.mtxtype = SpmGeneral;  // Despite being symmetric, we store the entire matrix.
+  spm.flttype = SpmDouble;
+  spm.fmttype = SpmCSC;
+  spm.layout = SpmColMajor;
+  spm.baseval = 1;
+
+  spm.n = nCols;
+  spm.nnz = nNonZero;
+  spm.dof = nVar;
+
+  spm.colptr = colptr.data();
+  spm.rowptr = rowidx.data();
+  spm.values = values.data();
+
+  spm.replicated = static_cast<int>(mpi_size == 1);
+  spm.loc2glob = mpi_size > 1 ? loc2glb.data() : nullptr;
+  spmUpdateComputedFields(&spm);
+
   if (mpi_rank == MASTER_NODE && verb > 0) cout << endl;
 
-  iparm[IPARM_START_TASK] = API_TASK_ORDERING;
-  iparm[IPARM_END_TASK] = API_TASK_ANALYSE;
-  Run();
+  if (const auto rc = pastix_task_analyze(state, &spm); rc != PASTIX_SUCCESS) {
+    SU2_MPI::Error("Error analyzing matrix: " + std::to_string(rc), CURRENT_FUNCTION);
+  }
 
   if (mpi_rank == MASTER_NODE && verb > 0)
     cout << " +--------------------------------------------------------------------+" << endl;
@@ -208,16 +212,13 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
 
 template <class ScalarType>
 void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* config, unsigned short kind_fact) {
-  using namespace PaStiX;
-
   /*--- Detect a possible change of settings between direct and adjoint that requires a reset ---*/
-  if (isinitialized)
-    if ((kind_fact == PASTIX_ILU) != (iparm[IPARM_INCOMPLETE] == API_YES)) {
+  if (isinitialized) {
+    if ((kind_fact == PASTIX_ILU) != (iparm[IPARM_INCOMPLETE] == 1)) {
       Clean();
-      isinitialized = false;
       iter = 0;
     }
-
+  }
   verb = config->GetPastixVerbLvl();
   iparm[IPARM_INCOMPLETE] = (kind_fact == PASTIX_ILU);
 
@@ -227,20 +228,15 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
 
   switch (verb) {
     case 1:
-      iparm[IPARM_VERBOSE] = API_VERBOSE_NO;
+      iparm[IPARM_VERBOSE] = PastixVerboseNo;
       break;
     case 2:
-      iparm[IPARM_VERBOSE] = API_VERBOSE_YES;
+      iparm[IPARM_VERBOSE] = PastixVerboseYes;
       break;
     default:
-      iparm[IPARM_VERBOSE] = API_VERBOSE_NOT;
+      iparm[IPARM_VERBOSE] = PastixVerboseNot;
       break;
   }
-
-  if (kind_fact == PASTIX_LDLT || kind_fact == PASTIX_LDLT_P)
-    iparm[IPARM_TRANSPOSE_SOLVE] = API_NO;  // symmetric so no need for slower transp. solve
-  else
-    iparm[IPARM_TRANSPOSE_SOLVE] = API_YES;  // negated due to CSR to CSC copy
 
   /*--- Is factorizing needed on this iteration? ---*/
 
@@ -260,21 +256,21 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
     cout << " +--------------------------------------------------------------------+" << endl;
   }
 
-  unsigned long i, j, k, iRow, begin, target, source, szBlk = matrix.nVar * matrix.nVar, nNonZero = values.size();
+  const unsigned long szBlk = matrix.nVar * matrix.nVar, nNonZero = values.size();
 
   /*--- Copy matrix values and swap blocks as required ---*/
 
-  for (i = 0; i < nNonZero; ++i) values[i] = SU2_TYPE::GetValue(matrix.values[i]);
+  for (auto i = 0ul; i < nNonZero; ++i) values[i] = SU2_TYPE::GetValue(matrix.values[i]);
 
-  for (i = 0; i < sort_rows.size(); ++i) {
-    iRow = sort_rows[i];
-    begin = matrix.rowptr[iRow];
+  for (auto i = 0ul; i < sort_rows.size(); ++i) {
+    const auto iRow = sort_rows[i];
+    const auto begin = matrix.rowptr[iRow];
 
-    for (j = 0; j < sort_order[i].size(); ++j) {
-      target = (begin + j) * szBlk;
-      source = sort_order[i][j] * szBlk;
+    for (auto j = 0ul; j < sort_order[i].size(); ++j) {
+      const auto target = (begin + j) * szBlk;
+      const auto source = sort_order[i][j] * szBlk;
 
-      for (k = 0; k < szBlk; ++k) values[target + k] = SU2_TYPE::GetValue(matrix.values[source + k]);
+      for (auto k = 0ul; k < szBlk; ++k) values[target + k] = SU2_TYPE::GetValue(matrix.values[source + k]);
     }
   }
 
@@ -283,14 +279,12 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
   switch (kind_fact) {
     case PASTIX_LDLT:
     case PASTIX_LDLT_P:
-      iparm[IPARM_SYM] = API_SYM_YES;
-      iparm[IPARM_FACTORIZATION] = API_FACT_LDLT;
+      iparm[IPARM_FACTORIZATION] = PastixFactLDLT;
       break;
     case PASTIX_LU:
     case PASTIX_LU_P:
     case PASTIX_ILU:
-      iparm[IPARM_SYM] = API_SYM_NO;
-      iparm[IPARM_FACTORIZATION] = API_FACT_LU;
+      iparm[IPARM_FACTORIZATION] = PastixFactLU;
       break;
     default:
       SU2_MPI::Error("Unknown type of PaStiX factorization.", CURRENT_FUNCTION);
@@ -299,9 +293,9 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
 
   /*--- Compute factorization ---*/
 
-  iparm[IPARM_START_TASK] = API_TASK_NUMFACT;
-  iparm[IPARM_END_TASK] = API_TASK_NUMFACT;
-  Run();
+  if (const auto rc = pastix_task_numfact(state, &spm); rc != PASTIX_SUCCESS) {
+    SU2_MPI::Error("Error factorizing matrix: " + std::to_string(rc), CURRENT_FUNCTION);
+  }
 
   if (mpi_rank == MASTER_NODE && verb > 0)
     cout << " +--------------------------------------------------------------------+" << endl << endl;

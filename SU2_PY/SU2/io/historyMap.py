@@ -310,6 +310,12 @@ history_header_map = {
         "HEADER": "ComboObj",
         "TYPE": "COEFFICIENT",
     },
+    "CUSTOM_OBJFUNC": {
+        "DESCRIPTION": "Custom obj. function value.",
+        "GROUP": "COMBO",
+        "HEADER": "CustomObj",
+        "TYPE": "COEFFICIENT",
+    },
     "DEFORM_ITER": {
         "DESCRIPTION": "Linear solver iterations for the mesh " "deformation",
         "GROUP": "DEFORM",

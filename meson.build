@@ -208,18 +208,10 @@ if get_option('enable-pastix')
          'PaStiX support requires either mkl or openblas')
 
   su2_cpp_args += '-DHAVE_PASTIX'
-
-  pastix_dep = dependency('pastix', required: false)
-
-  if not pastix_dep.found()
-    pastix_root = get_option('pastix_root')+'/install'
-    scotch_root = get_option('scotch_root')+'/lib'
-    pastix_dep  = declare_dependency(include_directories: pastix_root,
-                                    link_args: [ '-L../'+pastix_root, '-L../'+scotch_root,
-                                    '-lpastix', '-lscotch', '-lptscotch', '-lptscotcherr',
-                                    '-lm', '-lrt', '-lpthread'])
-  endif
-  su2_deps += pastix_dep
+  su2_deps += dependency('pastix')
+  su2_deps += meson.get_compiler('cpp').find_library('scotch', required: true)
+  su2_deps += meson.get_compiler('cpp').find_library('scotcherr', required: true)
+  su2_deps += meson.get_compiler('cpp').find_library('ptscotch', required: true)
 endif
 
 # CUDA dependencies
@@ -250,9 +242,11 @@ elif get_option('enable-openblas')
 
   su2_cpp_args += '-DHAVE_BLAS'
   su2_cpp_args += '-DHAVE_LAPACK'
-  blas_dep = dependency(get_option('blas-name'))
-  su2_deps += blas_dep
-
+  su2_deps += dependency(get_option('blas-name'))
+  su2_deps += dependency('lapack')
+  if get_option('enable-pastix')
+    su2_deps += dependency('lapacke')
+  endif
 endif
 
 if get_option('enable-librom')
