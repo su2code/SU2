@@ -802,6 +802,30 @@ struct DebugControl {
   std::ostream* out = &std::cout;
 };
 
+struct AdjustDebugControl {
+  TAPE_DEBUG_OPTION option;
+  void (*adjust)(DebugControl*, unsigned short);
+};
+
+static const AdjustDebugControl debug_control_adjustments[] = {
+  {TAPE_DEBUG_OPTION::ALLOW_PREACC, [](DebugControl* c, unsigned short) { c->allow_preacc = true; }},
+  {TAPE_DEBUG_OPTION::ACTIVATE_PREACC, [](DebugControl* c, unsigned short) { c->allow_preacc = false; }},
+  {TAPE_DEBUG_OPTION::ALLOW_ZONE, [](DebugControl* c, unsigned short zone) { c->allow_izone = zone + 1; }},
+  {TAPE_DEBUG_OPTION::ALLOW_ALL_ZONES, [](DebugControl* c, unsigned short) { c->allow_zones = true; }},
+  {TAPE_DEBUG_OPTION::ACTIVATE_ALL_ZONES, [](DebugControl* c, unsigned short) {
+    c->allow_zones = false;
+    c->allow_izone = 0;
+  }},
+  {TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS, [](DebugControl* c, unsigned short) {
+    c->allow_preacc = false;
+    c->allow_zones = false;
+    c->allow_izone = 0;
+  }},
+  {TAPE_DEBUG_OPTION::INIT_RUN, [](DebugControl* c, unsigned short) { c->init_run = true; }},
+  {TAPE_DEBUG_OPTION::CHECK_RUN, [](DebugControl* c, unsigned short) { c->init_run = false; }},
+  {TAPE_DEBUG_OPTION::MULTIZONE_TAGS, [](DebugControl* c, unsigned short) { c->multizone_tags = true; }},
+};
+
 FORCEINLINE void ResetErrorCounter(DebugControl& control) { control.ErrorCounter = 0; }
 
 FORCEINLINE void SetDebugReportFile(DebugControl& control, std::ostream* output_file) { control.out = output_file; }
@@ -867,30 +891,14 @@ static void tagErrorCallback(const int& correctTag, const int& wrongTag, void* u
 }
 
 FORCEINLINE void SetTapeDebugOption(TAPE_DEBUG_OPTION option, unsigned short izone = 0) {
-  if (option == AD::TAPE_DEBUG_OPTION::ALLOW_PREACC) {
-    current_control->allow_preacc = true;
+  if (current_control == nullptr) {
+    return;
   }
-  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_PREACC || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS) {
-    current_control->allow_preacc = false;
-  }
-  if (option == AD::TAPE_DEBUG_OPTION::ALLOW_ZONE) {
-    current_control->allow_izone = izone + 1;
-  }
-  if (option == AD::TAPE_DEBUG_OPTION::ALLOW_ALL_ZONES) {
-    current_control->allow_zones = true;
-  }
-  if (option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ZONES || option == AD::TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS) {
-    current_control->allow_zones = false;
-    current_control->allow_izone = 0;
-  }
-  if (option == AD::TAPE_DEBUG_OPTION::INIT_RUN) {
-    current_control->init_run = true;
-  }
-  if (option == AD::TAPE_DEBUG_OPTION::CHECK_RUN) {
-    current_control->init_run = false;
-  }
-  if (option == AD::TAPE_DEBUG_OPTION::MULTIZONE_TAGS) {
-    current_control->multizone_tags = true;
+  for (const AdjustDebugControl& entry : debug_control_adjustments) {
+    if (entry.option == option) {
+      entry.adjust(current_control, izone);
+      break;
+    }
   }
 }
 
