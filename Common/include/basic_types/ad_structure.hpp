@@ -808,22 +808,24 @@ struct AdjustDebugControl {
 };
 
 static const AdjustDebugControl debug_control_adjustments[] = {
-  {TAPE_DEBUG_OPTION::ALLOW_PREACC, [](DebugControl* c, unsigned short) { c->allow_preacc = true; }},
-  {TAPE_DEBUG_OPTION::ACTIVATE_PREACC, [](DebugControl* c, unsigned short) { c->allow_preacc = false; }},
-  {TAPE_DEBUG_OPTION::ALLOW_ZONE, [](DebugControl* c, unsigned short zone) { c->allow_izone = zone + 1; }},
-  {TAPE_DEBUG_OPTION::ALLOW_ALL_ZONES, [](DebugControl* c, unsigned short) { c->allow_zones = true; }},
-  {TAPE_DEBUG_OPTION::ACTIVATE_ALL_ZONES, [](DebugControl* c, unsigned short) {
-    c->allow_zones = false;
-    c->allow_izone = 0;
-  }},
-  {TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS, [](DebugControl* c, unsigned short) {
-    c->allow_preacc = false;
-    c->allow_zones = false;
-    c->allow_izone = 0;
-  }},
-  {TAPE_DEBUG_OPTION::INIT_RUN, [](DebugControl* c, unsigned short) { c->init_run = true; }},
-  {TAPE_DEBUG_OPTION::CHECK_RUN, [](DebugControl* c, unsigned short) { c->init_run = false; }},
-  {TAPE_DEBUG_OPTION::MULTIZONE_TAGS, [](DebugControl* c, unsigned short) { c->multizone_tags = true; }},
+    {TAPE_DEBUG_OPTION::ALLOW_PREACC, [](DebugControl* c, unsigned short) { c->allow_preacc = true; }},
+    {TAPE_DEBUG_OPTION::ACTIVATE_PREACC, [](DebugControl* c, unsigned short) { c->allow_preacc = false; }},
+    {TAPE_DEBUG_OPTION::ALLOW_ZONE, [](DebugControl* c, unsigned short zone) { c->allow_izone = zone + 1; }},
+    {TAPE_DEBUG_OPTION::ALLOW_ALL_ZONES, [](DebugControl* c, unsigned short) { c->allow_zones = true; }},
+    {TAPE_DEBUG_OPTION::ACTIVATE_ALL_ZONES,
+     [](DebugControl* c, unsigned short) {
+       c->allow_zones = false;
+       c->allow_izone = 0;
+     }},
+    {TAPE_DEBUG_OPTION::ACTIVATE_ALL_ERRORS,
+     [](DebugControl* c, unsigned short) {
+       c->allow_preacc = false;
+       c->allow_zones = false;
+       c->allow_izone = 0;
+     }},
+    {TAPE_DEBUG_OPTION::INIT_RUN, [](DebugControl* c, unsigned short) { c->init_run = true; }},
+    {TAPE_DEBUG_OPTION::CHECK_RUN, [](DebugControl* c, unsigned short) { c->init_run = false; }},
+    {TAPE_DEBUG_OPTION::MULTIZONE_TAGS, [](DebugControl* c, unsigned short) { c->multizone_tags = true; }},
 };
 
 FORCEINLINE void ResetErrorCounter(DebugControl& control) { control.ErrorCounter = 0; }
