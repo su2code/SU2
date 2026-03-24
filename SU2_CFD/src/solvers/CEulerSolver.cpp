@@ -6019,7 +6019,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CEulerSolver::PreprocessBC_Giles(CGeometry *geometry, CConfig *config, CNumerics *conv_numerics, unsigned short marker_flag) {
-  /* Implementation of Fuorier Transformations for non-regfelcting BC will come soon */
+  /* Implementation of Fourier Transformations for non-reflecting BC will come soon */
   su2double cj_inf,cj_out1, cj_out2, Density_i, Pressure_i, *turboNormal, *turboVelocity, *Velocity_i, AverageSoundSpeed;
   su2double *deltaprim, *cj, TwoPiThetaFreq_Pitch, pitch, theta, deltaTheta;
   unsigned short iMarker, iSpan, iMarkerTP, iDim;
@@ -6306,11 +6306,13 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       default:
         break;
     }
-    ExtAverageDensity = donorAverages[0];
-    ExtAveragePressure = donorAverages[1];
-    ExtAverageTurboVelocity[0] = donorAverages[2];
-    ExtAverageTurboVelocity[1] = donorAverages[3];
-    if (nDim == 3) ExtAverageTurboVelocity[2] = donorAverages[4];
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      ExtAverageDensity = donorAverages[0];
+      ExtAveragePressure = donorAverages[1];
+      ExtAverageTurboVelocity[0] = donorAverages[2];
+      ExtAverageTurboVelocity[1] = donorAverages[3];
+      if (nDim == 3) ExtAverageTurboVelocity[2] = donorAverages[4];
+    } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     switch(config->GetKind_Data_Giles(Marker_Tag)){
 
