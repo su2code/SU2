@@ -852,10 +852,10 @@ su2double CSpeciesFlameletSolver::ThickenedFlameCorrection(const CGeometry* geom
 
 su2double CSpeciesFlameletSolver::GetOverallFlameThickness(CGeometry* geometry, CSolver** solver_container) const {
   const CFlowVariable* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  su2double pvmax_local{-1e3}, pvmin_local{1e3}, pvmax_global{0.0},pvmin_global{0.0}, gradpv_local{0.0}, gradpv_global{0.0}, Tmax_local{-1e6},Tmax_global{0.0};
+  su2double pvmax_local{-1e3}, pvmin_local{1e3}, pvmax_global{0.0},pvmin_global{-1e3}, gradpv_local{0.0}, gradpv_global{0.0}, Tmax_local{-1e6},Tmax_global{0.0};
   
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0u; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
       su2double pv_local = nodes->GetSolution(iPoint, I_PROGVAR);
       su2double T_local = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
       
@@ -875,25 +875,36 @@ su2double CSpeciesFlameletSolver::GetOverallFlameThickness(CGeometry* geometry, 
         gradT2 += gradT*gradT;
       }
       mag_gradT = sqrt(gradT2);
-      proj_grad_T_u /= (gradT2 +  1e-5);
+      proj_grad_T_u /= (gradT2 +  EPS);
       proj_grad_T_u *= mag_gradT;
 
       /* Update minimum and maximum values. */
       gradpv_local = max(gradpv_local, proj_grad_T_u);
       pvmax_local = max(pvmax_local, pv_local);
-      pvmin_local = min(pvmin_local, pv_local);
+      pvmin_local = max(pvmin_local, -pv_local);
       Tmax_local = max(Tmax_local, T_local);
   }
   END_SU2_OMP_FOR
   SU2_MPI::Barrier(SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&gradpv_local, &gradpv_global, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&pvmin_local, &pvmin_global, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&pvmax_local, &pvmax_global, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&Tmax_local, &Tmax_global, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  su2double* MyFlameThickness = new su2double[4];
+  su2double* TotalFlameThickness = new su2double[4]; 
+  MyFlameThickness[0] = gradpv_local;
+  MyFlameThickness[1] = pvmin_local;
+  MyFlameThickness[2] = pvmax_local;
+  MyFlameThickness[3] = Tmax_local;
+  
+  SU2_MPI::Allreduce(MyFlameThickness, TotalFlameThickness, 4, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+  gradpv_global = TotalFlameThickness[0];
+  pvmin_global = -TotalFlameThickness[1];
+  pvmax_global = TotalFlameThickness[2];
+  Tmax_global = TotalFlameThickness[3];
 
+  delete [] MyFlameThickness;
+  delete [] TotalFlameThickness;
+  
   /* Update flame thickness value. */
   su2double flame_thickness{default_flame_thickness};
-  if (Tmax_global > 800.0) flame_thickness = (pvmax_global - pvmin_global) / (gradpv_global+1e-5);
+  if (Tmax_global > 800.0) flame_thickness = (pvmax_global - pvmin_global) / (gradpv_global+EPS);
 
   return flame_thickness;
 }
