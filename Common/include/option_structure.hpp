@@ -1447,6 +1447,7 @@ struct FluidFlamelet_ParsedOptions {
   unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
   bool thickenedflame_correction{true}; /*!< \brief Thickened flame correction. */
+  su2double ignition_temperature = 1100.0; /*!< \brief Temperature above which the solution is considered ignited. */
 };
 
 /*!

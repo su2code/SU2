@@ -1432,6 +1432,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief THICKENED_FLAME_CORRECTION \n DESCRIPTION: Coarse grid correction for source terms and diffusive fluxes in reacting flows. \ingroup Config*/
   addBoolOption("THICKENED_FLAME_CORRECTION", flamelet_ParsedOptions.thickenedflame_correction, true);
 
+  /*!\brief IGNITION_TEMPERATURE \n DESCRIPTION: Temperature above which the solution is considered ignited. */
+  addDoubleOption("IGNITION_TEMPERATURE", flamelet_ParsedOptions.ignition_temperature, 1100.0);
+
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
   /*!\brief DIFFUSIVITY_MODEL\n DESCRIPTION: mass diffusivity model \n DEFAULT constant disffusivity \ingroup Config*/
