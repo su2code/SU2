@@ -844,7 +844,7 @@ su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_mo
 
 su2double CSpeciesFlameletSolver::ThickenedFlameCorrection(CGeometry const * geometry, const unsigned long iPoint) const {
   su2double F{1.0};
-  if (global_flame_thickness != default_flame_thickness) {
+  if (fabs(global_flame_thickness - default_flame_thickness) > EPS * max(1.0, fabs(default_flame_thickness))) {
     su2double max_flame_vol = pow(global_flame_thickness, nDim);
     F = max(1.0, geometry->nodes->GetVolume(iPoint) / max_flame_vol);
   }
