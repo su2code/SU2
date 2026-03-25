@@ -418,7 +418,6 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
 
 void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solver_container,
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
-   
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
     /*--- Add source terms from the lookup table directly to the residual. ---*/
@@ -842,7 +841,7 @@ su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_mo
 }
 
 
-su2double CSpeciesFlameletSolver::ThickenedFlameCorrection(CGeometry const * geometry, const unsigned long iPoint) const {
+su2double CSpeciesFlameletSolver::ThickenedFlameCorrection(const CGeometry* geometry, unsigned long iPoint) const {
   su2double F{1.0};
   if (fabs(global_flame_thickness - default_flame_thickness) > EPS * max(1.0, fabs(default_flame_thickness))) {
     su2double max_flame_vol = pow(global_flame_thickness, nDim);
@@ -851,7 +850,7 @@ su2double CSpeciesFlameletSolver::ThickenedFlameCorrection(CGeometry const * geo
   return F;
 }
 
-su2double CSpeciesFlameletSolver::GetOverallFlameThickness(CGeometry * geometry, CSolver **solver_container) const {
+su2double CSpeciesFlameletSolver::GetOverallFlameThickness(CGeometry* geometry, CSolver** solver_container) const {
   CFlowVariable const * flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
   su2double pvmax_local{-1e3}, pvmin_local{1e3}, pvmax_global{0.0},pvmin_global{0.0}, gradpv_local{0.0}, gradpv_global{0.0}, Tmax_local{-1e6},Tmax_global{0.0};
   

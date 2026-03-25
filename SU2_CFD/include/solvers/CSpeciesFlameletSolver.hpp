@@ -116,7 +116,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] iPoint - node ID.
    * \return - flame thickness correction factor.
    */                                              
-  su2double ThickenedFlameCorrection(CGeometry const * geometry, const unsigned long iPoint) const;   
+  su2double ThickenedFlameCorrection(const CGeometry* geometry, unsigned long iPoint) const;   
 
   /*!
    * \brief Approximate the minimum flame thickness value used for the thickened flame model.
@@ -124,7 +124,7 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \param[in] solver_container - Container vector with all the solutions.
    * \return - approximate flame thickness value.
    */
-  su2double GetOverallFlameThickness(CGeometry * geometry,  CSolver **solver_container) const;
+  su2double GetOverallFlameThickness(CGeometry* geometry,  CSolver** solver_container) const;
 
  public:
   /*!
@@ -220,5 +220,5 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \brief Obtain the overall flame thickness value.
    * \return flame thickness value.
    */
-  virtual su2double GetFlameThickness() const {return global_flame_thickness;}
+  su2double GetFlameThickness() const override {return global_flame_thickness;}
 };
