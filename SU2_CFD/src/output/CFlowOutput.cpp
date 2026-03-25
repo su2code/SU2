@@ -1070,7 +1070,7 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
         AddHistoryOutput("RMS_"+CV_name, "rms["+CV_name+"]",ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean squared residual of " + CV_name + " controlling variable equation.", HistoryFieldType::RESIDUAL);
       }
       if (flamelet_config_options.thickenedflame_correction)
-        AddHistoryOutput("THICKNESS","flamethickness",ScreenOutputFormat::FIXED, "RMS_RES", "Flame thickness used for thickened flame correction model.", HistoryFieldType::RESIDUAL);
+        AddHistoryOutput("THICKNESS","flamethickness",ScreenOutputFormat::FIXED, "FLAME_THICKNESS", "Flame thickness used for thickened flame correction model.", HistoryFieldType::COEFFICIENT);
 
       /*--- auxiliary species transport ---*/
       for (auto i_scalar = 0u; i_scalar < flamelet_config_options.n_user_scalars; i_scalar++){
