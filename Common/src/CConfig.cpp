@@ -1429,7 +1429,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
   addDoubleListOption("SPARK_REACTION_RATES", flamelet_ParsedOptions.nspark, flamelet_ParsedOptions.spark_reaction_rates);
 
-  /*!\brief THICKENED_FLAME_CORRECTION \n DESCRIPTION: Dampen source terms and enhance diffusion based on the flame length scale. \ingroup Config*/
+  /*!\brief THICKENED_FLAME_CORRECTION \n DESCRIPTION: Coarse grid correction for source terms and diffusive fluxes in reacting flows. \ingroup Config*/
   addBoolOption("THICKENED_FLAME_CORRECTION", flamelet_ParsedOptions.thickenedflame_correction, true);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
