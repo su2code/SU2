@@ -166,6 +166,8 @@ void CFlowCompOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
   AddHistoryOutput("MAX_DELTA_TIME", "Max DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum local time step");
 
+  AddHistoryOutput("AVG_SOUND_SPEED", "Avg[a]", ScreenOutputFormat::FIXED, "PRIMITIVE", "Average local speed of sound.", HistoryFieldType::DEFAULT);
+
   AddHistoryOutput("MIN_CFL", "Min CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum of the local CFL numbers");
   AddHistoryOutput("MAX_CFL", "Max CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current maximum of the local CFL numbers");
   AddHistoryOutput("AVG_CFL", "Avg CFL", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current average of the local CFL numbers");
@@ -238,6 +240,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("PRESSURE",    "Pressure",                "PRIMITIVE", "Pressure");
   AddVolumeOutput("TEMPERATURE", "Temperature",             "PRIMITIVE", "Temperature");
   AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE", "Mach number");
+  AddVolumeOutput("LOCAL_SPEED_OF_SOUND", "Local_Speed_of_Sound", "PRIMITIVE", "Local speed of sound");
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
   AddVolumeOutput("VELOCITY-X", "Velocity_x", "PRIMITIVE", "x-component of the velocity vector");
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "PRIMITIVE", "y-component of the velocity vector");
@@ -328,6 +331,8 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   } else {
     SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(iPoint, 3));
   }
+
+  SetVolumeOutputValue("LOCAL_SPEED_OF_SOUND", iPoint, Node_Flow->GetSoundSpeed(iPoint));
 
   if (gridMovement){
     SetVolumeOutputValue("GRID_VELOCITY-X", iPoint, Node_Geo->GetGridVel(iPoint)[0]);
@@ -436,6 +441,26 @@ void CFlowCompOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSol
 
   SetHistoryOutputValue("MIN_DELTA_TIME", flow_solver->GetMin_Delta_Time());
   SetHistoryOutputValue("MAX_DELTA_TIME", flow_solver->GetMax_Delta_Time());
+
+  /*--- Compute average local speed of sound for screen output ---*/
+  su2double avg_a = 0.0;
+  unsigned long nPoint = geometry->GetnPointDomain();
+  const auto* Node_Flow = flow_solver->GetNodes();
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    avg_a += Node_Flow->GetSoundSpeed(iPoint);
+  }
+  su2double total_a = 0.0;
+  unsigned long total_points = 0;
+#ifdef HAVE_MPI
+  unsigned long nPoint_local = nPoint;
+  SU2_MPI::Allreduce(&avg_a, &total_a, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nPoint_local, &total_points, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+#else
+  total_a = avg_a;
+  total_points = nPoint;
+#endif
+  if (total_points > 0) total_a /= (su2double)total_points;
+  SetHistoryOutputValue("AVG_SOUND_SPEED", total_a);
 
   SetHistoryOutputValue("MIN_CFL", flow_solver->GetMin_CFL_Local());
   SetHistoryOutputValue("MAX_CFL", flow_solver->GetMax_CFL_Local());

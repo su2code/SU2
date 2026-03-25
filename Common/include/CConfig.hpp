@@ -326,6 +326,7 @@ private:
   su2double *Engine_Area;                    /*!< \brief Specified engine area for nacelle boundaries. */
   su2double *Outlet_Pressure;                /*!< \brief Specified back pressures (static) for outlet boundaries. */
   su2double *Isothermal_Temperature;         /*!< \brief Specified isothermal wall temperatures (static). */
+  mutable std::map<unsigned short, std::map<unsigned long, su2double>> Marker_Custom_Temperature; /*!< \brief Spatially varying isothermal wall temperatures. */
   su2double *HeatTransfer_Coeff;             /*!< \brief Specified heat transfer coefficients. */
   su2double *HeatTransfer_WallTemp;          /*!< \brief Specified temperatures at infinity alongside heat transfer coefficients. */
   su2double *Heat_Flux;                      /*!< \brief Specified wall heat fluxes. */
@@ -7425,6 +7426,22 @@ public:
    * \return The wall temperature.
    */
   su2double GetIsothermal_Temperature(const string& val_index) const;
+
+  /*!
+   * \brief Get the custom wall temperature (static) at an isothermal boundary node.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Vertex index on the marker.
+   * \return The custom wall temperature (returns -1.0 if not set).
+   */
+  su2double GetCustom_Temperature(unsigned short iMarker, unsigned long iVertex) const;
+
+  /*!
+   * \brief Set the custom wall temperature (static) at an isothermal boundary node.
+   * \param[in] iMarker - Marker index.
+   * \param[in] iVertex - Vertex index on the marker.
+   * \param[in] val - The custom wall temperature.
+   */
+  void SetCustom_Temperature(unsigned short iMarker, unsigned long iVertex, su2double val);
 
   /*!
    * \brief Get the wall heat flux on a constant heat flux boundary.

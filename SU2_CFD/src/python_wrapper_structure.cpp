@@ -28,6 +28,7 @@
 #include "../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../include/drivers/CDriver.hpp"
 #include "../include/drivers/CSinglezoneDriver.hpp"
+#include <cmath>
 
 void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry, CSolver***** solver) {
   int rank = MASTER_NODE;
@@ -177,5 +178,25 @@ void CDriver::SetMarkerTranslationRate(unsigned short iMarker, passivedouble vel
   config_container[selected_zone]->SetMarkerTranslationRate(iMarker, 0, vel_x);
   config_container[selected_zone]->SetMarkerTranslationRate(iMarker, 1, vel_y);
   config_container[selected_zone]->SetMarkerTranslationRate(iMarker, 2, vel_z);
+}
+
+void CDriver::SetMarkerCustomTemperature(unsigned short iMarker, unsigned long iVertex, su2double Temperature) {
+  geometry_container[selected_zone][INST_0][MESH_0]->SetCustomBoundaryTemperature(iMarker, iVertex, Temperature);
+}
+
+passivedouble CDriver::GetMarkerLocalSpeedOfSound(unsigned short iMarker, unsigned long iVertex) {
+  const auto* geometry = geometry_container[selected_zone][INST_0][MESH_0];
+  const auto* flow_solver = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL];
+  unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+  return SU2_TYPE::GetValue(flow_solver->GetNodes()->GetSoundSpeed(iPoint));
+}
+
+passivedouble CDriver::GetMarkerMachNumber(unsigned short iMarker, unsigned long iVertex) {
+  const auto* geometry = geometry_container[selected_zone][INST_0][MESH_0];
+  const auto* flow_solver = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL];
+  unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+  su2double V2 = flow_solver->GetNodes()->GetVelocity2(iPoint);
+  su2double a = flow_solver->GetNodes()->GetSoundSpeed(iPoint);
+  return SU2_TYPE::GetValue(sqrt(V2) / a);
 }
 
