@@ -130,11 +130,6 @@ void CMixingPlane::SetTransferCoeff(CGeometry**** geometry, const CConfig* const
     for (auto iSpanTarget = 1; iSpanTarget < nSpanTarget - 1; iSpanTarget++) {
       auto& targetSpan = targetSpans[iMarkerInt][iSpanTarget];
 
-      auto tSpan = 0;         // Nearest donor span index
-      auto kSpan = 0;         // Lower bound donor span for interpolation
-      su2double coeff = 0.0;  // Interpolation coefficient
-      su2double minDist = 10E+06;
-
       switch (donor_config->GetKind_MixingPlaneInterface()) {
         case MATCHING:
           targetSpan = MapMatchingSpan(iSpanTarget);
