@@ -137,60 +137,15 @@ void CMixingPlane::SetTransferCoeff(CGeometry**** geometry, const CConfig* const
 
       switch (donor_config->GetKind_MixingPlaneInterface()) {
         case MATCHING:
-          targetSpan.donorSpan = iSpanTarget;
-          targetSpan.coefficient = 0.0;
+          targetSpan = MapMatchingSpan(iSpanTarget);
           break;
 
         case NEAREST_SPAN:
-          // Find the nearest donor span
-          for (auto iSpanDonor = 0; iSpanDonor < nSpanDonor - 1; iSpanDonor++) {
-            const auto dist = abs(spanValuesTarget[iSpanTarget] - spanValuesDonor[iSpanDonor]);
-            if (dist < minDist) {
-              minDist = dist;
-              tSpan = iSpanDonor;
-            }
-          }
-          targetSpan.donorSpan = tSpan;
-          targetSpan.coefficient = 0.0;
+          targetSpan = MapNearestSpan(spanValuesTarget[iSpanTarget], spanValuesDonor, nSpanDonor);
           break;
 
         case LINEAR_INTERPOLATION: {
-          bool printWarning = false;
-          // Check if target span is within donor bound
-          if (spanValuesTarget[iSpanTarget] <= spanValuesDonor[0]) {
-            // Below hub - use hub value
-            targetSpan.donorSpan = 0;
-            targetSpan.coefficient = 0.0;
-            printWarning = true;
-          } else if (spanValuesTarget[iSpanTarget] >= spanValuesDonor[nSpanDonor - 1]) {
-            // Above shroud - use shroud value
-            targetSpan.donorSpan = nSpanDonor - 1;
-            targetSpan.coefficient = 0.0;
-            printWarning = true;
-          } else {
-            // Find the donor span interval that brackets the target span
-            for (auto iSpanDonor = 0; iSpanDonor < nSpanDonor - 1; iSpanDonor++) {
-              const auto test = abs(spanValuesTarget[iSpanTarget] - spanValuesDonor[iSpanDonor]);
-              if (test < minDist && spanValuesTarget[iSpanTarget] > spanValuesDonor[iSpanDonor]) {
-                kSpan = iSpanDonor;
-                minDist = test;
-              }
-            }
-            // Calculate interpolation coefficient
-            coeff = (spanValuesTarget[iSpanTarget] - spanValuesDonor[kSpan]) /
-                    (spanValuesDonor[kSpan + 1] - spanValuesDonor[kSpan]);
-            targetSpan.donorSpan = kSpan;
-            targetSpan.coefficient = coeff;
-          }
-          if (printWarning) {
-            if (rank == MASTER_NODE) {
-              cout << "Warning! Target spans exist outside the bounds of donor spans! Clamping interpolator..." << endl;
-              if (spanValuesTarget[iSpanTarget] <= spanValuesDonor[0]) cout << "This is an issue at the hub." << endl;
-              if (spanValuesTarget[iSpanTarget] >= spanValuesDonor[nSpanDonor - 1])
-                cout << "This is an issue at the shroud." << endl;
-              cout << "Setting coeff = 0.0 and transferring endwall value!" << endl;
-            }
-          }
+          targetSpan = MapLinearInterpolationSpan(spanValuesTarget[iSpanTarget], spanValuesDonor, nSpanDonor, rank);
           break;
         }
         default:

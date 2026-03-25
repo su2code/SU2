@@ -1066,11 +1066,6 @@ void CConfig::SetPointersNull() {
   nBlades                      = nullptr;
   FreeStreamTurboNormal        = nullptr;
 
-  /*--- Turbomachinery Objective Functions ---*/
-  EntropyGeneration = nullptr;
-  TotalPressureLoss = nullptr;
-  KineticEnergyLoss = nullptr;
-
   top_optim_kernels       = nullptr;
   top_optim_kernel_params = nullptr;
   top_optim_filter_radius = nullptr;
@@ -6227,11 +6222,6 @@ void CConfig::SetMarkers(SU2_COMPONENT val_software) {
         Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = YES;
   }
 
-  /*--- Allocate memory for turbomachinery objective functions ---*/
-  EntropyGeneration = new su2double[nZone] ();
-  TotalPressureLoss = new su2double[nZone] ();
-  KineticEnergyLoss = new su2double[nZone] ();
-
   /*--- Identification of Turbomachinery markers and flag them---*/
 
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
@@ -8611,9 +8601,6 @@ CConfig::~CConfig() {
   delete [] nBlades;
   delete [] FreeStreamTurboNormal;
 
-  delete [] EntropyGeneration;
-  delete [] TotalPressureLoss;
-  delete [] KineticEnergyLoss;
 }
 
 /*--- Input is the filename base, output is the completed filename. ---*/
