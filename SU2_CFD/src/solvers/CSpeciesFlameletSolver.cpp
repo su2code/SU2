@@ -851,7 +851,7 @@ su2double CSpeciesFlameletSolver::ThickenedFlameCorrection(const CGeometry* geom
 }
 
 su2double CSpeciesFlameletSolver::GetOverallFlameThickness(CGeometry* geometry, CSolver** solver_container) const {
-  CFlowVariable const * flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  const CFlowVariable* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
   su2double pvmax_local{-1e3}, pvmin_local{1e3}, pvmax_global{0.0},pvmin_global{0.0}, gradpv_local{0.0}, gradpv_global{0.0}, Tmax_local{-1e6},Tmax_global{0.0};
   
   SU2_OMP_FOR_STAT(omp_chunk_size)
