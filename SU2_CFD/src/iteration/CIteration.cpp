@@ -222,9 +222,9 @@ void CIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry**** geom
     auto TurbomachineryBladePerformances = GetBladesPerformanceVector(solver, nZone);
 
     auto nSpan = config_container[ZONE_0]->GetnSpanWiseSections();
-    auto InState = TurbomachineryBladePerformances.at(ZONE_0)->GetBladesPerformances().at(nSpan)->GetInletState();
+    auto InState = TurbomachineryBladePerformances[ZONE_0]->GetBladesPerformances().at(nSpan)->GetInletState();
     nSpan = config_container[nZone-1]->GetnSpanWiseSections();
-    auto OutState =  TurbomachineryBladePerformances.at(nZone-1)->GetBladesPerformances().at(nSpan)->GetOutletState();
+    auto OutState =  TurbomachineryBladePerformances[nZone-1]->GetBladesPerformances().at(nSpan)->GetOutletState();
     
     TurbomachineryStagePerformance->ComputePerformanceStage(InState, OutState, config_container[nZone-1]);
   }

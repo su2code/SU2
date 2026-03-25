@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../../Common/include/containers/C2DContainer.hpp"
 
 #include <cmath>
 #include <string>
@@ -149,9 +150,9 @@ protected:
     for (auto iVar = 0u; iVar < nVar; iVar++) Target_Variable[iVar] += donorCoeff * bcastVariable[iVar];
   }
 
-  inline virtual void RecoverTarget_Span_Endwall(const vector<su2double> &bcastVariable, unsigned long idx) { }
+  inline virtual void RecoverTarget_Span_Endwall(const su2activevector &bcastVariable, unsigned long idx) { }
 
-  inline virtual void RecoverTarget_Span(const vector<su2double> &bcastVariable, unsigned long idx, su2double donorCoeff) { }
+  inline virtual void RecoverTarget_Span(const su2activevector &bcastVariable, unsigned long idx, su2double donorCoeff) { }
 
 
 

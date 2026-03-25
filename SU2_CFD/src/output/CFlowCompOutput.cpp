@@ -511,7 +511,7 @@ bool CFlowCompOutput::WriteHistoryFileOutput(const CConfig *config) {
   return !config->GetFinite_Difference_Mode() && COutput::WriteHistoryFileOutput(config);
 }
 
-void CFlowCompOutput::SetTurboPerformance_Output(std::vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs,
+void CFlowCompOutput::SetTurboPerformance_Output(su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs,
                                   CConfig *config,
                                   unsigned long TimeIter,
                                   unsigned long OuterIter,
@@ -535,7 +535,7 @@ void CFlowCompOutput::SetTurboPerformance_Output(std::vector<std::shared_ptr<CTu
 
   for (unsigned short iZone = 0; iZone <= config->GetnZone()-1; iZone++) {
     auto nSpan = config->GetnSpan_iZones(iZone);
-    const auto& BladePerf = TurboBladePerfs.at(iZone)->GetBladesPerformances().at(nSpan);
+    const auto& BladePerf = TurboBladePerfs[iZone]->GetBladesPerformances().at(nSpan);
 
     TurboInOut<<" BLADE ROW INDEX "<<iZone <<"";
     TurboInOut.PrintFooter();
@@ -556,7 +556,7 @@ void CFlowCompOutput::SetTurboPerformance_Output(std::vector<std::shared_ptr<CTu
   cout<<TurboInOutTable.str();
 }
 
-void CFlowCompOutput::SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::vector<std::shared_ptr<CTurboOutput>> TurboPerf, CConfig *config) {
+void CFlowCompOutput::SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, su2vector<std::shared_ptr<CTurboOutput>> TurboPerf, CConfig *config) {
 
   stringstream TurboMZPerf;
 
@@ -586,10 +586,10 @@ void CFlowCompOutput::SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbo
 
 }
 
-void CFlowCompOutput::LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config) {
+void CFlowCompOutput::LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config) {
   for (unsigned short iZone = 0; iZone <= config->GetnZone()-1; iZone++) {
     auto nSpan = config->GetnSpan_iZones(iZone);
-    const auto& BladePerf = TurboBladePerfs.at(iZone)->GetBladesPerformances().at(nSpan);
+    const auto& BladePerf = TurboBladePerfs[iZone]->GetBladesPerformances().at(nSpan);
 
     stringstream tag;
     tag << iZone + 1;
@@ -633,7 +633,7 @@ void CFlowCompOutput::LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStageP
   SetHistoryOutputValue("TotPressureLoss_Stage", TurboStagePerf->GetTotalPressureLoss());
 }
 
-void CFlowCompOutput::WriteTurboSpanwisePerformance(std::vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CGeometry *geometry, CConfig **config, unsigned short val_iZone) {
+void CFlowCompOutput::WriteTurboSpanwisePerformance(su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CGeometry *geometry, CConfig **config, unsigned short val_iZone) {
 
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
   unsigned short nZone       = config[val_iZone]->GetnZone();
@@ -676,7 +676,7 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::vector<std::shared_ptr<
   file << endl;
 
   for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
-    const auto& BladePerf = TurboBladePerfs.at(val_iZone)->GetBladesPerformances().at(iSpan);
+    const auto& BladePerf = TurboBladePerfs[val_iZone]->GetBladesPerformances().at(iSpan);
 
     file.width(30); file << SpanWiseValuesIn[iSpan];
     file.width(15); file << iSpan;
@@ -721,7 +721,7 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::vector<std::shared_ptr<
 
 
   for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
-    const auto& BladePerf = TurboBladePerfs.at(val_iZone)->GetBladesPerformances().at(iSpan);
+    const auto& BladePerf = TurboBladePerfs[val_iZone]->GetBladesPerformances().at(iSpan);
 
     file.width(30); file << SpanWiseValuesOut[iSpan];
     file.width(15); file << iSpan;
@@ -772,7 +772,7 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::vector<std::shared_ptr<
 
 
   for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
-    const auto& BladePerf = TurboBladePerfs.at(val_iZone)->GetBladesPerformances().at(iSpan);
+    const auto& BladePerf = TurboBladePerfs[val_iZone]->GetBladesPerformances().at(iSpan);
 
     file.width(30); file << SpanWiseValuesIn[iSpan];
     file.width(15); file << iSpan;
@@ -836,7 +836,7 @@ void CFlowCompOutput::WriteTurboSpanwisePerformance(std::vector<std::shared_ptr<
 
 
   for(iSpan = 0; iSpan < config[val_iZone]->GetnSpanWiseSections(); iSpan++){
-    const auto& BladePerf = TurboBladePerfs.at(val_iZone)->GetBladesPerformances().at(iSpan);
+    const auto& BladePerf = TurboBladePerfs[val_iZone]->GetBladesPerformances().at(iSpan);
 
     file.width(30); file << SpanWiseValuesOut[iSpan];
     file.width(15); file << iSpan;

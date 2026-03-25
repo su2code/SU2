@@ -304,13 +304,11 @@ class CIteration {
    */
    void InitTurboPerformance(CGeometry *geometry, CConfig** config, CFluidModel *fluid, unsigned short val_iZone);
 
-   inline vector<std::shared_ptr<CTurboOutput>> GetBladesPerformanceVector(CSolver***** solver, unsigned short nBladeRow){
-    vector<std::shared_ptr<CTurboOutput>> bladePerformances;
-    bladePerformances.reserve(nBladeRow);
-    for (auto iBladeRow = 0u; iBladeRow < nBladeRow; iBladeRow++) {
-        auto const turboPerf = solver[iBladeRow][INST_0][MESH_0][FLOW_SOL]->GetTurboBladePerformance();
-        bladePerformances.push_back(turboPerf);
+    inline su2vector<std::shared_ptr<CTurboOutput>> GetBladesPerformanceVector(CSolver***** solver, unsigned short nBladeRow){
+        su2vector<std::shared_ptr<CTurboOutput>> bladePerformances(nBladeRow);
+        for (auto iBladeRow = 0u; iBladeRow < nBladeRow; iBladeRow++) {
+            bladePerformances[iBladeRow] = solver[iBladeRow][INST_0][MESH_0][FLOW_SOL]->GetTurboBladePerformance();
+        }
+        return bladePerformances;
     }
-    return bladePerformances;
-  }
 };

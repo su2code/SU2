@@ -105,7 +105,7 @@ public:
    * \param[in] OuterIter - Index of current outer iteration
    * \param[in] InnerIter - Index of current inner iteration
    */
-  void SetTurboPerformance_Output(std::vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) override;
+  void SetTurboPerformance_Output(su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) override;
 
   /*!
    * \brief Sets the multizone turboperformacne screen output
@@ -113,7 +113,7 @@ public:
    * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
    */
-  void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config) override;
+  void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config) override;
   
   /*!
    * \brief Loads the turboperformacne history data
@@ -121,7 +121,7 @@ public:
    * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
    */
-  void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config) override;
+  void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config) override;
 
   /*!
    * \brief Write the kinematic and thermodynamic variables at each spanwise division
@@ -130,6 +130,6 @@ public:
    * \param[in] config - Descripiton of the particular problem
    * \param[in] val_iZone - Idientifier of current zone
   */
-  void WriteTurboSpanwisePerformance(std::vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CGeometry *geometry, CConfig **config,
+  void WriteTurboSpanwisePerformance(su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CGeometry *geometry, CConfig **config,
                                        unsigned short val_iZone) override;
 };

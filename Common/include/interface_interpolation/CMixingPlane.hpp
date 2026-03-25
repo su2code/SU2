@@ -43,8 +43,9 @@ class CMixingPlane final : public CInterpolator {
 
   inline CSpanDonorInfo MapMatchingSpan(unsigned short iSpanTarget) { return {iSpanTarget, 0.0}; }
 
-  inline CSpanDonorInfo MapNearestSpan(const su2double iSpanTargetValue, const su2double* spanValuesDonor, unsigned long nSpanDonor) {
-    unsigned short tSpan = 0;         // Nearest donor span index
+  inline CSpanDonorInfo MapNearestSpan(const su2double iSpanTargetValue, const su2double* spanValuesDonor,
+                                       unsigned long nSpanDonor) {
+    unsigned short tSpan = 0;  // Nearest donor span index
     auto minDist = std::numeric_limits<su2double>::max();
 
     for (auto iSpanDonor = 0u; iSpanDonor < nSpanDonor - 1; iSpanDonor++) {
@@ -57,16 +58,17 @@ class CMixingPlane final : public CInterpolator {
     return {tSpan, 0.0};
   };
 
-  inline CSpanDonorInfo MapLinearInterpolationSpan(const su2double iSpanTargetValue, const su2double* spanValuesDonor, unsigned long nSpanDonor, int rank) {
-    unsigned short kSpan = 0;         // Lower bound donor span for interpolation
+  inline CSpanDonorInfo MapLinearInterpolationSpan(const su2double iSpanTargetValue, const su2double* spanValuesDonor,
+                                                   unsigned long nSpanDonor, int rank) {
+    unsigned short kSpan = 0;  // Lower bound donor span for interpolation
     auto minDist = std::numeric_limits<su2double>::max();
     su2double coeff = 0.0;  // Interpolation coefficient
 
     if (iSpanTargetValue < spanValuesDonor[0]) {
       PrintClampingWarning(rank, true);
       return {0, 0.0};
-    } 
-    
+    }
+
     if (iSpanTargetValue > spanValuesDonor[nSpanDonor - 1]) {
       PrintClampingWarning(rank, false);
       return {nSpanDonor - 1, 0.0};
@@ -80,11 +82,10 @@ class CMixingPlane final : public CInterpolator {
         break;
       }
     }
-    coeff = (iSpanTargetValue - spanValuesDonor[kSpan]) /
-                (spanValuesDonor[kSpan + 1] - spanValuesDonor[kSpan]);
+    coeff = (iSpanTargetValue - spanValuesDonor[kSpan]) / (spanValuesDonor[kSpan + 1] - spanValuesDonor[kSpan]);
     return {kSpan, coeff};
   };
-  
+
   inline void PrintClampingWarning(int rank, bool atHub) {
     if (rank != MASTER_NODE) return;
     cout << "Warning! Target spans exist outside the bounds of donor spans! Clamping interpolator..." << endl;

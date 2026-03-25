@@ -102,8 +102,8 @@ class CInterpolator {
   vector<vector<CDonorInfo>> targetVertices; /*! \brief Donor information per marker per vertex of the target. */
 
   struct CSpanDonorInfo {
-    size_t donorSpan;  // Refers to donor span
-    su2double coefficient;    // Refers to coefficient
+    size_t donorSpan;       // Refers to donor span
+    su2double coefficient;  // Refers to coefficient
   };
   vector<vector<CSpanDonorInfo>> targetSpans;  // <iMarkerInt<TargetSpan<CSpanDonorInfo>>
 

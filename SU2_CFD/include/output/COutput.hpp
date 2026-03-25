@@ -409,7 +409,7 @@ public:
    */
   void SetHistoryOutput(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                          std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf,
-                         std::vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, unsigned short val_iZone,
+                         su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, unsigned short val_iZone,
                          unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter, unsigned short val_iInst);
 
   /*!
@@ -980,7 +980,7 @@ protected:
    * \param[in] OuterIter - Index of current outer iteration
    * \param[in] InnerIter - Index of current inner iteration
    */
-  inline virtual void SetTurboPerformance_Output(std::vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {}
+  inline virtual void SetTurboPerformance_Output(su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CConfig *config, unsigned long TimeIter, unsigned long OuterIter, unsigned long InnerIter) {}
 
   /*!
    * \brief Sets the multizone turboperformacne screen output
@@ -988,7 +988,7 @@ protected:
    * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
    */
-  inline virtual void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::vector<std::shared_ptr<CTurboOutput>> TurboPerf, CConfig *config) {}
+  inline virtual void SetTurboMultiZonePerformance_Output(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, su2vector<std::shared_ptr<CTurboOutput>> TurboPerf, CConfig *config) {}
 
   /*!
    * \brief Loads the turboperformacne history data
@@ -996,7 +996,7 @@ protected:
    * \param[in] TurboPerf - Turboperformance class
    * \param[in] config - Definition of the particular problem
    */
-  inline virtual void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, std::vector<std::shared_ptr<CTurboOutput>> TurboPerf, CConfig *config) {}
+  inline virtual void LoadTurboHistoryData(std::shared_ptr<CTurbomachineryStagePerformance> TurboStagePerf, su2vector<std::shared_ptr<CTurboOutput>> TurboPerf, CConfig *config) {}
 
   /*!
    * \brief Write the kinematic and thermodynamic variables at each spanwise division
@@ -1005,7 +1005,7 @@ protected:
    * \param[in] config - Descripiton of the particular problem
    * \param[in] val_iZone - Idientifier of current zone
   */
-  inline virtual void WriteTurboSpanwisePerformance(std::vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CGeometry *geometry, CConfig **config,
+  inline virtual void WriteTurboSpanwisePerformance(su2vector<std::shared_ptr<CTurboOutput>> TurboBladePerfs, CGeometry *geometry, CConfig **config,
                                        unsigned short val_iZone) {};
 
   /*!
