@@ -860,22 +860,22 @@ su2double CSpeciesFlameletSolver::GetOverallFlameThickness(CGeometry* geometry, 
       su2double T_local = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
       
       /* Parallel projection of progress variable gradient against velocity */
-      su2double proj_grad_pv_u[MAXNDIM];
+      su2double proj_grad_pv_u[MAXNDIM]={0};
       for (auto iDim=0u; iDim < nDim; iDim++) {
         su2double gradpv = nodes->GetGradient(iPoint, I_PROGVAR, iDim);
         su2double val_u = flowNodes->GetVelocity(iPoint, iDim);
-        proj_grad_pv_u[iDim] = gradpv * val_u * val_u / (flowNodes->GetVelocity2(iPoint) + 1e-5);
+        proj_grad_pv_u[iDim] = gradpv * val_u * val_u / (flowNodes->GetVelocity2(iPoint) + EPS);
       }
 
       /* Parallel projection of temperature gradient against projected progress variable gradient */
-      su2double proj_grad_T_u = 0, gradT2{0}, mag_gradT{0};
-      for (auto iDim=0u; iDim < nDim; iDim++) {
-        su2double gradT = flowNodes->GetGradient_Primitive(iPoint, prim_idx.Temperature(), iDim);
-        proj_grad_T_u += gradT * proj_grad_pv_u[iDim];
-        gradT2 += gradT*gradT;
-      }
-      mag_gradT = sqrt(gradT2);
-      proj_grad_T_u /= (gradT2 +  EPS);
+      su2double gradT[MAXNDIM]={0};
+      for (auto iDim=0u; iDim < nDim; iDim++) 
+        gradT[iDim] = flowNodes->GetGradient_Primitive(iPoint, prim_idx.Temperature(), iDim);
+      
+      su2double proj_grad_T_u = GeometryToolbox::DotProduct(nDim, gradT, proj_grad_pv_u);
+      su2double mag_gradT = GeometryToolbox::Norm(nDim, gradT);
+      
+      proj_grad_T_u /= (pow(mag_gradT,2) +  EPS);
       proj_grad_T_u *= mag_gradT;
 
       /* Update minimum and maximum values. */
@@ -885,7 +885,6 @@ su2double CSpeciesFlameletSolver::GetOverallFlameThickness(CGeometry* geometry, 
       Tmax_local = max(Tmax_local, T_local);
   }
   END_SU2_OMP_FOR
-  SU2_MPI::Barrier(SU2_MPI::GetComm());
   su2double* MyFlameThickness = new su2double[4];
   su2double* TotalFlameThickness = new su2double[4]; 
   MyFlameThickness[0] = gradpv_local;
