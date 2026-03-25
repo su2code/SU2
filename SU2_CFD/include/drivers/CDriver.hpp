@@ -556,6 +556,30 @@ class CDriver : public CDriverBase {
   void SetMarkerTranslationRate(unsigned short iMarker, passivedouble vel_x, passivedouble vel_y, passivedouble vel_z);
 
   /*!
+   * \brief Set a custom temperature at a boundary vertex.
+   * \param[in] iMarker - Index of the boundary marker.
+   * \param[in] iVertex - Index of the boundary vertex.
+   * \param[in] Temperature - Temperature value.
+   */
+  void SetMarkerCustomTemperature(unsigned short iMarker, unsigned long iVertex, su2double Temperature);
+
+  /*!
+   * \brief Get the local speed of sound at a boundary vertex.
+   * \param[in] iMarker - Index of the boundary marker.
+   * \param[in] iVertex - Index of the boundary vertex.
+   * \return Local speed of sound.
+   */
+  passivedouble GetMarkerLocalSpeedOfSound(unsigned short iMarker, unsigned long iVertex);
+
+  /*!
+   * \brief Get the Mach number at a boundary vertex.
+   * \param[in] iMarker - Index of the boundary marker.
+   * \param[in] iVertex - Index of the boundary vertex.
+   * \return Mach number.
+   */
+  passivedouble GetMarkerMachNumber(unsigned short iMarker, unsigned long iVertex);
+
+  /*!
    * \brief Get the Freestream Density for nondimensionalization
    * \return Freestream Density
    */

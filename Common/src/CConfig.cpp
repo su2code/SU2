@@ -9608,6 +9608,21 @@ su2double CConfig::GetIsothermal_Temperature(const string& val_marker) const {
   return Isothermal_Temperature[0];
 }
 
+su2double CConfig::GetCustom_Temperature(unsigned short iMarker, unsigned long iVertex) const {
+  auto it_marker = Marker_Custom_Temperature.find(iMarker);
+  if (it_marker != Marker_Custom_Temperature.end()) {
+    auto it_vertex = it_marker->second.find(iVertex);
+    if (it_vertex != it_marker->second.end()) {
+      return it_vertex->second;
+    }
+  }
+  return -1.0;
+}
+
+void CConfig::SetCustom_Temperature(unsigned short iMarker, unsigned long iVertex, su2double val) {
+  Marker_Custom_Temperature[iMarker][iVertex] = val;
+}
+
 su2double CConfig::GetWall_HeatFlux(const string& val_marker) const {
 
   for (unsigned short iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++)
