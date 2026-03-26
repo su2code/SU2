@@ -91,7 +91,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     }
 #ifdef HAVE_MPI
     /*--- Gather data. ---*/
-    const size_t nTotalDonors = (nSpanDonor + 1) * size; // Number of donor spans across all ranks
+    const size_t nTotalDonors = static_cast<size_t>(nSpanDonor + 1) * size; // Number of donor spans across all ranks
     const size_t nSpanDonorVars = static_cast<size_t>(nSpanDonor + 1) * nMixingVars; // Number of variables to be transferred on each rank
     su2vector<short> buffDonorMarker(nTotalDonors);
     su2activevector buffDonorVar(static_cast<unsigned long>(nTotalDonors) * nMixingVars); // Total number of variables to be transferred on all ranks
