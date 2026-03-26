@@ -221,8 +221,17 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
 
-    BPressure = config->GetPressureOut_BC();
-    Temperature = config->GetTotalTemperatureIn_BC();
+    static int value_is_set = false;
+    static double BPressureValue = 0.0, TemperatureValue = 0.0;
+    if (!value_is_set) {
+      BPressureValue = SU2_TYPE::GetValue(config->GetPressureOut_BC());
+      TemperatureValue = SU2_TYPE::GetValue(config->GetTotalTemperatureIn_BC());
+      value_is_set = true;
+    }
+
+    /*--- Temporary fix that allows us to use the local variables BPressure and Temperature to track derivatives from here on via the config class. ---*/
+    BPressure = BPressureValue;
+    Temperature = TemperatureValue;
 
     if (!reset){
       AD::RegisterInput(BPressure);
