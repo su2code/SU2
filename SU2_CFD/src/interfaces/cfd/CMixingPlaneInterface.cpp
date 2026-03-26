@@ -83,7 +83,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     su2activevector sendDonorVar(static_cast<size_t>(nSpanDonor + 1) * nMixingVars);
 
     if (markDonor != -1) {
-      for (auto iSpan = 0u; iSpan < nSpanDonor + 1; iSpan++) {
+      for (auto iSpan = 0; iSpan < nSpanDonor + 1; iSpan++) {
         GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iSpan, 0);
         for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = Donor_Variable[iVar];
         sendDonorMarker[iSpan] = markDonor;
@@ -91,8 +91,8 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     }
 #ifdef HAVE_MPI
     /*--- Gather data. ---*/
-    const size_t nTotalDonors = (nSpanDonor + 1) * size; // Number of donor spans across all ranks
-    const size_t nSpanDonorVars = (nSpanDonor + 1) * nMixingVars; // Number of variables to be transferred on each rank
+    const size_t nTotalDonors = static_cast<size_t>(nSpanDonor + 1) * size; // Number of donor spans across all ranks
+    const size_t nSpanDonorVars = static_cast<size_t>(nSpanDonor + 1) * nMixingVars; // Number of variables to be transferred on each rank
     su2vector<short> buffDonorMarker(nTotalDonors);
     su2activevector buffDonorVar(static_cast<unsigned long>(nTotalDonors) * nMixingVars); // Total number of variables to be transferred on all ranks
 
@@ -106,7 +106,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
 
     for (auto iSize = 0; iSize < size; iSize++){
       if (buffDonorMarker[static_cast<size_t>(iSize) * static_cast<unsigned long>(nSpanDonor + 1)] != -1) {
-        for (size_t iSpan = 0; iSpan < nSpanDonor + 1; iSpan++){
+        for (auto iSpan = 0; iSpan < nSpanDonor + 1; iSpan++){
           for (size_t iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = buffDonorVar[static_cast<size_t>(iSize) * nSpanDonorVars + iSpan * nMixingVars + iVar];
         }
         markDonor = buffDonorMarker[static_cast<unsigned long>(iSize) * static_cast<unsigned long>(nSpanDonor + 1)];
@@ -189,13 +189,11 @@ void CMixingPlaneInterface::InitializeTarget_Variable(CSolver *target_solution, 
 void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
                                            const CConfig *target_config, unsigned long Marker_Target,
                                            unsigned long Span_Target, unsigned long Point_Target) {
-
-  unsigned short iVar, iDonorSpan;
   /*--- Set the mixing plane solution with the value of the Target Variable ---*/
 
-  iDonorSpan = target_solution->GetnMixingStates(Marker_Target, Span_Target);
+  unsigned short iDonorSpan = target_solution->GetnMixingStates(Marker_Target, Span_Target);
 
-  for (iVar = 0; iVar < nMixingVars; iVar++) {
+  for (unsigned short iVar = 0; iVar < nMixingVars; iVar++) {
     target_solution->SetMixingState(Marker_Target, Span_Target, iVar, Target_Variable[iVar]);
   }
 
