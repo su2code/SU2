@@ -189,13 +189,11 @@ void CMixingPlaneInterface::InitializeTarget_Variable(CSolver *target_solution, 
 void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
                                            const CConfig *target_config, unsigned long Marker_Target,
                                            unsigned long Span_Target, unsigned long Point_Target) {
-
-  unsigned short iVar, iDonorSpan;
   /*--- Set the mixing plane solution with the value of the Target Variable ---*/
 
-  iDonorSpan = target_solution->GetnMixingStates(Marker_Target, Span_Target);
+  unsigned short iDonorSpan = target_solution->GetnMixingStates(Marker_Target, Span_Target);
 
-  for (iVar = 0; iVar < nMixingVars; iVar++) {
+  for (unsigned short iVar = 0; iVar < nMixingVars; iVar++) {
     target_solution->SetMixingState(Marker_Target, Span_Target, iVar, Target_Variable[iVar]);
   }
 
