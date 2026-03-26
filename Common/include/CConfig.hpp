@@ -1974,12 +1974,6 @@ public:
   su2double GetPressure_FreeStreamND(void) const { return Pressure_FreeStreamND; }
 
   /*!
-   * \brief Get a reference to the non-dimensionalized freestream pressure (used for AD tracking).
-   * \return Reference to non-dimensionalized freestream pressure.
-   */
-  su2double& GetPressure_FreeStreamND(void) { return Pressure_FreeStreamND; }
-
-  /*!
    * \brief Get the value of the thermodynamic pressure.
    * \return Thermodynamic pressure.
    */
@@ -2003,12 +1997,6 @@ public:
    * \return Non-dimensionalized freestream temperature.
    */
   su2double GetTemperature_FreeStreamND(void) const { return Temperature_FreeStreamND; }
-
-  /*!
-   * \brief Get a reference to the non-dimensionalized freestream temperature (used for AD tracking).
-   * \return Reference to non-dimensionalized freestream temperature.
-   */
-  su2double& GetTemperature_FreeStreamND(void) { return Temperature_FreeStreamND; }
 
   /*!
    * \brief Get the value of the non-dimensionalized vibrational-electronic freestream temperature.

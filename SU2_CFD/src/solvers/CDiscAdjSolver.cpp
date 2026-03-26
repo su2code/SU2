@@ -180,21 +180,30 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
   if((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS && !config->GetBoolTurbomachinery())){
 
-    su2double Velocity_Ref = config->GetVelocity_Ref();
-    Alpha                  = config->GetAoA()*PI_NUMBER/180.0;
-    Beta                   = config->GetAoS()*PI_NUMBER/180.0;
-    Mach                   = config->GetMach();
-    /*--- Pressure and Temperature can be registered directly via their config file value
-     * (no further treatment required here). ---*/
-    su2double& Pressure    = config->GetPressure_FreeStreamND();
-    su2double& Temperature = config->GetTemperature_FreeStreamND();
+    static bool value_is_set = false;
+    static double Velocity_Ref = 0.0, Velocity_FreeStreamND = 0.0, AlphaValue = 0.0, BetaValue = 0.0, MachValue = 0.0, TemperatureValue = 0.0, PressureValue = 0.0;
+    if (!value_is_set) {
+      Velocity_Ref = SU2_TYPE::GetValue(config->GetVelocity_Ref());
+      Velocity_FreeStreamND = SU2_TYPE::GetValue(config->GetVelocity_FreeStreamND()[0]);
+      AlphaValue = SU2_TYPE::GetValue(config->GetAoA())*PI_NUMBER/180.0;
+      BetaValue = SU2_TYPE::GetValue(config->GetAoS())*PI_NUMBER/180.0;
+      MachValue = SU2_TYPE::GetValue(config->GetMach());
+      TemperatureValue = SU2_TYPE::GetValue(config->GetTemperature_FreeStreamND());
+      PressureValue = SU2_TYPE::GetValue(config->GetPressure_FreeStreamND());
+      value_is_set = true;
+    }
 
-    su2double SoundSpeed = 0.0;
+    Alpha       = AlphaValue;
+    Beta        = BetaValue;
+    Mach        = MachValue;
+    Pressure    = PressureValue;
+    Temperature = TemperatureValue;
 
-    // Treat Velocity_FreeStreamND config value as non-dependent (in debug mode)
-    AD::ClearTagOnVariable(config->GetVelocity_FreeStreamND()[0]);
-    if (nDim == 2) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*Mach); }
-    if (nDim == 3) { SoundSpeed = config->GetVelocity_FreeStreamND()[0]*Velocity_Ref/(cos(Alpha)*cos(Beta)*Mach); }
+    double SoundSpeed = 0.0;
+    if (nDim == 2) { SoundSpeed = Velocity_FreeStreamND*Velocity_Ref/(cos(AlphaValue)*MachValue); }
+    if (nDim == 3) { SoundSpeed = Velocity_FreeStreamND*Velocity_Ref/(cos(AlphaValue)*cos(BetaValue)*MachValue); }
+
+    /*--- Register the variables for AD. ---*/
 
     if (!reset) {
       AD::RegisterInput(Mach);
@@ -203,7 +212,7 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
       AD::RegisterInput(Pressure);
     }
 
-    /*--- Recompute the free stream velocity ---*/
+    /*--- Set the free stream velocity (now using the registered values for Alpha, Beta and Mach). ---*/
 
     if (nDim == 2) {
       config->GetVelocity_FreeStreamND()[0] = cos(Alpha)*Mach*SoundSpeed/Velocity_Ref;
@@ -215,13 +224,15 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
       config->GetVelocity_FreeStreamND()[2] = sin(Alpha)*cos(Beta)*Mach*SoundSpeed/Velocity_Ref;
     }
 
+    /*--- Set the freestream values in the direct solver (now using the registered values for Temperature and Pressure). ---*/
+
     direct_solver->SetTemperature_Inf(Temperature);
     direct_solver->SetPressure_Inf(Pressure);
   }
 
   if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && config->GetBoolTurbomachinery()){
 
-    static int value_is_set = false;
+    static bool value_is_set = false;
     static double BPressureValue = 0.0, TemperatureValue = 0.0;
     if (!value_is_set) {
       BPressureValue = SU2_TYPE::GetValue(config->GetPressureOut_BC());
@@ -229,9 +240,10 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
       value_is_set = true;
     }
 
-    /*--- Temporary fix that allows us to use the local variables BPressure and Temperature to track derivatives from here on via the config class. ---*/
     BPressure = BPressureValue;
     Temperature = TemperatureValue;
+
+    /*--- Register the variables for AD. ---*/
 
     if (!reset){
       AD::RegisterInput(BPressure);
@@ -248,15 +260,25 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
       ((KindDirect_Solver == RUNTIME_FLOW_SYS &&
         (!config->GetBoolTurbomachinery())))) {
 
-    /*--- Access the velocity (or pressure) and temperature at the
+    static bool value_is_set = false;
+    static double ModVelValue = 0.0, BPressureValue = 0.0, TemperatureValue = 0.0;
+
+     /*--- Access the velocity (or pressure) and temperature at the
      inlet BC and the back pressure at the outlet. Note that we are
      assuming that have internal flow, which will be true for the
      majority of cases. External flows with far-field BCs will report
      zero for these sensitivities. ---*/
 
-    ModVel    = config->GetIncInlet_BC();
-    BPressure = config->GetIncPressureOut_BC();
-    Temperature = config->GetIncTemperature_BC();
+    if (!value_is_set) {
+      ModVelValue = SU2_TYPE::GetValue(config->GetIncInlet_BC());
+      BPressureValue = SU2_TYPE::GetValue(config->GetIncPressureOut_BC());
+      TemperatureValue = SU2_TYPE::GetValue(config->GetIncTemperature_BC());
+      value_is_set = true;
+    }
+
+    ModVel      = ModVelValue;
+    BPressure   = BPressureValue;
+    Temperature = TemperatureValue;
 
     /*--- Register the variables for AD. ---*/
 
@@ -282,7 +304,14 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
     /*--- Access the nondimensional freestream temperature. ---*/
 
-    TemperatureRad = config->GetTemperature_FreeStreamND();
+    static bool value_is_set = false;
+    static double TemperatureRadValue = 0.0;
+    if (!value_is_set) {
+      TemperatureRadValue = SU2_TYPE::GetValue(config->GetTemperature_FreeStreamND());
+      value_is_set = true;
+    }
+    TemperatureRad = TemperatureRadValue;
+
 
     /*--- Register the variables for AD. ---*/
 
@@ -408,9 +437,6 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
   if ((config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE) && (KindDirect_Solver == RUNTIME_FLOW_SYS) && !config->GetBoolTurbomachinery()) {
     su2double Local_Sens_Press, Local_Sens_Temp, Local_Sens_AoA, Local_Sens_Mach;
-
-    su2double& Pressure    = config->GetPressure_FreeStreamND();
-    su2double& Temperature = config->GetTemperature_FreeStreamND();
 
     Local_Sens_Mach  = SU2_TYPE::GetDerivative(Mach);
     Local_Sens_AoA   = SU2_TYPE::GetDerivative(Alpha);
