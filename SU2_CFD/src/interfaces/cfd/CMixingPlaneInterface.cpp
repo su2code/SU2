@@ -83,7 +83,7 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
     su2activevector sendDonorVar(static_cast<size_t>(nSpanDonor + 1) * nMixingVars);
 
     if (markDonor != -1) {
-      for (auto iSpan = 0u; iSpan < nSpanDonor + 1; iSpan++) {
+      for (auto iSpan = 0; iSpan < nSpanDonor + 1; iSpan++) {
         GetDonor_Variable(donor_solution, donor_geometry, donor_config, markDonor, iSpan, 0);
         for (auto iVar = 0u; iVar < nMixingVars; iVar++) sendDonorVar[iSpan * nMixingVars + iVar] = Donor_Variable[iVar];
         sendDonorMarker[iSpan] = markDonor;
