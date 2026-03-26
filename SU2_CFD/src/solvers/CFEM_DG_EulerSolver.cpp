@@ -33,6 +33,7 @@
 #include "../../include/fluid/CPengRobinson.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
 #include "../../include/fluid/CDataDrivenFluid.hpp"
+#include "../../include/fluid/CNasaGas.hpp"
 
 enum {
 SIZE_ARR_NORM = 8
@@ -914,6 +915,21 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       }
 
       break;
+
+    case NASA_GAS:
+      FluidModel = new CNasaGas(Gamma, config->GetGas_Constant(), config->GetCompute_Entropy());
+      FluidModel->SetCpModel(config, 1.0);
+      if (free_stream_temp) {
+        FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+        Density_FreeStream = FluidModel->GetDensity();
+        config->SetDensity_FreeStream(Density_FreeStream);
+      }
+      else {
+        FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+        Temperature_FreeStream = FluidModel->GetTemperature();
+        config->SetTemperature_FreeStream(Temperature_FreeStream);
+      }
+      break;
   }
 
   Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
@@ -1121,6 +1137,12 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       FluidModel = new CDataDrivenFluid(config);
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
+
+    case NASA_GAS:
+      FluidModel = new CNasaGas(Gamma, Gas_ConstantND, config->GetCompute_Entropy());
+      FluidModel->SetCpModel(config, config->GetTemperature_Ref());
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      break;
   }
 
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -1290,6 +1312,9 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       break;
     case PR_GAS:
       ModelTable << "PR_GAS";
+      break;
+    case NASA_GAS:
+      ModelTable << "NASA_GAS";
       break;
     case COOLPROP:
       ModelTable << "CoolProp library";

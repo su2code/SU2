@@ -45,6 +45,7 @@
 #include "../../include/fluid/CCoolPropViscosity.hpp"
 #include "../../include/fluid/CConstantLewisDiffusivity.hpp"
 #include "../../include/fluid/CCoolPropConductivity.hpp"
+#include "../../include/fluid/CNasaGas.hpp"
 
 unique_ptr<CViscosityModel> CFluidModel::MakeLaminarViscosityModel(const CConfig* config, unsigned short iSpecies) {
   switch (config->GetKind_ViscosityModel()) {

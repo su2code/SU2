@@ -912,6 +912,9 @@ private:
   array<su2double, N_POLY_COEFFS> CpPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for specific heat Cp. */
   array<su2double, N_POLY_COEFFS> MuPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for viscosity. */
   array<su2double, N_POLY_COEFFS> KtPolyCoefficientsND{{0.0}};  /*!< \brief Definition of the non-dimensional temperature polynomial coefficients for thermal conductivity. */
+  array<su2double, N_NASA_POLY_COEFFS> NASA_CpLowPolyCoefficients{{0.0}};  /*!< \brief Definition of the NASA temperature polynomial coefficients for specific heat Cp (low temperature range). */
+  array<su2double, N_NASA_POLY_COEFFS> NASA_CpHighPolyCoefficients{{0.0}}; /*!< \brief Definition of the NASA temperature polynomial coefficients for specific heat Cp (high temperature range). */
+  su2double NASA_TransitionTemperature; /*!< \brief Transition temperature for the NASA polynomial gas model. */
   su2double TurbIntensityAndViscRatioFreeStream[2]; /*!< \brief Freestream turbulent intensity and viscosity ratio for turbulence and transition models. */
   su2double Energy_FreeStream,     /*!< \brief Free-stream total energy of the fluid.  */
   ModVel_FreeStream,               /*!< \brief Magnitude of the free-stream velocity of the fluid.  */
@@ -1125,6 +1128,9 @@ private:
   array<su2double, N_POLY_COEFFS> cp_polycoeffs{{0.0}};  /*!< \brief Array for specific heat polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
+  array<su2double, N_NASA_POLY_COEFFS> nasa_cp_low_polycoeffs{{0.0}};  /*!< \brief Array for NASA high temperature polynomial coefficients. */
+  array<su2double, N_NASA_POLY_COEFFS> nasa_cp_high_polycoeffs{{0.0}}; /*!< \brief Array for NASA high temperature polynomial coefficients. */
+  su2double nasa_transition_temperature; /*!< \brief Transition temperature for the NASA polynomial gas model. */
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
 
   struct CMUSCLRampParam {

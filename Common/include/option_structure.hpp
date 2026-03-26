@@ -202,6 +202,7 @@ constexpr passivedouble COLORING_EFF_THRESH = 0.875;  /*!< \brief Below this val
    Cp(T) = b0 + b1*T + b2*T^2 + b3*T^3 + b4*T^4. By default, all coeffs
    are set to zero and will be properly non-dim. in the solver. ---*/
 constexpr int N_POLY_COEFFS = 5; /*!< \brief Number of coefficients in temperature polynomial fits for fluid models. */
+constexpr int N_NASA_POLY_COEFFS = 7; /*!< \brief Number of coefficients in NASA temperature polynomial fits. */
 
 /*!
  * \brief Boolean answers
@@ -551,6 +552,7 @@ enum ENUM_FLUIDMODEL {
   COOLPROP = 10,          /*!< \brief Thermodynamics library. */
   FLUID_FLAMELET = 11,    /*!< \brief lookup table (LUT) method for premixed flamelets. */
   DATADRIVEN_FLUID = 12,  /*!< \brief multi-layer perceptron driven fluid model. */
+  NASA_GAS = 13,          /*!< \brief NASA polynomial ideal gas model. */
 };
 static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("STANDARD_AIR", STANDARD_AIR)
@@ -566,6 +568,7 @@ static const MapType<std::string, ENUM_FLUIDMODEL> FluidModel_Map = {
   MakePair("COOLPROP", COOLPROP)
   MakePair("DATADRIVEN_FLUID", DATADRIVEN_FLUID)
   MakePair("FLUID_FLAMELET", FLUID_FLAMELET)
+  MakePair("NASA_GAS", NASA_GAS)
 };
 
 /*!

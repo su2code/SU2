@@ -882,6 +882,13 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       auxFluidModel = new CDataDrivenFluid(config);
 
       break;
+
+    case NASA_GAS:
+
+      auxFluidModel = new CNasaGas(Gamma, config->GetGas_Constant());
+      auxFluidModel->SetCpModel(config, 1.0);
+
+      break;
     case COOLPROP:
 
       auxFluidModel = new CCoolProp(config->GetFluid_Name());
@@ -1133,6 +1140,11 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         FluidModel[thread] = new CDataDrivenFluid(config, false);
         break;
 
+      case NASA_GAS:
+        FluidModel[thread] = new CNasaGas(Gamma, Gas_ConstantND);
+        GetFluidModel()->SetCpModel(config, config->GetTemperature_Ref());
+        break;
+
       case COOLPROP:
         FluidModel[thread] = new CCoolProp(config->GetFluid_Name());
         break;
@@ -1310,6 +1322,9 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       break;
     case PR_GAS:
       ModelTable << "PR_GAS";
+      break;
+    case NASA_GAS:
+      ModelTable << "NASA_GAS";
       break;
     case COOLPROP:
       ModelTable << "CoolProp library";

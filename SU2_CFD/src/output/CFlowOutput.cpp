@@ -250,8 +250,19 @@ void CFlowOutput::SetAnalyzeSurface(const CSolver* const*solver, const CGeometry
             Mach              = sqrt(Velocity2)/SoundSpeed;
             Temperature       = Pressure / (Gas_Constant * Density);
             Enthalpy          = flow_nodes->GetEnthalpy(iPoint);
-            TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
-            TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
+            if (config->GetKind_FluidModel() == NASA_GAS) {
+              TotalTemperature = Temperature;
+              TotalPressure = Pressure;
+              // For variable Cp, we'd need an iterative or approximate approach for stagnation properties.
+              // For now, use a simplified approach or leave as static if complex.
+              // A common approximation for small Mach: Tt = T + V^2/(2*Cp)
+              TotalTemperature  = Temperature + 0.5 * Velocity2 / flow_nodes->GetSpecificHeatCp(iPoint);
+              // Pt approximation: Pt = P * (Tt/T)^(Cp/R)
+              TotalPressure     = Pressure * pow(TotalTemperature / Temperature, flow_nodes->GetSpecificHeatCp(iPoint) / Gas_Constant);
+            } else {
+              TotalTemperature  = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
+              TotalPressure     = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
+            }
           }
 
           /*--- Compute the mass Surface_MassFlow ---*/

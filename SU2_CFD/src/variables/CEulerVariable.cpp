@@ -33,7 +33,8 @@ unsigned long EulerNPrimVarGrad(const CConfig *config, unsigned long ndim) {
   if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) return ndim + 1;
 
   const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR ||
-                         config->GetKind_FluidModel() == IDEAL_GAS;
+                         config->GetKind_FluidModel() == IDEAL_GAS ||
+                         config->GetKind_FluidModel() == NASA_GAS;
   const bool low_mach = config->Low_Mach_Correction();
   if (ideal_gas && !low_mach &&
     (config->GetKind_Upwind_Flow() == UPWIND::ROE || config->GetKind_Upwind_Flow() == UPWIND::MSW)) {
