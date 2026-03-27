@@ -106,7 +106,7 @@ inline double GetNormal(unsigned long nodeIndex, unsigned long dim, unsigned lon
  * \param[in] x Argument of Bessel funtion.
  * \return Value of Bessel function.
  */
-inline double GetBesselZero(double x) {
+inline su2double GetBesselZero(su2double x) {
   double abx = fabs(x);
   if (abx < 3.75) {
     double t = abx / 3.75;
