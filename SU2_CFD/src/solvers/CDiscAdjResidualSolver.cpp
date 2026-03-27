@@ -325,7 +325,8 @@ void CDiscAdjResidualSolver::RegisterOutput(CGeometry* geometry, CConfig* config
     for (unsigned long iVar = 0; iVar < nVar; ++iVar) {
       AD::RegisterOutput(direct_solver->LinSysRes(iPoint, iVar));
 
-      AD::SetIndex(AD_ResidualIndex(iPoint, iVar), direct_solver->LinSysRes(iPoint, iVar));
+      auto& residual_index = AD_ResidualIndex(iPoint, iVar);
+      AD::SetIndex(residual_index, direct_solver->LinSysRes(iPoint, iVar));
     }
   }
   END_SU2_OMP_FOR
