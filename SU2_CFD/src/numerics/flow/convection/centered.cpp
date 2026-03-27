@@ -328,9 +328,6 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim]    = V_i[iDim+1];
     Velocity_j[iDim]    = V_j[iDim+1];
-  }  
-
-  for (iDim = 0; iDim < nDim; iDim++) {
     MeanVelocity[iDim]  =  0.5*(Velocity_i[iDim]+Velocity_j[iDim]);
     sq_vel_i           += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
     sq_vel_j           += 0.5*Velocity_j[iDim]*Velocity_j[iDim];
