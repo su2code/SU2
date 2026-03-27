@@ -99,7 +99,7 @@ CDiscAdjResidualSolver::CDiscAdjResidualSolver(CGeometry *geometry, CConfig *con
     Partial_Prod_dCoordinates_dDisplacements[iMarker].resize(nVertex, nDim) = su2double(0.0);
   }
 
-  AD_ResidualIndex.resize(nPoint, nVar) = -1;
+  AD_ResidualIndex.resize(nPoint, nVar) = AD::Identifier(-1);
 
   /*--- Sensitivity definition and coefficient in all the markers. ---*/
 

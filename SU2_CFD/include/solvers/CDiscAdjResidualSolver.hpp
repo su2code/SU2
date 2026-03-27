@@ -56,7 +56,7 @@ class CDiscAdjResidualSolver final : public CSolver {
     vector<su2matrix<su2double>> Partial_Sens_dObjective_dDisplacements;    /*!< \brief Partial sensitivity of the objective w.r.t. the boundary displacements . */
     vector<su2matrix<su2double>> Partial_Prod_dResiduals_dDisplacements;    /*!< \brief Partial sensitivity of the residuals w.r.t. the boundary displacements (matrix-vector product with adjoint vector). */
     vector<su2matrix<su2double>> Partial_Prod_dTractions_dDisplacements;    /*!< \brief Partial sensitivity of the tractions w.r.t. the boundary displacements (matrix-vector product with traction adjoints). */
-    su2matrix<int> AD_ResidualIndex;    /*!< \brief Indices of Residual variables in the adjoint vector. */
+    su2matrix<AD::Identifier> AD_ResidualIndex;    /*!< \brief Indices of Residual variables in the adjoint vector. */
 
     vector<vector<su2double>> CSensitivity; /*!< \brief Shape sensitivity coefficient for each boundary and vertex. */
     vector<su2double> Sens_Geo;             /*!< \brief Total shape sensitivity for each monitored boundary. */
