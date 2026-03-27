@@ -34,8 +34,8 @@ CMeshBoundVariable::CMeshBoundVariable(unsigned long npoint, unsigned long ndim,
 
   /*--- Allocate the AD indices ---*/
   if (config->GetDiscrete_Adjoint()) {
-    AD_InputIndex.resize(nPoint,nDim) = -1;
-    AD_OutputIndex.resize(nPoint,nDim) = -1;
+    AD_InputIndex.resize(nPoint,nDim) = AD::GetPassiveIndex();
+    AD_OutputIndex.resize(nPoint,nDim) = AD::GetPassiveIndex();
   }
 }
 
