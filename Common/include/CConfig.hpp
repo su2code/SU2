@@ -1097,7 +1097,7 @@ private:
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint;                /*!< \brief AD-based discrete adjoint mode. */
   ENUM_DISC_ADJ_TYPE Kind_DiscreteAdjoint; /*!< \brief AD-based discrete adjoint formulation. */
-  DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
+  bool DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
   su2double Const_DES;                 /*!< \brief Detached Eddy Simulation Constant. */
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
