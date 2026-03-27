@@ -115,7 +115,7 @@ inline double GetBesselZero(double x) {
   } else {
     double t = 3.75 / abx;
     double poly = 0.39894228 + t * (0.01328592 + t * (0.00225319 + t * (-0.00157565 + t * (0.00916281 + t * (-0.02057706 + t * (0.02635537 + t * (-0.01647633 + t * 0.00392377)))))));
-    return abx - 0.5 * log(abx) + log(poly);
+    return abx - log(sqrt(abx) * poly);
   }
 }
 
