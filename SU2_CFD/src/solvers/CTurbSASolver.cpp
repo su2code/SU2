@@ -1633,7 +1633,7 @@ void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry)
   const su2double dummySource = 1e3;
   bool stochBackscatterInBox = config->GetStochBackscatterInBox();
   
-  SU2_OMP_FOR_DYN(omp_chunk_size)
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   if (stochBackscatterInBox && timeIter==restartIter) {
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
       const auto coord = geometry->nodes->GetCoord(iPoint);
