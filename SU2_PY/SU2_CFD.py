@@ -30,7 +30,7 @@
 # ----------------------------------------------------------------------
 
 from __future__ import division, print_function, absolute_import
-from optparse import OptionParser  # use a parser for configuration
+import argparse  # use a parser for configuration
 import SU2  # imports SU2 python tools
 import pysu2  # imports the SU2 wrapped module
 
@@ -42,67 +42,67 @@ import pysu2  # imports the SU2 wrapped module
 def main():
 
     # Command line options
-    parser = OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "-f", "--file", dest="filename", help="Read config from FILE", metavar="FILE"
     )
-    parser.add_option(
+    parser.add_argument(
         "--nDim",
         dest="nDim",
         default=2,
         help="Define the number of DIMENSIONS",
         metavar="DIMENSIONS",
     )
-    parser.add_option(
+    parser.add_argument(
         "--nZone",
         dest="nZone",
         default=1,
         help="Define the number of ZONES",
         metavar="NZONE",
     )
-    parser.add_option(
+    parser.add_argument(
         "--parallel",
         action="store_true",
         help="Specify if we need to initialize MPI",
         dest="with_MPI",
         default=False,
     )
-    parser.add_option(
+    parser.add_argument(
         "--fsi",
         dest="fsi",
         default="False",
         help="Launch the FSI driver",
         metavar="FSI",
     )
-    parser.add_option(
+    parser.add_argument(
         "--fem",
         dest="fem",
         default="False",
         help="Launch the FEM driver (General driver)",
         metavar="FEM",
     )
-    parser.add_option(
+    parser.add_argument(
         "--harmonic_balance",
         dest="harmonic_balance",
         default="False",
         help="Launch the Harmonic Balance (HB) driver",
         metavar="HB",
     )
-    parser.add_option(
+    parser.add_argument(
         "--poisson_equation",
         dest="poisson_equation",
         default="False",
         help="Launch the poisson equation driver (General driver)",
         metavar="POIS_EQ",
     )
-    parser.add_option(
+    parser.add_argument(
         "--wave_equation",
         dest="wave_equation",
         default="False",
         help="Launch the wave equation driver (General driver)",
         metavar="WAVE_EQ",
     )
-    parser.add_option(
+    parser.add_argument(
         "--heat_equation",
         dest="heat_equation",
         default="False",
@@ -110,7 +110,7 @@ def main():
         metavar="HEAT_EQ",
     )
 
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     options.nDim = int(options.nDim)
     options.nZone = int(options.nZone)
     options.fsi = options.fsi.upper() == "TRUE"

@@ -1793,6 +1793,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("ENGINE_INFLOW_TYPE", Kind_Engine_Inflow, Engine_Inflow_Map, FAN_FACE_MACH);
   /* DESCRIPTION: Evaluate a problem with engines */
   addBoolOption("ENGINE", Engine, false);
+  /* DESCRIPTION: Use exhaust mass flow as inlet mass flow. */
+  addBoolOption("ENGINE_EXHAUST_TO_INLET", out2in_mdot_engine, false);
 
   /* DESCRIPTION:  Sharpness coefficient for the buffet sensor */
   addDoubleOption("BUFFET_K", Buffet_k, 10.0);

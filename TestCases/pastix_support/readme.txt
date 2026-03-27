@@ -5,81 +5,43 @@
 % File Version 8.4.0 "Harrier"                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% 1 - Download
-% Get PaStiX 5.2.3 from https://gforge.inria.fr/frs/?group_id=186
-% Get Scotch 6.0.6 from https://gforge.inria.fr/projects/scotch
-% Note: These two versions were tested on a number of platforms, some
-% issues were encountered with more recent version of Scotch, and PaStiX
-% 6.0.X is not compatible with SU2 as it does not support MPI yet.
+% 1 - Build and install dependencies
+%  - A BLAS library with LAPACK and LAPACKE support (e.g. OpenBLAS),
+%    sequential versions are required (threading is managed by the solver).
+%  - Scotch and PT-Scotch.
+%  - HWLOC (recommended for PaStiX).
+% If you use your OS package manager for these, the PaStiX and SU2 build
+% systems should be able to find them automatically.
+% If you build them from source and install in a custom location, you will
+% need to use CPATH, LIBRARY_PATH, and LD_LIBRARY_PATH for the build
+% systems to find them.
 %
-% 2 - Build Scotch
-% Extract the tarball downloaded in 1 into "externals"
-% Rename the directory as "scotch"
-% cd scotch/src && cp Make.inc/Makefile.inc.x86-64_pc_linux2.XXXX Makefile.inc
-% (choose the XXXX that matches your compiler)
-% Edit Makefile.inc and delete the cflag -DSCOTCH_PTHREAD (see why in 3-ii)
-% "make ptscotch"
-%
-% Note: If you build SU2 (7.0.1+) with OpenMP support (-Dwith-omp=true),
-%       AND your system supports MPI_THREAD_MULTIPLE, you do not need to
-%       delete the -DSCOTCH_PTHREAD flag (but doing so does no harm).
-%
-% 3 - Build PaStiX
-% Extract the tarball downloaded in 1 into "externals"
-% Rename the directory as "pastix"
-% cd pastix/src && cp config/LINUX-XXXX.in config.in
-% (again choose the XXXX that matches your compiler)
-% Edit config.in
-%  i   - Uncomment the lines for "VERSIONINT  = _int32"
-%  ii  - Uncomment the lines for "VERSIONSMP  = _nosmp",
-%        SU2 does not currently support MPI+Threads.
-%  iii - Set SCOTCH_HOME as SCOTCH_HOME ?= ${PWD}/../../scotch/
-%  iv  - Comment out the lines for "Hardware Locality", this may only be
-%        important for an MPI+Threads build (usually it is not).
-%  v   - Optionally look at the BLAS section (only required by "make examples")
-% "make all"
-%
-% Note: If you build SU2 (7.0.1+) with OpenMP support (-Dwith-omp=true),
-%       skip 3-ii, note however that this may not work well with SU2_CFD_AD.
-%       If you do use MPI+Threads, it is important for good performance that your
-%       system supports MPI_THREAD_MULTIPLE (SU2_CFD --thread_multiple ...)
-%       Furthermore, if MPI_THREAD_MULTIPLE is NOT supported, you need to
-%       uncomment the line with "-DPASTIX_FUNNELED" in config.in.
-%       Finally, if you just use threads (no MPI) this is not important.
+% 2 - Build PaStiX
+% Get PaStiX 6.X.X from https://gitlab.inria.fr/solverstack/pastix.git
+% Follow their build instructions, make sure to compile it with support
+% for MPI and PT-Scotch (see the cmake flags).
+% You may need to adjust the integer type from 64 to 32 bits depending
+% on how your version of Scotch was built.
 %
 % 4 - Build SU2
 % Follow the normal meson build instructions, add -Denable-pastix=true,
 % this requires you to compile with MKL (-Denable-mkl=true) or OpenBLAS
 % (-Denable-openblas=true) support in your call to meson.py.
-% If you did not build PaStiX and Scotch in the externals folders you must
-% use -Dpastix_root="some path" and -Dscotch_root="another path" to
-% indicate where they are RELATIVE to the SU2 directory.
-% You need sequential versions of BLAS. But when using MPI+Threads beware that
-% OpenBLAS needs to have parallel support otherwise the solver will crash, if
-% you get poor performance see 5.4 below.
+% The reliable way for meson to find PaStiX is use PKG_CONFIG_PATH to
+% make the pastix.pc.in file discoverable. For the other dependencies,
+% see #1. You should build with OpenMP to get the best performance,
+% using only MPI with PaStiX is not efficient.
 %
-% 5 - Common problems and known issues
-% - OpenMPI 4 does not work with PaStiX 5, downgrade to 3.1.4.
-% - Very early versions of OpenMPI 3 may have problems with MPI types.
-% - OpenBLAS build fails when linking executables. Old versions (e.g.
-%   0.2.18) did not provide LAPACK support, rebuild or upgrade.
-% - Very bad performance with OpenBLAS on some systems (observed on Ubuntu
-%   16.04) try "export OMP_NUM_THREADS=1" before running SU2, check that
-%   you only see N SU2 processes running at 100% (mpirun -n N SU2_XXX).
-% - Cannot find BLAS dependency:
-%   i   - On some OS the package has a different name (e.g. Ubuntu 16.04
-%     blas-openblas instead of openblas), use -Dblas-name="right name" in
-%     call to meson.py
-%   ii  - The name is right but meson cannot find it. Set env variable
-%     PKG_CONFIG_PATH=$PKG_CONFIG_PATH:"directory with someblas.pc file"
-% - MKL is not in its standard directory (/opt/intel/mkl), use option
-%   -Dmkl_root="non standard directory" in call to meson.py (headers are
-%   expected in "include" and libraries in "lib/intel64").
+% 5 - Running SU2
+% When running with MPI + OpenMP you need to pay attention to core and
+% thread binding to get the best performance. For example, to use 2 ranks
+% with 8 threads each (effectively) you may need something like:
+% mpirun -n 2 --map-by NUMA:PE=8 SU2_CFD -t 8 --thread_multiple config.cfg
+% otherwise the MPI implementation may not let each rank use the requested
+% threads, or PaStiX/HWLOC may bind the threads of different ranks to the
+% same core. Different MPI versions may have other arguments.
 %
 % 6 - Tested platforms
-% - Ubuntu 18.04, gcc 7.4, ompi 3.1.4, mkl 2017, openblas 0.2.20 and 0.3.2.dev
-% - Ubuntu 16.04, gcc 5.4, ompi 3.1.4, mkl 2017 and 2019
-% - CentOS 7.6.1810, gcc 5.4, ompi 3.1.4, mkl 2017
-% - CentOS 7.6.1810, gcc 5.4, impi 2018, mkl 2019
-% - CentOS 7.6.1810, gcc 8.2, impi 2018, mkl 2019
+% - Ubuntu 24.04 (gcc 13), ompi 5.0.6, default OpenBLAS, Scotch, PT-Scotch,
+%   and HWLOC (i.e. from apt install ...).
 %
