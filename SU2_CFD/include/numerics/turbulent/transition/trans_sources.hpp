@@ -388,6 +388,8 @@ class CSourcePieceWise_TransAFT final : public CNumerics {
     AD::SetPreaccIn(PrimVar_Grad_i, nDim + idx.Velocity(), nDim);
     AD::SetPreaccIn(Vorticity_i, 3);
     AD::SetPreaccIn(AuxVar_Grad_i, 2);
+    AD::SetPreaccIn(WallNormal, nDim);
+    AD::SetPreaccIn(Coord_i);
 
     su2double VorticityMag =
         sqrt(Vorticity_i[0] * Vorticity_i[0] + Vorticity_i[1] * Vorticity_i[1] + Vorticity_i[2] * Vorticity_i[2]);
@@ -414,15 +416,11 @@ class CSourcePieceWise_TransAFT final : public CNumerics {
 
     if (dist_i > 1e-10) {
       su2double HLGradTerm = 0.0;
-      HLGradTerm = AuxVar_Grad_i[1][0] * AuxVar_Grad_i[0][0] + AuxVar_Grad_i[1][1] * AuxVar_Grad_i[0][1];
-      if(nDim == 3) {
-        HLGradTerm += AuxVar_Grad_i[1][2] * AuxVar_Grad_i[0][2];
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+       HLGradTerm +=  AuxVar_Grad_i[1][iDim] * AuxVar_Grad_i[0][iDim];
       }
-      su2double HL = 0.0;
-      HL = dist_i * dist_i / Laminar_Viscosity_i  * HLGradTerm;
-      
 
-      
+      const su2double HL = dist_i * dist_i / Laminar_Viscosity_i * HLGradTerm;
       /*--- Cal H12, dNdRet, Ret0, D_H12, l_H12, m_H12, kv ---*/
       const su2double H12 = TransCorrelations.H12_Correlations(HL);
       const su2double dNdRet = TransCorrelations.dNdRet_Correlations(H12);
@@ -431,7 +429,7 @@ class CSourcePieceWise_TransAFT final : public CNumerics {
       const su2double l_H12 = TransCorrelations.l_Correlations(H12);
       const su2double m_H12 = TransCorrelations.m_Correlations(H12, l_H12);
       const su2double kv = TransCorrelations.kv_Correlations(H12);
-      const su2double Rev = Density_i * dist_i * dist_i * StrainMag_i / (Laminar_Viscosity_i + Eddy_Viscosity_i) * 2.0;
+      const su2double Rev = Density_i * dist_i * dist_i * StrainMag_i / (Laminar_Viscosity_i + Eddy_Viscosity_i);
       const su2double Rev0 = kv * Ret0;
 
 

@@ -1529,7 +1529,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
       break;
 
     case TURB_TRANS_MODEL::AFT:
-      //nodes -> SetAFT_Wonder_Func(iPoint, HL, H12, dNdRet, Ret0, D_H12, l_H12, m_H12, kv, Rev, Rev0, F_growth, F_crit, PAF, Pg, Dg);
+      //nodes -> SetAFT_Wonder_Func(iPoint, HL, H12, dNdRet, Ret0, D_H12, l_H12, m_H12, kv, Rev, Rev0, F_growth, F_crit, PAF, Pg, HL_Grad);
       AddVolumeOutput("HL", "HL", "PRIMITIVE", "HL");
       AddVolumeOutput("H12", "H12", "PRIMITIVE", "H12");
       AddVolumeOutput("dNdRet", "dNdRet", "PRIMITIVE", "dNdRet");
@@ -1540,11 +1540,11 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
       AddVolumeOutput("kv", "kv", "PRIMITIVE", "kv");
       AddVolumeOutput("Rev", "Rev", "PRIMITIVE", "Rev");
       AddVolumeOutput("Rev0", "Rev0", "PRIMITIVE", "Rev0");
-      AddVolumeOutput("F_growth", "F_growth", "PRIMITIVE", "F_growth");
-      AddVolumeOutput("F_crit", "F_crit", "PRIMITIVE", "F_crit");
-      AddVolumeOutput("PAF", "PAF", "PRIMITIVE", "PAF");
-      AddVolumeOutput("Pg", "Pg", "PRIMITIVE", "Pg");
-      AddVolumeOutput("Dg", "Dg", "PRIMITIVE", "Dg");
+      AddVolumeOutput("Grad_d_x", "Grad_d_x", "PRIMITIVE", "Grad_d_x");
+      AddVolumeOutput("Grad_d_y", "Grad_d_y", "PRIMITIVE", "Grad_d_y");
+      AddVolumeOutput("Wall_Normal_x", "Wall_Normal_x", "PRIMITIVE", "Wall_Normal_x");
+      AddVolumeOutput("Wall_Normal_y", "Wall_Normal_y", "PRIMITIVE", "Wall_Normal_y");
+      AddVolumeOutput("HL_Grad", "HL_Grad", "PRIMITIVE", "HL_Grad");
       break;
 
     case TURB_TRANS_MODEL::NONE:
@@ -1720,11 +1720,11 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("kv", iPoint, Node_Trans->GetAFT_Wonder_Func_var8(iPoint));
       SetVolumeOutputValue("Rev", iPoint, Node_Trans->GetAFT_Wonder_Func_var9(iPoint));
       SetVolumeOutputValue("Rev0", iPoint, Node_Trans->GetAFT_Wonder_Func_var10(iPoint));
-      SetVolumeOutputValue("F_growth", iPoint, Node_Trans->GetAFT_Wonder_Func_var11(iPoint));
-      SetVolumeOutputValue("F_crit", iPoint, Node_Trans->GetAFT_Wonder_Func_var12(iPoint));
-      SetVolumeOutputValue("PAF", iPoint, Node_Trans->GetAFT_Wonder_Func_var13(iPoint));
-      SetVolumeOutputValue("Pg", iPoint, Node_Trans->GetAFT_Wonder_Func_var14(iPoint));
-      SetVolumeOutputValue("Dg", iPoint, Node_Trans->GetAFT_Wonder_Func_var15(iPoint));
+      SetVolumeOutputValue("Grad_d_x", iPoint, Node_Trans->GetAFT_Wonder_Func_var11(iPoint));
+      SetVolumeOutputValue("Grad_d_y", iPoint, Node_Trans->GetAFT_Wonder_Func_var12(iPoint));
+      SetVolumeOutputValue("Wall_Normal_x", iPoint, Node_Trans->GetAFT_Wonder_Func_var13(iPoint));
+      SetVolumeOutputValue("Wall_Normal_y", iPoint, Node_Trans->GetAFT_Wonder_Func_var14(iPoint));
+      SetVolumeOutputValue("HL_Grad", iPoint, Node_Trans->GetAFT_Wonder_Func_var15(iPoint));
 
     case TURB_TRANS_MODEL::NONE: break;
   }

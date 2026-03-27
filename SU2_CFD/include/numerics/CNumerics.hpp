@@ -166,6 +166,7 @@ protected:
   Neighbor_i,  /*!< \brief Number of neighbors of the point i. */
   Neighbor_j;  /*!< \brief Number of neighbors of the point j. */
   const su2double *Normal = nullptr;      /*!< \brief Normal vector, its norm is the area of the face. */
+  const su2double *WallNormal = nullptr;      /*!< \brief Wall Normal unit vector. */
   su2double UnitNormal[MAXNDIM] = {0.0};  /*!< \brief Unitary normal vector. */
   su2double
   TimeStep,    /*!< \brief Time step useful in dual time method. */
@@ -973,6 +974,12 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    */
   inline void SetNormal(const su2double *val_normal) { Normal = val_normal; }
+
+  /*!
+   * \brief Set the value of the wall normal unit vector.
+   * \param[in] val_wallnormal - Wall normal unit vector.
+   */
+  inline void SetWallNormal(const su2double *val_wallnormal) { WallNormal = val_wallnormal; }
 
   /*!
    * \brief Set the value of the volume of the control volume.
