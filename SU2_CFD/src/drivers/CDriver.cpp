@@ -810,7 +810,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
   geometry[MESH_0]->SetMGLevel(MESH_0);
   if ((config->GetnMGLevels() != 0) && (rank == MASTER_NODE))
-    cout << "Setting the multigrid structure." << endl;
+    cout << "Setting the multigrid structure. NMG="<< config->GetnMGLevels() << endl;
 
   /*--- Loop over all the new grid ---*/
 
