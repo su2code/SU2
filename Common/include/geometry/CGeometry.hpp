@@ -1401,6 +1401,16 @@ class CGeometry {
   inline virtual void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) {}
 
   /*!
+   * \brief Get a reference to the sensitivity matrix.
+   * \return Reference to the sensitivity matrix.
+   */
+  inline virtual const su2activematrix& GetSensitivityMatrix() const {
+    SU2_MPI::Error("GetSensitivityMatrix not implemented for this geometry type.", CURRENT_FUNCTION);
+    static su2activematrix sens_matrix;
+    return sens_matrix;
+  }
+
+  /*!
    * \brief Get the average normal at a specific span for a given marker in the turbomachinery reference of frame.
    * \param[in] val_marker - marker value.
    * \param[in] val_span - span value.

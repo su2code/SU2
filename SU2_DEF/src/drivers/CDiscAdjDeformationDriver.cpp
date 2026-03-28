@@ -1005,59 +1005,17 @@ void CDiscAdjDeformationDriver::DerivativeTreatment_Gradient(CGeometry* geometry
   }
 }
 
-vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSensitivities() const {
-  const auto nPoint = GetNumberNodes();
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    values.push_back(GetObjectiveCoordinatesTotalSensitivities(iPoint));
-  }
-
-  return values;
+CPyWrapperMatrixView CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSensitivities() const {
+  auto& sensitivity = const_cast<su2activematrix&>(geometry_container[ZONE_0][INST_0][MESH_0]->GetSensitivityMatrix());
+  return CPyWrapperMatrixView(sensitivity, "ObjectiveCoordinatesTotalSensitivities", true);
 }
 
-vector<passivedouble> CDiscAdjDeformationDriver::GetObjectiveCoordinatesTotalSensitivities(unsigned long iPoint) const {
-  if (iPoint >= GetNumberNodes()) {
-    SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
-  }
-
-  vector<passivedouble> values(nDim, 0.0);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    const su2double value = geometry_container[ZONE_0][INST_0][MESH_0]->GetSensitivity(iPoint, iDim);
-
-    values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
-}
-
-vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivities(
+CPyWrapperMarkerMatrixView CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivities(
     unsigned short iMarker) const {
-  const auto nVertex = GetNumberMarkerNodes(iMarker);
-
-  vector<vector<passivedouble>> values;
-
-  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
-    values.push_back(GetMarkerObjectiveCoordinatesTotalSensitivities(iMarker, iVertex));
-  }
-
-  return values;
-}
-
-vector<passivedouble> CDiscAdjDeformationDriver::GetMarkerObjectiveCoordinatesTotalSensitivities(
-    unsigned short iMarker, unsigned long iVertex) const {
-  const auto iPoint = GetMarkerNode(iMarker, iVertex);
-  vector<passivedouble> values(nDim, 0.0);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    const su2double value = geometry_container[ZONE_0][INST_0][MESH_0]->GetSensitivity(iPoint, iDim);
-
-    values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
+  if (iMarker >= GetNumberMarkers()) SU2_MPI::Error("Marker index exceeds size.", CURRENT_FUNCTION);
+  auto& sensitivity = const_cast<su2activematrix&>(geometry_container[ZONE_0][INST_0][MESH_0]->GetSensitivityMatrix());
+  return CPyWrapperMarkerMatrixView(sensitivity, main_geometry->vertex[iMarker], main_geometry->GetnVertex(iMarker),
+                                    "MarkerObjectiveCoordinatesTotalSensitivities", true);
 }
 
 vector<vector<passivedouble>> CDiscAdjDeformationDriver::GetObjectiveDesignVariablesTotalSensitivities() const {

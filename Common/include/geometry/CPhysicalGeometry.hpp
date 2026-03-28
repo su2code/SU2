@@ -780,6 +780,12 @@ class CPhysicalGeometry final : public CGeometry {
   }
 
   /*!
+   * \brief Get a reference to the sensitivity matrix.
+   * \return Reference to the sensitivity matrix.
+   */
+  inline const su2activematrix& GetSensitivityMatrix() const override { return Sensitivity; }
+
+  /*!
    * \brief Check the mesh for periodicity and deactivate multigrid if periodicity is found.
    * \param[in] config - Definition of the particular problem.
    */
