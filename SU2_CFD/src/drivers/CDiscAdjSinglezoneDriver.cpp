@@ -273,12 +273,12 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
   for (nKrylov_Iter = nAdjoint_Iter; nKrylov_Iter >= KrylovMinIters && eps > KrylovSysTol;) {
     std::cout << "Adjoint iteration: " << nKrylov_Iter << " ... " << std::endl;
 
-    auto nIter = min(nKrylov_Iter - 2ul, config_container[iZone]->GetnQuasiNewtonSamples() - 2ul);
+    auto nIter = min(nKrylov_Iter - 2ul, config->GetnQuasiNewtonSamples() - 2ul);
     Scalar eps_l = 0.0;
     Scalar tol_l = KrylovSysTol / eps;
 
     nIter = AdjSolver.FGMRES_LinSolver(AdjRHS, AdjSol, *AdjOperator, *AdjPreconditioner, tol_l, nIter, eps_l, monitor,
-                                       config_container[ZONE_0]);
+                                       config);
     nKrylov_Iter -= nIter + 1;
 
     eps *= eps_l;
