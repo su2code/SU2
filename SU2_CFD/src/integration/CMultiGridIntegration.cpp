@@ -27,7 +27,6 @@
 
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
-#include <functional>
 
 /*!
  * \brief Compute the global RMS of LinSysRes across all variables and MPI ranks.
@@ -53,18 +52,18 @@ static su2double ComputeLinSysResRMS(const CSolver* solver, const CGeometry* geo
 /*!\cond PRIVATE Helper: shared logic for adapting a single MG damping factor.
  *  Inputs:
  *    performed[]  - actual iteration counts per level from this cycle
+ *    progress[]   - whether residuals decreased per level
  *    getConfigured - returns the per-level configured maximum
- *    nLevels       - number of levels to inspect (levels 0..nLevels inclusive)
- *    getLower      - lowest level index to start from (1 for restriction, 0 for prolongation)
+ *    levelStart/End - level range to inspect
  *    getCurrent    - returns the current damping factor from config
  *    setPersist    - persists the updated factor back to config
  \endcond */
+template <typename GetCfg, typename GetCur, typename SetPersist>
 static void adaptMGDampingFactor(const unsigned short* performed,
                                   const bool* progress,
-                                  std::function<unsigned short(unsigned short)> getConfigured,
+                                  GetCfg getConfigured,
                                   unsigned short levelStart, unsigned short levelEnd,
-                                  std::function<su2double()> getCurrent,
-                                  std::function<void(su2double)> setPersist) {
+                                  GetCur getCurrent, SetPersist setPersist) {
   int local_any_stagnant  = 0;  /*--- hit max iters AND residuals did not decrease → scale down. ---*/
   int local_all_early     = 1;  /*--- all levels exited before max iters → scale up. ---*/
   int local_inspected     = 0;
@@ -109,27 +108,27 @@ void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
   adaptMGDampingFactor(
     lastPreSmoothIters,
     lastPreSmoothProgress,
-    [&](unsigned short lvl){ return config->GetMG_PreSmooth(lvl); },
+    [config](unsigned short lvl){ return config->GetMG_PreSmooth(lvl); },
     /*levelStart=*/1, nMGLevels,
-    [&](){ return config->GetDamp_Res_Restric(); },
-    [&](su2double v){ config->SetDamp_Res_Restric(v); });
+    [config](){ return config->GetDamp_Res_Restric(); },
+    [config](su2double v){ config->SetDamp_Res_Restric(v); });
 }
 
 void CMultiGridIntegration::adaptProlongationDamping(CConfig* config) {
   /*--- Signal: post-smoothing workload on levels 0..nMGLevels-1.
    *    Post-smoothing directly measures whether the corrected fine-grid solution
    *    is well-behaved after prolongation.  If it exits early, the correction was
-   *    clean → increase damping.  If it stagnates at max iters, the correction was
-   *    too aggressive → decrease damping. ---*/
+   *    clean : increase damping.  If it stagnates at max iters, the correction was
+   *    too aggressive : decrease damping. ---*/
   const unsigned short nMGLevels = config->GetnMGLevels();
   if (nMGLevels == 0) return;
   adaptMGDampingFactor(
     lastPostSmoothIters,
     lastPostSmoothProgress,
-    [&](unsigned short lvl){ return config->GetMG_PostSmooth(lvl); },
+    [config](unsigned short lvl){ return config->GetMG_PostSmooth(lvl); },
     /*levelStart=*/0, static_cast<unsigned short>(nMGLevels - 1),
-    [&](){ return config->GetDamp_Correc_Prolong(); },
-    [&](su2double v){ config->SetDamp_Correc_Prolong(v); });
+    [config](){ return config->GetDamp_Correc_Prolong(); },
+    [config](su2double v){ config->SetDamp_Correc_Prolong(v); });
 }
 
 passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,

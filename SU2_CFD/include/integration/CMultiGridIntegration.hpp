@@ -230,35 +230,33 @@ private:
                                      unsigned short iMesh, passivedouble CFL_fine, passivedouble CFL_coarse_current);
 
   /*!
-   * \brief Adapt the residual restriction damping factor based on pre-smoothing workload.
+   * \brief Adapt the residual restriction damping factor.
    *
    * Uses \c lastPreSmoothIters[] (filled by the previous multigrid cycle) to assess
    * whether the pre-smoother is converging fast or slow on coarse levels, then adjusts
-   * \c Damp_Res_Restric in \p config accordingly.  Must be called after a complete
-   * V/W-cycle from a single-thread OMP context (i.e., inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS).
+   * \c Damp_Res_Restric in \p config accordingly.
    *
    * Signal logic:
-   *  - any coarse level ran its full configured iterations → smoother is struggling → reduce damping
-   *  - all coarse levels exited early (performed < configured) → smoother converges fast → increase damping
-   *  - mixed (some full, some partial) → no change
+   *  - any coarse level ran its full configured iterations: reduce damping
+   *  - all coarse levels exited early: increase damping
+   *  - mixed (some full, some partial): no change
    *
-   * \param[in,out] config - Problem configuration; \c SetDamp_Res_Restric is called to persist the result.
+   * \param[in,out] config - Problem configuration.
    */
   void adaptRestrictionDamping(CConfig* config);
 
   /*!
-   * \brief Adapt the correction prolongation damping factor based on correction-smoothing workload.
+   * \brief Adapt the correction prolongation damping factor.
    *
    * Uses \c lastCorrecSmoothIters[] (filled by the previous multigrid cycle) to assess
    * whether the correction smoother is working hard (prolongation injected too much error)
    * or converging fast (prolongation correction is clean), then adjusts \c Damp_Correc_Prolong
-   * in \p config accordingly.  Must be called after a complete V/W-cycle from a
-   * single-thread OMP context (i.e., inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS).
+   * in \p config accordingly.
    *
    * Signal logic:
-   *  - any level ran its full correction-smooth iterations → prolongation too aggressive → reduce damping
-   *  - all levels exited early → prolongation correction clean → increase damping
-   *  - mixed → no change
+   *  - any level ran its full correction-smooth iterations: reduce damping
+   *  - all levels exited early: increase damping
+   *  - mixed: no change
    *
    * \param[in,out] config - Problem configuration; \c SetDamp_Correc_Prolong is called to persist the result.
    */
