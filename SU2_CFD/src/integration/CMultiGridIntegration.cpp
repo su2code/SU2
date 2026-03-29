@@ -546,7 +546,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     }
     END_SU2_OMP_FOR
 
-    SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), 1.25, config, iMesh);
+    SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), config->GetMG_Smooth_Coeff(), config, iMesh);
 
     SetProlongated_Correction(solver_fine, geometry_fine, config, iMesh);
 
@@ -820,7 +820,6 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   const su2double *Residual_Old, *Residual_Sum, *Residual_j;
 
   const unsigned short nVar = solver->GetnVar();
-  const bool early_exit = config->GetMG_Smooth_EarlyExit() && (val_nSmooth > 1);
 
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -829,16 +828,13 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   }
   END_SU2_OMP_FOR
 
-  /*--- Compute initial RMS and reset the shared early-exit flag (master only). ---*/
+  /*--- Record initial correction norm for debugging output. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  {
-    mg_early_exit_flag = false;
-    lastCorrecSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver, geometry);
-    if (early_exit) mg_initial_smooth_rms = lastCorrecSmoothRMS[iMesh][0];
-  }
+  { lastCorrecSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver, geometry); }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  /*--- Jacobi iterations with optional early exit. ---*/
+  /*--- Jacobi iterations (no early exit — Jacobi targets high-frequency modes,
+   *    so the global RMS is not a meaningful convergence indicator). ---*/
 
   for (auto iSmooth = 0u; iSmooth < val_nSmooth; iSmooth++) {
 
@@ -890,33 +886,11 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
       }
     }
 
-    /*--- Early exit: check if RMS has dropped sufficiently (master only, then broadcast via flag). ---*/
-    if (early_exit) {
-      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-      {
-        su2double current_rms = ComputeLinSysResRMS(solver, geometry);
-        if (current_rms < config->GetMG_Smooth_Res_Threshold() * mg_initial_smooth_rms) {
-          lastCorrecSmoothIters[iMesh] = static_cast<unsigned short>(iSmooth + 1);
-          mg_early_exit_flag = true;
-        }
-      }
-      END_SU2_OMP_SAFE_GLOBAL_ACCESS
-      if (mg_early_exit_flag) break;
-    }
-
   }
 
-  /*--- Record final RMS, progress flag, and (for early-exit path) re-use already-computed value. ---*/
+  /*--- Record final correction norm for debugging output. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  {
-    if (early_exit && mg_early_exit_flag) {
-      lastCorrecSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver, geometry);
-      lastCorrecSmoothProgress[iMesh] = true;
-    } else {
-      lastCorrecSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver, geometry);
-      lastCorrecSmoothProgress[iMesh] = (lastCorrecSmoothRMS[iMesh][1] < lastCorrecSmoothRMS[iMesh][0]);
-    }
-  }
+  { lastCorrecSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver, geometry); }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
 }
@@ -926,7 +900,15 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   su2double *Solution_Fine, *Residual_Fine;
 
   const unsigned short nVar = sol_fine->GetnVar();
-  const su2double factor = config->GetDamp_Correc_Prolong();
+
+  /*--- Level-dependent damping: coarser prolongations produce noisier corrections
+   *    due to larger cell-size jumps, so we reduce the factor progressively.
+   *    iMesh=0: factor = base_damp * 1.0  (finest grid, full correction)
+   *    iMesh=1: factor = base_damp * 0.75
+   *    iMesh=2: factor = base_damp * 0.5625, etc. ---*/
+  const su2double base_damp = config->GetDamp_Correc_Prolong();
+  const su2double level_factor = pow(0.75, static_cast<su2double>(iMesh));
+  const su2double factor = base_damp * level_factor;
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Fine = 0ul; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {

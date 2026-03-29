@@ -1990,6 +1990,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MG_Smooth_Res_Threshold, 0.1);
   /*!\brief MG_SMOOTH_OUTPUT\n DESCRIPTION: Print compact per-cycle smoothing iteration summary. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_SMOOTH_OUTPUT", MG_Smooth_Output, false);
+  /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for the correction prolongation Jacobi smoother. DEFAULT: 1.25 \ingroup Config*/
+  addDoubleOption("MG_SMOOTH_COEFF", MG_Smooth_Coeff, 1.25);
 
   /*!\par CONFIG_CATEGORY: Spatial Discretization \ingroup Config*/
   /*--- Options related to the spatial discretization ---*/

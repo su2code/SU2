@@ -145,6 +145,7 @@ private:
   bool MG_Smooth_EarlyExit;         /*!< \brief Enable early exit for MG smoothing iterations. */
   su2double MG_Smooth_Res_Threshold; /*!< \brief RMS reduction threshold for MG smoothing early exit. */
   bool MG_Smooth_Output;            /*!< \brief Output compact per-cycle multigrid smoothing summary. */
+  su2double MG_Smooth_Coeff;         /*!< \brief Smoothing coefficient for the correction prolongation Jacobi smoother. */
   su2double Position_Plane;    /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
   su2double WeightCd;          /*!< \brief Weight of the drag coefficient. */
   su2double dCD_dCL;           /*!< \brief Fixed Cl mode derivate . */
@@ -3894,6 +3895,11 @@ public:
    * \brief Whether to print a compact per-cycle smoothing iteration summary.
    */
   bool GetMG_Smooth_Output() const { return MG_Smooth_Output; }
+
+  /*!
+   * \brief Smoothing coefficient for the correction prolongation Jacobi smoother.
+   */
+  su2double GetMG_Smooth_Coeff() const { return MG_Smooth_Coeff; }
 
   /*!
    * \brief plane of the FFD (I axis) that should be fixed.
