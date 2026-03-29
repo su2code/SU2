@@ -402,7 +402,7 @@ vector<passivedouble> CDriver::GetMarkerForceSensitivities(unsigned short iMarke
     auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
 
     for (auto iDim = 0u; iDim < nDim; iDim++) {
-      values[iPoint * nDim + iDim] = SU2_TYPE::GetValue(
+      values[iVertex * nDim + iDim] = SU2_TYPE::GetValue(
           solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL]->GetNodes()->GetFlowTractionSensitivity(iPoint, iDim));
     }
   }
