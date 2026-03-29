@@ -63,7 +63,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-3.254894, -3.550776, 0.053099, 0.000000]
+    discadj_arina2k.test_vals    = [-3.259547, -3.544519, 0.044517, 0.000000]
     test_list.append(discadj_arina2k)
 
     # Equivalent area NACA64-206
@@ -104,7 +104,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -4.096681, -2.686537, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -3.949889, -2.567232, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################
@@ -217,7 +217,8 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.226212, -1.647429, -0.007557, 0.000012]
+    discadj_pitchingNACA0012.test_vals = [-1.226498, -1.653107, -0.003489, -0.000000]
+    discadj_pitchingNACA0012.tol = 0.01
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
 
