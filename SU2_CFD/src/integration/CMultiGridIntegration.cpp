@@ -28,6 +28,27 @@
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
+/*!
+ * \brief Compute the global RMS of LinSysRes across all variables and MPI ranks.
+ *        Must be called from a single-thread context (e.g. inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS).
+ */
+static su2double ComputeLinSysResRMS(const CSolver* solver, const CGeometry* geometry) {
+  const unsigned short nVar = solver->GetnVar();
+  const unsigned long nPointDomain = geometry->GetnPointDomain();
+  su2double localSum = 0.0;
+  for (unsigned long i = 0; i < nPointDomain; ++i) {
+    const su2double* res = solver->LinSysRes.GetBlock(i);
+    for (unsigned short v = 0; v < nVar; ++v)
+      localSum += res[v] * res[v];
+  }
+  su2double globalSum = 0.0;
+  unsigned long globalNPoint = 0;
+  SU2_MPI::Allreduce(&localSum, &globalSum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&nPointDomain, &globalNPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  if (globalNPoint == 0) return 0.0;
+  return sqrt(globalSum / static_cast<su2double>(globalNPoint * nVar));
+}
+
 passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,
                                                           unsigned short iMesh, passivedouble CFL_fine, passivedouble CFL_coarse_current) {
 
@@ -219,6 +240,19 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
 
+  /*--- Initialize per-level smoothing iteration counters to the configured maximum.
+   *    If early exit never fires, the output will show actual == max. ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
+    for (unsigned short i = 0; i <= nMGLevels; ++i) {
+      lastPreSmoothIters[i]   = config[iZone]->GetMG_PreSmooth(i);
+      lastPostSmoothIters[i]  = config[iZone]->GetMG_PostSmooth(i);
+      lastCorrecSmoothIters[i] = config[iZone]->GetMG_CorrecSmooth(i);
+    }
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
   /// TODO: This was always false.
   const bool Convergence_FullMG = false;
 
@@ -256,6 +290,31 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   NonDimensional_Parameters(geometry[iZone][iInst], solver_container[iZone][iInst],
                             numerics_container[iZone][iInst], config[iZone],
                             FinestMesh, RunTime_EqSystem, &monitor);
+
+  /*--- Print compact smoothing summary when MG_SMOOTH_OUTPUT= YES. ---*/
+  if (config[iZone]->GetMG_Smooth_Output()) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      if (SU2_MPI::GetRank() == MASTER_NODE) {
+        const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
+        auto printRow = [&](const char* label, const unsigned short* actual,
+                            auto getMax, unsigned short nLevels) {
+          cout << label;
+          for (unsigned short i = 0; i <= nLevels; ++i) {
+            cout << (i == 0 ? "(" : ", ") << actual[i] << "/" << getMax(i);
+          }
+          cout << ")\n";
+        };
+        printRow("Pre-smooth  : ", lastPreSmoothIters,
+                 [&](unsigned short i){ return config[iZone]->GetMG_PreSmooth(i); }, nMGLevels);
+        printRow("Post-smooth : ", lastPostSmoothIters,
+                 [&](unsigned short i){ return config[iZone]->GetMG_PostSmooth(i); }, nMGLevels - 1);
+        printRow("Corr.-smooth: ", lastCorrecSmoothIters,
+                 [&](unsigned short i){ return config[iZone]->GetMG_CorrecSmooth(i); }, nMGLevels - 1);
+      }
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
   }
   END_SU2_OMP_PARALLEL
@@ -374,7 +433,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     }
     END_SU2_OMP_FOR
 
-    SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), 1.25, config);
+    SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), 1.25, config, iMesh);
 
     SetProlongated_Correction(solver_fine, geometry_fine, config, iMesh);
 
@@ -402,6 +461,17 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
   const unsigned short nPreSmooth = config->GetMG_PreSmooth(iMesh);
   const unsigned long timeIter = config->GetTimeIter();
+  const bool early_exit = config->GetMG_Smooth_EarlyExit() && (nPreSmooth > 1);
+
+  /*--- Compute initial RMS and reset the shared early-exit flag (master only). ---*/
+  if (early_exit) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      mg_early_exit_flag = false;
+      mg_initial_smooth_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
   for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
@@ -431,6 +501,20 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
     }
+
+    /*--- Early exit: check if RMS has dropped sufficiently (master only, then broadcast via flag). ---*/
+    if (early_exit) {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      {
+        su2double current_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
+        if (current_rms < config->GetMG_Smooth_Res_Threshold() * mg_initial_smooth_rms) {
+          lastPreSmoothIters[iMesh] = iPreSmooth + 1;
+          mg_early_exit_flag = true;
+        }
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      if (mg_early_exit_flag) break;
+    }
   }
 }
 
@@ -447,6 +531,17 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
   const unsigned short nPostSmooth = config->GetMG_PostSmooth(iMesh);
   const unsigned long timeIter = config->GetTimeIter();
+  const bool early_exit = config->GetMG_Smooth_EarlyExit() && (nPostSmooth > 1);
+
+  /*--- Compute initial RMS and reset the shared early-exit flag (master only). ---*/
+  if (early_exit) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      mg_early_exit_flag = false;
+      mg_initial_smooth_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
   /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
   for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
@@ -459,7 +554,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
         solver_fine->Set_OldSolution();
 
         if (classical_rk4) solver_fine->Set_NewSolution();
-        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  timeIter);
+        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh, timeIter);
       }
 
       /*--- Space integration ---*/
@@ -471,6 +566,20 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
 
+    }
+
+    /*--- Early exit: check if RMS has dropped sufficiently (master only, then broadcast via flag). ---*/
+    if (early_exit) {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      {
+        su2double current_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
+        if (current_rms < config->GetMG_Smooth_Res_Threshold() * mg_initial_smooth_rms) {
+          lastPostSmoothIters[iMesh] = iPostSmooth + 1;
+          mg_early_exit_flag = true;
+        }
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      if (mg_early_exit_flag) break;
     }
   }
 }
@@ -527,7 +636,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
       for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- For dirichlet boundary condtions, set the correction to zero.
+        /*--- For dirichlet boundary conditions, set the correction to zero.
          Note that Solution_Old stores the correction not the actual value ---*/
 
         su2double zero[3] = {0.0};
@@ -555,7 +664,8 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 }
 
 void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-                                                         unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) {
+                                                         unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config,
+                                                         unsigned short iMesh) {
 
   /*--- Check if there is work to do. ---*/
   if (val_nSmooth == 0) return;
@@ -563,6 +673,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   const su2double *Residual_Old, *Residual_Sum, *Residual_j;
 
   const unsigned short nVar = solver->GetnVar();
+  const bool early_exit = config->GetMG_Smooth_EarlyExit() && (val_nSmooth > 1);
 
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -571,7 +682,17 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   }
   END_SU2_OMP_FOR
 
-  /*--- Jacobi iterations. ---*/
+  /*--- Compute initial RMS and reset the shared early-exit flag (master only). ---*/
+  if (early_exit) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      mg_early_exit_flag = false;
+      mg_initial_smooth_rms = ComputeLinSysResRMS(solver, geometry);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
+
+  /*--- Jacobi iterations with optional early exit. ---*/
 
   for (auto iSmooth = 0u; iSmooth < val_nSmooth; iSmooth++) {
 
@@ -621,6 +742,20 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
         }
         END_SU2_OMP_FOR
       }
+    }
+
+    /*--- Early exit: check if RMS has dropped sufficiently (master only, then broadcast via flag). ---*/
+    if (early_exit) {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      {
+        su2double current_rms = ComputeLinSysResRMS(solver, geometry);
+        if (current_rms < config->GetMG_Smooth_Res_Threshold() * mg_initial_smooth_rms) {
+          lastCorrecSmoothIters[iMesh] = static_cast<unsigned short>(iSmooth + 1);
+          mg_early_exit_flag = true;
+        }
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      if (mg_early_exit_flag) break;
     }
 
   }

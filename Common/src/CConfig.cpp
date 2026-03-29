@@ -1984,6 +1984,12 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.75);
   /*!\brief MG_DAMP_PROLONGATION\n DESCRIPTION: Damping factor for the correction prolongation. DEFAULT 0.75 \ingroup Config*/
   addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.75);
+  /*!\brief MG_SMOOTH_EARLY_EXIT\n DESCRIPTION: Enable early exit for MG smoothing when RMS drops below threshold. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_SMOOTH_EARLY_EXIT", MG_Smooth_EarlyExit, false);
+  /*!\brief MG_SMOOTH_RES_THRESHOLD\n DESCRIPTION: Smoothing stops when current_rms < threshold * initial_rms. DEFAULT: 0.1 \ingroup Config*/
+  addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MG_Smooth_Res_Threshold, 0.1);
+  /*!\brief MG_SMOOTH_OUTPUT\n DESCRIPTION: Print compact per-cycle smoothing iteration summary. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_SMOOTH_OUTPUT", MG_Smooth_Output, false);
 
   /*!\par CONFIG_CATEGORY: Spatial Discretization \ingroup Config*/
   /*--- Options related to the spatial discretization ---*/

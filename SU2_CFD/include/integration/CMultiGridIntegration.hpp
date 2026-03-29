@@ -190,7 +190,8 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-                                    unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config);
+                                    unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config,
+                                    unsigned short iMesh);
 
   /*!
    * \brief Restrict solution from fine grid to a coarse grid.
@@ -241,5 +242,14 @@ private:
   unsigned long last_check_iter[MAX_MG_LEVELS] = {};
   unsigned long last_update_iter[MAX_MG_LEVELS] = {};
   unsigned long last_reset_iter = std::numeric_limits<unsigned long>::max();
+
+  /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
+  bool mg_early_exit_flag = false;          /*!< \brief Shared flag for early exit across OMP threads. */
+  su2double mg_initial_smooth_rms = 0.0;   /*!< \brief Initial RMS before current smoothing phase. */
+
+  /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
+  unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
+  unsigned short lastPostSmoothIters[MAX_MG_LEVELS+1] = {};
+  unsigned short lastCorrecSmoothIters[MAX_MG_LEVELS+1] = {};
 
 };
