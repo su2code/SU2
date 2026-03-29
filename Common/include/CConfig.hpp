@@ -6853,10 +6853,22 @@ public:
   su2double GetDamp_Res_Restric(void) const { return Damp_Res_Restric; }
 
   /*!
+   * \brief Set the damping factor for the residual restriction (used by adaptive MG damping).
+   * \param[in] val - New damping factor value.
+   */
+  void SetDamp_Res_Restric(su2double val) { Damp_Res_Restric = val; }
+
+  /*!
    * \brief Value of the damping factor for the correction prolongation.
    * \return Value of the damping factor.
    */
   su2double GetDamp_Correc_Prolong(void) const { return Damp_Correc_Prolong; }
+
+  /*!
+   * \brief Set the damping factor for the correction prolongation (used by adaptive MG damping).
+   * \param[in] val - New damping factor value.
+   */
+  void SetDamp_Correc_Prolong(su2double val) { Damp_Correc_Prolong = val; }
 
   /*!
    * \brief Value of the position of the Near Field (y coordinate for 2D, and z coordinate for 3D).

@@ -229,6 +229,41 @@ private:
   passivedouble computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,
                                      unsigned short iMesh, passivedouble CFL_fine, passivedouble CFL_coarse_current);
 
+  /*!
+   * \brief Adapt the residual restriction damping factor based on pre-smoothing workload.
+   *
+   * Uses \c lastPreSmoothIters[] (filled by the previous multigrid cycle) to assess
+   * whether the pre-smoother is converging fast or slow on coarse levels, then adjusts
+   * \c Damp_Res_Restric in \p config accordingly.  Must be called after a complete
+   * V/W-cycle from a single-thread OMP context (i.e., inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS).
+   *
+   * Signal logic:
+   *  - any coarse level ran its full configured iterations → smoother is struggling → reduce damping
+   *  - all coarse levels exited early (performed < configured) → smoother converges fast → increase damping
+   *  - mixed (some full, some partial) → no change
+   *
+   * \param[in,out] config - Problem configuration; \c SetDamp_Res_Restric is called to persist the result.
+   */
+  void adaptRestrictionDamping(CConfig* config);
+
+  /*!
+   * \brief Adapt the correction prolongation damping factor based on correction-smoothing workload.
+   *
+   * Uses \c lastCorrecSmoothIters[] (filled by the previous multigrid cycle) to assess
+   * whether the correction smoother is working hard (prolongation injected too much error)
+   * or converging fast (prolongation correction is clean), then adjusts \c Damp_Correc_Prolong
+   * in \p config accordingly.  Must be called after a complete V/W-cycle from a
+   * single-thread OMP context (i.e., inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS).
+   *
+   * Signal logic:
+   *  - any level ran its full correction-smooth iterations → prolongation too aggressive → reduce damping
+   *  - all levels exited early → prolongation correction clean → increase damping
+   *  - mixed → no change
+   *
+   * \param[in,out] config - Problem configuration; \c SetDamp_Correc_Prolong is called to persist the result.
+   */
+  void adaptProlongationDamping(CConfig* config);
+
   /*--- CFL adaptation state variables.
    *    These must be passivedouble: AD::Reset() clears the tape between adjoint recordings,
    *    but class members survive. If these were su2double their stale AD indices would
@@ -251,5 +286,19 @@ private:
   unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
   unsigned short lastPostSmoothIters[MAX_MG_LEVELS+1] = {};
   unsigned short lastCorrecSmoothIters[MAX_MG_LEVELS+1] = {};
+
+  /*--- Per-level residual progress flags: true if the final RMS after that phase was lower
+   *    than the initial RMS.  Used by the adaptive damping routines to distinguish
+   *    "hit max iters but still converging" from "hit max iters and stagnated". ---*/
+  bool lastPreSmoothProgress[MAX_MG_LEVELS+1] = {};
+  bool lastPostSmoothProgress[MAX_MG_LEVELS+1] = {};
+  bool lastCorrecSmoothProgress[MAX_MG_LEVELS+1] = {};
+
+  /*--- Per-level start/end RMS for the compact output summary.
+   *    [0] = initial RMS before smoothing, [1] = final RMS after smoothing.
+   *    Filled unconditionally (early-exit path and exhaustion path). ---*/
+  su2double lastPreSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+  su2double lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+  su2double lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
 
 };
