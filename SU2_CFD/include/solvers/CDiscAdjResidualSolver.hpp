@@ -203,22 +203,6 @@ class CDiscAdjResidualSolver final : public CSolver {
     }
 
     /*!
-     * \brief Get matrix-vector product dxvdxv^T x psi.
-     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
-     * \param[in] iDim - Dimension index.
-     */
-    su2double GetProd_dCoordinates_dCoordinates(unsigned long iPoint, unsigned short iDim) const override;
-
-    /*!
-     * \brief Get matrix-vector product dxvdua^T x psi.
-     * \param[in] iMarker - Marker identifier.
-     * \param[in] iVertex - Vertex on marker where the sensitivity is computed.
-     * \param[in] iDim - Dimension index.
-     */
-    su2double GetProd_dCoordinates_dDisplacements(unsigned short iMarker, unsigned long iVertex,
-                                                  unsigned short iDim) const override;
-
-    /*!
      * \brief Get partial derivative dIdxt.
      * \param[in] iTrim - Trim variable index.
      */
@@ -229,75 +213,6 @@ class CDiscAdjResidualSolver final : public CSolver {
      * \param[in] iTrim - Trim variable index.
      */
     su2double GetProd_dResiduals_dVariables(unsigned short iTrim) const override;
-
-    /*!
-     * \brief Get partial derivative dIdq.
-     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
-     * \param[in] iVar - Variable index.
-     */
-    su2double GetSens_dObjective_dStates(unsigned long iPoint, unsigned short iVar) const override;
-
-    /*!
-     * \brief Get matrix-vector product dAdq^T x psi.
-     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
-     * \param[in] iVar - Variable index.
-     */
-    su2double GetProd_dResiduals_dStates(unsigned long iPoint, unsigned short iVar) const override;
-
-    /*!
-     * \brief Get matrix-vector product dfadq^T x psi.
-     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
-     * \param[in] iVar - Variable index.
-     */
-    su2double GetProd_dTractions_dStates(unsigned long iPoint, unsigned short iVar) const override;
-
-    /*!
-     * \brief Get partial derivative dIdx.
-     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
-     * \param[in] iDim - Dimension index.
-     */
-    su2double GetSens_dObjective_dCoordinates(unsigned long iPoint, unsigned short iDim) const override;
-
-    /*!
-     * \brief Get matrix-vector product dAdx^T x psi.
-     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
-     * \param[in] iDim - Dimension index.
-     */
-    su2double GetProd_dResiduals_dCoordinates(unsigned long iPoint, unsigned short iDim) const override;
-
-    /*!
-     * \brief Get matrix-vector product dfadx^T x psi.
-     * \param[in] iPoint - Vertex in fluid domain where the sensitivity is computed.
-     * \param[in] iDim - Dimension index.
-     */
-    su2double GetProd_dTractions_dCoordinates(unsigned long iPoint, unsigned short iDim) const override;
-
-    /*!
-     * \brief Get partial derivative dIdua.
-     * \param[in] iMarker - Marker identifier.
-     * \param[in] iVertex - Vertex on marker where the sensitivity is computed.
-     * \param[in] iDim - Dimension index.
-     */
-    su2double GetSens_dObjective_dDisplacements(unsigned short iMarker, unsigned long iVertex,
-                                                unsigned short iDim) const override;
-
-    /*!
-     * \brief Get matrix-vector product dAdua^T x psi.
-     * \param[in] iMarker - Marker identifier.
-     * \param[in] iVertex - Vertex on marker where the sensitivity is computed.
-     * \param[in] iDim - Dimension index.
-     */
-    su2double GetProd_dResiduals_dDisplacements(unsigned short iMarker, unsigned long iVertex,
-                                                unsigned short iDim) const override;
-
-    /*!
-     * \brief Get matrix-vector product dfadua^T x psi.
-     * \param[in] iMarker - Marker identifier.
-     * \param[in] iVertex - Vertex on marker where the sensitivity is computed.
-     * \param[in] iDim - Dimension index.
-     */
-    su2double GetProd_dTractions_dDisplacements(unsigned short iMarker, unsigned long iVertex,
-                                                unsigned short iDim) const override;
 
     /*!
      * \brief Set the right-hand side adjoint source term.

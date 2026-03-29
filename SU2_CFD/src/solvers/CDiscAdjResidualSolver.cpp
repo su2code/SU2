@@ -602,56 +602,12 @@ void CDiscAdjResidualSolver::SetSurface_Sensitivity(CGeometry* geometry, CConfig
   SU2_OMP_BARRIER
 }
 
-su2double CDiscAdjResidualSolver::GetProd_dCoordinates_dCoordinates(unsigned long iPoint, unsigned short iDim) const {
-  return Partial_Prod_dCoordinates_dCoordinates(iPoint, iDim);
-}
-
-su2double CDiscAdjResidualSolver::GetProd_dCoordinates_dDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
-  return Partial_Prod_dCoordinates_dDisplacements[iMarker](iVertex, iDim);
-}
-
 su2double CDiscAdjResidualSolver::GetSens_dObjective_dVariables(unsigned short iTrim) const {
   return Partial_Sens_dObjective_dVariables(iTrim);
 }
 
 su2double CDiscAdjResidualSolver::GetProd_dResiduals_dVariables(unsigned short iTrim) const {
   return Partial_Prod_dResiduals_dVariables(iTrim);
-}
-
-su2double CDiscAdjResidualSolver::GetSens_dObjective_dStates(unsigned long iPoint, unsigned short iVar) const {
-  return Partial_Sens_dObjective_dStates(iPoint, iVar);
-}
-
-su2double CDiscAdjResidualSolver::GetProd_dResiduals_dStates(unsigned long iPoint, unsigned short iVar) const {
-  return Partial_Prod_dResiduals_dStates(iPoint, iVar);
-}
-
-su2double CDiscAdjResidualSolver::GetProd_dTractions_dStates(unsigned long iPoint, unsigned short iVar) const {
-  return Partial_Prod_dTractions_dStates(iPoint, iVar);
-}
-
-su2double CDiscAdjResidualSolver::GetSens_dObjective_dCoordinates(unsigned long iPoint, unsigned short iDim) const {
-  return Partial_Sens_dObjective_dCoordinates(iPoint, iDim);
-}
-
-su2double CDiscAdjResidualSolver::GetProd_dResiduals_dCoordinates(unsigned long iPoint, unsigned short iDim) const {
-  return Partial_Prod_dResiduals_dCoordinates(iPoint, iDim);
-}
-
-su2double CDiscAdjResidualSolver::GetProd_dTractions_dCoordinates(unsigned long iPoint, unsigned short iDim) const {
-  return Partial_Prod_dTractions_dCoordinates(iPoint, iDim);
-}
-
-su2double CDiscAdjResidualSolver::GetSens_dObjective_dDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
-  return Partial_Sens_dObjective_dDisplacements[iMarker](iVertex, iDim);
-}
-
-su2double CDiscAdjResidualSolver::GetProd_dResiduals_dDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
-  return Partial_Prod_dResiduals_dDisplacements[iMarker](iVertex, iDim);
-}
-
-su2double CDiscAdjResidualSolver::GetProd_dTractions_dDisplacements(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
-  return Partial_Prod_dTractions_dDisplacements[iMarker](iVertex, iDim);
 }
 
 void CDiscAdjResidualSolver::SetAdjoint_SourceTerm(unsigned long iPoint, unsigned short iVar, su2double val) {

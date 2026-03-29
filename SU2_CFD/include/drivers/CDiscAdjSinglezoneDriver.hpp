@@ -254,11 +254,10 @@ public:
 
       if (!solver || !solver->GetAdjoint()) continue;
 
+      const auto& mat = solver->GetPartialMatrix_dObjective_dStates();
       for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
         for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
-          auto value = solver->GetSens_dObjective_dStates(iPoint, iVar);
-
-          values(iPoint, offset + iVar) = -SU2_TYPE::GetValue(value);
+          values(iPoint, offset + iVar) = -SU2_TYPE::GetValue(mat(iPoint, iVar));
         }
       }
 
@@ -282,11 +281,10 @@ public:
 
       if (!solver || !solver->GetAdjoint()) continue;
 
+      const auto& mat = solver->GetPartialMatrix_dResiduals_dStates();
       for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
         for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
-          auto value = solver->GetProd_dResiduals_dStates(iPoint, iVar);
-
-          values(iPoint, offset + iVar) = SU2_TYPE::GetValue(value);
+          values(iPoint, offset + iVar) = SU2_TYPE::GetValue(mat(iPoint, iVar));
         }
       }
 
