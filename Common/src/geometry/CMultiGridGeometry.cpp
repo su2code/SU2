@@ -659,10 +659,12 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
 
   const su2double ratio = su2double(Global_nPointFine) / su2double(Global_nPointCoarse);
-  cout << "********** ratio = " << ratio << endl;
-  // lower value leads to more levels being accepted.
 
-  if (((nDim == 2) && (ratio < 1.5)) || ((nDim == 3) && (ratio < 1.5))) {
+  if (Global_nPointCoarse < config->GetMG_Min_MeshSize()) {
+    if (rank == MASTER_NODE)
+      cout << "MG level " << iMesh << " has only " << Global_nPointCoarse
+           << " CVs (< MG_MIN_MESHSIZE=" << config->GetMG_Min_MeshSize()
+           << "). Reducing MG levels to " << iMesh - 1 << "." << endl;
     config->SetMGLevels(iMesh - 1);
   } else if (rank == MASTER_NODE) {
     PrintingToolbox::CTablePrinter MGTable(&std::cout);
