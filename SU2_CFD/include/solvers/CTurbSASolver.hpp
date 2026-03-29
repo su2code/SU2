@@ -54,6 +54,13 @@ private:
                           CConfig *config);
 
   /*!
+   * \brief Mark the points that are located inside the box where the Stochastic Backscatter Model is active.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition.
+   */
+  void SetBackscatterInBox(CConfig *config, CGeometry* geometry);
+
+  /*!
    * \brief Update the source terms of the stochastic equations (Stochastic Backscatter Model).
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition.

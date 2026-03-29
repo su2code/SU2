@@ -1058,6 +1058,17 @@ def main():
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 
+    # Stochastic BackScatter (SBS) model
+    sbs_backward_step            = TestCase('sbs_backward_step')
+    sbs_backward_step.cfg_dir    = "backscatter/backward_step"
+    sbs_backward_step.cfg_file   = "backwardStep.cfg"
+    sbs_backward_step.test_iter  = 10
+    sbs_backward_step.test_vals  = [-6.656162, -4.527123, -5.971187, -5.333804, -9.765638, -8.499022, -8.462351, -8.482077]
+    sbs_backward_step.unsteady   = True
+    sbs_backward_step.decompress = True
+    sbs_backward_step.grid_file  = "backward_step.su2"
+    test_list.append(sbs_backward_step)
+
     # unsteady pitching NACA0015, SA
     unst_inc_turb_naca0015_sa           = TestCase('unst_inc_turb_naca0015_sa')
     unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"

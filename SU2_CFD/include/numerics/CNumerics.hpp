@@ -664,7 +664,7 @@ public:
    * \param[in] Cmag - Stochastic backscatter intensity coefficient.
    * \param[out] stochReynStress - Stochastic tensor (to be added to the Reynolds stress tensor).
    */
-  NEVERINLINE static void ComputeStochReynStress(su2double density, su2double tke, su2double rndVec[3], 
+  inline void ComputeStochReynStress(su2double density, su2double tke, su2double rndVec[3], 
                                                  su2double Cmag, su2double stochReynStress[3][3]) {
 
     /* --- Calculate stochastic tensor --- */
@@ -683,18 +683,16 @@ public:
 
   }
 
-    /*!
+  /*!
    * \brief Compute relaxation factor for stochastic source term in momentum equations (Stochastic Backscatter Model).
    * \param[in] config - Definition of the particular problem.
    * \param[out] intensityCoeff - Relaxation factor for backscatter intensity.
    */
-  NEVERINLINE static su2double ComputeStochRelaxFactor(const CConfig* config) {
+  inline su2double ComputeStochRelaxFactor(const CConfig* config) {
 
-    unsigned long timeIter = config->GetTimeIter();
-    unsigned long restartIter = config->GetRestart_Iter();
-    su2double SBS_Cmag = config->GetSBS_Cmag();
-    su2double SBS_RelaxFactor = config->GetStochSourceRelax();
+    su2double SBS_Cmag = config->GetSBSParam().SBS_Cmag;
     su2double intensityCoeff = SBS_Cmag;
+    su2double SBS_RelaxFactor = config->GetSBSParam().stochSourceRelax;
     if (SBS_RelaxFactor > 0.0) {
       su2double FS_Vel = config->GetModVel_FreeStream();
       su2double ReynoldsLength = config->GetLength_Reynolds();

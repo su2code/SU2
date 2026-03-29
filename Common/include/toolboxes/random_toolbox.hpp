@@ -78,11 +78,10 @@ inline double HashToUniform(uint64_t x) {
  * \return Standard normal random number (mean=0, stddev=1).
  */
 inline double HashToNormal(uint64_t x) {
-    constexpr double pi = 3.14159265358979323846;
     double u = HashToUniform(x);    // first uniform
     double v = HashToUniform(~x);   // second uniform (bitwise NOT)
     double r = sqrt(-2.0 * log(u));  
-    double theta = 2.0 * pi * v;
+    double theta = 2.0 * PI_NUMBER * v;
     return r * cos(theta);          // one normal sample
 }
 
@@ -127,7 +126,7 @@ inline su2double GetBesselZero(su2double x) {
  * \param[in] beta_z Argument in z-direction.
  * \return Value of the integral.
  */
-inline double GetBesselIntegral(double beta_x, double beta_y, double beta_z) {
+inline su2double GetBesselIntegral(su2double beta_x, su2double beta_y, su2double beta_z) {
   const double A = 1.0 + 2.0 * (beta_x + beta_y + beta_z);
   const double Bx = 2.0 * beta_x;
   const double By = 2.0 * beta_y;

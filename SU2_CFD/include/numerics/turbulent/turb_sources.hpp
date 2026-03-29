@@ -160,7 +160,7 @@ class CSourceBase_TurbSA : public CNumerics {
   inline void AddStochSource(const CConfig* config, CSAVariables& var, su2double& prod) {
 
     su2double Cmag = ComputeStochRelaxFactor(config);
-    su2double threshold = config->GetStochFdThreshold();
+    su2double threshold = config->GetSBSParam().stochFdThreshold;
 
     su2double nut = ScalarVar_i[0] * var.fv1;
     su2double tke = 0.0;
@@ -191,7 +191,7 @@ class CSourceBase_TurbSA : public CNumerics {
    * \param[in] config - Definition of the particular problem.
    */
   CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
-      : CNumerics(nDim, (config->GetStochastic_Backscatter() && config->GetSBS_Ctau() > 0.0) ? 4 : 1, config),
+      : CNumerics(nDim, (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) ? 4 : 1, config),
         idx(nDim, config->GetnSpecies()),
         options(config->GetSAParsedOptions()),
         axisymmetric(config->GetAxisymmetric()),
@@ -246,15 +246,23 @@ class CSourceBase_TurbSA : public CNumerics {
       const su2double Ji_2 = pow(var.Ji, 2);
       const su2double Ji_3 = Ji_2 * var.Ji;
 
-      var.fv1 = Ji_3 / (Ji_3 + var.cv1_3);
-      if (config->GetStochastic_Backscatter() && lesMode_i > 0.0) var.fv1 = 1.0;
-      var.d_fv1 = 3 * Ji_2 * var.cv1_3 / (nu * pow(Ji_3 + var.cv1_3, 2));
+      if (config->GetSBSParam().StochasticBackscatter && lesMode_i > config->GetSBSParam().stochFdThreshold) {
+        var.fv1 = 1.0;
+        var.d_fv1 = 0.0;
+      } else {
+        var.fv1 = Ji_3 / (Ji_3 + var.cv1_3);
+        var.d_fv1 = 3 * Ji_2 * var.cv1_3 / (nu * pow(Ji_3 + var.cv1_3, 2));
+      }
 
       /*--- Using a modified relation so as to not change the Shat that depends on fv2.
        * From NASA turb modeling resource and 2003 paper. ---*/
-      var.fv2 = 1 - ScalarVar_i[0] / (nu + ScalarVar_i[0] * var.fv1);
-      if (config->GetStochastic_Backscatter() && lesMode_i > 0.0) var.fv2 = 0.0;
-      var.d_fv2 = -(1 / nu - Ji_2 * var.d_fv1) / pow(1 + var.Ji * var.fv1, 2);
+      if (config->GetSBSParam().StochasticBackscatter && lesMode_i > config->GetSBSParam().stochFdThreshold) {
+        var.fv2 = 0.0;
+        var.d_fv2 = 0.0;
+      } else {
+        var.fv2 = 1 - ScalarVar_i[0] / (nu + ScalarVar_i[0] * var.fv1);
+        var.d_fv2 = -(1 / nu - Ji_2 * var.d_fv1) / pow(1 + var.Ji * var.fv1, 2);
+      }
 
       /*--- Evaluate Omega with a rotational correction term. ---*/
 
@@ -278,14 +286,17 @@ class CSourceBase_TurbSA : public CNumerics {
       /*--- Compute auxiliary function r ---*/
       rFunc::get(ScalarVar_i[0], var);
 
-      var.g = var.r + var.cw2 * (pow(var.r, 6) - var.r);
-      var.g_6 = pow(var.g, 6);
-      var.glim = pow((1 + var.cw3_6) / (var.g_6 + var.cw3_6), 1.0 / 6.0);
-      var.fw = var.g * var.glim;
-      if (config->GetStochastic_Backscatter() && lesMode_i > 0.0) var.fw = 1.0;
-
-      var.d_g = var.d_r * (1 + var.cw2 * (6 * pow(var.r, 5) - 1));
-      var.d_fw = var.d_g * var.glim * (1 - var.g_6 / (var.g_6 + var.cw3_6));
+      if (config->GetSBSParam().StochasticBackscatter && lesMode_i > config->GetSBSParam().stochFdThreshold) {
+        var.fw = 0.0;
+        var.d_fw = 0.0;
+      } else {
+        var.g = var.r + var.cw2 * (pow(var.r, 6) - var.r);
+        var.g_6 = pow(var.g, 6);
+        var.glim = pow((1 + var.cw3_6) / (var.g_6 + var.cw3_6), 1.0 / 6.0);
+        var.fw = var.g * var.glim;
+        var.d_g = var.d_r * (1 + var.cw2 * (6 * pow(var.r, 5) - 1));
+        var.d_fw = var.d_g * var.glim * (1 - var.g_6 / (var.g_6 + var.cw3_6));
+      }
 
       var.norm2_Grad = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0]);
 
@@ -329,7 +340,7 @@ class CSourceBase_TurbSA : public CNumerics {
       su2double Production = 0.0, Destruction = 0.0;
       SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, Jacobian_i[0][0]);
 
-      if (config->GetStochastic_Backscatter() && config->GetStochSourceNu())
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().stochSourceNu)
         AddStochSource(config, var, Production);
 
       Residual[0] = (Production - Destruction) * Volume;
@@ -340,10 +351,10 @@ class CSourceBase_TurbSA : public CNumerics {
 
       /*--- Compute residual for Langevin equations (Stochastic Backscatter Model). ---*/
 
-      if (config->GetStochastic_Backscatter() && config->GetSBS_Ctau() > 0.0) {
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
         const su2double DES_const = config->GetConst_DES();
-        ResidualStochEquations(config->GetDelta_UnstTime(), config->GetSBS_Ctau(), dist_i, DES_const,
-                               var, config->GetTime_Marching(), config->GetStochFdThreshold());
+        ResidualStochEquations(config->GetDelta_UnstTime(), config->GetSBSParam().SBS_Ctau, dist_i, DES_const,
+                               var, config->GetTime_Marching(), config->GetSBSParam().stochFdThreshold);
       }
     }
 

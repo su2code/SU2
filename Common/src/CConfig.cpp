@@ -2962,43 +2962,43 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
   /* DESCRIPTION: SBS lengthscale coefficient */
-  addDoubleOption("SBS_LENGTHSCALE_COEFF", SBS_Cdelta, 0.02);
+  addDoubleOption("SBS_LENGTHSCALE_COEFF", SBSParam.SBS_Cdelta, 0.02);
 
   /* DESCRIPTION: Maximum number of smoothing iterations for SBS model. */
-  addUnsignedShortOption("SBS_MAX_ITER_SMOOTH", SBS_maxIterSmooth, 100);
+  addUnsignedShortOption("SBS_MAX_ITER_SMOOTH", SBSParam.SBS_maxIterSmooth, 100);
 
   /* DESCRIPTION: SBS timescale coefficient */
-  addDoubleOption("SBS_TIMESCALE_COEFF", SBS_Ctau, 0.05);
+  addDoubleOption("SBS_TIMESCALE_COEFF", SBSParam.SBS_Ctau, 0.05);
 
   /* DESCRIPTION: SBS intensity coefficient */
-  addDoubleOption("SBS_INTENSITY_COEFF", SBS_Cmag, 1.0);
+  addDoubleOption("SBS_INTENSITY_COEFF", SBSParam.SBS_Cmag, 1.0);
 
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
   addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
 
   /* DESCRIPTION: Specify if the Stochastic Backscatter Model must be activated */
-  addBoolOption("STOCHASTIC_BACKSCATTER", StochasticBackscatter, false);
+  addBoolOption("STOCHASTIC_BACKSCATTER", SBSParam.StochasticBackscatter, false);
 
   /* DESCRIPTION: Specify if the LES mode must be enforced */
   addBoolOption("ENFORCE_LES", enforceLES, false);
 
   /* DESCRIPTION: Specify if the stochastic source term must be included in the turbulence model equation */
-  addBoolOption("SBS_SOURCE_NU_EQUATION", stochSourceNu, true);
+  addBoolOption("SBS_SOURCE_NU_EQUATION", SBSParam.stochSourceNu, true);
 
   /* DESCRIPTION: Enable diagnostics of the stochastic source term in Langevin equation. */
-  addBoolOption("SBS_SOURCE_DIAGNOSTICS", stochSourceDiagnostics, false);
+  addBoolOption("SBS_SOURCE_DIAGNOSTICS", SBSParam.stochSourceDiagnostics, false);
 
   /* DESCRIPTION: Relaxation factor for the stochastic source term (Stochastic Backscatter Model) */
-  addDoubleOption("SBS_RELAXATION_FACTOR", stochSourceRelax, 0.0);
+  addDoubleOption("SBS_RELAXATION_FACTOR", SBSParam.stochSourceRelax, 0.0);
 
   /* DESCRIPTION: Apply Stochastic Backscatter Model only in a bounded box */
-  addBoolOption("SBS_IN_BOX", StochBackscatterInBox, false);
+  addBoolOption("SBS_IN_BOX", SBSParam.StochBackscatterInBox, false);
 
   /* DESCRIPTION: Specify extents of box where Stochastic Backscatter Model is active */
-  addDoubleArrayOption("SBS_BOX_BOUNDS", 6, false, StochBackscatterBoxBounds);
+  addDoubleArrayOption("SBS_BOX_BOUNDS", 6, false, SBSParam.StochBackscatterBoxBounds);
 
   /* DESCRIPTION: Shielding function lower threshold for application of Stochastic Backscatter Model */
-  addDoubleOption("SBS_FD_LOWER_THRESHOLD", stochFdThreshold, 0.9);
+  addDoubleOption("SBS_FD_LOWER_THRESHOLD", SBSParam.stochFdThreshold, 0.9);
 
   /* DESCRIPTION: Filter width for LES (if negative, it is computed based on the local cell size) */
   addDoubleOption("LES_FILTER_WIDTH", LES_FilterWidth, -1.0);
@@ -6562,49 +6562,51 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         if (Kind_HybridRANSLES != NO_HYBRIDRANSLES) {
           if (LES_FilterWidth > 0.0) cout << "User-specified LES filter width: " << LES_FilterWidth << endl;
           cout << "Stochastic Backscatter: ";
-          if (StochasticBackscatter) {
+          if (SBSParam.StochasticBackscatter) {
             cout << "ON" << endl;
-            cout << "Backscatter intensity coefficient: " << SBS_Cmag << endl;
-            if (SBS_Cmag < 0.0)
+            if (Kind_HybridRANSLES == NO_HYBRIDRANSLES)
+              SU2_MPI::Error("Stochastic Backscatter can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
+            if (GetnDim(GetMesh_FileName(), Mesh_FileFormat) < 3)
+              SU2_MPI::Error("Stochastic Backscatter Model available for 3D flow simulations only.", CURRENT_FUNCTION);
+            cout << "Backscatter intensity coefficient: " << SBSParam.SBS_Cmag << endl;
+            if (SBSParam.SBS_Cmag < 0.0)
               SU2_MPI::Error("Backscatter intensity coefficient must be non-negative.", CURRENT_FUNCTION);
-            if (SBS_Ctau > 0.0)
-              cout << "Backscatter timescale coefficient: " << SBS_Ctau << endl;
+            if (SBSParam.SBS_Ctau > 0.0)
+              cout << "Backscatter timescale coefficient: " << SBSParam.SBS_Ctau << endl;
             else
               cout << "Langevin equations not integrated (temporally uncorrelated stochastic field)." << endl;
-            if (SBS_maxIterSmooth > 0) {
-              cout << "Maximum number of iterations for implicit smoothing: " << SBS_maxIterSmooth << endl;
-              cout << "Backscatter lengthscale coefficient: " << SBS_Cdelta << endl;
-              if (SBS_Cdelta < 0.0)
+            if (SBSParam.SBS_maxIterSmooth > 0) {
+              cout << "Maximum number of iterations for implicit smoothing: " << SBSParam.SBS_maxIterSmooth << endl;
+              cout << "Backscatter lengthscale coefficient: " << SBSParam.SBS_Cdelta << endl;
+              if (SBSParam.SBS_Cdelta < 0.0)
                 SU2_MPI::Error("Backscatter lengthscale coefficient must be non-negative.", CURRENT_FUNCTION);
             } else {
               cout << "No smoothing applied to stochastic source terms in Langevin equations." << endl;
             }
-            if (stochSourceNu)
+            if (SBSParam.stochSourceNu)
               cout << "Stochastic source term included in turbulence model equation." << endl;
             else
               cout << "Stochastic source term NOT included in turbulence model equation." << endl;
-            if (stochSourceRelax > 0.0)
-              cout << "Relaxation factor for stochastic source term: " << stochSourceRelax << endl;
+            if (SBSParam.stochSourceRelax > 0.0)
+              cout << "Relaxation factor for stochastic source term: " << SBSParam.stochSourceRelax << endl;
             else
               cout << "No relaxation factor for stochastic source term." << endl;
-            if (StochBackscatterInBox) {
+            if (SBSParam.StochBackscatterInBox) {
               cout << "Stochastic Backscatter Model activated only in a bounded box." << endl;
               cout << "Box bounds: " << endl;
-              cout << "  X: " << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[0] << " , "
-                              << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[1] << endl;
-              cout << "  Y: " << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[2] << " , "
-                              << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[3] << endl;
-              cout << "  Z: " << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[4] << " , "
-                              << setw(10) << fixed << setprecision(4) << StochBackscatterBoxBounds[5] << endl;
+              cout << "  X: " << setw(10) << fixed << setprecision(4) << SBSParam.StochBackscatterBoxBounds[0] << " , "
+                              << setw(10) << fixed << setprecision(4) << SBSParam.StochBackscatterBoxBounds[1] << endl;
+              cout << "  Y: " << setw(10) << fixed << setprecision(4) << SBSParam.StochBackscatterBoxBounds[2] << " , "
+                              << setw(10) << fixed << setprecision(4) << SBSParam.StochBackscatterBoxBounds[3] << endl;
+              cout << "  Z: " << setw(10) << fixed << setprecision(4) << SBSParam.StochBackscatterBoxBounds[4] << " , "
+                              << setw(10) << fixed << setprecision(4) << SBSParam.StochBackscatterBoxBounds[5] << endl;
             }
             if (Kind_HybridRANSLES != SA_DES)
-              cout << "Stochastic source terms suppressed where the shielding function is lower than: " << setw(5) << setprecision(3) << stochFdThreshold << endl;
+              cout << "Stochastic source terms suppressed where the shielding function is lower than: " << setw(5) << setprecision(3) << SBSParam.stochFdThreshold << endl;
           } else {
             cout << "OFF" << endl;
           }
         }
-        if (StochasticBackscatter && Kind_HybridRANSLES == NO_HYBRIDRANSLES)
-          SU2_MPI::Error("Stochastic Backscatter can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
         if (enforceLES) {
           if (Kind_HybridRANSLES == NO_HYBRIDRANSLES)
             SU2_MPI::Error("ENFORCE_LES can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);

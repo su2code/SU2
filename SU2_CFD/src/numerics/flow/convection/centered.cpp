@@ -348,28 +348,17 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
 
   if (LD2_Scheme) {
     su2double d_ij[3] = {0.0};
-    for (iDim = 0; iDim < nDim; iDim++)
-      d_ij[iDim] = Coord_j[iDim]-Coord_i[iDim];
-    su2double velGrad_i[3][3] = {{0.0}};
-    su2double velGrad_j[3][3] = {{0.0}};
-    su2double pressGrad_i[3] = {0.0};
-    su2double pressGrad_j[3] = {0.0};
-    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-      pressGrad_i[jDim] = PrimVar_Grad_i[0][jDim];
-      pressGrad_j[jDim] = PrimVar_Grad_j[0][jDim];
-      for (iDim = 0; iDim < nDim; iDim++) {
-        velGrad_i[iDim][jDim] = PrimVar_Grad_i[iDim+1][jDim];
-        velGrad_j[iDim][jDim] = PrimVar_Grad_j[iDim+1][jDim];
-      }
-    }
+    GeometryToolbox::Distance(nDim, Coord_j, Coord_i, d_ij);
+    su2double diffPresGrad[3] = {0.0};
     for (iDim = 0; iDim < nDim; iDim++) {
-      MeanVelocity[iDim] += 0.5 * alpha_LD2 * ((velGrad_i[iDim][0] - velGrad_j[iDim][0]) * d_ij[0] +
-                                               (velGrad_i[iDim][1] - velGrad_j[iDim][1]) * d_ij[1] +
-                                               (velGrad_i[iDim][2] - velGrad_j[iDim][2]) * d_ij[2]);
+      diffPresGrad[iDim] = PrimVar_Grad_i[0][iDim] - PrimVar_Grad_j[0][iDim];
+      su2double diffVelGrad[3];
+      for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+        diffVelGrad[jDim] = PrimVar_Grad_i[iDim+1][jDim] - PrimVar_Grad_j[iDim+1][jDim];
+      }
+      MeanVelocity[iDim] += 0.5 * alpha_LD2 * GeometryToolbox::DotProduct(nDim, diffVelGrad, d_ij);
     }
-    MeanPressure += 0.5 * alpha_LD2 * ((pressGrad_i[0] - pressGrad_j[0]) * d_ij[0] +
-                                       (pressGrad_i[1] - pressGrad_j[1]) * d_ij[1] +
-                                       (pressGrad_i[2] - pressGrad_j[2]) * d_ij[2]);
+    MeanPressure += 0.5 * alpha_LD2 * GeometryToolbox::DotProduct(nDim, diffPresGrad, d_ij);
   }
 
   /*--- We need the derivative of the equation of state to build the

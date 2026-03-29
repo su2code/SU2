@@ -210,6 +210,12 @@ public:
                        const CConfig* config);
 
   /*!
+   * \brief Calculate the stochastic contribution to the subgrid stress tensor (Stochastic Backscatter Model)
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetStochReynStress(const CConfig* config);
+
+  /*!
    * \brief Get a component of the viscous stress tensor.
    *
    * \param[in] iDim - The first index

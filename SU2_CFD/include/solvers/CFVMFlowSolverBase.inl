@@ -435,7 +435,7 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
-  const bool backscatter = config->GetStochastic_Backscatter();
+  const bool backscatter = config->GetSBSParam().StochasticBackscatter;
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded || backscatter) turbNodes = solver_container[TURB_SOL]->GetNodes();
@@ -472,7 +472,7 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
   /*--- Stochastic variables from Langevin equations (Stochastic Backscatter Model). ---*/
 
   if (backscatter) {
-    if (config->GetSBS_Ctau() > 0.0) {
+    if (config->GetSBSParam().SBS_Ctau > 0.0) {
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
         numerics->SetStochVar(iDim, turbNodes->GetSolution(iPoint, iDim+1),
                                     turbNodes->GetSolution(jPoint, iDim+1));
