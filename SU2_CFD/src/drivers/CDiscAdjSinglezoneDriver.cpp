@@ -273,7 +273,7 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
   for (nKrylov_Iter = nAdjoint_Iter; nKrylov_Iter >= KrylovMinIters && eps > KrylovSysTol;) {
     std::cout << "Adjoint iteration: " << nKrylov_Iter << " ... " << std::endl;
 
-    auto nIter = min(nKrylov_Iter - 2ul, config->GetnQuasiNewtonSamples() - 2ul);
+    auto nIter = min(nKrylov_Iter - 2ul, config->GetLinear_Solver_Iter());
     Scalar eps_l = 0.0;
     Scalar tol_l = KrylovSysTol / eps;
 

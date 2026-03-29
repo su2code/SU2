@@ -107,67 +107,28 @@ unsigned long CDriver::GetNumberPrimitiveVariables() const {
 /* Functions related to the adjoint flow solver solution.                       */
 //////////////////////////////////////////////////////////////////////////////////
 
-vector<passivedouble> CDriver::GetMarkerAdjointForces(unsigned short iMarker, unsigned long iVertex) const {
+CPyWrapperMatrixView CDriver::MarkerAdjointForces(unsigned short iMarker) const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (iVertex >= GetNumberMarkerNodes(iMarker)) {
-    SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
-  }
-
-  vector<passivedouble> values(nDim, 0.0);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetAdjointVertexTractions(iMarker, iVertex, iDim);
-
-    values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
+  auto& mat = const_cast<su2activematrix&>(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetVertexTractionAdjoint(iMarker));
+  return CPyWrapperMatrixView(mat, "MarkerAdjointForces", true);
 }
 
-vector<passivedouble> CDriver::GetCoordinatesCoordinatesSensitivities(unsigned long iPoint) const {
+CPyWrapperMatrixView CDriver::CoordinatesCoordinatesSensitivities() const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-  }
-  if (iPoint >= GetNumberNodes()) {
-    SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
-  }
-
-  vector<passivedouble> values(nDim, 0.0);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dCoordinates_dCoordinates(iPoint, iDim);
-
-    values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dCoordinates_dCoordinates());
+  return CPyWrapperMatrixView(mat, "CoordinatesCoordinatesSensitivities", true);
 }
 
-vector<passivedouble> CDriver::GetMarkerCoordinatesDisplacementsSensitivities(unsigned short iMarker, unsigned long iVertex) const {
+CPyWrapperMatrixView CDriver::MarkerCoordinatesDisplacementsSensitivities(unsigned short iMarker) const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-  }
-  if (iVertex >= GetNumberMarkerNodes(iMarker)) {
-    SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
-  }
-
-  vector<passivedouble> values(nDim, 0.0);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dCoordinates_dDisplacements(iMarker, iVertex, iDim);
-
-    values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dCoordinates_dDisplacements(iMarker));
+  return CPyWrapperMatrixView(mat, "MarkerCoordinatesDisplacementsSensitivities", true);
 }
 
 vector<passivedouble> CDriver::GetObjectiveFarfieldVariablesSensitivities() const {
@@ -210,227 +171,84 @@ vector<passivedouble> CDriver::GetResidualsFarfieldVariablesSensitivities() cons
   return values;
 }
 
-vector<passivedouble> CDriver::GetObjectiveStatesSensitivities(unsigned long iPoint) const {
+CPyWrapperMatrixView CDriver::ObjectiveStatesSensitivities() const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-  }
-  if (iPoint >= GetNumberNodes()) {
-    SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
-  }
-
-  const auto nVar = GetNumberStateVariables();
-  vector<passivedouble> values(nVar, 0.0);
-
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetSens_dObjective_dStates(iPoint, iVar);
-
-    values[iVar] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dObjective_dStates());
+  return CPyWrapperMatrixView(mat, "ObjectiveStatesSensitivities", true);
 }
 
-vector<passivedouble> CDriver::GetResidualsStatesSensitivities(unsigned long iPoint) const {
+CPyWrapperMatrixView CDriver::ResidualsStatesSensitivities() const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-  }
-  if (iPoint >= GetNumberNodes()) {
-    SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
-  }
-
-  const auto nVar = GetNumberStateVariables();
-  vector<passivedouble> values(nVar, 0.0);
-
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dResiduals_dStates(iPoint, iVar);
-
-    values[iVar] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dResiduals_dStates());
+  return CPyWrapperMatrixView(mat, "ResidualsStatesSensitivities", true);
 }
 
-vector<passivedouble> CDriver::GetForcesStatesSensitivities(unsigned long iPoint) const {
+CPyWrapperMatrixView CDriver::ForcesStatesSensitivities() const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-  }
-  if (iPoint >= GetNumberNodes()) {
-    SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
-  }
-
-  const auto nVar = GetNumberStateVariables();
-  vector<passivedouble> values(nVar, 0.0);
-
-  for (auto iVar = 0u; iVar < nVar; iVar++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dTractions_dStates(iPoint, iVar);
-
-    values[iVar] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dTractions_dStates());
+  return CPyWrapperMatrixView(mat, "ForcesStatesSensitivities", true);
 }
 
-vector<passivedouble> CDriver::GetObjectiveCoordinatesSensitivities(unsigned long iPoint) const {
+CPyWrapperMatrixView CDriver::ObjectiveCoordinatesSensitivities() const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-  }
-  if (iPoint >= GetNumberNodes()) {
-    SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
-  }
-
-  vector<passivedouble> values(nDim, 0.0);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetSens_dObjective_dCoordinates(iPoint, iDim);
-
-    values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dObjective_dCoordinates());
+  return CPyWrapperMatrixView(mat, "ObjectiveCoordinatesSensitivities", true);
 }
 
-vector<passivedouble> CDriver::GetResidualsCoordinatesSensitivities(unsigned long iPoint) const {
+CPyWrapperMatrixView CDriver::ResidualsCoordinatesSensitivities() const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-  }
-  if (iPoint >= GetNumberNodes()) {
-    SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
-  }
-
-  vector<passivedouble> values(nDim, 0.0);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dResiduals_dCoordinates(iPoint, iDim);
-
-    values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dResiduals_dCoordinates());
+  return CPyWrapperMatrixView(mat, "ResidualsCoordinatesSensitivities", true);
 }
 
-vector<passivedouble> CDriver::GetForcesCoordinatesSensitivities(unsigned long iPoint) const {
+CPyWrapperMatrixView CDriver::ForcesCoordinatesSensitivities() const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-  }
-  if (iPoint >= GetNumberNodes()) {
-    SU2_MPI::Error("Vertex index exceeds mesh size.", CURRENT_FUNCTION);
-  }
-
-  vector<passivedouble> values(nDim, 0.0);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dTractions_dCoordinates(iPoint, iDim);
-
-    values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dTractions_dCoordinates());
+  return CPyWrapperMatrixView(mat, "ForcesCoordinatesSensitivities", true);
 }
 
-vector<passivedouble> CDriver::GetMarkerObjectiveDisplacementsSensitivities(unsigned short iMarker, unsigned long iVertex) const {
+CPyWrapperMatrixView CDriver::MarkerObjectiveDisplacementsSensitivities(unsigned short iMarker) const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-  }
-  if (iVertex >= GetNumberMarkerNodes(iMarker)) {
-    SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
-  }
-
-  vector<passivedouble> values(nDim, 0.0);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetSens_dObjective_dDisplacements(iMarker, iVertex, iDim);
-
-    values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dObjective_dDisplacements(iMarker));
+  return CPyWrapperMatrixView(mat, "MarkerObjectiveDisplacementsSensitivities", true);
 }
 
-vector<passivedouble> CDriver::GetMarkerResidualsDisplacementsSensitivities(unsigned short iMarker, unsigned long iVertex) const {
+CPyWrapperMatrixView CDriver::MarkerResidualsDisplacementsSensitivities(unsigned short iMarker) const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-  }
-  if (iVertex >= GetNumberMarkerNodes(iMarker)) {
-    SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
-  }
-
-  vector<passivedouble> values(nDim, 0.0);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dResiduals_dDisplacements(iMarker, iVertex, iDim);
-
-    values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dResiduals_dDisplacements(iMarker));
+  return CPyWrapperMatrixView(mat, "MarkerResidualsDisplacementsSensitivities", true);
 }
 
-vector<passivedouble> CDriver::GetMarkerForcesDisplacementsSensitivities(unsigned short iMarker, unsigned long iVertex) const {
+CPyWrapperMatrixView CDriver::MarkerForcesDisplacementsSensitivities(unsigned short iMarker) const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-  }
-  if (iVertex >= GetNumberMarkerNodes(iMarker)) {
-    SU2_MPI::Error("Vertex index exceeds marker size.", CURRENT_FUNCTION);
-  }
-
-  vector<passivedouble> values(nDim, 0.0);
-
-  for (auto iDim = 0u; iDim < nDim; iDim++) {
-    const su2double value = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dTractions_dDisplacements(iMarker, iVertex, iDim);
-
-    values[iDim] = SU2_TYPE::GetValue(value);
-  }
-
-  return values;
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dTractions_dDisplacements(iMarker));
+  return CPyWrapperMatrixView(mat, "MarkerForcesDisplacementsSensitivities", true);
 }
 
-void CDriver::SetAdjointSourceTerm(vector<passivedouble> values) {
+CPyWrapperMatrixView CDriver::AdjointSourceTerm() {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
-    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
-  }
-
-  const auto nPoint = GetNumberNodes();
-  const auto nVar = GetNumberStateVariables();
-
-  if (values.size() != nPoint * nVar) {
-    SU2_MPI::Error("Size does not match nPoint * nVar!", CURRENT_FUNCTION);
-  }
-
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
-      solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_SourceTerm(iPoint, iVar, values[iPoint * nVar + iVar]);
-    }
-  }
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dObjective_dStates());
+  return CPyWrapperMatrixView(mat, "AdjointSourceTerm", false);
 }
 
 //////////////////////////////////////////////////////////////////////////////////

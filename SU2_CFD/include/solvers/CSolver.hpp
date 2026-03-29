@@ -1911,6 +1911,83 @@ public:
    */
   inline virtual void SetAdjoint_SourceTerm(unsigned long iPoint, unsigned short iVar, su2double value){};
 
+  /*! \brief Get a reference to the matrix of partial sensitivities dObjective/dStates. */
+  inline virtual const su2matrix<su2double>& GetPartialMatrix_dObjective_dStates() const {
+    SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
+    static su2matrix<su2double> sens_matrix; 
+    return sens_matrix;
+  }
+
+  /*! \brief Get a reference to the matrix of partial products dResiduals/dStates^T * psi. */
+  inline virtual const su2matrix<su2double>& GetPartialMatrix_dResiduals_dStates() const {
+    SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
+    static su2matrix<su2double> sens_matrix; 
+    return sens_matrix;
+  }
+
+  /*! \brief Get a reference to the matrix of partial products dTractions/dStates^T * psi. */
+  inline virtual const su2matrix<su2double>& GetPartialMatrix_dTractions_dStates() const {
+    SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
+    static su2matrix<su2double> sens_matrix; 
+    return sens_matrix;
+  }
+
+  /*! \brief Get a reference to the matrix of partial sensitivities dObjective/dCoordinates. */
+  inline virtual const su2matrix<su2double>& GetPartialMatrix_dObjective_dCoordinates() const {
+    SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
+    static su2matrix<su2double> sens_matrix; 
+    return sens_matrix;
+  }
+
+  /*! \brief Get a reference to the matrix of partial products dResiduals/dCoordinates^T * psi. */
+  inline virtual const su2matrix<su2double>& GetPartialMatrix_dResiduals_dCoordinates() const {
+    SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
+    static su2matrix<su2double> sens_matrix; 
+    return sens_matrix;
+  }
+
+  /*! \brief Get a reference to the matrix of partial products dTractions/dCoordinates^T * psi. */
+  inline virtual const su2matrix<su2double>& GetPartialMatrix_dTractions_dCoordinates() const {
+    SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
+    static su2matrix<su2double> sens_matrix; 
+    return sens_matrix;
+  }
+
+  /*! \brief Get a reference to the matrix of partial products dCoordinates/dCoordinates^T * psi. */
+  inline virtual const su2matrix<su2double>& GetPartialMatrix_dCoordinates_dCoordinates() const {
+    SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
+    static su2matrix<su2double> sens_matrix; 
+    return sens_matrix;
+  }
+
+  /*! \brief Get a reference to the marker matrix of partial sensitivities dObjective/dDisplacements. */
+  inline virtual const su2matrix<su2double>& GetPartialMatrix_dObjective_dDisplacements(unsigned short iMarker) const {
+    SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
+    static su2matrix<su2double> sens_matrix; 
+    return sens_matrix;
+  }
+
+  /*! \brief Get a reference to the marker matrix of partial products dResiduals/dDisplacements^T * psi. */
+  inline virtual const su2matrix<su2double>& GetPartialMatrix_dResiduals_dDisplacements(unsigned short iMarker) const {
+    SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
+    static su2matrix<su2double> sens_matrix; 
+    return sens_matrix;
+  }
+
+  /*! \brief Get a reference to the marker matrix of partial products dTractions/dDisplacements^T * psi. */
+  inline virtual const su2matrix<su2double>& GetPartialMatrix_dTractions_dDisplacements(unsigned short iMarker) const {
+    SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
+    static su2matrix<su2double> sens_matrix; 
+    return sens_matrix;
+  }
+
+  /*! \brief Get a reference to the marker matrix of partial products dCoordinates/dDisplacements^T * psi. */
+  inline virtual const su2matrix<su2double>& GetPartialMatrix_dCoordinates_dDisplacements(unsigned short iMarker) const {
+    SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
+    static su2matrix<su2double> sens_matrix; 
+    return sens_matrix;
+  }
+
   /*!
    * \author H. Kline
    * \brief Provide the total "combo" objective (weighted sum of other values).
@@ -4460,6 +4537,11 @@ public:
    */
   inline su2double GetAdjointVertexTractions(unsigned short iMarker, unsigned long iVertex, unsigned short iDim) const {
     return VertexTractionAdjoint[iMarker][iVertex][iDim];
+  }
+
+  /*! \brief Get a reference to the adjoint vertex traction matrix for a marker. */
+  inline const su2activematrix& GetVertexTractionAdjoint(unsigned short iMarker) const {
+    return VertexTractionAdjoint[iMarker];
   }
 
   /*!

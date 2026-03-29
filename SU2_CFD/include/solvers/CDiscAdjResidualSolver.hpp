@@ -307,6 +307,19 @@ class CDiscAdjResidualSolver final : public CSolver {
      */
     void SetAdjoint_SourceTerm(unsigned long iPoint, unsigned short iVar, su2double val) override;
 
+    /*--- Matrix-level accessors for CPyWrapperMatrixView. ---*/
+    const su2matrix<su2double>& GetPartialMatrix_dObjective_dStates() const override { return Partial_Sens_dObjective_dStates; }
+    const su2matrix<su2double>& GetPartialMatrix_dResiduals_dStates() const override { return Partial_Prod_dResiduals_dStates; }
+    const su2matrix<su2double>& GetPartialMatrix_dTractions_dStates() const override { return Partial_Prod_dTractions_dStates; }
+    const su2matrix<su2double>& GetPartialMatrix_dObjective_dCoordinates() const override { return Partial_Sens_dObjective_dCoordinates; }
+    const su2matrix<su2double>& GetPartialMatrix_dResiduals_dCoordinates() const override { return Partial_Prod_dResiduals_dCoordinates; }
+    const su2matrix<su2double>& GetPartialMatrix_dTractions_dCoordinates() const override { return Partial_Prod_dTractions_dCoordinates; }
+    const su2matrix<su2double>& GetPartialMatrix_dCoordinates_dCoordinates() const override { return Partial_Prod_dCoordinates_dCoordinates; }
+    const su2matrix<su2double>& GetPartialMatrix_dObjective_dDisplacements(unsigned short iMarker) const override { return Partial_Sens_dObjective_dDisplacements[iMarker]; }
+    const su2matrix<su2double>& GetPartialMatrix_dResiduals_dDisplacements(unsigned short iMarker) const override { return Partial_Prod_dResiduals_dDisplacements[iMarker]; }
+    const su2matrix<su2double>& GetPartialMatrix_dTractions_dDisplacements(unsigned short iMarker) const override { return Partial_Prod_dTractions_dDisplacements[iMarker]; }
+    const su2matrix<su2double>& GetPartialMatrix_dCoordinates_dDisplacements(unsigned short iMarker) const override { return Partial_Prod_dCoordinates_dDisplacements[iMarker]; }
+
     /*!
      * \brief Prepare the solver for a new recording.
      * \param[in] kind_recording - Kind of AD recording.

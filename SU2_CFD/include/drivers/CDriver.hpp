@@ -589,28 +589,22 @@ class CDriver : public CDriverBase {
   /*!
    * \brief Get the adjoint flow forces at a marker vertex.
    * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Adjoint flow forces (nDim).
+   * \return CPyWrapperMatrixView of shape (nVertex, nDim).
    */
-  vector<passivedouble> GetMarkerAdjointForces(unsigned short iMarker, unsigned long iVertex) const;
+  CPyWrapperMatrixView MarkerAdjointForces(unsigned short iMarker) const;
 
   /*!
-   * \brief Get sensitivity of deformed volume coordinates with respect to surface coordinates as a matrix-vector
-   *        product with the adjoint variable.
-   * \param[in] iPoint - Point index.
-   * \return Partial derivative of volume coordinates with respect to surface coordinates.
+   * \brief Get a read-only view of dCoordinates/dCoordinates^T * psi for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nDim).
    */
-  vector<passivedouble> GetCoordinatesCoordinatesSensitivities(unsigned long iPoint) const;
+  CPyWrapperMatrixView CoordinatesCoordinatesSensitivities() const;
 
   /*!
-   * \brief Get sensitivity of deformed volume coordinates with respect to surface displacements as a matrix-vector
-   *        product with the adjoint variable.
+   * \brief Get a read-only view of dCoordinates/dDisplacements^T * psi for a marker.
    * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Partial derivative of volume coordinates with respect to surface displacements.
+   * \return CPyWrapperMatrixView of shape (nVertex, nDim).
    */
-  vector<passivedouble> GetMarkerCoordinatesDisplacementsSensitivities(unsigned short iMarker,
-                                                                       unsigned long iVertex) const;
+  CPyWrapperMatrixView MarkerCoordinatesDisplacementsSensitivities(unsigned short iMarker) const;
 
   /*!
    * \brief Get sensitivity of objective function with respect to farfield design variables as a partial derivative.
@@ -626,78 +620,61 @@ class CDriver : public CDriverBase {
   vector<passivedouble> GetResidualsFarfieldVariablesSensitivities() const;
 
   /*!
-   * \brief Get sensitivity of objective function with respect to conservative flow variables as a partial derivative.
-   * \param[in] iPoint - Point index.
-   * \return Partial derivative of aerodynamic function with respect to flow states.
+   * \brief Get a read-only view of dObjective/dStates for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nVar).
    */
-  vector<passivedouble> GetObjectiveStatesSensitivities(unsigned long iPoint) const;
+  CPyWrapperMatrixView ObjectiveStatesSensitivities() const;
 
   /*!
-   * \brief Get sensitivity of flow residuals with respect to conservative flow variables as a matrix-vector product
-   *        with the adjoint variable.
-   * \param[in] iPoint - Point index.
-   * \return Partial derivative of aerodynamic residuals with respect to flow states.
+   * \brief Get a read-only view of dResiduals/dStates^T * psi for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nVar).
    */
-  vector<passivedouble> GetResidualsStatesSensitivities(unsigned long iPoint) const;
+  CPyWrapperMatrixView ResidualsStatesSensitivities() const;
 
   /*!
-   * \brief Get sensitivity of flow forces with respect to conservative flow variables as a matrix-vector product
-   *        with the adjoint variable.
-   * \param[in] iPoint - Point index.
-   * \return Partial derivative of aerodynamic forces with respect to flow states.
+   * \brief Get a read-only view of dTractions/dStates^T * psi for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nVar).
    */
-  vector<passivedouble> GetForcesStatesSensitivities(unsigned long iPoint) const;
+  CPyWrapperMatrixView ForcesStatesSensitivities() const;
 
   /*!
-   * \brief Get sensitivity of objective function with respect to volume coordinates as a partial derivative.
-   * \param[in] iPoint - Point index.
-   * \return Partial derivative of aerodynamic function with respect to volume coordinates.
+   * \brief Get a read-only view of dObjective/dCoordinates for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nDim).
    */
-  vector<passivedouble> GetObjectiveCoordinatesSensitivities(unsigned long iPoint) const;
+  CPyWrapperMatrixView ObjectiveCoordinatesSensitivities() const;
 
   /*!
-   * \brief Get sensitivity of flow residuals with respect to volume coordinates as a matrix-vector product with the
-   *        adjoint variable.
-   * \param[in] iPoint - Point index.
-   * \return Partial derivative of aerodynamic residuals with respect to volume coordinates.
+   * \brief Get a read-only view of dResiduals/dCoordinates^T * psi for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nDim).
    */
-  vector<passivedouble> GetResidualsCoordinatesSensitivities(unsigned long iPoint) const;
+  CPyWrapperMatrixView ResidualsCoordinatesSensitivities() const;
 
   /*!
-   * \brief Get sensitivity of flow forces with respect to volume coordinates as a matrix-vector product with the
-   *        adjoint variable.
-   * \param[in] iPoint - Point index.
-   * \return Partial derivative of aerodynamic forces with respect to volume coordinates.
+   * \brief Get a read-only view of dTractions/dCoordinates^T * psi for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nDim).
    */
-  vector<passivedouble> GetForcesCoordinatesSensitivities(unsigned long iPoint) const;
+  CPyWrapperMatrixView ForcesCoordinatesSensitivities() const;
 
   /*!
-   * \brief Get sensitivity of objective function with respect to surface displacements as a partial derivative.
+   * \brief Get a read-only view of dObjective/dDisplacements for a marker.
    * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Partial derivative of aerodynamic function with respect to surface displacements.
+   * \return CPyWrapperMatrixView of shape (nVertex, nDim).
    */
-  vector<passivedouble> GetMarkerObjectiveDisplacementsSensitivities(unsigned short iMarker,
-                                                                     unsigned long iVertex) const;
+  CPyWrapperMatrixView MarkerObjectiveDisplacementsSensitivities(unsigned short iMarker) const;
 
   /*!
-   * \brief Get sensitivity of flow residuals with respect to surface displacements as a matrix-vector product with the
-   *        adjoint variable.
+   * \brief Get a read-only view of dResiduals/dDisplacements^T * psi for a marker.
    * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Partial derivative of aerodynamic residuals with respect to surface displacements.
+   * \return CPyWrapperMatrixView of shape (nVertex, nDim).
    */
-  vector<passivedouble> GetMarkerResidualsDisplacementsSensitivities(unsigned short iMarker,
-                                                                     unsigned long iVertex) const;
+  CPyWrapperMatrixView MarkerResidualsDisplacementsSensitivities(unsigned short iMarker) const;
 
   /*!
-   * \brief Get sensitivity of flow forces with respect to surface displacements as a matrix-vector product with the
-   *        adjoint variable.
+   * \brief Get a read-only view of dTractions/dDisplacements^T * psi for a marker.
    * \param[in] iMarker - Marker index.
-   * \param[in] iVertex - Marker vertex index.
-   * \return Partial derivative of aerodynamic forces with respect to surface displacements.
+   * \return CPyWrapperMatrixView of shape (nVertex, nDim).
    */
-  vector<passivedouble> GetMarkerForcesDisplacementsSensitivities(unsigned short iMarker, unsigned long iVertex) const;
+  CPyWrapperMatrixView MarkerForcesDisplacementsSensitivities(unsigned short iMarker) const;
 
   /*!
    * \brief Get sensitivities of the flow forces for the structural solver.
@@ -707,10 +684,10 @@ class CDriver : public CDriverBase {
   vector<passivedouble> GetMarkerForceSensitivities(unsigned short iMarker) const;
 
   /*!
-   * \brief Set the right-hand side adjoint source term.
-   * \param[in] values - Values of the adjoint source term (nPoint, nVar).
+   * \brief Get a read/write view of the adjoint source term for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nVar).
    */
-  void SetAdjointSourceTerm(vector<passivedouble> values);
+  CPyWrapperMatrixView AdjointSourceTerm();
 
   /*!
    * \brief Get all the flow load boundary marker tags.
