@@ -37,10 +37,10 @@ namespace RandomToolbox {
  * \return Hashed 64-bit output.
  */
 static inline uint64_t splitmix64(uint64_t x) {
-    x += 0x9e3779b97f4a7c15ULL;                  // golden ratio offset
-    x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL; // first mixing step
-    x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL; // second mixing step
-    return x ^ (x >> 31);                        // final avalanche
+  x += 0x9e3779b97f4a7c15ULL;                   // golden ratio offset
+  x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9ULL;  // first mixing step
+  x = (x ^ (x >> 27)) * 0x94d049bb133111ebULL;  // second mixing step
+  return x ^ (x >> 31);                         // final avalanche
 }
 
 /*!
@@ -51,10 +51,10 @@ static inline uint64_t splitmix64(uint64_t x) {
  * \return 64-bit hash value.
  */
 inline uint64_t GetHash(unsigned long nodeIndex, unsigned short iDim, unsigned long timeIter) {
-    uint64_t x = nodeIndex;
-    x ^= splitmix64(iDim);
-    x ^= splitmix64(timeIter);
-    return splitmix64(x);
+  uint64_t x = nodeIndex;
+  x ^= splitmix64(iDim);
+  x ^= splitmix64(timeIter);
+  return splitmix64(x);
 }
 
 /*!
@@ -65,9 +65,9 @@ inline uint64_t GetHash(unsigned long nodeIndex, unsigned short iDim, unsigned l
  * \return Uniform double in the interval (0,1].
  */
 inline double HashToUniform(uint64_t x) {
-    constexpr double inv53 = 1.0 / 9007199254740992.0; // 1/2^53
-    uint64_t uInt = x >> 11;                           // top 53 bits
-    return (uInt + 1) * inv53;                         // map to (0,1]
+  constexpr double inv53 = 1.0 / 9007199254740992.0;  // 1/2^53
+  uint64_t uInt = x >> 11;                            // top 53 bits
+  return (uInt + 1) * inv53;                          // map to (0,1]
 }
 
 /*!
@@ -78,26 +78,26 @@ inline double HashToUniform(uint64_t x) {
  * \return Standard normal random number (mean=0, stddev=1).
  */
 inline double HashToNormal(uint64_t x) {
-    double u = HashToUniform(x);    // first uniform
-    double v = HashToUniform(~x);   // second uniform (bitwise NOT)
-    double r = sqrt(-2.0 * log(u));  
-    double theta = 2.0 * PI_NUMBER * v;
-    return r * cos(theta);          // one normal sample
+  double u = HashToUniform(x);   // first uniform
+  double v = HashToUniform(~x);  // second uniform (bitwise NOT)
+  double r = sqrt(-2.0 * log(u));
+  double theta = 2.0 * PI_NUMBER * v;
+  return r * cos(theta);  // one normal sample
 }
 
 /*!
  * \brief Generate a deterministic standard normal number for a cell, dimension, and timestep.
- * 
+ *
  * Combines hashing and Box-Muller in one function.
- * 
+ *
  * \param[in] nodeIndex Global node index.
  * \param[in] dim Dimension index.
  * \param[in] timeIter Simulation timestep (1-based).
  * \return Standard normal random number.
  */
 inline double GetNormal(unsigned long nodeIndex, unsigned long dim, unsigned long timeIter) {
-    uint64_t hash = GetHash(nodeIndex, dim, timeIter);
-    return HashToNormal(hash);
+  uint64_t hash = GetHash(nodeIndex, dim, timeIter);
+  return HashToNormal(hash);
 }
 
 /*!
@@ -109,17 +109,26 @@ inline su2double GetBesselZero(su2double x) {
   double abx = fabs(x);
   if (abx < 3.75) {
     double t = abx / 3.75;
-    double p = 1.0 + t * t * (3.5156229 + t * t * (3.0899424 + t * t * (1.2067492 + t * t * (0.2659732 + t * t * (0.0360768 + t * t * 0.0045813)))));
+    double p =
+        1.0 +
+        t * t *
+            (3.5156229 +
+             t * t * (3.0899424 + t * t * (1.2067492 + t * t * (0.2659732 + t * t * (0.0360768 + t * t * 0.0045813)))));
     return log(p);
   } else {
     double t = 3.75 / abx;
-    double poly = 0.39894228 + t * (0.01328592 + t * (0.00225319 + t * (-0.00157565 + t * (0.00916281 + t * (-0.02057706 + t * (0.02635537 + t * (-0.01647633 + t * 0.00392377)))))));
+    double poly =
+        0.39894228 +
+        t * (0.01328592 +
+             t * (0.00225319 +
+                  t * (-0.00157565 +
+                       t * (0.00916281 + t * (-0.02057706 + t * (0.02635537 + t * (-0.01647633 + t * 0.00392377)))))));
     return abx - log(sqrt(abx) * poly);
   }
 }
 
 /*!
- * \brief Compute integral involving the product of three modified Bessel functions. 
+ * \brief Compute integral involving the product of three modified Bessel functions.
  *  Useful for scaling the smoothed stochastic source terms in Langevin equations.
  * \param[in] beta_x Argument in x-direction.
  * \param[in] beta_y Argument in y-direction.
@@ -142,7 +151,7 @@ inline su2double GetBesselIntegral(su2double beta_x, su2double beta_y, su2double
     double lz = GetBesselZero(Bz * t);
     double lin = log(t) - A * t + lx + ly + lz;
     double integrand = exp(lin);
-    if (i==N) integrand *= 0.5;
+    if (i == N) integrand *= 0.5;
     sum += integrand;
   }
   return sum * dt;

@@ -30,13 +30,12 @@
 
 /*--- Function to test (included in random_toolbox.hpp) ---*/
 inline double HashToUniform(uint64_t x) {
-  constexpr double inv53 = 1.0 / 9007199254740992.0; // 1/2^53
-  uint64_t uInt = x >> 11;                           // top 53 bits
-  return (uInt + 1) * inv53;                         // map to (0,1]
+  constexpr double inv53 = 1.0 / 9007199254740992.0;  // 1/2^53
+  uint64_t uInt = x >> 11;                            // top 53 bits
+  return (uInt + 1) * inv53;                          // map to (0,1]
 }
 
 TEST_CASE("HashToUniform", "[Toolboxes]") {
-
   /*--- Basic checks: no zero, no >1 ---*/
   uint64_t simple_values[] = {0ULL, 1ULL, 123ULL, UINT64_MAX};
   for (auto v : simple_values) {
