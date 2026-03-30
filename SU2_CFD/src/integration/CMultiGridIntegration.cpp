@@ -90,10 +90,10 @@ static void adaptMGDampingFactor(const unsigned short* performed,
   SU2_MPI::Allreduce(&local_all_early,    &global_all_early,    1, MPI_INT, MPI_MIN, SU2_MPI::GetComm());
 #endif
 
-  constexpr su2double SCALE_DOWN = 0.99;
-  constexpr su2double SCALE_UP   = 1.01;
-  constexpr su2double CLAMP_MIN  = 0.1;
-  constexpr su2double CLAMP_MAX  = 0.95;
+  const su2double SCALE_DOWN = 0.99;
+  const su2double SCALE_UP   = 1.01;
+  const su2double CLAMP_MIN  = 0.1;
+  const su2double CLAMP_MAX  = 0.95;
 
   su2double factor = getCurrent();
   if (global_any_stagnant)    factor *= SCALE_DOWN;
