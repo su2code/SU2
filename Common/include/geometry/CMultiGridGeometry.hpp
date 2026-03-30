@@ -29,6 +29,8 @@
 
 #include "CGeometry.hpp"
 
+class CMultiGridQueue;
+
 /*!
  * \class CMultiGridGeometry
  * \brief Class for defining the multigrid geometry, the main dedicated part is the
@@ -74,6 +76,16 @@ class CMultiGridGeometry final : public CGeometry {
    * \return Maximum angle (in degrees) between this vertex normal and adjacent vertex normals.
    */
   su2double ComputeLocalCurvature(const CGeometry* fine_grid, unsigned long iPoint, unsigned short iMarker) const;
+
+  /*!
+   * \brief Agglomerate high-aspect-ratio interior cells along implicit lines from wall vertices.
+   * \param[in,out] Index_CoarseCV - Current coarse CV index, incremented as new coarse CVs are created.
+   * \param[in] fine_grid - Fine grid geometry.
+   * \param[in] config - Configuration.
+   * \param[in,out] MGQueue_InnerCV - Queue for domain agglomeration; processed points are removed.
+   */
+  void AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
+                                const CConfig* config, CMultiGridQueue& MGQueue_InnerCV);
 
  public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/

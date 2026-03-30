@@ -308,6 +308,11 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     }
   }
 
+  /*--- Agglomerate high-aspect-ratio interior nodes along implicit lines from walls. ---*/
+  if (config->GetMG_Implicit_Lines()) {
+    AgglomerateImplicitLines(Index_CoarseCV, fine_grid, config, MGQueue_InnerCV);
+  }
+
   /*--- STEP 2: Agglomerate the domain points. ---*/
 
   auto iteration = 0ul;
@@ -1290,4 +1295,238 @@ su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, 
   }
 
   return max_angle;
+}
+
+void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
+                                                  const CConfig* config, CMultiGridQueue& MGQueue_InnerCV) {
+  /*--- Parameters ---*/
+  constexpr su2double ANGLE_THRESHOLD_DEG = 20.0;  /*!< Stop line if direction deviates more than this. */
+  constexpr unsigned long MAX_LINE_LENGTH = 20;     /*!< Max nodes on implicit line (including wall). */
+  const su2double cos_threshold = cos(ANGLE_THRESHOLD_DEG * PI_NUMBER / 180.0);
+
+  const unsigned long nPointFine = fine_grid->GetnPoint();
+
+  /*--- Collect implicit lines starting at wall vertices.
+   *    Each line: [wall_node, interior_1, interior_2, ...].
+   *    The wall node (index 0) is already agglomerated by boundary agglomeration;
+   *    only interior nodes (index >= 1) are paired into coarse CVs. ---*/
+  vector<vector<unsigned long>> lines;
+
+  for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    /*--- Skip non-physical markers ---*/
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE ||
+        config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY ||
+        config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
+      continue;
+
+    for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
+      const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
+
+      /*--- Get vertex normal to seed the line direction ---*/
+      const long ChildVertex = fine_grid->nodes->GetVertex(iPoint, iMarker);
+      if (ChildVertex == -1) continue;
+      su2double Normal[MAXNDIM] = {0.0};
+      fine_grid->vertex[iMarker][ChildVertex]->GetNormal(Normal);
+
+      /*--- Normalize the direction ---*/
+      su2double prev_dir[MAXNDIM] = {0.0};
+      su2double norm_prev = 0.0;
+      for (unsigned short d = 0; d < nDim; ++d) {
+        prev_dir[d] = Normal[d];
+        norm_prev += Normal[d] * Normal[d];
+      }
+      if (norm_prev <= 0.0) continue;
+      norm_prev = sqrt(norm_prev);
+      for (unsigned short d = 0; d < nDim; ++d) prev_dir[d] /= norm_prev;
+
+      /*--- Build the implicit line by following the best-aligned interior neighbor ---*/
+      vector<unsigned long> L;
+      L.push_back(iPoint);
+      auto current = iPoint;
+
+      while (L.size() < MAX_LINE_LENGTH) {
+        su2double best_dot = -2.0;
+        unsigned long best_neighbor = ULONG_MAX;
+
+        for (auto jPoint : fine_grid->nodes->GetPoints(current)) {
+          if (jPoint == current) continue;
+          if (!fine_grid->nodes->GetDomain(jPoint)) continue;
+          if (fine_grid->nodes->GetBoundary(jPoint)) continue;
+          if (fine_grid->nodes->GetAgglomerate(jPoint)) continue;
+
+          /*--- Compute normalized direction to candidate ---*/
+          su2double vec[MAXNDIM] = {0.0};
+          su2double len2 = 0.0;
+          for (unsigned short d = 0; d < nDim; ++d) {
+            vec[d] = fine_grid->nodes->GetCoord(jPoint, d) - fine_grid->nodes->GetCoord(current, d);
+            len2 += vec[d] * vec[d];
+          }
+          if (len2 <= 0.0) continue;
+          const su2double len = sqrt(len2);
+          for (unsigned short d = 0; d < nDim; ++d) vec[d] /= len;
+
+          /*--- Alignment with previous direction ---*/
+          su2double dot = 0.0;
+          for (unsigned short d = 0; d < nDim; ++d) dot += vec[d] * prev_dir[d];
+          if (dot > best_dot) {
+            best_dot = dot;
+            best_neighbor = jPoint;
+          }
+        }
+
+        if (best_neighbor == ULONG_MAX || best_dot < cos_threshold) break;
+
+        L.push_back(best_neighbor);
+
+        /*--- Update direction for next step ---*/
+        su2double len2 = 0.0;
+        for (unsigned short d = 0; d < nDim; ++d) {
+          prev_dir[d] = fine_grid->nodes->GetCoord(best_neighbor, d) - fine_grid->nodes->GetCoord(current, d);
+          len2 += prev_dir[d] * prev_dir[d];
+        }
+        if (len2 <= 0.0) break;
+        const su2double len = sqrt(len2);
+        for (unsigned short d = 0; d < nDim; ++d) prev_dir[d] /= len;
+
+        current = best_neighbor;
+      }
+
+      /*--- Accept only lines with at least 2 interior nodes (length >= 3 including wall) ---*/
+      if (L.size() >= 3) {
+        lines.push_back(std::move(L));
+      }
+    }
+  }
+
+  if (lines.empty()) return;
+
+  if (rank == MASTER_NODE) {
+    cout << "Implicit line agglomeration: detected " << lines.size() << " lines." << endl;
+  }
+
+  /*--- Advancing-front greedy pairing with cross-line merging.
+   *    For each pair stage k, process interior positions (1+2k, 1+2k+1).
+   *    When two lines share the same wall-node parent CV, merge their pairs
+   *    into a single 4-child coarse CV.  Otherwise create 2-child coarse CVs. ---*/
+  vector<char> reserved(nPointFine, 0);
+  unsigned pair_idx = 0;
+
+  while (true) {
+    bool any_work = false;
+
+    /*--- Build map: wall parent CV -> list of line indices ---*/
+    unordered_map<unsigned long, vector<unsigned long>> parent_to_lines;
+    parent_to_lines.reserve(lines.size());
+    for (unsigned long li = 0; li < lines.size(); ++li) {
+      const auto& L = lines[li];
+      if (L.empty()) continue;
+      const auto idx2 = 1 + 2 * pair_idx + 1;
+      if (L.size() <= idx2) continue;  // no pair at this stage
+      const auto pW = fine_grid->nodes->GetParent_CV(L[0]);
+      parent_to_lines[pW].push_back(li);
+    }
+
+    vector<char> line_processed(lines.size(), 0);
+
+    /*--- A) Cross-line merges: parents with multiple lines ---*/
+    for (auto& [parent, line_ids] : parent_to_lines) {
+      if (line_ids.size() < 2) continue;
+
+      for (size_t k = 0; k + 1 < line_ids.size(); k += 2) {
+        const auto li1 = line_ids[k];
+        const auto li2 = line_ids[k + 1];
+        if (line_processed[li1] || line_processed[li2]) continue;
+
+        const auto& L1 = lines[li1];
+        const auto& L2 = lines[li2];
+        const auto idx1 = 1 + 2 * pair_idx;
+        const auto idx2 = idx1 + 1;
+        if (L1.size() <= idx2 || L2.size() <= idx2) continue;
+
+        const auto a = L1[idx1], b = L1[idx2];
+        const auto c = L2[idx1], d = L2[idx2];
+
+        /*--- Skip if any node is already claimed ---*/
+        if (fine_grid->nodes->GetAgglomerate(a) || fine_grid->nodes->GetAgglomerate(b) ||
+            fine_grid->nodes->GetAgglomerate(c) || fine_grid->nodes->GetAgglomerate(d))
+          continue;
+        if (reserved[a] || reserved[b] || reserved[c] || reserved[d]) continue;
+
+        /*--- Geometrical quality check ---*/
+        if (!GeometricalCheck(a, fine_grid, config) || !GeometricalCheck(b, fine_grid, config) ||
+            !GeometricalCheck(c, fine_grid, config) || !GeometricalCheck(d, fine_grid, config))
+          continue;
+
+        /*--- Guard against duplicate indices ---*/
+        if (a == b || a == c || a == d || b == c || b == d || c == d) {
+          for (auto other_li : line_ids) line_processed[other_li] = 1;
+          continue;
+        }
+
+        /*--- Create 4-child coarse CV ---*/
+        fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 0, a);
+        fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 1, b);
+        fine_grid->nodes->SetParent_CV(c, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 2, c);
+        fine_grid->nodes->SetParent_CV(d, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 3, d);
+        nodes->SetnChildren_CV(Index_CoarseCV, 4);
+
+        reserved[a] = reserved[b] = reserved[c] = reserved[d] = 1;
+        MGQueue_InnerCV.RemoveCV(a);
+        MGQueue_InnerCV.RemoveCV(b);
+        MGQueue_InnerCV.RemoveCV(c);
+        MGQueue_InnerCV.RemoveCV(d);
+
+        Index_CoarseCV++;
+        line_processed[li1] = line_processed[li2] = 1;
+        for (auto other_li : line_ids)
+          if (other_li != li1 && other_li != li2) line_processed[other_li] = 1;
+        any_work = true;
+      }
+    }
+
+    /*--- B) Single-line 2-child merges for remaining lines ---*/
+    for (unsigned long li = 0; li < lines.size(); ++li) {
+      if (line_processed[li]) continue;
+      const auto& L = lines[li];
+      const auto idx1 = 1 + 2 * pair_idx;
+      const auto idx2 = idx1 + 1;
+      if (L.size() <= idx2) continue;
+
+      const auto a = L[idx1], b = L[idx2];
+      if (fine_grid->nodes->GetAgglomerate(a) || fine_grid->nodes->GetAgglomerate(b)) continue;
+      if (reserved[a] || reserved[b]) continue;
+      if (!GeometricalCheck(a, fine_grid, config) || !GeometricalCheck(b, fine_grid, config)) continue;
+
+      /*--- Create 2-child coarse CV ---*/
+      fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
+      nodes->SetChildren_CV(Index_CoarseCV, 0, a);
+      fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
+      nodes->SetChildren_CV(Index_CoarseCV, 1, b);
+      nodes->SetnChildren_CV(Index_CoarseCV, 2);
+
+      reserved[a] = reserved[b] = 1;
+      MGQueue_InnerCV.RemoveCV(a);
+      MGQueue_InnerCV.RemoveCV(b);
+
+      Index_CoarseCV++;
+      any_work = true;
+    }
+
+    pair_idx++;
+    if (!any_work) break;
+
+    /*--- Check if any line still has pairs at the next stage ---*/
+    bool any_more = false;
+    for (const auto& L : lines) {
+      if (L.size() > 1 + 2 * pair_idx + 1) {
+        any_more = true;
+        break;
+      }
+    }
+    if (!any_more) break;
+  }
 }
