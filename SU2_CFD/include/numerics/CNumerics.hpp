@@ -664,8 +664,9 @@ public:
    * \param[in] Cmag - Stochastic backscatter intensity coefficient.
    * \param[out] stochReynStress - Stochastic tensor (to be added to the Reynolds stress tensor).
    */
-  inline void ComputeStochReynStress(su2double density, su2double tke, su2double rndVec[3], 
-                                                 su2double Cmag, su2double stochReynStress[3][3]) {
+  template<class Vec, class Mat>
+  inline void ComputeStochReynStress(su2double density, su2double tke, const Vec& rndVec, 
+                                     su2double Cmag, Mat& stochReynStress) {
 
     /* --- Calculate stochastic tensor --- */
 

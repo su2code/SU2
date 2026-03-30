@@ -27,19 +27,13 @@
 
 #include "catch.hpp"
 #include <cstdint>
-
-/*--- Function to test (included in random_toolbox.hpp) ---*/
-inline double HashToUniform(uint64_t x) {
-  constexpr double inv53 = 1.0 / 9007199254740992.0;  // 1/2^53
-  uint64_t uInt = x >> 11;                            // top 53 bits
-  return (uInt + 1) * inv53;                          // map to (0,1]
-}
+#include "../../Common/include/toolboxes/random_toolbox.hpp"
 
 TEST_CASE("HashToUniform", "[Toolboxes]") {
   /*--- Basic checks: no zero, no >1 ---*/
   uint64_t simple_values[] = {0ULL, 1ULL, 123ULL, UINT64_MAX};
   for (auto v : simple_values) {
-    auto u = HashToUniform(v);
+    auto u = RandomToolbox::HashToUniform(v);
     CHECK(u > 0.0);
     CHECK(u <= 1.0);
   }
@@ -48,7 +42,7 @@ TEST_CASE("HashToUniform", "[Toolboxes]") {
   uint64_t x = (uint64_t(-1) >> 11) << 11;  // force top 53 bits = all ones
   x |= 0x7FF;                               // set lower bits to avoid masking issues
 
-  double u = HashToUniform(x);
+  double u = RandomToolbox::HashToUniform(x);
 
   CHECK(u > 0.0);
   CHECK(u <= 1.0);
@@ -56,6 +50,6 @@ TEST_CASE("HashToUniform", "[Toolboxes]") {
   /*--- Check exact theoretical min and max ---*/
   constexpr double inv53 = 1.0 / 9007199254740992.0;
 
-  CHECK(HashToUniform(0ULL) == Approx(inv53));
-  CHECK(HashToUniform(UINT64_MAX) == Approx(1.0));
+  CHECK(RandomToolbox::HashToUniform(0ULL) == Approx(inv53));
+  CHECK(RandomToolbox::HashToUniform(UINT64_MAX) == Approx(1.0));
 }

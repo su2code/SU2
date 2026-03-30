@@ -26,6 +26,7 @@
 
 #pragma once
 #include <cstdint>
+#include "../option_structure.hpp"
 
 namespace RandomToolbox {
 /// \addtogroup RandomToolbox
@@ -105,19 +106,20 @@ inline double GetNormal(unsigned long nodeIndex, unsigned long dim, unsigned lon
  * \param[in] x Argument of Bessel funtion.
  * \return Value of Bessel function.
  */
-inline su2double GetBesselZero(su2double x) {
-  double abx = fabs(x);
+template <class T>
+inline T GetBesselZero(T x) {
+  T abx = fabs(x);
   if (abx < 3.75) {
-    double t = abx / 3.75;
-    double p =
+    T t = abx / 3.75;
+    T p =
         1.0 +
         t * t *
             (3.5156229 +
              t * t * (3.0899424 + t * t * (1.2067492 + t * t * (0.2659732 + t * t * (0.0360768 + t * t * 0.0045813)))));
     return log(p);
   } else {
-    double t = 3.75 / abx;
-    double poly =
+    T t = 3.75 / abx;
+    T poly =
         0.39894228 +
         t * (0.01328592 +
              t * (0.00225319 +
@@ -135,22 +137,23 @@ inline su2double GetBesselZero(su2double x) {
  * \param[in] beta_z Argument in z-direction.
  * \return Value of the integral.
  */
-inline su2double GetBesselIntegral(su2double beta_x, su2double beta_y, su2double beta_z) {
-  const double A = 1.0 + 2.0 * (beta_x + beta_y + beta_z);
-  const double Bx = 2.0 * beta_x;
-  const double By = 2.0 * beta_y;
-  const double Bz = 2.0 * beta_z;
+template <class T>
+inline T GetBesselIntegral(T beta_x, T beta_y, T beta_z) {
+  const T A = 1.0 + 2.0 * (beta_x + beta_y + beta_z);
+  const T Bx = 2.0 * beta_x;
+  const T By = 2.0 * beta_y;
+  const T Bz = 2.0 * beta_z;
   const int N = 4000;
-  const double t_max = 20.0;
-  const double dt = t_max / N;
-  double sum = 0.0;
+  const T t_max = 20.0;
+  const T dt = t_max / N;
+  T sum = 0.0;
   for (int i = 1; i <= N; i++) {
-    double t = i * dt;
-    double lx = GetBesselZero(Bx * t);
-    double ly = GetBesselZero(By * t);
-    double lz = GetBesselZero(Bz * t);
-    double lin = log(t) - A * t + lx + ly + lz;
-    double integrand = exp(lin);
+    T t = i * dt;
+    T lx = GetBesselZero(Bx * t);
+    T ly = GetBesselZero(By * t);
+    T lz = GetBesselZero(Bz * t);
+    T lin = log(t) - A * t + lx + ly + lz;
+    T integrand = exp(lin);
     if (i == N) integrand *= 0.5;
     sum += integrand;
   }
