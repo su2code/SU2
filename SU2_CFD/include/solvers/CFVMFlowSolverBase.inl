@@ -705,11 +705,8 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
   END_SU2_OMP_FOR
 
   if ((iMesh == MESH_0) && (config.GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_CRITICAL {
-      StrainMag_Max = max(StrainMag_Max, strainMax);
-      Omega_Max = max(Omega_Max, omegaMax);
-    }
-    END_SU2_OMP_CRITICAL
+    atomicMax(strainMax, StrainMag_Max);
+    atomicMax(omegaMax, Omega_Max);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
@@ -1479,7 +1476,7 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
 
   if (VerificationSolution) {
     unsigned short iVar;
-    unsigned long iVertex, iPoint, total_index;
+    unsigned long iVertex, iPoint;
 
     bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -1521,8 +1518,7 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
 
         if (implicit) {
           for (iVar = 0; iVar < nVar; iVar++) {
-            total_index = iPoint * nVar + iVar;
-            Jacobian.DeleteValsRowi(total_index);
+            Jacobian.DeleteValsRowi(iPoint, iVar);
           }
         }
       }

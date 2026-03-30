@@ -28,15 +28,20 @@
 #include "mpi_structure.hpp"
 #include <cstring>  // memcpy
 
-/* Initialise the MPI Communicator Rank and Size */
+/* Initialise the MPI Communicator Rank, Size, and default MPI Communicator */
+#ifdef HAVE_MPI
 int CBaseMPIWrapper::Rank = 0;
 int CBaseMPIWrapper::Size = 1;
-
-/* Set the default MPI Communicator */
-#ifdef HAVE_MPI
 CBaseMPIWrapper::Comm CBaseMPIWrapper::currentComm = MPI_COMM_WORLD;
 #else
-CBaseMPIWrapper::Comm CBaseMPIWrapper::currentComm = 0;  // dummy value
+template <typename ScalarType>
+int CBaseMPIWrapper<ScalarType>::Rank = 0;
+
+template <typename ScalarType>
+int CBaseMPIWrapper<ScalarType>::Size = 1;
+
+template <typename ScalarType>
+typename CBaseMPIWrapper<ScalarType>::Comm CBaseMPIWrapper<ScalarType>::currentComm = 0;  // dummy value
 #endif
 
 #ifdef HAVE_MPI
@@ -122,7 +127,8 @@ void CBaseMPIWrapper::CopyData(const void* sendbuf, void* recvbuf, int size, Dat
 }
 #else  // HAVE_MPI
 
-void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName) {
+template <typename ScalarType>
+void CBaseMPIWrapper<ScalarType>::Error(const std::string& ErrorMsg, const std::string& FunctionName) {
   if (Rank == 0) {
     std::cout << std::endl << std::endl;
     std::cout << "Error in \"" << FunctionName << "\": " << std::endl;
@@ -134,12 +140,13 @@ void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName) {
   Abort(currentComm, 0);
 }
 
-void CBaseMPIWrapper::CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype, int recvshift,
-                               int sendshift) {
+template <typename ScalarType>
+void CBaseMPIWrapper<ScalarType>::CopyData(const void* sendbuf, void* recvbuf, int size, Datatype datatype,
+                                           int recvshift, int sendshift) {
   switch (datatype) {
     case MPI_DOUBLE:
       for (int i = 0; i < size; i++) {
-        static_cast<su2double*>(recvbuf)[i + recvshift] = static_cast<const su2double*>(sendbuf)[i + sendshift];
+        static_cast<ScalarType*>(recvbuf)[i + recvshift] = static_cast<const ScalarType*>(sendbuf)[i + sendshift];
       }
       break;
     case MPI_UNSIGNED_LONG:
@@ -178,7 +185,16 @@ void CBaseMPIWrapper::CopyData(const void* sendbuf, void* recvbuf, int size, Dat
       break;
   };
 }
+
+template class CBaseMPIWrapper<su2double>;
+#if defined CODI_REVERSE_TYPE
+template class CBaseMPIWrapper<passivedouble>;
 #endif
+#if defined USE_MIXED_PRECISION
+template class CBaseMPIWrapper<su2mixedfloat>;
+#endif
+
+#endif  // HAVE_MPI
 
 #ifdef HAVE_MPI
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
