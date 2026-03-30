@@ -816,10 +816,11 @@ class CSysMatrix {
   }
 
   /*!
-   * \brief Deletes the values of the row i of the sparse matrix.
-   * \param[in] i - Index of the row.
+   * \brief Deletes the values of a row of the sparse matrix.
+   * \param[in] block_i - Index of the block.
+   * \param[in] row - Row within the block.
    */
-  void DeleteValsRowi(unsigned long i);
+  void DeleteValsRowi(unsigned long block_i, unsigned long row);
 
   /*!
    * \brief Modifies this matrix (A) and a rhs vector (b) such that (A^-1 * b)_i = x_i.

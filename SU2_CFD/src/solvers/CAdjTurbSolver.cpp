@@ -184,7 +184,7 @@ void CAdjTurbSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       LinSysRes.SetBlock_Zero(iPoint);
 
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      Jacobian.DeleteValsRowi(iPoint);
+      Jacobian.DeleteValsRowi(iPoint, 0);
 
     }
   }
@@ -208,7 +208,7 @@ void CAdjTurbSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
       LinSysRes.SetBlock_Zero(iPoint);
 
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      Jacobian.DeleteValsRowi(iPoint);
+      Jacobian.DeleteValsRowi(iPoint, 0);
 
     }
   }
@@ -455,7 +455,7 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned short iVar;
-  unsigned long iPoint, total_index;
+  unsigned long iPoint;
   su2double Delta, Vol;
 
   /*--- Set maximum residual to zero ---*/
@@ -479,11 +479,10 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = -LinSysRes[total_index];
-      LinSysSol[total_index] = 0.0;
-      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
+      LinSysRes(iPoint, iVar) = -LinSysRes(iPoint, iVar);
+      LinSysSol(iPoint, iVar) = 0.0;
+      Residual_RMS[iVar] += LinSysRes(iPoint, iVar)*LinSysRes(iPoint, iVar);
+      AddRes_Max(iVar, fabs(LinSysRes(iPoint, iVar)), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
   }
@@ -492,9 +491,8 @@ void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
+      LinSysRes(iPoint, iVar) = 0.0;
+      LinSysSol(iPoint, iVar) = 0.0;
     }
   }
 

@@ -566,7 +566,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
         LinSysRes(iPoint, 0) = 0.0;
         nodes->SetRes_TruncErrorZero(iPoint);
 
-        if (implicit) Jacobian.DeleteValsRowi(iPoint);
+        if (implicit) Jacobian.DeleteValsRowi(iPoint, 0);
       }
     }
     END_SU2_OMP_FOR
@@ -848,13 +848,8 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
     }
     END_SU2_OMP_FOR
     /*--- Min/max over threads. ---*/
-    SU2_OMP_CRITICAL
-    {
-      Min_Delta_Time = min(Min_Delta_Time, minDt);
-      Max_Delta_Time = max(Max_Delta_Time, maxDt);
-      Global_Delta_Time = Min_Delta_Time;
-    }
-    END_SU2_OMP_CRITICAL
+    atomicMin(minDt, Min_Delta_Time);
+    atomicMax(maxDt, Max_Delta_Time);
   }
 
   /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
@@ -868,6 +863,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       Max_Delta_Time = rbuf_time;
     }
+    Global_Delta_Time = Min_Delta_Time;
   } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
@@ -914,9 +910,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time / nodes->GetLocalCFL(iPoint));
     }
     END_SU2_OMP_FOR
-    SU2_OMP_CRITICAL
-    Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
-    END_SU2_OMP_CRITICAL
+    atomicMin(glbDtND, Global_Delta_UnstTimeND);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {

@@ -979,12 +979,8 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
         }
         END_SU2_OMP_FOR
       }
-
-      SU2_OMP_CRITICAL {
-        integral[0] += local_integral[0];
-        integral[1] += local_integral[1];
-      }
-      END_SU2_OMP_CRITICAL
+      atomicAdd(local_integral[0], integral[0]);
+      atomicAdd(local_integral[1], integral[1]);
     }
     END_SU2_OMP_PARALLEL
 

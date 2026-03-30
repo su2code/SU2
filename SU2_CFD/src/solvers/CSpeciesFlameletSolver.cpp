@@ -214,7 +214,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
       if (flame_front_ignition) prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
-      
+
       for (auto iVar = 0u; iVar < nVar; iVar++) scalar_init[iVar] = config->GetSpecies_Init()[iVar];
 
       /*--- Set enthalpy based on initial temperature and scalars. ---*/
@@ -460,8 +460,7 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSo
         nodes->SetVal_ResTruncError_Zero(iPoint, I_ENTH);
 
         if (implicit) {
-          unsigned long total_index = iPoint * nVar + I_ENTH;
-          Jacobian.DeleteValsRowi(total_index);
+          Jacobian.DeleteValsRowi(iPoint, I_ENTH);
         }
       } else {
         /*--- Weak BC formulation. ---*/
