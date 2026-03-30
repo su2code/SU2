@@ -659,7 +659,7 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
   int nZone = 1; /* Default value if nothing is specified. */
 
   switch (val_format) {
-    case SU2: {
+    case ENUM_GRID::SU2: {
 
       /*--- Local variables for reading the SU2 file. ---*/
       string text_line;
@@ -695,7 +695,7 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
 
     }
 
-    case SU2_BIN: {
+    case ENUM_GRID::SU2_BIN: {
 
       /*--- Open and check the grid file and read the number of zones
             at the correct location. */
@@ -703,7 +703,7 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
       break;
     }
 
-    case CGNS_GRID: {
+    case ENUM_GRID::CGNS_GRID: {
 
 #ifdef HAVE_CGNS
 
@@ -770,11 +770,11 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
 
       break;
     }
-    case RECTANGLE: {
+    case ENUM_GRID::RECTANGLE: {
       nZone = 1;
       break;
     }
-    case BOX: {
+    case ENUM_GRID::BOX: {
       nZone = 1;
       break;
     }
@@ -789,7 +789,7 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
   int nDim = -1;
 
   switch (val_format) {
-    case SU2: {
+    case ENUM_GRID::SU2: {
 
       /*--- Local variables for reading the SU2 file. ---*/
       string text_line;
@@ -831,7 +831,7 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
       break;
     }
 
-    case SU2_BIN: {
+    case ENUM_GRID::SU2_BIN: {
 
       /*--- Open and check the grid file and read the number of dimensions
             at the correct location. */
@@ -839,7 +839,7 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
       break;
     }
 
-    case CGNS_GRID: {
+    case ENUM_GRID::CGNS_GRID: {
 
 #ifdef HAVE_CGNS
 
@@ -888,11 +888,11 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
 
       break;
     }
-    case RECTANGLE: {
+    case ENUM_GRID::RECTANGLE: {
       nDim = 2;
       break;
     }
-    case BOX: {
+    case ENUM_GRID::BOX: {
       nDim = 3;
       break;
     }
@@ -2270,9 +2270,11 @@ void CConfig::SetConfig_Options() {
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
   /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
-  addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
+  addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, ENUM_GRID::SU2);
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh"));
+  /*!\brief MESH_OUT_FORMAT \n DESCRIPTION: Mesh output file format \n OPTIONS: see \link OutputMesh_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
+  addEnumOption("MESH_OUT_FORMAT", Mesh_Out_FileFormat, OutputMesh_Map, ENUM_GRID::SU2);
   /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out"));
 
@@ -7679,7 +7681,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_COMPONENT::SU2_DEF) {
-    cout << "Output mesh file name: " << GetMesh_Out_FileName() << ".su2. " << endl;
+    cout << "Output mesh file name: " << GetMesh_Out_FileName() << ". " << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
         cout << "Cell stiffness scaled by inverse of the cell volume." << endl;

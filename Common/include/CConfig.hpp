@@ -814,6 +814,7 @@ private:
   su2double *nBlades;                 /*!< \brief number of blades for turbomachinery computation. */
   unsigned short Geo_Description;     /*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;     /*!< \brief Mesh input format. */
+  unsigned short Mesh_Out_FileFormat; /*!< \brief Mesh output format. */
   TAB_OUTPUT Tab_FileFormat;          /*!< \brief Format of the output files. */
   unsigned short output_precision;    /*!< \brief <ofstream>.precision(value) for SU2_DOT and HISTORY output */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
@@ -5696,17 +5697,21 @@ public:
     /*--- we keep the original Mesh_FileName  ---*/
     string meshFilename = Mesh_FileName;
 
-    /*--- strip the extension, only if it is .su2 or .cgns ---*/
+    /*--- strip the extension, only if it is .su2, .su2b or .cgns ---*/
     PrintingToolbox::TrimExtension(".su2",meshFilename);
+    PrintingToolbox::TrimExtension(".su2b",meshFilename);
     PrintingToolbox::TrimExtension(".cgns",meshFilename);
 
     switch (GetMesh_FileFormat()) {
-      case SU2:
-      case RECTANGLE:
-      case BOX:
+      case ENUM_GRID::SU2:
+      case ENUM_GRID::RECTANGLE:
+      case ENUM_GRID::BOX:
         meshFilename += ".su2";
         break;
-      case CGNS_GRID:
+      case ENUM_GRID::SU2_BIN:
+        meshFilename += ".su2b";
+        break;
+      case ENUM_GRID::CGNS_GRID:
         meshFilename += ".cgns";
         break;
       default:
@@ -5727,9 +5732,22 @@ public:
     /*--- we keep the original Mesh_Out_FileName  ---*/
     string meshFilename = Mesh_Out_FileName;
 
-    /*--- strip the extension, only if it is .su2 or .cgns ---*/
+    /*--- strip the extension, only if it is .su2, .su2b or .cgns ---*/
     PrintingToolbox::TrimExtension(".su2",meshFilename);
+    PrintingToolbox::TrimExtension(".su2b",meshFilename);
     PrintingToolbox::TrimExtension(".cgns",meshFilename);
+
+    switch (GetMesh_Out_FileFormat()) {
+      case ENUM_GRID::SU2:
+        meshFilename += ".su2";
+        break;
+      case ENUM_GRID::SU2_BIN:
+        meshFilename += ".su2b";
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized mesh_out format specified!", CURRENT_FUNCTION);
+      break;
+    }
 
     return meshFilename;
   }
@@ -5769,10 +5787,16 @@ public:
   }
 
   /*!
-   * \brief Get the format of the input/output grid.
-   * \return Format of the input/output grid.
+   * \brief Get the format of the input grid.
+   * \return Format of the input grid.
    */
   unsigned short GetMesh_FileFormat(void) const { return Mesh_FileFormat; }
+
+  /*!
+   * \brief Get the format of the output grid.
+   * \return Format of the output grid.
+   */
+  unsigned short GetMesh_Out_FileFormat(void) const { return Mesh_Out_FileFormat; }
 
   /*!
    * \brief Get the format of the output solution.

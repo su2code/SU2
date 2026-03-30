@@ -49,6 +49,7 @@
 #include "../../include/output/filewriter/CSU2FileWriter.hpp"
 #include "../../include/output/filewriter/CSU2BinaryFileWriter.hpp"
 #include "../../include/output/filewriter/CSU2MeshFileWriter.hpp"
+#include "../../include/output/filewriter/CSU2MeshBinaryFileWriter.hpp"
 
 namespace {
 volatile sig_atomic_t STOP;
@@ -471,6 +472,25 @@ void COutput::WriteToFile(CConfig *config, CGeometry *geometry, OUTPUT_TYPE form
 
       LogOutputFiles("SU2 mesh");
       fileWriter = new CSU2MeshFileWriter(volumeDataSorter, config->GetiZone(), config->GetnZone());
+
+      break;
+
+    case OUTPUT_TYPE::MESH_BINARY:
+
+      extension = CSU2MeshBinaryFileWriter::fileExt;
+
+      if (fileName.empty())
+        fileName = config->GetFilename(volumeFilename, "", curTimeIter);
+
+      if (!config->GetWrt_Volume_Overwrite())
+        filename_iter = config->GetFilename_Iter(fileName, curInnerIter, curOuterIter);
+
+      /*--- Load and sort the output data and connectivity. ---*/
+
+      volumeDataSorter->SortConnectivity(config, geometry, true);
+
+      LogOutputFiles("SU2 binary mesh");
+      fileWriter = new CSU2MeshBinaryFileWriter(volumeDataSorter, config->GetiZone(), config->GetnZone());
 
       break;
 
