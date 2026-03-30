@@ -373,14 +373,11 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
         }
       }  // end target vertex loop
       END_SU2_OMP_FOR
-      SU2_OMP_CRITICAL {
-        totalDonorPoints += totalDonors;
-        MinDonors = min(MinDonors, minDonors);
-        MaxDonors = max(MaxDonors, maxDonors);
-        AvgCorrection += sumCorr;
-        MaxCorrection = max(MaxCorrection, maxCorr);
-      }
-      END_SU2_OMP_CRITICAL
+      atomicAdd(totalDonors, totalDonorPoints);
+      atomicMin(minDonors, MinDonors);
+      atomicMax(maxDonors, MaxDonors);
+      atomicAdd(sumCorr, AvgCorrection);
+      atomicMax(maxCorr, MaxCorrection);
     }
     END_SU2_OMP_PARALLEL
 

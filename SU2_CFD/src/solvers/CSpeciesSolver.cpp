@@ -357,15 +357,14 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    if (config->GetMarker_StrongBC(Marker_Tag)==true) {
+    if (config->GetMarker_StrongBC(Marker_Tag)) {
       nodes->SetSolution_Old(iPoint, Inlet_SpeciesVars[val_marker][iVertex]);
 
       LinSysRes.SetBlock_Zero(iPoint);
 
       /*--- Includes 1 in the diagonal ---*/
       for (auto iVar = 0u; iVar < nVar; iVar++) {
-        auto total_index = iPoint * nVar + iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     } else {  // weak BC
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
@@ -473,8 +472,7 @@ void CSpeciesSolver::BC_Wall_Generic(CGeometry* geometry, CSolver** solver_conta
           nodes->SetSolution_Old(iPoint, iVar, WallSpecies);
           LinSysRes(iPoint, iVar) = 0.0;
           if (implicit) {
-            unsigned long total_index = iPoint * nVar + iVar;
-            Jacobian.DeleteValsRowi(total_index);
+            Jacobian.DeleteValsRowi(iPoint, iVar);
           }
         break;
       }
@@ -547,8 +545,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
 
       /*--- Includes 1 on the diagonal ---*/
       for (auto iVar = 0u; iVar < nVar; iVar++) {
-        auto total_index = iPoint * nVar + iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     } else {  // weak BC
 

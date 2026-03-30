@@ -127,7 +127,7 @@ protected:
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j) const {
 
-    static_assert(PrimVarType::nVar <= Derived::nPrimVar,"");
+    static_assert(PrimVarType::nVar <= Derived::nPrimVar);
 
     /*--- Pointer on which to call the "compile-time virtual" methods. ---*/
 
