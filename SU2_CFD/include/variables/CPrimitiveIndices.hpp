@@ -1,14 +1,14 @@
 /*!
  * \file CPrimitiveIndices.hpp
  * \brief Abstract representation of flow primitive variable indices that tries to be efficient.
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -90,7 +90,7 @@ struct CPrimitiveIndices {
   template <class ConcreteIndices>
   void Construct(IndexType nDim, IndexType nSpecies) {
     /*--- Build the indices object in the static buffer owned by this class. ---*/
-    static_assert(sizeof(ConcreteIndices) <= 2 * sizeof(IndexType), "");
+    static_assert(sizeof(ConcreteIndices) <= 2 * sizeof(IndexType));
     new(data_) ConcreteIndices(nDim, nSpecies);
   }
 

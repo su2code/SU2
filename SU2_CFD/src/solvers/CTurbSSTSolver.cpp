@@ -2,14 +2,14 @@
  * \file CTurbSSTSolver.cpp
  * \brief Main subroutines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -505,8 +505,8 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
     if (implicit) {
       /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-      Jacobian.DeleteValsRowi(iPoint*nVar);
-      Jacobian.DeleteValsRowi(iPoint*nVar+1);
+      Jacobian.DeleteValsRowi(iPoint, 0);
+      Jacobian.DeleteValsRowi(iPoint, 1);
     }
   }
   END_SU2_OMP_FOR
@@ -568,8 +568,8 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
 
     if (implicit) {
       /*--- includes 1 in the diagonal ---*/
-      Jacobian.DeleteValsRowi(iPoint_Neighbor*nVar);
-      Jacobian.DeleteValsRowi(iPoint_Neighbor*nVar+1);
+      Jacobian.DeleteValsRowi(iPoint_Neighbor, 0);
+      Jacobian.DeleteValsRowi(iPoint_Neighbor, 1);
     }
   }
 }
@@ -1046,9 +1046,9 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
 
 }
 
-void CTurbSSTSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+void CTurbSSTSolver::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) {
 
   const su2double allowableRatio = config->GetMaxUpdateFractionSST();
 
-  ComputeUnderRelaxationFactorHelper(allowableRatio);
+  ComputeUnderRelaxationFactorHelper(solver_container, allowableRatio);
 }

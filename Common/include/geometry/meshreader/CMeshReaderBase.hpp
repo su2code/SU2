@@ -4,14 +4,14 @@
  * \brief Header file for the class CMeshReaderBase.
  *        The implementations are in the <i>CMeshReaderBase.cpp</i> file.
  * \author T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -88,6 +88,12 @@ class CMeshReaderBase {
    */
   void GetCornerPointsAllFaces(const unsigned long* elemInfo, unsigned short& numFaces, unsigned short nPointsPerFace[],
                                unsigned long faceConn[6][4]);
+
+  /*!
+   * \brief Creates copies of some markers.
+   * \param[in] srcDstMarkers - List of marker names [src_1, dst_1, ..., src_n, dst_n].
+   */
+  void CopyMarkers(const std::vector<std::string>& srcDstMarkers);
 
  public:
   /*!

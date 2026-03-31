@@ -2,14 +2,14 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -232,13 +232,9 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     if (ElemVolume <= 0.0) elCount++;
   }
   END_SU2_OMP_FOR
-  SU2_OMP_CRITICAL
-  {
-    MaxVolume = max(MaxVolume, maxVol);
-    MinVolume = min(MinVolume, minVol);
-    ElemCounter += elCount;
-  }
-  END_SU2_OMP_CRITICAL
+  atomicMax(maxVol, MaxVolume);
+  atomicMin(minVol, MinVolume);
+  atomicAdd(elCount, ElemCounter);
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
@@ -367,12 +363,9 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
     }
     END_SU2_OMP_FOR
-    SU2_OMP_CRITICAL
-    {
-      MaxDistance = max(MaxDistance, MaxDistance_Local);
-      MinDistance = min(MinDistance, MinDistance_Local);
-    }
-    END_SU2_OMP_CRITICAL
+
+    atomicMax(MaxDistance_Local, MaxDistance);
+    atomicMin(MinDistance_Local, MinDistance);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {

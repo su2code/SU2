@@ -2,14 +2,14 @@
  * \file common.hpp
  * \brief Common convection-related methods.
  * \author P. Gomes, F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -406,7 +406,7 @@ template<class PrimVarType, class ConsVarType, size_t nDim>
 FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const PrimVarType& V,
                                                const ConsVarType& U,
                                                const VectorDbl<nDim>& normal) {
-  static_assert(ConsVarType::nVar == nDim+2,"");
+  static_assert(ConsVarType::nVar == nDim+2);
   Double mdot = dot(U.momentum(), normal);
   VectorDbl<nDim+2> flux;
   flux(0) = mdot;

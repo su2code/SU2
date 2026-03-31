@@ -2,14 +2,14 @@
  * \file CTurbSASolver.cpp
  * \brief Main subroutines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -301,7 +301,7 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
     /*--- Roughness heights. ---*/
     numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
   };
-  
+
   /*--- Now instantiate the generic non-conservative implementation with the functor above. ---*/
   Viscous_Residual_NonCons(iEdge, geometry, solver_container, numerics, config, SolverSpecificNumerics);
 
@@ -479,7 +479,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
         /*--- Includes 1 in the diagonal ---*/
 
-        if (implicit) Jacobian.DeleteValsRowi(iPoint);
+        if (implicit) Jacobian.DeleteValsRowi(iPoint, 0);
        } else {
          /*--- For rough walls, the boundary condition is given by
           * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
@@ -1342,7 +1342,7 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       /*--- includes 1 in the diagonal ---*/
 
-      if (implicit) Jacobian.DeleteValsRowi(iPoint_Neighbor);
+      if (implicit) Jacobian.DeleteValsRowi(iPoint_Neighbor, 0);
     }
   }
 }
@@ -1555,7 +1555,7 @@ void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarke
   }
 }
 
-void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+void CTurbSASolver::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) {
 
   /* Apply the turbulent under-relaxation to the SA variants. The
    SA_NEG model is more robust due to allowing for negative nu_tilde,
@@ -1568,6 +1568,6 @@ void CTurbSASolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 
   const su2double allowableRatio =  config->GetMaxUpdateFractionSA();
 
-  ComputeUnderRelaxationFactorHelper(allowableRatio);
+  ComputeUnderRelaxationFactorHelper(solver_container, allowableRatio);
 
 }

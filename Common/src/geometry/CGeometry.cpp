@@ -2,14 +2,14 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -2468,6 +2468,9 @@ su2double CGeometry::GetSurfaceArea(const CConfig* config, unsigned short val_ma
 }
 
 void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
+  const su2double MIN_AREA = 1e-12;            // minimum area to consider a normal valid
+  const su2double PARALLEL_TOLERANCE = 0.001;  // min. angle between symm. planes to consider them non-parallel.
+
   /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against.
    * All nodes that are shared by multiple symmetries have to get a corrected normal. */
 
@@ -2557,6 +2560,8 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       /*--- Loop over previous symmetries and if this point shares them, make this normal orthogonal to them.
        * It's ok if we normalize merged normals against themselves, we get 0 area and this becomes a no-op. ---*/
 
+      std::vector<size_t> parallelMarkers;  // Track markers with nearly-parallel normals
+
       for (size_t j = 0; j < i; ++j) {
         const auto jMarker = symMarkers[j];
         const auto jVertex = nodes->GetVertex(iPoint, jMarker);
@@ -2566,14 +2571,48 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
         GetNormal(jMarker, jVertex, jNormal);
 
         const su2double proj = GeometryToolbox::DotProduct(int(MAXNDIM), jNormal.data(), iNormal.data());
+        const su2double angleDiff = std::abs(1.0 - std::abs(proj));
+
+        // Check if normals are nearly parallel (within ~2.5 degrees)
+        // cos(2.5°) ≈ 0.999, so (1 - cos(2.5°)) ≈ 0.001
+        if (angleDiff < PARALLEL_TOLERANCE) {
+          // These normals are nearly parallel - average them instead of orthogonalizing
+          parallelMarkers.push_back(j);
+          for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] += jNormal[iDim];
+          continue;
+        }
+
         for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] -= proj * jNormal[iDim];
+      }
+
+      /*--- If we found parallel markers, average and store the result for all involved markers ---*/
+      if (!parallelMarkers.empty()) {
+        // Normalize the averaged normal
+        const su2double avgArea = GeometryToolbox::Norm(int(MAXNDIM), iNormal.data());
+        if (avgArea > MIN_AREA) {
+          for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] /= avgArea;
+
+          // Store the averaged normal for the current marker
+          symmetryNormals[iMarker][iVertex] = iNormal;
+
+          // Also update all parallel markers with the same averaged normal
+          for (const auto j : parallelMarkers) {
+            const auto jMarker = symMarkers[j];
+            const auto jVertex = nodes->GetVertex(iPoint, jMarker);
+            if (jVertex >= 0) {
+              symmetryNormals[jMarker][jVertex] = iNormal;
+            }
+          }
+        }
+        continue;  // Skip the normal orthogonalization path below
       }
 
       /*--- Normalize. If the norm is close to zero it means the normal is a linear combination of previous
        * normals, in this case we don't need to store the corrected normal, using the original in the gradient
        * correction will have no effect since previous corrections will remove components in this direction). ---*/
       const su2double area = GeometryToolbox::Norm(int(MAXNDIM), iNormal.data());
-      if (area > 1e-12) {
+
+      if (area > MIN_AREA) {
         for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] /= area;
         symmetryNormals[iMarker][iVertex] = iNormal;
       }

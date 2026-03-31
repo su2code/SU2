@@ -2,14 +2,14 @@
  * \file graph_toolbox.hpp
  * \brief Functions and classes to build/represent sparse graphs or sparse patterns.
  * \author P. Gomes
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,7 +56,7 @@ enum class ConnectivityType { FiniteVolume = 0, FiniteElement = 1 };
  */
 template <typename Index_t>
 class CCompressedSparsePattern {
-  static_assert(std::is_integral<Index_t>::value, "");
+  static_assert(std::is_integral<Index_t>::value);
 
  private:
   su2vector<Index_t> m_outerPtr;       /*!< \brief Start positions of the inner indices for each outer index. */
@@ -490,8 +490,8 @@ T createNaturalColoring(Index_t numInnerIndexes) {
 template <typename Color_t = unsigned char, size_t MaxColors = 255, size_t MaxMB = 128, class T>
 T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool includeOuterIdx = false, bool balanceColors = false,
                      std::vector<Color_t>* indexColor = nullptr) {
-  static_assert(std::is_integral<Color_t>::value, "");
-  static_assert(std::numeric_limits<Color_t>::max() >= MaxColors, "");
+  static_assert(std::is_integral<Color_t>::value);
+  static_assert(std::numeric_limits<Color_t>::max() >= MaxColors);
 
   using Index_t = typename T::IndexType;
 
@@ -607,7 +607,7 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool includeOuterId
  */
 template <typename T = unsigned long>
 struct GridColor {
-  static_assert(std::is_integral<T>::value, "");
+  static_assert(std::is_integral<T>::value);
 
   const T size;
   T groupSize;
@@ -625,7 +625,7 @@ struct GridColor {
  */
 template <typename T = unsigned long>
 struct DummyGridColor {
-  static_assert(std::is_integral<T>::value, "");
+  static_assert(std::is_integral<T>::value);
 
   T size;
   struct {

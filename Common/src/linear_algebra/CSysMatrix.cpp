@@ -2,14 +2,14 @@
  * \file CSysMatrix.cpp
  * \brief Implementation of the sparse matrix class.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -601,10 +601,7 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 }
 
 template <class ScalarType>
-void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
-  const auto block_i = i / nVar;
-  const auto row = i % nVar;
-
+void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long block_i, unsigned long row) {
   for (auto index = row_ptr[block_i]; index < row_ptr[block_i + 1]; index++) {
     for (auto iVar = 0u; iVar < nVar; iVar++)
       matrix[index * nVar * nVar + row * nVar + iVar] = 0.0;  // Delete row values in the block

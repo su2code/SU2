@@ -2,14 +2,14 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -492,7 +492,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
     if (implicit) {
       for (unsigned short iVar = 1; iVar <= nDim; iVar++)
-        Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
     }
 
     if (!energy) continue;
@@ -644,8 +644,8 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
     if (implicit) {
       for (unsigned short iVar = 1; iVar <= nDim; iVar++)
-        Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
-      if (energy) Jacobian.DeleteValsRowi(iPoint*nVar+nDim+1);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
+      if (energy) Jacobian.DeleteValsRowi(iPoint, nDim + 1);
     }
 
     if (!energy) continue;
