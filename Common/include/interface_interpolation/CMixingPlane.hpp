@@ -64,22 +64,21 @@ class CMixingPlane final : public CInterpolator {
     auto minDist = std::numeric_limits<su2double>::max();
     su2double coeff = 0.0;  // Interpolation coefficient
 
-    if (iSpanTargetValue < spanValuesDonor[0]) {
+    if (iSpanTargetValue <= spanValuesDonor[0]) {
       PrintClampingWarning(rank, true);
       return {0, 0.0};
     }
 
-    if (iSpanTargetValue > spanValuesDonor[nSpanDonor - 1]) {
+    if (iSpanTargetValue >= spanValuesDonor[nSpanDonor - 1]) {
       PrintClampingWarning(rank, false);
       return {nSpanDonor - 1, 0.0};
     }
 
     for (auto iSpanDonor = 0u; iSpanDonor < nSpanDonor - 1; iSpanDonor++) {
       const auto dist = abs(iSpanTargetValue - spanValuesDonor[iSpanDonor]);
-      if (dist < minDist && iSpanTargetValue > spanValuesDonor[iSpanDonor]) {
+      if (dist < minDist && iSpanTargetValue >= spanValuesDonor[iSpanDonor]) {
         kSpan = iSpanDonor;
         minDist = dist;
-        break;
       }
     }
     coeff = (iSpanTargetValue - spanValuesDonor[kSpan]) / (spanValuesDonor[kSpan + 1] - spanValuesDonor[kSpan]);
