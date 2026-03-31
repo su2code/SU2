@@ -171,6 +171,7 @@ bytes   start   end   description      range / format
 #endif
 #include <sys/types.h>
 #include <time.h>
+#define _POSIX_SOURCE
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>

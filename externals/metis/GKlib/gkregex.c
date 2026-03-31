@@ -52,6 +52,7 @@ void gkfooo() { return; }
 # include "../locale/localeinfo.h"
 #endif
 
+#include <strings.h>
 #include "GKlib.h"
 
 
