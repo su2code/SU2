@@ -1300,8 +1300,8 @@ su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, 
 void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
                                                   const CConfig* config, CMultiGridQueue& MGQueue_InnerCV) {
   /*--- Parameters ---*/
-  constexpr su2double ANGLE_THRESHOLD_DEG = 20.0; /*!< Stop line if direction deviates more than this. */
-  constexpr unsigned long MAX_LINE_LENGTH = 20;   /*!< Max nodes on implicit line (including wall). */
+  const su2double ANGLE_THRESHOLD_DEG = 20.0;   /*!< Stop line if direction deviates more than this. */
+  constexpr unsigned long MAX_LINE_LENGTH = 20; /*!< Max nodes on implicit line (including wall). */
   const su2double cos_threshold = cos(ANGLE_THRESHOLD_DEG * PI_NUMBER / 180.0);
 
   const unsigned long nPointFine = fine_grid->GetnPoint();
