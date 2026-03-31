@@ -84,8 +84,8 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] config - Configuration.
    * \param[in,out] MGQueue_InnerCV - Queue for domain agglomeration; processed points are removed.
    */
-  void AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
-                                const CConfig* config, CMultiGridQueue& MGQueue_InnerCV);
+  void AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
+                                CMultiGridQueue& MGQueue_InnerCV);
 
  public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
