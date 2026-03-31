@@ -164,17 +164,12 @@ particular, the linear elasticity equations hold only for small deformations. --
 }
 
 void CLinearElasticity::UpdateGridCoord(CGeometry* geometry, CConfig* config) {
-  unsigned short iDim;
-  unsigned long iPoint, total_index;
-  su2double new_coord;
-
   /*--- Update the grid coordinates using the solution of the linear system
    after grid deformation (LinSysSol contains the x, y, z displacements). ---*/
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    for (iDim = 0; iDim < nDim; iDim++) {
-      total_index = iPoint * nDim + iDim;
-      new_coord = geometry->nodes->GetCoord(iPoint, iDim) + LinSysSol[total_index];
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+    for (auto iDim = 0ul; iDim < nDim; iDim++) {
+      su2double new_coord = geometry->nodes->GetCoord(iPoint, iDim) + LinSysSol(iPoint, iDim);
       if (fabs(new_coord) < EPS * EPS) new_coord = 0.0;
       geometry->nodes->SetCoord(iPoint, iDim, new_coord);
     }
@@ -190,7 +185,7 @@ void CLinearElasticity::UpdateGridCoord(CGeometry* geometry, CConfig* config) {
 void CLinearElasticity::UpdateGridCoord_Derivatives(CGeometry* geometry, CConfig* config,
                                                     bool ForwardProjectionDerivative) {
   unsigned short iDim, iMarker;
-  unsigned long iPoint, total_index, iVertex;
+  unsigned long iPoint, iVertex;
 
   SU2_COMPONENT Kind_SU2 = config->GetKind_SU2();
 
@@ -200,9 +195,8 @@ void CLinearElasticity::UpdateGridCoord_Derivatives(CGeometry* geometry, CConfig
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       su2double new_coord[3] = {};
       for (iDim = 0; iDim < nDim; iDim++) {
-        total_index = iPoint * nDim + iDim;
         new_coord[iDim] = geometry->nodes->GetCoord(iPoint, iDim);
-        SU2_TYPE::SetDerivative(new_coord[iDim], SU2_TYPE::GetValue(LinSysSol[total_index]));
+        SU2_TYPE::SetDerivative(new_coord[iDim], SU2_TYPE::GetValue(LinSysSol(iPoint, iDim)));
       }
       geometry->nodes->SetCoord(iPoint, new_coord);
     }
@@ -211,7 +205,6 @@ void CLinearElasticity::UpdateGridCoord_Derivatives(CGeometry* geometry, CConfig
     if (config->GetSmoothGradient()) {
       for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
         for (iDim = 0; iDim < nDim; iDim++) {
-          total_index = iPoint * nDim + iDim;
           geometry->SetSensitivity(iPoint, iDim, 0.0);
         }
       }
@@ -222,8 +215,7 @@ void CLinearElasticity::UpdateGridCoord_Derivatives(CGeometry* geometry, CConfig
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->nodes->GetDomain(iPoint)) {
             for (iDim = 0; iDim < nDim; iDim++) {
-              total_index = iPoint * nDim + iDim;
-              geometry->SetSensitivity(iPoint, iDim, LinSysSol[total_index]);
+              geometry->SetSensitivity(iPoint, iDim, LinSysSol(iPoint, iDim));
             }
           }
         }
@@ -232,8 +224,7 @@ void CLinearElasticity::UpdateGridCoord_Derivatives(CGeometry* geometry, CConfig
   } else if (config->GetSmoothGradient() && ForwardProjectionDerivative) {
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        total_index = iPoint * nDim + iDim;
-        geometry->SetSensitivity(iPoint, iDim, LinSysSol[total_index]);
+        geometry->SetSensitivity(iPoint, iDim, LinSysSol(iPoint, iDim));
       }
     }
   }
@@ -1247,7 +1238,7 @@ su2double CLinearElasticity::ShapeFunc_Hexa(su2double Xi, su2double Eta, su2doub
 
 void CLinearElasticity::SetDomainDisplacements(CGeometry* geometry, CConfig* config) {
   unsigned short iDim, nDim = geometry->GetnDim();
-  unsigned long iPoint, total_index;
+  unsigned long iPoint;
 
   if (config->GetHold_GridFixed()) {
     auto MinCoordValues = config->GetHold_GridFixed_Coord();
@@ -1260,10 +1251,9 @@ void CLinearElasticity::SetDomainDisplacements(CGeometry* geometry, CConfig* con
       auto Coord = geometry->nodes->GetCoord(iPoint);
       for (iDim = 0; iDim < nDim; iDim++) {
         if ((Coord[iDim] < MinCoordValues[iDim]) || (Coord[iDim] > MaxCoordValues[iDim])) {
-          total_index = iPoint * nDim + iDim;
-          LinSysRes[total_index] = 0.0;
-          LinSysSol[total_index] = 0.0;
-          StiffMatrix.DeleteValsRowi(total_index);
+          LinSysRes(iPoint, iDim) = 0.0;
+          LinSysSol(iPoint, iDim) = 0.0;
+          StiffMatrix.DeleteValsRowi(iPoint, iDim);
         }
       }
     }
@@ -1276,10 +1266,9 @@ void CLinearElasticity::SetDomainDisplacements(CGeometry* geometry, CConfig* con
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       if (geometry->nodes->GetWall_Distance(iPoint) >= config->GetDeform_Limit()) {
         for (iDim = 0; iDim < nDim; iDim++) {
-          total_index = iPoint * nDim + iDim;
-          LinSysRes[total_index] = 0.0;
-          LinSysSol[total_index] = 0.0;
-          StiffMatrix.DeleteValsRowi(total_index);
+          LinSysRes(iPoint, iDim) = 0.0;
+          LinSysSol(iPoint, iDim) = 0.0;
+          StiffMatrix.DeleteValsRowi(iPoint, iDim);
         }
       }
     }
@@ -1288,7 +1277,7 @@ void CLinearElasticity::SetDomainDisplacements(CGeometry* geometry, CConfig* con
 
 void CLinearElasticity::SetBoundaryDisplacements(CGeometry* geometry, CConfig* config) {
   unsigned short iDim, nDim = geometry->GetnDim(), iMarker, axis = 0;
-  unsigned long iPoint, total_index, iVertex;
+  unsigned long iPoint, iVertex;
   su2double *VarCoord, MeanCoord[3] = {0.0, 0.0, 0.0}, VarIncrement = 1.0;
 
   /*--- If requested (no by default) impose the surface deflections in
@@ -1307,10 +1296,9 @@ void CLinearElasticity::SetBoundaryDisplacements(CGeometry* geometry, CConfig* c
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++) {
-          total_index = iPoint * nDim + iDim;
-          LinSysRes[total_index] = 0.0;
-          LinSysSol[total_index] = 0.0;
-          StiffMatrix.DeleteValsRowi(total_index);
+          LinSysRes(iPoint, iDim) = 0.0;
+          LinSysSol(iPoint, iDim) = 0.0;
+          StiffMatrix.DeleteValsRowi(iPoint, iDim);
         }
       }
     }
@@ -1327,10 +1315,9 @@ void CLinearElasticity::SetBoundaryDisplacements(CGeometry* geometry, CConfig* c
         VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          total_index = iPoint * nDim + iDim;
-          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          StiffMatrix.DeleteValsRowi(total_index);
+          LinSysRes(iPoint, iDim) = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          LinSysSol(iPoint, iDim) = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          StiffMatrix.DeleteValsRowi(iPoint, iDim);
         }
       }
     }
@@ -1367,10 +1354,9 @@ void CLinearElasticity::SetBoundaryDisplacements(CGeometry* geometry, CConfig* c
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        total_index = iPoint * nDim + axis;
-        LinSysRes[total_index] = 0.0;
-        LinSysSol[total_index] = 0.0;
-        StiffMatrix.DeleteValsRowi(total_index);
+        LinSysRes(iPoint, axis) = 0.0;
+        LinSysSol(iPoint, axis) = 0.0;
+        StiffMatrix.DeleteValsRowi(iPoint, axis);
       }
     }
   }
@@ -1382,10 +1368,9 @@ void CLinearElasticity::SetBoundaryDisplacements(CGeometry* geometry, CConfig* c
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         for (iDim = 0; iDim < nDim; iDim++) {
-          total_index = iPoint * nDim + iDim;
-          LinSysRes[total_index] = 0.0;
-          LinSysSol[total_index] = 0.0;
-          StiffMatrix.DeleteValsRowi(total_index);
+          LinSysRes(iPoint, axis) = 0.0;
+          LinSysSol(iPoint, axis) = 0.0;
+          StiffMatrix.DeleteValsRowi(iPoint, axis);
         }
       }
     }
@@ -1399,10 +1384,9 @@ void CLinearElasticity::SetBoundaryDisplacements(CGeometry* geometry, CConfig* c
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
         for (iDim = 0; iDim < nDim; iDim++) {
-          total_index = iPoint * nDim + iDim;
-          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          StiffMatrix.DeleteValsRowi(total_index);
+          LinSysRes(iPoint, iDim) = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          LinSysSol(iPoint, iDim) = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          StiffMatrix.DeleteValsRowi(iPoint, iDim);
         }
       }
     }
@@ -1411,7 +1395,7 @@ void CLinearElasticity::SetBoundaryDisplacements(CGeometry* geometry, CConfig* c
 
 void CLinearElasticity::SetBoundaryDerivatives(CGeometry* geometry, CConfig* config, bool ForwardProjectionDerivative) {
   unsigned short iDim, iMarker;
-  unsigned long iPoint, total_index, iVertex;
+  unsigned long iPoint, iVertex;
 
   su2double* VarCoord;
   SU2_COMPONENT Kind_SU2 = config->GetKind_SU2();
@@ -1422,9 +1406,8 @@ void CLinearElasticity::SetBoundaryDerivatives(CGeometry* geometry, CConfig* con
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
           for (iDim = 0; iDim < nDim; iDim++) {
-            total_index = iPoint * nDim + iDim;
-            LinSysRes[total_index] = SU2_TYPE::GetDerivative(VarCoord[iDim]);
-            LinSysSol[total_index] = SU2_TYPE::GetDerivative(VarCoord[iDim]);
+            LinSysRes(iPoint, iDim) = SU2_TYPE::GetDerivative(VarCoord[iDim]);
+            LinSysSol(iPoint, iDim) = SU2_TYPE::GetDerivative(VarCoord[iDim]);
           }
         }
       }
@@ -1433,9 +1416,8 @@ void CLinearElasticity::SetBoundaryDerivatives(CGeometry* geometry, CConfig* con
   } else if ((Kind_SU2 == SU2_COMPONENT::SU2_DOT) && !ForwardProjectionDerivative) {
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        total_index = iPoint * nDim + iDim;
-        LinSysRes[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
-        LinSysSol[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
+        LinSysRes(iPoint, iDim) = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
+        LinSysSol(iPoint, iDim) = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
       }
     }
   } else if (config->GetSmoothGradient() && ForwardProjectionDerivative) {
@@ -1444,9 +1426,8 @@ void CLinearElasticity::SetBoundaryDerivatives(CGeometry* geometry, CConfig* con
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           for (iDim = 0; iDim < nDim; iDim++) {
-            total_index = iPoint * nDim + iDim;
-            LinSysRes[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
-            LinSysSol[total_index] = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
+            LinSysRes(iPoint, iDim) = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
+            LinSysSol(iPoint, iDim) = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint, iDim));
           }
         }
       }

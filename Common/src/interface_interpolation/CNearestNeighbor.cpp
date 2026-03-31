@@ -153,12 +153,9 @@ void CNearestNeighbor::SetTransferCoeff(CGeometry**** geometry, const CConfig* c
         }
       }
       END_SU2_OMP_FOR
-      SU2_OMP_CRITICAL {
-        totalTargetPoints += numTarget;
-        AvgDistance += avgDist;
-        MaxDistance = max(MaxDistance, maxDist);
-      }
-      END_SU2_OMP_CRITICAL
+      atomicAdd(numTarget, totalTargetPoints);
+      atomicAdd(avgDist, AvgDistance);
+      atomicMax(maxDist, MaxDistance);
     }
     END_SU2_OMP_PARALLEL
   }

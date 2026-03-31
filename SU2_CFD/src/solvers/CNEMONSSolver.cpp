@@ -313,8 +313,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     if (implicit) {
       /*--- Enforce the no-slip boundary condition in a strong way ---*/
       for (int iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
-        auto total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     }
 
@@ -349,7 +348,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   SU2_MPI::Error("BC_HEATFLUX with catalytic wall: Not operational in NEMO.", CURRENT_FUNCTION);
   //TODO: SCALE WITH EDDY VISC
   /*--- Local variables ---*/
-  unsigned long iPoint, total_index;
+  unsigned long iPoint;
   su2double rho, Ys;
   su2double *Normal, Area;
   su2double *Ds, *dYdn, SdYdn;
@@ -493,8 +492,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       if (implicit) {
         /*--- Enforce the no-slip boundary condition in a strong way ---*/
         for (auto iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
+          Jacobian.DeleteValsRowi(iPoint, iVar);
         }
       }
 
@@ -632,8 +630,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
       for (auto iVar = 1u; iVar <= nDim; iVar++) {
-        auto total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     }
   }
