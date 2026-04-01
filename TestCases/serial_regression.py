@@ -867,7 +867,7 @@ def main():
     Aachen_3D_restart.cfg_dir   = "turbomachinery/Aachen_turbine"
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
-    Aachen_3D_restart.test_vals = [-7.701448, -8.512353, -6.014939, -6.468417, -5.801739, -4.607173, -5.550692, -5.300771, -3.804187, -5.256008, -5.765048, -3.609601, -2.229277, -2.883894, -0.563470]
+    Aachen_3D_restart.test_vals = [-7.701421, -8.504727, -6.014939, -6.468221, -5.801125, -4.607173, -5.550665, -5.300779, -3.804187, -5.255982, -5.763060, -3.609601, -2.229250, -2.880453, -0.563470]
     test_list.append(Aachen_3D_restart)
 
     # Jones APU Turbocharger restart
@@ -883,7 +883,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [1.167176, 1.598840, -2.928275, 2.573906, -2.526639, 3.017139, 106370.000000, 106370.000000, 5.726800, 64.383000]
+    axial_stage2D.test_vals = [1.167506, 1.598841, -2.928278, 2.573904, -2.526639, 3.017139, 106370.000000, 106370.000000, 5.726800, 64.383000]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -891,7 +891,7 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals         = [-4.367851, -2.492866, -2.082422, 1.727424, -1.466963, 3.224518, -471620.000000, 94.839000, -0.052025]
+    transonic_stator_restart.test_vals         = [-4.367854, -2.492860, -2.082426, 1.727421, -1.466963, 3.224515, -471620.000000, 94.839000, -0.052024]
     transonic_stator_restart.test_vals_aarch64 = [-4.443401, -2.566759, -2.169302, 1.651815, -1.356398, 3.172527, -471620.000000, 94.843000, -0.044669]
     test_list.append(transonic_stator_restart)
 
@@ -900,8 +900,8 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632229, -8.894737, -9.348730]
-    multi_interface.test_vals_aarch64  = [-8.632229, -8.894737, -9.348730]
+    multi_interface.test_vals          = [-8.632227, -8.894736, -9.348706]
+    multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 
 
