@@ -193,6 +193,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     }
 
     /*--- Overwrite coarse-level eddy viscosity to ensure restart reproducibility. ---*/
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(), omp_get_num_threads()))
     for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
       su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
       su2double EddyVisc = 0.0;
@@ -203,14 +204,17 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
       }
       solver[iMesh][TURB_SOL]->GetNodes()->SetmuT(iPoint, EddyVisc);
     }
+    END_SU2_OMP_FOR
 
     /*--- Zero eddy viscosity at viscous walls. ---*/
     for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetViscous_Wall(iMarker)) {
+        SU2_OMP_FOR_STAT(32)
         for (auto iVertex = 0ul; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
           auto Point_Coarse = geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
           solver[iMesh][TURB_SOL]->GetNodes()->SetmuT(Point_Coarse, 0.0);
         }
+        END_SU2_OMP_FOR
       }
     }
 
