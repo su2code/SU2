@@ -360,11 +360,10 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       /*--- Reduce over all threads in an ordered way to ensure a deterministic result. ---*/
       for (int i = 1; i < omp_get_num_threads(); ++i) sum += dot_scratch[i];
-#ifdef HAVE_MPI
+
       /*--- Reduce across all mpi ranks, only the master thread communicates. ---*/
       const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
       SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dot_scratch[0], 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
-#endif
     }
     /*--- Make view of result consistent across threads. ---*/
     END_SU2_OMP_SAFE_GLOBAL_ACCESS

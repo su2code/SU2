@@ -1422,7 +1422,7 @@ void CAdjEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned short iVar;
-  unsigned long iPoint, total_index;
+  unsigned long iPoint;
   su2double Delta, *local_Res_TruncError, Vol;
 
   /*--- Set maximum residual to zero ---*/
@@ -1450,8 +1450,7 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
       for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar + iVar;
-        LinSysRes[total_index] = 0.0;
+        LinSysRes(iPoint, iVar) = 0.0;
         local_Res_TruncError[iVar] = 0.0;
       }
     }
@@ -1459,11 +1458,10 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = -(LinSysRes[total_index] + local_Res_TruncError[iVar]);
-      LinSysSol[total_index] = 0.0;
-      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
+      LinSysRes(iPoint, iVar) = -(LinSysRes(iPoint, iVar) + local_Res_TruncError[iVar]);
+      LinSysSol(iPoint, iVar) = 0.0;
+      Residual_RMS[iVar] += LinSysRes(iPoint, iVar)*LinSysRes(iPoint, iVar);
+      AddRes_Max(iVar, fabs(LinSysRes(iPoint, iVar)), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
   }
@@ -1472,9 +1470,8 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
   for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
+      LinSysRes(iPoint, iVar) = 0.0;
+      LinSysSol(iPoint, iVar) = 0.0;
     }
   }
 

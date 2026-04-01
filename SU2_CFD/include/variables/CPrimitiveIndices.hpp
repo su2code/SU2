@@ -90,7 +90,7 @@ struct CPrimitiveIndices {
   template <class ConcreteIndices>
   void Construct(IndexType nDim, IndexType nSpecies) {
     /*--- Build the indices object in the static buffer owned by this class. ---*/
-    static_assert(sizeof(ConcreteIndices) <= 2 * sizeof(IndexType), "");
+    static_assert(sizeof(ConcreteIndices) <= 2 * sizeof(IndexType));
     new(data_) ConcreteIndices(nDim, nSpecies);
   }
 

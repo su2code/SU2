@@ -2006,9 +2006,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
       maxVel2 = max(maxVel2, nodes->GetVelocity2(iPoint));
     END_SU2_OMP_FOR
 
-    SU2_OMP_CRITICAL
-    MaxVel2 = max(MaxVel2, maxVel2);
-    END_SU2_OMP_CRITICAL
+    atomicMax(maxVel2, MaxVel2);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
@@ -2051,14 +2049,10 @@ void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_con
     }
     END_SU2_OMP_FOR
 
-    SU2_OMP_CRITICAL {
-      MinP = min(MinP, minP);
-      MaxP = max(MaxP, maxP);
-    }
-    END_SU2_OMP_CRITICAL
+    atomicMin(minP, MinP);
+    atomicMax(maxP, MaxP);
 
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       minP = MinP;
       SU2_MPI::Allreduce(&minP, &MinP, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       maxP = MaxP;
