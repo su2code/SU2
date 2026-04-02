@@ -524,6 +524,155 @@ void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxT
   dist = sqrt(dist);
 }
 
+
+void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxTargets,
+                                                 vector<unsigned long>& frontLeaves,
+                                                 vector<unsigned long>& frontLeavesNew, const su2double* coor,
+                                                 su2double& dist, su2double* xw, unsigned short& markerID, 
+                                                 unsigned long& elemID, int& rankID) const {
+  const bool wasActive = AD::BeginPassive();
+
+
+  unsigned long kk = leaves[0].centralNodeID;
+  const su2double* coorBBMin = BBoxCoor.data() + nDimADT * kk;
+  const su2double* coorBBMax = coorBBMin + nDim;
+  unsigned long jj = 0;
+
+  dist = 0.0;
+  su2double ds;
+  ds = max(fabs(coor[0] - coorBBMin[0]), fabs(coor[0] - coorBBMax[0]));
+  dist += ds * ds;
+  ds = max(fabs(coor[1] - coorBBMin[1]), fabs(coor[1] - coorBBMax[1]));
+  dist += ds * ds;
+  if (nDim == 3) {
+    ds = max(fabs(coor[2] - coorBBMin[2]), fabs(coor[2] - coorBBMax[2]));
+    dist += ds * ds;
+  }
+
+  BBoxTargets.clear();
+  frontLeaves.clear();
+  frontLeaves.push_back(0);
+
+  
+  for (;;) {
+    
+    frontLeavesNew.clear();
+
+   
+    for (unsigned long i = 0; i < frontLeaves.size(); ++i) {
+      
+      const unsigned long ll = frontLeaves[i];
+      for (unsigned short mm = 0; mm < 2; ++mm) {
+       
+        kk = leaves[ll].children[mm];
+        if (leaves[ll].childrenAreTerminal[mm]) {
+         
+          coorBBMin = BBoxCoor.data() + nDimADT * kk;
+          coorBBMax = coorBBMin + nDim;
+
+          su2double posDist2 = 0.0, ds;
+          ds = min(0.0, coor[0] - coorBBMin[0]) + max(0.0, coor[0] - coorBBMax[0]);
+          posDist2 += ds * ds;
+          ds = min(0.0, coor[1] - coorBBMin[1]) + max(0.0, coor[1] - coorBBMax[1]);
+          posDist2 += ds * ds;
+          if (nDim == 3) {
+            ds = min(0.0, coor[2] - coorBBMin[2]) + max(0.0, coor[2] - coorBBMax[2]);
+            posDist2 += ds * ds;
+          }
+
+          
+          if (posDist2 <= dist) {
+            
+            su2double guarDist2 = 0.0, ds;
+            ds = max(fabs(coor[0] - coorBBMin[0]), fabs(coor[0] - coorBBMax[0]));
+            guarDist2 += ds * ds;
+            ds = max(fabs(coor[1] - coorBBMin[1]), fabs(coor[1] - coorBBMax[1]));
+            guarDist2 += ds * ds;
+            if (nDim == 3) {
+              ds = max(fabs(coor[2] - coorBBMin[2]), fabs(coor[2] - coorBBMax[2]));
+              guarDist2 += ds * ds;
+            }
+
+            
+            BBoxTargets.emplace_back(kk, posDist2, guarDist2);
+            dist = min(dist, guarDist2);
+          }
+        } else {
+          
+          coorBBMin = leaves[kk].xMin;
+          coorBBMax = leaves[kk].xMax + nDim;
+
+          su2double posDist2 = 0.0, ds;
+          ds = min(0.0, coor[0] - coorBBMin[0]) + max(0.0, coor[0] - coorBBMax[0]);
+          posDist2 += ds * ds;
+          ds = min(0.0, coor[1] - coorBBMin[1]) + max(0.0, coor[1] - coorBBMax[1]);
+          posDist2 += ds * ds;
+          if (nDim == 3) {
+            ds = min(0.0, coor[2] - coorBBMin[2]) + max(0.0, coor[2] - coorBBMax[2]);
+            posDist2 += ds * ds;
+          }
+
+          
+          if (posDist2 <= dist) {
+            frontLeavesNew.push_back(kk);
+
+            
+            kk = leaves[kk].centralNodeID;
+            coorBBMin = BBoxCoor.data() + nDimADT * kk;
+            coorBBMax = coorBBMin + nDim;
+
+            su2double guarDist2 = 0.0, ds;
+            ds = max(fabs(coor[0] - coorBBMin[0]), fabs(coor[0] - coorBBMax[0]));
+            guarDist2 += ds * ds;
+            ds = max(fabs(coor[1] - coorBBMin[1]), fabs(coor[1] - coorBBMax[1]));
+            guarDist2 += ds * ds;
+            if (nDim == 3) {
+              ds = max(fabs(coor[2] - coorBBMin[2]), fabs(coor[2] - coorBBMax[2]));
+              guarDist2 += ds * ds;
+            }
+
+            dist = min(dist, guarDist2);
+          }
+        }
+      }
+    }
+
+    
+    frontLeaves = frontLeavesNew;
+    if (frontLeaves.empty()) break;
+  }
+
+  
+  sort(BBoxTargets.begin(), BBoxTargets.end());
+
+  
+  for (unsigned long i = 0; i < BBoxTargets.size(); ++i) {
+   
+    if (BBoxTargets[i].possibleMinDist2 > dist) break;
+
+   
+    const unsigned long ii = BBoxTargets[i].boundingBoxID;
+
+    su2double dist2Elem;
+    Dist2ToElement(ii, coor, dist2Elem);
+    if (dist2Elem <= dist) {
+      jj = ii;
+      dist = dist2Elem;
+      markerID = localMarkers[ii];
+      elemID = localElemIDs[ii];
+      rankID = ranksOfElems[ii];
+    }
+  }
+
+  AD::EndPassive(wasActive);
+
+  
+  Dist2ToElement(jj, coor, dist, xw);
+  dist = sqrt(dist);
+  
+}
+
+
 bool CADTElemClass::CoorInElement(const unsigned long elemID, const su2double* coor, su2double* parCoor,
                                   su2double* weightsInterpol) const {
   /*--- Make a distinction between the element types. ---*/
@@ -626,6 +775,131 @@ void CADTElemClass::Dist2ToElement(const unsigned long elemID, const su2double* 
         dist2Elem = min(dist2Elem, dist2Line);
         Dist2ToLine(i3, i0, coor, dist2Line);
         dist2Elem = min(dist2Elem, dist2Line);
+      }
+
+      break;
+    }
+
+      /*------------------------------------------------------------------------*/
+
+    case TETRAHEDRON:
+    case PYRAMID:
+    case PRISM:
+    case HEXAHEDRON: {
+      SU2_MPI::Error("3D elements not implemented yet", CURRENT_FUNCTION);
+    }
+  }
+}
+
+
+void CADTElemClass::Dist2ToElement(const unsigned long elemID, const su2double* coor,
+                                   su2double& dist2Elem, su2double* xw) const {
+  /*--- Make a distinction between the element types. ---*/
+  switch (elemVTK_Type[elemID]) {
+    case LINE: {
+      /*--- Element is a line. The number of space dimensions can be either
+            1, 2 or 3. Store the indices where the coordinates of the vertices
+            are stored in i0 and i1. ---*/
+      unsigned long i0 = nDOFsPerElem[elemID];
+      unsigned long i1 = i0 + 1;
+      i0 = nDim * elemConns[i0];
+      i1 = nDim * elemConns[i1];
+
+      /*--- Call the function Dist2ToLine to do the actual work. ---*/
+      Dist2ToLine(i0, i1, coor, dist2Elem, xw);
+      break;
+    }
+      /*------------------------------------------------------------------------*/
+
+    case TRIANGLE: {
+      /*--- Element is a triangle. The number of space dimensions can be either
+            2 or 3. Store the indices where the coordinates of the vertices
+            are stored in i0, i1 and i2. ---*/
+      unsigned long i0 = nDOFsPerElem[elemID];
+      unsigned long i1 = i0 + 1, i2 = i0 + 2;
+      i0 = nDim * elemConns[i0];
+      i1 = nDim * elemConns[i1];
+      i2 = nDim * elemConns[i2];
+
+      /*--- Call the function Dist2ToTriangle to compute the distance to the
+            triangle if the projection is inside the triangle. In that case the
+            function returns true. If the projection is not inside the triangle,
+            false is returned and the distance to each of the lines of the
+            triangle is computed and the minimum is taken. ---*/
+      su2double r, s;
+      if (!Dist2ToTriangle(i0, i1, i2, coor, dist2Elem, r, s)) {
+        
+        su2double xwLine[3] = {0.0, 0.0, 0.0};
+        Dist2ToLine(i0, i1, coor, dist2Elem, xw);
+        su2double dist2Line;
+
+        Dist2ToLine(i1, i2, coor, dist2Line, xwLine);
+        if (dist2Line < dist2Elem) {
+          dist2Elem = dist2Line;
+          for (unsigned short k = 0; k < nDim; ++k) xw[k] = xwLine[k];
+        }
+
+        Dist2ToLine(i2, i0, coor, dist2Line, xwLine);
+        if (dist2Line < dist2Elem) {
+          dist2Elem = dist2Line;
+          for (unsigned short k = 0; k < nDim; ++k) xw[k] = xwLine[k];
+        }
+      } else {
+        
+        for (unsigned short k = 0; k < nDim; ++k) {
+          xw[k] = (coorPoints[i0 + k] + coorPoints[i1 + k] + coorPoints[i2 + k]) / 3.0;
+        }
+      }
+
+      break;
+    }
+
+      /*------------------------------------------------------------------------*/
+
+    case QUADRILATERAL: {
+      /*--- Element is a quadrilateral. The number of space dimensions can be
+            either 2 or 3. Store the indices where the coordinates of the
+            vertices are stored in i0, i1, i2 and i3. ---*/
+      unsigned long i0 = nDOFsPerElem[elemID];
+      unsigned long i1 = i0 + 1, i2 = i0 + 2, i3 = i0 + 3;
+      i0 = nDim * elemConns[i0];
+      i1 = nDim * elemConns[i1];
+      i2 = nDim * elemConns[i2];
+      i3 = nDim * elemConns[i3];
+
+      /*--- Call the function Dist2ToQuadrilateral to compute the distance to the
+            quadrilateral if the projection is inside the quadrilateral. In that
+            case the function returns true. If the projection is not inside the
+            quadrilateral, false is returned and the distance to each of the lines
+            of the quadrilateral is computed and the minimum is taken. ---*/
+      su2double r, s;
+      if (!Dist2ToQuadrilateral(i0, i1, i2, i3, coor, r, s, dist2Elem)) {
+        su2double xwLine[3] = {0.0, 0.0, 0.0};
+        Dist2ToLine(i0, i1, coor, dist2Elem, xw);
+
+        su2double dist2Line;
+        Dist2ToLine(i1, i2, coor, dist2Line, xwLine);
+        if (dist2Line < dist2Elem) {
+          dist2Elem = dist2Line;
+          for (unsigned short k = 0; k < nDim; ++k) xw[k] = xwLine[k];
+        }
+
+        Dist2ToLine(i2, i3, coor, dist2Line, xwLine);
+        if (dist2Line < dist2Elem) {
+          dist2Elem = dist2Line;
+          for (unsigned short k = 0; k < nDim; ++k) xw[k] = xwLine[k];
+        }
+
+        Dist2ToLine(i3, i0, coor, dist2Line, xwLine);
+        if (dist2Line < dist2Elem) {
+          dist2Elem = dist2Line;
+          for (unsigned short k = 0; k < nDim; ++k) xw[k] = xwLine[k];
+        }
+      } else {
+        for (unsigned short k = 0; k < nDim; ++k) {
+          xw[k] = 0.25 * (coorPoints[i0 + k] + coorPoints[i1 + k] +
+                          coorPoints[i2 + k] + coorPoints[i3 + k]);
+        }
       }
 
       break;
@@ -2072,6 +2346,45 @@ void CADTElemClass::Dist2ToLine(const unsigned long i0, const unsigned long i1, 
   dist2Line = 0.0;
   for (unsigned short k = 0; k < nDim; ++k) {
     const su2double ds = V0[k] - r * V1[k];
+    dist2Line += ds * ds;
+  }
+}
+
+void CADTElemClass::Dist2ToLine(const unsigned long i0, const unsigned long i1, const su2double* coor,
+                                su2double& dist2Line, su2double* xw) const {
+  /*--- The line is parametrized by X = X0 + (r+1)*(X1-X0)/2, -1 <= r <= 1.
+        As a consequence the minimum distance is found where the expression
+        |V0 - r*V1| has a minimum, where the vectors V0 and V1 are defined
+        as: V0 = coor - (X1+X0)/2, V1 = (X1-X0)/2. First construct the
+        vectors V0 and V1. ---*/
+  su2double Xc[3], V0[3], V1[3];
+  for (unsigned short k = 0; k < nDim; ++k) {
+    Xc[k] = 0.5 * (coorPoints[i1 + k] + coorPoints[i0 + k]);
+    V0[k] = coor[k] - Xc[k];
+    V1[k] = 0.5 * (coorPoints[i1 + k] - coorPoints[i0 + k]);
+  }
+
+  /*--- Determine the value of r, for which the minimum occurs. This is the
+        ratio of the dot product of V0.V1 and V1.V1. Make sure that r is
+        limited between -1 and 1 to make sure that the projection is inside
+        the line element. ---*/
+  su2double dotV0V1 = 0.0, dotV1V1 = 0.0;
+  for (unsigned short k = 0; k < nDim; ++k) {
+    dotV0V1 += V0[k] * V1[k];
+    dotV1V1 += V1[k] * V1[k];
+  }
+  su2double r = dotV0V1 / dotV1V1;
+  r = max(-1.0, min(1.0, r));
+
+  
+  for (unsigned short k = 0; k < nDim; ++k) {
+    xw[k] = Xc[k] + r * V1[k];
+  }
+
+  /*--- Determine the minimum distance squared. ---*/
+  dist2Line = 0.0;
+  for (unsigned short k = 0; k < nDim; ++k) {
+    const su2double ds = coor[k] - xw[k];
     dist2Line += ds * ds;
   }
 }

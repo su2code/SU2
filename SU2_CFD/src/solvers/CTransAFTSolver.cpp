@@ -172,7 +172,8 @@ void CTransAFTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     //auto WallNormalUnitVector = geometry -> nodes -> GetNormal(iPoint);
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
       //rhoUd += flowNodes->GetDensity(iPoint) * flowNodes->GetVelocity(iPoint, iDim) * WallNormalUnitVector[iDim];
-      rhoUd += flowNodes->GetDensity(iPoint) * flowNodes->GetVelocity(iPoint, iDim) * nodes->GetAuxVarGradient(iPoint, 0, iDim);
+      //rhoUd += flowNodes->GetDensity(iPoint) * flowNodes->GetVelocity(iPoint, iDim) * nodes->GetAuxVarGradient(iPoint, 0, iDim);
+      rhoUd += flowNodes->GetDensity(iPoint) * flowNodes->GetVelocity(iPoint, iDim) * geometry->GetWallNormalUnitVector(iPoint, iDim);
       
     }
     nodes->SetAuxVar(iPoint, 1, rhoUd);
@@ -231,7 +232,8 @@ void CTransAFTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_conta
     su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
     su2double HLGradTerm = 0.0;
     for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      HLGradTerm +=  nodes->GetAuxVarGradient(iPoint, 1, iDim) * WallNormalUnitVector[iDim];
+      //HLGradTerm +=  nodes->GetAuxVarGradient(iPoint, 1, iDim) * WallNormalUnitVector[iDim];
+      HLGradTerm +=  nodes->GetAuxVarGradient(iPoint, 1, iDim) * geometry->GetWallNormalUnitVector(iPoint, iDim);
     }
 
     const su2double HL = dist_i * dist_i / Laminar_Viscosity_i * HLGradTerm;
@@ -261,7 +263,7 @@ void CTransAFTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_conta
 
     /*-- destruction term of Intermeittency(Gamma) --*/
     const su2double Dg = c_2 * Density_i * VorticityMag * F_turb * (c_3 * exp(lnIntermittency) - 1.0);
-    nodes -> SetAFT_Wonder_Func(iPoint, HL, H12, dNdRet, Ret0, D_H12, l_H12, m_H12, kv, Rev, Rev0, nodes->GetAuxVarGradient(iPoint, 1, 0), nodes->GetAuxVarGradient(iPoint, 1, 1), WallNormalUnitVector[0], WallNormalUnitVector[1], HLGradTerm);
+    nodes -> SetAFT_Wonder_Func(iPoint, HL, H12, dNdRet, Ret0, D_H12, l_H12, m_H12, kv, Rev, Rev0, nodes->GetAuxVarGradient(iPoint, 0, 0), nodes->GetAuxVarGradient(iPoint, 0, 1), WallNormalUnitVector[0], WallNormalUnitVector[1], HLGradTerm);
   }
   END_SU2_OMP_FOR
 
@@ -338,7 +340,7 @@ void CTransAFTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Set coordinate (for debugging) ---*/
     numerics->SetCoord(geometry->nodes->GetCoord(iPoint), nullptr);
     numerics->SetAuxVarGrad(nodes->GetAuxVarGradient(iPoint), nullptr);
-    numerics->SetWallNormal(geometry->nodes->GetNormal(iPoint));
+    numerics->SetWallNormal(geometry->GetWallNormalUnitVector(iPoint));
 
     /*--- Compute the source term ---*/
     auto residual = numerics->ComputeResidual(config);

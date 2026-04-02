@@ -417,7 +417,8 @@ class CSourcePieceWise_TransAFT final : public CNumerics {
     if (dist_i > 1e-10) {
       su2double HLGradTerm = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-       HLGradTerm +=  AuxVar_Grad_i[1][iDim] * AuxVar_Grad_i[0][iDim];
+       //HLGradTerm +=  AuxVar_Grad_i[1][iDim] * AuxVar_Grad_i[0][iDim];
+       HLGradTerm +=  AuxVar_Grad_i[1][iDim] * WallNormal[iDim];
       }
 
       const su2double HL = dist_i * dist_i / Laminar_Viscosity_i * HLGradTerm;

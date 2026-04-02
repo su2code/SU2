@@ -143,6 +143,8 @@ class CGeometry {
 
   vector<su2double> XCoordList; /*!< \brief Vector containing points appearing on a single plane */
 
+  su2activematrix WallNormalUnitVector; /*!< \brief Store wall-normal unit vector */
+
 #if defined(HAVE_MPI) && defined(HAVE_PARMETIS)
   vector<vector<unsigned long>>
       adj_nodes; /*!< \brief Vector of vectors holding each node's adjacency during preparation for ParMETIS. */
@@ -1887,4 +1889,29 @@ class CGeometry {
    * \return A pointer to the reference node coordinate vector.
    */
   inline virtual const su2double* GetStreamwise_Periodic_RefNode() const { return nullptr; }
+
+  public:
+  inline void AllocateWallNormalUnitVector() {
+    WallNormalUnitVector.resize(nPoint, nDim) = su2double(0.0);
+  }
+
+  /*!
+   * \brief Get a pointer to the reference node coordinate vector.
+   * \param iPoint - Point
+   * \param iDim - Dimension
+   * \param val - Wall-normal unit vector
+   */
+  inline void SetWallNormalUnitVector(unsigned long iPoint, unsigned short iDim, su2double val) {
+    WallNormalUnitVector(iPoint, iDim) = val;
+  }
+
+  inline su2double GetWallNormalUnitVector(unsigned long iPoint, unsigned short iDim) const {
+    return WallNormalUnitVector(iPoint, iDim);
+  }
+
+  inline const su2double* GetWallNormalUnitVector(unsigned long iPoint) const {
+  return &WallNormalUnitVector(iPoint, 0);
+  }
+
+  inline const auto& GetWallNormalUnitVector() const { return WallNormalUnitVector; }
 };

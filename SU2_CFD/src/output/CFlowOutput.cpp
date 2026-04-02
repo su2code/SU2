@@ -1530,21 +1530,24 @@ void CFlowOutput::SetVolumeOutputFieldsScalarPrimitive(const CConfig* config) {
 
     case TURB_TRANS_MODEL::AFT:
       //nodes -> SetAFT_Wonder_Func(iPoint, HL, H12, dNdRet, Ret0, D_H12, l_H12, m_H12, kv, Rev, Rev0, F_growth, F_crit, PAF, Pg, HL_Grad);
-      AddVolumeOutput("HL", "HL", "PRIMITIVE", "HL");
-      AddVolumeOutput("H12", "H12", "PRIMITIVE", "H12");
-      AddVolumeOutput("dNdRet", "dNdRet", "PRIMITIVE", "dNdRet");
-      AddVolumeOutput("Ret0", "Ret0", "PRIMITIVE", "Ret0");
-      AddVolumeOutput("D_H12", "D_H12", "PRIMITIVE", "D_H12");
-      AddVolumeOutput("l_H12", "l_H12", "PRIMITIVE", "l_H12");
-      AddVolumeOutput("m_H12", "m_H12", "PRIMITIVE", "m_H12");
-      AddVolumeOutput("kv", "kv", "PRIMITIVE", "kv");
-      AddVolumeOutput("Rev", "Rev", "PRIMITIVE", "Rev");
-      AddVolumeOutput("Rev0", "Rev0", "PRIMITIVE", "Rev0");
-      AddVolumeOutput("Grad_d_x", "Grad_d_x", "PRIMITIVE", "Grad_d_x");
-      AddVolumeOutput("Grad_d_y", "Grad_d_y", "PRIMITIVE", "Grad_d_y");
-      AddVolumeOutput("Wall_Normal_x", "Wall_Normal_x", "PRIMITIVE", "Wall_Normal_x");
-      AddVolumeOutput("Wall_Normal_y", "Wall_Normal_y", "PRIMITIVE", "Wall_Normal_y");
-      AddVolumeOutput("HL_Grad", "HL_Grad", "PRIMITIVE", "HL_Grad");
+      AddVolumeOutput("HL", "HL", "DEBUG", "HL");
+      AddVolumeOutput("H12", "H12", "DEBUG", "H12");
+      AddVolumeOutput("dNdRet", "dNdRet", "DEBUG", "dNdRet");
+      AddVolumeOutput("Ret0", "Ret0", "DEBUG", "Ret0");
+      AddVolumeOutput("D_H12", "D_H12", "DEBUG", "D_H12");
+      AddVolumeOutput("l_H12", "l_H12", "DEBUG", "l_H12");
+      AddVolumeOutput("m_H12", "m_H12", "DEBUG", "m_H12");
+      AddVolumeOutput("kv", "kv", "DEBUG", "kv");
+      AddVolumeOutput("Rev", "Rev", "DEBUG", "Rev");
+      AddVolumeOutput("Rev0", "Rev0", "DEBUG", "Rev0");
+      AddVolumeOutput("Grad_d_x", "Grad_d_x", "DEBUG", "Grad_d_x");
+      AddVolumeOutput("Grad_d_y", "Grad_d_y", "DEBUG", "Grad_d_y");
+      AddVolumeOutput("Wall_Normal_x", "Wall_Normal_x", "DEBUG", "Wall_Normal_x");
+      AddVolumeOutput("Wall_Normal_y", "Wall_Normal_y", "DEBUG", "Wall_Normal_y");
+      AddVolumeOutput("HL_Grad", "HL_Grad", "DEBUG", "HL_Grad");
+      AddVolumeOutput("Wall_Normal_unit_x", "Wall_Normal_unit_x", "DEBUG", "Wall_Normal_unit_x");
+      AddVolumeOutput("Wall_Normal_unit_y", "Wall_Normal_unit_y", "DEBUG", "Wall_Normal_unit_y");
+      
       break;
 
     case TURB_TRANS_MODEL::NONE:
@@ -1725,6 +1728,8 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       SetVolumeOutputValue("Wall_Normal_x", iPoint, Node_Trans->GetAFT_Wonder_Func_var13(iPoint));
       SetVolumeOutputValue("Wall_Normal_y", iPoint, Node_Trans->GetAFT_Wonder_Func_var14(iPoint));
       SetVolumeOutputValue("HL_Grad", iPoint, Node_Trans->GetAFT_Wonder_Func_var15(iPoint));
+      SetVolumeOutputValue("Wall_Normal_unit_x", iPoint, geometry->GetWallNormalUnitVector(iPoint, 0));
+      SetVolumeOutputValue("Wall_Normal_unit_y", iPoint, geometry->GetWallNormalUnitVector(iPoint, 1));
 
     case TURB_TRANS_MODEL::NONE: break;
   }

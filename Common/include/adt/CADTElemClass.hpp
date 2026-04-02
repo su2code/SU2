@@ -122,6 +122,25 @@ class CADTElemClass : public CADTBaseClass {
                                  markerID, elemID, rankID);
   }
 
+  /*!
+   * \brief Determines the nearest element in the ADT for a given coordinate and computes
+   *        the closest point on that element.
+   * \note This function forwards the call to the implementation routine, selecting the
+   *       appropriate thread-local working variables.
+   * \param[in]  coor     Coordinate for which the nearest element must be determined.
+   * \param[out] dist     Distance to the nearest element.
+   * \param[out] xw       Coordinates of the closest point on the nearest element.
+   * \param[out] markerID Local marker ID of the nearest element.
+   * \param[out] elemID   Local element ID of the nearest element.
+   * \param[out] rankID   Rank on which the nearest element is stored.
+   */ 
+  inline void DetermineNearestElement(const su2double* coor, su2double& dist, su2double* xw,
+                                            unsigned short& markerID, unsigned long& elemID, int& rankID) {
+    const auto iThread = omp_get_thread_num();
+    DetermineNearestElement_impl(BBoxTargets[iThread], FrontLeaves[iThread], FrontLeavesNew[iThread], coor, dist,
+                                 xw, markerID, elemID, rankID);
+  }
+
  private:
   /*!
    * \brief Implementation of DetermineContainingElement.
@@ -138,6 +157,17 @@ class CADTElemClass : public CADTBaseClass {
   void DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxTargets, vector<unsigned long>& frontLeaves,
                                     vector<unsigned long>& frontLeavesNew, const su2double* coor, su2double& dist,
                                     unsigned short& markerID, unsigned long& elemID, int& rankID) const;
+
+  /*!
+   * \brief Implementation of the nearest element search in the ADT for a given coordinate,
+   *        including computation of the closest point on the element.
+   * \note This routine performs the actual traversal of the ADT using the provided
+   *       thread-local working arrays. It identifies the nearest element and evaluates
+   *       the closest point on that element surface.
+   */
+  void DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxTargets, vector<unsigned long>& frontLeaves,
+                                    vector<unsigned long>& frontLeavesNew, const su2double* coor, su2double& dist,
+                                    su2double* xw, unsigned short& markerID, unsigned long& elemID, int& rankID) const;
 
   /*!
    * \brief Function, which checks whether or not the given coordinate is
@@ -294,6 +324,15 @@ class CADTElemClass : public CADTBaseClass {
   void Dist2ToElement(const unsigned long elemID, const su2double* coor, su2double& dist2Elem) const;
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
+            to the given element.
+   * \param[in]  elemID    ID of the element to which the distance must be determined.
+   * \param[in]  coor      Coordinate for which the distance to the element must be determined.
+   * \param[out] dist2Elem Distance squared from the coordinate to the element.
+   * \param[out] xw        Representative point used for the final distance evaluation.
+   */
+  void Dist2ToElement(const unsigned long elemID, const su2double* coor, su2double& dist2Elem, su2double* xw) const;
+  /*!
+   * \brief Function, which computes the distance squared of the given coordinate
             to a linear line element.
    * \param[in]  i0        Starting index in coorPoints, where the coordinates of the
                            first point of the line are stored.
@@ -303,6 +342,19 @@ class CADTElemClass : public CADTBaseClass {
    * \param[out] dist2Line Distance squared from the coordinate to the line.
    */
   void Dist2ToLine(const unsigned long i0, const unsigned long i1, const su2double* coor, su2double& dist2Line) const;
+  /*!
+   * \brief Function, which computes the distance squared of the given coordinate to a linear
+   *        line element and returns the representative point used for the final distance evaluation.
+   * \param[in]  i0        Starting index in coorPoints, where the coordinates of the first point
+   *                       of the line are stored.
+   * \param[in]  i1        Starting index in coorPoints, where the coordinates of the second point
+   *                       of the line are stored.
+   * \param[in]  coor      Coordinate for which the distance to the line must be determined.
+   * \param[out] dist2Line Distance squared from the coordinate to the line.
+   * \param[out] xw        Representative point used for the final distance evaluation.
+   */
+  void Dist2ToLine(const unsigned long i0, const unsigned long i1, const su2double* coor,
+                 su2double& dist2Line, su2double* xw) const;
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear quadrilateral element if the projection is inside the quad.

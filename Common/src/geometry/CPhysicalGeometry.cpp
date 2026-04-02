@@ -10555,11 +10555,28 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
         unsigned long elemID;
         int rankID;
         su2double dist;
-
         WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID, elemID, rankID);
+        su2double xw[3] = {0.0, 0.0, 0.0};
+
+        if(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::NONE) {
+          WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, markerID, elemID, rankID);
+        }
+        else {
+         WallADT->DetermineNearestElement(nodes->GetCoord(iPoint), dist, xw, markerID, elemID, rankID);         
+        }
 
         if (dist < nodes->GetWall_Distance(iPoint)) {
           nodes->SetWall_Distance(iPoint, dist, rankID, iZone, markerID, elemID);
+          if (dist > 1e-14) {
+            for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+              const su2double val = (nodes->GetCoord(iPoint, iDim) - xw[iDim]) / dist;
+              SetWallNormalUnitVector(iPoint, iDim, val);
+            }
+          } else {
+            for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+              SetWallNormalUnitVector(iPoint, iDim, 0.0);
+            }
+          }
         }
       }
       END_CPHYSGEO_PARFOR
