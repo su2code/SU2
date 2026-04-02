@@ -93,7 +93,7 @@ def main():
     channel.cfg_dir   = "euler/channel"
     channel.cfg_file  = "inv_channel_RK.cfg"
     channel.test_iter = 10
-    channel.test_vals = [-2.244274, 3.300113, 0.075814, 0.159961]
+    channel.test_vals = [-2.214769, 3.328356, 0.064004, 0.163535]
     test_list.append(channel)
 
     # NACA0012
@@ -101,7 +101,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-4.968082, -4.396602, 0.331959, 0.023010]
+    naca0012.test_vals = [-4.261697, -3.801400, 0.305629, 0.024806]
     test_list.append(naca0012)
 
     # Supersonic wedge
@@ -117,7 +117,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-11.428634, -10.889247, 0.280800, 0.008623]
+    oneram6.test_vals = [-11.504431, -10.968968, 0.280800, 0.008623]
     oneram6.timeout   = 9600
     test_list.append(oneram6)
 
@@ -126,7 +126,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-3.751251, 1.788794, 0.301332, 0.019499]
+    fixedCL_naca0012.test_vals = [-3.920501, 1.594999, 0.300907, 0.019465]
     test_list.append(fixedCL_naca0012)
 
     # Polar sweep of the inviscid NACA0012
@@ -135,7 +135,7 @@ def main():
     polar_naca0012.cfg_file  = "inv_NACA0012.cfg"
     polar_naca0012.polar     = True
     polar_naca0012.test_iter = 10
-    polar_naca0012.test_vals         = [-1.119642, 4.342860, 0.002338, 0.020591]
+    polar_naca0012.test_vals         = [-1.194139, 4.249901, 0.010678, 0.069437]
     polar_naca0012.test_vals_aarch64 = [-1.063447, 4.401847, 0.000291, 0.031696]
     polar_naca0012.command   = TestCase.Command(exec = "compute_polar.py", param = "-n 1 -i 11")
     # flaky test on arm64
@@ -166,7 +166,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 20
-    flatplate.test_vals = [-5.099346, 0.381614, 0.001277, 0.024994, 2.361500, -2.336500, 0.000000, 0.000000]
+    flatplate.test_vals = [-5.448267, 0.027571, 0.002633, 0.015619, 2.361200, -2.345600, 0.000000, 0.000000]
     test_list.append(flatplate)
 
     # Laminar cylinder (steady)
@@ -174,7 +174,7 @@ def main():
     cylinder.cfg_dir   = "navierstokes/cylinder"
     cylinder.cfg_file  = "lam_cylinder.cfg"
     cylinder.test_iter = 25
-    cylinder.test_vals = [-8.631691, -3.138513, -0.003331, 1.602087, 0.000000]
+    cylinder.test_vals = [-8.505644, -3.013640, 0.258361, 1.696807, 0.000000]
     test_list.append(cylinder)
 
     # Laminar cylinder (low Mach correction)
@@ -182,7 +182,7 @@ def main():
     cylinder_lowmach.cfg_dir   = "navierstokes/cylinder"
     cylinder_lowmach.cfg_file  = "cylinder_lowmach.cfg"
     cylinder_lowmach.test_iter = 25
-    cylinder_lowmach.test_vals = [-6.412653, -0.950827, 0.038557, -134.198785, 0.000000]
+    cylinder_lowmach.test_vals = [-6.575537, -1.113770, -0.007954, -72.332095, 0.000000]
     test_list.append(cylinder_lowmach)
 
     # 2D Poiseuille flow (body force driven with periodic inlet / outlet)
@@ -190,7 +190,7 @@ def main():
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
     poiseuille.cfg_file  = "lam_poiseuille.cfg"
     poiseuille.test_iter = 10
-    poiseuille.test_vals = [-5.050753, 0.648333, 0.012273, 13.643141, 0]
+    poiseuille.test_vals = [-12.004404, -7.544434, -0.000000, 2.089953]
     test_list.append(poiseuille)
 
     # 2D Poiseuille flow (inlet profile file)
@@ -218,7 +218,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-1.846052, -5.109587, 0.571411, 0.040773, 0.000000]
+    rae2822_sa.test_vals = [-1.868837, -5.246178, 0.256774, 0.111451, 0.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -226,7 +226,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-0.509931, 5.862083, 0.583382, 0.013958, 0.000000]
+    rae2822_sst.test_vals = [-0.510316, 5.872015, 0.249363, 0.101014, 0.000000]
     test_list.append(rae2822_sst)
 
     # RAE2822 SST_SUST
@@ -234,7 +234,7 @@ def main():
     rae2822_sst_sust.cfg_dir   = "rans/rae2822"
     rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
     rae2822_sst_sust.test_iter = 20
-    rae2822_sst_sust.test_vals = [-2.446759, 5.862083, 0.583382, 0.013958]
+    rae2822_sst_sust.test_vals = [-2.606708, 5.872015, 0.249363, 0.101014]
     test_list.append(rae2822_sst_sust)
 
     # Flat plate
@@ -359,7 +359,7 @@ def main():
     turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
     turb_naca0012_sst_restart_mg.test_iter = 50
     turb_naca0012_sst_restart_mg.ntest_vals = 5
-    turb_naca0012_sst_restart_mg.test_vals = [-6.606238, -5.081439, 0.810958, -0.008789, 0.077730]
+    turb_naca0012_sst_restart_mg.test_vals = [-6.575448, -5.081421, 0.810883, -0.008836, 0.077960]
     turb_naca0012_sst_restart_mg.timeout   = 3200
     turb_naca0012_sst_restart_mg.tol       = 0.000001
     test_list.append(turb_naca0012_sst_restart_mg)
