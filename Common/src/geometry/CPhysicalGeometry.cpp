@@ -8845,12 +8845,14 @@ void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig* config) {
 }
 
 void CPhysicalGeometry::Check_Periodicity(CConfig* config) {
-  /*--- Check for the presence of any periodic BCs and disable multigrid
-   for now if found. ---*/
+  /*--- Check for the presence of any periodic BCs. Multigrid with periodic
+   boundaries uses self-referencing donor matching on coarse grids, which is
+   incorrect. Coordinate-based matching is not yet implemented. Multigrid is
+   now allowed for investigation purposes. ---*/
 
   if ((config->GetnMarker_Periodic() != 0) && (config->GetnMGLevels() > 0)) {
-    if (rank == MASTER_NODE) cout << "WARNING: Periodicity has been detected. Disabling multigrid. " << endl;
-    config->SetMGLevels(0);
+    if (rank == MASTER_NODE)
+      cout << "WARNING: Periodicity has been detected. Multigrid coarse-grid periodic matching is approximate." << endl;
   }
 }
 
