@@ -5093,6 +5093,11 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
       const auto Energy_i = nodes->GetEnergy(iPoint);
       const su2double StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
 
+      /*--- Skip non-physical boundary nodes (e.g. from coarse-grid prolongation
+           on agglomerated periodic boundaries). Leaving the residual unchanged
+           is safe: the multigrid cycle will correct these nodes on the next pass. ---*/
+      if (!std::isfinite(Density_i) || !std::isfinite(StaticEnergy_i) || Density_i <= 0.0) continue;
+
       GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 
       const auto Pressure_i = GetFluidModel()->GetPressure();
@@ -5561,6 +5566,11 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
         Energy_i = nodes->GetEnergy(iPoint);
         StaticEnergy_i = Energy_i - 0.5*Velocity2_i;
+
+        /*--- Skip non-physical boundary nodes (e.g. from coarse-grid prolongation
+             on agglomerated periodic boundaries). Leaving the residual unchanged
+             is safe: the multigrid cycle will correct these nodes on the next pass. ---*/
+        if (!std::isfinite(Density_i) || !std::isfinite(StaticEnergy_i) || Density_i <= 0.0) continue;
 
         GetFluidModel()->SetTDState_rhoe(Density_i, StaticEnergy_i);
 

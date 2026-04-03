@@ -798,6 +798,11 @@ void CGeometry::MatchPeriodic(const CConfig* config, unsigned short val_periodic
 
   su2double epsilon = 1e-6;
 
+  /*--- Diagnostic: count points per marker, self-matches, multi-marker nodes. ---*/
+  unsigned long nSelfMatch_local = 0;
+  unsigned long nMultiMarker_local = 0;
+  su2double mindist_global_min = 1e20;
+
   /*--- Evaluate the number of periodic boundary conditions ---*/
 
   nPeriodic = config->GetnMarker_Periodic();
@@ -891,6 +896,53 @@ void CGeometry::MatchPeriodic(const CConfig* config, unsigned short val_periodic
               Buffer_Send_Coord[nLocalVertex_Periodic * nDim + iDim] = nodes->GetCoord(iPoint, iDim);
             nLocalVertex_Periodic++;
           }
+        }
+      }
+    }
+  }
+
+  /*--- Diagnostic: report per-marker vertex counts and detect multi-marker nodes. ---*/
+
+  if (rank == MASTER_NODE) {
+    cout << "  Periodic pair " << val_periodic << ": nLocalVertex = " << nLocalVertex_Periodic
+         << ", nDim = " << nDim << ", nPoint = " << nPoint << ", nPointDomain = " << nPointDomain << endl;
+  }
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if ((iPeriodic == val_periodic) || (iPeriodic == val_periodic + nPeriodic / 2)) {
+        unsigned long nVertOwned = 0;
+        for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          if (nodes->GetDomain(iPoint)) {
+            nVertOwned++;
+            /*--- Check if this node is also on another boundary. ---*/
+            for (unsigned short jM = 0; jM < config->GetnMarker_All(); jM++) {
+              if (jM != iMarker && nodes->GetVertex(iPoint, jM) != -1) {
+                nMultiMarker_local++;
+                if (rank == MASTER_NODE) {
+                  cout << "  [DIAG] Point " << nodes->GetGlobalIndex(iPoint)
+                       << " on periodic marker " << iMarker
+                       << " (" << config->GetMarker_All_TagBound(iMarker) << ")"
+                       << " also on marker " << jM
+                       << " (" << config->GetMarker_All_TagBound(jM)
+                       << ", BC=" << config->GetMarker_All_KindBC(jM) << ")"
+                       << " coords=(";
+                  for (iDim = 0; iDim < nDim; iDim++) {
+                    cout << nodes->GetCoord(iPoint, iDim);
+                    if (iDim < nDim-1) cout << ", ";
+                  }
+                  cout << ")" << endl;
+                }
+              }
+            }
+          }
+        }
+        if (rank == MASTER_NODE) {
+          cout << "  Marker " << iMarker << " (" << config->GetMarker_All_TagBound(iMarker)
+               << "): nVertex=" << GetnVertex(iMarker) << ", nOwned=" << nVertOwned
+               << ", iPeriodic=" << iPeriodic << endl;
         }
       }
     }
@@ -1007,9 +1059,11 @@ void CGeometry::MatchPeriodic(const CConfig* config, unsigned short val_periodic
                 jVertex_ = Buffer_Recv_Vertex[index];
                 jMarker = Buffer_Recv_Marker[index];
 
-                /*--- Avoid matching the point to itself. ---*/
+                /*--- Avoid matching the point to itself. Use local point
+                 index + processor rather than global index, because global
+                 indices are not set on coarse multigrid levels. ---*/
 
-                if ((jPointGlobal != iPointGlobal) || (pointOnAxis)) {
+                if ((iProcessor != rank || jPoint != iPoint) || (pointOnAxis)) {
                   dist = 0.0;
                   for (iDim = 0; iDim < nDim; iDim++) {
                     Coord_j[iDim] = Buffer_Recv_Coord[index * nDim + iDim];
@@ -1035,7 +1089,37 @@ void CGeometry::MatchPeriodic(const CConfig* config, unsigned short val_periodic
 
             vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pPointGlobal, pVertex, pMarker, pProcessor);
             maxdist_local = max(maxdist_local, mindist);
+            mindist_global_min = min(mindist_global_min, mindist);
             nPointMatch++;
+
+            /*--- Detect self-match (donor == self on same processor). ---*/
+            if (pProcessor == rank && pPoint == iPoint && !pointOnAxis) {
+              nSelfMatch_local++;
+              cout << "  [DIAG] SELF-MATCH: local point " << iPoint
+                   << " on marker " << iMarker << " matched to itself!"
+                   << " dist=" << mindist << endl;
+            }
+
+            /*--- Verbose per-point diagnostic (only first 20 per rank to avoid flooding). ---*/
+            if (nPointMatch <= 20 && rank == MASTER_NODE) {
+              cout << "  [DIAG] Match: local=" << iPoint
+                   << " marker=" << iMarker
+                   << " -> donor_local=" << pPoint
+                   << " donor_marker=" << pMarker
+                   << " donor_proc=" << pProcessor
+                   << " dist=" << scientific << mindist
+                   << " coord=(";
+              for (iDim = 0; iDim < nDim; iDim++) {
+                cout << nodes->GetCoord(iPoint, iDim);
+                if (iDim < nDim-1) cout << ", ";
+              }
+              cout << ") rotCoord=(";
+              for (iDim = 0; iDim < nDim; iDim++) {
+                cout << rotCoord[iDim];
+                if (iDim < nDim-1) cout << ", ";
+              }
+              cout << ")" << defaultfloat << endl;
+            }
 
             if (mindist > epsilon) {
               cout.precision(10);
@@ -1071,6 +1155,24 @@ void CGeometry::MatchPeriodic(const CConfig* config, unsigned short val_periodic
       cout << "\n !!! Warning !!!" << endl;
       cout << "Bad matches found. Computation will continue, but be cautious.\n";
     }
+  }
+
+  /*--- Diagnostic summary. ---*/
+
+  unsigned long nSelfMatch_global = 0, nMultiMarker_global = 0;
+  su2double mindist_min_global = 0.0;
+  SU2_MPI::Reduce(&nSelfMatch_local, &nSelfMatch_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Reduce(&nMultiMarker_local, &nMultiMarker_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Reduce(&mindist_global_min, &mindist_min_global, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+
+  if (rank == MASTER_NODE) {
+    cout << "  [DIAG] Pair " << val_periodic << " summary:"
+         << " nMatched=" << nPointMatch
+         << ", nSelfMatch=" << nSelfMatch_global
+         << ", nMultiMarkerNodes=" << nMultiMarker_global
+         << ", minDist=" << scientific << mindist_min_global
+         << ", maxDist=" << maxdist_global
+         << defaultfloat << endl;
   }
 
   /*--- Free local memory for communications. ---*/

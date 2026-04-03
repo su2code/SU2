@@ -90,6 +90,15 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   /*--- STEP 1: The first step is the boundary agglomeration. ---*/
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    /*--- Skip periodic boundaries: do not agglomerate on periodic markers.
+     The boundary agglomeration traversal is independent on each side of the
+     periodic interface, so the resulting coarse-node centroid coordinates are
+     not guaranteed to be symmetric.  MatchPeriodic then pairs wrong coarse
+     nodes together, producing incorrect solution exchange and high residuals
+     at the periodic boundary.  Leaving each periodic node as a single-child
+     coarse CV preserves the exact 1-to-1 coordinate match. ---*/
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) continue;
+
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
 
