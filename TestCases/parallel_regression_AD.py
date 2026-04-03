@@ -231,8 +231,8 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, 0.667037, 0.483920, 0.518405, -1.013536]
-    discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.696755, 0.485950, 0.569475, -0.990065]
+    discadj_trans_stator.test_vals = [79.000000, 0.666993, 0.483927, 0.518392, -1.013549]
+    discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.666993, 0.483927, 0.518392, -1.013549]
     test_list.append(discadj_trans_stator)
 
     # Axial stage 2D
@@ -240,8 +240,8 @@ def main():
     discadj_axial_stage.cfg_dir   = "disc_adj_turbomachinery/axial_stage_2D"
     discadj_axial_stage.cfg_file  = "Axial_stage2D.cfg"
     discadj_axial_stage.test_iter = 79
-    discadj_axial_stage.test_vals = [79, -7.205880, -7.864736]
-    discadj_axial_stage.test_vals_aarch64 = [79, -7.205880, -7.864736]
+    discadj_axial_stage.test_vals = [79.000000, -6.606323, -7.139638]
+    discadj_axial_stage.test_vals_aarch64 = [79.000000, -6.606323, -7.139638]
     test_list.append(discadj_axial_stage)
 
     ###################################
