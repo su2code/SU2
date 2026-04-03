@@ -439,13 +439,6 @@ class CPhysicalGeometry final : public CGeometry {
   void MatchActuator_Disk(const CConfig* config) override;
 
   /*!
-   * \brief Mach the periodic boundary conditions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_periodic - Index of the first periodic face in a pair.
-   */
-  void MatchPeriodic(const CConfig* config, unsigned short val_periodic) override;
-
-  /*!
    * \brief Set boundary vertex structure of the control volume.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.

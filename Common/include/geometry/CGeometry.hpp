@@ -811,10 +811,13 @@ class CGeometry {
   inline virtual void MatchActuator_Disk(const CConfig* config) {}
 
   /*!
-   * \brief A virtual member.
+   * \brief Match periodic boundary points using coordinate-based matching.
+   * \details Gathers coordinates from all ranks via MPI, applies the rotation/translation
+   * for the periodic pair, and finds the nearest neighbor. Works on both fine and coarse grids.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic - Index of the periodic marker pair.
    */
-  inline virtual void MatchPeriodic(const CConfig* config, unsigned short val_periodic) {}
+  virtual void MatchPeriodic(const CConfig* config, unsigned short val_periodic);
 
   /*!
    * \brief A virtual member.

@@ -156,13 +156,6 @@ class CMultiGridGeometry final : public CGeometry {
   void MatchActuator_Disk(const CConfig* config) override;
 
   /*!
-   * \brief Mach the periodic boundary conditions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_periodic - Index of the first periodic face in a pair.
-   */
-  void MatchPeriodic(const CConfig* config, unsigned short val_periodic) override;
-
-  /*!
    * \brief Set a representative wall normal heat flux of the agglomerated control volume on a particular boundary
    * marker. \param[in] fine_grid - Geometrical definition of the problem. \param[in] val_marker - Index of the boundary
    * marker.

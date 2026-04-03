@@ -992,29 +992,6 @@ void CMultiGridGeometry::MatchActuator_Disk(const CConfig* config) {
   }
 }
 
-void CMultiGridGeometry::MatchPeriodic(const CConfig* config, unsigned short val_periodic) {
-  int iProcessor = rank;
-
-  /*--- Evaluate the number of periodic boundary conditions ---*/
-
-  auto nPeriodic = config->GetnMarker_Periodic();
-
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-      auto iPeriodic = config->GetMarker_All_PerBound(iMarker);
-      if ((iPeriodic == val_periodic) || (iPeriodic == val_periodic + nPeriodic / 2)) {
-        for (auto iVertex = 0u; iVertex < nVertex[iMarker]; iVertex++) {
-          auto iPoint = vertex[iMarker][iVertex]->GetNode();
-          if (nodes->GetDomain(iPoint)) {
-            vertex[iMarker][iVertex]->SetDonorPoint(iPoint, nodes->GetGlobalIndex(iPoint), iVertex, iMarker,
-                                                    iProcessor);
-          }
-        }
-      }
-    }
-  }
-}
-
 void CMultiGridGeometry::SetControlVolume(const CGeometry* fine_grid, unsigned short action) {
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     /*--- Compute the area of the coarse volume ---*/
