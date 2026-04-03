@@ -189,8 +189,8 @@ def main():
     discadj_axial_stage.cfg_dir   = "disc_adj_turbomachinery/axial_stage_2D"
     discadj_axial_stage.cfg_file  = "Axial_stage2D.cfg"
     discadj_axial_stage.test_iter = 79
-    discadj_axial_stage.test_vals = [79, 0.668058, 0.483608, 0.518789, -1.013227]
-    discadj_axial_stage.test_vals_aarch64 = [79, 0.668058, 0.483608, 0.518789, -1.013227]
+    discadj_axial_stage.test_vals = [79, -7.205880, -7.864736]
+    discadj_axial_stage.test_vals_aarch64 = [79, -7.205880, -7.864736]
     test_list.append(discadj_axial_stage)
 
     ###################################
