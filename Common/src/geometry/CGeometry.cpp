@@ -971,7 +971,8 @@ void CGeometry::MatchPeriodic(const CConfig* config, unsigned short val_periodic
 
             dx = Coord_i[0] - center[0];
             dy = Coord_i[1] - center[1];
-            dz = (nDim == 3) ? Coord_i[2] - center[2] : 0.0;
+            dz = su2double(0.0);
+            if (nDim == 3) dz = Coord_i[2] - center[2];
 
             /*--- Compute transformed point coordinates. ---*/
 
