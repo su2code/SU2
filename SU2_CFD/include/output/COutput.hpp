@@ -93,6 +93,8 @@ protected:
   curOuterIter,                   /*!< \brief Current value of the outer iteration index */
   curInnerIter;                   /*!< \brief Current value of the inner iteration index */
 
+  su2double PrevStopTime;         /*!< \brief Previous stop time for iteration timing. */
+
   string historyFilename;   /*!< \brief The history filename*/
   ofstream histFile;        /*!< \brief Output file stream for the history */
 
