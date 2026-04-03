@@ -829,8 +829,8 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
           cout << "WARNING: FGCRODR orthogonalization failed, linear solver diverged." << endl;
           END_SU2_OMP_MASTER
         }
-        converged = true;  /*--- Force exit from inner and outer loops. ---*/
-        m = j;             /*--- Only use iterations that completed successfully. ---*/
+        converged = true; /*--- Force exit from inner and outer loops. ---*/
+        m = j;            /*--- Only use iterations that completed successfully. ---*/
         break;
       }
 
