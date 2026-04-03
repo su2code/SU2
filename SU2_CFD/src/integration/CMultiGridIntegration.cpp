@@ -397,8 +397,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     {
       if (SU2_MPI::GetRank() == MASTER_NODE) {
         const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
-        auto printRow = [&](const char* label, const unsigned short* actual,
-                            auto getMax, const su2double (*rms)[2],
+        auto printRow = [&](const char* label,
+                            const unsigned short (&actual)[MAX_MG_LEVELS+1],
+                            auto getMax,
+                            const su2double (&rms)[MAX_MG_LEVELS+1][2],
                             unsigned short nLevels) {
           cout << label;
           for (unsigned short i = 0; i <= nLevels; ++i) {
