@@ -236,11 +236,7 @@ bool CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<Sc
   nrm = w[i + 1].norm();
   SetHsbg(i + 1, i, nrm);
 
-  /*--- Guard division by zero: if the post-orthogonalization norm is zero or NaN,
-       the new Krylov direction is linearly dependent on the existing basis
-       ("happy breakdown"). H(i+1,i) is already set to 0/nrm above; skip
-       the normalization to avoid division by zero and signal the caller. ---*/
-
+  /*--- Return false if the resulting vector is zero or contains NaN, true otherwise. --- */
   if ((nrm <= 0.0) || (nrm != nrm)) {
     return false;
   }
