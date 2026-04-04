@@ -5086,8 +5086,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 #endif
 
-  delete [] tmp_smooth;
-
   /*--- Make sure that implicit time integration is disabled
         for the FEM fluid solver (numerics). ---*/
   if ((Kind_Solver == MAIN_SOLVER::FEM_EULER)         ||
