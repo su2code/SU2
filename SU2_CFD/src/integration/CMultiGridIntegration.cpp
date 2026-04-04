@@ -32,21 +32,13 @@
  * \brief Compute the global RMS of LinSysRes across all variables and MPI ranks.
  *        Must be called from a single-thread context (e.g. inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS).
  */
-static su2double ComputeLinSysResRMS(const CSolver* solver, const CGeometry* geometry) {
-  const unsigned short nVar = solver->GetnVar();
-  const unsigned long nPointDomain = geometry->GetnPointDomain();
-  su2double localSum = 0.0;
-  for (unsigned long i = 0; i < nPointDomain; ++i) {
-    const su2double* res = solver->LinSysRes.GetBlock(i);
-    for (unsigned short v = 0; v < nVar; ++v)
-      localSum += res[v] * res[v];
-  }
-  su2double globalSum = 0.0;
-  unsigned long globalNPoint = 0;
-  SU2_MPI::Allreduce(&localSum, &globalSum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&nPointDomain, &globalNPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  if (globalNPoint == 0) return 0.0;
-  return sqrt(globalSum / static_cast<su2double>(globalNPoint * nVar));
+static su2double ComputeLinSysResRMS(const CSolver* solver, const CGeometry* /*geometry*/) {
+  unsigned long nElmDomain = solver->LinSysRes.GetNElmDomain();
+  unsigned long globalNElmDomain = 0;
+  SU2_MPI::Allreduce(&nElmDomain, &globalNElmDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+  if (globalNElmDomain == 0) return 0.0;
+  const su2double sq = solver->LinSysRes.squaredNorm();
+  return sqrt(sq / static_cast<su2double>(globalNElmDomain));
 }
 
 /*!\cond PRIVATE Helper: shared logic for adapting a single MG damping factor.
@@ -311,10 +303,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   su2double monitor = 1.0;
   bool FullMG = false;
 
-  unsigned short RecursiveParam = config[iZone]->GetMGCycle();
+  unsigned short RecursiveParam = static_cast<unsigned short>(config[iZone]->GetMGCycle());
 
-  if (config[iZone]->GetMGCycle() == FULLMG_CYCLE) {
-    RecursiveParam = V_CYCLE;
+  if (config[iZone]->GetMGCycle() == ENUM_MG_CYCLE::FULLMG_CYCLE) {
+    RecursiveParam = static_cast<unsigned short>(ENUM_MG_CYCLE::V_CYCLE);
     FullMG = true;
   }
 
@@ -341,8 +333,15 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  /// TODO: This was always false.
-  const bool Convergence_FullMG = false;
+  /*--- Full MG: advance to the next finer grid after a fixed number of
+   *    outer iterations on the current coarsest active level.
+   *    We use 100 iterations per level (nMGLevels levels total), so the
+   *    solver spends equally long on each coarse grid before stepping up.
+   *    This matches the classic FMG schedule: solve briefly on each grid,
+   *    prolongate, then continue as a standard V-CYCLE on MESH_0. ---*/
+  const bool Convergence_FullMG =
+      FullMG && (FinestMesh != MESH_0) &&
+      (config[iZone]->GetInnerIter() % 100 == 99);
 
   if (!config[iZone]->GetRestart() && FullMG && direct && ( Convergence_FullMG && (FinestMesh != MESH_0 ))) {
 
@@ -1112,8 +1111,9 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
 
-      /*--- Calculate the turbo performance ---*/
-      if (config->GetBoolTurbomachinery()){
+      /*--- Calculate the turbo performance (only on the fine grid; turbo
+       *    geometry data is only available on MESH_0). ---*/
+      if (config->GetBoolTurbomachinery() && FinestMesh == MESH_0){
 
         /*--- Average quantities at the inflow and outflow boundaries ---*/
 

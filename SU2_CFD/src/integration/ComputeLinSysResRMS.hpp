@@ -1,7 +1,7 @@
 /*!
  * \file ComputeLinSysResRMS.hpp
  * \brief Helper to compute the global RMS of LinSysRes across all variables and domain points.
- * \author SU2 Contributors
+ * \author Nijso Beishuizen
  * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -26,35 +26,21 @@
  */
 
 #pragma once
-#include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
-#include <vector>
 #include <cmath>
 
 /*!
  * \brief Compute the global (MPI-reduced) RMS of LinSysRes over all variables and domain points.
- * \param[in] solver   - Solver whose LinSysRes is evaluated.
- * \param[in] geometry - Geometry whose GetnPointDomain() determines the local count.
+ * \param[in] solver - Solver whose LinSysRes is evaluated.
  * \return Global RMS value.
  */
-inline su2double ComputeLinSysResRMS(const CSolver* solver, const CGeometry* geometry) {
-  const unsigned short nVar = solver->GetnVar();
-  const unsigned long nPointDomain = geometry->GetnPointDomain();
+inline su2double ComputeLinSysResRMS(const CSolver* solver) {
+  unsigned long nElmDomain = solver->LinSysRes.GetNElmDomain();
+  unsigned long globalNElmDomain = 0;
+  SU2_MPI::Allreduce(&nElmDomain, &globalNElmDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
-  su2double localSum = 0.0;
-  for (unsigned long i = 0; i < nPointDomain; ++i) {
-    const su2double* res = solver->LinSysRes.GetBlock(i);
-    for (unsigned short v = 0; v < nVar; ++v) {
-      localSum += res[v] * res[v];
-    }
-  }
+  if (globalNElmDomain == 0) return 0.0;
 
-  su2double globalSum = 0.0;
-  SU2_MPI::Allreduce(&localSum, &globalSum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-
-  unsigned long globalNPointDomain = 0;
-  SU2_MPI::Allreduce(&nPointDomain, &globalNPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-
-  if (globalNPointDomain == 0) return 0.0;
-  return std::sqrt(globalSum / (static_cast<su2double>(globalNPointDomain) * nVar));
+  const su2double squaredNorm = solver->LinSysRes.squaredNorm();
+  return std::sqrt(squaredNorm / static_cast<su2double>(globalNElmDomain));
 }

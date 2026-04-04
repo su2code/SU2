@@ -2281,17 +2281,17 @@ static const MapType<std::string, JUMP_DEFINITION> Jump_Map = {
 /*!
  * \brief Type of multigrid cycle
  */
-enum MG_CYCLE {
-  V_CYCLE = 0,        /*!< \brief V cycle. */
-  W_CYCLE = 1,        /*!< \brief W cycle. */
-  FULLMG_CYCLE = 2    /*!< \brief FullMG cycle. */
-};
-static const MapType<std::string, MG_CYCLE> MG_Cycle_Map = {
-  MakePair("V_CYCLE", V_CYCLE)
-  MakePair("W_CYCLE", W_CYCLE)
-  MakePair("FULLMG_CYCLE", FULLMG_CYCLE)
+enum class ENUM_MG_CYCLE {
+  V_CYCLE,  /*!< \brief V-cycle multigrid solver. */
+  W_CYCLE,  /*!< \brief W-cycle multigrid solver. */
+  FULLMG_CYCLE, /*!< \brief Full multigrid (FMG) solver. */
 };
 
+static const MapType<std::string, ENUM_MG_CYCLE> MG_Cycle_Map = {
+  MakePair("V_CYCLE", ENUM_MG_CYCLE::V_CYCLE)
+  MakePair("W_CYCLE", ENUM_MG_CYCLE::W_CYCLE)
+  MakePair("FULLMG_CYCLE", ENUM_MG_CYCLE::FULLMG_CYCLE)
+};
 /*!
  * \brief Types of design parameterizations
  */

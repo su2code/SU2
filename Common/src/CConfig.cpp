@@ -993,9 +993,9 @@ void CConfig::SetPointersNull() {
   TimeIntegrationADER_DG    = nullptr;
   WeightsIntegrationADER_DG = nullptr;
   RK_Alpha_Step             = nullptr;
-  MG_CorrecSmooth           = nullptr;
-  MG_PreSmooth              = nullptr;
-  MG_PostSmooth             = nullptr;
+  MGOptions.MG_CorrecSmooth           = nullptr;
+  MGOptions.MG_PreSmooth              = nullptr;
+  MGOptions.MG_PostSmooth             = nullptr;
   Int_Coeffs                = nullptr;
 
   Kind_Inc_Inlet = nullptr;
@@ -1973,29 +1973,29 @@ void CConfig::SetConfig_Options() {
   /*!\brief MGLEVEL\n DESCRIPTION: Multi-grid Levels. DEFAULT: 0 \ingroup Config*/
   addUnsignedShortOption("MGLEVEL", nMGLevels, 0);
   /*!\brief MGCYCLE\n DESCRIPTION: Multi-grid cycle. OPTIONS: See \link MG_Cycle_Map \endlink. Defualt V_CYCLE \ingroup Config*/
-  addEnumOption("MGCYCLE", MGCycle, MG_Cycle_Map, V_CYCLE);
+  addEnumOption("MGCYCLE", Kind_MGCycle, MG_Cycle_Map, ENUM_MG_CYCLE::V_CYCLE);
   /*!\brief MG_PRE_SMOOTH\n DESCRIPTION: Multi-grid pre-smoothing level \ingroup Config*/
-  addUShortListOption("MG_PRE_SMOOTH", nMG_PreSmooth, MG_PreSmooth);
+  addUShortListOption("MG_PRE_SMOOTH", MGOptions.nMG_PreSmooth, MGOptions.MG_PreSmooth);
   /*!\brief MG_POST_SMOOTH\n DESCRIPTION: Multi-grid post-smoothing level \ingroup Config*/
-  addUShortListOption("MG_POST_SMOOTH", nMG_PostSmooth, MG_PostSmooth);
+  addUShortListOption("MG_POST_SMOOTH", MGOptions.nMG_PostSmooth, MGOptions.MG_PostSmooth);
   /*!\brief MG_CORRECTION_SMOOTH\n DESCRIPTION: Jacobi implicit smoothing of the correction \ingroup Config*/
-  addUShortListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
+  addUShortListOption("MG_CORRECTION_SMOOTH", MGOptions.nMG_CorrecSmooth, MGOptions.MG_CorrecSmooth);
   /*!\brief MG_DAMP_RESTRICTION\n DESCRIPTION: Damping factor for the residual restriction. DEFAULT: 0.75 \ingroup Config*/
   addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.5);
   /*!\brief MG_DAMP_PROLONGATION\n DESCRIPTION: Damping factor for the correction prolongation. DEFAULT 0.75 \ingroup Config*/
   addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.5);
   /*!\brief MG_SMOOTH_EARLY_EXIT\n DESCRIPTION: Enable early exit for MG smoothing when RMS drops below threshold. DEFAULT: NO \ingroup Config*/
-  addBoolOption("MG_SMOOTH_EARLY_EXIT", MG_Smooth_EarlyExit, true);
+  addBoolOption("MG_SMOOTH_EARLY_EXIT", MGOptions.MG_Smooth_EarlyExit, true);
   /*!\brief MG_SMOOTH_RES_THRESHOLD\n DESCRIPTION: Smoothing stops when current_rms < threshold * initial_rms. DEFAULT: 0.1 \ingroup Config*/
-  addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MG_Smooth_Res_Threshold, 0.5);
+  addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MGOptions.MG_Smooth_Res_Threshold, 0.5);
   /*!\brief MG_SMOOTH_OUTPUT\n DESCRIPTION: Print compact per-cycle smoothing iteration summary. DEFAULT: NO \ingroup Config*/
-  addBoolOption("MG_SMOOTH_OUTPUT", MG_Smooth_Output, false);
+  addBoolOption("MG_SMOOTH_OUTPUT", MGOptions.MG_Smooth_Output, false);
   /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for the correction prolongation Jacobi smoother. DEFAULT: 1.25 \ingroup Config*/
-  addDoubleOption("MG_SMOOTH_COEFF", MG_Smooth_Coeff, 1.25);
+  addDoubleOption("MG_SMOOTH_COEFF", MGOptions.MG_Smooth_Coeff, 1.25);
   /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level. Levels that would produce fewer CVs are not created. DEFAULT: 50 \ingroup Config*/
-  addUnsignedLongOption("MG_MIN_MESHSIZE", MG_Min_MeshSize, 500);
+  addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
-  addBoolOption("MG_IMPLICIT_LINES", MG_Implicit_Lines, false);
+  addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
 
   /*!\par CONFIG_CATEGORY: Spatial Discretization \ingroup Config*/
   /*--- Options related to the spatial discretization ---*/
@@ -4704,7 +4704,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   FinestMesh = MESH_0;
-  if (MGCycle == FULLMG_CYCLE) FinestMesh = nMGLevels;
+  if (Kind_MGCycle == ENUM_MG_CYCLE::FULLMG_CYCLE) FinestMesh = nMGLevels;
 
   if ((Kind_Solver == MAIN_SOLVER::NAVIER_STOKES) &&
       (Kind_Turb_Model != TURB_MODEL::NONE))
@@ -4725,128 +4725,128 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   Kappa_2nd_AdjFlow = jst_adj_coeff[0];
   Kappa_4th_AdjFlow = jst_adj_coeff[1];
 
-  /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
+  /*--- Make the MGOptions.MG_PreSmooth, MGOptions.MG_PostSmooth, and MGOptions.MG_CorrecSmooth
    arrays consistent with nMGLevels ---*/
 
   auto * tmp_smooth = new unsigned short[nMGLevels+1];
 
-  if ((nMG_PreSmooth != nMGLevels+1) && (nMG_PreSmooth != 0)) {
-    if (nMG_PreSmooth > nMGLevels+1) {
+  if ((MGOptions.nMG_PreSmooth != nMGLevels+1) && (MGOptions.nMG_PreSmooth != 0)) {
+    if (MGOptions.nMG_PreSmooth > nMGLevels+1) {
 
       /*--- Truncate by removing unnecessary elements at the end ---*/
 
       for (unsigned int i = 0; i <= nMGLevels; i++)
-        tmp_smooth[i] = MG_PreSmooth[i];
-      delete [] MG_PreSmooth;
-      MG_PreSmooth=nullptr;
+        tmp_smooth[i] = MGOptions.MG_PreSmooth[i];
+      delete [] MGOptions.MG_PreSmooth;
+      MGOptions.MG_PreSmooth=nullptr;
     }
     else {
 
       /*--- Add additional elements equal to last element ---*/
 
-      for (unsigned int i = 0; i < nMG_PreSmooth; i++)
-        tmp_smooth[i] = MG_PreSmooth[i];
-      for (unsigned int i = nMG_PreSmooth; i <= nMGLevels; i++)
-        tmp_smooth[i] = MG_PreSmooth[nMG_PreSmooth-1];
-      delete [] MG_PreSmooth;
-      MG_PreSmooth=nullptr;
+      for (unsigned int i = 0; i < MGOptions.nMG_PreSmooth; i++)
+        tmp_smooth[i] = MGOptions.MG_PreSmooth[i];
+      for (unsigned int i = MGOptions.nMG_PreSmooth; i <= nMGLevels; i++)
+        tmp_smooth[i] = MGOptions.MG_PreSmooth[MGOptions.nMG_PreSmooth-1];
+      delete [] MGOptions.MG_PreSmooth;
+      MGOptions.MG_PreSmooth=nullptr;
     }
 
-    nMG_PreSmooth = nMGLevels+1;
-    MG_PreSmooth = new unsigned short[nMG_PreSmooth];
-    for (unsigned int i = 0; i < nMG_PreSmooth; i++)
-      MG_PreSmooth[i] = tmp_smooth[i];
+    MGOptions.nMG_PreSmooth = nMGLevels+1;
+    MGOptions.MG_PreSmooth = new unsigned short[MGOptions.nMG_PreSmooth];
+    for (unsigned int i = 0; i < MGOptions.nMG_PreSmooth; i++)
+      MGOptions.MG_PreSmooth[i] = tmp_smooth[i];
   }
-  if ((nMGLevels != 0) && (nMG_PreSmooth == 0)) {
-    delete [] MG_PreSmooth;
-    nMG_PreSmooth = nMGLevels+1;
-    MG_PreSmooth = new unsigned short[nMG_PreSmooth];
-    for (unsigned int i = 0; i < nMG_PreSmooth; i++)
-      MG_PreSmooth[i] = i+1;
+  if ((nMGLevels != 0) && (MGOptions.nMG_PreSmooth == 0)) {
+    delete [] MGOptions.MG_PreSmooth;
+    MGOptions.nMG_PreSmooth = nMGLevels+1;
+    MGOptions.MG_PreSmooth = new unsigned short[MGOptions.nMG_PreSmooth];
+    for (unsigned int i = 0; i < MGOptions.nMG_PreSmooth; i++)
+      MGOptions.MG_PreSmooth[i] = i+1;
   }
 
-  if ((nMG_PostSmooth != nMGLevels+1) && (nMG_PostSmooth != 0)) {
-    if (nMG_PostSmooth > nMGLevels+1) {
+  if ((MGOptions.nMG_PostSmooth != nMGLevels+1) && (MGOptions.nMG_PostSmooth != 0)) {
+    if (MGOptions.nMG_PostSmooth > nMGLevels+1) {
 
       /*--- Truncate by removing unnecessary elements at the end ---*/
 
       for (unsigned int i = 0; i <= nMGLevels; i++)
-        tmp_smooth[i] = MG_PostSmooth[i];
-      delete [] MG_PostSmooth;
-      MG_PostSmooth=nullptr;
+        tmp_smooth[i] = MGOptions.MG_PostSmooth[i];
+      delete [] MGOptions.MG_PostSmooth;
+      MGOptions.MG_PostSmooth=nullptr;
     }
     else {
 
       /*--- Add additional elements equal to last element ---*/
 
-      for (unsigned int i = 0; i < nMG_PostSmooth; i++)
-        tmp_smooth[i] = MG_PostSmooth[i];
-      for (unsigned int i = nMG_PostSmooth; i <= nMGLevels; i++)
-        tmp_smooth[i] = MG_PostSmooth[nMG_PostSmooth-1];
-      delete [] MG_PostSmooth;
-      MG_PostSmooth=nullptr;
+      for (unsigned int i = 0; i < MGOptions.nMG_PostSmooth; i++)
+        tmp_smooth[i] = MGOptions.MG_PostSmooth[i];
+      for (unsigned int i = MGOptions.nMG_PostSmooth; i <= nMGLevels; i++)
+        tmp_smooth[i] = MGOptions.MG_PostSmooth[MGOptions.nMG_PostSmooth-1];
+      delete [] MGOptions.MG_PostSmooth;
+      MGOptions.MG_PostSmooth=nullptr;
     }
 
-    nMG_PostSmooth = nMGLevels+1;
-    MG_PostSmooth = new unsigned short[nMG_PostSmooth];
-    for (unsigned int i = 0; i < nMG_PostSmooth; i++)
-      MG_PostSmooth[i] = tmp_smooth[i];
+    MGOptions.nMG_PostSmooth = nMGLevels+1;
+    MGOptions.MG_PostSmooth = new unsigned short[MGOptions.nMG_PostSmooth];
+    for (unsigned int i = 0; i < MGOptions.nMG_PostSmooth; i++)
+      MGOptions.MG_PostSmooth[i] = tmp_smooth[i];
 
   }
 
-  if ((nMGLevels != 0) && (nMG_PostSmooth == 0)) {
-    delete [] MG_PostSmooth;
-    nMG_PostSmooth = nMGLevels+1;
-    MG_PostSmooth = new unsigned short[nMG_PostSmooth];
-    for (unsigned int i = 0; i < nMG_PostSmooth; i++)
-      MG_PostSmooth[i] = 0;
+  if ((nMGLevels != 0) && (MGOptions.nMG_PostSmooth == 0)) {
+    delete [] MGOptions.MG_PostSmooth;
+    MGOptions.nMG_PostSmooth = nMGLevels+1;
+    MGOptions.MG_PostSmooth = new unsigned short[MGOptions.nMG_PostSmooth];
+    for (unsigned int i = 0; i < MGOptions.nMG_PostSmooth; i++)
+      MGOptions.MG_PostSmooth[i] = 0;
   }
 
-  if ((nMG_CorrecSmooth != nMGLevels+1) && (nMG_CorrecSmooth != 0)) {
-    if (nMG_CorrecSmooth > nMGLevels+1) {
+  if ((MGOptions.nMG_CorrecSmooth != nMGLevels+1) && (MGOptions.nMG_CorrecSmooth != 0)) {
+    if (MGOptions.nMG_CorrecSmooth > nMGLevels+1) {
 
       /*--- Truncate by removing unnecessary elements at the end ---*/
 
       for (unsigned int i = 0; i <= nMGLevels; i++)
-        tmp_smooth[i] = MG_CorrecSmooth[i];
-      delete [] MG_CorrecSmooth;
-      MG_CorrecSmooth = nullptr;
+        tmp_smooth[i] = MGOptions.MG_CorrecSmooth[i];
+      delete [] MGOptions.MG_CorrecSmooth;
+      MGOptions.MG_CorrecSmooth = nullptr;
     }
     else {
 
       /*--- Add additional elements equal to last element ---*/
 
-      for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
-        tmp_smooth[i] = MG_CorrecSmooth[i];
-      for (unsigned int i = nMG_CorrecSmooth; i <= nMGLevels; i++)
-        tmp_smooth[i] = MG_CorrecSmooth[nMG_CorrecSmooth-1];
-      delete [] MG_CorrecSmooth;
-      MG_CorrecSmooth = nullptr;
+      for (unsigned int i = 0; i < MGOptions.nMG_CorrecSmooth; i++)
+        tmp_smooth[i] = MGOptions.MG_CorrecSmooth[i];
+      for (unsigned int i = MGOptions.nMG_CorrecSmooth; i <= nMGLevels; i++)
+        tmp_smooth[i] = MGOptions.MG_CorrecSmooth[MGOptions.nMG_CorrecSmooth-1];
+      delete [] MGOptions.MG_CorrecSmooth;
+      MGOptions.MG_CorrecSmooth = nullptr;
     }
-    nMG_CorrecSmooth = nMGLevels+1;
-    MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
-    for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
-      MG_CorrecSmooth[i] = tmp_smooth[i];
+    MGOptions.nMG_CorrecSmooth = nMGLevels+1;
+    MGOptions.MG_CorrecSmooth = new unsigned short[MGOptions.nMG_CorrecSmooth];
+    for (unsigned int i = 0; i < MGOptions.nMG_CorrecSmooth; i++)
+      MGOptions.MG_CorrecSmooth[i] = tmp_smooth[i];
   }
 
-  if ((nMGLevels != 0) && (nMG_CorrecSmooth == 0)) {
-    delete [] MG_CorrecSmooth;
-    nMG_CorrecSmooth = nMGLevels+1;
-    MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
-    for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
-      MG_CorrecSmooth[i] = 0;
+  if ((nMGLevels != 0) && (MGOptions.nMG_CorrecSmooth == 0)) {
+    delete [] MGOptions.MG_CorrecSmooth;
+    MGOptions.nMG_CorrecSmooth = nMGLevels+1;
+    MGOptions.MG_CorrecSmooth = new unsigned short[MGOptions.nMG_CorrecSmooth];
+    for (unsigned int i = 0; i < MGOptions.nMG_CorrecSmooth; i++)
+      MGOptions.MG_CorrecSmooth[i] = 0;
   }
 
   /*--- Override MG Smooth parameters ---*/
 
-  if (nMG_PreSmooth != 0) MG_PreSmooth[MESH_0] = 1;
-  if (nMG_PostSmooth != 0) {
-    MG_PostSmooth[MESH_0] = 0;
-    MG_PostSmooth[nMGLevels] = 0;
+  if (MGOptions.nMG_PreSmooth != 0) MGOptions.MG_PreSmooth[MESH_0] = 1;
+  if (MGOptions.nMG_PostSmooth != 0) {
+    MGOptions.MG_PostSmooth[MESH_0] = 0;
+    MGOptions.MG_PostSmooth[nMGLevels] = 0;
   }
-  if (nMG_CorrecSmooth != 0) MG_CorrecSmooth[nMGLevels] = 0;
+  if (MGOptions.nMG_CorrecSmooth != 0) MGOptions.MG_CorrecSmooth[nMGLevels] = 0;
 
-  if (Restart) MGCycle = V_CYCLE;
+  if (Restart) Kind_MGCycle = ENUM_MG_CYCLE::V_CYCLE;
 
   if (ContinuousAdjoint) {
     if (Kind_Solver == MAIN_SOLVER::EULER) Kind_Solver = MAIN_SOLVER::ADJ_EULER;
@@ -7478,9 +7478,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if (nMGLevels !=0) {
 
-      if (MGCycle == V_CYCLE) cout << "V Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
-      if (MGCycle == W_CYCLE) cout << "W Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
-      if (MGCycle == FULLMG_CYCLE) cout << "Full Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
+      if (Kind_MGCycle == ENUM_MG_CYCLE::V_CYCLE) cout << "V Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
+      if (Kind_MGCycle == ENUM_MG_CYCLE::W_CYCLE) cout << "W Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
+      if (Kind_MGCycle == ENUM_MG_CYCLE::FULLMG_CYCLE) cout << "Full Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
 
       cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<< endl;
       cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;
@@ -7504,7 +7504,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         MGTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
         MGTable.PrintHeader();
         for (unsigned short iLevel = 0; iLevel < nMGLevels+1; iLevel++) {
-          MGTable << iLevel << MG_PreSmooth[iLevel] << MG_PostSmooth[iLevel] << MG_CorrecSmooth[iLevel];
+          MGTable << iLevel << MGOptions.MG_PreSmooth[iLevel] << MGOptions.MG_PostSmooth[iLevel] << MGOptions.MG_CorrecSmooth[iLevel];
         }
         MGTable.PrintFooter();
       }
