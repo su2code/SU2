@@ -4758,7 +4758,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       MGOptions.MG_PreSmooth[i] = tmp_smooth[i];
   }
   if ((nMGLevels != 0) && (MGOptions.nMG_PreSmooth == 0)) {
-    delete [] MGOptions.MG_PreSmooth;
     MGOptions.nMG_PreSmooth = nMGLevels+1;
     MGOptions.MG_PreSmooth = new unsigned short[MGOptions.nMG_PreSmooth];
     for (unsigned int i = 0; i < MGOptions.nMG_PreSmooth; i++)
@@ -4795,7 +4794,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if ((nMGLevels != 0) && (MGOptions.nMG_PostSmooth == 0)) {
-    delete [] MGOptions.MG_PostSmooth;
     MGOptions.nMG_PostSmooth = nMGLevels+1;
     MGOptions.MG_PostSmooth = new unsigned short[MGOptions.nMG_PostSmooth];
     for (unsigned int i = 0; i < MGOptions.nMG_PostSmooth; i++)
@@ -4830,7 +4828,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   if ((nMGLevels != 0) && (MGOptions.nMG_CorrecSmooth == 0)) {
-    delete [] MGOptions.MG_CorrecSmooth;
     MGOptions.nMG_CorrecSmooth = nMGLevels+1;
     MGOptions.MG_CorrecSmooth = new unsigned short[MGOptions.nMG_CorrecSmooth];
     for (unsigned int i = 0; i < MGOptions.nMG_CorrecSmooth; i++)
