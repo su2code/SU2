@@ -1342,18 +1342,16 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
 
           /*--- Compute normalized direction to candidate ---*/
           su2double vec[MAXNDIM] = {0.0};
-          su2double len2 = 0.0;
-          for (unsigned short d = 0; d < nDim; ++d) {
+          for (unsigned short d = 0; d < nDim; ++d)
             vec[d] = fine_grid->nodes->GetCoord(jPoint, d) - fine_grid->nodes->GetCoord(current, d);
-            len2 += vec[d] * vec[d];
-          }
-          if (len2 <= 0.0) continue;
-          const su2double len = sqrt(len2);
+          const su2double len = GeometryToolbox::Distance(nDim,
+                                  fine_grid->nodes->GetCoord(jPoint),
+                                  fine_grid->nodes->GetCoord(current));
+          if (len <= 0.0) continue;
           for (unsigned short d = 0; d < nDim; ++d) vec[d] /= len;
 
           /*--- Alignment with previous direction ---*/
-          su2double dot = 0.0;
-          for (unsigned short d = 0; d < nDim; ++d) dot += vec[d] * prev_dir[d];
+          const su2double dot = GeometryToolbox::DotProduct(nDim, vec, prev_dir);
           if (dot > best_dot) {
             best_dot = dot;
             best_neighbor = jPoint;
