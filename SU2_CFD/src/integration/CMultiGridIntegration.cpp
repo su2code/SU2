@@ -28,26 +28,6 @@
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
-/*!
- * \brief Compute the global RMS of LinSysRes across all variables and MPI ranks.
- *        Must be called from a single-thread context (e.g. inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS).
- */
-static su2double ComputeLinSysResRMS(const CSolver* solver, const CGeometry* geometry) {
-  const unsigned short nVar = solver->GetnVar();
-  const unsigned long nPointDomain = geometry->GetnPointDomain();
-  su2double localSum = 0.0;
-  for (unsigned long i = 0; i < nPointDomain; ++i) {
-    const su2double* res = solver->LinSysRes.GetBlock(i);
-    for (unsigned short v = 0; v < nVar; ++v)
-      localSum += res[v] * res[v];
-  }
-  su2double globalSum = 0.0;
-  unsigned long globalNPoint = 0;
-  SU2_MPI::Allreduce(&localSum, &globalSum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&nPointDomain, &globalNPoint, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  if (globalNPoint == 0) return 0.0;
-  return sqrt(globalSum / static_cast<su2double>(globalNPoint * nVar));
-}
 
 /*!\cond PRIVATE Helper: shared logic for adapting a single MG damping factor.
  *  Inputs:
