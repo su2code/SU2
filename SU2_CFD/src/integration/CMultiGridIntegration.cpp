@@ -28,6 +28,7 @@
 #include "../../include/integration/ComputeLinSysResRMS.hpp"
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
+#include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 
 /*!\cond PRIVATE Helper: shared logic for adapting a single MG damping factor.
  *  Inputs:
@@ -384,34 +385,49 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     {
       if (SU2_MPI::GetRank() == MASTER_NODE) {
         const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
-        auto printRow = [&](const char* label,
-                            const unsigned short (&actual)[MAX_MG_LEVELS+1],
-                            auto getMax,
-                            const su2double (&rms)[MAX_MG_LEVELS+1][2],
-                            unsigned short nLevels) {
-          cout << label;
-          for (unsigned short i = 0; i <= nLevels; ++i) {
-            cout << (i == 0 ? "(" : ", ")
-                 << actual[i] << "/" << getMax(i)
-                 << " [" << scientific << setprecision(2)
-                 << rms[i][0] << "->" << rms[i][1]
-                 << defaultfloat << setprecision(6) << "]";
-          }
-          cout << ")\n";
+
+        /*--- Helper: format one cell as "act/max [init->final]". ---*/
+        auto cellStr = [](unsigned short act, unsigned short mx,
+                          su2double rms0, su2double rms1) -> std::string {
+          std::ostringstream ss;
+          ss << act << "/" << mx << " ["
+             << std::scientific << std::setprecision(2)
+             << rms0 << "->" << rms1 << "]";
+          return ss.str();
         };
-        printRow("Pre-smooth  : ", lastPreSmoothIters,
-                 [&](unsigned short i){ return config[iZone]->GetMG_PreSmooth(i); },
-                 lastPreSmoothRMS, nMGLevels);
-        printRow("Post-smooth : ", lastPostSmoothIters,
-                 [&](unsigned short i){ return config[iZone]->GetMG_PostSmooth(i); },
-                 lastPostSmoothRMS, nMGLevels - 1);
-        printRow("Corr.-smooth: ", lastCorrecSmoothIters,
-                 [&](unsigned short i){ return config[iZone]->GetMG_CorrecSmooth(i); },
-                 lastCorrecSmoothRMS, nMGLevels - 1);
-        cout << fixed << setprecision(4)
-             << "Damp. (restr/prolong): " << config[iZone]->GetDamp_Res_Restric()
-             << " / " << config[iZone]->GetDamp_Correc_Prolong() << "\n";
-        cout << defaultfloat << setprecision(6);
+
+        PrintingToolbox::CTablePrinter table(&std::cout);
+        table.AddColumn("Smoother", 13);
+        for (unsigned short i = 0; i <= nMGLevels; ++i)
+          table.AddColumn("Level " + std::to_string(i), 26);
+        table.PrintHeader();
+
+        /*--- Pre-smooth: defined on all levels 0..nMGLevels. ---*/
+        table << "Pre-smooth";
+        for (unsigned short i = 0; i <= nMGLevels; ++i)
+          table << cellStr(lastPreSmoothIters[i], config[iZone]->GetMG_PreSmooth(i),
+                           lastPreSmoothRMS[i][0], lastPreSmoothRMS[i][1]);
+
+        /*--- Post-smooth: defined on levels 0..nMGLevels-1; coarsest has none. ---*/
+        table << "Post-smooth";
+        for (unsigned short i = 0; i < nMGLevels; ++i)
+          table << cellStr(lastPostSmoothIters[i], config[iZone]->GetMG_PostSmooth(i),
+                           lastPostSmoothRMS[i][0], lastPostSmoothRMS[i][1]);
+        table << "-";
+
+        /*--- Corr.-smooth: defined on levels 0..nMGLevels-1; coarsest has none. ---*/
+        table << "Corr-smooth";
+        for (unsigned short i = 0; i < nMGLevels; ++i)
+          table << cellStr(lastCorrecSmoothIters[i], config[iZone]->GetMG_CorrecSmooth(i),
+                           lastCorrecSmoothRMS[i][0], lastCorrecSmoothRMS[i][1]);
+        table << "-";
+
+        table.PrintFooter();
+
+        cout << std::fixed << std::setprecision(4)
+             << "Damping [restrict | prolong] : " << config[iZone]->GetDamp_Res_Restric()
+             << " | " << config[iZone]->GetDamp_Correc_Prolong() << "\n"
+             << std::defaultfloat << std::setprecision(6);
       }
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -590,12 +606,14 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
 
       /*--- Capture initial RMS after the very first residual evaluation.
-       *    This is the earliest point where LinSysRes = R(u_current) (not stale). ---*/
+       *    This is the earliest point where LinSysRes = R(u_current) (not stale).
+       *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
       if (iPreSmooth == 0 && iRKStep == 0) {
+        const su2double initial_rms = ComputeLinSysResRMS(solver_fine);
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
         {
-          lastPreSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver_fine);
-          if (early_exit) mg_initial_smooth_rms = lastPreSmoothRMS[iMesh][0];
+          lastPreSmoothRMS[iMesh][0] = initial_rms;
+          if (early_exit) mg_initial_smooth_rms = initial_rms;
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
       }
@@ -607,11 +625,14 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
     }
 
-    /*--- Early exit: check if RMS has dropped sufficiently (master only, then broadcast via flag). ---*/
+    /*--- Early exit: check if RMS has dropped sufficiently.
+     *    ComputeLinSysResRMS must be called by all threads (uses parallel dot);
+     *    only master uses the result inside the safe block. ---*/
     if (early_exit) {
+      const su2double current_rms = ComputeLinSysResRMS(solver_fine);
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
-        mg_last_smooth_rms = ComputeLinSysResRMS(solver_fine);
+        mg_last_smooth_rms = current_rms;
         if (mg_last_smooth_rms < config->GetMG_Smooth_Res_Threshold() * mg_initial_smooth_rms) {
           lastPreSmoothIters[iMesh] = iPreSmooth + 1;
           mg_early_exit_flag = true;
@@ -624,14 +645,17 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
 
   /*--- Record final RMS and progress flag.
    *    In the early-exit path mg_last_smooth_rms already holds the current value;
-   *    in the normal path we compute it once here. ---*/
+   *    in the normal path we compute it once here.
+   *    The condition is the same for all threads so they all agree on whether to call. ---*/
+  su2double final_pre_rms = mg_last_smooth_rms;
+  if (!(early_exit && mg_early_exit_flag))
+    final_pre_rms = ComputeLinSysResRMS(solver_fine);
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
-    if (!(early_exit && mg_early_exit_flag))
-      mg_last_smooth_rms = ComputeLinSysResRMS(solver_fine);
-    lastPreSmoothRMS[iMesh][1] = mg_last_smooth_rms;
+    mg_last_smooth_rms = final_pre_rms;
+    lastPreSmoothRMS[iMesh][1] = final_pre_rms;
     lastPreSmoothProgress[iMesh] = mg_early_exit_flag ||
-                                   (mg_last_smooth_rms < lastPreSmoothRMS[iMesh][0]);
+                                   (final_pre_rms < lastPreSmoothRMS[iMesh][0]);
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -675,12 +699,14 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
       /*--- Capture initial RMS after the very first residual evaluation.
        *    Before this point, LinSysRes held the smoothed correction (from SmoothProlongated_Correction),
-       *    NOT the spatial residual R(u). This is the first valid R(u) after applying the correction. ---*/
+       *    NOT the spatial residual R(u). This is the first valid R(u) after applying the correction.
+       *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
       if (iPostSmooth == 0 && iRKStep == 0) {
+        const su2double initial_rms = ComputeLinSysResRMS(solver_fine);
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
         {
-          lastPostSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver_fine);
-          if (early_exit) mg_initial_smooth_rms = lastPostSmoothRMS[iMesh][0];
+          lastPostSmoothRMS[iMesh][0] = initial_rms;
+          if (early_exit) mg_initial_smooth_rms = initial_rms;
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
       }
@@ -693,11 +719,13 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
     }
 
-    /*--- Early exit: check if RMS has dropped sufficiently (master only, then broadcast via flag). ---*/
+    /*--- Early exit: check if RMS has dropped sufficiently.
+     *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
     if (early_exit) {
+      const su2double current_rms = ComputeLinSysResRMS(solver_fine);
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
-        mg_last_smooth_rms = ComputeLinSysResRMS(solver_fine);
+        mg_last_smooth_rms = current_rms;
         if (mg_last_smooth_rms < config->GetMG_Smooth_Res_Threshold() * mg_initial_smooth_rms) {
           lastPostSmoothIters[iMesh] = iPostSmooth + 1;
           mg_early_exit_flag = true;
@@ -709,14 +737,17 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   }
 
   /*--- Record final RMS after post-smoothing.
-   *    In the early-exit path mg_last_smooth_rms is already current; otherwise compute once. ---*/
+   *    In the early-exit path mg_last_smooth_rms is already current; otherwise compute once.
+   *    The condition is the same for all threads so they all agree on whether to call. ---*/
+  su2double final_post_rms = mg_last_smooth_rms;
+  if (!(early_exit && mg_early_exit_flag))
+    final_post_rms = ComputeLinSysResRMS(solver_fine);
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
-    if (!(early_exit && mg_early_exit_flag))
-      mg_last_smooth_rms = ComputeLinSysResRMS(solver_fine);
-    lastPostSmoothRMS[iMesh][1] = mg_last_smooth_rms;
+    mg_last_smooth_rms = final_post_rms;
+    lastPostSmoothRMS[iMesh][1] = final_post_rms;
     lastPostSmoothProgress[iMesh] = mg_early_exit_flag ||
-                                    (mg_last_smooth_rms < lastPostSmoothRMS[iMesh][0]);
+                                    (final_post_rms < lastPostSmoothRMS[iMesh][0]);
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -818,10 +849,14 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   }
   END_SU2_OMP_FOR
 
-  /*--- Record initial correction norm for debugging output. ---*/
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  { lastCorrecSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver); }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  /*--- Record initial correction norm for debugging output.
+   *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
+  {
+    const su2double initial_corr_rms = ComputeLinSysResRMS(solver);
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    { lastCorrecSmoothRMS[iMesh][0] = initial_corr_rms; }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
   /*--- Jacobi iterations (no early exit — Jacobi targets high-frequency modes,
    *    so the global RMS is not a meaningful convergence indicator). ---*/
@@ -878,10 +913,14 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
   }
 
-  /*--- Record final correction norm for debugging output. ---*/
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  { lastCorrecSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver); }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  /*--- Record final correction norm for debugging output.
+   *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
+  {
+    const su2double final_corr_rms = ComputeLinSysResRMS(solver);
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    { lastCorrecSmoothRMS[iMesh][1] = final_corr_rms; }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
 }
 

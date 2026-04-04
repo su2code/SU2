@@ -27,20 +27,37 @@
 
 #pragma once
 #include "../../include/solvers/CSolver.hpp"
+#include "../../../Common/include/parallelization/omp_structure.hpp"
 #include <cmath>
 
 /*!
  * \brief Compute the global (MPI-reduced) RMS of LinSysRes over all variables and domain points.
+ *
+ * \note Thread-safety: This function MUST be called by ALL threads in the current
+ *       OpenMP parallel region, because squaredNorm() uses parallel for + barriers
+ *       internally.  Do NOT call from inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS.
+ *       The return value is correct only on the master thread (thread 0).
+ *
  * \param[in] solver - Solver whose LinSysRes is evaluated.
- * \return Global RMS value.
+ * \return Global RMS value (valid on master thread; other threads return 0).
  */
 inline su2double ComputeLinSysResRMS(const CSolver* solver) {
-  unsigned long nElmDomain = solver->LinSysRes.GetNElmDomain();
-  unsigned long globalNElmDomain = 0;
-  SU2_MPI::Allreduce(&nElmDomain, &globalNElmDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
-  if (globalNElmDomain == 0) return 0.0;
+  /*--- squaredNorm() -> dot() uses OMP parallel for + barriers internally,
+   *    so all threads must participate. ---*/
+  const su2double sqNorm = solver->LinSysRes.squaredNorm();
 
-  const su2double squaredNorm = solver->LinSysRes.squaredNorm();
-  return std::sqrt(squaredNorm / static_cast<su2double>(globalNElmDomain));
+  /*--- The MPI reduction for nElmDomain must be single-threaded. ---*/
+  su2double result = 0.0;
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    unsigned long nElmDomain = solver->LinSysRes.GetNElmDomain();
+    unsigned long globalNElmDomain = 0;
+    SU2_MPI::Allreduce(&nElmDomain, &globalNElmDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+    if (globalNElmDomain > 0)
+      result = std::sqrt(sqNorm / static_cast<su2double>(globalNElmDomain));
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  return result;
 }
