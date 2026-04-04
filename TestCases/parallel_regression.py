@@ -1240,7 +1240,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.623154, -1.660901]
+    bars_SST_2D.test_vals = [13.000000, -0.472766, -1.558314]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 

@@ -107,10 +107,13 @@ void CMultiGridIntegration::adaptProlongationDamping(CConfig* config) {
     [config](su2double v){ config->SetDamp_Correc_Prolong(v); });
 }
 
-passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,
-                                                          unsigned short iMesh, passivedouble CFL_fine, passivedouble CFL_coarse_current) {
+passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsigned short iMesh,
+                                                          passivedouble CFL_fine, passivedouble CFL_coarse_current,
+                                                          passivedouble rms_res_coarse) {
 
-  /*--- Must be called from a single-thread context (e.g. inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS). ---*/
+  /*--- Must be called from a single-thread context (e.g. inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS).
+   *    rms_res_coarse is already MPI-reduced (it comes from lastPreSmoothRMS which is computed
+   *    via ComputeLinSysResRMS → Allreduce); no additional communication needed here. ---*/
   const bool wasActive = AD::BeginPassive();
 
   passivedouble current_coeff = CFL_coarse_current / CFL_fine;
@@ -146,17 +149,7 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolve
     unsigned short lvl = min(iMesh, (unsigned short)(MAX_MG_LEVELS - 1));
     unsigned long iter = current_iter;
 
-    /*--- Get sum of all RMS residuals for all variables (local to this rank) ---*/
-    su2double rms_res_coarse_local = 0.0;
-    for (unsigned short iVar = 0; iVar < solver_coarse->GetnVar(); iVar++) {
-      rms_res_coarse_local += SU2_TYPE::GetValue(solver_coarse->GetRes_RMS(iVar));
-    }
-
-    /*--- MPI synchronization: ensure all ranks use the same global residual value. ---*/
-    /*--- Always reduce across ranks so all subsequent CFL logic is deterministic. ---*/
-    su2double rms_global_sum = 0.0;
-    SU2_MPI::Allreduce(&rms_res_coarse_local, &rms_global_sum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    passivedouble rms_res_coarse = SU2_TYPE::GetValue(rms_global_sum) / static_cast<passivedouble>(SU2_MPI::GetSize());
+    /*--- rms_res_coarse is passed in (from lastPreSmoothRMS, already MPI-reduced). ---*/
 
     /*--- Flip-flop detection: detect oscillating residuals (once per outer iteration) ---*/
     bool oscillation_detected = false;
@@ -348,6 +341,34 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
 
+  /*--- Adapt coarse-grid CFL once per cycle using smoothing residuals gathered during the cycle.
+   *    lastPreSmoothRMS[iMesh+1][1] is the final RMS after pre-smoothing at the coarse level —
+   *    it is already MPI-reduced (computed via ComputeLinSysResRMS) and identical on all ranks.
+   *    This replaces the per-level Allreduce that was previously inside MultiGrid_Cycle. ---*/
+  {
+    const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
+        const passivedouble CFL_fine_p   = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh));
+        const passivedouble CFL_coarse_p = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh+1));
+        computeMultigridCFL(config[iZone], iMesh, CFL_fine_p, CFL_coarse_p,
+                            lastPreSmoothRMS[iMesh+1][1]);
+      }
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+    /*--- Propagate the updated coarse-grid CFL to every coarse-grid point (all threads). ---*/
+    for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
+      const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh+1));
+      CGeometry* geo_c  = geometry[iZone][iInst][iMesh+1];
+      CSolver*   sol_c  = solver_container[iZone][iInst][iMesh+1][Solver_Position];
+      SU2_OMP_FOR_STAT(roundUpDiv(geo_c->GetnPoint(), omp_get_num_threads()))
+      for (auto iPoint = 0ul; iPoint < geo_c->GetnPoint(); iPoint++)
+        sol_c->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
+      END_SU2_OMP_FOR
+    }
+  }
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
 
@@ -525,25 +546,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
 
     GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
-
-    /*--- Compute adaptive CFL for coarse grid (master only, with barriers for synchronization) ---*/
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
-      passivedouble CFL_fine_passive = SU2_TYPE::GetValue(config->GetCFL(iMesh));
-      passivedouble CFL_coarse_current_passive = SU2_TYPE::GetValue(config->GetCFL(iMesh+1));
-      computeMultigridCFL(config, solver_coarse, geometry_coarse, iMesh, CFL_fine_passive, CFL_coarse_current_passive);
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
-    /*--- All threads read the CFL updated by master (safe after trailing barrier above) ---*/
-    const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config->GetCFL(iMesh+1));
-
-    /*--- Update LocalCFL at each coarse grid point ---*/
-    SU2_OMP_FOR_STAT(roundUpDiv(geometry_coarse->GetnPoint(), omp_get_num_threads()))
-    for (auto iPoint = 0ul; iPoint < geometry_coarse->GetnPoint(); iPoint++) {
-      solver_coarse->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
-    }
-    END_SU2_OMP_FOR
 
     SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), config->GetMG_Smooth_Coeff(), config, iMesh);
 
@@ -975,7 +977,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   const su2double *Residual_Fine;
 
   const unsigned short nVar = sol_coarse->GetnVar();
-  su2double factor = config->GetDamp_Res_Restric();
+  const su2double factor = config->GetDamp_Res_Restric();
 
   auto *Residual = new su2double[nVar];
 
@@ -989,7 +991,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
       auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
       Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
       for (auto iVar = 0u; iVar < nVar; iVar++)
-        Residual[iVar] += factor*Residual_Fine[iVar];
+        Residual[iVar] += factor * Residual_Fine[iVar];
     }
     sol_coarse->GetNodes()->AddRes_TruncError(Point_Coarse, Residual);
   }

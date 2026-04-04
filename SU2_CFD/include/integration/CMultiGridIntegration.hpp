@@ -224,10 +224,12 @@ private:
    * \param[in] iMesh - Current multigrid level.
    * \param[in] CFL_fine - Fine grid CFL value (passive).
    * \param[in] CFL_coarse_current - Current coarse grid CFL value (passive).
+   * \param[in] rms_res_coarse - Coarse-grid RMS residual (already MPI-reduced, from lastPreSmoothRMS).
    * \return New CFL value for the coarse grid.
    */
-  passivedouble computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,
-                                     unsigned short iMesh, passivedouble CFL_fine, passivedouble CFL_coarse_current);
+  passivedouble computeMultigridCFL(CConfig* config, unsigned short iMesh,
+                                     passivedouble CFL_fine, passivedouble CFL_coarse_current,
+                                     passivedouble rms_res_coarse);
 
   /*!
    * \brief Adapt the residual restriction damping factor.
