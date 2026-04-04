@@ -25,21 +25,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../include/integration/ComputeLinSysResRMS.hpp"
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
-
-/*!
- * \brief Compute the global RMS of LinSysRes across all variables and MPI ranks.
- *        Must be called from a single-thread context (e.g. inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS).
- */
-static su2double ComputeLinSysResRMS(const CSolver* solver, const CGeometry* /*geometry*/) {
-  unsigned long nElmDomain = solver->LinSysRes.GetNElmDomain();
-  unsigned long globalNElmDomain = 0;
-  SU2_MPI::Allreduce(&nElmDomain, &globalNElmDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-  if (globalNElmDomain == 0) return 0.0;
-  const su2double sq = solver->LinSysRes.squaredNorm();
-  return sqrt(sq / static_cast<su2double>(globalNElmDomain));
-}
 
 /*!\cond PRIVATE Helper: shared logic for adapting a single MG damping factor.
  *  Inputs:
@@ -606,7 +594,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       if (iPreSmooth == 0 && iRKStep == 0) {
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
         {
-          lastPreSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver_fine, geometry_fine);
+          lastPreSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver_fine);
           if (early_exit) mg_initial_smooth_rms = lastPreSmoothRMS[iMesh][0];
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -623,8 +611,8 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
     if (early_exit) {
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
-        su2double current_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
-        if (current_rms < config->GetMG_Smooth_Res_Threshold() * mg_initial_smooth_rms) {
+        mg_last_smooth_rms = ComputeLinSysResRMS(solver_fine);
+        if (mg_last_smooth_rms < config->GetMG_Smooth_Res_Threshold() * mg_initial_smooth_rms) {
           lastPreSmoothIters[iMesh] = iPreSmooth + 1;
           mg_early_exit_flag = true;
         }
@@ -634,18 +622,16 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
     }
   }
 
-  /*--- Record final RMS, progress flag, and (for early-exit path) re-use already-computed value. ---*/
+  /*--- Record final RMS and progress flag.
+   *    In the early-exit path mg_last_smooth_rms already holds the current value;
+   *    in the normal path we compute it once here. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
-    if (early_exit && mg_early_exit_flag) {
-      /*--- Early exit: RMS threshold was met; the RMS that triggered exit is current_rms
-       *    but we don't store it — just do a final read for the output. ---*/
-      lastPreSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver_fine, geometry_fine);
-      lastPreSmoothProgress[iMesh] = true;
-    } else {
-      lastPreSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver_fine, geometry_fine);
-      lastPreSmoothProgress[iMesh] = (lastPreSmoothRMS[iMesh][1] < lastPreSmoothRMS[iMesh][0]);
-    }
+    if (!(early_exit && mg_early_exit_flag))
+      mg_last_smooth_rms = ComputeLinSysResRMS(solver_fine);
+    lastPreSmoothRMS[iMesh][1] = mg_last_smooth_rms;
+    lastPreSmoothProgress[iMesh] = mg_early_exit_flag ||
+                                   (mg_last_smooth_rms < lastPreSmoothRMS[iMesh][0]);
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -693,7 +679,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       if (iPostSmooth == 0 && iRKStep == 0) {
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
         {
-          lastPostSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver_fine, geometry_fine);
+          lastPostSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver_fine);
           if (early_exit) mg_initial_smooth_rms = lastPostSmoothRMS[iMesh][0];
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -711,8 +697,8 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
     if (early_exit) {
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
-        su2double current_rms = ComputeLinSysResRMS(solver_fine, geometry_fine);
-        if (current_rms < config->GetMG_Smooth_Res_Threshold() * mg_initial_smooth_rms) {
+        mg_last_smooth_rms = ComputeLinSysResRMS(solver_fine);
+        if (mg_last_smooth_rms < config->GetMG_Smooth_Res_Threshold() * mg_initial_smooth_rms) {
           lastPostSmoothIters[iMesh] = iPostSmooth + 1;
           mg_early_exit_flag = true;
         }
@@ -722,11 +708,15 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
     }
   }
 
-  /*--- Record final RMS after post-smoothing. ---*/
+  /*--- Record final RMS after post-smoothing.
+   *    In the early-exit path mg_last_smooth_rms is already current; otherwise compute once. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
-    lastPostSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver_fine, geometry_fine);
-    lastPostSmoothProgress[iMesh] = (lastPostSmoothRMS[iMesh][1] < lastPostSmoothRMS[iMesh][0]);
+    if (!(early_exit && mg_early_exit_flag))
+      mg_last_smooth_rms = ComputeLinSysResRMS(solver_fine);
+    lastPostSmoothRMS[iMesh][1] = mg_last_smooth_rms;
+    lastPostSmoothProgress[iMesh] = mg_early_exit_flag ||
+                                    (mg_last_smooth_rms < lastPostSmoothRMS[iMesh][0]);
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -830,7 +820,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
   /*--- Record initial correction norm for debugging output. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  { lastCorrecSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver, geometry); }
+  { lastCorrecSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver); }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- Jacobi iterations (no early exit — Jacobi targets high-frequency modes,
@@ -890,7 +880,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
   /*--- Record final correction norm for debugging output. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  { lastCorrecSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver, geometry); }
+  { lastCorrecSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver); }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
 }
