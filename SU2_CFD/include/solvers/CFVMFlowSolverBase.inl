@@ -684,11 +684,8 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
   END_SU2_OMP_FOR
 
   if ((iMesh == MESH_0) && (config.GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_CRITICAL {
-      StrainMag_Max = max(StrainMag_Max, strainMax);
-      Omega_Max = max(Omega_Max, omegaMax);
-    }
-    END_SU2_OMP_CRITICAL
+    atomicMax(strainMax, StrainMag_Max);
+    atomicMax(omegaMax, Omega_Max);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
@@ -1458,7 +1455,7 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
 
   if (VerificationSolution) {
     unsigned short iVar;
-    unsigned long iVertex, iPoint, total_index;
+    unsigned long iVertex, iPoint;
 
     bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -1500,8 +1497,7 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
 
         if (implicit) {
           for (iVar = 0; iVar < nVar; iVar++) {
-            total_index = iPoint * nVar + iVar;
-            Jacobian.DeleteValsRowi(total_index);
+            Jacobian.DeleteValsRowi(iPoint, iVar);
           }
         }
       }
@@ -3002,5 +2998,60 @@ void CFVMFlowSolverBase<V, FlowRegime>::ComputeAxisymmetricAuxGradients(CGeometr
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     SetAuxVar_Gradient_LS(geometry, config);
+  }
+}
+
+template <class V, ENUM_REGIME FlowRegime>
+void CFVMFlowSolverBase<V, FlowRegime>::MultigridProjectEulerWall(CGeometry* geometry, const CConfig* config,
+                                                                   bool use_solution_old) {
+  const auto iVel = prim_idx.Velocity();
+  const auto nDim = geometry->GetnDim();
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != EULER_WALL) continue;
+
+    SU2_OMP_FOR_STAT(32)
+    for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+      /*--- Use the Gram-Schmidt corrected normal for nodes on intersecting walls,
+       *    consistent with BC_Sym_Plane.  Fall back to the raw marker normal otherwise. ---*/
+      su2double UnitNormal[MAXNDIM] = {0.0};
+      const auto it = geometry->symmetryNormals[iMarker].find(iVertex);
+      if (it != geometry->symmetryNormals[iMarker].end()) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->second[iDim];
+      } else {
+        su2double Normal[MAXNDIM] = {0.0};
+        geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+        if (Area < EPS) continue;
+        for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+      }
+
+      su2double* sol = use_solution_old ? nodes->GetSolution_Old(iPoint) : nodes->GetSolution(iPoint);
+
+      /*--- Compute normal component of the velocity / momentum vector.
+       *    For dynamic grids subtract the grid velocity to enforce (v - v_grid).n = 0,
+       *    multiplying by density for compressible flow (conservative variables). ---*/
+      su2double gridVel[MAXNDIM] = {};
+      if (dynamic_grid && !use_solution_old) {
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
+        if constexpr (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
+          for (auto iDim = 0u; iDim < nDim; iDim++)
+            gridVel[iDim] *= nodes->GetDensity(iPoint);
+        }
+      }
+
+      su2double momentum_n = 0.0;
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        momentum_n += (sol[iVel + iDim] - gridVel[iDim]) * UnitNormal[iDim];
+
+      /*--- Project to tangent plane. ---*/
+      for (auto iDim = 0u; iDim < nDim; iDim++) sol[iVel + iDim] -= momentum_n * UnitNormal[iDim];
+    }
+    END_SU2_OMP_FOR
   }
 }

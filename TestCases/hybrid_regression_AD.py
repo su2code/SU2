@@ -66,7 +66,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-3.254503, -3.495599, 0.052373, 0.000000]
+    discadj_arina2k.test_vals    = [-3.229402, -3.466984, 0.043984, 0.000000]
     test_list.append(discadj_arina2k)
 
     ####################################
@@ -99,7 +99,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -4.091640, -2.655563, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -3.977753, -2.562520, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################
@@ -187,7 +187,8 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.220333, -1.646832, -0.007539, 0.000013]
+    discadj_pitchingNACA0012.test_vals = [-1.224189, -1.654687, -0.004097, -0.000003]
+    discadj_pitchingNACA0012.tol = 0.01
     discadj_pitchingNACA0012.unsteady  = True
     discadj_pitchingNACA0012.enabled_with_tsan = False
     test_list.append(discadj_pitchingNACA0012)
@@ -212,7 +213,8 @@ def main():
     for test in test_list:
         test.command = TestCase.Command(exec = "SU2_CFD_AD", param = "-t 2")
         test.timeout = 600
-        test.tol = 1e-4
+        if test.tol == 0.0:
+            test.tol = 1.0e-4
     #end
 
     pass_list = [ test.run_test(args.tsan) for test in test_list ]

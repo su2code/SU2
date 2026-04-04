@@ -481,12 +481,11 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      unsigned long total_index = iPoint * nVar + iVar;
-      LinSysRes[total_index] = -LinSysRes[total_index];
-      LinSysSol[total_index] = 0.0;
+      LinSysRes(iPoint, iVar) = -LinSysRes(iPoint, iVar);
+      LinSysSol(iPoint, iVar) = 0.0;
 
       /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
-      ResidualReductions_PerThread(iPoint, iVar, LinSysRes[total_index], resRMS, resMax, idxMax);
+      ResidualReductions_PerThread(iPoint, iVar, LinSysRes(iPoint, iVar), resRMS, resMax, idxMax);
     }
   }
   END_SU2_OMP_FOR

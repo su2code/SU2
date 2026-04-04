@@ -524,14 +524,10 @@ class CFVMFlowSolverBase : public CSolver {
         }
       }
       END_SU2_OMP_FOR
+
       /*--- Min/max over threads. ---*/
-      SU2_OMP_CRITICAL
-      {
-        Min_Delta_Time = min(Min_Delta_Time, minDt);
-        Max_Delta_Time = max(Max_Delta_Time, maxDt);
-        Global_Delta_Time = Min_Delta_Time;
-      }
-      END_SU2_OMP_CRITICAL
+      atomicMin(minDt, Min_Delta_Time);
+      atomicMax(maxDt, Max_Delta_Time);
     }
 
     /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
@@ -545,6 +541,7 @@ class CFVMFlowSolverBase : public CSolver {
         SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
         Max_Delta_Time = rbuf_time;
       }
+      Global_Delta_Time = Min_Delta_Time;
     } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
@@ -578,7 +575,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     }
 
-    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is diferent from 0.
+    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is different from 0.
      * This is only done once because in dual time the time step cannot be variable. ---*/
 
     if (dual_time && (Iteration == config->GetRestart_Iter()) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
@@ -591,9 +588,7 @@ class CFVMFlowSolverBase : public CSolver {
         glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time / nodes->GetLocalCFL(iPoint));
       }
       END_SU2_OMP_FOR
-      SU2_OMP_CRITICAL
-      Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
-      END_SU2_OMP_CRITICAL
+      atomicMin(glbDtND, Global_Delta_UnstTimeND);
 
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
@@ -811,7 +806,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     static_assert(IntegrationType == CLASSICAL_RK4_EXPLICIT ||
                   IntegrationType == RUNGE_KUTTA_EXPLICIT ||
-                  IntegrationType == EULER_EXPLICIT, "");
+                  IntegrationType == EULER_EXPLICIT);
 
     const bool adjoint = config->GetContinuous_Adjoint();
 
@@ -968,12 +963,11 @@ class CFVMFlowSolverBase : public CSolver {
       }
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        unsigned long total_index = iPoint*nVar + iVar;
-        LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
-        LinSysSol[total_index] = 0.0;
+        LinSysRes(iPoint, iVar) = -(LinSysRes(iPoint, iVar) + local_Res_TruncError[iVar]);
+        LinSysSol(iPoint, iVar) = 0.0;
 
         /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
-        ResidualReductions_PerThread(iPoint, iVar, LinSysRes[total_index], resRMS, resMax, idxMax);
+        ResidualReductions_PerThread(iPoint, iVar, LinSysRes(iPoint, iVar), resRMS, resMax, idxMax);
       }
     }
     END_SU2_OMP_FOR
@@ -1139,6 +1133,8 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Call the equivalent symmetry plane boundary condition. ---*/
     BC_Sym_Plane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
   }
+
+  void MultigridProjectEulerWall(CGeometry* geometry, const CConfig* config, bool use_solution_old) override;
 
   /*!
    * \author T. Kattmann

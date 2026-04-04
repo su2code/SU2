@@ -133,6 +133,42 @@ private:
   void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
+
+  /*!
+   * \brief Apply post-smoothing iterations on the fine grid after prolongation.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] solver_fine - Pointer to the solver on the fine grid.
+   * \param[in] numerics_fine - Description of the numerical method on the fine grid.
+   * \param[in] geometry_fine - Geometrical definition of the fine grid.
+   * \param[in] solver_container_fine - Container with all solvers on the fine grid.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKLimit - Number of Runge-Kutta steps.
+   */
+  void PostSmoothing(unsigned short RunTime_EqSystem, CSolver* solver_fine, CNumerics** numerics_fine,
+                     CGeometry* geometry_fine, CSolver** solver_container_fine, CConfig *config,
+                     unsigned short iMesh, unsigned short iRKLimit);
+
+  /*!
+   * \brief Apply pre-smoothing iterations on the fine grid before restriction.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] geometry - Geometrical definition of the problem (all levels).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config_container - Definition of the particular problems.
+   * \param[in] solver_fine - Pointer to the solver on the fine grid.
+   * \param[in] numerics_fine - Description of the numerical method on the fine grid.
+   * \param[in] geometry_fine - Geometrical definition of the fine grid.
+   * \param[in] solver_container_fine - Container with all solvers on the fine grid.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] iRKLimit - Number of Runge-Kutta steps.
+   */
+  void PreSmoothing(unsigned short RunTime_EqSystem, CGeometry**** geometry, CSolver***** solver_container,
+                    CConfig **config_container, CSolver* solver_fine, CNumerics** numerics_fine,
+                    CGeometry* geometry_fine, CSolver** solver_container_fine, CConfig *config,
+                    unsigned short iMesh, unsigned short iZone, unsigned short iRKLimit);
+
   /*!
    * \brief Compute the fine grid correction from the coarse solution.
    * \param[out] sol_fine - Pointer to the solution on the fine grid.
@@ -164,8 +200,6 @@ private:
    * \param[in] geo_fine - Geometrical definition of the fine grid.
    * \param[in] geo_coarse - Geometrical definition of the coarse grid.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
    */
   void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                               CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
@@ -180,5 +214,32 @@ private:
    */
   void Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+
+  /*!
+   * \brief Compute adaptive CFL for multigrid coarse levels.
+   * \param[in] config - Problem configuration.
+   * \param[in] solver_coarse - Coarse grid solver.
+   * \param[in] geometry_coarse - Coarse grid geometry.
+   * \param[in] iMesh - Current multigrid level.
+   * \param[in] CFL_fine - Fine grid CFL value (passive).
+   * \param[in] CFL_coarse_current - Current coarse grid CFL value (passive).
+   * \return New CFL value for the coarse grid.
+   */
+  passivedouble computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,
+                                     unsigned short iMesh, passivedouble CFL_fine, passivedouble CFL_coarse_current);
+
+  /*--- CFL adaptation state variables.
+   *    These must be passivedouble: AD::Reset() clears the tape between adjoint recordings,
+   *    but class members survive. If these were su2double their stale AD indices would
+   *    reference the cleared tape, causing invalid memory access during the backward pass. ---*/
+  static constexpr int MAX_MG_LEVELS = 10;
+  passivedouble current_avg[MAX_MG_LEVELS] = {};
+  passivedouble prev_avg[MAX_MG_LEVELS] = {};
+  passivedouble last_res[MAX_MG_LEVELS] = {};
+  bool last_was_increase[MAX_MG_LEVELS] = {};
+  int oscillation_count[MAX_MG_LEVELS] = {};
+  unsigned long last_check_iter[MAX_MG_LEVELS] = {};
+  unsigned long last_update_iter[MAX_MG_LEVELS] = {};
+  unsigned long last_reset_iter = std::numeric_limits<unsigned long>::max();
 
 };

@@ -601,10 +601,7 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 }
 
 template <class ScalarType>
-void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
-  const auto block_i = i / nVar;
-  const auto row = i % nVar;
-
+void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long block_i, unsigned long row) {
   for (auto index = row_ptr[block_i]; index < row_ptr[block_i + 1]; index++) {
     for (auto iVar = 0u; iVar < nVar; iVar++)
       matrix[index * nVar * nVar + row * nVar + iVar] = 0.0;  // Delete row values in the block
