@@ -4725,113 +4725,36 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   Kappa_2nd_AdjFlow = jst_adj_coeff[0];
   Kappa_4th_AdjFlow = jst_adj_coeff[1];
 
-  /*--- Make the MGOptions.MG_PreSmooth, MGOptions.MG_PostSmooth, and MGOptions.MG_CorrecSmooth
-   arrays consistent with nMGLevels ---*/
+  /*--- Make the MG smooth arrays consistent with nMGLevels.
+   Truncate if too long, extend by repeating the last value if too short,
+   or fill with defaults if not set in the config. ---*/
 
-  auto * tmp_smooth = new unsigned short[nMGLevels+1];
+  {
+    std::vector<unsigned short> tmp_smooth(nMGLevels + 1);
 
-  if ((MGOptions.nMG_PreSmooth != nMGLevels+1) && (MGOptions.nMG_PreSmooth != 0)) {
-    if (MGOptions.nMG_PreSmooth > nMGLevels+1) {
+    auto resizeSmooth = [&](unsigned short*& arr, unsigned short& n, auto getDefault) {
+      const unsigned short nNew = nMGLevels + 1;
+      if (n != 0 && n != nNew) {
+        for (unsigned short i = 0; i < nNew; i++)
+          tmp_smooth[i] = (i < n) ? arr[i] : arr[n-1];
+        delete[] arr; arr = nullptr;
+        n = nNew;
+        arr = new unsigned short[n];
+        for (unsigned short i = 0; i < n; i++) arr[i] = tmp_smooth[i];
+      }
+      if (nMGLevels != 0 && n == 0) {
+        n = nNew;
+        arr = new unsigned short[n];
+        for (unsigned short i = 0; i < n; i++) arr[i] = getDefault(i);
+      }
+    };
 
-      /*--- Truncate by removing unnecessary elements at the end ---*/
-
-      for (unsigned int i = 0; i <= nMGLevels; i++)
-        tmp_smooth[i] = MGOptions.MG_PreSmooth[i];
-      delete [] MGOptions.MG_PreSmooth;
-      MGOptions.MG_PreSmooth=nullptr;
-    }
-    else {
-
-      /*--- Add additional elements equal to last element ---*/
-
-      for (unsigned int i = 0; i < MGOptions.nMG_PreSmooth; i++)
-        tmp_smooth[i] = MGOptions.MG_PreSmooth[i];
-      for (unsigned int i = MGOptions.nMG_PreSmooth; i <= nMGLevels; i++)
-        tmp_smooth[i] = MGOptions.MG_PreSmooth[MGOptions.nMG_PreSmooth-1];
-      delete [] MGOptions.MG_PreSmooth;
-      MGOptions.MG_PreSmooth=nullptr;
-    }
-
-    MGOptions.nMG_PreSmooth = nMGLevels+1;
-    MGOptions.MG_PreSmooth = new unsigned short[MGOptions.nMG_PreSmooth];
-    for (unsigned int i = 0; i < MGOptions.nMG_PreSmooth; i++)
-      MGOptions.MG_PreSmooth[i] = tmp_smooth[i];
-  }
-  if ((nMGLevels != 0) && (MGOptions.nMG_PreSmooth == 0)) {
-    MGOptions.nMG_PreSmooth = nMGLevels+1;
-    MGOptions.MG_PreSmooth = new unsigned short[MGOptions.nMG_PreSmooth];
-    for (unsigned int i = 0; i < MGOptions.nMG_PreSmooth; i++)
-      MGOptions.MG_PreSmooth[i] = i+1;
-  }
-
-  if ((MGOptions.nMG_PostSmooth != nMGLevels+1) && (MGOptions.nMG_PostSmooth != 0)) {
-    if (MGOptions.nMG_PostSmooth > nMGLevels+1) {
-
-      /*--- Truncate by removing unnecessary elements at the end ---*/
-
-      for (unsigned int i = 0; i <= nMGLevels; i++)
-        tmp_smooth[i] = MGOptions.MG_PostSmooth[i];
-      delete [] MGOptions.MG_PostSmooth;
-      MGOptions.MG_PostSmooth=nullptr;
-    }
-    else {
-
-      /*--- Add additional elements equal to last element ---*/
-
-      for (unsigned int i = 0; i < MGOptions.nMG_PostSmooth; i++)
-        tmp_smooth[i] = MGOptions.MG_PostSmooth[i];
-      for (unsigned int i = MGOptions.nMG_PostSmooth; i <= nMGLevels; i++)
-        tmp_smooth[i] = MGOptions.MG_PostSmooth[MGOptions.nMG_PostSmooth-1];
-      delete [] MGOptions.MG_PostSmooth;
-      MGOptions.MG_PostSmooth=nullptr;
-    }
-
-    MGOptions.nMG_PostSmooth = nMGLevels+1;
-    MGOptions.MG_PostSmooth = new unsigned short[MGOptions.nMG_PostSmooth];
-    for (unsigned int i = 0; i < MGOptions.nMG_PostSmooth; i++)
-      MGOptions.MG_PostSmooth[i] = tmp_smooth[i];
-
-  }
-
-  if ((nMGLevels != 0) && (MGOptions.nMG_PostSmooth == 0)) {
-    MGOptions.nMG_PostSmooth = nMGLevels+1;
-    MGOptions.MG_PostSmooth = new unsigned short[MGOptions.nMG_PostSmooth];
-    for (unsigned int i = 0; i < MGOptions.nMG_PostSmooth; i++)
-      MGOptions.MG_PostSmooth[i] = 0;
-  }
-
-  if ((MGOptions.nMG_CorrecSmooth != nMGLevels+1) && (MGOptions.nMG_CorrecSmooth != 0)) {
-    if (MGOptions.nMG_CorrecSmooth > nMGLevels+1) {
-
-      /*--- Truncate by removing unnecessary elements at the end ---*/
-
-      for (unsigned int i = 0; i <= nMGLevels; i++)
-        tmp_smooth[i] = MGOptions.MG_CorrecSmooth[i];
-      delete [] MGOptions.MG_CorrecSmooth;
-      MGOptions.MG_CorrecSmooth = nullptr;
-    }
-    else {
-
-      /*--- Add additional elements equal to last element ---*/
-
-      for (unsigned int i = 0; i < MGOptions.nMG_CorrecSmooth; i++)
-        tmp_smooth[i] = MGOptions.MG_CorrecSmooth[i];
-      for (unsigned int i = MGOptions.nMG_CorrecSmooth; i <= nMGLevels; i++)
-        tmp_smooth[i] = MGOptions.MG_CorrecSmooth[MGOptions.nMG_CorrecSmooth-1];
-      delete [] MGOptions.MG_CorrecSmooth;
-      MGOptions.MG_CorrecSmooth = nullptr;
-    }
-    MGOptions.nMG_CorrecSmooth = nMGLevels+1;
-    MGOptions.MG_CorrecSmooth = new unsigned short[MGOptions.nMG_CorrecSmooth];
-    for (unsigned int i = 0; i < MGOptions.nMG_CorrecSmooth; i++)
-      MGOptions.MG_CorrecSmooth[i] = tmp_smooth[i];
-  }
-
-  if ((nMGLevels != 0) && (MGOptions.nMG_CorrecSmooth == 0)) {
-    MGOptions.nMG_CorrecSmooth = nMGLevels+1;
-    MGOptions.MG_CorrecSmooth = new unsigned short[MGOptions.nMG_CorrecSmooth];
-    for (unsigned int i = 0; i < MGOptions.nMG_CorrecSmooth; i++)
-      MGOptions.MG_CorrecSmooth[i] = 0;
+    resizeSmooth(MGOptions.MG_PreSmooth,    MGOptions.nMG_PreSmooth,
+                 [](unsigned short i) { return static_cast<unsigned short>(i + 1); });
+    resizeSmooth(MGOptions.MG_PostSmooth,   MGOptions.nMG_PostSmooth,
+                 [](unsigned short  ) { return (unsigned short)0; });
+    resizeSmooth(MGOptions.MG_CorrecSmooth, MGOptions.nMG_CorrecSmooth,
+                 [](unsigned short  ) { return (unsigned short)0; });
   }
 
   /*--- Override MG Smooth parameters ---*/
