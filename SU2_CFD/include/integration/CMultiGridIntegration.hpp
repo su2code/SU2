@@ -277,9 +277,9 @@ private:
   unsigned long last_reset_iter = std::numeric_limits<unsigned long>::max();
 
   /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
-  bool mg_early_exit_flag = false;          /*!< \brief Shared flag for early exit across OMP threads. */
-  su2double mg_initial_smooth_rms = 0.0;   /*!< \brief Initial RMS before current smoothing phase. */
-  su2double mg_last_smooth_rms = 0.0;      /*!< \brief Last computed RMS; cached to avoid redundant Allreduce. */
+  bool mg_early_exit_flag = false;             /*!< \brief Shared flag for early exit across OMP threads. */
+  passivedouble mg_initial_smooth_rms = 0.0;  /*!< \brief Initial RMS before current smoothing phase. */
+  passivedouble mg_last_smooth_rms = 0.0;     /*!< \brief Last computed RMS; cached to avoid redundant Allreduce. */
 
   /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
   unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
@@ -295,9 +295,11 @@ private:
 
   /*--- Per-level start/end RMS for the compact output summary.
    *    [0] = initial RMS before smoothing, [1] = final RMS after smoothing.
-   *    Filled unconditionally (early-exit path and exhaustion path). ---*/
-  su2double lastPreSmoothRMS[MAX_MG_LEVELS+1][2] = {};
-  su2double lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
-  su2double lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+   *    Filled unconditionally (early-exit path and exhaustion path).
+   *    Must be passivedouble: class members survive tape resets; su2double would
+   *    carry stale AD indices referencing a cleared tape. ---*/
+  passivedouble lastPreSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+  passivedouble lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+  passivedouble lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
 
 };

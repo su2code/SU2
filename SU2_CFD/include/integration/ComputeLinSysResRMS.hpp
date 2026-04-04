@@ -41,21 +41,21 @@
  * \param[in] solver - Solver whose LinSysRes is evaluated.
  * \return Global RMS value (valid on master thread; other threads return 0).
  */
-inline su2double ComputeLinSysResRMS(const CSolver* solver) {
+inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
 
   /*--- squaredNorm() -> dot() uses OMP parallel for + barriers internally,
    *    so all threads must participate. ---*/
   const su2double sqNorm = solver->LinSysRes.squaredNorm();
 
   /*--- The MPI reduction for nElmDomain must be single-threaded. ---*/
-  su2double result = 0.0;
+  passivedouble result = 0.0;
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
     unsigned long nElmDomain = solver->LinSysRes.GetNElmDomain();
     unsigned long globalNElmDomain = 0;
     SU2_MPI::Allreduce(&nElmDomain, &globalNElmDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
     if (globalNElmDomain > 0)
-      result = std::sqrt(sqNorm / static_cast<su2double>(globalNElmDomain));
+      result = std::sqrt(SU2_TYPE::GetValue(sqNorm) / static_cast<passivedouble>(globalNElmDomain));
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 

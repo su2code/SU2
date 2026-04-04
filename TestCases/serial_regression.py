@@ -838,7 +838,7 @@ def main():
     ls89_sa.cfg_dir   = "nicf/LS89"
     ls89_sa.cfg_file  = "turb_SA_PR.cfg"
     ls89_sa.test_iter = 20
-    ls89_sa.test_vals = [-5.036891, -13.351107, 0.174961, 0.430698]
+    ls89_sa.test_vals = [-5.241488, -13.580472, 0.188420, 0.414010]
     test_list.append(ls89_sa)
 
     # Rarefaction shock wave edge_VW

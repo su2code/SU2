@@ -604,7 +604,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
        *    This is the earliest point where LinSysRes = R(u_current) (not stale).
        *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
       if (iPreSmooth == 0 && iRKStep == 0) {
-        const su2double initial_rms = ComputeLinSysResRMS(solver_fine);
+        const passivedouble initial_rms = ComputeLinSysResRMS(solver_fine);
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
         {
           lastPreSmoothRMS[iMesh][0] = initial_rms;
@@ -624,7 +624,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
      *    ComputeLinSysResRMS must be called by all threads (uses parallel dot);
      *    only master uses the result inside the safe block. ---*/
     if (early_exit) {
-      const su2double current_rms = ComputeLinSysResRMS(solver_fine);
+      const passivedouble current_rms = ComputeLinSysResRMS(solver_fine);
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
         mg_last_smooth_rms = current_rms;
@@ -642,7 +642,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
    *    In the early-exit path mg_last_smooth_rms already holds the current value;
    *    in the normal path we compute it once here.
    *    The condition is the same for all threads so they all agree on whether to call. ---*/
-  su2double final_pre_rms = mg_last_smooth_rms;
+  passivedouble final_pre_rms = mg_last_smooth_rms;
   if (!(early_exit && mg_early_exit_flag))
     final_pre_rms = ComputeLinSysResRMS(solver_fine);
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -697,7 +697,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
        *    NOT the spatial residual R(u). This is the first valid R(u) after applying the correction.
        *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
       if (iPostSmooth == 0 && iRKStep == 0) {
-        const su2double initial_rms = ComputeLinSysResRMS(solver_fine);
+        const passivedouble initial_rms = ComputeLinSysResRMS(solver_fine);
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
         {
           lastPostSmoothRMS[iMesh][0] = initial_rms;
@@ -717,7 +717,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
     /*--- Early exit: check if RMS has dropped sufficiently.
      *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
     if (early_exit) {
-      const su2double current_rms = ComputeLinSysResRMS(solver_fine);
+      const passivedouble current_rms = ComputeLinSysResRMS(solver_fine);
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
         mg_last_smooth_rms = current_rms;
@@ -734,7 +734,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   /*--- Record final RMS after post-smoothing.
    *    In the early-exit path mg_last_smooth_rms is already current; otherwise compute once.
    *    The condition is the same for all threads so they all agree on whether to call. ---*/
-  su2double final_post_rms = mg_last_smooth_rms;
+  passivedouble final_post_rms = mg_last_smooth_rms;
   if (!(early_exit && mg_early_exit_flag))
     final_post_rms = ComputeLinSysResRMS(solver_fine);
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -847,7 +847,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   /*--- Record initial correction norm for debugging output.
    *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
   {
-    const su2double initial_corr_rms = ComputeLinSysResRMS(solver);
+    const passivedouble initial_corr_rms = ComputeLinSysResRMS(solver);
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     { lastCorrecSmoothRMS[iMesh][0] = initial_corr_rms; }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -911,7 +911,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   /*--- Record final correction norm for debugging output.
    *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
   {
-    const su2double final_corr_rms = ComputeLinSysResRMS(solver);
+    const passivedouble final_corr_rms = ComputeLinSysResRMS(solver);
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     { lastCorrecSmoothRMS[iMesh][1] = final_corr_rms; }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
