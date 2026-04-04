@@ -64,21 +64,16 @@ static void adaptMGDampingFactor(const unsigned short* performed,
   }
   if (local_inspected == 0) return;
 
-  int global_any_stagnant = local_any_stagnant;
-  int global_all_early    = local_all_early;
-#ifdef HAVE_MPI
-  SU2_MPI::Allreduce(&local_any_stagnant, &global_any_stagnant, 1, MPI_INT, MPI_MAX, SU2_MPI::GetComm());
-  SU2_MPI::Allreduce(&local_all_early,    &global_all_early,    1, MPI_INT, MPI_MIN, SU2_MPI::GetComm());
-#endif
-
+  /*--- performed[] and progress[] are derived from MPI-reduced ComputeLinSysResRMS values,
+   *    so local_any_stagnant and local_all_early are already identical on every rank. ---*/
   const su2double SCALE_DOWN = 0.99;
   const su2double SCALE_UP   = 1.01;
   const su2double CLAMP_MIN  = 0.1;
   const su2double CLAMP_MAX  = 0.95;
 
   su2double factor = getCurrent();
-  if (global_any_stagnant)    factor *= SCALE_DOWN;
-  else if (global_all_early)  factor *= SCALE_UP;
+  if (local_any_stagnant)    factor *= SCALE_DOWN;
+  else if (local_all_early)  factor *= SCALE_UP;
   /*--- else: hit max iters but still converging, or mixed — hold factor. ---*/
   factor = max(CLAMP_MIN, min(CLAMP_MAX, factor));
   setPersist(factor);
