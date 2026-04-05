@@ -32,6 +32,7 @@
 #include "../../include/iteration/CIterationFactory.hpp"
 #include "../../include/iteration/CTurboIteration.hpp"
 #include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
@@ -556,6 +557,7 @@ void CDiscAdjSinglezoneDriver::DirectRunResidual(RECORDING kind_recording) {
 
   /*--- Run the computation of the outputs of interest. ---*/
   UpdateResiduals();
+  SetWallNormalConstraint();
   UpdateTractions();
   UpdateObjective();
 
@@ -820,8 +822,6 @@ void CDiscAdjSinglezoneDriver::ApplyPreconditioner(const CSysVector<Scalar>& u, 
   (*PrimalPreconditioner)(u, v);
 
   /*--- Apply a few FGMRES iterations in addition to the above preconditioner. ---*/
-  v.SetValZero();
-
   Scalar KrylovPreEps = KrylovPreTol;
   auto MaxIter = 5;
   solver[FLOW_SOL]->System.FGMRES_LinSolver(u, v, *PrimalJacobian, *PrimalPreconditioner, KrylovPreTol, MaxIter,
@@ -837,4 +837,39 @@ void CDiscAdjSinglezoneDriver::ApplyOperator(const CSysVector<Scalar>& u, CSysVe
 
   /*--- Extract the partial residual Jacobian-adjoint product. ---*/
   GetAllResidualsStatesSensitivities(v);
+}
+
+void CDiscAdjSinglezoneDriver::SetWallNormalConstraint() {
+  const unsigned short iVel = 1;
+
+  for (auto iMarker = 0ul; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != EULER_WALL &&
+        config->GetMarker_All_KindBC(iMarker) != SYMMETRY_PLANE) continue;
+
+    for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+      /*--- Get the unit normal. ---*/
+      const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      su2double UnitNormal[3] = {0.0};
+      const auto it = geometry->symmetryNormals[iMarker].find(iVertex);
+
+      if (it != geometry->symmetryNormals[iMarker].end()) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->second[iDim];
+      } else {
+        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+        for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+      }
+
+      /*--- Compute wall-normal momentum from the registered (unmodified) solution. ---*/
+      su2double vnMom = 0.0;
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        vnMom += solver[FLOW_SOL]->GetNodes()->GetSolution(iPoint, iVel + iDim) * UnitNormal[iDim];
+
+      /*--- Add the constraint R_n = (ρv)·n into the currently zeroed normal slot. ---*/
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        solver[FLOW_SOL]->LinSysRes(iPoint, iVel + iDim) += vnMom * UnitNormal[iDim];
+    }
+  }
 }

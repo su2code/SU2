@@ -219,6 +219,11 @@ public:
   void UpdateResiduals();
 
   /*!
+   * \brief Set wall-normal constraint R_n = (rho*v).n so that (dR/dq)^T is non-singular.
+   */
+  void SetWallNormalConstraint();
+
+  /*!
    * \brief Update the primal tractions.
    */
   void UpdateTractions();
