@@ -12,20 +12,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os_bin: [macos64-omp, macos64-mpi, linux64-omp, linux64-mpi, win64-omp, win64-mpi]
+        os_bin: [macos64, macos64-mpi, linux64-omp, linux64-mpi, win64-omp, win64-mpi]
         include:
           - os_bin: win64-omp
-            flags: '-Dwith-omp=true -Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_windows'
+            flags: '-Dcpu-arch=haswell -Dwith-omp=true -Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_windows'
           - os_bin: win64-mpi
-            flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_windows_mpi'
-          - os_bin: macos64-omp
-            flags: '-Dwith-omp=true -Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_darwin'
+            flags: '-Dcpu-arch=haswell -Dcustom-mpi=true --cross-file=/hostfiles/hostfile_windows_mpi'
+          - os_bin: macos64
+            flags: '-Dcpu-arch= -Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_darwin'
           - os_bin: macos64-mpi
-            flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_darwin_mpi'
+            flags: '-Dcpu-arch= -Dcustom-mpi=true --cross-file=/hostfiles/hostfile_darwin_mpi'
           - os_bin: linux64-omp
-            flags: '-Dwith-omp=true -Dwith-mpi=disabled -Dstatic-cgns-deps=true --cross-file=/hostfiles/hostfile_linux'
+            flags: '-Dcpu-arch=haswell -Dwith-omp=true -Dwith-mpi=disabled -Dstatic-cgns-deps=true --cross-file=/hostfiles/hostfile_linux'
           - os_bin: linux64-mpi
-            flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_linux_mpi'
+            flags: '-Dcpu-arch=haswell -Dcustom-mpi=true --cross-file=/hostfiles/hostfile_linux_mpi'
     runs-on: ubuntu-latest
     steps:
       - name: Cache Object Files
