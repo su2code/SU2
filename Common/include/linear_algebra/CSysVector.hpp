@@ -3,14 +3,14 @@
  * \brief Declararion and inlines of the vector class used in the
  * solution of large, distributed, sparse linear systems.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,8 @@
  */
 
 #pragma once
+
+#include <memory>
 
 #include "../parallelization/mpi_structure.hpp"
 #include "../parallelization/omp_structure.hpp"
@@ -66,6 +68,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
  private:
   enum { OMP_MAX_SIZE = 4096 }; /*!< \brief Maximum chunk size used in parallel for loops. */
 
+  /// NOTE: Update swap() if you add member variables.
   unsigned long omp_chunk_size = OMP_MAX_SIZE; /*!< \brief Static chunk size used in loops. */
   ScalarType* vec_val = nullptr;               /*!< \brief Storage, 64 byte aligned (do not use normal new/delete). */
   unsigned long nElm = 0;       /*!< \brief Total number of elements (or number elements on this processor). */
@@ -73,6 +76,13 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   unsigned long nVar = 1;       /*!< \brief Number of elements in a block. */
 
   ScalarType* d_vec_val = nullptr; /*!< \brief Device Pointer to store the vector values on the GPU. */
+
+#ifdef HAVE_OMP
+  mutable std::unique_ptr<ScalarType[]>
+      dot_scratch; /*!< \brief Stores partial sums for ordered reduction over OMP threads. */
+#else
+  mutable std::array<ScalarType, 1> dot_scratch;
+#endif
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -154,6 +164,19 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] u - Vector being copied.
    */
   CSysVector(const CSysVector& u) { Initialize(u.GetNBlk(), u.GetNBlkDomain(), u.nVar, u.vec_val, true); }
+
+  /*!
+   * \brief Swap contents with another vector.
+   */
+  void swap(CSysVector& other) {
+    std::swap(omp_chunk_size, other.omp_chunk_size);
+    std::swap(vec_val, other.vec_val);
+    std::swap(d_vec_val, other.d_vec_val);
+    std::swap(nElm, other.nElm);
+    std::swap(nElmDomain, other.nElmDomain);
+    std::swap(nVar, other.nVar);
+    std::swap(dot_scratch, other.dot_scratch);
+  }
 
   /*!
    * \brief Initialize the class with a scalar.
@@ -320,9 +343,8 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    */
   template <class T>
   ScalarType dot(const VecExpr::CVecExpr<T, ScalarType>& expr) const {
-    static ScalarType dotRes;
-    /*--- All threads get the same "view" of the vectors and shared variable. ---*/
-    SU2_OMP_SAFE_GLOBAL_ACCESS(dotRes = 0.0;)
+    /*--- All threads get the same "view" of the vectors. ---*/
+    SU2_OMP_BARRIER
 
     /*--- Local dot product for each thread. ---*/
     ScalarType sum = 0.0;
@@ -333,23 +355,20 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     }
     END_CSYSVEC_PARFOR
 
-    /*--- Update shared variable with "our" partial sum. ---*/
-    atomicAdd(sum, dotRes);
+    dot_scratch[omp_get_thread_num()] = sum;
 
-#ifdef HAVE_MPI
-    /*--- Reduce across all mpi ranks, only master thread communicates. ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      sum = dotRes;
-      const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
-      SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dotRes, 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-#else
-    /*--- Make view of result consistent across threads. ---*/
-    SU2_OMP_BARRIER
-#endif
+      /*--- Reduce over all threads in an ordered way to ensure a deterministic result. ---*/
+      for (int i = 1; i < omp_get_num_threads(); ++i) sum += dot_scratch[i];
 
-    return dotRes;
+      /*--- Reduce across all mpi ranks, only the master thread communicates. ---*/
+      const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
+      SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dot_scratch[0], 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
+    }
+    /*--- Make view of result consistent across threads. ---*/
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+    return dot_scratch[0];
   }
 
   /*!

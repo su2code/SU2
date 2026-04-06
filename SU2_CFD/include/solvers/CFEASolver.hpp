@@ -2,14 +2,14 @@
  * \file CFEASolver.hpp
  * \brief Finite element solver for elasticity problems.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -550,7 +550,7 @@ public:
    * \param[in] config - Definition of the problem.
    * \param[in] solver - Container vector with all the solutions.
    */
-  void Evaluate_ObjFunc(const CConfig *config, CSolver**) final {
+  void Evaluate_ObjFunc(const CConfig *config, CSolver** solver) final {
     Total_ComboObj = 0.0;
     switch (config->GetKind_ObjFunc()) {
       case REFERENCE_GEOMETRY:
@@ -574,6 +574,10 @@ public:
       case CUSTOM_OBJFUNC:
         Total_ComboObj = Total_Custom_ObjFunc;
         break;
+    }
+    if (config->GetWeakly_Coupled_Heat()) {
+      solver[HEAT_SOL]->Evaluate_ObjFunc(config, solver);
+      Total_ComboObj += solver[HEAT_SOL]->GetTotal_ComboObj();
     }
   }
 

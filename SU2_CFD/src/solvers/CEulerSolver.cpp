@@ -2,14 +2,14 @@
  * \file CEulerSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -247,7 +247,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   Energy_Inf = config->GetEnergy_FreeStreamND();
   Mach_Inf = config->GetMach();
 
-  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+  /*--- Initialize the secondary values for direct derivative approximations ---*/
 
   switch(direct_diff) {
     case NO_DERIVATIVE:
@@ -1446,6 +1446,11 @@ void CEulerSolver::SetReferenceValues(const CConfig& config) {
   }
 
   DynamicPressureRef = 0.5 * Density_Inf * RefVel2;
+
+  if (DynamicPressureRef < EPS) {
+    DynamicPressureRef = 1.0;
+  }
+
   AeroCoeffForceRef =  DynamicPressureRef * config.GetRefArea();
 
 }
@@ -1639,6 +1644,9 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
       if (!center_jst_ke) SetUndivided_Laplacian(geometry, config);
     }
   }
+  if (config->GetKind_Upwind_Flow() == UPWIND::MSW && !Output) {
+    SetCentered_Dissipation_Sensor(geometry, config);
+  }
 
   /*--- Roe Low Dissipation Sensor ---*/
 
@@ -1652,7 +1660,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
   /*--- Initialize the Jacobian matrix and residual, not needed for the reducer strategy
    *    as we set blocks (including diagonal ones) and completely overwrite. ---*/
 
-  if(!ReducerStrategy && !Output) {
+  if (!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
     if (implicit) Jacobian.SetValZero();
     else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
@@ -1789,14 +1797,16 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool low_mach_corr = config->Low_Mach_Correction();
 
   /*--- Use vectorization if the scheme supports it. ---*/
-  if (config->GetKind_Upwind_Flow() == UPWIND::ROE && ideal_gas && !low_mach_corr) {
-    EdgeFluxResidual(geometry, solver_container, config);
-    return;
+  if (ideal_gas && !low_mach_corr) {
+    if (config->GetKind_Upwind_Flow() == UPWIND::ROE || config->GetKind_Upwind_Flow() == UPWIND::MSW) {
+      EdgeFluxResidual(geometry, solver_container, config);
+      return;
+    }
   }
 
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const su2double nkRelax     = config->GetNewtonKrylovRelaxation();
 
+  const bool msw              = (config->GetKind_Upwind_Flow() == UPWIND::MSW);
   const bool roe_turkel       = (config->GetKind_Upwind_Flow() == UPWIND::TURKEL);
   const auto kind_dissipation = config->GetKind_RoeLowDiss();
 
@@ -1805,6 +1815,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
   const su2double kappa       = config->GetMUSCL_Kappa_Flow();
+  const su2double musclRamp   = config->GetMUSCLRampValue() * config->GetNewtonKrylovRelaxation();
 
   /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
@@ -1882,8 +1893,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
       for (auto iVar = 0u; iVar < nPrimVarGrad; iVar++) {
         const su2double V_ij = V_j[iVar] - V_i[iVar];
 
-        const su2double Project_Grad_i = nkRelax * MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa);
-        const su2double Project_Grad_j = nkRelax * MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa);
+        const su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappa, musclRamp);
+        const su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappa, musclRamp);
 
         su2double lim_i = 1.0;
         su2double lim_j = 1.0;
@@ -1943,17 +1954,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Roe Low Dissipation Scheme ---*/
 
     if (kind_dissipation != NO_ROELOWDISS) {
-
       numerics->SetDissipation(nodes->GetRoe_Dissipation(iPoint),
                                nodes->GetRoe_Dissipation(jPoint));
-
-      if (kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS){
-        numerics->SetSensor(nodes->GetSensor(iPoint),
-                            nodes->GetSensor(jPoint));
-      }
-      if (kind_dissipation == NTS || kind_dissipation == NTS_DUCROS){
-        numerics->SetCoord(Coord_i, Coord_j);
-      }
+    }
+    if (msw || kind_dissipation == FD_DUCROS || kind_dissipation == NTS_DUCROS){
+      numerics->SetSensor(nodes->GetSensor(iPoint),
+                          nodes->GetSensor(jPoint));
+    }
+    if (kind_dissipation == NTS || kind_dissipation == NTS_DUCROS){
+      numerics->SetCoord(Coord_i, Coord_j);
     }
 
     /*--- Compute the residual ---*/
@@ -4132,7 +4141,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
    * Institution: Computational and Theoretical Fluid Dynamics (CTFD),
    *            CSIR - National Aerospace Laboratories, Bangalore
    *            Academy of Scientific and Innovative Research, Ghaziabad
-   * \version 8.3.0 "Harrier"
+   * \version 8.4.0 "Harrier"
    * First release date : September 26 2023
    * modified on:
    *
@@ -5572,8 +5581,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
         switch(config->GetKind_Data_Riemann(Marker_Tag))
         {
-          //TODO(turbo), generilize for 3D case
-          //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
+          //TODO(turbo), generalize for 3D case
+          //TODO(turbo), generalize for Inlet and Outlet in for backflow treatment
           //TODO(turbo), implement not uniform inlet and radial equilibrium for the outlet
           case TOTAL_CONDITIONS_PT:
 
@@ -6536,8 +6545,8 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       switch(config->GetKind_Data_Giles(Marker_Tag))
       {
 
-      //Done, generilize for 3D case
-      //TODO(turbo), generilize for Inlet and Outlet in for backflow treatment
+      //Done, generalize for 3D case
+      //TODO(turbo), generalize for Inlet and Outlet in for backflow treatment
 
       case TOTAL_CONDITIONS_PT: case MIXING_IN:case TOTAL_CONDITIONS_PT_1D: case MIXING_IN_1D:
         if(config->GetSpatialFourier()){
@@ -7613,6 +7622,17 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
     /*--- Retrieve the specified target mass flow (non-dimensional) at the nacelle. ---*/
 
     Target_Inflow_MassFlow = config->GetEngineInflow_Target(Marker_Tag) / (config->GetDensity_Ref() * config->GetVelocity_Ref());
+
+    if (config->GetExhaustToInlet_Engine()) {
+      su2double Outlet_MF = 0.0;
+      unsigned short nMarker_Global = config->GetnMarker_CfgFile();
+      for (unsigned short iMarker_Global = 0; iMarker_Global < nMarker_Global; iMarker_Global++) {
+        if (config->GetMarker_CfgFile_KindBC(config->GetMarker_CfgFile_TagBound(iMarker_Global)) == ENGINE_EXHAUST) {
+          Outlet_MF = Outlet_MF + config->GetExhaust_MassFlow(config->GetMarker_CfgFile_TagBound(iMarker_Global));
+        }
+      }
+      Target_Inflow_MassFlow = Outlet_MF;
+    }
 
     if (config->GetSystemMeasurements() == US) Target_Inflow_MassFlow /= 32.174;
 

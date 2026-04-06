@@ -3,14 +3,14 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -199,6 +199,8 @@ private:
   nMarker_Inlet,                  /*!< \brief Number of inlet flow markers. */
   nMarker_Inlet_Species,          /*!< \brief Number of inlet species markers. */
   nSpecies_per_Inlet,             /*!< \brief Number of species defined per inlet markers. */
+  nMarker_Wall_Species,           /*!< \brief Number of wall species markers. */
+  nSpecies_per_Wall,              /*!< \brief Number of species defined per wall markers. */
   nMarker_Inlet_Turb,             /*!< \brief Number of inlet turbulent markers. */
   nTurb_Properties,               /*!< \brief Number of turbulent properties per inlet markers. */
   nMarker_Riemann,                /*!< \brief Number of Riemann flow markers. */
@@ -255,6 +257,7 @@ private:
   *Marker_ActDiskBemOutlet_Axis,  /*!< \brief Actuator disk BEM outlet markers passed to MARKER_ACTDISK_BEM_AXIS. */
   *Marker_Inlet,                  /*!< \brief Inlet flow markers. */
   *Marker_Inlet_Species,          /*!< \brief Inlet species markers. */
+  *Marker_Wall_Species,           /*!< \brief Wall species markers. */
   *Marker_Inlet_Turb,             /*!< \brief Inlet turbulent markers. */
   *Marker_Riemann,                /*!< \brief Riemann markers. */
   *Marker_Giles,                  /*!< \brief Giles markers. */
@@ -294,6 +297,8 @@ private:
   su2double **Inlet_Velocity;                /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
   su2double **Inlet_SpeciesVal;              /*!< \brief Specified species vector for inlet boundaries. */
   su2double **Inlet_TurbVal;                 /*!< \brief Specified turbulent intensity and viscosity ratio for inlet boundaries. */
+  WALL_SPECIES_TYPE **Kind_Wall_Species;        /*!< \brief Species boundary condition type for wall boundaries (FLUX or VALUE) per species. */
+  su2double **Wall_SpeciesVal;               /*!< \brief Specified species flux or value for wall boundaries per species. */
   su2double *EngineInflow_Target;            /*!< \brief Specified fan face targets for nacelle boundaries. */
   su2double *Inflow_Mach;                    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Inflow_Pressure;                /*!< \brief Specified fan face pressure for nacelle boundaries. */
@@ -430,7 +435,7 @@ private:
   unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
   bool NewtonKrylov;           /*!< \brief Use a coupled Newton method to solve the flow equations. */
-  array<unsigned short,3> NK_IntParam{{20, 3, 2}}; /*!< \brief Integer parameters for NK method. */
+  array<unsigned short,4> NK_IntParam{{20, 3, 2, 0}}; /*!< \brief Integer parameters for NK method. */
   array<su2double,5> NK_DblParam{{-2.0, 0.1, -3.0, 1e-4, 1.0}}; /*!< \brief Floating-point parameters for NK method. */
   su2double NK_Relaxation = 1.0;
 
@@ -483,7 +488,7 @@ private:
   unsigned short **DegreeFFDBox;      /*!< \brief Degree of the FFD boxes. */
   string *FFDTag;                     /*!< \brief Parameters of the design variable. */
   string *TagFFDBox;                  /*!< \brief Tag of the FFD box. */
-  unsigned short GeometryMode;        /*!< \brief Gemoetry mode (analysis or gradient computation). */
+  unsigned short GeometryMode;        /*!< \brief Geometry mode (analysis or gradient computation). */
   unsigned short MGCycle;             /*!< \brief Kind of multigrid cycle. */
   unsigned short FinestMesh;          /*!< \brief Finest mesh for the full multigrid approach. */
   unsigned short nFFD_Fix_IDir,
@@ -515,6 +520,7 @@ private:
   Kind_SlopeLimit_AdjFlow,      /*!< \brief Slope limiter for the adjoint equation.*/
   Kind_SlopeLimit_Heat,         /*!< \brief Slope limiter for the adjoint equation.*/
   Kind_SlopeLimit_Species;      /*!< \brief Slope limiter for the species equation.*/
+  LINEAR_SOLVER_INNER Kind_Linear_Solver_Inner; /*!< \brief Inner solver used in nested Krylov schemes. */
   unsigned short Kind_FluidModel,  /*!< \brief Kind of the Fluid Model: Ideal, van der Waals, etc. */
   Kind_InitOption,                 /*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GridMovement,               /*!< \brief Kind of the static mesh movement. */
@@ -641,9 +647,11 @@ private:
   unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;       /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
+  unsigned long Linear_Solver_Restart_Deflation; /*!< \brief Number of vectors used for deflated restarts. */
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
+  su2double MSW_Alpha;                  /*!< \brief Coefficient for blending states in the MSW scheme. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
@@ -732,6 +740,7 @@ private:
   nMarker_ZoneInterface,              /*!< \brief Number of markers in the zone interface. */
   nMarker_Plotting,                   /*!< \brief Number of markers to plot. */
   nMarker_Analyze,                    /*!< \brief Number of markers to analyze. */
+  nMarker_Create_Copy,                /*!< \brief Number of markers to duplicate. */
   nMarker_Moving,                     /*!< \brief Number of markers in motion (DEFORMING, MOVING_WALL). */
   nMarker_PyCustom,                   /*!< \brief Number of markers that are customizable in Python. */
   nMarker_DV,                         /*!< \brief Number of markers affected by the design variables. */
@@ -743,6 +752,7 @@ private:
   *Marker_GeoEval,                    /*!< \brief Markers to evaluate geometry. */
   *Marker_Plotting,                   /*!< \brief Markers to plot. */
   *Marker_Analyze,                    /*!< \brief Markers to analyze. */
+  *Marker_Create_Copy,                /*!< \brief Markers to duplicate. */
   *Marker_ZoneInterface,              /*!< \brief Markers in the FSI interface. */
   *Marker_Moving,                     /*!< \brief Markers in motion (DEFORMING, MOVING_WALL). */
   *Marker_PyCustom,                   /*!< \brief Markers that are customizable in Python. */
@@ -756,6 +766,7 @@ private:
   SST_OPTIONS *SST_Options;           /*!< \brief List of modifications/corrections/versions of SST turbulence model.*/
   SA_OPTIONS *SA_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
   LM_OPTIONS *LM_Options;             /*!< \brief List of modifications/corrections/versions of SA turbulence model.*/
+  ROUGHSST_MODEL Kind_RoughSST_Model;         /*!< \brief List of modifications/corrections/versions of rough-wall boundary conditions for SST turbulence model.*/
   unsigned short nSST_Options;        /*!< \brief Number of SST options specified. */
   unsigned short nSA_Options;         /*!< \brief Number of SA options specified. */
   unsigned short nLM_Options;         /*!< \brief Number of SA options specified. */
@@ -921,6 +932,7 @@ private:
   Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
   Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  bool out2in_mdot_engine;         /*!< \brief Flag to use engine outlet mass flow as engine inlet mass flow. */
   unsigned short wallModel_MaxIter; /*!< \brief maximum number of iterations for the Newton method for the wall model */
   su2double wallModel_Kappa,        /*!< \brief von Karman constant kappa for turbulence wall modeling */
   wallModel_B,                      /*!< \brief constant B for turbulence wall modeling */
@@ -1097,6 +1109,7 @@ private:
   bool SpatialFourier;              /*!< \brief option for computing the fourier transforms for subsonic non-reflecting BC. */
   bool RampMotionFrame;             /*!< \brief option for ramping up or down the motion Frame values */
   bool RampOutlet;                  /*!< \brief option for ramping up or down the outlet values */
+  bool RampMUSCL;
   bool RampRotatingFrame;           /*!< \brief option for ramping up or down the motion Frame values */
   bool RampTranslationFrame;        /*!< \brief option for ramping up or down the outlet values */
   bool RampOutletMassFlow;          /*!< \brief option for ramping up or down the motion Frame values */
@@ -1112,6 +1125,13 @@ private:
   array<su2double, N_POLY_COEFFS> mu_polycoeffs{{0.0}};  /*!< \brief Array for viscosity polynomial coefficients. */
   array<su2double, N_POLY_COEFFS> kt_polycoeffs{{0.0}};  /*!< \brief Array for thermal conductivity polynomial coefficients. */
   bool Body_Force;                      /*!< \brief Flag to know if a body force is included in the formulation. */
+
+  struct CMUSCLRampParam {
+    su2double RampMUSCLPower; /*!< \brief Exponent by which to raise the MUSCL ramp to the power of */
+    MUSCL_RAMP_TYPE Kind_MUSCLRamp; /*!< \brief The kind of MUSCL ramp */
+    unsigned long rampMUSCLCoeff[3];     /*!< \brief ramp MUSCL value coefficients for the COption class. */
+  } RampMUSCLParam;
+  su2double rampMUSCLValue; /*!< \brief Current value of the MUSCL ramp */
 
   ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
   bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
@@ -1355,6 +1375,8 @@ private:
 
   void addUShortArrayOption(const string& name, int size, bool allow_fewer, unsigned short* option_field);
 
+  void addULongArrayOption(const string& name, int size, bool allow_fewer, unsigned long* option_field);
+
   void addDoubleListOption(const string& name, unsigned short & size, su2double * & option_field);
 
   void addShortListOption(const string& name, unsigned short & size, short * & option_field);
@@ -1402,6 +1424,11 @@ private:
   template <class Tenum>
   void addGilesOption(const string name, unsigned short & nMarker_Giles, string * & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                      su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relaxfactor1, su2double* & relaxfactor2);
+
+  template <class Tenum>
+  void addWallSpeciesOption(const string name, unsigned short & nMarker_Wall_Species, string * & Marker_Wall_Species,
+                            WALL_SPECIES_TYPE** & option_field, const map<string, Tenum> & enum_map,
+                            su2double** & value, unsigned short & nSpecies_per_Wall);
 
   void addExhaustOption(const string& name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
                         su2double* & Ttotal, su2double* & Ptotal);
@@ -2103,6 +2130,12 @@ public:
    * \return Non-dimensionalized engine intensity.
    */
   su2double GetNuFactor_Engine(void) const { return NuFactor_Engine; }
+
+  /*!
+   * \brief Get the flag to use exhaust mass flow as inlet mass flow.
+   * \return TRUE if exhaust mass flow is used as inlet mass flow.
+   */
+  bool GetExhaustToInlet_Engine(void) const { return out2in_mdot_engine; }
 
   /*!
    * \brief Get the value of the non-dimensionalized actuator disk turbulence intensity.
@@ -2900,7 +2933,7 @@ public:
   unsigned short GetFinestMesh(void) const { return FinestMesh; }
 
   /*!
-   * \brief Get the kind of multigrid (V or W).
+   * \brief Get the kind of multigrid (V, W or FULLMG).
    * \note This variable is used in a recursive way to perform the different kind of cycles
    * \return 0 or 1 depending of we are dealing with a V or W cycle.
    */
@@ -3043,7 +3076,27 @@ public:
    * \brief Get the number of Runge-Kutta steps.
    * \return Number of Runge-Kutta steps.
    */
-  unsigned short GetnRKStep(void) const { return nRKStep; }
+  unsigned short GetnRKStep(void) const {
+
+    unsigned short iRKLimit = 1;
+
+    switch (GetKind_TimeIntScheme()) {
+      case RUNGE_KUTTA_EXPLICIT:
+        iRKLimit = nRKStep;
+        break;
+      case CLASSICAL_RK4_EXPLICIT:
+        iRKLimit = 4;
+        break;
+      case EULER_EXPLICIT:
+      case EULER_IMPLICIT:
+        iRKLimit = 1;
+        break;
+      default:
+        iRKLimit = 1;
+        break;
+    }
+    return iRKLimit;
+  }
 
   /*!
    * \brief Get the number of time levels for time accurate local time stepping.
@@ -3440,12 +3493,19 @@ public:
   string GetMarker_HeatFlux_TagBound(unsigned short val_marker) const { return Marker_HeatFlux[val_marker]; }
 
   /*!
+   * \brief Get the list of markers for which to create copies.
+   */
+  std::vector<string> GetMarkerCreateCopy() const {
+    return { Marker_Create_Copy, Marker_Create_Copy + nMarker_Create_Copy };
+  }
+
+  /*!
    * \brief Get the tag if the iMarker defined in the geometry file.
    * \param[in] val_tag - Value of the tag in which we are interested.
    * \return Value of the marker <i>val_marker</i> that is in the geometry file
    *         for the surface that has the tag.
    */
-  short GetMarker_All_TagBound(string val_tag)  {
+  short GetMarker_All_TagBound(const string& val_tag)  {
     for (unsigned short iMarker = 0; iMarker < nMarker_All; iMarker++) {
       if (val_tag == Marker_All_TagBound[iMarker]) return iMarker;
     }
@@ -4293,6 +4353,10 @@ public:
    */
   unsigned short GetKind_Linear_Solver(void) const { return Kind_Linear_Solver; }
 
+  /*!
+   * \brief Get the inner linear solver used in nested Krylov linear solvers.
+   */
+  LINEAR_SOLVER_INNER GetKind_Linear_Solver_Inner(void) const { return Kind_Linear_Solver_Inner; }
 
   /*!
    * \brief Get the kind of preconditioner for the implicit solver.
@@ -4341,6 +4405,11 @@ public:
    * \return Restart frequency of the linear solver for the implicit formulation.
    */
   unsigned long GetLinear_Solver_Restart_Frequency(void) const { return Linear_Solver_Restart_Frequency; }
+
+  /*!
+   * \brief Get the number of vectors used for deflated restarts.
+   */
+  unsigned long GetLinear_Solver_Restart_Deflation(void) const { return Linear_Solver_Restart_Deflation; }
 
   /*!
    * \brief Get the relaxation factor for iterative linear smoothers.
@@ -4395,7 +4464,7 @@ public:
   /*!
    * \brief Get Newton-Krylov integer parameters.
    */
-  array<unsigned short,3> GetNewtonKrylovIntParam() const { return NK_IntParam; }
+  array<unsigned short,4> GetNewtonKrylovIntParam() const { return NK_IntParam; }
 
   /*!
    * \brief Get Newton-Krylov floating-point parameters.
@@ -4411,6 +4480,11 @@ public:
    * \brief Set the Newton-Krylov relaxation.
    */
   void SetNewtonKrylovRelaxation(const su2double& relaxation) { NK_Relaxation = relaxation; }
+
+  /*!
+   * \brief Returns the MSW alpha (coefficient of the state blending weight).
+   */
+  su2double GetMSW_Alpha(void) const { return MSW_Alpha; }
 
   /*!
    * \brief Returns the Roe kappa (multipler of the dissipation term).
@@ -5192,6 +5266,12 @@ public:
   bool GetRampOutflow(void) const { return RampOutlet; }
 
   /*!
+   * \brief Get MUSCL ramp option.
+   * \return Ramp MUSCL option
+  */
+  bool GetMUSCLRamp(void) const { return RampMUSCL; }
+
+  /*!
    * \brief General interface for accessing ramp coefficient information
    * \return coeff for ramps
   */
@@ -5200,6 +5280,23 @@ public:
     else if (ramp_flag == RAMP_TYPE::BOUNDARY) return rampOutletCoeff[val_coeff];
     else return 0;
   };
+
+  /*!
+   * \brief Set MUSCL ramp value.
+  */
+  void SetMUSCLRampValue(su2double ramp_value) { rampMUSCLValue = ramp_value; }
+
+  /*!
+   * \brief Get MUSCL ramp value.
+   * \return Ramp MUSCL value
+  */
+  su2double GetMUSCLRampValue(void) const { return rampMUSCLValue; }
+
+  /*!
+   * \brief Get MUSCL ramp paramaters.
+   * \return Ramp MUSCL kind
+  */
+  const CMUSCLRampParam& GetMUSCLRampParam(void) const { return RampMUSCLParam; }
 
   /*!
    * \brief Generic interface for setting monitor outlet values for the ramp.
@@ -7142,6 +7239,22 @@ public:
    * \return The inlet species values.
    */
   const su2double* GetInlet_SpeciesVal(const string& val_index) const;
+
+  /*!
+   * \brief Get the species value at a wall boundary for a specific species
+   * \param[in] val_marker - Marker tag corresponding to the wall boundary.
+   * \param[in] iSpecies - Species index.
+   * \return The wall species value (flux or Dirichlet value).
+   */
+  su2double GetWall_SpeciesVal(const string& val_marker, unsigned short iSpecies) const;
+
+  /*!
+   * \brief Get the species boundary condition type at a wall boundary for a specific species
+   * \param[in] val_marker - Marker tag corresponding to the wall boundary.
+   * \param[in] iSpecies - Species index.
+   * \return The wall species type (FLUX or VALUE).
+   */
+  WALL_SPECIES_TYPE GetWall_SpeciesType(const string& val_marker, unsigned short iSpecies) const;
 
   /*!
    * \brief Get the turbulent properties values at an inlet boundary
@@ -10141,6 +10254,10 @@ public:
    */
   LM_ParsedOptions GetLMParsedOptions() const { return lmParsedOptions; }
 
+  /*!
+   * \brief Get rough-wall boundary conditions for SST.
+   */
+  ROUGHSST_MODEL GetKindRoughSSTModel() const { return Kind_RoughSST_Model; }
 
   /*!
    * \brief Get parsed option data structure for data-driven fluid model.

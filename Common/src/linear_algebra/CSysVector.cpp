@@ -2,14 +2,14 @@
  * \file CSysVector.cpp
  * \brief Implementation and explicit instantiations of CSysVector.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,6 +53,10 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
   if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
 
   d_vec_val = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
+
+#ifdef HAVE_OMP
+  dot_scratch.reset(new ScalarType[omp_get_max_threads()]);
+#endif
 
   if (val != nullptr) {
     if (!valIsArray) {

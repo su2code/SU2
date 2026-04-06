@@ -2,14 +2,14 @@
  * \file CDriverBase.hpp
  * \brief Base class for all drivers.
  * \author H. Patel, A. Gastaldi
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -564,6 +564,18 @@ class CDriverBase {
    */
   inline void SetMarkerCustomNormalHeatFlux(unsigned short iMarker, unsigned long iVertex, passivedouble WallHeatFlux) {
     main_geometry->SetCustomBoundaryHeatFlux(iMarker, iVertex, WallHeatFlux);
+  }
+
+    /*!
+   * \brief Set the wall normal scalar values at a vertex on a specified marker (MARKER_PYTHON_CUSTOM).
+   * \note This can be the input of a scalar transport equation.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] WallScalar - Value of the normal heat flux.
+   */
+   inline void SetMarkerCustomScalar(unsigned short iMarker, unsigned long iVertex, vector<passivedouble> WallScalar) {
+    auto* solver = solver_container[selected_zone][INST_0][MESH_0][SPECIES_SOL];
+    solver->SetCustomBoundaryScalar(iMarker, iVertex, WallScalar);
   }
 
   /*!

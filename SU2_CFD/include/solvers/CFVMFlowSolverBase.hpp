@@ -1,14 +1,14 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -69,7 +69,8 @@ class CFVMFlowSolverBase : public CSolver {
   su2double Mach_Inf = 0.0;          /*!< \brief Mach number at the infinity. */
   su2double Density_Inf = 0.0;       /*!< \brief Density at the infinity. */
   su2double Energy_Inf = 0.0;        /*!< \brief Energy at the infinity. */
-  su2double Temperature_Inf = 0.0;   /*!< \brief Energy at the infinity. */
+  su2double Temperature_Inf = 0.0;   /*!< \brief Temperature at the infinity. */
+  su2double Enthalpy_Inf = 0.0;      /*!< \brief Enthalpy at the infinity. */
   su2double Pressure_Inf = 0.0;      /*!< \brief Pressure at the infinity. */
   su2double* Velocity_Inf = nullptr; /*!< \brief Flow Velocity vector at the infinity. */
 
@@ -523,14 +524,10 @@ class CFVMFlowSolverBase : public CSolver {
         }
       }
       END_SU2_OMP_FOR
+
       /*--- Min/max over threads. ---*/
-      SU2_OMP_CRITICAL
-      {
-        Min_Delta_Time = min(Min_Delta_Time, minDt);
-        Max_Delta_Time = max(Max_Delta_Time, maxDt);
-        Global_Delta_Time = Min_Delta_Time;
-      }
-      END_SU2_OMP_CRITICAL
+      atomicMin(minDt, Min_Delta_Time);
+      atomicMax(maxDt, Max_Delta_Time);
     }
 
     /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
@@ -544,6 +541,7 @@ class CFVMFlowSolverBase : public CSolver {
         SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
         Max_Delta_Time = rbuf_time;
       }
+      Global_Delta_Time = Min_Delta_Time;
     } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
@@ -577,7 +575,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     }
 
-    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is diferent from 0.
+    /*--- Recompute the unsteady time step for the dual time strategy if the unsteady CFL is different from 0.
      * This is only done once because in dual time the time step cannot be variable. ---*/
 
     if (dual_time && (Iteration == config->GetRestart_Iter()) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
@@ -590,9 +588,7 @@ class CFVMFlowSolverBase : public CSolver {
         glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time / nodes->GetLocalCFL(iPoint));
       }
       END_SU2_OMP_FOR
-      SU2_OMP_CRITICAL
-      Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
-      END_SU2_OMP_CRITICAL
+      atomicMin(glbDtND, Global_Delta_UnstTimeND);
 
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
@@ -727,6 +723,7 @@ class CFVMFlowSolverBase : public CSolver {
   template<class SensVarFunc>
   FORCEINLINE void SetCentered_Dissipation_Sensor_impl(const SensVarFunc& sensVar,
                                                        CGeometry *geometry, const CConfig *config) {
+    const bool msw = config->GetKind_Upwind_Flow() == UPWIND::MSW;
 
     /*--- We can access memory more efficiently if there are no periodic boundaries. ---*/
 
@@ -741,8 +738,8 @@ class CFVMFlowSolverBase : public CSolver {
       const su2double sensVar_i = sensVar(*nodes, iPoint);
 
       /*--- Initialize. ---*/
-      iPoint_UndLapl[iPoint] = 0.0;
-      jPoint_UndLapl[iPoint] = 0.0;
+      iPoint_UndLapl[iPoint] = 0;
+      jPoint_UndLapl[iPoint] = msw ? 1 : 0;
 
       /*--- Loop over the neighbors of point i. ---*/
       for (auto jPoint : geometry->nodes->GetPoints(iPoint))
@@ -754,9 +751,16 @@ class CFVMFlowSolverBase : public CSolver {
 
         su2double sensVar_j = sensVar(*nodes, jPoint);
 
-        /*--- Dissipation sensor, add variable difference and variable sum. ---*/
-        iPoint_UndLapl[iPoint] += sensVar_j - sensVar_i;
-        jPoint_UndLapl[iPoint] += sensVar_j + sensVar_i;
+        if (msw) {
+          /*--- More conservative formulation (triggered by large gradient instead of large laplacian).
+           * From "Development of an Unstructured Navier-Stokes Solver For Hypersonic Nonequilibrium
+           * Aerothermodynamics". ---*/
+          iPoint_UndLapl[iPoint] = fmax(iPoint_UndLapl[iPoint], fabs(sensVar_j - sensVar_i) / fmin(sensVar_j, sensVar_i));
+        } else {
+          /*--- Jameson dissipation sensor, add variable difference and variable sum. ---*/
+          iPoint_UndLapl[iPoint] += sensVar_j - sensVar_i;
+          jPoint_UndLapl[iPoint] += sensVar_j + sensVar_i;
+        }
       }
 
       if (!isPeriodic) {
@@ -802,7 +806,7 @@ class CFVMFlowSolverBase : public CSolver {
 
     static_assert(IntegrationType == CLASSICAL_RK4_EXPLICIT ||
                   IntegrationType == RUNGE_KUTTA_EXPLICIT ||
-                  IntegrationType == EULER_EXPLICIT, "");
+                  IntegrationType == EULER_EXPLICIT);
 
     const bool adjoint = config->GetContinuous_Adjoint();
 
@@ -959,12 +963,11 @@ class CFVMFlowSolverBase : public CSolver {
       }
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        unsigned long total_index = iPoint*nVar + iVar;
-        LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
-        LinSysSol[total_index] = 0.0;
+        LinSysRes(iPoint, iVar) = -(LinSysRes(iPoint, iVar) + local_Res_TruncError[iVar]);
+        LinSysSol(iPoint, iVar) = 0.0;
 
         /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
-        ResidualReductions_PerThread(iPoint, iVar, LinSysRes[total_index], resRMS, resMax, idxMax);
+        ResidualReductions_PerThread(iPoint, iVar, LinSysRes(iPoint, iVar), resRMS, resMax, idxMax);
       }
     }
     END_SU2_OMP_FOR
@@ -1130,6 +1133,8 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Call the equivalent symmetry plane boundary condition. ---*/
     BC_Sym_Plane(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
   }
+
+  void MultigridProjectEulerWall(CGeometry* geometry, const CConfig* config, bool use_solution_old) override;
 
   /*!
    * \author T. Kattmann

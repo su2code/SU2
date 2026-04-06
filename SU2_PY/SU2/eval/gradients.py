@@ -3,14 +3,14 @@
 ## \file gradients.py
 #  \brief python package for gradients
 #  \author T. Lukaczyk, F. Palacios
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -76,7 +76,7 @@ def gradient(func_name, method, config, state=None):
     if func_name == "ALL":
         raise Exception("func_name = 'ALL' not yet supported")
     func_output = func_name
-    if type(func_name) == list:
+    if isinstance(func_name, list):
         if config.OPT_COMBINE_OBJECTIVE == "YES":
             func_output = "COMBO"
         else:
@@ -184,7 +184,7 @@ def adjoint(func_name, config, state=None):
 
     # When a list of objectives is used, they are combined
     # and the output name is 'COMBO'
-    multi_objective = type(func_name) == list
+    multi_objective = isinstance(func_name, list)
     func_output = func_name
     if multi_objective:
         func_output = "COMBO"
@@ -259,7 +259,7 @@ def adjoint(func_name, config, state=None):
             name = files["RESTART_FILE_1"]
             name = su2io.expand_part(name, config)
             link.extend(name)
-        if "RESTART_FILE_1" in files:  # not the case for 1st order time stepping
+        if "RESTART_FILE_2" in files:  # not the case for 1st order time stepping
             name = files["RESTART_FILE_2"]
             name = su2io.expand_part(name, config)
             link.extend(name)

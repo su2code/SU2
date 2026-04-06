@@ -2,14 +2,14 @@
  * \file CFEASolver.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1163,7 +1163,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
   const su2double stress_scale = 1.0 / stressParam[0];
   const su2double ks_mult = stressParam[1];
 
-  const unsigned short nStress = (nDim == 2) ? 3 : 6;
+  const unsigned short nStress = 2 * nDim;
 
   su2double StressPenalty = 0.0;
   su2double MaxVonMises_Stress = 0.0;
@@ -1296,9 +1296,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
       maxVonMises = max(maxVonMises, vms);
     }
     END_SU2_OMP_FOR
-    SU2_OMP_CRITICAL
-    MaxVonMises_Stress = max(MaxVonMises_Stress, maxVonMises);
-    END_SU2_OMP_CRITICAL
+    atomicMax(maxVonMises, MaxVonMises_Stress);
 
     AD::EndPassive(wasActive);
 
@@ -3099,7 +3097,7 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CNumerics **numerics, CC
 
 void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
-  const bool dynamic = (config->GetTime_Domain());
+  const bool dynamic = config->GetTime_Domain();
   const bool fluid_structure = config->GetFSI_Simulation();
   const bool discrete_adjoint = config->GetDiscrete_Adjoint();
 

@@ -2,14 +2,14 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -604,11 +604,13 @@ public:
    * \param[in] vector_ij - Distance vector.
    * \param[in] delta_ij - Centered difference.
    * \param[in] kappa - Blending coefficient for U-MUSCL reconstruction.
+   * \param[in] ramp_val - Value of the 1st-2nd order MUSCL ramp.
    * \return - Projected variable.
    */
-  inline su2double MUSCL_Reconstruction(const su2double* grad, const su2double* vector_ij, su2double delta_ij, su2double kappa) {
+  FORCEINLINE su2double MUSCL_Reconstruction(const su2double* grad, const su2double* vector_ij, su2double delta_ij,
+                                             su2double kappa, su2double ramp_val) const {
     su2double project_grad = GeometryToolbox::DotProduct(nDim, grad, vector_ij);
-    return LimiterHelpers<>::umusclProjection(project_grad, delta_ij, kappa);
+    return ramp_val * LimiterHelpers<>::umusclProjection(project_grad, delta_ij, kappa);
   }
 
   /*!
@@ -818,6 +820,16 @@ public:
                                     CNumerics      *visc_numerics,
                                     CConfig        *config,
                                     unsigned short val_marker) { }
+
+  /*!
+   * \brief Enforce Euler wall BC on a restricted or prolongated multigrid solution by
+   *        projecting the momentum to the tangent plane of the wall.
+   * \param[in] geometry - Coarse grid geometry.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] use_solution_old - If true, project Solution_Old (corrections); if false, project Solution.
+   */
+  inline virtual void MultigridProjectEulerWall(CGeometry* /*geometry*/, const CConfig* /*config*/,
+                                                bool /*use_solution_old*/) {}
 
   /*!
    * \brief A virtual member.
@@ -2872,6 +2884,16 @@ public:
   inline virtual su2double GetInletFlowDir(unsigned short val_marker,
                                            unsigned long val_vertex,
                                            unsigned short val_dim) const { return 0; }
+
+
+  /*!
+   * \brief Set the value of the customized normal scalar values/flux at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   */
+  inline virtual void SetCustomBoundaryScalar(unsigned short val_marker, unsigned long val_vertex,
+    vector<passivedouble> val_customBoundaryScalar) {  }
+
 
   /*!
    * \brief A virtual member

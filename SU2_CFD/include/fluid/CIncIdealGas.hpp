@@ -2,14 +2,14 @@
  * \file CIncIdealGas.hpp
  * \brief Defines the incompressible Ideal Gas model.
  * \author T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +39,7 @@ class CIncIdealGas final : public CFluidModel {
   /*!
    * \brief Constructor of the class.
    */
-  CIncIdealGas(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure) {
+  CIncIdealGas(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure, su2double val_Std_Ref_Temp_ND) {
     /*--- In the incompressible ideal gas model, the thermodynamic pressure
   is decoupled from the governing equations and held constant. The
   density is therefore only a function of temperature variations. ---*/
@@ -48,6 +48,7 @@ class CIncIdealGas final : public CFluidModel {
     Gamma = 1.0;
     Cp = val_Cp;
     Cv = Cp;
+    Std_Ref_Temp_ND = val_Std_Ref_Temp_ND;
   }
 
   /*!
@@ -58,9 +59,21 @@ class CIncIdealGas final : public CFluidModel {
     /*--- The EoS only depends upon temperature. ---*/
     Temperature = t;
     Density = Pressure / (Temperature * Gas_Constant);
+    Enthalpy = Cp * (Temperature - Std_Ref_Temp_ND);  // Sensible enthalpy relative to REF_TEMP
+  }
+
+  /*!
+   * \brief Set the Dimensionless State using Enthalpy.
+   * \param[in] val_enthalpy - Enthalpy value at the point.
+   */
+  void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override {
+    Enthalpy = val_enthalpy;
+    Temperature = Enthalpy / Cp + Std_Ref_Temp_ND;  // Temperature from sensible enthalpy
+    Density = Pressure / (Temperature * Gas_Constant);
   }
 
  private:
   su2double Gas_Constant{0.0}; /*!< \brief Gas Constant. */
   su2double Gamma{0.0};        /*!< \brief Heat Capacity Ratio. */
+  su2double Std_Ref_Temp_ND{0.0}; /*!< \brief Nondimensional standard reference temperature for enthalpy. */
 };

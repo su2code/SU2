@@ -2,14 +2,14 @@
  * \file CHeatSolver.cpp
  * \brief Main subroutines for solving the heat equation
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -201,6 +201,10 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     // P, vx, vy (,vz)
     skipVars += 1 + nDim;
   }
+  if (config->GetStructuralProblem() && config->GetWeakly_Coupled_Heat()) {
+    skipVars += nDim;
+    if (config->GetTime_Domain()) skipVars += 2 * nDim;
+  }
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -310,6 +314,20 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     if (implicit) Jacobian.SetDiagonalAsColumnSum();
   }
 }
+
+void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
+                                  CConfig *config, unsigned short iMesh) {
+
+  /*--- Regular source terms go here. ---*/
+  /*--- ... ---*/
+
+ /*--- Custom user defined source term (from the python wrapper) ---*/
+  if (config->GetPyCustomSource()) {
+    CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
+  }
+
+}
+
 
 void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 
@@ -548,7 +566,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
         LinSysRes(iPoint, 0) = 0.0;
         nodes->SetRes_TruncErrorZero(iPoint);
 
-        if (implicit) Jacobian.DeleteValsRowi(iPoint);
+        if (implicit) Jacobian.DeleteValsRowi(iPoint, 0);
       }
     }
     END_SU2_OMP_FOR
@@ -830,13 +848,8 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
     }
     END_SU2_OMP_FOR
     /*--- Min/max over threads. ---*/
-    SU2_OMP_CRITICAL
-    {
-      Min_Delta_Time = min(Min_Delta_Time, minDt);
-      Max_Delta_Time = max(Max_Delta_Time, maxDt);
-      Global_Delta_Time = Min_Delta_Time;
-    }
-    END_SU2_OMP_CRITICAL
+    atomicMin(minDt, Min_Delta_Time);
+    atomicMax(maxDt, Max_Delta_Time);
   }
 
   /*--- Compute the min/max dt (in parallel, now over mpi ranks). ---*/
@@ -850,6 +863,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       SU2_MPI::Allreduce(&Max_Delta_Time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       Max_Delta_Time = rbuf_time;
     }
+    Global_Delta_Time = Min_Delta_Time;
   } END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   /*--- For exact time solution use the minimum delta time of the whole mesh. ---*/
@@ -896,9 +910,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
       glbDtND = min(glbDtND, config->GetUnst_CFL()*Global_Delta_Time / nodes->GetLocalCFL(iPoint));
     }
     END_SU2_OMP_FOR
-    SU2_OMP_CRITICAL
-    Global_Delta_UnstTimeND = min(Global_Delta_UnstTimeND, glbDtND);
-    END_SU2_OMP_CRITICAL
+    atomicMin(glbDtND, Global_Delta_UnstTimeND);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {

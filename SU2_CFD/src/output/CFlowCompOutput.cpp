@@ -2,14 +2,14 @@
  * \file CFlowCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -288,6 +288,10 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Enthalpy", "LIMITER", "Limiter value of the enthalpy");
   }
 
+  if (config->GetKind_Upwind_Flow() == UPWIND::MSW) {
+    AddVolumeOutput("MSW_SENSOR", "MSW_Sensor", "LIMITER", "Value of sensor used to switch from SW to MSW");
+  }
+
   SetVolumeOutputFieldsScalarLimiter(config);
 
   SetVolumeOutputFieldsScalarSource(config);
@@ -379,6 +383,10 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
       SetVolumeOutputValue("LIMITER_DENSITY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+2));
       SetVolumeOutputValue("LIMITER_ENTHALPY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+3));
     }
+  }
+
+  if (config->GetKind_Upwind_Flow() == UPWIND::MSW) {
+    SetVolumeOutputValue("MSW_SENSOR", iPoint, Node_Flow->GetSensor(iPoint));
   }
 
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){

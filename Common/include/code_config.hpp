@@ -2,14 +2,14 @@
  * \file code_config.hpp
  * \brief Header file for collecting common macros, definitions and type configurations.
  * \author T. Albring, P. Gomes, J. Blühdorn
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,12 @@
 #pragma once
 
 #include <type_traits>
+
+#if defined(_MSC_VER)
+#define PRAGMIZE(X) __pragma(X)
+#else
+#define PRAGMIZE(X) _Pragma(#X)
+#endif
 
 #if defined(_MSC_VER)
 #define FORCEINLINE __forceinline
@@ -150,4 +156,14 @@ using su2mixedfloat = passivedouble;
 #if (_OPENMP >= 201811 && !defined(FORCE_OPDI_MACRO_BACKEND)) || defined(FORCE_OPDI_OMPT_BACKEND)
 #define HAVE_OMPT
 #endif
+#endif
+
+#ifdef __GNUC__
+#define SU2_IGNORE_WARNING(WARNING) \
+  PRAGMIZE(GCC diagnostic push)     \
+  PRAGMIZE(GCC diagnostic ignored WARNING)
+#define SU2_RESTORE_WARNING PRAGMIZE(GCC diagnostic pop)
+#else
+#define SU2_IGNORE_WARNING(WARNING)
+#define SU2_RESTORE_WARNING
 #endif

@@ -2,14 +2,14 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -668,44 +668,46 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             break;
 
-          case PERIODIC_SENSOR:
+          case PERIODIC_SENSOR: {
+            const bool msw = config->GetKind_Upwind_Flow() == UPWIND::MSW;
 
             /*--- For the centered schemes, the sensor must be computed
              consistently using info from the entire control volume
              on both sides of the periodic face. ---*/
 
-            Sensor_i = 0.0; Sensor_j = 0.0;
+            Sensor_i = 0; Sensor_j = 0;
             for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
 
               /*--- Avoid halos and boundary points so that we don't
                duplicate edges on both sides of the periodic BC. ---*/
 
-              if (!geometry->nodes->GetPeriodicBoundary(jPoint)) {
+              if (geometry->nodes->GetPeriodicBoundary(jPoint)) continue;
 
-                /*--- Use density instead of pressure for incomp. flows. ---*/
+              /*--- Use density instead of pressure for incomp. flows. ---*/
 
-                if ((config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE)) {
-                  Pressure_i = base_nodes->GetDensity(iPoint);
-                  Pressure_j = base_nodes->GetDensity(jPoint);
-                } else {
-                  Pressure_i = base_nodes->GetPressure(iPoint);
-                  Pressure_j = base_nodes->GetPressure(jPoint);
-                }
-
-                boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
-                boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
-
-                /*--- Both points inside domain, or both on boundary ---*/
-                /*--- iPoint inside the domain, jPoint on the boundary ---*/
-
-                if (!boundary_i || boundary_j) {
-                  if (geometry->nodes->GetDomain(iPoint)) {
-                    Sensor_i += (Pressure_j - Pressure_i);
-                    Sensor_j += (Pressure_i + Pressure_j);
-                  }
-                }
-
+              if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) {
+                Pressure_i = base_nodes->GetDensity(iPoint);
+                Pressure_j = base_nodes->GetDensity(jPoint);
+              } else {
+                Pressure_i = base_nodes->GetPressure(iPoint);
+                Pressure_j = base_nodes->GetPressure(jPoint);
               }
+
+              boundary_i = geometry->nodes->GetPhysicalBoundary(iPoint);
+              boundary_j = geometry->nodes->GetPhysicalBoundary(jPoint);
+
+              /*--- Both points inside domain, or both on boundary ---*/
+              /*--- iPoint inside the domain, jPoint on the boundary ---*/
+
+              if ((!boundary_i || boundary_j) && geometry->nodes->GetDomain(iPoint)) {
+                if (msw) {
+                  Sensor_i = fmax(Sensor_i, fabs(Pressure_j - Pressure_i)) / fmin(Pressure_i, Pressure_j);
+                } else {
+                  Sensor_i += (Pressure_j - Pressure_i);
+                  Sensor_j += (Pressure_i + Pressure_j);
+                }
+              }
+
             }
 
             /*--- Store the sensor increments to buffer. After summing
@@ -715,7 +717,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             buf_offset++;
             bufDSend[buf_offset] = Sensor_j;
 
-            break;
+          } break;
 
           case PERIODIC_SOL_GG:
           case PERIODIC_SOL_GG_R:
@@ -1013,7 +1015,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   unsigned short nPeriodic = config->GetnMarker_Periodic();
   unsigned short iDim, jDim, iVar, jVar, iPeriodic, nNeighbor;
 
-  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset, total_index;
+  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
 
   int source, iMessage, jRecv;
 
@@ -1158,8 +1160,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                 if (iPeriodic == val_periodic_index + nPeriodic/2) {
                   for (iVar = 0; iVar < nVar; iVar++) {
                     LinSysRes(iPoint, iVar) = 0.0;
-                    total_index = iPoint*nVar+iVar;
-                    Jacobian.DeleteValsRowi(total_index);
+                    Jacobian.DeleteValsRowi(iPoint, iVar);
                   }
                 }
 
@@ -1214,8 +1215,13 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               /*--- Simple accumulation of the sensors on periodic faces. ---*/
 
-              iPoint_UndLapl[iPoint] += bufDRecv[buf_offset]; buf_offset++;
-              jPoint_UndLapl[iPoint] += bufDRecv[buf_offset];
+              if (config->GetKind_Upwind_Flow() == UPWIND::MSW) {
+                iPoint_UndLapl[iPoint] = fmax(iPoint_UndLapl[iPoint], bufDRecv[buf_offset++]);
+                jPoint_UndLapl[iPoint] = 1;
+              } else {
+                iPoint_UndLapl[iPoint] += bufDRecv[buf_offset++];
+                jPoint_UndLapl[iPoint] += bufDRecv[buf_offset];
+              }
 
               break;
 
@@ -1950,13 +1956,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Reduce the min/max/avg local CFL numbers. */
 
     if ((iMesh == MESH_0) && fullComms) {
-      SU2_OMP_CRITICAL
-      { /* OpenMP reduction. */
-        Min_CFL_Local = min(Min_CFL_Local,myCFLMin);
-        Max_CFL_Local = max(Max_CFL_Local,myCFLMax);
-        Avg_CFL_Local += myCFLSum;
-      }
-      END_SU2_OMP_CRITICAL
+      atomicMin(myCFLMin, Min_CFL_Local);
+      atomicMax(myCFLMax, Max_CFL_Local);
+      atomicAdd(myCFLSum, Avg_CFL_Local);
 
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       { /* MPI reduction. */
@@ -3422,7 +3424,7 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
       position = text_line.find ("ITER=",0);
       if (position != string::npos) {
-        // TODO: 'ITER=' has 5 chars, not 9!
+       // TODO: 'ITER=' has 5 chars, not 9!
         text_line.erase (0,9); InnerIter_ = atoi(text_line.c_str());
       }
 
@@ -4082,7 +4084,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
         // Calculate tn in the fluid nodes for the viscous term
         if (viscous_flow) {
           const su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
-          su2double Tau[3][3];
+          su2double Tau[3][3] = {{}};
           CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity);
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], Normal);

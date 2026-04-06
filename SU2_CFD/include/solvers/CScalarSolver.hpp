@@ -1,14 +1,14 @@
 /*!
  * \file CScalarSolver.hpp
  * \brief Headers of the CScalarSolver class
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -181,7 +181,7 @@ class CScalarSolver : public CSolver {
       numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
       numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
 
-      return numerics->ComputeResidual(config); 
+      return numerics->ComputeResidual(config);
     };
 
     /*--- Compute fluxes and jacobians i->j ---*/
@@ -241,7 +241,7 @@ class CScalarSolver : public CSolver {
       }
     }
   }
-  
+
   /*!
    * \brief Generic implementation of the fluid interface boundary condition for scalar solvers.
    * \tparam SolverSpecificNumericsFunc - lambda that implements solver specific contributions to viscous numerics.
@@ -427,7 +427,7 @@ class CScalarSolver : public CSolver {
    * a nonlinear iteration for stability. Default value 1.0 set in ctor of CScalarVariable.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void ComputeUnderRelaxationFactor(const CConfig* config) {}
+  virtual void ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig* config) {}
 
  public:
   /*!
