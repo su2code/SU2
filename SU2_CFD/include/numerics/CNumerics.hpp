@@ -32,7 +32,6 @@
 #include <iostream>
 #include <limits>
 #include <cstdlib>
-#include <random>
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
