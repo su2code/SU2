@@ -1891,6 +1891,7 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
             cout << endl;
           }
         }
+        /*--- Converged or maximum number of iterations reached. ---*/
         break;
 
       }
