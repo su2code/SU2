@@ -1014,7 +1014,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   unsigned short nPeriodic = config->GetnMarker_Periodic();
   unsigned short iDim, jDim, iVar, jVar, iPeriodic, nNeighbor;
 
-  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset, total_index;
+  unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
 
   int source, iMessage, jRecv;
 
@@ -1159,8 +1159,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                 if (iPeriodic == val_periodic_index + nPeriodic/2) {
                   for (iVar = 0; iVar < nVar; iVar++) {
                     LinSysRes(iPoint, iVar) = 0.0;
-                    total_index = iPoint*nVar+iVar;
-                    Jacobian.DeleteValsRowi(total_index);
+                    Jacobian.DeleteValsRowi(iPoint, iVar);
                   }
                 }
 
@@ -1932,13 +1931,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
     /* Reduce the min/max/avg local CFL numbers. */
 
     if ((iMesh == MESH_0) && fullComms) {
-      SU2_OMP_CRITICAL
-      { /* OpenMP reduction. */
-        Min_CFL_Local = min(Min_CFL_Local,myCFLMin);
-        Max_CFL_Local = max(Max_CFL_Local,myCFLMax);
-        Avg_CFL_Local += myCFLSum;
-      }
-      END_SU2_OMP_CRITICAL
+      atomicMin(myCFLMin, Min_CFL_Local);
+      atomicMax(myCFLMax, Max_CFL_Local);
+      atomicAdd(myCFLSum, Avg_CFL_Local);
 
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       { /* MPI reduction. */
@@ -4050,7 +4045,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
         // Calculate tn in the fluid nodes for the viscous term
         if (viscous_flow) {
           const su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
-          su2double Tau[3][3];
+          su2double Tau[3][3] = {{}};
           CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity);
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], Normal);

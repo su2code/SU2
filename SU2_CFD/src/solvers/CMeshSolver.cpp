@@ -232,13 +232,9 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     if (ElemVolume <= 0.0) elCount++;
   }
   END_SU2_OMP_FOR
-  SU2_OMP_CRITICAL
-  {
-    MaxVolume = max(MaxVolume, maxVol);
-    MinVolume = min(MinVolume, minVol);
-    ElemCounter += elCount;
-  }
-  END_SU2_OMP_CRITICAL
+  atomicMax(maxVol, MaxVolume);
+  atomicMin(minVol, MinVolume);
+  atomicAdd(elCount, ElemCounter);
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
@@ -367,12 +363,9 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
     }
     END_SU2_OMP_FOR
-    SU2_OMP_CRITICAL
-    {
-      MaxDistance = max(MaxDistance, MaxDistance_Local);
-      MinDistance = min(MinDistance, MinDistance_Local);
-    }
-    END_SU2_OMP_CRITICAL
+
+    atomicMax(MaxDistance_Local, MaxDistance);
+    atomicMin(MinDistance_Local, MinDistance);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {

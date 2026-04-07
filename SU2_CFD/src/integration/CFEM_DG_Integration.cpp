@@ -38,7 +38,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
                                                unsigned short iZone,
                                                unsigned short iInst) {
 
-  unsigned short iMesh, iStep, iLimit = 1;
+  unsigned short iMesh, iStep;
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
 
@@ -60,12 +60,8 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
         complicated algorithm must be used to facilitate time accurate
         local time stepping.  Note that we are currently hard-coding
         the classical RK4 scheme. ---*/
-  bool useADER = false;
-  switch (config[iZone]->GetKind_TimeIntScheme()) {
-    case RUNGE_KUTTA_EXPLICIT: iLimit = config[iZone]->GetnRKStep(); break;
-    case CLASSICAL_RK4_EXPLICIT: iLimit = 4; break;
-    case ADER_DG: iLimit = 1; useADER = true; break;
-    case EULER_EXPLICIT: case EULER_IMPLICIT: iLimit = 1; break; }
+  unsigned short iLimit = config[iZone]->GetnRKStep();
+
 
   /*--- In case an unsteady simulation is carried out, it is possible that a
         synchronization time step is specified. If so, set the boolean
@@ -101,7 +97,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
           space and time integration are tightly coupled and cannot be treated
           segregatedly. Therefore a different function is called for ADER to
           carry out the space and time integration. ---*/
-    if( useADER ) {
+    if( config[iZone]->GetKind_TimeIntScheme() == ADER_DG ) {
       solver_container[iZone][iInst][iMesh][SolContainer_Position]->ADER_SpaceTimeIntegration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
                                                                                               numerics_container[iZone][iInst][iMesh][SolContainer_Position],
                                                                                               config[iZone], iMesh, RunTime_EqSystem);

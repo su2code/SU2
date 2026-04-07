@@ -123,11 +123,13 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
         config[val_iZone]->SetInnerIter(CurIter);
         break;
       }
-      /*--- Linear elasticity without thermal effects only needs one iteration. ---*/
+      /*--- Linear elasticity without thermal effects and double precision only needs one iteration. ---*/
+#ifndef USE_MIXED_PRECISION
       if (linear && !heat) {
         output->SetConvergence(true);
         break;
       }
+#endif
       /*--- Normal stopping criteria. ---*/
       if (StopCalc && IntIter > 0) break;
     }

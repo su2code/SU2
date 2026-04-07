@@ -492,7 +492,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
     if (implicit) {
       for (unsigned short iVar = 1; iVar <= nDim; iVar++)
-        Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
     }
 
     if (!energy) continue;
@@ -644,8 +644,8 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
     if (implicit) {
       for (unsigned short iVar = 1; iVar <= nDim; iVar++)
-        Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
-      if (energy) Jacobian.DeleteValsRowi(iPoint*nVar+nDim+1);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
+      if (energy) Jacobian.DeleteValsRowi(iPoint, nDim + 1);
     }
 
     if (!energy) continue;
@@ -739,6 +739,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
       const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
       /*--- On the finest mesh compute also on halo nodes to avoid communication of tau wall. ---*/
       if ((!geometry->nodes->GetDomain(iPoint)) && !(MGLevel==MESH_0)) continue;
 

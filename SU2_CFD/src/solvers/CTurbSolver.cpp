@@ -229,7 +229,7 @@ void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *
         if (implicit) {
           /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
           for(unsigned long iVar=0; iVar<nVar; iVar++)
-            Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+            Jacobian.DeleteValsRowi(iPoint, iVar);
         }
       }
     }

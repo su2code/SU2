@@ -25,7 +25,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-from optparse import OptionParser
+import argparse
 import SU2
 
 # -------------------------------------------------------------------
@@ -35,11 +35,11 @@ import SU2
 
 def main():
 
-    parser = OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "-f", "--file", dest="filename", help="read config from FILE", metavar="FILE"
     )
-    parser.add_option(
+    parser.add_argument(
         "-n",
         "--partitions",
         dest="partitions",
@@ -48,7 +48,7 @@ def main():
         metavar="PARTITIONS",
     )
 
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     options.partitions = int(options.partitions)
 
     merge_solution(options.filename, options.partitions)

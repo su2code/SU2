@@ -1296,9 +1296,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
       maxVonMises = max(maxVonMises, vms);
     }
     END_SU2_OMP_FOR
-    SU2_OMP_CRITICAL
-    MaxVonMises_Stress = max(MaxVonMises_Stress, maxVonMises);
-    END_SU2_OMP_CRITICAL
+    atomicMax(maxVonMises, MaxVonMises_Stress);
 
     AD::EndPassive(wasActive);
 

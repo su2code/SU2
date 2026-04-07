@@ -301,7 +301,7 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
     /*--- Roughness heights. ---*/
     numerics->SetRoughness(geometry->nodes->GetRoughnessHeight(iPoint), geometry->nodes->GetRoughnessHeight(jPoint));
   };
-  
+
   /*--- Now instantiate the generic non-conservative implementation with the functor above. ---*/
   Viscous_Residual_NonCons(iEdge, geometry, solver_container, numerics, config, SolverSpecificNumerics);
 
@@ -479,7 +479,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
         /*--- Includes 1 in the diagonal ---*/
 
-        if (implicit) Jacobian.DeleteValsRowi(iPoint);
+        if (implicit) Jacobian.DeleteValsRowi(iPoint, 0);
        } else {
          /*--- For rough walls, the boundary condition is given by
           * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
@@ -1342,7 +1342,7 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 
       /*--- includes 1 in the diagonal ---*/
 
-      if (implicit) Jacobian.DeleteValsRowi(iPoint_Neighbor);
+      if (implicit) Jacobian.DeleteValsRowi(iPoint_Neighbor, 0);
     }
   }
 }

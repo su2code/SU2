@@ -27,9 +27,11 @@
 
 #pragma once
 
+#include <assert.h>
+#include <cstdint>
+
 #include "CFileWriter.hpp"
 
-#include <assert.h>
 
 class CTecplotBinaryFileWriter final: public CFileWriter{
 

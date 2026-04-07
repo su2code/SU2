@@ -56,11 +56,6 @@ public:
   CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
   /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEALinearElasticity(void) override = default;
-
-  /*!
    * \brief Build the tangent stiffness matrix of an element.
    * \param[in,out] element_container - Element whose tangent matrix is being built.
    * \param[in] config - Definition of the problem.
@@ -109,11 +104,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, unsigned long val_nElem, const CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEAMeshElasticity(void) override = default;
 
   /*!
    * \brief Set the element-based local Young's modulus in mesh problems
