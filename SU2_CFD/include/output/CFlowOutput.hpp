@@ -337,15 +337,18 @@ protected:
 
   /*!
    * \brief Set the time averaged output fields.
+   * \param[in] config - Definition of the particular problem per zone.
    */
-  void SetTimeAveragedFields();
+  void SetTimeAveragedFields(const CConfig *config);
 
   /*!
    * \brief Load the time averaged output fields.
    * \param iPoint
    * \param node_flow
+   * \param node_turb
+   * \param config - Definition of the particular problem per zone.
    */
-  void LoadTimeAveragedData(unsigned long iPoint, const CVariable *node_flow);
+  void LoadTimeAveragedData(unsigned long iPoint, const CVariable *node_flow, const CVariable *node_turb, const CConfig *config);
 
   /*!
    * \brief Write additional output for fixed CL mode.

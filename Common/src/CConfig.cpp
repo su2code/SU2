@@ -6564,8 +6564,6 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           cout << "Stochastic Backscatter: ";
           if (SBSParam.StochasticBackscatter) {
             cout << "ON" << endl;
-            if (Kind_HybridRANSLES == NO_HYBRIDRANSLES)
-              SU2_MPI::Error("Stochastic Backscatter can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
             if (GetnDim(GetMesh_FileName(), Mesh_FileFormat) < 3)
               SU2_MPI::Error("Stochastic Backscatter Model available for 3D flow simulations only.", CURRENT_FUNCTION);
             cout << "Backscatter intensity coefficient: " << SBSParam.SBS_Cmag << endl;
@@ -6607,6 +6605,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             cout << "OFF" << endl;
           }
         }
+        if (Kind_HybridRANSLES == NO_HYBRIDRANSLES && SBSParam.StochasticBackscatter)
+          SU2_MPI::Error("Stochastic Backscatter can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
         if (enforceLES) {
           if (Kind_HybridRANSLES == NO_HYBRIDRANSLES)
             SU2_MPI::Error("ENFORCE_LES can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
