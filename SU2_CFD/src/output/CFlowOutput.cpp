@@ -1158,6 +1158,14 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
     case TURB_FAMILY::SA:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
       AddHistoryOutput("BGS_NU_TILDE", "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        /// DESCRIPTION: Maximum residual of stochastic vector x-component (Stochastic Backscatter Model).
+        AddHistoryOutput("BGS_STOCH_VAR-X", "bgs[stoch_x]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Maximum residual of stochastic vector y-component (Stochastic Backscatter Model).
+        AddHistoryOutput("BGS_STOCH_VAR-Y", "bgs[stoch_y]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of stochastic vector y-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Maximum residual of stochastic vector z-component (Stochastic Backscatter Model).
+        AddHistoryOutput("BGS_STOCH_VAR-Z", "bgs[stoch_z]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+      }
       break;
 
     case TURB_FAMILY::KW:
@@ -1344,7 +1352,7 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
-      if (config->GetSBSParam().SBS_Ctau > 0.0) {
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
         AddVolumeOutput("STOCHVAR_X", "StochVar_x", "SOLUTION", "x-component of the stochastic vector potential");
         AddVolumeOutput("STOCHVAR_Y", "StochVar_y", "SOLUTION", "y-component of the stochastic vector potential");
         AddVolumeOutput("STOCHVAR_Z", "StochVar_z", "SOLUTION", "z-component of the stochastic vector potential");
@@ -1401,6 +1409,11 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
   switch (TurbModelFamily(config->GetKind_Turb_Model())){
     case TURB_FAMILY::SA:
       AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        AddVolumeOutput("RES_STOCHVAR_X", "Residual_StochVar_X", "RESIDUAL", "Residual of the x-component of the stochastic vector potential");
+        AddVolumeOutput("RES_STOCHVAR_Y", "Residual_StochVar_Y", "RESIDUAL", "Residual of the y-component of the stochastic vector potential");
+        AddVolumeOutput("RES_STOCHVAR_Z", "Residual_StochVar_Z", "RESIDUAL", "Residual of the z-component of the stochastic vector potential");
+      }
       break;
 
     case TURB_FAMILY::KW:
@@ -1693,6 +1706,9 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         SetVolumeOutputValue("STOCHVAR_X", iPoint, Node_Turb->GetSolution(iPoint, 1));
         SetVolumeOutputValue("STOCHVAR_Y", iPoint, Node_Turb->GetSolution(iPoint, 2));
         SetVolumeOutputValue("STOCHVAR_Z", iPoint, Node_Turb->GetSolution(iPoint, 3));
+        SetVolumeOutputValue("RES_STOCHVAR_X", iPoint, turb_solver->LinSysRes(iPoint, 1));
+        SetVolumeOutputValue("RES_STOCHVAR_Y", iPoint, turb_solver->LinSysRes(iPoint, 2));
+        SetVolumeOutputValue("RES_STOCHVAR_Z", iPoint, turb_solver->LinSysRes(iPoint, 3));
       }
       SetVolumeOutputValue("STOCHSOURCE_X", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 0));
       SetVolumeOutputValue("STOCHSOURCE_Y", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 1));
