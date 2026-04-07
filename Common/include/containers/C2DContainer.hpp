@@ -545,7 +545,10 @@ class C2DContainer
    * \brief Set value of all entries to "value".
    */
   void setConstant(const Scalar_t& value) noexcept {
+    // GCC 13 has a false-positive about overflow of memcpy due to size being uint64_t, and its memcpy just int64_t.
+    SU2_IGNORE_WARNING("-Wstringop-overflow")
     for (size_t i = 0; i < size(); ++i) m_data[i] = value;
+    SU2_RESTORE_WARNING
   }
 
   /*!
