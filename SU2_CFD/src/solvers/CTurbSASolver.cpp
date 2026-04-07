@@ -1622,7 +1622,7 @@ void CTurbSASolver::SetBackscatterInBox(CConfig *config, CGeometry *geometry) {
   auto sbsBoxBounds = config->GetSBSParam().StochBackscatterBoxBounds;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     const auto coord = geometry->nodes->GetCoord(iPoint);
     bool outOfBoxX = (coord[0]<sbsBoxBounds[0] || coord[0]>sbsBoxBounds[1]);
     bool outOfBoxY = (coord[1]<sbsBoxBounds[2] || coord[1]>sbsBoxBounds[3]);
