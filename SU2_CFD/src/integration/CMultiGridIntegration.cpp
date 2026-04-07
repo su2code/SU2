@@ -80,11 +80,12 @@ static void adaptMGDampingFactor(const unsigned short* performed,
 }
 
 void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
+  const auto& mgOpts = config->GetMGOptions();
   const unsigned short nMGLevels = config->GetnMGLevels();
   adaptMGDampingFactor(
     lastPreSmoothIters,
     lastPreSmoothProgress,
-    [config](unsigned short lvl){ return config->GetMG_PreSmooth(lvl); },
+    [&mgOpts](unsigned short lvl){ return mgOpts.MG_PreSmooth[lvl]; },
     /*levelStart=*/1, nMGLevels,
     [config](){ return config->GetDamp_Res_Restric(); },
     [config](su2double v){ config->SetDamp_Res_Restric(v); });
@@ -96,12 +97,13 @@ void CMultiGridIntegration::adaptProlongationDamping(CConfig* config) {
    *    is well-behaved after prolongation.  If it exits early, the correction was
    *    clean : increase damping.  If it stagnates at max iters, the correction was
    *    too aggressive : decrease damping. ---*/
+  const auto& mgOpts = config->GetMGOptions();
   const unsigned short nMGLevels = config->GetnMGLevels();
   if (nMGLevels == 0) return;
   adaptMGDampingFactor(
     lastPostSmoothIters,
     lastPostSmoothProgress,
-    [config](unsigned short lvl){ return config->GetMG_PostSmooth(lvl); },
+    [&mgOpts](unsigned short lvl){ return mgOpts.MG_PostSmooth[lvl]; },
     /*levelStart=*/0, static_cast<unsigned short>(nMGLevels - 1),
     [config](){ return config->GetDamp_Correc_Prolong(); },
     [config](su2double v){ config->SetDamp_Correc_Prolong(v); });
@@ -282,8 +284,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   unsigned short RecursiveParam = static_cast<unsigned short>(config[iZone]->GetMGCycle());
 
-  if (config[iZone]->GetMGCycle() == ENUM_MG_CYCLE::FULLMG_CYCLE) {
-    RecursiveParam = static_cast<unsigned short>(ENUM_MG_CYCLE::V_CYCLE);
+  if (config[iZone]->GetMGCycle() == MG_CYCLE::FULL) {
+    RecursiveParam = static_cast<unsigned short>(MG_CYCLE::V);
     FullMG = true;
   }
 
@@ -296,10 +298,11 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
     const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
+    const auto& mgOpts = config[iZone]->GetMGOptions();
     for (unsigned short i = 0; i <= nMGLevels; ++i) {
-      lastPreSmoothIters[i]    = config[iZone]->GetMG_PreSmooth(i);
-      lastPostSmoothIters[i]   = config[iZone]->GetMG_PostSmooth(i);
-      lastCorrecSmoothIters[i] = config[iZone]->GetMG_CorrecSmooth(i);
+      lastPreSmoothIters[i]    = mgOpts.MG_PreSmooth[i];
+      lastPostSmoothIters[i]   = mgOpts.MG_PostSmooth[i];
+      lastCorrecSmoothIters[i] = mgOpts.MG_CorrecSmooth[i];
       lastPreSmoothProgress[i]    = false;
       lastPostSmoothProgress[i]    = false;
       lastCorrecSmoothProgress[i] = false;
@@ -386,7 +389,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   /*--- Adapt restriction damping based on coarse-level pre-smoothing workload from this cycle.
    *    Only effective when MG_SMOOTH_EARLY_EXIT= YES (otherwise all levels always run to completion
    *    and the signal would always point to "scale down"). ---*/
-  if (config[iZone]->GetMG_Smooth_EarlyExit()) {
+  const auto& mgOptsZone = config[iZone]->GetMGOptions();
+  if (mgOptsZone.MG_Smooth_EarlyExit) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       adaptRestrictionDamping(config[iZone]);
@@ -396,7 +400,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   }
 
   /*--- Print compact smoothing summary when MG_SMOOTH_OUTPUT= YES. ---*/
-  if (config[iZone]->GetMG_Smooth_Output()) {
+  if (mgOptsZone.MG_Smooth_Output) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       if (SU2_MPI::GetRank() == MASTER_NODE) {
@@ -421,20 +425,20 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
         /*--- Pre-smooth: defined on all levels 0..nMGLevels. ---*/
         table << "Pre-smooth";
         for (unsigned short i = 0; i <= nMGLevels; ++i)
-          table << cellStr(lastPreSmoothIters[i], config[iZone]->GetMG_PreSmooth(i),
+          table << cellStr(lastPreSmoothIters[i], mgOptsZone.MG_PreSmooth[i],
                            lastPreSmoothRMS[i][0], lastPreSmoothRMS[i][1]);
 
         /*--- Post-smooth: defined on levels 0..nMGLevels-1; coarsest has none. ---*/
         table << "Post-smooth";
         for (unsigned short i = 0; i < nMGLevels; ++i)
-          table << cellStr(lastPostSmoothIters[i], config[iZone]->GetMG_PostSmooth(i),
+          table << cellStr(lastPostSmoothIters[i], mgOptsZone.MG_PostSmooth[i],
                            lastPostSmoothRMS[i][0], lastPostSmoothRMS[i][1]);
         table << "-";
 
         /*--- Corr.-smooth: defined on levels 0..nMGLevels-1; coarsest has none. ---*/
         table << "Corr-smooth";
         for (unsigned short i = 0; i < nMGLevels; ++i)
-          table << cellStr(lastCorrecSmoothIters[i], config[iZone]->GetMG_CorrecSmooth(i),
+          table << cellStr(lastCorrecSmoothIters[i], mgOptsZone.MG_CorrecSmooth[i],
                            lastCorrecSmoothRMS[i][0], lastCorrecSmoothRMS[i][1]);
         table << "-";
 
@@ -547,7 +551,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
-    SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), config->GetMG_Smooth_Coeff(), config, iMesh);
+    const auto& mgOpts = config->GetMGOptions();
+    SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, mgOpts.MG_CorrecSmooth[iMesh], mgOpts.MG_Smooth_Coeff, config, iMesh);
 
     SetProlongated_Correction(solver_fine, geometry_fine, config, iMesh);
 
@@ -572,10 +577,11 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
                                          unsigned short iZone,
                                          unsigned short iRKLimit) {
 
+  const auto& mgOpts = config->GetMGOptions();
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
-  const unsigned short nPreSmooth = config->GetMG_PreSmooth(iMesh);
+  const unsigned short nPreSmooth = mgOpts.MG_PreSmooth[iMesh];
   const unsigned long timeIter = config->GetTimeIter();
-  const bool early_exit = config->GetMG_Smooth_EarlyExit() && (nPreSmooth > 1);
+  const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPreSmooth > 1);
 
   /*--- Reset the shared early-exit flag (master only). ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -630,7 +636,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
         mg_last_smooth_rms = current_rms;
-        if (mg_last_smooth_rms < config->GetMG_Smooth_Res_Threshold() * mg_initial_smooth_rms) {
+        if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
           lastPreSmoothIters[iMesh] = iPreSmooth + 1;
           mg_early_exit_flag = true;
         }
@@ -667,10 +673,11 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
                                           unsigned short iMesh,
                                           unsigned short iRKLimit) {
 
+  const auto& mgOpts = config->GetMGOptions();
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
-  const unsigned short nPostSmooth = config->GetMG_PostSmooth(iMesh);
+  const unsigned short nPostSmooth = mgOpts.MG_PostSmooth[iMesh];
   const unsigned long timeIter = config->GetTimeIter();
-  const bool early_exit = config->GetMG_Smooth_EarlyExit() && (nPostSmooth > 1);
+  const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPostSmooth > 1);
 
   /*--- Reset the shared early-exit flag (master only). ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -723,7 +730,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       {
         mg_last_smooth_rms = current_rms;
-        if (mg_last_smooth_rms < config->GetMG_Smooth_Res_Threshold() * mg_initial_smooth_rms) {
+        if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
           lastPostSmoothIters[iMesh] = iPostSmooth + 1;
           mg_early_exit_flag = true;
         }

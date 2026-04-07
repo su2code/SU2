@@ -318,7 +318,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
 
   /*--- Agglomerate high-aspect-ratio interior nodes along implicit lines from walls. ---*/
-  if (config->GetMG_Implicit_Lines()) {
+  if (config->GetMGOptions().MG_Implicit_Lines) {
     AgglomerateImplicitLines(Index_CoarseCV, fine_grid, config, MGQueue_InnerCV);
   }
 
@@ -674,10 +674,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   const su2double ratio = su2double(Global_nPointFine) / su2double(Global_nPointCoarse);
 
-  if (Global_nPointCoarse < config->GetMG_Min_MeshSize()) {
+  if (Global_nPointCoarse < config->GetMGOptions().MG_Min_MeshSize) {
     if (rank == MASTER_NODE)
       cout << "MG level " << iMesh << " has only " << Global_nPointCoarse
-           << " CVs (< MG_MIN_MESHSIZE=" << config->GetMG_Min_MeshSize() << "). Reducing MG levels to " << iMesh - 1
+           << " CVs (< MG_MIN_MESHSIZE=" << config->GetMGOptions().MG_Min_MeshSize << "). Reducing MG levels to " << iMesh - 1
            << "." << endl;
     config->SetMGLevels(iMesh - 1);
   } else if (rank == MASTER_NODE) {

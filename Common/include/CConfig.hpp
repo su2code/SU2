@@ -496,7 +496,7 @@ private:
   *FFD_Fix_JDir, *FFD_Fix_KDir;       /*!< \brief Exact sections. */
   su2double *LocationStations;        /*!< \brief Airfoil sections in wing slicing subroutine. */
 
-  ENUM_MG_CYCLE Kind_MGCycle;              /*!< \brief Kind of multigrid cycle. */
+  MG_CYCLE Kind_MGCycle;              /*!< \brief Kind of multigrid cycle. */
   ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
   CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
@@ -1126,20 +1126,10 @@ private:
     unsigned long rampMUSCLCoeff[3];     /*!< \brief ramp MUSCL value coefficients for the COption class. */
   } RampMUSCLParam;
   su2double rampMUSCLValue; /*!< \brief Current value of the MUSCL ramp */
-  struct CMGOptions {
-    su2double MG_Smooth_Res_Threshold; /*!< \brief RMS reduction threshold for MG smoothing early exit. */
-    su2double MG_Smooth_Coeff;         /*!< \brief Jacobi smoother coefficient for coarse-grid correction. */
-    unsigned long  MG_Min_MeshSize;    /*!< \brief Minimum CVs on coarsest MG level. */
-    unsigned short nMG_PreSmooth;      /*!< \brief Number of MG pre-smooth values in config file. */
-    unsigned short nMG_PostSmooth;     /*!< \brief Number of MG post-smooth values in config file. */
-    unsigned short nMG_CorrecSmooth;   /*!< \brief Number of MG correct-smooth values in config file. */
-    unsigned short *MG_PreSmooth;      /*!< \brief Multigrid pre-smoothing iterations per level. */
-    unsigned short *MG_PostSmooth;     /*!< \brief Multigrid post-smoothing iterations per level. */
-    unsigned short *MG_CorrecSmooth;   /*!< \brief Multigrid Jacobi correction-smoothing per level. */
-    bool MG_Smooth_EarlyExit;          /*!< \brief Enable early exit for MG smoothing iterations. */
-    bool MG_Smooth_Output;             /*!< \brief Output compact per-cycle smoothing summary. */
-    bool MG_Implicit_Lines;            /*!< \brief Enable implicit-lines agglomeration from walls. */
-  } MGOptions;
+  CMGOptions MGOptions;
+  /*--- Parse-time buffers for MG smooth arrays; owned/freed by COptionScalarList. ---*/
+  unsigned short nMG_PreSmooth_p{0}, nMG_PostSmooth_p{0}, nMG_CorrecSmooth_p{0};
+  unsigned short *MG_PreSmooth_p{nullptr}, *MG_PostSmooth_p{nullptr}, *MG_CorrecSmooth_p{nullptr};
 
   ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
   bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
@@ -2916,7 +2906,7 @@ public:
    */
   void SetMGLevels(unsigned short val_nMGLevels) {
     nMGLevels = val_nMGLevels;
-    if (Kind_MGCycle == ENUM_MG_CYCLE::FULLMG_CYCLE) {
+    if (Kind_MGCycle == MG_CYCLE::FULL) {
       SetFinestMesh(val_nMGLevels);
     }
   }
@@ -2933,7 +2923,7 @@ public:
    * \note This variable is used in a recursive way to perform the different kind of cycles
    * \return 0 or 1 depending of we are dealing with a V or W cycle.
    */
-  ENUM_MG_CYCLE GetMGCycle(void) const { return Kind_MGCycle; }
+  MG_CYCLE GetMGCycle(void) const { return Kind_MGCycle; }
 
   /*!
    * \brief Get the king of evaluation in the geometrical module.
@@ -3855,65 +3845,9 @@ public:
   su2double GetNacelleLocation(unsigned short val_index) const { return nacelle_location[val_index]; }
 
   /*!
-   * \brief Get the number of pre-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
+   * \brief Get the multigrid options struct.
    */
-  unsigned short GetMG_PreSmooth(unsigned short val_mesh) const {
-    if (MGOptions.nMG_PreSmooth == 0) return 1;
-    return MGOptions.MG_PreSmooth[val_mesh];
-  }
-
-  /*!
-   * \brief Get the number of post-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
-   */
-  unsigned short GetMG_PostSmooth(unsigned short val_mesh) const {
-    if (MGOptions.nMG_PostSmooth == 0) return 0;
-    return MGOptions.MG_PostSmooth[val_mesh];
-  }
-
-  /*!
-   * \brief Get the number of implicit Jacobi smoothings of the correction in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of implicit smoothing iterations.
-   */
-  unsigned short GetMG_CorrecSmooth(unsigned short val_mesh) const {
-    if (MGOptions.nMG_CorrecSmooth == 0) return 0;
-    return MGOptions.MG_CorrecSmooth[val_mesh];
-  }
-
-  /*!
-   * \brief Whether early exit is enabled for MG smoothing iterations.
-   */
-  bool GetMG_Smooth_EarlyExit() const { return MGOptions.MG_Smooth_EarlyExit; }
-
-  /*!
-   * \brief RMS reduction threshold for MG smoothing early exit.
-   *        Smoothing stops when current_rms < threshold * initial_rms.
-   */
-  su2double GetMG_Smooth_Res_Threshold() const { return MGOptions.MG_Smooth_Res_Threshold; }
-
-  /*!
-   * \brief Whether to print a compact per-cycle smoothing iteration summary.
-   */
-  bool GetMG_Smooth_Output() const { return MGOptions.MG_Smooth_Output; }
-
-  /*!
-   * \brief Smoothing coefficient for the correction prolongation Jacobi smoother.
-   */
-  su2double GetMG_Smooth_Coeff() const { return MGOptions.MG_Smooth_Coeff; }
-
-  /*!
-   * \brief Minimum number of CVs on the coarsest multigrid level.
-   */
-  unsigned long GetMG_Min_MeshSize() const { return MGOptions.MG_Min_MeshSize; }
-
-  /*!
-   * \brief Whether implicit-lines agglomeration from walls is enabled.
-   */
-  bool GetMG_Implicit_Lines() const { return MGOptions.MG_Implicit_Lines; }
+  const CMGOptions& GetMGOptions() const { return MGOptions; }
 
   /*!
    * \brief plane of the FFD (I axis) that should be fixed.

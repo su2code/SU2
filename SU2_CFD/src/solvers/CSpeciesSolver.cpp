@@ -113,7 +113,7 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
 
   AllocVectorOfMatrices( nVertex, nVar,CustomBoundaryScalar);
 
-  if (iMesh == MESH_0 || config->GetMGCycle() == ENUM_MG_CYCLE::FULLMG_CYCLE) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == MG_CYCLE::FULL) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 

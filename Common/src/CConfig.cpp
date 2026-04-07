@@ -993,9 +993,6 @@ void CConfig::SetPointersNull() {
   TimeIntegrationADER_DG    = nullptr;
   WeightsIntegrationADER_DG = nullptr;
   RK_Alpha_Step             = nullptr;
-  MGOptions.MG_CorrecSmooth           = nullptr;
-  MGOptions.MG_PreSmooth              = nullptr;
-  MGOptions.MG_PostSmooth             = nullptr;
   Int_Coeffs                = nullptr;
 
   Kind_Inc_Inlet = nullptr;
@@ -1973,13 +1970,13 @@ void CConfig::SetConfig_Options() {
   /*!\brief MGLEVEL\n DESCRIPTION: Multi-grid Levels. DEFAULT: 0 \ingroup Config*/
   addUnsignedShortOption("MGLEVEL", nMGLevels, 0);
   /*!\brief MGCYCLE\n DESCRIPTION: Multi-grid cycle. OPTIONS: See \link MG_Cycle_Map \endlink. Defualt V_CYCLE \ingroup Config*/
-  addEnumOption("MGCYCLE", Kind_MGCycle, MG_Cycle_Map, ENUM_MG_CYCLE::V_CYCLE);
+  addEnumOption("MGCYCLE", Kind_MGCycle, MG_Cycle_Map, MG_CYCLE::V);
   /*!\brief MG_PRE_SMOOTH\n DESCRIPTION: Multi-grid pre-smoothing level \ingroup Config*/
-  addUShortListOption("MG_PRE_SMOOTH", MGOptions.nMG_PreSmooth, MGOptions.MG_PreSmooth);
+  addUShortListOption("MG_PRE_SMOOTH", nMG_PreSmooth_p, MG_PreSmooth_p);
   /*!\brief MG_POST_SMOOTH\n DESCRIPTION: Multi-grid post-smoothing level \ingroup Config*/
-  addUShortListOption("MG_POST_SMOOTH", MGOptions.nMG_PostSmooth, MGOptions.MG_PostSmooth);
+  addUShortListOption("MG_POST_SMOOTH", nMG_PostSmooth_p, MG_PostSmooth_p);
   /*!\brief MG_CORRECTION_SMOOTH\n DESCRIPTION: Jacobi implicit smoothing of the correction \ingroup Config*/
-  addUShortListOption("MG_CORRECTION_SMOOTH", MGOptions.nMG_CorrecSmooth, MGOptions.MG_CorrecSmooth);
+  addUShortListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth_p, MG_CorrecSmooth_p);
   /*!\brief MG_DAMP_RESTRICTION\n DESCRIPTION: Damping factor for the residual restriction. DEFAULT: 0.75 \ingroup Config*/
   addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.5);
   /*!\brief MG_DAMP_PROLONGATION\n DESCRIPTION: Damping factor for the correction prolongation. DEFAULT 0.75 \ingroup Config*/
@@ -4704,7 +4701,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   FinestMesh = MESH_0;
-  if (Kind_MGCycle == ENUM_MG_CYCLE::FULLMG_CYCLE) FinestMesh = nMGLevels;
+  if (Kind_MGCycle == MG_CYCLE::FULL) FinestMesh = nMGLevels;
 
   if ((Kind_Solver == MAIN_SOLVER::NAVIER_STOKES) &&
       (Kind_Turb_Model != TURB_MODEL::NONE))
@@ -4725,48 +4722,36 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   Kappa_2nd_AdjFlow = jst_adj_coeff[0];
   Kappa_4th_AdjFlow = jst_adj_coeff[1];
 
-  /*--- Make the MG smooth arrays consistent with nMGLevels.
-   Truncate if too long, extend by repeating the last value if too short,
-   or fill with defaults if not set in the config. ---*/
+  /*--- Fill MG smooth vectors to size nMGLevels+1.
+   Use parsed values (truncating or extending by repeat) or defaults if not set. ---*/
 
   {
-    std::vector<unsigned short> tmp_smooth(nMGLevels + 1);
-
-    auto resizeSmooth = [&](unsigned short*& arr, unsigned short& n, auto getDefault) {
+    auto fillSmooth = [&](unsigned short n, unsigned short* buf,
+                          std::vector<unsigned short>& vec, auto getDefault) {
       const unsigned short nNew = nMGLevels + 1;
-      if (n != 0 && n != nNew) {
-        for (unsigned short i = 0; i < nNew; i++)
-          tmp_smooth[i] = (i < n) ? arr[i] : arr[n-1];
-        delete[] arr; arr = nullptr;
-        n = nNew;
-        arr = new unsigned short[n];
-        for (unsigned short i = 0; i < n; i++) arr[i] = tmp_smooth[i];
-      }
-      if (nMGLevels != 0 && n == 0) {
-        n = nNew;
-        arr = new unsigned short[n];
-        for (unsigned short i = 0; i < n; i++) arr[i] = getDefault(i);
-      }
+      vec.resize(nNew);
+      if (n != 0)
+        for (unsigned short i = 0; i < nNew; i++) vec[i] = (i < n) ? buf[i] : buf[n - 1];
+      else
+        for (unsigned short i = 0; i < nNew; i++) vec[i] = getDefault(i);
     };
 
-    resizeSmooth(MGOptions.MG_PreSmooth,    MGOptions.nMG_PreSmooth,
-                 [](unsigned short i) { return static_cast<unsigned short>(i + 1); });
-    resizeSmooth(MGOptions.MG_PostSmooth,   MGOptions.nMG_PostSmooth,
-                 [](unsigned short  ) { return (unsigned short)0; });
-    resizeSmooth(MGOptions.MG_CorrecSmooth, MGOptions.nMG_CorrecSmooth,
-                 [](unsigned short  ) { return (unsigned short)0; });
+    fillSmooth(nMG_PreSmooth_p,    MG_PreSmooth_p,    MGOptions.MG_PreSmooth,
+               [](unsigned short i) { return static_cast<unsigned short>(i + 1); });
+    fillSmooth(nMG_PostSmooth_p,   MG_PostSmooth_p,   MGOptions.MG_PostSmooth,
+               [](unsigned short  ) { return (unsigned short)0; });
+    fillSmooth(nMG_CorrecSmooth_p, MG_CorrecSmooth_p, MGOptions.MG_CorrecSmooth,
+               [](unsigned short  ) { return (unsigned short)0; });
   }
 
   /*--- Override MG Smooth parameters ---*/
 
-  if (MGOptions.nMG_PreSmooth != 0) MGOptions.MG_PreSmooth[MESH_0] = 1;
-  if (MGOptions.nMG_PostSmooth != 0) {
-    MGOptions.MG_PostSmooth[MESH_0] = 0;
-    MGOptions.MG_PostSmooth[nMGLevels] = 0;
-  }
-  if (MGOptions.nMG_CorrecSmooth != 0) MGOptions.MG_CorrecSmooth[nMGLevels] = 0;
+  MGOptions.MG_PreSmooth[MESH_0] = 1;
+  MGOptions.MG_PostSmooth[MESH_0] = 0;
+  MGOptions.MG_PostSmooth[nMGLevels] = 0;
+  MGOptions.MG_CorrecSmooth[nMGLevels] = 0;
 
-  if (Restart) Kind_MGCycle = ENUM_MG_CYCLE::V_CYCLE;
+  if (Restart) Kind_MGCycle = MG_CYCLE::V;
 
   if (ContinuousAdjoint) {
     if (Kind_Solver == MAIN_SOLVER::EULER) Kind_Solver = MAIN_SOLVER::ADJ_EULER;
@@ -7396,9 +7381,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if (nMGLevels !=0) {
 
-      if (Kind_MGCycle == ENUM_MG_CYCLE::V_CYCLE) cout << "V Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
-      if (Kind_MGCycle == ENUM_MG_CYCLE::W_CYCLE) cout << "W Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
-      if (Kind_MGCycle == ENUM_MG_CYCLE::FULLMG_CYCLE) cout << "Full Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
+      if (Kind_MGCycle == MG_CYCLE::V) cout << "V Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
+      if (Kind_MGCycle == MG_CYCLE::W) cout << "W Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
+      if (Kind_MGCycle == MG_CYCLE::FULL) cout << "Full Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
 
       cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<< endl;
       cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;
