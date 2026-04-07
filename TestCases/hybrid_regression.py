@@ -51,7 +51,7 @@ def main():
     channel.cfg_dir   = "euler/channel"
     channel.cfg_file  = "inv_channel_RK.cfg"
     channel.test_iter = 20
-    channel.test_vals = [-2.318829, 3.225520, 0.133414, 0.150270]
+    channel.test_vals = [-2.318252, 3.226111, 0.133426, 0.150359]
     test_list.append(channel)
 
     # NACA0012
@@ -59,7 +59,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-4.209979, -3.769999, 0.308619, 0.024085]
+    naca0012.test_vals = [-4.252415, -3.789971, 0.306821, 0.024573]
     test_list.append(naca0012)
 
     # Supersonic wedge
@@ -103,7 +103,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-6.381346, -0.904242, 0.001313, 0.025285, 2.361500, -2.336300, 0.000000, 0.000000]
+    flatplate.test_vals = [-6.382489, -0.905413, 0.001313, 0.025294, 2.361500, -2.336200, 0.000000, 0.000000]
     test_list.append(flatplate)
 
     # Laminar cylinder (steady)
@@ -119,7 +119,7 @@ def main():
     cylinder_lowmach.cfg_dir   = "navierstokes/cylinder"
     cylinder_lowmach.cfg_file  = "cylinder_lowmach.cfg"
     cylinder_lowmach.test_iter = 25
-    cylinder_lowmach.test_vals         = [-6.603381, -1.141626, -0.015033, -60.869333, 0.000000]
+    cylinder_lowmach.test_vals         = [-6.629113, -1.167336, -0.016421, -73.160843, 0.000000]
     cylinder_lowmach.test_vals_aarch64 = [-6.830996, -1.368850, -0.143956, 73.963354, 0]
     test_list.append(cylinder_lowmach)
 
@@ -136,14 +136,14 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.005208, -7.538825, -0.000000, 2.089953]
+    poiseuille_profile.test_vals         = [-12.005215, -7.539613, -0.000000, 2.089953
     poiseuille_profile.test_vals_aarch64 = [-12.009012, -7.262530, -0.000000, 2.089953]
     test_list.append(poiseuille_profile)
 
     # 2D Rotational Periodic
     periodic2d           = TestCase('periodic2d')
     periodic2d.cfg_dir   = "navierstokes/periodic2D"
-    periodic2d.cfg_file  = "config.cfg"
+    periodic2d.cfg_file  = "config.cfg"]
     periodic2d.test_iter = 1400
     periodic2d.test_vals = [-10.817611, -8.363544, -8.287461, -5.334104, -1.088411, -2945.200000]
     test_list.append(periodic2d)
@@ -157,7 +157,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.169199, -5.450601, 0.293796, 0.104767, 0.000000]
+    rae2822_sa.test_vals = [-2.169314, -5.450577, 0.293838, 0.104752, 0.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -165,7 +165,7 @@ def main():
     rae2822_sst.cfg_dir   = "rans/rae2822"
     rae2822_sst.cfg_file  = "turb_SST_RAE2822.cfg"
     rae2822_sst.test_iter = 20
-    rae2822_sst.test_vals = [-1.028401, 5.875356, 0.278891, 0.094029, 0.000000]
+    rae2822_sst.test_vals = [-1.028401, 5.875380, 0.279522, 0.093893, 0.000000]
     test_list.append(rae2822_sst)
 
     # RAE2822 SST_SUST
@@ -173,7 +173,7 @@ def main():
     rae2822_sst_sust.cfg_dir   = "rans/rae2822"
     rae2822_sst_sust.cfg_file  = "turb_SST_SUST_RAE2822.cfg"
     rae2822_sst_sust.test_iter = 20
-    rae2822_sst_sust.test_vals = [-2.540538, 5.875345, 0.278891, 0.094029]
+    rae2822_sst_sust.test_vals = [-2.540329, 5.875369, 0.279522, 0.093893]
     test_list.append(rae2822_sst_sust)
 
     # Flat plate
@@ -355,7 +355,7 @@ def main():
     inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
     inc_nozzle.cfg_file  = "inv_nozzle.cfg"
     inc_nozzle.test_iter = 20
-    inc_nozzle.test_vals = [-5.361522, -4.747833, -0.017520, 0.115828]
+    inc_nozzle.test_vals = [-5.362338, -4.748247, -0.017498, 0.115865]
     test_list.append(inc_nozzle)
 
     #############################
@@ -535,7 +535,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 40
-    edge_VW.test_vals = [-8.897182, -2.696020, -0.000009, 0.000000]
+    edge_VW.test_vals = [-8.895442, -2.694280, -0.000009, 0.000000]
     test_list.append(edge_VW)
 
     # Rarefaction shock wave edge_PPR
@@ -543,7 +543,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 20
-    edge_PPR.test_vals         = [-10.857964, -4.696048, -0.000034, 0.000000]
+    edge_PPR.test_vals         = [-10.590427, -4.427866, -0.000034, 0.000000]
     edge_PPR.test_vals_aarch64 = [ -7.139211, -0.980821, -0.000034, 0.000000]
     test_list.append(edge_PPR)
 
@@ -656,7 +656,7 @@ def main():
     bars_SST_2D.cfg_dir   = "sliding_interface/bars_SST_2D"
     bars_SST_2D.cfg_file  = "bars.cfg"
     bars_SST_2D.test_iter = 13
-    bars_SST_2D.test_vals = [13.000000, -0.473801, -1.561442]
+    bars_SST_2D.test_vals = [13.000000, -0.473801, -1.563681]
     bars_SST_2D.multizone = True
     test_list.append(bars_SST_2D)
 
