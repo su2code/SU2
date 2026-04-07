@@ -313,6 +313,11 @@ if get_option('enable-coolprop')
   if build_machine.cpu_family() == 'x86' or build_machine.cpu_family() == 'x86_64'
     cmake = import('cmake')
     cmake_opts = cmake.subproject_options()
+    if get_option('cpu-arch') != ''
+      cmake_opts.add_cmake_defines({
+        'CMAKE_CXX_FLAGS': '-march=' + get_option('cpu-arch')
+      })
+    endif
     cmake_opts.set_override_option('warning_level', '0')
     cmake_opts.add_cmake_defines({
       'COOLPROP_STATIC_LIBRARY': true,
