@@ -380,8 +380,8 @@ void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
     Scalar eps_l = 0.0;
     Scalar tol_l = KrylovTol / eps;
     auto iter = min(totalIter-2ul, config_container[iZone]->GetnQuasiNewtonSamples()-2ul);
-    iter = LinSolver[iZone].FGMRES_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
-                                             tol_l, iter, eps_l, monitor, config_container[iZone]);
+    iter = LinSolver[iZone].FGCRODR_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
+                                              tol_l, iter, eps_l, monitor, config_container[iZone]);
     totalIter -= iter+1;
     eps *= eps_l;
   }

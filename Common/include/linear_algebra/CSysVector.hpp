@@ -29,6 +29,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include "../parallelization/mpi_structure.hpp"
 #include "../parallelization/omp_structure.hpp"
@@ -369,6 +370,32 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
     return dot_scratch[0];
+  }
+
+  /*!
+   * \brief Computes the product of V^T W efficiencly, where V and W are tall matrices stored as vectors of CSysVector.
+   * \param[in] V - Tall matrix.
+   * \param[in] n - Number of columns to consider from V (if 0, the size of V is used).
+   * \param[in] W - Tall matrix.
+   * \param[in] m - Number of columns to consider from W (if 0, the size of W is used).
+   * \param[out] VTW - Matrix to store the product, must be n by m or larger.
+   */
+  template <class Mat>
+  static void multiDot(const std::vector<CSysVector>& V, size_t n, const std::vector<CSysVector>& W, size_t m,
+                       Mat& VTW) {
+    static constexpr size_t BLOCK_SIZE = 1024;
+
+    if (n == 0) n = V.size();
+    if (m == 0) m = W.size();
+    if (n == 0 || m == 0) return;
+
+    su2matrix<ScalarType> local;
+    local.resize(n, m) = ScalarType{};
+
+    for (size_t i = 0; i < n; ++i) {
+      for (size_t j = 0; j < m; ++j) {
+      }
+    }
   }
 
   /*!
