@@ -237,7 +237,7 @@ def main():
     tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
     tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3A.test_iter  = 20
-    tutorial_trans_flatplate_T3A.test_vals  = [-5.790137, -2.054834, -3.894661, -0.255074, -1.747145, 5.119341, -3.493237, 0.393262]
+    tutorial_trans_flatplate_T3A.test_vals  = [-5.790137, -2.054834, -3.894661, -0.255074, -1.747007, 5.119341, -3.493237, 0.393262]
     tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.808996, -2.070606, -3.969765, -0.277943, -1.953289, 1.708472, -3.514943, 0.357411]
     tutorial_trans_flatplate_T3A.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3A)
@@ -247,7 +247,7 @@ def main():
     tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
-    tutorial_trans_flatplate_T3Am.test_vals  = [-5.590359, -1.700867, -3.099309, -0.105449, -3.750523, 3.287643, -2.394576, 1.119623]
+    tutorial_trans_flatplate_T3Am.test_vals  = [-5.591088, -1.700867, -3.100341, -0.106090, -3.750523, 3.287643, -2.394576, 1.119623]
     tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-5.540938, -1.681627, -2.878831, -0.058224, -3.695533, 3.413628, -2.385345, 1.103633]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
@@ -302,7 +302,7 @@ def main():
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
-    tutorial_unst_naca0012.test_vals         = [520, 0, -5.298821, 0, 0.269405, 0.724098, 0.002630, 0.015827]
+    tutorial_unst_naca0012.test_vals         = [520, 0, -5.293168, 0, 0.301651, 0.772998, 0.002171, 0.012763]
     tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.292359, 0, 0.284720, 0.766329, 0.000954, 0.007565]
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
@@ -354,7 +354,7 @@ def main():
     pywrapper_psi.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_psi)
 
-    # custom source: including source term for enthalpy equations 
+    # custom source: including source term for enthalpy equations
     pywrapper_psi_hl = TestCase('psi_enthalpy')
     pywrapper_psi_hl.cfg_dir = "../Tutorials/multiphysics/TFC_python/enthalpy"
     pywrapper_psi_hl.cfg_file = "psi.cfg"
@@ -363,7 +363,7 @@ def main():
     pywrapper_psi_hl.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_psi_hl)
 
-    # custom source: including custom BC and source term 
+    # custom source: including custom BC and source term
     pywrapper_psi_quench = TestCase('psi_quench')
     pywrapper_psi_quench.cfg_dir = "../Tutorials/multiphysics/TFC_python/quench"
     pywrapper_psi_quench.cfg_file = "psi.cfg"

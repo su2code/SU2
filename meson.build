@@ -27,10 +27,8 @@ su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
 default_warning_flags = []
 if build_machine.system() != 'windows'
-  if meson.get_compiler('cpp').get_id() != 'intel'
-    default_warning_flags += ['-Wno-empty-body']
-  endif
-  desired_warnings = ['-Wno-ignored-qualifiers',
+  desired_warnings = ['-Wno-empty-body',
+                      '-Wno-ignored-qualifiers',
                       '-Wno-unused-parameter',
                       '-Wno-deprecated-declarations',
                       '-Wno-error=cast-function-type',
@@ -53,6 +51,15 @@ if build_machine.system() != 'windows'
   if get_option('enable-autodiff') or get_option('enable-directdiff')
     default_warning_flags += ['-Wno-non-virtual-dtor']
   endif
+endif
+
+if get_option('cpu-arch') != ''
+  su2_cpp_args += ['-march=' + get_option('cpu-arch')]
+endif
+
+# Fast math to allow pow(x, 2) -> x * x.
+if meson.get_compiler('cpp').has_argument('-fno-finite-math-only')
+  su2_cpp_args += ['-ffast-math', '-fno-finite-math-only']
 endif
 
 # Handle assertions: default is b_ndebug=true (assertions disabled)
@@ -306,6 +313,11 @@ if get_option('enable-coolprop')
   if build_machine.cpu_family() == 'x86' or build_machine.cpu_family() == 'x86_64'
     cmake = import('cmake')
     cmake_opts = cmake.subproject_options()
+    if get_option('cpu-arch') != ''
+      cmake_opts.add_cmake_defines({
+        'CMAKE_CXX_FLAGS': '-march=' + get_option('cpu-arch')
+      })
+    endif
     cmake_opts.set_override_option('warning_level', '0')
     cmake_opts.add_cmake_defines({
       'COOLPROP_STATIC_LIBRARY': true,
