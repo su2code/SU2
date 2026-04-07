@@ -28,7 +28,6 @@
 #pragma once
 
 #include "CTurbVariable.hpp"
-#include <random>
 
 /*!
  * \class CTurbSAVariable
