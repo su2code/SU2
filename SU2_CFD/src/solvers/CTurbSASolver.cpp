@@ -1628,7 +1628,7 @@ void CTurbSASolver::SetBackscatterInBox(CConfig *config, CGeometry *geometry) {
     bool outOfBoxY = (coord[1]<sbsBoxBounds[2] || coord[1]>sbsBoxBounds[3]);
     bool outOfBoxZ = (coord[2]<sbsBoxBounds[4] || coord[2]>sbsBoxBounds[5]);
     bool outOfBox  = (outOfBoxX || outOfBoxY || outOfBoxZ);
-    if (outOfBox) nodes->SetSbsInBox(iPoint, 0.0);
+    nodes->SetSbsInBox(iPoint, outOfBox ? 0 : 1);
   }
   END_SU2_OMP_FOR
 
