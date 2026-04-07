@@ -677,8 +677,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   if (Global_nPointCoarse < config->GetMGOptions().MG_Min_MeshSize) {
     if (rank == MASTER_NODE)
       cout << "MG level " << iMesh << " has only " << Global_nPointCoarse
-           << " CVs (< MG_MIN_MESHSIZE=" << config->GetMGOptions().MG_Min_MeshSize << "). Reducing MG levels to " << iMesh - 1
-           << "." << endl;
+           << " CVs (< MG_MIN_MESHSIZE=" << config->GetMGOptions().MG_Min_MeshSize << "). Reducing MG levels to "
+           << iMesh - 1 << "." << endl;
     config->SetMGLevels(iMesh - 1);
   } else if (rank == MASTER_NODE) {
     PrintingToolbox::CTablePrinter MGTable(&std::cout);
