@@ -29,6 +29,12 @@
 #include <type_traits>
 
 #if defined(_MSC_VER)
+#define PRAGMIZE(X) __pragma(X)
+#else
+#define PRAGMIZE(X) _Pragma(#X)
+#endif
+
+#if defined(_MSC_VER)
 #define FORCEINLINE __forceinline
 #elif defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
 #define FORCEINLINE inline __attribute__((always_inline))
@@ -150,4 +156,14 @@ using su2mixedfloat = passivedouble;
 #if (_OPENMP >= 201811 && !defined(FORCE_OPDI_MACRO_BACKEND)) || defined(FORCE_OPDI_OMPT_BACKEND)
 #define HAVE_OMPT
 #endif
+#endif
+
+#ifdef __GNUC__
+#define SU2_IGNORE_WARNING(WARNING) \
+  PRAGMIZE(GCC diagnostic push)     \
+  PRAGMIZE(GCC diagnostic ignored WARNING)
+#define SU2_RESTORE_WARNING PRAGMIZE(GCC diagnostic pop)
+#else
+#define SU2_IGNORE_WARNING(WARNING)
+#define SU2_RESTORE_WARNING
 #endif

@@ -181,7 +181,7 @@ void CFEM_Knowles_NearInc::Compute_Constitutive_Matrix(CElement *element, const 
 
 void CFEM_Knowles_NearInc::Compute_Stress_Tensor(CElement *element, const CConfig *config, unsigned short iGauss) {
 
-  /* -- Suchocki (2011) (full reference in class constructor). ---*/
+  /*--- Suchocki (2011) (full reference in class constructor). ---*/
 
   unsigned short iVar, jVar;
 
@@ -208,9 +208,7 @@ void CFEM_Knowles_NearInc::Compute_Stress_Tensor(CElement *element, const CConfi
 }
 
 CFEM_DielectricElastomer::CFEM_DielectricElastomer(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) :
-                          CFEANonlinearElasticity(val_nDim, val_nVar, config) {
-
-}
+                          CFEANonlinearElasticity(val_nDim, val_nVar, config) {}
 
 void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element, const CConfig *config) {
 
@@ -230,36 +228,16 @@ void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element, co
     D_Mat[5][0] = 0.0;  D_Mat[5][1] = 0.0;  D_Mat[5][2] = 0.0;  D_Mat[5][3] = 0.0;  D_Mat[5][4] = 0.0;  D_Mat[5][5] = 0.0;
   }
 
-
 }
 
 void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, const CConfig *config, unsigned short iGauss) {
 
-  unsigned short iDim, jDim;
-
-  su2double E0 = 0.0, E1 = 0.0, E2 = 0.0;
-  su2double E0_2 = 0.0, E1_2 = 0.0, E2_2 = 0.0;
-  su2double E_2 = 0.0;
-
-  Compute_FmT_Mat();
-
-  for (iDim = 0; iDim < nDim; iDim++){
-    EField_Curr_Unit[iDim] = 0.0;
-    for (jDim = 0; jDim < nDim; jDim++){
-      EField_Curr_Unit[iDim] += FmT_Mat[iDim][jDim] * EField_Ref_Unit[jDim];
+  for (unsigned short iDim = 0; iDim < MAXNDIM; ++iDim) {
+    for (unsigned short jDim = 0; jDim < MAXNDIM; ++jDim) {
+      Stress_Tensor[iDim][jDim] = 0;
     }
   }
-
-  E0 = EFieldMod_Ref*EField_Curr_Unit[0];          E0_2 = pow(E0,2);
-  E1 = EFieldMod_Ref*EField_Curr_Unit[1];          E1_2 = pow(E1,2);
-  if (nDim == 3) {E2 = EFieldMod_Ref*EField_Curr_Unit[2];  E2_2 = pow(E2,2);}
-
-  E_2 = E0_2+E1_2+E2_2;
-
-  Stress_Tensor[0][0] = ke_DE*(E0_2-0.5*E_2);  Stress_Tensor[0][1] = ke_DE*E0*E1;      Stress_Tensor[0][2] = ke_DE*E0*E2;
-  Stress_Tensor[1][0] = ke_DE*E1*E0;      Stress_Tensor[1][1] = ke_DE*(E1_2-0.5*E_2);  Stress_Tensor[1][2] = ke_DE*E1*E2;
-  Stress_Tensor[2][0] = ke_DE*E2*E0;      Stress_Tensor[2][1] = ke_DE*E2*E1;      Stress_Tensor[2][2] = ke_DE*(E2_2-0.5*E_2);
-
+  Add_MaxwellStress(element, config);
 }
 
 CFEM_IdealDE::CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar,

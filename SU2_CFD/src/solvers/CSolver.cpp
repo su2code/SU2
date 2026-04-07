@@ -4045,7 +4045,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
         // Calculate tn in the fluid nodes for the viscous term
         if (viscous_flow) {
           const su2double Viscosity = base_nodes->GetLaminarViscosity(iPoint);
-          su2double Tau[3][3];
+          su2double Tau[3][3] = {{}};
           CNumerics::ComputeStressTensor(nDim, Tau, base_nodes->GetVelocityGradient(iPoint), Viscosity);
           for (unsigned short iDim = 0; iDim < nDim; iDim++) {
             auxForce[iDim] += GeometryToolbox::DotProduct(nDim, Tau[iDim], Normal);

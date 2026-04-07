@@ -563,7 +563,7 @@ public:
   NEVERINLINE static void ComputePerturbedRSM(size_t nDim, size_t uq_eigval_comp, bool uq_permute, su2double uq_delta_b,
                                               su2double uq_urlx, const Mat1& velgrad, Scalar density,
                                               Scalar viscosity, Scalar turb_ke, Mat2& MeanPerturbedRSM) {
-    Scalar MeanReynoldsStress[3][3];
+    Scalar MeanReynoldsStress[3][3] = {{}};
     ComputeStressTensor(nDim, MeanReynoldsStress, velgrad, viscosity, density, turb_ke, true);
     for (size_t iDim = 0; iDim < 3; iDim++)
       for (size_t jDim = 0; jDim < 3; jDim++)

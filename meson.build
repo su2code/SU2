@@ -40,7 +40,10 @@ if build_machine.system() != 'windows'
                       '-Wno-error=missing-field-initializers',
                       '-Wno-missing-field-initializers',
                       '-Wno-error=class-memaccess',
-                      '-Wno-class-memaccess']
+                      '-Wno-class-memaccess',
+                      '-Wno-overloaded-virtual',
+                      '-Wno-array-bounds',
+                      '-Wno-dangling-pointer']
   foreach flag : desired_warnings
     if meson.get_compiler('cpp').has_argument(flag)
       default_warning_flags += flag
