@@ -34,57 +34,14 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
 
   nearly_incompressible = (config->GetMaterialCompressibility() == STRUCT_COMPRESS::NEARLY_INCOMP);
 
-  unsigned short iVar;
-
-  F_Mat = new su2double *[3];
-  b_Mat = new su2double *[3];
-  FmT_Mat = new su2double *[3];
-  Stress_Tensor = new su2double *[3];
-  for (iVar = 0; iVar < 3; iVar++) {
-    F_Mat[iVar] = new su2double [3];
-    b_Mat[iVar] = new su2double [3];
-    FmT_Mat[iVar] = new su2double [3];
-    Stress_Tensor[iVar] = new su2double [3];
-  }
-
-  KAux_t_a = new su2double [nDim];
-
-  KAux_P_ab = new su2double* [nDim];
-  for (iVar = 0; iVar < nDim; iVar++) {
-    KAux_P_ab[iVar] = new su2double[nDim];
-  }
-
-  unsigned short nNodes = (nDim==2) ? NNODES_2D : NNODES_3D;
-
-  currentCoord = new su2double* [nNodes];
-  for (iVar = 0; iVar < nNodes; iVar++)
-    currentCoord[iVar] = new su2double[nDim];
-
-  J_F = 1.0; J_F_Iso = 1.0;
+  J_F = 1.0;
   f33 = 1.0;
-
-  C10 = Mu/2.0;
-  D1  = 2.0/Kappa;
-
-  F_Mat_Iso = nullptr;
-  b_Mat_Iso = nullptr;
-
-  F_Mat_Iso = new su2double *[3];
-  b_Mat_Iso = new su2double *[3];
-  for (iVar = 0; iVar < 3; iVar++){
-    F_Mat_Iso[iVar] = new su2double [3];
-    b_Mat_Iso[iVar] = new su2double [3];
-  }
 
   maxwell_stress = config->GetDE_Effects();
 
-  ke_DE         = 0.0;
-  nElectric_Field   = 0;
+  ke_DE = 0.0;
+  nElectric_Field = 0;
   nDim_Electric_Field = 0;
-
-  EField_Ref_Unit   = nullptr;
-  EField_Ref_Mod    = nullptr;
-  EField_Curr_Unit  = nullptr;
 
   if (maxwell_stress) {
 
@@ -120,26 +77,26 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
     }
 
     /*--- Initialize pointer for the electric field ---*/
-    EField_Ref_Unit = new su2double[nDim_Electric_Field];
+    EField_Ref_Unit.reset(new su2double[nDim_Electric_Field]);
     /*--- Assign values to the auxiliary Electric_Field structure ---*/
     for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
       EField_Ref_Unit[iDim] = Electric_Field_Dir[iDim]/ref_Efield_mod;
     }
 
     /*--- Auxiliary vector for hosting the electric field modulus in the reference configuration ---*/
-    EField_Ref_Mod = new su2double[nElectric_Field];
+    EField_Ref_Mod.reset(new su2double[nElectric_Field]);
     for (iVar = 0; iVar < nElectric_Field; iVar++)
       EField_Ref_Mod[iVar] = config->Get_Electric_Field_Mod(iVar);
 
     /*--- Auxiliary vector for computing the electric field in the current configuration ---*/
-    EField_Curr_Unit = new su2double[nDim_Electric_Field];
+    EField_Curr_Unit.reset(new su2double[nDim_Electric_Field]);
     for (iDim = 0; iDim < nDim_Electric_Field; iDim++) {
       EField_Curr_Unit[iDim] = 0.0;
     }
 
     /*--- Auxiliary vector for storing the electric field constant ---*/
     unsigned short nElectric_Constant = config->GetnElectric_Constant();
-    ke_DE_i = new su2double[nElectric_Field];
+    ke_DE_i.reset(new su2double[nElectric_Field]);
 
     if (nElectric_Constant == nElectric_Field)
       for (iVar = 0; iVar < nElectric_Field; iVar++) ke_DE_i[iVar] = config->GetElectric_Constant(iVar);
@@ -163,76 +120,19 @@ CFEANonlinearElasticity::CFEANonlinearElasticity(unsigned short val_nDim, unsign
         }
         break;
     }
-
-  }
-
-}
-
-CFEANonlinearElasticity::~CFEANonlinearElasticity() {
-
-  unsigned short iVar;
-
-  for (iVar = 0; iVar < 3; iVar++) {
-    delete [] F_Mat[iVar];
-    delete [] b_Mat[iVar];
-    delete [] FmT_Mat[iVar];
-    delete [] Stress_Tensor[iVar];
-  }
-
-  for (iVar = 0; iVar < nDim; iVar++) {
-    delete [] KAux_P_ab[iVar];
-  }
-
-  unsigned short nNodes = (nDim==2) ? NNODES_2D : NNODES_3D;
-
-  for (iVar = 0; iVar < nNodes; iVar++) {
-    delete [] currentCoord[iVar];
-  }
-
-  delete [] F_Mat;
-  delete [] b_Mat;
-  delete [] FmT_Mat;
-  delete [] Stress_Tensor;
-  delete [] KAux_t_a;
-  delete [] KAux_P_ab;
-  delete [] currentCoord;
-
-  if (F_Mat_Iso != nullptr) {
-    for (iVar = 0; iVar < 3; iVar++){
-      if (F_Mat_Iso[iVar] != nullptr) delete [] F_Mat_Iso[iVar];
-    }
-    delete [] F_Mat_Iso;
-  }
-  if (b_Mat_Iso != nullptr){
-    for (iVar = 0; iVar < 3; iVar++){
-      if (b_Mat_Iso[iVar] != nullptr) delete [] b_Mat_Iso[iVar];
-    }
-    delete [] b_Mat_Iso;
-  }
-
-  delete [] EField_Ref_Unit;
-  delete [] EField_Ref_Mod;
-  delete [] EField_Curr_Unit;
-
-  if (maxwell_stress) {
-    delete [] ke_DE_i;
   }
 }
-
 
 void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
-  unsigned short iGauss, nGauss;
-  unsigned short iNode, jNode, nNode;
-  unsigned short iDim, bDim;
+  unsigned short iGauss;
+  unsigned short iNode, jNode;
+  unsigned short iDim;
 
-  su2double Ks_Aux_ab;
-
-  su2double Weight, Jac_x;
-
-  su2double AuxMatrixKc[3][6];
-  su2double AuxMatrixKs[3];
+  su2double AuxMatrixKc[MAXNDIM][DIM_STRAIN_3D] = {};
+  su2double AuxMatrixKs[MAXNDIM] = {};
+  su2double Ba_Mat[DIM_STRAIN_3D][MAXNDIM] = {}, Bb_Mat[DIM_STRAIN_3D][MAXNDIM] = {};
 
   /*--- TODO: Initialize values for the material model considered ---*/
 //  cout << "PROPERTY: " << element->Get_iProp() << " and DV " << element->Get_iDV() << endl;
@@ -251,54 +151,36 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CC
   /*--- Recompute Lame parameters as they depend on the material properties ---*/
   Compute_Lame_Parameters();
 
-  /*-----------------------------------------------------------*/
-
-  /*--- Initialize auxiliary matrices ---*/
-
-  bDim = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
-
-  for (iVar = 0; iVar < bDim; iVar++) {
-    for (jVar = 0; jVar < nDim; jVar++) {
-      Ba_Mat[iVar][jVar] = 0.0;
-      Bb_Mat[iVar][jVar] = 0.0;
-    }
-  }
-
-  for (iVar = 0; iVar < 3; iVar++) {
-    for (jVar = 0; jVar < 6; jVar++) {
-      AuxMatrixKc[iVar][jVar] = 0.0;
-    }
-  }
-
-  for (iVar = 0; iVar < 3; iVar++) {
-    AuxMatrixKs[iVar] = 0.0;
-  }
-
-  element->ClearElement();  /*--- Restarts the element to avoid adding over previous results. --*/
+  /*--- Restarts the element to avoid adding over previous results. --*/
+  element->ClearElement();
   element->ComputeGrad_Linear();
   element->ComputeGrad_NonLinear();
 
-  nNode = element->GetnNodes();
-  nGauss = element->GetnGaussPoints();
+  const auto nNode = element->GetnNodes();
+  const auto nGauss = element->GetnGaussPoints();
+  const auto bDim = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
 
   /*--- Full integration of the constitutive and stress term ---*/
 
   for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
-    Weight = element->GetWeight(iGauss);
-    Jac_x = element->GetJ_x(iGauss);
+    const su2double Weight = element->GetWeight(iGauss);
+    const su2double Jac_x = element->GetJ_x(iGauss);
 
     /*--- Initialize the deformation gradient for each Gauss Point ---*/
 
-    for (iVar = 0; iVar < 3; iVar++) {
-      for (jVar = 0; jVar < 3; jVar++) {
-        F_Mat[iVar][jVar] = 0.0;
-        b_Mat[iVar][jVar] = 0.0;
+    for (iVar = 0; iVar < MAXNDIM; iVar++) {
+      for (jVar = 0; jVar < MAXNDIM; jVar++) {
+        F_Mat[iVar][jVar] = 0;
       }
     }
 
     /*--- Retrieve the values of the gradients of the shape functions for each node ---*/
     /*--- This avoids repeated operations ---*/
+
+    su2double GradNi_Ref_Mat[NNODES_3D][MAXNDIM] = {};
+    su2double GradNi_Curr_Mat[NNODES_3D][MAXNDIM] = {};
+    su2double currentCoord[NNODES_3D][MAXNDIM] = {};
 
     for (iNode = 0; iNode < nNode; iNode++) {
 
@@ -330,22 +212,11 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CC
 
     /*--- Determinant of F --> Jacobian of the transformation ---*/
 
-    J_F =   F_Mat[0][0]*F_Mat[1][1]*F_Mat[2][2]+
-        F_Mat[0][1]*F_Mat[1][2]*F_Mat[2][0]+
-        F_Mat[0][2]*F_Mat[1][0]*F_Mat[2][1]-
-        F_Mat[0][2]*F_Mat[1][1]*F_Mat[2][0]-
-        F_Mat[1][2]*F_Mat[2][1]*F_Mat[0][0]-
-        F_Mat[2][2]*F_Mat[0][1]*F_Mat[1][0];
+    ComputeJ_F();
 
     /*--- Compute the left Cauchy deformation tensor ---*/
 
-    for (iVar = 0; iVar < 3; iVar++) {
-      for (jVar = 0; jVar < 3; jVar++) {
-        for (kVar = 0; kVar < 3; kVar++) {
-          b_Mat[iVar][jVar] += F_Mat[iVar][kVar]*F_Mat[jVar][kVar];
-        }
-      }
-    }
+    ComputeLeftCauchyGreenTensor();
 
     /*--- Compute the constitutive matrix ---*/
 
@@ -362,8 +233,8 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CC
         /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
         /*--- and add it to the element structure to be retrieved from the solver      ---*/
 
+      su2double KAux_t_a[MAXNDIM] = {};
       for (iVar = 0; iVar < nDim; iVar++) {
-        KAux_t_a[iVar] = 0.0;
         for (jVar = 0; jVar < nDim; jVar++) {
           KAux_t_a[iVar] += Weight * Stress_Tensor[iVar][jVar] * GradNi_Curr_Mat[iNode][jVar] * Jac_x;
         }
@@ -375,25 +246,9 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CC
       /*----------------------- CONSTITUTIVE AND STRESS TERM ---------------------------*/
       /*--------------------------------------------------------------------------------*/
 
-      if (nDim == 2) {
-        Ba_Mat[0][0] = GradNi_Curr_Mat[iNode][0];
-        Ba_Mat[1][1] = GradNi_Curr_Mat[iNode][1];
-        Ba_Mat[2][0] = GradNi_Curr_Mat[iNode][1];
-        Ba_Mat[2][1] = GradNi_Curr_Mat[iNode][0];
-      }
-      else if (nDim ==3) {
-        Ba_Mat[0][0] = GradNi_Curr_Mat[iNode][0];
-        Ba_Mat[1][1] = GradNi_Curr_Mat[iNode][1];
-        Ba_Mat[2][2] = GradNi_Curr_Mat[iNode][2];
-        Ba_Mat[3][0] = GradNi_Curr_Mat[iNode][1];
-        Ba_Mat[3][1] = GradNi_Curr_Mat[iNode][0];
-        Ba_Mat[4][0] = GradNi_Curr_Mat[iNode][2];
-        Ba_Mat[4][2] = GradNi_Curr_Mat[iNode][0];
-        Ba_Mat[5][1] = GradNi_Curr_Mat[iNode][2];
-        Ba_Mat[5][2] = GradNi_Curr_Mat[iNode][1];
-      }
+      FillBMat(iNode, GradNi_Curr_Mat, Ba_Mat);
 
-        /*--- Compute the BT.D Matrix ---*/
+      /*--- Compute the BT.D Matrix ---*/
 
       for (iVar = 0; iVar < nDim; iVar++) {
         for (jVar = 0; jVar < bDim; jVar++) {
@@ -415,28 +270,12 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CC
 
       /*--- Assumming symmetry ---*/
       for (jNode = iNode; jNode < nNode; jNode++) {
-        if (nDim == 2) {
-          Bb_Mat[0][0] = GradNi_Curr_Mat[jNode][0];
-          Bb_Mat[1][1] = GradNi_Curr_Mat[jNode][1];
-          Bb_Mat[2][0] = GradNi_Curr_Mat[jNode][1];
-          Bb_Mat[2][1] = GradNi_Curr_Mat[jNode][0];
-        }
-        else if (nDim ==3) {
-          Bb_Mat[0][0] = GradNi_Curr_Mat[jNode][0];
-          Bb_Mat[1][1] = GradNi_Curr_Mat[jNode][1];
-          Bb_Mat[2][2] = GradNi_Curr_Mat[jNode][2];
-          Bb_Mat[3][0] = GradNi_Curr_Mat[jNode][1];
-          Bb_Mat[3][1] = GradNi_Curr_Mat[jNode][0];
-          Bb_Mat[4][0] = GradNi_Curr_Mat[jNode][2];
-          Bb_Mat[4][2] = GradNi_Curr_Mat[jNode][0];
-          Bb_Mat[5][1] = GradNi_Curr_Mat[jNode][2];
-          Bb_Mat[5][2] = GradNi_Curr_Mat[jNode][1];
-        }
+        FillBMat(jNode, GradNi_Curr_Mat, Bb_Mat);
 
         /*--- KAux_ab is the term for the constitutive part of the tangent matrix ---*/
+        su2double KAux_ab[MAXNDIM][MAXNDIM] = {};
         for (iVar = 0; iVar < nDim; iVar++) {
           for (jVar = 0; jVar < nDim; jVar++) {
-            KAux_ab[iVar][jVar] = 0.0;
             for (kVar = 0; kVar < bDim; kVar++) {
               KAux_ab[iVar][jVar] += Weight * AuxMatrixKc[iVar][kVar] * Bb_Mat[kVar][jVar] * Jac_x;
             }
@@ -444,7 +283,7 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CC
         }
 
         /*--- Ks_Aux_ab is the term for the constitutive part of the tangent matrix ---*/
-        Ks_Aux_ab = 0.0;
+        su2double Ks_Aux_ab = 0.0;
         for (iVar = 0; iVar < nDim; iVar++) {
           Ks_Aux_ab += Weight * AuxMatrixKs[iVar] * GradNi_Curr_Mat[jNode][iVar] * Jac_x;
         }
@@ -471,9 +310,9 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, const CC
 
 void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, const CConfig *config) {
 
-  unsigned short iVar, jVar, kVar;
-  unsigned short iGauss, nGauss;
-  unsigned short iNode, nNode;
+  unsigned short iVar, jVar;
+  unsigned short iGauss;
+  unsigned short iNode;
   unsigned short iDim;
 
   /*--- TODO: Initialize values for the material model considered ---*/
@@ -494,33 +333,34 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, const 
 
   /*-----------------------------------------------------------*/
 
-  su2double Weight, Jac_x;
-
   element->ClearElement();       /*--- Restarts the element to avoid adding over previous results. --*/
   element->ComputeGrad_Linear(); /*--- TODO: Check if we can take this out so we don't have to do it twice. ---*/
   element->ComputeGrad_NonLinear();
 
-  nNode = element->GetnNodes();
-  nGauss = element->GetnGaussPoints();
+  const auto nNode = element->GetnNodes();
+  const auto nGauss = element->GetnGaussPoints();
 
   /*--- Full integration of the nodal stress ---*/
 
   for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
-    Weight = element->GetWeight(iGauss);
-    Jac_x = element->GetJ_x(iGauss);
+    const su2double Weight = element->GetWeight(iGauss);
+    const su2double Jac_x = element->GetJ_x(iGauss);
 
     /*--- Initialize the deformation gradient for each Gauss Point ---*/
 
-    for (iVar = 0; iVar < 3; iVar++) {
-      for (jVar = 0; jVar < 3; jVar++) {
-        F_Mat[iVar][jVar] = 0.0;
-        b_Mat[iVar][jVar] = 0.0;
+    for (iVar = 0; iVar < MAXNDIM; iVar++) {
+      for (jVar = 0; jVar < MAXNDIM; jVar++) {
+        F_Mat[iVar][jVar] = 0;
       }
     }
 
     /*--- Retrieve the values of the gradients of the shape functions for each node ---*/
     /*--- This avoids repeated operations ---*/
+
+    su2double GradNi_Ref_Mat[NNODES_3D][MAXNDIM] = {};
+    su2double GradNi_Curr_Mat[NNODES_3D][MAXNDIM] = {};
+    su2double currentCoord[NNODES_3D][MAXNDIM] = {};
 
     for (iNode = 0; iNode < nNode; iNode++) {
 
@@ -552,22 +392,11 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, const 
 
     /*--- Determinant of F --> Jacobian of the transformation ---*/
 
-    J_F =   F_Mat[0][0]*F_Mat[1][1]*F_Mat[2][2]+
-        F_Mat[0][1]*F_Mat[1][2]*F_Mat[2][0]+
-        F_Mat[0][2]*F_Mat[1][0]*F_Mat[2][1]-
-        F_Mat[0][2]*F_Mat[1][1]*F_Mat[2][0]-
-        F_Mat[1][2]*F_Mat[2][1]*F_Mat[0][0]-
-        F_Mat[2][2]*F_Mat[0][1]*F_Mat[1][0];
+    ComputeJ_F();
 
     /*--- Compute the left Cauchy deformation tensor ---*/
 
-    for (iVar = 0; iVar < 3; iVar++) {
-      for (jVar = 0; jVar < 3; jVar++) {
-        for (kVar = 0; kVar < 3; kVar++) {
-          b_Mat[iVar][jVar] += F_Mat[iVar][kVar]*F_Mat[jVar][kVar];
-        }
-      }
-    }
+    ComputeLeftCauchyGreenTensor();
 
     /*--- Compute the stress tensor ---*/
 
@@ -576,11 +405,11 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, const 
 
     for (iNode = 0; iNode < nNode; iNode++) {
 
-        /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
-        /*--- and add it to the element structure to be retrieved from the solver      ---*/
+      /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
+      /*--- and add it to the element structure to be retrieved from the solver      ---*/
 
+      su2double KAux_t_a[MAXNDIM] = {};
       for (iVar = 0; iVar < nDim; iVar++) {
-        KAux_t_a[iVar] = 0.0;
         for (jVar = 0; jVar < nDim; jVar++) {
           KAux_t_a[iVar] += Weight * Stress_Tensor[iVar][jVar] * GradNi_Curr_Mat[iNode][jVar] * Jac_x;
         }
@@ -600,19 +429,18 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, const 
 
 void CFEANonlinearElasticity::Add_MaxwellStress(CElement *element, const CConfig *config) {
 
-//  Adds the Maxwell stress to the output of the stress Sxx, Syy, Szz, SVM...
-
-  unsigned short iDim, jDim;
+  //  Adds the Maxwell stress to the output of the stress Sxx, Syy, Szz, SVM...
 
   su2double E0 = 0.0, E1 = 0.0, E2 = 0.0;
   su2double E0_2 = 0.0, E1_2 = 0.0, E2_2 = 0.0;
   su2double E_2 = 0.0;
 
-  Compute_FmT_Mat();
+  su2double FmT_Mat[MAXNDIM][MAXNDIM] = {};
+  Compute_FmT_Mat(F_Mat, J_F, FmT_Mat);
 
-  for (iDim = 0; iDim < nDim; iDim++){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++){
     EField_Curr_Unit[iDim] = 0.0;
-    for (jDim = 0; jDim < nDim; jDim++){
+    for (unsigned short jDim = 0; jDim < nDim; jDim++){
       EField_Curr_Unit[iDim] += FmT_Mat[iDim][jDim] * EField_Ref_Unit[jDim];
     }
   }
@@ -645,41 +473,23 @@ void CFEANonlinearElasticity::SetElectric_Properties(const CElement *element, co
 
 }
 
-void CFEANonlinearElasticity::Compute_FmT_Mat() {
-
-  FmT_Mat[0][0] = (F_Mat[1][1]*F_Mat[2][2] - F_Mat[1][2]*F_Mat[2][1]) / J_F;
-  FmT_Mat[0][1] = (F_Mat[1][2]*F_Mat[2][0] - F_Mat[2][2]*F_Mat[1][0]) / J_F;
-  FmT_Mat[0][2] = (F_Mat[1][0]*F_Mat[2][1] - F_Mat[1][1]*F_Mat[2][0]) / J_F;
-
-  FmT_Mat[1][0] = (F_Mat[0][2]*F_Mat[2][1] - F_Mat[0][1]*F_Mat[2][2]) / J_F;
-  FmT_Mat[1][1] = (F_Mat[0][0]*F_Mat[2][2] - F_Mat[2][0]*F_Mat[0][2]) / J_F;
-  FmT_Mat[1][2] = (F_Mat[0][1]*F_Mat[2][1] - F_Mat[0][0]*F_Mat[2][0]) / J_F;
-
-  FmT_Mat[2][0] = (F_Mat[0][1]*F_Mat[1][2] - F_Mat[0][2]*F_Mat[1][1]) / J_F;
-  FmT_Mat[2][1] = (F_Mat[0][2]*F_Mat[1][0] - F_Mat[0][0]*F_Mat[1][2]) / J_F;
-  FmT_Mat[2][2] = (F_Mat[0][0]*F_Mat[1][1] - F_Mat[0][1]*F_Mat[1][0]) / J_F;
-
-}
-
 void CFEANonlinearElasticity::Compute_Isochoric_F_b() {
 
-  unsigned short iVar, jVar, kVar;
-
-  J_F_Iso = pow(J_F,-0.333333333333333);
+  const su2double J_F_Iso = pow(J_F,-0.333333333333333);
 
   // Isochoric deformation tensor
-  for (iVar = 0; iVar < 3; iVar++){
-    for (jVar = 0; jVar < 3; jVar++){
+  su2double F_Mat_Iso[MAXNDIM][MAXNDIM];
+  for (unsigned short iVar = 0; iVar < MAXNDIM; iVar++) {
+    for (unsigned short jVar = 0; jVar < MAXNDIM; jVar++) {
       F_Mat_Iso[iVar][jVar] = F_Mat[iVar][jVar] * J_F_Iso;
     }
   }
 
   // Isochoric left Cauchy-Green tensor
-
-  for (iVar = 0; iVar < 3; iVar++){
-    for (jVar = 0; jVar < 3; jVar++){
+  for (unsigned short iVar = 0; iVar < MAXNDIM; iVar++) {
+    for (unsigned short jVar = 0; jVar < MAXNDIM; jVar++) {
       b_Mat_Iso[iVar][jVar] = 0.0;
-      for (kVar = 0; kVar < 3; kVar++){
+      for (unsigned short kVar = 0; kVar < MAXNDIM; kVar++) {
         b_Mat_Iso[iVar][jVar] += F_Mat_Iso[iVar][kVar]*F_Mat_Iso[jVar][kVar];
       }
     }
@@ -689,9 +499,7 @@ void CFEANonlinearElasticity::Compute_Isochoric_F_b() {
 
 void CFEANonlinearElasticity::Assign_cijkl_D_Mat() {
 
-  unsigned short iVar, jVar;
-
-  if (nDim == 2){
+  if (nDim == 2) {
     D_Mat[0][0] = cijkl[0][0][0][0];
     D_Mat[1][1] = cijkl[1][1][1][1];
 
@@ -705,8 +513,7 @@ void CFEANonlinearElasticity::Assign_cijkl_D_Mat() {
     D_Mat[2][1] = cijkl[1][0][1][1];
 
     D_Mat[2][2] = cijkl[0][1][0][1];
-  }
-  else{
+  } else {
     D_Mat[0][0] = cijkl[0][0][0][0];
     D_Mat[1][1] = cijkl[1][1][1][1];
     D_Mat[2][2] = cijkl[2][2][2][2];
@@ -734,8 +541,8 @@ void CFEANonlinearElasticity::Assign_cijkl_D_Mat() {
 
     D_Mat[4][5] = cijkl[0][2][1][2];
 
-    for (jVar = 0; jVar < 6; jVar++){
-      for (iVar = 0; iVar < jVar; iVar++){
+    for (unsigned short jVar = 0; jVar < 6; jVar++){
+      for (unsigned short iVar = 0; iVar < jVar; iVar++){
         D_Mat[jVar][iVar] = D_Mat[iVar][jVar];
       }
     }
@@ -746,11 +553,11 @@ void CFEANonlinearElasticity::Assign_cijkl_D_Mat() {
 
 su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
 
-  unsigned short iVar, jVar, kVar;
-  unsigned short iGauss, nGauss;
-  unsigned short iDim, iNode, nNode;
+  unsigned short iVar, jVar;
+  unsigned short iGauss;
+  unsigned short iDim, iNode;
 
-  su2double avgStress[DIM_STRAIN_3D] = {0.0};
+  su2double avgStress[DIM_STRAIN_3D] = {};
 
   /*--- TODO: Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
@@ -772,34 +579,35 @@ su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *elemen
   /*--- Recompute Lame parameters as they depend on the material properties ---*/
   Compute_Lame_Parameters();
 
-  su2double Weight, Jac_x;
-
   element->ClearStress();
   element->ClearElement(); /*--- Restarts the element to avoid adding over previous results. ---*/
   element->ComputeGrad_Linear();
   element->ComputeGrad_NonLinear();
 
-  nNode = element->GetnNodes();
-  nGauss = element->GetnGaussPoints();
+  const auto nNode = element->GetnNodes();
+  const auto nGauss = element->GetnGaussPoints();
 
   /*--- Computation of the deformation gradient ---*/
 
   for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
-    Weight = element->GetWeight(iGauss);
-    Jac_x = element->GetJ_x(iGauss);
+    const su2double Weight = element->GetWeight(iGauss);
+    const su2double Jac_x = element->GetJ_x(iGauss);
 
     /*--- Initialize the deformation gradient for each Gauss Point ---*/
 
-    for (iVar = 0; iVar < 3; iVar++) {
-      for (jVar = 0; jVar < 3; jVar++) {
-        F_Mat[iVar][jVar] = 0.0;
-        b_Mat[iVar][jVar] = 0.0;
+    for (iVar = 0; iVar < MAXNDIM; iVar++) {
+      for (jVar = 0; jVar < MAXNDIM; jVar++) {
+        F_Mat[iVar][jVar] = 0;
       }
     }
 
     /*--- Retrieve the values of the gradients of the shape functions for each node ---*/
     /*--- This avoids repeated operations ---*/
+
+    su2double GradNi_Ref_Mat[NNODES_3D][MAXNDIM] = {};
+    su2double GradNi_Curr_Mat[NNODES_3D][MAXNDIM] = {};
+    su2double currentCoord[NNODES_3D][MAXNDIM] = {};
 
     for (iNode = 0; iNode < nNode; iNode++) {
 
@@ -831,22 +639,11 @@ su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *elemen
 
     /*--- Determinant of F --> Jacobian of the transformation ---*/
 
-    J_F = F_Mat[0][0]*F_Mat[1][1]*F_Mat[2][2]+
-          F_Mat[0][1]*F_Mat[1][2]*F_Mat[2][0]+
-          F_Mat[0][2]*F_Mat[1][0]*F_Mat[2][1]-
-          F_Mat[0][2]*F_Mat[1][1]*F_Mat[2][0]-
-          F_Mat[1][2]*F_Mat[2][1]*F_Mat[0][0]-
-          F_Mat[2][2]*F_Mat[0][1]*F_Mat[1][0];
+    ComputeJ_F();
 
     /*--- Compute the left Cauchy deformation tensor ---*/
 
-    for (iVar = 0; iVar < 3; iVar++) {
-      for (jVar = 0; jVar < 3; jVar++) {
-        for (kVar = 0; kVar < 3; kVar++) {
-          b_Mat[iVar][jVar] += F_Mat[iVar][kVar]*F_Mat[jVar][kVar];
-        }
-      }
-    }
+    ComputeLeftCauchyGreenTensor();
 
     /*--- Compute the stress tensor ---*/
 
@@ -867,8 +664,8 @@ su2double CFEANonlinearElasticity::Compute_Averaged_NodalStress(CElement *elemen
       /*--- Compute the nodal stress term for each gaussian point and for each node, ---*/
       /*--- and add it to the element structure to be retrieved from the solver      ---*/
 
+      su2double KAux_t_a[MAXNDIM] = {};
       for (iVar = 0; iVar < nDim; iVar++) {
-        KAux_t_a[iVar] = 0.0;
         for (jVar = 0; jVar < nDim; jVar++) {
           KAux_t_a[iVar] += Weight * Stress_Tensor[iVar][jVar] * GradNi_Curr_Mat[iNode][jVar] * Jac_x;
         }
