@@ -852,10 +852,10 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
     /*--- Compute Ritz values and keep the ones with the smallest real part. ---*/
 
     EigenMatrix VW = EigenMatrix::Identity(m + 1, m);
+    const auto& tmp = CSysVector<ScalarType>::multiDot(V, m + 1, W, k);
     for (auto i = 0ul; i <= m; ++i) {
       for (auto j = 0ul; j < k; ++j) {
-        // TODO(pedro): There are clever ways to avoid this multiplication, or at least use BLAS.
-        VW(i, j) = V[i].dot(W[j]);
+        VW(i, j) = tmp(i, j);
       }
     }
     const auto Hm = Heigen.topLeftCorner(m + 1, m);
