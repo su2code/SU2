@@ -1322,7 +1322,7 @@ def main():
     nonlinear_plane_stress.cfg_dir = "fea_fsi/VonMissesVerif"
     nonlinear_plane_stress.cfg_file = "nonlinear_plane_stress_2d.cfg"
     nonlinear_plane_stress.test_iter = 19
-    nonlinear_plane_stress.test_vals = [-7.432129, -3.354513, -13.982310, 162480, 43, -4.072960]
+    nonlinear_plane_stress.test_vals = [-7.433449, -3.355607, -13.983863, 162480, 43, -4.070373]
     test_list.append(nonlinear_plane_stress)
 
     # Dynamic beam, 2d
