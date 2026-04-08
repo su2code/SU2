@@ -57,10 +57,10 @@ class CPastixWrapper {
   pastix_int_t nCols;            /*!< \brief Local number of columns. */
   vector<pastix_int_t> colptr;   /*!< \brief Equiv. to our "row_ptr". */
   vector<pastix_int_t> rowidx;   /*!< \brief Equiv. to our "col_ind". */
-  vector<passivedouble> values;  /*!< \brief Equiv. to our "matrix". */
+  vector<su2mixedfloat> values;  /*!< \brief Equiv. to our "matrix". */
   vector<pastix_int_t> loc2glb;  /*!< \brief Global index of the columns held by this rank. */
   vector<pastix_int_t> perm;     /*!< \brief Ordering computed by PaStiX. */
-  vector<passivedouble> workvec; /*!< \brief RHS vector which then becomes the solution. */
+  vector<su2mixedfloat> workvec; /*!< \brief RHS vector which then becomes the solution. */
 
   pastix_int_t iparm[IPARM_SIZE];  /*!< \brief Integer parameters for PaStiX. */
   passivedouble dparm[DPARM_SIZE]; /*!< \brief Floating point parameters for PaStiX. */

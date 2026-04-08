@@ -39,14 +39,12 @@ CFEALinearElasticity::CFEALinearElasticity(unsigned short val_nDim, unsigned sho
 void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar, kVar;
-  unsigned short iGauss, nGauss;
-  unsigned short iNode, jNode, nNode;
+  unsigned short iGauss;
+  unsigned short iNode, jNode;
   unsigned short iDim;
-  unsigned short bDim;
 
-  su2double Weight, Jac_X;
-
-  su2double AuxMatrix[3][6], *res_aux = new su2double[nVar];
+  su2double AuxMatrix[MAXNDIM][DIM_STRAIN_3D] = {};
+  su2double Ba_Mat[DIM_STRAIN_3D][MAXNDIM] = {}, Bb_Mat[DIM_STRAIN_3D][MAXNDIM] = {};
 
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
@@ -62,35 +60,21 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConf
 
   Compute_Constitutive_Matrix(element, config);
 
-  /*--- Initialize auxiliary matrices ---*/
-
-  bDim = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
-
-  for (iVar = 0; iVar < bDim; iVar++) {
-    for (jVar = 0; jVar < nDim; jVar++) {
-      Ba_Mat[iVar][jVar] = 0.0;
-      Bb_Mat[iVar][jVar] = 0.0;
-    }
-  }
-
-  for (iVar = 0; iVar < 3; iVar++) {
-    for (jVar = 0; jVar < 6; jVar++) {
-      AuxMatrix[iVar][jVar] = 0.0;
-    }
-  }
-
-  element->ClearElement();       /*--- Restarts the element: avoids adding over previous results in other elements --*/
+  /*--- Restart the element: avoids adding over previous results in other elements --*/
+  element->ClearElement();
   element->ComputeGrad_Linear();
-  nNode = element->GetnNodes();
-  nGauss = element->GetnGaussPoints();
+  const auto nNode = element->GetnNodes();
+  const auto nGauss = element->GetnGaussPoints();
+  const auto bDim = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
 
   for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
-    Weight = element->GetWeight(iGauss);
-    Jac_X = element->GetJ_X(iGauss);
+    const su2double Weight = element->GetWeight(iGauss);
+    const su2double Jac_X = element->GetJ_X(iGauss);
 
     /*--- Retrieve the values of the gradients of the shape functions for each node ---*/
     /*--- This avoids repeated operations ---*/
+    su2double GradNi_Ref_Mat[NNODES_3D][MAXNDIM] = {};
     for (iNode = 0; iNode < nNode; iNode++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
@@ -101,29 +85,13 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConf
 
     for (iNode = 0; iNode < nNode; iNode++) {
 
-      su2double KAux_t_a[3] = {0.0};
+      su2double KAux_t_a[MAXNDIM] = {};
       for (iVar = 0; iVar < nDim; iVar++) {
         KAux_t_a[iVar] += Weight * thermalStress * GradNi_Ref_Mat[iNode][iVar] * Jac_X;
       }
       element->Add_Kt_a(iNode, KAux_t_a);
 
-      if (nDim == 2) {
-        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
-      }
-      else {
-        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[3][0] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[3][1] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[4][0] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[4][2] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[5][1] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
-      }
+      FillBMat(iNode, GradNi_Ref_Mat, Ba_Mat);
 
       /*--- Compute the BT.D Matrix ---*/
 
@@ -138,27 +106,11 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConf
 
       /*--- Assumming symmetry ---*/
       for (jNode = iNode; jNode < nNode; jNode++) {
-        if (nDim == 2) {
-          Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[2][0] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[2][1] = GradNi_Ref_Mat[jNode][0];
-        }
-        else {
-          Bb_Mat[0][0] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[1][1] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[2][2] = GradNi_Ref_Mat[jNode][2];
-          Bb_Mat[3][0] = GradNi_Ref_Mat[jNode][1];
-          Bb_Mat[3][1] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[4][0] = GradNi_Ref_Mat[jNode][2];
-          Bb_Mat[4][2] = GradNi_Ref_Mat[jNode][0];
-          Bb_Mat[5][1] = GradNi_Ref_Mat[jNode][2];
-          Bb_Mat[5][2] = GradNi_Ref_Mat[jNode][1];
-        }
+        FillBMat(jNode, GradNi_Ref_Mat, Bb_Mat);
 
+        su2double KAux_ab[MAXNDIM][MAXNDIM] = {};
         for (iVar = 0; iVar < nDim; iVar++) {
           for (jVar = 0; jVar < nDim; jVar++) {
-            KAux_ab[iVar][jVar] = 0.0;
             for (kVar = 0; kVar < bDim; kVar++) {
               KAux_ab[iVar][jVar] += Weight * AuxMatrix[iVar][kVar] * Bb_Mat[kVar][jVar] * Jac_X;
             }
@@ -178,17 +130,16 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConf
   }
 
   /*--- Compute residual ---*/
-  for(iNode = 0; iNode<nNode; ++iNode)
-  {
-    for(jNode = 0; jNode<nNode; ++jNode)
-    {
+  for (iNode = 0; iNode<nNode; ++iNode) {
+    for (jNode = 0; jNode<nNode; ++jNode) {
       const su2double *Kab = element->Get_Kab(iNode,jNode);
 
+      su2double res_aux[MAXNDIM] = {};
       for (iVar = 0; iVar < nVar; iVar++) {
-        res_aux[iVar] = 0.0;
-        for (jVar = 0; jVar < nVar; jVar++)
-          res_aux[iVar] += Kab[iVar*nVar+jVar]*
-            (element->GetCurr_Coord(jNode,jVar)-element->GetRef_Coord(jNode,jVar));
+        for (jVar = 0; jVar < nVar; jVar++) {
+          res_aux[iVar] += Kab[iVar*nVar+jVar] *
+              (element->GetCurr_Coord(jNode,jVar) - element->GetRef_Coord(jNode,jVar));
+        }
       }
       element->Add_Kt_a(iNode, res_aux);
     }
@@ -197,8 +148,6 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, const CConf
   /*--- Register the stress residual as preaccumulation output ---*/
   element->SetPreaccOut_Kt_a();
   AD::EndPreacc();
-
-  delete[] res_aux;
 }
 
 
@@ -234,11 +183,12 @@ void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_contain
 su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, const CConfig *config) {
 
   unsigned short iVar, jVar;
-  unsigned short iGauss, nGauss;
-  unsigned short iNode, nNode;
-  unsigned short iDim, bDim;
+  unsigned short iGauss;
+  unsigned short iNode;
+  unsigned short iDim;
 
-  su2double avgStress[DIM_STRAIN_3D] = {0.0};
+  su2double avgStress[DIM_STRAIN_3D] = {};
+  su2double Ba_Mat[DIM_STRAIN_3D][MAXNDIM] = {};
 
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
@@ -254,25 +204,19 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
 
   Compute_Constitutive_Matrix(element, config);
 
-  /*--- Initialize auxiliary matrices ---*/
-
-  bDim = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
-
-  for (iVar = 0; iVar < bDim; iVar++) {
-    for (jVar = 0; jVar < nDim; jVar++) {
-      Ba_Mat[iVar][jVar] = 0.0;
-    }
-  }
-
-  element->ClearStress(); /*--- Clears the stress in the element to avoid adding over previous results. --*/
+  /*--- Clears the stress in the element to avoid adding over previous results. --*/
+  element->ClearStress();
   element->ComputeGrad_Linear();
-  nNode = element->GetnNodes();
-  nGauss = element->GetnGaussPoints();
+
+  const auto nNode = element->GetnNodes();
+  const auto nGauss = element->GetnGaussPoints();
+  const auto bDim = (nDim == 2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
 
   for (iGauss = 0; iGauss < nGauss; iGauss++) {
 
     /*--- Retrieve the values of the gradients of the shape functions for each node ---*/
     /*--- This avoids repeated operations ---*/
+    su2double GradNi_Ref_Mat[NNODES_3D][MAXNDIM] = {};
     for (iNode = 0; iNode < nNode; iNode++) {
       for (iDim = 0; iDim < nDim; iDim++) {
         GradNi_Ref_Mat[iNode][iDim] = element->GetGradNi_X(iNode,iGauss,iDim);
@@ -280,37 +224,17 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
       }
     }
 
-    su2double Strain[DIM_STRAIN_3D] = {0.0};
+    /*--- Compute the Strain Vector as B*u ---*/
+    su2double Strain[DIM_STRAIN_3D] = {};
 
     for (iNode = 0; iNode < nNode; iNode++) {
-
-      /*--- Set matrix B ---*/
-      if (nDim == 2) {
-        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][0] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][1] = GradNi_Ref_Mat[iNode][0];
-      }
-      else {
-        Ba_Mat[0][0] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[1][1] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[2][2] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[3][0] = GradNi_Ref_Mat[iNode][1];
-        Ba_Mat[3][1] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[4][0] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[4][2] = GradNi_Ref_Mat[iNode][0];
-        Ba_Mat[5][1] = GradNi_Ref_Mat[iNode][2];
-        Ba_Mat[5][2] = GradNi_Ref_Mat[iNode][1];
-      }
-
-      /*--- Compute the Strain Vector as B*u ---*/
+      FillBMat(iNode, GradNi_Ref_Mat, Ba_Mat);
 
       for (iVar = 0; iVar < bDim; iVar++) {
         for (jVar = 0; jVar < nDim; jVar++) {
           Strain[iVar] += Ba_Mat[iVar][jVar]*nodalDisplacement[iNode][jVar];
         }
       }
-
     }
 
     /*--- Compute the Stress Vector as D*epsilon + thermal stress ---*/
@@ -361,16 +285,8 @@ su2double CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, 
 CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar,
                                        unsigned long val_nElem, const CConfig *config) :
                                        CFEALinearElasticity() {
-  DV_Val         = nullptr;
-  Rho_s_i        = nullptr;
-  Rho_s_DL_i     = nullptr;
-  Nu_i           = nullptr;
-  Alpha_i        = nullptr;
-
   nDim = val_nDim;
   nVar = val_nVar;
-
-  unsigned long iVar;
 
   E = 1.0;
   Nu = config->GetDeform_PoissonRatio();
@@ -386,36 +302,11 @@ CFEAMeshElasticity::CFEAMeshElasticity(unsigned short val_nDim, unsigned short v
     break;
   }
 
-  E_i  = nullptr;
   if (element_based){
-    E_i = new su2double[val_nElem];
-    for (iVar = 0; iVar < val_nElem; iVar++){
+    E_i.reset(new su2double[val_nElem]);
+    for (unsigned long iVar = 0; iVar < val_nElem; iVar++){
       E_i[iVar] = E;
     }
-  }
-
-  KAux_ab = new su2double* [nDim];
-  for (iVar = 0; iVar < nDim; iVar++) {
-    KAux_ab[iVar] = new su2double[nDim];
-  }
-
-  unsigned short nStrain = (nDim==2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
-  unsigned short nNodes = (nDim==2) ? NNODES_2D : NNODES_3D;
-
-  Ba_Mat = new su2double* [nStrain];
-  Bb_Mat = new su2double* [nStrain];
-  D_Mat  = new su2double* [nStrain];
-  Ni_Vec  = new su2double [nNodes];
-  GradNi_Ref_Mat = new su2double* [nNodes];
-  GradNi_Curr_Mat = new su2double* [nNodes];
-  for (iVar = 0; iVar < nStrain; iVar++) {
-    Ba_Mat[iVar] = new su2double[nDim];
-    Bb_Mat[iVar] = new su2double[nDim];
-    D_Mat[iVar] = new su2double[nStrain];
-  }
-  for (iVar = 0; iVar < nNodes; iVar++) {
-    GradNi_Ref_Mat[iVar] = new su2double[nDim];
-    GradNi_Curr_Mat[iVar] = new su2double[nDim];
   }
 
 }
