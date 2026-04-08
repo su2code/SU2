@@ -436,3 +436,36 @@ map<string, unsigned short> CDriverBase::GetPrimitiveIndices() const {
       main_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
       main_config->GetNEMOProblem(), nDim, main_config->GetnSpecies()));
 }
+
+short CDriverBase::GetMetricSensorIndex(const string& sensor_name) const {
+  auto* flow_solver = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL];
+  if (flow_solver == nullptr) return -1;
+  const auto& names = flow_solver->GetMetricSensorNames();
+  auto it = std::find(names.begin(), names.end(), sensor_name);
+  if (it == names.end()) return -1;
+  return static_cast<short>(it - names.begin());
+}
+
+void CDriverBase::SetSensorAdapt(unsigned long iPoint, unsigned short iSensor, passivedouble value) {
+  auto* flow_solver = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL];
+  if (flow_solver == nullptr)
+    SU2_MPI::Error("Flow solver does not exist.", CURRENT_FUNCTION);
+  if (iSensor >= flow_solver->GetnMetricSensor())
+    SU2_MPI::Error("Sensor index " + to_string(iSensor) + " out of range.", CURRENT_FUNCTION);
+  if (iPoint >= main_geometry->GetnPoint())
+    SU2_MPI::Error("Node index " + to_string(iPoint) + " out of range.", CURRENT_FUNCTION);
+
+  flow_solver->GetNodes()->SetSensor_Adapt(iPoint, iSensor, value);
+}
+
+passivedouble CDriverBase::GetSensorAdapt(unsigned long iPoint, unsigned short iSensor) const {
+  auto* flow_solver = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL];
+  if (flow_solver == nullptr)
+    SU2_MPI::Error("Flow solver does not exist.", CURRENT_FUNCTION);
+  if (iSensor >= flow_solver->GetnMetricSensor())
+    SU2_MPI::Error("Sensor index " + to_string(iSensor) + " out of range.", CURRENT_FUNCTION);
+  if (iPoint >= main_geometry->GetnPoint())
+    SU2_MPI::Error("Node index " + to_string(iPoint) + " out of range.", CURRENT_FUNCTION);
+
+  return SU2_TYPE::GetValue(flow_solver->GetNodes()->GetSensor_Adapt(iPoint, iSensor));
+}

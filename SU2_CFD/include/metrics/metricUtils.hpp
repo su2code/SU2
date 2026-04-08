@@ -116,6 +116,7 @@ inline bool ResolveSensorIndices(
 
   /*--- Resolve each sensor and group by solver ---*/
   bool all_resolved = true;
+  std::vector<std::string> unresolved;
   for (const auto& sensor_name : sensor_names) {
     auto it = var_map.find(sensor_name);
     if (it != var_map.end()) {
@@ -131,9 +132,21 @@ inline bool ResolveSensorIndices(
       }
     } else {
       if (rank == MASTER_NODE) {
-        std::cerr << "Warning: Sensor '" << sensor_name << "' not found in any solver" << std::endl;
+        std::cout << "  Custom sensor '" << sensor_name << "' detected." << std::endl;
       }
       all_resolved = false;
+      unresolved.push_back(sensor_name);
+    }
+  }
+
+  /*--- Assign unresolved sensors to FLOW_SOL with USHRT_MAX as a placeholder index.
+   *    These slots are skipped by SetPrimitive_Adapt and must be filled externally
+   *    (e.g. via CDriverBase::SetSensorAdapt from the Python wrapper). ---*/
+  if (!unresolved.empty()) {
+    unsigned short flow_sol = FLOW_SOL;
+    for (const auto& name : unresolved) {
+      sensor_names_by_solver[flow_sol].push_back(name);
+      sensor_indices_by_solver[flow_sol].push_back(std::numeric_limits<unsigned short>::max());
     }
   }
 
@@ -144,11 +157,8 @@ inline bool ResolveSensorIndices(
     solver_container[iSol]->SetMetricSensorNames(sensor_names_by_solver[iSol]);
   }
 
-  /*--- Return true if at least one sensor was resolved ---*/
+  /*--- Return true if at least one sensor was resolved or reserved ---*/
   const bool any_resolved = !sensor_indices_by_solver.empty();
-  if (!all_resolved && rank == MASTER_NODE) {
-    std::cerr << "Warning: Some sensors could not be resolved (see above). Proceeding with resolved sensors." << std::endl;
-  }
   return any_resolved;
 }
 

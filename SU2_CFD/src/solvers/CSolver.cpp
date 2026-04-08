@@ -2200,9 +2200,12 @@ void CSolver::AllocateMetricSensorArrays(const vector<unsigned short>& sensor_in
 void CSolver::SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) {
   const auto nSensors = GetnMetricSensor();
 
-  /*--- Copy each resolved sensor variable into Sensor_Adapt ---*/
+  /*--- Copy each resolved sensor variable into Sensor_Adapt.
+   *    Slots with index == USHRT_MAX are custom (Python-defined) sensors
+   *    and must be filled externally via CDriverBase::SetSensorAdapt. ---*/
   for (size_t iSensor = 0; iSensor < nSensors; iSensor++) {
     const auto var_idx = MetricSensorIndices[iSensor];
+    if (var_idx == std::numeric_limits<unsigned short>::max()) continue;
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {

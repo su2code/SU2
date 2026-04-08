@@ -4189,6 +4189,13 @@ void CFlowOutput::AddMeshAdaptationOutputs(const CConfig* config) {
 
   // Anisotropic metric tensor, sensor gradients/Hessians, and dual-cell volume
   if(config->GetCompute_Metric()) {
+    // Sensor values (primitive and custom)
+    for (auto iSensor = 0u; iSensor < config->GetnMetric_Sensor(); iSensor++){
+      string sens_str = config->GetMetric_Sensor(iSensor);
+      string sens_title = ToTitleCase(sens_str);
+      AddVolumeOutput("SENSOR_" + sens_str, "Sensor_" + sens_title, "SENSOR_VALUE", "Value of sensor " + sens_title);
+    }
+
     // Gradients
     for (auto iSensor = 0u; iSensor < config->GetnMetric_Sensor(); iSensor++){
       string sens_str = config->GetMetric_Sensor(iSensor);
@@ -4244,6 +4251,12 @@ void CFlowOutput::LoadMeshAdaptationOutputs(const CConfig* config, const CSolver
   if(config->GetCompute_Metric()) {
     const auto& Sensor_Names = solver[FLOW_SOL]->GetMetricSensorNames();
     const auto nSensor = solver[FLOW_SOL]->GetnMetricSensor();
+
+    // Sensor values (primitive and custom)
+    for (auto iSensor = 0u; iSensor < nSensor; iSensor++) {
+      const string& sens_str = Sensor_Names[iSensor];
+      SetVolumeOutputValue("SENSOR_" + sens_str, iPoint, Node_Flow->GetSensor_Adapt(iPoint, iSensor));
+    }
 
     // Gradients
     for (auto iSensor = 0u; iSensor < nSensor; iSensor++){
