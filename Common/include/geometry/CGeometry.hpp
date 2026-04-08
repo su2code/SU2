@@ -1613,12 +1613,6 @@ class CGeometry {
   }
 
   /*!
-   * \brief A virtual member.
-   * \param config - Config
-   */
-  inline virtual void Check_Periodicity(CConfig* config) {}
-
-  /*!
    * \brief Get the value of the customized temperature at a specified vertex on a specified marker.
    * \param[in] val_marker - Marker value
    * \param[in] val_vertex - Boundary vertex value

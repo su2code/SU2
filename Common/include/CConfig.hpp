@@ -1127,7 +1127,7 @@ private:
   } RampMUSCLParam;
   su2double rampMUSCLValue; /*!< \brief Current value of the MUSCL ramp */
   CMGOptions MGOptions;
-  /*--- Parse-time buffers for MG smooth arrays; owned/freed by COptionScalarList. ---*/
+  /*--- Multigrid options  ---*/
   unsigned short nMG_PreSmooth_p{0}, nMG_PostSmooth_p{0}, nMG_CorrecSmooth_p{0};
   unsigned short *MG_PreSmooth_p{nullptr}, *MG_PostSmooth_p{nullptr}, *MG_CorrecSmooth_p{nullptr};
 

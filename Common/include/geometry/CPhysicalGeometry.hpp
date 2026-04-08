@@ -773,11 +773,6 @@ class CPhysicalGeometry final : public CGeometry {
   }
 
   /*!
-   * \brief Check the mesh for periodicity and deactivate multigrid if periodicity is found.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Check_Periodicity(CConfig* config) override;
-
   /*!
    * \brief Compute an ADT including the coordinates of all viscous markers
    * \param[in] config - Definition of the particular problem.

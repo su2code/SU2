@@ -8468,18 +8468,6 @@ void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig* config) {
   }
 }
 
-void CPhysicalGeometry::Check_Periodicity(CConfig* config) {
-  /*--- Check for the presence of any periodic BCs. Multigrid with periodic
-   boundaries uses self-referencing donor matching on coarse grids, which is
-   incorrect. Coordinate-based matching is not yet implemented. Multigrid is
-   now allowed for investigation purposes. ---*/
-
-  if ((config->GetnMarker_Periodic() != 0) && (config->GetnMGLevels() > 0)) {
-    if (rank == MASTER_NODE)
-      cout << "WARNING: Periodicity has been detected. Multigrid coarse-grid periodic matching is approximate." << endl;
-  }
-}
-
 su2double CPhysicalGeometry::Compute_MaxThickness(su2double* Plane_P0, su2double* Plane_Normal, CConfig* config,
                                                   vector<su2double>& Xcoord_Airfoil, vector<su2double>& Ycoord_Airfoil,
                                                   vector<su2double>& Zcoord_Airfoil) {
