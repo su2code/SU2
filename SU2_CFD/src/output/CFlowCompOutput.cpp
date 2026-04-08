@@ -397,6 +397,8 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
+  LoadMeshAdaptationOutputs(config, solver, geometry, iPoint);
+
   if (config->GetTime_Domain()) {
     LoadTimeAveragedData(iPoint, Node_Flow);
   }

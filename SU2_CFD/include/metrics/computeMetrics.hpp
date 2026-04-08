@@ -4,7 +4,7 @@
  * \note This allows the same implementation to be used for goal-oriented
  *       or feature-based mesh adaptation.
  * \author B. Munguía
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -160,7 +160,7 @@ void setPositiveDefiniteMetrics(CGeometry& geometry, const CConfig& config,
   ScalarType A[nDim][nDim], EigVec[nDim][nDim], EigVal[nDim], work[nDim];
 
   /*--- Minimum eigenvalue threshold ---*/
-  const ScalarType eps = 1e-12;
+  const ScalarType eps = 1e-20;
 
   for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
     /*--- Get full metric tensor ---*/
@@ -255,7 +255,7 @@ void normalizeMetrics(CGeometry& geometry, const CConfig& config,
 
   /*--- Constants defining normalization ---*/
   const ScalarType p = config.GetMetric_Norm();
-  const ScalarType N = SU2_TYPE::GetValue(config.GetMetric_Complexity());
+  const ScalarType N = SU2_TYPE::GetValue(config.GetMetric_Complexity() * config.GetnAdapt_Time_Subinterval());
   const ScalarType globalFactor = pow(N / integral, 2.0 / nDim);
   const ScalarType normExp = -1.0 / (2.0 * p + nDim);
 

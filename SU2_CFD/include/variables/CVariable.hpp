@@ -103,7 +103,7 @@ protected:
 
   VectorType SolutionExtra_BGS_k; /*!< \brief Intermediate storage, enables cross term extraction as that is also pushed to Solution. */
 
-  MatrixType Primitive_Adapt;     /*!< \brief Variables for which we need gradients for anisotropy in mesh adaptation. */
+  MatrixType Sensor_Adapt;     /*!< \brief Variables for which we need gradients for anisotropy in mesh adaptation. */
   CVectorOfMatrix Gradient_Adapt; /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */
   CVectorOfMatrix Hessian;        /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
   su2matrix<double> Metric;       /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
@@ -2384,20 +2384,20 @@ public:
    * \param[in] iPoint - Point index.
    * \param[in] gradient - Gradient of the solution.
    */
-  inline void SetPrimitive_Adapt(unsigned long iPoint, unsigned long iVar, su2double primitive) { Primitive_Adapt(iPoint,iVar) = primitive; }
+  inline void SetSensor_Adapt(unsigned long iPoint, unsigned long iVar, su2double primitive) { Sensor_Adapt(iPoint,iVar) = primitive; }
 
   /*!
    * \brief Get the gradient of the entire solution.
    * \return Reference to gradient.
    */
-  inline const MatrixType& GetPrimitive_Adapt(void) const { return Primitive_Adapt; }
+  inline const MatrixType& GetSensor_Adapt(void) const { return Sensor_Adapt; }
 
   /*!
    * \brief Get the value of the solution gradient.
    * \param[in] iPoint - Point index.
    * \return Value of the gradient solution.
    */
-  inline su2double *GetPrimitive_Adapt(unsigned long iPoint) { return Primitive_Adapt[iPoint]; }
+  inline su2double *GetSensor_Adapt(unsigned long iPoint) { return Sensor_Adapt[iPoint]; }
 
   /*!
    * \brief Get the value of the solution gradient.
@@ -2405,7 +2405,7 @@ public:
    * \param[in] iVar - Variable index.
    * \return Value of the solution gradient.
    */
-  inline su2double GetPrimitive_Adapt(unsigned long iPoint, unsigned long iVar) const { return Primitive_Adapt(iPoint,iVar); }
+  inline su2double GetSensor_Adapt(unsigned long iPoint, unsigned long iVar) const { return Sensor_Adapt(iPoint,iVar); }
 
   /*!
    * \brief Set the gradient of the solution.
@@ -2489,4 +2489,28 @@ public:
    * \param[in] iMat  - Metric tensor index.
    */
   inline double GetMetric(unsigned long iPoint, unsigned short iMat) const { return Metric(iPoint,iMat); }
+
+  /*!
+   * \brief Allocate Gradient_Adapt and Hessian arrays for specified sensor indices.
+   * \param[in] nSensors - Number of metric sensors
+   */
+  inline void AllocateMetricSensorArrays(unsigned short nSensors) {
+    if (nSensors == 0) return;
+    if (nDim == 0 || nPoint == 0)
+      SU2_MPI::Error("nDim and nPoint must be set before allocating metric arrays.", CURRENT_FUNCTION);
+
+    /*--- Allocate if not already allocated or resize if needed ---*/
+    if (Sensor_Adapt.size() == 0 || Sensor_Adapt.cols() != nSensors) {
+      Sensor_Adapt.resize(nPoint, nSensors) = 0.0;
+    }
+    if (Gradient_Adapt.size() == 0 || Gradient_Adapt.cols() != nSensors) {
+      Gradient_Adapt.resize(nPoint, nSensors, nDim, 0.0);
+    }
+    if (Hessian.size() == 0 || Hessian.cols() != nSensors) {
+      Hessian.resize(nPoint, nSensors, nSymMat, 0.0);
+    }
+    if (Metric.size() == 0 || Metric.cols() != nSymMat) {
+      Metric.resize(nPoint, nSymMat) =  0.0;
+    }
+  }
 };

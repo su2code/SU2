@@ -29,6 +29,7 @@
 #include "../../include/definition_structure.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIteration.hpp"
+#include "../../include/metrics/metricUtils.hpp"
 
 CSinglezoneDriver::CSinglezoneDriver(char* confFile,
                        unsigned short val_nZone,
@@ -48,6 +49,39 @@ void CSinglezoneDriver::StartSolver() {
   StartTime = SU2_MPI::Wtime();
 
   config_container[ZONE_0]->Set_StartTime(StartTime);
+
+    /*--- Resolve and allocate metric arrays if metric computation is enabled ---*/
+  if (config_container[ZONE_0]->GetCompute_Metric()) {
+    /*--- Resolve sensor indices from sensor names and store in solvers ---*/
+    if (rank == MASTER_NODE) {
+      cout << "Resolving metric sensor indices." << endl;
+    }
+
+    bool resolved = MetricUtils::ResolveSensorIndices(
+      config_container[ZONE_0],
+      geometry_container[ZONE_0][INST_0][MESH_0],
+      solver_container[ZONE_0][INST_0][MESH_0]
+    );
+
+    if (resolved) {
+      /*--- Allocate metric sensor arrays ---*/
+      MetricUtils::InitializeMetrics(solver_container[ZONE_0][INST_0][MESH_0]);
+
+      /*--- Count total sensors for reporting ---*/
+      unsigned long total_sensors = 0;
+      for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++) {
+        if (solver_container[ZONE_0][INST_0][MESH_0][iSol] != nullptr) {
+          total_sensors += solver_container[ZONE_0][INST_0][MESH_0][iSol]->GetMetricSensorIndices().size();
+        }
+      }
+
+      if (rank == MASTER_NODE && total_sensors > 0) {
+        cout << "Successfully resolved " << total_sensors << " metric sensors." << endl;
+      }
+    } else if (rank == MASTER_NODE) {
+      cout << "Warning: COMPUTE_METRIC is enabled but no valid sensors found." << endl;
+    }
+  }
 
   /*--- Main external loop of the solver. Runs for the number of time steps required. ---*/
 
@@ -139,6 +173,17 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   }
 
   SU2_MPI::Barrier(SU2_MPI::GetComm());
+
+  /*--- Compute the initial metric tensor if performing an unsteady restart. ---*/
+  /*--- The metric at RestartIter-1 is the endpoint of sub-interval i-1, and the
+        initial metric of sub-interval i, so we calculate it after setting the
+        initial condition. ---*/
+  if (config_container[ZONE_0]->GetTime_Domain() &&
+      config_container[ZONE_0]->GetCompute_Metric() &&
+      config_container[ZONE_0]->GetRestart() &&
+      TimeIter == config_container[ZONE_0]->GetRestart_Iter()) {
+    ComputeMetricField(true);
+  }
 
   /*--- Run a predictor step ---*/
   if (config_container[ZONE_0]->GetPredictor())
@@ -318,7 +363,7 @@ bool CSinglezoneDriver::GetTimeConvergence() const{
   return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }
 
-void CSinglezoneDriver::ComputeMetricField() {
+void CSinglezoneDriver::ComputeMetricField(bool restartMetric) {
 
   auto solver = solver_container[ZONE_0][INST_0][MESH_0];
   auto solver_flow = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL];
@@ -345,5 +390,5 @@ void CSinglezoneDriver::ComputeMetricField() {
   }
 
   if(rank == MASTER_NODE) cout << "Computing feature-based metric tensor." << endl;
-  solver_flow->ComputeMetric(solver, geometry, config);
+  solver_flow->ComputeMetric(solver, geometry, config, restartMetric);
 }

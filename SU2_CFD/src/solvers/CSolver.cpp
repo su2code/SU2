@@ -29,8 +29,8 @@
 #include "../../include/solvers/CSolver.hpp"
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
-#include "../../include/gradients/computeMetrics.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
+#include "../../include/metrics/computeMetrics.hpp"
 #include "../../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
 #include "../../../Common/include/toolboxes/MMS/CInviscidVortexSolution.hpp"
 #include "../../../Common/include/toolboxes/MMS/CMMSIncEulerSolution.hpp"
@@ -1387,11 +1387,11 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case MPI_QUANTITIES::GRADIENT_ADAPT:
-      COUNT_PER_POINT  = config->GetnMetric_Sensor()*nDim;
+      COUNT_PER_POINT  = GetnMetricSensor()*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     case MPI_QUANTITIES::HESSIAN:
-      COUNT_PER_POINT  = config->GetnMetric_Sensor()*nSymMat;
+      COUNT_PER_POINT  = GetnMetricSensor()*nSymMat;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
     default:
@@ -2192,10 +2192,47 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
   computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, idxVel, gradient, rmatrix);
 }
 
+void CSolver::AllocateMetricSensorArrays(const vector<unsigned short>& sensor_indices) {
+  if (base_nodes == nullptr || sensor_indices.empty()) return;
+  base_nodes->AllocateMetricSensorArrays(sensor_indices.size());
+}
+
+void CSolver::SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) {
+  const auto nSensors = MetricSensorIndices.size();
+
+  /*--- Copy each resolved sensor variable into Sensor_Adapt ---*/
+  for (size_t iSensor = 0; iSensor < nSensors; iSensor++) {
+    const auto var_idx = MetricSensorIndices[iSensor];
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      const su2double prim_var = base_nodes->GetPrimitive(iPoint, var_idx);
+      base_nodes->SetSensor_Adapt(iPoint, iSensor, prim_var);
+    }
+    END_SU2_OMP_FOR
+  }
+}
+
+void CSolver::SetSolution_Adapt(CGeometry *geometry, const CConfig *config) {
+  const auto nSensors = MetricSensorIndices.size();
+
+  /*--- Copy each resolved sensor variable into Sensor_Adapt ---*/
+  for (size_t iSensor = 0; iSensor < nSensors; iSensor++) {
+    const auto var_idx = MetricSensorIndices[iSensor];
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      const su2double prim_var = base_nodes->GetSolution(iPoint, var_idx);
+      base_nodes->SetSensor_Adapt(iPoint, iSensor, prim_var);
+    }
+    END_SU2_OMP_FOR
+  }
+}
+
 void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, short idxVel, const unsigned short Kind_Solver) {
-  const auto& solution = base_nodes->GetPrimitive_Adapt();
+  const auto& solution = base_nodes->GetSensor_Adapt();
   auto& gradient = base_nodes->GetGradient_Adapt();
-  auto nHess = config->GetnMetric_Sensor();
+  auto nHess = GetnMetricSensor();
 
   computeGradientsGreenGauss(this, MPI_QUANTITIES::GRADIENT_ADAPT, PERIODIC_GRAD_ADAPT,
                              *geometry, *config, solution, 0, nHess, idxVel, gradient);
@@ -4389,14 +4426,11 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 }
 
 
-void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config) {
+void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config, bool restartMetric) {
   /*--- TODO: - goal-oriented metric ---*/
   /*---       - metric intersection  ---*/
   const unsigned long nPointDomain = geometry->GetnPointDomain();
-  const unsigned short nSensor = config->GetnMetric_Sensor();
-
-  const bool normalize = (config->GetNormalize_Metric());
-
+  const unsigned short nSensor = GetnMetricSensor();
 
   const unsigned long time_iter = config->GetTimeIter();
   const bool steady = (config->GetTime_Marching() == TIME_MARCHING::STEADY);
@@ -4404,15 +4438,20 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
                              (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ||
                              (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
   const bool is_last_iter = (time_iter == config->GetnTime_Iter() - 1) || (steady);
+  const bool normalize = (config->GetNormalize_Metric());
 
   /*--- Integrate and normalize the metric tensor field ---*/
   vector<double> integrals;
   for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
     SU2_OMP_MASTER
-    /*--- Make the Hessian eigenvalues positive definite, and add to the metric tensor ---*/
+    /*--- Make the Hessian eigenvalues positive definite ---*/
     auto& hessians = base_nodes->GetHessian();
     setPositiveDefiniteMetrics<su2double, tensor::hessian>(*geometry, *config, iSensor, hessians);
-    AddMetrics(solver, geometry, config, iSensor);
+
+    if (iSensor > 0) continue;
+
+    /*--- Add Hessian of sensor at position 0 to metric tensor */
+    AddMetrics(solver, geometry, config, iSensor, restartMetric);
 
     /*--- Integrate metric field on the last iteration (the end of the simulation if steady) ---*/
     auto& metrics = base_nodes->GetMetric();
@@ -4428,8 +4467,9 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
     if (is_last_iter) {
       integrals.push_back(integral);
       if (rank == MASTER_NODE) {
+        const string& sensor_name = (iSensor < MetricSensorNames.size()) ? MetricSensorNames[iSensor] : "unknown";
         cout << "Global metric normalization integral for sensor ";
-        cout << config->GetMetric_SensorString(iSensor) << ": " << integral << endl;
+        cout << sensor_name << ": " << integral << endl;
       }
     }
     END_SU2_OMP_MASTER
@@ -4438,7 +4478,7 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
 }
 
 void CSolver::AddMetrics(CSolver **solver, const CGeometry*geometry, const CConfig *config,
-                         const unsigned short iSensor) {
+                         const unsigned short iSensor, bool restartMetric) {
   /*--- TODO: - goal-oriented metric ---*/
   /*---       - metric intersection  ---*/
   auto varFlo = solver[FLOW_SOL]->GetNodes();
@@ -4450,7 +4490,7 @@ void CSolver::AddMetrics(CSolver **solver, const CGeometry*geometry, const CConf
   const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                              (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ||
                              (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
-  const bool is_first_iter = (time_iter == 0);
+  const bool is_first_iter = (time_iter == 0) || (restartMetric);
   const bool is_last_iter = (time_iter == config->GetnTime_Iter() - 1);
 
   double coeff = (time_stepping && (is_first_iter || is_last_iter))? 0.5 : 1.0;

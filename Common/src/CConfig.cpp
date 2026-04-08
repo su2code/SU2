@@ -3077,19 +3077,22 @@ void CConfig::SetConfig_Options() {
   /*--- options that are used for mesh adaptation ---*/
   /*!\par CONFIG_CATEGORY:Adaptation Options \ingroup Config*/
 
-  /*!\brief COMPUTE_METRIC \n DESCRIPTION: Compute a metric tensor field */
+  /*!\brief COMPUTE_METRIC \n DESCRIPTION: Compute an error estimate */
   addBoolOption("COMPUTE_METRIC", Compute_Metric, false);
   /*!\brief NORMALIZE_METRIC \n DESCRIPTION: Normalize the metric tensor */
-  addBoolOption("NORMALIZE_METRIC", Normalize_Metric, true);
-  /*!\brief NUM_METHOD_HESS \n DESCRIPTION: Numerical method for Hessian computation \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: GREEN_GAUSS. \ingroup Config*/
+  addBoolOption("NORMALIZE_METRIC", Normalize_Metric, false);
+  /*!\brief NUM_METHOD_HESS
+   *  \n DESCRIPTION: Numerical method for Hessian computation \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: GREEN_GAUSS. \ingroup Config*/
   addEnumOption("NUM_METHOD_HESS", Kind_Hessian_Method, Gradient_Map, GREEN_GAUSS);
 
-  /*!\brief METRIC_SENSOR \n DESCRIPTION: Sensors for mesh adaptation */
-  addEnumListOption("METRIC_SENSOR", nMetric_Sensor, Metric_Sensor, Metric_Sensor_Map);
+  /*!\brief METRIC_SENSOR \n DESCRIPTION: Sensors for mesh adaptation metric field */
+  addStringListOption("METRIC_SENSOR", nMetric_Sensor, Metric_Sensor);
   /*!\brief METRIC_NORM \n DESCRIPTION: Lp-norm for mesh adaptation */
   addUnsignedShortOption("METRIC_NORM", Metric_Norm, 2);
   /*!\brief METRIC_COMPLEXITY \n DESCRIPTION: Constraint mesh complexity */
   addUnsignedLongOption("METRIC_COMPLEXITY", Metric_Complexity, 10000);
+  /*!\brief ADAP_TIME_SUBINTERVAL \n DESCRIPTION: Number of time subintervals in unsteady mesh adaptation */
+  addUnsignedShortOption("ADAP_TIME_SUBINTERVAL", nAdapt_Time_Subinterval, 1);
 
   /*!\brief METRIC_HMAX \n DESCRIPTION: Constraint maximum cell size */
   addDoubleOption("METRIC_HMAX", Metric_Hmax, 10.0);
@@ -3097,6 +3100,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("METRIC_HMIN", Metric_Hmin, 1.0E-8);
   /*!\brief METRIC_ARMAX \n DESCRIPTION: Constraint maximum cell aspect ratio */
   addDoubleOption("METRIC_ARMAX", Metric_ARmax, 1.0E6);
+  /*!\brief METRIC_HGRAD \n DESCRIPTION: Size gradation smoothing parameter */
+  addPythonOption("METRIC_HGRAD");
 
   /*!\brief ADAP_ITER \n DESCRIPTION: Mesh adaptation inner iterations per complexity */
   addPythonOption("ADAP_ITER");
@@ -5850,31 +5855,25 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   /*--- Checks for mesh adaptation ---*/
   if (Compute_Metric) {
     /*--- Check that config is valid for requested sensor ---*/
-    for (auto iSensor = 0; iSensor < nMetric_Sensor; iSensor++) {
-      /*--- TODO: If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
-      /*--- For now, goal-oriented adaptation is unsupported ---*/
-      if (Metric_Sensor[iSensor] == METRIC_SENSOR::GOAL) {
+    for (unsigned short iSensor = 0; iSensor < nMetric_Sensor; iSensor++) {
+      const string& sensor_name = Metric_Sensor[iSensor];
+      /*--- If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
+      /*--- TODO: goal-oriented adaptation ---*/
+      if (sensor_name == "GOAL") {
         SU2_MPI::Error("Adaptation sensor GOAL not yet supported.", CURRENT_FUNCTION);
       }
-
-      if (Kind_Solver == MAIN_SOLVER::NEMO_EULER || Kind_Solver == MAIN_SOLVER::NEMO_NAVIER_STOKES) {
-          if (Metric_Sensor[iSensor] == METRIC_SENSOR::DENSITY || Metric_Sensor[iSensor] == METRIC_SENSOR::TOTAL_PRESSURE)
-            SU2_MPI::Error(string("Adaptation sensor ") + GetMetric_SensorString(iSensor) + string(" not available for NEMO problems."), CURRENT_FUNCTION);
-        }
-        if (Kind_Solver != MAIN_SOLVER::NEMO_EULER && Kind_Solver != MAIN_SOLVER::NEMO_NAVIER_STOKES) {
-          if (Metric_Sensor[iSensor] == METRIC_SENSOR::TEMPERATURE_VE || Metric_Sensor[iSensor] == METRIC_SENSOR::ENERGY_VE)
-            SU2_MPI::Error(string("Adaptation sensor ") + GetMetric_SensorString(iSensor) + string(" not available for non-NEMO problems."), CURRENT_FUNCTION);
-        }
-        if (Kind_Solver == MAIN_SOLVER::INC_EULER || Kind_Solver == MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver == MAIN_SOLVER::INC_RANS) {
-          if (Metric_Sensor[iSensor] == METRIC_SENSOR::MACH)
-            SU2_MPI::Error(string("Adaptation sensor ") + GetMetric_SensorString(iSensor) + string(" not available for INC problems."), CURRENT_FUNCTION);
-        }
     }
 
     /*--- Only GG Hessians for now ---*/
     if (Kind_Hessian_Method != GREEN_GAUSS) {
       SU2_MPI::Error("NUM_METHOD_HESS must be GREEN_GAUSS.", CURRENT_FUNCTION);
     }
+
+    /*--- Make sure only using single adaptation sub-interval for steady problems ---*/
+    if(TimeMarching == TIME_MARCHING::STEADY)
+      nAdapt_Time_Subinterval = 1;
+    if (nAdapt_Time_Subinterval != 1)
+      SU2_MPI::Error("Adaptation sub-intervals not yet supported. Set ADAP_TIME_SUBINTERVAL = 1 or remove from config.", CURRENT_FUNCTION);
   }
 
 }
@@ -8083,8 +8082,8 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
     if (Compute_Metric) {
       cout << endl <<"---------------- Mesh Adaptation Information ( Zone "  << iZone << " ) -----------------" << endl;
       cout << "Adaptation sensor(s): ";
-      for (auto iSensor = 0; iSensor < nMetric_Sensor; iSensor++) {
-        cout << GetMetric_SensorString(iSensor);
+      for (unsigned short iSensor = 0; iSensor < nMetric_Sensor; iSensor++) {
+        cout << Metric_Sensor[iSensor];
         if (iSensor < nMetric_Sensor - 1 ) cout << ", ";
       }
       cout << endl;
@@ -8093,6 +8092,10 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       }
       if (Normalize_Metric) {
         cout << "Target complexity: " << Metric_Complexity << endl;
+        if (TimeMarching != TIME_MARCHING::STEADY) {
+          cout << "  Unsteady adaptation sub-intervals: " << nAdapt_Time_Subinterval << endl;
+          cout << "  Target space-time complexity: " << Metric_Complexity * nAdapt_Time_Subinterval << endl;
+        }
         cout << "Lp norm: " << Metric_Norm << endl;
         cout << "Min. edge length: " << Metric_Hmin << endl;
         cout << "Max. edge length: " << Metric_Hmax << endl;

@@ -1302,9 +1302,11 @@ private:
   bool Normalize_Metric;                   /*!< \brief Determines if metric tensor normalization is taking place */
   unsigned short Kind_Hessian_Method;      /*!< \brief Numerical method for computation of Hessians. */
   unsigned short nMetric_Sensor;           /*!< \brief Number of sensors to use for adaptation. */
-  METRIC_SENSOR* Metric_Sensor;            /*!< \brief Sensors to use for adaptation. */
+  string* Metric_Sensor;                   /*!< \brief Sensors to use for adaptation (first entry is normalized, rest are Hessian-only). */
+
   unsigned short Metric_Norm;              /*!< \brief Lp-norm for mesh adaptation */
   unsigned long Metric_Complexity;         /*!< \brief Constraint mesh complexity */
+  unsigned short nAdapt_Time_Subinterval;  /*!< \brief Number of unsteady time sub-intervals for adaptation. */
   su2double Metric_Hmax,                   /*!< \brief Maximum cell size */
             Metric_Hmin,                   /*!< \brief Minimum cell size */
             Metric_ARmax;                  /*!< \brief Maximum cell aspect ratio */
@@ -10272,15 +10274,15 @@ public:
   const FluidFlamelet_ParsedOptions& GetFlameletParsedOptions() const { return flamelet_ParsedOptions; }
 
   /*!
-   * \brief Check if a metric tensor field is being computed
-   * \return <code>TRUE<\code> if a metric tensor field is being computed
-   */
+   * \brief Check if error estimation is being carried out
+   * \return <code>TRUE<\code> if error estimation is taking place
+  */
   bool GetCompute_Metric(void) const { return Compute_Metric; }
 
   /*!
    * \brief Check if metric tensor normalization is being carried out
    * \return <code>TRUE<\code> if metric normalization is taking place
-   */
+  */
   bool GetNormalize_Metric(void) const { return Normalize_Metric; }
 
   /*!
@@ -10290,54 +10292,37 @@ public:
   unsigned short GetKind_Hessian_Method(void) const { return Kind_Hessian_Method; }
 
   /*!
-   * \brief Get adaptation sensor
+   * \brief Get complete array of metric sensor names
+   * \return Array of sensor names
    */
-  METRIC_SENSOR GetMetric_Sensor(unsigned short iSens) const { return Metric_Sensor[iSens]; }
+  string* GetMetric_Sensor() const {
+    return Metric_Sensor;
+  }
 
   /*!
-   * \brief Get corresponding string from metric sensor type
+   * \brief Get metric sensor name by index
+   * \param[in] iSens - Index of the sensor
+   * \return Sensor name string
    */
-  string GetMetric_SensorString(unsigned short iSens) const {
-    string sensor_name;
-    switch (Metric_Sensor[iSens]) {
-      case METRIC_SENSOR::DENSITY:
-        sensor_name = "Density";
-        break;
-      case METRIC_SENSOR::MACH:
-        sensor_name = "Mach";
-        break;
-      case METRIC_SENSOR::PRESSURE:
-        sensor_name = "Pressure";
-        break;
-      case METRIC_SENSOR::TOTAL_PRESSURE:
-        sensor_name = "Total Pressure";
-        break;
-      case METRIC_SENSOR::TEMPERATURE:
-        sensor_name = "Temperature";
-        break;
-      case METRIC_SENSOR::TEMPERATURE_VE:
-        sensor_name = "Temperature_ve";
-        break;
-      case METRIC_SENSOR::ENERGY:
-        sensor_name = "Energy";
-        break;
-      case METRIC_SENSOR::ENERGY_VE:
-        sensor_name = "Energy_ve";
-        break;
-      case METRIC_SENSOR::GOAL:
-        sensor_name = "Goal";
-        break;
-      default:
-        SU2_MPI::Error("Unsupported metric sensor.", CURRENT_FUNCTION);
-    }
+  string GetMetric_Sensor(unsigned short iSens) const {
+    if (iSens >= nMetric_Sensor)
+      SU2_MPI::Error("Sensor index out of range.", CURRENT_FUNCTION);
+    return Metric_Sensor[iSens];
+  }
 
-    return sensor_name;
+  /*!
+   * \brief Get the complete list of metric sensor names
+   * \return Vector of sensor name strings
+   */
+  vector<string> GetMetric_SensorList() const {
+    return vector<string>(Metric_Sensor, Metric_Sensor + nMetric_Sensor);
   }
 
   /*!
    * \brief Get number of adaptation sensors
+   * \return Number of sensors
    */
-  unsigned short GetnMetric_Sensor(void) const { return nMetric_Sensor; }
+  unsigned short GetnMetric_Sensor() const { return nMetric_Sensor; }
 
   /*!
    * \brief Get adaptation norm value (Lp)
@@ -10367,5 +10352,12 @@ public:
    * \return Mesh complexity
    */
   unsigned long GetMetric_Complexity(void) const { return Metric_Complexity; }
+
+  /*!
+   * \brief Get number of unsteady adaptation sub-intervals
+   * \note Currently only one sub-interval supported
+   * \return Number of unsteady adaptation sub-intervals
+   */
+  unsigned long GetnAdapt_Time_Subinterval(void) const { return nAdapt_Time_Subinterval; }
 
 };

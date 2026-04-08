@@ -208,6 +208,11 @@ public:
 
   vector<string> fields;
 
+  /*--- Metric sensor indices for mesh adaptation ---*/
+  vector<unsigned short> MetricSensorIndices;  /*!< \brief Variable indices for metric sensors in this solver. */
+  vector<string> MetricSensorNames;            /*!< \brief Names of metric sensors in this solver. */
+
+
 #ifdef HAVE_LIBROM
   std::unique_ptr<CAROM::BasisGenerator> u_basis_generator;
 #endif
@@ -581,12 +586,25 @@ public:
    */
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
 
-   /*!
-   * \brief A virtual member.
+  /*!
+   * \brief Set primitive variables for adaptation using resolved sensor locations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) { }
+  virtual void SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Set solution variables for adaptation using resolved sensor locations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetSolution_Adapt(CGeometry *geometry, const CConfig *config);
+
+    /*!
+   * \brief Allocate Gradient_Adapt and Hessian arrays for specified sensor variables.
+   * \param[in] sensor_indices - Vector of variable indices for this solver to allocate arrays for
+   */
+  virtual void AllocateMetricSensorArrays(const vector<unsigned short>& sensor_indices);
 
   /*!
    * \brief Compute the Green-Gauss Hessian of the solution.
@@ -4275,6 +4293,41 @@ public:
   inline vector<string> GetSolutionFields() const{return fields;}
 
   /*!
+   * \brief Get the number of metric sensors assigned to this solver.
+   * \return Number of metric sensors in this solver.
+   */
+  inline unsigned short GetnMetricSensor() const { return static_cast<unsigned short>(MetricSensorIndices.size()); }
+
+  /*!
+   * \brief Get the metric sensor variable indices for this solver.
+   * \return Vector of variable indices used as metric sensors.
+   */
+  inline const vector<unsigned short>& GetMetricSensorIndices() const { return MetricSensorIndices; }
+
+  /*!
+   * \brief Get the metric sensor names for this solver.
+   * \return Vector of sensor names.
+   */
+  inline const vector<string>& GetMetricSensorNames() const { return MetricSensorNames; }
+
+  /*!
+   * \brief Set the metric sensor indices for this solver.
+   * \param[in] indices - Variable indices for metric sensors.
+   * \param[in] names - Names of metric sensors.
+   */
+  inline void SetMetricSensorIndices(const vector<unsigned short>& indices) {
+    MetricSensorIndices = indices;
+  }
+
+  /*!
+   * \brief Set the metric sensor names for this solver.
+   * \param[in] names - Names of metric sensors.
+   */
+  inline void SetMetricSensorNames(const vector<string>& names) {
+    MetricSensorNames = names;
+  }
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
@@ -4408,22 +4461,24 @@ public:
   }
 
   /*!
-   * \brief Compute the metric tensor field.
+   * \brief Compute the goal-oriented metric.
    * \param[in] solver - Physical definition of the problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] restartMetric - Whether this is the initial sub-interval metric computation for an unsteady restart.
    */
-  void ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config);
+  void ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config, bool restartMetric);
 
   /*!
-   * \brief Add contribution to the metric field.
+   * \brief Sum up the weighted Hessians to obtain the goal-oriented metric.
    * \param[in] solver - Physical definition of the problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iSensor - Index of the sensor to work on.
+   * \param[in] restartMetric - Whether this is the initial sub-interval metric computation for an unsteady restart.
    */
   void AddMetrics(CSolver **solver, const CGeometry *geometry, const CConfig *config,
-                  const unsigned short iSensor);
+                  const unsigned short iSensor, bool restartMetric);
 
 protected:
   /*!

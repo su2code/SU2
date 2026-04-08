@@ -112,7 +112,8 @@ public:
 
   /*!
    * \brief Perform all steps to compute the metric tensor.
+   * \param[in] restartMetric - Whether this is the initial sub-interval metric computation for an unsteady restart.
    */
-  virtual void ComputeMetricField();
+  virtual void ComputeMetricField(bool restartMetric = false);
 
 };
