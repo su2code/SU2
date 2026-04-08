@@ -773,7 +773,6 @@ class CPhysicalGeometry final : public CGeometry {
   }
 
   /*!
-  /*!
    * \brief Compute an ADT including the coordinates of all viscous markers
    * \param[in] config - Definition of the particular problem.
    * \return pointer to the ADT
