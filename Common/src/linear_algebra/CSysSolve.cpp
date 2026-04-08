@@ -62,8 +62,8 @@ constexpr float linSolEpsilon<float>() {
 
 /*--- Computes v = vs * ws or v += vs * ws with unrolling of up to 4 iterations. ---*/
 template <class ScalarType, class Weights, class Vectors>
-void LinearCombination(const unsigned long n, const Vectors& vs, const Weights& ws, CSysVector<ScalarType>& v,
-                       bool inc = false) {
+void LinearCombinationImpl(const unsigned long n, const Vectors& vs, const Weights& ws, CSysVector<ScalarType>& v,
+                           bool inc = false) {
   if (n == 0) {
     if (!inc) v = ScalarType{};
     return;
@@ -105,19 +105,32 @@ void LinearCombination(const unsigned long n, const Vectors& vs, const Weights& 
 
 /*--- Overload to handle a vector of CSysVector directly. ---*/
 template <class ScalarType, class Weights>
-void LinearCombination(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs, const Weights& ws,
-                       CSysVector<ScalarType>& v, bool inc = false) {
-  LinearCombination(
+void LinearCombinationImpl(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs, const Weights& ws,
+                           CSysVector<ScalarType>& v, bool inc = false) {
+  LinearCombinationImpl(
       n, [&vs](auto i) -> auto& { return vs[i]; }, ws, v, inc);
 }
 
 /*--- Overload to handle a std::vector<T> of weights directly. ---*/
 template <class ScalarType, class Vectors>
-void LinearCombination(const unsigned long n, const Vectors& vs, const std::vector<ScalarType>& ws,
-                       CSysVector<ScalarType>& v, bool inc = false) {
-  LinearCombination(
+void LinearCombinationImpl(const unsigned long n, const Vectors& vs, const std::vector<ScalarType>& ws,
+                           CSysVector<ScalarType>& v, bool inc = false) {
+  LinearCombinationImpl(
       n, vs, [&ws](auto i) { return ws[i]; }, v, inc);
 }
+
+/*--- Wrapper around LinearCombinationImpl. ---*/
+template <class... Ts>
+void LinearCombination(bool parallel, Ts&&... args) {
+  if (parallel) {
+    SU2_OMP_PARALLEL
+    LinearCombinationImpl(std::forward<Ts>(args)...);
+    END_SU2_OMP_PARALLEL
+  } else {
+    LinearCombinationImpl(std::forward<Ts>(args)...);
+  }
+}
+
 }  // namespace
 
 template <class ScalarType>
@@ -578,13 +591,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   const auto& basis = flexible ? Z : V;
 
-  if (nestedParallel) {
-    SU2_OMP_PARALLEL
-    LinearCombination(i, basis, y, x, true);
-    END_SU2_OMP_PARALLEL
-  } else {
-    LinearCombination(i, basis, y, x, true);
-  }
+  LinearCombination(nestedParallel, i, basis, y, x, true);
 
   /*---  Recalculate final (neg.) residual (this should be optional) ---*/
 
@@ -730,7 +737,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       /*--- Make r orthogonal to the rebuilt V so we can proceed with the usual Arnoldi process. ---*/
       vr(j) = r.dot(V[j]);
     }
-    LinearCombination(k, V, -vr, r, true);
+    LinearCombination(nestedParallel, k, V, -vr, r, true);
 
     /*--- Apply R^-1 to Z and W and update x accordingly. R is uppper triangular,
      * so we loop backwards to compute the products in-place. ---*/
@@ -740,12 +747,12 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
         for (auto* basis : {&W, &Z}) {
           auto reversed = [&](auto i) -> const auto& { return (*basis)[j - i]; };
           LinearCombination(
-              j + 1, reversed, [&](auto i) { return invR(j - i, j); }, (*basis)[j]);
+              nestedParallel, j + 1, reversed, [&](auto i) { return invR(j - i, j); }, (*basis)[j]);
         }
         if (j == 0) break;  // j is unsigned, avoid underflow.
       }
     }
-    LinearCombination(k, Z, vr, x, true);
+    LinearCombination(nestedParallel, k, Z, vr, x, true);
   }
   ScalarType rNorm = r.norm();
   auto iter = k;
@@ -839,8 +846,8 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
 
     /*--- Update the solution and residual. The latter is only required if we restart. ---*/
 
-    LinearCombination(m, Z, y, x, true);
-    if (!converged) LinearCombination(m + 1, V, rls, r);
+    LinearCombination(nestedParallel, m, Z, y, x, true);
+    if (!converged) LinearCombination(nestedParallel, m + 1, V, rls, r);
 
     /*--- Update deflation vectors. ---*/
 
@@ -852,10 +859,21 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
     /*--- Compute Ritz values and keep the ones with the smallest real part. ---*/
 
     EigenMatrix VW = EigenMatrix::Identity(m + 1, m);
-    const auto& tmp = CSysVector<ScalarType>::multiDot(V, m + 1, W, k);
+    const su2matrix<ScalarType>* VWk = nullptr;
+    if (nestedParallel) {
+      SU2_OMP_PARALLEL {
+        const auto& tmp = CSysVector<ScalarType>::multiDot(V, m + 1, W, k);
+        SU2_OMP_MASTER
+        VWk = &tmp;
+        END_SU2_OMP_MASTER
+      }
+      END_SU2_OMP_PARALLEL
+    } else {
+      VWk = &CSysVector<ScalarType>::multiDot(V, m + 1, W, k);
+    }
     for (auto i = 0ul; i <= m; ++i) {
       for (auto j = 0ul; j < k; ++j) {
-        VW(i, j) = tmp(i, j);
+        VW(i, j) = (*VWk)(i, j);
       }
     }
     const auto Hm = Heigen.topLeftCorner(m + 1, m);
@@ -917,7 +935,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
 
     auto modify = [&](const EigenMatrix& mod, const auto& basis) {
       for (auto j = 0ul; j < k_new; ++j) {
-        LinearCombination(mod.rows(), basis, mod.col(j), T[j]);
+        LinearCombination(nestedParallel, mod.rows(), basis, mod.col(j), T[j]);
       }
     };
     modify(
