@@ -2198,7 +2198,7 @@ void CSolver::AllocateMetricSensorArrays(const vector<unsigned short>& sensor_in
 }
 
 void CSolver::SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) {
-  const auto nSensors = MetricSensorIndices.size();
+  const auto nSensors = GetnMetricSensor();
 
   /*--- Copy each resolved sensor variable into Sensor_Adapt ---*/
   for (size_t iSensor = 0; iSensor < nSensors; iSensor++) {
@@ -2214,7 +2214,7 @@ void CSolver::SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) {
 }
 
 void CSolver::SetSolution_Adapt(CGeometry *geometry, const CConfig *config) {
-  const auto nSensors = MetricSensorIndices.size();
+  const auto nSensors = GetnMetricSensor();
 
   /*--- Copy each resolved sensor variable into Sensor_Adapt ---*/
   for (size_t iSensor = 0; iSensor < nSensors; iSensor++) {

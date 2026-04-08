@@ -173,4 +173,19 @@ inline void InitializeMetrics(CSolver** solver_container) {
   }
 }
 
+/*!
+ * \brief Get total number of sensors in all solvers.
+ * \param[in] solver_container - Array of solvers [iSol]
+ * \return Number of sensors in all solvers.
+ */
+inline unsigned short TotalNumSensors(CSolver** solver_container) {
+  unsigned short num_sensor = 0;
+  for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++) {
+    if (solver_container[iSol] != nullptr) {
+      num_sensor += solver_container[iSol]->GetMetricSensorIndices().size();
+    }
+  }
+  return num_sensor;
+}
+
 } // namespace MetricUtils
