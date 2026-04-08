@@ -90,7 +90,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   /*--- STEP 1: The first step is the boundary agglomeration. ---*/
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
-
     /*--- Skip periodic boundaries: do not agglomerate on periodic markers. ---*/
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) continue;
 
