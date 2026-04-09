@@ -624,7 +624,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
     }
 
     /*--- Early exit: check if RMS has dropped sufficiently.
-     *    ComputeLinSysResRMS must be called by all threads (uses parallel dot);
+     *    ComputeLinSysResRMS must be called by all threads.
      *    only master uses the result inside the safe block. ---*/
     if (early_exit) {
       const passivedouble current_rms = ComputeLinSysResRMS(solver_fine);
@@ -914,12 +914,10 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
   /*--- Record final correction norm for debugging output.
    *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
-  {
     const passivedouble final_corr_rms = ComputeLinSysResRMS(solver);
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     { lastCorrecSmoothRMS[iMesh][1] = final_corr_rms; }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
-  }
 
 }
 

@@ -251,9 +251,8 @@ private:
    * \brief Adapt the correction prolongation damping factor.
    *
    * Uses \c lastCorrecSmoothIters[] (filled by the previous multigrid cycle) to assess
-   * whether the correction smoother is working hard (prolongation injected too much error)
-   * or converging fast (prolongation correction is clean), then adjusts \c Damp_Correc_Prolong
-   * in \p config accordingly.
+   * whether the correction smoother is struggling or converging fast,
+   * then adjusts \c Damp_Correc_Prolong in \p config accordingly.
    *
    * Signal logic:
    *  - any level ran its full correction-smooth iterations: reduce damping
