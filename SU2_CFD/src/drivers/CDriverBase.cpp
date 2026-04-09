@@ -440,10 +440,11 @@ map<string, unsigned short> CDriverBase::GetPrimitiveIndices() const {
 short CDriverBase::GetMetricSensorIndex(const string& sensor_name) const {
   auto* flow_solver = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL];
   if (flow_solver == nullptr) return -1;
-  const auto& names = flow_solver->GetMetricSensorNames();
-  auto it = std::find(names.begin(), names.end(), sensor_name);
-  if (it == names.end()) return -1;
-  return static_cast<short>(it - names.begin());
+  const auto& sensors = flow_solver->GetMetricSensors();
+  for (short i = 0; i < static_cast<short>(sensors.size()); ++i) {
+    if (sensors[i].name == sensor_name) return i;
+  }
+  return -1;
 }
 
 void CDriverBase::SetSensorAdapt(unsigned long iPoint, unsigned short iSensor, passivedouble value) {

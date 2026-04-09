@@ -4249,18 +4249,17 @@ void CFlowOutput::LoadMeshAdaptationOutputs(const CConfig* config, const CSolver
   const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
   const auto* Node_Geo = geometry->nodes;
   if(config->GetCompute_Metric()) {
-    const auto& Sensor_Names = solver[FLOW_SOL]->GetMetricSensorNames();
-    const auto nSensor = solver[FLOW_SOL]->GetnMetricSensor();
+    const auto& sensors = solver[FLOW_SOL]->GetMetricSensors();
 
     // Sensor values (primitive and custom)
-    for (auto iSensor = 0u; iSensor < nSensor; iSensor++) {
-      const string& sens_str = Sensor_Names[iSensor];
+    for (auto iSensor = 0u; iSensor < sensors.size(); iSensor++) {
+      const string& sens_str = sensors[iSensor].name;
       SetVolumeOutputValue("SENSOR_" + sens_str, iPoint, Node_Flow->GetSensor_Adapt(iPoint, iSensor));
     }
 
     // Gradients
-    for (auto iSensor = 0u; iSensor < nSensor; iSensor++){
-      const string& sens_str = Sensor_Names[iSensor];
+    for (auto iSensor = 0u; iSensor < sensors.size(); iSensor++){
+      const string& sens_str = sensors[iSensor].name;
       // Common gradient vector components for both 2D and 3D
       SetVolumeOutputValue("GRADIENT_" + sens_str + "_X", iPoint, Node_Flow->GetGradient_Adapt(iPoint, iSensor, 0));
       SetVolumeOutputValue("GRADIENT_" + sens_str + "_Y", iPoint, Node_Flow->GetGradient_Adapt(iPoint, iSensor, 1));
@@ -4271,8 +4270,8 @@ void CFlowOutput::LoadMeshAdaptationOutputs(const CConfig* config, const CSolver
     }
 
     // Hessians
-    for (auto iSensor = 0u; iSensor < nSensor; iSensor++){
-      const string& sens_str = Sensor_Names[iSensor];
+    for (auto iSensor = 0u; iSensor < sensors.size(); iSensor++){
+      const string& sens_str = sensors[iSensor].name;
       // Common Hessian tensor components for both 2D and 3D
       SetVolumeOutputValue("HESSIAN_" + sens_str + "_XX", iPoint, Node_Flow->GetHessian(iPoint, iSensor, 0));
       SetVolumeOutputValue("HESSIAN_" + sens_str + "_XY", iPoint, Node_Flow->GetHessian(iPoint, iSensor, 1));

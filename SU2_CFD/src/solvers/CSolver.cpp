@@ -2204,41 +2204,35 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
   computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, idxVel, gradient, rmatrix);
 }
 
-void CSolver::AllocateMetricSensorArrays(const vector<unsigned short>& sensor_indices) {
-  if (base_nodes == nullptr || sensor_indices.empty()) return;
-  base_nodes->AllocateMetricSensorArrays(sensor_indices.size());
+void CSolver::AllocateMetricSensorArrays(unsigned short nSensors) {
+  if (base_nodes == nullptr || nSensors == 0) return;
+  base_nodes->AllocateMetricSensorArrays(nSensors);
 }
 
 void CSolver::SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) {
-  const auto nSensors = GetnMetricSensor();
-
   /*--- Copy each resolved sensor variable into Sensor_Adapt.
-   *    Slots with index == USHRT_MAX are custom (Python-defined) sensors
+   *    Slots with prim_idx == USHRT_MAX are custom (Python-defined) sensors
    *    and must be filled externally via CDriverBase::SetSensorAdapt. ---*/
-  for (size_t iSensor = 0; iSensor < nSensors; iSensor++) {
-    const auto var_idx = MetricSensorIndices[iSensor];
-    if (var_idx == std::numeric_limits<unsigned short>::max()) continue;
+  for (size_t iSensor = 0; iSensor < MetricSensors.size(); ++iSensor) {
+    const auto prim_idx = MetricSensors[iSensor].prim_idx;
+    if (prim_idx == std::numeric_limits<unsigned short>::max()) continue;
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      const su2double prim_var = base_nodes->GetPrimitive(iPoint, var_idx);
-      base_nodes->SetSensor_Adapt(iPoint, iSensor, prim_var);
+      base_nodes->SetSensor_Adapt(iPoint, iSensor, base_nodes->GetPrimitive(iPoint, prim_idx));
     }
     END_SU2_OMP_FOR
   }
 }
 
 void CSolver::SetSolution_Adapt(CGeometry *geometry, const CConfig *config) {
-  const auto nSensors = GetnMetricSensor();
-
   /*--- Copy each resolved sensor variable into Sensor_Adapt ---*/
-  for (size_t iSensor = 0; iSensor < nSensors; iSensor++) {
-    const auto var_idx = MetricSensorIndices[iSensor];
+  for (size_t iSensor = 0; iSensor < MetricSensors.size(); ++iSensor) {
+    const auto prim_idx = MetricSensors[iSensor].prim_idx;
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      const su2double prim_var = base_nodes->GetSolution(iPoint, var_idx);
-      base_nodes->SetSensor_Adapt(iPoint, iSensor, prim_var);
+      base_nodes->SetSensor_Adapt(iPoint, iSensor, base_nodes->GetSolution(iPoint, prim_idx));
     }
     END_SU2_OMP_FOR
   }
@@ -4482,7 +4476,7 @@ void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig
     if (is_last_iter) {
       integrals.push_back(integral);
       if (rank == MASTER_NODE) {
-        const string& sensor_name = (iSensor < MetricSensorNames.size()) ? MetricSensorNames[iSensor] : "unknown";
+        const string& sensor_name = (iSensor < MetricSensors.size()) ? MetricSensors[iSensor].name : "unknown";
         cout << "Global metric normalization integral for sensor ";
         cout << sensor_name << ": " << integral << endl;
       }

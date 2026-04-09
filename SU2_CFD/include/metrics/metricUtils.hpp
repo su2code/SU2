@@ -45,7 +45,7 @@ namespace MetricUtils {
  * Maps sensor names from config (e.g., "DENSITY", "TEMPERATURE") to their corresponding
  * solver index and variable index within that solver. Works for both flow solvers
  * (using primitive variables) and non-flow solvers (using solution fields).
- * Directly stores the resolved indices in each solver via SetMetricSensorIndices().
+ * Directly stores the resolved sensors in each solver via SetMetricSensors().
  *
  * \param[in] config - Configuration containing sensor names
  * \param[in] geometry - Geometry for dimension info
@@ -62,9 +62,8 @@ inline bool ResolveSensorIndices(
   /*--- Get sensor names from config ---*/
   std::vector<std::string> sensor_names = config->GetMetric_SensorList();
 
-  /*--- Group sensors by solver ---*/
-  std::map<unsigned short, std::vector<unsigned short>> sensor_indices_by_solver;
-  std::map<unsigned short, std::vector<std::string>> sensor_names_by_solver;
+  /*--- Group sensors by solver (in config order) ---*/
+  std::map<unsigned short, std::vector<CSolver::MetricSensorInfo>> sensors_by_solver;
 
   /*--- Build a map of all available variables across all solvers ---*/
   std::map<std::string, std::pair<unsigned short, unsigned short>> var_map;
@@ -91,8 +90,8 @@ inline bool ResolveSensorIndices(
       CPrimitiveIndices<unsigned short> indices(incompressible, nemo, nDim, nSpecies);
       std::map<std::string, unsigned short> primitive_map = PrimitiveNameToIndexMap(indices);
 
-      for (const auto& entry : primitive_map) {
-        var_map[entry.first] = std::make_pair(iSol, entry.second);
+      for (const auto& [varname, varidx] : primitive_map) {
+        var_map[varname] = std::make_pair(iSol, varidx);
       }
     } else {
       /*--- For non-flow solvers, use solution fields ---*/
@@ -114,18 +113,20 @@ inline bool ResolveSensorIndices(
     }
   }
 
-  /*--- Resolve each sensor and group by solver ---*/
+  /*--- Resolve each sensor in config order, grouping by solver.
+   *    Custom sensors (not found in var_map) are assigned to FLOW_SOL with
+   *    prim_idx == USHRT_MAX as a placeholder. These slots are skipped by
+   *    SetPrimitive_Adapt and must be filled externally (e.g. via
+   *    CDriverBase::SetSensorAdapt from the Python wrapper).
+   *    Config order is preserved so the first listed sensor is always iSensor=0
+   *    (the one whose Hessian is used for the metric and normalized). ---*/
   bool all_resolved = true;
-  std::vector<std::string> unresolved;
   for (const auto& sensor_name : sensor_names) {
     auto it = var_map.find(sensor_name);
     if (it != var_map.end()) {
       const unsigned short iSol = it->second.first;
       const unsigned short var_index = it->second.second;
-
-      sensor_indices_by_solver[iSol].push_back(var_index);
-      sensor_names_by_solver[iSol].push_back(sensor_name);
-
+      sensors_by_solver[iSol].push_back({var_index, sensor_name});
       if (rank == MASTER_NODE) {
         std::cout << "  Resolved sensor '" << sensor_name << "' to solver "
                   << iSol << ", variable index " << var_index << std::endl;
@@ -135,31 +136,18 @@ inline bool ResolveSensorIndices(
         std::cout << "  Custom sensor '" << sensor_name << "' detected." << std::endl;
       }
       all_resolved = false;
-      unresolved.push_back(sensor_name);
+      sensors_by_solver[FLOW_SOL].push_back(
+          {std::numeric_limits<unsigned short>::max(), sensor_name});
     }
   }
 
-  /*--- Assign unresolved sensors to FLOW_SOL with USHRT_MAX as a placeholder index.
-   *    These slots are skipped by SetPrimitive_Adapt and must be filled externally
-   *    (e.g. via CDriverBase::SetSensorAdapt from the Python wrapper). ---*/
-  if (!unresolved.empty()) {
-    unsigned short flow_sol = FLOW_SOL;
-    for (const auto& name : unresolved) {
-      sensor_names_by_solver[flow_sol].push_back(name);
-      sensor_indices_by_solver[flow_sol].push_back(std::numeric_limits<unsigned short>::max());
-    }
-  }
-
-  /*--- Set sensor indices directly in each solver ---*/
-  for (const auto& entry : sensor_indices_by_solver) {
-    const unsigned short iSol = entry.first;
-    solver_container[iSol]->SetMetricSensorIndices(sensor_indices_by_solver[iSol]);
-    solver_container[iSol]->SetMetricSensorNames(sensor_names_by_solver[iSol]);
+  /*--- Set sensor list directly in each solver ---*/
+  for (const auto& [iSol, sensors] : sensors_by_solver) {
+    solver_container[iSol]->SetMetricSensors(sensors);
   }
 
   /*--- Return true if at least one sensor was resolved or reserved ---*/
-  const bool any_resolved = !sensor_indices_by_solver.empty();
-  return any_resolved;
+  return !sensors_by_solver.empty();
 }
 
 /*!
@@ -176,9 +164,9 @@ inline void InitializeMetrics(CSolver** solver_container) {
   for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++) {
     if (solver_container[iSol] == nullptr) continue;
 
-    const auto& indices = solver_container[iSol]->GetMetricSensorIndices();
-    if (!indices.empty()) {
-      solver_container[iSol]->AllocateMetricSensorArrays(indices);
+    const auto nSensors = solver_container[iSol]->GetnMetricSensor();
+    if (nSensors > 0) {
+      solver_container[iSol]->AllocateMetricSensorArrays(nSensors);
     }
   }
 }
@@ -192,7 +180,7 @@ inline unsigned short TotalNumSensors(CSolver** solver_container) {
   unsigned short num_sensor = 0;
   for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++) {
     if (solver_container[iSol] != nullptr) {
-      num_sensor += solver_container[iSol]->GetMetricSensorIndices().size();
+      num_sensor += solver_container[iSol]->GetnMetricSensor();
     }
   }
   return num_sensor;
