@@ -348,7 +348,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
    *    lastPreSmoothRMS[iMesh+1][1] is the final RMS after pre-smoothing at the coarse level —
    *    it is already MPI-reduced (computed via ComputeLinSysResRMS) and identical on all ranks.
    *    This replaces the per-level Allreduce that was previously inside MultiGrid_Cycle. ---*/
-  {
     const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
