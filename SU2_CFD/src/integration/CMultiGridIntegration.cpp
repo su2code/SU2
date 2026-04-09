@@ -905,9 +905,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   /*--- Record final correction norm for debugging output.
    *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
     const passivedouble final_corr_rms = ComputeLinSysResRMS(solver);
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    { lastCorrecSmoothRMS[iMesh][1] = final_corr_rms; }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+    SU2_OMP_SAFE_GLOBAL_ACCESS(lastCorrecSmoothRMS[iMesh][1] = final_corr_rms;)
 
 }
 
