@@ -66,7 +66,6 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
   /*--- Common calculations for both branches ---*/
   su2double rho = U_i[0];                     // density
   su2double u = U_i[1]/U_i[0];                // u-velocity
-  su2double v = U_i[2]/U_i[0];                // v-velocity
   su2double r = Coord_i[1];                   // radial coordinate
   su2double dv_dr = PrimVar_Grad_i[2][1];     // ∂v/∂r (radial velocity gradient)
   
