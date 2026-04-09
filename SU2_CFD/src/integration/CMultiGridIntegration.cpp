@@ -45,9 +45,9 @@ static void adaptMGDampingFactor(const unsigned short* performed,
                                   GetCfg getConfigured,
                                   unsigned short levelStart, unsigned short levelEnd,
                                   GetCur getCurrent, SetPersist setPersist) {
-  int local_any_stagnant  = 0;  /*--- hit max iters AND residuals did not decrease → scale down. ---*/
-  int local_all_early     = 1;  /*--- all levels exited before max iters → scale up. ---*/
-  int local_inspected     = 0;
+  int local_any_stagnant = 0;  /*--- hit max iters AND residuals did not decrease: scale down. ---*/
+  int local_all_early = 1;  /*--- all levels exited before max iters: scale up. ---*/
+  int local_inspected = 0;
 
   for (unsigned short lvl = levelStart; lvl <= levelEnd; ++lvl) {
     const unsigned short configured = getConfigured(lvl);
@@ -67,13 +67,13 @@ static void adaptMGDampingFactor(const unsigned short* performed,
   /*--- performed[] and progress[] are derived from MPI-reduced ComputeLinSysResRMS values,
    *    so local_any_stagnant and local_all_early are already identical on every rank. ---*/
   const su2double SCALE_DOWN = 0.99;
-  const su2double SCALE_UP   = 1.01;
-  const su2double CLAMP_MIN  = 0.1;
-  const su2double CLAMP_MAX  = 0.95;
+  const su2double SCALE_UP = 1.01;
+  const su2double CLAMP_MIN = 0.1;
+  const su2double CLAMP_MAX = 0.95;
 
   su2double factor = getCurrent();
-  if (local_any_stagnant)    factor *= SCALE_DOWN;
-  else if (local_all_early)  factor *= SCALE_UP;
+  if (local_any_stagnant) factor *= SCALE_DOWN;
+  else if (local_all_early) factor *= SCALE_UP;
   /*--- else: hit max iters but still converging, or mixed — hold factor. ---*/
   factor = max(CLAMP_MIN, min(CLAMP_MAX, factor));
   setPersist(factor);
@@ -92,11 +92,9 @@ void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
 }
 
 void CMultiGridIntegration::adaptProlongationDamping(CConfig* config) {
-  /*--- Signal: post-smoothing workload on levels 0..nMGLevels-1.
-   *    Post-smoothing directly measures whether the corrected fine-grid solution
-   *    is well-behaved after prolongation.  If it exits early, the correction was
-   *    clean : increase damping.  If it stagnates at max iters, the correction was
-   *    too aggressive : decrease damping. ---*/
+  /*--- Post-smoothing directly measures whether the corrected fine-grid solution
+   *    is well-behaved after prolongation.  If it exits early, increase damping.
+   *    If it stagnates at max iters, decrease damping. ---*/
   const auto& mgOpts = config->GetMGOptions();
   const unsigned short nMGLevels = config->GetnMGLevels();
   if (nMGLevels == 0) return;
@@ -122,106 +120,105 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsign
 
   passivedouble CFL_coarse_new = CFL_coarse_current; // Default: keep current value
 
-  {
-    /*--- Get global iteration count first ---*/
-    unsigned long current_iter;
-    if (config->GetTime_Domain())
-      current_iter = config->GetTimeIter();
-    else
-      current_iter = config->GetInnerIter();
+  /*--- Get global iteration count first ---*/
+  unsigned long current_iter;
+  if (config->GetTime_Domain())
+    current_iter = config->GetTimeIter();
+  else
+    current_iter = config->GetInnerIter();
 
-    /*--- Reset state at the beginning of a new solve (iter 0 or 1) ---*/
-    /*--- This ensures deterministic behavior across multiple runs ---*/
-    if (current_iter <= 1 && last_reset_iter != current_iter) {
-      for (int i = 0; i < MAX_MG_LEVELS; i++) {
-        current_avg[i] = 0.0;
-        prev_avg[i] = 0.0;
-        last_res[i] = 0.0;
-        last_was_increase[i] = false;
-        oscillation_count[i] = 0;
-        last_check_iter[i] = 0;
-        last_update_iter[i] = 0;
-      }
-      last_reset_iter = current_iter;
+  /*--- Reset state at the beginning of a new solve (iter 0 or 1) ---*/
+  /*--- This ensures deterministic behavior across multiple runs ---*/
+  if (current_iter <= 1 && last_reset_iter != current_iter) {
+    for (int i = 0; i < MAX_MG_LEVELS; i++) {
+      current_avg[i] = 0.0;
+      prev_avg[i] = 0.0;
+      last_res[i] = 0.0;
+      last_was_increase[i] = false;
+      oscillation_count[i] = 0;
+      last_check_iter[i] = 0;
+      last_update_iter[i] = 0;
     }
+    last_reset_iter = current_iter;
+  }
 
-    unsigned short lvl = min(iMesh, (unsigned short)(MAX_MG_LEVELS - 1));
-    unsigned long iter = current_iter;
+  unsigned short lvl = min(iMesh, (unsigned short)(MAX_MG_LEVELS - 1));
+  unsigned long iter = current_iter;
 
-    /*--- rms_res_coarse is passed in (from lastPreSmoothRMS, already MPI-reduced). ---*/
+  /*--- rms_res_coarse is passed in (from lastPreSmoothRMS, already MPI-reduced). ---*/
 
-    /*--- Flip-flop detection: detect oscillating residuals (once per outer iteration) ---*/
-    bool oscillation_detected = false;
-    if (iter != last_check_iter[lvl]) {
-      last_check_iter[lvl] = iter;
+  /*--- Flip-flop detection: detect oscillating residuals (once per outer iteration) ---*/
+  bool oscillation_detected = false;
+  if (iter != last_check_iter[lvl]) {
+    last_check_iter[lvl] = iter;
 
-      if (last_res[lvl] > EPS) {
-        bool current_is_increase = (rms_res_coarse > last_res[lvl]);
-        if (current_is_increase != last_was_increase[lvl]) {
-          /*--- Direction changed, increment oscillation counter ---*/
-          oscillation_count[lvl]++;
-          if (oscillation_count[lvl] >= 4) {
-            /*--- Detected 4 consecutive direction changes = oscillation ---*/
-            oscillation_detected = true;
-            oscillation_count[lvl] = 0;  // Reset counter after detecting
-          }
-        } else {
-          /*--- Same direction, reset counter ---*/
-          oscillation_count[lvl] = 0;
+    if (last_res[lvl] > EPS) {
+      bool current_is_increase = (rms_res_coarse > last_res[lvl]);
+      if (current_is_increase != last_was_increase[lvl]) {
+        /*--- Direction changed, increment oscillation counter ---*/
+        oscillation_count[lvl]++;
+        if (oscillation_count[lvl] >= 4) {
+          /*--- Detected 4 consecutive direction changes = oscillation ---*/
+          oscillation_detected = true;
+          oscillation_count[lvl] = 0;  // Reset counter after detecting
         }
-        last_was_increase[lvl] = current_is_increase;
+      } else {
+        /*--- Same direction, reset counter ---*/
+        oscillation_count[lvl] = 0;
       }
-      last_res[lvl] = rms_res_coarse;
+      last_was_increase[lvl] = current_is_increase;
     }
+    last_res[lvl] = rms_res_coarse;
+  }
 
-    /*--- Update exponential moving average ---*/
-    if (current_avg[lvl] < EPS) {
-      current_avg[lvl] = rms_res_coarse;  // Initialize with first value
-    } else {
-      current_avg[lvl] = (current_avg[lvl] * (AVG_WINDOW - 1) + rms_res_coarse) / AVG_WINDOW;
-    }
+  /*--- Update exponential moving average ---*/
+  if (current_avg[lvl] < EPS) {
+    current_avg[lvl] = rms_res_coarse;  // Initialize with first value
+  } else {
+    current_avg[lvl] = (current_avg[lvl] * (AVG_WINDOW - 1) + rms_res_coarse) / AVG_WINDOW;
+  }
 
-    /*--- Check if we should compare and adapt CFL ---*/
-    passivedouble new_coeff = current_coeff;
-    const passivedouble MIN_REDUCTION_FACTOR = 0.98;  // Require at least 2% reduction
-    const int UPDATE_INTERVAL = 5;  // Update reference every N iterations
+  /*--- Check if we should compare and adapt CFL ---*/
+  passivedouble new_coeff = current_coeff;
+  const passivedouble MIN_REDUCTION_FACTOR = 0.98;  // Require at least 2% reduction
+  const int UPDATE_INTERVAL = 5;  // Update reference every N iterations
 
-    /*--- Initialize prev_avg on first use ---*/
-    if (prev_avg[lvl] < EPS) {
+  /*--- Initialize prev_avg on first use ---*/
+  if (prev_avg[lvl] < EPS) {
+    prev_avg[lvl] = current_avg[lvl];
+  }
+
+  /*--- Periodically update prev_avg to allow ratio to reflect accumulated decrease ---*/
+  bool should_update = (iter - last_update_iter[lvl] >= UPDATE_INTERVAL);
+
+  /*--- Asymmetric adaptation for robustness ---*/
+  if (prev_avg[lvl] > EPS) {
+    passivedouble ratio = current_avg[lvl] / prev_avg[lvl];
+    bool sufficient_decrease = (ratio < MIN_REDUCTION_FACTOR);
+    bool increasing_trend = (ratio >= 1.0);
+
+    if (increasing_trend) {
+      /*--- Residual increasing: reduce CFL immediately for robustness ---*/
+      new_coeff = current_coeff * 0.90;
+      /*--- Update reference since we're reacting immediately ---*/
       prev_avg[lvl] = current_avg[lvl];
-    }
-
-    /*--- Periodically update prev_avg to allow ratio to reflect accumulated decrease ---*/
-    bool should_update = (iter - last_update_iter[lvl] >= UPDATE_INTERVAL);
-
-    /*--- Asymmetric adaptation for robustness ---*/
-    if (prev_avg[lvl] > EPS) {
-      passivedouble ratio = current_avg[lvl] / prev_avg[lvl];
-      bool sufficient_decrease = (ratio < MIN_REDUCTION_FACTOR);
-      bool increasing_trend = (ratio >= 1.0);
-
-      if (increasing_trend) {
-        /*--- Residual increasing: reduce CFL immediately for robustness ---*/
-        new_coeff = current_coeff * 0.90;
-        /*--- Update reference since we're reacting immediately ---*/
-        prev_avg[lvl] = current_avg[lvl];
-        last_update_iter[lvl] = iter;
-      } else if (sufficient_decrease && should_update) {
-        /*--- Residual decreasing sufficiently: increase CFL ---*/
-        new_coeff = current_coeff * 1.05;
-        /*--- Update reference only when we actually increase CFL ---*/
-        prev_avg[lvl] = current_avg[lvl];
-        last_update_iter[lvl] = iter;
-      }
-    }
-
-    /*--- CFL reduction for oscillation detection ---*/
-    if (oscillation_detected) {
-      new_coeff = current_coeff * 0.75;
-      /*--- Update reference after oscillation response ---*/
+      last_update_iter[lvl] = iter;
+    } else if (sufficient_decrease && should_update) {
+      /*--- Residual decreasing sufficiently: increase CFL ---*/
+      new_coeff = current_coeff * 1.05;
+      /*--- Update reference only when we actually increase CFL ---*/
       prev_avg[lvl] = current_avg[lvl];
       last_update_iter[lvl] = iter;
     }
+  }
+
+  /*--- CFL reduction for oscillation detection ---*/
+  if (oscillation_detected) {
+    new_coeff = current_coeff * 0.75;
+    /*--- Update reference after oscillation response ---*/
+    prev_avg[lvl] = current_avg[lvl];
+    last_update_iter[lvl] = iter;
+  }
 
     /*--- Clamp coefficient between 0.5 and 1.0 ---*/
     new_coeff = max(0.5, min(1.0, new_coeff));
@@ -230,7 +227,6 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsign
     CFL_coarse_new = max(0.5 * CFL_fine, min(CFL_fine, CFL_fine * new_coeff));
 
     config->SetCFL(iMesh+1, CFL_coarse_new);
-  }
 
   AD::EndPassive(wasActive);
   return CFL_coarse_new;
@@ -534,7 +530,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
       MultiGrid_Cycle(geometry, solver_container, numerics_container, config_container,
                       iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst);
-
     }
 
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
