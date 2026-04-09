@@ -107,19 +107,19 @@ inline double GetNormal(unsigned long nodeIndex, unsigned long dim, unsigned lon
  * \return Value of Bessel function.
  */
 template <class T>
-inline T GetBesselZero(T x) {
-  T abx = fabs(x);
+inline auto GetBesselZero(const T& x) {
+  auto abx = fabs(x);
   if (abx < 3.75) {
-    T t = abx / 3.75;
-    T p =
+    auto t = abx / 3.75;
+    auto p =
         1.0 +
         t * t *
             (3.5156229 +
              t * t * (3.0899424 + t * t * (1.2067492 + t * t * (0.2659732 + t * t * (0.0360768 + t * t * 0.0045813)))));
     return log(p);
   } else {
-    T t = 3.75 / abx;
-    T poly =
+    auto t = 3.75 / abx;
+    auto poly =
         0.39894228 +
         t * (0.01328592 +
              t * (0.00225319 +
@@ -138,22 +138,22 @@ inline T GetBesselZero(T x) {
  * \return Value of the integral.
  */
 template <class T>
-inline T GetBesselIntegral(T beta_x, T beta_y, T beta_z) {
-  const T A = 1.0 + 2.0 * (beta_x + beta_y + beta_z);
-  const T Bx = 2.0 * beta_x;
-  const T By = 2.0 * beta_y;
-  const T Bz = 2.0 * beta_z;
+inline auto GetBesselIntegral(const T& beta_x, const T& beta_y, const T& beta_z) {
+  const auto A = 1.0 + 2.0 * (beta_x + beta_y + beta_z);
+  const auto Bx = 2.0 * beta_x;
+  const auto By = 2.0 * beta_y;
+  const auto Bz = 2.0 * beta_z;
   const int N = 4000;
-  const T t_max = 20.0;
-  const T dt = t_max / N;
-  T sum = 0.0;
+  const auto t_max = T(20.0);
+  const auto dt = t_max / N;
+  auto sum = T(0.0);
   for (int i = 1; i <= N; i++) {
-    T t = i * dt;
-    T lx = GetBesselZero(Bx * t);
-    T ly = GetBesselZero(By * t);
-    T lz = GetBesselZero(Bz * t);
-    T lin = log(t) - A * t + lx + ly + lz;
-    T integrand = exp(lin);
+    auto t = i * dt;
+    auto lx = GetBesselZero(Bx * t);
+    auto ly = GetBesselZero(By * t);
+    auto lz = GetBesselZero(Bz * t);
+    auto lin = log(t) - A * t + lx + ly + lz;
+    auto integrand = exp(lin);
     if (i == N) integrand *= 0.5;
     sum += integrand;
   }
