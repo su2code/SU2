@@ -594,8 +594,8 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
           HeatFlux = HeatFluxDensity * Area;
 
           if (implicit) {
-            su2double Jacobian_i[] = {-thermal_diffusivity*Area};
-            Jacobian.SubtractBlock2Diag(iPoint, &Jacobian_i);
+            su2double Jacobian_i[1][1] = {{-thermal_diffusivity*Area}};
+            Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
           }
         }
         else {

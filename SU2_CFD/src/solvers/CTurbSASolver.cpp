@@ -550,8 +550,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
          su2double coeff = (nu_total/sigma);
          su2double RoughWallBC = nodes->GetSolution(iPoint,0)/(0.03*Roughness_Height);
 
-         su2double Res_Wall;// = new su2double [nVar];
-         Res_Wall = coeff*RoughWallBC*Area;
+         su2double Res_Wall = coeff*RoughWallBC*Area;
          LinSysRes(iPoint, 0) -= Res_Wall;
 
          Jacobian_i[0][0] = (laminar_viscosity /density *Area)/(0.03*Roughness_Height*sigma);
