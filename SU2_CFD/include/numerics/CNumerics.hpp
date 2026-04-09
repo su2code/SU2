@@ -920,7 +920,7 @@ public:
    * \param[in] val_sbsInBox_i - 1 if point i lies inside the box where the model is active.
    * \param[in] val_sbsInBox_j - 1 if point j lies inside the box where the model is active.
    */
-  inline void SetSbsInBoxSensor(su2double val_sbsInBox_i, su2double val_sbsInBox_j) {
+  inline void SetSbsInBoxSensor(unsigned short val_sbsInBox_i, unsigned short val_sbsInBox_j) {
     sbsInBox_i = val_sbsInBox_i;
     sbsInBox_j = val_sbsInBox_j;
   }

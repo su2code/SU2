@@ -1680,7 +1680,6 @@ void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry)
 void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geometry) {
 
   const su2double LES_FilterWidth = config->GetLES_FilterWidth();
-  const su2double constDES = config->GetConst_DES();
   const su2double cDelta = config->GetSBSParam().SBS_Cdelta;
   const unsigned short maxIter = config->GetSBSParam().SBS_maxIterSmooth;
   const su2double tol = -5.0;
