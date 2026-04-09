@@ -109,23 +109,32 @@ inline double GetNormal(unsigned long nodeIndex, unsigned long dim, unsigned lon
 template <class T>
 inline auto GetBesselZero(const T& x) {
   auto abx = fabs(x);
-  if (abx < 3.75) {
-    auto t = abx / 3.75;
+
+  if (abx < T(3.75)) {
+    auto t = abx / T(3.75);
     auto p =
-        1.0 +
+        T(1.0) +
         t * t *
-            (3.5156229 +
-             t * t * (3.0899424 + t * t * (1.2067492 + t * t * (0.2659732 + t * t * (0.0360768 + t * t * 0.0045813)))));
+            (T(3.5156229) +
+             t * t *
+                 (T(3.0899424) +
+                  t * t * (T(1.2067492) + t * t * (T(0.2659732) + t * t * (T(0.0360768) + t * t * T(0.0045813))))));
     return log(p);
   } else {
-    auto t = 3.75 / abx;
+    auto t = T(3.75) / abx;
+
     auto poly =
-        0.39894228 +
-        t * (0.01328592 +
-             t * (0.00225319 +
-                  t * (-0.00157565 +
-                       t * (0.00916281 + t * (-0.02057706 + t * (0.02635537 + t * (-0.01647633 + t * 0.00392377)))))));
-    return abx - log(sqrt(abx) * poly);
+        T(0.39894228) +
+        t * (T(0.01328592) +
+             t * (T(0.00225319) +
+                  t * (T(-0.00157565) +
+                       t * (T(0.00916281) +
+                            t * (T(-0.02057706) + t * (T(0.02635537) + t * (T(-0.01647633) + t * T(0.00392377))))))));
+
+    auto arg = sqrt(abx) * poly;
+    auto log_term = log(arg);
+
+    return abx - log_term;
   }
 }
 
@@ -139,24 +148,28 @@ inline auto GetBesselZero(const T& x) {
  */
 template <class T>
 inline auto GetBesselIntegral(const T& beta_x, const T& beta_y, const T& beta_z) {
-  const auto A = 1.0 + 2.0 * (beta_x + beta_y + beta_z);
-  const auto Bx = 2.0 * beta_x;
-  const auto By = 2.0 * beta_y;
-  const auto Bz = 2.0 * beta_z;
+  const auto A = T(1.0) + T(2.0) * (beta_x + beta_y + beta_z);
+  const auto Bx = T(2.0) * beta_x;
+  const auto By = T(2.0) * beta_y;
+  const auto Bz = T(2.0) * beta_z;
+
   const int N = 4000;
   const auto t_max = T(20.0);
   const auto dt = t_max / N;
-  auto sum = T(0.0);
+
+  T sum = T(0.0);
+
   for (int i = 1; i <= N; i++) {
     auto t = i * dt;
-    auto lx = GetBesselZero(Bx * t);
-    auto ly = GetBesselZero(By * t);
-    auto lz = GetBesselZero(Bz * t);
-    auto lin = log(t) - A * t + lx + ly + lz;
+
+    auto lin = log(t) - A * t + GetBesselZero(Bx * t) + GetBesselZero(By * t) + GetBesselZero(Bz * t);
+
     auto integrand = exp(lin);
-    if (i == N) integrand *= 0.5;
-    sum += integrand;
+
+    auto weight = (i == N) ? T(0.5) : T(1.0);
+    sum += integrand * weight;
   }
+
   return sum * dt;
 }
 
