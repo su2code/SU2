@@ -307,7 +307,7 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
 
   AddCommonFVMOutputs(config);
 
-  // Metric tensor and dual-cell volume
+  // Sensor value/gradient/Hessian, metric tensor, and dual-cell volume
   AddMeshAdaptationOutputs(config);
 
   if (config->GetTime_Domain()) {
