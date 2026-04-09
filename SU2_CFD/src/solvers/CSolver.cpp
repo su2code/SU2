@@ -1386,6 +1386,10 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case MPI_QUANTITIES::SENSOR_ADAPT:
+      COUNT_PER_POINT  = GetnMetricSensor();
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     case MPI_QUANTITIES::GRADIENT_ADAPT:
       COUNT_PER_POINT  = GetnMetricSensor()*nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
@@ -1515,6 +1519,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
             break;
           case MPI_QUANTITIES::SENSOR:
             bufDSend[buf_offset] = base_nodes->GetSensor(iPoint);
+            break;
+          case MPI_QUANTITIES::SENSOR_ADAPT:
+            for (iVar = 0; iVar < GetnMetricSensor(); iVar++)
+              bufDSend[buf_offset+iVar] = base_nodes->GetSensor_Adapt(iPoint, iVar);
             break;
           case MPI_QUANTITIES::SOLUTION_GRADIENT:
           case MPI_QUANTITIES::PRIMITIVE_GRADIENT:
@@ -1670,6 +1678,10 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
           case MPI_QUANTITIES::SENSOR:
             base_nodes->SetSensor(iPoint,bufDRecv[buf_offset]);
+            break;
+          case MPI_QUANTITIES::SENSOR_ADAPT:
+            for (iVar = 0; iVar < GetnMetricSensor(); iVar++)
+               base_nodes->SetSensor_Adapt(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
           case MPI_QUANTITIES::SOLUTION_GRADIENT:
           case MPI_QUANTITIES::PRIMITIVE_GRADIENT:

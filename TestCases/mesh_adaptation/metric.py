@@ -29,13 +29,18 @@ def main():
     driver = pysu2.CSinglezoneDriver("rans_naca0012.cfg", 1, comm)
 
     # Initialize custom metric sensors
-    custom_sensors = CustomSensorRegistry()
-    custom_sensors.register("MACH", mach_number)
+    custom_sensors = CustomSensorRegistry({"MACH": mach_number})
+
+    # Initialize map of Sensor: idx
     custom_sensors.initialize(driver)
 
     driver.Preprocess(0)
     driver.Run()
-    custom_sensors.populate(driver)  # Store Mach sensor
+
+    # Store custom sensor
+    custom_sensors.populate(driver)
+
+    # Postprocess solution/metric and output
     driver.Postprocess()
     driver.Update()
     driver.Monitor(0)

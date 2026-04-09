@@ -25,53 +25,47 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import Any
+
+SU2Driver = Any
+SensorFn = Callable[[SU2Driver, int], float]
+
 
 class CustomSensorRegistry:
-    """Registry mapping sensor names to per-node callables for mesh adaptation.
+    """Registry mapping sensor names to callables for mesh adaptation."""
 
-    Usage::
-
-        registry = CustomSensorRegistry()
-        registry["MACH"] = my_sensor  # fn(driver, iPoint) -> float
-
-        driver = pysu2.CSinglezoneDriver("case.cfg", 1, comm)
-        registry.initialize(driver)   # resolve indices once after construction
-
-        for inner_iter in range(N):
-            driver.Preprocess(inner_iter)
-            driver.Run()
-            registry.populate(driver) # fill sensor slots before ComputeMetricField
-            driver.Postprocess()
-            driver.Update()
-            driver.Output(inner_iter)
-    """
-
-    def __init__(self):
-        self._sensors = {}  # name -> fn(driver, iPoint) -> float
-        self._indices = {}  # name -> iSensor (cached by initialize)
-
-    def register(self, name, fn):
-        """Register a sensor function ``fn(driver, iPoint) -> float``.
-
-        Args:
-            name: Sensor name exactly as listed in METRIC_SENSOR in the config.
-            fn:   Called once per node per iteration. Must cover all nodes
-                  (domain + halo) so the Green-Gauss gradient has correct
-                  values at MPI boundaries.
+    def __init__(self, sensors: dict[str, SensorFn] | None = None) -> None:
         """
+        Args:
+            sensors: Optional mapping of sensor name to callable. Each callable
+                must have the signature ``fn(driver, iPoint) -> float`` and names
+                must match entries in ``METRIC_SENSOR`` in the config exactly.
+        """
+        self._sensors: dict[str, SensorFn] = (
+            dict(sensors) if sensors is not None else {}
+        )
+        self._indices: dict[str, int] = {}
+
+    def __setitem__(self, name: str, fn: SensorFn) -> None:
+        """Register or replace the sensor callable for ``name``."""
         self._sensors[name] = fn
 
-    def __setitem__(self, name, fn):
-        self.register(name, fn)
-
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> SensorFn:
+        """Return the sensor callable registered under ``name``."""
         return self._sensors[name]
 
-    def initialize(self, driver):
+    def initialize(self, driver: SU2Driver) -> None:
         """Resolve and cache sensor indices. Call once after driver construction.
 
+        Args:
+            driver: Active SU2 driver instance (e.g. ``CSinglezoneDriver``).
+
         Raises:
-            ValueError: if a registered name is not listed in METRIC_SENSOR.
+            ValueError: If a registered sensor name is not listed in
+                ``METRIC_SENSOR`` in the config.
         """
         for name in self._sensors:
             idx = driver.GetMetricSensorIndex(name)
@@ -82,8 +76,14 @@ class CustomSensorRegistry:
                 )
             self._indices[name] = idx
 
-    def populate(self, driver):
-        """Evaluate all sensors and push values to the driver. Call before Postprocess()."""
+    def populate(self, driver: SU2Driver) -> None:
+        """Evaluate all sensors and push values to the driver.
+
+        Call after ``Run()`` and before ``Postprocess()`` on each iteration.
+
+        Args:
+            driver: Active SU2 driver instance (e.g. ``CSinglezoneDriver``).
+        """
         nNodes = driver.GetNumberNodes()
         for name, fn in self._sensors.items():
             iSensor = self._indices[name]

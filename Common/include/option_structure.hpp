@@ -2704,6 +2704,7 @@ enum class MPI_QUANTITIES {
   MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
+  SENSOR_ADAPT         ,  /*!< \brief Sensors for anisotropic sizing metric tensor. */
   GRADIENT_ADAPT       ,  /*!< \brief Gradient vectors for anisotropic sizing metric tensor. */
   HESSIAN              ,  /*!< \brief Hessian tensors for anisotropic sizing metric tensor. */
 };

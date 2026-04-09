@@ -365,11 +365,12 @@ void CSinglezoneDriver::ComputeMetricField(bool restartMetric) {
     cout << endl <<"----------------------------- Compute Metric ----------------------------" << endl;
     cout << "Storing primitive variables needed for gradients in metric." << endl;
   }
-  solver_flow->InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
-  solver_flow->CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
-  solver_flow->Preprocessing(geometry, solver, config, MESH_0, NO_RK_ITER,
-                             RUNTIME_FLOW_SYS, true);
+
+  /*--- Set primitive variable adaptation sensors ---*/
+  /*--- Custom sensors should have already been set via python wrapper ---*/
   solver_flow->SetPrimitive_Adapt(geometry, config);
+  solver_flow->InitiateComms(geometry, config, MPI_QUANTITIES::SENSOR_ADAPT);
+  solver_flow->CompleteComms(geometry, config, MPI_QUANTITIES::SENSOR_ADAPT);
 
   if (config->GetKind_Hessian_Method() == GREEN_GAUSS) {
     if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
