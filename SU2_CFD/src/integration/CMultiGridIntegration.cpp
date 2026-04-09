@@ -300,11 +300,11 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
     const auto& mgOpts = config[iZone]->GetMGOptions();
     for (unsigned short i = 0; i <= nMGLevels; ++i) {
-      lastPreSmoothIters[i]    = mgOpts.MG_PreSmooth[i];
-      lastPostSmoothIters[i]   = mgOpts.MG_PostSmooth[i];
+      lastPreSmoothIters[i] = mgOpts.MG_PreSmooth[i];
+      lastPostSmoothIters[i] = mgOpts.MG_PostSmooth[i];
       lastCorrecSmoothIters[i] = mgOpts.MG_CorrecSmooth[i];
-      lastPreSmoothProgress[i]    = false;
-      lastPostSmoothProgress[i]    = false;
+      lastPreSmoothProgress[i] = false;
+      lastPostSmoothProgress[i] = false;
       lastCorrecSmoothProgress[i] = false;
       lastPreSmoothRMS[i][0] = lastPreSmoothRMS[i][1] = 0.0;
       lastPostSmoothRMS[i][0] = lastPostSmoothRMS[i][1] = 0.0;
@@ -315,10 +315,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   /*--- Full MG: advance to the next finer grid after a fixed number of
    *    outer iterations on the current coarsest active level.
-   *    We use 100 iterations per level (nMGLevels levels total), so the
-   *    solver spends equally long on each coarse grid before stepping up.
-   *    This matches the classic FMG schedule: solve briefly on each grid,
-   *    prolongate, then continue as a standard V-CYCLE on MESH_0. ---*/
+   *    We use 100 iterations per level (nMGLevels levels total) ---*/
   const bool Convergence_FullMG =
       FullMG && (FinestMesh != MESH_0) &&
       (config[iZone]->GetInnerIter() % 100 == 99);
@@ -345,9 +342,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                   FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
 
   /*--- Adapt coarse-grid CFL once per cycle using smoothing residuals gathered during the cycle.
-   *    lastPreSmoothRMS[iMesh+1][1] is the final RMS after pre-smoothing at the coarse level —
-   *    it is already MPI-reduced (computed via ComputeLinSysResRMS) and identical on all ranks.
-   *    This replaces the per-level Allreduce that was previously inside MultiGrid_Cycle. ---*/
+   *    lastPreSmoothRMS[iMesh+1][1] is the final RMS after pre-smoothing at the coarse level ---*/
   {
     const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
