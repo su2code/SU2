@@ -390,7 +390,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       if (SU2_MPI::GetRank() == MASTER_NODE) {
-        const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
 
         /*--- Helper: format one cell as "act/max [init->final]". ---*/
         auto cellStr = [](unsigned short act, unsigned short mx,
