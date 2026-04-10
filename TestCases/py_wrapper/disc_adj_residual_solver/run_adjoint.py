@@ -182,6 +182,7 @@ def compare_surface_sensitivities(res_file, fp_file):
     l2   = np.linalg.norm(np.concatenate([sx_r - sx_f, sy_r - sy_f, ss_r - ss_f]))
 
     print(f'\nPrintout for regression test...')
+    print('\n------------------------------ Begin Solver -----------------------------')
     print(f'{77777:>8d} {d_sx:.6f} {d_sy:.6f} {d_ss:.6f} {l2:.6f}')
 
 def main():
