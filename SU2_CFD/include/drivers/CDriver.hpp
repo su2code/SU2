@@ -594,17 +594,17 @@ class CDriver : public CDriverBase {
   CPyWrapperMatrixView MarkerAdjointForces(unsigned short iMarker) const;
 
   /*!
-   * \brief Get a read-only view of dCoordinates/dCoordinates^T * psi for all mesh nodes.
+   * \brief Get sensitivity of volume coordinates with respect to deformed surface coordinates (dxv/dxa^T * psi).
    * \return CPyWrapperMatrixView of shape (nPoint, nDim).
    */
-  CPyWrapperMatrixView CoordinatesCoordinatesSensitivities() const;
+  CPyWrapperMatrixView VolumeCoordinatesSurfaceCoordinatesSensitivities() const;
 
   /*!
-   * \brief Get a read-only view of dCoordinates/dDisplacements^T * psi for a marker.
+   * \brief Get sensitivity of volume coordinates with respect to surface displacements (dxv/dua^T * psi).
    * \param[in] iMarker - Marker index.
    * \return CPyWrapperMatrixView of shape (nVertex, nDim).
    */
-  CPyWrapperMatrixView MarkerCoordinatesDisplacementsSensitivities(unsigned short iMarker) const;
+  CPyWrapperMatrixView MarkerVolumeCoordinatesDisplacementsSensitivities(unsigned short iMarker) const;
 
   /*!
    * \brief Get sensitivity of objective function with respect to farfield design variables as a partial derivative.

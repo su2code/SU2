@@ -115,20 +115,20 @@ CPyWrapperMatrixView CDriver::MarkerAdjointForces(unsigned short iMarker) const 
   return CPyWrapperMatrixView(mat, "MarkerAdjointForces", true);
 }
 
-CPyWrapperMatrixView CDriver::CoordinatesCoordinatesSensitivities() const {
+CPyWrapperMatrixView CDriver::VolumeCoordinatesSurfaceCoordinatesSensitivities() const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
   auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dCoordinates_dCoordinates());
-  return CPyWrapperMatrixView(mat, "CoordinatesCoordinatesSensitivities", true);
+  return CPyWrapperMatrixView(mat, "VolumeCoordinatesSurfaceCoordinatesSensitivities", true);
 }
 
-CPyWrapperMatrixView CDriver::MarkerCoordinatesDisplacementsSensitivities(unsigned short iMarker) const {
+CPyWrapperMatrixView CDriver::MarkerVolumeCoordinatesDisplacementsSensitivities(unsigned short iMarker) const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
   auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dCoordinates_dDisplacements(iMarker));
-  return CPyWrapperMatrixView(mat, "MarkerCoordinatesDisplacementsSensitivities", true);
+  return CPyWrapperMatrixView(mat, "MarkerVolumeCoordinatesDisplacementsSensitivities", true);
 }
 
 vector<passivedouble> CDriver::GetObjectiveFarfieldVariablesSensitivities() const {
