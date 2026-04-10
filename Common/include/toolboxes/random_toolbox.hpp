@@ -107,12 +107,12 @@ inline double GetNormal(unsigned long nodeIndex, unsigned long dim, unsigned lon
  * \return Value of Bessel function.
  */
 template <class T>
-inline auto GetBesselZero(const T& x) {
-  auto abx = fabs(x);
+inline T GetBesselZero(const T& x) {
+  T abx = fabs(x);
 
   if (abx < 3.75) {
-    auto t = abx / 3.75;
-    auto p =
+    T t = abx / 3.75;
+    T p =
         1.0 +
         t * t *
             (3.5156229 +
@@ -123,9 +123,9 @@ inline auto GetBesselZero(const T& x) {
                                                  t * t * 0.0045813)))));
     return log(p);
   } else {
-    auto t = 3.75 / abx;
+    T t = 3.75 / abx;
 
-    auto poly =
+    T poly =
         0.39894228 +
         t * (0.01328592 +
              t * (0.00225319 +
@@ -136,7 +136,7 @@ inline auto GetBesselZero(const T& x) {
                                       t * (-0.01647633 +
                                            t * 0.00392377)))))));
 
-    auto arg = sqrt(abx) * poly;
+    T arg = sqrt(abx) * poly;
     return abx - log(arg);
   }
 }
@@ -150,26 +150,26 @@ inline auto GetBesselZero(const T& x) {
  * \return Value of the integral.
  */
 template <class T>
-inline auto GetBesselIntegral(const T& beta_x, const T& beta_y, const T& beta_z) {
-  const auto A = T(1.0) + T(2.0) * (beta_x + beta_y + beta_z);
-  const auto Bx = T(2.0) * beta_x;
-  const auto By = T(2.0) * beta_y;
-  const auto Bz = T(2.0) * beta_z;
+inline T GetBesselIntegral(const T& beta_x, const T& beta_y, const T& beta_z) {
+  const T A = 1 + 2 * (beta_x + beta_y + beta_z);
+  const T Bx = 2 * beta_x;
+  const T By = 2 * beta_y;
+  const T Bz = 2 * beta_z;
 
   const int N = 4000;
-  const auto t_max = T(20.0);
-  const auto dt = t_max / N;
+  const T t_max = 20.0;
+  const T dt = t_max / N;
 
   T sum = T(0.0);
 
   for (int i = 1; i <= N; i++) {
-    auto t = i * dt;
+    T t = i * dt;
 
-    auto lin = log(t) - A * t + GetBesselZero(Bx * t) + GetBesselZero(By * t) + GetBesselZero(Bz * t);
+    T lin = log(t) - A * t + GetBesselZero(T(Bx * t)) + GetBesselZero(T(By * t)) + GetBesselZero(T(Bz * t));
 
-    auto integrand = exp(lin);
+    T integrand = exp(lin);
 
-    auto weight = (i == N) ? T(0.5) : T(1.0);
+    T weight = (i == N) ? 0.5 : 1.0;
     sum += integrand * weight;
   }
 
