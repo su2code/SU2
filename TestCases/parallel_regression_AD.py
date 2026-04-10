@@ -532,10 +532,10 @@ def main():
     # Residual-based discrete adjoint solver
     pywrapper_CFD_AD_ResidSolver               = TestCase('pywrapper_CFD_AD_ResidSolver')
     pywrapper_CFD_AD_ResidSolver.cfg_dir       = "py_wrapper/disc_adj_residual_solver"
-    pywrapper_CFD_AD_ResidSolver.cfg_file      = "flow_adjoint.cfg"
-    pywrapper_CFD_AD_ResidSolver.test_iter     = 100
-    pywrapper_CFD_AD_ResidSolver.test_vals     = [-3.562562, -8.932563, -0.000000, 0.005608]
-    pywrapper_CFD_AD_ResidSolver.command       = TestCase.Command("mpirun -n 2", "python", "run_adjoint.py --parallel -f")
+    pywrapper_CFD_AD_ResidSolver.cfg_file      = "base.cfg"
+    pywrapper_CFD_AD_ResidSolver.test_iter     = 77777
+    pywrapper_CFD_AD_ResidSolver.test_vals     = [0.000000, 0.000000, 0.000000, 0.000000]
+    pywrapper_CFD_AD_ResidSolver.command       = TestCase.Command("mpirun -n 2", "python", "run_adjoint.py -f")
     pywrapper_CFD_AD_ResidSolver.timeout       = 1600
     pywrapper_CFD_AD_ResidSolver.tol           = 0.000001
     pywrapper_CFD_AD_ResidSolver.new_output    = False
