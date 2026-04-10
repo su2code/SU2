@@ -41,6 +41,11 @@
 #include "CSysVector.hpp"
 #include "../option_structure.hpp"
 
+SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+#include "Eigen/Core"
+#include "Eigen/Dense"
+SU2_RESTORE_WARNING
+
 class CConfig;
 class CGeometry;
 template <class T>
@@ -110,6 +115,7 @@ class CSysSolve {
   mutable unsigned long k = 0;
   mutable std::vector<VectorType> Z, V; /*!< \brief Large matrices used by FGMRES, v^i+1 = A * z^i. */
   mutable std::vector<VectorType> W, T; /*!< \brief Large matrices used by FGCRODR for deflation vectors. */
+  mutable Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> VWk;
 
   /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
   VectorType LinSysSol_tmp;

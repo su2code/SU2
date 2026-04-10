@@ -35,8 +35,6 @@
 #include "../../include/linear_algebra/CPreconditioner.hpp"
 
 SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
-#include "Eigen/Core"
-#include "Eigen/Dense"
 #include "Eigen/Eigenvalues"
 SU2_RESTORE_WARNING
 
@@ -661,6 +659,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
   const auto deflation = min(config->GetLinear_Solver_Restart_Deflation(), m - 1);
 
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
+  const bool flexible = !precond.IsIdentity();
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
    * we still want to parallelize some of the expensive operations. ---*/
   const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
@@ -685,8 +684,10 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       r.Initialize(nBlk, nBlkDomain, nVar, nullptr);
       V.resize(m + 1);
       for (auto& v : V) v.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-      Z.resize(m);
-      for (auto& z : Z) z.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+      if (flexible) {
+        Z.resize(m);
+        for (auto& z : Z) z.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+      }
       W.resize(deflation + 1);
       for (auto& w : W) w.Initialize(nBlk, nBlkDomain, nVar, nullptr);
       T.resize(deflation + 1);
@@ -707,11 +708,20 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
   /*--- Calculate the initial residual and compute its norm. ---*/
 
   if (!xIsZero) {
-    mat_vec(x, Z.back());
-    r = b - Z.back();
+    mat_vec(x, T[0]);
+    r = b - T[0];
   } else {
     r = b;
   }
+
+  /*--- We don't store the part of W that is equal to V explicitly, W(:, k:m) = V(:, k:m). ---*/
+  auto GetW = [&](auto i) -> auto& { return i < k ? W[i] : V[i]; };
+
+  /*--- With an identity preconditioner Z = W. ---*/
+  auto GetZ = [&](auto i) -> auto& {
+    if (flexible) return Z[i];
+    return GetW(i);
+  };
 
   /*--- Rebuild Z, V, and W for the new matrix if necessary.
    * Q * R = A * Z
@@ -725,7 +735,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       if (mode != FgcrodrMode::SAME_MAT) {
         /*--- When k = 0, Z = M(W), we could keep that property but it is not
          * critical and so we choose to save the cost of precond(W[j], Z[j]); ---*/
-        mat_vec(Z[j], V[j]);
+        mat_vec(GetZ(j), V[j]);
 
         for (auto i = 0ul; i < j; ++i) {
           R(i, j) = V[i].dot(V[j]);
@@ -748,11 +758,12 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
           auto reversed = [&](auto i) -> const auto& { return (*basis)[j - i]; };
           LinearCombination(
               nestedParallel, j + 1, reversed, [&](auto i) { return invR(j - i, j); }, (*basis)[j]);
+          if (!flexible) break;  // skip Z.
         }
         if (j == 0) break;  // j is unsigned, avoid underflow.
       }
     }
-    LinearCombination(nestedParallel, k, Z, vr, x, true);
+    LinearCombination(nestedParallel, k, GetZ, vr, x, true);
   }
   ScalarType rNorm = r.norm();
   auto iter = k;
@@ -800,8 +811,12 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
     bool converged = false;
     for (auto j = k; j < m; ++j) {
       ++iter;
-      precond(V[j], Z[j]);
-      mat_vec(Z[j], V[j + 1]);
+      if (flexible) {
+        precond(V[j], Z[j]);
+        mat_vec(Z[j], V[j + 1]);
+      } else {
+        mat_vec(V[j], V[j + 1]);
+      }
 
       if (nestedParallel) {
         /*--- "omp parallel if" does not work well here ---*/
@@ -841,12 +856,9 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       }
     }
 
-    /*--- We don't store the part of W that is equal to V explicitly,
-     * W(:, k:m) = V(:, k:m). ---*/
-
     /*--- Update the solution and residual. The latter is only required if we restart. ---*/
 
-    LinearCombination(nestedParallel, m, Z, y, x, true);
+    LinearCombination(nestedParallel, m, GetZ, y, x, true);
     if (!converged) LinearCombination(nestedParallel, m + 1, V, rls, r);
 
     /*--- Update deflation vectors. ---*/
@@ -859,22 +871,23 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
     /*--- Compute Ritz values and keep the ones with the smallest real part. ---*/
 
     EigenMatrix VW = EigenMatrix::Identity(m + 1, m);
-    const su2matrix<ScalarType>* VWk = nullptr;
-    if (nestedParallel) {
-      SU2_OMP_PARALLEL {
-        const auto& tmp = CSysVector<ScalarType>::multiDot(V, m + 1, W, k);
-        SU2_OMP_MASTER
-        VWk = &tmp;
-        END_SU2_OMP_MASTER
+    if (mode != FgcrodrMode::SAME_MAT) {
+      const su2matrix<ScalarType>* VWk = nullptr;
+      if (nestedParallel) {
+        SU2_OMP_PARALLEL
+        VWk = &CSysVector<ScalarType>::multiDot(V, m + 1, W, k);
+        END_SU2_OMP_PARALLEL
+      } else {
+        VWk = &CSysVector<ScalarType>::multiDot(V, m + 1, W, k);
       }
-      END_SU2_OMP_PARALLEL
-    } else {
-      VWk = &CSysVector<ScalarType>::multiDot(V, m + 1, W, k);
-    }
-    for (auto i = 0ul; i <= m; ++i) {
-      for (auto j = 0ul; j < k; ++j) {
-        VW(i, j) = (*VWk)(i, j);
+      for (auto i = 0ul; i <= m; ++i) {
+        for (auto j = 0ul; j < k; ++j) {
+          VW(i, j) = (*VWk)(i, j);
+        }
       }
+    } else if (k > 0) {
+      /*--- See notes near the end of the outer loop. ---*/
+      VW.topLeftCorner(k, k) = VWk.topRows(k);
     }
     const auto Hm = Heigen.topLeftCorner(m + 1, m);
     EigenMatrix HTVW = Hm.transpose() * VW;
@@ -938,10 +951,16 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
         LinearCombination(nestedParallel, mod.rows(), basis, mod.col(j), T[j]);
       }
     };
-    modify(
-        PinvR, [&](auto i) -> auto& { return i < k ? W[i] : V[i]; });
+    modify(PinvR, GetW);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      /*--- Initialize VWk, then apply the V and W modifications of the left and right, respectively. ---*/
+      if (mode == FgcrodrMode::SAME_MAT) {
+        if (k == 0) {
+          VWk = EigenMatrix::Identity(m + 1, k_new);
+        }
+        VWk.topRows(k) = Q.transpose() * (VWk * PinvR);
+      }
       /*--- T and W are the same size, so we can swap them. ---*/
       std::swap(T, W);
       k = k_new;
@@ -956,8 +975,10 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
     };
 
-    modify(PinvR, Z);
-    update(Z);
+    if (flexible) {
+      modify(PinvR, Z);
+      update(Z);
+    }
 
     /*--- Update V only if necessary. ---*/
     if (!converged || mode == FgcrodrMode::SAME_MAT) {
@@ -976,9 +997,9 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       END_SU2_OMP_MASTER
     }
     if (recomputeRes) {
-      mat_vec(x, Z.back());
-      Z.back() -= b;
-      ScalarType res = Z.back().norm();
+      mat_vec(x, T[0]);
+      T[0] -= b;
+      ScalarType res = T[0].norm();
 
       if (fabs(res - rNorm) > tol * 10) {
         if (masterRank) {
