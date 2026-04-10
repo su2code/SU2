@@ -4133,19 +4133,21 @@ void CFlowOutput::SetTimeAveragedFields(const CConfig *config) {
     AddVolumeOutput("VWPRIME", "w'v'", "TIME_AVERAGE", "Mean Reynolds-stress component w'v'");
   }
 
-  AddVolumeOutput("MODELED_REYNOLDS_STRESS_11", "ModeledReynoldsStress_11", "TIME_AVERAGE", "Modeled Reynolds stress xx-component");
-  AddVolumeOutput("MODELED_REYNOLDS_STRESS_22", "ModeledReynoldsStress_22", "TIME_AVERAGE", "Modeled Reynolds stress yy-component");
-  AddVolumeOutput("MODELED_REYNOLDS_STRESS_12", "ModeledReynoldsStress_12", "TIME_AVERAGE", "Modeled Reynolds stress xy-component");
-  if (nDim == 3){
-    AddVolumeOutput("MODELED_REYNOLDS_STRESS_33", "ModeledReynoldsStress_33", "TIME_AVERAGE", "Modeled Reynolds stress zz-component");
-    AddVolumeOutput("MODELED_REYNOLDS_STRESS_13", "ModeledReynoldsStress_13", "TIME_AVERAGE", "Modeled Reynolds stress xz-component");
-    AddVolumeOutput("MODELED_REYNOLDS_STRESS_23", "ModeledReynoldsStress_23", "TIME_AVERAGE", "Modeled Reynolds stress yz-component");
-  }
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    AddVolumeOutput("MODELED_REYNOLDS_STRESS_11", "ModeledReynoldsStress_11", "TIME_AVERAGE", "Modeled Reynolds stress xx-component");
+    AddVolumeOutput("MODELED_REYNOLDS_STRESS_22", "ModeledReynoldsStress_22", "TIME_AVERAGE", "Modeled Reynolds stress yy-component");
+    AddVolumeOutput("MODELED_REYNOLDS_STRESS_12", "ModeledReynoldsStress_12", "TIME_AVERAGE", "Modeled Reynolds stress xy-component");
+    if (nDim == 3){
+      AddVolumeOutput("MODELED_REYNOLDS_STRESS_33", "ModeledReynoldsStress_33", "TIME_AVERAGE", "Modeled Reynolds stress zz-component");
+      AddVolumeOutput("MODELED_REYNOLDS_STRESS_13", "ModeledReynoldsStress_13", "TIME_AVERAGE", "Modeled Reynolds stress xz-component");
+      AddVolumeOutput("MODELED_REYNOLDS_STRESS_23", "ModeledReynoldsStress_23", "TIME_AVERAGE", "Modeled Reynolds stress yz-component");
+    }
 
-  if (config->GetSBSParam().StochasticBackscatter) {
-    AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_12", "StochasticReynoldsStress_12", "TIME_AVERAGE", "Stochastic Reynolds stress xy-component");
-    AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_13", "StochasticReynoldsStress_13", "TIME_AVERAGE", "Stochastic Reynolds stress xz-component");
-    AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_23", "StochasticReynoldsStress_23", "TIME_AVERAGE", "Stochastic Reynolds stress yz-component");
+    if (config->GetSBSParam().StochasticBackscatter) {
+      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_12", "StochasticReynoldsStress_12", "TIME_AVERAGE", "Stochastic Reynolds stress xy-component");
+      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_13", "StochasticReynoldsStress_13", "TIME_AVERAGE", "Stochastic Reynolds stress xz-component");
+      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_23", "StochasticReynoldsStress_23", "TIME_AVERAGE", "Stochastic Reynolds stress yz-component");
+    }
   }
 }
 
@@ -4189,41 +4191,43 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *No
     SetVolumeOutputValue("VWPRIME",  iPoint, -(vmean*wmean - vwmean));
   }
 
-  const su2double rho = Node_Flow->GetDensity(iPoint);
-  const su2double nu_t = Node_Flow->GetEddyViscosity(iPoint) / rho;
-  const auto vel_grad = Node_Flow->GetVelocityGradient(iPoint);
-  const su2double vel_div = vel_grad(0,0) + vel_grad(1,1) + (nDim ==3 ? vel_grad(2,2) : 0.0);
-  const su2double tau_xx = nu_t * (2*vel_grad(0,0) - (2.0/3.0)*vel_div);
-  const su2double tau_yy = nu_t * (2*vel_grad(1,1) - (2.0/3.0)*vel_div);
-  const su2double tau_xy = nu_t * (vel_grad(0,1) + vel_grad(1,0));
-  SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_11", iPoint, -tau_xx);
-  SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_22", iPoint, -tau_yy);
-  SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_12", iPoint, -tau_xy);
-  if (nDim == 3){
-    const su2double tau_zz = nu_t * (2*vel_grad(2,2) - (2.0/3.0)*vel_div);
-    const su2double tau_xz = nu_t * (vel_grad(0,2) + vel_grad(2,0));
-    const su2double tau_yz = nu_t * (vel_grad(1,2) + vel_grad(2,1));
-    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_33", iPoint, -tau_zz);
-    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_13", iPoint, -tau_xz);
-    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_23", iPoint, -tau_yz);
-  }
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    const su2double rho = Node_Flow->GetDensity(iPoint);
+    const su2double nu_t = Node_Flow->GetEddyViscosity(iPoint) / rho;
+    const auto vel_grad = Node_Flow->GetVelocityGradient(iPoint);
+    const su2double vel_div = vel_grad(0,0) + vel_grad(1,1) + (nDim ==3 ? vel_grad(2,2) : 0.0);
+    const su2double tau_xx = nu_t * (2*vel_grad(0,0) - (2.0/3.0)*vel_div);
+    const su2double tau_yy = nu_t * (2*vel_grad(1,1) - (2.0/3.0)*vel_div);
+    const su2double tau_xy = nu_t * (vel_grad(0,1) + vel_grad(1,0));
+    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_11", iPoint, -tau_xx);
+    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_22", iPoint, -tau_yy);
+    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_12", iPoint, -tau_xy);
+    if (nDim == 3){
+      const su2double tau_zz = nu_t * (2*vel_grad(2,2) - (2.0/3.0)*vel_div);
+      const su2double tau_xz = nu_t * (vel_grad(0,2) + vel_grad(2,0));
+      const su2double tau_yz = nu_t * (vel_grad(1,2) + vel_grad(2,1));
+      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_33", iPoint, -tau_zz);
+      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_13", iPoint, -tau_xz);
+      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_23", iPoint, -tau_yz);
+    }
 
-  if (config->GetSBSParam().StochasticBackscatter) {
-    const su2double DES_lengthscale = max(Node_Flow->GetDES_LengthScale(iPoint), 1e-10);
-    const su2double lesSensor = Node_Flow->GetLES_Mode(iPoint);
-    const su2double mag = config->GetSBSParam().SBS_Cmag;
-    const su2double threshold = config->GetSBSParam().stochFdThreshold;
-    su2double tke_estim = 0.0;
-    if (lesSensor > threshold) tke_estim = pow(nu_t/DES_lengthscale, 2);
-    const su2double csi_x = Node_Turb->GetSolution(iPoint, 1);
-    const su2double csi_y = Node_Turb->GetSolution(iPoint, 2);
-    const su2double csi_z = Node_Turb->GetSolution(iPoint, 3);
-    const su2double R_xy = - mag * tke_estim * csi_z;
-    const su2double R_xz = + mag * tke_estim * csi_y;
-    const su2double R_yz = - mag * tke_estim * csi_x;
-    SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_12", iPoint, -R_xy);
-    SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_13", iPoint, -R_xz);
-    SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_23", iPoint, -R_yz);
+    if (config->GetSBSParam().StochasticBackscatter) {
+      const su2double DES_lengthscale = max(Node_Flow->GetDES_LengthScale(iPoint), 1e-10);
+      const su2double lesSensor = Node_Flow->GetLES_Mode(iPoint);
+      const su2double mag = config->GetSBSParam().SBS_Cmag;
+      const su2double threshold = config->GetSBSParam().stochFdThreshold;
+      su2double tke_estim = 0.0;
+      if (lesSensor > threshold) tke_estim = pow(nu_t/DES_lengthscale, 2);
+      const su2double csi_x = Node_Turb->GetSolution(iPoint, 1);
+      const su2double csi_y = Node_Turb->GetSolution(iPoint, 2);
+      const su2double csi_z = Node_Turb->GetSolution(iPoint, 3);
+      const su2double R_xy = - mag * tke_estim * csi_z;
+      const su2double R_xz = + mag * tke_estim * csi_y;
+      const su2double R_yz = - mag * tke_estim * csi_x;
+      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_12", iPoint, -R_xy);
+      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_13", iPoint, -R_xz);
+      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_23", iPoint, -R_yz);
+    }
   }
 }
 
