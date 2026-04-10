@@ -41,7 +41,7 @@ class CTurbSAVariable final : public CTurbVariable {
 private:
   VectorType DES_LengthScale;
   VectorType lesMode;
-  VectorType sbsInBox;
+  su2vector<int8_t> sbsInBox;
   MatrixType stochSource;
   MatrixType stochSourceOld;
   VectorType Vortex_Tilting;
