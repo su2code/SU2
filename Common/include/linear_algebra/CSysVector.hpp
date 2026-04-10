@@ -375,12 +375,13 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   /*!
    * \brief Computes the product of V^T W efficiencly, where V and W are tall matrices stored as vectors of CSysVector.
    * \param[in] V - Tall matrix.
-   * \param[in] n - Number of columns to consider from V.
+   * \param[in] i0 - First column of V to consider.
+   * \param[in] n - Number of columns to consider from V starting at i0.
    * \param[in] W - Tall matrix.
    * \param[in] m - Number of columns to consider from W.
    * \return n by m matrix with the result of the product.
    */
-  static const su2matrix<ScalarType>& multiDot(const std::vector<CSysVector>& V, size_t n,
+  static const su2matrix<ScalarType>& multiDot(const std::vector<CSysVector>& V, size_t i0, size_t n,
                                                const std::vector<CSysVector>& W, size_t m);
 
   /*!

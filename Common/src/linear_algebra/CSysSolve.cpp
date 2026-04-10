@@ -658,8 +658,9 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
   auto m = min(config->GetLinear_Solver_Restart_Frequency(), max_iter);
   const auto deflation = min(config->GetLinear_Solver_Restart_Deflation(), m - 1);
 
-  const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   const bool flexible = !precond.IsIdentity();
+  const bool same_mat = mode == FgcrodrMode::SAME_MAT;
+  const bool masterRank = SU2_MPI::GetRank() == MASTER_NODE;
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
    * we still want to parallelize some of the expensive operations. ---*/
   const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
@@ -732,7 +733,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
     EigenMatrix R = EigenMatrix::Zero(k, k);
     EigenVector vr = EigenVector::Zero(k);
     for (auto j = 0ul; j < k; ++j) {
-      if (mode != FgcrodrMode::SAME_MAT) {
+      if (!same_mat) {
         /*--- When k = 0, Z = M(W), we could keep that property but it is not
          * critical and so we choose to save the cost of precond(W[j], Z[j]); ---*/
         mat_vec(GetZ(j), V[j]);
@@ -751,7 +752,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
 
     /*--- Apply R^-1 to Z and W and update x accordingly. R is uppper triangular,
      * so we loop backwards to compute the products in-place. ---*/
-    if (mode != FgcrodrMode::SAME_MAT) {
+    if (!same_mat) {
       EigenMatrix invR = R.template triangularView<Eigen::Upper>().solve(EigenMatrix::Identity(k, k));
       for (auto j = k - 1;; --j) {
         for (auto* basis : {&W, &Z}) {
@@ -871,23 +872,29 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
     /*--- Compute Ritz values and keep the ones with the smallest real part. ---*/
 
     EigenMatrix VW = EigenMatrix::Identity(m + 1, m);
-    if (mode != FgcrodrMode::SAME_MAT) {
+    {
+      /*--- Part of VW known from previous cycle. See notes near the end of the outer loop. ---*/
+      if (same_mat && k > 0) VW.topLeftCorner(k, k) = VkWk;
+
+      /*--- Rest of VW. Either V[k] * Wk or the entire V * Wk depending on the mode.
+       * When the matrix stays constant, V[k+1:m+1] are orthogonal to Wk, but when it changes,
+       * we need to compute that part of the product. Since m >> k, there is less benefit in
+       * avoiding the cost of V[0:k] * Wk and we opt to make the code a little simpler. ---*/
       const su2matrix<ScalarType>* VWk = nullptr;
+      const auto i0 = same_mat ? k : 0;
+      const auto n = same_mat ? 1 : m + 1;
       if (nestedParallel) {
         SU2_OMP_PARALLEL
-        VWk = &CSysVector<ScalarType>::multiDot(V, m + 1, W, k);
+        VWk = &CSysVector<ScalarType>::multiDot(V, i0, n, W, k);
         END_SU2_OMP_PARALLEL
       } else {
-        VWk = &CSysVector<ScalarType>::multiDot(V, m + 1, W, k);
+        VWk = &CSysVector<ScalarType>::multiDot(V, i0, n, W, k);
       }
-      for (auto i = 0ul; i <= m; ++i) {
+      for (auto i = 0ul; i < n; ++i) {
         for (auto j = 0ul; j < k; ++j) {
-          VW(i, j) = (*VWk)(i, j);
+          VW(i0 + i, j) = (*VWk)(i, j);
         }
       }
-    } else if (k > 0) {
-      /*--- See notes near the end of the outer loop. ---*/
-      VW.topLeftCorner(k, k) = VWk.topRows(k);
     }
     const auto Hm = Heigen.topLeftCorner(m + 1, m);
     EigenMatrix HTVW = Hm.transpose() * VW;
@@ -954,13 +961,9 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
     modify(PinvR, GetW);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      /*--- Initialize VWk, then apply the V and W modifications of the left and right, respectively. ---*/
-      if (mode == FgcrodrMode::SAME_MAT) {
-        if (k == 0) {
-          VWk = EigenMatrix::Identity(m + 1, k_new);
-        }
-        VWk.topRows(k) = Q.transpose() * (VWk * PinvR);
-      }
+      /*--- Apply the V and W modifications to the left and right of the current VW, respectively. ---*/
+      if (same_mat) VkWk.noalias() = Q.transpose() * (VW * PinvR);
+
       /*--- T and W are the same size, so we can swap them. ---*/
       std::swap(T, W);
       k = k_new;
@@ -981,7 +984,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
     }
 
     /*--- Update V only if necessary. ---*/
-    if (!converged || mode == FgcrodrMode::SAME_MAT) {
+    if (!converged || same_mat) {
       modify(Q, V);
       update(V);
     }

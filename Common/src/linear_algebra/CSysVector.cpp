@@ -69,7 +69,7 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
 template <class ScalarType>
 const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<CSysVector<ScalarType>>& V,
-                                                              const size_t n,
+                                                              const size_t i0, const size_t n,
                                                               const std::vector<CSysVector<ScalarType>>& W,
                                                               const size_t m) {
   static constexpr size_t BLOCK_SIZE = 1024;
@@ -87,7 +87,7 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
   for (size_t offset = 0; offset < size; offset += BLOCK_SIZE) {
     const auto limit = std::min(offset + BLOCK_SIZE, size);
     for (size_t i = 0; i < n; ++i) {
-      const auto& vi = V[i];
+      const auto& vi = V[i0 + i];
       for (size_t j = 0; j < m; ++j) {
         const auto& wj = W[j];
         ScalarType sum = 0.0;
