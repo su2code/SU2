@@ -122,7 +122,7 @@ public:
    * \param[in] iPoint - Point index.
    * \param[in] val_sbsInBox - 1.0 if the Stochastic Backscatter Model must be applied only in a confined box.
    */
-  inline void SetSbsInBox(unsigned long iPoint, su2double val_sbsInBox) override { sbsInBox(iPoint) = val_sbsInBox; }
+  inline void SetSbsInBox(unsigned long iPoint, int8_t val_sbsInBox) override { sbsInBox(iPoint) = val_sbsInBox; }
 
   /*!
    * \brief Set the LES sensor.
