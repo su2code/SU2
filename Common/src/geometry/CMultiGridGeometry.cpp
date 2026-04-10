@@ -1354,8 +1354,8 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
         L.push_back(best_neighbor);
 
         /*--- Update direction for next step ---*/
-        GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(best_neighbor),
-                                  fine_grid->nodes->GetCoord(current), prev_dir);
+        GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(best_neighbor), fine_grid->nodes->GetCoord(current),
+                                  prev_dir);
         const su2double len = GeometryToolbox::Norm(nDim, prev_dir);
         if (len <= 0.0) break;
         for (unsigned short d = 0; d < nDim; ++d) prev_dir[d] /= len;
