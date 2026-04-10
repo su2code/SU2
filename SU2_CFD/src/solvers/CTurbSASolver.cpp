@@ -1645,7 +1645,7 @@ void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry)
     for (unsigned short iDim = 0; iDim < nDim; iDim++){
       su2double lesSensor = nodes->GetLES_Mode(iPoint);
       su2double inBoxSensor = nodes->GetSbsInBox(iPoint);
-      bool insideBox = (std::nearbyint(inBoxSensor) == 1);
+      bool insideBox = (inBoxSensor == 1);
       if (lesSensor>threshold && insideBox) {
         su2double rnd = RandomToolbox::GetNormal(iPointGlobal, iDim, timeIter);
         nodes->SetLangevinSourceTermsOld(iPoint, iDim, rnd);
@@ -1748,7 +1748,7 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
       unsigned long global_nPointLES = 0;
       SU2_MPI::Allreduce(&local_nPointLES, &global_nPointLES, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&localResNorm, &globalResNorm, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      globalResNorm = (global_nPointLES==0) ? 0.0 : sqrt(globalResNorm / global_nPointLES);
+      globalResNorm = (global_nPointLES==0) ? su2double(0.0) : sqrt(globalResNorm / global_nPointLES);
 
       if (rank == MASTER_NODE) {
         if (iter == 0) {
