@@ -1336,8 +1336,7 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
 
           /*--- Compute normalized direction to candidate ---*/
           su2double vec[MAXNDIM] = {0.0};
-          for (unsigned short d = 0; d < nDim; ++d)
-            vec[d] = fine_grid->nodes->GetCoord(jPoint, d) - fine_grid->nodes->GetCoord(current, d);
+          GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(current), vec);
           const su2double len =
               GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jPoint), fine_grid->nodes->GetCoord(current));
           if (len <= 0.0) continue;
