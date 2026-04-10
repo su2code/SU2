@@ -93,14 +93,14 @@ def run_residuals_adjoint(config_file):
         print(f"    dI/dAoA  = {obj_farfield[1]:.6e}")
 
     # dI/dq (nPoint, nVar)
-    obj_states = adj_driver.ObjectiveStatesSensitivities()
+    obj_states = adj_driver.ObjectiveSolutionSensitivities()
     obj_states_np = matrix_to_numpy(obj_states)
     if RANK == 0:
         print(f"\ndObjective/dStates: shape = {obj_states_np.shape}")
         print(obj_states_np)
 
     # dA/dq^T * psi (nPoint, nVar)
-    res_states = adj_driver.ResidualsStatesSensitivities()
+    res_states = adj_driver.ResidualsSolutionSensitivities()
     res_states_np = matrix_to_numpy(res_states)
     if RANK == 0:
         print(f"\ndResiduals/dStates^T * psi: shape = {res_states_np.shape}")

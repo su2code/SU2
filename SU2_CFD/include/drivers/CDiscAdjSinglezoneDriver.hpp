@@ -248,7 +248,7 @@ public:
    * \param[out] values - Values object with interface (iPoint, iVar).
    */
   template <class Container>
-  void GetAllObjectiveStatesSensitivities(Container& values) const {
+  void GetAllObjectiveSolutionSensitivities(Container& values) const {
     const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
 
     /*--- Get all the partial sensitivities (dObjective/dStates) ---*/
@@ -275,7 +275,7 @@ public:
    * \param[out] values - Values object with interface (iPoint, iVar).
    */
   template <class Container>
-  void GetAllResidualsStatesSensitivities(Container& values) const {
+  void GetAllResidualsSolutionSensitivities(Container& values) const {
     const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
 
     /*--- Get all the partial jacobian-adjoint products (dResiduals/dStates) ---*/

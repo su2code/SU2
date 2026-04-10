@@ -620,22 +620,22 @@ class CDriver : public CDriverBase {
   vector<passivedouble> GetResidualsFarfieldVariablesSensitivities() const;
 
   /*!
-   * \brief Get a read-only view of dObjective/dStates for all mesh nodes.
+   * \brief Get sensitivity of objective function with respect to conservative variables (dI/dq) for all mesh nodes.
    * \return CPyWrapperMatrixView of shape (nPoint, nVar).
    */
-  CPyWrapperMatrixView ObjectiveStatesSensitivities() const;
+  CPyWrapperMatrixView ObjectiveSolutionSensitivities() const;
 
   /*!
-   * \brief Get a read-only view of dResiduals/dStates^T * psi for all mesh nodes.
+   * \brief Get sensitivity of residuals with respect to conservative variables (dA/dq^T * psi) for all mesh nodes.
    * \return CPyWrapperMatrixView of shape (nPoint, nVar).
    */
-  CPyWrapperMatrixView ResidualsStatesSensitivities() const;
+  CPyWrapperMatrixView ResidualsSolutionSensitivities() const;
 
   /*!
-   * \brief Get a read-only view of dTractions/dStates^T * psi for all mesh nodes.
+   * \brief Get sensitivity of tractions with respect to conservative variables (dfa/dq) for all mesh nodes.
    * \return CPyWrapperMatrixView of shape (nPoint, nVar).
    */
-  CPyWrapperMatrixView ForcesStatesSensitivities() const;
+  CPyWrapperMatrixView ForcesSolutionSensitivities() const;
 
   /*!
    * \brief Get a read-only view of dObjective/dCoordinates for all mesh nodes.

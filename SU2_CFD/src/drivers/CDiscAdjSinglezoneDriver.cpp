@@ -256,7 +256,7 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
   UpdateAdjointsResidual();
 
   GetAllSolutions(ZONE_0, true, AdjSol);
-  GetAllObjectiveStatesSensitivities(AdjRHS);
+  GetAllObjectiveSolutionSensitivities(AdjRHS);
 
   /*--- Manipulate the screen output frequency to avoid printing garbage. ---*/
   const bool monitor = true;
@@ -836,7 +836,7 @@ void CDiscAdjSinglezoneDriver::ApplyOperator(const CSysVector<Scalar>& u, CSysVe
   UpdateAdjointsResidual();
 
   /*--- Extract the partial residual Jacobian-adjoint product. ---*/
-  GetAllResidualsStatesSensitivities(v);
+  GetAllResidualsSolutionSensitivities(v);
 }
 
 void CDiscAdjSinglezoneDriver::SetWallNormalConstraint() {

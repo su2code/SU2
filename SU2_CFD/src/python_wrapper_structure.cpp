@@ -171,28 +171,28 @@ vector<passivedouble> CDriver::GetResidualsFarfieldVariablesSensitivities() cons
   return values;
 }
 
-CPyWrapperMatrixView CDriver::ObjectiveStatesSensitivities() const {
+CPyWrapperMatrixView CDriver::ObjectiveSolutionSensitivities() const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
   auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dObjective_dStates());
-  return CPyWrapperMatrixView(mat, "ObjectiveStatesSensitivities", true);
+  return CPyWrapperMatrixView(mat, "ObjectiveSolutionSensitivities", true);
 }
 
-CPyWrapperMatrixView CDriver::ResidualsStatesSensitivities() const {
+CPyWrapperMatrixView CDriver::ResidualsSolutionSensitivities() const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
   auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dResiduals_dStates());
-  return CPyWrapperMatrixView(mat, "ResidualsStatesSensitivities", true);
+  return CPyWrapperMatrixView(mat, "ResidualsSolutionSensitivities", true);
 }
 
-CPyWrapperMatrixView CDriver::ForcesStatesSensitivities() const {
+CPyWrapperMatrixView CDriver::ForcesSolutionSensitivities() const {
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
   auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dTractions_dStates());
-  return CPyWrapperMatrixView(mat, "ForcesStatesSensitivities", true);
+  return CPyWrapperMatrixView(mat, "ForcesSolutionSensitivities", true);
 }
 
 CPyWrapperMatrixView CDriver::ObjectiveCoordinatesSensitivities() const {
