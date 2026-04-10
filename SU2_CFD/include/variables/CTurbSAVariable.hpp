@@ -115,7 +115,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return 1.0 if the Stochastic Backscatter Model must be applied only in a confined box.
    */
-  inline su2double GetSbsInBox(unsigned long iPoint) const override { return sbsInBox(iPoint); }
+  inline int8_t GetSbsInBox(unsigned long iPoint) const override { return sbsInBox(iPoint); }
 
   /*!
    * \brief Set if the Stochastic Backscatter Model must be applied only in a confined box.
