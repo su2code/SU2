@@ -839,9 +839,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
    *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
   {
     const passivedouble initial_corr_rms = ComputeLinSysResRMS(solver);
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    { lastCorrecSmoothRMS[iMesh][0] = initial_corr_rms; }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+    SU2_OMP_SAFE_GLOBAL_ACCESS(lastCorrecSmoothRMS[iMesh][0] = initial_corr_rms;)
   }
 
   /*--- Jacobi iterations (no early exit — Jacobi targets high-frequency modes,
