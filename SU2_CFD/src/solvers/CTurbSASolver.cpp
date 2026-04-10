@@ -422,7 +422,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           numerics->SetStochSource(nodes->GetLangevinSourceTerms(iPoint, iDim), iDim);
         numerics->SetLES_Mode(nodes->GetLES_Mode(iPoint), 0.0);
-        numerics->SetSbsInBoxSensor(std::nearbyint(nodes->GetSbsInBox(iPoint)), 0);
+        numerics->SetSbsInBoxSensor(nodes->GetSbsInBox(iPoint), 0);
       }
 
     }
