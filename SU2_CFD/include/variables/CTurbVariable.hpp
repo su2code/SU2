@@ -131,12 +131,12 @@ public:
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    */
-  inline virtual su2double GetSbsInBox(unsigned long iPoint) const { return 0.0; }
+  inline virtual int8_t GetSbsInBox(unsigned long iPoint) const { return 0; }
 
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    * \param[in] val_sbsInBox - 1.0 if the Stochastic Backscatter Model must be applied only in a confined box.
    */
-  inline virtual void SetSbsInBox(unsigned long iPoint, su2double val_sbsInBox) {}
+  inline virtual void SetSbsInBox(unsigned long iPoint, int8_t val_sbsInBox) {}
 };
