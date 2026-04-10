@@ -568,9 +568,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPreSmooth > 1);
 
   /*--- Reset the shared early-exit flag (master only). ---*/
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  { mg_early_exit_flag = false; }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
   for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
 
     /*--- Time and space integration ---*/
