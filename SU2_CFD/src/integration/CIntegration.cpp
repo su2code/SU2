@@ -81,16 +81,17 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config);
 
-  /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied---*/
+  /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied.
+   Turbomachinery span-wise data structures are only initialized on the fine grid. ---*/
 
-  if (config->GetBoolGiles() && config->GetSpatialFourier()){
+  if (iMesh == MESH_0 && config->GetBoolGiles() && config->GetSpatialFourier()){
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, conv_bound_numerics, INFLOW);
 
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, conv_bound_numerics, OUTFLOW);
   }
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    if (config->GetBoolTurbomachinery()){
+    if (iMesh == MESH_0 && config->GetBoolTurbomachinery()){
         /*--- Average quantities at the inflow and outflow boundaries ---*/
       solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry,config,INFLOW);
       solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry, config, OUTFLOW);
@@ -128,10 +129,14 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Supersonic_Outlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case GILES_BOUNDARY:
-        solver_container[MainSolver]->BC_Giles(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        /*--- Giles BC uses turbo geometry data only available on the fine grid. ---*/
+        if (iMesh == MESH_0) {
+          solver_container[MainSolver]->BC_Giles(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        }
         break;
       case RIEMANN_BOUNDARY:
-        if (config->GetBoolTurbomachinery()){
+        /*--- TurboRiemann uses turbo geometry data only available on the fine grid. ---*/
+        if (config->GetBoolTurbomachinery() && iMesh == MESH_0){
           solver_container[MainSolver]->BC_TurboRiemann(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         }
         else{

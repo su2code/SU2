@@ -191,6 +191,36 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
                                             false);
       solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
     }
+
+    /*--- Overwrite coarse-level eddy viscosity to ensure restart reproducibility. ---*/
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
+      su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
+      su2double EddyVisc = 0.0;
+      for (auto iChildren = 0u; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
+        EddyVisc += solver[iMesh - 1][TURB_SOL]->GetNodes()->GetmuT(Point_Fine) * Area_Children / Area_Parent;
+      }
+      solver[iMesh][TURB_SOL]->GetNodes()->SetmuT(iPoint, EddyVisc);
+    }
+    END_SU2_OMP_FOR
+
+    /*--- Zero eddy viscosity at viscous walls. ---*/
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetViscous_Wall(iMarker)) {
+        SU2_OMP_FOR_STAT(32)
+        for (auto iVertex = 0ul; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
+          auto Point_Coarse = geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
+          solver[iMesh][TURB_SOL]->GetNodes()->SetmuT(Point_Coarse, 0.0);
+        }
+        END_SU2_OMP_FOR
+      }
+    }
+
+    /*--- Communicate the restricted eddy viscosity. ---*/
+    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION_EDDY);
+    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION_EDDY);
   }
 
   /*--- Go back to single threaded execution. ---*/
