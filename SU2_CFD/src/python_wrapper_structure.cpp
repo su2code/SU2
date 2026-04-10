@@ -57,14 +57,14 @@ void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry
 //////////////////////////////////////////////////////////////////////////////////
 passivedouble CDriver::GetAngleOfAttack() const { return SU2_TYPE::GetValue(main_config->GetAoA()); }
 
-void CDriver::SetAngleOfAttack(const passivedouble AoA) {
+void CDriver::SetFarFieldAoA(const passivedouble AoA) {
   config_container[selected_zone]->SetAoA(AoA);
   solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[selected_zone]);
 }
 
 passivedouble CDriver::GetAngleOfSideslip() const { return SU2_TYPE::GetValue(main_config->GetAoS()); }
 
-void CDriver::SetAngleOfSideslip(const passivedouble AoS) {
+void CDriver::SetFarFieldAoS(const passivedouble AoS) {
   config_container[selected_zone]->SetAoS(AoS);
   solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[selected_zone]);
 }

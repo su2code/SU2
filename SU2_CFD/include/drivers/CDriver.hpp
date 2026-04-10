@@ -566,13 +566,13 @@ class CDriver : public CDriverBase {
    * \brief Set the angle of attack of the farfield.
    * \param[in] alpha - Angle (degree).
    */
-  void SetAngleOfAttack(passivedouble alpha);
+  void SetFarFieldAoA(passivedouble alpha);
 
   /*!
    * \brief Set the angle of sideslip of the farfield.
    * \param[in] beta - Angle (degree).
    */
-  void SetAngleOfSideslip(passivedouble beta);
+  void SetFarFieldAoS(passivedouble beta);
 
   /*!
    * \brief Get the number of conservative state variables.
