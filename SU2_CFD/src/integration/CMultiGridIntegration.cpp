@@ -664,9 +664,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPostSmooth > 1);
 
   /*--- Reset the shared early-exit flag (master only). ---*/
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  { mg_early_exit_flag = false; }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
 
   /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
   for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
