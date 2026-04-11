@@ -102,8 +102,11 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
                 spark_radius = flamelet_config_options.spark_init[3];
       dist_from_center = GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.spark_init.data());
       if (dist_from_center < pow(spark_radius,2)) {
-        for (auto iVar = 0u; iVar < nVar; iVar++)
-          nodes->SetScalarSource(i_point, iVar, nodes->GetScalarSources(i_point)[iVar] + flamelet_config_options.spark_reaction_rates[iVar]);
+        /*--- Add spark reaction rates to the sources that were just set by SetScalarSources ---*/
+        const su2double* current_sources = nodes->GetScalarSources(i_point);
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          nodes->SetScalarSource(i_point, iVar, current_sources[iVar] + flamelet_config_options.spark_reaction_rates[iVar]);
+        }
       }
     }
 
@@ -194,10 +197,11 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
           cout << "Ignition with a straight flame front" << endl;
           break;
         case FLAMELET_INIT_TYPE::SPARK:
-          cout << "Ignition with an artificial spark" << endl;
+          cout << "Ignition with an artificial spark at iteration "<< flamelet_config_options.spark_init[4]
+               << " for a duration of " << flamelet_config_options.spark_init[5] << " iterations." << endl;
           break;
         case FLAMELET_INIT_TYPE::NONE:
-          cout << "No solution ignition (cold flow)" << endl;
+          cout << "No solution ignition (cold flow or restart)" << endl;
           break;
         default:
           break;
