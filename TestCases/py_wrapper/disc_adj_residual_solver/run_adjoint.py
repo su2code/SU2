@@ -202,15 +202,19 @@ def main():
         print("\n-------------------- FORWARD FLOW SOLVER --------------------")
     run_primal(options.filename)
 
-    shutil.copy('restart.dat', 'solution.dat')
+    if RANK == 0:
+        shutil.copy('restart.dat', 'solution.dat')
+    if COMM != 0:
+        COMM.Barrier()
 
     # run residual adjoint solver
     res_config = 'adjoint_res.cfg'
-    with open(options.filename, 'r') as f:
-        cfg_text = f.read()
-    cfg_text = cfg_text.replace('MATH_PROBLEM = DIRECT', 'MATH_PROBLEM = DISCRETE_ADJOINT')
-    with open(res_config, 'w') as f:
-        f.write(cfg_text)
+    if RANK == 0:
+        with open(options.filename, 'r') as f:
+            cfg_text = f.read()
+        cfg_text = cfg_text.replace('MATH_PROBLEM = DIRECT', 'MATH_PROBLEM = DISCRETE_ADJOINT')
+        with open(res_config, 'w') as f:
+            f.write(cfg_text)
 
     if RANK == 0:
         print("\n-------------------- RESIDUAL ADJOINT SOLVER --------------------")
@@ -222,16 +226,15 @@ def main():
 
     # fixed-point adjoint solver
     fp_config = 'adjoint_fp.cfg'
-    with open(res_config, 'r') as f:
-        cfg_text = f.read()
-    cfg_text = cfg_text.replace('KIND_DISC_ADJ = RESIDUALS', 'KIND_DISC_ADJ = FIXED_POINT')
-    with open(fp_config, 'w') as f:
-        f.write(cfg_text)
+    if RANK == 0:
+        with open(res_config, 'r') as f:
+            cfg_text = f.read()
+        cfg_text = cfg_text.replace('KIND_DISC_ADJ = RESIDUALS', 'KIND_DISC_ADJ = FIXED_POINT')
+        with open(fp_config, 'w') as f:
+            f.write(cfg_text)
 
-    if options.with_MPI:
-        COMM.Barrier()
-
-    print("\n-------------------- FIXED-POINT ADJOINT SOLVER --------------------")
+    if RANK == 0:
+        print("\n-------------------- FIXED-POINT ADJOINT SOLVER --------------------")
     run_fixed_point_adjoint(fp_config)
 
     fp_surface = 'surface_adjoint_fixed_point.dat'

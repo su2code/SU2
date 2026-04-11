@@ -488,8 +488,12 @@ void CDiscAdjResidualSolver::SetAdjoint_Output(CGeometry* geometry, CConfig* con
   /*--- Local container to manipulate the adjoint solution. ---*/
   su2double Solution[MAXNVAR] = {0.0};
 
+  /*--- Only seed domain residuals. Ghost residuals are locally computed (not MPI-received),
+   *    so seeding them causes double-counting of cross-rank edge contributions. ---*/
+  const auto nPointDomain = geometry->GetnPointDomain();
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
     /*--- Get and store the adjoint solution of a point. ---*/
 
     for (auto iVar = 0u; iVar < nVar; iVar++) {

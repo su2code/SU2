@@ -534,7 +534,7 @@ def main():
     pywrapper_CFD_AD_ResidSolver.cfg_dir       = "py_wrapper/disc_adj_residual_solver"
     pywrapper_CFD_AD_ResidSolver.cfg_file      = "box.cfg"
     pywrapper_CFD_AD_ResidSolver.test_iter     = 77777
-    pywrapper_CFD_AD_ResidSolver.test_vals     = [0.000000, 0.000000, 0.000000, 0.000000]
+    pywrapper_CFD_AD_ResidSolver.test_vals     = [0.000000, 0.000001, 0.000001, 0.000002]
     pywrapper_CFD_AD_ResidSolver.command       = TestCase.Command("mpirun -n 2", "python", "run_adjoint.py -f")
     pywrapper_CFD_AD_ResidSolver.timeout       = 1600
     pywrapper_CFD_AD_ResidSolver.tol           = 0.000001
