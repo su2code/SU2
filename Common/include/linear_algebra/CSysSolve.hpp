@@ -196,7 +196,7 @@ class CSysSolve {
    * vector is kept in nrm0 and updated after operating with each vector
    *
    */
-  void ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg, std::vector<VectorType>& w) const;
+  bool ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg, std::vector<VectorType>& w) const;
 
   /*!
    * \brief writes header information for a CSysSolve residual history

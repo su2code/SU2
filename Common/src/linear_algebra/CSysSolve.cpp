@@ -178,7 +178,7 @@ void CSysSolve<ScalarType>::SolveReduced(int n, const su2matrix<ScalarType>& Hsb
 }
 
 template <class ScalarType>
-void CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg,
+bool CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg,
                                            vector<CSysVector<ScalarType>>& w) const {
   const auto thread = omp_get_thread_num();
 
@@ -201,11 +201,13 @@ void CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<Sc
   ScalarType nrm = w[i + 1].squaredNorm();
   ScalarType thr = nrm * reorth;
 
-  /*--- The norm of w[i+1] < 0.0 or w[i+1] = NaN ---*/
+  /*--- The squared norm of w[i+1] <= 0 or is NaN: the input vector from
+       mat_vec is zero or contains NaN. Cannot proceed with orthogonalization. ---*/
 
   if ((nrm <= 0.0) || (nrm != nrm)) {
     /*--- nrm is the result of a dot product, communications are implicitly handled. ---*/
-    SU2_MPI::Error("FGMRES orthogonalization failed, linear solver diverged.", CURRENT_FUNCTION);
+    SetHsbg(i + 1, i, ScalarType(0));
+    return false;
   }
 
   /*--- Begin main Gram-Schmidt loop ---*/
@@ -236,9 +238,16 @@ void CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<Sc
   nrm = w[i + 1].norm();
   SetHsbg(i + 1, i, nrm);
 
+  /*--- Return false if the resulting vector is zero or contains NaN, true otherwise. --- */
+  if ((nrm <= 0.0) || (nrm != nrm)) {
+    return false;
+  }
+
   /*--- Scale the resulting vector ---*/
 
   w[i + 1] /= nrm;
+
+  return true;
 }
 
 template <class ScalarType>
@@ -543,13 +552,23 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     /*---  Modified Gram-Schmidt orthogonalization ---*/
 
+    bool orthog_ok;
     if (nestedParallel) {
       /*--- "omp parallel if" does not work well here ---*/
       SU2_OMP_PARALLEL
-      ModGramSchmidt(true, i, H, V);
+      orthog_ok = ModGramSchmidt(true, i, H, V);
       END_SU2_OMP_PARALLEL
     } else {
-      ModGramSchmidt(false, i, H, V);
+      orthog_ok = ModGramSchmidt(false, i, H, V);
+    }
+
+    if (!orthog_ok) {
+      if (masterRank) {
+        SU2_OMP_MASTER
+        cout << "WARNING: FGMRES orthogonalization failed, linear solver diverged." << endl;
+        END_SU2_OMP_MASTER
+      }
+      break;
     }
 
     /*---  Apply old Givens rotations to new column of the Hessenberg matrix then generate the
@@ -796,13 +815,25 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       precond(V[j], Z[j]);
       mat_vec(Z[j], V[j + 1]);
 
+      bool orthog_ok;
       if (nestedParallel) {
         /*--- "omp parallel if" does not work well here ---*/
         SU2_OMP_PARALLEL
-        ModGramSchmidt(true, j, H, V);
+        orthog_ok = ModGramSchmidt(true, j, H, V);
         END_SU2_OMP_PARALLEL
       } else {
-        ModGramSchmidt(false, j, H, V);
+        orthog_ok = ModGramSchmidt(false, j, H, V);
+      }
+
+      if (!orthog_ok) {
+        if (masterRank) {
+          SU2_OMP_MASTER
+          cout << "WARNING: FGCRODR orthogonalization failed, linear solver diverged." << endl;
+          END_SU2_OMP_MASTER
+        }
+        converged = true; /*--- Force exit from inner and outer loops. ---*/
+        m = j;            /*--- Only use iterations that completed successfully. ---*/
+        break;
       }
 
       /*--- Solve the reduced system. We do not use Given's rotations to factor H in place

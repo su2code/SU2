@@ -25,13 +25,92 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../../include/integration/ComputeLinSysResRMS.hpp"
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
+#include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 
-passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,
-                                                          unsigned short iMesh, passivedouble CFL_fine, passivedouble CFL_coarse_current) {
+/*!\cond PRIVATE Helper: shared logic for adapting a single MG damping factor.
+ *  Inputs:
+ *    performed[]  - actual iteration counts per level from this cycle
+ *    progress[]   - whether residuals decreased per level
+ *    getConfigured - returns the per-level configured maximum
+ *    levelStart/End - level range to inspect
+ *    getCurrent    - returns the current damping factor from config
+ *    setPersist    - persists the updated factor back to config
+ \endcond */
+template <typename GetCfg, typename GetCur, typename SetPersist>
+static void adaptMGDampingFactor(const unsigned short* performed,
+                                  const bool* progress,
+                                  GetCfg getConfigured,
+                                  unsigned short levelStart, unsigned short levelEnd,
+                                  GetCur getCurrent, SetPersist setPersist) {
+  int local_any_stagnant = 0;  /*--- hit max iters AND residuals did not decrease: scale down. ---*/
+  int local_all_early = 1;  /*--- all levels exited before max iters: scale up. ---*/
+  int local_inspected = 0;
 
-  /*--- Must be called from a single-thread context (e.g. inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS). ---*/
+  for (unsigned short lvl = levelStart; lvl <= levelEnd; ++lvl) {
+    const unsigned short configured = getConfigured(lvl);
+    if (configured == 0) continue;
+    ++local_inspected;
+    const bool hit_max = (performed[lvl] >= configured);
+    /*--- Scale-down signal: hit the cap AND residuals did not improve.
+     *    Hitting the cap while still converging is not stagnation; no reduction needed. ---*/
+    if (hit_max && !progress[lvl]) local_any_stagnant = 1;
+    /*--- Scale-up signal: requires early exit on every level.
+     *    Making progress at max iters is good, but the damping is already doing useful work;
+     *    do not increase it further until the smoother actually exits early. ---*/
+    if (hit_max) local_all_early = 0;
+  }
+  if (local_inspected == 0) return;
+
+  /*--- performed[] and progress[] are derived from MPI-reduced ComputeLinSysResRMS values,
+   *    so local_any_stagnant and local_all_early are already identical on every rank. ---*/
+  const su2double SCALE_DOWN = 0.99;
+  const su2double SCALE_UP = 1.01;
+  const su2double CLAMP_MIN = 0.1;
+  const su2double CLAMP_MAX = 0.95;
+
+  su2double factor = getCurrent();
+  if (local_any_stagnant) factor *= SCALE_DOWN;
+  else if (local_all_early) factor *= SCALE_UP;
+  /*--- else: hit max iters but still converging, or mixed — hold factor. ---*/
+  factor = max(CLAMP_MIN, min(CLAMP_MAX, factor));
+  setPersist(factor);
+}
+
+void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
+  const auto& mgOpts = config->GetMGOptions();
+  const unsigned short nMGLevels = config->GetnMGLevels();
+  adaptMGDampingFactor(
+    lastPreSmoothIters,
+    lastPreSmoothProgress,
+    [&mgOpts](unsigned short lvl){ return mgOpts.MG_PreSmooth[lvl]; },
+    /*levelStart=*/1, nMGLevels,
+    [config](){ return config->GetDamp_Res_Restric(); },
+    [config](su2double v){ config->SetDamp_Res_Restric(v); });
+}
+
+void CMultiGridIntegration::adaptProlongationDamping(CConfig* config) {
+  /*--- Post-smoothing directly measures whether the corrected fine-grid solution
+   *    is well-behaved after prolongation.  If it exits early, increase damping.
+   *    If it stagnates at max iters, decrease damping. ---*/
+  const auto& mgOpts = config->GetMGOptions();
+  const unsigned short nMGLevels = config->GetnMGLevels();
+  if (nMGLevels == 0) return;
+  adaptMGDampingFactor(
+    lastPostSmoothIters,
+    lastPostSmoothProgress,
+    [&mgOpts](unsigned short lvl){ return mgOpts.MG_PostSmooth[lvl]; },
+    /*levelStart=*/0, static_cast<unsigned short>(nMGLevels - 1),
+    [config](){ return config->GetDamp_Correc_Prolong(); },
+    [config](su2double v){ config->SetDamp_Correc_Prolong(v); });
+}
+
+passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsigned short iMesh,
+                                                          passivedouble CFL_fine, passivedouble CFL_coarse_current,
+                                                          passivedouble rms_res_coarse) {
+
   const bool wasActive = AD::BeginPassive();
 
   passivedouble current_coeff = CFL_coarse_current / CFL_fine;
@@ -41,116 +120,105 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolve
 
   passivedouble CFL_coarse_new = CFL_coarse_current; // Default: keep current value
 
-  {
-    /*--- Get global iteration count first ---*/
-    unsigned long current_iter;
-    if (config->GetTime_Domain())
-      current_iter = config->GetTimeIter();
-    else
-      current_iter = config->GetInnerIter();
+  /*--- Get global iteration count first ---*/
+  unsigned long current_iter;
+  if (config->GetTime_Domain())
+    current_iter = config->GetTimeIter();
+  else
+    current_iter = config->GetInnerIter();
 
-    /*--- Reset state at the beginning of a new solve (iter 0 or 1) ---*/
-    /*--- This ensures deterministic behavior across multiple runs ---*/
-    if (current_iter <= 1 && last_reset_iter != current_iter) {
-      for (int i = 0; i < MAX_MG_LEVELS; i++) {
-        current_avg[i] = 0.0;
-        prev_avg[i] = 0.0;
-        last_res[i] = 0.0;
-        last_was_increase[i] = false;
-        oscillation_count[i] = 0;
-        last_check_iter[i] = 0;
-        last_update_iter[i] = 0;
-      }
-      last_reset_iter = current_iter;
+  /*--- Reset state at the beginning of a new solve (iter 0 or 1) ---*/
+  /*--- This ensures deterministic behavior across multiple runs ---*/
+  if (current_iter <= 1 && last_reset_iter != current_iter) {
+    for (int i = 0; i < MAX_MG_LEVELS; i++) {
+      current_avg[i] = 0.0;
+      prev_avg[i] = 0.0;
+      last_res[i] = 0.0;
+      last_was_increase[i] = false;
+      oscillation_count[i] = 0;
+      last_check_iter[i] = 0;
+      last_update_iter[i] = 0;
     }
+    last_reset_iter = current_iter;
+  }
 
-    unsigned short lvl = min(iMesh, (unsigned short)(MAX_MG_LEVELS - 1));
-    unsigned long iter = current_iter;
+  unsigned short lvl = min(iMesh, (unsigned short)(MAX_MG_LEVELS - 1));
+  unsigned long iter = current_iter;
 
-    /*--- Get sum of all RMS residuals for all variables (local to this rank) ---*/
-    su2double rms_res_coarse_local = 0.0;
-    for (unsigned short iVar = 0; iVar < solver_coarse->GetnVar(); iVar++) {
-      rms_res_coarse_local += SU2_TYPE::GetValue(solver_coarse->GetRes_RMS(iVar));
-    }
+  /*--- rms_res_coarse is passed in (from lastPreSmoothRMS, already MPI-reduced). ---*/
 
-    /*--- MPI synchronization: ensure all ranks use the same global residual value. ---*/
-    /*--- Always reduce across ranks so all subsequent CFL logic is deterministic. ---*/
-    su2double rms_global_sum = 0.0;
-    SU2_MPI::Allreduce(&rms_res_coarse_local, &rms_global_sum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    passivedouble rms_res_coarse = SU2_TYPE::GetValue(rms_global_sum) / static_cast<passivedouble>(SU2_MPI::GetSize());
+  /*--- Flip-flop detection: detect oscillating residuals (once per outer iteration) ---*/
+  bool oscillation_detected = false;
+  if (iter != last_check_iter[lvl]) {
+    last_check_iter[lvl] = iter;
 
-    /*--- Flip-flop detection: detect oscillating residuals (once per outer iteration) ---*/
-    bool oscillation_detected = false;
-    if (iter != last_check_iter[lvl]) {
-      last_check_iter[lvl] = iter;
-
-      if (last_res[lvl] > EPS) {
-        bool current_is_increase = (rms_res_coarse > last_res[lvl]);
-        if (current_is_increase != last_was_increase[lvl]) {
-          /*--- Direction changed, increment oscillation counter ---*/
-          oscillation_count[lvl]++;
-          if (oscillation_count[lvl] >= 4) {
-            /*--- Detected 4 consecutive direction changes = oscillation ---*/
-            oscillation_detected = true;
-            oscillation_count[lvl] = 0;  // Reset counter after detecting
-          }
-        } else {
-          /*--- Same direction, reset counter ---*/
-          oscillation_count[lvl] = 0;
+    if (last_res[lvl] > EPS) {
+      bool current_is_increase = (rms_res_coarse > last_res[lvl]);
+      if (current_is_increase != last_was_increase[lvl]) {
+        /*--- Direction changed, increment oscillation counter ---*/
+        oscillation_count[lvl]++;
+        if (oscillation_count[lvl] >= 4) {
+          /*--- Detected 4 consecutive direction changes = oscillation ---*/
+          oscillation_detected = true;
+          oscillation_count[lvl] = 0;  // Reset counter after detecting
         }
-        last_was_increase[lvl] = current_is_increase;
+      } else {
+        /*--- Same direction, reset counter ---*/
+        oscillation_count[lvl] = 0;
       }
-      last_res[lvl] = rms_res_coarse;
+      last_was_increase[lvl] = current_is_increase;
     }
+    last_res[lvl] = rms_res_coarse;
+  }
 
-    /*--- Update exponential moving average ---*/
-    if (current_avg[lvl] < EPS) {
-      current_avg[lvl] = rms_res_coarse;  // Initialize with first value
-    } else {
-      current_avg[lvl] = (current_avg[lvl] * (AVG_WINDOW - 1) + rms_res_coarse) / AVG_WINDOW;
-    }
+  /*--- Update exponential moving average ---*/
+  if (current_avg[lvl] < EPS) {
+    current_avg[lvl] = rms_res_coarse;  // Initialize with first value
+  } else {
+    current_avg[lvl] = (current_avg[lvl] * (AVG_WINDOW - 1) + rms_res_coarse) / AVG_WINDOW;
+  }
 
-    /*--- Check if we should compare and adapt CFL ---*/
-    passivedouble new_coeff = current_coeff;
-    const passivedouble MIN_REDUCTION_FACTOR = 0.98;  // Require at least 2% reduction
-    const int UPDATE_INTERVAL = 5;  // Update reference every N iterations
+  /*--- Check if we should compare and adapt CFL ---*/
+  passivedouble new_coeff = current_coeff;
+  const passivedouble MIN_REDUCTION_FACTOR = 0.98;  // Require at least 2% reduction
+  const int UPDATE_INTERVAL = 5;  // Update reference every N iterations
 
-    /*--- Initialize prev_avg on first use ---*/
-    if (prev_avg[lvl] < EPS) {
+  /*--- Initialize prev_avg on first use ---*/
+  if (prev_avg[lvl] < EPS) {
+    prev_avg[lvl] = current_avg[lvl];
+  }
+
+  /*--- Periodically update prev_avg to allow ratio to reflect accumulated decrease ---*/
+  bool should_update = (iter - last_update_iter[lvl] >= UPDATE_INTERVAL);
+
+  /*--- Asymmetric adaptation for robustness ---*/
+  if (prev_avg[lvl] > EPS) {
+    passivedouble ratio = current_avg[lvl] / prev_avg[lvl];
+    bool sufficient_decrease = (ratio < MIN_REDUCTION_FACTOR);
+    bool increasing_trend = (ratio >= 1.0);
+
+    if (increasing_trend) {
+      /*--- Residual increasing: reduce CFL immediately for robustness ---*/
+      new_coeff = current_coeff * 0.90;
+      /*--- Update reference since we're reacting immediately ---*/
       prev_avg[lvl] = current_avg[lvl];
-    }
-
-    /*--- Periodically update prev_avg to allow ratio to reflect accumulated decrease ---*/
-    bool should_update = (iter - last_update_iter[lvl] >= UPDATE_INTERVAL);
-
-    /*--- Asymmetric adaptation for robustness ---*/
-    if (prev_avg[lvl] > EPS) {
-      passivedouble ratio = current_avg[lvl] / prev_avg[lvl];
-      bool sufficient_decrease = (ratio < MIN_REDUCTION_FACTOR);
-      bool increasing_trend = (ratio >= 1.0);
-
-      if (increasing_trend) {
-        /*--- Residual increasing: reduce CFL immediately for robustness ---*/
-        new_coeff = current_coeff * 0.90;
-        /*--- Update reference since we're reacting immediately ---*/
-        prev_avg[lvl] = current_avg[lvl];
-        last_update_iter[lvl] = iter;
-      } else if (sufficient_decrease && should_update) {
-        /*--- Residual decreasing sufficiently: increase CFL ---*/
-        new_coeff = current_coeff * 1.05;
-        /*--- Update reference only when we actually increase CFL ---*/
-        prev_avg[lvl] = current_avg[lvl];
-        last_update_iter[lvl] = iter;
-      }
-    }
-
-    /*--- CFL reduction for oscillation detection ---*/
-    if (oscillation_detected) {
-      new_coeff = current_coeff * 0.75;
-      /*--- Update reference after oscillation response ---*/
+      last_update_iter[lvl] = iter;
+    } else if (sufficient_decrease && should_update) {
+      /*--- Residual decreasing sufficiently: increase CFL ---*/
+      new_coeff = current_coeff * 1.05;
+      /*--- Update reference only when we actually increase CFL ---*/
       prev_avg[lvl] = current_avg[lvl];
       last_update_iter[lvl] = iter;
     }
+  }
+
+  /*--- CFL reduction for oscillation detection ---*/
+  if (oscillation_detected) {
+    new_coeff = current_coeff * 0.75;
+    /*--- Update reference after oscillation response ---*/
+    prev_avg[lvl] = current_avg[lvl];
+    last_update_iter[lvl] = iter;
+  }
 
     /*--- Clamp coefficient between 0.5 and 1.0 ---*/
     new_coeff = max(0.5, min(1.0, new_coeff));
@@ -159,7 +227,6 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolve
     CFL_coarse_new = max(0.5 * CFL_fine, min(CFL_fine, CFL_fine * new_coeff));
 
     config->SetCFL(iMesh+1, CFL_coarse_new);
-  }
 
   AD::EndPassive(wasActive);
   return CFL_coarse_new;
@@ -208,10 +275,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   su2double monitor = 1.0;
   bool FullMG = false;
 
-  unsigned short RecursiveParam = config[iZone]->GetMGCycle();
+  unsigned short RecursiveParam = static_cast<unsigned short>(config[iZone]->GetMGCycle());
 
-  if (config[iZone]->GetMGCycle() == FULLMG_CYCLE) {
-    RecursiveParam = V_CYCLE;
+  if (config[iZone]->GetMGCycle() == MG_CYCLE::FULL) {
+    RecursiveParam = static_cast<unsigned short>(MG_CYCLE::V);
     FullMG = true;
   }
 
@@ -219,8 +286,32 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
 
-  /// TODO: This was always false.
-  const bool Convergence_FullMG = false;
+  /*--- Initialize per-level smoothing iteration counters to the configured maximum.
+   *    If early exit never fires, the output will show actual == max. ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
+    const auto& mgOpts = config[iZone]->GetMGOptions();
+    for (unsigned short i = 0; i <= nMGLevels; ++i) {
+      lastPreSmoothIters[i] = mgOpts.MG_PreSmooth[i];
+      lastPostSmoothIters[i] = mgOpts.MG_PostSmooth[i];
+      lastCorrecSmoothIters[i] = mgOpts.MG_CorrecSmooth[i];
+      lastPreSmoothProgress[i] = false;
+      lastPostSmoothProgress[i] = false;
+      lastCorrecSmoothProgress[i] = false;
+      lastPreSmoothRMS[i][0] = lastPreSmoothRMS[i][1] = 0.0;
+      lastPostSmoothRMS[i][0] = lastPostSmoothRMS[i][1] = 0.0;
+      lastCorrecSmoothRMS[i][0] = lastCorrecSmoothRMS[i][1] = 0.0;
+    }
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  /*--- Full MG: advance to the next finer grid after a fixed number of
+   *    outer iterations on the current coarsest active level.
+   *    We use 100 iterations per level (nMGLevels levels total) ---*/
+  const bool Convergence_FullMG =
+      FullMG && (FinestMesh != MESH_0) &&
+      (config[iZone]->GetInnerIter() % 100 == 99);
 
   if (!config[iZone]->GetRestart() && FullMG && direct && ( Convergence_FullMG && (FinestMesh != MESH_0 ))) {
 
@@ -243,6 +334,30 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
 
+  /*--- Adapt coarse-grid CFL once per cycle using smoothing residuals gathered during the cycle.
+   *    lastPreSmoothRMS[iMesh+1][1] is the final RMS after pre-smoothing at the coarse level ---*/
+  const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
+      const passivedouble CFL_fine_p = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh));
+      const passivedouble CFL_coarse_p = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh+1));
+      computeMultigridCFL(config[iZone], iMesh, CFL_fine_p, CFL_coarse_p,
+                          lastPreSmoothRMS[iMesh+1][1]);
+    }
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  /*--- Propagate the updated coarse-grid CFL to every coarse-grid point (all threads). ---*/
+  for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
+    const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh+1));
+    CGeometry* geo_c = geometry[iZone][iInst][iMesh+1];
+    CSolver* sol_c = solver_container[iZone][iInst][iMesh+1][Solver_Position];
+    SU2_OMP_FOR_STAT(roundUpDiv(geo_c->GetnPoint(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geo_c->GetnPoint(); iPoint++)
+      sol_c->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
+    END_SU2_OMP_FOR
+  }
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
 
@@ -256,6 +371,72 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   NonDimensional_Parameters(geometry[iZone][iInst], solver_container[iZone][iInst],
                             numerics_container[iZone][iInst], config[iZone],
                             FinestMesh, RunTime_EqSystem, &monitor);
+
+  /*--- Adapt restriction damping based on coarse-level pre-smoothing workload from this cycle.
+   *    Only effective when MG_SMOOTH_EARLY_EXIT= YES (otherwise all levels always run to completion
+   *    and the signal would always point to "scale down"). ---*/
+  const auto& mgOptsZone = config[iZone]->GetMGOptions();
+  if (mgOptsZone.MG_Smooth_EarlyExit) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      adaptRestrictionDamping(config[iZone]);
+      adaptProlongationDamping(config[iZone]);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
+
+  /*--- Print compact smoothing summary when MG_SMOOTH_OUTPUT= YES. ---*/
+  if (mgOptsZone.MG_Smooth_Output) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      if (SU2_MPI::GetRank() == MASTER_NODE) {
+
+        /*--- Helper: format one cell as "act/max [init->final]". ---*/
+        auto cellStr = [](unsigned short act, unsigned short mx,
+                          su2double rms0, su2double rms1) -> std::string {
+          std::ostringstream ss;
+          ss << act << "/" << mx << " ["
+             << std::scientific << std::setprecision(2)
+             << rms0 << "->" << rms1 << "]";
+          return ss.str();
+        };
+
+        PrintingToolbox::CTablePrinter table(&std::cout);
+        table.AddColumn("Smoother", 13);
+        for (unsigned short i = 0; i <= nMGLevels; ++i)
+          table.AddColumn("Level " + std::to_string(i), 26);
+        table.PrintHeader();
+
+        /*--- Pre-smooth: defined on all levels 0..nMGLevels. ---*/
+        table << "Pre-smooth";
+        for (unsigned short i = 0; i <= nMGLevels; ++i)
+          table << cellStr(lastPreSmoothIters[i], mgOptsZone.MG_PreSmooth[i],
+                           lastPreSmoothRMS[i][0], lastPreSmoothRMS[i][1]);
+
+        /*--- Post-smooth: defined on levels 0..nMGLevels-1; coarsest has none. ---*/
+        table << "Post-smooth";
+        for (unsigned short i = 0; i < nMGLevels; ++i)
+          table << cellStr(lastPostSmoothIters[i], mgOptsZone.MG_PostSmooth[i],
+                           lastPostSmoothRMS[i][0], lastPostSmoothRMS[i][1]);
+        table << "-";
+
+        /*--- Corr.-smooth: defined on levels 0..nMGLevels-1; coarsest has none. ---*/
+        table << "Corr-smooth";
+        for (unsigned short i = 0; i < nMGLevels; ++i)
+          table << cellStr(lastCorrecSmoothIters[i], mgOptsZone.MG_CorrecSmooth[i],
+                           lastCorrecSmoothRMS[i][0], lastCorrecSmoothRMS[i][1]);
+        table << "-";
+
+        table.PrintFooter();
+
+        cout << std::fixed << std::setprecision(4)
+             << "Damping [restrict | prolong] : " << config[iZone]->GetDamp_Res_Restric()
+             << " | " << config[iZone]->GetDamp_Correc_Prolong() << "\n"
+             << std::defaultfloat << std::setprecision(6);
+      }
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
   }
   END_SU2_OMP_PARALLEL
@@ -348,33 +529,14 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
       MultiGrid_Cycle(geometry, solver_container, numerics_container, config_container,
                       iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst);
-
     }
 
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
 
     GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
-    /*--- Compute adaptive CFL for coarse grid (master only, with barriers for synchronization) ---*/
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
-      passivedouble CFL_fine_passive = SU2_TYPE::GetValue(config->GetCFL(iMesh));
-      passivedouble CFL_coarse_current_passive = SU2_TYPE::GetValue(config->GetCFL(iMesh+1));
-      computeMultigridCFL(config, solver_coarse, geometry_coarse, iMesh, CFL_fine_passive, CFL_coarse_current_passive);
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
-    /*--- All threads read the CFL updated by master (safe after trailing barrier above) ---*/
-    const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config->GetCFL(iMesh+1));
-
-    /*--- Update LocalCFL at each coarse grid point ---*/
-    SU2_OMP_FOR_STAT(roundUpDiv(geometry_coarse->GetnPoint(), omp_get_num_threads()))
-    for (auto iPoint = 0ul; iPoint < geometry_coarse->GetnPoint(); iPoint++) {
-      solver_coarse->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
-    }
-    END_SU2_OMP_FOR
-
-    SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), 1.25, config);
+    const auto& mgOpts = config->GetMGOptions();
+    SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, mgOpts.MG_CorrecSmooth[iMesh], mgOpts.MG_Smooth_Coeff, config, iMesh);
 
     SetProlongated_Correction(solver_fine, geometry_fine, config, iMesh);
 
@@ -399,11 +561,14 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
                                          unsigned short iZone,
                                          unsigned short iRKLimit) {
 
+  const auto& mgOpts = config->GetMGOptions();
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
-  const unsigned short nPreSmooth = config->GetMG_PreSmooth(iMesh);
+  const unsigned short nPreSmooth = mgOpts.MG_PreSmooth[iMesh];
   const unsigned long timeIter = config->GetTimeIter();
+  const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPreSmooth > 1);
 
-  /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
+  /*--- Reset the shared early-exit flag (master only). ---*/
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
   for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
 
     /*--- Time and space integration ---*/
@@ -425,13 +590,59 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       /*--- Space integration ---*/
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
 
+      /*--- Capture initial RMS after the very first residual evaluation.
+       *    This is the earliest point where LinSysRes = R(u_current) (not stale).
+       *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
+      if (iPreSmooth == 0 && iRKStep == 0) {
+        const passivedouble initial_rms = ComputeLinSysResRMS(solver_fine);
+        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+        {
+          lastPreSmoothRMS[iMesh][0] = initial_rms;
+          if (early_exit) mg_initial_smooth_rms = initial_rms;
+        }
+        END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      }
+
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
 
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
     }
+
+    /*--- Early exit: check if RMS has dropped sufficiently.
+     *    ComputeLinSysResRMS must be called by all threads.
+     *    only master uses the result inside the safe block. ---*/
+    if (early_exit) {
+      const passivedouble current_rms = ComputeLinSysResRMS(solver_fine);
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      {
+        mg_last_smooth_rms = current_rms;
+        if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
+          lastPreSmoothIters[iMesh] = iPreSmooth + 1;
+          mg_early_exit_flag = true;
+        }
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      if (mg_early_exit_flag) break;
+    }
   }
+
+  /*--- Record final RMS and progress flag.
+   *    In the early-exit path mg_last_smooth_rms already holds the current value;
+   *    in the normal path we compute it once here.
+   *    The condition is the same for all threads so they all agree on whether to call. ---*/
+  passivedouble final_pre_rms = mg_last_smooth_rms;
+  if (!(early_exit && mg_early_exit_flag))
+    final_pre_rms = ComputeLinSysResRMS(solver_fine);
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    mg_last_smooth_rms = final_pre_rms;
+    lastPreSmoothRMS[iMesh][1] = final_pre_rms;
+    lastPreSmoothProgress[iMesh] = mg_early_exit_flag ||
+                                   (final_pre_rms < lastPreSmoothRMS[iMesh][0]);
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 
@@ -444,9 +655,14 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
                                           unsigned short iMesh,
                                           unsigned short iRKLimit) {
 
+  const auto& mgOpts = config->GetMGOptions();
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
-  const unsigned short nPostSmooth = config->GetMG_PostSmooth(iMesh);
+  const unsigned short nPostSmooth = mgOpts.MG_PostSmooth[iMesh];
   const unsigned long timeIter = config->GetTimeIter();
+  const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPostSmooth > 1);
+
+  /*--- Reset the shared early-exit flag (master only). ---*/
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
 
   /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
   for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
@@ -459,11 +675,25 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
         solver_fine->Set_OldSolution();
 
         if (classical_rk4) solver_fine->Set_NewSolution();
-        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  timeIter);
+        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh, timeIter);
       }
 
       /*--- Space integration ---*/
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
+
+      /*--- Capture initial RMS after the very first residual evaluation.
+       *    Before this point, LinSysRes held the smoothed correction (from SmoothProlongated_Correction),
+       *    NOT the spatial residual R(u). This is the first valid R(u) after applying the correction.
+       *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
+      if (iPostSmooth == 0 && iRKStep == 0) {
+        const passivedouble initial_rms = ComputeLinSysResRMS(solver_fine);
+        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+        {
+          lastPostSmoothRMS[iMesh][0] = initial_rms;
+          if (early_exit) mg_initial_smooth_rms = initial_rms;
+        }
+        END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      }
 
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
@@ -472,7 +702,38 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
 
     }
+
+    /*--- Early exit: check if RMS has dropped sufficiently.
+     *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
+    if (early_exit) {
+      const passivedouble current_rms = ComputeLinSysResRMS(solver_fine);
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+      {
+        mg_last_smooth_rms = current_rms;
+        if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
+          lastPostSmoothIters[iMesh] = iPostSmooth + 1;
+          mg_early_exit_flag = true;
+        }
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      if (mg_early_exit_flag) break;
+    }
   }
+
+  /*--- Record final RMS after post-smoothing.
+   *    In the early-exit path mg_last_smooth_rms is already current; otherwise compute once.
+   *    The condition is the same for all threads so they all agree on whether to call. ---*/
+  passivedouble final_post_rms = mg_last_smooth_rms;
+  if (!(early_exit && mg_early_exit_flag))
+    final_post_rms = ComputeLinSysResRMS(solver_fine);
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    mg_last_smooth_rms = final_post_rms;
+    lastPostSmoothRMS[iMesh][1] = final_post_rms;
+    lastPostSmoothProgress[iMesh] = mg_early_exit_flag ||
+                                    (final_post_rms < lastPostSmoothRMS[iMesh][0]);
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 
@@ -527,7 +788,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
       for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- For dirichlet boundary condtions, set the correction to zero.
+        /*--- For dirichlet boundary conditions, set the correction to zero.
          Note that Solution_Old stores the correction not the actual value ---*/
 
         su2double zero[3] = {0.0};
@@ -555,7 +816,8 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 }
 
 void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-                                                         unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config) {
+                                                         unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config,
+                                                         unsigned short iMesh) {
 
   /*--- Check if there is work to do. ---*/
   if (val_nSmooth == 0) return;
@@ -571,7 +833,15 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   }
   END_SU2_OMP_FOR
 
-  /*--- Jacobi iterations. ---*/
+  /*--- Record initial correction norm for debugging output.
+   *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
+  {
+    const passivedouble initial_corr_rms = ComputeLinSysResRMS(solver);
+    SU2_OMP_SAFE_GLOBAL_ACCESS(lastCorrecSmoothRMS[iMesh][0] = initial_corr_rms;)
+  }
+
+  /*--- Jacobi iterations (no early exit — Jacobi targets high-frequency modes,
+   *    so the global RMS is not a meaningful convergence indicator). ---*/
 
   for (auto iSmooth = 0u; iSmooth < val_nSmooth; iSmooth++) {
 
@@ -625,6 +895,11 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
   }
 
+  /*--- Record final correction norm for debugging output.
+   *    ComputeLinSysResRMS must be called by all threads (uses parallel dot). ---*/
+    const passivedouble final_corr_rms = ComputeLinSysResRMS(solver);
+    SU2_OMP_SAFE_GLOBAL_ACCESS(lastCorrecSmoothRMS[iMesh][1] = final_corr_rms;)
+
 }
 
 void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine,
@@ -632,7 +907,15 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   su2double *Solution_Fine, *Residual_Fine;
 
   const unsigned short nVar = sol_fine->GetnVar();
-  const su2double factor = config->GetDamp_Correc_Prolong();
+
+  /*--- Level-dependent damping: coarser prolongations produce noisier corrections
+   *    due to larger cell-size jumps, so we reduce the factor progressively.
+   *    iMesh=0: factor = base_damp * 1.0  (finest grid, full correction)
+   *    iMesh=1: factor = base_damp * 0.75
+   *    iMesh=2: factor = base_damp * 0.5625, etc. ---*/
+  const su2double base_damp = config->GetDamp_Correc_Prolong();
+  const su2double level_factor = pow(0.75, static_cast<su2double>(iMesh));
+  const su2double factor = base_damp * level_factor;
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Fine = 0ul; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
@@ -675,7 +958,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   const su2double *Residual_Fine;
 
   const unsigned short nVar = sol_coarse->GetnVar();
-  su2double factor = config->GetDamp_Res_Restric();
+  const su2double factor = config->GetDamp_Res_Restric();
 
   auto *Residual = new su2double[nVar];
 
@@ -689,7 +972,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
       auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
       Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
       for (auto iVar = 0u; iVar < nVar; iVar++)
-        Residual[iVar] += factor*Residual_Fine[iVar];
+        Residual[iVar] += factor * Residual_Fine[iVar];
     }
     sol_coarse->GetNodes()->AddRes_TruncError(Point_Coarse, Residual);
   }
@@ -835,8 +1118,9 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
       solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
 
-      /*--- Calculate the turbo performance ---*/
-      if (config->GetBoolTurbomachinery()){
+      /*--- Calculate the turbo performance (only on the fine grid; turbo
+       *    geometry data is only available on MESH_0). ---*/
+      if (config->GetBoolTurbomachinery() && FinestMesh == MESH_0){
 
         /*--- Average quantities at the inflow and outflow boundaries ---*/
 
