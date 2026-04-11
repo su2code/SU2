@@ -215,6 +215,8 @@ def main():
         cfg_text = cfg_text.replace('MATH_PROBLEM = DIRECT', 'MATH_PROBLEM = DISCRETE_ADJOINT')
         with open(res_config, 'w') as f:
             f.write(cfg_text)
+    if COMM != 0:
+        COMM.Barrier()
 
     if RANK == 0:
         print("\n-------------------- RESIDUAL ADJOINT SOLVER --------------------")
@@ -223,6 +225,8 @@ def main():
     res_surface = 'surface_adjoint_residual.dat'
     if RANK == 0:
         os.rename('surface_adjoint.dat', res_surface)
+    if COMM != 0:
+        COMM.Barrier()
 
     # fixed-point adjoint solver
     fp_config = 'adjoint_fp.cfg'
@@ -232,6 +236,8 @@ def main():
         cfg_text = cfg_text.replace('KIND_DISC_ADJ = RESIDUALS', 'KIND_DISC_ADJ = FIXED_POINT')
         with open(fp_config, 'w') as f:
             f.write(cfg_text)
+    if COMM != 0:
+        COMM.Barrier()
 
     if RANK == 0:
         print("\n-------------------- FIXED-POINT ADJOINT SOLVER --------------------")
@@ -240,6 +246,8 @@ def main():
     fp_surface = 'surface_adjoint_fixed_point.dat'
     if RANK == 0:
         os.rename('surface_adjoint.dat', fp_surface)
+    if COMM != 0:
+        COMM.Barrier()
 
     # compare surface sensitivities
     compare_surface_sensitivities(res_surface, fp_surface)
