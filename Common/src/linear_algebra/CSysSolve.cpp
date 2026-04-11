@@ -650,12 +650,12 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
                                                            const CMatrixVectorProduct<ScalarType>& mat_vec,
                                                            const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                            unsigned long max_iter, ScalarType& residual,
-                                                           bool monitoring, const CConfig* config,
-                                                           FgcrodrMode mode) const {
+                                                           bool monitoring, const CConfig* config, FgcrodrMode mode,
+                                                           unsigned long custom_m) const {
   using EigenMatrix = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
   using EigenVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
-  auto m = min(config->GetLinear_Solver_Restart_Frequency(), max_iter);
+  auto m = min(custom_m != 0 ? custom_m : config->GetLinear_Solver_Restart_Frequency(), max_iter);
   const auto deflation = min(config->GetLinear_Solver_Restart_Deflation(), m - 1);
 
   const bool flexible = !precond.IsIdentity();
@@ -1021,9 +1021,10 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarTy
                                                        const CMatrixVectorProduct<ScalarType>& mat_vec,
                                                        const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                        unsigned long max_iter, ScalarType& residual, bool monitoring,
-                                                       const CConfig* config, [[maybe_unused]] FgcrodrMode mode) const {
+                                                       const CConfig* config, [[maybe_unused]] FgcrodrMode mode,
+                                                       [[maybe_unused]] unsigned long custom_m) const {
   if constexpr (std::is_same_v<ScalarType, float> || std::is_same_v<ScalarType, double>) {
-    return FGCRODR_LinSolverImpl<>(b, x, mat_vec, precond, tol, max_iter, residual, monitoring, config, mode);
+    return FGCRODR_LinSolverImpl<>(b, x, mat_vec, precond, tol, max_iter, residual, monitoring, config, mode, custom_m);
   } else {
     return RFGMRES_LinSolver(b, x, mat_vec, precond, tol, max_iter, residual, monitoring, config);
   }

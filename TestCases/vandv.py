@@ -28,7 +28,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import sys, os
+import sys, shutil
 from TestCase import TestCase
 
 def main():
@@ -48,7 +48,7 @@ def main():
     p30n30.test_vals = [-11.267106, -11.168215, -11.182822, -10.949673, -14.233489, 0.052235, 2.830394, 1.318894, -1.210648, 1, 1.2763e+01]
     test_list.append(p30n30)
 
-    os.symlink("vandv/rans/30p30n/solution.dat", "vandv/rans/30p30n/solution_0.dat")
+    shutil.copy("vandv/rans/30p30n/solution.dat", "vandv/rans/30p30n/solution_0.dat")
     p30n30_ad = TestCase('30P30N_ad')
     p30n30_ad.cfg_dir = "vandv/rans/30p30n"
     p30n30_ad.cfg_file = "config_ad.cfg"
