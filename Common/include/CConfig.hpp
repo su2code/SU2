@@ -472,7 +472,7 @@ private:
   string CustomObjFunc;        /*!< \brief User-defined objective function. */
   string CustomOutputs;        /*!< \brief User-defined functions for outputs. */
   unsigned short nDV,                  /*!< \brief Number of design variables. */
-  nObj, nObjW;                         /*! \brief Number of objective functions. */
+  nObj, nObjW;                         /*!< \brief Number of objective functions. */
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;              /*!< \brief Number of ffd boxes. */
   unsigned short nTurboMachineryKind;  /*!< \brief Number turbomachinery types specified. */
@@ -489,20 +489,14 @@ private:
   string *FFDTag;                     /*!< \brief Parameters of the design variable. */
   string *TagFFDBox;                  /*!< \brief Tag of the FFD box. */
   unsigned short GeometryMode;        /*!< \brief Geometry mode (analysis or gradient computation). */
-  unsigned short MGCycle;             /*!< \brief Kind of multigrid cycle. */
   unsigned short FinestMesh;          /*!< \brief Finest mesh for the full multigrid approach. */
   unsigned short nFFD_Fix_IDir,
   nFFD_Fix_JDir, nFFD_Fix_KDir;       /*!< \brief Number of planes fixed in the FFD. */
-  unsigned short nMG_PreSmooth,       /*!< \brief Number of MG pre-smooth parameters found in config file. */
-  nMG_PostSmooth,                     /*!< \brief Number of MG post-smooth parameters found in config file. */
-  nMG_CorrecSmooth;                   /*!< \brief Number of MG correct-smooth parameters found in config file. */
   short *FFD_Fix_IDir,
   *FFD_Fix_JDir, *FFD_Fix_KDir;       /*!< \brief Exact sections. */
-  unsigned short *MG_PreSmooth,       /*!< \brief Multigrid Pre smoothing. */
-  *MG_PostSmooth,                     /*!< \brief Multigrid Post smoothing. */
-  *MG_CorrecSmooth;                   /*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
   su2double *LocationStations;        /*!< \brief Airfoil sections in wing slicing subroutine. */
 
+  MG_CYCLE Kind_MGCycle;              /*!< \brief Kind of multigrid cycle. */
   ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
   CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
@@ -1132,6 +1126,10 @@ private:
     unsigned long rampMUSCLCoeff[3];     /*!< \brief ramp MUSCL value coefficients for the COption class. */
   } RampMUSCLParam;
   su2double rampMUSCLValue; /*!< \brief Current value of the MUSCL ramp */
+  CMGOptions MGOptions;
+  /*--- Multigrid options  ---*/
+  unsigned short nMG_PreSmooth_p{0}, nMG_PostSmooth_p{0}, nMG_CorrecSmooth_p{0};
+  unsigned short *MG_PreSmooth_p{nullptr}, *MG_PostSmooth_p{nullptr}, *MG_CorrecSmooth_p{nullptr};
 
   ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
   bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
@@ -2908,7 +2906,7 @@ public:
    */
   void SetMGLevels(unsigned short val_nMGLevels) {
     nMGLevels = val_nMGLevels;
-    if (MGCycle == FULLMG_CYCLE) {
+    if (Kind_MGCycle == MG_CYCLE::FULL) {
       SetFinestMesh(val_nMGLevels);
     }
   }
@@ -2925,7 +2923,7 @@ public:
    * \note This variable is used in a recursive way to perform the different kind of cycles
    * \return 0 or 1 depending of we are dealing with a V or W cycle.
    */
-  unsigned short GetMGCycle(void) const { return MGCycle; }
+  MG_CYCLE GetMGCycle(void) const { return Kind_MGCycle; }
 
   /*!
    * \brief Get the king of evaluation in the geometrical module.
@@ -3847,34 +3845,9 @@ public:
   su2double GetNacelleLocation(unsigned short val_index) const { return nacelle_location[val_index]; }
 
   /*!
-   * \brief Get the number of pre-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
+   * \brief Get the multigrid options struct.
    */
-  unsigned short GetMG_PreSmooth(unsigned short val_mesh) const {
-    if (nMG_PreSmooth == 0) return 1;
-    return MG_PreSmooth[val_mesh];
-  }
-
-  /*!
-   * \brief Get the number of post-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
-   */
-  unsigned short GetMG_PostSmooth(unsigned short val_mesh) const {
-    if (nMG_PostSmooth == 0) return 0;
-    return MG_PostSmooth[val_mesh];
-  }
-
-  /*!
-   * \brief Get the number of implicit Jacobi smoothings of the correction in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of implicit smoothing iterations.
-   */
-  unsigned short GetMG_CorrecSmooth(unsigned short val_mesh) const {
-    if (nMG_CorrecSmooth == 0) return 0;
-    return MG_CorrecSmooth[val_mesh];
-  }
+  const CMGOptions& GetMGOptions() const { return MGOptions; }
 
   /*!
    * \brief plane of the FFD (I axis) that should be fixed.
@@ -6834,10 +6807,22 @@ public:
   su2double GetDamp_Res_Restric(void) const { return Damp_Res_Restric; }
 
   /*!
+   * \brief Set the damping factor for the residual restriction (used by adaptive MG damping).
+   * \param[in] val - New damping factor value.
+   */
+  void SetDamp_Res_Restric(su2double val) { Damp_Res_Restric = val; }
+
+  /*!
    * \brief Value of the damping factor for the correction prolongation.
    * \return Value of the damping factor.
    */
   su2double GetDamp_Correc_Prolong(void) const { return Damp_Correc_Prolong; }
+
+  /*!
+   * \brief Set the damping factor for the correction prolongation (used by adaptive MG damping).
+   * \param[in] val - New damping factor value.
+   */
+  void SetDamp_Correc_Prolong(su2double val) { Damp_Correc_Prolong = val; }
 
   /*!
    * \brief Value of the position of the Near Field (y coordinate for 2D, and z coordinate for 3D).
