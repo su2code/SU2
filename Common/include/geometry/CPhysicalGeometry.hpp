@@ -779,12 +779,6 @@ class CPhysicalGeometry final : public CGeometry {
   inline const su2activematrix& GetSensitivityMatrix() const override { return Sensitivity; }
 
   /*!
-   * \brief Check the mesh for periodicity and deactivate multigrid if periodicity is found.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Check_Periodicity(CConfig* config) override;
-
-  /*!
    * \brief Compute an ADT including the coordinates of all viscous markers
    * \param[in] config - Definition of the particular problem.
    * \return pointer to the ADT
