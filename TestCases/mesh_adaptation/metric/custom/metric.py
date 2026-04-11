@@ -15,9 +15,12 @@ def total_pressure(driver) -> list[float]:
     primVars = driver.Primitives()
     nNodes = driver.GetNumberNodes() - driver.GetNumberHaloNodes()
 
-    dens_col = prim_idx["DENSITY"]
+    gamma = 1.4
+    coeff = 0.5 * (gamma - 1.0)
+    exp_fac = gamma / (gamma - 1.0)
     press_col = prim_idx["PRESSURE"]
     vel_cols = [prim_idx["VELOCITY_X"], prim_idx["VELOCITY_Y"]]
+    a_col = prim_idx["SOUND_SPEED"]
     if nDim == 3:
         vel_cols.append(prim_idx["VELOCITY_Z"])
 
@@ -25,10 +28,11 @@ def total_pressure(driver) -> list[float]:
     for iNode in range(nNodes):
         row = primVars(iNode)
         p = row[press_col]
-        r = row[dens_col]
+        a = row[a_col]
         vel2 = sum(row[k] ** 2 for k in vel_cols)
+        mach2 = vel2 / (a * a)
 
-        p_tot[iNode] = p + 0.5 * r * vel2
+        p_tot[iNode] = p * pow(1.0 + coeff * mach2, exp_fac)
     return p_tot
 
 
