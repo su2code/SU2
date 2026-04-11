@@ -2864,6 +2864,15 @@ static const MapType<std::string, DEFORM_KIND> Deform_Kind_Map = {
   MakePair("RBF",       DEFORM_KIND::RBF)
 };
 
+/*!
+ * \brief Type of sensor for anisotropic metrics.
+ */
+enum class SensorType : unsigned char {
+  PRIMITIVE, /*!< \brief Value read directly from the primitive variable array. */
+  DERIVED,   /*!< \brief Officially-supported computed quantity (e.g. Mach number). */
+  CUSTOM,    /*!< \brief User-defined sensor populated externally via the Python wrapper. */
+};
+
 
 #undef MakePair
 /* END_CONFIG_ENUMS */

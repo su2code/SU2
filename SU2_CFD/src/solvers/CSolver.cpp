@@ -2209,14 +2209,13 @@ void CSolver::AllocateMetricSensorArrays(unsigned short nSensors) {
   base_nodes->AllocateMetricSensorArrays(nSensors);
 }
 
-void CSolver::SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) {
-  /*--- Copy each resolved sensor variable into Sensor_Adapt.
-   *    Slots with prim_idx == USHRT_MAX are custom (Python-defined) sensors
-   *    and must be filled externally via CDriverBase::SetSensorAdapt. ---*/
+void CSolver::SetPrimitive_SensorAdapt(CGeometry *geometry, const CConfig *config) {
+  /*--- Copy PRIMITIVE sensor values from primitive variable array into Sensor_Adapt.
+   *    DERIVED and CUSTOM slots are skipped here. ---*/
   for (size_t iSensor = 0; iSensor < MetricSensors.size(); ++iSensor) {
-    const auto prim_idx = MetricSensors[iSensor].prim_idx;
-    if (prim_idx == std::numeric_limits<unsigned short>::max()) continue;
+    if (MetricSensors[iSensor].type != SensorType::PRIMITIVE) continue;
 
+    const auto prim_idx = MetricSensors[iSensor].prim_idx;
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       base_nodes->SetSensor_Adapt(iPoint, iSensor, base_nodes->GetPrimitive(iPoint, prim_idx));
@@ -2225,14 +2224,16 @@ void CSolver::SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config) {
   }
 }
 
-void CSolver::SetSolution_Adapt(CGeometry *geometry, const CConfig *config) {
-  /*--- Copy each resolved sensor variable into Sensor_Adapt ---*/
+void CSolver::SetDerived_SensorAdapt(CGeometry *geometry, const CConfig *config) {
+  /*--- Evaluate DERIVED sensors via their stored lambdas (e.g. Mach number).
+   *    Each lambda receives a pointer to the full primitive row for the point. ---*/
   for (size_t iSensor = 0; iSensor < MetricSensors.size(); ++iSensor) {
-    const auto prim_idx = MetricSensors[iSensor].prim_idx;
+    if (MetricSensors[iSensor].type != SensorType::DERIVED) continue;
 
+    const auto& fn = MetricSensors[iSensor].fn;
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      base_nodes->SetSensor_Adapt(iPoint, iSensor, base_nodes->GetSolution(iPoint, prim_idx));
+      base_nodes->SetSensor_Adapt(iPoint, iSensor, fn(base_nodes->GetPrimitive(iPoint)));
     }
     END_SU2_OMP_FOR
   }

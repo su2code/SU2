@@ -31,6 +31,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -210,8 +211,10 @@ public:
 
   /*--- Metric sensors for mesh adaptation ---*/
   struct MetricSensorInfo {
-    unsigned short prim_idx;  /*!< \brief Primitive variable index; USHRT_MAX for custom sensors. */
-    std::string name;         /*!< \brief Sensor name as specified in config. */
+    unsigned short prim_idx;                       /*!< \brief Primitive variable index (PRIMITIVE type only). */
+    std::string name;                              /*!< \brief Sensor name as specified in config. */
+    SensorType type = SensorType::PRIMITIVE;       /*!< \brief Category of sensor. */
+    std::function<su2double(const su2double*)> fn; /*!< \brief Point-wise evaluator for DERIVED sensors. */
   };
   vector<MetricSensorInfo> MetricSensors;  /*!< \brief Sensor list in config order, one entry per sensor. */
 
@@ -590,18 +593,18 @@ public:
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
 
   /*!
-   * \brief Set primitive variables for adaptation using resolved sensor locations.
+   * \brief Copy PRIMITIVE sensor values from primitive variable array into Sensor_Adapt.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetPrimitive_Adapt(CGeometry *geometry, const CConfig *config);
+  virtual void SetPrimitive_SensorAdapt(CGeometry *geometry, const CConfig *config);
 
   /*!
-   * \brief Set solution variables for adaptation using resolved sensor locations.
+   * \brief Evaluate DERIVED sensors (e.g. Mach number) and store results in Sensor_Adapt.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetSolution_Adapt(CGeometry *geometry, const CConfig *config);
+  virtual void SetDerived_SensorAdapt(CGeometry *geometry, const CConfig *config);
 
     /*!
    * \brief Allocate Gradient_Adapt and Hessian arrays for the sensors assigned to this solver.

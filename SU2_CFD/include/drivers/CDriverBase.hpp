@@ -524,20 +524,13 @@ class CDriverBase {
   short GetMetricSensorIndex(const std::string& sensor_name) const;
 
   /*!
-   * \brief Set the value of a metric sensor for a single node.
-   * \param[in] iPoint  - Node index.
-   * \param[in] iSensor - Local sensor index (from GetMetricSensorIndex).
-   * \param[in] value   - Sensor value at this node.
+   * \brief Get a read/write view of adaptation sensor values on all mesh nodes of the flow solver.
+   * \warning Adaptation sensors are only available for flow solvers with metric sensors configured.
    */
-  void SetSensorAdapt(unsigned long iPoint, unsigned short iSensor, passivedouble value);
-
-  /*!
-   * \brief Get the value of a metric sensor at a single node.
-   * \param[in] iPoint  - Node index.
-   * \param[in] iSensor - Local sensor index (from GetMetricSensorIndex).
-   * \return Sensor value at this node.
-   */
-  passivedouble GetSensorAdapt(unsigned long iPoint, unsigned short iSensor) const;
+  inline CPyWrapperMatrixView AdaptSensors() {
+    auto* solver = GetSolverAndCheckMarker(FLOW_SOL);
+    return CPyWrapperMatrixView(const_cast<su2activematrix&>(solver->GetNodes()->GetSensor_Adapt()), "AdaptSensors", false);
+  }
 
   /*!
    * \brief Get a read/write view of the current primitive variables on all mesh nodes of the flow solver.

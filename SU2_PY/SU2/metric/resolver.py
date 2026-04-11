@@ -31,7 +31,7 @@ from collections.abc import Callable
 from typing import Any
 
 SU2Driver = Any
-SensorFn = Callable[[SU2Driver, int], float]
+SensorFn = Callable[[SU2Driver], list[float]]
 
 
 class CustomSensorRegistry:
@@ -41,7 +41,7 @@ class CustomSensorRegistry:
         """
         Args:
             sensors: Optional mapping of sensor name to callable. Each callable
-                must have the signature ``fn(driver, iPoint) -> float`` and names
+                must have the signature ``fn(driver) -> list[float]`` and names
                 must match entries in ``METRIC_SENSOR`` in the config exactly.
         """
         self._sensors: dict[str, SensorFn] = (
@@ -77,15 +77,18 @@ class CustomSensorRegistry:
             self._indices[name] = idx
 
     def populate(self, driver: SU2Driver) -> None:
-        """Evaluate all sensors and push values to the driver.
+        """Evaluate all sensors and push values to the driver in bulk.
 
         Call after ``Run()`` and before ``Postprocess()`` on each iteration.
 
         Args:
             driver: Active SU2 driver instance (e.g. ``CSinglezoneDriver``).
         """
-        nNodes = driver.GetNumberNodes()
+        sensors = driver.AdaptSensors()
+
         for name, fn in self._sensors.items():
             iSensor = self._indices[name]
-            for iPoint in range(nNodes):
-                driver.SetSensorAdapt(iPoint, iSensor, fn(driver, iPoint))
+            values = fn(driver)
+
+            for iNode, value in enumerate(values):
+                sensors.Set(iNode, iSensor, value)
