@@ -58,7 +58,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Single grid simulation ---*/
 
-  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == MG_CYCLE::FULL) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 

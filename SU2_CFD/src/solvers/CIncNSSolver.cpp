@@ -108,8 +108,6 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   if (wall_functions) {
     SU2_OMP_SAFE_GLOBAL_ACCESS(SetTau_Wall_WF(geometry, solver_container, config);)
-    // nijso: we have to set this as well??
-    // seteddyviscfirstpoint
   }
 
   /*--- Compute recovered pressure and temperature for streamwise periodic flow ---*/

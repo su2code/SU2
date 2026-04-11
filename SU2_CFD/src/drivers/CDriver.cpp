@@ -795,11 +795,6 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
   geometry[MESH_0]->ComputeSurfaceAreaCfgFile(config);
 
-  /*--- Check for periodicity and disable MG if necessary. ---*/
-
-  if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
-  geometry[MESH_0]->Check_Periodicity(config);
-
   /*--- Compute mesh quality statistics on the fine grid. ---*/
 
   if (!fea) {

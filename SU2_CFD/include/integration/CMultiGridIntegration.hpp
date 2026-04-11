@@ -190,7 +190,8 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-                                    unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config);
+                                    unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config,
+                                    unsigned short iMesh);
 
   /*!
    * \brief Restrict solution from fine grid to a coarse grid.
@@ -223,10 +224,44 @@ private:
    * \param[in] iMesh - Current multigrid level.
    * \param[in] CFL_fine - Fine grid CFL value (passive).
    * \param[in] CFL_coarse_current - Current coarse grid CFL value (passive).
+   * \param[in] rms_res_coarse - Coarse-grid RMS residual (already MPI-reduced, from lastPreSmoothRMS).
    * \return New CFL value for the coarse grid.
    */
-  passivedouble computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,
-                                     unsigned short iMesh, passivedouble CFL_fine, passivedouble CFL_coarse_current);
+  passivedouble computeMultigridCFL(CConfig* config, unsigned short iMesh,
+                                     passivedouble CFL_fine, passivedouble CFL_coarse_current,
+                                     passivedouble rms_res_coarse);
+
+  /*!
+   * \brief Adapt the residual restriction damping factor.
+   *
+   * Uses \c lastPreSmoothIters[] (filled by the previous multigrid cycle) to assess
+   * whether the pre-smoother is converging fast or slow on coarse levels, then adjusts
+   * \c Damp_Res_Restric in \p config accordingly.
+   *
+   * Signal logic:
+   *  - any coarse level ran its full configured iterations: reduce damping
+   *  - all coarse levels exited early: increase damping
+   *  - mixed (some full, some partial): no change
+   *
+   * \param[in,out] config - Problem configuration.
+   */
+  void adaptRestrictionDamping(CConfig* config);
+
+  /*!
+   * \brief Adapt the correction prolongation damping factor.
+   *
+   * Uses \c lastCorrecSmoothIters[] (filled by the previous multigrid cycle) to assess
+   * whether the correction smoother is struggling or converging fast,
+   * then adjusts \c Damp_Correc_Prolong in \p config accordingly.
+   *
+   * Signal logic:
+   *  - any level ran its full correction-smooth iterations: reduce damping
+   *  - all levels exited early: increase damping
+   *  - mixed: no change
+   *
+   * \param[in,out] config - Problem configuration; \c SetDamp_Correc_Prolong is called to persist the result.
+   */
+  void adaptProlongationDamping(CConfig* config);
 
   /*--- CFL adaptation state variables.
    *    These must be passivedouble: AD::Reset() clears the tape between adjoint recordings,
@@ -241,5 +276,31 @@ private:
   unsigned long last_check_iter[MAX_MG_LEVELS] = {};
   unsigned long last_update_iter[MAX_MG_LEVELS] = {};
   unsigned long last_reset_iter = std::numeric_limits<unsigned long>::max();
+
+  /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
+  bool mg_early_exit_flag = false;             /*!< \brief Shared flag for early exit across OMP threads. */
+  passivedouble mg_initial_smooth_rms = 0.0;  /*!< \brief Initial RMS before current smoothing phase. */
+  passivedouble mg_last_smooth_rms = 0.0;     /*!< \brief Last computed RMS; cached to avoid redundant Allreduce. */
+
+  /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
+  unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
+  unsigned short lastPostSmoothIters[MAX_MG_LEVELS+1] = {};
+  unsigned short lastCorrecSmoothIters[MAX_MG_LEVELS+1] = {};
+
+  /*--- Per-level residual progress flags: true if the final RMS after that phase was lower
+   *    than the initial RMS.  Used by the adaptive damping routines to distinguish
+   *    "hit max iters but still converging" from "hit max iters and stagnated". ---*/
+  bool lastPreSmoothProgress[MAX_MG_LEVELS+1] = {};
+  bool lastPostSmoothProgress[MAX_MG_LEVELS+1] = {};
+  bool lastCorrecSmoothProgress[MAX_MG_LEVELS+1] = {};
+
+  /*--- Per-level start/end RMS for the compact output summary.
+   *    [0] = initial RMS before smoothing, [1] = final RMS after smoothing.
+   *    Filled unconditionally (early-exit path and exhaustion path).
+   *    Must be passivedouble: class members survive tape resets; su2double would
+   *    carry stale AD indices referencing a cleared tape. ---*/
+  passivedouble lastPreSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+  passivedouble lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+  passivedouble lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
 
 };

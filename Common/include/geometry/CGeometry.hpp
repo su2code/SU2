@@ -811,10 +811,13 @@ class CGeometry {
   inline virtual void MatchActuator_Disk(const CConfig* config) {}
 
   /*!
-   * \brief A virtual member.
+   * \brief Match periodic boundary points using coordinate-based matching.
+   * \details Gathers coordinates from all ranks via MPI, applies the rotation/translation
+   * for the periodic pair, and finds the nearest neighbor. Works on both fine and coarse grids.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic - Index of the periodic marker pair.
    */
-  inline virtual void MatchPeriodic(const CConfig* config, unsigned short val_periodic) {}
+  virtual void MatchPeriodic(const CConfig* config, unsigned short val_periodic);
 
   /*!
    * \brief A virtual member.
@@ -1608,12 +1611,6 @@ class CGeometry {
   inline const su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span) const {
     return AverageGridVel[val_marker][val_span];
   }
-
-  /*!
-   * \brief A virtual member.
-   * \param config - Config
-   */
-  inline virtual void Check_Periodicity(CConfig* config) {}
 
   /*!
    * \brief Get the value of the customized temperature at a specified vertex on a specified marker.

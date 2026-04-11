@@ -43,12 +43,6 @@
 
 #include "../code_config.hpp"
 
-#if defined(_MSC_VER)
-#define PRAGMIZE(X) __pragma(X)
-#else
-#define PRAGMIZE(X) _Pragma(#X)
-#endif
-
 #if defined(HAVE_OMP)
 #include <omp.h>
 
