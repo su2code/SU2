@@ -185,6 +185,7 @@ def compare_surface_sensitivities(res_file, fp_file):
     print('\n------------------------------ Begin Solver -----------------------------')
     print(f'{77777:>8d} {d_sx:.6f} {d_sy:.6f} {d_ss:.6f} {l2:.6f}')
 
+
 def main():
     # command line options
     parser = OptionParser()

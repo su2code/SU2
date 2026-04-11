@@ -432,7 +432,11 @@ map<string, unsigned short> CDriverBase::GetPrimitiveIndices() const {
   if (solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL] == nullptr) {
     SU2_MPI::Error("The flow solver does not exist.", CURRENT_FUNCTION);
   }
-  return PrimitiveNameToIndexMap(CPrimitiveIndices<unsigned short>(
+  auto nameToIndex = PrimitiveNameToIndexMap(CPrimitiveIndices<unsigned short>(
       main_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
       main_config->GetNEMOProblem(), nDim, main_config->GetnSpecies()));
+  
+    nameToIndex["COUNT"] = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
+  
+    return nameToIndex;
 }

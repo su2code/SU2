@@ -84,26 +84,6 @@ void CDriver::SetReynoldsNumber(passivedouble value) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////
-/* Functions related to the flow solver solution and variables.                 */
-//////////////////////////////////////////////////////////////////////////////////
-
-unsigned long CDriver::GetNumberStateVariables() const {
-  if (!main_config->GetFluidProblem()) {
-    SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
-  }
-
-  return solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-}
-
-unsigned long CDriver::GetNumberPrimitiveVariables() const {
-  if (!main_config->GetFluidProblem()) {
-    SU2_MPI::Error("Flow solver is not defined!", CURRENT_FUNCTION);
-  }
-
-  return solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
-}
-
-//////////////////////////////////////////////////////////////////////////////////
 /* Functions related to the adjoint flow solver solution.                       */
 //////////////////////////////////////////////////////////////////////////////////
 

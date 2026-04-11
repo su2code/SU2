@@ -575,18 +575,6 @@ class CDriver : public CDriverBase {
   void SetFarFieldAoS(passivedouble beta);
 
   /*!
-   * \brief Get the number of conservative state variables.
-   * \return Number of conservative state variables.
-   */
-  unsigned long GetNumberStateVariables() const;
-
-  /*!
-   * \brief Get the number of primitive state variables.
-   * \return Number of primitive state variables.
-   */
-  unsigned long GetNumberPrimitiveVariables() const;
-
-  /*!
    * \brief Get the adjoint flow forces at a marker vertex.
    * \param[in] iMarker - Marker index.
    * \return CPyWrapperMatrixView of shape (nVertex, nDim).
