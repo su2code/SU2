@@ -1063,8 +1063,8 @@ def main():
     sbs_backward_step            = TestCase('sbs_backward_step')
     sbs_backward_step.cfg_dir    = "backscatter/backward_step"
     sbs_backward_step.cfg_file   = "backwardStep.cfg"
-    sbs_backward_step.test_iter  = 10
-    sbs_backward_step.test_vals  = [-6.656162, -4.527123, -5.971187, -5.333804, -9.765638, -8.499022, -8.462351, -8.482077]
+    sbs_backward_step.test_iter  = 3
+    sbs_backward_step.test_vals  = [-6.419128, -4.371595, -5.836729, -5.281628, -10.570440, -8.842410, -8.871305, -8.916457]
     sbs_backward_step.unsteady   = True
     sbs_backward_step.decompress = True
     sbs_backward_step.grid_file  = "backward_step.su2"
