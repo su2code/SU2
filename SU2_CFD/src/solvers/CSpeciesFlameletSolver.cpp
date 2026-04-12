@@ -800,9 +800,9 @@ su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_mo
   for (auto iVar = 0u; iVar < nVar; iVar++) scalars[iVar] = scalar_solution[iVar];
   bool outside = false;
   scalars[I_PROGVAR] += delta;
-  const su2double dummy_temp = 300;
   while (!outside) {
-    fluid_model->SetTDState_T(dummy_temp, scalars);
+    /*--- Note that 300.0 is a dummy temperature here and not used. ---*/
+    fluid_model->SetTDState_T(300.0, scalars);
     if (fluid_model->GetExtrapolation() == 1) outside = true;
     scalars[I_PROGVAR] += delta;
   }
