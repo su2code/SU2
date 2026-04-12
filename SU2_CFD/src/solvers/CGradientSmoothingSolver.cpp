@@ -550,8 +550,6 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry* geometry, con
   int EL_KIND = 0;
   std::array<unsigned long, MAXNNODE_2D> indexNode;
   std::array<unsigned long, MAXNNODE_2D> indexVertex;
-  su2double Weight, Jac_X, norm, val_Coord, normalSens = 0.0, Residual=0.0;
-  su2double normal[MAXNDIM];
 
   for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
     /*--- Identify the kind of boundary element ---*/
@@ -562,7 +560,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry* geometry, con
       indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+        const su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
         element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
     }
@@ -575,31 +573,27 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry* geometry, con
       }
     }
 
-    element_container[GRAD_TERM][EL_KIND]
-        ->ClearElement(); /*--- Restarts the element: avoids adding over previous results in other elements --*/
+    /*--- Restarts the element: avoids adding over previous results in other elements --*/
+    element_container[GRAD_TERM][EL_KIND]->ClearElement();
     element_container[GRAD_TERM][EL_KIND]->ComputeGrad_SurfaceEmbedded();
     unsigned int nGauss = element_container[GRAD_TERM][EL_KIND]->GetnGaussPoints();
 
     for (unsigned int iGauss = 0; iGauss < nGauss; iGauss++) {
-      Weight = element_container[GRAD_TERM][EL_KIND]->GetWeight(iGauss);
-      Jac_X = element_container[GRAD_TERM][EL_KIND]->GetJ_X(iGauss);
+      const su2double Weight = element_container[GRAD_TERM][EL_KIND]->GetWeight(iGauss);
+      const su2double Jac_X = element_container[GRAD_TERM][EL_KIND]->GetJ_X(iGauss);
 
       for (unsigned int iNode = 0; iNode < nNodes; iNode++) {
+        su2double normal[MAXNDIM] = {};
         geometry->vertex[val_marker][indexVertex[iNode]]->GetNormal(normal);
-        norm = GeometryToolbox::Norm(nDim, normal);
+        const su2double norm = GeometryToolbox::Norm(nDim, normal);
         for (iDim = 0; iDim < nDim; iDim++) {
           normal[iDim] = normal[iDim] / norm;
         }
-
+        su2double normalSens = 0;
         for (iDim = 0; iDim < nDim; iDim++) {
           normalSens += normal[iDim] * nodes->GetSensitivity(indexNode[iNode], iDim);
         }
-
-        Residual += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode, iGauss) * normalSens;
-        LinSysRes.AddBlock(indexNode[iNode], &Residual);
-
-        Residual = 0;
-        normalSens = 0;
+        LinSysRes(indexNode[iNode], 0) += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode, iGauss) * normalSens;
       }
     }
   }

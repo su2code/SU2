@@ -39,7 +39,7 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
   Res_TruncError.resize(nPoint, nVar) = su2double(0.0);
 
   for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    if (config->GetMG_CorrecSmooth(iMesh) > 0) {
+    if (config->GetMGOptions().MG_CorrecSmooth[iMesh] > 0) {
       Residual_Sum.resize(nPoint, nVar);
       Residual_Old.resize(nPoint, nVar);
       break;
