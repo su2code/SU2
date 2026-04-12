@@ -30,6 +30,7 @@
 
 
 CIntegration::CIntegration() {
+  SU2_ZONE_SCOPED
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 }
@@ -231,6 +232,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CIntegration::SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solver, const CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_PARALLEL
   {
@@ -250,6 +252,7 @@ void CIntegration::SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solve
 }
 
 void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_PARALLEL
   {

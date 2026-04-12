@@ -62,6 +62,7 @@ public:
 CNewtonIntegration::~CNewtonIntegration() { delete preconditioner; }
 
 void CNewtonIntegration::Setup() {
+  SU2_ZONE_SCOPED
 
   auto iparam = config->GetNewtonKrylovIntParam();
   auto dparam = config->GetNewtonKrylovDblParam();
@@ -115,6 +116,7 @@ void CNewtonIntegration::Setup() {
 }
 
 void CNewtonIntegration::PerturbSolution(const CSysVector<Scalar>& dir, Scalar mag) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint) {
@@ -126,6 +128,7 @@ void CNewtonIntegration::PerturbSolution(const CSysVector<Scalar>& dir, Scalar m
 }
 
 void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
+  SU2_ZONE_SCOPED
 
   /*--- Save the default integration scheme, and force to explicit if required. ---*/
   auto TimeIntScheme = config->GetKind_TimeIntScheme();
@@ -149,6 +152,7 @@ void CNewtonIntegration::ComputeResiduals(ResEvalType type) {
 }
 
 void CNewtonIntegration::ComputeFinDiffStep() {
+  SU2_ZONE_SCOPED
 
   static su2double rmsSol;
   su2double rmsSol_loc = 0.0;
@@ -330,6 +334,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
 }
 
 void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) {
+  SU2_ZONE_SCOPED
 
   Scalar factor = finDiffStep / u.norm();
 
@@ -362,6 +367,7 @@ void CNewtonIntegration::MatrixFreeProduct(const CSysVector<Scalar>& u, CSysVect
 }
 
 void CNewtonIntegration::Preconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const {
+  SU2_ZONE_SCOPED
 
   if (preconditioner) {
     Scalar eps = SU2_TYPE::GetValue(precondTol);

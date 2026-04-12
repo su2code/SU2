@@ -144,6 +144,7 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
                                             CConfig *config, unsigned short iMesh,
                                             unsigned short iStep,
                                             unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
@@ -164,6 +165,7 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
 
 void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iStep,
                                     unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
