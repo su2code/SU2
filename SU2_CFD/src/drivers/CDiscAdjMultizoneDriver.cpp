@@ -380,8 +380,9 @@ void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
     Scalar eps_l = 0.0;
     Scalar tol_l = KrylovTol / eps;
     auto iter = min(totalIter-2ul, config_container[iZone]->GetnQuasiNewtonSamples()-2ul);
-    iter = LinSolver[iZone].FGMRES_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
-                                             tol_l, iter, eps_l, monitor, config_container[iZone]);
+    iter = LinSolver[iZone].FGCRODR_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
+                                              tol_l, iter, eps_l, monitor, config_container[iZone],
+                                              FgcrodrMode::SAME_MAT, iter);
     totalIter -= iter+1;
     eps *= eps_l;
   }
@@ -415,7 +416,7 @@ void CDiscAdjMultizoneDriver::Run() {
   /*--- Temporary warning because we need to test writing intermediate output to file (requires re-recording). ---*/
   for(iZone = 0; iZone < nZone; iZone++) {
     for (auto iVolumeFreq = 0; iVolumeFreq < config_container[iZone]->GetnVolumeOutputFrequencies(); iVolumeFreq++){
-      if (config_container[iZone]->GetVolumeOutputFrequency(iVolumeFreq) < nOuterIter) {
+      if (!time_domain && config_container[iZone]->GetVolumeOutputFrequency(iVolumeFreq) < nOuterIter) {
         if (rank == MASTER_NODE) {
           cout << "\nWARNING (iZone = " << iZone
                << "): "
@@ -573,6 +574,7 @@ void CDiscAdjMultizoneDriver::Run() {
   }
 
   if (time_domain) {
+    for (const auto& ls : LinSolver) ls.ResetDeflation();
     EvaluateSensitivities(TimeIter, (TimeIter+1) == driver_config->GetnTime_Iter());
   }
 
