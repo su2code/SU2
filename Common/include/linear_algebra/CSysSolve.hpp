@@ -240,6 +240,7 @@ class CSysSolve {
    */
   template <class OtherType>
   void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol) {
+    SU2_ZONE_SCOPED
     if constexpr (std::is_same_v<ScalarType, OtherType>) {
       /*--- Same type specialization, temporary variables are not required. ---*/
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -267,6 +268,7 @@ class CSysSolve {
    */
   template <class OtherType>
   void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
+    SU2_ZONE_SCOPED
     if constexpr (std::is_same_v<ScalarType, OtherType>) {
       /*--- Same type specialization, temporary variables are not required. ---*/
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
