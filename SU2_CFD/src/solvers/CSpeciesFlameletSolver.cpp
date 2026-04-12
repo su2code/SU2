@@ -223,7 +223,8 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       /*--- Set enthalpy based on initial temperature and scalars. ---*/
       n_not_iterated_local += GetEnthFromTemp(fluid_model_local, temp_inlet, config->GetSpecies_Init(), &enth_inlet);
       scalar_init[I_ENTH] = enth_inlet;
-      if (flame_front_ignition) prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
+
+      if (flame_front_ignition) prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init, config->GetSpecies_T_ignition());
 
       prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
       SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -795,7 +796,7 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
   return exit_code;
 }
 
-su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalar_solution) {
+su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalar_solution, const su2double T_ignition) {
   su2double scalars[MAXNVAR], delta = 1e-3;
   for (auto iVar = 0u; iVar < nVar; iVar++) scalars[iVar] = scalar_solution[iVar];
   bool outside = false;
@@ -803,7 +804,7 @@ su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_mo
   while (!outside) {
     /*--- Note that 300.0 is a dummy temperature here and not used. ---*/
     fluid_model->SetTDState_T(300.0, scalars);
-    if (fluid_model->GetExtrapolation() == 1) outside = true;
+    if ((fluid_model->GetExtrapolation() == 1) || fluid_model->GetTemperature() > T_ignition) outside = true;
     scalars[I_PROGVAR] += delta;
   }
   su2double pv_burnt = scalars[I_PROGVAR] - delta;

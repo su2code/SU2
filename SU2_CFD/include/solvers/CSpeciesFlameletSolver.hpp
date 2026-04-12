@@ -70,9 +70,10 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \brief Find maximum progress variable value within the manifold for the current solution.
    * \param[in] fluid_model - pointer to flamelet fluid model.
    * \param[in] scalars - local scalar solution.
+   * \param[in] T_ignition - ignition temperature - at this temperature, the progress variable is considered burnt.
    * \return - maximum progress variable value within manifold bounds.
    */
-  su2double GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalars);
+  su2double GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalars, const su2double T_ignition);
 
   /*!
    * \brief Retrieve scalar source terms from manifold.

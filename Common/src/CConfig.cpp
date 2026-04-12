@@ -1426,6 +1426,9 @@ void CConfig::SetConfig_Options() {
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
   addDoubleListOption("SPARK_REACTION_RATES", flamelet_ParsedOptions.nspark, flamelet_ParsedOptions.spark_reaction_rates);
 
+  /*!\brief FLAME_INIT_IGNITION \n DESCRIPTION: Ignition temperature for the flame initialization \ingroup Config*/
+  addDoubleOption("FLAME_INIT_IGNITION", Species_T_ignition, 5000.0);
+
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
   /*!\brief DIFFUSIVITY_MODEL\n DESCRIPTION: mass diffusivity model \n DEFAULT constant disffusivity \ingroup Config*/
