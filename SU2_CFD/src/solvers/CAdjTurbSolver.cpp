@@ -31,6 +31,7 @@
 CAdjTurbSolver::CAdjTurbSolver() : CSolver() {}
 
 CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
+  SU2_ZONE_SCOPED
 
   adjoint = true;
 
@@ -164,10 +165,12 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
 }
 
 CAdjTurbSolver::~CAdjTurbSolver() {
+  SU2_ZONE_SCOPED
   delete nodes;
 }
 
 void CAdjTurbSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint, iVertex;
 
@@ -192,6 +195,7 @@ void CAdjTurbSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CAdjTurbSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint, iVertex;
 
@@ -216,6 +220,7 @@ void CAdjTurbSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 }
 
 void CAdjTurbSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   unsigned long iPoint, iVertex;
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -261,6 +266,7 @@ void CAdjTurbSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
@@ -310,6 +316,7 @@ void CAdjTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
 
 void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                       CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[VISC_TERM];
 
@@ -359,6 +366,7 @@ void CAdjTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
 
 void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
   //CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
@@ -446,6 +454,7 @@ void CAdjTurbSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CAdjTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar;
   unsigned long iPoint;
