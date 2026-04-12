@@ -135,6 +135,7 @@ CMultizoneDriver::~CMultizoneDriver() {
 }
 
 void CMultizoneDriver::StartSolver() {
+  SU2_ZONE_SCOPED
 
   /*--- Find out the minimum of all references times and then set each zone to this (same) value.
         To ensure that all zones run synchronously in time, be it a dimensional or non-dimensionalized one. ---*/
@@ -599,10 +600,10 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
 
       /*--- Set average value donorZone->targetZone ---*/
       interface_container[donorZone][targetZone]->SetAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
-      
+
       /*--- Set average geometrical properties FROM donorZone IN targetZone ---*/
       geometry_container[targetZone][INST_0][MESH_0]->SetAvgTurboGeoValues(config_container[iZone],geometry_container[iZone][INST_0][MESH_0], iZone);
-      
+
       break;
     }
     case NO_TRANSFER:

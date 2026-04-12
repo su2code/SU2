@@ -46,6 +46,7 @@
 #include "option_structure.hpp"
 #include "containers/container_decorators.hpp"
 #include "toolboxes/printing_toolbox.hpp"
+#include "tracy_structure.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"

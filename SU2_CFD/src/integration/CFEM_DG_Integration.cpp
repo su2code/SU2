@@ -37,6 +37,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
                                                unsigned short RunTime_EqSystem,
                                                unsigned short iZone,
                                                unsigned short iInst) {
+  SU2_ZONE_SCOPED
 
   unsigned short iMesh, iStep;
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);

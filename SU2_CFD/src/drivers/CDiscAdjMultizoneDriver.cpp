@@ -158,6 +158,7 @@ void CDiscAdjMultizoneDriver::Preprocess(unsigned long TimeIter) {
 }
 
 void CDiscAdjMultizoneDriver::StartSolver() {
+  SU2_ZONE_SCOPED
 
   /*--- Start the debug recording mode for the discrete adjoint solver. ---*/
 

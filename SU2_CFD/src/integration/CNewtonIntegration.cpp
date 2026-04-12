@@ -177,6 +177,8 @@ void CNewtonIntegration::ComputeFinDiffStep() {
 void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver *****solvers_, CNumerics ******numerics_,
                                              CConfig **config_, unsigned short EqSystem, unsigned short iZone,
                                              unsigned short iInst) {
+  SU2_ZONE_SCOPED
+
   config = config_[iZone];
   solvers = solvers_[iZone][iInst][MESH_0];
   geometry = geometry_[iZone][iInst][MESH_0];

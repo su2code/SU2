@@ -95,14 +95,10 @@
 #include "../../include/iteration/CIterationFactory.hpp"
 
 #include "../../../Common/include/parallelization/omp_structure.hpp"
-
 #include "../../../Common/include/grid_movement/CVolumetricMovementFactory.hpp"
 
 #include <cassert>
 
-#ifdef VTUNEPROF
-#include <ittnotify.h>
-#endif
 #include <cfenv>
 
 CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator, bool dummy_geo) :
@@ -2875,10 +2871,7 @@ CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MP
 CFluidDriver::~CFluidDriver() = default;
 
 void CFluidDriver::StartSolver(){
-
-#ifdef VTUNEPROF
-  __itt_resume();
-#endif
+  SU2_ZONE_SCOPED
 
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
 
@@ -2927,9 +2920,6 @@ void CFluidDriver::StartSolver(){
     Iter++;
 
   }
-#ifdef VTUNEPROF
-  __itt_pause();
-#endif
 }
 
 

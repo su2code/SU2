@@ -241,6 +241,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                 unsigned short RunTime_EqSystem,
                                                 unsigned short iZone,
                                                 unsigned short iInst) {
+  SU2_ZONE_SCOPED
 
   bool direct;
   switch (config[iZone]->GetKind_Solver()) {

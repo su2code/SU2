@@ -33,6 +33,8 @@
 void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surface_movement,
                                   CVolumetricMovement* grid_movement, CSolver*** solver, CConfig* config,
                                   unsigned long IntIter, unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
+
   unsigned short Kind_Grid_Movement = config->GetKind_GridMovement();
   bool adjoint = config->GetContinuous_Adjoint();
 
@@ -92,7 +94,7 @@ void CIteration::SetGrid_Movement(CGeometry** geometry, CSurfaceMovement* surfac
 
   if (config->GetSurface_Movement(AEROELASTIC) || config->GetSurface_Movement(AEROELASTIC_RIGID_MOTION) || config->GetSurface_Movement(MOVING_WALL)) {
     /*--- Apply rigid mesh transformation to entire grid first, if necessary ---*/
-    
+
     if (IntIter == 0) {
 
       if (Kind_Grid_Movement == AEROELASTIC_RIGID_MOTION) {

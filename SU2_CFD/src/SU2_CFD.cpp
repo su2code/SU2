@@ -26,6 +26,7 @@
  */
 
 #include "../include/SU2_CFD.hpp"
+#include "../../Common/include/tracy_structure.hpp"
 
 /* Include file, needed for the runtime NaN catching. You also have to include feenableexcept(...) below. */
 //#include <fenv.h>
@@ -95,6 +96,7 @@ int main(int argc, char *argv[]) {
   const bool multizone = config.GetMultizone_Problem();
   const bool harmonic_balance = (config.GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
 
+  BEGIN_SU2_ZONE_N("Preprocessing")
   if (dry_run) {
 
     /*--- Dry Run. ---*/
@@ -133,6 +135,7 @@ int main(int argc, char *argv[]) {
     driver = new CHBDriver(config_file_name, nZone, MPICommunicator);
 
   }
+  END_SU2_ZONE
 
   /*--- Launch the main external loop of the solver. ---*/
 
