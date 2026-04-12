@@ -1,5 +1,3 @@
-import math
-
 from mpi4py import MPI
 
 import pysu2
