@@ -193,7 +193,6 @@ void computeHessiansGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERI
 #endif
 
   const size_t nSymMat = 3 * (nDim - 1);
-  su2double diagScale;
 
   /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
 
@@ -224,20 +223,26 @@ void computeHessiansGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERI
 
       const auto area = geometry.edges->GetNormal(iEdge);
 
-      for (size_t jDim = 0; jDim < nDim; ++jDim) {
-        for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
-          su2double flux = weight * (gradient(iPoint, iVar, jDim) + gradient(jPoint, iVar, jDim));
-          for (size_t iDim = 0; iDim < nDim; ++iDim) {
-            /*--- Make the Hessian symmetric by construction.
-             *    Get the 1D index for lower triangular storage. ---*/
-            const auto iMax = max(iDim, jDim);
-            const auto iMin = min(iDim, jDim);
-            const size_t ind = iMax * (iMax + 1) / 2 + iMin;
-            diagScale = (iDim == jDim)? 1.0 : 0.5;
-            hessian(iPoint, iVar, ind) += diagScale * flux * area[iDim];
-          } // iDims
-        } // variables
-      } // jDims
+      for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
+        /*--- Precompute per-dimension fluxes for this neighbor. ---*/
+        su2double flux[nDim];
+        for (size_t i = 0; i < nDim; ++i)
+          flux[i] = weight * (gradient(iPoint, iVar, i) + gradient(jPoint, iVar, i));
+
+        /*--- Diagonal entries. ---*/
+        for (size_t i = 0; i < nDim; ++i) {
+          const size_t ind = i * (i + 1) / 2 + i;
+          hessian(iPoint, iVar, ind) += flux[i] * area[i];
+        }
+
+        /*--- Off-diagonal entries (lower triangle only, symmetric by construction). ---*/
+        for (size_t i = 1; i < nDim; ++i) {
+          for (size_t j = 0; j < i; ++j) {
+            const size_t ind = i * (i + 1) / 2 + j;
+            hessian(iPoint, iVar, ind) += 0.5 * (flux[i] * area[j] + flux[j] * area[i]);
+          }
+        }
+      } // variables
     } // neighbors
   } // points
   END_SU2_OMP_FOR
@@ -262,20 +267,26 @@ void computeHessiansGreenGauss(CSolver* solver, MPI_QUANTITIES kindMpiComm, PERI
         su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
         const auto area = geometry.vertex[iMarker][iVertex]->GetNormal();
 
-        for (size_t jDim = 0; jDim < nDim; ++jDim) {
-          for (size_t iVar = varBegin; iVar < varEnd; iVar++) {
-            su2double flux = gradient(iPoint, iVar, jDim) / volume;
-            for (size_t iDim = 0; iDim < nDim; ++iDim) {
-              /*--- Make the Hessian symmetric by construction.
-               *    Get the 1D index for lower triangular storage. ---*/
-              const auto iMax = max(iDim, jDim);
-              const auto iMin = min(iDim, jDim);
-              const size_t ind = iMax * (iMax + 1) / 2 + iMin;
-              diagScale = (iDim == jDim)? 1.0 : 0.5;
-              hessian(iPoint, iVar, ind) -= diagScale * flux * area[iDim];
-            } // iDims
-          } // variables
-        } // jDims
+        for (size_t iVar = varBegin; iVar < varEnd; ++iVar) {
+          /*--- Precompute per-dimension fluxes for this boundary vertex. ---*/
+          su2double flux[nDim];
+          for (size_t i = 0; i < nDim; ++i)
+            flux[i] = gradient(iPoint, iVar, i) / volume;
+
+          /*--- Diagonal entries. ---*/
+          for (size_t i = 0; i < nDim; ++i) {
+            const size_t ind = i * (i + 1) / 2 + i;
+            hessian(iPoint, iVar, ind) -= flux[i] * area[i];
+          }
+
+          /*--- Off-diagonal entries (lower triangle only, symmetric by construction). ---*/
+          for (size_t i = 1; i < nDim; ++i) {
+            for (size_t j = 0; j < i; ++j) {
+              const size_t ind = i * (i + 1) / 2 + j;
+              hessian(iPoint, iVar, ind) -= 0.5 * (flux[i] * area[j] + flux[j] * area[i]);
+            }
+          }
+        } // variables
       } // vertices
       END_SU2_OMP_FOR
     } //found right marker
