@@ -36,14 +36,16 @@
  * \author F. Palacios, T. Economon, T. Albring
  */
 class CIncNSSolver final : public CIncEulerSolver {
-
   /*!
    * \brief Generic implementation of the isothermal, heatflux and heat-transfer/convection walls.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   * \param[in] kind_boundary - Kind of boundary condition applied.
    */
-  void BC_Wall_Generic(const CGeometry *geometry,
-                       const CConfig *config,
-                       unsigned short val_marker,
-                       unsigned short kind_boundary);
+  void BC_Wall_Generic(const CGeometry* geometry, CSolver** solver_container, const CConfig* config,
+                       unsigned short val_marker, unsigned short kind_boundary);
 
   /*!
    * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
