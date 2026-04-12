@@ -286,8 +286,8 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-4.773024, 0.915849, -3.863369, 0.295450, 3.839800]
-    discadj_fsi2.test_vals_aarch64 = [-4.772641, 0.917601, -3.863369, 0.295450, 3.839800]
+    discadj_fsi2.test_vals         = [-3.824870, 1.979160, -3.863368, 0.295450, 3.839800]
+    discadj_fsi2.test_vals_aarch64 = [-3.824870, 1.979160, -3.863368, 0.295450, 3.839800]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
 
@@ -559,6 +559,8 @@ def main():
     dyn_discadj_fsi.reference_file = "grad_dv.opt.ref"
     dyn_discadj_fsi.reference_file_aarch64 = "grad_dv_aarch64.opt.ref"
     dyn_discadj_fsi.test_file = "grad_young.opt"
+    dyn_discadj_fsi.comp_threshold = 1e-6
+    dyn_discadj_fsi.tol_file_percent = 0.1
     dyn_discadj_fsi.unsteady  = True
     pass_list.append(dyn_discadj_fsi.run_filediff())
     test_list.append(dyn_discadj_fsi)

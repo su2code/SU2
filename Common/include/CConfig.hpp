@@ -9102,25 +9102,6 @@ public:
    * \brief Start the timer for profiling subroutines.
    * \param[in] val_start_time - the value of the start time.
    */
-  void Tick(double *val_start_time);
-
-  /*!
-   * \brief Stop the timer for profiling subroutines and store results.
-   * \param[in] val_start_time - the value of the start time.
-   * \param[in] val_function_name - string for the name of the profiled subroutine.
-   * \param[in] val_group_id - string for the name of the profiled subroutine.
-   */
-  void Tock(double val_start_time, const string& val_function_name, int val_group_id);
-
-  /*!
-   * \brief Write a CSV file containing the results of the profiling.
-   */
-  void SetProfilingCSV(void);
-
-  /*!
-   * \brief Start the timer for profiling subroutines.
-   * \param[in] val_start_time - the value of the start time.
-   */
   void GEMM_Tick(double *val_start_time) const;
 
   /*!
