@@ -79,7 +79,7 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
   if (n == 0 || m == 0) return shared;
 
   SU2_OMP_BARRIER
-  const auto size = V[0].nElmDomain;
+  const size_t size = V[0].nElmDomain;
 
   su2matrix<ScalarType> local(n, m);
   local.setConstant(0);
