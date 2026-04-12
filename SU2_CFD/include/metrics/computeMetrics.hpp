@@ -38,92 +38,92 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 namespace tensor {
-  struct metric {
-    template <class MatrixType, class MetricType>
-    static void get(MetricType& metric_field, const unsigned long iPoint,
-                    const unsigned short iSensor, MatrixType& mat, unsigned short nDim) {
-      switch(nDim) {
-        case 2: {
-          mat[0][0] = metric_field(iPoint, 0); mat[0][1] = metric_field(iPoint, 1);
-          mat[1][0] = metric_field(iPoint, 1); mat[1][1] = metric_field(iPoint, 2);
-          break;
-        }
-        case 3: {
-          mat[0][0] = metric_field(iPoint, 0); mat[0][1] = metric_field(iPoint, 1); mat[0][2] = metric_field(iPoint, 3);
-          mat[1][0] = metric_field(iPoint, 1); mat[1][1] = metric_field(iPoint, 2); mat[1][2] = metric_field(iPoint, 4);
-          mat[2][0] = metric_field(iPoint, 3); mat[2][1] = metric_field(iPoint, 4); mat[2][2] = metric_field(iPoint, 5);
-          break;
-        }
+struct metric {
+  template <class MatrixType, class MetricType>
+  static void get(MetricType& metric_field, const unsigned long iPoint,
+                  const unsigned short iSensor, MatrixType& mat, unsigned short nDim) {
+    switch(nDim) {
+      case 2: {
+        mat[0][0] = metric_field(iPoint, 0); mat[0][1] = metric_field(iPoint, 1);
+        mat[1][0] = metric_field(iPoint, 1); mat[1][1] = metric_field(iPoint, 2);
+        break;
+      }
+      case 3: {
+        mat[0][0] = metric_field(iPoint, 0); mat[0][1] = metric_field(iPoint, 1); mat[0][2] = metric_field(iPoint, 3);
+        mat[1][0] = metric_field(iPoint, 1); mat[1][1] = metric_field(iPoint, 2); mat[1][2] = metric_field(iPoint, 4);
+        mat[2][0] = metric_field(iPoint, 3); mat[2][1] = metric_field(iPoint, 4); mat[2][2] = metric_field(iPoint, 5);
+        break;
       }
     }
+  }
 
-    template <class ScalarType, class MatrixType, class MetricType>
-    static void set(MetricType& metric_field, const unsigned long iPoint,
-                    const unsigned short iSensor, MatrixType& mat, ScalarType scale,
-                    unsigned short nDim) {
-      switch(nDim) {
-        case 2: {
-          metric_field(iPoint, 0) = mat[0][0] * scale;
-          metric_field(iPoint, 1) = mat[0][1] * scale;
-          metric_field(iPoint, 2) = mat[1][1] * scale;
-          break;
-        }
-        case 3: {
-          metric_field(iPoint, 0) = mat[0][0] * scale;
-          metric_field(iPoint, 1) = mat[0][1] * scale;
-          metric_field(iPoint, 2) = mat[1][1] * scale;
-          metric_field(iPoint, 3) = mat[0][2] * scale;
-          metric_field(iPoint, 4) = mat[1][2] * scale;
-          metric_field(iPoint, 5) = mat[2][2] * scale;
-          break;
-        }
+  template <class ScalarType, class MatrixType, class MetricType>
+  static void set(MetricType& metric_field, const unsigned long iPoint,
+                  const unsigned short iSensor, MatrixType& mat, ScalarType scale,
+                  unsigned short nDim) {
+    switch(nDim) {
+      case 2: {
+        metric_field(iPoint, 0) = mat[0][0] * scale;
+        metric_field(iPoint, 1) = mat[0][1] * scale;
+        metric_field(iPoint, 2) = mat[1][1] * scale;
+        break;
+      }
+      case 3: {
+        metric_field(iPoint, 0) = mat[0][0] * scale;
+        metric_field(iPoint, 1) = mat[0][1] * scale;
+        metric_field(iPoint, 2) = mat[1][1] * scale;
+        metric_field(iPoint, 3) = mat[0][2] * scale;
+        metric_field(iPoint, 4) = mat[1][2] * scale;
+        metric_field(iPoint, 5) = mat[2][2] * scale;
+        break;
       }
     }
-  };
+  }
+};
 
-  struct hessian {
-    template <class MatrixType, class MetricType>
-    static void get(MetricType& metric_field, const unsigned long iPoint,
-                    const unsigned short iSensor, MatrixType& mat, unsigned short nDim) {
-      switch(nDim) {
-        case 2: {
-          mat[0][0] = metric_field(iPoint, iSensor, 0); mat[0][1] = metric_field(iPoint, iSensor, 1);
-          mat[1][0] = metric_field(iPoint, iSensor, 1); mat[1][1] = metric_field(iPoint, iSensor, 2);
-          break;
-        }
-        case 3: {
-          mat[0][0] = metric_field(iPoint, iSensor, 0); mat[0][1] = metric_field(iPoint, iSensor, 1); mat[0][2] = metric_field(iPoint, iSensor, 3);
-          mat[1][0] = metric_field(iPoint, iSensor, 1); mat[1][1] = metric_field(iPoint, iSensor, 2); mat[1][2] = metric_field(iPoint, iSensor, 4);
-          mat[2][0] = metric_field(iPoint, iSensor, 3); mat[2][1] = metric_field(iPoint, iSensor, 4); mat[2][2] = metric_field(iPoint, iSensor, 5);
-          break;
-        }
+struct hessian {
+  template <class MatrixType, class MetricType>
+  static void get(MetricType& metric_field, const unsigned long iPoint,
+                  const unsigned short iSensor, MatrixType& mat, unsigned short nDim) {
+    switch(nDim) {
+      case 2: {
+        mat[0][0] = metric_field(iPoint, iSensor, 0); mat[0][1] = metric_field(iPoint, iSensor, 1);
+        mat[1][0] = metric_field(iPoint, iSensor, 1); mat[1][1] = metric_field(iPoint, iSensor, 2);
+        break;
+      }
+      case 3: {
+        mat[0][0] = metric_field(iPoint, iSensor, 0); mat[0][1] = metric_field(iPoint, iSensor, 1); mat[0][2] = metric_field(iPoint, iSensor, 3);
+        mat[1][0] = metric_field(iPoint, iSensor, 1); mat[1][1] = metric_field(iPoint, iSensor, 2); mat[1][2] = metric_field(iPoint, iSensor, 4);
+        mat[2][0] = metric_field(iPoint, iSensor, 3); mat[2][1] = metric_field(iPoint, iSensor, 4); mat[2][2] = metric_field(iPoint, iSensor, 5);
+        break;
       }
     }
+  }
 
-    template <class ScalarType, class MatrixType, class MetricType>
-    static void set(MetricType& metric_field, const unsigned long iPoint,
-                    const unsigned short iSensor,  MatrixType& mat, ScalarType scale,
-                    unsigned short nDim) {
-      switch(nDim) {
-        case 2: {
-          metric_field(iPoint, iSensor, 0) = mat[0][0] * scale;
-          metric_field(iPoint, iSensor, 1) = mat[0][1] * scale;
-          metric_field(iPoint, iSensor, 2) = mat[1][1] * scale;
-          break;
-        }
-        case 3: {
-          metric_field(iPoint, iSensor, 0) = mat[0][0] * scale;
-          metric_field(iPoint, iSensor, 1) = mat[0][1] * scale;
-          metric_field(iPoint, iSensor, 2) = mat[1][1] * scale;
-          metric_field(iPoint, iSensor, 3) = mat[0][2] * scale;
-          metric_field(iPoint, iSensor, 4) = mat[1][2] * scale;
-          metric_field(iPoint, iSensor, 5) = mat[2][2] * scale;
-          break;
-        }
+  template <class ScalarType, class MatrixType, class MetricType>
+  static void set(MetricType& metric_field, const unsigned long iPoint,
+                  const unsigned short iSensor,  MatrixType& mat, ScalarType scale,
+                  unsigned short nDim) {
+    switch(nDim) {
+      case 2: {
+        metric_field(iPoint, iSensor, 0) = mat[0][0] * scale;
+        metric_field(iPoint, iSensor, 1) = mat[0][1] * scale;
+        metric_field(iPoint, iSensor, 2) = mat[1][1] * scale;
+        break;
+      }
+      case 3: {
+        metric_field(iPoint, iSensor, 0) = mat[0][0] * scale;
+        metric_field(iPoint, iSensor, 1) = mat[0][1] * scale;
+        metric_field(iPoint, iSensor, 2) = mat[1][1] * scale;
+        metric_field(iPoint, iSensor, 3) = mat[0][2] * scale;
+        metric_field(iPoint, iSensor, 4) = mat[1][2] * scale;
+        metric_field(iPoint, iSensor, 5) = mat[2][2] * scale;
+        break;
       }
     }
-  };
-}
+  }
+};
+}  // namespace tensor
 
 namespace detail {
 
