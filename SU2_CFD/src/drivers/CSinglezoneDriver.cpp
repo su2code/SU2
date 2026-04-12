@@ -228,6 +228,7 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 }
 
 void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   auto iteration = iteration_container[ZONE_0][INST_0];
 
@@ -317,5 +318,6 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 }
 
 bool CSinglezoneDriver::GetTimeConvergence() const{
+  SU2_ZONE_SCOPED
   return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }
