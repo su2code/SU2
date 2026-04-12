@@ -456,10 +456,6 @@ void CDriver::Finalize() {
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
 
   /*--- Output profiling information ---*/
-  // Note that for now this is called only by a single thread, but all
-  // necessary variables have been made thread private for safety (tick/tock)!!
-
-  config_container[ZONE_0]->SetProfilingCSV();
   config_container[ZONE_0]->GEMMProfilingCSV();
 
   /*--- Deallocate config container ---*/
