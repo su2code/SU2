@@ -49,9 +49,9 @@ namespace tensor {
           break;
         }
         case 3: {
-          mat[0][0] = metric_field(iPoint, 0); mat[0][1] = metric_field(iPoint, 1); mat[0][2] = metric_field(iPoint, 2);
-          mat[1][0] = metric_field(iPoint, 1); mat[1][1] = metric_field(iPoint, 3); mat[1][2] = metric_field(iPoint, 4);
-          mat[2][0] = metric_field(iPoint, 2); mat[2][1] = metric_field(iPoint, 4); mat[2][2] = metric_field(iPoint, 5);
+          mat[0][0] = metric_field(iPoint, 0); mat[0][1] = metric_field(iPoint, 1); mat[0][2] = metric_field(iPoint, 3);
+          mat[1][0] = metric_field(iPoint, 1); mat[1][1] = metric_field(iPoint, 2); mat[1][2] = metric_field(iPoint, 4);
+          mat[2][0] = metric_field(iPoint, 3); mat[2][1] = metric_field(iPoint, 4); mat[2][2] = metric_field(iPoint, 5);
           break;
         }
       }
@@ -71,8 +71,8 @@ namespace tensor {
         case 3: {
           metric_field(iPoint, 0) = mat[0][0] * scale;
           metric_field(iPoint, 1) = mat[0][1] * scale;
-          metric_field(iPoint, 2) = mat[0][2] * scale;
-          metric_field(iPoint, 3) = mat[1][1] * scale;
+          metric_field(iPoint, 2) = mat[1][1] * scale;
+          metric_field(iPoint, 3) = mat[0][2] * scale;
           metric_field(iPoint, 4) = mat[1][2] * scale;
           metric_field(iPoint, 5) = mat[2][2] * scale;
           break;
@@ -92,9 +92,9 @@ namespace tensor {
           break;
         }
         case 3: {
-          mat[0][0] = metric_field(iPoint, iSensor, 0); mat[0][1] = metric_field(iPoint, iSensor, 1); mat[0][2] = metric_field(iPoint, iSensor, 2);
-          mat[1][0] = metric_field(iPoint, iSensor, 1); mat[1][1] = metric_field(iPoint, iSensor, 3); mat[1][2] = metric_field(iPoint, iSensor, 4);
-          mat[2][0] = metric_field(iPoint, iSensor, 2); mat[2][1] = metric_field(iPoint, iSensor, 4); mat[2][2] = metric_field(iPoint, iSensor, 5);
+          mat[0][0] = metric_field(iPoint, iSensor, 0); mat[0][1] = metric_field(iPoint, iSensor, 1); mat[0][2] = metric_field(iPoint, iSensor, 3);
+          mat[1][0] = metric_field(iPoint, iSensor, 1); mat[1][1] = metric_field(iPoint, iSensor, 2); mat[1][2] = metric_field(iPoint, iSensor, 4);
+          mat[2][0] = metric_field(iPoint, iSensor, 3); mat[2][1] = metric_field(iPoint, iSensor, 4); mat[2][2] = metric_field(iPoint, iSensor, 5);
           break;
         }
       }
@@ -114,8 +114,8 @@ namespace tensor {
         case 3: {
           metric_field(iPoint, iSensor, 0) = mat[0][0] * scale;
           metric_field(iPoint, iSensor, 1) = mat[0][1] * scale;
-          metric_field(iPoint, iSensor, 2) = mat[0][2] * scale;
-          metric_field(iPoint, iSensor, 3) = mat[1][1] * scale;
+          metric_field(iPoint, iSensor, 2) = mat[1][1] * scale;
+          metric_field(iPoint, iSensor, 3) = mat[0][2] * scale;
           metric_field(iPoint, iSensor, 4) = mat[1][2] * scale;
           metric_field(iPoint, iSensor, 5) = mat[2][2] * scale;
           break;
@@ -221,8 +221,8 @@ ScalarType integrateMetrics(CGeometry& geometry, const CConfig& config,
     } else if constexpr (nDim == 3) {
       const ScalarType m00 = metric(iPoint, 0);
       const ScalarType m01 = metric(iPoint, 1);
-      const ScalarType m02 = metric(iPoint, 2);
-      const ScalarType m11 = metric(iPoint, 3);
+      const ScalarType m11 = metric(iPoint, 2);
+      const ScalarType m02 = metric(iPoint, 3);
       const ScalarType m12 = metric(iPoint, 4);
       const ScalarType m22 = metric(iPoint, 5);
       det = m00 * (m11 * m22 - m12 * m12) - m01 * (m01 * m22 - m02 * m12) + m02 * (m01 * m12 - m02 * m11);
