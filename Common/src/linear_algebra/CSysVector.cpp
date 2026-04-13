@@ -72,13 +72,14 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
                                                               const size_t i0, const size_t n,
                                                               const std::vector<CSysVector<ScalarType>>& W,
                                                               const size_t m) {
+  SU2_ZONE_SCOPED
   static constexpr size_t BLOCK_SIZE = 1024;
   static su2matrix<ScalarType> shared;
 
   if (n == 0 || m == 0) return shared;
 
   SU2_OMP_BARRIER
-  const auto size = V[0].nElmDomain;
+  const size_t size = V[0].nElmDomain;
 
   su2matrix<ScalarType> local(n, m);
   local.setConstant(0);

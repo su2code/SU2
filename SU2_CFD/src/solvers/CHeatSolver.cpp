@@ -36,6 +36,7 @@ template class CScalarSolver<CHeatVariable>;
 CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   : CScalarSolver<CHeatVariable>(geometry, config, false),
     flow(config->GetFluidProblem()) {
+  SU2_ZONE_SCOPED
 
   /*--- Dimension of the problem --> temperature is the only conservative variable ---*/
 
@@ -173,6 +174,7 @@ CHeatSolver::CHeatSolver(CGeometry *geometry, CConfig *config, unsigned short iM
 
 void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                 unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
   CommonPreprocessing(geometry, config, Output);
 
@@ -190,6 +192,7 @@ void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
 
 void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter,
                               bool val_update_geo) {
+  SU2_ZONE_SCOPED
   string restart_filename = config->GetSolution_FileName();
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -278,6 +281,7 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
 void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                   CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
   /*--- For solid heat transfer there is no convection. ---*/
   if (!flow) return;
   CScalarSolver<CHeatVariable>::Upwind_Residual(geometry, solver_container, numerics_container, config, iMesh);
@@ -285,6 +289,7 @@ void CHeatSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 
 void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
   /*--- For fluid problems the viscous residual is included in the convective residual. ---*/
   if (flow) return;
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -317,6 +322,7 @@ void CHeatSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
 
 void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                   CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   /*--- Regular source terms go here. ---*/
   /*--- ... ---*/
@@ -330,6 +336,7 @@ void CHeatSolver::Source_Residual(CGeometry *geometry, CSolver **solver_containe
 
 
 void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
@@ -390,6 +397,7 @@ void CHeatSolver::Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) {
 
 void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   su2double Twall = config->GetIsothermal_Temperature(Marker_Tag) / config->GetTemperature_Ref();
@@ -407,6 +415,7 @@ void CHeatSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_conta
 
 void CHeatSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                    CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   const bool IsPyCustom = config->GetMarker_All_PyCustom(val_marker);
 
@@ -434,6 +443,7 @@ void CHeatSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_contain
 
 void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                            CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   if (!flow) return;
 
   const bool viscous = config->GetViscous();
@@ -494,6 +504,7 @@ void CHeatSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNum
 
 void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   if (!flow) return;
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -548,6 +559,7 @@ void CHeatSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const su2double Temperature_Ref = config->GetTemperature_Ref();
@@ -612,6 +624,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 }
 
 void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPointNormal;
   unsigned short Boundary, Monitoring;
@@ -726,6 +739,7 @@ void CHeatSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, C
 
 void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                unsigned short iMesh, unsigned long Iteration) {
+  SU2_ZONE_SCOPED
 
   const bool implicit      = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
@@ -935,6 +949,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
 }
 
 void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   const bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
@@ -983,6 +998,7 @@ void CHeatSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_co
 
 void CHeatSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                        unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
   if (flow) {
     CScalarSolver<CHeatVariable>::SetResidual_DualTime(geometry, solver_container, config, iRKStep, iMesh, RunTime_EqSystem);
     return;

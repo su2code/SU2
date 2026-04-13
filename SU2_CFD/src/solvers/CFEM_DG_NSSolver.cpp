@@ -34,6 +34,7 @@ SIZE_ARR_NORM = 8
 };
 
 CFEM_DG_NSSolver::CFEM_DG_NSSolver() : CFEM_DG_EulerSolver() {
+  SU2_ZONE_SCOPED
 
   /*--- Basic array initialization ---*/
   CD_Visc  = nullptr; CL_Visc  = nullptr; CSF_Visc = nullptr; CEff_Visc = nullptr;
@@ -53,6 +54,7 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver() : CFEM_DG_EulerSolver() {
 
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
  : CFEM_DG_EulerSolver(geometry, config, iMesh) {
+  SU2_ZONE_SCOPED
 
   /*--- Array initialization ---*/
   CD_Visc = nullptr;  CL_Visc = nullptr;  CSF_Visc = nullptr; CEff_Visc = nullptr;
@@ -153,6 +155,7 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
 }
 
 CFEM_DG_NSSolver::~CFEM_DG_NSSolver() {
+  SU2_ZONE_SCOPED
 
         delete [] CD_Visc;
         delete [] CL_Visc;
@@ -183,6 +186,7 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver() {
 }
 
 void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
 
   /* Allocate the memory for the work array and initialize it to zero to avoid
      warnings in debug mode  about uninitialized memory when padding is applied. */
@@ -893,6 +897,7 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
 
 void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
+  SU2_ZONE_SCOPED
 
   /* Check whether or not a time stepping scheme is used. */
   const bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
@@ -1310,6 +1315,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
                                                            const unsigned short NPad,
                                                            su2double            *res,
                                                            su2double            *work) {
+  SU2_ZONE_SCOPED
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
@@ -1634,6 +1640,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
                                                            const unsigned short NPad,
                                                            su2double            *res,
                                                            su2double            *work) {
+  SU2_ZONE_SCOPED
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
@@ -2022,6 +2029,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
                                                               const unsigned short NPad,
                                                               su2double            *res,
                                                               su2double            *work) {
+  SU2_ZONE_SCOPED
 
   /* Constant factor present in the heat flux vector, the inverse of
      the specific heat at constant volume and ratio lambdaOverMu. */
@@ -2414,6 +2422,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
                                                               const unsigned short NPad,
                                                               su2double            *res,
                                                               su2double            *work) {
+  SU2_ZONE_SCOPED
 
   /* Constant factor present in the heat flux vector, the inverse of
      the specific heat at constant volume and ratio lambdaOverMu. */
@@ -2974,6 +2983,7 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG(CConfig             *config,
                                           const unsigned long elemBeg,
                                           const unsigned long elemEnd,
                                           su2double           *workArray) {
+  SU2_ZONE_SCOPED
 
   /*--- Run shock capturing algorithm ---*/
   switch( config->GetKind_FEM_DG_Shock() ) {
@@ -2988,6 +2998,7 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG(CConfig             *config,
 void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(const unsigned long elemBeg,
                                                   const unsigned long elemEnd,
                                                   su2double           *workArray) {
+  SU2_ZONE_SCOPED
 
   /*--- Dummy variable for storing shock sensor value temporarily ---*/
   su2double sensorVal, sensorLowerBound, machNorm, machMax;
@@ -3150,6 +3161,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
                                        const unsigned long elemBeg,
                                        const unsigned long elemEnd,
                                        su2double           *workArray) {
+  SU2_ZONE_SCOPED
 
   /*--- Determine whether a body force term is present. ---*/
   bool body_force = config->GetBody_Force();
@@ -3728,6 +3740,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
                                      unsigned long       &indResFaces,
                                      CNumerics           *numerics,
                                      su2double           *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
@@ -4146,6 +4159,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(const CVolumeElementFEM *adjVolElem
                                                    su2double         *viscNormFluxes,
                                                    su2double         *viscosityInt,
                                                    su2double         *kOverCvInt) {
+  SU2_ZONE_SCOPED
 
   /* Multiplication factor for the heat flux. It is set to zero if the wall heat flux
      is prescribed, such that the computed heat flux is zero, and to one otherwise. */
@@ -4312,6 +4326,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_2D(const su2double *sol
                                                                   su2double &Viscosity,
                                                                   su2double &kOverCv,
                                                                   su2double *normalFlux) {
+  SU2_ZONE_SCOPED
 
   /* Constant factor present in the heat flux vector, namely the ratio of
      thermal conductivity and viscosity. */
@@ -4398,6 +4413,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_3D(const su2double *sol
                                                                   su2double &Viscosity,
                                                                   su2double &kOverCv,
                                                                   su2double *normalFlux) {
+  SU2_ZONE_SCOPED
 
   /* Constant factor present in the heat flux vector, namely the ratio of
      thermal conductivity and viscosity. */
@@ -4509,6 +4525,7 @@ void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short indFaceChunk,
                                             const su2double      lenScale1,
                                             const su2double      *metricNormalsFace,
                                                   su2double      *penaltyFluxes) {
+  SU2_ZONE_SCOPED
 
   /* Constant ratio of the second viscosity and the viscosity itself. */
   const su2double lambdaOverMu = -TWO3;
@@ -4629,6 +4646,7 @@ void CFEM_DG_NSSolver::SymmetrizingFluxesFace(const unsigned short indFaceChunk,
                                               const su2double      *kOverCvInt1,
                                               const su2double      *metricNormalsFace,
                                                     su2double      *symmFluxes) {
+  SU2_ZONE_SCOPED
 
   /* Constant ratio of the second viscosity and the viscosity itself. */
   const su2double lambdaOverMu = -TWO3;
@@ -4868,6 +4886,7 @@ void CFEM_DG_NSSolver::TransformSymmetrizingFluxes(const unsigned short indFaceC
                                                    const su2double      *weights,
                                                    const su2double      *metricCoorFace,
                                                          su2double      *paramFluxes) {
+  SU2_ZONE_SCOPED
 
   /*--- Transform the fluxes, such that they must be multiplied with the
         gradients w.r.t. the parametric coordinates rather than the
@@ -4985,6 +5004,7 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
                                      su2double                *resFaces,
                                      CNumerics                *conv_numerics,
                                      su2double                *workArray){
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -5051,6 +5071,7 @@ void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
                                     su2double                *resFaces,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray){
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -5123,6 +5144,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
                                     su2double                *resFaces,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray){
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -5528,6 +5550,7 @@ void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig                  *config,
                                             su2double                *resFaces,
                                             CNumerics                *conv_numerics,
                                             su2double                *workArray){
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -5596,6 +5619,7 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
                                 CNumerics                *conv_numerics,
                                 unsigned short           val_marker,
                                 su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -5662,6 +5686,7 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
                                  CNumerics                *conv_numerics,
                                  unsigned short           val_marker,
                                  su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -5728,6 +5753,7 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
                                         CNumerics                *conv_numerics,
                                         unsigned short           val_marker,
                                         su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Set the factor for the wall velocity. For factWallVel = 0, the right state
      contains the wall velocity. For factWallVel = 1.0, the velocity of the
@@ -5860,6 +5886,7 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
                                           CNumerics                *conv_numerics,
                                           unsigned short           val_marker,
                                           su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Set the factor for the wall velocity. For factWallVel = 0, the right state
      contains the wall velocity. For factWallVel = 1.0, the velocity of the
@@ -5977,6 +6004,7 @@ void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
                                   CNumerics                *conv_numerics,
                                   unsigned short           val_marker,
                                   su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -6042,6 +6070,7 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
                                  su2double                *resFaces,
                                  CNumerics                *conv_numerics,
                                  su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -6142,6 +6171,7 @@ void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
                                              su2double          *resFaces,
                                              unsigned long      &indResFaces,
                                              CWallModel         *wallModel) {
+  SU2_ZONE_SCOPED
 
   /*--- Get the information from the standard element, which is the same
         for all the faces in the chunks considered. ---*/
@@ -6201,6 +6231,7 @@ void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
                                              su2double          *viscFluxes,
                                              su2double          *viscosityInt,
                                              su2double          *kOverCvInt) {
+  SU2_ZONE_SCOPED
 
   /*---------------------------------------------------------------------------*/
   /*--- Step 1: Compute the gradients of the conservative variables in the  ---*/
@@ -6274,6 +6305,7 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
                                         su2double          *viscosityInt,
                                         su2double          *kOverCvInt,
                                         CWallModel         *wallModel) {
+  SU2_ZONE_SCOPED
 
   /* Loop over the simultaneously treated faces. */
   for(unsigned short l=0; l<nFaceSimul; ++l) {
@@ -6396,6 +6428,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                                       const su2double          *kOverCvInt,
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
+  SU2_ZONE_SCOPED
 
   /*--- Get the required information from the standard element, which is the
         same for all faces considered. ---*/

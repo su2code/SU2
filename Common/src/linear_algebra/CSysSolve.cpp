@@ -62,6 +62,8 @@ constexpr float linSolEpsilon<float>() {
 template <class ScalarType, class Weights, class Vectors>
 void LinearCombinationImpl(const unsigned long n, const Vectors& vs, const Weights& ws, CSysVector<ScalarType>& v,
                            bool inc = false) {
+  SU2_ZONE_SCOPED
+
   if (n == 0) {
     if (!inc) v = ScalarType{};
     return;
@@ -191,6 +193,7 @@ void CSysSolve<ScalarType>::SolveReduced(int n, const su2matrix<ScalarType>& Hsb
 template <class ScalarType>
 bool CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg,
                                            vector<CSysVector<ScalarType>>& w) const {
+  SU2_ZONE_SCOPED
   const auto thread = omp_get_thread_num();
 
   /*--- If Hsbg is shared by multiple threads calling this function, only one
@@ -293,6 +296,8 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType>& 
                                                   const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                   unsigned long m, ScalarType& residual, bool monitoring,
                                                   const CConfig* config) const {
+  SU2_ZONE_SCOPED
+
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   ScalarType norm_r = 0.0, norm0 = 0.0;
   unsigned long i = 0;
@@ -442,6 +447,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
                                                       const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                       unsigned long m, ScalarType& residual, bool monitoring,
                                                       const CConfig* config) const {
+  SU2_ZONE_SCOPED
+
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   const bool flexible = !precond.IsIdentity();
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
@@ -671,6 +678,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
                                                            unsigned long max_iter, ScalarType& residual,
                                                            bool monitoring, const CConfig* config, FgcrodrMode mode,
                                                            unsigned long custom_m) const {
+  SU2_ZONE_SCOPED
   using EigenMatrix = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
   using EigenVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
@@ -1067,6 +1075,8 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
                                                        const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                        unsigned long m, ScalarType& residual, bool monitoring,
                                                        const CConfig* config) const {
+  SU2_ZONE_SCOPED
+
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   ScalarType norm_r = 0.0, norm0 = 0.0;
   unsigned long i = 0;
@@ -1240,6 +1250,8 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
                                                         const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                         unsigned long m, ScalarType& residual, bool monitoring,
                                                         const CConfig* config) const {
+  SU2_ZONE_SCOPED
+
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   const bool fix_iter_mode = tol < eps;
   ScalarType norm_r = 0.0, norm0 = 0.0;
@@ -1394,6 +1406,7 @@ template <class ScalarType>
 unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, const CSysVector<su2double>& LinSysRes,
                                            CSysVector<su2double>& LinSysSol, CGeometry* geometry,
                                            const CConfig* config) {
+  SU2_ZONE_SCOPED
   /*---
    A word about the templated types. It is assumed that the residual and solution vectors are always of su2doubles,
    meaning that they are active in the discrete adjoint. The same assumption is made in SetExternalSolve.
@@ -1610,6 +1623,8 @@ template <class ScalarType>
 unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, const CSysVector<su2double>& LinSysRes,
                                              CSysVector<su2double>& LinSysSol, CGeometry* geometry,
                                              const CConfig* config, const bool directCall) {
+  SU2_ZONE_SCOPED
+
   unsigned short KindSolver, KindPrecond;
   unsigned long MaxIter, IterLinSol = 0;
   ScalarType SolverTol;
