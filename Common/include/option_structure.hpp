@@ -2882,9 +2882,9 @@ static const MapType<std::string, DEFORM_KIND> Deform_Kind_Map = {
 /*!
  * \brief Type of sensor for anisotropic metrics.
  */
-enum class SensorType : unsigned char {
+enum class SensorType {
   PRIMITIVE, /*!< \brief Value read directly from the primitive variable array. */
-  DERIVED,   /*!< \brief Officially-supported computed quantity (e.g. Mach number). */
+  COMPUTED,  /*!< \brief Officially-supported computed quantity (e.g. Mach number). */
   CUSTOM,    /*!< \brief User-defined sensor populated externally via the Python wrapper. */
 };
 

@@ -42,9 +42,9 @@
 namespace MetricUtils {
 
 /*!
- * \brief Build a map of supported derived sensor names to their point-wise evaluator lambdas.
+ * \brief Build a map of supported computed sensor names to their point-wise evaluator lambdas.
  *
- * Derived sensors are officially-supported computed quantities that are not stored directly
+ * Computed sensors are officially-supported computed quantities that are not stored directly
  * as primitive variables. Supported sensors:
  *   - VELOCITY  velocity magnitude (all flow solvers)
  *   - MACH      local Mach number  (compressible flow solvers only)
@@ -55,13 +55,13 @@ namespace MetricUtils {
  * \param[in] primitive_map  - Map of primitive variable names to their array indices.
  * \param[in] nDim           - Number of spatial dimensions.
  * \param[in] incompressible - True for incompressible solvers (MACH is excluded).
- * \return Map of derived sensor names to evaluator lambdas.
+ * \return Map of computed sensor names to evaluator lambdas.
  */
 inline std::map<std::string, std::function<su2double(const su2double*)>>
-DerivedNameToFunctionMap(const std::map<std::string, unsigned short>& primitive_map,
-                         unsigned long nDim, bool incompressible) {
+ComputedNameToFunctionMap(const std::map<std::string, unsigned short>& primitive_map,
+                          unsigned long nDim, bool incompressible) {
   using SensorFn = std::function<su2double(const su2double*)>;
-  std::map<std::string, SensorFn> derived_map;
+  std::map<std::string, SensorFn> computed_map;
 
   const unsigned short vel_x = primitive_map.at("VELOCITY_X");
   const unsigned short vel_y = primitive_map.at("VELOCITY_Y");
@@ -69,7 +69,7 @@ DerivedNameToFunctionMap(const std::map<std::string, unsigned short>& primitive_
                                             : std::numeric_limits<unsigned short>::max();
 
   /*--- Velocity magnitude: supported by all flow solvers ---*/
-  derived_map["VELOCITY"] = [vel_x, vel_y, vel_z, nDim](const su2double* prim) -> su2double {
+  computed_map["VELOCITY"] = [vel_x, vel_y, vel_z, nDim](const su2double* prim) -> su2double {
     su2double vel2 = prim[vel_x] * prim[vel_x] + prim[vel_y] * prim[vel_y];
     if (nDim == 3) vel2 += prim[vel_z] * prim[vel_z];
     return std::sqrt(vel2);
@@ -78,14 +78,14 @@ DerivedNameToFunctionMap(const std::map<std::string, unsigned short>& primitive_
   /*--- Mach number: compressible solvers only ---*/
   if (!incompressible) {
     const unsigned short a_idx = primitive_map.at("SOUND_SPEED");
-    derived_map["MACH"] = [vel_x, vel_y, vel_z, a_idx, nDim](const su2double* prim) -> su2double {
+    computed_map["MACH"] = [vel_x, vel_y, vel_z, a_idx, nDim](const su2double* prim) -> su2double {
       su2double vel2 = prim[vel_x] * prim[vel_x] + prim[vel_y] * prim[vel_y];
       if (nDim == 3) vel2 += prim[vel_z] * prim[vel_z];
       return std::sqrt(vel2) / std::max(std::abs(prim[a_idx]), su2double(1e-20));
     };
   }
 
-  return derived_map;
+  return computed_map;
 }
 
 /*!
@@ -116,9 +116,9 @@ inline bool ResolveSensorIndices(
 
   /*--- Build maps of available variables across all solvers.
    *    var_map:     name -> (iSol, prim_idx)  for PRIMITIVE sensors
-   *    derived_map: name -> evaluator lambda   for DERIVED sensors ---*/
+   *    computed_map: name -> evaluator lambda   for COMPUTED sensors ---*/
   std::map<std::string, std::pair<unsigned short, unsigned short>> var_map;
-  std::map<std::string, std::function<su2double(const su2double*)>> derived_map;
+  std::map<std::string, std::function<su2double(const su2double*)>> computed_map;
 
   for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++) {
     if (solver_container[iSol] == nullptr) continue;
@@ -146,9 +146,9 @@ inline bool ResolveSensorIndices(
         var_map[varname] = std::make_pair(iSol, varidx);
       }
 
-      /*--- Build derived sensor map. VELOCITY is supported by all flow solvers;
-       *    MACH is excluded for incompressible (see DerivedNameToFunctionMap). ---*/
-      derived_map = DerivedNameToFunctionMap(primitive_map, nDim, incompressible);
+      /*--- Build computed sensor map. VELOCITY is supported by all flow solvers;
+       *    MACH is excluded for incompressible (see ComputedNameToFunctionMap). ---*/
+      computed_map = ComputedNameToFunctionMap(primitive_map, nDim, incompressible);
     } else {
       /*--- For non-flow solvers, use solution fields ---*/
       std::vector<std::string> solution_fields = solver_container[iSol]->GetSolutionFields();
@@ -171,9 +171,9 @@ inline bool ResolveSensorIndices(
 
   /*--- Resolve each sensor in config order, grouping by solver.
    *    Three categories are distinguished:
-   *      PRIMITIVE — index into primitive variable array (prim_idx is valid).
-   *      DERIVED   — supported computed quantity (e.g. Mach); evaluator lambda stored in fn.
-   *      CUSTOM    — filled externally via Python wrapper (CDriverBase::AdaptSensors).
+   *      PRIMITIVE: index into primitive variable array (prim_idx is valid).
+   *      COMPUTED:  supported computed quantity (e.g. Mach); evaluator lambda stored in fn.
+   *      CUSTOM:    filled externally via Python wrapper (CDriverBase::AdaptSensors).
    *    Config order is preserved so iSensor=0 is always the first listed sensor
    *    (whose Hessian drives the metric and is normalised). ---*/
   bool all_resolved = true;
@@ -190,17 +190,17 @@ inline bool ResolveSensorIndices(
                   << iSol << ", variable index " << var_index << std::endl;
       }
     } else {
-      auto dit = derived_map.find(sensor_name);
-      if (dit != derived_map.end()) {
-        /*--- DERIVED sensor ---*/
+      auto dit = computed_map.find(sensor_name);
+      if (dit != computed_map.end()) {
+        /*--- COMPUTED sensor ---*/
         sensors_by_solver[FLOW_SOL].push_back(
             {std::numeric_limits<unsigned short>::max(), sensor_name,
-             SensorType::DERIVED, dit->second});
+             SensorType::COMPUTED, dit->second});
         if (rank == MASTER_NODE) {
-          std::cout << "  Derived sensor '" << sensor_name << "' registered." << std::endl;
+          std::cout << "  Computed sensor '" << sensor_name << "' registered." << std::endl;
         }
       } else {
-        /*--- CUSTOM sensor — must be populated via Python wrapper ---*/
+        /*--- CUSTOM sensor (must be populated via Python wrapper) ---*/
         if (rank == MASTER_NODE) {
           std::cout << "  Custom sensor '" << sensor_name << "' detected." << std::endl;
         }

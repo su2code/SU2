@@ -2228,7 +2228,7 @@ void CSolver::AllocateMetricSensorArrays(unsigned short nSensors) {
 
 void CSolver::SetPrimitive_SensorAdapt(CGeometry *geometry, const CConfig *config) {
   /*--- Copy PRIMITIVE sensor values from primitive variable array into Sensor_Adapt.
-   *    DERIVED and CUSTOM slots are skipped here. ---*/
+   *    COMPUTED and CUSTOM slots are skipped here. ---*/
   for (size_t iSensor = 0; iSensor < MetricSensors.size(); ++iSensor) {
     if (MetricSensors[iSensor].type != SensorType::PRIMITIVE) continue;
 
@@ -2241,11 +2241,11 @@ void CSolver::SetPrimitive_SensorAdapt(CGeometry *geometry, const CConfig *confi
   }
 }
 
-void CSolver::SetDerived_SensorAdapt(CGeometry *geometry, const CConfig *config) {
-  /*--- Evaluate DERIVED sensors via their stored lambdas (e.g. Mach number).
+void CSolver::SetComputed_SensorAdapt(CGeometry *geometry, const CConfig *config) {
+  /*--- Evaluate COMPUTED sensors via their stored lambdas (e.g. Mach number).
    *    Each lambda receives a pointer to the full primitive row for the point. ---*/
   for (size_t iSensor = 0; iSensor < MetricSensors.size(); ++iSensor) {
-    if (MetricSensors[iSensor].type != SensorType::DERIVED) continue;
+    if (MetricSensors[iSensor].type != SensorType::COMPUTED) continue;
 
     const auto& fn = MetricSensors[iSensor].fn;
     SU2_OMP_FOR_STAT(omp_chunk_size)

@@ -214,7 +214,7 @@ public:
     unsigned short prim_idx;                       /*!< \brief Primitive variable index (PRIMITIVE type only). */
     std::string name;                              /*!< \brief Sensor name as specified in config. */
     SensorType type = SensorType::PRIMITIVE;       /*!< \brief Category of sensor. */
-    std::function<su2double(const su2double*)> fn; /*!< \brief Point-wise evaluator for DERIVED sensors. */
+    std::function<su2double(const su2double*)> fn; /*!< \brief Point-wise evaluator for COMPUTED sensors. */
   };
   vector<MetricSensorInfo> MetricSensors;  /*!< \brief Sensor list in config order, one entry per sensor. */
 
@@ -600,11 +600,11 @@ public:
   virtual void SetPrimitive_SensorAdapt(CGeometry *geometry, const CConfig *config);
 
   /*!
-   * \brief Evaluate DERIVED sensors (e.g. Mach number) and store results in Sensor_Adapt.
+   * \brief Evaluate COMPUTED sensors (e.g. Mach number) and store results in Sensor_Adapt.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetDerived_SensorAdapt(CGeometry *geometry, const CConfig *config);
+  virtual void SetComputed_SensorAdapt(CGeometry *geometry, const CConfig *config);
 
     /*!
    * \brief Allocate Gradient_Adapt and Hessian arrays for the sensors assigned to this solver.
