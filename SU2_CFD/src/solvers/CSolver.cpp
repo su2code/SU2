@@ -52,6 +52,7 @@
 
 
 CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_mode) {
+  SU2_ZONE_SCOPED
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
@@ -121,6 +122,7 @@ CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_m
 }
 
 CSolver::~CSolver() {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar;
 
@@ -195,6 +197,7 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
                                           unsigned short &MPI_TYPE,
                                           unsigned short &ICOUNT,
                                           unsigned short &JCOUNT) const {
+  SU2_ZONE_SCOPED
   switch (commType) {
     case PERIODIC_VOLUME:
       COUNT_PER_POINT  = 1;
@@ -337,6 +340,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                     const CConfig *config,
                                     unsigned short val_periodic_index,
                                     unsigned short commType) {
+  SU2_ZONE_SCOPED
 
   /*--- Check for dummy communication. ---*/
 
@@ -1000,6 +1004,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                                     const CConfig *config,
                                     unsigned short val_periodic_index,
                                     unsigned short commType) {
+  SU2_ZONE_SCOPED
 
   /*--- Check for dummy communication. ---*/
 
@@ -1332,6 +1337,7 @@ void CSolver::GetCommCountAndType(const CConfig* config,
                                   MPI_QUANTITIES commType,
                                   unsigned short &COUNT_PER_POINT,
                                   unsigned short &MPI_TYPE) const {
+  SU2_ZONE_SCOPED
   switch (commType) {
     case MPI_QUANTITIES::SOLUTION:
     case MPI_QUANTITIES::SOLUTION_OLD:
@@ -1427,6 +1433,7 @@ namespace CommHelpers {
 void CSolver::InitiateComms(CGeometry *geometry,
                             const CConfig *config,
                             MPI_QUANTITIES commType) {
+  SU2_ZONE_SCOPED
 
   /*--- Local variables ---*/
 
@@ -1580,6 +1587,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 void CSolver::CompleteComms(CGeometry *geometry,
                             const CConfig *config,
                             MPI_QUANTITIES commType) {
+  SU2_ZONE_SCOPED
 
   /*--- Local variables ---*/
 
@@ -1740,6 +1748,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 }
 
 void CSolver::ResetCFLAdapt() {
+  SU2_ZONE_SCOPED
   NonLinRes_Series.clear();
   Old_Func = 0;
   New_Func = 0;
@@ -1750,6 +1759,7 @@ void CSolver::ResetCFLAdapt() {
 void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CSolver   ***solver_container,
                              CConfig   *config) {
+  SU2_ZONE_SCOPED
 
   /* Adapt the CFL number on all multigrid levels using an
    exponential progression with under-relaxation approach. */
@@ -1988,6 +1998,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 }
 
 void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   if (geometry->GetMGLevel() != MESH_0) return;
 
@@ -2049,6 +2060,7 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
 }
 
 void CSolver::SetResidual_BGS(const CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   if (geometry->GetMGLevel() != MESH_0) return;
 
@@ -2091,6 +2103,7 @@ void CSolver::SetResidual_BGS(const CGeometry *geometry, const CConfig *config) 
 }
 
 void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Loop interior points ---*/
 
@@ -2153,6 +2166,7 @@ void CSolver::SetRotatingFrame_GCL(CGeometry *geometry, const CConfig *config) {
 }
 
 void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   const auto& solution = base_nodes->GetAuxVar();
   auto& gradient = base_nodes->GetAuxVarGradient();
@@ -2162,6 +2176,7 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, const CConfig *config) 
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   bool weighted = true;
   const auto& solution = base_nodes->GetAuxVar();
@@ -2173,6 +2188,7 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) 
 }
 
 void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction) {
+  SU2_ZONE_SCOPED
 
   const auto& solution = base_nodes->GetSolution();
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
@@ -2182,6 +2198,7 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config
 }
 
 void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction) {
+  SU2_ZONE_SCOPED
 
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
@@ -2254,6 +2271,7 @@ void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, short id
 }
 
 void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Loop domain points. ---*/
 
@@ -2299,6 +2317,7 @@ void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config)
 }
 
 void CSolver::Add_External_To_Solution() {
+  SU2_ZONE_SCOPED
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->AddSolution(iPoint, base_nodes->Get_External(iPoint));
   }
@@ -2307,6 +2326,7 @@ void CSolver::Add_External_To_Solution() {
 }
 
 void CSolver::Add_Solution_To_External() {
+  SU2_ZONE_SCOPED
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     base_nodes->Add_External(iPoint, base_nodes->GetSolution(iPoint));
   }
@@ -2315,6 +2335,7 @@ void CSolver::Add_Solution_To_External() {
 }
 
 void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
+  SU2_ZONE_SCOPED
 
   /*--- This method is for discrete adjoint solvers and it is used in multi-physics
    *    contexts, "cross_term" is the old value, the new one is in "Solution".
@@ -2341,6 +2362,7 @@ void CSolver::Update_Cross_Term(CConfig *config, su2passivematrix &cross_term) {
 }
 
 void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) const {
+  SU2_ZONE_SCOPED
 
   /// TODO: No comms needed for this gradient? The Rmatrix should be allocated somewhere.
 
@@ -2353,6 +2375,7 @@ void CSolver::SetGridVel_Gradient(CGeometry *geometry, const CConfig *config) co
 }
 
 void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   const auto kindLimiter = config->GetKind_SlopeLimit();
   const auto umusclKappa = config->GetMUSCL_Kappa();
@@ -2367,6 +2390,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
 }
 
 void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nVar) {
+  SU2_ZONE_SCOPED
 
   short iVar, jVar, kVar;
   su2double weight, aux;
@@ -2401,6 +2425,7 @@ void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nV
 }
 
 void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometry, CConfig *config, unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Variables used for Aeroelastic case ---*/
 
@@ -2481,6 +2506,7 @@ void CSolver::Aeroelastic(CSurfaceMovement *surface_movement, CGeometry *geometr
 }
 
 void CSolver::SetUpTypicalSectionWingModel(vector<vector<su2double> >& Phi, vector<su2double>& omega, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Retrieve values from the config file ---*/
   su2double w_h = config->GetAeroelastic_Frequency_Plunge();
@@ -2559,6 +2585,7 @@ void CSolver::SetUpTypicalSectionWingModel(vector<vector<su2double> >& Phi, vect
 }
 
 void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su2double Cm, CConfig *config, unsigned short iMarker, vector<su2double>& displacements) {
+  SU2_ZONE_SCOPED
 
   /*--- The aeroelastic model solved in this routine is the typical section wing model
    The details of the implementation are similar to those found in J.J. Alonso
@@ -2681,6 +2708,7 @@ void CSolver::SolveTypicalSectionWingModel(CGeometry *geometry, su2double Cl, su
 }
 
 void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) const {
+  SU2_ZONE_SCOPED
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
@@ -2840,6 +2868,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) const {
 }
 
 void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config, string val_filename) {
+  SU2_ZONE_SCOPED
 
   ifstream restart_file;
   string text_line, Tag;
@@ -3002,6 +3031,7 @@ void CSolver::Read_SU2_Restart_ASCII(CGeometry *geometry, const CConfig *config,
 }
 
 void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config, string val_filename) {
+  SU2_ZONE_SCOPED
 
   char str_buf[CGNS_STRING_SIZE], fname[100];
   strcpy(fname, val_filename.c_str());
@@ -3233,6 +3263,7 @@ void CSolver::Read_SU2_Restart_Binary(CGeometry *geometry, const CConfig *config
 }
 
 void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   if (geometry->GetGlobal_nPointDomain() == 0) return;
 
@@ -3437,6 +3468,7 @@ void CSolver::InterpolateRestartData(const CGeometry *geometry, const CConfig *c
 }
 
 void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint, const string& val_filename) const {
+  SU2_ZONE_SCOPED
 
   su2double AoA_ = config->GetAoA();
   su2double AoS_ = config->GetAoS();
@@ -3646,6 +3678,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
                                int val_iter,
                                unsigned short val_kind_solver,
                                unsigned short val_kind_marker) const {
+  SU2_ZONE_SCOPED
 
   /*-- First, set the solver and marker kind for the particular problem at
    hand. Note that, in the future, these routines can be used for any solver
@@ -4098,6 +4131,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
 
 void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config){
+  SU2_ZONE_SCOPED
 
   const bool viscous_flow = config->GetViscous();
   const su2double Pressure_Inf = config->GetPressure_FreeStreamND();
@@ -4149,6 +4183,7 @@ void CSolver::ComputeVertexTractions(CGeometry *geometry, const CConfig *config)
 }
 
 void CSolver::RegisterVertexTractions(CGeometry *geometry, const CConfig *config){
+  SU2_ZONE_SCOPED
 
   unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint;
@@ -4180,6 +4215,7 @@ void CSolver::RegisterVertexTractions(CGeometry *geometry, const CConfig *config
 }
 
 void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *config){
+  SU2_ZONE_SCOPED
 
   unsigned short iMarker, iDim;
   unsigned long iVertex, iPoint;
@@ -4216,6 +4252,7 @@ void CSolver::SetVertexTractionsAdjoint(CGeometry *geometry, const CConfig *conf
 void CSolver::SetVerificationSolution(unsigned short nDim,
                                       unsigned short nVar,
                                       CConfig        *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Determine the verification solution to be set and
         allocate memory for the corresponding class. ---*/
@@ -4251,6 +4288,7 @@ void CSolver::SetVerificationSolution(unsigned short nDim,
 }
 
 void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig *config){
+  SU2_ZONE_SCOPED
 
   SU2_OMP_PARALLEL {
 
@@ -4300,6 +4338,7 @@ void CSolver::ComputeResidual_Multizone(const CGeometry *geometry, const CConfig
 }
 
 void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const string& filename, unsigned long skipVars) {
+  SU2_ZONE_SCOPED
 
   /*--- Read and store the restart metadata. ---*/
 
@@ -4346,6 +4385,7 @@ void CSolver::BasicLoadRestart(CGeometry *geometry, const CConfig *config, const
 }
 
 void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
+  SU2_ZONE_SCOPED
 
 #if defined(HAVE_LIBROM) && !defined(CODI_FORWARD_TYPE) && !defined(CODI_REVERSE_TYPE)
   const bool unsteady            = config->GetTime_Domain();

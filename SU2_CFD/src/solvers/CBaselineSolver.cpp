@@ -34,6 +34,7 @@
 CBaselineSolver::CBaselineSolver() : CSolver() { }
 
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   nPoint = geometry->GetnPoint();
 
@@ -58,6 +59,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
 }
 
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short val_nvar, vector<string> field_names) {
+  SU2_ZONE_SCOPED
 
   /*--- Define geometry constants in the solver structure ---*/
 
@@ -76,6 +78,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 }
 
 void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Open the restart file and extract the nVar and field names. ---*/
 
@@ -351,6 +354,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 }
 
 void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  SU2_ZONE_SCOPED
 
   /*--- Restart the solution from file information ---*/
 
@@ -486,6 +490,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 }
 
 void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter) {
+  SU2_ZONE_SCOPED
 
   /*--- Restart the solution from file information ---*/
   string filename;
@@ -554,5 +559,6 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
 }
 
 CBaselineSolver::~CBaselineSolver() {
+  SU2_ZONE_SCOPED
   delete nodes;
 }

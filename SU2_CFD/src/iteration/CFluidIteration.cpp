@@ -32,6 +32,8 @@ void CFluidIteration::Preprocess(COutput* output, CIntegration**** integration, 
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                  CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
+
   unsigned long TimeIter = config[val_iZone]->GetTimeIter();
 
   bool fsi = config[val_iZone]->GetFSI_Simulation();
@@ -56,6 +58,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                               CSolver***** solver, CNumerics****** numerics, CConfig** config,
                               CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                               CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
 
   const bool unsteady = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                         (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
@@ -155,7 +158,7 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
                              CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                              CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                              unsigned short val_iInst) {
-  unsigned short iMesh;
+  SU2_ZONE_SCOPED
 
   /*--- Dual time stepping strategy ---*/
 
@@ -163,7 +166,7 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
       (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     /*--- Update dual time solver on all mesh levels ---*/
 
-    for (iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+    for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       integration[val_iZone][val_iInst][FLOW_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][iMesh],
                                                                       solver[val_iZone][val_iInst][iMesh][FLOW_SOL],
                                                                       config[val_iZone], iMesh);
@@ -216,14 +219,12 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
                               CSolver***** solver, CNumerics****** numerics, CConfig** config,
                               CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                               CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
-  bool StopCalc = false;
+  SU2_ZONE_SCOPED
 
   StopTime = SU2_MPI::Wtime();
-
   UsedTime = StopTime - StartTime;
 
-
-    /*--- Turbomachinery Specific Montior ---*/
+  /*--- Turbomachinery Specific Montior ---*/
   if (config[ZONE_0]->GetBoolTurbomachinery()){
     if (val_iZone == config[ZONE_0]->GetnZone()-1) {
       ComputeTurboPerformance(solver, geometry, config, config[val_iZone]->GetnInner_Iter());
@@ -248,7 +249,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
 
-  StopCalc = output->GetConvergence();
+  auto StopCalc = output->GetConvergence();
 
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 
@@ -261,6 +262,8 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
 }
 
 void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag) {
+  SU2_ZONE_SCOPED
+
   /*--- Generic function for handling ramps ---*/
   // Grid updates (i.e. rotation/translation) handled seperately to boundary (i.e. pressure/mass flow) updates
   auto* config = config_container[iZone];
@@ -362,6 +365,8 @@ void CFluidIteration::UpdateRamp(CGeometry**** geometry_container, CConfig** con
 }
 
 void CFluidIteration::ComputeTurboPerformance(CSolver***** solver, CGeometry**** geometry_container, CConfig** config_container, unsigned long ExtIter) {
+  SU2_ZONE_SCOPED
+
   unsigned short nDim = geometry_container[ZONE_0][INST_0][MESH_0]->GetnDim();
   unsigned short nBladesRow = config_container[ZONE_0]->GetnMarker_Turbomachinery();
   unsigned short iBlade=0, iSpan;
@@ -398,6 +403,7 @@ void CFluidIteration::Postprocess(COutput* output, CIntegration**** integration,
                                   CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                   CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
 
   /*--- Temporary: enable only for single-zone driver. This should be removed eventually when generalized. ---*/
   if (!config[val_iZone]->GetMultizone_Problem()) {
@@ -412,6 +418,8 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
                             CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                             CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                             unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
+
   /*--- Boolean to determine if we are running a static or dynamic case ---*/
   bool steady = !config[val_iZone]->GetTime_Domain();
 
@@ -457,6 +465,8 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
 }
 
 void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, CSolver*** solver) {
+  SU2_ZONE_SCOPED
+
   // The gust is imposed on the flow field via the grid velocities. This method called the Field Velocity Method is
   // described in the NASA TM–2012-217771 - Development, Verification and Use of Gust Modeling in the NASA Computational
   // Fluid Dynamics Code FUN3D the desired gust is prescribed as the negative of the grid velocity.
@@ -604,6 +614,8 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
 
 void CFluidIteration::InitializeVortexDistribution(unsigned long& nVortex, vector<su2double>& x0, vector<su2double>& y0,
                                                    vector<su2double>& vort_strength, vector<su2double>& r_core) {
+  SU2_ZONE_SCOPED
+
   /*--- Read in Vortex Distribution ---*/
   std::string line;
   std::ifstream file;
@@ -637,6 +649,7 @@ void CFluidIteration::InitializeVortexDistribution(unsigned long& nVortex, vecto
 }
 
 bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSolver **solver, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   CSolver* flow_solver= solver[FLOW_SOL];
 
@@ -661,6 +674,7 @@ bool CFluidIteration::MonitorFixed_CL(COutput *output, CGeometry *geometry, CSol
 }
 
 void CFluidIteration::SetDualTime_Aeroelastic(CConfig* config) const {
+  SU2_ZONE_SCOPED
 
   /*--- Store old aeroelastic solutions ---*/
 

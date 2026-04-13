@@ -34,6 +34,7 @@
 
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
              : CTurbSolver(geometry, config, false) {
+  SU2_ZONE_SCOPED
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
 
@@ -176,6 +177,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
         unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   const auto kind_hybridRANSLES = config->GetKind_HybridRANSLES();
@@ -209,6 +211,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 }
 
 void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   const su2double cv1_3 = 7.1*7.1*7.1, cR1 = 0.5, rough_const = 0.03;
 
@@ -296,6 +299,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
 void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
@@ -310,6 +314,7 @@ void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry*
 
 void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                     CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   bool axisymmetric = config->GetAxisymmetric();
 
@@ -440,10 +445,12 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
 void CTurbSASolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                     CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 }
 
 void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
 
@@ -518,6 +525,7 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
 void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                        CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 
@@ -525,6 +533,7 @@ void CTurbSASolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_con
 
 void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                              CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -649,6 +658,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
 
 void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -740,6 +750,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
 
 void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -829,6 +840,7 @@ void CTurbSASolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_conta
 
 void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -918,12 +930,14 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
 
 void CTurbSASolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                      CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config,  val_marker, true);
 }
 
 void CTurbSASolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config,  val_marker, false);
 }
@@ -931,6 +945,7 @@ void CTurbSASolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_cont
 void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container,
                                CNumerics *conv_numerics, CNumerics *visc_numerics,
                                CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -1068,6 +1083,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container,
 
 void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                          CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
@@ -1163,6 +1179,7 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
 
 void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const auto nSpanWiseSections = config->GetnSpanWiseSections();
@@ -1268,6 +1285,7 @@ void CTurbSASolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contain
 
 void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_container,
                                   const CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -1348,6 +1366,7 @@ void CTurbSASolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   const auto kindHybridRANSLES = config->GetKind_HybridRANSLES();
 
@@ -1530,6 +1549,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 void CTurbSASolver::SetInletAtVertex(const su2double *val_inlet,
                                     unsigned short iMarker,
                                     unsigned long iVertex) {
+  SU2_ZONE_SCOPED
 
   Inlet_TurbVars[iMarker][iVertex][0] = val_inlet[nDim+2+nDim];
 
@@ -1537,6 +1557,7 @@ void CTurbSASolver::SetInletAtVertex(const su2double *val_inlet,
 
 su2double CTurbSASolver::GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
                                           const CGeometry* geometry, su2double* val_inlet) const {
+  SU2_ZONE_SCOPED
   const auto position = nDim + 2 + nDim;
   val_inlet[position] = Inlet_TurbVars[iMarker][iVertex][0];
 
@@ -1548,6 +1569,7 @@ su2double CTurbSASolver::GetInletAtVertex(unsigned short iMarker, unsigned long 
 }
 
 void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
+  SU2_ZONE_SCOPED
   if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       Inlet_TurbVars[iMarker][iVertex][0] = GetNuTilde_Inf();
@@ -1556,6 +1578,7 @@ void CTurbSASolver::SetUniformInlet(const CConfig* config, unsigned short iMarke
 }
 
 void CTurbSASolver::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /* Apply the turbulent under-relaxation to the SA variants. The
    SA_NEG model is more robust due to allowing for negative nu_tilde,

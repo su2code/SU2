@@ -80,6 +80,7 @@ static void adaptMGDampingFactor(const unsigned short* performed,
 }
 
 void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
+  SU2_ZONE_SCOPED
   const auto& mgOpts = config->GetMGOptions();
   const unsigned short nMGLevels = config->GetnMGLevels();
   adaptMGDampingFactor(
@@ -92,6 +93,7 @@ void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
 }
 
 void CMultiGridIntegration::adaptProlongationDamping(CConfig* config) {
+  SU2_ZONE_SCOPED
   /*--- Post-smoothing directly measures whether the corrected fine-grid solution
    *    is well-behaved after prolongation.  If it exits early, increase damping.
    *    If it stagnates at max iters, decrease damping. ---*/
@@ -110,6 +112,7 @@ void CMultiGridIntegration::adaptProlongationDamping(CConfig* config) {
 passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsigned short iMesh,
                                                           passivedouble CFL_fine, passivedouble CFL_coarse_current,
                                                           passivedouble rms_res_coarse) {
+  SU2_ZONE_SCOPED
 
   const bool wasActive = AD::BeginPassive();
 
@@ -241,6 +244,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                 unsigned short RunTime_EqSystem,
                                                 unsigned short iZone,
                                                 unsigned short iInst) {
+  SU2_ZONE_SCOPED
 
   bool direct;
   switch (config[iZone]->GetKind_Solver()) {
@@ -452,6 +456,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
                                             unsigned short RunTime_EqSystem,
                                             unsigned short iZone,
                                             unsigned short iInst) {
+  SU2_ZONE_SCOPED
 
   CConfig* config = config_container[iZone];
 
@@ -560,6 +565,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
                                          unsigned short iMesh,
                                          unsigned short iZone,
                                          unsigned short iRKLimit) {
+  SU2_ZONE_SCOPED
 
   const auto& mgOpts = config->GetMGOptions();
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
@@ -654,6 +660,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
                                           CConfig *config,
                                           unsigned short iMesh,
                                           unsigned short iRKLimit) {
+  SU2_ZONE_SCOPED
 
   const auto& mgOpts = config->GetMGOptions();
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
@@ -739,6 +746,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
 void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                       CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+  SU2_ZONE_SCOPED
   const su2double *Solution_Fine = nullptr, *Solution_Coarse = nullptr;
 
   const unsigned short nVar = sol_coarse->GetnVar();
@@ -818,6 +826,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
                                                          unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config,
                                                          unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   /*--- Check if there is work to do. ---*/
   if (val_nSmooth == 0) return;
@@ -904,6 +913,7 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
 void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine,
                                                       CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
   su2double *Solution_Fine, *Residual_Fine;
 
   const unsigned short nVar = sol_fine->GetnVar();
@@ -941,6 +951,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
 
 void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                     CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
@@ -954,6 +965,7 @@ void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSys
 
 void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
                                             CGeometry *geo_coarse, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   const su2double *Residual_Fine;
 
@@ -1000,6 +1012,7 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
 }
 
 void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solver) {
+  SU2_ZONE_SCOPED
 
   AD::StartNoSharedReading();
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPointDomain(), omp_get_num_threads()))
@@ -1012,6 +1025,7 @@ void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solve
 
 void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
   const bool grid_movement = config->GetGrid_Movement();
@@ -1068,6 +1082,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
 void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   const unsigned short nDim = geo_coarse->GetnDim();
   const unsigned short nVar = sol_coarse->GetnVar();
@@ -1107,6 +1122,7 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
                                                       CNumerics ****numerics_container, CConfig *config,
                                                       unsigned short FinestMesh, unsigned short RunTime_EqSystem,
                                                       su2double *monitor) {
+  SU2_ZONE_SCOPED
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   switch (RunTime_EqSystem) {
 
@@ -1157,6 +1173,7 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
 
 void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                                           unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
+  SU2_ZONE_SCOPED
 
   if ((RunTime_EqSystem != RUNTIME_ADJFLOW_SYS) || (Iteration != 0)) return;
 
