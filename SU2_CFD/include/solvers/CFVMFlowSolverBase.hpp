@@ -869,7 +869,7 @@ class CFVMFlowSolverBase : public CSolver {
           }
 
           /*--- Update residual information for current thread. ---*/
-          ResidualReductions_PerThread(iPoint, iVar, Res, resRMS, resMax, idxMax);
+          ResidualReductions_PerThread(iPoint, iVar, Residual[iVar], resRMS, resMax, idxMax);
         }
       }
       END_SU2_OMP_FOR
@@ -964,11 +964,11 @@ class CFVMFlowSolverBase : public CSolver {
       }
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-        LinSysRes(iPoint, iVar) = -(LinSysRes(iPoint, iVar) + local_Res_TruncError[iVar]);
-        LinSysSol(iPoint, iVar) = 0.0;
-
         /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
         ResidualReductions_PerThread(iPoint, iVar, LinSysRes(iPoint, iVar), resRMS, resMax, idxMax);
+
+        LinSysRes(iPoint, iVar) = -(LinSysRes(iPoint, iVar) + local_Res_TruncError[iVar]);
+        LinSysSol(iPoint, iVar) = 0.0;
       }
     }
     END_SU2_OMP_FOR
