@@ -261,7 +261,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
   /*--- Local variables ---*/
 
   const unsigned short COUNT_PER_POINT = x.GetNVar();
-  const unsigned short MPI_TYPE = COMM_TYPE_DOUBLE;
+  const auto MPI_TYPE = COMM_TYPE::DOUBLE;
 
   /*--- Create a boolean for reversing the order of comms. ---*/
 

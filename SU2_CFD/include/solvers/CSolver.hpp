@@ -244,7 +244,7 @@ public:
   void GetCommCountAndType(const CConfig* config,
                            MPI_QUANTITIES commType,
                            unsigned short &COUNT_PER_POINT,
-                           unsigned short &MPI_TYPE) const;
+                           COMM_TYPE &MPI_TYPE) const;
 
   /*!
    * \brief Routine to load a solver quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs.
@@ -278,7 +278,7 @@ public:
   void GetPeriodicCommCountAndType(const CConfig* config,
                                    unsigned short commType,
                                    unsigned short &COUNT_PER_POINT,
-                                   unsigned short &MPI_TYPE,
+                                   COMM_TYPE &MPI_TYPE,
                                    unsigned short &ICOUNT,
                                    unsigned short &JCOUNT) const;
 
