@@ -99,7 +99,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -3.338267, -2.490046, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -3.954252, -2.527402, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################

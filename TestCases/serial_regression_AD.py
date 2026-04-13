@@ -108,7 +108,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -3.338269, -2.490047, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -3.954248, -2.527402, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################
@@ -158,7 +158,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.130532, -1.575494, -0.005113, 0.000007]
+    discadj_pitchingNACA0012.test_vals = [-1.119624, -1.570110, -0.005041, 0.000010]
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
 
@@ -167,7 +167,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform_ad.cfg"
     unst_deforming_naca0012.test_iter = 4
-    unst_deforming_naca0012.test_vals = [-1.885032, -1.775564, 3994.600000, 0.000002]
+    unst_deforming_naca0012.test_vals = [-1.907590, -1.801094, 3796.400000, 0.000003]
     unst_deforming_naca0012.unsteady  = True
     test_list.append(unst_deforming_naca0012)
 

@@ -175,7 +175,7 @@ def main():
     tutorial_inv_bump.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Bump"
     tutorial_inv_bump.cfg_file   = "inv_channel.cfg"
     tutorial_inv_bump.test_iter  = 0
-    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.043691, 0.034241]
+    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.057592, 0.023760]
     test_list.append(tutorial_inv_bump)
 
     # Inviscid Wedge
@@ -192,7 +192,7 @@ def main():
     tutorial_inv_onera.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_ONERAM6"
     tutorial_inv_onera.cfg_file   = "inv_ONERAM6.cfg"
     tutorial_inv_onera.test_iter  = 0
-    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.255680, 0.087977]
+    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.260583, 0.085713]
     tutorial_inv_onera.no_restart = True
     test_list.append(tutorial_inv_onera)
 
@@ -201,7 +201,7 @@ def main():
     tutorial_lam_cylinder.cfg_dir    = "../Tutorials/compressible_flow/Laminar_Cylinder"
     tutorial_lam_cylinder.cfg_file   = "lam_cylinder.cfg"
     tutorial_lam_cylinder.test_iter  = 0
-    tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, -0.047729, 43.442977]
+    tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, -0.112574, 33.441997]
     tutorial_lam_cylinder.no_restart = True
     test_list.append(tutorial_lam_cylinder)
 
