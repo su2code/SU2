@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
+#include "../../../Common/include/parallelization/mpi_structure.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
@@ -171,7 +172,7 @@ void setPositiveDefiniteMetrics(CGeometry& geometry, const CConfig& config,
 
     /*--- Make positive definite by taking absolute value of eigenvalues ---*/
     /*--- Handle NaN and very small values that could cause numerical issues ---*/
-    for (auto iDim = 0; iDim < nDim; iDim++) {
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
       if (std::isnan(EigVal[iDim])) {
         /*--- NaN detected, set to small positive value ---*/
         EigVal[iDim] = eps;
@@ -233,7 +234,7 @@ ScalarType integrateMetrics(CGeometry& geometry, const CConfig& config,
     localIntegral += pow(abs(det), normExp) * Vol;
   }
 
-  CBaseMPIWrapper::Allreduce(&localIntegral, &globalIntegral, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  SU2_MPI::Allreduce(&localIntegral, &globalIntegral, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
 
   return globalIntegral;
 }
