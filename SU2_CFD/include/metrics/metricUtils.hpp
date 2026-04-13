@@ -176,7 +176,6 @@ inline bool ResolveSensorIndices(
    *      CUSTOM:    filled externally via Python wrapper (CDriverBase::AdaptSensors).
    *    Config order is preserved so iSensor=0 is always the first listed sensor
    *    (whose Hessian drives the metric and is normalised). ---*/
-  bool all_resolved = true;
   for (const auto& sensor_name : sensor_names) {
     auto it = var_map.find(sensor_name);
     if (it != var_map.end()) {
@@ -204,7 +203,6 @@ inline bool ResolveSensorIndices(
         if (rank == MASTER_NODE) {
           std::cout << "  Custom sensor '" << sensor_name << "' detected." << std::endl;
         }
-        all_resolved = false;
         sensors_by_solver[FLOW_SOL].push_back(
             {std::numeric_limits<unsigned short>::max(), sensor_name,
              SensorType::CUSTOM, {}});
