@@ -84,7 +84,7 @@ inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
   for (unsigned short iVar = 0; iVar < solver->GetnVar(); ++iVar) {
     result += pow(SU2_TYPE::GetValue(solver->GetRes_RMS(iVar)), 2);
   }
-  return sqrt(result);
+  return sqrt(result / solver->GetnVar());
 }
 }
 
@@ -602,6 +602,9 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       /*--- Space integration ---*/
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
 
+      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
+      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+
       /*--- Capture initial RMS after the very first residual evaluation.
        *    This is the earliest point where LinSysRes = R(u_current) (not stale). ---*/
       if (iPreSmooth == 0 && iRKStep == 0) {
@@ -612,9 +615,6 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
       }
-
-      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
-      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
 
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
@@ -689,6 +689,9 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       /*--- Space integration ---*/
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
 
+      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
+      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+
       /*--- Capture initial RMS after the very first residual evaluation.
        *    Before this point, LinSysRes held the smoothed correction (from SmoothProlongated_Correction),
        *    NOT the spatial residual R(u). This is the first valid R(u) after applying the correction. ---*/
@@ -700,9 +703,6 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
       }
-
-      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
-      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
 
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
@@ -834,7 +834,9 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   END_SU2_OMP_FOR
 
   /*--- Record initial correction norm for debugging output. ---*/
-  SU2_OMP_SAFE_GLOBAL_ACCESS(lastCorrecSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver);)
+  if (config->GetMGOptions().MG_Smooth_Output) {
+    SU2_OMP_SAFE_GLOBAL_ACCESS(lastCorrecSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver);)
+  }
 
   /*--- Jacobi iterations (no early exit — Jacobi targets high-frequency modes,
    *    so the global RMS is not a meaningful convergence indicator). ---*/
@@ -892,8 +894,10 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   }
 
   /*--- Record final correction norm for debugging output. ---*/
-  SU2_OMP_SAFE_GLOBAL_ACCESS(lastCorrecSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver);)
-
+  if (config->GetMGOptions().MG_Smooth_Output) {
+    const su2double res = sqrt(solver->LinSysRes.squaredNorm() / (nVar * geometry->GetGlobal_nPointDomain()));
+    SU2_OMP_SAFE_GLOBAL_ACCESS(lastCorrecSmoothRMS[iMesh][1] = SU2_TYPE::GetValue(res);)
+  }
 }
 
 void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeometry *geo_fine,
