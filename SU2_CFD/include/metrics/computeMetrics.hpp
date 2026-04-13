@@ -285,7 +285,7 @@ void normalizeMetrics(CGeometry& geometry, const CConfig& config,
 
     /*--- Clip by user-specified aspect ratio ---*/
     unsigned short iMax = 0;
-    for (auto iDim = 1; iDim < nDim; ++iDim)
+    for (auto iDim = 1u; iDim < nDim; ++iDim)
       iMax = (EigVal[iDim] > EigVal[iMax])? iDim : iMax;
 
     for (auto iDim = 0u; iDim < nDim; ++iDim)

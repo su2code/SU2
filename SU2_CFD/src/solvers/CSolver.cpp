@@ -2233,7 +2233,7 @@ void CSolver::SetPrimitive_SensorAdapt(CGeometry *geometry, const CConfig *confi
     if (MetricSensors[iSensor].type != SensorType::PRIMITIVE) continue;
 
     const auto prim_idx = MetricSensors[iSensor].prim_idx;
-    SU2_OMP_FOR_STAT(omp_chunk_size)
+    SU2_OMP_FOR_DYN(256)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       base_nodes->SetSensor_Adapt(iPoint, iSensor, base_nodes->GetPrimitive(iPoint, prim_idx));
     }
@@ -2248,7 +2248,7 @@ void CSolver::SetComputed_SensorAdapt(CGeometry *geometry, const CConfig *config
     if (MetricSensors[iSensor].type != SensorType::COMPUTED) continue;
 
     const auto& fn = MetricSensors[iSensor].fn;
-    SU2_OMP_FOR_STAT(omp_chunk_size)
+    SU2_OMP_FOR_DYN(256)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       base_nodes->SetSensor_Adapt(iPoint, iSensor, fn(base_nodes->GetPrimitive(iPoint)));
     }
@@ -4479,51 +4479,48 @@ void CSolver::SavelibROM(CGeometry *geometry, CConfig *config, bool converged) {
 void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config, bool restartMetric) {
   /*--- TODO: - goal-oriented metric ---*/
   /*---       - metric intersection  ---*/
-  const unsigned long nPointDomain = geometry->GetnPointDomain();
   const unsigned short nSensor = GetnMetricSensor();
 
   const unsigned long time_iter = config->GetTimeIter();
   const bool steady = (config->GetTime_Marching() == TIME_MARCHING::STEADY);
-  const bool time_stepping = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
-                             (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) ||
-                             (config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING);
   const bool is_last_iter = (time_iter == config->GetnTime_Iter() - 1) || (steady);
   const bool normalize = (config->GetNormalize_Metric());
 
   /*--- Integrate and normalize the metric tensor field ---*/
   vector<double> integrals;
   for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
-    SU2_OMP_MASTER
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
     /*--- Make the Hessian eigenvalues positive definite ---*/
     auto& hessians = base_nodes->GetHessian();
     setPositiveDefiniteMetrics<su2double, tensor::hessian>(*geometry, *config, iSensor, hessians);
 
-    if (iSensor > 0) continue;
+    if (iSensor == 0) {
+      /*--- Add Hessian of sensor at position 0 to metric tensor */
+      AddMetrics(solver, geometry, config, iSensor, restartMetric);
 
-    /*--- Add Hessian of sensor at position 0 to metric tensor */
-    AddMetrics(solver, geometry, config, iSensor, restartMetric);
+      /*--- Integrate metric field on the last iteration (the end of the simulation if steady) ---*/
+      auto& metrics = base_nodes->GetMetric();
+      double integral = 0.0;
+      if (is_last_iter)
+        integral = integrateMetrics<double>(*geometry, *config, iSensor, metrics);
 
-    /*--- Integrate metric field on the last iteration (the end of the simulation if steady) ---*/
-    auto& metrics = base_nodes->GetMetric();
-    double integral = 0.0;
-    if (is_last_iter)
-      integral = integrateMetrics<double>(*geometry, *config, iSensor, metrics);
+      /*--- Normalize the metric field for steady simulations, or if requested for unsteady ---*/
+      if (steady || (normalize && is_last_iter))
+        normalizeMetrics<double, tensor::metric>(*geometry, *config, iSensor, integral, metrics);
 
-    /*--- Normalize the metric field for steady simulations, or if requested for unsteady ---*/
-    if (steady || (normalize && is_last_iter))
-      normalizeMetrics<double, tensor::metric>(*geometry, *config, iSensor, integral, metrics);
-
-    /*--- Store the integral to be written ---*/
-    if (is_last_iter) {
-      integrals.push_back(integral);
-      if (rank == MASTER_NODE) {
-        const string& sensor_name = (iSensor < MetricSensors.size()) ? MetricSensors[iSensor].name : "unknown";
-        cout << "Global metric normalization integral for sensor ";
-        cout << sensor_name << ": " << integral << endl;
+      /*--- Store the integral to be written ---*/
+      if (is_last_iter) {
+        integrals.push_back(integral);
+        if (rank == MASTER_NODE) {
+          const string& sensor_name = (iSensor < MetricSensors.size()) ? MetricSensors[iSensor].name : "unknown";
+          cout << "Global metric normalization integral for sensor ";
+          cout << sensor_name << ": " << integral << endl;
+        }
       }
-    }
-    END_SU2_OMP_MASTER
-    SU2_OMP_BARRIER
+    } // iSensor == 0
+    } // BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 }
 
