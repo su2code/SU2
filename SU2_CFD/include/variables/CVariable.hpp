@@ -2491,26 +2491,8 @@ public:
   inline double GetMetric(unsigned long iPoint, unsigned short iMat) const { return Metric(iPoint,iMat); }
 
   /*!
-   * \brief Allocate Gradient_Adapt and Hessian arrays for specified sensor indices.
+   * \brief Allocate Sensor_Adapt, Gradient_Adapt, Hessian, and Metric arrays for specified sensor indices.
    * \param[in] nSensors - Number of metric sensors
    */
-  inline void AllocateMetricSensorArrays(unsigned short nSensors) {
-    if (nSensors == 0) return;
-    if (nDim == 0 || nPoint == 0)
-      SU2_MPI::Error("nDim and nPoint must be set before allocating metric arrays.", CURRENT_FUNCTION);
-
-    /*--- Allocate if not already allocated or resize if needed ---*/
-    if (Sensor_Adapt.size() == 0 || Sensor_Adapt.cols() != nSensors) {
-      Sensor_Adapt.resize(nPoint, nSensors) = 0.0;
-    }
-    if (Gradient_Adapt.size() == 0 || Gradient_Adapt.cols() != nSensors) {
-      Gradient_Adapt.resize(nPoint, nSensors, nDim, 0.0);
-    }
-    if (Hessian.size() == 0 || Hessian.cols() != nSensors) {
-      Hessian.resize(nPoint, nSensors, nSymMat, 0.0);
-    }
-    if (Metric.size() == 0 || Metric.cols() != nSymMat) {
-      Metric.resize(nPoint, nSymMat) =  0.0;
-    }
-  }
+  void AllocateMetricSensorArrays(unsigned short nSensors);
 };
