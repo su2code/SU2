@@ -1291,7 +1291,7 @@ private:
   bool Species_StrongBC;           /*!< \brief Boolean whether strong BC's are used for in- outlet of the species solver. */
   su2double* Species_Init;         /*!< \brief Initial uniform value for scalar transport. */
   unsigned short nSpecies_Init;    /*!< \brief Number of entries of SPECIES_INIT */
-  su2double Species_T_ignition;    /*!< \brief Ignition temperature for the species, used for initialization. */
+  su2double Flame_T_ignition;    /*!< \brief Ignition temperature for the flame, used for initialization. */
 
   /*--- Additional flamelet solver options ---*/
   FluidFlamelet_ParsedOptions flamelet_ParsedOptions; /*!< \brief Additional flamelet solver options */
@@ -2253,10 +2253,10 @@ public:
   const su2double* GetSpecies_Init() const { return Species_Init; }
 
   /*!
-   * \brief Get the ignition temperature for the species.
-   * \return Ignition temperature for the species.
+   * \brief Get the ignition temperature for the flame.
+   * \return Ignition temperature for the flame.
    */
-  su2double GetSpecies_T_ignition() const { return Species_T_ignition; }
+  su2double GetFlame_T_ignition() const { return Flame_T_ignition; }
 
   /*!
    * \brief Get the flag for using strong BC's for in- and outlets in the species solver.
