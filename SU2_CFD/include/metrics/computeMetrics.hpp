@@ -333,7 +333,7 @@ void setPositiveDefiniteMetrics(CGeometry& geometry, const CConfig& config,
 template<class ScalarType, class MetricType>
 ScalarType integrateMetrics(CGeometry& geometry, const CConfig& config,
                             unsigned short iSensor, MetricType& metric) {
-  su2double integral;
+  su2double integral = 0.0;
   switch (geometry.GetnDim()) {
     case 2:
       integral = detail::integrateMetrics<2, ScalarType>(geometry, config, iSensor, metric);
