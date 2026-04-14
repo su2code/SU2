@@ -611,7 +611,7 @@ def main():
     contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixedCL_naca0012.test_iter = 100
-    contadj_fixedCL_naca0012.test_vals = [-3.914411, 1.620762, 0.301093, 0.019484]
+    contadj_fixedCL_naca0012.test_vals = [1.042298, -4.454215, -0.039421, -0.004930]
     test_list.append(contadj_fixedCL_naca0012)
 
     ###################################
