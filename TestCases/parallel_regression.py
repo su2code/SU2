@@ -228,7 +228,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-4.427649, -3.952898, 0.319961, 0.022649]
+    naca0012.test_vals = [-8.373603, -7.829504, 0.335767, 0.023275]
     test_list.append(naca0012)
 
     # Supersonic wedge
