@@ -1462,7 +1462,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
   /*--- Handle the different types of gradient and limiter. ---*/
 
-  const auto nVarGrad = COUNT_PER_POINT / nDim;
+  const unsigned short nVarGrad = COUNT_PER_POINT / nDim;
   auto& gradient = CommHelpers::selectGradient(base_nodes, commType);
   auto& limiter = CommHelpers::selectLimiter(base_nodes, commType);
 
@@ -1542,8 +1542,10 @@ void CSolver::InitiateComms(CGeometry *geometry,
             break;
           case MPI_QUANTITIES::HESSIAN:
             for (iVar = 0; iVar < GetnMetricSensor(); iVar++)
-              for (iMat = 0; iMat < nSymMat; iMat++)
-                bufDSend[buf_offset+iVar*nSymMat+iMat] = gradient(iPoint, iVar, iMat);
+              for (iMat = 0; iMat < nSymMat; iMat++) {
+                const auto buf_idx = buf_offset + static_cast<unsigned long>(iVar)*nSymMat + iMat;
+                bufDSend[buf_idx] = gradient(iPoint, iVar, iMat);
+              }
             break;
           case MPI_QUANTITIES::SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
@@ -1610,7 +1612,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
   /*--- Handle the different types of gradient and limiter. ---*/
 
-  const auto nVarGrad = COUNT_PER_POINT / nDim;
+  const unsigned short nVarGrad = COUNT_PER_POINT / nDim;
   auto& gradient = CommHelpers::selectGradient(base_nodes, commType);
   auto& limiter = CommHelpers::selectLimiter(base_nodes, commType);
 
@@ -1701,8 +1703,10 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
           case MPI_QUANTITIES::HESSIAN:
             for (iVar = 0; iVar < GetnMetricSensor(); iVar++)
-              for (iMat = 0; iMat < nSymMat; iMat++)
-                gradient(iPoint, iVar, iMat) = bufDRecv[buf_offset+iVar*nSymMat+iMat];
+              for (iMat = 0; iMat < nSymMat; iMat++) {
+                const auto buf_idx = buf_offset + static_cast<unsigned long>(iVar)*nSymMat + iMat;
+                gradient(iPoint, iVar, iMat) = bufDRecv[buf_idx];
+              }
             break;
           case MPI_QUANTITIES::SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
