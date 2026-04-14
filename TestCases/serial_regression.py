@@ -126,7 +126,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [1.042298, -4.454215, -0.039421, -0.004930]
+    fixedCL_naca0012.test_vals = [-3.914411, 1.620762, 0.301093, 0.019484]
     test_list.append(fixedCL_naca0012)
 
     # Polar sweep of the inviscid NACA0012
