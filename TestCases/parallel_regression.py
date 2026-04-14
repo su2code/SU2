@@ -539,7 +539,7 @@ def main():
     turb_naca0012_sst_expliciteuler.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_expliciteuler.cfg_file  = "turb_NACA0012_sst_expliciteuler.cfg"
     turb_naca0012_sst_expliciteuler.test_iter = 10
-    turb_naca0012_sst_expliciteuler.test_vals = [-3.157224, 3.743381, 1.124798, 0.501715, -inf]
+    turb_naca0012_sst_expliciteuler.test_vals = [-3.157224, 3.743381, 1.124798, 0.501715, -float("inf")]
     turb_naca0012_sst_expliciteuler.timeout   = 3200
     test_list.append(turb_naca0012_sst_expliciteuler)
 
@@ -586,7 +586,7 @@ def main():
     turb_naca0012_sst_restart_mg.cfg_file  = "turb_NACA0012_sst_multigrid_restart.cfg"
     turb_naca0012_sst_restart_mg.test_iter = 20
     turb_naca0012_sst_restart_mg.ntest_vals = 5
-    turb_naca0012_sst_restart_mg.test_vals = [-3.157224, 3.743381, 1.124798, 0.501715, -inf]
+    turb_naca0012_sst_restart_mg.test_vals = [-3.157224, 3.743381, 1.124798, 0.501715, -float("inf")]
     turb_naca0012_sst_restart_mg.timeout   = 3200
     turb_naca0012_sst_restart_mg.tol       = 0.000001
     test_list.append(turb_naca0012_sst_restart_mg)
