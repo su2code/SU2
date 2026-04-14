@@ -112,6 +112,7 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
   /*--- Define geometry constants in the solver structure ---*/
 
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
 
   AllocVectorOfMatrices( nVertex, nVar,CustomBoundaryScalar);
 

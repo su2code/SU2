@@ -1463,7 +1463,6 @@ void CSolver::InitiateComms(CGeometry *geometry,
   /*--- Handle the different types of gradient and limiter. ---*/
 
   const auto nVarGrad = COUNT_PER_POINT / nDim;
-  const auto nVarHess = COUNT_PER_POINT / nSymMat;
   auto& gradient = CommHelpers::selectGradient(base_nodes, commType);
   auto& limiter = CommHelpers::selectLimiter(base_nodes, commType);
 
@@ -1542,7 +1541,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
                 bufDSend[buf_offset+iVar*nDim+iDim] = gradient(iPoint, iVar, iDim);
             break;
           case MPI_QUANTITIES::HESSIAN:
-            for (iVar = 0; iVar < nVarHess; iVar++)
+            for (iVar = 0; iVar < GetnMetricSensor(); iVar++)
               for (iMat = 0; iMat < nSymMat; iMat++)
                 bufDSend[buf_offset+iVar*nSymMat+iMat] = gradient(iPoint, iVar, iMat);
             break;
@@ -1612,7 +1611,6 @@ void CSolver::CompleteComms(CGeometry *geometry,
   /*--- Handle the different types of gradient and limiter. ---*/
 
   const auto nVarGrad = COUNT_PER_POINT / nDim;
-  const auto nVarHess = COUNT_PER_POINT / nSymMat;
   auto& gradient = CommHelpers::selectGradient(base_nodes, commType);
   auto& limiter = CommHelpers::selectLimiter(base_nodes, commType);
 
@@ -1702,7 +1700,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
                 gradient(iPoint,iVar,iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
             break;
           case MPI_QUANTITIES::HESSIAN:
-            for (iVar = 0; iVar < nVarHess; iVar++)
+            for (iVar = 0; iVar < GetnMetricSensor(); iVar++)
               for (iMat = 0; iMat < nSymMat; iMat++)
                 gradient(iPoint, iVar, iMat) = bufDRecv[buf_offset+iVar*nSymMat+iMat];
             break;
