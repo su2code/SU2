@@ -45,7 +45,7 @@ CHeatVariable::CHeatVariable(su2double heat, unsigned long npoint, unsigned long
   /*--- Only for residual smoothing (multigrid) ---*/
 
   for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    if (config->GetMG_CorrecSmooth(iMesh) > 0) {
+    if (config->GetMGOptions().MG_CorrecSmooth[iMesh] > 0) {
       Residual_Sum.resize(nPoint, nVar);
       Residual_Old.resize(nPoint, nVar);
       break;

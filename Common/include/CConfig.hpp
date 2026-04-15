@@ -46,6 +46,7 @@
 #include "option_structure.hpp"
 #include "containers/container_decorators.hpp"
 #include "toolboxes/printing_toolbox.hpp"
+#include "tracy_structure.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
@@ -472,7 +473,7 @@ private:
   string CustomObjFunc;        /*!< \brief User-defined objective function. */
   string CustomOutputs;        /*!< \brief User-defined functions for outputs. */
   unsigned short nDV,                  /*!< \brief Number of design variables. */
-  nObj, nObjW;                         /*! \brief Number of objective functions. */
+  nObj, nObjW;                         /*!< \brief Number of objective functions. */
   unsigned short* nDV_Value;           /*!< \brief Number of values for each design variable (might be different than 1 if we allow arbitrary movement). */
   unsigned short nFFDBox;              /*!< \brief Number of ffd boxes. */
   unsigned short nTurboMachineryKind;  /*!< \brief Number turbomachinery types specified. */
@@ -488,21 +489,15 @@ private:
   unsigned short **DegreeFFDBox;      /*!< \brief Degree of the FFD boxes. */
   string *FFDTag;                     /*!< \brief Parameters of the design variable. */
   string *TagFFDBox;                  /*!< \brief Tag of the FFD box. */
-  unsigned short GeometryMode;        /*!< \brief Gemoetry mode (analysis or gradient computation). */
-  unsigned short MGCycle;             /*!< \brief Kind of multigrid cycle. */
+  unsigned short GeometryMode;        /*!< \brief Geometry mode (analysis or gradient computation). */
   unsigned short FinestMesh;          /*!< \brief Finest mesh for the full multigrid approach. */
   unsigned short nFFD_Fix_IDir,
   nFFD_Fix_JDir, nFFD_Fix_KDir;       /*!< \brief Number of planes fixed in the FFD. */
-  unsigned short nMG_PreSmooth,       /*!< \brief Number of MG pre-smooth parameters found in config file. */
-  nMG_PostSmooth,                     /*!< \brief Number of MG post-smooth parameters found in config file. */
-  nMG_CorrecSmooth;                   /*!< \brief Number of MG correct-smooth parameters found in config file. */
   short *FFD_Fix_IDir,
   *FFD_Fix_JDir, *FFD_Fix_KDir;       /*!< \brief Exact sections. */
-  unsigned short *MG_PreSmooth,       /*!< \brief Multigrid Pre smoothing. */
-  *MG_PostSmooth,                     /*!< \brief Multigrid Post smoothing. */
-  *MG_CorrecSmooth;                   /*!< \brief Multigrid Jacobi implicit smoothing of the correction. */
   su2double *LocationStations;        /*!< \brief Airfoil sections in wing slicing subroutine. */
 
+  MG_CYCLE Kind_MGCycle;              /*!< \brief Kind of multigrid cycle. */
   ENUM_MULTIZONE Kind_MZSolver;    /*!< \brief Kind of multizone solver.  */
   INC_DENSITYMODEL Kind_DensityModel; /*!< \brief Kind of the density model for incompressible flows. */
   CHT_COUPLING Kind_CHT_Coupling;  /*!< \brief Kind of coupling method used at CHT interfaces. */
@@ -932,6 +927,7 @@ private:
   Pressure_Thermodynamic,          /*!< \brief Thermodynamic pressure of the fluid. */
   Temperature_FreeStream,          /*!< \brief Total temperature of the fluid.  */
   Temperature_ve_FreeStream;       /*!< \brief Total vibrational-electronic temperature of the fluid.  */
+  bool out2in_mdot_engine;         /*!< \brief Flag to use engine outlet mass flow as engine inlet mass flow. */
   unsigned short wallModel_MaxIter; /*!< \brief maximum number of iterations for the Newton method for the wall model */
   su2double wallModel_Kappa,        /*!< \brief von Karman constant kappa for turbulence wall modeling */
   wallModel_B,                      /*!< \brief constant B for turbulence wall modeling */
@@ -1131,6 +1127,10 @@ private:
     unsigned long rampMUSCLCoeff[3];     /*!< \brief ramp MUSCL value coefficients for the COption class. */
   } RampMUSCLParam;
   su2double rampMUSCLValue; /*!< \brief Current value of the MUSCL ramp */
+  CMGOptions MGOptions;
+  /*--- Multigrid options  ---*/
+  unsigned short nMG_PreSmooth_p{0}, nMG_PostSmooth_p{0}, nMG_CorrecSmooth_p{0};
+  unsigned short *MG_PreSmooth_p{nullptr}, *MG_PostSmooth_p{nullptr}, *MG_CorrecSmooth_p{nullptr};
 
   ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
   bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
@@ -2119,6 +2119,12 @@ public:
   su2double GetNuFactor_Engine(void) const { return NuFactor_Engine; }
 
   /*!
+   * \brief Get the flag to use exhaust mass flow as inlet mass flow.
+   * \return TRUE if exhaust mass flow is used as inlet mass flow.
+   */
+  bool GetExhaustToInlet_Engine(void) const { return out2in_mdot_engine; }
+
+  /*!
    * \brief Get the value of the non-dimensionalized actuator disk turbulence intensity.
    * \return Non-dimensionalized actuator disk intensity.
    */
@@ -2901,7 +2907,7 @@ public:
    */
   void SetMGLevels(unsigned short val_nMGLevels) {
     nMGLevels = val_nMGLevels;
-    if (MGCycle == FULLMG_CYCLE) {
+    if (Kind_MGCycle == MG_CYCLE::FULL) {
       SetFinestMesh(val_nMGLevels);
     }
   }
@@ -2914,11 +2920,11 @@ public:
   unsigned short GetFinestMesh(void) const { return FinestMesh; }
 
   /*!
-   * \brief Get the kind of multigrid (V or W).
+   * \brief Get the kind of multigrid (V, W or FULLMG).
    * \note This variable is used in a recursive way to perform the different kind of cycles
    * \return 0 or 1 depending of we are dealing with a V or W cycle.
    */
-  unsigned short GetMGCycle(void) const { return MGCycle; }
+  MG_CYCLE GetMGCycle(void) const { return Kind_MGCycle; }
 
   /*!
    * \brief Get the king of evaluation in the geometrical module.
@@ -3057,7 +3063,27 @@ public:
    * \brief Get the number of Runge-Kutta steps.
    * \return Number of Runge-Kutta steps.
    */
-  unsigned short GetnRKStep(void) const { return nRKStep; }
+  unsigned short GetnRKStep(void) const {
+
+    unsigned short iRKLimit = 1;
+
+    switch (GetKind_TimeIntScheme()) {
+      case RUNGE_KUTTA_EXPLICIT:
+        iRKLimit = nRKStep;
+        break;
+      case CLASSICAL_RK4_EXPLICIT:
+        iRKLimit = 4;
+        break;
+      case EULER_EXPLICIT:
+      case EULER_IMPLICIT:
+        iRKLimit = 1;
+        break;
+      default:
+        iRKLimit = 1;
+        break;
+    }
+    return iRKLimit;
+  }
 
   /*!
    * \brief Get the number of time levels for time accurate local time stepping.
@@ -3820,34 +3846,9 @@ public:
   su2double GetNacelleLocation(unsigned short val_index) const { return nacelle_location[val_index]; }
 
   /*!
-   * \brief Get the number of pre-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
+   * \brief Get the multigrid options struct.
    */
-  unsigned short GetMG_PreSmooth(unsigned short val_mesh) const {
-    if (nMG_PreSmooth == 0) return 1;
-    return MG_PreSmooth[val_mesh];
-  }
-
-  /*!
-   * \brief Get the number of post-smoothings in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of smoothing iterations.
-   */
-  unsigned short GetMG_PostSmooth(unsigned short val_mesh) const {
-    if (nMG_PostSmooth == 0) return 0;
-    return MG_PostSmooth[val_mesh];
-  }
-
-  /*!
-   * \brief Get the number of implicit Jacobi smoothings of the correction in a multigrid strategy.
-   * \param[in] val_mesh - Index of the grid.
-   * \return Number of implicit smoothing iterations.
-   */
-  unsigned short GetMG_CorrecSmooth(unsigned short val_mesh) const {
-    if (nMG_CorrecSmooth == 0) return 0;
-    return MG_CorrecSmooth[val_mesh];
-  }
+  const CMGOptions& GetMGOptions() const { return MGOptions; }
 
   /*!
    * \brief plane of the FFD (I axis) that should be fixed.
@@ -6807,10 +6808,22 @@ public:
   su2double GetDamp_Res_Restric(void) const { return Damp_Res_Restric; }
 
   /*!
+   * \brief Set the damping factor for the residual restriction (used by adaptive MG damping).
+   * \param[in] val - New damping factor value.
+   */
+  void SetDamp_Res_Restric(su2double val) { Damp_Res_Restric = val; }
+
+  /*!
    * \brief Value of the damping factor for the correction prolongation.
    * \return Value of the damping factor.
    */
   su2double GetDamp_Correc_Prolong(void) const { return Damp_Correc_Prolong; }
+
+  /*!
+   * \brief Set the damping factor for the correction prolongation (used by adaptive MG damping).
+   * \param[in] val - New damping factor value.
+   */
+  void SetDamp_Correc_Prolong(su2double val) { Damp_Correc_Prolong = val; }
 
   /*!
    * \brief Value of the position of the Near Field (y coordinate for 2D, and z coordinate for 3D).
@@ -9084,25 +9097,6 @@ public:
    * \return Current number of non-physical reconstructions for 2nd-order upwinding.
    */
   unsigned long GetNonphysical_Reconstr(void) const { return Nonphys_Reconstr; }
-
-  /*!
-   * \brief Start the timer for profiling subroutines.
-   * \param[in] val_start_time - the value of the start time.
-   */
-  void Tick(double *val_start_time);
-
-  /*!
-   * \brief Stop the timer for profiling subroutines and store results.
-   * \param[in] val_start_time - the value of the start time.
-   * \param[in] val_function_name - string for the name of the profiled subroutine.
-   * \param[in] val_group_id - string for the name of the profiled subroutine.
-   */
-  void Tock(double val_start_time, const string& val_function_name, int val_group_id);
-
-  /*!
-   * \brief Write a CSV file containing the results of the profiling.
-   */
-  void SetProfilingCSV(void);
 
   /*!
    * \brief Start the timer for profiling subroutines.

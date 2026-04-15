@@ -26,7 +26,7 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 import os, sys, shutil, copy
-from optparse import OptionParser
+import argparse
 
 sys.path.append(os.environ["SU2_RUN"])
 import SU2
@@ -39,11 +39,11 @@ import SU2
 def main():
 
     # Command Line Options
-    parser = OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "-f", "--file", dest="filename", help="read config from FILE", metavar="FILE"
     )
-    parser.add_option(
+    parser.add_argument(
         "-n",
         "--partitions",
         dest="partitions",
@@ -51,7 +51,7 @@ def main():
         help="number of PARTITIONS",
         metavar="PARTITIONS",
     )
-    parser.add_option(
+    parser.add_argument(
         "-c",
         "--compute",
         dest="compute",
@@ -60,7 +60,7 @@ def main():
         metavar="COMPUTE",
     )
 
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     options.partitions = int(options.partitions)
     options.compute = options.compute.upper() == "TRUE"
 

@@ -41,6 +41,11 @@
 #include "CSysVector.hpp"
 #include "../option_structure.hpp"
 
+SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+#include "Eigen/Core"
+#include "Eigen/Dense"
+SU2_RESTORE_WARNING
+
 class CConfig;
 class CGeometry;
 template <class T>
@@ -110,6 +115,7 @@ class CSysSolve {
   mutable unsigned long k = 0;
   mutable std::vector<VectorType> Z, V; /*!< \brief Large matrices used by FGMRES, v^i+1 = A * z^i. */
   mutable std::vector<VectorType> W, T; /*!< \brief Large matrices used by FGCRODR for deflation vectors. */
+  mutable Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> VkWk;
 
   /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
   VectorType LinSysSol_tmp;
@@ -196,7 +202,7 @@ class CSysSolve {
    * vector is kept in nrm0 and updated after operating with each vector
    *
    */
-  void ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg, std::vector<VectorType>& w) const;
+  bool ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg, std::vector<VectorType>& w) const;
 
   /*!
    * \brief writes header information for a CSysSolve residual history
@@ -240,6 +246,7 @@ class CSysSolve {
    */
   template <class OtherType>
   void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol) {
+    SU2_ZONE_SCOPED
     if constexpr (std::is_same_v<ScalarType, OtherType>) {
       /*--- Same type specialization, temporary variables are not required. ---*/
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -267,6 +274,7 @@ class CSysSolve {
    */
   template <class OtherType>
   void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
+    SU2_ZONE_SCOPED
     if constexpr (std::is_same_v<ScalarType, OtherType>) {
       /*--- Same type specialization, temporary variables are not required. ---*/
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -292,8 +300,8 @@ class CSysSolve {
   template <class Dummy = int>
   unsigned long FGCRODR_LinSolverImpl(const VectorType& b, VectorType& x, const ProductType& mat_vec,
                                       const PrecondType& precond, ScalarType tol, unsigned long max_iter,
-                                      ScalarType& residual, bool monitoring, const CConfig* config,
-                                      FgcrodrMode mode) const;
+                                      ScalarType& residual, bool monitoring, const CConfig* config, FgcrodrMode mode,
+                                      unsigned long custom_m) const;
 
   /*!
    * \brief Creates the inner solver for nested preconditioning if the settings allow it.
@@ -316,7 +324,7 @@ class CSysSolve {
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] m - maximum size of the search subspace
    * \param[out] residual - final normalized residual
-   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] monitoring - turn on priting residuals from solver to screen
    * \param[in] config - Definition of the particular problem.
    */
   unsigned long CG_LinSolver(const VectorType& b, VectorType& x, const ProductType& mat_vec, const PrecondType& precond,
@@ -332,7 +340,7 @@ class CSysSolve {
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] m - maximum size of the search subspace
    * \param[out] residual - final normalized residual
-   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] monitoring - turn on priting residuals from solver to screen
    * \param[in] config - Definition of the particular problem.
    */
   unsigned long FGMRES_LinSolver(const VectorType& b, VectorType& x, const ProductType& mat_vec,
@@ -355,14 +363,15 @@ class CSysSolve {
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] max_iter - maximum number of iterations
    * \param[out] residual - final normalized residual
-   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] monitoring - turn on priting residuals from solver to screen
    * \param[in] config - Definition of the particular problem.
    * \param[in] mode - See FgcrodrMode.
+   * \param[in] custom_m - alternative maximum size of the search subspace, overrides the config value if != 0.
    */
   unsigned long FGCRODR_LinSolver(const VectorType& b, VectorType& x, const ProductType& mat_vec,
                                   const PrecondType& precond, ScalarType tol, unsigned long max_iter,
                                   ScalarType& residual, bool monitoring, const CConfig* config,
-                                  FgcrodrMode mode = FgcrodrMode::NORMAL) const;
+                                  FgcrodrMode mode = FgcrodrMode::NORMAL, unsigned long custom_m = 0) const;
 
   /*!
    * \brief Biconjugate Gradient Stabilized Method (BCGSTAB)
@@ -373,7 +382,7 @@ class CSysSolve {
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] m - maximum size of the search subspace
    * \param[out] residual - final normalized residual
-   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] monitoring - turn on priting residuals from solver to screen
    * \param[in] config - Definition of the particular problem.
    */
   unsigned long BCGSTAB_LinSolver(const VectorType& b, VectorType& x, const ProductType& mat_vec,
@@ -389,7 +398,7 @@ class CSysSolve {
    * \param[in] tol - tolerance with which to solve the system
    * \param[in] m - maximum number of iterations
    * \param[out] residual - final normalized residual
-   * \param[in] monitoring - turn on priting residuals from solver to screen.
+   * \param[in] monitoring - turn on priting residuals from solver to screen
    * \param[in] config - Definition of the particular problem.
    */
   unsigned long Smoother_LinSolver(const VectorType& b, VectorType& x, const ProductType& mat_vec,

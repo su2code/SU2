@@ -32,6 +32,7 @@
 CBaselineSolver_FEM::CBaselineSolver_FEM() : CSolver() { }
 
 CBaselineSolver_FEM::CBaselineSolver_FEM(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Define geometry constants in the solver structure ---*/
 
@@ -86,6 +87,7 @@ CBaselineSolver_FEM::CBaselineSolver_FEM(CGeometry *geometry, CConfig *config) {
 }
 
 void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Open the restart file and extract the nVar and field names. ---*/
 
@@ -311,6 +313,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 }
 
 void CBaselineSolver_FEM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  SU2_ZONE_SCOPED
 
   /*--- Restart the solution from file information ---*/
   unsigned short iVar;

@@ -406,7 +406,7 @@ template<class PrimVarType, class ConsVarType, size_t nDim>
 FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const PrimVarType& V,
                                                const ConsVarType& U,
                                                const VectorDbl<nDim>& normal) {
-  static_assert(ConsVarType::nVar == nDim+2,"");
+  static_assert(ConsVarType::nVar == nDim+2);
   Double mdot = dot(U.momentum(), normal);
   VectorDbl<nDim+2> flux;
   flux(0) = mdot;
