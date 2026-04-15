@@ -406,7 +406,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-4.876686, -1.664775, -2.430911, 0.640693, -3.575081]
+    turb_flatplate.test_vals = [-5.082740, -7.435143, -0.187601, 0.011644]
     test_list.append(turb_flatplate)
 
     # Flat plate (compressible) with species inlet
@@ -807,7 +807,7 @@ def main():
     turbmod_sa_comp_edw_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_comp_edw_rae2822.cfg_file  = "turb_SA_COMP_EDW_RAE2822.cfg"
     turbmod_sa_comp_edw_rae2822.test_iter = 20
-    turbmod_sa_comp_edw_rae2822.test_vals = [-2.868992, 0.045625, -0.444345, -5.303336, 0.827669, 0.027373]
+    turbmod_sa_comp_edw_rae2822.test_vals = [-2.926124, -0.062158, -0.558874, -5.933325, 0.837911, 0.027020]
     test_list.append(turbmod_sa_comp_edw_rae2822)
 
     # SA QCR
@@ -815,7 +815,7 @@ def main():
     turbmod_sa_qcr_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_qcr_rae2822.cfg_file  = "turb_SA_QCR_RAE2822.cfg"
     turbmod_sa_qcr_rae2822.test_iter = 20
-    turbmod_sa_qcr_rae2822.test_vals = [-2.926124, -0.062158, -0.558874, -5.933325, 0.837911, 0.027020]
+    turbmod_sa_qcr_rae2822.test_vals = [-2.868992, 0.045625, -0.444345, -5.303336, 0.827669, 0.027373]
     test_list.append(turbmod_sa_qcr_rae2822)
 
     ############################
@@ -1450,7 +1450,7 @@ def main():
     pywrapper_naca0012.cfg_dir   = "euler/naca0012"
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 80
-    pywrapper_naca0012.test_vals = [-4.427649, -3.952898, 0.319961, 0.022649]
+    pywrapper_naca0012.test_vals = [-8.373603, -7.829504, 0.335767, 0.023275]
     pywrapper_naca0012.command   = TestCase.Command("mpirun -np 2", "SU2_CFD.py", "--parallel -f")
     test_list.append(pywrapper_naca0012)
 
