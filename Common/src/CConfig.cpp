@@ -5719,6 +5719,10 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                        " values (one for each scalar variable), but only " + to_string(flamelet_ParsedOptions.nspark) + " were provided.", CURRENT_FUNCTION);
       }
     }
+    /*--- Check if flame ignition temperature is valid ---*/
+    if (flamelet_ParsedOptions.Flame_T_ignition <= Inc_Temperature_Init) {
+      SU2_MPI::Error("Flame ignition temperature must be higher than the initial temperature of the flow field.", CURRENT_FUNCTION);
+    }
   }
 
   if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
