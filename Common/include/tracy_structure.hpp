@@ -35,9 +35,11 @@
 #include "tracy/Tracy.hpp"
 #define SU2_ZONE_SCOPED ZoneScoped;
 #define SU2_ZONE_SCOPED_N(name) ZoneScopedN(name);
+#define SU2_SET_THREAD_NAME(name) tracy::SetThreadName(name);
 #else
 #define SU2_ZONE_SCOPED
 #define SU2_ZONE_SCOPED_N(name)
+#define SU2_SET_THREAD_NAME(name)
 #endif
 
 #define BEGIN_SU2_ZONE_N(name) \

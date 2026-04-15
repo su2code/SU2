@@ -420,6 +420,18 @@ void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, COMM_TY
           SU2_MPI::Irecv(&(bufD_P2PSend[offset]), count, MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
                          &(req_P2PRecv[iRecv]));
           break;
+#ifdef CODI_REVERSE_TYPE
+        case COMM_TYPE::PASSIVE_DOUBLE:
+          SelectMPIWrapper<passivedouble>::W::Irecv(&(bufPD_P2PSend[offset]), count, MPI_DOUBLE, source, tag,
+                                                    SU2_MPI::GetComm(), &(req_P2PRecv[iRecv]));
+          break;
+#endif
+#ifdef USE_MIXED_PRECISION
+        case COMM_TYPE::FLOAT:
+          SelectMPIWrapper<su2mixedfloat>::W::Irecv(&(bufF_P2PSend[offset]), count, MPI_FLOAT, source, tag,
+                                                    SU2_MPI::GetComm(), &(req_P2PRecv[iRecv]));
+          break;
+#endif
         case COMM_TYPE::UNSIGNED_SHORT:
           SU2_MPI::Irecv(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT, source, tag, SU2_MPI::GetComm(),
                          &(req_P2PRecv[iRecv]));
@@ -455,6 +467,18 @@ void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, COMM_TY
           SU2_MPI::Irecv(&(bufD_P2PRecv[offset]), count, MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
                          &(req_P2PRecv[iMessage]));
           break;
+#ifdef CODI_REVERSE_TYPE
+        case COMM_TYPE::PASSIVE_DOUBLE:
+          SelectMPIWrapper<passivedouble>::W::Irecv(&(bufPD_P2PRecv[offset]), count, MPI_DOUBLE, source, tag,
+                                                    SU2_MPI::GetComm(), &(req_P2PRecv[iMessage]));
+          break;
+#endif
+#ifdef USE_MIXED_PRECISION
+        case COMM_TYPE::FLOAT:
+          SelectMPIWrapper<su2mixedfloat>::W::Irecv(&(bufF_P2PRecv[offset]), count, MPI_FLOAT, source, tag,
+                                                    SU2_MPI::GetComm(), &(req_P2PRecv[iMessage]));
+          break;
+#endif
         case COMM_TYPE::UNSIGNED_SHORT:
           SU2_MPI::Irecv(&(bufS_P2PRecv[offset]), count, MPI_UNSIGNED_SHORT, source, tag, SU2_MPI::GetComm(),
                          &(req_P2PRecv[iMessage]));
@@ -508,6 +532,18 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, COMM_TY
         SU2_MPI::Isend(&(bufD_P2PRecv[offset]), count, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                        &(req_P2PSend[val_iSend]));
         break;
+#ifdef CODI_REVERSE_TYPE
+      case COMM_TYPE::PASSIVE_DOUBLE:
+        SelectMPIWrapper<passivedouble>::W::Isend(&(bufPD_P2PRecv[offset]), count, MPI_DOUBLE, dest, tag,
+                                                  SU2_MPI::GetComm(), &(req_P2PSend[val_iSend]));
+        break;
+#endif
+#ifdef USE_MIXED_PRECISION
+      case COMM_TYPE::FLOAT:
+        SelectMPIWrapper<su2mixedfloat>::W::Isend(&(bufF_P2PRecv[offset]), count, MPI_FLOAT, dest, tag,
+                                                  SU2_MPI::GetComm(), &(req_P2PSend[val_iSend]));
+        break;
+#endif
       case COMM_TYPE::UNSIGNED_SHORT:
         SU2_MPI::Isend(&(bufS_P2PRecv[offset]), count, MPI_UNSIGNED_SHORT, dest, tag, SU2_MPI::GetComm(),
                        &(req_P2PSend[val_iSend]));
@@ -543,6 +579,18 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, COMM_TY
         SU2_MPI::Isend(&(bufD_P2PSend[offset]), count, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                        &(req_P2PSend[val_iSend]));
         break;
+#ifdef CODI_REVERSE_TYPE
+      case COMM_TYPE::PASSIVE_DOUBLE:
+        SelectMPIWrapper<passivedouble>::W::Isend(&(bufPD_P2PSend[offset]), count, MPI_DOUBLE, dest, tag,
+                                                  SU2_MPI::GetComm(), &(req_P2PSend[val_iSend]));
+        break;
+#endif
+#ifdef USE_MIXED_PRECISION
+      case COMM_TYPE::FLOAT:
+        SelectMPIWrapper<su2mixedfloat>::W::Isend(&(bufF_P2PSend[offset]), count, MPI_FLOAT, dest, tag,
+                                                  SU2_MPI::GetComm(), &(req_P2PSend[val_iSend]));
+        break;
+#endif
       case COMM_TYPE::UNSIGNED_SHORT:
         SU2_MPI::Isend(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT, dest, tag, SU2_MPI::GetComm(),
                        &(req_P2PSend[val_iSend]));

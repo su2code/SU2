@@ -395,6 +395,65 @@ class CGeometry {
                     int val_iMessage, bool val_reverse) const;
 
   /*!
+   * \brief Returns the COMM_TYPE enum for a given data type.
+   */
+  template <class T>
+  COMM_TYPE GetCommType() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return COMM_TYPE::DOUBLE;
+    } else if constexpr (std::is_same_v<T, passivedouble>) {
+      return COMM_TYPE::PASSIVE_DOUBLE;
+    } else if constexpr (std::is_same_v<T, su2mixedfloat>) {
+      return COMM_TYPE::FLOAT;
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return COMM_TYPE::UNSIGNED_SHORT;
+    }
+  }
+
+  /*!
+   * \brief Returns the send buffer for a given data type.
+   */
+  template <class T>
+  auto* GetP2PSendBuf() {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return bufD_P2PSend;
+#ifdef CODI_REVERSE_TYPE
+    } else if constexpr (std::is_same_v<T, passivedouble>) {
+      return bufPD_P2PSend;
+#endif
+#ifdef USE_MIXED_PRECISION
+    } else if constexpr (std::is_same_v<T, su2mixedfloat>) {
+      return bufF_P2PSend;
+#endif
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return bufS_P2PSend;
+    }
+  }
+
+  /*!
+   * \brief Returns the receive buffer for a given data type.
+   */
+  template <class T>
+  auto* GetP2PRecvBuf() {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return bufD_P2PRecv;
+#ifdef CODI_REVERSE_TYPE
+    } else if constexpr (std::is_same_v<T, passivedouble>) {
+      return bufPD_P2PRecv;
+#endif
+#ifdef USE_MIXED_PRECISION
+    } else if constexpr (std::is_same_v<T, su2mixedfloat>) {
+      return bufF_P2PRecv;
+#endif
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return bufS_P2PRecv;
+    }
+  }
+
+  /*!
    * \brief Routine to set up persistent data structures for periodic communications.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

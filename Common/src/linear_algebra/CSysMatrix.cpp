@@ -261,7 +261,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
   /*--- Local variables ---*/
 
   const unsigned short COUNT_PER_POINT = x.GetNVar();
-  const auto MPI_TYPE = COMM_TYPE::DOUBLE;
+  const auto MPI_TYPE = geometry->GetCommType<T>();
 
   /*--- Create a boolean for reversing the order of comms. ---*/
 
@@ -295,7 +295,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
   for (auto iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
     switch (commType) {
       case MPI_QUANTITIES::SOLUTION_MATRIX: {
-        su2double* bufDSend = geometry->bufD_P2PSend;
+        auto* bufDSend = geometry->GetP2PSendBuf<T>();
 
         /*--- Get the offset for the start of this message. ---*/
 
@@ -327,8 +327,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
         /*--- We are going to communicate in reverse, so we use the
          recv buffer for the send instead. Also, all of the offsets
          and counts are derived from the recv data structures. ---*/
-
-        su2double* bufDSend = geometry->bufD_P2PRecv;
+        auto* bufDSend = geometry->GetP2PRecvBuf<T>();
 
         /*--- Get the offset for the start of this message. ---*/
 
@@ -397,7 +396,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
 
     switch (commType) {
       case MPI_QUANTITIES::SOLUTION_MATRIX: {
-        const su2double* bufDRecv = geometry->bufD_P2PRecv;
+        const auto* bufDRecv = geometry->GetP2PRecvBuf<T>();
 
         /*--- We know the offsets based on the source rank. ---*/
 
@@ -435,7 +434,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
          send buffer for the recv instead. Also, all of the offsets
          and counts are derived from the send data structures. ---*/
 
-        const su2double* bufDRecv = geometry->bufD_P2PSend;
+        const auto* bufDRecv = geometry->GetP2PSendBuf<T>();
 
         /*--- We know the offsets based on the source rank. ---*/
 
