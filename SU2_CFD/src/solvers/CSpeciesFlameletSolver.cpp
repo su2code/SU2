@@ -103,7 +103,8 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
       su2double dist_from_center = 0,
                 spark_radius = flamelet_config_options.spark_init[3];
       dist_from_center = GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.spark_init.data());
-      if (dist_from_center < pow(spark_radius,2)) {
+      su2double T_local = flowNodes->GetTemperature(i_point);
+      if (dist_from_center < pow(spark_radius,2) && T_local < flamelet_config_options.Flame_T_ignition) {
         /*--- Add spark reaction rates to the sources that were just set by SetScalarSources ---*/
         const su2double* current_sources = nodes->GetScalarSources(i_point);
         for (auto iVar = 0u; iVar < nVar; iVar++) {
