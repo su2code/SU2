@@ -227,7 +227,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       n_not_iterated_local += GetEnthFromTemp(fluid_model_local, temp_inlet, config->GetSpecies_Init(), &enth_inlet);
       scalar_init[I_ENTH] = enth_inlet;
 
-      if (flame_front_ignition) prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init, config->GetSpecies_T_ignition());
+      if (flame_front_ignition) prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init, flamelet_config_options.Flame_T_ignition);
 
       prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
       SU2_OMP_FOR_STAT(omp_chunk_size)

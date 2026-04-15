@@ -1420,7 +1420,7 @@ void CConfig::SetConfig_Options() {
   addDoubleListOption("SPARK_REACTION_RATES", flamelet_ParsedOptions.nspark, flamelet_ParsedOptions.spark_reaction_rates);
 
   /*!\brief FLAME_INIT_IGNITION \n DESCRIPTION: Ignition temperature for the flame initialization \ingroup Config*/
-  addDoubleOption("FLAME_INIT_IGNITION", Flame_T_ignition, 5000.0);
+  addDoubleOption("FLAME_INIT_IGNITION", flamelet_ParsedOptions.Flame_T_ignition, 5000.0);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
