@@ -38,6 +38,7 @@
 #include "../../include/iteration/CFEAIteration.hpp"
 
 CIteration* CIterationFactory::CreateIteration(MAIN_SOLVER kindSolver, const CConfig* config){
+  SU2_ZONE_SCOPED
 
   CIteration *iteration = nullptr;
 

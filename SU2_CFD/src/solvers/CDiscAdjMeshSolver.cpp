@@ -29,6 +29,7 @@
 #include "../../include/variables/CDiscAdjMeshBoundVariable.hpp"
 
 CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver) : CSolver() {
+  SU2_ZONE_SCOPED
 
   nVar = geometry->GetnDim();
   nDim = geometry->GetnDim();
@@ -86,6 +87,7 @@ CDiscAdjMeshSolver::CDiscAdjMeshSolver(CGeometry *geometry, CConfig *config, CSo
 CDiscAdjMeshSolver::~CDiscAdjMeshSolver() { delete nodes; }
 
 void CDiscAdjMeshSolver::SetRecording(CGeometry* geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   /*--- Reset the solution to the initial (converged) solution ---*/
 
@@ -104,12 +106,14 @@ void CDiscAdjMeshSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 }
 
 void CDiscAdjMeshSolver::RegisterSolution(CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   /*--- Register reference mesh coordinates ---*/
   direct_solver->GetNodes()->Register_MeshCoord();
 }
 
 void CDiscAdjMeshSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
+  SU2_ZONE_SCOPED
 
   /*--- Register boundary displacements as input.
    * Except for FSI, where they are determined by the FEA solver. ---*/
@@ -133,6 +137,7 @@ void CDiscAdjMeshSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config)
 }
 
 void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm){
+  SU2_ZONE_SCOPED
 
   /*--- Extract the sensitivities of the mesh coordinates ---*/
 
@@ -154,6 +159,7 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *c
 }
 
 void CDiscAdjMeshSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   /*--- Extract the sensitivities of the boundary displacements, except for FSI. ---*/
 
@@ -173,6 +179,7 @@ void CDiscAdjMeshSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *
 }
 
 void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver *solver) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_PARALLEL {
 
@@ -218,5 +225,6 @@ void CDiscAdjMeshSolver::SetSensitivity(CGeometry *geometry, CConfig *config, CS
 }
 
 void CDiscAdjMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  SU2_ZONE_SCOPED
 
 }

@@ -32,6 +32,7 @@ void CHeatIteration::Iterate(COutput* output, CIntegration**** integration, CGeo
                              CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                              CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                              unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
 
   /*--- Update global parameters ---*/
 
@@ -45,6 +46,7 @@ void CHeatIteration::Update(COutput* output, CIntegration**** integration, CGeom
                             CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                             CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                             unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
 
   /*--- Update dual time solver ---*/
   if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||

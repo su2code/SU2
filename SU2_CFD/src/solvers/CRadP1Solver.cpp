@@ -30,10 +30,12 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CRadP1Solver::CRadP1Solver() : CRadSolver() {
+  SU2_ZONE_SCOPED
 
 }
 
 CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(geometry, config) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar;
   unsigned short direct_diff = config->GetDirectDiff();
@@ -131,12 +133,14 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 }
 
 CRadP1Solver::~CRadP1Solver() {
+  SU2_ZONE_SCOPED
 
   delete nodes;
 
 }
 
 void CRadP1Solver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint;
 
@@ -160,6 +164,7 @@ void CRadP1Solver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 }
 
 void CRadP1Solver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint;
   su2double Energy, Temperature;
@@ -189,6 +194,7 @@ void CRadP1Solver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
 
 void CRadP1Solver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[VISC_TERM];
 
@@ -228,6 +234,7 @@ void CRadP1Solver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
 void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                   CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
 
@@ -265,6 +272,7 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
 void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                        unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
@@ -339,6 +347,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
@@ -414,6 +423,7 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
 void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                               unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
@@ -489,6 +499,7 @@ void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, C
 
 
 void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar;
   unsigned long iPoint, IterLinSol = 0;
@@ -566,6 +577,7 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
 void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                unsigned short iMesh, unsigned long Iteration) {
+  SU2_ZONE_SCOPED
 
   unsigned short iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;

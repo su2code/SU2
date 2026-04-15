@@ -30,6 +30,7 @@
 
 
 CIntegration::CIntegration() {
+  SU2_ZONE_SCOPED
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 }
@@ -40,6 +41,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
+
   unsigned short iMarker, KindBC;
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
@@ -207,6 +210,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
@@ -228,6 +232,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CIntegration::SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solver, const CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_PARALLEL
   {
@@ -247,6 +252,7 @@ void CIntegration::SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solve
 }
 
 void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_PARALLEL
   {
