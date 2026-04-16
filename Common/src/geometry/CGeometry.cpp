@@ -295,8 +295,8 @@ void CGeometry::PreprocessP2PComms(CGeometry* geometry, CConfig* config) {
   if (nP2PRecv > 0) req_P2PRecv = new SU2_MPI::Request[nP2PRecv];
 
 #if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
-  if (nP2PSend > 0) reqP_P2PSend = new CBaseMPIWrapper::Request[nP2PSend];
-  if (nP2PRecv > 0) reqP_P2PRecv = new CBaseMPIWrapper::Request[nP2PRecv];
+  if (nP2PSend > 0) reqP_P2PSend = new PassiveRequest[nP2PSend];
+  if (nP2PRecv > 0) reqP_P2PRecv = new PassiveRequest[nP2PRecv];
 #endif
 
   /*--- Build lists of local index values for send. ---*/
