@@ -37,6 +37,8 @@ CDummyDriver::CDummyDriver(char* confFile,
 }
 
 void CDummyDriver::StartSolver(){
+  SU2_ZONE_SCOPED
+
   if (rank == MASTER_NODE){
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
     cout << endl;

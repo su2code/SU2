@@ -34,6 +34,8 @@
 
 template <class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::GetSize()) {
+  SU2_ZONE_SCOPED
+
   nPoint = nPointDomain = nVar = nEqn = 0;
   nnz = nnz_ilu = 0;
   ilu_fill_in = 0;
@@ -63,6 +65,8 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
 
 template <class ScalarType>
 CSysMatrix<ScalarType>::~CSysMatrix() {
+  SU2_ZONE_SCOPED
+
   delete[] omp_partitions;
   MemoryAllocation::aligned_free(ILU_matrix);
   MemoryAllocation::aligned_free(matrix);
@@ -86,6 +90,7 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar,
                                         unsigned short neqn, bool EdgeConnect, CGeometry* geometry,
                                         const CConfig* config, bool needTranspPtr, bool grad_mode) {
+  SU2_ZONE_SCOPED
   assert(omp_get_thread_num() == 0 && "Only the master thread is allowed to initialize the matrix.");
 
   if (npoint == 0) return;
@@ -250,6 +255,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 template <class T>
 void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, const CConfig* config,
                                MPI_QUANTITIES commType) {
+  SU2_ZONE_SCOPED
   if (geometry->nP2PSend == 0) return;
 
   /*--- Local variables ---*/
@@ -365,6 +371,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
 
 template <class T>
 void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType) {
+  SU2_ZONE_SCOPED
   if (geometry->nP2PRecv == 0) return;
 
   /*--- Local variables ---*/
@@ -478,6 +485,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::SetValZero() {
+  SU2_ZONE_SCOPED
   const auto size = nnz * nVar * nEqn;
   const auto chunk = roundUpDiv(size, omp_get_num_threads());
   const auto begin = chunk * omp_get_thread_num();
@@ -488,6 +496,7 @@ void CSysMatrix<ScalarType>::SetValZero() {
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::SetValDiagonalZero() {
+  SU2_ZONE_SCOPED
   SU2_OMP_FOR_STAT(omp_heavy_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint)
     for (auto index = 0ul; index < nVar * nEqn; ++index) matrix[dia_ptr[iPoint] * nVar * nEqn + index] = 0.0;
@@ -602,6 +611,7 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long block_i, unsigned long row) {
+  SU2_ZONE_SCOPED
   for (auto index = row_ptr[block_i]; index < row_ptr[block_i + 1]; index++) {
     for (auto iVar = 0u; iVar < nVar; iVar++)
       matrix[index * nVar * nVar + row * nVar + iVar] = 0.0;  // Delete row values in the block
@@ -613,6 +623,7 @@ void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long block_i, unsigned long
 template <class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                  CGeometry* geometry, const CConfig* config) const {
+  SU2_ZONE_SCOPED
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
 #ifndef NDEBUG
   if ((nEqn != vec.GetNVar()) || (nVar != prod.GetNVar())) {
@@ -643,6 +654,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>& v
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
+  SU2_ZONE_SCOPED
   /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -654,6 +666,7 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<ScalarType>& vec,
                                                          CSysVector<ScalarType>& prod, CGeometry* geometry,
                                                          const CConfig* config) const {
+  SU2_ZONE_SCOPED
   /*--- Apply Jacobi preconditioner, y = D^{-1} * x, the inverse of the diagonal is already known. ---*/
   SU2_OMP_BARRIER
   SU2_OMP_FOR_DYN(omp_heavy_size)
@@ -668,6 +681,7 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
+  SU2_ZONE_SCOPED
   /*--- Copy block matrix to compute factorization in-place. ---*/
 
   if (ilu_fill_in == 0) {
@@ -766,6 +780,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
 template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                       CGeometry* geometry, const CConfig* config) const {
+  SU2_ZONE_SCOPED
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
@@ -823,6 +838,7 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<ScalarType>& vec,
                                                          CSysVector<ScalarType>& prod, CGeometry* geometry,
                                                          const CConfig* config) const {
+  SU2_ZONE_SCOPED
   /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
 
   /*--- Coherent view of vectors. ---*/
@@ -886,6 +902,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildLineletPreconditioner(const CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
   BuildJacobiPreconditioner();
 
   /*--- Allocate working vectors if not done yet. ---*/
@@ -917,6 +934,7 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<ScalarType>& vec,
                                                           CSysVector<ScalarType>& prod, CGeometry* geometry,
                                                           const CConfig* config) const {
+  SU2_ZONE_SCOPED
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
@@ -1021,6 +1039,7 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType>& sol, const CSysVector<ScalarType>& f,
                                              CSysVector<ScalarType>& res) const {
+  SU2_ZONE_SCOPED
   SU2_OMP_BARRIER
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1035,6 +1054,7 @@ template <class ScalarType>
 template <class OtherType>
 void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, const OtherType* x_i,
                                                    CSysVector<OtherType>& b) {
+  SU2_ZONE_SCOPED
   /*--- Eliminate the row associated with node i (Block_ii = I and all other Block_ij = 0).
    *    To preserve eventual symmetry, also attempt to eliminate the column, if the sparse pattern is not
    *    symmetric the entire column may not be eliminated, the result (matrix and vector) is still correct.
@@ -1076,6 +1096,8 @@ void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, c
 template <class ScalarType>
 template <class OtherType>
 void CSysMatrix<ScalarType>::EnforceZeroProjection(unsigned long node_i, const OtherType* n, CSysVector<OtherType>& b) {
+  SU2_ZONE_SCOPED
+
   for (auto index = row_ptr[node_i]; index < row_ptr[node_i + 1]; ++index) {
     const auto node_j = col_ind[index];
 
@@ -1132,6 +1154,8 @@ void CSysMatrix<ScalarType>::EnforceZeroProjection(unsigned long node_i, const O
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
+  SU2_ZONE_SCOPED
+
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
     auto block_ii = &matrix[dia_ptr[iPoint] * nVar * nEqn];
@@ -1148,6 +1172,7 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::TransposeInPlace() {
+  SU2_ZONE_SCOPED
   assert(nVar == nEqn && "Cannot transpose with nVar != nEqn.");
 
   auto swapAndTransp = [](unsigned long n, ScalarType* a, ScalarType* b) {
@@ -1223,6 +1248,7 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::MatrixMatrixAddition(ScalarType alpha, const CSysMatrix<ScalarType>& B) {
+  SU2_ZONE_SCOPED
   /*--- Check that the sparse structure is shared between the two matrices,
    *    comparing pointers is ok as they are obtained from CGeometry. ---*/
   bool ok = (row_ptr == B.row_ptr) && (col_ind == B.col_ind) && (nVar == B.nVar) && (nEqn == B.nEqn) && (nnz == B.nnz);
@@ -1239,6 +1265,7 @@ void CSysMatrix<ScalarType>::MatrixMatrixAddition(ScalarType alpha, const CSysMa
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry* geometry, const CConfig* config,
                                                        unsigned short kind_fact) {
+  SU2_ZONE_SCOPED
 #ifdef HAVE_PASTIX
   /*--- Pastix will launch nested threads. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -1255,6 +1282,7 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<ScalarType>& vec,
                                                          CSysVector<ScalarType>& prod, CGeometry* geometry,
                                                          const CConfig* config) const {
+  SU2_ZONE_SCOPED
 #ifdef HAVE_PASTIX
   SU2_OMP_SAFE_GLOBAL_ACCESS(pastix_wrapper.Solve(vec, prod);)
 
