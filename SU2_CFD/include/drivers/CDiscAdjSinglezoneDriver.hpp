@@ -45,7 +45,7 @@ class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
   #ifdef CODI_FORWARD_TYPE
     using LinSolScalar = su2double;
   #else
-    using LinSolScalar = passivedouble;
+    using LinSolScalar = su2mixedfloat;
   #endif
 
  protected:
