@@ -2816,13 +2816,13 @@ static const MapType<std::string, ENUM_STREAMWISE_PERIODIC> Streamwise_Periodic_
 /*!
  * \brief Types of discrete adjoint solver formulations.
  */
-enum class ENUM_DISC_ADJ_TYPE {
+enum class DISC_ADJ_TYPE {
   FIXED_POINT, /*!< \brief Fixed-point discrete-adjoint formulation. */
-  RESIDUALS    /*!< \brief Residual-based discrete-adjoint formulation. */
+  RESIDUALS,   /*!< \brief Residual-based discrete-adjoint formulation. */
 };
-static const MapType<std::string, ENUM_DISC_ADJ_TYPE> DiscreteAdjoint_Map = {
-  MakePair("FIXED_POINT", ENUM_DISC_ADJ_TYPE::FIXED_POINT)
-  MakePair("RESIDUALS",   ENUM_DISC_ADJ_TYPE::RESIDUALS)
+static const MapType<std::string, DISC_ADJ_TYPE> DiscreteAdjoint_Map = {
+  MakePair("FIXED_POINT", DISC_ADJ_TYPE::FIXED_POINT)
+  MakePair("RESIDUALS",   DISC_ADJ_TYPE::RESIDUALS)
 };
 
 enum class ENUM_VARIABLE {

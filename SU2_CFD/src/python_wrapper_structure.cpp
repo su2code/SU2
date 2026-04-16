@@ -115,7 +115,7 @@ vector<passivedouble> CDriver::GetObjectiveFarfieldVariablesSensitivities() cons
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
 
@@ -135,7 +135,7 @@ vector<passivedouble> CDriver::GetResidualsFarfieldVariablesSensitivities() cons
   if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+  if (main_config->GetKind_DiscreteAdjoint() != DISC_ADJ_TYPE::RESIDUALS) {
     SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
   }
 
@@ -371,7 +371,7 @@ vector<passivedouble> CDriver::GetMarkerForceSensitivities(unsigned short iMarke
   if (!main_config->GetStructuralProblem() || !main_config->GetDiscrete_Adjoint()) {
     SU2_MPI::Error("Discrete adjoint structural solver is not defined!", CURRENT_FUNCTION);
   }
-  if (main_config->GetKind_DiscreteAdjoint() != ENUM_DISC_ADJ_TYPE::FIXED_POINT) {
+  if (main_config->GetKind_DiscreteAdjoint() != DISC_ADJ_TYPE::FIXED_POINT) {
     SU2_MPI::Error("Discrete adjoint structural solver does not use fixed-point formulation!", CURRENT_FUNCTION);
   }
 

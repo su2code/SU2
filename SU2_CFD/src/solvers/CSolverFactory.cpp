@@ -262,7 +262,7 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
     case SUB_SOLVER_TYPE::DISC_ADJ_FLOW:
-      if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+      if (config->GetKind_DiscreteAdjoint() == DISC_ADJ_TYPE::RESIDUALS) {
         genericSolver = new CDiscAdjResidualSolver(geometry, config, solver[FLOW_SOL], RUNTIME_FLOW_SYS, iMGLevel);
       }
       else {

@@ -25,22 +25,13 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+
 #include "CSinglezoneDriver.hpp"
 #include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 #include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
 #include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"
-
-#ifdef CODI_FORWARD_TYPE
-  using Scalar = su2double;
-#else
-  using Scalar = su2mixedfloat;
-#endif
-
-class LinOperator;
-class LinPreconditioner;
 
 /*!
  * \class CDiscAdjSinglezoneDriver
@@ -50,8 +41,14 @@ class LinPreconditioner;
  * \version 8.4.0 "Harrier"
  */
 class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
-protected:
+ public:
+  #ifdef CODI_FORWARD_TYPE
+    using LinSolScalar = su2double;
+  #else
+    using LinSolScalar = passivedouble;
+  #endif
 
+ protected:
   unsigned long nAdjoint_Iter;                  /*!< \brief The number of adjoint iterations that are run on the fixed-point solver.*/
   RECORDING RecordingState;                     /*!< \brief The kind of recording the tape currently holds.*/
   RECORDING MainVariables;                      /*!< \brief The kind of recording linked to the main variables of the problem.*/
@@ -73,18 +70,16 @@ protected:
 
   /*!< \brief Members to use GMRES to drive inner iterations (alternative to quasi-Newton) of the residual-based formulation. */
   static constexpr unsigned long KrylovMinIters = 3;
-  const Scalar KrylovSysTol = 1E-10;
-  const Scalar KrylovPreTol = 0.1;
+  const LinSolScalar KrylovSysTol = 1E-10;
+  const LinSolScalar KrylovPreTol = 0.1;
   bool KrylovSet = false;
 
-  CSysMatrix<Scalar> CopiedJacobian;
-  CSysSolve<Scalar> AdjSolver;
-  CSysVector<Scalar> AdjRHS;
-  CSysVector<Scalar> AdjSol;
-  CPreconditioner<Scalar>* PrimalPreconditioner = nullptr;
-  CSysMatrixVectorProduct<Scalar>* PrimalJacobian = nullptr;
-  LinOperator* AdjOperator = nullptr;
-  LinPreconditioner* AdjPreconditioner = nullptr;
+  CSysMatrix<LinSolScalar> CopiedJacobian;
+  CSysSolve<LinSolScalar> AdjSolver;
+  CSysVector<LinSolScalar> AdjRHS;
+  CSysVector<LinSolScalar> AdjSol;
+  CPreconditioner<LinSolScalar>* PrimalPreconditioner = nullptr;
+  CSysMatrixVectorProduct<LinSolScalar>* PrimalJacobian = nullptr;
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
@@ -170,7 +165,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjSinglezoneDriver(void) override;
+  ~CDiscAdjSinglezoneDriver() override;
 
   /*!
    * \brief Preprocess the single-zone iteration
@@ -300,30 +295,10 @@ public:
   /*!
    * \brief Adjoint problem Jacobian-vector product.
    */
-  void ApplyOperator(const CSysVector<Scalar>& u, CSysVector<Scalar>& v);
+  void ApplyOperator(const CSysVector<LinSolScalar>& u, CSysVector<LinSolScalar>& v);
 
   /*!
    * \brief Adjoint problem preconditioner (based on the transpose approximate Jacobian of the primal problem).
    */
-  void ApplyPreconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v);
-};
-
-class LinOperator : public CMatrixVectorProduct<Scalar> {
- public:
-  CDiscAdjSinglezoneDriver* const driver;
-  LinOperator(CDiscAdjSinglezoneDriver* d) : driver(d) { }
-
-  inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
-    driver->ApplyOperator(u, v);
-  }
-};
-
-class LinPreconditioner : public CPreconditioner<Scalar> {
- public:
-  CDiscAdjSinglezoneDriver* const driver;
-  LinPreconditioner(CDiscAdjSinglezoneDriver* d) : driver(d) { }
-
-  inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
-    driver->ApplyPreconditioner(u, v);
-  }
+  void ApplyPreconditioner(const CSysVector<LinSolScalar>& u, CSysVector<LinSolScalar>& v);
 };

@@ -34,6 +34,34 @@
 #include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
+namespace {
+class LinOperator final : public CMatrixVectorProduct<CDiscAdjSinglezoneDriver::LinSolScalar> {
+ public:
+  using Scalar = typename CDiscAdjSinglezoneDriver::LinSolScalar;
+
+  explicit LinOperator(CDiscAdjSinglezoneDriver* d) : driver(d) { }
+
+  inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
+    driver->ApplyOperator(u, v);
+  }
+ private:
+  CDiscAdjSinglezoneDriver* const driver;
+};
+
+class LinPreconditioner final : public CPreconditioner<CDiscAdjSinglezoneDriver::LinSolScalar> {
+ public:
+  using Scalar = typename CDiscAdjSinglezoneDriver::LinSolScalar;
+
+  explicit LinPreconditioner(CDiscAdjSinglezoneDriver* d) : driver(d) { }
+
+  inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
+    driver->ApplyPreconditioner(u, v);
+  }
+ private:
+  CDiscAdjSinglezoneDriver* const driver;
+};
+}
+
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
                                                    unsigned short val_nZone,
                                                    SU2_Comm MPICommunicator) : CSinglezoneDriver(confFile,
@@ -129,9 +157,6 @@ CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver() {
   delete direct_output;
   delete PrimalJacobian;
   delete PrimalPreconditioner;
-  delete AdjOperator;
-  delete AdjPreconditioner;
-
 }
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
@@ -162,7 +187,7 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 void CDiscAdjSinglezoneDriver::Run() {
   SU2_ZONE_SCOPED
 
-  if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+  if (config->GetKind_DiscreteAdjoint() == DISC_ADJ_TYPE::RESIDUALS) {
     RunResidual();
   } else {
     RunFixedPoint();
@@ -246,10 +271,10 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
     }
 
     CopiedJacobian.TransposeInPlace();
-    PrimalJacobian = new CSysMatrixVectorProduct<Scalar>(CopiedJacobian, geometry, config);
+    PrimalJacobian = new CSysMatrixVectorProduct<LinSolScalar>(CopiedJacobian, geometry, config);
 
     const auto kindPreconditioner = static_cast<ENUM_LINEAR_SOLVER_PREC>(config->GetKind_Linear_Solver_Prec());
-    PrimalPreconditioner = CPreconditioner<Scalar>::Create(kindPreconditioner, CopiedJacobian, geometry, config);
+    PrimalPreconditioner = CPreconditioner<LinSolScalar>::Create(kindPreconditioner, CopiedJacobian, geometry, config);
     PrimalPreconditioner->Build();
   }
 
@@ -269,20 +294,20 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
   AdjSolver.SetMonitoringFrequency(wrtFreq);
 
   /*--- Initialize the linear solver iterations ---*/
-  AdjOperator = new LinOperator(this);
-  AdjPreconditioner = new LinPreconditioner(this);
+  LinOperator AdjOperator{this};
+  LinPreconditioner AdjPreconditioner{this};
 
-  Scalar eps = 1.0;
+  LinSolScalar eps = 1.0;
 
   unsigned long nKrylov_Iter;
   for (nKrylov_Iter = nAdjoint_Iter; nKrylov_Iter >= KrylovMinIters && eps > KrylovSysTol;) {
     std::cout << "Adjoint iteration: " << nKrylov_Iter << " ... " << std::endl;
 
     auto nIter = min(nKrylov_Iter - 2ul, config->GetLinear_Solver_Iter());
-    Scalar eps_l = 0.0;
-    Scalar tol_l = KrylovSysTol / eps;
+    LinSolScalar eps_l = 0.0;
+    LinSolScalar tol_l = KrylovSysTol / eps;
 
-    nIter = AdjSolver.FGMRES_LinSolver(AdjRHS, AdjSol, *AdjOperator, *AdjPreconditioner, tol_l, nIter, eps_l, monitor,
+    nIter = AdjSolver.FGMRES_LinSolver(AdjRHS, AdjSol, AdjOperator, AdjPreconditioner, tol_l, nIter, eps_l, monitor,
                                        config);
     nKrylov_Iter -= nIter + 1;
 
@@ -310,7 +335,7 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
 }
 
 void CDiscAdjSinglezoneDriver::UpdateAdjoints() {
-  if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+  if (config->GetKind_DiscreteAdjoint() == DISC_ADJ_TYPE::RESIDUALS) {
     UpdateAdjointsResidual();
   } else {
     UpdateAdjointsFixedPoint();
@@ -424,7 +449,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
       /*--- Compute the geometrical sensitivities ---*/
       SecondaryRecording();
 
-      if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+      if (config->GetKind_DiscreteAdjoint() == DISC_ADJ_TYPE::RESIDUALS) {
         SecondaryRunResidual();
       } else {
         SecondaryRunFixedPoint();
@@ -437,7 +462,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
       /*--- Compute the geometrical sensitivities ---*/
       SecondaryRecording();
 
-      if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+      if (config->GetKind_DiscreteAdjoint() == DISC_ADJ_TYPE::RESIDUALS) {
         SecondaryRunResidual();
       } else {
         SecondaryRunFixedPoint();
@@ -500,7 +525,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
                              INST_0, kind_recording);
 
   /*--- Do one iteration of the direct solver. ---*/
-  if (config->GetKind_DiscreteAdjoint() == ENUM_DISC_ADJ_TYPE::RESIDUALS) {
+  if (config->GetKind_DiscreteAdjoint() == DISC_ADJ_TYPE::RESIDUALS) {
     DirectRunResidual(kind_recording);
   } else {
     DirectRunFixedPoint(kind_recording);
@@ -829,18 +854,18 @@ void CDiscAdjSinglezoneDriver::UpdateJacobians() {
   solver[FLOW_SOL]->PrepareImplicitIteration(geometry, solver, config);
 }
 
-void CDiscAdjSinglezoneDriver::ApplyPreconditioner(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) {
+void CDiscAdjSinglezoneDriver::ApplyPreconditioner(const CSysVector<LinSolScalar>& u, CSysVector<LinSolScalar>& v) {
   /*--- Use an approximate diagonal preconditioning based on the transpose of the primal Jacobian. ---*/
   (*PrimalPreconditioner)(u, v);
 
   /*--- Apply a few FGMRES iterations in addition to the above preconditioner. ---*/
-  Scalar KrylovPreEps = KrylovPreTol;
+  LinSolScalar KrylovPreEps = KrylovPreTol;
   auto MaxIter = 5;
   solver[FLOW_SOL]->System.FGMRES_LinSolver(u, v, *PrimalJacobian, *PrimalPreconditioner, KrylovPreTol, MaxIter,
                                                     KrylovPreEps, false, config);
 }
 
-void CDiscAdjSinglezoneDriver::ApplyOperator(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) {
+void CDiscAdjSinglezoneDriver::ApplyOperator(const CSysVector<LinSolScalar>& u, CSysVector<LinSolScalar>& v) {
   /*--- Set the adjoint variables used in the seeding of the tape. ---*/
   SetAllSolutions(ZONE_0, true, u);
 
