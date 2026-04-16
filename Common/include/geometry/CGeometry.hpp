@@ -297,7 +297,7 @@ class CGeometry {
   SU2_MPI::Request* req_P2PSend{nullptr}; /*!< \brief Data structure for point-to-point send requests. */
   SU2_MPI::Request* req_P2PRecv{nullptr}; /*!< \brief Data structure for point-to-point recv requests. */
 #if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
-  using PassiveRequest = typename CBaseMPIWrapper::Request;
+  using PassiveRequest = typename SelectMPIWrapper<passivedouble>::W::Request;
   PassiveRequest* reqP_P2PSend{nullptr}; /*!< \brief Data structure for point-to-point send requests. */
   PassiveRequest* reqP_P2PRecv{nullptr}; /*!< \brief Data structure for point-to-point recv requests. */
 #endif
