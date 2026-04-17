@@ -632,7 +632,7 @@ struct SelectMPIWrapper<passivedouble> {
 #endif
 
 /*--- Specialize for the low precision type. ---*/
-#if defined USE_MIXED_PRECISION
+#if defined(USE_MIXED_PRECISION)
 template <>
 struct SelectMPIWrapper<su2mixedfloat> {
 #if defined HAVE_MPI

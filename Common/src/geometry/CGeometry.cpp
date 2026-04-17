@@ -110,10 +110,8 @@ CGeometry::~CGeometry() {
   delete[] req_P2PSend;
   delete[] req_P2PRecv;
 
-#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
   delete[] reqP_P2PSend;
   delete[] reqP_P2PRecv;
-#endif
 
   delete[] nPoint_P2PRecv;
   delete[] nPoint_P2PSend;
@@ -294,10 +292,8 @@ void CGeometry::PreprocessP2PComms(CGeometry* geometry, CConfig* config) {
   if (nP2PSend > 0) req_P2PSend = new SU2_MPI::Request[nP2PSend];
   if (nP2PRecv > 0) req_P2PRecv = new SU2_MPI::Request[nP2PRecv];
 
-#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
   if (nP2PSend > 0) reqP_P2PSend = new PassiveRequest[nP2PSend];
   if (nP2PRecv > 0) reqP_P2PRecv = new PassiveRequest[nP2PRecv];
-#endif
 
   /*--- Build lists of local index values for send. ---*/
 
@@ -429,13 +425,13 @@ void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, COMM_TY
 #ifdef CODI_REVERSE_TYPE
         case COMM_TYPE::PASSIVE_DOUBLE:
           SelectMPIWrapper<passivedouble>::W::Irecv(&(bufPD_P2PSend[offset]), count, MPI_DOUBLE, source, tag,
-                                                    SU2_MPI::GetComm(), &(reqP_P2PRecv[iRecv]));
+                                                    SU2_MPI::GetComm(), &GetP2PRecvReq<passivedouble>()[iRecv]);
           break;
 #endif
 #ifdef USE_MIXED_PRECISION
         case COMM_TYPE::FLOAT:
           SelectMPIWrapper<su2mixedfloat>::W::Irecv(&(bufF_P2PSend[offset]), count, MPI_FLOAT, source, tag,
-                                                    SU2_MPI::GetComm(), &(reqP_P2PRecv[iRecv]));
+                                                    SU2_MPI::GetComm(), &GetP2PRecvReq<su2mixedfloat>()[iRecv]);
           break;
 #endif
         case COMM_TYPE::UNSIGNED_SHORT:
@@ -476,13 +472,13 @@ void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, COMM_TY
 #ifdef CODI_REVERSE_TYPE
         case COMM_TYPE::PASSIVE_DOUBLE:
           SelectMPIWrapper<passivedouble>::W::Irecv(&(bufPD_P2PRecv[offset]), count, MPI_DOUBLE, source, tag,
-                                                    SU2_MPI::GetComm(), &(reqP_P2PRecv[iMessage]));
+                                                    SU2_MPI::GetComm(), &GetP2PRecvReq<passivedouble>()[iMessage]);
           break;
 #endif
 #ifdef USE_MIXED_PRECISION
         case COMM_TYPE::FLOAT:
           SelectMPIWrapper<su2mixedfloat>::W::Irecv(&(bufF_P2PRecv[offset]), count, MPI_FLOAT, source, tag,
-                                                    SU2_MPI::GetComm(), &(reqP_P2PRecv[iMessage]));
+                                                    SU2_MPI::GetComm(), &GetP2PRecvReq<su2mixedfloat>()[iMessage]);
           break;
 #endif
         case COMM_TYPE::UNSIGNED_SHORT:
@@ -541,13 +537,13 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, COMM_TY
 #ifdef CODI_REVERSE_TYPE
       case COMM_TYPE::PASSIVE_DOUBLE:
         SelectMPIWrapper<passivedouble>::W::Isend(&(bufPD_P2PRecv[offset]), count, MPI_DOUBLE, dest, tag,
-                                                  SU2_MPI::GetComm(), &(reqP_P2PSend[val_iSend]));
+                                                  SU2_MPI::GetComm(), &GetP2PSendReq<passivedouble>()[val_iSend]);
         break;
 #endif
 #ifdef USE_MIXED_PRECISION
       case COMM_TYPE::FLOAT:
         SelectMPIWrapper<su2mixedfloat>::W::Isend(&(bufF_P2PRecv[offset]), count, MPI_FLOAT, dest, tag,
-                                                  SU2_MPI::GetComm(), &(reqP_P2PSend[val_iSend]));
+                                                  SU2_MPI::GetComm(), &GetP2PSendReq<su2mixedfloat>()[val_iSend]);
         break;
 #endif
       case COMM_TYPE::UNSIGNED_SHORT:
@@ -588,13 +584,13 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, COMM_TY
 #ifdef CODI_REVERSE_TYPE
       case COMM_TYPE::PASSIVE_DOUBLE:
         SelectMPIWrapper<passivedouble>::W::Isend(&(bufPD_P2PSend[offset]), count, MPI_DOUBLE, dest, tag,
-                                                  SU2_MPI::GetComm(), &(reqP_P2PSend[val_iSend]));
+                                                  SU2_MPI::GetComm(), &GetP2PSendReq<passivedouble>()[val_iSend]);
         break;
 #endif
 #ifdef USE_MIXED_PRECISION
       case COMM_TYPE::FLOAT:
         SelectMPIWrapper<su2mixedfloat>::W::Isend(&(bufF_P2PSend[offset]), count, MPI_FLOAT, dest, tag,
-                                                  SU2_MPI::GetComm(), &(reqP_P2PSend[val_iSend]));
+                                                  SU2_MPI::GetComm(), &GetP2PSendReq<su2mixedfloat>()[val_iSend]);
         break;
 #endif
       case COMM_TYPE::UNSIGNED_SHORT:

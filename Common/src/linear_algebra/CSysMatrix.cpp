@@ -378,7 +378,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
   const unsigned short COUNT_PER_POINT = x.GetNVar();
 
   /*--- Global status so all threads can see the result of Waitany. ---*/
-  static SU2_MPI::Status status;
+  static typename SelectMPIWrapper<T>::W::Status status;
   int ind;
 
   /*--- Store the data that was communicated into the appropriate
@@ -1306,17 +1306,11 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
   template void CSysMatrix<TYPE>::EnforceZeroProjection(unsigned long, const su2double*, CSysVector<su2double>&); \
   INSTANTIATE_COMMS(TYPE)
 
-#ifdef CODI_FORWARD_TYPE
-/*--- In forward AD only the active type is used. ---*/
-INSTANTIATE_MATRIX(su2double)
-#else
-/*--- Base and reverse AD, matrix is passive. ---*/
 INSTANTIATE_MATRIX(su2mixedfloat)
-/*--- If using mixed precision (float) instantiate also a version for doubles, and allow cross communications. ---*/
+
 #ifdef USE_MIXED_PRECISION
 INSTANTIATE_MATRIX(passivedouble)
 #endif
 #ifdef CODI_REVERSE_TYPE
 INSTANTIATE_COMMS(su2double)
 #endif
-#endif  // CODI_FORWARD_TYPE

@@ -296,11 +296,10 @@ class CGeometry {
   unsigned short* bufS_P2PSend{nullptr};  /*!< \brief Data structure for unsigned long point-to-point send. */
   SU2_MPI::Request* req_P2PSend{nullptr}; /*!< \brief Data structure for point-to-point send requests. */
   SU2_MPI::Request* req_P2PRecv{nullptr}; /*!< \brief Data structure for point-to-point recv requests. */
-#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
+
   using PassiveRequest = typename SelectMPIWrapper<passivedouble>::W::Request;
   PassiveRequest* reqP_P2PSend{nullptr}; /*!< \brief Data structure for point-to-point send requests. */
   PassiveRequest* reqP_P2PRecv{nullptr}; /*!< \brief Data structure for point-to-point recv requests. */
-#endif
 
   /*--- Data structures for periodic communications. ---*/
 
@@ -420,7 +419,7 @@ class CGeometry {
    * \brief Returns the send buffer for a given data type.
    */
   template <class T>
-  auto* GetP2PSendBuf() {
+  auto* GetP2PSendBuf() const {
     if constexpr (std::is_same_v<T, su2double>) {
       return bufD_P2PSend;
 #ifdef CODI_REVERSE_TYPE
@@ -441,7 +440,7 @@ class CGeometry {
    * \brief Returns the receive buffer for a given data type.
    */
   template <class T>
-  auto* GetP2PRecvBuf() {
+  auto* GetP2PRecvBuf() const {
     if constexpr (std::is_same_v<T, su2double>) {
       return bufD_P2PRecv;
 #ifdef CODI_REVERSE_TYPE
@@ -462,13 +461,11 @@ class CGeometry {
    * \brief Returns the send requests for a given data type.
    */
   template <class T>
-  auto* GetP2PSendReq() {
+  auto* GetP2PSendReq() const {
     if constexpr (std::is_same_v<T, su2double>) {
       return req_P2PSend;
-#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
     } else if constexpr (std::is_same_v<T, passivedouble> || std::is_same_v<T, su2mixedfloat>) {
       return reqP_P2PSend;
-#endif
     } else {
       static_assert(std::is_same_v<T, unsigned short>);
       return req_P2PSend;
@@ -479,13 +476,11 @@ class CGeometry {
    * \brief Returns the receive requests for a given data type.
    */
   template <class T>
-  auto* GetP2PRecvReq() {
+  auto* GetP2PRecvReq() const {
     if constexpr (std::is_same_v<T, su2double>) {
       return req_P2PRecv;
-#if defined(CODI_REVERSE_TYPE) || defined(USE_MIXED_PRECISION)
     } else if constexpr (std::is_same_v<T, passivedouble> || std::is_same_v<T, su2mixedfloat>) {
       return reqP_P2PRecv;
-#endif
     } else {
       static_assert(std::is_same_v<T, unsigned short>);
       return req_P2PRecv;
