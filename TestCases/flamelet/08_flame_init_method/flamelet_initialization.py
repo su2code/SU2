@@ -128,7 +128,6 @@ def main():
 
     # Retrieve temperature from the burnt zone of the initial flame front.
     T_flame_front = driver_flame_front.GetOutputValue("Tprobe")
-    good_flame_front = T_flame_front > T_ignition
     driver_flame_front.Finalize()
 
     # Initialize simulation with spark ignition.
@@ -137,18 +136,9 @@ def main():
 
     # Retrieve temperature from center of the spark.
     T_spark = driver_spark.GetOutputValue("Tprobe")
-    good_spark = T_spark > T_ignition
     driver_spark.Finalize()
-
-    if not good_flame_front:
-        print("ERROR: Temperature in burnt zone below target ignition temperature (%f)" % T_flame_front)
-    if not good_spark:
-        print("ERROR: Temperature in spark region below target ignition temperature (%f)" % T_spark)
-    
-    if good_spark and good_flame_front:
-        SystemExit(0)
-    else:
-        SystemExit(1)
+    if comm.Get_rank() == 0:
+        print("| %i | %.2f | %.2f|" % (1, min(T_ignition, T_flame_front), min(T_ignition, T_spark)))
 
 if __name__ == '__main__':
   main()
