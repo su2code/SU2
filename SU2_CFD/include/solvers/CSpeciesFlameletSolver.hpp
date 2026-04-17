@@ -174,6 +174,22 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
                 CConfig* config, unsigned short val_marker) override;
 
   /*!
+   * \brief Impose the outlet boundary condition.
+   * When backflow prevention is enabled and reversed flow is detected at a face,
+   * the scalar ghost state is set to the inlet prescribed values (fresh mixture)
+   * instead of the Neumann interior values, preventing burned-gas scalars from
+   * re-entering the domain and pushing FGM look-ups outside the manifold.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics, CNumerics* visc_numerics,
+                 CConfig* config, unsigned short val_marker) override;
+
+  /*!
    * \brief Impose the (received) conjugate heat variables.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

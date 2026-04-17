@@ -1396,6 +1396,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("INC_INLET_DAMPING", Inc_Inlet_Damping, 0.1);
   /*!\brief INC_OUTLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow (0.1 by default). \ingroup Config*/
   addDoubleOption("INC_OUTLET_DAMPING", Inc_Outlet_Damping, 0.1);
+  /*!\brief INC_OUTLET_BACKFLOW_PREVENTION \n DESCRIPTION: Remove the reversed normal velocity component from the outlet ghost state when backflow is detected, preventing spurious inflow through the outlet. \ingroup Config*/
+  addBoolOption("INC_OUTLET_BACKFLOW_PREVENTION", Inc_Outlet_BackflowPrevention, false);
 
   /*--- Options related to the species solver. ---*/
 

@@ -424,6 +424,143 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   CSpeciesSolver::BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
+void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                       CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
+
+  /*--- When backflow prevention is disabled, fall back to the base Neumann outlet. ---*/
+  if (!config->GetInc_Outlet_BackflowPrevention()) {
+    CSpeciesSolver::BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    return;
+  }
+
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  passivedouble nBackflow_loc = 0.0;
+  passivedouble Vn_min_loc    = 0.0;  /*--- Most negative Vn seen this call. ---*/
+
+  // Compute a manifold-consistent enthalpy state for backflow faces.
+  // V_ref is the inlet bulk velocity; used to normalise the blending weight so that
+  // alpha -> 0 for marginal backflow and alpha -> 1 for strong backflow.
+  string Inlet_Tag;
+  bool found_inlet = false;
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_CfgFile(); iMarker++) {
+    const string tag = config->GetMarker_CfgFile_TagBound(iMarker);
+    if (config->GetMarker_CfgFile_KindBC(tag) == INLET_FLOW) {
+      Inlet_Tag    = tag;
+      found_inlet  = true;
+      break;
+    }
+  }
+  if (!found_inlet) {
+    /*--- No inlet boundary defined — nothing to blend against; fall back to Neumann. ---*/
+    CSpeciesSolver::BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    return;
+  }
+
+  const su2double T_inlet = config->GetInletTtotal(Inlet_Tag);
+  const su2double V_ref   = config->GetInletPtotal(Inlet_Tag) / config->GetVelocity_Ref();
+
+  /*--- Determine thermodynamically consistent inlet enthalpy via Newton method. ---*/
+  su2double H_inlet;
+  GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(),
+                  T_inlet, config->GetInlet_SpeciesVal(Inlet_Tag), &H_inlet);
+
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+    /*--- Outward face normal and normal velocity — needed for both strong and weak paths. ---*/
+    su2double Normal[MAXNDIM] = {0.0};
+    for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+
+    auto V_domain = solver_container[FLOW_SOL]->GetNodes()->GetPrimitive(iPoint);
+    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+    const su2double Vn   = GeometryToolbox::DotProduct(nDim, &V_domain[prim_idx.Velocity()], Normal) / Area;
+
+    if (Vn < 0.0) {
+      SU2_OMP_ATOMIC
+      nBackflow_loc += 1.0;
+      const passivedouble Vn_passive = SU2_TYPE::GetValue(Vn);
+      /*--- Bug fix: SU2_OMP_ATOMIC (#pragma omp atomic) only supports simple op= expressions,
+       *   not min(). Use atomicMin which falls back to a critical section when needed. ---*/
+      atomicMin(Vn_passive, Vn_min_loc);
+    }
+
+    /*--- Strong BC path: prescribe inlet scalars on backflow faces; otherwise copy
+     from the interior neighbour as usual. ---*/
+    if (config->GetMarker_StrongBC(Marker_Tag)) {
+      if (Vn < 0.0) {
+        nodes->SetSolution_Old(iPoint, Inlet_SpeciesVars[val_marker][iVertex]);
+      } else {
+        auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+        nodes->SetSolution_Old(iPoint, nodes->GetSolution(Point_Normal));
+      }
+      LinSysRes.SetBlock_Zero(iPoint);
+      for (auto iVar = 0u; iVar < nVar; iVar++) Jacobian.DeleteValsRowi(iPoint, iVar);
+      continue;
+    }
+
+    /*--- Weak BC: flow ghost state set by CIncEulerSolver::BC_Outlet. ---*/
+    auto V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
+
+    /*--- Choose scalar ghost state:
+     *   Outflow  (Vn >= 0): Neumann — interior values propagate outward (standard).
+     *   Backflow (Vn <  0): Dirichlet — Use blended approach to create thermodynamically consistent state. ---*/
+    su2double backflow_scalars[MAXNVAR];
+    const su2double* scalar_ghost;
+
+    if (Vn < 0.0) {
+      const su2double alpha      = min(-Vn / V_ref, 1.0);
+      const su2double H_interior = nodes->GetSolution(iPoint, I_ENTH);
+
+      /*--- Start from the interior solution, then blend the enthalpy toward the
+       *   thermodynamically consistent inlet value and clamp PV to zero. ---*/
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        backflow_scalars[iVar] = nodes->GetSolution(iPoint, iVar);
+
+      backflow_scalars[I_ENTH]    = (1.0 - alpha) * H_interior + alpha * H_inlet;
+      backflow_scalars[I_PROGVAR] = config->GetSpecies_Clipping_Min(I_PROGVAR);
+
+      scalar_ghost = backflow_scalars;
+    } else {
+      scalar_ghost = nodes->GetSolution(iPoint);
+    }
+
+    conv_numerics->SetPrimitive(V_domain, V_outlet);
+    conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), scalar_ghost);
+    conv_numerics->SetNormal(Normal);
+
+    if (dynamic_grid)
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+
+    if (conv_numerics->GetBoundedScalar()) {
+      const su2double* velocity = &V_outlet[prim_idx.Velocity()];
+      const su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      conv_numerics->SetMassFlux(BoundedScalarBCFlux(iPoint, implicit, density, velocity, Normal));
+    }
+
+    auto residual = conv_numerics->ComputeResidual(config);
+    LinSysRes.AddBlock(iPoint, residual);
+    if (implicit) Jacobian.AddBlock2Diag(iPoint, residual.jacobian_i);
+  }
+  END_SU2_OMP_FOR
+
+  /*--- Print backflow diagnostics once per BC call (no MPI reduction — safe). ---*/
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    if (nBackflow_loc > 0.5 && rank == MASTER_NODE) {
+      cout << "  Flamelet BC_Outlet [" << Marker_Tag << "]: "
+           << static_cast<unsigned long>(nBackflow_loc)
+           << " backflow face(s), Vn_min = " << Vn_min_loc << " m/s"
+           << "  --> applying inlet scalars (PV=0, H=H_inlet) on backflow faces." << endl;
+    }
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+}
+
 void CSpeciesFlameletSolver::BC_Isothermal_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
                                                         CNumerics* conv_numerics, CNumerics* visc_numerics,
                                                         CConfig* config, unsigned short val_marker, bool cht_mode) {
