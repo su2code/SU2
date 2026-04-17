@@ -1335,6 +1335,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
                                                            CConfig* config) {
   SU2_ZONE_SCOPED
 
+  const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS;
+
   unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
   unsigned short iDim, iVar, jVar, iMarker, nDonorVertex;
 
@@ -1386,19 +1388,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
 
             conv_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
 
-            if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-              if (!(config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS)) {
-                auto Secondary_i = nodes->GetSecondary(iPoint);
+            if (FlowRegime == ENUM_REGIME::COMPRESSIBLE && !ideal_gas) {
+              P_static = PrimVar_j[nDim + 1];
+              rho_static = PrimVar_j[nDim + 2];
+              GetFluidModel()->SetTDState_Prho(P_static, rho_static);
 
-                P_static = PrimVar_j[nDim + 1];
-                rho_static = PrimVar_j[nDim + 2];
-                GetFluidModel()->SetTDState_Prho(P_static, rho_static);
+              Secondary_j[0] = GetFluidModel()->GetdPdrho_e();
+              Secondary_j[1] = GetFluidModel()->GetdPde_rho();
 
-                Secondary_j[0] = GetFluidModel()->GetdPdrho_e();
-                Secondary_j[1] = GetFluidModel()->GetdPde_rho();
-
-                conv_numerics->SetSecondary(Secondary_i, Secondary_j);
-              }
+              conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), Secondary_j);
             }
 
             /*--- Set the normal vector ---*/
