@@ -286,6 +286,19 @@ void CMultizoneDriver::RunGaussSeidel() {
     config_container[iZone]->SetOuterIter(0ul);
   }
 
+  /*--- Initialize a Quasi-Newton correction for data that is broadcasted at physical interfaces. ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (auto jZone = 0u; jZone < nZone; jZone++) {
+      if (jZone != iZone) {
+        /*--- Donor zone is jzone ---*/
+        if(interface_container[jZone][iZone] != nullptr) {
+          interface_container[jZone][iZone]->InitializeQuasiNewtonCorrection(geometry_container[jZone][INST_0][MESH_0], config_container[jZone]);
+        }
+      }
+    }
+  }
+
   /*--- Loop over the number of outer iterations ---*/
   for (auto iOuter_Iter = 0ul; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++) {
 

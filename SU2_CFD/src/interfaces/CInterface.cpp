@@ -59,6 +59,35 @@ CInterface::~CInterface() {
   delete[] SpanLevelDonor;
 }
 
+void CInterface::InitializeQuasiNewtonCorrection(CGeometry *donor_geometry, const CConfig *donor_config) {
+
+  /*--- One Quasi-Newton correction object for each interface. ---*/
+  QuasiNewtonCorrection.resize(donor_config->GetMarker_n_ZoneInterface()/2);
+
+  /*--- Determine the global size of the interface. ---*/
+  for (auto iMarkerInt = 0u; iMarkerInt < donor_config->GetMarker_n_ZoneInterface()/2; iMarkerInt++) {
+    const auto markDonor = donor_config->FindInterfaceMarker(iMarkerInt);
+    int nLocalVertexDonor = 0;
+    if (markDonor >= 0) {
+      for (auto iVertex = 0ul; iVertex < donor_geometry->GetnVertex(markDonor); iVertex++) {
+        auto Point_Donor = donor_geometry->vertex[markDonor][iVertex]->GetNode();
+        /*--- Only domain points are donors. ---*/
+        nLocalVertexDonor += donor_geometry->nodes->GetDomain(Point_Donor);
+      }
+    }
+
+    vector<int> nAllVertexDonor(size);
+    SU2_MPI::Allgather(&nLocalVertexDonor, 1, MPI_INT, nAllVertexDonor.data(), 1, MPI_INT, SU2_MPI::GetComm());
+
+    int nGlobalVertexDonor = 0;
+    for (int i = 0; i < size; ++i) nGlobalVertexDonor += nAllVertexDonor[i];
+
+    std::cout << "Initializing Quasi-Newton correction for interface " << iMarkerInt << " with " << nGlobalVertexDonor << " donor vertices and " << nVar << " variables." << std::endl;
+    /*--- Initialize the Quasi-Newton correction object for this interface. ---*/
+    QuasiNewtonCorrection[iMarkerInt].resize(5, nGlobalVertexDonor, 4);
+  }
+}
+
 void CInterface::BroadcastData(const CInterpolator& interpolator,
                                CSolver *donor_solution, CSolver *target_solution,
                                CGeometry *donor_geometry, CGeometry *target_geometry,
@@ -159,6 +188,12 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
       for (auto iVar = 0u; iVar < nVar; ++iVar)
         swap(donorVar(i,iVar), donorVar(j,iVar));
     }
+
+    /*--- Each rank performs a Quasi-Newton correction step on the global donor data before applying them on the target. ---*/
+
+    SetAllValues(donorVar, QuasiNewtonCorrection[iMarkerInt].FPresult(), nGlobalVertexDonor, nVar);
+    QuasiNewtonCorrection[iMarkerInt].compute();
+    SetAllValues(donorVar, QuasiNewtonCorrection[iMarkerInt], nGlobalVertexDonor, nVar);
 
     /*--- Loop over target vertices. ---*/
 

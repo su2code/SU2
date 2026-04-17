@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
 
 #include <cmath>
 #include <string>
@@ -73,6 +74,9 @@ protected:
   unsigned short nVar = 0;
   static constexpr size_t MAXNDIM = 3;  /*!< \brief Max number of space dimensions, used in some static arrays. */
 
+  /*--- Quasi-Newton correction for each donor marker. ---*/
+  vector<CQuasiNewtonInvLeastSquares<passivedouble>> QuasiNewtonCorrection;
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -90,6 +94,33 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CInterface(void);
+
+  /*!
+   * \brief Initializes the Quasi-Newton correction object for each donor marker.
+   * \param[in] donor_geometry - Geometry of the donor mesh.
+   * \param[in] donor_config - Definition of the problem at the donor mesh, used to get the number of donor markers.
+   */
+  void InitializeQuasiNewtonCorrection(CGeometry *donor_geometry, const CConfig *donor_config);
+
+  /*!
+    * \brief Get the values to be transferred from the donor solution.
+    * \param[in] DonorData - Data container from which the values will be read.
+    * \param[in] TargetData - Data container to which the values will be written.
+    * \param[in] nVertex - Number of vertices on the donor side.
+    * \param[in] nVar - Number of variables.
+    */
+  template <class DonorData, class TargetData>
+  void SetAllValues(DonorData& donor, TargetData& target, unsigned long nVertex, unsigned short nVar) {
+
+    unsigned long index = 0;
+    for(auto iVertex = 0u; iVertex < nVertex; iVertex++) {
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        // if (iVertex * nVar + iVar >= donor.size()) {}
+        target(iVertex, iVar) = donor(iVertex, iVar);
+        index++;
+      }
+    }
+  }
 
   /*!
    * \brief Interpolate data and broadcast it into all processors, for nonmatching meshes.
