@@ -210,21 +210,22 @@ bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2doubl
 }
 
 void CNSVariable::SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel) {
+  if (nSecondaryVar == 0) return;
 
-    /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
+  /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
 
-    SetdPdrho_e( iPoint, FluidModel->GetdPdrho_e() );
-    SetdPde_rho( iPoint, FluidModel->GetdPde_rho() );
+  SetdPdrho_e( iPoint, FluidModel->GetdPdrho_e() );
+  SetdPde_rho( iPoint, FluidModel->GetdPde_rho() );
 
-    SetdTdrho_e( iPoint, FluidModel->GetdTdrho_e() );
-    SetdTde_rho( iPoint, FluidModel->GetdTde_rho() );
+  SetdTdrho_e( iPoint, FluidModel->GetdTdrho_e() );
+  SetdTde_rho( iPoint, FluidModel->GetdTde_rho() );
 
-    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+  /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
 
-    Setdmudrho_T( iPoint, FluidModel->Getdmudrho_T() );
-    SetdmudT_rho( iPoint, FluidModel->GetdmudT_rho() );
+  Setdmudrho_T( iPoint, FluidModel->Getdmudrho_T() );
+  SetdmudT_rho( iPoint, FluidModel->GetdmudT_rho() );
 
-    Setdktdrho_T( iPoint, FluidModel->Getdktdrho_T() );
-    SetdktdT_rho( iPoint, FluidModel->GetdktdT_rho() );
+  Setdktdrho_T( iPoint, FluidModel->Getdktdrho_T() );
+  SetdktdT_rho( iPoint, FluidModel->GetdktdT_rho() );
 
 }
