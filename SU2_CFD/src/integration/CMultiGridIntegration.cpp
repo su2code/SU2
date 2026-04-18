@@ -131,19 +131,43 @@ void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
 
 void CMultiGridIntegration::adaptProlongationDamping(CConfig* config) {
   SU2_ZONE_SCOPED
-  /*--- Post-smoothing directly measures whether the corrected fine-grid solution
-   *    is well-behaved after prolongation.  If it exits early, increase damping.
-   *    If it stagnates at max iters, decrease damping. ---*/
+  /*--- Adapt the prolongation damping based on actual post-smoothing LinSysRes reduction.
+   *    Scale up  if every configured post-smooth level reduces LinSysRes by >1%
+   *               (post-smoothing is genuinely effective → allow more coarse correction).
+   *    Scale down if any configured level shows no reduction
+   *               (post-smoothing is failing to heal the prolongated correction).
+   *    This allows the factor to recover after it was driven low during transients. ---*/
   const auto& mgOpts = config->GetMGOptions();
   const unsigned short nMGLevels = config->GetnMGLevels();
   if (nMGLevels == 0) return;
-  adaptMGDampingFactor(
-    lastPostSmoothIters,
-    lastPostSmoothProgress,
-    [&mgOpts](unsigned short lvl){ return mgOpts.MG_PostSmooth[lvl]; },
-    /*levelStart=*/0, static_cast<unsigned short>(nMGLevels - 1),
-    [config](){ return config->GetDamp_Correc_Prolong(); },
-    [config](su2double v){ config->SetDamp_Correc_Prolong(v); });
+
+  constexpr su2double SCALE_DOWN = 0.99;
+  constexpr su2double SCALE_UP   = 1.01;
+  constexpr su2double CLAMP_MIN  = 0.1;
+  constexpr su2double CLAMP_MAX  = 0.95;
+  constexpr passivedouble UP_TOL = 0.01;  // >1% LinSysRes reduction required for scale-up
+
+  int all_reducing = 1;  // true if every configured level reduces RMS by > UP_TOL
+  int any_stagnant = 0;  // true if any configured level fails to reduce RMS at all
+  int inspected = 0;
+
+  for (unsigned short lvl = 0; lvl < nMGLevels; ++lvl) {
+    if (mgOpts.MG_PostSmooth[lvl] == 0) continue;
+    ++inspected;
+    const passivedouble rms0 = lastPostSmoothRMS[lvl][0];
+    const passivedouble rms1 = lastPostSmoothRMS[lvl][1];
+    if (rms0 <= 0.0) { all_reducing = 0; continue; }
+    const passivedouble reduction = 1.0 - rms1 / rms0;
+    if (reduction <= 0.0) any_stagnant = 1;
+    if (reduction <  UP_TOL) all_reducing = 0;
+  }
+  if (inspected == 0) return;
+
+  su2double factor = config->GetDamp_Correc_Prolong();
+  if (any_stagnant)      factor *= SCALE_DOWN;
+  else if (all_reducing) factor *= SCALE_UP;
+  factor = max(CLAMP_MIN, min(CLAMP_MAX, factor));
+  config->SetDamp_Correc_Prolong(factor);
 }
 
 passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsigned short iMesh,
@@ -648,6 +672,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   const bool compute_diagnostics = early_exit || mgOpts.MG_Smooth_Output;
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
+  passivedouble pre_prev_delta = 0.0;  // tracks previous step's solution delta for step_eff
   for (unsigned short iPreSmooth = 0; iPreSmooth < effectiveMax; iPreSmooth++) {
 
     /*--- Time and space integration ---*/
@@ -713,9 +738,10 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
 
         /*--- Step-efficiency: relative improvement over previous step (passive diagnostic). ---*/
         passivedouble step_eff = 0.0;
-        if (iPreSmooth > 0 && mg_last_smooth_rms > 0.0) {
-          step_eff = (mg_last_smooth_rms - current_delta) / mg_last_smooth_rms;
+        if (iPreSmooth > 0 && pre_prev_delta > 0.0) {
+          step_eff = (pre_prev_delta - current_delta) / pre_prev_delta;
         }
+        pre_prev_delta = current_delta;
 
         if (verbose) {
           std::cout << "  PreSmooth L" << iMesh << " step " << iPreSmooth
@@ -728,8 +754,6 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
                  << current_delta / prevCyclePreDelta[iMesh];
           std::cout << std::defaultfloat << std::setprecision(6) << std::endl;
         }
-
-        mg_last_smooth_rms = current_delta;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
@@ -748,8 +772,8 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
                                    (final_pre_rms < lastPreSmoothRMS[iMesh][0]);
 
     if (compute_diagnostics) {
-      lastPreSmoothDelta[iMesh][1] = mg_last_smooth_rms;
-      prevCyclePreDelta[iMesh] = mg_initial_smooth_rms;
+      lastPreSmoothDelta[iMesh][1] = pre_prev_delta;
+      prevCyclePreDelta[iMesh] = lastPreSmoothDelta[iMesh][0];
     }
 
     /*--- Between-cycle ramp: adjust effective steps for the NEXT cycle based on
@@ -810,6 +834,8 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   const bool compute_diagnostics = early_exit || mgOpts.MG_Smooth_Output;
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
+  passivedouble post_initial_delta = 0.0;  // solution delta at first post-smooth step
+  passivedouble post_prev_delta = 0.0;     // tracks previous step's solution delta for step_eff
 
   /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
   for (unsigned short iPostSmooth = 0; iPostSmooth < effectiveMax; iPostSmooth++) {
@@ -866,15 +892,16 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
         const passivedouble current_delta = ComputeSolutionDeltaRMS(solver_fine, geometry_fine);
 
         if (iPostSmooth == 0) {
-          mg_initial_smooth_rms = current_delta;
+          post_initial_delta = current_delta;
           lastPostSmoothDelta[iMesh][0] = current_delta;
         }
 
         /*--- Step-efficiency: relative improvement over previous step (passive diagnostic). ---*/
         passivedouble step_eff = 0.0;
-        if (iPostSmooth > 0 && mg_last_smooth_rms > 0.0) {
-          step_eff = (mg_last_smooth_rms - current_delta) / mg_last_smooth_rms;
+        if (iPostSmooth > 0 && post_prev_delta > 0.0) {
+          step_eff = (post_prev_delta - current_delta) / post_prev_delta;
         }
+        post_prev_delta = current_delta;
 
         if (verbose) {
           std::cout << "  PostSmooth L" << iMesh << " step " << iPostSmooth
@@ -887,8 +914,6 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
                  << current_delta / prevCyclePostDelta[iMesh];
           std::cout << std::defaultfloat << std::setprecision(6) << std::endl;
         }
-
-        mg_last_smooth_rms = current_delta;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
@@ -907,13 +932,13 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
                                     (final_post_rms < lastPostSmoothRMS[iMesh][0]);
 
     if (compute_diagnostics) {
-      lastPostSmoothDelta[iMesh][1] = mg_last_smooth_rms;
-      prevCyclePostDelta[iMesh] = mg_initial_smooth_rms;
+      lastPostSmoothDelta[iMesh][1] = post_prev_delta;
+      prevCyclePostDelta[iMesh] = post_initial_delta;
     }
 
     /*--- Between-cycle ramp: adjust effective steps for the NEXT cycle. ---*/
-    if (mgOpts.MG_Smooth_EarlyExit && compute_diagnostics && mg_initial_smooth_rms > 0.0) {
-      const passivedouble total_reduction = 1.0 - mg_last_smooth_rms / mg_initial_smooth_rms;
+    if (mgOpts.MG_Smooth_EarlyExit && compute_diagnostics && lastPostSmoothRMS[iMesh][0] > 0.0) {
+      const passivedouble total_reduction = 1.0 - lastPostSmoothRMS[iMesh][1] / lastPostSmoothRMS[iMesh][0];
       constexpr passivedouble RAMP_DOWN_TOL = 0.05;
       constexpr passivedouble RAMP_UP_TOL  = 0.20;
       if (total_reduction < RAMP_DOWN_TOL) {
