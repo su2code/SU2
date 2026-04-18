@@ -65,6 +65,7 @@ void CSysSolve_b<ScalarType>::Solve_b(const su2double::Real* x, su2double::Real*
 
   solver->Solve_b(*Jacobian, *LinSysRes_b, *LinSysSol_b, geometry, config, false);
 
+  SU2_OMP_BARRIER
   SU2_OMP_FOR_STAT(roundUpDiv(n, omp_get_num_threads()))
   for (unsigned long i = 0; i < n; i++) {
     x_b[i] = SU2_TYPE::GetValue((*LinSysSol_b)[i]);
