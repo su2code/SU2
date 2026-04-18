@@ -114,44 +114,6 @@ inline passivedouble ComputeSolutionDeltaRMS(const CSolver* solver,
   return sqrt(global_val / (nPtGlobal * nVar));
 }
 
-/*!
- * \brief Compute RMS of the local variance of the residual field (LinSysRes).
- *        Measures the oscillatory / high-frequency content of the residual:
- *        for each interior point i, Var_i = (1/nNeigh) sum_{j in N(i)} (R_j - R_i)^2
- *        then returns sqrt( mean_i( sum_iVar Var_i ) ).
- *        Must be called from master-only context (uses MPI_Allreduce).
- */
-inline passivedouble ComputeResidualLocalVariance(const CSolver* solver,
-                                                  const CGeometry* geometry) {
-  const unsigned short nVar = solver->GetnVar();
-  const unsigned long nPtDomain = geometry->GetnPointDomain();
-
-  passivedouble local_sum = 0.0;
-  for (auto iPoint = 0ul; iPoint < nPtDomain; iPoint++) {
-    const auto nNeigh = geometry->nodes->GetnPoint(iPoint);
-    if (nNeigh == 0) continue;
-    const passivedouble inv_nNeigh = 1.0 / nNeigh;
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      const passivedouble Ri = SU2_TYPE::GetValue(solver->LinSysRes(iPoint, iVar));
-      passivedouble var_i = 0.0;
-      for (auto iNeigh = 0u; iNeigh < nNeigh; ++iNeigh) {
-        const auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
-        const passivedouble Rj = SU2_TYPE::GetValue(solver->LinSysRes(jPoint, iVar));
-        const passivedouble diff = Rj - Ri;
-        var_i += diff * diff;
-      }
-      local_sum += var_i * inv_nNeigh;
-    }
-  }
-
-  passivedouble global_val = 0.0;
-  SU2_MPI::Allreduce(&local_sum, &global_val, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-
-  const auto nPtGlobal = geometry->GetGlobal_nPointDomain();
-  if (nPtGlobal == 0) return 0.0;
-  return sqrt(global_val / (nPtGlobal * nVar));
-}
-
 }
 
 void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
@@ -381,8 +343,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       lastPreSmoothRMS[i][0] = lastPreSmoothRMS[i][1] = 0.0;
       lastPostSmoothRMS[i][0] = lastPostSmoothRMS[i][1] = 0.0;
       lastCorrecSmoothRMS[i][0] = lastCorrecSmoothRMS[i][1] = 0.0;
-      lastPreSmoothOscErr[i][0] = lastPreSmoothOscErr[i][1] = 0.0;
-      lastPostSmoothOscErr[i][0] = lastPostSmoothOscErr[i][1] = 0.0;
     }
     /*--- Initialize effective max steps from config on first call. ---*/
     if (!effectiveMaxStepsInitialized) {
@@ -526,15 +486,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       table << "Post-delta";
       for (unsigned short i = 0; i < nMGLevels; ++i)
         table << deltaStr(lastPostSmoothDelta[i][0], lastPostSmoothDelta[i][1]);
-      table << "-";
-
-      /*--- Oscillatory error: RMS of local variance of the residual (initial->final). ---*/
-      table << "Pre-osc";
-      for (unsigned short i = 0; i <= nMGLevels; ++i)
-        table << deltaStr(lastPreSmoothOscErr[i][0], lastPreSmoothOscErr[i][1]);
-      table << "Post-osc";
-      for (unsigned short i = 0; i < nMGLevels; ++i)
-        table << deltaStr(lastPostSmoothOscErr[i][0], lastPostSmoothOscErr[i][1]);
       table << "-";
 
       /*--- Ramp state: effective max steps per level. ---*/
@@ -755,11 +706,9 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
     if (compute_diagnostics) {
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
         const passivedouble current_delta = ComputeSolutionDeltaRMS(solver_fine, geometry_fine);
-        const passivedouble osc_err = ComputeResidualLocalVariance(solver_fine, geometry_fine);
 
         if (iPreSmooth == 0) {
           lastPreSmoothDelta[iMesh][0] = current_delta;
-          lastPreSmoothOscErr[iMesh][0] = osc_err;
         }
 
         /*--- Step-efficiency: relative improvement over previous step (passive diagnostic). ---*/
@@ -771,8 +720,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
         if (verbose) {
           std::cout << "  PreSmooth L" << iMesh << " step " << iPreSmooth
                << "/" << effectiveMax << " (cfg=" << nPreSmooth << "): "
-               << "delta=" << std::scientific << std::setprecision(4) << current_delta
-               << "  osc=" << osc_err;
+               << "delta=" << std::scientific << std::setprecision(4) << current_delta;
           if (iPreSmooth > 0)
             std::cout << "  step_eff=" << std::fixed << std::setprecision(4) << step_eff;
           if (iPreSmooth == 0 && prevCyclePreDelta[iMesh] > 0.0)
@@ -782,7 +730,6 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
         }
 
         mg_last_smooth_rms = current_delta;
-        lastPreSmoothOscErr[iMesh][1] = osc_err;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }
@@ -917,12 +864,10 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
     if (compute_diagnostics) {
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
         const passivedouble current_delta = ComputeSolutionDeltaRMS(solver_fine, geometry_fine);
-        const passivedouble osc_err = ComputeResidualLocalVariance(solver_fine, geometry_fine);
 
         if (iPostSmooth == 0) {
           mg_initial_smooth_rms = current_delta;
           lastPostSmoothDelta[iMesh][0] = current_delta;
-          lastPostSmoothOscErr[iMesh][0] = osc_err;
         }
 
         /*--- Step-efficiency: relative improvement over previous step (passive diagnostic). ---*/
@@ -934,8 +879,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
         if (verbose) {
           std::cout << "  PostSmooth L" << iMesh << " step " << iPostSmooth
                << "/" << effectiveMax << " (cfg=" << nPostSmooth << "): "
-               << "delta=" << std::scientific << std::setprecision(4) << current_delta
-               << "  osc=" << osc_err;
+               << "delta=" << std::scientific << std::setprecision(4) << current_delta;
           if (iPostSmooth > 0)
             std::cout << "  step_eff=" << std::fixed << std::setprecision(4) << step_eff;
           if (iPostSmooth == 0 && prevCyclePostDelta[iMesh] > 0.0)
@@ -945,7 +889,6 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
         }
 
         mg_last_smooth_rms = current_delta;
-        lastPostSmoothOscErr[iMesh][1] = osc_err;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
     }

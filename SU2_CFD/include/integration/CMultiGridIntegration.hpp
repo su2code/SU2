@@ -330,10 +330,4 @@ private:
   unsigned short consecutivePostEarlyExit[MAX_MG_LEVELS+1] = {};
   static constexpr unsigned short RAMP_HYSTERESIS = 3;
 
-  /*--- Per-level oscillatory error: RMS of local variance of the residual (LinSysRes).
-   *    [0] = after first smoothing step, [1] = after last step.
-   *    Measures high-frequency content of the residual field. ---*/
-  passivedouble lastPreSmoothOscErr[MAX_MG_LEVELS+1][2] = {};
-  passivedouble lastPostSmoothOscErr[MAX_MG_LEVELS+1][2] = {};
-
 };
