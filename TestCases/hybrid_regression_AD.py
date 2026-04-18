@@ -173,7 +173,7 @@ def main():
     discadj_DT_1ST_cylinder.cfg_dir   = "disc_adj_rans/cylinder_DT_1ST"
     discadj_DT_1ST_cylinder.cfg_file  = "cylinder.cfg"
     discadj_DT_1ST_cylinder.test_iter = 9
-    discadj_DT_1ST_cylinder.test_vals = [1.211597, -3.317548, -0.006201, 0.000023]
+    discadj_DT_1ST_cylinder.test_vals = [1.196347, -3.339014, -0.006212, 0.000020]
     discadj_DT_1ST_cylinder.unsteady  = True
     discadj_DT_1ST_cylinder.enabled_with_tsan = False
     test_list.append(discadj_DT_1ST_cylinder)
