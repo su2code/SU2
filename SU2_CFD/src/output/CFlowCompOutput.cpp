@@ -288,6 +288,10 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Enthalpy", "LIMITER", "Limiter value of the enthalpy");
   }
 
+  if (config->GetKind_Upwind_Flow() == UPWIND::MSW) {
+    AddVolumeOutput("MSW_SENSOR", "MSW_Sensor", "LIMITER", "Value of sensor used to switch from SW to MSW");
+  }
+
   SetVolumeOutputFieldsScalarLimiter(config);
 
   SetVolumeOutputFieldsScalarSource(config);
@@ -376,6 +380,10 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
       SetVolumeOutputValue("LIMITER_DENSITY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+2));
       SetVolumeOutputValue("LIMITER_ENTHALPY", iPoint, Node_Flow->GetLimiter_Primitive(iPoint, nDim+3));
     }
+  }
+
+  if (config->GetKind_Upwind_Flow() == UPWIND::MSW) {
+    SetVolumeOutputValue("MSW_SENSOR", iPoint, Node_Flow->GetSensor(iPoint));
   }
 
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){

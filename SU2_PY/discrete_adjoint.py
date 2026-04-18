@@ -26,7 +26,7 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 import os, sys, copy
-from optparse import OptionParser
+import argparse
 
 sys.path.append(os.environ["SU2_RUN"])
 import SU2
@@ -39,11 +39,11 @@ import SU2
 def main():
 
     # Command Line Options
-    parser = OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser(description="SU2 discrete adjoint computation.")
+    parser.add_argument(
         "-f", "--file", dest="filename", help="read config from FILE", metavar="FILE"
     )
-    parser.add_option(
+    parser.add_argument(
         "-n",
         "--partitions",
         dest="partitions",
@@ -51,7 +51,7 @@ def main():
         help="number of PARTITIONS",
         metavar="PARTITIONS",
     )
-    parser.add_option(
+    parser.add_argument(
         "-s",
         "--step",
         dest="step",
@@ -59,7 +59,7 @@ def main():
         help="DOT finite difference STEP",
         metavar="STEP",
     )
-    parser.add_option(
+    parser.add_argument(
         "-v",
         "--validate",
         dest="validate",
@@ -67,7 +67,7 @@ def main():
         help="Validate the gradient using direct diff. mode",
         metavar="VALIDATION",
     )
-    parser.add_option(
+    parser.add_argument(
         "-z",
         "--zones",
         dest="nzones",
@@ -75,7 +75,7 @@ def main():
         help="Number of Zones",
         metavar="ZONES",
     )
-    parser.add_option(
+    parser.add_argument(
         "-m",
         "--mode",
         dest="mode",
@@ -84,7 +84,7 @@ def main():
         metavar="MODE",
     )
 
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     options.partitions = int(options.partitions)
     options.step = float(options.step)
     options.validate = options.validate.upper() == "TRUE"

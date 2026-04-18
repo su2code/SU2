@@ -1102,6 +1102,21 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 }
 
 /*!
+ * \brief Structure containing multigrid options.
+ */
+struct CMGOptions {
+  su2double MG_Smooth_Res_Threshold{0.0}; /*!< \brief RMS reduction threshold for MG smoothing early exit. */
+  su2double MG_Smooth_Coeff{0.0};         /*!< \brief Jacobi smoother coefficient for coarse-grid correction. */
+  unsigned long MG_Min_MeshSize{0};       /*!< \brief Minimum CVs on coarsest MG level. */
+  std::vector<unsigned short> MG_PreSmooth;    /*!< \brief Multigrid pre-smoothing iterations per level. */
+  std::vector<unsigned short> MG_PostSmooth;   /*!< \brief Multigrid post-smoothing iterations per level. */
+  std::vector<unsigned short> MG_CorrecSmooth; /*!< \brief Multigrid Jacobi correction-smoothing per level. */
+  bool MG_Smooth_EarlyExit{false};        /*!< \brief Enable early exit for MG smoothing iterations. */
+  bool MG_Smooth_Output{false};           /*!< \brief Output compact per-cycle smoothing summary. */
+  bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
+};
+
+/*!
  * \brief SST rough-wall boundary conditions Options
  */
 enum class ROUGHSST_MODEL {
@@ -1345,8 +1360,6 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
  * \brief Structure containing parsed options for data-driven fluid model.
  */
 struct DataDrivenFluid_ParsedOptions {
-  su2double rho_init_custom = -1;     /*!< \brief Optional initial guess for density in inverse look-up operations. */
-  su2double e_init_custom = -1;       /*!< \brief Optional initial guess for static energy in inverse look-up operations.*/
   su2double Newton_relaxation = 1.0;  /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
   bool use_PINN = false;               /*!< \brief Use physics-informed method for data-driven fluid modeling. */
   ENUM_DATADRIVEN_METHOD interp_algorithm_type = ENUM_DATADRIVEN_METHOD::MLP; /*!< \brief Interpolation algorithm used for data-driven fluid model. */
@@ -2283,17 +2296,17 @@ static const MapType<std::string, JUMP_DEFINITION> Jump_Map = {
 /*!
  * \brief Type of multigrid cycle
  */
-enum MG_CYCLE {
-  V_CYCLE = 0,        /*!< \brief V cycle. */
-  W_CYCLE = 1,        /*!< \brief W cycle. */
-  FULLMG_CYCLE = 2    /*!< \brief FullMG cycle. */
-};
-static const MapType<std::string, MG_CYCLE> MG_Cycle_Map = {
-  MakePair("V_CYCLE", V_CYCLE)
-  MakePair("W_CYCLE", W_CYCLE)
-  MakePair("FULLMG_CYCLE", FULLMG_CYCLE)
+enum class MG_CYCLE {
+  V,  /*!< \brief V-cycle multigrid solver. */
+  W,  /*!< \brief W-cycle multigrid solver. */
+  FULL, /*!< \brief Full multigrid (FMG) solver. */
 };
 
+static const MapType<std::string, MG_CYCLE> MG_Cycle_Map = {
+  MakePair("V_CYCLE", MG_CYCLE::V)
+  MakePair("W_CYCLE", MG_CYCLE::W)
+  MakePair("FULLMG_CYCLE", MG_CYCLE::FULL)
+};
 /*!
  * \brief Types of design parameterizations
  */

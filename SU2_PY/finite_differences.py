@@ -26,7 +26,7 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 import os, sys
-from optparse import OptionParser
+import argparse
 
 sys.path.append(os.environ["SU2_RUN"])
 import SU2
@@ -38,11 +38,11 @@ import SU2
 
 def main():
 
-    parser = OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser(description="SU2 finite differences computation.")
+    parser.add_argument(
         "-f", "--file", dest="filename", help="read config from FILE", metavar="FILE"
     )
-    parser.add_option(
+    parser.add_argument(
         "-n",
         "--partitions",
         dest="partitions",
@@ -50,7 +50,7 @@ def main():
         help="number of PARTITIONS",
         metavar="PARTITIONS",
     )
-    parser.add_option(
+    parser.add_argument(
         "-q",
         "--quiet",
         dest="quiet",
@@ -58,7 +58,7 @@ def main():
         help="output QUIET to log files",
         metavar="QUIET",
     )
-    parser.add_option(
+    parser.add_argument(
         "-z",
         "--zones",
         dest="nzones",
@@ -67,7 +67,7 @@ def main():
         metavar="ZONES",
     )
 
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     options.partitions = int(options.partitions)
     options.quiet = options.quiet.upper() == "TRUE"
     options.nzones = int(options.nzones)
