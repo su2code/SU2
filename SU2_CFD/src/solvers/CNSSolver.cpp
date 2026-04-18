@@ -158,8 +158,9 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
 
-    bool physical = static_cast<CNSVariable*>(nodes)->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel());
-    nodes->SetSecondaryVar(iPoint, GetFluidModel());
+    auto* ns_nodes = static_cast<CNSVariable*>(nodes);
+    bool physical = ns_nodes->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel());
+    ns_nodes->SetSecondaryVar(iPoint, GetFluidModel());
 
     /*--- Check for non-realizable states for reporting. ---*/
 

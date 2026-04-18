@@ -108,14 +108,12 @@ protected:
   CVectorOfMatrix Hessian;        /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
   su2matrix<double> Metric;       /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
 
- protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
   unsigned long nVar = 0;        /*!< \brief Number of variables of the problem. */
   unsigned long nPrimVar = 0;      /*!< \brief Number of primitive variables. */
   unsigned long nPrimVarGrad = 0;    /*!< \brief Number of primitives for which a gradient is computed. */
   unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
-  unsigned long nSecondaryVarGrad = 0;   /*!< \brief Number of secondaries for which a gradient is computed. */
   unsigned long nAuxVar = 0; /*!< \brief Number of auxiliary variables. */
   unsigned long nSymMat = 0;        /*!< \brief Number of symmetric matrix componenents for Hessian and metric tensor. */
 
