@@ -205,60 +205,32 @@ bool CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<Sc
     }
   };
 
-  /*--- Parameter for reorthonormalization ---*/
+  /*--- Classical Gram Schmidt twice is faster and at least as accurate
+   * as Modified Gram Schmidt. ---*/
 
-  const ScalarType reorth = 0.98;
+  const auto h_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
+  LinearCombination(
+      shared_hsbg, i + 1, w, [&h_i](int k) { return -h_i(0, k); }, w[i + 1], true);
 
-  /*--- Get the norm of the vector being orthogonalized, and find the
-  threshold for re-orthogonalization ---*/
+  const auto& dh_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
+  LinearCombination(
+      shared_hsbg, i + 1, w, [&dh_i](int k) { return -dh_i(0, k); }, w[i + 1], true);
 
-  ScalarType nrm = w[i + 1].squaredNorm();
-  ScalarType thr = nrm * reorth;
+  for (int k = 0; k < i + 1; k++) SetHsbg(k, i, h_i(0, k) + dh_i(0, k));
 
-  /*--- The squared norm of w[i+1] <= 0 or is NaN: the input vector from
-       mat_vec is zero or contains NaN. Cannot proceed with orthogonalization. ---*/
+  /*--- The norm of w[i+1] is 0 or NaN: the input vector from mat_vec is
+   * zero or contains NaN. Cannot proceed with orthogonalization. ---*/
 
-  if ((nrm <= 0.0) || (nrm != nrm)) {
+  ScalarType nrm = w[i + 1].norm();
+
+  if (nrm <= 0.0 || nrm != nrm) {
     /*--- nrm is the result of a dot product, communications are implicitly handled. ---*/
     SetHsbg(i + 1, i, ScalarType(0));
     return false;
   }
 
-  /*--- Begin main Gram-Schmidt loop ---*/
-
-  for (int k = 0; k < i + 1; k++) {
-    ScalarType prod = w[i + 1].dot(w[k]);
-    ScalarType h_ki = prod;
-    w[i + 1] -= prod * w[k];
-
-    /*--- Check if reorthogonalization is necessary ---*/
-
-    if (prod * prod > thr) {
-      prod = w[i + 1].dot(w[k]);
-      h_ki += prod;
-      w[i + 1] -= prod * w[k];
-    }
-    SetHsbg(k, i, h_ki);
-
-    /*--- Update the norm and check its size ---*/
-
-    nrm -= pow(h_ki, 2);
-    nrm = max<ScalarType>(nrm, 0.0);
-    thr = nrm * reorth;
-  }
-
-  /*--- Test the resulting vector ---*/
-
-  nrm = w[i + 1].norm();
+  /*--- Normalize the resulting vector. ---*/
   SetHsbg(i + 1, i, nrm);
-
-  /*--- Return false if the resulting vector is zero or contains NaN, true otherwise. --- */
-  if ((nrm <= 0.0) || (nrm != nrm)) {
-    return false;
-  }
-
-  /*--- Scale the resulting vector ---*/
-
   w[i + 1] /= nrm;
 
   return true;
