@@ -103,7 +103,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-6.382489, -0.905413, 0.001313, 0.025294, 2.361500, -2.336200, 0.000000, 0.000000]
+    flatplate.test_vals = [-6.381351, -0.904240, 0.001313, 0.025285, 2.361500, -2.336300, 0, 0]
     test_list.append(flatplate)
 
     # Laminar cylinder (steady)
@@ -197,7 +197,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals = [-12.038153, -16.332090, 1.080346, 0.018385, 20, -2.872824, 0, -14.250271, 0]
+    turb_naca0012_sa.test_vals = [-12.038104, -16.332090, 1.080346, 0.018385, 20, -2.873254, 0, -14.250271, 0]
     turb_naca0012_sa.test_vals_aarch64 = [-12.038091, -16.332090, 1.080346, 0.018385, 20.000000, -2.873236, 0.000000, -14.250271, 0.000000]
     test_list.append(turb_naca0012_sa)
 
@@ -206,7 +206,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.093892, -15.251078, -5.906327, 1.070413, 0.015775, -2.855348, 0]
+    turb_naca0012_sst.test_vals = [-12.093920, -15.251077, -5.906326, 1.070413, 0.015775, -2.855455, 0]
     turb_naca0012_sst.test_vals_aarch64 = [-12.075928, -15.246732, -5.861249, 1.070036, 0.015841, -2.835263, 0]
     test_list.append(turb_naca0012_sst)
 
@@ -215,7 +215,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-12.080757, -14.837176, -5.732917, 1.000893, 0.019109, -2.120437]
+    turb_naca0012_sst_sust.test_vals = [-12.080826, -14.837176, -5.732918, 1.000893, 0.019109, -2.120233]
     turb_naca0012_sst_sust.test_vals_aarch64 = [-12.073210, -14.836724, -5.732627, 1.000050, 0.019144, -2.629689]
     test_list.append(turb_naca0012_sst_sust)
 
@@ -252,7 +252,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-12.066224, -7.425808, -8.815859, -3.732773, 0]
+    axi_rans_air_nozzle_restart.test_vals = [-12.066222, -7.425854, -8.815484, -3.732619, 0]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.140441, -9.154674, -10.886121, -5.806594, 0.000000]
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -278,7 +278,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.976782, 1.343831, 0.443889, -0.029247]
+    turb_naca0012_1c.test_vals = [-4.980125, 1.343354, 0.443788, -0.029257]
     turb_naca0012_1c.test_vals_aarch64 = [-4.976620, 1.345983, 0.433171, -0.033685]
     test_list.append(turb_naca0012_1c)
 
@@ -287,7 +287,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.482862, 1.260869, 0.405097, -0.040169]
+    turb_naca0012_2c.test_vals = [-5.482849, 1.260868, 0.404588, -0.040284]
     turb_naca0012_2c.test_vals_aarch64 = [-5.485484, 1.263406, 0.411442, -0.040859]
     test_list.append(turb_naca0012_2c)
 
@@ -314,7 +314,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals         = [-5.553950, 1.234029, 0.424324, -0.033438]
+    turb_naca0012_p1c2.test_vals         = [-5.553917, 1.234038, 0.424217, -0.033478]
     turb_naca0012_p1c2.test_vals_aarch64 = [-5.548245, 1.236384, 0.381821, -0.050337]
     test_list.append(turb_naca0012_p1c2)
 

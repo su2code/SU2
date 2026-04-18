@@ -67,12 +67,6 @@ int main(int argc, char *argv[]) {
 #endif
   SU2_MPI::Comm MPICommunicator = SU2_MPI::GetComm();
 
-  SU2_OMP_PARALLEL {
-    const std::string name = "Rank " + std::to_string(SU2_MPI::GetRank());
-    SU2_SET_THREAD_NAME(name.c_str())
-  }
-  END_SU2_OMP_PARALLEL
-
   /*--- Further initializations are placed in the constructor of CDriverBase, to ensure that they are also seen by the
    python wrapper. */
 

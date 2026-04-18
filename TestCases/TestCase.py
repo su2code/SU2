@@ -297,7 +297,7 @@ class TestCase:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
 
         if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+            print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
         if not start_solver and not with_tapetests:
             print('ERROR: The code was not able to get to the "Begin solver" section.')
@@ -628,7 +628,7 @@ class TestCase:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
 
         if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+            print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
         if not start_solver:
             print('ERROR: The code was not able to get to the "OBJFUN" section.')
@@ -770,7 +770,7 @@ class TestCase:
 
         if not with_tsan and not with_asan:
           if exceed_tol:
-              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+              print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
           if not start_solver:
               print('ERROR: The code was not able to get to the "OBJFUN" section.')
@@ -901,7 +901,7 @@ class TestCase:
 
         if not with_tsan and not with_asan:
           if exceed_tol:
-              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%e'%self.tol)
+              print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
           if not start_solver:
               print('ERROR: The code was not able to get to the "Begin solver" section.')
