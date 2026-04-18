@@ -691,10 +691,12 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   const unsigned short nPreSmooth = mgOpts.MG_PreSmooth[iMesh];
   const unsigned short effectiveMax = effectivePreMaxSteps[iMesh];
   const unsigned long timeIter = config->GetTimeIter();
+  const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (effectiveMax > 1);
   const bool verbose = mgOpts.MG_Smooth_Output && (SU2_MPI::GetRank() == MASTER_NODE);
   /*--- compute_diagnostics is config-derived → identical on all ranks → MPI-safe. ---*/
-  const bool compute_diagnostics = mgOpts.MG_Smooth_EarlyExit || mgOpts.MG_Smooth_Output;
+  const bool compute_diagnostics = early_exit || mgOpts.MG_Smooth_Output;
 
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
   for (unsigned short iPreSmooth = 0; iPreSmooth < effectiveMax; iPreSmooth++) {
 
     /*--- Time and space integration ---*/
@@ -722,7 +724,9 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       /*--- Capture initial RMS after the very first residual evaluation (for output table). ---*/
       if (iPreSmooth == 0 && iRKStep == 0) {
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-          lastPreSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver_fine);
+          const passivedouble initial_rms = ComputeLinSysResRMS(solver_fine);
+          lastPreSmoothRMS[iMesh][0] = initial_rms;
+          if (early_exit) mg_initial_smooth_rms = initial_rms;
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
       }
@@ -731,7 +735,21 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
     }
 
-    /*--- Per-step diagnostics (no mid-loop exit).
+    /*--- Early exit: check if RMS has dropped sufficiently. ---*/
+    if (early_exit) {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        const passivedouble current_rms = ComputeLinSysResRMS(solver_fine);
+        mg_last_smooth_rms = current_rms;
+        if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
+          lastPreSmoothIters[iMesh] = iPreSmooth + 1;
+          mg_early_exit_flag = true;
+        }
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      if (mg_early_exit_flag) break;
+    }
+
+    /*--- Per-step diagnostics.
      *    compute_diagnostics is config-derived (same on all ranks), so all MPI ranks
      *    enter consistently and the MPI_Allreduce calls are safe. ---*/
     if (compute_diagnostics) {
@@ -740,7 +758,6 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
         const passivedouble osc_err = ComputeResidualLocalVariance(solver_fine, geometry_fine);
 
         if (iPreSmooth == 0) {
-          mg_initial_smooth_rms = current_delta;
           lastPreSmoothDelta[iMesh][0] = current_delta;
           lastPreSmoothOscErr[iMesh][0] = osc_err;
         }
@@ -772,11 +789,16 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   }
 
   /*--- Record final RMS and progress flag. ---*/
-  const passivedouble final_pre_rms = ComputeLinSysResRMS(solver_fine);
+  passivedouble final_pre_rms = mg_last_smooth_rms;
+  if (!(early_exit && mg_early_exit_flag)) {
+    final_pre_rms = ComputeLinSysResRMS(solver_fine);
+  }
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    mg_last_smooth_rms = final_pre_rms;
     lastPreSmoothRMS[iMesh][1] = final_pre_rms;
-    lastPreSmoothIters[iMesh] = effectiveMax;
-    lastPreSmoothProgress[iMesh] = (final_pre_rms < lastPreSmoothRMS[iMesh][0]);
+    if (!mg_early_exit_flag) lastPreSmoothIters[iMesh] = effectiveMax;
+    lastPreSmoothProgress[iMesh] = mg_early_exit_flag ||
+                                   (final_pre_rms < lastPreSmoothRMS[iMesh][0]);
 
     if (compute_diagnostics) {
       lastPreSmoothDelta[iMesh][1] = mg_last_smooth_rms;
@@ -836,8 +858,11 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   const unsigned short nPostSmooth = mgOpts.MG_PostSmooth[iMesh];
   const unsigned short effectiveMax = effectivePostMaxSteps[iMesh];
   const unsigned long timeIter = config->GetTimeIter();
+  const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (effectiveMax > 1);
   const bool verbose = mgOpts.MG_Smooth_Output && (SU2_MPI::GetRank() == MASTER_NODE);
-  const bool compute_diagnostics = mgOpts.MG_Smooth_EarlyExit || mgOpts.MG_Smooth_Output;
+  const bool compute_diagnostics = early_exit || mgOpts.MG_Smooth_Output;
+
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
 
   /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
   for (unsigned short iPostSmooth = 0; iPostSmooth < effectiveMax; iPostSmooth++) {
@@ -862,7 +887,9 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       /*--- Capture initial RMS after the very first residual evaluation (for output table). ---*/
       if (iPostSmooth == 0 && iRKStep == 0) {
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-          lastPostSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver_fine);
+          const passivedouble initial_rms = ComputeLinSysResRMS(solver_fine);
+          lastPostSmoothRMS[iMesh][0] = initial_rms;
+          if (early_exit) mg_initial_smooth_rms = initial_rms;
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
       }
@@ -872,7 +899,21 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
     }
 
-    /*--- Per-step diagnostics (no mid-loop exit). ---*/
+    /*--- Early exit: check if RMS has dropped sufficiently. ---*/
+    if (early_exit) {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        const passivedouble current_rms = ComputeLinSysResRMS(solver_fine);
+        mg_last_smooth_rms = current_rms;
+        if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
+          lastPostSmoothIters[iMesh] = iPostSmooth + 1;
+          mg_early_exit_flag = true;
+        }
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      if (mg_early_exit_flag) break;
+    }
+
+    /*--- Per-step diagnostics. ---*/
     if (compute_diagnostics) {
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
         const passivedouble current_delta = ComputeSolutionDeltaRMS(solver_fine, geometry_fine);
@@ -911,11 +952,16 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   }
 
   /*--- Record final RMS after post-smoothing. ---*/
-  const passivedouble final_post_rms = ComputeLinSysResRMS(solver_fine);
+  passivedouble final_post_rms = mg_last_smooth_rms;
+  if (!(early_exit && mg_early_exit_flag)) {
+    final_post_rms = ComputeLinSysResRMS(solver_fine);
+  }
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    mg_last_smooth_rms = final_post_rms;
     lastPostSmoothRMS[iMesh][1] = final_post_rms;
-    lastPostSmoothIters[iMesh] = effectiveMax;
-    lastPostSmoothProgress[iMesh] = (final_post_rms < lastPostSmoothRMS[iMesh][0]);
+    if (!mg_early_exit_flag) lastPostSmoothIters[iMesh] = effectiveMax;
+    lastPostSmoothProgress[iMesh] = mg_early_exit_flag ||
+                                    (final_post_rms < lastPostSmoothRMS[iMesh][0]);
 
     if (compute_diagnostics) {
       lastPostSmoothDelta[iMesh][1] = mg_last_smooth_rms;

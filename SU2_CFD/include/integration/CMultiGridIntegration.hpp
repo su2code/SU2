@@ -278,6 +278,7 @@ private:
   unsigned long last_reset_iter = std::numeric_limits<unsigned long>::max();
 
   /*--- Smoothing diagnostics state (shared across OMP threads via master write + barrier). ---*/
+  bool mg_early_exit_flag = false;             /*!< \brief Shared flag for early exit across OMP threads. */
   passivedouble mg_initial_smooth_rms = 0.0;  /*!< \brief Initial delta RMS before current smoothing phase. */
   passivedouble mg_last_smooth_rms = 0.0;     /*!< \brief Last computed delta RMS; cached to avoid redundant Allreduce. */
 
