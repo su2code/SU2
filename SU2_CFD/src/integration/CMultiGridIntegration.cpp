@@ -86,6 +86,72 @@ inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
   }
   return sqrt(result / solver->GetnVar());
 }
+
+/*!
+ * \brief Compute RMS of the solution change ||u_new - u_old|| over the domain.
+ *        Requires Set_OldSolution() to have been called before the smoothing step.
+ *        Must be called from master-only context (uses MPI_Allreduce).
+ */
+inline passivedouble ComputeSolutionDeltaRMS(const CSolver* solver,
+                                             const CGeometry* geometry) {
+  const unsigned short nVar = solver->GetnVar();
+  const unsigned long nPtDomain = geometry->GetnPointDomain();
+
+  passivedouble sum_sq = 0.0;
+  for (auto iPoint = 0ul; iPoint < nPtDomain; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      const passivedouble d = SU2_TYPE::GetValue(solver->GetNodes()->GetSolution(iPoint, iVar)
+                                                 - solver->GetNodes()->GetSolution_Old(iPoint, iVar));
+      sum_sq += d * d;
+    }
+  }
+
+  passivedouble global_val = 0.0;
+  SU2_MPI::Allreduce(&sum_sq, &global_val, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+  const auto nPtGlobal = geometry->GetGlobal_nPointDomain();
+  if (nPtGlobal == 0) return 0.0;
+  return sqrt(global_val / (nPtGlobal * nVar));
+}
+
+/*!
+ * \brief Compute RMS of the local variance of the residual field (LinSysRes).
+ *        Measures the oscillatory / high-frequency content of the residual:
+ *        for each interior point i, Var_i = (1/nNeigh) sum_{j in N(i)} (R_j - R_i)^2
+ *        then returns sqrt( mean_i( sum_iVar Var_i ) ).
+ *        Must be called from master-only context (uses MPI_Allreduce).
+ */
+inline passivedouble ComputeResidualLocalVariance(const CSolver* solver,
+                                                  const CGeometry* geometry) {
+  const unsigned short nVar = solver->GetnVar();
+  const unsigned long nPtDomain = geometry->GetnPointDomain();
+
+  passivedouble local_sum = 0.0;
+  for (auto iPoint = 0ul; iPoint < nPtDomain; iPoint++) {
+    const auto nNeigh = geometry->nodes->GetnPoint(iPoint);
+    if (nNeigh == 0) continue;
+    const passivedouble inv_nNeigh = 1.0 / nNeigh;
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      const passivedouble Ri = SU2_TYPE::GetValue(solver->LinSysRes(iPoint, iVar));
+      passivedouble var_i = 0.0;
+      for (auto iNeigh = 0u; iNeigh < nNeigh; ++iNeigh) {
+        const auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
+        const passivedouble Rj = SU2_TYPE::GetValue(solver->LinSysRes(jPoint, iVar));
+        const passivedouble diff = Rj - Ri;
+        var_i += diff * diff;
+      }
+      local_sum += var_i * inv_nNeigh;
+    }
+  }
+
+  passivedouble global_val = 0.0;
+  SU2_MPI::Allreduce(&local_sum, &global_val, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+  const auto nPtGlobal = geometry->GetGlobal_nPointDomain();
+  if (nPtGlobal == 0) return 0.0;
+  return sqrt(global_val / (nPtGlobal * nVar));
+}
+
 }
 
 void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
@@ -315,6 +381,16 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       lastPreSmoothRMS[i][0] = lastPreSmoothRMS[i][1] = 0.0;
       lastPostSmoothRMS[i][0] = lastPostSmoothRMS[i][1] = 0.0;
       lastCorrecSmoothRMS[i][0] = lastCorrecSmoothRMS[i][1] = 0.0;
+      lastPreSmoothOscErr[i][0] = lastPreSmoothOscErr[i][1] = 0.0;
+      lastPostSmoothOscErr[i][0] = lastPostSmoothOscErr[i][1] = 0.0;
+    }
+    /*--- Initialize effective max steps from config on first call. ---*/
+    if (!effectiveMaxStepsInitialized) {
+      for (unsigned short i = 0; i <= nMGLevels; ++i) {
+        effectivePreMaxSteps[i] = mgOpts.MG_PreSmooth[i];
+        effectivePostMaxSteps[i] = mgOpts.MG_PostSmooth[i];
+      }
+      effectiveMaxStepsInitialized = true;
     }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -415,7 +491,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       PrintingToolbox::CTablePrinter table(&std::cout);
       table.AddColumn("Smoother", 13);
       for (unsigned short i = 0; i <= nMGLevels; ++i)
-        table.AddColumn("Level " + std::to_string(i), 26);
+        table.AddColumn("Level " + std::to_string(i), 30);
       table.PrintHeader();
 
       /*--- Pre-smooth: defined on all levels 0..nMGLevels. ---*/
@@ -436,6 +512,43 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       for (unsigned short i = 0; i < nMGLevels; ++i)
         table << cellStr(lastCorrecSmoothIters[i], mgOptsZone.MG_CorrecSmooth[i],
                           lastCorrecSmoothRMS[i][0], lastCorrecSmoothRMS[i][1]);
+      table << "-";
+
+      /*--- Solution delta: ||u^{k+1}-u^k|| initial->final for pre/post smoothing. ---*/
+      auto deltaStr = [](passivedouble d0, passivedouble d1) -> std::string {
+        std::ostringstream ss;
+        ss << std::scientific << std::setprecision(2) << d0 << "->" << d1;
+        return ss.str();
+      };
+      table << "Pre-delta";
+      for (unsigned short i = 0; i <= nMGLevels; ++i)
+        table << deltaStr(lastPreSmoothDelta[i][0], lastPreSmoothDelta[i][1]);
+      table << "Post-delta";
+      for (unsigned short i = 0; i < nMGLevels; ++i)
+        table << deltaStr(lastPostSmoothDelta[i][0], lastPostSmoothDelta[i][1]);
+      table << "-";
+
+      /*--- Oscillatory error: RMS of local variance of the residual (initial->final). ---*/
+      table << "Pre-osc";
+      for (unsigned short i = 0; i <= nMGLevels; ++i)
+        table << deltaStr(lastPreSmoothOscErr[i][0], lastPreSmoothOscErr[i][1]);
+      table << "Post-osc";
+      for (unsigned short i = 0; i < nMGLevels; ++i)
+        table << deltaStr(lastPostSmoothOscErr[i][0], lastPostSmoothOscErr[i][1]);
+      table << "-";
+
+      /*--- Ramp state: effective max steps per level. ---*/
+      auto rampStr = [](unsigned short eff, unsigned short cfg) -> std::string {
+        std::ostringstream ss;
+        ss << eff << "/" << cfg;
+        return ss.str();
+      };
+      table << "Pre-ramp";
+      for (unsigned short i = 0; i <= nMGLevels; ++i)
+        table << rampStr(effectivePreMaxSteps[i], mgOptsZone.MG_PreSmooth[i]);
+      table << "Post-ramp";
+      for (unsigned short i = 0; i < nMGLevels; ++i)
+        table << rampStr(effectivePostMaxSteps[i], mgOptsZone.MG_PostSmooth[i]);
       table << "-";
 
       table.PrintFooter();
@@ -576,12 +689,13 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   const auto& mgOpts = config->GetMGOptions();
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
   const unsigned short nPreSmooth = mgOpts.MG_PreSmooth[iMesh];
+  const unsigned short effectiveMax = effectivePreMaxSteps[iMesh];
   const unsigned long timeIter = config->GetTimeIter();
-  const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPreSmooth > 1);
+  const bool verbose = mgOpts.MG_Smooth_Output && (SU2_MPI::GetRank() == MASTER_NODE);
+  /*--- compute_diagnostics is config-derived → identical on all ranks → MPI-safe. ---*/
+  const bool compute_diagnostics = mgOpts.MG_Smooth_EarlyExit || mgOpts.MG_Smooth_Output;
 
-  /*--- Reset the shared early-exit flag (master only). ---*/
-  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
-  for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
+  for (unsigned short iPreSmooth = 0; iPreSmooth < effectiveMax; iPreSmooth++) {
 
     /*--- Time and space integration ---*/
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
@@ -605,13 +719,10 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
 
-      /*--- Capture initial RMS after the very first residual evaluation.
-       *    This is the earliest point where LinSysRes = R(u_current) (not stale). ---*/
+      /*--- Capture initial RMS after the very first residual evaluation (for output table). ---*/
       if (iPreSmooth == 0 && iRKStep == 0) {
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-          const passivedouble initial_rms = ComputeLinSysResRMS(solver_fine);
-          lastPreSmoothRMS[iMesh][0] = initial_rms;
-          if (early_exit) mg_initial_smooth_rms = initial_rms;
+          lastPreSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver_fine);
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
       }
@@ -620,34 +731,91 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
     }
 
-    /*--- Early exit: check if RMS has dropped sufficiently. ---*/
-    if (early_exit) {
+    /*--- Per-step diagnostics (no mid-loop exit).
+     *    compute_diagnostics is config-derived (same on all ranks), so all MPI ranks
+     *    enter consistently and the MPI_Allreduce calls are safe. ---*/
+    if (compute_diagnostics) {
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-        const passivedouble current_rms = ComputeLinSysResRMS(solver_fine);
-        mg_last_smooth_rms = current_rms;
-        if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
-          lastPreSmoothIters[iMesh] = iPreSmooth + 1;
-          mg_early_exit_flag = true;
+        const passivedouble current_delta = ComputeSolutionDeltaRMS(solver_fine, geometry_fine);
+        const passivedouble osc_err = ComputeResidualLocalVariance(solver_fine, geometry_fine);
+
+        if (iPreSmooth == 0) {
+          mg_initial_smooth_rms = current_delta;
+          lastPreSmoothDelta[iMesh][0] = current_delta;
+          lastPreSmoothOscErr[iMesh][0] = osc_err;
         }
+
+        /*--- Step-efficiency: relative improvement over previous step (passive diagnostic). ---*/
+        passivedouble step_eff = 0.0;
+        if (iPreSmooth > 0 && mg_last_smooth_rms > 0.0) {
+          step_eff = (mg_last_smooth_rms - current_delta) / mg_last_smooth_rms;
+        }
+
+        if (verbose) {
+          std::cout << "  PreSmooth L" << iMesh << " step " << iPreSmooth
+               << "/" << effectiveMax << " (cfg=" << nPreSmooth << "): "
+               << "delta=" << std::scientific << std::setprecision(4) << current_delta
+               << "  osc=" << osc_err;
+          if (iPreSmooth > 0)
+            std::cout << "  step_eff=" << std::fixed << std::setprecision(4) << step_eff;
+          if (iPreSmooth == 0 && prevCyclePreDelta[iMesh] > 0.0)
+            std::cout << "  hist_ratio=" << std::scientific << std::setprecision(4)
+                 << current_delta / prevCyclePreDelta[iMesh];
+          std::cout << std::defaultfloat << std::setprecision(6) << std::endl;
+        }
+
+        mg_last_smooth_rms = current_delta;
+        lastPreSmoothOscErr[iMesh][1] = osc_err;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
-      if (mg_early_exit_flag) break;
     }
   }
 
-  /*--- Record final RMS and progress flag.
-   *    In the early-exit path mg_last_smooth_rms already holds the current value;
-   *    in the normal path we compute it once here.
-   *    The condition is the same for all threads so they all agree on whether to call. ---*/
-  passivedouble final_pre_rms = mg_last_smooth_rms;
-  if (!(early_exit && mg_early_exit_flag)) {
-    final_pre_rms = ComputeLinSysResRMS(solver_fine);
-  }
+  /*--- Record final RMS and progress flag. ---*/
+  const passivedouble final_pre_rms = ComputeLinSysResRMS(solver_fine);
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    mg_last_smooth_rms = final_pre_rms;
     lastPreSmoothRMS[iMesh][1] = final_pre_rms;
-    lastPreSmoothProgress[iMesh] = mg_early_exit_flag ||
-                                   (final_pre_rms < lastPreSmoothRMS[iMesh][0]);
+    lastPreSmoothIters[iMesh] = effectiveMax;
+    lastPreSmoothProgress[iMesh] = (final_pre_rms < lastPreSmoothRMS[iMesh][0]);
+
+    if (compute_diagnostics) {
+      lastPreSmoothDelta[iMesh][1] = mg_last_smooth_rms;
+      prevCyclePreDelta[iMesh] = mg_initial_smooth_rms;
+    }
+
+    /*--- Between-cycle ramp: adjust effective steps for the NEXT cycle based on
+     *    total delta reduction over this cycle.  The smoothing loop itself always
+     *    runs to completion — no mid-loop exit.
+     *    Ramp-down: requires RAMP_HYSTERESIS consecutive low-reduction cycles (min 1).
+     *    Ramp-up:   high total reduction → increase by 1 (max = configured). ---*/
+    if (mgOpts.MG_Smooth_EarlyExit && compute_diagnostics && mg_initial_smooth_rms > 0.0) {
+      const passivedouble total_reduction = 1.0 - mg_last_smooth_rms / mg_initial_smooth_rms;
+      constexpr passivedouble RAMP_DOWN_TOL = 0.05;  // < 5% total reduction → count toward ramp-down
+      constexpr passivedouble RAMP_UP_TOL  = 0.20;   // > 20% total reduction → ramp up
+      if (total_reduction < RAMP_DOWN_TOL) {
+        consecutivePreEarlyExit[iMesh]++;
+        if (consecutivePreEarlyExit[iMesh] >= RAMP_HYSTERESIS && effectivePreMaxSteps[iMesh] > 1)
+          effectivePreMaxSteps[iMesh]--;
+      } else if (total_reduction > RAMP_UP_TOL) {
+        consecutivePreEarlyExit[iMesh] = 0;
+        if (effectivePreMaxSteps[iMesh] < nPreSmooth)
+          effectivePreMaxSteps[iMesh]++;
+      } else {
+        consecutivePreEarlyExit[iMesh] = 0;
+      }
+
+      if (verbose) {
+        std::cout << "  PreSmooth L" << iMesh << ": completed " << effectiveMax
+             << " steps, total_red=" << std::fixed << std::setprecision(4)
+             << total_reduction * 100.0 << "%" << std::defaultfloat << std::setprecision(6) << std::endl;
+        std::cout << "  PreSmooth L" << iMesh << " ramp: effective="
+             << effectivePreMaxSteps[iMesh] << "/" << nPreSmooth
+             << " (consec_low=" << consecutivePreEarlyExit[iMesh] << ")" << std::endl;
+      }
+    } else if (verbose) {
+      std::cout << "  PreSmooth L" << iMesh << ": completed " << effectiveMax
+           << " steps" << std::endl;
+    }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -666,14 +834,13 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   const auto& mgOpts = config->GetMGOptions();
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
   const unsigned short nPostSmooth = mgOpts.MG_PostSmooth[iMesh];
+  const unsigned short effectiveMax = effectivePostMaxSteps[iMesh];
   const unsigned long timeIter = config->GetTimeIter();
-  const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPostSmooth > 1);
-
-  /*--- Reset the shared early-exit flag (master only). ---*/
-  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
+  const bool verbose = mgOpts.MG_Smooth_Output && (SU2_MPI::GetRank() == MASTER_NODE);
+  const bool compute_diagnostics = mgOpts.MG_Smooth_EarlyExit || mgOpts.MG_Smooth_Output;
 
   /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
-  for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
+  for (unsigned short iPostSmooth = 0; iPostSmooth < effectiveMax; iPostSmooth++) {
 
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
@@ -692,14 +859,10 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
 
-      /*--- Capture initial RMS after the very first residual evaluation.
-       *    Before this point, LinSysRes held the smoothed correction (from SmoothProlongated_Correction),
-       *    NOT the spatial residual R(u). This is the first valid R(u) after applying the correction. ---*/
+      /*--- Capture initial RMS after the very first residual evaluation (for output table). ---*/
       if (iPostSmooth == 0 && iRKStep == 0) {
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-          const passivedouble initial_rms = ComputeLinSysResRMS(solver_fine);
-          lastPostSmoothRMS[iMesh][0] = initial_rms;
-          if (early_exit) mg_initial_smooth_rms = initial_rms;
+          lastPostSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver_fine);
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
       }
@@ -709,33 +872,85 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
     }
 
-    /*--- Early exit: check if RMS has dropped sufficiently. ---*/
-    if (early_exit) {
+    /*--- Per-step diagnostics (no mid-loop exit). ---*/
+    if (compute_diagnostics) {
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-        const passivedouble current_rms = ComputeLinSysResRMS(solver_fine);
-        mg_last_smooth_rms = current_rms;
-        if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
-          lastPostSmoothIters[iMesh] = iPostSmooth + 1;
-          mg_early_exit_flag = true;
+        const passivedouble current_delta = ComputeSolutionDeltaRMS(solver_fine, geometry_fine);
+        const passivedouble osc_err = ComputeResidualLocalVariance(solver_fine, geometry_fine);
+
+        if (iPostSmooth == 0) {
+          mg_initial_smooth_rms = current_delta;
+          lastPostSmoothDelta[iMesh][0] = current_delta;
+          lastPostSmoothOscErr[iMesh][0] = osc_err;
         }
+
+        /*--- Step-efficiency: relative improvement over previous step (passive diagnostic). ---*/
+        passivedouble step_eff = 0.0;
+        if (iPostSmooth > 0 && mg_last_smooth_rms > 0.0) {
+          step_eff = (mg_last_smooth_rms - current_delta) / mg_last_smooth_rms;
+        }
+
+        if (verbose) {
+          std::cout << "  PostSmooth L" << iMesh << " step " << iPostSmooth
+               << "/" << effectiveMax << " (cfg=" << nPostSmooth << "): "
+               << "delta=" << std::scientific << std::setprecision(4) << current_delta
+               << "  osc=" << osc_err;
+          if (iPostSmooth > 0)
+            std::cout << "  step_eff=" << std::fixed << std::setprecision(4) << step_eff;
+          if (iPostSmooth == 0 && prevCyclePostDelta[iMesh] > 0.0)
+            std::cout << "  hist_ratio=" << std::scientific << std::setprecision(4)
+                 << current_delta / prevCyclePostDelta[iMesh];
+          std::cout << std::defaultfloat << std::setprecision(6) << std::endl;
+        }
+
+        mg_last_smooth_rms = current_delta;
+        lastPostSmoothOscErr[iMesh][1] = osc_err;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
-      if (mg_early_exit_flag) break;
     }
   }
 
-  /*--- Record final RMS after post-smoothing.
-   *    In the early-exit path mg_last_smooth_rms is already current; otherwise compute once.
-   *    The condition is the same for all threads so they all agree on whether to call. ---*/
-  passivedouble final_post_rms = mg_last_smooth_rms;
-  if (!(early_exit && mg_early_exit_flag)) {
-    final_post_rms = ComputeLinSysResRMS(solver_fine);
-  }
+  /*--- Record final RMS after post-smoothing. ---*/
+  const passivedouble final_post_rms = ComputeLinSysResRMS(solver_fine);
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    mg_last_smooth_rms = final_post_rms;
     lastPostSmoothRMS[iMesh][1] = final_post_rms;
-    lastPostSmoothProgress[iMesh] = mg_early_exit_flag ||
-                                    (final_post_rms < lastPostSmoothRMS[iMesh][0]);
+    lastPostSmoothIters[iMesh] = effectiveMax;
+    lastPostSmoothProgress[iMesh] = (final_post_rms < lastPostSmoothRMS[iMesh][0]);
+
+    if (compute_diagnostics) {
+      lastPostSmoothDelta[iMesh][1] = mg_last_smooth_rms;
+      prevCyclePostDelta[iMesh] = mg_initial_smooth_rms;
+    }
+
+    /*--- Between-cycle ramp: adjust effective steps for the NEXT cycle. ---*/
+    if (mgOpts.MG_Smooth_EarlyExit && compute_diagnostics && mg_initial_smooth_rms > 0.0) {
+      const passivedouble total_reduction = 1.0 - mg_last_smooth_rms / mg_initial_smooth_rms;
+      constexpr passivedouble RAMP_DOWN_TOL = 0.05;
+      constexpr passivedouble RAMP_UP_TOL  = 0.20;
+      if (total_reduction < RAMP_DOWN_TOL) {
+        consecutivePostEarlyExit[iMesh]++;
+        if (consecutivePostEarlyExit[iMesh] >= RAMP_HYSTERESIS && effectivePostMaxSteps[iMesh] > 1)
+          effectivePostMaxSteps[iMesh]--;
+      } else if (total_reduction > RAMP_UP_TOL) {
+        consecutivePostEarlyExit[iMesh] = 0;
+        if (effectivePostMaxSteps[iMesh] < nPostSmooth)
+          effectivePostMaxSteps[iMesh]++;
+      } else {
+        consecutivePostEarlyExit[iMesh] = 0;
+      }
+
+      if (verbose) {
+        std::cout << "  PostSmooth L" << iMesh << ": completed " << effectiveMax
+             << " steps, total_red=" << std::fixed << std::setprecision(4)
+             << total_reduction * 100.0 << "%" << std::defaultfloat << std::setprecision(6) << std::endl;
+        std::cout << "  PostSmooth L" << iMesh << " ramp: effective="
+             << effectivePostMaxSteps[iMesh] << "/" << nPostSmooth
+             << " (consec_low=" << consecutivePostEarlyExit[iMesh] << ")" << std::endl;
+      }
+    } else if (verbose) {
+      std::cout << "  PostSmooth L" << iMesh << ": completed " << effectiveMax
+           << " steps" << std::endl;
+    }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }

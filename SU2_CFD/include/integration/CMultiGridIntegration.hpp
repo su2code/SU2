@@ -277,10 +277,9 @@ private:
   unsigned long last_update_iter[MAX_MG_LEVELS] = {};
   unsigned long last_reset_iter = std::numeric_limits<unsigned long>::max();
 
-  /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
-  bool mg_early_exit_flag = false;             /*!< \brief Shared flag for early exit across OMP threads. */
-  passivedouble mg_initial_smooth_rms = 0.0;  /*!< \brief Initial RMS before current smoothing phase. */
-  passivedouble mg_last_smooth_rms = 0.0;     /*!< \brief Last computed RMS; cached to avoid redundant Allreduce. */
+  /*--- Smoothing diagnostics state (shared across OMP threads via master write + barrier). ---*/
+  passivedouble mg_initial_smooth_rms = 0.0;  /*!< \brief Initial delta RMS before current smoothing phase. */
+  passivedouble mg_last_smooth_rms = 0.0;     /*!< \brief Last computed delta RMS; cached to avoid redundant Allreduce. */
 
   /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
   unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
@@ -302,5 +301,38 @@ private:
   passivedouble lastPreSmoothRMS[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+
+  /*--- Per-level initial/final solution-delta norms for the compact output summary.
+   *    [0] = ||delta u|| after first smoothing step, [1] = ||delta u|| after last step.
+   *    Only meaningful when early_exit is active. ---*/
+  passivedouble lastPreSmoothDelta[MAX_MG_LEVELS+1][2] = {};
+  passivedouble lastPostSmoothDelta[MAX_MG_LEVELS+1][2] = {};
+
+  /*--- History-based 1-step exit: first-step delta from the *previous* outer iteration.
+   *    If the current first-step delta is much smaller than the previous one,
+   *    the smoother has little work left on that grid. ---*/
+  passivedouble prevCyclePreDelta[MAX_MG_LEVELS+1] = {};
+  passivedouble prevCyclePostDelta[MAX_MG_LEVELS+1] = {};
+
+  /*--- Gradual ramp: effective max smoothing steps per level.
+   *    Starts at configured value; adjusted between cycles based on total
+   *    delta reduction.  Ramp-down requires RAMP_HYSTERESIS consecutive
+   *    low-reduction cycles.  Clamped to [1, configured_max]. ---*/
+  unsigned short effectivePreMaxSteps[MAX_MG_LEVELS+1] = {};
+  unsigned short effectivePostMaxSteps[MAX_MG_LEVELS+1] = {};
+  bool effectiveMaxStepsInitialized = false;
+
+  /*--- Consecutive low-reduction counters for ramp hysteresis.
+   *    Only after RAMP_HYSTERESIS consecutive low-reduction cycles on a level
+   *    is the effective max decreased.  Reset to 0 on high/neutral reduction. ---*/
+  unsigned short consecutivePreEarlyExit[MAX_MG_LEVELS+1] = {};
+  unsigned short consecutivePostEarlyExit[MAX_MG_LEVELS+1] = {};
+  static constexpr unsigned short RAMP_HYSTERESIS = 3;
+
+  /*--- Per-level oscillatory error: RMS of local variance of the residual (LinSysRes).
+   *    [0] = after first smoothing step, [1] = after last step.
+   *    Measures high-frequency content of the residual field. ---*/
+  passivedouble lastPreSmoothOscErr[MAX_MG_LEVELS+1][2] = {};
+  passivedouble lastPostSmoothOscErr[MAX_MG_LEVELS+1][2] = {};
 
 };
