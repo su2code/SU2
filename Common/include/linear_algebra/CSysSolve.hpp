@@ -112,10 +112,11 @@ class CSysSolve {
   mutable VectorType r_0; /*!< \brief The "arbitrary" vector in BCGSTAB. */
   mutable VectorType v;   /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
 
-  mutable unsigned long k = 0;
+  mutable bool ritz_failed = false;
+  mutable unsigned long k = 0, k_new = 0;
   mutable std::vector<VectorType> Z, V; /*!< \brief Large matrices used by FGMRES, v^i+1 = A * z^i. */
   mutable std::vector<VectorType> W, T; /*!< \brief Large matrices used by FGCRODR for deflation vectors. */
-  mutable Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> VkWk;
+  mutable Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> VkWk, Q, PinvR;
 
   /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
   VectorType LinSysSol_tmp;

@@ -27,6 +27,7 @@
 
 #include "../include/SU2_CFD.hpp"
 #include "../../Common/include/tracy_structure.hpp"
+#include "Eigen/src/Core/products/Parallelizer.h"
 
 /* Include file, needed for the runtime NaN catching. You also have to include feenableexcept(...) below. */
 //#include <fenv.h>
@@ -55,6 +56,7 @@ int main(int argc, char *argv[]) {
   /*--- OpenMP setup ---*/
 
   omp_set_num_threads(num_threads);
+  Eigen::setNbThreads(1);
 
   /*--- MPI initialization, and buffer setting ---*/
 

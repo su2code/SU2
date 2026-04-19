@@ -907,62 +907,66 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
         }
       }
     }
-    const auto Hm = Heigen.topLeftCorner(m + 1, m);
-    EigenMatrix HTVW = Hm.transpose() * VW;
 
-    /*--- If the "B" matrix in the generalized eigenvalue problem is not invertible we reset. ---*/
-    if (Eigen::ColPivHouseholderQR<EigenMatrix> qr(HTVW); !qr.isInvertible()) {
-      if (masterRank) {
-        SU2_OMP_MASTER
-        cout << "WARNING: (VH)^T W in FGCRODR is not invertible.\n";
-        END_SU2_OMP_MASTER
+    auto RitzValues = [&]() {
+      SU2_ZONE_SCOPED_N("RitzValues")
+      ritz_failed = false;
+      const auto Hm = Heigen.topLeftCorner(m + 1, m);
+      EigenMatrix HTVW = Hm.transpose() * VW;
+
+      /*--- If the "B" matrix in the generalized eigenvalue problem is not invertible we reset. ---*/
+      if (Eigen::ColPivHouseholderQR<EigenMatrix> qr(HTVW); !qr.isInvertible()) {
+        if (masterRank) cout << "WARNING: (VH)^T W in FGCRODR is not invertible.\n";
+        ResetDeflation();
+        ritz_failed = true;
+        return;
       }
-      SU2_OMP_SAFE_GLOBAL_ACCESS(ResetDeflation();)
+      EigenMatrix HTH = Hm.transpose() * Hm;
+      Eigen::GeneralizedEigenSolver<EigenMatrix> ges(HTH, HTVW);
+      const auto& lambda = ges.eigenvalues();
+
+      std::vector<int> order(m);
+      std::iota(order.begin(), order.end(), 0);
+      std::sort(order.begin(), order.end(),
+                [&lambda](int i, int j) { return fabs(std::real(lambda(i))) < fabs(std::real(lambda(j))); });
+
+      EigenMatrix P(m, deflation + 1);
+      k_new = 0;
+      for (auto i = 0ul; i < m; ++i) {
+        const auto j = order[i];
+
+        /*--- Skip conjugate pairs because we split complex vectors into real and imag. ---*/
+        if (i > 0 && abs(lambda(j) - std::conj(lambda(order[i - 1]))) / abs(lambda(j)) < 1e-3) {
+          continue;
+        }
+        if (monitoring && masterRank && config->GetComm_Level() == COMM_FULL) {
+          cout << "     FGCRODR Ritz value #" << i << ": " << lambda(j) << "\n";
+        }
+        P.col(k_new++) = ges.eigenvectors().col(j).real();
+
+        if (fabs(std::imag(lambda(j))) > 1e-2 * fabs(std::real(lambda(j)))) {
+          P.col(k_new++) = ges.eigenvectors().col(j).imag();
+        }
+        if (k_new >= deflation) break;
+      }
+      P.conservativeResize(m, k_new);
+
+      /*--- Modify the Krylov basis vectors using P.
+       * A Z P = V H P <=> A Z P = V Q R <=> A Z P R^-1 = V Q <=> A Zk = Vk.
+       * W is updated the same way as Z since Z = M(W). ---*/
+
+      EigenMatrix HP = Hm * P;
+      Eigen::HouseholderQR<EigenMatrix> qr(HP);
+      Q = qr.householderQ() * EigenMatrix::Identity(m + 1, k_new);
+      auto R = qr.matrixQR().topRows(k_new).template triangularView<Eigen::Upper>();
+
+      PinvR = P * R.solve(EigenMatrix::Identity(k_new, k_new));
+    };
+    SU2_OMP_SAFE_GLOBAL_ACCESS(RitzValues();)
+    if (ritz_failed) {
       if (converged) break;
       continue;
     }
-    EigenMatrix HTH = Hm.transpose() * Hm;
-    Eigen::GeneralizedEigenSolver<EigenMatrix> ges(HTH, HTVW);
-    const auto& lambda = ges.eigenvalues();
-
-    std::vector<int> order(m);
-    std::iota(order.begin(), order.end(), 0);
-    std::sort(order.begin(), order.end(),
-              [&lambda](int i, int j) { return fabs(std::real(lambda(i))) < fabs(std::real(lambda(j))); });
-
-    EigenMatrix P(m, deflation + 1);
-    auto k_new = 0ul;
-    for (auto i = 0ul; i < m; ++i) {
-      const auto j = order[i];
-
-      /*--- Skip conjugate pairs because we split complex vectors into real and imag. ---*/
-      if (i > 0 && abs(lambda(j) - std::conj(lambda(order[i - 1]))) / abs(lambda(j)) < 1e-3) {
-        continue;
-      }
-      if (monitoring && masterRank && config->GetComm_Level() == COMM_FULL) {
-        SU2_OMP_MASTER
-        cout << "     FGCRODR Ritz value #" << i << ": " << lambda(j) << "\n";
-        END_SU2_OMP_MASTER
-      }
-      P.col(k_new++) = ges.eigenvectors().col(j).real();
-
-      if (fabs(std::imag(lambda(j))) > 1e-2 * fabs(std::real(lambda(j)))) {
-        P.col(k_new++) = ges.eigenvectors().col(j).imag();
-      }
-      if (k_new >= deflation) break;
-    }
-    P.conservativeResize(m, k_new);
-
-    /*--- Modify the Krylov basis vectors using P.
-     * A Z P = V H P <=> A Z P = V Q R <=> A Z P R^-1 = V Q <=> A Zk = Vk.
-     * W is updated the same way as Z since Z = M(W). ---*/
-
-    EigenMatrix HP = Hm * P;
-    Eigen::HouseholderQR<EigenMatrix> qr(HP);
-    EigenMatrix Q = qr.householderQ() * EigenMatrix::Identity(m + 1, k_new);
-    auto R = qr.matrixQR().topRows(k_new).template triangularView<Eigen::Upper>();
-
-    EigenMatrix PinvR = P * (R.solve(EigenMatrix::Identity(k_new, k_new)));
 
     auto modify = [&](const EigenMatrix& mod, const auto& basis) {
       for (auto j = 0ul; j < k_new; ++j) {
