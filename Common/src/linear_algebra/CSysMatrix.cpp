@@ -261,7 +261,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
   /*--- Local variables ---*/
 
   const unsigned short COUNT_PER_POINT = x.GetNVar();
-  const unsigned short MPI_TYPE = COMM_TYPE_DOUBLE;
+  const auto MPI_TYPE = geometry->GetCommType<T>();
 
   /*--- Create a boolean for reversing the order of comms. ---*/
 
@@ -295,7 +295,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
   for (auto iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
     switch (commType) {
       case MPI_QUANTITIES::SOLUTION_MATRIX: {
-        su2double* bufDSend = geometry->bufD_P2PSend;
+        auto* bufDSend = geometry->GetP2PSendBuf<T>();
 
         /*--- Get the offset for the start of this message. ---*/
 
@@ -327,8 +327,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
         /*--- We are going to communicate in reverse, so we use the
          recv buffer for the send instead. Also, all of the offsets
          and counts are derived from the recv data structures. ---*/
-
-        su2double* bufDSend = geometry->bufD_P2PRecv;
+        auto* bufDSend = geometry->GetP2PRecvBuf<T>();
 
         /*--- Get the offset for the start of this message. ---*/
 
@@ -379,7 +378,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
   const unsigned short COUNT_PER_POINT = x.GetNVar();
 
   /*--- Global status so all threads can see the result of Waitany. ---*/
-  static SU2_MPI::Status status;
+  static typename SelectMPIWrapper<T>::W::Status status;
   int ind;
 
   /*--- Store the data that was communicated into the appropriate
@@ -389,7 +388,8 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
     /*--- For efficiency, recv the messages dynamically based on
      the order they arrive. ---*/
 
-    SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);)
+    SU2_OMP_SAFE_GLOBAL_ACCESS(
+        SelectMPIWrapper<T>::W::Waitany(geometry->nP2PRecv, geometry->GetP2PRecvReq<T>(), &ind, &status);)
 
     /*--- Once we have recv'd a message, get the source rank. ---*/
 
@@ -397,7 +397,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
 
     switch (commType) {
       case MPI_QUANTITIES::SOLUTION_MATRIX: {
-        const su2double* bufDRecv = geometry->bufD_P2PRecv;
+        const auto* bufDRecv = geometry->GetP2PRecvBuf<T>();
 
         /*--- We know the offsets based on the source rank. ---*/
 
@@ -435,7 +435,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
          send buffer for the recv instead. Also, all of the offsets
          and counts are derived from the send data structures. ---*/
 
-        const su2double* bufDRecv = geometry->bufD_P2PSend;
+        const auto* bufDRecv = geometry->GetP2PSendBuf<T>();
 
         /*--- We know the offsets based on the source rank. ---*/
 
@@ -479,7 +479,8 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
    data in the loop above at this point. ---*/
 
 #ifdef HAVE_MPI
-  SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);)
+  SU2_OMP_SAFE_GLOBAL_ACCESS(
+      SelectMPIWrapper<T>::W::Waitall(geometry->nP2PSend, geometry->GetP2PSendReq<T>(), MPI_STATUS_IGNORE);)
 #endif
 }
 
@@ -1305,17 +1306,11 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
   template void CSysMatrix<TYPE>::EnforceZeroProjection(unsigned long, const su2double*, CSysVector<su2double>&); \
   INSTANTIATE_COMMS(TYPE)
 
-#ifdef CODI_FORWARD_TYPE
-/*--- In forward AD only the active type is used. ---*/
-INSTANTIATE_MATRIX(su2double)
-#else
-/*--- Base and reverse AD, matrix is passive. ---*/
 INSTANTIATE_MATRIX(su2mixedfloat)
-/*--- If using mixed precision (float) instantiate also a version for doubles, and allow cross communications. ---*/
+
 #ifdef USE_MIXED_PRECISION
 INSTANTIATE_MATRIX(passivedouble)
 #endif
 #ifdef CODI_REVERSE_TYPE
 INSTANTIATE_COMMS(su2double)
 #endif
-#endif  // CODI_FORWARD_TYPE

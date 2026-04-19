@@ -37,8 +37,8 @@
  */
 namespace CGradientSmoothingSolverDetails {
 
-template<typename su2matvecscalar>
-void WriteVectorToGeometry(CGeometry* geometry, const CSysVector<su2matvecscalar>& vector) {
+template<typename Scalar>
+void WriteVectorToGeometry(CGeometry* geometry, const CSysVector<Scalar>& vector) {
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
     for (auto iDim = 0u; iDim < geometry->GetnDim(); iDim++) {
       geometry->SetSensitivity(iPoint,iDim, vector(iPoint, iDim));
@@ -46,8 +46,8 @@ void WriteVectorToGeometry(CGeometry* geometry, const CSysVector<su2matvecscalar
   }
 }
 
-template<typename su2matvecscalar>
-void ReadVectorToGeometry(const CGeometry* geometry, CSysVector<su2matvecscalar>& vector) {
+template<typename Scalar>
+void ReadVectorToGeometry(const CGeometry* geometry, CSysVector<Scalar>& vector) {
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
     for (auto iDim = 0u; iDim < geometry->GetnDim(); iDim++) {
       vector(iPoint, iDim) = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint,iDim));
@@ -272,7 +272,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
   /*--- Compute the full Sobolev Hessian approximation column by column. ---*/
   if (rank == MASTER_NODE)  cout << " computing the system matrix line by line" << endl;
 
-  auto mat_vec = GetStiffnessMatrixVectorProduct<su2matvecscalar>(geometry, numerics, config);
+  auto mat_vec = GetStiffnessMatrixVectorProduct<su2mixedfloat>(geometry, numerics, config);
 
   for (column=0; column<nDVtotal; column++) {
 
@@ -307,9 +307,9 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
     } else {
 
       /*--- Forward evaluation of the mesh deformation ---*/
-      CGradientSmoothingSolverDetails::WriteVectorToGeometry<su2matvecscalar>(geometry, helperVecIn);
+      CGradientSmoothingSolverDetails::WriteVectorToGeometry<su2mixedfloat>(geometry, helperVecIn);
       grid_movement->SetVolume_Deformation(geometry, config, false, true, true);
-      CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2matvecscalar>(geometry, helperVecIn);
+      CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2mixedfloat>(geometry, helperVecIn);
 
       CSysMatrixComms::Initiate(helperVecIn, geometry, config, MPI_QUANTITIES::SOLUTION_MATRIX);
       CSysMatrixComms::Complete(helperVecIn, geometry, config, MPI_QUANTITIES::SOLUTION_MATRIX);
@@ -324,9 +324,9 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
       }
 
       /*--- Forward evaluation of the mesh deformation ---*/
-      CGradientSmoothingSolverDetails::WriteVectorToGeometry<su2matvecscalar>(geometry, helperVecOut);
+      CGradientSmoothingSolverDetails::WriteVectorToGeometry<su2mixedfloat>(geometry, helperVecOut);
       grid_movement->SetVolume_Deformation(geometry, config, false, true, false);
-      CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2matvecscalar>(geometry, helperVecOut);
+      CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2mixedfloat>(geometry, helperVecOut);
 
     }
 
@@ -684,8 +684,8 @@ void CGradientSmoothingSolver::Solve_Linear_System(CGeometry* geometry, const CC
   END_SU2_OMP_PARALLEL
 }
 
-template <typename scalar_type>
-CSysMatrixVectorProduct<scalar_type> CGradientSmoothingSolver::GetStiffnessMatrixVectorProduct(CGeometry* geometry,
+template <typename Scalar>
+CSysMatrixVectorProduct<Scalar> CGradientSmoothingSolver::GetStiffnessMatrixVectorProduct(CGeometry* geometry,
                                                                                                CNumerics* numerics,
                                                                                                const CConfig* config) {
   SU2_ZONE_SCOPED
@@ -702,7 +702,7 @@ CSysMatrixVectorProduct<scalar_type> CGradientSmoothingSolver::GetStiffnessMatri
     Compute_StiffMatrix(geometry, numerics, config);
   }
 
-  return CSysMatrixVectorProduct<scalar_type>(Jacobian, geometry, config);
+  return CSysMatrixVectorProduct<Scalar>(Jacobian, geometry, config);
 }
 
 void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CVolumetricMovement *grid_movement, CConfig *config, su2double** Gradient) {
@@ -716,7 +716,7 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
 
   grid_movement->SetVolume_Deformation(geometry, config, false, true);
 
-  CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2matvecscalar>(geometry, helperVecOut);
+  CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2mixedfloat>(geometry, helperVecOut);
 
   ProjectMeshToDV(geometry, helperVecOut, deltaP, activeCoord, config);
 
@@ -820,7 +820,7 @@ void CGradientSmoothingSolver::RecordParameterizationJacobian(CGeometry *geometr
 
 }
 
-void CGradientSmoothingSolver::ProjectDVtoMesh(CGeometry *geometry, std::vector<su2double>& seeding, CSysVector<su2matvecscalar>& result, CSysVector<su2double>& registeredCoord, CConfig *config) {
+void CGradientSmoothingSolver::ProjectDVtoMesh(CGeometry *geometry, std::vector<su2double>& seeding, CSysVector<su2mixedfloat>& result, CSysVector<su2double>& registeredCoord, CConfig *config) {
   SU2_ZONE_SCOPED
 
   unsigned int nDim, nMarker, nDV, nDV_Value, nVertex;
@@ -860,7 +860,7 @@ void CGradientSmoothingSolver::ProjectDVtoMesh(CGeometry *geometry, std::vector<
 
 }
 
-void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<su2matvecscalar>& sensitivity, std::vector<su2double>& output, CSysVector<su2double>& registeredCoord, CConfig *config) {
+void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<su2mixedfloat>& sensitivity, std::vector<su2double>& output, CSysVector<su2double>& registeredCoord, CConfig *config) {
   SU2_ZONE_SCOPED
 
   /*--- adjoint surface deformation ---*/
