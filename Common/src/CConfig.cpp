@@ -1973,7 +1973,7 @@ void CConfig::SetConfig_Options() {
   /*!\brief MG_DAMP_RESTRICTION\n DESCRIPTION: Damping factor for the residual restriction. DEFAULT: 0.75 \ingroup Config*/
   addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.5);
   /*!\brief MG_DAMP_PROLONGATION\n DESCRIPTION: Damping factor for the correction prolongation. DEFAULT 0.75 \ingroup Config*/
-  addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.5);
+  addDoubleOption("MG_DAMP_PROLONGATION", Damp_Res_Prolong, 0.5);
   /*!\brief MG_SMOOTH_EARLY_EXIT\n DESCRIPTION: Enable early exit for MG smoothing when RMS drops below threshold. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_SMOOTH_EARLY_EXIT", MGOptions.MG_Smooth_EarlyExit, true);
   /*!\brief MG_SMOOTH_RES_THRESHOLD\n DESCRIPTION: Smoothing stops when current_rms < threshold * initial_rms. DEFAULT: 0.1 \ingroup Config*/
@@ -7379,7 +7379,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
       if (Kind_MGCycle == MG_CYCLE::FULL) cout << "Full Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
 
       cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<< endl;
-      cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;
+      cout << "Damping factor for the residual prolongation: " << Damp_Res_Prolong <<"."<< endl;
     }
 
     if ((Kind_Solver != MAIN_SOLVER::FEM_ELASTICITY) && (Kind_Solver != MAIN_SOLVER::DISC_ADJ_FEM)) {

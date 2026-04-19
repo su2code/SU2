@@ -252,14 +252,14 @@ private:
    *
    * Uses \c lastCorrecSmoothIters[] (filled by the previous multigrid cycle) to assess
    * whether the correction smoother is struggling or converging fast,
-   * then adjusts \c Damp_Correc_Prolong in \p config accordingly.
+   * then adjusts \c Damp_Res_Prolong in \p config accordingly.
    *
    * Signal logic:
    *  - any level ran its full correction-smooth iterations: reduce damping
    *  - all levels exited early: increase damping
    *  - mixed: no change
    *
-   * \param[in,out] config - Problem configuration; \c SetDamp_Correc_Prolong is called to persist the result.
+   * \param[in,out] config - Problem configuration; \c SetDamp_Res_Prolong is called to persist the result.
    */
   void adaptProlongationDamping(CConfig* config);
 
@@ -324,10 +324,19 @@ private:
   bool effectiveMaxStepsInitialized = false;
 
   /*--- Consecutive low-reduction counters for ramp hysteresis.
-   *    Only after RAMP_HYSTERESIS consecutive low-reduction cycles on a level
-   *    is the effective max decreased.  Reset to 0 on high/neutral reduction. ---*/
-  unsigned short consecutivePreEarlyExit[MAX_MG_LEVELS+1] = {};
-  unsigned short consecutivePostEarlyExit[MAX_MG_LEVELS+1] = {};
+   *    Incremented each cycle where LinSysRes reduction < RAMP_DOWN_TOL (5%) at that level.
+   *    Reset to 0 on high/neutral reduction.
+   *    Used by the step-ramp logic. ---*/
+  unsigned short consecutiveLowReductionPre[MAX_MG_LEVELS+1] = {};
+  unsigned short consecutiveLowReductionPost[MAX_MG_LEVELS+1] = {};
   static constexpr unsigned short RAMP_HYSTERESIS = 3;
+
+  /*--- Consecutive outer-non-converging counters for damping adaptation.
+   *    Incremented when the cycle-over-cycle solution delta is NOT decreasing
+   *    (hist_ratio >= 1 at that level).  Reset to 0 when delta IS decreasing.
+   *    Works correctly with cfg=1 where per-step LinSysRes change is negligible.
+   *    Scale up damping when all levels at 0; scale down when any >= RAMP_HYSTERESIS. ---*/
+  unsigned short consecutiveOuterNonConvergingPre[MAX_MG_LEVELS+1] = {};
+  unsigned short consecutiveOuterNonConvergingPost[MAX_MG_LEVELS+1] = {};
 
 };

@@ -142,7 +142,7 @@ private:
   su2double Damp_Engine_Exhaust;  /*!< \brief Damping factor for the engine exhaust. */
   unsigned long Bc_Eval_Freq;      /*!< \brief Evaluation frequency for Engine and Actuator disk markers. */
   su2double Damp_Res_Restric,     /*!< \brief Damping factor for the residual restriction. */
-  Damp_Correc_Prolong;            /*!< \brief Damping factor for the correction prolongation. */
+  Damp_Res_Prolong;               /*!< \brief Damping factor for the residual prolongation. */
   su2double Position_Plane;    /*!< \brief Position of the Near-Field (y coordinate 2D, and z coordinate 3D). */
   su2double WeightCd;          /*!< \brief Weight of the drag coefficient. */
   su2double dCD_dCL;           /*!< \brief Fixed Cl mode derivate . */
@@ -6808,22 +6808,22 @@ public:
   su2double GetDamp_Res_Restric(void) const { return Damp_Res_Restric; }
 
   /*!
+   * \brief Value of the damping factor for the residual prolongation.
+   * \return Value of the damping factor.
+   */
+  su2double GetDamp_Res_Prolong(void) const { return Damp_Res_Prolong; }
+
+  /*!
    * \brief Set the damping factor for the residual restriction (used by adaptive MG damping).
    * \param[in] val - New damping factor value.
    */
   void SetDamp_Res_Restric(su2double val) { Damp_Res_Restric = val; }
 
   /*!
-   * \brief Value of the damping factor for the correction prolongation.
-   * \return Value of the damping factor.
-   */
-  su2double GetDamp_Correc_Prolong(void) const { return Damp_Correc_Prolong; }
-
-  /*!
-   * \brief Set the damping factor for the correction prolongation (used by adaptive MG damping).
+   * \brief Set the damping factor for the residual prolongation (used by adaptive MG damping).
    * \param[in] val - New damping factor value.
    */
-  void SetDamp_Correc_Prolong(su2double val) { Damp_Correc_Prolong = val; }
+  void SetDamp_Res_Prolong(su2double val) { Damp_Res_Prolong = val; }
 
   /*!
    * \brief Value of the position of the Near Field (y coordinate for 2D, and z coordinate for 3D).

@@ -30,53 +30,56 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 
 namespace {
-/*!\cond PRIVATE Helper: shared logic for adapting a single MG damping factor.
- *  Inputs:
- *    performed[]  - actual iteration counts per level from this cycle
- *    progress[]   - whether residuals decreased per level
- *    getConfigured - returns the per-level configured maximum
- *    levelStart/End - level range to inspect
- *    getCurrent    - returns the current damping factor from config
- *    setPersist    - persists the updated factor back to config
+/*!
+ * \cond PRIVATE Helper: adapt a single MG damping factor based on per-level
+ * outer-convergence counters.  Uses cycle-over-cycle solution delta trend, which
+ * works correctly even when configured smoothing steps == 1.
+ *
+ *  levelStart/End  - inclusive level range to inspect
+ *  getConfigured   - returns the configured smoother max steps for a level
+ *  getOuterConsec  - returns the per-level consecutiveOuterNonConverging counter
+ *                    (0 = last cycle was converging; >RAMP_HYSTERESIS = sustained diverge)
+ *  getCurrent      - returns the current damping factor from config
+ *  setPersist      - persists the updated factor back to config
+ *
+ *  Returns false if no levels were inspected (all configured == 0).
+ *  Scale up:   all levels have outerConsec == 0 (every level converging cycle-over-cycle)
+ *  Scale down: any level has outerConsec >= RAMP_HYSTERESIS (sustained non-convergence)
+ *  Hold:       otherwise
  \endcond */
-template <typename GetCfg, typename GetCur, typename SetPersist>
-static void adaptMGDampingFactor(const unsigned short* performed,
-                                  const bool* progress,
-                                  GetCfg getConfigured,
+template <typename GetCfg, typename GetConsec, typename GetCur, typename SetPersist>
+static bool adaptMGDampingFactor(GetCfg getConfigured,
                                   unsigned short levelStart, unsigned short levelEnd,
+                                  GetConsec getOuterConsec,
+                                  unsigned short hysteresis,
                                   GetCur getCurrent, SetPersist setPersist) {
-  int local_any_stagnant = 0;  /*--- hit max iters AND residuals did not decrease: scale down. ---*/
-  int local_all_early = 1;  /*--- all levels exited before max iters: scale up. ---*/
-  int local_inspected = 0;
+  int any_diverging = 0;  /*--- any level: outerConsec >= hysteresis → scale down. ---*/
+  int all_converging = 1; /*--- all levels: outerConsec == 0 → scale up. ---*/
+  int inspected = 0;
 
   for (unsigned short lvl = levelStart; lvl <= levelEnd; ++lvl) {
-    const unsigned short configured = getConfigured(lvl);
-    if (configured == 0) continue;
-    ++local_inspected;
-    const bool hit_max = (performed[lvl] >= configured);
-    /*--- Scale-down signal: hit the cap AND residuals did not improve.
-     *    Hitting the cap while still converging is not stagnation; no reduction needed. ---*/
-    if (hit_max && !progress[lvl]) local_any_stagnant = 1;
-    /*--- Scale-up signal: requires early exit on every level.
-     *    Making progress at max iters is good, but the damping is already doing useful work;
-     *    do not increase it further until the smoother actually exits early. ---*/
-    if (hit_max) local_all_early = 0;
+    if (getConfigured(lvl) == 0) continue;
+    ++inspected;
+    const unsigned short consec = getOuterConsec(lvl);
+    if (consec >= hysteresis) any_diverging = 1;
+    if (consec != 0) all_converging = 0;
   }
-  if (local_inspected == 0) return;
+  if (inspected == 0) return false;
 
-  /*--- performed[] and progress[] are derived from MPI-reduced ComputeLinSysResRMS values,
-   *    so local_any_stagnant and local_all_early are already identical on every rank. ---*/
+  /*--- Counters are written by master-only code in PreSmoothing/PostSmoothing and are
+   *    identical on every rank (solution delta uses MPI_Allreduce). ---*/
   const su2double SCALE_DOWN = 0.99;
   const su2double SCALE_UP = 1.01;
   const su2double CLAMP_MIN = 0.1;
   const su2double CLAMP_MAX = 0.95;
 
   su2double factor = getCurrent();
-  if (local_any_stagnant) factor *= SCALE_DOWN;
-  else if (local_all_early) factor *= SCALE_UP;
-  /*--- else: hit max iters but still converging, or mixed — hold factor. ---*/
+  if (any_diverging) factor *= SCALE_DOWN;
+  else if (all_converging) factor *= SCALE_UP;
+  /*--- else: mixed or insufficient data — hold. ---*/
   factor = max(CLAMP_MIN, min(CLAMP_MAX, factor));
   setPersist(factor);
+  return true;
 }
 
 inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
@@ -121,53 +124,39 @@ void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
   const auto& mgOpts = config->GetMGOptions();
   const unsigned short nMGLevels = config->GetnMGLevels();
   adaptMGDampingFactor(
-    lastPreSmoothIters,
-    lastPreSmoothProgress,
     [&mgOpts](unsigned short lvl){ return mgOpts.MG_PreSmooth[lvl]; },
     /*levelStart=*/1, nMGLevels,
+    [this](unsigned short lvl){ return consecutiveOuterNonConvergingPre[lvl]; },
+    RAMP_HYSTERESIS,
     [config](){ return config->GetDamp_Res_Restric(); },
     [config](su2double v){ config->SetDamp_Res_Restric(v); });
 }
 
 void CMultiGridIntegration::adaptProlongationDamping(CConfig* config) {
   SU2_ZONE_SCOPED
-  /*--- Adapt the prolongation damping based on actual post-smoothing LinSysRes reduction.
-   *    Scale up  if every configured post-smooth level reduces LinSysRes by >1%
-   *               (post-smoothing is genuinely effective → allow more coarse correction).
-   *    Scale down if any configured level shows no reduction
-   *               (post-smoothing is failing to heal the prolongated correction).
-   *    This allows the factor to recover after it was driven low during transients. ---*/
   const auto& mgOpts = config->GetMGOptions();
   const unsigned short nMGLevels = config->GetnMGLevels();
   if (nMGLevels == 0) return;
+  const bool handled = adaptMGDampingFactor(
+    [&mgOpts](unsigned short lvl){ return mgOpts.MG_PostSmooth[lvl]; },
+    /*levelStart=*/0, static_cast<unsigned short>(nMGLevels - 1),
+    [this](unsigned short lvl){ return consecutiveOuterNonConvergingPost[lvl]; },
+    RAMP_HYSTERESIS,
+    [config](){ return config->GetDamp_Res_Prolong(); },
+    [config](su2double v){ config->SetDamp_Res_Prolong(v); });
 
-  constexpr su2double SCALE_DOWN = 0.99;
-  constexpr su2double SCALE_UP   = 1.01;
-  constexpr su2double CLAMP_MIN  = 0.1;
-  constexpr su2double CLAMP_MAX  = 0.95;
-  constexpr passivedouble UP_TOL = 0.01;  // >1% LinSysRes reduction required for scale-up
-
-  int all_reducing = 1;  // true if every configured level reduces RMS by > UP_TOL
-  int any_stagnant = 0;  // true if any configured level fails to reduce RMS at all
-  int inspected = 0;
-
-  for (unsigned short lvl = 0; lvl < nMGLevels; ++lvl) {
-    if (mgOpts.MG_PostSmooth[lvl] == 0) continue;
-    ++inspected;
-    const passivedouble rms0 = lastPostSmoothRMS[lvl][0];
-    const passivedouble rms1 = lastPostSmoothRMS[lvl][1];
-    if (rms0 <= 0.0) { all_reducing = 0; continue; }
-    const passivedouble reduction = 1.0 - rms1 / rms0;
-    if (reduction <= 0.0) any_stagnant = 1;
-    if (reduction <  UP_TOL) all_reducing = 0;
+  if (!handled) {
+    const unsigned short consec0 = consecutiveOuterNonConvergingPre[0];
+    const su2double SCALE_DOWN = 0.99;
+    const su2double SCALE_UP = 1.01;
+    const su2double CLAMP_MIN = 0.1;
+    const su2double CLAMP_MAX = 0.95;
+    su2double factor = config->GetDamp_Res_Prolong();
+    if (consec0 >= RAMP_HYSTERESIS) factor *= SCALE_DOWN;
+    else if (consec0 == 0) factor *= SCALE_UP;
+    factor = max(CLAMP_MIN, min(CLAMP_MAX, factor));
+    config->SetDamp_Res_Prolong(factor);
   }
-  if (inspected == 0) return;
-
-  su2double factor = config->GetDamp_Correc_Prolong();
-  if (any_stagnant)      factor *= SCALE_DOWN;
-  else if (all_reducing) factor *= SCALE_UP;
-  factor = max(CLAMP_MIN, min(CLAMP_MAX, factor));
-  config->SetDamp_Correc_Prolong(factor);
 }
 
 passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsigned short iMesh,
@@ -269,7 +258,7 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsign
       last_update_iter[lvl] = iter;
     } else if (sufficient_decrease && should_update) {
       /*--- Residual decreasing sufficiently: increase CFL ---*/
-      new_coeff = current_coeff * 1.05;
+      new_coeff = current_coeff * 1.01;
       /*--- Update reference only when we actually increase CFL ---*/
       prev_avg[lvl] = current_avg[lvl];
       last_update_iter[lvl] = iter;
@@ -530,7 +519,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
       cout << std::fixed << std::setprecision(4)
             << "Damping [restrict | prolong] : " << config[iZone]->GetDamp_Res_Restric()
-            << " | " << config[iZone]->GetDamp_Correc_Prolong() << "\n"
+            << " | " << config[iZone]->GetDamp_Res_Prolong() << "\n"
             << std::defaultfloat << std::setprecision(6);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -773,6 +762,15 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
 
     if (compute_diagnostics) {
       lastPreSmoothDelta[iMesh][1] = pre_prev_delta;
+      /*--- Update outer-convergence counter for damping adapt BEFORE overwriting prevCycleDelta.
+       *    If this cycle's initial delta < last cycle's, the outer loop is converging → reset.
+       *    Otherwise accumulate (non-decreasing delta = stagnation or divergence). ---*/
+      if (prevCyclePreDelta[iMesh] > 0.0) {
+        if (lastPreSmoothDelta[iMesh][0] < prevCyclePreDelta[iMesh])
+          consecutiveOuterNonConvergingPre[iMesh] = 0;
+        else
+          consecutiveOuterNonConvergingPre[iMesh]++;
+      }
       prevCyclePreDelta[iMesh] = lastPreSmoothDelta[iMesh][0];
     }
 
@@ -781,20 +779,20 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
      *    runs to completion — no mid-loop exit.
      *    Ramp-down: requires RAMP_HYSTERESIS consecutive low-reduction cycles (min 1).
      *    Ramp-up:   high total reduction → increase by 1 (max = configured). ---*/
-    if (mgOpts.MG_Smooth_EarlyExit && compute_diagnostics && mg_initial_smooth_rms > 0.0) {
-      const passivedouble total_reduction = 1.0 - mg_last_smooth_rms / mg_initial_smooth_rms;
+    if (mgOpts.MG_Smooth_EarlyExit && compute_diagnostics && lastPreSmoothRMS[iMesh][0] > 0.0) {
+      const passivedouble total_reduction = 1.0 - lastPreSmoothRMS[iMesh][1] / lastPreSmoothRMS[iMesh][0];
       constexpr passivedouble RAMP_DOWN_TOL = 0.05;  // < 5% total reduction → count toward ramp-down
       constexpr passivedouble RAMP_UP_TOL  = 0.20;   // > 20% total reduction → ramp up
       if (total_reduction < RAMP_DOWN_TOL) {
-        consecutivePreEarlyExit[iMesh]++;
-        if (consecutivePreEarlyExit[iMesh] >= RAMP_HYSTERESIS && effectivePreMaxSteps[iMesh] > 1)
+        consecutiveLowReductionPre[iMesh]++;
+        if (consecutiveLowReductionPre[iMesh] >= RAMP_HYSTERESIS && effectivePreMaxSteps[iMesh] > 1)
           effectivePreMaxSteps[iMesh]--;
       } else if (total_reduction > RAMP_UP_TOL) {
-        consecutivePreEarlyExit[iMesh] = 0;
+        consecutiveLowReductionPre[iMesh] = 0;
         if (effectivePreMaxSteps[iMesh] < nPreSmooth)
           effectivePreMaxSteps[iMesh]++;
       } else {
-        consecutivePreEarlyExit[iMesh] = 0;
+        consecutiveLowReductionPre[iMesh] = 0;
       }
 
       if (verbose) {
@@ -803,7 +801,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
              << total_reduction * 100.0 << "%" << std::defaultfloat << std::setprecision(6) << std::endl;
         std::cout << "  PreSmooth L" << iMesh << " ramp: effective="
              << effectivePreMaxSteps[iMesh] << "/" << nPreSmooth
-             << " (consec_low=" << consecutivePreEarlyExit[iMesh] << ")" << std::endl;
+             << " (consec_low=" << consecutiveLowReductionPre[iMesh] << ")" << std::endl;
       }
     } else if (verbose) {
       std::cout << "  PreSmooth L" << iMesh << ": completed " << effectiveMax
@@ -933,6 +931,13 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
     if (compute_diagnostics) {
       lastPostSmoothDelta[iMesh][1] = post_prev_delta;
+      /*--- Update outer-convergence counter for damping adapt BEFORE overwriting prevCycleDelta. ---*/
+      if (prevCyclePostDelta[iMesh] > 0.0) {
+        if (post_initial_delta < prevCyclePostDelta[iMesh])
+          consecutiveOuterNonConvergingPost[iMesh] = 0;
+        else
+          consecutiveOuterNonConvergingPost[iMesh]++;
+      }
       prevCyclePostDelta[iMesh] = post_initial_delta;
     }
 
@@ -942,15 +947,15 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       constexpr passivedouble RAMP_DOWN_TOL = 0.05;
       constexpr passivedouble RAMP_UP_TOL  = 0.20;
       if (total_reduction < RAMP_DOWN_TOL) {
-        consecutivePostEarlyExit[iMesh]++;
-        if (consecutivePostEarlyExit[iMesh] >= RAMP_HYSTERESIS && effectivePostMaxSteps[iMesh] > 1)
+        consecutiveLowReductionPost[iMesh]++;
+        if (consecutiveLowReductionPost[iMesh] >= RAMP_HYSTERESIS && effectivePostMaxSteps[iMesh] > 1)
           effectivePostMaxSteps[iMesh]--;
       } else if (total_reduction > RAMP_UP_TOL) {
-        consecutivePostEarlyExit[iMesh] = 0;
+        consecutiveLowReductionPost[iMesh] = 0;
         if (effectivePostMaxSteps[iMesh] < nPostSmooth)
           effectivePostMaxSteps[iMesh]++;
       } else {
-        consecutivePostEarlyExit[iMesh] = 0;
+        consecutiveLowReductionPost[iMesh] = 0;
       }
 
       if (verbose) {
@@ -959,7 +964,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
              << total_reduction * 100.0 << "%" << std::defaultfloat << std::setprecision(6) << std::endl;
         std::cout << "  PostSmooth L" << iMesh << " ramp: effective="
              << effectivePostMaxSteps[iMesh] << "/" << nPostSmooth
-             << " (consec_low=" << consecutivePostEarlyExit[iMesh] << ")" << std::endl;
+             << " (consec_low=" << consecutiveLowReductionPost[iMesh] << ")" << std::endl;
       }
     } else if (verbose) {
       std::cout << "  PostSmooth L" << iMesh << ": completed " << effectiveMax
@@ -1140,7 +1145,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
    *    iMesh=0: factor = base_damp * 1.0  (finest grid, full correction)
    *    iMesh=1: factor = base_damp * 0.75
    *    iMesh=2: factor = base_damp * 0.5625, etc. ---*/
-  const su2double base_damp = config->GetDamp_Correc_Prolong();
+  const su2double base_damp = config->GetDamp_Res_Prolong();
   const su2double level_factor = pow(0.75, static_cast<su2double>(iMesh));
   const su2double factor = base_damp * level_factor;
 
