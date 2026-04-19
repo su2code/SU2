@@ -252,14 +252,14 @@ private:
    *
    * Uses \c lastCorrecSmoothIters[] (filled by the previous multigrid cycle) to assess
    * whether the correction smoother is struggling or converging fast,
-   * then adjusts \c Damp_Res_Prolong in \p config accordingly.
+   * then adjusts \c Damp_Correc_Prolong in \p config accordingly.
    *
    * Signal logic:
    *  - any level ran its full correction-smooth iterations: reduce damping
    *  - all levels exited early: increase damping
    *  - mixed: no change
    *
-   * \param[in,out] config - Problem configuration; \c SetDamp_Res_Prolong is called to persist the result.
+   * \param[in,out] config - Problem configuration; \c SetDamp_Correc_Prolong is called to persist the result.
    */
   void adaptProlongationDamping(CConfig* config);
 

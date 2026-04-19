@@ -142,8 +142,8 @@ void CMultiGridIntegration::adaptProlongationDamping(CConfig* config) {
     /*levelStart=*/0, static_cast<unsigned short>(nMGLevels - 1),
     [this](unsigned short lvl){ return consecutiveOuterNonConvergingPost[lvl]; },
     RAMP_HYSTERESIS,
-    [config](){ return config->GetDamp_Res_Prolong(); },
-    [config](su2double v){ config->SetDamp_Res_Prolong(v); });
+    [config](){ return config->GetDamp_Correc_Prolong(); },
+    [config](su2double v){ config->SetDamp_Correc_Prolong(v); });
 
   if (!handled) {
     const unsigned short consec0 = consecutiveOuterNonConvergingPre[0];
@@ -151,11 +151,11 @@ void CMultiGridIntegration::adaptProlongationDamping(CConfig* config) {
     const su2double SCALE_UP = 1.01;
     const su2double CLAMP_MIN = 0.1;
     const su2double CLAMP_MAX = 0.95;
-    su2double factor = config->GetDamp_Res_Prolong();
+    su2double factor = config->GetDamp_Correc_Prolong();
     if (consec0 >= RAMP_HYSTERESIS) factor *= SCALE_DOWN;
     else if (consec0 == 0) factor *= SCALE_UP;
     factor = max(CLAMP_MIN, min(CLAMP_MAX, factor));
-    config->SetDamp_Res_Prolong(factor);
+    config->SetDamp_Correc_Prolong(factor);
   }
 }
 
@@ -519,7 +519,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
       cout << std::fixed << std::setprecision(4)
             << "Damping [restrict | prolong] : " << config[iZone]->GetDamp_Res_Restric()
-            << " | " << config[iZone]->GetDamp_Res_Prolong() << "\n"
+            << " | " << config[iZone]->GetDamp_Correc_Prolong() << "\n"
             << std::defaultfloat << std::setprecision(6);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -657,7 +657,6 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   const unsigned long timeIter = config->GetTimeIter();
   const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (effectiveMax > 1);
   const bool verbose = mgOpts.MG_Smooth_Output && (SU2_MPI::GetRank() == MASTER_NODE);
-  /*--- compute_diagnostics is config-derived → identical on all ranks → MPI-safe. ---*/
   const bool compute_diagnostics = early_exit || mgOpts.MG_Smooth_Output;
 
   SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
@@ -714,9 +713,6 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       if (mg_early_exit_flag) break;
     }
 
-    /*--- Per-step diagnostics.
-     *    compute_diagnostics is config-derived (same on all ranks), so all MPI ranks
-     *    enter consistently and the MPI_Allreduce calls are safe. ---*/
     if (compute_diagnostics) {
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
         const passivedouble current_delta = ComputeSolutionDeltaRMS(solver_fine, geometry_fine);
@@ -1145,7 +1141,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
    *    iMesh=0: factor = base_damp * 1.0  (finest grid, full correction)
    *    iMesh=1: factor = base_damp * 0.75
    *    iMesh=2: factor = base_damp * 0.5625, etc. ---*/
-  const su2double base_damp = config->GetDamp_Res_Prolong();
+  const su2double base_damp = config->GetDamp_Correc_Prolong();
   const su2double level_factor = pow(0.75, static_cast<su2double>(iMesh));
   const su2double factor = base_damp * level_factor;
 
