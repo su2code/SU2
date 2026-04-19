@@ -1469,8 +1469,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
       AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
-      AD::FuncHelper.addUserData(&LinSysRes);
-      AD::FuncHelper.addUserData(&LinSysSol);
+      AD::FuncHelper.addUserData(&LinSysRes_tmp);
+      AD::FuncHelper.addUserData(&LinSysSol_tmp);
       AD::FuncHelper.addUserData(&Jacobian);
       AD::FuncHelper.addUserData(geometry);
       AD::FuncHelper.addUserData(config);
@@ -1620,8 +1620,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 }
 
 template <class ScalarType>
-unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, const CSysVector<su2double>& LinSysRes,
-                                             CSysVector<su2double>& LinSysSol, CGeometry* geometry,
+unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, const CSysVector<ScalarType>& LinSysRes,
+                                             CSysVector<ScalarType>& LinSysSol, CGeometry* geometry,
                                              const CConfig* config, const bool directCall) {
   SU2_ZONE_SCOPED
 
@@ -1700,37 +1700,35 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
   /*--- Local variable to prevent all threads from writing to a shared location (this->Residual). ---*/
   ScalarType residual = 0.0;
 
-  HandleTemporariesIn(LinSysRes, LinSysSol);
-
   switch (KindSolver) {
     case FGMRES:
-      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
-                                    ScreenOutput, config);
+      IterLinSol =
+          FGMRES_LinSolver(LinSysRes, LinSysSol, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
       break;
     case FGCRODR:
-      IterLinSol = FGCRODR_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+      IterLinSol = FGCRODR_LinSolver(LinSysRes, LinSysSol, mat_vec, *precond, SolverTol, MaxIter, residual,
                                      ScreenOutput, config);
       break;
     case RESTARTED_FGMRES:
-      IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+      IterLinSol = RFGMRES_LinSolver(LinSysRes, LinSysSol, mat_vec, *precond, SolverTol, MaxIter, residual,
                                      ScreenOutput, config);
       break;
     case BCGSTAB:
-      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+      IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, mat_vec, *precond, SolverTol, MaxIter, residual,
                                      ScreenOutput, config);
       break;
     case CONJUGATE_GRADIENT:
-      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
-                                ScreenOutput, config);
+      IterLinSol =
+          CG_LinSolver(LinSysRes, LinSysSol, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
       break;
     case SMOOTHER:
-      IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+      IterLinSol = Smoother_LinSolver(LinSysRes, LinSysSol, mat_vec, *precond, SolverTol, MaxIter, residual,
                                       ScreenOutput, config);
       break;
     case PASTIX_LDLT:
     case PASTIX_LU:
       if (directCall) Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
-      Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
+      Jacobian.ComputePastixPreconditioner(LinSysRes, LinSysSol, geometry, config);
       IterLinSol = 1;
       residual = 1e-20;
       break;
@@ -1738,8 +1736,6 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
       SU2_MPI::Error("Unknown type of linear solver.", CURRENT_FUNCTION);
       break;
   }
-
-  HandleTemporariesOut(LinSysSol);
 
   delete normal_prec;
   delete nested_prec;
@@ -1755,11 +1751,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
 
 /*--- Explicit instantiations ---*/
 
-#ifdef CODI_FORWARD_TYPE
-template class CSysSolve<su2double>;
-#else
 template class CSysSolve<su2mixedfloat>;
 #ifdef USE_MIXED_PRECISION
 template class CSysSolve<passivedouble>;
-#endif
 #endif

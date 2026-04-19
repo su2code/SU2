@@ -188,7 +188,7 @@ class CScalarSolver : public CSolver {
     const su2double* normal = geometry->edges->GetNormal(iEdge);
     auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
 
-    JacobianScalarType *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
+    su2mixedfloat *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
     if (implicit) {
       Jacobian.GetBlocks(iEdge, iPoint, jPoint, Block_ii, Block_ij, Block_ji, Block_jj);
     }

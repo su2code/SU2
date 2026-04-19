@@ -125,12 +125,10 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
         break;
       }
       /*--- Linear elasticity without thermal effects and double precision only needs one iteration. ---*/
-#ifndef USE_MIXED_PRECISION
-      if (linear && !heat) {
+      if (!std::is_same_v<su2mixedfloat, float> && linear && !heat) {
         output->SetConvergence(true);
         break;
       }
-#endif
       /*--- Normal stopping criteria. ---*/
       if (StopCalc && IntIter > 0) break;
     }
