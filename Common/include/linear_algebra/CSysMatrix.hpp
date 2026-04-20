@@ -304,11 +304,11 @@ class CSysMatrix {
   inline void InverseDiagonalBlock(unsigned long block_i, ScalarType* invBlock) const;
 
   /*!
-   * \brief Inverse diagonal block.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[out] invBlock - Inverse block.
+   * \brief Invert diagonal block (Uii) of the ILU matrix in place.
+   * \param[in] block_i - Index of the block to invert.
+   * \return Inverted block.
    */
-  inline void InverseDiagonalBlock_ILUMatrix(unsigned long block_i, ScalarType* invBlock) const;
+  inline const ScalarType* InvertDiagonalBlockILUMatrix(unsigned long block_i);
 
   /*!
    * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.

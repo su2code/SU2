@@ -118,13 +118,13 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     prec = config->GetKind_DiscAdj_Linear_Prec();
   }
 
-  /*--- No else if, but separat if case! ---*/
+  /*--- No else if, but separate if case! ---*/
   if (config->GetSmoothGradient() && grad_mode) {
     prec = config->GetKind_Grad_Linear_Solver_Prec();
   }
 
   const bool ilu_needed = (prec == ILU);
-  const bool diag_needed = ilu_needed || (prec == JACOBI) || (prec == LINELET);
+  const bool diag_needed = (prec == JACOBI) || (prec == LINELET);
 
   /*--- Basic dimensions. ---*/
   nVar = nvar;
@@ -724,12 +724,12 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
      *    to row/col "end-1" (i.e. the range [begin,end[). Which is exactly
      *    what the MPI-only implementation does. ---*/
 
-    ScalarType weight[MAXNVAR * MAXNVAR], aux_block[MAXNVAR * MAXNVAR];
+    ScalarType Lij[MAXNVAR * MAXNVAR], Lij_Ujk[MAXNVAR * MAXNVAR];
 
     for (auto iPoint = begin + 1; iPoint < end; iPoint++) {
-      /*--- Invert and store the previous diagonal block to later compute the weight. ---*/
+      /*--- Invert and store the previous diagonal block to compute the lower entries. ---*/
 
-      InverseDiagonalBlock_ILUMatrix(iPoint - 1, &invM[(iPoint - 1) * nVar * nVar]);
+      InvertDiagonalBlockILUMatrix(iPoint - 1);
 
       /*--- For this row (unknown), loop over its lower diagonal entries. ---*/
 
@@ -745,9 +745,10 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
         /*--- Multiply the block by the inverse of the corresponding diagonal block. ---*/
 
         auto Block_ij = &ILU_matrix[index * nVar * nVar];
-        MatrixMatrixProduct(Block_ij, &invM[jPoint * nVar * nVar], weight);
+        const auto invUjj = &ILU_matrix[dia_ptr_ilu[jPoint] * nVar * nVar];
+        MatrixMatrixProduct(Block_ij, invUjj, Lij);
 
-        /*--- "weight" holds Aij*inv(Ajj). Jump to the upper part of the jPoint row. ---*/
+        /*--- Lij holds Aij*inv(Ujj). Jump to the upper part of the jPoint row. ---*/
 
         for (auto index_ = dia_ptr_ilu[jPoint] + 1; index_ < row_ptr_ilu[jPoint + 1]; index_++) {
           /*--- Get the column index (kPoint > jPoint). ---*/
@@ -756,24 +757,23 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
 
           if (kPoint >= end) break;
 
-          /*--- If Aik exists, update it: Aik -= Aij*inv(Ajj)*Ajk ---*/
+          /*--- If Aik exists, update it: Aik -= Lij * Ujk ---*/
 
           auto Block_ik = GetBlock_ILUMatrix(iPoint, kPoint);
 
           if (Block_ik != nullptr) {
-            auto Block_jk = &ILU_matrix[index_ * nVar * nVar];
-            MatrixMatrixProduct(weight, Block_jk, aux_block);
-            MatrixSubtraction(Block_ik, aux_block, Block_ik);
+            const auto Ujk = &ILU_matrix[index_ * nVar * nVar];
+            MatrixMatrixProduct(Lij, Ujk, Lij_Ujk);
+            MatrixSubtraction(Block_ik, Lij_Ujk, Block_ik);
           }
         }
 
-        /*--- Lastly, store "weight" in the lower triangular part, which
-         will be reused during the forward solve in the precon/smoother. ---*/
-
-        for (auto iVar = 0ul; iVar < nVar * nVar; ++iVar) Block_ij[iVar] = weight[iVar];
+        /*--- Lastly, store Lij in the lower triangular part. ---*/
+        SU2_OMP_SIMD
+        for (auto iVar = 0ul; iVar < nVar * nVar; ++iVar) Block_ij[iVar] = Lij[iVar];
       }
     }
-    InverseDiagonalBlock_ILUMatrix(end - 1, &invM[(end - 1) * nVar * nVar]);
+    InvertDiagonalBlockILUMatrix(end - 1);
   }
   END_SU2_OMP_FOR
 }
@@ -817,6 +817,8 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
       iPoint--;  // unsigned type
       for (auto iVar = 0ul; iVar < nVar; iVar++) aux_vec[iVar] = prod[iPoint * nVar + iVar];
 
+      const auto* invUii = &ILU_matrix[dia_ptr_ilu[iPoint] * nVar * nVar];
+
       for (auto index = dia_ptr_ilu[iPoint] + 1; index < row_ptr_ilu[iPoint + 1]; index++) {
         auto jPoint = col_ind_ilu[index];
         if (jPoint >= end) break;
@@ -824,7 +826,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
         MatrixVectorProductSub(Block_ij, &prod[jPoint * nVar], aux_vec);
       }
 
-      MatrixVectorProduct(&invM[iPoint * nVar * nVar], aux_vec, &prod[iPoint * nVar]);
+      MatrixVectorProduct(invUii, aux_vec, &prod[iPoint * nVar]);
     }
   }
   END_SU2_OMP_FOR
