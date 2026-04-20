@@ -425,8 +425,17 @@ class CSysSolve {
    * \param[in] config - Definition of the particular problem.
    * \param[in] directCall - If this method is called directly, or in AD context.
    */
-  unsigned long Solve_b(MatrixType& Jacobian, const CSysVector<su2double>& LinSysRes, CSysVector<su2double>& LinSysSol,
-                        CGeometry* geometry, const CConfig* config, bool directCall = true);
+  unsigned long Solve_b(MatrixType& Jacobian, const VectorType& LinSysRes, VectorType& LinSysSol, CGeometry* geometry,
+                        const CConfig* config, bool directCall = true);
+
+  template <class OtherType, su2enable_if<!std::is_same_v<ScalarType, OtherType>> = 0>
+  unsigned long Solve_b(MatrixType& Jacobian, const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol,
+                        CGeometry* geometry, const CConfig* config, bool directCall = true) {
+    HandleTemporariesIn(LinSysRes, LinSysSol);
+    auto iter = Solve_b(Jacobian, *LinSysRes_ptr, *LinSysSol_ptr, geometry, config, directCall);
+    HandleTemporariesOut(LinSysSol);
+    return iter;
+  }
 
   /*!
    * \brief Get the number of iterations.

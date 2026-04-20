@@ -113,13 +113,17 @@ const int MASTER_NODE = 0;      /*!< \brief Master node for MPI parallelization.
 const int SINGLE_NODE = 1;      /*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;      /*!< \brief There is only a zone. */
 
-const unsigned short COMM_TYPE_UNSIGNED_LONG  = 1;  /*!< \brief Communication type for unsigned long. */
-const unsigned short COMM_TYPE_LONG           = 2;  /*!< \brief Communication type for long. */
-const unsigned short COMM_TYPE_UNSIGNED_SHORT = 3;  /*!< \brief Communication type for unsigned short. */
-const unsigned short COMM_TYPE_DOUBLE         = 4;  /*!< \brief Communication type for double. */
-const unsigned short COMM_TYPE_CHAR           = 5;  /*!< \brief Communication type for char. */
-const unsigned short COMM_TYPE_SHORT          = 6;  /*!< \brief Communication type for short. */
-const unsigned short COMM_TYPE_INT            = 7;  /*!< \brief Communication type for int. */
+enum class COMM_TYPE {
+  UNSIGNED_LONG,  /*!< \brief Communication type for unsigned long. */
+  LONG,           /*!< \brief Communication type for long. */
+  UNSIGNED_SHORT, /*!< \brief Communication type for unsigned short. */
+  FLOAT,          /*!< \brief Communication type for su2mixedfloat. */
+  DOUBLE,         /*!< \brief Communication type for double. */
+  PASSIVE_DOUBLE, /*!< \brief Communication type for passivedouble. */
+  CHAR,           /*!< \brief Communication type for char. */
+  SHORT,          /*!< \brief Communication type for short. */
+  INT,            /*!< \brief Communication type for int. */
+};
 
 /*!
  * \brief Types of geometric entities based on VTK nomenclature

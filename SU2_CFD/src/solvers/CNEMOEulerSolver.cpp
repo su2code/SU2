@@ -633,8 +633,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   /*--- Warning message about non-physical reconstructions. ---*/
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
     /*--- Add counter results for all threads. ---*/
-    SU2_OMP_ATOMIC
-    ErrorCounter += counter_local;
+    atomicAdd(counter_local, ErrorCounter);
 
     /*--- Add counter results for all ranks. ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS

@@ -451,6 +451,8 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
@@ -469,10 +471,10 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
                          nodes->GetPrimitive(jPoint));
-
-  numerics->SetSecondary(nodes->GetSecondary(iPoint),
-                         nodes->GetSecondary(jPoint));
-
+  if (!ideal_gas) {
+    numerics->SetSecondary(nodes->GetSecondary(iPoint),
+                           nodes->GetSecondary(jPoint));
+  }
   /*--- Gradients. ---*/
 
   numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
@@ -1149,6 +1151,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
   SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
   const auto iVel = prim_idx.Velocity();
 
   /*--- Blazek chapter 8.:
@@ -1205,7 +1209,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
       /*--- Set Primitive and Secondary for numerics class. ---*/
       conv_numerics->SetPrimitive(V_domain, V_reflected);
-      conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+      if (!ideal_gas) {
+        conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+      }
 
       /*--- Compute the residual using an upwind scheme. ---*/
       auto residual = conv_numerics->ComputeResidual(config);
@@ -1329,6 +1335,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
                                                            CConfig* config) {
   SU2_ZONE_SCOPED
 
+  const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS;
+
   unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
   unsigned short iDim, iVar, jVar, iMarker, nDonorVertex;
 
@@ -1380,19 +1388,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
 
             conv_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
 
-            if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-              if (!(config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS)) {
-                auto Secondary_i = nodes->GetSecondary(iPoint);
+            if (FlowRegime == ENUM_REGIME::COMPRESSIBLE && !ideal_gas) {
+              P_static = PrimVar_j[nDim + 1];
+              rho_static = PrimVar_j[nDim + 2];
+              GetFluidModel()->SetTDState_Prho(P_static, rho_static);
 
-                P_static = PrimVar_j[nDim + 1];
-                rho_static = PrimVar_j[nDim + 2];
-                GetFluidModel()->SetTDState_Prho(P_static, rho_static);
+              Secondary_j[0] = GetFluidModel()->GetdPdrho_e();
+              Secondary_j[1] = GetFluidModel()->GetdPde_rho();
 
-                Secondary_j[0] = GetFluidModel()->GetdPdrho_e();
-                Secondary_j[1] = GetFluidModel()->GetdPde_rho();
-
-                conv_numerics->SetSecondary(Secondary_i, Secondary_j);
-              }
+              conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), Secondary_j);
             }
 
             /*--- Set the normal vector ---*/

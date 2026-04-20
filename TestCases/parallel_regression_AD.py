@@ -286,7 +286,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-3.824870, 1.979160, -3.863368, 0.295450, 3.839800]
+    discadj_fsi2.test_vals         = [-3.824565, 1.979651, -3.863368, 0.295450, 3.839800]
     discadj_fsi2.test_vals_aarch64 = [-3.824870, 1.979160, -3.863368, 0.295450, 3.839800]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
