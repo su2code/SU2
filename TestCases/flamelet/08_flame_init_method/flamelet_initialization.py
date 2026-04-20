@@ -29,7 +29,7 @@ from mpi4py import MPI
 
 # Generatl config options
 config_options = """
-FILENAMES_INTERPOLATOR= (MLP_PIML_1.mlp,MLP_PIML_2.mlp,MLP_PIML_3.mlp,MLP_PIML_4.mlp,MLP_PIML_5.mlp,MLP_PIML_6.mlp,MLP_PIML_7.mlp,MLP_PIML_8.mlp,MLP_PIML_9.mlp,MLP_PIML_10.mlp,MLP_PIML_11.mlp)
+FILENAMES_INTERPOLATOR= (MLP_Group1.mlp,MLP_Group2.mlp,MLP_Group3.mlp,MLP_Group4.mlp,MLP_Group5.mlp,MLP_Group6.mlp)
 
 INC_VELOCITY_INIT= (1e-5, 0.0, 0.0)
 MARKER_SYM=(x_minus, x_plus, y_plus, y_minus)
