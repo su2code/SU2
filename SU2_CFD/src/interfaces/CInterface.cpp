@@ -82,9 +82,11 @@ void CInterface::InitializeQuasiNewtonCorrection(CGeometry *donor_geometry, cons
     int nGlobalVertexDonor = 0;
     for (int i = 0; i < size; ++i) nGlobalVertexDonor += nAllVertexDonor[i];
 
-    std::cout << "Initializing Quasi-Newton correction for interface " << iMarkerInt << " with " << nGlobalVertexDonor << " donor vertices and " << nVar << " variables." << std::endl;
     /*--- Initialize the Quasi-Newton correction object for this interface. ---*/
-    QuasiNewtonCorrection[iMarkerInt].resize(5, nGlobalVertexDonor, 4);
+    if(donor_config->GetnQuasiNewtonSamples()) {
+      std::cout << "Applying a Quasi-Newton correction for zone " << donor_config->GetiZone() << " and interface " << iMarkerInt << " with " << nGlobalVertexDonor << " donor vertices and " << nVar << " variables." << std::endl;
+      QuasiNewtonCorrection[iMarkerInt].resize(donor_config->GetnQuasiNewtonSamples(), nGlobalVertexDonor, 4);
+    }
   }
 }
 
@@ -191,9 +193,11 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
 
     /*--- Each rank performs a Quasi-Newton correction step on the global donor data before applying them on the target. ---*/
 
-    SetAllValues(donorVar, QuasiNewtonCorrection[iMarkerInt].FPresult(), nGlobalVertexDonor, nVar);
-    QuasiNewtonCorrection[iMarkerInt].compute();
-    SetAllValues(donorVar, QuasiNewtonCorrection[iMarkerInt], nGlobalVertexDonor, nVar);
+    if (QuasiNewtonCorrection[iMarkerInt].size()) {
+      SetAllValues(donorVar, QuasiNewtonCorrection[iMarkerInt].FPresult(), nGlobalVertexDonor, nVar);
+      QuasiNewtonCorrection[iMarkerInt].compute();
+      SetAllValues(donorVar, QuasiNewtonCorrection[iMarkerInt], nGlobalVertexDonor, nVar);
+    }
 
     /*--- Loop over target vertices. ---*/
 
