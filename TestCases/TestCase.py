@@ -232,9 +232,14 @@ class TestCase:
                             for j in range(len(data)):
                                 sim_vals.append( float(data[j]) )
                                 delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                                if delta_vals[j] > self.tol:
-                                    exceed_tol = True
-                                    passed     = False
+                                if isinstance(self.tol, list):
+                                    if delta_vals[j] > self.tol[j]:
+                                        exceed_tol = True
+                                        passed     = False
+                                else:
+                                    if delta_vals[j] > self.tol:
+                                        exceed_tol = True
+                                        passed     = False
                             break
                         else:
                             iter_missing = True

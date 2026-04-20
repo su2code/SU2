@@ -32,6 +32,7 @@ void CDiscAdjHeatIteration::Preprocess(COutput* output, CIntegration**** integra
                                        CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                        CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                        CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
 
   const auto TimeIter = config[val_iZone]->GetTimeIter();
   const bool dual_time_1st = (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
@@ -125,6 +126,7 @@ void CDiscAdjHeatIteration::Preprocess(COutput* output, CIntegration**** integra
 void CDiscAdjHeatIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
                                                   unsigned short val_iZone, unsigned short val_iInst,
                                                   int val_DirectIter) {
+  SU2_ZONE_SCOPED
   auto solvers = solver[val_iZone][val_iInst];
   auto geometries = geometry[val_iZone][val_iInst];
 
@@ -148,6 +150,7 @@ void CDiscAdjHeatIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolve
 
 void CDiscAdjHeatIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
                                            unsigned short val_iZone, unsigned short val_iInst, bool CrossTerm) {
+  SU2_ZONE_SCOPED
 
   solver[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry[val_iZone][val_iInst][MESH_0],
                                                                              config[val_iZone], CrossTerm);
@@ -155,6 +158,7 @@ void CDiscAdjHeatIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** 
 
 void CDiscAdjHeatIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                               unsigned short iZone, unsigned short iInst) {
+  SU2_ZONE_SCOPED
 
   /*--- Initialize the adjoints the solution variables ---*/
 
@@ -166,6 +170,7 @@ void CDiscAdjHeatIteration::InitializeAdjoint(CSolver***** solver, CGeometry****
 
 void CDiscAdjHeatIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                           unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
+  SU2_ZONE_SCOPED
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
@@ -194,6 +199,7 @@ void CDiscAdjHeatIteration::RegisterInput(CSolver***** solver, CGeometry**** geo
 void CDiscAdjHeatIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                             CConfig** config, unsigned short iZone, unsigned short iInst,
                                             RECORDING kind_recording) {
+  SU2_ZONE_SCOPED
 
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometries = geometry[iZone][iInst];
@@ -219,6 +225,7 @@ void CDiscAdjHeatIteration::SetDependencies(CSolver***** solver, CGeometry**** g
 
 void CDiscAdjHeatIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                            unsigned short iZone, unsigned short iInst) {
+  SU2_ZONE_SCOPED
 
   solver[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry[iZone][iInst][MESH_0], config[iZone]);
 }
@@ -227,6 +234,7 @@ bool CDiscAdjHeatIteration::Monitor(COutput* output, CIntegration**** integratio
                                     CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                     CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                     CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
 
   output->SetHistoryOutput(geometry[val_iZone][INST_0][MESH_0], solver[val_iZone][INST_0][MESH_0], config[val_iZone],
                             config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),

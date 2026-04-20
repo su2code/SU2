@@ -33,6 +33,7 @@
 
 CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) :
                   CDriver(confFile, val_nZone, MPICommunicator, false) {
+                    SU2_ZONE_SCOPED
 
   /*--- Initialize the counter for TimeIter ---*/
   TimeIter = 0;
@@ -118,6 +119,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile, unsigned short val_nZone, SU2
 }
 
 CMultizoneDriver::~CMultizoneDriver() {
+  SU2_ZONE_SCOPED
 
   for (iZone = 0; iZone < nZone; iZone++){
     delete [] init_res[iZone];
@@ -135,6 +137,7 @@ CMultizoneDriver::~CMultizoneDriver() {
 }
 
 void CMultizoneDriver::StartSolver() {
+  SU2_ZONE_SCOPED
 
   /*--- Find out the minimum of all references times and then set each zone to this (same) value.
         To ensure that all zones run synchronously in time, be it a dimensional or non-dimensionalized one. ---*/
@@ -206,6 +209,7 @@ void CMultizoneDriver::StartSolver() {
 }
 
 void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Set the current time iteration in the config ---*/
   driver_config->SetTimeIter(TimeIter);
@@ -278,6 +282,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 }
 
 void CMultizoneDriver::RunGaussSeidel() {
+  SU2_ZONE_SCOPED
 
   unsigned short UpdateMesh;
   bool DeformMesh = false;
@@ -341,6 +346,7 @@ void CMultizoneDriver::RunGaussSeidel() {
 }
 
 void CMultizoneDriver::RunJacobi() {
+  SU2_ZONE_SCOPED
 
   unsigned short UpdateMesh;
   bool DeformMesh = false;
@@ -401,6 +407,7 @@ void CMultizoneDriver::RunJacobi() {
 }
 
 void CMultizoneDriver::Corrector(unsigned short val_iZone) {
+  SU2_ZONE_SCOPED
 
   if (config_container[val_iZone]->GetRelaxation())
     iteration_container[val_iZone][INST_0]->Relaxation(output_container[ZONE_0], integration_container,
@@ -409,6 +416,7 @@ void CMultizoneDriver::Corrector(unsigned short val_iZone) {
 }
 
 bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Update the residual for the all the zones. ---*/
 
@@ -441,6 +449,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 }
 
 void CMultizoneDriver::Update() {
+  SU2_ZONE_SCOPED
 
   /*--- For enabling a consistent restart, we need to update the mesh with the interface information that introduces displacements --*/
   /*--- Loop over the number of zones (IZONE) ---*/
@@ -466,6 +475,7 @@ void CMultizoneDriver::Update() {
 }
 
 void CMultizoneDriver::Output(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Time the output for performance benchmarking. ---*/
 
@@ -499,6 +509,7 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
 }
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   bool AnyDeformMesh = false;
 
@@ -519,6 +530,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 }
 
 void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   auto iteration = iteration_container[val_iZone][INST_0];
 
@@ -544,6 +556,7 @@ void CMultizoneDriver::DynamicMeshUpdate(unsigned short val_iZone, unsigned long
 }
 
 bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short targetZone) {
+  SU2_ZONE_SCOPED
 
   bool UpdateMesh = false;
 
@@ -612,10 +625,10 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
 
       /*--- Set average value donorZone->targetZone ---*/
       interface_container[donorZone][targetZone]->SetAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
-      
+
       /*--- Set average geometrical properties FROM donorZone IN targetZone ---*/
       geometry_container[targetZone][INST_0][MESH_0]->SetAvgTurboGeoValues(config_container[iZone],geometry_container[iZone][INST_0][MESH_0], iZone);
-      
+
       break;
     }
     case NO_TRANSFER:
@@ -635,6 +648,7 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
 
 
 void CMultizoneDriver::SetTurboPerformance() {
+  SU2_ZONE_SCOPED
   for (auto donorZone = 1u; donorZone < nZone; donorZone++) {
     interface_container[donorZone][ZONE_0]->SetAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
                                                                 solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
@@ -643,6 +657,7 @@ void CMultizoneDriver::SetTurboPerformance() {
 }
 
 bool CMultizoneDriver::Monitor(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Check whether the inner solver has converged --- */
 
@@ -688,5 +703,6 @@ bool CMultizoneDriver::Monitor(unsigned long TimeIter) {
 }
 
 bool CMultizoneDriver::GetTimeConvergence() const{
+  SU2_ZONE_SCOPED
   return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }
