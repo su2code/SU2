@@ -108,10 +108,10 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
       su2double dist_from_center = 0,
                 spark_radius = flamelet_config_options.spark_init[3];
       dist_from_center = GeometryToolbox::SquaredDistance(nDim, geometry->nodes->GetCoord(i_point), flamelet_config_options.spark_init.data());
-      if (dist_from_center < pow(spark_radius,2)) {
+      su2double T_local = flowNodes->GetTemperature(i_point);
+      if (dist_from_center < pow(spark_radius,2) && T_local < flamelet_config_options.Flame_T_ignition) {
         /*--- Add spark reaction rates to the sources that were just set by SetScalarSources ---*/
         const su2double* current_sources = nodes->GetScalarSources(i_point);
-
         for (auto iVar = 0u; iVar < nVar; iVar++) {
           nodes->SetScalarSource(i_point, iVar, current_sources[iVar] + flamelet_config_options.spark_reaction_rates[iVar]);
         }
@@ -193,7 +193,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
     su2double enth_inlet = config->GetSpecies_Init()[I_ENTH];
 
     su2double prog_burnt = 0, prog_unburnt, point_loc;
-    su2double scalar_init[MAXNVAR];
+    su2double scalar_init[MAXNVAR]= {0.0};
 
     if (rank == MASTER_NODE) {
       cout << "initial condition: T = " << temp_inlet << endl;
@@ -226,13 +226,14 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
     for (unsigned long i_mesh = 0; i_mesh <= config->GetnMGLevels(); i_mesh++) {
       fluid_model_local = solver_container[i_mesh][FLOW_SOL]->GetFluidModel();
-      if (flame_front_ignition) prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init);
 
       for (auto iVar = 0u; iVar < nVar; iVar++) scalar_init[iVar] = config->GetSpecies_Init()[iVar];
 
       /*--- Set enthalpy based on initial temperature and scalars. ---*/
       n_not_iterated_local += GetEnthFromTemp(fluid_model_local, temp_inlet, config->GetSpecies_Init(), &enth_inlet);
       scalar_init[I_ENTH] = enth_inlet;
+
+      if (flame_front_ignition) prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init, flamelet_config_options.Flame_T_ignition);
 
       prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
       SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -815,16 +816,22 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
   return exit_code;
 }
 
-su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalar_solution) {
+su2double CSpeciesFlameletSolver::GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalar_solution, const su2double T_ignition) {
   SU2_ZONE_SCOPED
   su2double scalars[MAXNVAR], delta = 1e-3;
   for (auto iVar = 0u; iVar < nVar; iVar++) scalars[iVar] = scalar_solution[iVar];
   bool outside = false;
+  scalars[I_PROGVAR] += delta;
   while (!outside) {
-    fluid_model->SetTDState_T(300, scalars);
-    if (fluid_model->GetExtrapolation() == 1 || (fluid_model->GetTemperature()>1000.)) outside = true;
+    /*--- Note that 300.0 is a dummy temperature here and not used. ---*/
+    fluid_model->SetTDState_T(300.0, scalars);
+    if ((fluid_model->GetExtrapolation() == 1) || fluid_model->GetTemperature() > T_ignition) outside = true;
     scalars[I_PROGVAR] += delta;
   }
   su2double pv_burnt = scalars[I_PROGVAR] - delta;
+  if (rank == MASTER_NODE) {
+    cout << "Burnt progress variable determined from flamelet table: " << pv_burnt << endl;
+    cout << "Burnt temperature from flamelet table: " << fluid_model->GetTemperature() << endl;
+  }
   return pv_burnt;
 }

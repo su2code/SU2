@@ -75,8 +75,16 @@ def main():
     cfd_flamelet_h2.cfg_file = "laminar_premixed_h2_flame_cfd.cfg"
     cfd_flamelet_h2.test_iter = 5
     cfd_flamelet_h2.test_vals = [-8.036958, -8.372668, -1.842800, -9.388446]
-    cfd_flamelet_h2.new_output = True
     test_list.append(cfd_flamelet_h2)
+
+    # Flame ignition methods
+    flame_init_methods = TestCase("flame_init_methods")
+    flame_init_methods.cfg_dir = "flamelet/08_flame_init_method"
+    flame_init_methods.cfg_file ="flamelet_initialization.py" 
+    flame_init_methods.command = TestCase.Command("mpirun -np 2", "python", "flamelet_initialization.py")
+    flame_init_methods.test_vals=[1600, 1600]
+    flame_init_methods.new_output = True 
+    test_list.append(flame_init_methods)
 
     #########################
     ## NEMO solver ###
