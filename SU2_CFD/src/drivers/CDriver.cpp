@@ -95,18 +95,15 @@
 #include "../../include/iteration/CIterationFactory.hpp"
 
 #include "../../../Common/include/parallelization/omp_structure.hpp"
-
 #include "../../../Common/include/grid_movement/CVolumetricMovementFactory.hpp"
 
 #include <cassert>
 
-#ifdef VTUNEPROF
-#include <ittnotify.h>
-#endif
 #include <cfenv>
 
 CDriver::CDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator, bool dummy_geo) :
 CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), fem_solver(false), dry_run(dummy_geo) {
+  SU2_ZONE_SCOPED
 
   /*--- Start timer to track preprocessing for benchmarking. ---*/
 
@@ -297,6 +294,7 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
 }
 
 void CDriver::InitializeContainers(){
+  SU2_ZONE_SCOPED
 
   /*--- Create pointers to all of the classes that may be used throughout
    the SU2_CFD code. In general, the pointers are instantiated down a
@@ -345,6 +343,7 @@ void CDriver::InitializeContainers(){
 
 
 void CDriver::Finalize() {
+  SU2_ZONE_SCOPED
 
   const bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
 
@@ -457,10 +456,6 @@ void CDriver::Finalize() {
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
 
   /*--- Output profiling information ---*/
-  // Note that for now this is called only by a single thread, but all
-  // necessary variables have been made thread private for safety (tick/tock)!!
-
-  config_container[ZONE_0]->SetProfilingCSV();
   config_container[ZONE_0]->GEMMProfilingCSV();
 
   /*--- Deallocate config container ---*/
@@ -548,6 +543,7 @@ void CDriver::Finalize() {
 
 
 void CDriver::PreprocessInput(CConfig **&config, CConfig *&driver_config) {
+  SU2_ZONE_SCOPED
 
   char zone_file_name[MAX_STRING_SIZE];
 
@@ -600,6 +596,7 @@ void CDriver::PreprocessInput(CConfig **&config, CConfig *&driver_config) {
 }
 
 void CDriver::InitializeGeometry(CConfig* config, CGeometry **&geometry, bool dummy){
+  SU2_ZONE_SCOPED
 
   if (!dummy){
     if (rank == MASTER_NODE)
@@ -687,6 +684,7 @@ void CDriver::InitializeGeometry(CConfig* config, CGeometry **&geometry, bool du
 }
 
 void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
+  SU2_ZONE_SCOPED
 
   unsigned short iZone = config->GetiZone(), iMGlevel;
   unsigned short requestedMGlevels = config->GetnMGLevels();
@@ -902,6 +900,7 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 }
 
 void CDriver::InitializeGeometryDGFEM(CConfig* config, CGeometry **&geometry) {
+  SU2_ZONE_SCOPED
 
   /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
   /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
@@ -994,6 +993,7 @@ void CDriver::InitializeGeometryDGFEM(CConfig* config, CGeometry **&geometry) {
 }
 
 void CDriver::InitializeSolver(CConfig* config, CGeometry** geometry, CSolver ***&solver) {
+  SU2_ZONE_SCOPED
 
   MAIN_SOLVER kindSolver = config->GetKind_Solver();
 
@@ -1025,6 +1025,7 @@ void CDriver::InitializeSolver(CConfig* config, CGeometry** geometry, CSolver **
 }
 
 void CDriver::PreprocessInlet(CSolver ***solver, CGeometry **geometry, CConfig *config) const {
+  SU2_ZONE_SCOPED
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
@@ -1166,6 +1167,7 @@ void CDriver::FinalizeSolver(CSolver ****solver, CGeometry **geometry,
 }
 
 void CDriver::InitializeIntegration(CConfig *config, CSolver **solver, CIntegration **&integration) const {
+  SU2_ZONE_SCOPED
 
   if (rank == MASTER_NODE)
     cout << endl <<"----------------- Integration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
@@ -1177,6 +1179,7 @@ void CDriver::InitializeIntegration(CConfig *config, CSolver **solver, CIntegrat
 }
 
 void CDriver::FinalizeIntegration(CIntegration ***integration, CGeometry **geometry, CConfig *config, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
 
   for (unsigned int iSol = 0; iSol < MAX_SOLS; iSol++){
     delete integration[val_iInst][iSol];
@@ -1427,6 +1430,7 @@ template void CDriver::InstantiateSpeciesNumerics<CNEMOEulerVariable::CIndices<u
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const {
+  SU2_ZONE_SCOPED
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Numerics Preprocessing ( Zone " << config->GetiZone() <<" ) -------------------" << endl;
@@ -2352,6 +2356,7 @@ void CDriver::FinalizeNumerics(CNumerics *****numerics, CSolver***, CGeometry**,
 }
 
 void CDriver::PreprocessIteration(CConfig* config, CIteration *&iteration) const {
+  SU2_ZONE_SCOPED
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------- Iteration Preprocessing ( Zone " << config->GetiZone() <<" ) ------------------" << endl;
@@ -2542,6 +2547,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
 }
 
 void CDriver::PreprocessStaticMesh(const CConfig *config, CGeometry** geometry){
+  SU2_ZONE_SCOPED
 
   unsigned short iMGlevel, iMGfine;
 
@@ -2587,6 +2593,7 @@ void CDriver::PreprocessStaticMesh(const CConfig *config, CGeometry** geometry){
 }
 
 void CDriver::PreprocessOutput(CConfig **config, CConfig *driver_config, COutput **&output, COutput *&driver_output){
+  SU2_ZONE_SCOPED
 
   /*--- Definition of the output class (one for each zone). The output class
    manages the writing of all restart, volume solution, surface solution,
@@ -2757,6 +2764,7 @@ void CDriver::PreprocessTurbomachinery(CConfig** config, CGeometry**** geometry,
 CDriver::~CDriver() = default;
 
 void CDriver::PrintDirectResidual(RECORDING kind_recording) {
+  SU2_ZONE_SCOPED
 
   if (rank != MASTER_NODE || kind_recording != RECORDING::SOLUTION_VARIABLES) return;
 
@@ -2869,16 +2877,14 @@ void CDriver::PrintDirectResidual(RECORDING kind_recording) {
 
 
 CFluidDriver::CFluidDriver(char* confFile, unsigned short val_nZone, SU2_Comm MPICommunicator) : CDriver(confFile, val_nZone, MPICommunicator, false) {
+  SU2_ZONE_SCOPED
   Max_Iter = config_container[ZONE_0]->GetnInner_Iter();
 }
 
 CFluidDriver::~CFluidDriver() = default;
 
 void CFluidDriver::StartSolver(){
-
-#ifdef VTUNEPROF
-  __itt_resume();
-#endif
+  SU2_ZONE_SCOPED
 
   /*--- Main external loop of the solver. Within this loop, each iteration ---*/
 
@@ -2927,13 +2933,11 @@ void CFluidDriver::StartSolver(){
     Iter++;
 
   }
-#ifdef VTUNEPROF
-  __itt_pause();
-#endif
 }
 
 
 void CFluidDriver::Preprocess(unsigned long Iter) {
+  SU2_ZONE_SCOPED
 
   /*--- Set the value of the external iteration and physical time. ---*/
 
@@ -2961,6 +2965,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
 }
 
 void CFluidDriver::Run() {
+  SU2_ZONE_SCOPED
 
   unsigned short iZone, jZone;
   unsigned long IntIter, nIntIter;
@@ -3020,6 +3025,7 @@ void CFluidDriver::Run() {
 }
 
 void CFluidDriver::TransferData(unsigned short donorZone, unsigned short targetZone) {
+  SU2_ZONE_SCOPED
 
   auto BroadcastData = [&](unsigned int solIdx) {
     interface_container[donorZone][targetZone]->BroadcastData(*interpolator_container[donorZone][targetZone].get(),
@@ -3038,6 +3044,7 @@ void CFluidDriver::TransferData(unsigned short donorZone, unsigned short targetZ
 }
 
 void CFluidDriver::Update() {
+  SU2_ZONE_SCOPED
 
   for(iZone = 0; iZone < nZone; iZone++)
     iteration_container[iZone][INST_0]->Update(output_container[iZone], integration_container, geometry_container,
@@ -3046,6 +3053,7 @@ void CFluidDriver::Update() {
 }
 
 void CFluidDriver::DynamicMeshUpdate(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   bool harmonic_balance;
 
@@ -3060,6 +3068,7 @@ void CFluidDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 }
 
 bool CFluidDriver::Monitor(unsigned long ExtIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/
@@ -3083,6 +3092,7 @@ bool CFluidDriver::Monitor(unsigned long ExtIter) {
 }
 
 void CFluidDriver::Output(unsigned long InnerIter) {
+  SU2_ZONE_SCOPED
 
   for (iZone = 0; iZone < nZone; iZone++) {
     const auto inst = config_container[iZone]->GetiInst();
@@ -3114,6 +3124,7 @@ CHBDriver::CHBDriver(char* confFile,
 }
 
 CHBDriver::~CHBDriver() {
+  SU2_ZONE_SCOPED
 
   unsigned short kInst;
 
@@ -3124,6 +3135,7 @@ CHBDriver::~CHBDriver() {
 
 
 void CHBDriver::Run() {
+  SU2_ZONE_SCOPED
 
   /*--- Run a single iteration of a Harmonic Balance problem. Preprocess all
    all zones before beginning the iteration. ---*/
@@ -3146,6 +3158,7 @@ void CHBDriver::Run() {
 }
 
 void CHBDriver::Update() {
+  SU2_ZONE_SCOPED
 
   for (iInst = 0; iInst < nInstHB; iInst++) {
     /*--- Compute the harmonic balance terms across all zones ---*/
@@ -3171,6 +3184,7 @@ void CHBDriver::Update() {
 }
 
 void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar, jInst, iMGlevel;
   unsigned short nVar = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnVar();
@@ -3294,6 +3308,7 @@ void CHBDriver::SetHarmonicBalance(unsigned short iInst) {
 }
 
 void CHBDriver::StabilizeHarmonicBalance() {
+  SU2_ZONE_SCOPED
 
   unsigned short i, j, k, iVar, iInst, jInst, iMGlevel;
   unsigned short nVar = solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetnVar();
@@ -3454,6 +3469,7 @@ void CHBDriver::StabilizeHarmonicBalance() {
 }
 
 void CHBDriver::ComputeHBOperator() {
+  SU2_ZONE_SCOPED
 
   const   complex<su2double> J(0.0,1.0);
   unsigned short i, j, k, iInst;

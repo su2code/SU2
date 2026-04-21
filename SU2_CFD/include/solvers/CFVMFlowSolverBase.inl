@@ -84,6 +84,8 @@ void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::setZero(int i) {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
+  SU2_ZONE_SCOPED
+
   /*--- Define some auxiliar vector related with the residual ---*/
 
   Residual_RMS.resize(nVar,0.0);
@@ -216,6 +218,8 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::AllocateTerribleLegacyTemporaryVariables() {
+  SU2_ZONE_SCOPED
+
   /*--- Define some auxiliary vectors related to the residual ---*/
 
   Residual = new su2double[nVar]();
@@ -247,6 +251,8 @@ void CFVMFlowSolverBase<V, R>::AllocateTerribleLegacyTemporaryVariables() {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
+
   /*--- Define solver parameters needed for execution of destructor ---*/
 
   space_centered = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -283,6 +289,8 @@ void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry, cons
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& config, CGeometry& geometry) {
+  SU2_ZONE_SCOPED
+
 #ifdef HAVE_OMP
   /*--- Get the edge coloring. If the expected parallel efficiency becomes too low setup the
    *    reducer strategy. Where one loop is performed over edges followed by a point loop to
@@ -370,6 +378,7 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 
 template <class V, ENUM_REGIME R>
 CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
+  SU2_ZONE_SCOPED
 
   for (auto& mat : SlidingState) {
     for (auto ptr : mat) delete [] ptr;
@@ -382,6 +391,8 @@ CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_GG(CGeometry* geometry, const CConfig* config,
                                                         bool reconstruction) {
+  SU2_ZONE_SCOPED
+
   const auto& primitives = nodes->GetPrimitive();
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
   const auto comm = reconstruction? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
@@ -393,6 +404,8 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_GG(CGeometry* geometry, con
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config,
                                                         bool reconstruction) {
+  SU2_ZONE_SCOPED
+
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
   PERIODIC_QUANTITIES commPer;
@@ -417,6 +430,8 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, con
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
+
   const auto kindLimiter = config->GetKind_SlopeLimit_Flow();
   const auto umusclKappa = config->GetMUSCL_Kappa_Flow();
   const auto& primitives = nodes->GetPrimitive();
@@ -432,9 +447,12 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const C
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                                      CNumerics *numerics, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
 
   CVariable* turbNodes = nullptr;
   if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
@@ -453,10 +471,10 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
                          nodes->GetPrimitive(jPoint));
-
-  numerics->SetSecondary(nodes->GetSecondary(iPoint),
-                         nodes->GetSecondary(jPoint));
-
+  if (!ideal_gas) {
+    numerics->SetSecondary(nodes->GetSecondary(iPoint),
+                           nodes->GetSecondary(jPoint));
+  }
   /*--- Gradients. ---*/
 
   numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
@@ -494,6 +512,7 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CConfig* config) {
+  SU2_ZONE_SCOPED
 
   /*--- The errors only need to be computed on the finest grid. ---*/
   if (MGLevel != MESH_0) return;
@@ -557,6 +576,8 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* config) {
+  SU2_ZONE_SCOPED
+
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
 
@@ -594,6 +615,7 @@ void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* confi
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSolver**, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   PrepareImplicitIteration(geometry, nullptr, config);
 
@@ -619,6 +641,7 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& config, const CGeometry *geometry, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   auto& StrainMag = nodes->GetStrainMag();
 
@@ -703,6 +726,8 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetInletAtVertex(const su2double* val_inlet, unsigned short iMarker,
                                                 unsigned long iVertex) {
+  SU2_ZONE_SCOPED
+
   /*--- Alias positions within inlet file for readability ---*/
 
   unsigned short T_position = nDim;
@@ -724,6 +749,8 @@ void CFVMFlowSolverBase<V, R>::SetInletAtVertex(const su2double* val_inlet, unsi
 template <class V, ENUM_REGIME R>
 su2double CFVMFlowSolverBase<V, R>::GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
                                                      const CGeometry* geometry, su2double* val_inlet) const {
+  SU2_ZONE_SCOPED
+
   const auto T_position = nDim;
   const auto P_position = nDim + 1;
   const auto FlowDir_position = nDim + 2;
@@ -742,6 +769,8 @@ su2double CFVMFlowSolverBase<V, R>::GetInletAtVertex(unsigned short iMarker, uns
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
+  SU2_ZONE_SCOPED
+
   if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
     const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     const su2double p_total = config->GetInletPtotal(Marker_Tag);
@@ -778,6 +807,8 @@ void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned s
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::UpdateCustomBoundaryConditions(
     CGeometry** geometry_container, CSolver*** solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
+
   struct {
     const CSolver* fine_solver{nullptr};
     CSolver* coarse_solver{nullptr};
@@ -822,6 +853,8 @@ template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver ***solver, CConfig *config, int iter,
                                                 bool update_geo, su2double* SolutionRestart,
                                                 unsigned short nVar_Restart) {
+  SU2_ZONE_SCOPED
+
   /*--- Restart the solution from file information ---*/
 
   string restart_filename = config->GetSolution_FileName();
@@ -1007,12 +1040,14 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::LoadRestart(CGeometry **geometry, CSolver ***solver,
                                            CConfig *config, int iter, bool update_geo) {
+  SU2_ZONE_SCOPED
   LoadRestart_impl(geometry, solver, config, iter, update_geo);
 }
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
                                                    CConfig *config, unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   const bool restart = (config->GetRestart() || config->GetRestart_Flow());
   const bool rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
@@ -1064,6 +1099,8 @@ template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bool restart, bool rans,
                                                       CSolver*** solver_container, CGeometry** geometry,
                                                       CConfig* config) {
+  SU2_ZONE_SCOPED
+
   /*--- Push back the initial condition to previous solution containers
    for a 1st-order restart or when simply initializing to freestream. ---*/
 
@@ -1111,7 +1148,11 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
 template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                                      CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
+
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
   const auto iVel = prim_idx.Velocity();
 
   /*--- Blazek chapter 8.:
@@ -1168,7 +1209,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
       /*--- Set Primitive and Secondary for numerics class. ---*/
       conv_numerics->SetPrimitive(V_domain, V_reflected);
-      conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+      if (!ideal_gas) {
+        conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
+      }
 
       /*--- Compute the residual using an upwind scheme. ---*/
       auto residual = conv_numerics->ComputeResidual(config);
@@ -1272,6 +1315,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
                                            CConfig* config) {
+  SU2_ZONE_SCOPED
+
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
    adjacent periodic markers, the repeated points will have their residuals
@@ -1288,6 +1333,10 @@ template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, CSolver** solver_container,
                                                            CNumerics* conv_numerics, CNumerics* visc_numerics,
                                                            CConfig* config) {
+  SU2_ZONE_SCOPED
+
+  const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS;
+
   unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
   unsigned short iDim, iVar, jVar, iMarker, nDonorVertex;
 
@@ -1339,19 +1388,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
 
             conv_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
 
-            if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-              if (!(config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS)) {
-                auto Secondary_i = nodes->GetSecondary(iPoint);
+            if (FlowRegime == ENUM_REGIME::COMPRESSIBLE && !ideal_gas) {
+              P_static = PrimVar_j[nDim + 1];
+              rho_static = PrimVar_j[nDim + 2];
+              GetFluidModel()->SetTDState_Prho(P_static, rho_static);
 
-                P_static = PrimVar_j[nDim + 1];
-                rho_static = PrimVar_j[nDim + 2];
-                GetFluidModel()->SetTDState_Prho(P_static, rho_static);
+              Secondary_j[0] = GetFluidModel()->GetdPdrho_e();
+              Secondary_j[1] = GetFluidModel()->GetdPde_rho();
 
-                Secondary_j[0] = GetFluidModel()->GetdPdrho_e();
-                Secondary_j[1] = GetFluidModel()->GetdPde_rho();
-
-                conv_numerics->SetSecondary(Secondary_i, Secondary_j);
-              }
+              conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), Secondary_j);
             }
 
             /*--- Set the normal vector ---*/
@@ -1451,6 +1496,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                          CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
+
   /* Check for a verification solution. */
 
   if (VerificationSolution) {
@@ -1514,6 +1561,8 @@ template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
                                                 const CSolver* const* solvers,
                                                 CConfig *config) {
+  SU2_ZONE_SCOPED
+
   if (!edgeNumerics) {
     if (!ReducerStrategy && (omp_get_max_threads() > 1) &&
         (config->GetEdgeColoringGroupSize() % Double::Size != 0)) {
@@ -1571,6 +1620,7 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SumEdgeFluxes(const CGeometry* geometry) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {

@@ -287,6 +287,7 @@ class CFVMFlowSolverBase : public CSolver {
    */
   inline void FinalizeResidualComputation(const CGeometry *geometry, bool pausePreacc,
                                           unsigned long localCounter, CConfig* config) {
+    SU2_ZONE_SCOPED
 
     /*--- Restore preaccumulation and adjoint evaluation state. ---*/
     AD::ResumePreaccumulation(pausePreacc);
@@ -302,12 +303,10 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Warning message about non-physical reconstructions. ---*/
     if ((MGLevel == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
       /*--- Add counter results for all threads. ---*/
-      SU2_OMP_ATOMIC
-      ErrorCounter += localCounter;
+      atomicAdd(localCounter, ErrorCounter);
 
       /*--- Add counter results for all ranks. ---*/
-      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-      {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
         localCounter = ErrorCounter;
         SU2_MPI::Reduce(&localCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
         config->SetNonphysical_Reconstr(ErrorCounter);
@@ -2434,7 +2433,7 @@ class CFVMFlowSolverBase : public CSolver {
     return UTau[val_marker][val_vertex];
   }
 
-   /*!
+  /*!
    * \brief Get the eddy viscosity at the wall (wall functions).
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.

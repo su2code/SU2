@@ -35,10 +35,10 @@ template <class ScalarType>
 void CSysSolve_b<ScalarType>::Solve_b(const su2double::Real* x, su2double::Real* x_b, size_t m,
                                       const su2double::Real* y, const su2double::Real* y_b, size_t n,
                                       codi::ExternalFunctionUserData* d) {
-  CSysVector<su2double>* LinSysRes_b = nullptr;
+  CSysVector<ScalarType>* LinSysRes_b = nullptr;
   d->getDataByIndex(LinSysRes_b, 0);
 
-  CSysVector<su2double>* LinSysSol_b = nullptr;
+  CSysVector<ScalarType>* LinSysSol_b = nullptr;
   d->getDataByIndex(LinSysSol_b, 1);
 
   CSysMatrix<ScalarType>* Jacobian = nullptr;
@@ -65,6 +65,7 @@ void CSysSolve_b<ScalarType>::Solve_b(const su2double::Real* x, su2double::Real*
 
   solver->Solve_b(*Jacobian, *LinSysRes_b, *LinSysSol_b, geometry, config, false);
 
+  SU2_OMP_BARRIER
   SU2_OMP_FOR_STAT(roundUpDiv(n, omp_get_num_threads()))
   for (unsigned long i = 0; i < n; i++) {
     x_b[i] = SU2_TYPE::GetValue((*LinSysSol_b)[i]);

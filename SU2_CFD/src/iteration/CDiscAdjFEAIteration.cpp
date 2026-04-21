@@ -32,12 +32,14 @@
 #include "../../include/output/COutput.hpp"
 
 CDiscAdjFEAIteration::CDiscAdjFEAIteration(const CConfig *config) : CIteration(config), CurrentRecording(NONE) {
+  SU2_ZONE_SCOPED
   if (config->GetWeakly_Coupled_Heat()) {
     DiscAdjHeatIteration = new CDiscAdjHeatIteration(config);
   }
 }
 
 CDiscAdjFEAIteration::~CDiscAdjFEAIteration() {
+  SU2_ZONE_SCOPED
   delete DiscAdjHeatIteration;
 }
 
@@ -45,6 +47,7 @@ void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integrat
                                       CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                       CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                       CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
+  SU2_ZONE_SCOPED
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
   auto dirNodes = solvers0[FEA_SOL]->GetNodes();
@@ -106,6 +109,7 @@ void CDiscAdjFEAIteration::Preprocess(COutput* output, CIntegration**** integrat
 void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
                                                 unsigned short iZone, unsigned short iInst,
                                                 int val_DirectIter) {
+  SU2_ZONE_SCOPED
   /*--- Set to false to prevent updating Solution_time_n when loading primal solutions of unsteady cases. ---*/
   const bool update_geo = false;
   auto*** solvers = solver[iZone][iInst];
@@ -124,6 +128,7 @@ void CDiscAdjFEAIteration::LoadDynamic_Solution(CGeometry**** geometry, CSolver*
 
 void CDiscAdjFEAIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
                                           unsigned short iZone, unsigned short iInst, bool CrossTerm) {
+  SU2_ZONE_SCOPED
 
   /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
   for (const auto iSol : {ADJFEA_SOL, ADJHEAT_SOL}) {
@@ -136,6 +141,7 @@ void CDiscAdjFEAIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** s
 
 void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                          unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
+  SU2_ZONE_SCOPED
   if (kind_recording != RECORDING::MESH_COORDS) {
     for (const auto iSol : {ADJFEA_SOL, ADJHEAT_SOL}) {
       if (auto* sol = solver[iZone][iInst][MESH_0][iSol]; sol != nullptr) {
@@ -157,6 +163,7 @@ void CDiscAdjFEAIteration::RegisterInput(CSolver***** solver, CGeometry**** geom
 void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                            CConfig** config, unsigned short iZone, unsigned short iInst,
                                            RECORDING kind_recording) {
+  SU2_ZONE_SCOPED
   if (DiscAdjHeatIteration) {
     DiscAdjHeatIteration->SetDependencies(solver, geometry, numerics, config, iZone, iInst, kind_recording);
   }
@@ -278,6 +285,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver***** solver, CGeometry**** ge
 
 void CDiscAdjFEAIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                           unsigned short iZone, unsigned short iInst) {
+  SU2_ZONE_SCOPED
   /*--- Register solution variables as output of the iteration. ---*/
   for (const auto iSol : {ADJFEA_SOL, ADJHEAT_SOL}) {
     if (auto* sol = solver[iZone][iInst][MESH_0][iSol]; sol != nullptr) {
@@ -288,6 +296,7 @@ void CDiscAdjFEAIteration::RegisterOutput(CSolver***** solver, CGeometry**** geo
 
 void CDiscAdjFEAIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                              unsigned short iZone, unsigned short iInst) {
+  SU2_ZONE_SCOPED
   /*--- Initialize the adjoints of the solution variables. ---*/
 
   AD::ResizeAdjoints();
@@ -304,6 +313,7 @@ bool CDiscAdjFEAIteration::Monitor(COutput* output, CIntegration**** integration
                                    CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                    CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                    CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
+  SU2_ZONE_SCOPED
   /*--- Write the convergence history (only screen output) ---*/
 
   output->SetHistoryOutput(geometry[iZone][INST_0][MESH_0], solver[iZone][INST_0][MESH_0], config[iZone],
@@ -317,6 +327,7 @@ void CDiscAdjFEAIteration::Postprocess(COutput* output, CIntegration**** integra
                                        CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                        CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                        CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
+  SU2_ZONE_SCOPED
   auto solvers0 = solver[iZone][iInst][MESH_0];
 
   // TEST: for implementation of python framework in standalone structural problems

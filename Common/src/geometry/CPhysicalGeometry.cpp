@@ -652,9 +652,9 @@ void CPhysicalGeometry::DistributeColoring(const CConfig* config, CGeometry* geo
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(colorSend, nPoint_Send, colorSendReq, colorRecv, nPoint_Recv, colorRecvReq, 1,
-                   COMM_TYPE_UNSIGNED_LONG);
+                   COMM_TYPE::UNSIGNED_LONG);
 
-  InitiateCommsAll(idSend, nPoint_Send, idSendReq, idRecv, nPoint_Recv, idRecvReq, 1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(idSend, nPoint_Send, idSendReq, idRecv, nPoint_Recv, idRecvReq, 1, COMM_TYPE::UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -904,9 +904,9 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(const CConfig* config, CGeo
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(connSend, nElem_Send, connSendReq, connRecv, nElem_Recv, connRecvReq, NODES_PER_ELEMENT,
-                   COMM_TYPE_UNSIGNED_LONG);
+                   COMM_TYPE::UNSIGNED_LONG);
 
-  InitiateCommsAll(idSend, nElem_Send, idSendReq, idRecv, nElem_Recv, idRecvReq, 1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(idSend, nElem_Send, idSendReq, idRecv, nElem_Recv, idRecvReq, 1, COMM_TYPE::UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -1199,11 +1199,11 @@ void CPhysicalGeometry::DistributePoints(const CConfig* config, CGeometry* geome
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(colorSend, nPoint_Send, colorSendReq, colorRecv, nPoint_Recv, colorRecvReq, 1,
-                   COMM_TYPE_UNSIGNED_LONG);
+                   COMM_TYPE::UNSIGNED_LONG);
 
-  InitiateCommsAll(idSend, nPoint_Send, idSendReq, idRecv, nPoint_Recv, idRecvReq, 1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(idSend, nPoint_Send, idSendReq, idRecv, nPoint_Recv, idRecvReq, 1, COMM_TYPE::UNSIGNED_LONG);
 
-  InitiateCommsAll(coordSend, nPoint_Send, coordSendReq, coordRecv, nPoint_Recv, coordRecvReq, nDim, COMM_TYPE_DOUBLE);
+  InitiateCommsAll(coordSend, nPoint_Send, coordSendReq, coordRecv, nPoint_Recv, coordRecvReq, nDim, COMM_TYPE::DOUBLE);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -1506,12 +1506,12 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig* config, CGeometry*
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(connSend, nElem_Send, connSendReq, connRecv, nElem_Recv, connRecvReq, NODES_PER_ELEMENT,
-                   COMM_TYPE_UNSIGNED_LONG);
+                   COMM_TYPE::UNSIGNED_LONG);
 
   InitiateCommsAll(markerSend, nElem_Send, markerSendReq, markerRecv, nElem_Recv, markerRecvReq, 1,
-                   COMM_TYPE_UNSIGNED_LONG);
+                   COMM_TYPE::UNSIGNED_LONG);
 
-  InitiateCommsAll(idSend, nElem_Send, idSendReq, idRecv, nElem_Recv, idRecvReq, 1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(idSend, nElem_Send, idSendReq, idRecv, nElem_Recv, idRecvReq, 1, COMM_TYPE::UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -1845,12 +1845,12 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig* config, CGeometry
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(connSend, nElem_Send, connSendReq, connRecv, nElem_Recv, connRecvReq, NODES_PER_ELEMENT,
-                   COMM_TYPE_UNSIGNED_LONG);
+                   COMM_TYPE::UNSIGNED_LONG);
 
   InitiateCommsAll(markerSend, nElem_Send, markerSendReq, markerRecv, nElem_Recv, markerRecvReq, 1,
-                   COMM_TYPE_UNSIGNED_LONG);
+                   COMM_TYPE::UNSIGNED_LONG);
 
-  InitiateCommsAll(idSend, nElem_Send, idSendReq, idRecv, nElem_Recv, idRecvReq, 1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(idSend, nElem_Send, idSendReq, idRecv, nElem_Recv, idRecvReq, 1, COMM_TYPE::UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -2682,7 +2682,7 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig* config, CGeometry* geometry
 
 void CPhysicalGeometry::InitiateCommsAll(void* bufSend, const int* nElemSend, SU2_MPI::Request* sendReq, void* bufRecv,
                                          const int* nElemRecv, SU2_MPI::Request* recvReq, unsigned short countPerElem,
-                                         unsigned short commType) {
+                                         COMM_TYPE commType) {
   /*--- Local variables ---*/
 
   int iMessage, iProc, offset, nElem, count, source, dest, tag;
@@ -2715,31 +2715,31 @@ void CPhysicalGeometry::InitiateCommsAll(void* bufSend, const int* nElemSend, SU
       tag = iProc + 1;
 
       switch (commType) {
-        case COMM_TYPE_DOUBLE:
+        case COMM_TYPE::DOUBLE:
           SU2_MPI::Irecv(&(static_cast<su2double*>(bufRecv)[offset]), count, MPI_DOUBLE, source, tag,
                          SU2_MPI::GetComm(), &(recvReq[iMessage]));
           break;
-        case COMM_TYPE_UNSIGNED_LONG:
+        case COMM_TYPE::UNSIGNED_LONG:
           SU2_MPI::Irecv(&(static_cast<unsigned long*>(bufRecv)[offset]), count, MPI_UNSIGNED_LONG, source, tag,
                          SU2_MPI::GetComm(), &(recvReq[iMessage]));
           break;
-        case COMM_TYPE_LONG:
+        case COMM_TYPE::LONG:
           SU2_MPI::Irecv(&(static_cast<long*>(bufRecv)[offset]), count, MPI_LONG, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
-        case COMM_TYPE_UNSIGNED_SHORT:
+        case COMM_TYPE::UNSIGNED_SHORT:
           SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufRecv)[offset]), count, MPI_UNSIGNED_SHORT, source, tag,
                          SU2_MPI::GetComm(), &(recvReq[iMessage]));
           break;
-        case COMM_TYPE_CHAR:
+        case COMM_TYPE::CHAR:
           SU2_MPI::Irecv(&(static_cast<char*>(bufRecv)[offset]), count, MPI_CHAR, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
-        case COMM_TYPE_SHORT:
+        case COMM_TYPE::SHORT:
           SU2_MPI::Irecv(&(static_cast<short*>(bufRecv)[offset]), count, MPI_SHORT, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
-        case COMM_TYPE_INT:
+        case COMM_TYPE::INT:
           SU2_MPI::Irecv(&(static_cast<int*>(bufRecv)[offset]), count, MPI_INT, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
@@ -2781,31 +2781,31 @@ void CPhysicalGeometry::InitiateCommsAll(void* bufSend, const int* nElemSend, SU
       tag = rank + 1;
 
       switch (commType) {
-        case COMM_TYPE_DOUBLE:
+        case COMM_TYPE::DOUBLE:
           SU2_MPI::Isend(&(static_cast<su2double*>(bufSend)[offset]), count, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
-        case COMM_TYPE_UNSIGNED_LONG:
+        case COMM_TYPE::UNSIGNED_LONG:
           SU2_MPI::Isend(&(static_cast<unsigned long*>(bufSend)[offset]), count, MPI_UNSIGNED_LONG, dest, tag,
                          SU2_MPI::GetComm(), &(sendReq[iMessage]));
           break;
-        case COMM_TYPE_LONG:
+        case COMM_TYPE::LONG:
           SU2_MPI::Isend(&(static_cast<long*>(bufSend)[offset]), count, MPI_LONG, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
-        case COMM_TYPE_UNSIGNED_SHORT:
+        case COMM_TYPE::UNSIGNED_SHORT:
           SU2_MPI::Isend(&(static_cast<unsigned short*>(bufSend)[offset]), count, MPI_UNSIGNED_SHORT, dest, tag,
                          SU2_MPI::GetComm(), &(sendReq[iMessage]));
           break;
-        case COMM_TYPE_CHAR:
+        case COMM_TYPE::CHAR:
           SU2_MPI::Isend(&(static_cast<char*>(bufSend)[offset]), count, MPI_CHAR, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
-        case COMM_TYPE_SHORT:
+        case COMM_TYPE::SHORT:
           SU2_MPI::Isend(&(static_cast<short*>(bufSend)[offset]), count, MPI_SHORT, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
-        case COMM_TYPE_INT:
+        case COMM_TYPE::INT:
           SU2_MPI::Isend(&(static_cast<int*>(bufSend)[offset]), count, MPI_INT, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;

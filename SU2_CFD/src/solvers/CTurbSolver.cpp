@@ -35,17 +35,20 @@ template class CScalarSolver<CTurbVariable>;
 
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative)
   : CScalarSolver<CTurbVariable>(geometry, config, conservative) {
+  SU2_ZONE_SCOPED
   /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
   SetImplicitPeriodic(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
 }
 
 CTurbSolver::~CTurbSolver() {
+  SU2_ZONE_SCOPED
   for (auto& mat : SlidingState) {
     for (auto ptr : mat) delete [] ptr;
   }
 }
 
 void CTurbSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
@@ -61,6 +64,7 @@ void CTurbSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CN
 }
 
 void CTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
@@ -77,6 +81,7 @@ void CTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_containe
 
 
 void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
@@ -102,6 +107,7 @@ void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNum
 
 void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                               bool val_update_geo) {
+  SU2_ZONE_SCOPED
   /*--- Restart the solution from file information ---*/
 
   string restart_filename = config->GetSolution_FileName();
@@ -234,6 +240,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 }
 
 void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config){
+  SU2_ZONE_SCOPED
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Check whether turbulence quantities are fixed to far-field values on a half-plane. ---*/
@@ -269,6 +276,7 @@ void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *
 }
 
 unsigned long CTurbSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
+  SU2_ZONE_SCOPED
 
   /*--- Register muT as input/output of a RANS iteration. ---*/
   nodes->RegisterEddyViscosity(input);
@@ -278,6 +286,7 @@ unsigned long CTurbSolver::RegisterSolutionExtra(bool input, const CConfig* conf
 }
 
 void CTurbSolver::ComputeUnderRelaxationFactorHelper(CSolver** solver_container, su2double allowableRatio) {
+  SU2_ZONE_SCOPED
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */

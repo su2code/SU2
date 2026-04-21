@@ -46,6 +46,7 @@
 #include "option_structure.hpp"
 #include "containers/container_decorators.hpp"
 #include "toolboxes/printing_toolbox.hpp"
+#include "tracy_structure.hpp"
 
 #ifdef HAVE_CGNS
 #include "cgnslib.h"
@@ -9096,25 +9097,6 @@ public:
    * \return Current number of non-physical reconstructions for 2nd-order upwinding.
    */
   unsigned long GetNonphysical_Reconstr(void) const { return Nonphys_Reconstr; }
-
-  /*!
-   * \brief Start the timer for profiling subroutines.
-   * \param[in] val_start_time - the value of the start time.
-   */
-  void Tick(double *val_start_time);
-
-  /*!
-   * \brief Stop the timer for profiling subroutines and store results.
-   * \param[in] val_start_time - the value of the start time.
-   * \param[in] val_function_name - string for the name of the profiled subroutine.
-   * \param[in] val_group_id - string for the name of the profiled subroutine.
-   */
-  void Tock(double val_start_time, const string& val_function_name, int val_group_id);
-
-  /*!
-   * \brief Write a CSV file containing the results of the profiling.
-   */
-  void SetProfilingCSV(void);
 
   /*!
    * \brief Start the timer for profiling subroutines.
