@@ -276,6 +276,11 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsign
   /*--- Clamp coefficient between 0.5 and 1.0 ---*/
   new_coeff = max(0.5, min(1.0, new_coeff));
 
+  /*--- Record whether the CFL was actively reduced this cycle.  Only a decrease
+   *    (not a clamp-to-current) counts; this distinguishes instability-driven cuts
+   *    from neutral cycles.  The flag is read by the smoothing ramp next cycle. ---*/
+  lastCFLWasReduced[iMesh+1] = (new_coeff < current_coeff);
+
   /*--- Update coarse grid CFL ---*/
   CFL_coarse_new = max(0.5 * CFL_fine, min(CFL_fine, CFL_fine * new_coeff));
 
@@ -514,6 +519,14 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       for (unsigned short i = 0; i < nMGLevels; ++i)
         table << rampStr(effectivePostMaxSteps[i], mgOptsZone.MG_PostSmooth[i]);
       table << "-";
+
+      /*--- CFL per level. ---*/
+      table << "CFL";
+      for (unsigned short i = 0; i <= nMGLevels; ++i) {
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(2) << SU2_TYPE::GetValue(config[iZone]->GetCFL(i));
+        table << ss.str();
+      }
 
       table.PrintFooter();
 
@@ -773,17 +786,33 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
     /*--- Between-cycle ramp: adjust effective steps for the NEXT cycle based on
      *    total delta reduction over this cycle.  The smoothing loop itself always
      *    runs to completion — no mid-loop exit.
-     *    Ramp-down: requires RAMP_HYSTERESIS consecutive low-reduction cycles (min 1).
+     *    Ramp-down: requires RAMP_HYSTERESIS consecutive low-reduction cycles (min 1),
+     *               OR an immediate single-cycle cut when the coarse CFL was reduced
+     *               (CFL reduction = direct evidence of explicit smoother instability).
      *    Ramp-up:   high total reduction → increase by 1 (max = configured). ---*/
     if (mgOpts.MG_Smooth_EarlyExit && compute_diagnostics && lastPreSmoothRMS[iMesh][0] > 0.0) {
+      /*--- CFL-instability fast path: if computeMultigridCFL cut the CFL at this
+       *    level last cycle, the smoother was running too many explicit steps.
+       *    Reduce immediately without waiting for RAMP_HYSTERESIS cycles. ---*/
+      if (lastCFLWasReduced[iMesh] && effectivePreMaxSteps[iMesh] > 1) {
+        effectivePreMaxSteps[iMesh]--;
+        consecutiveLowReductionPre[iMesh] = 0;
+        if (verbose)
+          std::cout << "  PreSmooth L" << iMesh << " ramp-down (CFL cut): effective="
+               << effectivePreMaxSteps[iMesh] << "/" << nPreSmooth << std::endl;
+      }
       const passivedouble total_reduction = 1.0 - lastPreSmoothRMS[iMesh][1] / lastPreSmoothRMS[iMesh][0];
       constexpr passivedouble RAMP_DOWN_TOL = 0.05;  // < 5% total reduction → count toward ramp-down
-      constexpr passivedouble RAMP_UP_TOL  = 0.20;   // > 20% total reduction → ramp up
+      constexpr passivedouble RAMP_UP_TOL  = 0.20;   // > 20% total reduction → ramp up (multi-step)
+      /*--- When at minimum (1 step) the measurement window is a single step, so the 20% threshold
+       *    would trap us permanently in the stall regime.  At effectiveMax==1, any improvement
+       *    above RAMP_DOWN_TOL is sufficient to probe a second step. ---*/
+      const passivedouble ramp_up_tol = (effectivePreMaxSteps[iMesh] == 1) ? RAMP_DOWN_TOL : RAMP_UP_TOL;
       if (total_reduction < RAMP_DOWN_TOL) {
         consecutiveLowReductionPre[iMesh]++;
         if (consecutiveLowReductionPre[iMesh] >= RAMP_HYSTERESIS && effectivePreMaxSteps[iMesh] > 1)
           effectivePreMaxSteps[iMesh]--;
-      } else if (total_reduction > RAMP_UP_TOL) {
+      } else if (total_reduction > ramp_up_tol) {
         consecutiveLowReductionPre[iMesh] = 0;
         if (effectivePreMaxSteps[iMesh] < nPreSmooth)
           effectivePreMaxSteps[iMesh]++;
@@ -939,14 +968,22 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
     /*--- Between-cycle ramp: adjust effective steps for the NEXT cycle. ---*/
     if (mgOpts.MG_Smooth_EarlyExit && compute_diagnostics && lastPostSmoothRMS[iMesh][0] > 0.0) {
+      if (lastCFLWasReduced[iMesh] && effectivePostMaxSteps[iMesh] > 1) {
+        effectivePostMaxSteps[iMesh]--;
+        consecutiveLowReductionPost[iMesh] = 0;
+        if (verbose)
+          std::cout << "  PostSmooth L" << iMesh << " ramp-down (CFL cut): effective="
+               << effectivePostMaxSteps[iMesh] << "/" << nPostSmooth << std::endl;
+      }
       const passivedouble total_reduction = 1.0 - lastPostSmoothRMS[iMesh][1] / lastPostSmoothRMS[iMesh][0];
       constexpr passivedouble RAMP_DOWN_TOL = 0.05;
       constexpr passivedouble RAMP_UP_TOL  = 0.20;
+      const passivedouble ramp_up_tol = (effectivePostMaxSteps[iMesh] == 1) ? RAMP_DOWN_TOL : RAMP_UP_TOL;
       if (total_reduction < RAMP_DOWN_TOL) {
         consecutiveLowReductionPost[iMesh]++;
         if (consecutiveLowReductionPost[iMesh] >= RAMP_HYSTERESIS && effectivePostMaxSteps[iMesh] > 1)
           effectivePostMaxSteps[iMesh]--;
-      } else if (total_reduction > RAMP_UP_TOL) {
+      } else if (total_reduction > ramp_up_tol) {
         consecutiveLowReductionPost[iMesh] = 0;
         if (effectivePostMaxSteps[iMesh] < nPostSmooth)
           effectivePostMaxSteps[iMesh]++;

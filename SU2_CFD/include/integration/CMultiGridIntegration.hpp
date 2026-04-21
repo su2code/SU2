@@ -339,4 +339,11 @@ private:
   unsigned short consecutiveOuterNonConvergingPre[MAX_MG_LEVELS+1] = {};
   unsigned short consecutiveOuterNonConvergingPost[MAX_MG_LEVELS+1] = {};
 
+  /*--- Per-level flag set by computeMultigridCFL when the coarse-grid CFL was
+   *    actively reduced this cycle (increasing residual trend or oscillation).
+   *    Read by the ramp block in Pre/PostSmoothing to trigger an immediate
+   *    step-count reduction — bypassing RAMP_HYSTERESIS — because the CFL
+   *    reduction is direct evidence that too many explicit steps are unstable. ---*/
+  bool lastCFLWasReduced[MAX_MG_LEVELS+1] = {};
+
 };
