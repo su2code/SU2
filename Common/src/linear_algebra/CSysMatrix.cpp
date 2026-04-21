@@ -683,33 +683,6 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
   SU2_ZONE_SCOPED
-  /*--- Copy block matrix to compute factorization in-place. ---*/
-
-  if (ilu_fill_in == 0) {
-    /*--- ILU0, direct copy. ---*/
-    SU2_OMP_FOR_STAT(omp_light_size)
-    for (auto iVar = 0ul; iVar < nnz * nVar * nVar; ++iVar) ILU_matrix[iVar] = matrix[iVar];
-    END_SU2_OMP_FOR
-  } else {
-    /*--- ILUn clear the ILU matrix first. ---*/
-    SU2_OMP_FOR_STAT(omp_light_size)
-    for (auto iVar = 0ul; iVar < nnz_ilu * nVar * nVar; iVar++) ILU_matrix[iVar] = 0.0;
-    END_SU2_OMP_FOR
-
-    /*--- ILUn, traverse matrix to access its blocks
-     *    sequentially and set them in the ILU matrix. ---*/
-    SU2_OMP_FOR_DYN(omp_heavy_size)
-    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-      for (auto index = row_ptr[iPoint]; index < row_ptr[iPoint + 1]; index++) {
-        auto jPoint = col_ind[index];
-        SetBlock_ILUMatrix(iPoint, jPoint, &matrix[index * nVar * nVar]);
-      }
-    }
-    END_SU2_OMP_FOR
-  }
-
-  /*--- Transform system in Upper Matrix ---*/
-
   /*--- OpenMP Parallelization, a loop construct is used to ensure
    *    the preconditioner is computed correctly even if called
    *    outside of a parallel section. ---*/
@@ -724,9 +697,45 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
      *    to row/col "end-1" (i.e. the range [begin,end[). Which is exactly
      *    what the MPI-only implementation does. ---*/
 
+    const auto blockSize = nVar * nVar;
     ScalarType Lij[MAXNVAR * MAXNVAR], Lij_Ujk[MAXNVAR * MAXNVAR];
 
+    /*--- Copy block matrix to compute factorization in-place. ---*/
+    auto InitIluRow = [&](const auto iRow) {
+      if (ilu_fill_in == 0) {
+        /*--- ILU0, direct copy to initialize. ---*/
+        const auto begin = row_ptr_ilu[iRow] * blockSize;
+        const auto end = row_ptr_ilu[iRow + 1] * blockSize;
+        SU2_OMP_SIMD
+        for (unsigned long k = begin; k < end; k++) ILU_matrix[k] = matrix[k];
+        return;
+      }
+      /*--- ILUn, clear or copy the entries of the matrix. ---*/
+      auto indexMat = row_ptr[iRow];
+      const auto endMat = row_ptr[iRow + 1];
+      for (auto index = row_ptr_ilu[iRow]; index < row_ptr_ilu[iRow + 1];) {
+        const auto jPoint = col_ind_ilu[index];
+        const auto jPointMat = col_ind[indexMat];
+        if (jPoint < jPointMat || indexMat == endMat) {
+          /*--- ILU column has not caught up with matrix column or all matrix columns were used. ---*/
+          ZeroMatrix(&ILU_matrix[index * blockSize]);
+          ++index;
+        } else {
+          /*--- Columns match, copy the matrix block. ---*/
+          if (jPoint == jPointMat) {
+            MatrixCopy(&matrix[indexMat * blockSize], &ILU_matrix[index * blockSize]);
+            ++index;
+          }
+          /*--- We've either copied the matrix column or it has not caught up with the ILU column. ---*/
+          ++indexMat;
+        }
+      }
+    };
+    InitIluRow(begin);
+
     for (auto iPoint = begin + 1; iPoint < end; iPoint++) {
+      InitIluRow(iPoint);
+
       /*--- Invert and store the previous diagonal block to compute the lower entries. ---*/
 
       InvertDiagonalBlockILUMatrix(iPoint - 1);
@@ -744,8 +753,8 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
 
         /*--- Multiply the block by the inverse of the corresponding diagonal block. ---*/
 
-        auto Block_ij = &ILU_matrix[index * nVar * nVar];
-        const auto invUjj = &ILU_matrix[dia_ptr_ilu[jPoint] * nVar * nVar];
+        auto Block_ij = &ILU_matrix[index * blockSize];
+        const auto invUjj = &ILU_matrix[dia_ptr_ilu[jPoint] * blockSize];
         MatrixMatrixProduct(Block_ij, invUjj, Lij);
 
         /*--- Lij holds Aij*inv(Ujj). Jump to the upper part of the jPoint row. ---*/
@@ -762,7 +771,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
           auto Block_ik = GetBlock_ILUMatrix(iPoint, kPoint);
 
           if (Block_ik != nullptr) {
-            const auto Ujk = &ILU_matrix[index_ * nVar * nVar];
+            const auto Ujk = &ILU_matrix[index_ * blockSize];
             MatrixMatrixProduct(Lij, Ujk, Lij_Ujk);
             MatrixSubtraction(Block_ik, Lij_Ujk, Block_ik);
           }
@@ -770,7 +779,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
 
         /*--- Lastly, store Lij in the lower triangular part. ---*/
         SU2_OMP_SIMD
-        for (auto iVar = 0ul; iVar < nVar * nVar; ++iVar) Block_ij[iVar] = Lij[iVar];
+        for (auto iVar = 0ul; iVar < blockSize; ++iVar) Block_ij[iVar] = Lij[iVar];
       }
     }
     InvertDiagonalBlockILUMatrix(end - 1);
