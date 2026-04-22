@@ -1371,11 +1371,11 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       break;
     case MPI_QUANTITIES::STOCH_SOURCE_LANG:
       COUNT_PER_POINT  = nDim;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::DES_LENGTHSCALE:
       COUNT_PER_POINT  = 1;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::SOLUTION_FEA:
       if (config->GetTime_Domain())
