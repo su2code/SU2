@@ -86,6 +86,24 @@ inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
   }
   return sqrt(result / solver->GetnVar());
 }
+
+/*! \brief Compute RMS of LinSysRes directly over domain points, with MPI reduction.
+ *  Reads the vector itself (not Residual_RMS), so it gives R(u_current) immediately
+ *  after a Preprocessing + Space_Integration call without needing Time_Integration.
+ *  Must be called from master only (inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS). */
+inline passivedouble ComputeLinSysVecRMS(const CSolver* solver, const CGeometry* geometry) {
+  const unsigned short nVar = solver->GetnVar();
+  const unsigned long nPtDomain = geometry->GetnPointDomain();
+  passivedouble local_sq = 0.0;
+  for (auto iPoint = 0ul; iPoint < nPtDomain; iPoint++)
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      const passivedouble r = SU2_TYPE::GetValue(solver->LinSysRes(iPoint, iVar));
+      local_sq += r * r;
+    }
+  passivedouble global_sq = 0.0;
+  SU2_MPI::Allreduce(&local_sq, &global_sq, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  return sqrt(global_sq / (nVar * geometry->GetGlobal_nPointDomain()));
+}
 }
 
 void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
@@ -580,8 +598,25 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPreSmooth > 1);
   const bool need_per_step_rms = early_exit || mgOpts.MG_Smooth_Output;
 
-  /*--- Reset the shared early-exit flag and stagnation tracker (master only). ---*/
-  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false; mg_prev_smooth_rms = 0.0;)
+  /*--- Reset the shared early-exit flag (master only). ---*/
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
+
+  /*--- Pre-loop: evaluate the true baseline R(u_0) before any solution update.
+   *    Runs Preprocessing + Space_Integration without modifying the solution, then
+   *    reads LinSysRes directly so Residual_RMS does not need to be current.
+   *    Only done when per-step monitoring is active (output or early exit). ---*/
+  if (need_per_step_rms) {
+    solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, 0, RunTime_EqSystem, false);
+    Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, 0, RunTime_EqSystem);
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      const passivedouble pre_rms = ComputeLinSysVecRMS(solver_fine, geometry_fine);
+      mg_initial_smooth_rms = pre_rms;
+      mg_prev_smooth_rms    = pre_rms;
+      lastPreSmoothRMS[iMesh][0] = pre_rms;
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
+
   for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
 
     /*--- Time and space integration ---*/
@@ -606,13 +641,11 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
 
-      /*--- Capture initial RMS after the very first residual evaluation.
-       *    This is the earliest point where LinSysRes = R(u_current) (not stale). ---*/
-      if (iPreSmooth == 0 && iRKStep == 0) {
+      /*--- Capture initial RMS for the non-verbose/non-early-exit path only.
+       *    When need_per_step_rms is true the pre-loop block already set the baseline. ---*/
+      if (iPreSmooth == 0 && iRKStep == 0 && !need_per_step_rms) {
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-          const passivedouble initial_rms = ComputeLinSysResRMS(solver_fine);
-          lastPreSmoothRMS[iMesh][0] = initial_rms;
-          if (need_per_step_rms) mg_initial_smooth_rms = initial_rms;
+          lastPreSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver_fine);
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
       }
@@ -621,10 +654,15 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
     }
 
-    /*--- Per-step residual check: verbose output and early exit (threshold + stagnation). ---*/
+    /*--- Per-step residual check: re-evaluate R(u_new) then verbose output and early exit.
+     *    A fresh Preprocessing + Space_Integration gives LinSysRes = R(u after this step),
+     *    which ComputeLinSysVecRMS reads directly.  This extra pass is accepted cost when
+     *    output or early exit is enabled; it is not executed in normal production runs. ---*/
     if (need_per_step_rms) {
+      solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, 0, RunTime_EqSystem, false);
+      Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, 0, RunTime_EqSystem);
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-        const passivedouble current_rms = ComputeLinSysResRMS(solver_fine);
+        const passivedouble current_rms = ComputeLinSysVecRMS(solver_fine, geometry_fine);
         mg_last_smooth_rms = current_rms;
 
         if (mgOpts.MG_Smooth_Output && SU2_MPI::GetRank() == MASTER_NODE) {
@@ -655,11 +693,11 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   }
 
   /*--- Record final RMS and progress flag.
-   *    Skip recompute when per-step RMS was tracked and early exit triggered
-   *    (mg_last_smooth_rms is already current); otherwise recompute once here.
-   *    The condition is the same for all threads so they all agree on whether to call. ---*/
+   *    In the verbose/early-exit path mg_last_smooth_rms is always kept current by the
+   *    per-step ComputeLinSysVecRMS call, so no recompute is needed.
+   *    In the normal path recompute once from Residual_RMS (stale-by-one-step but cheap). ---*/
   passivedouble final_pre_rms = mg_last_smooth_rms;
-  if (!(need_per_step_rms && mg_early_exit_flag)) {
+  if (!need_per_step_rms) {
     final_pre_rms = ComputeLinSysResRMS(solver_fine);
   }
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -689,8 +727,23 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPostSmooth > 1);
   const bool need_per_step_rms = early_exit || mgOpts.MG_Smooth_Output;
 
-  /*--- Reset the shared early-exit flag and stagnation tracker (master only). ---*/
-  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false; mg_prev_smooth_rms = 0.0;)
+  /*--- Reset the shared early-exit flag (master only). ---*/
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
+
+  /*--- Pre-loop: evaluate the true baseline R(u_0) before any solution update.
+   *    Same rationale as PreSmoothing: reads LinSysRes directly after a fresh
+   *    Preprocessing + Space_Integration, so Residual_RMS need not be current. ---*/
+  if (need_per_step_rms) {
+    solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, 0, RunTime_EqSystem, false);
+    Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, 0, RunTime_EqSystem);
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      const passivedouble pre_rms = ComputeLinSysVecRMS(solver_fine, geometry_fine);
+      mg_initial_smooth_rms = pre_rms;
+      mg_prev_smooth_rms    = pre_rms;
+      lastPostSmoothRMS[iMesh][0] = pre_rms;
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
   /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
   for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
@@ -712,14 +765,13 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
 
-      /*--- Capture initial RMS after the very first residual evaluation.
-       *    Before this point, LinSysRes held the smoothed correction (from SmoothProlongated_Correction),
-       *    NOT the spatial residual R(u). This is the first valid R(u) after applying the correction. ---*/
-      if (iPostSmooth == 0 && iRKStep == 0) {
+      /*--- Capture initial RMS for the non-verbose/non-early-exit path only.
+       *    When need_per_step_rms is true the pre-loop block already set the baseline.
+       *    Note: before the pre-loop, LinSysRes held the smoothed correction, not R(u);
+       *    the pre-loop's Space_Integration overwrites it with the true R(u). ---*/
+      if (iPostSmooth == 0 && iRKStep == 0 && !need_per_step_rms) {
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-          const passivedouble initial_rms = ComputeLinSysResRMS(solver_fine);
-          lastPostSmoothRMS[iMesh][0] = initial_rms;
-          if (need_per_step_rms) mg_initial_smooth_rms = initial_rms;
+          lastPostSmoothRMS[iMesh][0] = ComputeLinSysResRMS(solver_fine);
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
       }
@@ -729,10 +781,12 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
     }
 
-    /*--- Per-step residual check: verbose output and early exit (threshold + stagnation). ---*/
+    /*--- Per-step residual check: re-evaluate R(u_new) then verbose output and early exit. ---*/
     if (need_per_step_rms) {
+      solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, 0, RunTime_EqSystem, false);
+      Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, 0, RunTime_EqSystem);
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-        const passivedouble current_rms = ComputeLinSysResRMS(solver_fine);
+        const passivedouble current_rms = ComputeLinSysVecRMS(solver_fine, geometry_fine);
         mg_last_smooth_rms = current_rms;
 
         if (mgOpts.MG_Smooth_Output && SU2_MPI::GetRank() == MASTER_NODE) {
@@ -763,10 +817,10 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   }
 
   /*--- Record final RMS after post-smoothing.
-   *    Skip recompute when per-step RMS was tracked and early exit triggered;
-   *    otherwise compute once here. ---*/
+   *    In the verbose/early-exit path mg_last_smooth_rms is kept current by the per-step
+   *    ComputeLinSysVecRMS call; in the normal path recompute once from Residual_RMS. ---*/
   passivedouble final_post_rms = mg_last_smooth_rms;
-  if (!(need_per_step_rms && mg_early_exit_flag)) {
+  if (!need_per_step_rms) {
     final_post_rms = ComputeLinSysResRMS(solver_fine);
   }
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
