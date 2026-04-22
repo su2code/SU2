@@ -18,35 +18,50 @@ on:
         type: string
 
 jobs:
+  setup:
+    name: Compute shared flags
+    runs-on: ubuntu-latest
+
+    outputs:
+      flags: ${{ steps.compute.outputs.flags }}
+
+    steps:
+      - id: compute
+        run: |
+          if [[ "${{ inputs.runner || 'ubuntu-latest' }}" == *arm* ]]; then
+            echo "flags=" >> $GITHUB_OUTPUT
+          else
+            echo "flags=-Dcpu-arch=skylake" >> $GITHUB_OUTPUT
+          fi
+
   build:
     name: Build SU2
-    env:
-      ARCH_FLAGS: ${{ !contains(inputs.runner || 'ubuntu-latest', 'arm') && '-Dcpu-arch=skylake' || '' }}
+    needs: setup
     strategy:
       fail-fast: false
       matrix:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, ReverseTagNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
         include:
           - config_set: BaseMPI
-            flags: '${{ env.ARCH_FLAGS }} -Denable-pywrapper=true -Denable-coolprop=true -Denable-mpp=true -Dinstall-mpp=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-pywrapper=true -Denable-coolprop=true -Denable-mpp=true -Dinstall-mpp=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2'
           - config_set: ReverseMPI
-            flags: '${{ env.ARCH_FLAGS }} -Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 --werror'
           - config_set: ForwardMPI
-            flags: '${{ env.ARCH_FLAGS }} -Denable-directdiff=true -Denable-normal=false -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 --werror'
           - config_set: BaseNoMPI
-            flags: '${{ env.ARCH_FLAGS }} -Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ReverseNoMPI
-            flags: '${{ env.ARCH_FLAGS }} -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ForwardNoMPI
-            flags: '${{ env.ARCH_FLAGS }} -Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ReverseTagNoMPI
-            flags: '${{ env.ARCH_FLAGS }} -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror -Dcodi-tape=Tag'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror -Dcodi-tape=Tag'
           - config_set: BaseOMP
-            flags: '${{ env.ARCH_FLAGS }} -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
           - config_set: ReverseOMP
-            flags: '${{ env.ARCH_FLAGS }} -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
           - config_set: ForwardOMP
-            flags: '${{ env.ARCH_FLAGS }} -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
@@ -78,8 +93,7 @@ jobs:
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   build_tsan:
     name: Build SU2 (tsan)
-    env:
-      ARCH_FLAGS: ${{ !contains(inputs.runner || 'ubuntu-latest', 'arm') && '-Dcpu-arch=skylake' || '' }}
+    needs: setup
     if: ${{ !contains(inputs.runner, 'arm') }}
     strategy:
       fail-fast: false
@@ -87,11 +101,11 @@ jobs:
         config_set: [BaseOMP-tsan, ReverseOMP-tsan] #ForwardOMP-tsan
         include:
           - config_set: BaseOMP-tsan
-            flags: '--buildtype=debugoptimized ${{ env.ARCH_FLAGS }} -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
+            flags: '--buildtype=debugoptimized ${{ needs.setup.outputs.flags }} -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
           - config_set: ReverseOMP-tsan
-            flags: '--buildtype=debugoptimized ${{ env.ARCH_FLAGS }} -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
+            flags: '--buildtype=debugoptimized ${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
           #- config_set: ForwardOMP-tsan
-          #  flags: '--buildtype=debug ${{ env.ARCH_FLAGS }} -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+          #  flags: '--buildtype=debug ${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
@@ -123,17 +137,16 @@ jobs:
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   build_asan:
     name: Build SU2 (asan)
-    env:
-      ARCH_FLAGS: ${{ !contains(inputs.runner || 'ubuntu-latest', 'arm') && '-Dcpu-arch=skylake' || '' }}
+    needs: setup
     strategy:
       fail-fast: false
       matrix:
         config_set: [BaseNoMPI-asan, ReverseNoMPI-asan]
         include:
           - config_set: BaseNoMPI-asan
-            flags: '--buildtype=debugoptimized ${{ env.ARCH_FLAGS }} -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true --warnlevel=3 --werror'
+            flags: '--buildtype=debugoptimized ${{ needs.setup.outputs.flags }} -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true --warnlevel=3 --werror'
           - config_set: ReverseNoMPI-asan
-            flags: '--buildtype=debugoptimized ${{ env.ARCH_FLAGS }} --optimization=1 -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled --warnlevel=3 --werror'
+            flags: '--buildtype=debugoptimized ${{ needs.setup.outputs.flags }} --optimization=1 -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
