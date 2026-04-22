@@ -16,6 +16,11 @@ on:
         default: 'ubuntu-latest'
         required: false
         type: string
+      architecture:
+        description: 'CPU architecture for compiler optimizations'
+        default: 'skylake'
+        required: false
+        type: string
 
 jobs:
   build:
@@ -26,25 +31,25 @@ jobs:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, ReverseTagNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
         include:
           - config_set: BaseMPI
-            flags: '-Dcpu-arch=skylake -Denable-pywrapper=true -Denable-coolprop=true -Denable-mpp=true -Dinstall-mpp=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2'
+            flags: '-Dcpu-arch=${{ inputs.architecture }} -Denable-pywrapper=true -Denable-coolprop=true -Denable-mpp=true -Dinstall-mpp=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2'
           - config_set: ReverseMPI
-            flags: '-Dcpu-arch=skylake -Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 --werror'
+            flags: '-Dcpu-arch=${{ inputs.architecture }} -Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 --werror'
           - config_set: ForwardMPI
-            flags: '-Dcpu-arch=skylake -Denable-directdiff=true -Denable-normal=false -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 --werror'
+            flags: '-Dcpu-arch=${{ inputs.architecture }} -Denable-directdiff=true -Denable-normal=false -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 --werror'
           - config_set: BaseNoMPI
-            flags: '-Dcpu-arch=skylake -Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Dcpu-arch=${{ inputs.architecture }} -Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ReverseNoMPI
-            flags: '-Dcpu-arch=skylake -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Dcpu-arch=${{ inputs.architecture }} -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ForwardNoMPI
-            flags: '-Dcpu-arch=skylake -Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
+            flags: '-Dcpu-arch=${{ inputs.architecture }} -Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
           - config_set: ReverseTagNoMPI
-            flags: '-Dcpu-arch=skylake -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror -Dcodi-tape=Tag'
+            flags: '-Dcpu-arch=${{ inputs.architecture }} -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror -Dcodi-tape=Tag'
           - config_set: BaseOMP
-            flags: '-Dcpu-arch=skylake -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '-Dcpu-arch=${{ inputs.architecture }} -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
           - config_set: ReverseOMP
-            flags: '-Dcpu-arch=skylake -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '-Dcpu-arch=${{ inputs.architecture }} -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
           - config_set: ForwardOMP
-            flags: '-Dcpu-arch=skylake -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '-Dcpu-arch=${{ inputs.architecture }} -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
@@ -83,11 +88,11 @@ jobs:
         config_set: [BaseOMP-tsan, ReverseOMP-tsan] #ForwardOMP-tsan
         include:
           - config_set: BaseOMP-tsan
-            flags: '--buildtype=debugoptimized -Dcpu-arch=skylake -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
+            flags: '--buildtype=debugoptimized -Dcpu-arch=${{ inputs.architecture }} -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
           - config_set: ReverseOMP-tsan
-            flags: '--buildtype=debugoptimized -Dcpu-arch=skylake -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
+            flags: '--buildtype=debugoptimized -Dcpu-arch=${{ inputs.architecture }} -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
           #- config_set: ForwardOMP-tsan
-          #  flags: '--buildtype=debug -Dcpu-arch=skylake -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+          #  flags: '--buildtype=debug -Dcpu-arch=${{ inputs.architecture }} -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
@@ -125,9 +130,9 @@ jobs:
         config_set: [BaseNoMPI-asan, ReverseNoMPI-asan]
         include:
           - config_set: BaseNoMPI-asan
-            flags: '--buildtype=debugoptimized -Dcpu-arch=skylake -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true --warnlevel=3 --werror'
+            flags: '--buildtype=debugoptimized -Dcpu-arch=${{ inputs.architecture }} -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true --warnlevel=3 --werror'
           - config_set: ReverseNoMPI-asan
-            flags: '--buildtype=debugoptimized -Dcpu-arch=skylake --optimization=1 -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled --warnlevel=3 --werror'
+            flags: '--buildtype=debugoptimized -Dcpu-arch=${{ inputs.architecture }} --optimization=1 -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled --warnlevel=3 --werror'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
