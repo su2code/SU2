@@ -1980,6 +1980,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MGOptions.MG_Smooth_Res_Threshold, 0.5);
   /*!\brief MG_SMOOTH_OUTPUT\n DESCRIPTION: Print compact per-cycle smoothing iteration summary. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_SMOOTH_OUTPUT", MGOptions.MG_Smooth_Output, false);
+  /*!\brief MG_SMOOTH_STAGNATION_TOL\n DESCRIPTION: Early exit smoothing when step-to-step RMS ratio >= this value (0 = disabled). DEFAULT: 0.0 \ingroup Config*/
+  addDoubleOption("MG_SMOOTH_STAGNATION_TOL", MGOptions.MG_Smooth_StagnationTol, 0.0);
   /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for the correction prolongation Jacobi smoother. DEFAULT: 1.25 \ingroup Config*/
   addDoubleOption("MG_SMOOTH_COEFF", MGOptions.MG_Smooth_Coeff, 1.25);
   /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level. Levels that would produce fewer CVs are not created. DEFAULT: 50 \ingroup Config*/

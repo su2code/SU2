@@ -578,9 +578,10 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   const unsigned short nPreSmooth = mgOpts.MG_PreSmooth[iMesh];
   const unsigned long timeIter = config->GetTimeIter();
   const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPreSmooth > 1);
+  const bool need_per_step_rms = early_exit || mgOpts.MG_Smooth_Output;
 
-  /*--- Reset the shared early-exit flag (master only). ---*/
-  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
+  /*--- Reset the shared early-exit flag and stagnation tracker (master only). ---*/
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false; mg_prev_smooth_rms = 0.0;)
   for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
 
     /*--- Time and space integration ---*/
@@ -611,7 +612,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
           const passivedouble initial_rms = ComputeLinSysResRMS(solver_fine);
           lastPreSmoothRMS[iMesh][0] = initial_rms;
-          if (early_exit) mg_initial_smooth_rms = initial_rms;
+          if (need_per_step_rms) mg_initial_smooth_rms = initial_rms;
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
       }
@@ -620,15 +621,33 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
     }
 
-    /*--- Early exit: check if RMS has dropped sufficiently. ---*/
-    if (early_exit) {
+    /*--- Per-step residual check: verbose output and early exit (threshold + stagnation). ---*/
+    if (need_per_step_rms) {
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
         const passivedouble current_rms = ComputeLinSysResRMS(solver_fine);
         mg_last_smooth_rms = current_rms;
-        if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
-          lastPreSmoothIters[iMesh] = iPreSmooth + 1;
-          mg_early_exit_flag = true;
+
+        if (mgOpts.MG_Smooth_Output && SU2_MPI::GetRank() == MASTER_NODE) {
+          const passivedouble ratio = (mg_initial_smooth_rms > 0.0) ?
+                                      current_rms / mg_initial_smooth_rms : 1.0;
+          cout << "  Pre-smooth [MG level " << iMesh << "] step " << iPreSmooth+1
+               << "/" << nPreSmooth << "  r0=" << scientific << setprecision(3)
+               << mg_initial_smooth_rms << "  r=" << current_rms
+               << "  ratio=" << fixed << setprecision(4) << ratio << "\n";
         }
+
+        if (early_exit) {
+          if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
+            lastPreSmoothIters[iMesh] = iPreSmooth + 1;
+            mg_early_exit_flag = true;
+          } else if (mgOpts.MG_Smooth_StagnationTol > 0.0 && iPreSmooth > 0 &&
+                     current_rms >= mg_prev_smooth_rms * mgOpts.MG_Smooth_StagnationTol) {
+            lastPreSmoothIters[iMesh] = iPreSmooth + 1;
+            mg_early_exit_flag = true;
+          }
+        }
+
+        mg_prev_smooth_rms = current_rms;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
       if (mg_early_exit_flag) break;
@@ -636,11 +655,11 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   }
 
   /*--- Record final RMS and progress flag.
-   *    In the early-exit path mg_last_smooth_rms already holds the current value;
-   *    in the normal path we compute it once here.
+   *    Skip recompute when per-step RMS was tracked and early exit triggered
+   *    (mg_last_smooth_rms is already current); otherwise recompute once here.
    *    The condition is the same for all threads so they all agree on whether to call. ---*/
   passivedouble final_pre_rms = mg_last_smooth_rms;
-  if (!(early_exit && mg_early_exit_flag)) {
+  if (!(need_per_step_rms && mg_early_exit_flag)) {
     final_pre_rms = ComputeLinSysResRMS(solver_fine);
   }
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -668,9 +687,10 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   const unsigned short nPostSmooth = mgOpts.MG_PostSmooth[iMesh];
   const unsigned long timeIter = config->GetTimeIter();
   const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPostSmooth > 1);
+  const bool need_per_step_rms = early_exit || mgOpts.MG_Smooth_Output;
 
-  /*--- Reset the shared early-exit flag (master only). ---*/
-  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
+  /*--- Reset the shared early-exit flag and stagnation tracker (master only). ---*/
+  SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false; mg_prev_smooth_rms = 0.0;)
 
   /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
   for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
@@ -699,7 +719,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
           const passivedouble initial_rms = ComputeLinSysResRMS(solver_fine);
           lastPostSmoothRMS[iMesh][0] = initial_rms;
-          if (early_exit) mg_initial_smooth_rms = initial_rms;
+          if (need_per_step_rms) mg_initial_smooth_rms = initial_rms;
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
       }
@@ -709,15 +729,33 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
     }
 
-    /*--- Early exit: check if RMS has dropped sufficiently. ---*/
-    if (early_exit) {
+    /*--- Per-step residual check: verbose output and early exit (threshold + stagnation). ---*/
+    if (need_per_step_rms) {
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
         const passivedouble current_rms = ComputeLinSysResRMS(solver_fine);
         mg_last_smooth_rms = current_rms;
-        if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
-          lastPostSmoothIters[iMesh] = iPostSmooth + 1;
-          mg_early_exit_flag = true;
+
+        if (mgOpts.MG_Smooth_Output && SU2_MPI::GetRank() == MASTER_NODE) {
+          const passivedouble ratio = (mg_initial_smooth_rms > 0.0) ?
+                                      current_rms / mg_initial_smooth_rms : 1.0;
+          cout << "  Post-smooth [MG level " << iMesh << "] step " << iPostSmooth+1
+               << "/" << nPostSmooth << "  r0=" << scientific << setprecision(3)
+               << mg_initial_smooth_rms << "  r=" << current_rms
+               << "  ratio=" << fixed << setprecision(4) << ratio << "\n";
         }
+
+        if (early_exit) {
+          if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
+            lastPostSmoothIters[iMesh] = iPostSmooth + 1;
+            mg_early_exit_flag = true;
+          } else if (mgOpts.MG_Smooth_StagnationTol > 0.0 && iPostSmooth > 0 &&
+                     current_rms >= mg_prev_smooth_rms * mgOpts.MG_Smooth_StagnationTol) {
+            lastPostSmoothIters[iMesh] = iPostSmooth + 1;
+            mg_early_exit_flag = true;
+          }
+        }
+
+        mg_prev_smooth_rms = current_rms;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
       if (mg_early_exit_flag) break;
@@ -725,10 +763,10 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   }
 
   /*--- Record final RMS after post-smoothing.
-   *    In the early-exit path mg_last_smooth_rms is already current; otherwise compute once.
-   *    The condition is the same for all threads so they all agree on whether to call. ---*/
+   *    Skip recompute when per-step RMS was tracked and early exit triggered;
+   *    otherwise compute once here. ---*/
   passivedouble final_post_rms = mg_last_smooth_rms;
-  if (!(early_exit && mg_early_exit_flag)) {
+  if (!(need_per_step_rms && mg_early_exit_flag)) {
     final_post_rms = ComputeLinSysResRMS(solver_fine);
   }
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {

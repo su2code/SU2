@@ -1113,6 +1113,7 @@ struct CMGOptions {
   std::vector<unsigned short> MG_CorrecSmooth; /*!< \brief Multigrid Jacobi correction-smoothing per level. */
   bool MG_Smooth_EarlyExit{false};        /*!< \brief Enable early exit for MG smoothing iterations. */
   bool MG_Smooth_Output{false};           /*!< \brief Output compact per-cycle smoothing summary. */
+  su2double MG_Smooth_StagnationTol{0.0}; /*!< \brief Stagnation early exit: stop if current_rms >= prev_rms * tol. 0 = disabled. */
   bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
 };
 

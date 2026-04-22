@@ -281,6 +281,7 @@ private:
   bool mg_early_exit_flag = false;             /*!< \brief Shared flag for early exit across OMP threads. */
   passivedouble mg_initial_smooth_rms = 0.0;  /*!< \brief Initial RMS before current smoothing phase. */
   passivedouble mg_last_smooth_rms = 0.0;     /*!< \brief Last computed RMS; cached to avoid redundant Allreduce. */
+  passivedouble mg_prev_smooth_rms = 0.0;     /*!< \brief RMS from previous smoothing step; used for stagnation detection. */
 
   /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
   unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
