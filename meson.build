@@ -187,6 +187,7 @@ endif
 if omp
   # add OpenMP dependency
   su2_deps += omp_dep
+  su2_cpp_args += '-DEIGEN_DONT_PARALLELIZE'
 
   # add opdi dependency
   if get_option('enable-autodiff')

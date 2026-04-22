@@ -80,10 +80,10 @@ def main():
     # Flame ignition methods
     flame_init_methods = TestCase("flame_init_methods")
     flame_init_methods.cfg_dir = "flamelet/08_flame_init_method"
-    flame_init_methods.cfg_file ="flamelet_initialization.py" 
+    flame_init_methods.cfg_file ="flamelet_initialization.py"
     flame_init_methods.command = TestCase.Command("mpirun -np 2", "python", "flamelet_initialization.py")
     flame_init_methods.test_vals=[1600, 1600]
-    flame_init_methods.new_output = True 
+    flame_init_methods.new_output = True
     test_list.append(flame_init_methods)
 
     #########################
@@ -1188,7 +1188,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 5
-    uniform_flow.test_vals = [5.000000, 0.000000, -0.195002, -10.624458]
+    uniform_flow.test_vals = [5.000000, 0.000000, -0.195002, -10.624448]
     uniform_flow.unsteady  = True
     uniform_flow.multizone = True
     test_list.append(uniform_flow)
@@ -1330,8 +1330,8 @@ def main():
     nonlinear_plane_stress = TestCase('nonlinear_plane_stress')
     nonlinear_plane_stress.cfg_dir = "fea_fsi/VonMissesVerif"
     nonlinear_plane_stress.cfg_file = "nonlinear_plane_stress_2d.cfg"
-    nonlinear_plane_stress.test_iter = 19
-    nonlinear_plane_stress.test_vals = [-7.433449, -3.355607, -13.983863, 162480, 43, -4.070373]
+    nonlinear_plane_stress.test_iter = 16
+    nonlinear_plane_stress.test_vals = [-7.131557, -2.945301, -13.165302, 1.6248e+05, 32, -4.129942]
     nonlinear_plane_stress.tol = [2e-4, 2e-4, 2e-4, 1e-5, 1e-5, 4e-4]
     test_list.append(nonlinear_plane_stress)
 
@@ -1369,7 +1369,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.330741, -4.152826, 0, 96]
+    dyn_fsi.test_vals = [-4.330741, -4.152826, 0, 97]
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     test_list.append(dyn_fsi)
@@ -1758,7 +1758,7 @@ def main():
     species_passive_val.cfg_dir   = "species_transport/passive_transport_validation"
     species_passive_val.cfg_file  = "passive_transport.cfg"
     species_passive_val.test_iter = 50
-    species_passive_val.test_vals = [-16.590103, -16.350880, -16.915685, -4.257599, 10, -4.296538, 8, -5.193350, 0.186610, 0]
+    species_passive_val.test_vals = [-16.576049, -16.349168, -16.916647, -4.257599, 10, -4.232357, 8, -5.193350, 0.186610, 0]
     species_passive_val.test_vals_aarch64 = [-16.517744, -16.282420, -16.871663, -4.257599, 10.000000, -4.278151, 8.000000, -5.193350, 0.186610, 0.000000]
     test_list.append(species_passive_val)
 
