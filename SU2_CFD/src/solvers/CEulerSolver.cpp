@@ -115,6 +115,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
    ---*/
 
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
 
   nVar = nDim + 2;
   nPrimVar = nDim + 9;

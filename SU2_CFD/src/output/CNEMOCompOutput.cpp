@@ -298,6 +298,9 @@ void CNEMOCompOutput::SetVolumeOutputFields(CConfig *config){
 
   AddCommonFVMOutputs(config);
 
+  // Sensor value/gradient/Hessian, metric tensor, and dual-cell volume
+  AddMeshAdaptationOutputs(config);
+
   if (config->GetTime_Domain()) {
     SetTimeAveragedFields();
   }
@@ -383,6 +386,8 @@ void CNEMOCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   LoadVolumeDataScalar(config, solver, geometry, iPoint);
 
   LoadCommonFVMOutputs(config, geometry, iPoint);
+
+  LoadMeshAdaptationOutputs(config, solver, geometry, iPoint);
 
   if (config->GetTime_Domain()) {
     LoadTimeAveragedData(iPoint, Node_Flow);

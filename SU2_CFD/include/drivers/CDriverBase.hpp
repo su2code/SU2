@@ -516,6 +516,23 @@ class CDriverBase {
   map<string, unsigned short> GetPrimitiveIndices() const;
 
   /*!
+   * \brief Get the local index of a named metric sensor in the flow solver.
+   * Used by Python custom sensor registries to cache indices before the run loop.
+   * \param[in] sensor_name - Name as listed in METRIC_SENSOR config.
+   * \return Sensor index, or -1 if not found.
+   */
+  short GetMetricSensorIndex(const std::string& sensor_name) const;
+
+  /*!
+   * \brief Get a read/write view of adaptation sensor values on all mesh nodes of the flow solver.
+   * \warning Adaptation sensors are only available for flow solvers with metric sensors configured.
+   */
+  inline CPyWrapperMatrixView AdaptSensors() {
+    auto* solver = GetSolverAndCheckMarker(FLOW_SOL);
+    return CPyWrapperMatrixView(const_cast<su2activematrix&>(solver->GetNodes()->GetSensor_Adapt()), "AdaptSensors", false);
+  }
+
+  /*!
    * \brief Get a read/write view of the current primitive variables on all mesh nodes of the flow solver.
    * \warning Primitive variables are only available for flow solvers.
    */

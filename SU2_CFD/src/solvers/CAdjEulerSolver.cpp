@@ -92,6 +92,7 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Define geometry constans in the solver structure ---*/
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
   nMarker = config->GetnMarker_All();
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();

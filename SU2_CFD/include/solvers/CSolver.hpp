@@ -31,6 +31,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <functional>
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -84,7 +85,8 @@ protected:
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nSecondaryVar,                 /*!< \brief Number of primitive variables of the problem. */
   nVarGrad,                      /*!< \brief Number of variables for deallocating the LS Cvector. */
-  nDim;                          /*!< \brief Number of dimensions of the problem. */
+  nDim,                          /*!< \brief Number of dimensions of the problem. */
+  nSymMat;                       /*!< \brief Number of symmetric matrix componenents for Hessian and metric tensor. */
   unsigned long nPoint;          /*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain;    /*!< \brief Number of points of the computational grid. */
   su2double Max_Delta_Time, /*!< \brief Maximum value of the delta time for all the control volumes. */
@@ -200,6 +202,16 @@ public:
   CVerificationSolution *VerificationSolution; /*!< \brief Verification solution class used within the solver. */
 
   vector<string> fields;
+
+  /*--- Metric sensors for mesh adaptation ---*/
+  struct MetricSensorInfo {
+    unsigned short prim_idx;                       /*!< \brief Primitive variable index (PRIMITIVE type only). */
+    std::string name;                              /*!< \brief Sensor name as specified in config. */
+    SensorType type = SensorType::PRIMITIVE;       /*!< \brief Category of sensor. */
+    std::function<su2double(const su2double*)> fn; /*!< \brief Point-wise evaluator for COMPUTED sensors. */
+  };
+  vector<MetricSensorInfo> MetricSensors;  /*!< \brief Sensor list in config order, one entry per sensor. */
+
 
 #ifdef HAVE_LIBROM
   std::unique_ptr<CAROM::BasisGenerator> u_basis_generator;
@@ -568,6 +580,35 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
+
+  /*!
+   * \brief Copy PRIMITIVE sensor values from primitive variable array into Sensor_Adapt.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetPrimitive_SensorAdapt(CGeometry *geometry, const CConfig *config);
+
+  /*!
+   * \brief Evaluate COMPUTED sensors (e.g. Mach number) and store results in Sensor_Adapt.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetComputed_SensorAdapt(CGeometry *geometry, const CConfig *config);
+
+    /*!
+   * \brief Allocate Gradient_Adapt and Hessian arrays for the sensors assigned to this solver.
+   * \param[in] nSensors - Number of sensors to allocate arrays for.
+   */
+  virtual void AllocateMetricSensorArrays(unsigned short nSensors);
+
+  /*!
+   * \brief Compute the Green-Gauss Hessian of the solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] idxVel - Index to velocity, -1 if no velocity is present in the solver.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetHessian_GG(CGeometry *geometry, const CConfig *config, short idxVel, const unsigned short Kind_Solver);
 
   /*!
    * \brief Compute the projection of a variable for MUSCL reconstruction.
@@ -4247,6 +4288,26 @@ public:
   inline vector<string> GetSolutionFields() const{return fields;}
 
   /*!
+   * \brief Get the number of metric sensors assigned to this solver.
+   * \return Number of metric sensors in this solver.
+   */
+  inline unsigned short GetnMetricSensor() const { return static_cast<unsigned short>(MetricSensors.size()); }
+
+  /*!
+   * \brief Get the metric sensor list for this solver.
+   * \return Vector of MetricSensorInfo entries in config order.
+   */
+  inline const vector<MetricSensorInfo>& GetMetricSensors() const { return MetricSensors; }
+
+  /*!
+   * \brief Set the metric sensor list for this solver.
+   * \param[in] sensors - Sensor entries in config order.
+   */
+  inline void SetMetricSensors(const vector<MetricSensorInfo>& sensors) {
+    MetricSensors = sensors;
+  }
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition.
    * \param[in] config   - Definition of the particular problem.
@@ -4360,24 +4421,44 @@ public:
     END_SU2_OMP_FOR
   }
 
-inline void CustomSourceResidual(CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  inline void CustomSourceResidual(CGeometry *geometry, CSolver **solver_container,
+                                  CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
 
-  AD::StartNoSharedReading();
+    AD::StartNoSharedReading();
 
-  SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain,2*omp_get_max_threads()))
-  for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-    /*--- Get control volume size. ---*/
-    su2double Volume = geometry->nodes->GetVolume(iPoint);
-    /*--- Compute the residual for this control volume and subtract. ---*/
-    for (auto iVar = 0ul; iVar < nVar; iVar++) {
-      LinSysRes(iPoint,iVar) -= base_nodes->GetUserDefinedSource()(iPoint, iVar) * Volume;
+    SU2_OMP_FOR_STAT(roundUpDiv(nPointDomain,2*omp_get_max_threads()))
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+      /*--- Get control volume size. ---*/
+      su2double Volume = geometry->nodes->GetVolume(iPoint);
+      /*--- Compute the residual for this control volume and subtract. ---*/
+      for (auto iVar = 0ul; iVar < nVar; iVar++) {
+        LinSysRes(iPoint,iVar) -= base_nodes->GetUserDefinedSource()(iPoint, iVar) * Volume;
+      }
     }
-  }
-  END_SU2_OMP_FOR
+    END_SU2_OMP_FOR
 
-  AD::EndNoSharedReading();
-}
+    AD::EndNoSharedReading();
+  }
+
+  /*!
+   * \brief Compute the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] restartMetric - Whether this is the initial sub-interval metric computation for an unsteady restart.
+   */
+  void ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config, bool restartMetric);
+
+  /*!
+   * \brief Sum up the weighted Hessians to obtain the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iSensor - Index of the sensor to work on.
+   * \param[in] restartMetric - Whether this is the initial sub-interval metric computation for an unsteady restart.
+   */
+  void AddMetrics(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                  const unsigned short iSensor, bool restartMetric);
 
 protected:
   /*!

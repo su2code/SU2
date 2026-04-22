@@ -1296,6 +1296,20 @@ private:
   /*--- Additional flamelet solver options ---*/
   FluidFlamelet_ParsedOptions flamelet_ParsedOptions; /*!< \brief Additional flamelet solver options */
 
+  /*--- Mesh adaptation options ---*/
+  bool Compute_Metric;                     /*!< \brief Determines if error estimation is taking place */
+  bool Normalize_Metric;                   /*!< \brief Determines if metric tensor normalization is taking place */
+  unsigned short Kind_Hessian_Method;      /*!< \brief Numerical method for computation of Hessians. */
+  unsigned short nMetric_Sensor;           /*!< \brief Number of sensors to use for adaptation. */
+  string* Metric_Sensor;                   /*!< \brief Sensors to use for adaptation (first entry is normalized, rest are Hessian-only). */
+
+  unsigned short Metric_Norm;              /*!< \brief Lp-norm for mesh adaptation */
+  unsigned long Metric_Complexity;         /*!< \brief Constraint mesh complexity */
+  unsigned short nAdapt_Time_Subinterval;  /*!< \brief Number of unsteady time sub-intervals for adaptation. */
+  su2double Metric_Hmax,                   /*!< \brief Maximum cell size */
+            Metric_Hmin,                   /*!< \brief Minimum cell size */
+            Metric_ARmax;                  /*!< \brief Maximum cell aspect ratio */
+
   /*!
    * \brief Set the default values of config options not set in the config file using another config object.
    * \param config - Config object to use the default values from.
@@ -10225,5 +10239,92 @@ public:
    * \return option data structure for the flamelet fluid model.
    */
   const FluidFlamelet_ParsedOptions& GetFlameletParsedOptions() const { return flamelet_ParsedOptions; }
+
+  /*!
+   * \brief Check if error estimation is being carried out
+   * \return <code>TRUE<\code> if error estimation is taking place
+  */
+  bool GetCompute_Metric(void) const { return Compute_Metric; }
+
+  /*!
+   * \brief Check if metric tensor normalization is being carried out
+   * \return <code>TRUE<\code> if metric normalization is taking place
+  */
+  bool GetNormalize_Metric(void) const { return Normalize_Metric; }
+
+  /*!
+   * \brief Get the kind of method for computation of Hessians used for anisotropy.
+   * \return Numerical method for computation of Hessians used for anisotropy.
+   */
+  unsigned short GetKind_Hessian_Method(void) const { return Kind_Hessian_Method; }
+
+  /*!
+   * \brief Get complete array of metric sensor names
+   * \return Array of sensor names
+   */
+  string* GetMetric_Sensor() const {
+    return Metric_Sensor;
+  }
+
+  /*!
+   * \brief Get metric sensor name by index
+   * \param[in] iSens - Index of the sensor
+   * \return Sensor name string
+   */
+  string GetMetric_Sensor(unsigned short iSens) const {
+    if (iSens >= nMetric_Sensor)
+      SU2_MPI::Error("Sensor index out of range.", CURRENT_FUNCTION);
+    return Metric_Sensor[iSens];
+  }
+
+  /*!
+   * \brief Get the complete list of metric sensor names
+   * \return Vector of sensor name strings
+   */
+  vector<string> GetMetric_SensorList() const {
+    return vector<string>(Metric_Sensor, Metric_Sensor + nMetric_Sensor);
+  }
+
+  /*!
+   * \brief Get number of adaptation sensors
+   * \return Number of sensors
+   */
+  unsigned short GetnMetric_Sensor() const { return nMetric_Sensor; }
+
+  /*!
+   * \brief Get adaptation norm value (Lp)
+   */
+  unsigned short GetMetric_Norm(void) const { return Metric_Norm; }
+
+  /*!
+   * \brief Get maximum cell size
+   * \return Maximum cell size
+   */
+  su2double GetMetric_Hmax(void) const { return Metric_Hmax; }
+
+  /*!
+   * \brief Get minimum cell size
+   * \return Minimum cell size
+   */
+  su2double GetMetric_Hmin(void) const { return Metric_Hmin; }
+
+  /*!
+   * \brief Get maximum cell aspect ratio
+   * \return Maximum cell aspect ratio
+   */
+  su2double GetMetric_ARmax(void) const { return Metric_ARmax; }
+
+  /*!
+   * \brief Get constraint complexity
+   * \return Mesh complexity
+   */
+  unsigned long GetMetric_Complexity(void) const { return Metric_Complexity; }
+
+  /*!
+   * \brief Get number of unsteady adaptation sub-intervals
+   * \note Currently only one sub-interval supported
+   * \return Number of unsteady adaptation sub-intervals
+   */
+  unsigned long GetnAdapt_Time_Subinterval(void) const { return nAdapt_Time_Subinterval; }
 
 };

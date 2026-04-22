@@ -2692,6 +2692,8 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_PRIM_1 ,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 ,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_IMPLICIT   ,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+  PERIODIC_GRAD_ADAPT ,  /*!< \brief Gradient vectors for anisotropic sizing metric (periodic only). */
+  PERIODIC_HESSIAN    ,  /*!< \brief Hessian tensors for anisotropic sizing metric (periodic only). */
 };
 
 /*!
@@ -2723,6 +2725,9 @@ enum class MPI_QUANTITIES {
   MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
+  SENSOR_ADAPT         ,  /*!< \brief Sensors for anisotropic sizing metric tensor. */
+  GRADIENT_ADAPT       ,  /*!< \brief Gradient vectors for anisotropic sizing metric tensor. */
+  HESSIAN              ,  /*!< \brief Hessian tensors for anisotropic sizing metric tensor. */
 };
 
 /*!
@@ -2878,6 +2883,15 @@ enum class DEFORM_KIND {
 static const MapType<std::string, DEFORM_KIND> Deform_Kind_Map = {
   MakePair("ELASTIC",   DEFORM_KIND::ELASTIC)
   MakePair("RBF",       DEFORM_KIND::RBF)
+};
+
+/*!
+ * \brief Type of sensor for anisotropic metrics.
+ */
+enum class SensorType {
+  PRIMITIVE, /*!< \brief Value read directly from the primitive variable array. */
+  COMPUTED,  /*!< \brief Officially-supported computed quantity (e.g. Mach number). */
+  CUSTOM,    /*!< \brief User-defined sensor populated externally via the Python wrapper. */
 };
 
 

@@ -54,6 +54,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Define geometry constants in the solver structure ---*/
 
   nDim = geometry->GetnDim();
+  nSymMat = 3 * (nDim - 1);
 
   /*--- Single grid simulation ---*/
 

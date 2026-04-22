@@ -4176,3 +4176,129 @@ void CFlowOutput::AddTurboOutput(unsigned short nZone){
   AddHistoryOutput("KineticEnergyLoss_Stage", "KELC_all", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine Kinetic Energy Loss Coefficient", HistoryFieldType::DEFAULT);
   AddHistoryOutput("TotPressureLoss_Stage", "TPLC_all", ScreenOutputFormat::SCIENTIFIC, "TURBO_PERF", "Machine Pressure Loss Coefficient", HistoryFieldType::DEFAULT);
 }
+
+void CFlowOutput::AddMeshAdaptationOutputs(const CConfig* config) {
+
+  auto ToTitleCase = [](const std::string& str) -> std::string {
+    if (str.empty()) return str;
+    std::string result = str;
+    for (auto& c : result) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+    result[0] = static_cast<char>(toupper(static_cast<unsigned char>(result[0])));
+    return result;
+  };
+
+  // Anisotropic metric tensor, sensor gradients/Hessians, and dual-cell volume
+  if(config->GetCompute_Metric()) {
+    // Sensor values (primitive and custom)
+    for (auto iSensor = 0u; iSensor < config->GetnMetric_Sensor(); iSensor++){
+      string sens_str = config->GetMetric_Sensor(iSensor);
+      string sens_title = ToTitleCase(sens_str);
+      AddVolumeOutput("SENSOR_" + sens_str, "Sensor_" + sens_title, "SENSOR_VALUE", "Value of sensor " + sens_title);
+    }
+
+    // Gradients
+    for (auto iSensor = 0u; iSensor < config->GetnMetric_Sensor(); iSensor++){
+      string sens_str = config->GetMetric_Sensor(iSensor);
+      string sens_title = ToTitleCase(sens_str);
+      // Common gradient vector components for both 2D and 3D
+      AddVolumeOutput("GRADIENT_" + sens_str + "_X", "Gradient_" + sens_title + "_x", "SENSOR_GRADIENT", "x-component of the " + sens_title + " gradient");
+      AddVolumeOutput("GRADIENT_" + sens_str + "_Y", "Gradient_" + sens_title + "_y", "SENSOR_GRADIENT", "y-component of the " + sens_title + " gradient");
+      // Additional component for 3D
+      if (nDim == 3) {
+        AddVolumeOutput("GRADIENT_" + sens_str + "_Z", "Gradient_" + sens_title + "_z", "SENSOR_GRADIENT", "z-component of the " + sens_title + " gradient");
+      }
+    }
+
+    // Hessians
+    for (auto iSensor = 0u; iSensor < config->GetnMetric_Sensor(); iSensor++){
+      string sens_str = config->GetMetric_Sensor(iSensor);
+      string sens_title = ToTitleCase(sens_str);
+      // Common Hessian tensor components for both 2D and 3D
+      AddVolumeOutput("HESSIAN_" + sens_str + "_XX", "Hessian_" + sens_title + "_xx", "SENSOR_HESSIAN", "x-x-component of the " + sens_title + " Hessian");
+      AddVolumeOutput("HESSIAN_" + sens_str + "_XY", "Hessian_" + sens_title + "_xy", "SENSOR_HESSIAN", "x-y-component of the " + sens_title + " Hessian");
+      AddVolumeOutput("HESSIAN_" + sens_str + "_YY", "Hessian_" + sens_title + "_yy", "SENSOR_HESSIAN", "y-y-component of the " + sens_title + " Hessian");
+      // Additional components for 3D
+      if (nDim == 3) {
+        AddVolumeOutput("HESSIAN_" + sens_str + "_XZ", "Hessian_" + sens_title + "_xz", "SENSOR_HESSIAN", "x-z-component of the " + sens_title + " Hessian");
+        AddVolumeOutput("HESSIAN_" + sens_str + "_YZ", "Hessian_" + sens_title + "_yz", "SENSOR_HESSIAN", "y-z-component of the " + sens_title + " Hessian");
+        AddVolumeOutput("HESSIAN_" + sens_str + "_ZZ", "Hessian_" + sens_title + "_zz", "SENSOR_HESSIAN", "z-z-component of the " + sens_title + " Hessian");
+      }
+    }
+
+    // Metric tensor
+    // Common metric tensor components for both 2D and 3D
+    AddVolumeOutput("METRIC_XX", "Metric_xx", "METRIC", "x-x-component of the metric");
+    AddVolumeOutput("METRIC_XY", "Metric_xy", "METRIC", "x-y-component of the metric");
+    AddVolumeOutput("METRIC_YY", "Metric_yy", "METRIC", "y-y-component of the metric");
+    // Additional components for 3D
+    if (nDim == 3) {
+      AddVolumeOutput("METRIC_XZ", "Metric_xz", "METRIC", "x-z-component of the metric");
+      AddVolumeOutput("METRIC_YZ", "Metric_yz", "METRIC", "y-z-component of the metric");
+      AddVolumeOutput("METRIC_ZZ", "Metric_zz", "METRIC", "z-z-component of the metric");
+    }
+
+    // Dual-cell volume
+    AddVolumeOutput("VOLUME", "Volume", "VOLUME", "Dual-cell volume");
+    AddVolumeOutput("TOTAL_VOLUME", "Total_Volume", "PERIODIC_VOLUME", "Dual-cell volume, including periodic volume");
+  }
+}
+
+void CFlowOutput::LoadMeshAdaptationOutputs(const CConfig* config, const CSolver* const* solver, const CGeometry* geometry,
+                                            unsigned long iPoint) {
+
+  const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
+  const auto* Node_Geo = geometry->nodes;
+  if(config->GetCompute_Metric()) {
+    const auto& sensors = solver[FLOW_SOL]->GetMetricSensors();
+
+    // Sensor values (primitive and custom)
+    for (auto iSensor = 0u; iSensor < sensors.size(); iSensor++) {
+      const string& sens_str = sensors[iSensor].name;
+      SetVolumeOutputValue("SENSOR_" + sens_str, iPoint, Node_Flow->GetSensor_Adapt(iPoint, iSensor));
+    }
+
+    // Gradients
+    for (auto iSensor = 0u; iSensor < sensors.size(); iSensor++){
+      const string& sens_str = sensors[iSensor].name;
+      // Common gradient vector components for both 2D and 3D
+      SetVolumeOutputValue("GRADIENT_" + sens_str + "_X", iPoint, Node_Flow->GetGradient_Adapt(iPoint, iSensor, 0));
+      SetVolumeOutputValue("GRADIENT_" + sens_str + "_Y", iPoint, Node_Flow->GetGradient_Adapt(iPoint, iSensor, 1));
+      // Additional component for 3D
+      if (nDim == 3) {
+        SetVolumeOutputValue("GRADIENT_" + sens_str + "_Z", iPoint, Node_Flow->GetGradient_Adapt(iPoint, iSensor, 2));
+      }
+    }
+
+    // Hessians
+    for (auto iSensor = 0u; iSensor < sensors.size(); iSensor++){
+      const string& sens_str = sensors[iSensor].name;
+      // Common Hessian tensor components for both 2D and 3D
+      SetVolumeOutputValue("HESSIAN_" + sens_str + "_XX", iPoint, Node_Flow->GetHessian(iPoint, iSensor, 0));
+      SetVolumeOutputValue("HESSIAN_" + sens_str + "_XY", iPoint, Node_Flow->GetHessian(iPoint, iSensor, 1));
+      SetVolumeOutputValue("HESSIAN_" + sens_str + "_YY", iPoint, Node_Flow->GetHessian(iPoint, iSensor, 2));
+      // Additional components for 3D
+      if (nDim == 3) {
+        SetVolumeOutputValue("HESSIAN_" + sens_str + "_XZ", iPoint, Node_Flow->GetHessian(iPoint, iSensor, 3));
+        SetVolumeOutputValue("HESSIAN_" + sens_str + "_YZ", iPoint, Node_Flow->GetHessian(iPoint, iSensor, 4));
+        SetVolumeOutputValue("HESSIAN_" + sens_str + "_ZZ", iPoint, Node_Flow->GetHessian(iPoint, iSensor, 5));
+      }
+    }
+
+    // Metric tensor
+    // Common metric tensor components for both 2D and 3D
+    SetVolumeOutputValue("METRIC_XX", iPoint, Node_Flow->GetMetric(iPoint, 0));
+    SetVolumeOutputValue("METRIC_XY", iPoint, Node_Flow->GetMetric(iPoint, 1));
+    SetVolumeOutputValue("METRIC_YY", iPoint, Node_Flow->GetMetric(iPoint, 2));
+
+    // Additional components for 3D
+    if (nDim == 3) {
+      SetVolumeOutputValue("METRIC_XZ", iPoint, Node_Flow->GetMetric(iPoint, 3));
+      SetVolumeOutputValue("METRIC_YZ", iPoint, Node_Flow->GetMetric(iPoint, 4));
+      SetVolumeOutputValue("METRIC_ZZ", iPoint, Node_Flow->GetMetric(iPoint, 5));
+    }
+
+    // Dual-cell volume
+    SetVolumeOutputValue("VOLUME", iPoint, Node_Geo->GetVolume(iPoint));
+    SetVolumeOutputValue("TOTAL_VOLUME", iPoint, Node_Geo->GetVolume(iPoint) + Node_Geo->GetPeriodicVolume(iPoint));
+  }
+}

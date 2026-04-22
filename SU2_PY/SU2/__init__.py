@@ -17,6 +17,7 @@ class DivergenceFailure(EvaluationFailure):
 from SU2 import run
 from SU2 import io
 from SU2 import eval
+from SU2 import metric
 from SU2 import opt
 from SU2 import util
 

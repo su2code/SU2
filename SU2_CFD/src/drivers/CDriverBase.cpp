@@ -437,3 +437,13 @@ map<string, unsigned short> CDriverBase::GetPrimitiveIndices() const {
       main_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
       main_config->GetNEMOProblem(), nDim, main_config->GetnSpecies()));
 }
+
+short CDriverBase::GetMetricSensorIndex(const string& sensor_name) const {
+  auto* flow_solver = solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL];
+  if (flow_solver == nullptr) return -1;
+  const auto& sensors = flow_solver->GetMetricSensors();
+  for (short i = 0; i < static_cast<short>(sensors.size()); ++i) {
+    if (sensors[i].name == sensor_name) return i;
+  }
+  return -1;
+}
