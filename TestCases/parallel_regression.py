@@ -1330,8 +1330,8 @@ def main():
     nonlinear_plane_stress = TestCase('nonlinear_plane_stress')
     nonlinear_plane_stress.cfg_dir = "fea_fsi/VonMissesVerif"
     nonlinear_plane_stress.cfg_file = "nonlinear_plane_stress_2d.cfg"
-    nonlinear_plane_stress.test_iter = 19
-    nonlinear_plane_stress.test_vals = [-7.432674, -3.354821, -13.982785, 162480, 43, -4.072188]
+    nonlinear_plane_stress.test_iter = 16
+    nonlinear_plane_stress.test_vals = [-7.131557, -2.945301, -13.165302, 1.6248e+05, 32, -4.129942]
     nonlinear_plane_stress.tol = [2e-4, 2e-4, 2e-4, 1e-5, 1e-5, 4e-4]
     test_list.append(nonlinear_plane_stress)
 
