@@ -244,7 +244,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   /*--- Update original config file ---*/
 
   if (runtime_file) {
-    if (all_options.find("TIME_ITER") == all_options.end())
+    if (OptionIsSet("TIME_ITER"))
       config->SetnTime_Iter(nTimeIter);
   }
 }
@@ -4012,7 +4012,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   if (Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY) {
     nMGLevels = 0;
-    if (all_options.find("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING") == all_options.end()) {
+    if (!OptionIsSet("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING")) {
       /*--- Different default behavior for this solver type. ---*/
       Linear_Solver_ILU_levels = true;
     }
@@ -5715,11 +5715,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- Check that spark ignition has required parameters defined ---*/
     if (flamelet_ParsedOptions.ignition_method == FLAMELET_INIT_TYPE::SPARK) {
       /*--- Check if SPARK_INIT was explicitly set in config file ---*/
-      if (all_options.find("SPARK_INIT") != all_options.end()) {
+      if (!OptionIsSet("SPARK_INIT")) {
         SU2_MPI::Error("FLAME_INIT_METHOD= SPARK requires SPARK_INIT to be defined in the config file.", CURRENT_FUNCTION);
       }
       /*--- Check if SPARK_REACTION_RATES was explicitly set in config file ---*/
-      if (all_options.find("SPARK_REACTION_RATES") != all_options.end()) {
+      if (!OptionIsSet.find("SPARK_REACTION_RATES")) {
         SU2_MPI::Error("FLAME_INIT_METHOD= SPARK requires SPARK_REACTION_RATES to be defined in the config file.", CURRENT_FUNCTION);
       }
       if (flamelet_ParsedOptions.nspark < flamelet_ParsedOptions.n_scalars) {
