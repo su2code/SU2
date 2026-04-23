@@ -185,7 +185,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     dia_ptr_ilu = csr_ilu.diagPtr();
     nnz_ilu = csr_ilu.getNumNonZeros();
 
-    if (type == ConnectivityType::FiniteElement && omp_get_max_threads() > 1) {
+    if (omp_get_max_threads() > 1 && config->GetLinear_Solver_ILU_levels()) {
       levels_ilu = computeLevels(csr_ilu);
     }
   }

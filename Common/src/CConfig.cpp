@@ -1896,6 +1896,8 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
+  /* DESCRIPTION: Use level scheduling for OMP parallelization of the ILU preconditioner */
+  addBoolOption("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING", Linear_Solver_ILU_levels, false);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
   /* DESCRIPTION: Number of vectors used for deflated restarts */
@@ -4008,7 +4010,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Set the number of external iterations to 1 for the steady state problem ---*/
 
-  if (Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY) nMGLevels = 0;
+  if (Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY) {
+    nMGLevels = 0;
+    if (all_options.find("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING") == all_options.end()) {
+      /*--- Different default behavior for this solver type. ---*/
+      Linear_Solver_ILU_levels = true;
+    }
+  }
 
   Radiation = (Kind_Radiation != RADIATION_MODEL::NONE);
 
