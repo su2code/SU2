@@ -854,7 +854,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
 
   /*--- Build ADT for probe nearest neighbor search if heuristic suggests it. ---*/
   std::unique_ptr<CADTPointsOnlyClass> probeADT;
-  if (useADT) {
+  auto BuildADT = [&]() {
     const unsigned long nPointDomain = geometry->GetnPointDomain();
     vector<su2double> coords(nDim * nPointDomain);
     vector<unsigned long> pointIDs(nPointDomain);
@@ -868,7 +868,7 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
 
     /*--- Build global ADT to find nearest nodes across all ranks. ---*/
     probeADT = std::make_unique<CADTPointsOnlyClass>(nDim, nPointDomain, coords.data(), pointIDs.data(), true);
-  }
+  };
 
   for (auto& output : customOutputs) {
     if (output.skip) continue;
@@ -906,6 +906,8 @@ void CFlowOutput::SetCustomOutputs(const CSolver* const* solver, const CGeometry
         int rankID = -1;
         int rank;
         SU2_MPI::Comm_rank(SU2_MPI::GetComm(), &rank);
+
+        if (useADT && !probeADT) BuildADT();
 
         if (useADT && probeADT && !probeADT->IsEmpty()) {
           /*--- Use ADT to find the nearest node efficiently (O(log n) instead of O(n)). ---*/
@@ -1794,11 +1796,11 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
     SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
   SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[heat_sol]->GetHeatFlux(iMarker, iVertex));
   SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
-  
+
   if (config->GetTime_Domain()) {
     SetAvgVolumeOutputValue("MEAN_SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
     SetAvgVolumeOutputValue("MEAN_SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
-    if (nDim == 3) 
+    if (nDim == 3)
       SetAvgVolumeOutputValue("MEAN_SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
   }
 }
