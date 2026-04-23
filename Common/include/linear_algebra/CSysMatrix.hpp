@@ -28,9 +28,10 @@
 
 #pragma once
 
-#include "../../include/CConfig.hpp"
+#include "../CConfig.hpp"
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"
+#include "../toolboxes/graph_toolbox.hpp"
 
 #include <cstdlib>
 #include <vector>
@@ -120,10 +121,9 @@ class CSysMatrix {
   const int rank; /*!< \brief MPI Rank. */
   const int size; /*!< \brief MPI Size. */
 
-  enum : size_t {
-    MAXNVAR = 20
-  }; /*!< \brief Maximum number of variables the matrix can handle. The static
-                 size is needed for fast, per-thread, static memory allocation. */
+  /*!< \brief Maximum number of variables the matrix can handle. The static
+   * size is needed for fast, per-thread, static memory allocation. */
+  enum : size_t { MAXNVAR = 20 };
 
   enum { OMP_MAX_SIZE_L = 8192 }; /*!< \brief Max. chunk size used in light parallel for loops. */
   enum { OMP_MAX_SIZE_H = 512 };  /*!< \brief Max. chunk size used in heavy parallel for loops. */
@@ -158,7 +158,10 @@ class CSysMatrix {
   const unsigned long* col_ind_ilu; /*!< \brief Column index for each of the elements in val() (ILU). */
   unsigned short ilu_fill_in;       /*!< \brief Fill in level for the ILU preconditioner. */
 
-  ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner, or diagonal of ILU. */
+  /*!< \brief Level structure for alternative shared memory parallelization of ILU. */
+  CCompressedSparsePatternUL levels_ilu;
+
+  ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */
 
   /*--- Temporary (hence mutable) working memory used in the Linelet preconditioner, outer vector is for threads ---*/
   mutable vector<vector<const ScalarType*> >
