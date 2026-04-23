@@ -48,6 +48,10 @@ private:
   using Base::ScalarVar_i;
   using Base::ScalarVar_j;
   using Base::bounded_scalar;
+  using Base::V_i;
+  using Base::V_j;
+  using Base::idx;
+  using Base::nVar;
 
   /*!
    * \brief Adds any extra variables to AD.
@@ -59,6 +63,13 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void FinishResidualCalc(const CConfig* config) override {
+    if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+      for (unsigned short iVar = 1; iVar < nVar; iVar++) {
+        Flux[iVar] = (a0 + a1) * 0.5 * (ScalarVar_i[iVar] + ScalarVar_j[iVar]);
+        Jacobian_i[iVar][iVar] = 0.5 * (a0+a1);
+        Jacobian_j[iVar][iVar] = 0.5 * (a0+a1);
+      }
+    }
     Flux[0] = a0*ScalarVar_i[0] + a1*ScalarVar_j[0];
     Jacobian_i[0][0] = a0;
     Jacobian_j[0][0] = a1;

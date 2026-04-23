@@ -76,7 +76,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-3.254490, -3.495569, 0.052370, 0.000000]
+    discadj_arina2k.test_vals    = [-2.928012, -3.351813, 0.073362, 0.000000]
     test_list.append(discadj_arina2k)
 
     #######################################################
@@ -108,7 +108,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -4.091644, -2.655563, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -3.338269, -2.490047, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################
@@ -158,7 +158,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.219518, -1.646199, -0.007607, 0.000013]
+    discadj_pitchingNACA0012.test_vals = [-1.130532, -1.575494, -0.005113, 0.000007]
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
 
@@ -167,7 +167,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform_ad.cfg"
     unst_deforming_naca0012.test_iter = 4
-    unst_deforming_naca0012.test_vals = [-1.960419, -1.844186, 2970.700000, 0.000004]
+    unst_deforming_naca0012.test_vals = [-1.885032, -1.775564, 3994.600000, 0.000002]
     unst_deforming_naca0012.unsteady  = True
     test_list.append(unst_deforming_naca0012)
 
@@ -180,7 +180,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
-    discadj_fea.test_vals         = [-2.849844, -3.238713, -0.000364, -8.708700]
+    discadj_fea.test_vals = [-2.849719, -3.238637, -0.000364, -8.708700]
     discadj_fea.test_vals_aarch64 = [-2.849588, -3.238523, -0.000364, -8.708700]
     discadj_fea.tol               = 0.00007
     test_list.append(discadj_fea)
@@ -206,7 +206,7 @@ def main():
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 6
-    discadj_fsi.test_vals = [6, -8.928820, -10.067497, 3.1052e-11, -1.7613e-06]
+    discadj_fsi.test_vals = [6, -8.931715, -10.103841, 3.0937e-11, -1.7573e-06]
     discadj_fsi.test_vals_aarch64 = [6, -8.928820, -10.067497, 3.0979e-11, -1.7585e-06]
     test_list.append(discadj_fsi)
 

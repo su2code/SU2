@@ -34,6 +34,7 @@
 
 CIntegration** CIntegrationFactory::CreateIntegrationContainer(MAIN_SOLVER kindMainSolver,
                                                                const CSolver* const* solver_container){
+  SU2_ZONE_SCOPED
 
   auto **integration = new CIntegration* [MAX_SOLS]();
 
@@ -48,6 +49,7 @@ CIntegration** CIntegrationFactory::CreateIntegrationContainer(MAIN_SOLVER kindM
 }
 
 CIntegration* CIntegrationFactory::CreateIntegration(INTEGRATION_TYPE integrationType){
+  SU2_ZONE_SCOPED
 
   CIntegration *integration = nullptr;
 

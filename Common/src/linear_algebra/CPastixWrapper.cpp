@@ -181,7 +181,7 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
 
   spmInitDist(&spm, SU2_MPI::GetComm());
   spm.mtxtype = SpmGeneral;  // Despite being symmetric, we store the entire matrix.
-  spm.flttype = SpmDouble;
+  spm.flttype = std::is_same_v<su2mixedfloat, double> ? SpmDouble : SpmFloat;
   spm.fmttype = SpmCSC;
   spm.layout = SpmColMajor;
   spm.baseval = 1;
