@@ -168,11 +168,18 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   /*--- Register quantities that are no solver variables but further inputs/outputs of the (outer) iteration. ---*/
   direct_solver->RegisterSolutionExtra(true, config);
 
-  if (time_n_needed)
+  if (time_n_needed) {
     direct_solver->GetNodes()->RegisterSolution_time_n();
+    /*--- Density is stored separately from the solution vector for incompressible flows. ---*/
+    if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE)
+      direct_solver->GetNodes()->RegisterDensity_time_n();
+  }
 
-  if (time_n1_needed)
+  if (time_n1_needed) {
     direct_solver->GetNodes()->RegisterSolution_time_n1();
+    if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE)
+      direct_solver->GetNodes()->RegisterDensity_time_n1();
+  }
 }
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
@@ -373,6 +380,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
       direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
+      /*--- TODO: For incompressible flow, accumulate GetAdjointDensity_time_n
+       *    into the enthalpy adjoint via d(rho)/d(h) chain rule. ---*/
       nodes->Set_Solution_time_n(iPoint,Solution);
     }
     END_SU2_OMP_FOR
@@ -388,6 +397,8 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
       direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
+      /*--- TODO: For incompressible flow, accumulate GetAdjointDensity_time_n1
+       *    into the enthalpy adjoint via d(rho)/d(h) chain rule. ---*/
       nodes->Set_Solution_time_n1(iPoint,Solution);
     }
     END_SU2_OMP_FOR

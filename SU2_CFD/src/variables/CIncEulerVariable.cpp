@@ -159,3 +159,11 @@ void CIncEulerVariable::Set_Solution_time_n1() {
     END_SU2_OMP_FOR
   }
 }
+
+void CIncEulerVariable::RegisterDensity_time_n() {
+  RegisterContainer(true, Density_time_n);
+}
+
+void CIncEulerVariable::RegisterDensity_time_n1() {
+  RegisterContainer(true, Density_time_n1);
+}

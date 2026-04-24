@@ -331,4 +331,40 @@ public:
    */
   inline void SetDensity_time_n1(unsigned long iPoint, su2double val_density) { Density_time_n1(iPoint) = val_density; }
 
+  /*!
+   * \brief Register the density at time n as an AD input variable (for discrete adjoint unsteady).
+   */
+  void RegisterDensity_time_n() override;
+
+  /*!
+   * \brief Register the density at time n-1 as an AD input variable (for discrete adjoint unsteady).
+   */
+  void RegisterDensity_time_n1() override;
+
+  /*!
+   * \brief Get the adjoint of density at time n.
+   *        Simplified version: directly extracts the AD derivative of Density_time_n,
+   *        analogous to GetAdjointSolution_time_n for the solution vector.
+   *        The chain-rule contribution d(rho)/d(h) is currently not applied (TODO).
+   * \param[in] iPoint - Point index.
+   * \return Adjoint of the density at time n.
+   */
+  inline su2double GetAdjointDensity_time_n(unsigned long iPoint) const override {
+    AD::Identifier index = AD::GetPassiveIndex();
+    AD::SetIndex(index, Density_time_n(iPoint));
+    return AD::GetDerivative(index);
+  }
+
+  /*!
+   * \brief Get the adjoint of density at time n-1.
+   *        See GetAdjointDensity_time_n.
+   * \param[in] iPoint - Point index.
+   * \return Adjoint of the density at time n-1.
+   */
+  inline su2double GetAdjointDensity_time_n1(unsigned long iPoint) const override {
+    AD::Identifier index = AD::GetPassiveIndex();
+    AD::SetIndex(index, Density_time_n1(iPoint));
+    return AD::GetDerivative(index);
+  }
+
 };
