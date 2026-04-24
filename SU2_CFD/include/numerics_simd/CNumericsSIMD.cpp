@@ -74,7 +74,6 @@ CNumericsSIMD* createCenteredNumerics(const CConfig& config, int iMesh, const CV
       obj = new CLaxScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
     case CENTERED::JST:
-    case CENTERED::LD2: // Just to silence compiler warnings (LD2 implemented in the incompressible solver only).
       obj = new CJSTScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
     case CENTERED::JST_KE:
@@ -82,6 +81,9 @@ CNumericsSIMD* createCenteredNumerics(const CConfig& config, int iMesh, const CV
       break;
     case CENTERED::JST_MAT:
       obj = new CJSTmatScheme<ViscousDecorator>(config, iMesh, turbVars);
+      break;
+    case CENTERED::LD2:
+      /*--- LD2 implemented only in the incompressible solver. ---*/
       break;
   }
   return obj;

@@ -4136,19 +4136,19 @@ void CFlowOutput::SetTimeAveragedFields(const CConfig *config) {
   }
 
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
-    AddVolumeOutput("MODELED_REYNOLDS_STRESS_11", "ModeledReynoldsStress_11", "TIME_AVERAGE", "Modeled Reynolds stress xx-component");
-    AddVolumeOutput("MODELED_REYNOLDS_STRESS_22", "ModeledReynoldsStress_22", "TIME_AVERAGE", "Modeled Reynolds stress yy-component");
-    AddVolumeOutput("MODELED_REYNOLDS_STRESS_12", "ModeledReynoldsStress_12", "TIME_AVERAGE", "Modeled Reynolds stress xy-component");
+    AddVolumeOutput("MODELED_REYNOLDS_STRESS_XX", "ModeledReynoldsStress_XX", "TIME_AVERAGE", "Modeled Reynolds stress xx-component");
+    AddVolumeOutput("MODELED_REYNOLDS_STRESS_YY", "ModeledReynoldsStress_YY", "TIME_AVERAGE", "Modeled Reynolds stress yy-component");
+    AddVolumeOutput("MODELED_REYNOLDS_STRESS_XY", "ModeledReynoldsStress_XY", "TIME_AVERAGE", "Modeled Reynolds stress xy-component");
     if (nDim == 3){
-      AddVolumeOutput("MODELED_REYNOLDS_STRESS_33", "ModeledReynoldsStress_33", "TIME_AVERAGE", "Modeled Reynolds stress zz-component");
-      AddVolumeOutput("MODELED_REYNOLDS_STRESS_13", "ModeledReynoldsStress_13", "TIME_AVERAGE", "Modeled Reynolds stress xz-component");
-      AddVolumeOutput("MODELED_REYNOLDS_STRESS_23", "ModeledReynoldsStress_23", "TIME_AVERAGE", "Modeled Reynolds stress yz-component");
+      AddVolumeOutput("MODELED_REYNOLDS_STRESS_ZZ", "ModeledReynoldsStress_ZZ", "TIME_AVERAGE", "Modeled Reynolds stress zz-component");
+      AddVolumeOutput("MODELED_REYNOLDS_STRESS_XZ", "ModeledReynoldsStress_XZ", "TIME_AVERAGE", "Modeled Reynolds stress xz-component");
+      AddVolumeOutput("MODELED_REYNOLDS_STRESS_YZ", "ModeledReynoldsStress_YZ", "TIME_AVERAGE", "Modeled Reynolds stress yz-component");
     }
 
     if (config->GetSBSParam().StochasticBackscatter) {
-      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_12", "StochasticReynoldsStress_12", "TIME_AVERAGE", "Stochastic Reynolds stress xy-component");
-      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_13", "StochasticReynoldsStress_13", "TIME_AVERAGE", "Stochastic Reynolds stress xz-component");
-      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_23", "StochasticReynoldsStress_23", "TIME_AVERAGE", "Stochastic Reynolds stress yz-component");
+      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_XY", "StochasticReynoldsStress_XY", "TIME_AVERAGE", "Stochastic Reynolds stress xy-component");
+      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_XZ", "StochasticReynoldsStress_XZ", "TIME_AVERAGE", "Stochastic Reynolds stress xz-component");
+      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_YZ", "StochasticReynoldsStress_YZ", "TIME_AVERAGE", "Stochastic Reynolds stress yz-component");
     }
   }
 }
@@ -4201,16 +4201,16 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *No
     const su2double tau_xx = nu_t * (2*vel_grad(0,0) - (2.0/3.0)*vel_div);
     const su2double tau_yy = nu_t * (2*vel_grad(1,1) - (2.0/3.0)*vel_div);
     const su2double tau_xy = nu_t * (vel_grad(0,1) + vel_grad(1,0));
-    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_11", iPoint, -tau_xx);
-    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_22", iPoint, -tau_yy);
-    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_12", iPoint, -tau_xy);
+    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_XX", iPoint, -tau_xx);
+    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_YY", iPoint, -tau_yy);
+    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_XY", iPoint, -tau_xy);
     if (nDim == 3){
       const su2double tau_zz = nu_t * (2*vel_grad(2,2) - (2.0/3.0)*vel_div);
       const su2double tau_xz = nu_t * (vel_grad(0,2) + vel_grad(2,0));
       const su2double tau_yz = nu_t * (vel_grad(1,2) + vel_grad(2,1));
-      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_33", iPoint, -tau_zz);
-      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_13", iPoint, -tau_xz);
-      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_23", iPoint, -tau_yz);
+      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_ZZ", iPoint, -tau_zz);
+      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_XZ", iPoint, -tau_xz);
+      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_YZ", iPoint, -tau_yz);
     }
 
     if (config->GetSBSParam().StochasticBackscatter) {
@@ -4226,9 +4226,9 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *No
       const su2double R_xy = - mag * tke_estim * csi_z;
       const su2double R_xz = + mag * tke_estim * csi_y;
       const su2double R_yz = - mag * tke_estim * csi_x;
-      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_12", iPoint, -R_xy);
-      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_13", iPoint, -R_xz);
-      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_23", iPoint, -R_yz);
+      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_XY", iPoint, -R_xy);
+      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_XY", iPoint, -R_xz);
+      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_YZ", iPoint, -R_yz);
     }
   }
 }

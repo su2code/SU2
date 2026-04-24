@@ -427,7 +427,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           numerics->SetStochSource(nodes->GetLangevinSourceTerms(iPoint, iDim), iDim);
         numerics->SetLES_Mode(nodes->GetLES_Mode(iPoint), 0.0);
-        numerics->SetSbsInBoxSensor(nodes->GetSbsInBox(iPoint), 0);
+        numerics->SetSbsInBoxSensor(nodes->GetSbsInBox(iPoint));
       }
 
     }
@@ -453,7 +453,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     if (transition_BC || config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
       nodes->SetIntermittency(iPoint,numerics->GetIntermittencyEff());
     }
-    
+
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, residual);
@@ -1636,7 +1636,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 }
 
 void CTurbSASolver::SetBackscatterInBox(CConfig *config, CGeometry *geometry) {
-  
+  SU2_ZONE_SCOPED
+
   auto sbsBoxBounds = config->GetSBSParam().StochBackscatterBoxBounds;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1653,6 +1654,7 @@ void CTurbSASolver::SetBackscatterInBox(CConfig *config, CGeometry *geometry) {
 }
 
 void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry) {
+  SU2_ZONE_SCOPED
 
   const su2double threshold = config->GetSBSParam().stochFdThreshold;
   const su2double dummySource = 1e3;
@@ -1710,9 +1712,9 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
   /*--- Start SOR algorithm for the Laplacian smoothing. ---*/
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-  
+
     for (unsigned short iter = 0; iter < maxIter; iter++) {
-      
+
       /*--- MPI communication. ---*/
 
       InitiateComms(geometry, config, MPI_QUANTITIES::STOCH_SOURCE_LANG);
@@ -1778,7 +1780,7 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
                << "---------------------------------" << endl;
         }
         if (iter%10 == 0) {
-          cout << "  " 
+          cout << "  "
                << std::setw(5) << iter
                << "       "
                << std::setw(12) << std::fixed << std::setprecision(6) << log10(globalResNorm)
@@ -1789,14 +1791,14 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
       if (log10(globalResNorm) < tol || iter == maxIter-1) {
 
         if (rank == MASTER_NODE) {
-          cout << "  " 
+          cout << "  "
                << std::setw(5) << iter
                << "       "
                << std::setw(12) << std::fixed << ::setprecision(6) << log10(globalResNorm)
                << endl;
           cout << "---------------------------------" << endl;
         }
-        
+
         /*--- Scale source terms for variance preservation. ---*/
 
         su2double var_check_old = 0.0;

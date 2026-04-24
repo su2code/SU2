@@ -192,9 +192,8 @@ protected:
   su2double
   lesMode_i = 0.0, /*!< \brief LES sensor at point i for hybrid RANS-LES methods. */
   lesMode_j = 0.0; /*!< \brief LES sensor at point j for hybrid RANS-LES methods. */
-  unsigned short
-  sbsInBox_i = 0, /*!< \brief Sensor to assess if point i lies inside the box where the Stochastic Backscatter Model is active. */
-  sbsInBox_j = 0; /*!< \brief Sensor to assess if point j lies inside the box where the Stochastic Backscatter Model is active. */
+  int8_t
+  sbsInBox_i = 0; /*!< \brief Sensor to assess if point i lies inside the box where the Stochastic Backscatter Model is active. */
   SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
@@ -651,7 +650,7 @@ public:
       }
     }
   }
-  
+
   /*!
    * \brief Compute a random contribution to the Reynolds stress tensor (Stochastic Backscatter Model).
    * \details See: Kok, Johan C. "A stochastic backscatter model for grey-area mitigation in detached
@@ -664,12 +663,12 @@ public:
    * \param[out] stochReynStress - Stochastic tensor (to be added to the Reynolds stress tensor).
    */
   template<class Vec, class Mat>
-  inline void ComputeStochReynStress(su2double density, su2double tke, const Vec& rndVec, 
+  inline void ComputeStochReynStress(su2double density, su2double tke, const Vec& rndVec,
                                      su2double Cmag, Mat& stochReynStress) {
 
     /* --- Calculate stochastic tensor --- */
 
-    su2double stochLim = 3.0; 
+    su2double stochLim = 3.0;
 
     stochReynStress[0][0] =   0.0;
     stochReynStress[1][1] =   0.0;
@@ -918,11 +917,9 @@ public:
   /*!
    * \brief Set the sensor to locate the box where the Stochastic Backscatter Model is active.
    * \param[in] val_sbsInBox_i - 1 if point i lies inside the box where the model is active.
-   * \param[in] val_sbsInBox_j - 1 if point j lies inside the box where the model is active.
    */
-  inline void SetSbsInBoxSensor(unsigned short val_sbsInBox_i, unsigned short val_sbsInBox_j) {
+  inline void SetSbsInBoxSensor(int8_t val_sbsInBox_i) {
     sbsInBox_i = val_sbsInBox_i;
-    sbsInBox_j = val_sbsInBox_j;
   }
 
   /*!
