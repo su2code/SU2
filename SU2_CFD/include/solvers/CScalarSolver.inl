@@ -28,6 +28,7 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CScalarSolver.hpp"
 #include "../../include/variables/CFlowVariable.hpp"
+#include "../../include/variables/CIncEulerVariable.hpp"
 
 template <class VariableType>
 CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative)
@@ -627,6 +628,7 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
   /*--- Flow solution, needed to get density. ---*/
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  auto* incFlowNodes = incompressible ? su2staticcast_p<CIncEulerVariable*>(flowNodes) : nullptr;
 
   /*--- Store the physical time step ---*/
 
@@ -655,9 +657,9 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       if (Conservative) {
         if (incompressible) {
-          Density_nM1 = flowNodes->GetDensity_time_n1(iPoint);
-          Density_n = flowNodes->GetDensity_time_n(iPoint);
-          Density_nP1 = flowNodes->GetDensity(iPoint);
+          Density_nM1 = incFlowNodes->GetDensity_time_n1(iPoint);
+          Density_n = incFlowNodes->GetDensity_time_n(iPoint);
+          Density_nP1 = incFlowNodes->GetDensity(iPoint);
         } else {
           Density_nM1 = flowNodes->GetSolution_time_n1(iPoint)[0];
           Density_n = flowNodes->GetSolution_time_n(iPoint, 0);
@@ -717,7 +719,7 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
 
       if (Conservative) {
         if (incompressible)
-          Density_n = flowNodes->GetDensity_time_n(iPoint);
+          Density_n = incFlowNodes->GetDensity_time_n(iPoint);
         else
           Density_n = flowNodes->GetSolution_time_n(iPoint, 0);
       }
@@ -773,11 +775,11 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
 
           if (Conservative) {
             if (incompressible)
-              Density_n = flowNodes->GetDensity_time_n(iPoint);
+              Density_n = incFlowNodes->GetDensity_time_n(iPoint);
             else
               Density_n = flowNodes->GetSolution_time_n(iPoint, 0);
           }
-          // nijso: what about second order?
+
           for (iVar = 0; iVar < nVar; iVar++) LinSysRes(iPoint, iVar) += Density_n * U_time_n[iVar] * Residual_GCL;
         }
         END_SU2_OMP_FOR
@@ -814,9 +816,9 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/
         if (incompressible) {
-          Density_nM1 = flowNodes->GetDensity_time_n1(iPoint);
-          Density_n = flowNodes->GetDensity_time_n(iPoint);
-          Density_nP1 = flowNodes->GetDensity(iPoint);
+          Density_nM1 = incFlowNodes->GetDensity_time_n1(iPoint);
+          Density_n = incFlowNodes->GetDensity_time_n(iPoint);
+          Density_nP1 = incFlowNodes->GetDensity(iPoint);
         } else {
           Density_nM1 = flowNodes->GetSolution_time_n1(iPoint)[0];
           Density_n = flowNodes->GetSolution_time_n(iPoint, 0);
