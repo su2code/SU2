@@ -175,7 +175,7 @@ def main():
     tutorial_inv_bump.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Bump"
     tutorial_inv_bump.cfg_file   = "inv_channel.cfg"
     tutorial_inv_bump.test_iter  = 0
-    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.035200, 0.019230]
+    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.043691, 0.034241]
     test_list.append(tutorial_inv_bump)
 
     # Inviscid Wedge
@@ -183,7 +183,7 @@ def main():
     tutorial_inv_wedge.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Wedge"
     tutorial_inv_wedge.cfg_file   = "inv_wedge_HLLC.cfg"
     tutorial_inv_wedge.test_iter  = 0
-    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.281099, 0.049535]
+    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.253048, 0.044501]
     tutorial_inv_wedge.no_restart = True
     test_list.append(tutorial_inv_wedge)
 
@@ -192,7 +192,7 @@ def main():
     tutorial_inv_onera.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_ONERAM6"
     tutorial_inv_onera.cfg_file   = "inv_ONERAM6.cfg"
     tutorial_inv_onera.test_iter  = 0
-    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.294332, 0.115223]
+    tutorial_inv_onera.test_vals  = [-5.204928, -4.597762, 0.255680, 0.087977]
     tutorial_inv_onera.no_restart = True
     test_list.append(tutorial_inv_onera)
 
@@ -201,7 +201,7 @@ def main():
     tutorial_lam_cylinder.cfg_dir    = "../Tutorials/compressible_flow/Laminar_Cylinder"
     tutorial_lam_cylinder.cfg_file   = "lam_cylinder.cfg"
     tutorial_lam_cylinder.test_iter  = 0
-    tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, 0.126007, 69.619462]
+    tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, -0.047729, 43.442977]
     tutorial_lam_cylinder.no_restart = True
     test_list.append(tutorial_lam_cylinder)
 
@@ -237,7 +237,7 @@ def main():
     tutorial_trans_flatplate_T3A.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A"
     tutorial_trans_flatplate_T3A.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3A.test_iter  = 20
-    tutorial_trans_flatplate_T3A.test_vals  = [-5.790137, -2.054834, -3.894661, -0.255074, -1.747145, 5.119341, -3.493237, 0.393262]
+    tutorial_trans_flatplate_T3A.test_vals  = [-5.790137, -2.054834, -3.894661, -0.255074, -1.747074, 5.119341, -3.493237, 0.393262]
     tutorial_trans_flatplate_T3A.test_vals_aarch64 = [-5.808996, -2.070606, -3.969765, -0.277943, -1.953289, 1.708472, -3.514943, 0.357411]
     tutorial_trans_flatplate_T3A.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3A)
@@ -247,7 +247,7 @@ def main():
     tutorial_trans_flatplate_T3Am.cfg_dir    = "../Tutorials/compressible_flow/Transitional_Flat_Plate/Langtry_and_Menter/T3A-"
     tutorial_trans_flatplate_T3Am.cfg_file   = "transitional_LM_model_ConfigFile.cfg"
     tutorial_trans_flatplate_T3Am.test_iter  = 20
-    tutorial_trans_flatplate_T3Am.test_vals  = [-5.590359, -1.700867, -3.099309, -0.105449, -3.750523, 3.287643, -2.394576, 1.119623]
+    tutorial_trans_flatplate_T3Am.test_vals  = [-5.590061, -1.700867, -3.098455, -0.105190, -3.750523, 3.287643, -2.394576, 1.119623]
     tutorial_trans_flatplate_T3Am.test_vals_aarch64 = [-5.540938, -1.681627, -2.878831, -0.058224, -3.695533, 3.413628, -2.385345, 1.103633]
     tutorial_trans_flatplate_T3Am.no_restart = True
     test_list.append(tutorial_trans_flatplate_T3Am)
@@ -302,7 +302,7 @@ def main():
     tutorial_unst_naca0012.cfg_dir       = "../Tutorials/compressible_flow/Unsteady_NACA0012"
     tutorial_unst_naca0012.cfg_file      = "unsteady_naca0012.cfg"
     tutorial_unst_naca0012.test_iter     = 520
-    tutorial_unst_naca0012.test_vals         = [520, 0, -5.298821, 0, 0.269405, 0.724098, 0.002630, 0.015827]
+    tutorial_unst_naca0012.test_vals         = [520, 0, -5.294874, 0, 0.307437, 0.796981, 0.000921, 0.006756]
     tutorial_unst_naca0012.test_vals_aarch64 = [520, 0, -5.292359, 0, 0.284720, 0.766329, 0.000954, 0.007565]
     tutorial_unst_naca0012.unsteady      = True
     test_list.append(tutorial_unst_naca0012)
@@ -323,7 +323,7 @@ def main():
     tutorial_design_inv_naca0012.cfg_dir    = "../Tutorials/design/Inviscid_2D_Unconstrained_NACA0012"
     tutorial_design_inv_naca0012.cfg_file   = "inv_NACA0012_basic.cfg"
     tutorial_design_inv_naca0012.test_iter  = 0
-    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.169337, 0.235131]
+    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.164248, 0.228824]
     tutorial_design_inv_naca0012.no_restart = True
     test_list.append(tutorial_design_inv_naca0012)
 
@@ -354,7 +354,7 @@ def main():
     pywrapper_psi.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_psi)
 
-    # custom source: including source term for enthalpy equations 
+    # custom source: including source term for enthalpy equations
     pywrapper_psi_hl = TestCase('psi_enthalpy')
     pywrapper_psi_hl.cfg_dir = "../Tutorials/multiphysics/TFC_python/enthalpy"
     pywrapper_psi_hl.cfg_file = "psi.cfg"
@@ -363,7 +363,7 @@ def main():
     pywrapper_psi_hl.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_psi_hl)
 
-    # custom source: including custom BC and source term 
+    # custom source: including custom BC and source term
     pywrapper_psi_quench = TestCase('psi_quench')
     pywrapper_psi_quench.cfg_dir = "../Tutorials/multiphysics/TFC_python/quench"
     pywrapper_psi_quench.cfg_file = "psi.cfg"

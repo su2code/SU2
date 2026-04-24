@@ -401,7 +401,7 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddCommonFVMOutputs(config);
 
   if (config->GetTime_Domain()) {
-    SetTimeAveragedFields();
+    SetTimeAveragedFields(config);
   }
 }
 
@@ -409,6 +409,8 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
   const auto* Node_Flow_Inc = static_cast<const CIncEulerVariable*>(Node_Flow);
+  const CVariable* Node_Turb = nullptr;
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) Node_Turb = solver[TURB_SOL]->GetNodes();
   const CVariable* Node_Heat = nullptr;
   const CVariable* Node_Rad = nullptr;
   auto* Node_Geo = geometry->nodes;
@@ -499,7 +501,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
   if (config->GetTime_Domain()) {
-    LoadTimeAveragedData(iPoint, Node_Flow);
+    LoadTimeAveragedData(iPoint, Node_Flow, Node_Turb, config);
   }
 }
 

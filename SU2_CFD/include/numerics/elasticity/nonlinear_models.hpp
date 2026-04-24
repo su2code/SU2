@@ -48,11 +48,6 @@ public:
    */
   CFEM_NeoHookean_Comp(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEM_NeoHookean_Comp(void) override = default;
-
 private:
   /*!
    * \brief Compute the plane stress term.
@@ -100,11 +95,6 @@ public:
    */
   CFEM_Knowles_NearInc(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
 
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEM_Knowles_NearInc(void) override = default;
-
 private:
   /*!
    * \brief Compute the plane stress term.
@@ -149,11 +139,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CFEM_DielectricElastomer(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEM_DielectricElastomer(void) override = default;
 
 private:
   /*!
@@ -201,11 +186,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEM_IdealDE(void) override = default;
 
 private:
   /*!

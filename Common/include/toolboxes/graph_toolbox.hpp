@@ -56,7 +56,7 @@ enum class ConnectivityType { FiniteVolume = 0, FiniteElement = 1 };
  */
 template <typename Index_t>
 class CCompressedSparsePattern {
-  static_assert(std::is_integral<Index_t>::value, "");
+  static_assert(std::is_integral<Index_t>::value);
 
  private:
   su2vector<Index_t> m_outerPtr;       /*!< \brief Start positions of the inner indices for each outer index. */
@@ -490,8 +490,8 @@ T createNaturalColoring(Index_t numInnerIndexes) {
 template <typename Color_t = unsigned char, size_t MaxColors = 255, size_t MaxMB = 128, class T>
 T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool includeOuterIdx = false, bool balanceColors = false,
                      std::vector<Color_t>* indexColor = nullptr) {
-  static_assert(std::is_integral<Color_t>::value, "");
-  static_assert(std::numeric_limits<Color_t>::max() >= MaxColors, "");
+  static_assert(std::is_integral<Color_t>::value);
+  static_assert(std::numeric_limits<Color_t>::max() >= MaxColors);
 
   using Index_t = typename T::IndexType;
 
@@ -607,7 +607,7 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool includeOuterId
  */
 template <typename T = unsigned long>
 struct GridColor {
-  static_assert(std::is_integral<T>::value, "");
+  static_assert(std::is_integral<T>::value);
 
   const T size;
   T groupSize;
@@ -625,7 +625,7 @@ struct GridColor {
  */
 template <typename T = unsigned long>
 struct DummyGridColor {
-  static_assert(std::is_integral<T>::value, "");
+  static_assert(std::is_integral<T>::value);
 
   T size;
   struct {

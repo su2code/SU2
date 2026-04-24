@@ -249,7 +249,8 @@ class CElement {
    * \param[in] nodeB - index of Node b.
    * \param[in] val_Kab - value of the matrix K.
    */
-  inline void Add_Kab(unsigned short nodeA, unsigned short nodeB, su2double** val_Kab) {
+  template <typename Matrix>
+  inline void Add_Kab(unsigned short nodeA, unsigned short nodeB, Matrix& val_Kab) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       for (unsigned short jDim = 0; jDim < nDim; jDim++) Kab[nodeA](nodeB, iDim * nDim + jDim) += val_Kab[iDim][jDim];
   }
@@ -259,7 +260,8 @@ class CElement {
    * transpose) \param[in] nodeA - index of Node a. \param[in] nodeB - index of Node b. \param[in] val_Kab - value of
    * the matrix K.
    */
-  inline void Add_Kab_T(unsigned short nodeA, unsigned short nodeB, su2double** val_Kab) {
+  template <typename Matrix>
+  inline void Add_Kab_T(unsigned short nodeA, unsigned short nodeB, Matrix& val_Kab) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       for (unsigned short jDim = 0; jDim < nDim; jDim++) Kab[nodeA](nodeB, iDim * nDim + jDim) += val_Kab[jDim][iDim];
   }

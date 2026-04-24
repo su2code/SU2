@@ -29,10 +29,12 @@
 #include "../../include/variables/CRadVariable.hpp"
 
 CRadSolver::CRadSolver() : CSolver() {
+  SU2_ZONE_SCOPED
 
 }
 
 CRadSolver::CRadSolver(CGeometry* geometry, CConfig *config) : CSolver() {
+  SU2_ZONE_SCOPED
 
   Absorption_Coeff = config->GetAbsorption_Coeff();
   Scattering_Coeff = config->GetScattering_Coeff();
@@ -42,6 +44,7 @@ CRadSolver::CRadSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 }
 
 void CRadSolver::SetVolumetricHeatSource(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -72,6 +75,7 @@ void CRadSolver::SetVolumetricHeatSource(CGeometry *geometry, CConfig *config) {
 }
 
 void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  SU2_ZONE_SCOPED
 
   /*--- Restart the solution from file information ---*/
 

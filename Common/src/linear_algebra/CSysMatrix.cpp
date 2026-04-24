@@ -34,6 +34,8 @@
 
 template <class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::GetSize()) {
+  SU2_ZONE_SCOPED
+
   nPoint = nPointDomain = nVar = nEqn = 0;
   nnz = nnz_ilu = 0;
   ilu_fill_in = 0;
@@ -63,6 +65,8 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
 
 template <class ScalarType>
 CSysMatrix<ScalarType>::~CSysMatrix() {
+  SU2_ZONE_SCOPED
+
   delete[] omp_partitions;
   MemoryAllocation::aligned_free(ILU_matrix);
   MemoryAllocation::aligned_free(matrix);
@@ -86,6 +90,7 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar,
                                         unsigned short neqn, bool EdgeConnect, CGeometry* geometry,
                                         const CConfig* config, bool needTranspPtr, bool grad_mode) {
+  SU2_ZONE_SCOPED
   assert(omp_get_thread_num() == 0 && "Only the master thread is allowed to initialize the matrix.");
 
   if (npoint == 0) return;
@@ -113,13 +118,13 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     prec = config->GetKind_DiscAdj_Linear_Prec();
   }
 
-  /*--- No else if, but separat if case! ---*/
+  /*--- No else if, but separate if case! ---*/
   if (config->GetSmoothGradient() && grad_mode) {
     prec = config->GetKind_Grad_Linear_Solver_Prec();
   }
 
   const bool ilu_needed = (prec == ILU);
-  const bool diag_needed = ilu_needed || (prec == JACOBI) || (prec == LINELET);
+  const bool diag_needed = (prec == JACOBI) || (prec == LINELET);
 
   /*--- Basic dimensions. ---*/
   nVar = nvar;
@@ -250,12 +255,13 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 template <class T>
 void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, const CConfig* config,
                                MPI_QUANTITIES commType) {
+  SU2_ZONE_SCOPED
   if (geometry->nP2PSend == 0) return;
 
   /*--- Local variables ---*/
 
   const unsigned short COUNT_PER_POINT = x.GetNVar();
-  const unsigned short MPI_TYPE = COMM_TYPE_DOUBLE;
+  const auto MPI_TYPE = geometry->GetCommType<T>();
 
   /*--- Create a boolean for reversing the order of comms. ---*/
 
@@ -289,7 +295,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
   for (auto iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
     switch (commType) {
       case MPI_QUANTITIES::SOLUTION_MATRIX: {
-        su2double* bufDSend = geometry->bufD_P2PSend;
+        auto* bufDSend = geometry->GetP2PSendBuf<T>();
 
         /*--- Get the offset for the start of this message. ---*/
 
@@ -321,8 +327,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
         /*--- We are going to communicate in reverse, so we use the
          recv buffer for the send instead. Also, all of the offsets
          and counts are derived from the recv data structures. ---*/
-
-        su2double* bufDSend = geometry->bufD_P2PRecv;
+        auto* bufDSend = geometry->GetP2PRecvBuf<T>();
 
         /*--- Get the offset for the start of this message. ---*/
 
@@ -365,6 +370,7 @@ void CSysMatrixComms::Initiate(const CSysVector<T>& x, CGeometry* geometry, cons
 
 template <class T>
 void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType) {
+  SU2_ZONE_SCOPED
   if (geometry->nP2PRecv == 0) return;
 
   /*--- Local variables ---*/
@@ -372,7 +378,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
   const unsigned short COUNT_PER_POINT = x.GetNVar();
 
   /*--- Global status so all threads can see the result of Waitany. ---*/
-  static SU2_MPI::Status status;
+  static typename SelectMPIWrapper<T>::W::Status status;
   int ind;
 
   /*--- Store the data that was communicated into the appropriate
@@ -382,7 +388,8 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
     /*--- For efficiency, recv the messages dynamically based on
      the order they arrive. ---*/
 
-    SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv, &ind, &status);)
+    SU2_OMP_SAFE_GLOBAL_ACCESS(
+        SelectMPIWrapper<T>::W::Waitany(geometry->nP2PRecv, geometry->GetP2PRecvReq<T>(), &ind, &status);)
 
     /*--- Once we have recv'd a message, get the source rank. ---*/
 
@@ -390,7 +397,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
 
     switch (commType) {
       case MPI_QUANTITIES::SOLUTION_MATRIX: {
-        const su2double* bufDRecv = geometry->bufD_P2PRecv;
+        const auto* bufDRecv = geometry->GetP2PRecvBuf<T>();
 
         /*--- We know the offsets based on the source rank. ---*/
 
@@ -428,7 +435,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
          send buffer for the recv instead. Also, all of the offsets
          and counts are derived from the send data structures. ---*/
 
-        const su2double* bufDRecv = geometry->bufD_P2PSend;
+        const auto* bufDRecv = geometry->GetP2PSendBuf<T>();
 
         /*--- We know the offsets based on the source rank. ---*/
 
@@ -472,12 +479,14 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
    data in the loop above at this point. ---*/
 
 #ifdef HAVE_MPI
-  SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);)
+  SU2_OMP_SAFE_GLOBAL_ACCESS(
+      SelectMPIWrapper<T>::W::Waitall(geometry->nP2PSend, geometry->GetP2PSendReq<T>(), MPI_STATUS_IGNORE);)
 #endif
 }
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::SetValZero() {
+  SU2_ZONE_SCOPED
   const auto size = nnz * nVar * nEqn;
   const auto chunk = roundUpDiv(size, omp_get_num_threads());
   const auto begin = chunk * omp_get_thread_num();
@@ -488,6 +497,7 @@ void CSysMatrix<ScalarType>::SetValZero() {
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::SetValDiagonalZero() {
+  SU2_ZONE_SCOPED
   SU2_OMP_FOR_STAT(omp_heavy_size)
   for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint)
     for (auto index = 0ul; index < nVar * nEqn; ++index) matrix[dia_ptr[iPoint] * nVar * nEqn + index] = 0.0;
@@ -601,10 +611,8 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 }
 
 template <class ScalarType>
-void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
-  const auto block_i = i / nVar;
-  const auto row = i % nVar;
-
+void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long block_i, unsigned long row) {
+  SU2_ZONE_SCOPED
   for (auto index = row_ptr[block_i]; index < row_ptr[block_i + 1]; index++) {
     for (auto iVar = 0u; iVar < nVar; iVar++)
       matrix[index * nVar * nVar + row * nVar + iVar] = 0.0;  // Delete row values in the block
@@ -616,6 +624,7 @@ void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
 template <class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                  CGeometry* geometry, const CConfig* config) const {
+  SU2_ZONE_SCOPED
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
 #ifndef NDEBUG
   if ((nEqn != vec.GetNVar()) || (nVar != prod.GetNVar())) {
@@ -646,6 +655,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>& v
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
+  SU2_ZONE_SCOPED
   /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -657,6 +667,7 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<ScalarType>& vec,
                                                          CSysVector<ScalarType>& prod, CGeometry* geometry,
                                                          const CConfig* config) const {
+  SU2_ZONE_SCOPED
   /*--- Apply Jacobi preconditioner, y = D^{-1} * x, the inverse of the diagonal is already known. ---*/
   SU2_OMP_BARRIER
   SU2_OMP_FOR_DYN(omp_heavy_size)
@@ -671,33 +682,7 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
-  /*--- Copy block matrix to compute factorization in-place. ---*/
-
-  if (ilu_fill_in == 0) {
-    /*--- ILU0, direct copy. ---*/
-    SU2_OMP_FOR_STAT(omp_light_size)
-    for (auto iVar = 0ul; iVar < nnz * nVar * nVar; ++iVar) ILU_matrix[iVar] = matrix[iVar];
-    END_SU2_OMP_FOR
-  } else {
-    /*--- ILUn clear the ILU matrix first. ---*/
-    SU2_OMP_FOR_STAT(omp_light_size)
-    for (auto iVar = 0ul; iVar < nnz_ilu * nVar * nVar; iVar++) ILU_matrix[iVar] = 0.0;
-    END_SU2_OMP_FOR
-
-    /*--- ILUn, traverse matrix to access its blocks
-     *    sequentially and set them in the ILU matrix. ---*/
-    SU2_OMP_FOR_DYN(omp_heavy_size)
-    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-      for (auto index = row_ptr[iPoint]; index < row_ptr[iPoint + 1]; index++) {
-        auto jPoint = col_ind[index];
-        SetBlock_ILUMatrix(iPoint, jPoint, &matrix[index * nVar * nVar]);
-      }
-    }
-    END_SU2_OMP_FOR
-  }
-
-  /*--- Transform system in Upper Matrix ---*/
-
+  SU2_ZONE_SCOPED
   /*--- OpenMP Parallelization, a loop construct is used to ensure
    *    the preconditioner is computed correctly even if called
    *    outside of a parallel section. ---*/
@@ -712,12 +697,48 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
      *    to row/col "end-1" (i.e. the range [begin,end[). Which is exactly
      *    what the MPI-only implementation does. ---*/
 
-    ScalarType weight[MAXNVAR * MAXNVAR], aux_block[MAXNVAR * MAXNVAR];
+    const auto blockSize = nVar * nVar;
+    ScalarType Lij[MAXNVAR * MAXNVAR], Lij_Ujk[MAXNVAR * MAXNVAR];
+
+    /*--- Copy block matrix to compute factorization in-place. ---*/
+    auto InitIluRow = [&](const auto iRow) {
+      if (ilu_fill_in == 0) {
+        /*--- ILU0, direct copy to initialize. ---*/
+        const auto begin = row_ptr_ilu[iRow] * blockSize;
+        const auto end = row_ptr_ilu[iRow + 1] * blockSize;
+        SU2_OMP_SIMD
+        for (unsigned long k = begin; k < end; k++) ILU_matrix[k] = matrix[k];
+        return;
+      }
+      /*--- ILUn, clear or copy the entries of the matrix. ---*/
+      auto indexMat = row_ptr[iRow];
+      const auto endMat = row_ptr[iRow + 1];
+      for (auto index = row_ptr_ilu[iRow]; index < row_ptr_ilu[iRow + 1];) {
+        const auto jPoint = col_ind_ilu[index];
+        const auto jPointMat = col_ind[indexMat];
+        if (jPoint < jPointMat || indexMat == endMat) {
+          /*--- ILU column has not caught up with matrix column or all matrix columns were used. ---*/
+          ZeroMatrix(&ILU_matrix[index * blockSize]);
+          ++index;
+        } else {
+          /*--- Columns match, copy the matrix block. ---*/
+          if (jPoint == jPointMat) {
+            MatrixCopy(&matrix[indexMat * blockSize], &ILU_matrix[index * blockSize]);
+            ++index;
+          }
+          /*--- We've either copied the matrix column or it has not caught up with the ILU column. ---*/
+          ++indexMat;
+        }
+      }
+    };
+    InitIluRow(begin);
 
     for (auto iPoint = begin + 1; iPoint < end; iPoint++) {
-      /*--- Invert and store the previous diagonal block to later compute the weight. ---*/
+      InitIluRow(iPoint);
 
-      InverseDiagonalBlock_ILUMatrix(iPoint - 1, &invM[(iPoint - 1) * nVar * nVar]);
+      /*--- Invert and store the previous diagonal block to compute the lower entries. ---*/
+
+      InvertDiagonalBlockILUMatrix(iPoint - 1);
 
       /*--- For this row (unknown), loop over its lower diagonal entries. ---*/
 
@@ -732,10 +753,11 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
 
         /*--- Multiply the block by the inverse of the corresponding diagonal block. ---*/
 
-        auto Block_ij = &ILU_matrix[index * nVar * nVar];
-        MatrixMatrixProduct(Block_ij, &invM[jPoint * nVar * nVar], weight);
+        auto Block_ij = &ILU_matrix[index * blockSize];
+        const auto invUjj = &ILU_matrix[dia_ptr_ilu[jPoint] * blockSize];
+        MatrixMatrixProduct(Block_ij, invUjj, Lij);
 
-        /*--- "weight" holds Aij*inv(Ajj). Jump to the upper part of the jPoint row. ---*/
+        /*--- Lij holds Aij*inv(Ujj). Jump to the upper part of the jPoint row. ---*/
 
         for (auto index_ = dia_ptr_ilu[jPoint] + 1; index_ < row_ptr_ilu[jPoint + 1]; index_++) {
           /*--- Get the column index (kPoint > jPoint). ---*/
@@ -744,24 +766,23 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
 
           if (kPoint >= end) break;
 
-          /*--- If Aik exists, update it: Aik -= Aij*inv(Ajj)*Ajk ---*/
+          /*--- If Aik exists, update it: Aik -= Lij * Ujk ---*/
 
           auto Block_ik = GetBlock_ILUMatrix(iPoint, kPoint);
 
           if (Block_ik != nullptr) {
-            auto Block_jk = &ILU_matrix[index_ * nVar * nVar];
-            MatrixMatrixProduct(weight, Block_jk, aux_block);
-            MatrixSubtraction(Block_ik, aux_block, Block_ik);
+            const auto Ujk = &ILU_matrix[index_ * blockSize];
+            MatrixMatrixProduct(Lij, Ujk, Lij_Ujk);
+            MatrixSubtraction(Block_ik, Lij_Ujk, Block_ik);
           }
         }
 
-        /*--- Lastly, store "weight" in the lower triangular part, which
-         will be reused during the forward solve in the precon/smoother. ---*/
-
-        for (auto iVar = 0ul; iVar < nVar * nVar; ++iVar) Block_ij[iVar] = weight[iVar];
+        /*--- Lastly, store Lij in the lower triangular part. ---*/
+        SU2_OMP_SIMD
+        for (auto iVar = 0ul; iVar < blockSize; ++iVar) Block_ij[iVar] = Lij[iVar];
       }
     }
-    InverseDiagonalBlock_ILUMatrix(end - 1, &invM[(end - 1) * nVar * nVar]);
+    InvertDiagonalBlockILUMatrix(end - 1);
   }
   END_SU2_OMP_FOR
 }
@@ -769,6 +790,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
 template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                       CGeometry* geometry, const CConfig* config) const {
+  SU2_ZONE_SCOPED
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
@@ -804,6 +826,8 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
       iPoint--;  // unsigned type
       for (auto iVar = 0ul; iVar < nVar; iVar++) aux_vec[iVar] = prod[iPoint * nVar + iVar];
 
+      const auto* invUii = &ILU_matrix[dia_ptr_ilu[iPoint] * nVar * nVar];
+
       for (auto index = dia_ptr_ilu[iPoint] + 1; index < row_ptr_ilu[iPoint + 1]; index++) {
         auto jPoint = col_ind_ilu[index];
         if (jPoint >= end) break;
@@ -811,7 +835,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
         MatrixVectorProductSub(Block_ij, &prod[jPoint * nVar], aux_vec);
       }
 
-      MatrixVectorProduct(&invM[iPoint * nVar * nVar], aux_vec, &prod[iPoint * nVar]);
+      MatrixVectorProduct(invUii, aux_vec, &prod[iPoint * nVar]);
     }
   }
   END_SU2_OMP_FOR
@@ -826,6 +850,7 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<ScalarType>& vec,
                                                          CSysVector<ScalarType>& prod, CGeometry* geometry,
                                                          const CConfig* config) const {
+  SU2_ZONE_SCOPED
   /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
 
   /*--- Coherent view of vectors. ---*/
@@ -889,6 +914,7 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildLineletPreconditioner(const CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
   BuildJacobiPreconditioner();
 
   /*--- Allocate working vectors if not done yet. ---*/
@@ -920,6 +946,7 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<ScalarType>& vec,
                                                           CSysVector<ScalarType>& prod, CGeometry* geometry,
                                                           const CConfig* config) const {
+  SU2_ZONE_SCOPED
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
@@ -1024,6 +1051,7 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
 template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType>& sol, const CSysVector<ScalarType>& f,
                                              CSysVector<ScalarType>& res) const {
+  SU2_ZONE_SCOPED
   SU2_OMP_BARRIER
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -1038,6 +1066,7 @@ template <class ScalarType>
 template <class OtherType>
 void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, const OtherType* x_i,
                                                    CSysVector<OtherType>& b) {
+  SU2_ZONE_SCOPED
   /*--- Eliminate the row associated with node i (Block_ii = I and all other Block_ij = 0).
    *    To preserve eventual symmetry, also attempt to eliminate the column, if the sparse pattern is not
    *    symmetric the entire column may not be eliminated, the result (matrix and vector) is still correct.
@@ -1079,6 +1108,8 @@ void CSysMatrix<ScalarType>::EnforceSolutionAtNode(const unsigned long node_i, c
 template <class ScalarType>
 template <class OtherType>
 void CSysMatrix<ScalarType>::EnforceZeroProjection(unsigned long node_i, const OtherType* n, CSysVector<OtherType>& b) {
+  SU2_ZONE_SCOPED
+
   for (auto index = row_ptr[node_i]; index < row_ptr[node_i + 1]; ++index) {
     const auto node_j = col_ind[index];
 
@@ -1135,6 +1166,8 @@ void CSysMatrix<ScalarType>::EnforceZeroProjection(unsigned long node_i, const O
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
+  SU2_ZONE_SCOPED
+
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
     auto block_ii = &matrix[dia_ptr[iPoint] * nVar * nEqn];
@@ -1151,6 +1184,7 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::TransposeInPlace() {
+  SU2_ZONE_SCOPED
   assert(nVar == nEqn && "Cannot transpose with nVar != nEqn.");
 
   auto swapAndTransp = [](unsigned long n, ScalarType* a, ScalarType* b) {
@@ -1226,6 +1260,7 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::MatrixMatrixAddition(ScalarType alpha, const CSysMatrix<ScalarType>& B) {
+  SU2_ZONE_SCOPED
   /*--- Check that the sparse structure is shared between the two matrices,
    *    comparing pointers is ok as they are obtained from CGeometry. ---*/
   bool ok = (row_ptr == B.row_ptr) && (col_ind == B.col_ind) && (nVar == B.nVar) && (nEqn == B.nEqn) && (nnz == B.nnz);
@@ -1242,6 +1277,7 @@ void CSysMatrix<ScalarType>::MatrixMatrixAddition(ScalarType alpha, const CSysMa
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry* geometry, const CConfig* config,
                                                        unsigned short kind_fact) {
+  SU2_ZONE_SCOPED
 #ifdef HAVE_PASTIX
   /*--- Pastix will launch nested threads. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -1258,6 +1294,7 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<ScalarType>& vec,
                                                          CSysVector<ScalarType>& prod, CGeometry* geometry,
                                                          const CConfig* config) const {
+  SU2_ZONE_SCOPED
 #ifdef HAVE_PASTIX
   SU2_OMP_SAFE_GLOBAL_ACCESS(pastix_wrapper.Solve(vec, prod);)
 
@@ -1280,17 +1317,11 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
   template void CSysMatrix<TYPE>::EnforceZeroProjection(unsigned long, const su2double*, CSysVector<su2double>&); \
   INSTANTIATE_COMMS(TYPE)
 
-#ifdef CODI_FORWARD_TYPE
-/*--- In forward AD only the active type is used. ---*/
-INSTANTIATE_MATRIX(su2double)
-#else
-/*--- Base and reverse AD, matrix is passive. ---*/
 INSTANTIATE_MATRIX(su2mixedfloat)
-/*--- If using mixed precision (float) instantiate also a version for doubles, and allow cross communications. ---*/
+
 #ifdef USE_MIXED_PRECISION
 INSTANTIATE_MATRIX(passivedouble)
 #endif
 #ifdef CODI_REVERSE_TYPE
 INSTANTIATE_COMMS(su2double)
 #endif
-#endif  // CODI_FORWARD_TYPE
