@@ -177,6 +177,15 @@ class TestCase:
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
+
+        if hasattr(self, "decompress") and self.decompress:
+            print("--- Decompressing grid file: " + self.grid_file + ".gz")
+            import gzip, shutil
+            with gzip.open(self.grid_file + ".gz", "rb") as f_in:
+                with open(self.grid_file, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            print("--- Decompression completed!")
+
         start   = datetime.datetime.now()
         process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
 

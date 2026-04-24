@@ -1028,6 +1028,14 @@ void CFlowOutput::AddHistoryOutputFields_ScalarRMS_RES(const CConfig* config) {
     case TURB_FAMILY::SA:
       /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).
       AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        /// DESCRIPTION: Root-mean square residual of stochastic vector x-component (Stochastic Backscatter Model).
+        AddHistoryOutput("RMS_STOCH_VAR-X", "rms[stoch_x]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Root-mean square residual of stochastic vector y-component (Stochastic Backscatter Model).
+        AddHistoryOutput("RMS_STOCH_VAR-Y", "rms[stoch_y]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector y-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Root-mean square residual of stochastic vector z-component (Stochastic Backscatter Model).
+        AddHistoryOutput("RMS_STOCH_VAR-Z", "rms[stoch_z]", ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+      }
       break;
 
     case TURB_FAMILY::KW:
@@ -1083,6 +1091,14 @@ void CFlowOutput::AddHistoryOutputFields_ScalarMAX_RES(const CConfig* config) {
     case TURB_FAMILY::SA:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
       AddHistoryOutput("MAX_NU_TILDE", "max[nu]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        /// DESCRIPTION: Maximum residual of stochastic vector x-component (Stochastic Backscatter Model).
+        AddHistoryOutput("MAX_STOCH_VAR-X", "max[stoch_x]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Maximum residual of stochastic vector y-component (Stochastic Backscatter Model).
+        AddHistoryOutput("MAX_STOCH_VAR-Y", "max[stoch_y]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector y-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Maximum residual of stochastic vector z-component (Stochastic Backscatter Model).
+        AddHistoryOutput("MAX_STOCH_VAR-Z", "max[stoch_z]", ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+      }
       break;
 
     case TURB_FAMILY::KW:
@@ -1142,6 +1158,14 @@ void CFlowOutput::AddHistoryOutputFields_ScalarBGS_RES(const CConfig* config) {
     case TURB_FAMILY::SA:
       /// DESCRIPTION: Maximum residual of nu tilde (SA model).
       AddHistoryOutput("BGS_NU_TILDE", "bgs[nu]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of nu tilde (SA model).", HistoryFieldType::RESIDUAL);
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        /// DESCRIPTION: Maximum residual of stochastic vector x-component (Stochastic Backscatter Model).
+        AddHistoryOutput("BGS_STOCH_VAR-X", "bgs[stoch_x]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of stochastic vector x-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Maximum residual of stochastic vector y-component (Stochastic Backscatter Model).
+        AddHistoryOutput("BGS_STOCH_VAR-Y", "bgs[stoch_y]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of stochastic vector y-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+        /// DESCRIPTION: Maximum residual of stochastic vector z-component (Stochastic Backscatter Model).
+        AddHistoryOutput("BGS_STOCH_VAR-Z", "bgs[stoch_z]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of stochastic vector z-component (Stochastic Backscatter Model).", HistoryFieldType::RESIDUAL);
+      }
       break;
 
     case TURB_FAMILY::KW:
@@ -1224,8 +1248,21 @@ void CFlowOutput::LoadHistoryDataScalar(const CConfig* config, const CSolver* co
     case TURB_FAMILY::SA:
       SetHistoryOutputValue("RMS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_RMS(0)));
       SetHistoryOutputValue("MAX_NU_TILDE", log10(solver[TURB_SOL]->GetRes_Max(0)));
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        SetHistoryOutputValue("RMS_STOCH_VAR-X", log10(solver[TURB_SOL]->GetRes_RMS(1)));
+        SetHistoryOutputValue("RMS_STOCH_VAR-Y", log10(solver[TURB_SOL]->GetRes_RMS(2)));
+        SetHistoryOutputValue("RMS_STOCH_VAR-Z", log10(solver[TURB_SOL]->GetRes_RMS(3)));
+        SetHistoryOutputValue("MAX_STOCH_VAR-X", log10(solver[TURB_SOL]->GetRes_Max(1)));
+        SetHistoryOutputValue("MAX_STOCH_VAR-Y", log10(solver[TURB_SOL]->GetRes_Max(2)));
+        SetHistoryOutputValue("MAX_STOCH_VAR-Z", log10(solver[TURB_SOL]->GetRes_Max(3)));
+      }
       if (multiZone) {
         SetHistoryOutputValue("BGS_NU_TILDE", log10(solver[TURB_SOL]->GetRes_BGS(0)));
+        if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+          SetHistoryOutputValue("BGS_STOCH_VAR-X", log10(solver[TURB_SOL]->GetRes_BGS(1)));
+          SetHistoryOutputValue("BGS_STOCH_VAR-Y", log10(solver[TURB_SOL]->GetRes_BGS(2)));
+          SetHistoryOutputValue("BGS_STOCH_VAR-Z", log10(solver[TURB_SOL]->GetRes_BGS(3)));
+        }
       }
       break;
 
@@ -1315,6 +1352,11 @@ void CFlowOutput::SetVolumeOutputFieldsScalarSolution(const CConfig* config){
   switch (TurbModelFamily(config->GetKind_Turb_Model())) {
     case TURB_FAMILY::SA:
       AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION", "Spalart-Allmaras variable");
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        AddVolumeOutput("STOCHVAR_X", "StochVar_x", "SOLUTION", "x-component of the stochastic vector potential");
+        AddVolumeOutput("STOCHVAR_Y", "StochVar_y", "SOLUTION", "y-component of the stochastic vector potential");
+        AddVolumeOutput("STOCHVAR_Z", "StochVar_z", "SOLUTION", "z-component of the stochastic vector potential");
+      }
       break;
 
     case TURB_FAMILY::KW:
@@ -1367,6 +1409,11 @@ void CFlowOutput::SetVolumeOutputFieldsScalarResidual(const CConfig* config) {
   switch (TurbModelFamily(config->GetKind_Turb_Model())){
     case TURB_FAMILY::SA:
       AddVolumeOutput("RES_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL", "Residual of the Spalart-Allmaras variable");
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        AddVolumeOutput("RES_STOCHVAR_X", "Residual_StochVar_X", "RESIDUAL", "Residual of the x-component of the stochastic vector potential");
+        AddVolumeOutput("RES_STOCHVAR_Y", "Residual_StochVar_Y", "RESIDUAL", "Residual of the y-component of the stochastic vector potential");
+        AddVolumeOutput("RES_STOCHVAR_Z", "Residual_StochVar_Z", "RESIDUAL", "Residual of the z-component of the stochastic vector potential");
+      }
       break;
 
     case TURB_FAMILY::KW:
@@ -1547,6 +1594,13 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES", "DES length scale value");
     AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES", "Wall distance value");
+    AddVolumeOutput("LES_SENSOR","LES_Sensor","DDES","LES sensor value");
+    if (config->GetSBSParam().StochasticBackscatter) {
+      AddVolumeOutput("STOCHSOURCE_X", "StochSource_x", "BACKSCATTER", "x-component of the stochastic source vector");
+      AddVolumeOutput("STOCHSOURCE_Y", "StochSource_y", "BACKSCATTER", "y-component of the stochastic source vector");
+      AddVolumeOutput("STOCHSOURCE_Z", "StochSource_z", "BACKSCATTER", "z-component of the stochastic source vector");
+      AddVolumeOutput("ENERGY_BACKSCATTER_RATIO", "Energy_Backscatter_Ratio", "BACKSCATTER", "Energy backscatter from unresolved to resolved scales (divided by the turbulent dissipation of resolved kinetic energy)");
+    }
   }
 
   if (config->GetViscous()) {
@@ -1646,6 +1700,21 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
   if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
     SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale(iPoint));
     SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance(iPoint));
+    SetVolumeOutputValue("LES_SENSOR", iPoint, Node_Flow->GetLES_Mode(iPoint));
+    if (config->GetSBSParam().StochasticBackscatter) {
+      if (config->GetSBSParam().SBS_Ctau > 0.0) {
+        SetVolumeOutputValue("STOCHVAR_X", iPoint, Node_Turb->GetSolution(iPoint, 1));
+        SetVolumeOutputValue("STOCHVAR_Y", iPoint, Node_Turb->GetSolution(iPoint, 2));
+        SetVolumeOutputValue("STOCHVAR_Z", iPoint, Node_Turb->GetSolution(iPoint, 3));
+        SetVolumeOutputValue("RES_STOCHVAR_X", iPoint, turb_solver->LinSysRes(iPoint, 1));
+        SetVolumeOutputValue("RES_STOCHVAR_Y", iPoint, turb_solver->LinSysRes(iPoint, 2));
+        SetVolumeOutputValue("RES_STOCHVAR_Z", iPoint, turb_solver->LinSysRes(iPoint, 3));
+      }
+      SetVolumeOutputValue("STOCHSOURCE_X", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 0));
+      SetVolumeOutputValue("STOCHSOURCE_Y", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 1));
+      SetVolumeOutputValue("STOCHSOURCE_Z", iPoint, Node_Turb->GetLangevinSourceTerms(iPoint, 2));
+      SetVolumeOutputValue("ENERGY_BACKSCATTER_RATIO", iPoint, GetEnergyBackscatterRatio(iPoint, config, Node_Flow, Node_Turb));
+    }
   }
 
   switch (config->GetKind_Species_Model()) {
@@ -1725,6 +1794,13 @@ void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver 
     SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
   SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[heat_sol]->GetHeatFlux(iMarker, iVertex));
   SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
+  
+  if (config->GetTime_Domain()) {
+    SetAvgVolumeOutputValue("MEAN_SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
+    SetAvgVolumeOutputValue("MEAN_SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
+    if (nDim == 3) 
+      SetAvgVolumeOutputValue("MEAN_SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
+  }
 }
 
 void CFlowOutput::AddAerodynamicCoefficients(const CConfig* config) {
@@ -4027,7 +4103,7 @@ bool CFlowOutput::WriteVolumeOutput(CConfig *config, unsigned long Iter, bool fo
   return force_writing;
 }
 
-void CFlowOutput::SetTimeAveragedFields() {
+void CFlowOutput::SetTimeAveragedFields(const CConfig *config) {
   AddVolumeOutput("MEAN_DENSITY", "MeanDensity", "TIME_AVERAGE", "Mean density");
   AddVolumeOutput("MEAN_VELOCITY-X", "MeanVelocity_x", "TIME_AVERAGE", "Mean velocity x-component");
   AddVolumeOutput("MEAN_VELOCITY-Y", "MeanVelocity_y", "TIME_AVERAGE", "Mean velocity y-component");
@@ -4035,6 +4111,11 @@ void CFlowOutput::SetTimeAveragedFields() {
     AddVolumeOutput("MEAN_VELOCITY-Z", "MeanVelocity_z", "TIME_AVERAGE", "Mean velocity z-component");
 
   AddVolumeOutput("MEAN_PRESSURE", "MeanPressure", "TIME_AVERAGE", "Mean pressure");
+  AddVolumeOutput("MEAN_SKIN_FRICTION-X", "MeanSkinFriction_x", "TIME_AVERAGE", "Mean skin friction x-component");
+  AddVolumeOutput("MEAN_SKIN_FRICTION-Y", "MeanSkinFriction_y", "TIME_AVERAGE", "Mean skin friction y-component");
+  if (nDim==3)
+    AddVolumeOutput("MEAN_SKIN_FRICTION-Z", "MeanSkinFriction_z", "TIME_AVERAGE", "Mean skin friction z-component");
+
   AddVolumeOutput("RMS_U",   "RMS[u]", "TIME_AVERAGE", "RMS u");
   AddVolumeOutput("RMS_V",   "RMS[v]", "TIME_AVERAGE", "RMS v");
   AddVolumeOutput("RMS_UV",  "RMS[uv]", "TIME_AVERAGE", "RMS uv");
@@ -4051,9 +4132,26 @@ void CFlowOutput::SetTimeAveragedFields() {
     AddVolumeOutput("UWPRIME", "w'u'", "TIME_AVERAGE", "Mean Reynolds-stress component w'u'");
     AddVolumeOutput("VWPRIME", "w'v'", "TIME_AVERAGE", "Mean Reynolds-stress component w'v'");
   }
+
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    AddVolumeOutput("MODELED_REYNOLDS_STRESS_11", "ModeledReynoldsStress_11", "TIME_AVERAGE", "Modeled Reynolds stress xx-component");
+    AddVolumeOutput("MODELED_REYNOLDS_STRESS_22", "ModeledReynoldsStress_22", "TIME_AVERAGE", "Modeled Reynolds stress yy-component");
+    AddVolumeOutput("MODELED_REYNOLDS_STRESS_12", "ModeledReynoldsStress_12", "TIME_AVERAGE", "Modeled Reynolds stress xy-component");
+    if (nDim == 3){
+      AddVolumeOutput("MODELED_REYNOLDS_STRESS_33", "ModeledReynoldsStress_33", "TIME_AVERAGE", "Modeled Reynolds stress zz-component");
+      AddVolumeOutput("MODELED_REYNOLDS_STRESS_13", "ModeledReynoldsStress_13", "TIME_AVERAGE", "Modeled Reynolds stress xz-component");
+      AddVolumeOutput("MODELED_REYNOLDS_STRESS_23", "ModeledReynoldsStress_23", "TIME_AVERAGE", "Modeled Reynolds stress yz-component");
+    }
+
+    if (config->GetSBSParam().StochasticBackscatter) {
+      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_12", "StochasticReynoldsStress_12", "TIME_AVERAGE", "Stochastic Reynolds stress xy-component");
+      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_13", "StochasticReynoldsStress_13", "TIME_AVERAGE", "Stochastic Reynolds stress xz-component");
+      AddVolumeOutput("STOCHASTIC_REYNOLDS_STRESS_23", "StochasticReynoldsStress_23", "TIME_AVERAGE", "Stochastic Reynolds stress yz-component");
+    }
+  }
 }
 
-void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *Node_Flow){
+void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *Node_Flow, const CVariable *Node_Turb, const CConfig *config){
   SetAvgVolumeOutputValue("MEAN_DENSITY", iPoint, Node_Flow->GetDensity(iPoint));
   SetAvgVolumeOutputValue("MEAN_VELOCITY-X", iPoint, Node_Flow->GetVelocity(iPoint,0));
   SetAvgVolumeOutputValue("MEAN_VELOCITY-Y", iPoint, Node_Flow->GetVelocity(iPoint,1));
@@ -4061,7 +4159,6 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *No
     SetAvgVolumeOutputValue("MEAN_VELOCITY-Z", iPoint, Node_Flow->GetVelocity(iPoint,2));
 
   SetAvgVolumeOutputValue("MEAN_PRESSURE", iPoint, Node_Flow->GetPressure(iPoint));
-
   SetAvgVolumeOutputValue("RMS_U", iPoint, pow(Node_Flow->GetVelocity(iPoint,0),2));
   SetAvgVolumeOutputValue("RMS_V", iPoint, pow(Node_Flow->GetVelocity(iPoint,1),2));
   SetAvgVolumeOutputValue("RMS_UV", iPoint, Node_Flow->GetVelocity(iPoint,0) * Node_Flow->GetVelocity(iPoint,1));
@@ -4092,6 +4189,45 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *No
     SetVolumeOutputValue("WWPRIME", iPoint, -(wmean*wmean - wwmean));
     SetVolumeOutputValue("UWPRIME", iPoint, -(umean*wmean - uwmean));
     SetVolumeOutputValue("VWPRIME",  iPoint, -(vmean*wmean - vwmean));
+  }
+
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
+    const su2double rho = Node_Flow->GetDensity(iPoint);
+    const su2double nu_t = Node_Flow->GetEddyViscosity(iPoint) / rho;
+    const auto vel_grad = Node_Flow->GetVelocityGradient(iPoint);
+    const su2double vel_div = vel_grad(0,0) + vel_grad(1,1) + (nDim ==3 ? vel_grad(2,2) : 0.0);
+    const su2double tau_xx = nu_t * (2*vel_grad(0,0) - (2.0/3.0)*vel_div);
+    const su2double tau_yy = nu_t * (2*vel_grad(1,1) - (2.0/3.0)*vel_div);
+    const su2double tau_xy = nu_t * (vel_grad(0,1) + vel_grad(1,0));
+    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_11", iPoint, -tau_xx);
+    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_22", iPoint, -tau_yy);
+    SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_12", iPoint, -tau_xy);
+    if (nDim == 3){
+      const su2double tau_zz = nu_t * (2*vel_grad(2,2) - (2.0/3.0)*vel_div);
+      const su2double tau_xz = nu_t * (vel_grad(0,2) + vel_grad(2,0));
+      const su2double tau_yz = nu_t * (vel_grad(1,2) + vel_grad(2,1));
+      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_33", iPoint, -tau_zz);
+      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_13", iPoint, -tau_xz);
+      SetAvgVolumeOutputValue("MODELED_REYNOLDS_STRESS_23", iPoint, -tau_yz);
+    }
+
+    if (config->GetSBSParam().StochasticBackscatter) {
+      const su2double DES_lengthscale = max(Node_Flow->GetDES_LengthScale(iPoint), 1e-10);
+      const su2double lesSensor = Node_Flow->GetLES_Mode(iPoint);
+      const su2double mag = config->GetSBSParam().SBS_Cmag;
+      const su2double threshold = config->GetSBSParam().stochFdThreshold;
+      su2double tke_estim = 0.0;
+      if (lesSensor > threshold) tke_estim = pow(nu_t/DES_lengthscale, 2);
+      const su2double csi_x = Node_Turb->GetSolution(iPoint, 1);
+      const su2double csi_y = Node_Turb->GetSolution(iPoint, 2);
+      const su2double csi_z = Node_Turb->GetSolution(iPoint, 3);
+      const su2double R_xy = - mag * tke_estim * csi_z;
+      const su2double R_xz = + mag * tke_estim * csi_y;
+      const su2double R_yz = - mag * tke_estim * csi_x;
+      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_12", iPoint, -R_xy);
+      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_13", iPoint, -R_xz);
+      SetAvgVolumeOutputValue("STOCHASTIC_REYNOLDS_STRESS_23", iPoint, -R_yz);
+    }
   }
 }
 

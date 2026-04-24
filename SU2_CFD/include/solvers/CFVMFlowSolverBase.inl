@@ -451,11 +451,12 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool backscatter = config->GetSBSParam().StochasticBackscatter;
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                          (config->GetKind_FluidModel() == IDEAL_GAS);
 
   CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
+  if (tkeNeeded || backscatter) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
@@ -485,6 +486,26 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
   if (tkeNeeded)
     numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
                                    turbNodes->GetSolution(jPoint,0));
+
+  /*--- Stochastic variables from Langevin equations (Stochastic Backscatter Model). ---*/
+
+  if (backscatter) {
+    if (config->GetSBSParam().SBS_Ctau > 0.0) {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        numerics->SetStochVar(iDim, turbNodes->GetSolution(iPoint, iDim+1),
+                                    turbNodes->GetSolution(jPoint, iDim+1));
+    } else {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        numerics->SetStochVar(iDim, turbNodes->GetLangevinSourceTerms(iPoint, iDim),
+                                    turbNodes->GetLangevinSourceTerms(jPoint, iDim));
+    }
+    su2double DES_length_i = max(turbNodes->GetDES_LengthScale(iPoint), 1e-10);
+    su2double DES_length_j = max(turbNodes->GetDES_LengthScale(jPoint), 1e-10);
+    su2double lesMode_i = turbNodes->GetLES_Mode(iPoint);
+    su2double lesMode_j = turbNodes->GetLES_Mode(jPoint);
+    numerics->SetDistance(DES_length_i, DES_length_j);
+    numerics->SetLES_Mode(lesMode_i, lesMode_j);
+  }
 
   /*--- Wall shear stress values (wall functions) ---*/
 
