@@ -140,6 +140,11 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 
     if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
 
+    /*--- Compute how many turbulence variables are present in the restart file. ---*/
+
+    unsigned short nVarInRestart = Restart_Vars[1] - skipVars;
+    if (nVarInRestart > nVar) nVarInRestart = nVar;
+
     /*--- Load data from the restart into correct containers. ---*/
 
     unsigned long counter = 0;
@@ -154,7 +159,8 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
          offset in the buffer of data from the restart file and load it. ---*/
 
         const auto index = counter * Restart_Vars[1] + skipVars;
-        for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        for (auto iVar = 0u; iVar < nVarInRestart; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        for (auto iVar = nVarInRestart; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, 0.0);
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;

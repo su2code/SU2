@@ -275,6 +275,14 @@ class CSysMatrix {
   }
 
   /*!
+   * \brief Zero a matrix.
+   */
+  FORCEINLINE void ZeroMatrix(ScalarType* mat) const {
+    SU2_OMP_SIMD
+    for (auto iVar = 0ul; iVar < nVar * nEqn; ++iVar) mat[iVar] = 0;
+  }
+
+  /*!
    * \brief Solve a small (nVar x nVar) linear system using Gaussian elimination.
    * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
    * \param[in,out] vec - On entry the rhs, on exit the solution.
@@ -304,11 +312,11 @@ class CSysMatrix {
   inline void InverseDiagonalBlock(unsigned long block_i, ScalarType* invBlock) const;
 
   /*!
-   * \brief Inverse diagonal block.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[out] invBlock - Inverse block.
+   * \brief Invert diagonal block (Uii) of the ILU matrix in place.
+   * \param[in] block_i - Index of the block to invert.
+   * \return Inverted block.
    */
-  inline void InverseDiagonalBlock_ILUMatrix(unsigned long block_i, ScalarType* invBlock) const;
+  inline const ScalarType* InvertDiagonalBlockILUMatrix(unsigned long block_i);
 
   /*!
    * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
@@ -365,12 +373,12 @@ class CSysMatrix {
   /*!
    * \brief Constructor of the class.
    */
-  CSysMatrix(void);
+  CSysMatrix();
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CSysMatrix(void);
+  ~CSysMatrix();
 
   /*!
    * \brief Initializes the sparse matrix.
@@ -390,12 +398,12 @@ class CSysMatrix {
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
    */
-  void SetValZero(void);
+  void SetValZero();
 
   /*!
    * \brief Sets to zero all the block diagonal entries of the sparse matrix.
    */
-  void SetValDiagonalZero(void);
+  void SetValDiagonalZero();
 
   /*!
    * \brief Performs the memory copy from host to device.

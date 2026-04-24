@@ -205,60 +205,32 @@ bool CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<Sc
     }
   };
 
-  /*--- Parameter for reorthonormalization ---*/
+  /*--- Classical Gram Schmidt twice is faster and at least as accurate
+   * as Modified Gram Schmidt. ---*/
 
-  const ScalarType reorth = 0.98;
+  const auto h_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
+  LinearCombination(
+      shared_hsbg, i + 1, w, [&h_i](int k) { return -h_i(0, k); }, w[i + 1], true);
 
-  /*--- Get the norm of the vector being orthogonalized, and find the
-  threshold for re-orthogonalization ---*/
+  const auto& dh_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
+  LinearCombination(
+      shared_hsbg, i + 1, w, [&dh_i](int k) { return -dh_i(0, k); }, w[i + 1], true);
 
-  ScalarType nrm = w[i + 1].squaredNorm();
-  ScalarType thr = nrm * reorth;
+  for (int k = 0; k < i + 1; k++) SetHsbg(k, i, h_i(0, k) + dh_i(0, k));
 
-  /*--- The squared norm of w[i+1] <= 0 or is NaN: the input vector from
-       mat_vec is zero or contains NaN. Cannot proceed with orthogonalization. ---*/
+  /*--- The norm of w[i+1] is 0 or NaN: the input vector from mat_vec is
+   * zero or contains NaN. Cannot proceed with orthogonalization. ---*/
 
-  if ((nrm <= 0.0) || (nrm != nrm)) {
+  ScalarType nrm = w[i + 1].norm();
+
+  if (nrm <= 0.0 || nrm != nrm) {
     /*--- nrm is the result of a dot product, communications are implicitly handled. ---*/
     SetHsbg(i + 1, i, ScalarType(0));
     return false;
   }
 
-  /*--- Begin main Gram-Schmidt loop ---*/
-
-  for (int k = 0; k < i + 1; k++) {
-    ScalarType prod = w[i + 1].dot(w[k]);
-    ScalarType h_ki = prod;
-    w[i + 1] -= prod * w[k];
-
-    /*--- Check if reorthogonalization is necessary ---*/
-
-    if (prod * prod > thr) {
-      prod = w[i + 1].dot(w[k]);
-      h_ki += prod;
-      w[i + 1] -= prod * w[k];
-    }
-    SetHsbg(k, i, h_ki);
-
-    /*--- Update the norm and check its size ---*/
-
-    nrm -= pow(h_ki, 2);
-    nrm = max<ScalarType>(nrm, 0.0);
-    thr = nrm * reorth;
-  }
-
-  /*--- Test the resulting vector ---*/
-
-  nrm = w[i + 1].norm();
+  /*--- Normalize the resulting vector. ---*/
   SetHsbg(i + 1, i, nrm);
-
-  /*--- Return false if the resulting vector is zero or contains NaN, true otherwise. --- */
-  if ((nrm <= 0.0) || (nrm != nrm)) {
-    return false;
-  }
-
-  /*--- Scale the resulting vector ---*/
-
   w[i + 1] /= nrm;
 
   return true;
@@ -935,62 +907,66 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
         }
       }
     }
-    const auto Hm = Heigen.topLeftCorner(m + 1, m);
-    EigenMatrix HTVW = Hm.transpose() * VW;
 
-    /*--- If the "B" matrix in the generalized eigenvalue problem is not invertible we reset. ---*/
-    if (Eigen::ColPivHouseholderQR<EigenMatrix> qr(HTVW); !qr.isInvertible()) {
-      if (masterRank) {
-        SU2_OMP_MASTER
-        cout << "WARNING: (VH)^T W in FGCRODR is not invertible.\n";
-        END_SU2_OMP_MASTER
+    auto RitzValues = [&]() {
+      SU2_ZONE_SCOPED_N("RitzValues")
+      ritz_failed = false;
+      const auto Hm = Heigen.topLeftCorner(m + 1, m);
+      EigenMatrix HTVW = Hm.transpose() * VW;
+
+      /*--- If the "B" matrix in the generalized eigenvalue problem is not invertible we reset. ---*/
+      if (Eigen::ColPivHouseholderQR<EigenMatrix> qr(HTVW); !qr.isInvertible()) {
+        if (masterRank) cout << "WARNING: (VH)^T W in FGCRODR is not invertible.\n";
+        ResetDeflation();
+        ritz_failed = true;
+        return;
       }
-      SU2_OMP_SAFE_GLOBAL_ACCESS(ResetDeflation();)
+      EigenMatrix HTH = Hm.transpose() * Hm;
+      Eigen::GeneralizedEigenSolver<EigenMatrix> ges(HTH, HTVW);
+      const auto& lambda = ges.eigenvalues();
+
+      std::vector<int> order(m);
+      std::iota(order.begin(), order.end(), 0);
+      std::sort(order.begin(), order.end(),
+                [&lambda](int i, int j) { return fabs(std::real(lambda(i))) < fabs(std::real(lambda(j))); });
+
+      EigenMatrix P(m, deflation + 1);
+      k_new = 0;
+      for (auto i = 0ul; i < m; ++i) {
+        const auto j = order[i];
+
+        /*--- Skip conjugate pairs because we split complex vectors into real and imag. ---*/
+        if (i > 0 && abs(lambda(j) - std::conj(lambda(order[i - 1]))) / abs(lambda(j)) < 1e-3) {
+          continue;
+        }
+        if (monitoring && masterRank && config->GetComm_Level() == COMM_FULL) {
+          cout << "     FGCRODR Ritz value #" << i << ": " << lambda(j) << "\n";
+        }
+        P.col(k_new++) = ges.eigenvectors().col(j).real();
+
+        if (fabs(std::imag(lambda(j))) > 1e-2 * fabs(std::real(lambda(j)))) {
+          P.col(k_new++) = ges.eigenvectors().col(j).imag();
+        }
+        if (k_new >= deflation) break;
+      }
+      P.conservativeResize(m, k_new);
+
+      /*--- Modify the Krylov basis vectors using P.
+       * A Z P = V H P <=> A Z P = V Q R <=> A Z P R^-1 = V Q <=> A Zk = Vk.
+       * W is updated the same way as Z since Z = M(W). ---*/
+
+      EigenMatrix HP = Hm * P;
+      Eigen::HouseholderQR<EigenMatrix> qr(HP);
+      Q = qr.householderQ() * EigenMatrix::Identity(m + 1, k_new);
+      auto R = qr.matrixQR().topRows(k_new).template triangularView<Eigen::Upper>();
+
+      PinvR = P * R.solve(EigenMatrix::Identity(k_new, k_new));
+    };
+    SU2_OMP_SAFE_GLOBAL_ACCESS(RitzValues();)
+    if (ritz_failed) {
       if (converged) break;
       continue;
     }
-    EigenMatrix HTH = Hm.transpose() * Hm;
-    Eigen::GeneralizedEigenSolver<EigenMatrix> ges(HTH, HTVW);
-    const auto& lambda = ges.eigenvalues();
-
-    std::vector<int> order(m);
-    std::iota(order.begin(), order.end(), 0);
-    std::sort(order.begin(), order.end(),
-              [&lambda](int i, int j) { return fabs(std::real(lambda(i))) < fabs(std::real(lambda(j))); });
-
-    EigenMatrix P(m, deflation + 1);
-    auto k_new = 0ul;
-    for (auto i = 0ul; i < m; ++i) {
-      const auto j = order[i];
-
-      /*--- Skip conjugate pairs because we split complex vectors into real and imag. ---*/
-      if (i > 0 && abs(lambda(j) - std::conj(lambda(order[i - 1]))) / abs(lambda(j)) < 1e-3) {
-        continue;
-      }
-      if (monitoring && masterRank && config->GetComm_Level() == COMM_FULL) {
-        SU2_OMP_MASTER
-        cout << "     FGCRODR Ritz value #" << i << ": " << lambda(j) << "\n";
-        END_SU2_OMP_MASTER
-      }
-      P.col(k_new++) = ges.eigenvectors().col(j).real();
-
-      if (fabs(std::imag(lambda(j))) > 1e-2 * fabs(std::real(lambda(j)))) {
-        P.col(k_new++) = ges.eigenvectors().col(j).imag();
-      }
-      if (k_new >= deflation) break;
-    }
-    P.conservativeResize(m, k_new);
-
-    /*--- Modify the Krylov basis vectors using P.
-     * A Z P = V H P <=> A Z P = V Q R <=> A Z P R^-1 = V Q <=> A Zk = Vk.
-     * W is updated the same way as Z since Z = M(W). ---*/
-
-    EigenMatrix HP = Hm * P;
-    Eigen::HouseholderQR<EigenMatrix> qr(HP);
-    EigenMatrix Q = qr.householderQ() * EigenMatrix::Identity(m + 1, k_new);
-    auto R = qr.matrixQR().topRows(k_new).template triangularView<Eigen::Upper>();
-
-    EigenMatrix PinvR = P * (R.solve(EigenMatrix::Identity(k_new, k_new)));
 
     auto modify = [&](const EigenMatrix& mod, const auto& basis) {
       for (auto j = 0ul; j < k_new; ++j) {
