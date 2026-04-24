@@ -5758,7 +5758,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         SU2_MPI::Error("FLAME_INIT_METHOD= SPARK requires SPARK_INIT to be defined in the config file.", CURRENT_FUNCTION);
       }
       /*--- Check if SPARK_REACTION_RATES was explicitly set in config file ---*/
-      if (!OptionIsSet.find("SPARK_REACTION_RATES")) {
+      if (!OptionIsSet("SPARK_REACTION_RATES")) {
         SU2_MPI::Error("FLAME_INIT_METHOD= SPARK requires SPARK_REACTION_RATES to be defined in the config file.", CURRENT_FUNCTION);
       }
       if (flamelet_ParsedOptions.nspark < flamelet_ParsedOptions.n_scalars) {
