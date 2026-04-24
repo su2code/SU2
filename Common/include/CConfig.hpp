@@ -645,6 +645,7 @@ private:
   unsigned long Linear_Solver_Restart_Deflation; /*!< \brief Number of vectors used for deflated restarts. */
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
+  bool Linear_Solver_ILU_levels;                 /*!< \brief Use level scheduling for OMP parallelization of ILU. */
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
   su2double MSW_Alpha;                  /*!< \brief Coefficient for blending states in the MSW scheme. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
@@ -4376,6 +4377,11 @@ public:
    * \return Fill in level of the ILU preconditioner for the linear solver.
    */
   unsigned short GetLinear_Solver_ILU_n(void) const { return Linear_Solver_ILU_n; }
+
+  /*!
+   * \brief Get whether to use level scheduling for OMP parallelization of ILU.
+   */
+  bool GetLinear_Solver_ILU_levels(void) const { return Linear_Solver_ILU_levels; }
 
   /*!
    * \brief Get restart frequency of the linear solver for the implicit formulation.

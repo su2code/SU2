@@ -184,6 +184,10 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     col_ind_ilu = csr_ilu.innerIdx();
     dia_ptr_ilu = csr_ilu.diagPtr();
     nnz_ilu = csr_ilu.getNumNonZeros();
+
+    if (omp_get_max_threads() > 1 && config->GetLinear_Solver_ILU_levels()) {
+      levels_ilu = computeLevels(csr_ilu);
+    }
   }
 
   /*--- Preconditioners. ---*/
@@ -682,163 +686,204 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
-  SU2_ZONE_SCOPED
-  /*--- OpenMP Parallelization, a loop construct is used to ensure
-   *    the preconditioner is computed correctly even if called
-   *    outside of a parallel section. ---*/
+  const auto blockSize = nVar * nVar;
+  ScalarType Lij[MAXNVAR * MAXNVAR], Lij_Ujk[MAXNVAR * MAXNVAR];
 
-  SU2_OMP_FOR_STAT(1)
-  for (unsigned long thread = 0; thread < omp_num_parts; ++thread) {
-    const auto begin = omp_partitions[thread];
-    const auto end = omp_partitions[thread + 1];
-    if (begin == end) continue;
-
-    /*--- Each thread will work on the submatrix defined from row/col "begin"
-     *    to row/col "end-1" (i.e. the range [begin,end[). Which is exactly
-     *    what the MPI-only implementation does. ---*/
-
-    const auto blockSize = nVar * nVar;
-    ScalarType Lij[MAXNVAR * MAXNVAR], Lij_Ujk[MAXNVAR * MAXNVAR];
-
-    /*--- Copy block matrix to compute factorization in-place. ---*/
-    auto InitIluRow = [&](const auto iRow) {
-      if (ilu_fill_in == 0) {
-        /*--- ILU0, direct copy to initialize. ---*/
-        const auto begin = row_ptr_ilu[iRow] * blockSize;
-        const auto end = row_ptr_ilu[iRow + 1] * blockSize;
-        SU2_OMP_SIMD
-        for (unsigned long k = begin; k < end; k++) ILU_matrix[k] = matrix[k];
-        return;
-      }
-      /*--- ILUn, clear or copy the entries of the matrix. ---*/
-      auto indexMat = row_ptr[iRow];
-      const auto endMat = row_ptr[iRow + 1];
-      for (auto index = row_ptr_ilu[iRow]; index < row_ptr_ilu[iRow + 1];) {
-        const auto jPoint = col_ind_ilu[index];
-        const auto jPointMat = col_ind[indexMat];
-        if (jPoint < jPointMat || indexMat == endMat) {
-          /*--- ILU column has not caught up with matrix column or all matrix columns were used. ---*/
-          ZeroMatrix(&ILU_matrix[index * blockSize]);
+  /*--- Helper to copy block matrix to compute factorization in-place. ---*/
+  auto InitIluRow = [&](const auto iPoint) {
+    if (ilu_fill_in == 0) {
+      /*--- ILU0, direct copy to initialize. ---*/
+      const auto begin = row_ptr_ilu[iPoint] * blockSize;
+      const auto end = row_ptr_ilu[iPoint + 1] * blockSize;
+      SU2_OMP_SIMD
+      for (unsigned long k = begin; k < end; ++k) ILU_matrix[k] = matrix[k];
+      return;
+    }
+    /*--- ILUn, clear or copy the entries of the matrix. ---*/
+    auto indexMat = row_ptr[iPoint];
+    const auto endMat = row_ptr[iPoint + 1];
+    for (auto index = row_ptr_ilu[iPoint]; index < row_ptr_ilu[iPoint + 1];) {
+      const auto jPoint = col_ind_ilu[index];
+      const auto jPointMat = col_ind[indexMat];
+      if (jPoint < jPointMat || indexMat == endMat) {
+        /*--- ILU column has not caught up with matrix column or all matrix columns were used. ---*/
+        ZeroMatrix(&ILU_matrix[index * blockSize]);
+        ++index;
+      } else {
+        /*--- Columns match, copy the matrix block. ---*/
+        if (jPoint == jPointMat) {
+          MatrixCopy(&matrix[indexMat * blockSize], &ILU_matrix[index * blockSize]);
           ++index;
-        } else {
-          /*--- Columns match, copy the matrix block. ---*/
-          if (jPoint == jPointMat) {
-            MatrixCopy(&matrix[indexMat * blockSize], &ILU_matrix[index * blockSize]);
-            ++index;
-          }
-          /*--- We've either copied the matrix column or it has not caught up with the ILU column. ---*/
-          ++indexMat;
         }
-      }
-    };
-    InitIluRow(begin);
-
-    for (auto iPoint = begin + 1; iPoint < end; iPoint++) {
-      InitIluRow(iPoint);
-
-      /*--- Invert and store the previous diagonal block to compute the lower entries. ---*/
-
-      InvertDiagonalBlockILUMatrix(iPoint - 1);
-
-      /*--- For this row (unknown), loop over its lower diagonal entries. ---*/
-
-      for (auto index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; index++) {
-        /*--- jPoint is the column index (jPoint < iPoint). ---*/
-
-        auto jPoint = col_ind_ilu[index];
-
-        /*--- We only care about the sub matrix within "begin" and "end-1". ---*/
-
-        if (jPoint < begin) continue;
-
-        /*--- Multiply the block by the inverse of the corresponding diagonal block. ---*/
-
-        auto Block_ij = &ILU_matrix[index * blockSize];
-        const auto invUjj = &ILU_matrix[dia_ptr_ilu[jPoint] * blockSize];
-        MatrixMatrixProduct(Block_ij, invUjj, Lij);
-
-        /*--- Lij holds Aij*inv(Ujj). Jump to the upper part of the jPoint row. ---*/
-
-        for (auto index_ = dia_ptr_ilu[jPoint] + 1; index_ < row_ptr_ilu[jPoint + 1]; index_++) {
-          /*--- Get the column index (kPoint > jPoint). ---*/
-
-          auto kPoint = col_ind_ilu[index_];
-
-          if (kPoint >= end) break;
-
-          /*--- If Aik exists, update it: Aik -= Lij * Ujk ---*/
-
-          auto Block_ik = GetBlock_ILUMatrix(iPoint, kPoint);
-
-          if (Block_ik != nullptr) {
-            const auto Ujk = &ILU_matrix[index_ * blockSize];
-            MatrixMatrixProduct(Lij, Ujk, Lij_Ujk);
-            MatrixSubtraction(Block_ik, Lij_Ujk, Block_ik);
-          }
-        }
-
-        /*--- Lastly, store Lij in the lower triangular part. ---*/
-        SU2_OMP_SIMD
-        for (auto iVar = 0ul; iVar < blockSize; ++iVar) Block_ij[iVar] = Lij[iVar];
+        /*--- We've either copied the matrix column or it has not caught up with the ILU column. ---*/
+        ++indexMat;
       }
     }
-    InvertDiagonalBlockILUMatrix(end - 1);
+  };
+
+  /*--- Update one row of the LU matrix. ---*/
+  auto BuildIluRow = [&](const auto iPoint, const auto begin, const auto end) {
+    /*--- For this row (unknown), loop over its lower diagonal entries. ---*/
+
+    for (auto index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; ++index) {
+      /*--- jPoint is the column index (jPoint < iPoint). ---*/
+
+      const auto jPoint = col_ind_ilu[index];
+
+      /*--- We only care about the sub matrix within "begin" and "end-1". ---*/
+
+      if (jPoint < begin) continue;
+
+      /*--- Multiply the block by the inverse of the corresponding diagonal block. ---*/
+
+      auto* Block_ij = &ILU_matrix[index * blockSize];
+      const auto* invUjj = &ILU_matrix[dia_ptr_ilu[jPoint] * blockSize];
+      MatrixMatrixProduct(Block_ij, invUjj, Lij);
+
+      /*--- Lij holds Aij*inv(Ujj). Jump to the upper part of the jPoint row. ---*/
+
+      for (auto index_ = dia_ptr_ilu[jPoint] + 1; index_ < row_ptr_ilu[jPoint + 1]; ++index_) {
+        /*--- Get the column index (kPoint > jPoint). ---*/
+
+        const auto kPoint = col_ind_ilu[index_];
+        if (kPoint >= end) break;
+
+        /*--- If Aik exists, update it: Aik -= Lij * Ujk ---*/
+
+        auto* Block_ik = GetBlock_ILUMatrix(iPoint, kPoint);
+        if (Block_ik == nullptr) continue;
+
+        const auto* Ujk = &ILU_matrix[index_ * blockSize];
+        MatrixMatrixProduct(Lij, Ujk, Lij_Ujk);
+        MatrixSubtraction(Block_ik, Lij_Ujk, Block_ik);
+      }
+
+      /*--- Store Lij in the lower triangular part. ---*/
+      MatrixCopy(Lij, Block_ij);
+    }
+
+    /*--- Invert the diagonal entry, Uii, for the next rows. ---*/
+    InvertDiagonalBlockILUMatrix(iPoint);
+  };
+
+  if (levels_ilu.empty()) {
+    /*--- Each OMP thread will work on the submatrix defined from
+     * row/col "begin" to row/col "end-1" (i.e. the range [begin,end[).
+     * Which is exactly what the MPI-only implementation does. ---*/
+    SU2_OMP_FOR_STAT(1)
+    for (unsigned long thread = 0; thread < omp_num_parts; ++thread) {
+      const auto begin = omp_partitions[thread];
+      const auto end = omp_partitions[thread + 1];
+      if (begin == end) continue;
+
+      InitIluRow(begin);
+      InvertDiagonalBlockILUMatrix(begin);
+
+      for (auto iPoint = begin + 1; iPoint < end; iPoint++) {
+        InitIluRow(iPoint);
+        BuildIluRow(iPoint, begin, end);
+      }
+    }
+    END_SU2_OMP_FOR
+  } else {
+    /*--- OMP threads work on each level together before moving to the next.
+     * Levels are determined such that rows in a level only depend on rows
+     * from previous levels. ---*/
+
+    SU2_OMP_FOR_(schedule(static))
+    for (auto k = 0ul; k < levels_ilu.getNumNonZeros(0); ++k) {
+      const auto iPoint = levels_ilu.getInnerIdx(0, k);
+      InitIluRow(iPoint);
+      InvertDiagonalBlockILUMatrix(iPoint);
+    }
+    END_SU2_OMP_FOR
+
+    for (auto level = 1ul; level < levels_ilu.getOuterSize(); ++level) {
+      SU2_OMP_FOR_(schedule(static))
+      for (auto k = 0ul; k < levels_ilu.getNumNonZeros(level); ++k) {
+        const auto iPoint = levels_ilu.getInnerIdx(level, k);
+        InitIluRow(iPoint);
+        BuildIluRow(iPoint, 0ul, nPointDomain);
+      }
+      END_SU2_OMP_FOR
+    }
   }
-  END_SU2_OMP_FOR
 }
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                       CGeometry* geometry, const CConfig* config) const {
-  SU2_ZONE_SCOPED
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
-  /*--- OpenMP Parallelization ---*/
-  SU2_OMP_FOR_STAT(1)
-  for (unsigned long thread = 0; thread < omp_num_parts; ++thread) {
-    const auto begin = omp_partitions[thread];
-    const auto end = omp_partitions[thread + 1];
-    if (begin == end) continue;
+  const auto blockSize = nVar * nVar;
 
+  /*--- Forward solve the system using the lower matrix entries
+   * that were computed and stored during the ILU preprocessing.
+   * Note that we are overwriting the prod vector as we go. ---*/
+
+  auto ForwardSolve = [&](const auto iPoint, const auto begin) {
+    for (auto iVar = 0ul; iVar < nVar; ++iVar) prod(iPoint, iVar) = vec(iPoint, iVar);
+
+    for (auto index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; ++index) {
+      const auto jPoint = col_ind_ilu[index];
+      if (jPoint < begin) continue;
+      const auto* Block_ij = &ILU_matrix[index * blockSize];
+      MatrixVectorProductSub(Block_ij, &prod[jPoint * nVar], &prod[iPoint * nVar]);
+    }
+  };
+
+  auto BackwardSolve = [&](const auto iPoint, const auto end) {
     ScalarType aux_vec[MAXNVAR];
+    for (auto iVar = 0ul; iVar < nVar; ++iVar) aux_vec[iVar] = prod(iPoint, iVar);
 
-    /*--- Copy vector to then work on prod in place ---*/
+    const auto* invUii = &ILU_matrix[dia_ptr_ilu[iPoint] * blockSize];
 
-    for (auto iVar = begin * nVar; iVar < end * nVar; iVar++) prod[iVar] = vec[iVar];
-
-    /*--- Forward solve the system using the lower matrix entries that
-     were computed and stored during the ILU preprocessing. Note
-     that we are overwriting the residual vector as we go. ---*/
-
-    for (auto iPoint = begin + 1; iPoint < end; iPoint++) {
-      for (auto index = row_ptr_ilu[iPoint]; index < dia_ptr_ilu[iPoint]; index++) {
-        auto jPoint = col_ind_ilu[index];
-        if (jPoint < begin) continue;
-        auto Block_ij = &ILU_matrix[index * nVar * nVar];
-        MatrixVectorProductSub(Block_ij, &prod[jPoint * nVar], &prod[iPoint * nVar]);
-      }
+    for (auto index = dia_ptr_ilu[iPoint] + 1; index < row_ptr_ilu[iPoint + 1]; ++index) {
+      const auto jPoint = col_ind_ilu[index];
+      if (jPoint >= end) break;
+      const auto* Block_ij = &ILU_matrix[index * blockSize];
+      MatrixVectorProductSub(Block_ij, &prod[jPoint * nVar], aux_vec);
     }
 
-    /*--- Backwards substitution (starts at the last row) ---*/
+    MatrixVectorProduct(invUii, aux_vec, &prod[iPoint * nVar]);
+  };
 
-    for (auto iPoint = end; iPoint > begin;) {
-      iPoint--;  // unsigned type
-      for (auto iVar = 0ul; iVar < nVar; iVar++) aux_vec[iVar] = prod[iPoint * nVar + iVar];
+  if (levels_ilu.empty()) {
+    SU2_OMP_FOR_STAT(1)
+    for (unsigned long thread = 0; thread < omp_num_parts; ++thread) {
+      const auto begin = omp_partitions[thread];
+      const auto end = omp_partitions[thread + 1];
+      if (begin == end) continue;
 
-      const auto* invUii = &ILU_matrix[dia_ptr_ilu[iPoint] * nVar * nVar];
-
-      for (auto index = dia_ptr_ilu[iPoint] + 1; index < row_ptr_ilu[iPoint + 1]; index++) {
-        auto jPoint = col_ind_ilu[index];
-        if (jPoint >= end) break;
-        auto Block_ij = &ILU_matrix[index * nVar * nVar];
-        MatrixVectorProductSub(Block_ij, &prod[jPoint * nVar], aux_vec);
+      for (auto iPoint = begin; iPoint < end; ++iPoint) {
+        ForwardSolve(iPoint, begin);
       }
-
-      MatrixVectorProduct(invUii, aux_vec, &prod[iPoint * nVar]);
+      for (auto iPoint = end; iPoint > begin;) {
+        --iPoint;  // unsigned type
+        BackwardSolve(iPoint, end);
+      }
+    }
+    END_SU2_OMP_FOR
+  } else {
+    for (auto level = 0ul; level < levels_ilu.getOuterSize(); ++level) {
+      SU2_OMP_FOR_(schedule(static))
+      for (auto k = 0ul; k < levels_ilu.getNumNonZeros(level); ++k) {
+        const auto iPoint = levels_ilu.getInnerIdx(level, k);
+        ForwardSolve(iPoint, 0ul);
+      }
+      END_SU2_OMP_FOR
+    }
+    for (auto level = levels_ilu.getOuterSize(); level > 0;) {
+      --level;  // unsigned type
+      SU2_OMP_FOR_(schedule(static))
+      for (auto k = 0ul; k < levels_ilu.getNumNonZeros(level); ++k) {
+        const auto iPoint = levels_ilu.getInnerIdx(level, k);
+        BackwardSolve(iPoint, nPointDomain);
+      }
+      END_SU2_OMP_FOR
     }
   }
-  END_SU2_OMP_FOR
 
   /*--- MPI Parallelization ---*/
 

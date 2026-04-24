@@ -244,7 +244,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   /*--- Update original config file ---*/
 
   if (runtime_file) {
-    if (all_options.find("TIME_ITER") == all_options.end())
+    if (OptionIsSet("TIME_ITER"))
       config->SetnTime_Iter(nTimeIter);
   }
 }
@@ -1896,6 +1896,8 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
+  /* DESCRIPTION: Use level scheduling for OMP parallelization of the ILU preconditioner */
+  addBoolOption("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING", Linear_Solver_ILU_levels, false);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
   /* DESCRIPTION: Number of vectors used for deflated restarts */
@@ -4047,7 +4049,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Set the number of external iterations to 1 for the steady state problem ---*/
 
-  if (Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY) nMGLevels = 0;
+  if (Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY) {
+    nMGLevels = 0;
+    if (!OptionIsSet("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING")) {
+      /*--- Different default behavior for this solver type. ---*/
+      Linear_Solver_ILU_levels = true;
+    }
+  }
 
   Radiation = (Kind_Radiation != RADIATION_MODEL::NONE);
 
@@ -5746,11 +5754,11 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     /*--- Check that spark ignition has required parameters defined ---*/
     if (flamelet_ParsedOptions.ignition_method == FLAMELET_INIT_TYPE::SPARK) {
       /*--- Check if SPARK_INIT was explicitly set in config file ---*/
-      if (all_options.find("SPARK_INIT") != all_options.end()) {
+      if (!OptionIsSet("SPARK_INIT")) {
         SU2_MPI::Error("FLAME_INIT_METHOD= SPARK requires SPARK_INIT to be defined in the config file.", CURRENT_FUNCTION);
       }
       /*--- Check if SPARK_REACTION_RATES was explicitly set in config file ---*/
-      if (all_options.find("SPARK_REACTION_RATES") != all_options.end()) {
+      if (!OptionIsSet("SPARK_REACTION_RATES")) {
         SU2_MPI::Error("FLAME_INIT_METHOD= SPARK requires SPARK_REACTION_RATES to be defined in the config file.", CURRENT_FUNCTION);
       }
       if (flamelet_ParsedOptions.nspark < flamelet_ParsedOptions.n_scalars) {
