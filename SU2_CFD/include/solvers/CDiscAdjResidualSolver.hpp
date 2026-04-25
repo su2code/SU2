@@ -2,7 +2,7 @@
  * \file CDiscAdjResidualSolver.hpp
  * \brief Headers of the residual-based adjoint solver class.
  * \author H. Patel, A. Gastaldi
- * \version 8.1.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
