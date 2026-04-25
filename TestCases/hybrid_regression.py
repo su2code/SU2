@@ -103,7 +103,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-6.382489, -0.905413, 0.001313, 0.025294, 2.361500, -2.336200, 0.000000, 0.000000]
+    flatplate.test_vals = [-6.381351, -0.904240, 0.001313, 0.025285, 2.361500, -2.336300, 0, 0]
     test_list.append(flatplate)
 
     # Laminar cylinder (steady)
@@ -128,7 +128,7 @@ def main():
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
     poiseuille.cfg_file  = "lam_poiseuille.cfg"
     poiseuille.test_iter = 10
-    poiseuille.test_vals = [-5.046131, 0.652984, 0.008355, 13.735816, 0.000000]
+    poiseuille.test_vals = [-5.046139, 0.652976, 0.008353, 13.735637, 0]
     test_list.append(poiseuille)
 
     # 2D Poiseuille flow (inlet profile file)
@@ -136,7 +136,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.005215, -7.539613, -0.000000, 2.089953]
+    poiseuille_profile.test_vals         = [-12.005211, -7.539073, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.009012, -7.262530, -0.000000, 2.089953]
     test_list.append(poiseuille_profile)
 
@@ -197,7 +197,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals = [-12.038153, -16.332090, 1.080346, 0.018385, 20, -2.872824, 0, -14.250271, 0]
+    turb_naca0012_sa.test_vals = [-12.038018, -16.332088, 1.080346, 0.018385, 20, -2.873140, 0, -14.250270, 0]
     turb_naca0012_sa.test_vals_aarch64 = [-12.038091, -16.332090, 1.080346, 0.018385, 20.000000, -2.873236, 0.000000, -14.250271, 0.000000]
     test_list.append(turb_naca0012_sa)
 
@@ -206,7 +206,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.093892, -15.251078, -5.906327, 1.070413, 0.015775, -2.855348, 0]
+    turb_naca0012_sst.test_vals = [-12.093939, -15.251079, -5.906323, 1.070413, 0.015775, -2.854890, 0]
     turb_naca0012_sst.test_vals_aarch64 = [-12.075928, -15.246732, -5.861249, 1.070036, 0.015841, -2.835263, 0]
     test_list.append(turb_naca0012_sst)
 
@@ -215,7 +215,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-12.080757, -14.837176, -5.732917, 1.000893, 0.019109, -2.120437]
+    turb_naca0012_sst_sust.test_vals = [-12.080826, -14.837176, -5.732918, 1.000893, 0.019109, -2.120233]
     turb_naca0012_sst_sust.test_vals_aarch64 = [-12.073210, -14.836724, -5.732627, 1.000050, 0.019144, -2.629689]
     test_list.append(turb_naca0012_sst_sust)
 
@@ -252,7 +252,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-12.066224, -7.425808, -8.815859, -3.732773, 0]
+    axi_rans_air_nozzle_restart.test_vals = [-12.066224, -7.425871, -8.816101, -3.732807, 0]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.140441, -9.154674, -10.886121, -5.806594, 0.000000]
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -278,7 +278,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.976782, 1.343831, 0.443889, -0.029247]
+    turb_naca0012_1c.test_vals = [-4.980125, 1.343354, 0.443788, -0.029257]
     turb_naca0012_1c.test_vals_aarch64 = [-4.976620, 1.345983, 0.433171, -0.033685]
     test_list.append(turb_naca0012_1c)
 
@@ -287,7 +287,7 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.482862, 1.260869, 0.405097, -0.040169]
+    turb_naca0012_2c.test_vals = [-5.482849, 1.260868, 0.404588, -0.040284]
     turb_naca0012_2c.test_vals_aarch64 = [-5.485484, 1.263406, 0.411442, -0.040859]
     test_list.append(turb_naca0012_2c)
 
@@ -305,7 +305,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-5.133998, 1.283519, 0.548341, 0.010772]
+    turb_naca0012_p1c1.test_vals = [-5.134031, 1.283495, 0.548237, 0.010736]
     turb_naca0012_p1c1.test_vals_aarch64 = [-5.114189, 1.285037, 0.406851, -0.043003]
     test_list.append(turb_naca0012_p1c1)
 
@@ -314,7 +314,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals         = [-5.553950, 1.234029, 0.424324, -0.033438]
+    turb_naca0012_p1c2.test_vals         = [-5.553917, 1.234038, 0.424217, -0.033478]
     turb_naca0012_p1c2.test_vals_aarch64 = [-5.548245, 1.236384, 0.381821, -0.050337]
     test_list.append(turb_naca0012_p1c2)
 
@@ -404,7 +404,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.758063, -10.974497, -0.000004, -0.028654, 4, -5.402309, 2, -5.032668]
+    inc_turb_naca0012.test_vals = [-4.758063, -10.974497, -0.000004, -0.028654, 4, -5.404919, 2, -5.032662]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
@@ -491,7 +491,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals         = [0.073776, 0.027464, -0.001638, -0.000129]
+    aeroelastic.test_vals         = [0.076965, 0.027533, -0.001374, -0.000299]
     aeroelastic.test_vals_aarch64 = [0.074170, 0.027590, -0.001579, -0.000160]
     aeroelastic.unsteady  = True
     aeroelastic.enabled_on_cpu_arch = ["x86_64"] # Requires AVX-capable architecture
@@ -543,7 +543,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 20
-    edge_PPR.test_vals         = [-10.590427, -4.427866, -0.000034, 0.000000]
+    edge_PPR.test_vals         = [-10.594993, -4.431993, -0.000034, 0.000000]
     edge_PPR.test_vals_aarch64 = [ -7.139211, -0.980821, -0.000034, 0.000000]
     test_list.append(edge_PPR)
 
@@ -679,7 +679,7 @@ def main():
     statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
     statbeam3d.cfg_file  = "configBeam_3d.cfg"
     statbeam3d.test_iter = 0
-    statbeam3d.test_vals = [-2.777602, -1.710976, -2.445072, 110350]
+    statbeam3d.test_vals = [-2.830455, -1.746659, -2.366087, 110350]
     statbeam3d.test_vals_aarch64 = [-2.777602, -1.710976, -2.445072, 110350]
     test_list.append(statbeam3d)
 

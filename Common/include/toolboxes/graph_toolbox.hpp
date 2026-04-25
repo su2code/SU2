@@ -516,7 +516,7 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool includeOuterId
 
   {
     /*--- For each color keep track of the inner indices that are in it. ---*/
-    std::vector<std::vector<bool> > innerInColor;
+    std::vector<std::vector<bool>> innerInColor;
     innerInColor.emplace_back(nInner, false);
 
     /*--- Order in which we look for space in the colors to insert a new group. ---*/
@@ -670,6 +670,33 @@ su2double coloringEfficiency(const SparsePattern& coloring, int numThreads, int 
     real += chunkSize * roundUpDiv(roundUpDiv(coloring.getNumNonZeros(color), chunkSize), numThreads);
 
   return ideal / real;
+}
+
+/*!
+ * \brief Compute the levels for the lower part of a sparse pattern.
+ * For example, corresponding to the dependencies of forward substitution.
+ */
+template <class T>
+T computeLevels(const T& pattern) {
+  using Index = typename T::IndexType;
+
+  std::vector<std::vector<Index>> levels;
+  {
+    const auto n = pattern.getOuterSize();
+    su2vector<int> level(n);
+    for (Index i = 0; i < n; ++i) {
+      level(i) = 0;
+      for (const auto j : pattern.getInnerIter(i)) {
+        if (j >= i) continue;
+        level(i) = std::max(level(i), level(j) + 1);
+      }
+      if (static_cast<std::size_t>(level(i) + 1) > levels.size()) {
+        levels.emplace_back();
+      }
+      levels[level(i)].push_back(i);
+    }
+  }
+  return T(levels);
 }
 
 /// @}

@@ -220,7 +220,7 @@ class CPhysicalGeometry final : public CGeometry {
    */
   void InitiateCommsAll(void* bufSend, const int* nElemSend, SU2_MPI::Request* sendReq, void* bufRecv,
                         const int* nElemRecv, SU2_MPI::Request* recvReq, unsigned short countPerElem,
-                        unsigned short commType);
+                        COMM_TYPE commType);
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany().

@@ -365,7 +365,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
   SU2_ZONE_SCOPED
 
   unsigned long iPoint, nonPhysicalPoints = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0, LES_Mode = 0.0;
   const su2double* scalar = nullptr;
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
   const SPECIES_MODEL species_model = config->GetKind_Species_Model();
@@ -385,6 +385,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
         DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
+        LES_Mode = solver_container[TURB_SOL]->GetNodes()->GetLES_Mode(iPoint); 
       }
     }
 
@@ -404,6 +405,10 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
     /*--- Set the DES length scale ---*/
 
     nodes->SetDES_LengthScale(iPoint,DES_LengthScale);
+
+    /*--- Set the LES sensor ---*/
+
+    nodes->SetLES_Mode(iPoint, LES_Mode);
 
   }
   END_SU2_OMP_FOR
@@ -894,11 +899,8 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
     ompMasterAssignBarrier(globalCounter1,0, globalCounter2,0);
 
-    SU2_OMP_ATOMIC
-    globalCounter1 += notConvergedCounter;
-
-    SU2_OMP_ATOMIC
-    globalCounter2 += smallYPlusCounter;
+    atomicAdd(notConvergedCounter, globalCounter1);
+    atomicAdd(smallYPlusCounter, globalCounter2);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());

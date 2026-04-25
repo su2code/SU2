@@ -121,7 +121,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   /*--- Centered schemes only need gradients for viscous fluxes (T and v). ---*/
   nPrimVarGrad = EulerNPrimVarGrad(config, nDim);
   nSecondaryVar = nSecVar;
-  nSecondaryVarGrad = 2;
 
   /*--- Initialize nVarGrad for deallocation ---*/
 
@@ -1883,8 +1882,11 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
     /*--- Get primitive and secondary variables ---*/
 
-    auto V_i = nodes->GetPrimitive(iPoint); auto V_j = nodes->GetPrimitive(jPoint);
-    auto S_i = nodes->GetSecondary(iPoint); auto S_j = nodes->GetSecondary(jPoint);
+    auto V_i = nodes->GetPrimitive(iPoint);
+    auto V_j = nodes->GetPrimitive(jPoint);
+
+    const su2double* S_i = ideal_gas? nullptr : nodes->GetSecondary(iPoint);
+    const su2double* S_j = ideal_gas? nullptr : nodes->GetSecondary(jPoint);
 
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
@@ -5081,9 +5083,11 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
   const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   const bool viscous      = config->GetViscous(),
-             implicit     = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT),
+             implicit     = config->GetKind_TimeIntScheme() == EULER_IMPLICIT,
              gravity      = config->GetGravityForce(),
-             tkeNeeded    = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+             tkeNeeded    = config->GetKind_Turb_Model() == TURB_MODEL::SST,
+             ideal_gas    = config->GetKind_FluidModel() == STANDARD_AIR ||
+                            config->GetKind_FluidModel() == IDEAL_GAS;
 
   su2double **P_Tensor = new su2double*[nVar],
             **invP_Tensor = new su2double*[nVar];
@@ -5451,7 +5455,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Secondary variables ---*/
 
-        auto S_domain = nodes->GetSecondary(iPoint);
+        const su2double* S_domain = ideal_gas? nullptr : nodes->GetSecondary(iPoint);
 
         /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
         su2double S_boundary[8];
@@ -5527,6 +5531,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   bool viscous = config->GetViscous();
   bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR ||
+                         config->GetKind_FluidModel() == IDEAL_GAS;
 
   su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
   Normal = new su2double[nDim];
@@ -5947,7 +5953,7 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
 
           /*--- Secondary variables ---*/
 
-          S_domain = nodes->GetSecondary(iPoint);
+          S_domain = ideal_gas ? nullptr : nodes->GetSecondary(iPoint);
 
           /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
 
@@ -6203,6 +6209,8 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
   bool implicit             = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
   bool viscous              = config->GetViscous();
+  const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR ||
+                         config->GetKind_FluidModel() == IDEAL_GAS;
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
   su2double relfacAvgCfg       = config->GetGiles_RelaxFactorAverage(Marker_Tag);
   su2double relfacFouCfg       = config->GetGiles_RelaxFactorFourier(Marker_Tag);
@@ -6538,8 +6546,7 @@ void CEulerSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNu
       V_domain = nodes->GetPrimitive(iPoint);
 
       /*--- Retrieve domain Secondary variables ---*/
-      S_domain = nodes->GetSecondary(iPoint);
-
+      S_domain = ideal_gas? nullptr : nodes->GetSecondary(iPoint);
 
       /*--- Compute the internal state u_i ---*/
       Velocity2_i = 0;

@@ -284,10 +284,22 @@ class CGeometry {
                                         in point-to-point comms. */
   su2double* bufD_P2PRecv{nullptr};  /*!< \brief Data structure for su2double point-to-point receive. */
   su2double* bufD_P2PSend{nullptr};  /*!< \brief Data structure for su2double point-to-point send. */
+#ifdef CODI_REVERSE_TYPE
+  passivedouble* bufPD_P2PRecv{nullptr}; /*!< \brief Data structure for passivedouble point-to-point receive. */
+  passivedouble* bufPD_P2PSend{nullptr}; /*!< \brief Data structure for passivedouble point-to-point send. */
+#endif
+#ifdef USE_MIXED_PRECISION
+  su2mixedfloat* bufF_P2PRecv{nullptr}; /*!< \brief Data structure for su2mixedfloat point-to-point receive. */
+  su2mixedfloat* bufF_P2PSend{nullptr}; /*!< \brief Data structure for su2mixedfloat point-to-point send. */
+#endif
   unsigned short* bufS_P2PRecv{nullptr};  /*!< \brief Data structure for unsigned long point-to-point receive. */
   unsigned short* bufS_P2PSend{nullptr};  /*!< \brief Data structure for unsigned long point-to-point send. */
   SU2_MPI::Request* req_P2PSend{nullptr}; /*!< \brief Data structure for point-to-point send requests. */
   SU2_MPI::Request* req_P2PRecv{nullptr}; /*!< \brief Data structure for point-to-point recv requests. */
+
+  using PassiveRequest = typename SelectMPIWrapper<passivedouble>::W::Request;
+  PassiveRequest* reqP_P2PSend{nullptr}; /*!< \brief Data structure for point-to-point send requests. */
+  PassiveRequest* reqP_P2PRecv{nullptr}; /*!< \brief Data structure for point-to-point recv requests. */
 
   /*--- Data structures for periodic communications. ---*/
 
@@ -370,7 +382,7 @@ class CGeometry {
    * \param[in] countPerPoint - Number of variables per point.
    * \param[in] val_reverse - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PRecvs(CGeometry* geometry, const CConfig* config, unsigned short commType, unsigned short countPerPoint,
+  void PostP2PRecvs(CGeometry* geometry, const CConfig* config, COMM_TYPE commType, unsigned short countPerPoint,
                     bool val_reverse) const;
 
   /*!
@@ -383,8 +395,97 @@ class CGeometry {
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PSends(CGeometry* geometry, const CConfig* config, unsigned short commType, unsigned short countPerPoint,
+  void PostP2PSends(CGeometry* geometry, const CConfig* config, COMM_TYPE commType, unsigned short countPerPoint,
                     int val_iMessage, bool val_reverse) const;
+
+  /*!
+   * \brief Returns the COMM_TYPE enum for a given data type.
+   */
+  template <class T>
+  COMM_TYPE GetCommType() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return COMM_TYPE::DOUBLE;
+    } else if constexpr (std::is_same_v<T, passivedouble>) {
+      return COMM_TYPE::PASSIVE_DOUBLE;
+    } else if constexpr (std::is_same_v<T, su2mixedfloat>) {
+      return COMM_TYPE::FLOAT;
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return COMM_TYPE::UNSIGNED_SHORT;
+    }
+  }
+
+  /*!
+   * \brief Returns the send buffer for a given data type.
+   */
+  template <class T>
+  auto* GetP2PSendBuf() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return bufD_P2PSend;
+#ifdef CODI_REVERSE_TYPE
+    } else if constexpr (std::is_same_v<T, passivedouble>) {
+      return bufPD_P2PSend;
+#endif
+#ifdef USE_MIXED_PRECISION
+    } else if constexpr (std::is_same_v<T, su2mixedfloat>) {
+      return bufF_P2PSend;
+#endif
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return bufS_P2PSend;
+    }
+  }
+
+  /*!
+   * \brief Returns the receive buffer for a given data type.
+   */
+  template <class T>
+  auto* GetP2PRecvBuf() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return bufD_P2PRecv;
+#ifdef CODI_REVERSE_TYPE
+    } else if constexpr (std::is_same_v<T, passivedouble>) {
+      return bufPD_P2PRecv;
+#endif
+#ifdef USE_MIXED_PRECISION
+    } else if constexpr (std::is_same_v<T, su2mixedfloat>) {
+      return bufF_P2PRecv;
+#endif
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return bufS_P2PRecv;
+    }
+  }
+
+  /*!
+   * \brief Returns the send requests for a given data type.
+   */
+  template <class T>
+  auto* GetP2PSendReq() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return req_P2PSend;
+    } else if constexpr (std::is_same_v<T, passivedouble> || std::is_same_v<T, su2mixedfloat>) {
+      return reqP_P2PSend;
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return req_P2PSend;
+    }
+  }
+
+  /*!
+   * \brief Returns the receive requests for a given data type.
+   */
+  template <class T>
+  auto* GetP2PRecvReq() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return req_P2PRecv;
+    } else if constexpr (std::is_same_v<T, passivedouble> || std::is_same_v<T, su2mixedfloat>) {
+      return reqP_P2PRecv;
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return req_P2PRecv;
+    }
+  }
 
   /*!
    * \brief Routine to set up persistent data structures for periodic communications.
@@ -408,7 +509,7 @@ class CGeometry {
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    * \param[in] countPerPeriodicPoint - Number of variables per point.
    */
-  void PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, unsigned short commType,
+  void PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                          unsigned short countPerPeriodicPoint);
 
   /*!
@@ -420,7 +521,7 @@ class CGeometry {
    * \param[in] countPerPeriodicPoint - Number of variables per point.
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    */
-  void PostPeriodicSends(CGeometry* geometry, const CConfig* config, unsigned short commType,
+  void PostPeriodicSends(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                          unsigned short countPerPeriodicPoint, int val_iMessage) const;
 
   /*!
@@ -431,7 +532,7 @@ class CGeometry {
    * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
    */
   void GetCommCountAndType(const CConfig* config, MPI_QUANTITIES commType, unsigned short& COUNT_PER_POINT,
-                           unsigned short& MPI_TYPE) const;
+                           COMM_TYPE& MPI_TYPE) const;
 
   /*!
    * \brief Routine to load a geometric quantity into the data structures for MPI point-to-point communication and to

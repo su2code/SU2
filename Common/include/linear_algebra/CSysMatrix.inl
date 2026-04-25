@@ -160,13 +160,13 @@ FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long bloc
 }
 
 template <class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock_ILUMatrix(unsigned long block_i,
-                                                                        ScalarType* invBlock) const {
+FORCEINLINE const ScalarType* CSysMatrix<ScalarType>::InvertDiagonalBlockILUMatrix(unsigned long block_i) {
   /*--- Copy block, as the algorithm modifies the matrix ---*/
+  auto* Uii = &ILU_matrix[dia_ptr_ilu[block_i] * nVar * nVar];
   ScalarType block[MAXNVAR * MAXNVAR];
-  MatrixCopy(&ILU_matrix[dia_ptr_ilu[block_i] * nVar * nVar], block);
-
-  MatrixInverse(block, invBlock);
+  MatrixCopy(Uii, block);
+  MatrixInverse(block, Uii);
+  return Uii;
 }
 
 template <class ScalarType>

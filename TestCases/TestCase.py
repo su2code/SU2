@@ -177,6 +177,15 @@ class TestCase:
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
+
+        if hasattr(self, "decompress") and self.decompress:
+            print("--- Decompressing grid file: " + self.grid_file + ".gz")
+            import gzip, shutil
+            with gzip.open(self.grid_file + ".gz", "rb") as f_in:
+                with open(self.grid_file, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            print("--- Decompression completed!")
+
         start   = datetime.datetime.now()
         process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
 
@@ -297,7 +306,7 @@ class TestCase:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
 
         if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+            print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
         if not start_solver and not with_tapetests:
             print('ERROR: The code was not able to get to the "Begin solver" section.')
@@ -628,7 +637,7 @@ class TestCase:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
 
         if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+            print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
         if not start_solver:
             print('ERROR: The code was not able to get to the "OBJFUN" section.')
@@ -770,7 +779,7 @@ class TestCase:
 
         if not with_tsan and not with_asan:
           if exceed_tol:
-              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+              print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
           if not start_solver:
               print('ERROR: The code was not able to get to the "OBJFUN" section.')
@@ -901,7 +910,7 @@ class TestCase:
 
         if not with_tsan and not with_asan:
           if exceed_tol:
-              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%e'%self.tol)
+              print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
           if not start_solver:
               print('ERROR: The code was not able to get to the "Begin solver" section.')

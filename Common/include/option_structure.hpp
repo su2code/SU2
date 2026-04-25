@@ -113,13 +113,17 @@ const int MASTER_NODE = 0;      /*!< \brief Master node for MPI parallelization.
 const int SINGLE_NODE = 1;      /*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;      /*!< \brief There is only a zone. */
 
-const unsigned short COMM_TYPE_UNSIGNED_LONG  = 1;  /*!< \brief Communication type for unsigned long. */
-const unsigned short COMM_TYPE_LONG           = 2;  /*!< \brief Communication type for long. */
-const unsigned short COMM_TYPE_UNSIGNED_SHORT = 3;  /*!< \brief Communication type for unsigned short. */
-const unsigned short COMM_TYPE_DOUBLE         = 4;  /*!< \brief Communication type for double. */
-const unsigned short COMM_TYPE_CHAR           = 5;  /*!< \brief Communication type for char. */
-const unsigned short COMM_TYPE_SHORT          = 6;  /*!< \brief Communication type for short. */
-const unsigned short COMM_TYPE_INT            = 7;  /*!< \brief Communication type for int. */
+enum class COMM_TYPE {
+  UNSIGNED_LONG,  /*!< \brief Communication type for unsigned long. */
+  LONG,           /*!< \brief Communication type for long. */
+  UNSIGNED_SHORT, /*!< \brief Communication type for unsigned short. */
+  FLOAT,          /*!< \brief Communication type for su2mixedfloat. */
+  DOUBLE,         /*!< \brief Communication type for double. */
+  PASSIVE_DOUBLE, /*!< \brief Communication type for passivedouble. */
+  CHAR,           /*!< \brief Communication type for char. */
+  SHORT,          /*!< \brief Communication type for short. */
+  INT,            /*!< \brief Communication type for int. */
+};
 
 /*!
  * \brief Types of geometric entities based on VTK nomenclature
@@ -820,7 +824,8 @@ enum class CENTERED {
   JST,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
   LAX,            /*!< \brief Lax-Friedrich centered numerical method. */
   JST_MAT,        /*!< \brief JST with matrix dissipation. */
-  JST_KE          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
+  JST_KE,         /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
+  LD2             /*!< \brief Low-Dissipation Low-Dispersion (LD2) centered scheme. */
 };
 static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("NONE", CENTERED::NONE)
@@ -828,6 +833,7 @@ static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("JST_KE", CENTERED::JST_KE)
   MakePair("JST_MAT", CENTERED::JST_MAT)
   MakePair("LAX-FRIEDRICH", CENTERED::LAX)
+  MakePair("LD2", CENTERED::LD2)
 };
 
 
@@ -1461,6 +1467,8 @@ struct FluidFlamelet_ParsedOptions {
   su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
   unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
+  su2double Flame_T_ignition = 5000;    /*!< \brief Ignition temperature for the flame, used for initialization. */
+
 };
 
 /*!
@@ -2710,6 +2718,8 @@ enum class MPI_QUANTITIES {
   MAX_LENGTH           ,  /*!< \brief Maximum length communication. */
   GRID_VELOCITY        ,  /*!< \brief Grid velocity communication. */
   SOLUTION_EDDY        ,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
+  STOCH_SOURCE_LANG    ,  /*!< \brief Stochastic source term for Langevin equations communication. */
+  DES_LENGTHSCALE      ,  /*!< \brief DES length scale communication. */
   SOLUTION_MATRIX      ,  /*!< \brief Matrix solution communication. */
   SOLUTION_MATRIXTRANS ,  /*!< \brief Matrix transposed solution communication. */
   NEIGHBORS            ,  /*!< \brief Neighbor point count communication (for JST). */
