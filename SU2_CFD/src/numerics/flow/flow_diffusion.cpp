@@ -477,7 +477,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,config);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
@@ -655,7 +655,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,config);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
@@ -985,7 +985,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,config);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
