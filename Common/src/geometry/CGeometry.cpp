@@ -4524,7 +4524,7 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
    *    Compute an alternative distance based on volume and wall area. ---*/
 
   const auto nDim = geometry->GetnDim();
-  su2double Normal[3] = {0, 0, 0};
+  su2double Normal[3] = {};
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (!config->GetViscous_Wall(iMarker)) continue;
 
@@ -4536,7 +4536,7 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
     }
   }
   const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
-  return 2 * Vol / GeometryToolbox::Norm(nDim, Normal);
+  return 2 * Vol / GeometryToolbox::Norm(3, Normal);
 }
 }  // namespace
 
