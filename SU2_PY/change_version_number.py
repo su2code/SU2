@@ -48,7 +48,6 @@ parser.add_argument(
     action="store_true",
     dest="yes",
     help="Answer yes to all questions",
-    metavar="YES",
 )
 options = parser.parse_args()
 
