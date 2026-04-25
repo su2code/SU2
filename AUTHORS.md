@@ -52,6 +52,7 @@ Amit Sachdeva
 Ana Lourenco
 Andrew Burkett
 Andrew Wendorff
+Angelo Passariello
 Aniket C. Aranake
 Antonio Rubino
 Arne Bachmann
