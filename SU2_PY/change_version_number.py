@@ -3,7 +3,7 @@
 ## \file change_version_number.py
 #  \brief Python script for updating the version number of the SU2 suite.
 #  \author A. Aranake
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -54,8 +54,8 @@ options = parser.parse_args()
 if not options.version:
     parser.error("new version number must be provided with -v option")
 
-oldvers = '8.4.0 "Harrier"'
-oldvers_q = r"8.4.0 \"Harrier\""
+oldvers = '8.5.0 "Harrier"'
+oldvers_q = r"8.5.0 \"Harrier\""
 newvers = str(options.version) + ' "' + str(options.releasename) + '"'
 newvers_q = str(options.version) + ' \\"' + str(options.releasename) + '\\"'
 # oldvers = 'Copyright 2012-2026, SU2'

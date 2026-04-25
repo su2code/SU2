@@ -2,7 +2,7 @@
  * \file ComputeLinSysResRMS.hpp
  * \brief Helper to compute the global RMS of LinSysRes across all variables and domain points.
  * \author Nijso Beishuizen
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

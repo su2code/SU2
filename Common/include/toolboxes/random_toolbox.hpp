@@ -1,7 +1,7 @@
 /*!
  * \file random_toolbox.hpp
  * \brief Collection of utility functions for random number generation.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
