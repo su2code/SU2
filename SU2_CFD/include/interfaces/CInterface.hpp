@@ -115,8 +115,7 @@ public:
     unsigned long index = 0;
     for(auto iVertex = 0u; iVertex < nVertex; iVertex++) {
       for (auto iVar = 0u; iVar < nVar; iVar++) {
-        // if (iVertex * nVar + iVar >= donor.size()) {}
-        target(iVertex, iVar) = donor(iVertex, iVar);
+        target(iVertex, iVar) = SU2_TYPE::GetValue(donor(iVertex, iVar));
         index++;
       }
     }
