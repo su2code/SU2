@@ -2,14 +2,14 @@
  * \file CFEAElasticity.cpp
  * \brief Base class for all elasticity problems.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -43,11 +43,11 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   /*--- Initialize vector structures for multiple material definition ---*/
   const auto nProp = config->GetnElasticityMat();
 
-  E_i = new su2double[nProp];
-  Nu_i = new su2double[nProp];
-  Rho_s_i = new su2double[nProp];     // For inertial effects
-  Rho_s_DL_i = new su2double[nProp];  // For dead loads
-  Alpha_i = new su2double[nProp];
+  E_i.reset(new su2double[nProp]);
+  Nu_i.reset(new su2double[nProp]);
+  Rho_s_i.reset(new su2double[nProp]);     // For inertial effects
+  Rho_s_DL_i.reset(new su2double[nProp]);  // For dead loads
+  Alpha_i.reset(new su2double[nProp]);
   for (iVar = 0; iVar < nProp; iVar++) {
     E_i[iVar] = config->GetElasticyMod(iVar);
     Nu_i[iVar] = config->GetPoissonRatio(iVar);
@@ -64,36 +64,12 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   Alpha = Alpha_i[0];
   ReferenceTemperature = config->GetMaterialReferenceTemperature();
 
+  plane_stress = (nDim == 2) && (config->GetElas2D_Formulation() == STRUCT_2DFORM::PLANE_STRESS);
+  linear = config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL;
+
   Compute_Lame_Parameters();
 
-  plane_stress = (nDim == 2) && (config->GetElas2D_Formulation() == STRUCT_2DFORM::PLANE_STRESS);
-
-  KAux_ab = new su2double* [nDim];
-  for (iVar = 0; iVar < nDim; iVar++) {
-    KAux_ab[iVar] = new su2double[nDim];
-  }
-
-  unsigned short nStrain = (nDim==2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
-  unsigned short nNodes = (nDim==2) ? NNODES_2D : NNODES_3D;
-
-  Ba_Mat = new su2double* [nStrain];
-  Bb_Mat = new su2double* [nStrain];
-  D_Mat  = new su2double* [nStrain];
-  Ni_Vec = new su2double [nNodes];
-  GradNi_Ref_Mat = new su2double* [nNodes];
-  GradNi_Curr_Mat = new su2double* [nNodes];
-  for (iVar = 0; iVar < nStrain; iVar++) {
-    Ba_Mat[iVar] = new su2double[nDim];
-    Bb_Mat[iVar] = new su2double[nDim];
-    D_Mat[iVar] = new su2double[nStrain];
-  }
-  for (iVar = 0; iVar < nNodes; iVar++) {
-    GradNi_Ref_Mat[iVar] = new su2double[nDim];
-    GradNi_Curr_Mat[iVar] = new su2double[nDim];
-  }
-
-  DV_Val      = nullptr;
-  n_DV        = 0;
+  n_DV = 0;
   switch (config->GetDV_FEA()) {
     case YOUNG_MODULUS:
     case POISSON_RATIO:
@@ -130,44 +106,6 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   }
 }
 
-CFEAElasticity::~CFEAElasticity() {
-
-  unsigned short iVar;
-  unsigned short nStrain = (nDim==2) ? DIM_STRAIN_2D : DIM_STRAIN_3D;
-  unsigned short nNodes = (nDim==2) ? NNODES_2D : NNODES_3D;
-
-  for (iVar = 0; iVar < nDim; iVar++) {
-    delete [] KAux_ab[iVar];
-  }
-
-  for (iVar = 0; iVar < nStrain; iVar++) {
-    delete [] Ba_Mat[iVar];
-    delete [] Bb_Mat[iVar];
-    delete [] D_Mat[iVar];
-  }
-  for (iVar = 0; iVar < nNodes; iVar++) {
-    delete [] GradNi_Ref_Mat[iVar];
-    delete [] GradNi_Curr_Mat[iVar];
-  }
-
-  delete [] KAux_ab;
-  delete [] Ba_Mat;
-  delete [] Bb_Mat;
-  delete [] D_Mat;
-  delete [] GradNi_Ref_Mat;
-  delete [] GradNi_Curr_Mat;
-
-  delete[] DV_Val;
-
-  delete [] E_i;
-  delete [] Nu_i;
-  delete [] Rho_s_i;
-  delete [] Rho_s_DL_i;
-  delete [] Alpha_i;
-  delete [] Ni_Vec;
-}
-
-
 void CFEAElasticity::Compute_Mass_Matrix(CElement *element, const CConfig *config) {
 
   /*--- Initialize values for the material model considered ---*/
@@ -197,6 +135,7 @@ void CFEAElasticity::Compute_Mass_Matrix(CElement *element, const CConfig *confi
 
     /*--- Retrieve the values of the shape functions for each node ---*/
     /*--- This avoids repeated operations ---*/
+    su2double Ni_Vec[NNODES_3D] = {};
     for (iNode = 0; iNode < nNode; iNode++) {
       Ni_Vec[iNode] = element->GetNi(iNode,iGauss);
     }
@@ -382,8 +321,8 @@ void CFEAElasticity::ReadDV(const CConfig *config) {
     if (master_node)
       cout << "There is no design variable file." << endl;
 
-    n_DV   = 1;
-    DV_Val = new su2double[n_DV];
+    n_DV = 1;
+    DV_Val.reset(new su2double[n_DV]);
     for (unsigned short iDV = 0; iDV < n_DV; iDV++)
       DV_Val[iDV] = 1.0;
 
@@ -407,7 +346,7 @@ void CFEAElasticity::ReadDV(const CConfig *config) {
     properties_file.close();
 
     n_DV = iDV;
-    DV_Val = new su2double[n_DV];
+    DV_Val.reset(new su2double[n_DV]);
 
     /*--- Reopen the file (TODO: improve this) ---*/
 

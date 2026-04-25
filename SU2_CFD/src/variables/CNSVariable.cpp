@@ -2,14 +2,14 @@
  * \file CNSVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,6 +39,7 @@ CNSVariable::CNSVariable(su2double density, const su2double *velocity, su2double
   StrainMag.resize(nPoint) = su2double(0.0);
   Tau_Wall.resize(nPoint) = su2double(-1.0);
   DES_LengthScale.resize(nPoint) = su2double(0.0);
+  lesMode.resize(nPoint) = su2double(0.0);
   Roe_Dissipation.resize(nPoint) = su2double(0.0);
   Vortex_Tilting.resize(nPoint) = su2double(0.0);
   Max_Lambda_Visc.resize(nPoint) = su2double(0.0);
@@ -210,21 +211,22 @@ bool CNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2doubl
 }
 
 void CNSVariable::SetSecondaryVar(unsigned long iPoint, CFluidModel *FluidModel) {
+  if (nSecondaryVar == 0) return;
 
-    /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
+  /*--- Compute secondary thermodynamic properties (partial derivatives...) ---*/
 
-    SetdPdrho_e( iPoint, FluidModel->GetdPdrho_e() );
-    SetdPde_rho( iPoint, FluidModel->GetdPde_rho() );
+  SetdPdrho_e( iPoint, FluidModel->GetdPdrho_e() );
+  SetdPde_rho( iPoint, FluidModel->GetdPde_rho() );
 
-    SetdTdrho_e( iPoint, FluidModel->GetdTdrho_e() );
-    SetdTde_rho( iPoint, FluidModel->GetdTde_rho() );
+  SetdTdrho_e( iPoint, FluidModel->GetdTdrho_e() );
+  SetdTde_rho( iPoint, FluidModel->GetdTde_rho() );
 
-    /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
+  /*--- Compute secondary thermo-physical properties (partial derivatives...) ---*/
 
-    Setdmudrho_T( iPoint, FluidModel->Getdmudrho_T() );
-    SetdmudT_rho( iPoint, FluidModel->GetdmudT_rho() );
+  Setdmudrho_T( iPoint, FluidModel->Getdmudrho_T() );
+  SetdmudT_rho( iPoint, FluidModel->GetdmudT_rho() );
 
-    Setdktdrho_T( iPoint, FluidModel->Getdktdrho_T() );
-    SetdktdT_rho( iPoint, FluidModel->GetdktdT_rho() );
+  Setdktdrho_T( iPoint, FluidModel->Getdktdrho_T() );
+  SetdktdT_rho( iPoint, FluidModel->GetdktdT_rho() );
 
 }

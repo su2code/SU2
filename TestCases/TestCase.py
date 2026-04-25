@@ -3,14 +3,14 @@
 ## \file TestCase.py
 #  \brief Python class for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -124,6 +124,7 @@ class TestCase:
         self.command = self.Command()
         self.timeout = 0
         self.tol = 0.0
+        self.tol_aarch64 = 0.0
         self.tapetest_tol = 0
         self.tol_file_percent = 0.0
         self.comp_threshold = 0.0
@@ -176,6 +177,15 @@ class TestCase:
         workdir = os.getcwd()
         os.chdir(self.cfg_dir)
         print(os.getcwd())
+
+        if hasattr(self, "decompress") and self.decompress:
+            print("--- Decompressing grid file: " + self.grid_file + ".gz")
+            import gzip, shutil
+            with gzip.open(self.grid_file + ".gz", "rb") as f_in:
+                with open(self.grid_file, "wb") as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            print("--- Decompression completed!")
+
         start   = datetime.datetime.now()
         process = subprocess.Popen(shell_command, shell=True)  # This line launches SU2
 
@@ -231,9 +241,14 @@ class TestCase:
                             for j in range(len(data)):
                                 sim_vals.append( float(data[j]) )
                                 delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                                if delta_vals[j] > self.tol:
-                                    exceed_tol = True
-                                    passed     = False
+                                if isinstance(self.tol, list):
+                                    if delta_vals[j] > self.tol[j]:
+                                        exceed_tol = True
+                                        passed     = False
+                                else:
+                                    if delta_vals[j] > self.tol:
+                                        exceed_tol = True
+                                        passed     = False
                             break
                         else:
                             iter_missing = True
@@ -291,7 +306,7 @@ class TestCase:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
 
         if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+            print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
         if not start_solver and not with_tapetests:
             print('ERROR: The code was not able to get to the "Begin solver" section.')
@@ -386,6 +401,9 @@ class TestCase:
 
                         # If file tolerance is set to 0, make regular diff
                         if self.tol_file_percent == 0.0:
+                            # Strip trailing whitespace but keep newline for difflib
+                            fromlines = [line.rstrip() + '\n' for line in fromlines]
+                            tolines = [line.rstrip() + '\n' for line in tolines]
                             diff = list(difflib.unified_diff(fromlines, tolines, fromfile, tofile, fromdate, todate))
 
                         # Else test word by word with given tolerance
@@ -619,7 +637,7 @@ class TestCase:
             print('ERROR: Execution timed out. timeout=%d'%self.timeout)
 
         if exceed_tol:
-            print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+            print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
         if not start_solver:
             print('ERROR: The code was not able to get to the "OBJFUN" section.')
@@ -761,7 +779,7 @@ class TestCase:
 
         if not with_tsan and not with_asan:
           if exceed_tol:
-              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%f'%self.tol)
+              print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
           if not start_solver:
               print('ERROR: The code was not able to get to the "OBJFUN" section.')
@@ -892,7 +910,7 @@ class TestCase:
 
         if not with_tsan and not with_asan:
           if exceed_tol:
-              print('ERROR: Difference between computed input and test_vals exceeded tolerance. TOL=%e'%self.tol)
+              print(f'ERROR: Difference between computed input and test_vals exceeded tolerance. TOL={self.tol}')
 
           if not start_solver:
               print('ERROR: The code was not able to get to the "Begin solver" section.')
@@ -1034,3 +1052,6 @@ class TestCase:
 
             if len(self.reference_file_aarch64) != 0:
                 self.reference_file = self.reference_file_aarch64
+
+            if self.tol_aarch64 != 0:
+                self.tol = self.tol_aarch64

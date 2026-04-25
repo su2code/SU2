@@ -2,14 +2,14 @@
  * \file computeLimiters.hpp
  * \brief Compute limiters wrapper function.
  * \author P. Gomes
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,6 +45,7 @@ void computeLimiters(LIMITER LimiterKind,
                      const CConfig& config,
                      size_t varBegin,
                      size_t varEnd,
+                     su2double umusclKappa,
                      const FieldType& field,
                      const GradientType& gradient,
                      FieldType& fieldMin,
@@ -57,10 +58,10 @@ void computeLimiters(LIMITER LimiterKind,
 #define INSTANTIATE(KIND)\
 if (geometry.GetnDim() == 2) {\
   computeLimiters_impl<2,KIND>(solver, kindMpiComm, kindPeriodicComm1, kindPeriodicComm2, geometry,\
-                               config, varBegin, varEnd, field, gradient, fieldMin, fieldMax, limiter);\
+                               config, varBegin, varEnd, umusclKappa, field, gradient, fieldMin, fieldMax, limiter);\
 } else {\
   computeLimiters_impl<3,KIND>(solver, kindMpiComm, kindPeriodicComm1, kindPeriodicComm2, geometry,\
-                               config, varBegin, varEnd, field, gradient, fieldMin, fieldMax, limiter);\
+                               config, varBegin, varEnd, umusclKappa, field, gradient, fieldMin, fieldMax, limiter);\
 }
   switch (LimiterKind) {
     case LIMITER::NONE:

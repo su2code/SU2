@@ -2,14 +2,14 @@
  * \file CHeatIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,7 @@ void CHeatIteration::Iterate(COutput* output, CIntegration**** integration, CGeo
                              CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                              CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                              unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
 
   /*--- Update global parameters ---*/
 
@@ -45,6 +46,7 @@ void CHeatIteration::Update(COutput* output, CIntegration**** integration, CGeom
                             CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                             CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                             unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
 
   /*--- Update dual time solver ---*/
   if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||

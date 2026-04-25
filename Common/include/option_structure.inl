@@ -3,14 +3,14 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -233,18 +233,19 @@ class COptionEnumList final : public COptionBase {
 
 template <class Type>
 class COptionArray final : public COptionBase {
-  string name;     // Identifier for the option
-  const int size;  // Number of elements
-  Type* field;     // Reference to the field
+  string name;             // Identifier for the option
+  const int size;          // Number of elements
+  const bool allow_fewer;  // Allow smaller size
+  Type* field;             // Reference to the field
 
  public:
-  COptionArray(string option_field_name, const int list_size, Type* option_field)
-      : name(option_field_name), size(list_size), field(option_field) {}
+  COptionArray(string option_field_name, const int list_size, const bool allow_fewer, Type* option_field)
+      : name(std::move(option_field_name)), size(list_size), allow_fewer(allow_fewer), field(option_field) {}
 
   string SetValue(const vector<string>& option_value) override {
     COptionBase::SetValue(option_value);
     // Check that the size is correct
-    if (option_value.size() != (unsigned long)this->size) {
+    if ((option_value.size() < size_t(size) && !allow_fewer) || option_value.size() > size_t(size)) {
       string newstring;
       newstring.append(this->name);
       newstring.append(": wrong number of arguments: ");
@@ -258,7 +259,7 @@ class COptionArray final : public COptionBase {
       newstring.append(" found");
       return newstring;
     }
-    for (int i = 0; i < this->size; i++) {
+    for (size_t i = 0; i < option_value.size(); i++) {
       istringstream is(option_value[i]);
       if (!(is >> field[i])) {
         return badValue(" array", this->name);
@@ -1298,6 +1299,170 @@ class COptionRiemann : public COptionBase {
     this->var2 = nullptr;
     this->flowdir = nullptr;
     this->size = 0;  // There is no default value for list
+  }
+};
+
+template <class Tenum>
+class COptionWallSpecies : public COptionBase {
+ protected:
+  map<string, Tenum> m;
+  string name;  // identifier for the option
+  unsigned short& size;
+  string*& marker;
+  WALL_SPECIES_TYPE**& field;  // Reference to the field name (now 2D: marker x species)
+  su2double**& value;          // Now 2D: marker x species
+  unsigned short& nSpecies_per_Wall;
+
+ public:
+  COptionWallSpecies(string option_field_name, unsigned short& nMarker_Wall_Species, string*& Marker_Wall_Species,
+                     WALL_SPECIES_TYPE**& option_field, const map<string, Tenum> m, su2double**& value,
+                     unsigned short& nSpecies_per_Wall)
+      : size(nMarker_Wall_Species),
+        marker(Marker_Wall_Species),
+        field(option_field),
+        value(value),
+        nSpecies_per_Wall(nSpecies_per_Wall) {
+    this->name = option_field_name;
+    this->m = m;
+  }
+  ~COptionWallSpecies() override {
+    if (marker) {
+      delete[] marker;
+      marker = nullptr;
+    }
+    if (field) {
+      for (unsigned short i = 0; i < size; i++) {
+        delete[] field[i];
+      }
+      delete[] field;
+      field = nullptr;
+    }
+    if (value) {
+      for (unsigned short i = 0; i < size; i++) {
+        delete[] value[i];
+      }
+      delete[] value;
+      value = nullptr;
+    }
+  }
+
+  string SetValue(const vector<string>& option_value) override {
+    COptionBase::SetValue(option_value);
+    unsigned short totalVals = option_value.size();
+    if ((totalVals == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->size = 0;
+      this->marker = nullptr;
+      this->field = nullptr;
+      this->value = nullptr;
+      this->nSpecies_per_Wall = 0;
+      return "";
+    }
+
+    /*--- Determine the number of markers and species per marker.
+     * Format: marker1, TYPE1, value1, TYPE2, value2, ..., marker2, TYPE1, value1, ...
+     * Each marker name starts with a letter, each TYPE is an enum string (starts with letter),
+     * and each value is numeric. Pattern: marker, (TYPE, value) x N ---*/
+
+    vector<unsigned short> marker_indices;  // Indices where markers start
+    vector<unsigned short> species_counts;  // Number of species per marker
+
+    // Find all marker positions (strings starting with a letter that are not TYPE keywords)
+    for (unsigned short i = 0; i < totalVals; i++) {
+      if (isalpha(option_value[i][0])) {
+        // Check if this could be a TYPE keyword (i.e., is it in the enum map?)
+        if (this->m.find(option_value[i]) != m.end()) {
+          continue;  // This is a TYPE keyword, not a marker
+        }
+        // This is a marker name
+        marker_indices.push_back(i);
+      }
+    }
+
+    if (marker_indices.empty()) {
+      string newstring;
+      newstring.append(this->name);
+      newstring.append(": no valid markers found");
+      return newstring;
+    }
+
+    // Calculate number of species for each marker
+    for (size_t i = 0; i < marker_indices.size(); i++) {
+      unsigned short start_idx = marker_indices[i] + 1;  // Start after marker name
+      unsigned short end_idx = (i + 1 < marker_indices.size()) ? marker_indices[i + 1] : totalVals;
+      unsigned short entries = end_idx - start_idx;
+
+      // Each species needs 2 entries: TYPE and value
+      if (entries % 2 != 0) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(": each marker must have pairs of (TYPE, value) entries");
+        return newstring;
+      }
+
+      species_counts.push_back(entries / 2);
+    }
+
+    // Check that all markers have the same number of species
+    this->nSpecies_per_Wall = species_counts[0];
+    for (auto count : species_counts) {
+      if (count != this->nSpecies_per_Wall) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(": all markers must specify the same number of species");
+        return newstring;
+      }
+    }
+
+    // Allocate arrays
+    this->size = marker_indices.size();
+    this->marker = new string[this->size];
+    this->field = new WALL_SPECIES_TYPE*[this->size];
+    this->value = new su2double*[this->size];
+
+    for (unsigned short i = 0; i < this->size; i++) {
+      this->field[i] = new WALL_SPECIES_TYPE[this->nSpecies_per_Wall];
+      this->value[i] = new su2double[this->nSpecies_per_Wall];
+    }
+
+    // Parse the values
+    for (unsigned short iMarker = 0; iMarker < this->size; iMarker++) {
+      unsigned short marker_idx = marker_indices[iMarker];
+      this->marker[iMarker].assign(option_value[marker_idx]);
+
+      // Parse species data for this marker
+      for (unsigned short iSpecies = 0; iSpecies < this->nSpecies_per_Wall; iSpecies++) {
+        unsigned short type_idx = marker_idx + 1 + 2 * iSpecies;
+        unsigned short val_idx = type_idx + 1;
+
+        // Check TYPE keyword
+        if (this->m.find(option_value[type_idx]) == m.end()) {
+          string str;
+          str.append(this->name);
+          str.append(": invalid option value ");
+          str.append(option_value[type_idx]);
+          str.append(". Check current SU2 options in config_template.cfg.");
+          return str;
+        }
+
+        Tenum val = this->m[option_value[type_idx]];
+        this->field[iMarker][iSpecies] = val;
+
+        istringstream ss_value(option_value[val_idx]);
+        if (!(ss_value >> this->value[iMarker][iSpecies])) {
+          return badValue("WallSpecies", this->name);
+        }
+      }
+    }
+
+    return "";
+  }
+
+  void SetDefault() override {
+    this->marker = nullptr;
+    this->field = nullptr;
+    this->value = nullptr;
+    this->size = 0;  // There is no default value for list
+    this->nSpecies_per_Wall = 0;
   }
 };
 

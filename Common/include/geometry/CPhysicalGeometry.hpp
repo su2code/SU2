@@ -2,14 +2,14 @@
  * \file CPhysicalGeometry.hpp
  * \brief Headers of the physical geometry class used to read meshes from file.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -220,7 +220,7 @@ class CPhysicalGeometry final : public CGeometry {
    */
   void InitiateCommsAll(void* bufSend, const int* nElemSend, SU2_MPI::Request* sendReq, void* bufRecv,
                         const int* nElemRecv, SU2_MPI::Request* recvReq, unsigned short countPerElem,
-                        unsigned short commType);
+                        COMM_TYPE commType);
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany().
@@ -437,13 +437,6 @@ class CPhysicalGeometry final : public CGeometry {
    * \param[in] config - Definition of the particular problem.
    */
   void MatchActuator_Disk(const CConfig* config) override;
-
-  /*!
-   * \brief Mach the periodic boundary conditions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_periodic - Index of the first periodic face in a pair.
-   */
-  void MatchPeriodic(const CConfig* config, unsigned short val_periodic) override;
 
   /*!
    * \brief Set boundary vertex structure of the control volume.
@@ -778,12 +771,6 @@ class CPhysicalGeometry final : public CGeometry {
   inline void SetSensitivity(unsigned long iPoint, unsigned short iDim, su2double val) override {
     Sensitivity(iPoint, iDim) = val;
   }
-
-  /*!
-   * \brief Check the mesh for periodicity and deactivate multigrid if periodicity is found.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Check_Periodicity(CConfig* config) override;
 
   /*!
    * \brief Compute an ADT including the coordinates of all viscous markers

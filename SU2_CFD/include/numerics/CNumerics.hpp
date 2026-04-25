@@ -3,14 +3,14 @@
  * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,6 +35,7 @@
 
 #include "../../../Common/include/CConfig.hpp"
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 class CElement;
 class CFluidModel;
@@ -46,14 +47,13 @@ class CFluidModel;
  */
 class CNumerics {
 protected:
-  enum : size_t {MAXNDIM = 3}; /*!< \brief Max number of space dimensions, used in some static arrays. */
+  static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
 
   unsigned short nDim, nVar;  /*!< \brief Number of dimensions and variables. */
   su2double Gamma;            /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;  /*!< \brief Fluids's Gamma - 1.0  . */
   su2double Minf;             /*!< \brief Free stream Mach number . */
   su2double Gas_Constant;     /*!< \brief Gas constant. */
-  su2double Prandtl_Lam;      /*!< \brief Laminar Prandtl's number. */
   su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl's number. */
   su2double MassFlux;         /*!< \brief Mass flux across edge. */
   su2double
@@ -130,6 +130,10 @@ protected:
   const su2double
   *ScalarVar_i,   /*!< \brief Vector of scalar variables at point i. */
   *ScalarVar_j;   /*!< \brief Vector of scalar variables at point j. */
+  su2double
+  HeatFluxDiffusion;   /*!< \brief Heat flux due to enthalpy diffusion for multicomponent. */
+  su2double
+  JacHeatFluxDiffusion;   /*!< \brief Heat flux jacobian due to enthalpy diffusion for multicomponent. */
   const su2double
   *TransVar_i,  /*!< \brief Vector of turbulent variables at point i. */
   *TransVar_j;  /*!< \brief Vector of turbulent variables at point j. */
@@ -180,6 +184,17 @@ protected:
   roughness_j = 0.0;                       /*!< \brief Roughness of the wall nearest to point j. */
 
   su2double MeanPerturbedRSM[3][3];   /*!< \brief Perturbed Reynolds stress tensor  */
+  su2double stochReynStress[3][3] = {{0.0}}; /*!< \brief Stochastic contribution to Reynolds stress tensor for Backscatter Model. */
+  su2double stochSource[3] = {0.0}; /*!< \brief Source term for Langevin equations in Stochastic Backscatter Model. */
+  su2double
+  stochVar_i[3] = {0.0}, /*!< \brief Stochastic variables at point i for Stochastic Backscatter Model. */
+  stochVar_j[3] = {0.0}; /*!< \brief Stochastic variables at point j for Stochastic Backscatter Model. */
+  su2double
+  lesMode_i = 0.0, /*!< \brief LES sensor at point i for hybrid RANS-LES methods. */
+  lesMode_j = 0.0; /*!< \brief LES sensor at point j for hybrid RANS-LES methods. */
+  unsigned short
+  sbsInBox_i = 0, /*!< \brief Sensor to assess if point i lies inside the box where the Stochastic Backscatter Model is active. */
+  sbsInBox_j = 0; /*!< \brief Sensor to assess if point j lies inside the box where the Stochastic Backscatter Model is active. */
   SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
@@ -187,6 +202,8 @@ protected:
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
+
+  bool energy_multicomponent = false; /*!< \brief Flag for multicomponent and reacting flow  */
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
@@ -557,7 +574,7 @@ public:
   NEVERINLINE static void ComputePerturbedRSM(size_t nDim, size_t uq_eigval_comp, bool uq_permute, su2double uq_delta_b,
                                               su2double uq_urlx, const Mat1& velgrad, Scalar density,
                                               Scalar viscosity, Scalar turb_ke, Mat2& MeanPerturbedRSM) {
-    Scalar MeanReynoldsStress[3][3];
+    Scalar MeanReynoldsStress[3][3] = {{}};
     ComputeStressTensor(nDim, MeanReynoldsStress, velgrad, viscosity, density, turb_ke, true);
     for (size_t iDim = 0; iDim < 3; iDim++)
       for (size_t jDim = 0; jDim < 3; jDim++)
@@ -633,6 +650,61 @@ public:
           uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
       }
     }
+  }
+  
+  /*!
+   * \brief Compute a random contribution to the Reynolds stress tensor (Stochastic Backscatter Model).
+   * \details See: Kok, Johan C. "A stochastic backscatter model for grey-area mitigation in detached
+   * eddy simulations." Flow, Turbulence and Combustion 99.1 (2017): 119-150.
+   * \param[in] nDim - Dimension of the flow problem, 2 or 3.
+   * \param[in] density - Density.
+   * \param[in] tke - Turbulent kinetic energy.
+   * \param[in] rndVec - Vector of stochastic variables from Langevin equations.
+   * \param[in] Cmag - Stochastic backscatter intensity coefficient.
+   * \param[out] stochReynStress - Stochastic tensor (to be added to the Reynolds stress tensor).
+   */
+  template<class Vec, class Mat>
+  inline void ComputeStochReynStress(su2double density, su2double tke, const Vec& rndVec, 
+                                     su2double Cmag, Mat& stochReynStress) {
+
+    /* --- Calculate stochastic tensor --- */
+
+    su2double stochLim = 3.0; 
+
+    stochReynStress[0][0] =   0.0;
+    stochReynStress[1][1] =   0.0;
+    stochReynStress[2][2] =   0.0;
+    stochReynStress[0][1] = - Cmag * density * tke * max(-stochLim, min(stochLim, rndVec[2]));
+    stochReynStress[0][2] = + Cmag * density * tke * max(-stochLim, min(stochLim, rndVec[1]));
+    stochReynStress[1][2] = - Cmag * density * tke * max(-stochLim, min(stochLim, rndVec[0]));
+    stochReynStress[1][0] = - stochReynStress[0][1];
+    stochReynStress[2][0] = - stochReynStress[0][2];
+    stochReynStress[2][1] = - stochReynStress[1][2];
+
+  }
+
+  /*!
+   * \brief Compute relaxation factor for stochastic source term in momentum equations (Stochastic Backscatter Model).
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] intensityCoeff - Relaxation factor for backscatter intensity.
+   */
+  inline su2double ComputeStochRelaxFactor(const CConfig* config) {
+
+    su2double SBS_Cmag = config->GetSBSParam().SBS_Cmag;
+    su2double intensityCoeff = SBS_Cmag;
+    su2double SBS_RelaxFactor = config->GetSBSParam().stochSourceRelax;
+    if (SBS_RelaxFactor > 0.0) {
+      su2double FS_Vel = config->GetModVel_FreeStream();
+      su2double ReynoldsLength = config->GetLength_Reynolds();
+      su2double timeScale = ReynoldsLength / FS_Vel;
+      unsigned long timeIter = config->GetTimeIter();
+      unsigned long restartIter = config->GetRestart_Iter();
+      su2double timeStep = config->GetTime_Step();
+      su2double currentTime = (timeIter - restartIter) * timeStep;
+      intensityCoeff = SBS_Cmag * (1.0 - exp(- currentTime / (timeScale*SBS_RelaxFactor)));
+    }
+    return intensityCoeff;
+
   }
 
   /*!
@@ -752,6 +824,20 @@ public:
   }
 
   /*!
+   * \brief Set the heat flux due to enthalpy diffusion
+   * \param[in] val_heatfluxdiffusion - Value of the heat flux due to enthalpy diffusion.
+   */
+  inline void SetHeatFluxDiffusion(su2double val_heatfluxdiffusion) { HeatFluxDiffusion = val_heatfluxdiffusion; }
+
+  /*!
+   * \brief Set Jacobian of the heat flux due to enthalpy diffusion
+   * \param[in] val_jacheatfluxdiffusion - Value of the heat flux jacobian due to enthalpy diffusion.
+   */
+  inline void SetJacHeatFluxDiffusion(su2double val_jacheatfluxdiffusion) {
+    JacHeatFluxDiffusion = val_jacheatfluxdiffusion;
+  }
+
+  /*!
    * \brief Set the laminar viscosity.
    * \param[in] val_laminar_viscosity_i - Value of the laminar viscosity at point i.
    * \param[in] val_laminar_viscosity_j - Value of the laminar viscosity at point j.
@@ -819,6 +905,37 @@ public:
   }
 
   /*!
+   * \brief Set the stochastic variables from Langevin equations (Stochastic Backscatter Model).
+   * \param[in] val_stochvar_i - Value of the stochastic variable at point i.
+   * \param[in] val_stochvar_j - Value of the stochastic variable at point j.
+   * \param[in] iDim - Index of Langevin equation.
+   */
+  inline void SetStochVar(unsigned short iDim, su2double val_stochvar_i, su2double val_stochvar_j) {
+    stochVar_i[iDim] = val_stochvar_i;
+    stochVar_j[iDim] = val_stochvar_j;
+  }
+
+  /*!
+   * \brief Set the sensor to locate the box where the Stochastic Backscatter Model is active.
+   * \param[in] val_sbsInBox_i - 1 if point i lies inside the box where the model is active.
+   * \param[in] val_sbsInBox_j - 1 if point j lies inside the box where the model is active.
+   */
+  inline void SetSbsInBoxSensor(unsigned short val_sbsInBox_i, unsigned short val_sbsInBox_j) {
+    sbsInBox_i = val_sbsInBox_i;
+    sbsInBox_j = val_sbsInBox_j;
+  }
+
+  /*!
+   * \brief Set the LES sensor for hybrid RANS-LES methods.
+   * \param[in] val_lesMode_i - Value of the LES sensor at point i.
+   * \param[in] val_lesMode_j - Value of the LES sensor at point j.
+   */
+  inline void SetLES_Mode(su2double val_lesMode_i, su2double val_lesMode_j) {
+    lesMode_i = val_lesMode_i;
+    lesMode_j = val_lesMode_j;
+  }
+
+  /*!
    * \brief Set the value of the distance from the nearest wall.
    * \param[in] val_dist_i - Value of of the distance from point i to the nearest wall.
    * \param[in] val_dist_j - Value of of the distance from point j to the nearest wall.
@@ -826,6 +943,15 @@ public:
   void SetDistance(su2double val_dist_i, su2double val_dist_j) {
     dist_i = val_dist_i;
     dist_j = val_dist_j;
+  }
+
+  /*!
+   * \brief Set the stochastic source term for the Langevin equations (Backscatter Model).
+   * \param[in] val_stoch_source - Value of stochastic source term.
+   * \param[in] iDim - Index of Langevin equation.
+   */
+  void SetStochSource(su2double val_stoch_source, unsigned short iDim) {
+    stochSource[iDim] = val_stoch_source;
   }
 
   /*!
@@ -1039,9 +1165,8 @@ public:
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Pointer to the velocity.
    * \param[in] val_betainc2 - Value of the artificial compresibility factor.
-   * \param[in] val_cp - Value of the specific heat at constant pressure.
-   * \param[in] val_temperature - Value of the temperature.
-   * \param[in] val_dRhodT - Value of the derivative of density w.r.t. temperature.
+   * \param[in] val_enthalpy - Value of the enthalpy.
+   * \param[in] val_dRhodh - Value of the derivative of density w.r.t. enthalpy.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
@@ -1049,9 +1174,8 @@ public:
   void GetInviscidIncProjJac(const su2double *val_density,
                              const su2double *val_velocity,
                              const su2double *val_betainc2,
-                             const su2double *val_cp,
-                             const su2double *val_temperature,
-                             const su2double *val_dRhodT,
+                             const su2double *val_enthalpy,
+                             const su2double *val_dRhodh,
                              const su2double *val_normal,
                              su2double val_scale,
                              su2double **val_Proj_Jac_Tensor) const;
@@ -1061,17 +1185,15 @@ public:
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Pointer to the velocity.
    * \param[in] val_betainc2 - Value of the artificial compresibility factor.
-   * \param[in] val_cp - Value of the specific heat at constant pressure.
-   * \param[in] val_temperature - Value of the temperature.
-   * \param[in] val_dRhodT - Value of the derivative of density w.r.t. temperature.
+   * \param[in] val_enthalpy - Value of the enthalpy.
+   * \param[in] val_dRhodh - Value of the derivative of density w.r.t. enthalpy.
    * \param[out] val_Precon - Pointer to the preconditioning matrix.
    */
   void GetPreconditioner(const su2double *val_density,
                          const su2double *val_velocity,
                          const su2double *val_betainc2,
-                         const su2double *val_cp,
-                         const su2double *val_temperature,
-                         const su2double *val_drhodt,
+                         const su2double *val_enthalpy,
+                         const su2double *val_drhodh,
                          su2double **val_Precon) const;
 
   /*!
@@ -1131,15 +1253,77 @@ public:
   /*!
    * \brief Computation of the matrix P, this matrix diagonalize the conservative Jacobians in
    *        the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] val_soundspeed - Value of the sound speed.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_p_tensor - Pointer to the P matrix.
+   * \param[in] density - Value of the density.
+   * \param[in] velocity - Velocity vector.
+   * \param[in] soundspeed - Value of the sound speed.
+   * \param[in] normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] p_tensor - P matrix.
    */
-  void GetPMatrix(const su2double *val_density, const su2double *val_velocity,
-                  const su2double *val_soundspeed, const su2double *val_normal,
-                  su2double **val_p_tensor) const;
+  template <typename Matrix>
+  void GetPMatrix(const su2double& density, const su2double* velocity,
+                  const su2double& soundspeed, const su2double* normal,
+                  Matrix& p_tensor) const {
+    const su2double rhooc = density / soundspeed;
+    const su2double rhoxc = density * soundspeed;
+
+    if (nDim == 2) {
+      const su2double ke = 0.5 * GeometryToolbox::SquaredNorm(2, velocity);
+      const su2double projvel = GeometryToolbox::DotProduct(2, velocity, normal);
+
+      p_tensor[0][0] = 1.0;
+      p_tensor[0][1] = 0.0;
+      p_tensor[0][2] = 0.5 * rhooc;
+      p_tensor[0][3] = 0.5 * rhooc;
+
+      p_tensor[1][0] = velocity[0];
+      p_tensor[1][1] = density * normal[1];
+      p_tensor[1][2] = 0.5 * (velocity[0] * rhooc + normal[0] * density);
+      p_tensor[1][3] = 0.5 * (velocity[0] * rhooc - normal[0] * density);
+
+      p_tensor[2][0] = velocity[1];
+      p_tensor[2][1] = -density * normal[0];
+      p_tensor[2][2] = 0.5 * (velocity[1] * rhooc + normal[1] * density);
+      p_tensor[2][3] = 0.5 * (velocity[1] * rhooc - normal[1] * density);
+
+      p_tensor[3][0] = ke;
+      p_tensor[3][1] = density * (velocity[0] * normal[1] - velocity[1] * normal[0]);
+      p_tensor[3][2] = 0.5 * (ke * rhooc + density * projvel + rhoxc / Gamma_Minus_One);
+      p_tensor[3][3] = 0.5 * (ke * rhooc - density * projvel + rhoxc / Gamma_Minus_One);
+    } else {
+      const su2double ke = 0.5 * GeometryToolbox::SquaredNorm(3, velocity);
+      const su2double projvel = GeometryToolbox::DotProduct(3, velocity, normal);
+
+      p_tensor[0][0] = normal[0];
+      p_tensor[0][1] = normal[1];
+      p_tensor[0][2] = normal[2];
+      p_tensor[0][3] = 0.5 * rhooc;
+      p_tensor[0][4] = 0.5 * rhooc;
+
+      p_tensor[1][0] = velocity[0] * normal[0];
+      p_tensor[1][1] = velocity[0] * normal[1] - density * normal[2];
+      p_tensor[1][2] = velocity[0] * normal[2] + density * normal[1];
+      p_tensor[1][3] = 0.5 * (velocity[0] * rhooc + density * normal[0]);
+      p_tensor[1][4] = 0.5 * (velocity[0] * rhooc - density * normal[0]);
+
+      p_tensor[2][0] = velocity[1] * normal[0] + density * normal[2];
+      p_tensor[2][1] = velocity[1] * normal[1];
+      p_tensor[2][2] = velocity[1] * normal[2] - density * normal[0];
+      p_tensor[2][3] = 0.5 * (velocity[1] * rhooc + density * normal[1]);
+      p_tensor[2][4] = 0.5 * (velocity[1] * rhooc - density * normal[1]);
+
+      p_tensor[3][0] = velocity[2] * normal[0] - density * normal[1];
+      p_tensor[3][1] = velocity[2] * normal[1] + density * normal[0];
+      p_tensor[3][2] = velocity[2] * normal[2];
+      p_tensor[3][3] = 0.5 * (velocity[2] * rhooc + density * normal[2]);
+      p_tensor[3][4] = 0.5 * (velocity[2] * rhooc - density * normal[2]);
+
+      p_tensor[4][0] = ke * normal[0] + density * (velocity[1] * normal[2] - velocity[2] * normal[1]);
+      p_tensor[4][1] = ke * normal[1] + density * (velocity[2] * normal[0] - velocity[0] * normal[2]);
+      p_tensor[4][2] = ke * normal[2] + density * (velocity[0] * normal[1] - velocity[1] * normal[0]);
+      p_tensor[4][3] = 0.5 * (ke * rhooc + density * projvel + rhoxc / Gamma_Minus_One);
+      p_tensor[4][4] = 0.5 * (ke * rhooc - density * projvel + rhoxc / Gamma_Minus_One);
+    }
+  }
 
   /*!
    * \brief Computation of the matrix Rinv*Pe.
@@ -1246,15 +1430,83 @@ public:
   /*!
    * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
    *        in the form $P^{-1}(A.Normal)P=Lambda$.
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Value of the velocity.
-   * \param[in] val_soundspeed - Value of the sound speed.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+   * \param[in] density - Value of the density.
+   * \param[in] velocity - Velocity vector.
+   * \param[in] soundspeed - Value of the sound speed.
+   * \param[in] normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[out] inv_p_tensor - Pointer to inverse of the P matrix.
    */
-  void GetPMatrix_inv(const su2double *val_density, const su2double *val_velocity,
-                      const su2double *val_soundspeed, const su2double *val_normal,
-                      su2double **val_invp_tensor) const;
+  template <typename Matrix>
+  void GetPMatrix_inv(const su2double& density, const su2double* velocity,
+                      const su2double& soundspeed, const su2double* normal,
+                      Matrix& inv_p_tensor) const {
+    const su2double rhoxc = density * soundspeed;
+    const su2double c2 = pow(soundspeed, 2);
+    const su2double gm1 = Gamma_Minus_One;
+    const su2double k0orho = normal[0] / density;
+    const su2double k1orho = normal[1] / density;
+    const su2double gm1_o_c2 = gm1 / c2;
+    const su2double gm1_o_rhoxc = gm1 / rhoxc;
+
+    if (nDim == 3) {
+      const su2double k2orho = normal[2] / density;
+      const su2double ke = 0.5 * GeometryToolbox::SquaredNorm(3, velocity);
+      const su2double projvel_o_rho = GeometryToolbox::DotProduct(3, velocity, normal) / density;
+
+      inv_p_tensor[0][0] = normal[0] + k1orho * velocity[2] - k2orho * velocity[1] - normal[0] * gm1_o_c2 * ke;
+      inv_p_tensor[0][1] = normal[0] * gm1_o_c2 * velocity[0];
+      inv_p_tensor[0][2] = k2orho + normal[0] * gm1_o_c2 * velocity[1];
+      inv_p_tensor[0][3] = -k1orho + normal[0] * gm1_o_c2 * velocity[2];
+      inv_p_tensor[0][4] = -normal[0] * gm1_o_c2;
+
+      inv_p_tensor[1][0] = normal[1] + k2orho * velocity[0] - k0orho * velocity[2] - normal[1] * gm1_o_c2 * ke;
+      inv_p_tensor[1][1] = -k2orho + normal[1] * gm1_o_c2 * velocity[0];
+      inv_p_tensor[1][2] = normal[1] * gm1_o_c2 * velocity[1];
+      inv_p_tensor[1][3] = k0orho + normal[1] * gm1_o_c2 * velocity[2];
+      inv_p_tensor[1][4] = -normal[1] * gm1_o_c2;
+
+      inv_p_tensor[2][0] = normal[2] + k0orho * velocity[1] - k1orho * velocity[0] - normal[2] * gm1_o_c2 * ke;
+      inv_p_tensor[2][1] = k1orho + normal[2] * gm1_o_c2 * velocity[0];
+      inv_p_tensor[2][2] = -k0orho + normal[2] * gm1_o_c2 * velocity[1];
+      inv_p_tensor[2][3] = normal[2] * gm1_o_c2 * velocity[2];
+      inv_p_tensor[2][4] = -normal[2] * gm1_o_c2;
+
+      inv_p_tensor[3][0] = -projvel_o_rho + gm1_o_rhoxc * ke;
+      inv_p_tensor[3][1] = k0orho - gm1_o_rhoxc * velocity[0];
+      inv_p_tensor[3][2] = k1orho - gm1_o_rhoxc * velocity[1];
+      inv_p_tensor[3][3] = k2orho - gm1_o_rhoxc * velocity[2];
+      inv_p_tensor[3][4] = gm1_o_rhoxc;
+
+      inv_p_tensor[4][0] = projvel_o_rho + gm1_o_rhoxc * ke;
+      inv_p_tensor[4][1] = -k0orho - gm1_o_rhoxc * velocity[0];
+      inv_p_tensor[4][2] = -k1orho - gm1_o_rhoxc * velocity[1];
+      inv_p_tensor[4][3] = -k2orho - gm1_o_rhoxc * velocity[2];
+      inv_p_tensor[4][4] = gm1_o_rhoxc;
+    } else {
+      const su2double ke = 0.5 * GeometryToolbox::SquaredNorm(2, velocity);
+      const su2double projvel_o_rho = GeometryToolbox::DotProduct(2, velocity, normal) / density;
+
+      inv_p_tensor[0][0] = 1 - gm1_o_c2 * ke;
+      inv_p_tensor[0][1] = gm1_o_c2 * velocity[0];
+      inv_p_tensor[0][2] = gm1_o_c2 * velocity[1];
+      inv_p_tensor[0][3] = -gm1_o_c2;
+
+      inv_p_tensor[1][0] = -k1orho * velocity[0] + k0orho * velocity[1];
+      inv_p_tensor[1][1] = k1orho;
+      inv_p_tensor[1][2] = -k0orho;
+      inv_p_tensor[1][3] = 0;
+
+      inv_p_tensor[2][0] = -projvel_o_rho + gm1_o_rhoxc * ke;
+      inv_p_tensor[2][1] = k0orho - gm1_o_rhoxc * velocity[0];
+      inv_p_tensor[2][2] = k1orho - gm1_o_rhoxc * velocity[1];
+      inv_p_tensor[2][3] = gm1_o_rhoxc;
+
+      inv_p_tensor[3][0] = projvel_o_rho + gm1_o_rhoxc * ke;
+      inv_p_tensor[3][1] = -k0orho - gm1_o_rhoxc * velocity[0];
+      inv_p_tensor[3][2] = -k1orho - gm1_o_rhoxc * velocity[1];
+      inv_p_tensor[3][3] = gm1_o_rhoxc;
+    }
+  }
 
   /*!
    * \brief Compute viscous residual and jacobian.

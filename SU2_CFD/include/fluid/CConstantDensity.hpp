@@ -2,14 +2,14 @@
  * \file CConstantDensity.hpp
  * \brief Defines the incompressible constant density model.
  * \author T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,10 +39,11 @@ class CConstantDensity final : public CFluidModel {
   /*!
    * \brief Constructor of the class.
    */
-  CConstantDensity(su2double val_Density, su2double val_Cp) {
+  CConstantDensity(su2double val_Density, su2double val_Cp, su2double val_Temperature_Ref) {
     Density = val_Density;
     Cp = val_Cp;
     Cv = val_Cp;
+    Std_Ref_Temp_ND = val_Temperature_Ref;
   }
 
   /*!
@@ -56,5 +57,19 @@ class CConstantDensity final : public CFluidModel {
        decoupled equation. Hence, we update the value.
        Note Cp = Cv, (gamma = 1).*/
     Temperature = t;
+    Enthalpy = Cp * (Temperature - Std_Ref_Temp_ND);  // Sensible enthalpy relative to STD_REF_TEMP
   }
+
+  /*!
+   * \brief Set the Dimensionless State using Enthalpy.
+   * \param[in] val_enthalpy - Enthalpy value at the point.
+   * \param[in] val_scalars - not used here.
+   */
+  void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override {
+    Enthalpy = val_enthalpy;
+    Temperature = Enthalpy / Cp + Std_Ref_Temp_ND;  // Temperature from sensible enthalpy
+  }
+
+ private:
+  su2double Std_Ref_Temp_ND{0.0}; /*!< \brief Nondimensional standard reference temperature for enthalpy. */
 };

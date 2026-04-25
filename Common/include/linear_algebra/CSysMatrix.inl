@@ -5,14 +5,14 @@
  *       of the .cpp file and so they are hidden to avoid triggering
  *       recompilation of other units when changes are made here.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -160,13 +160,13 @@ FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long bloc
 }
 
 template <class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock_ILUMatrix(unsigned long block_i,
-                                                                        ScalarType* invBlock) const {
+FORCEINLINE const ScalarType* CSysMatrix<ScalarType>::InvertDiagonalBlockILUMatrix(unsigned long block_i) {
   /*--- Copy block, as the algorithm modifies the matrix ---*/
+  auto* Uii = &ILU_matrix[dia_ptr_ilu[block_i] * nVar * nVar];
   ScalarType block[MAXNVAR * MAXNVAR];
-  MatrixCopy(&ILU_matrix[dia_ptr_ilu[block_i] * nVar * nVar], block);
-
-  MatrixInverse(block, invBlock);
+  MatrixCopy(Uii, block);
+  MatrixInverse(block, Uii);
+  return Uii;
 }
 
 template <class ScalarType>

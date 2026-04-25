@@ -2,14 +2,14 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -91,35 +91,39 @@ const unsigned int ZONE_0 = 0;  /*!< \brief Definition of the first grid domain.
 const unsigned int ZONE_1 = 1;  /*!< \brief Definition of the second grid domain. */
 const unsigned int INST_0 = 0;  /*!< \brief Definition of the first instance per grid level. */
 
-const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
-const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
-const su2double BOLTZMANN_CONSTANT = 1.3806503E-23;   /*!< \brief Boltzmann's constant [J K^-1] */
-const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogadro's constant, number of particles in one kmole. */
-const su2double FUND_ELEC_CHARGE_CGS = 4.8032047E-10; /*!< \brief Fundamental electric charge in CGS units, cm^(3/2) g^(1/2) s^(-1). */
+constexpr passivedouble STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
+constexpr passivedouble UNIVERSAL_GAS_CONSTANT = 8.3144598;   /*!< \brief Universal gas constant in J/(mol*K) */
+constexpr passivedouble BOLTZMANN_CONSTANT = 1.3806503E-23;   /*!< \brief Boltzmann's constant [J K^-1] */
+constexpr passivedouble AVOGAD_CONSTANT = 6.0221415E26;       /*!< \brief Avogadro's constant, number of particles in one kmole. */
+constexpr passivedouble FUND_ELEC_CHARGE_CGS = 4.8032047E-10; /*!< \brief Fundamental electric charge in CGS units, cm^(3/2) g^(1/2) s^(-1). */
+constexpr passivedouble STD_REF_TEMP = 298.15;  /*!< \brief Standard reference temperature for enthalpy in Kelvin. */
+constexpr passivedouble EPS = 1.0E-16;        /*!< \brief Error scale. */
+constexpr passivedouble TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
 
-const su2double EPS = 1.0E-16;        /*!< \brief Error scale. */
-const su2double TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
+constexpr passivedouble ONE2 = 0.5;         /*!< \brief One divided by two. */
+constexpr passivedouble ONE3 = 1.0 / 3.0;   /*!< \brief One divided by three. */
+constexpr passivedouble TWO3 = 2.0 / 3.0;   /*!< \brief Two divided by three. */
+constexpr passivedouble FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
 
-const su2double ONE2 = 0.5;         /*!< \brief One divided by two. */
-const su2double ONE3 = 1.0 / 3.0;   /*!< \brief One divided by three. */
-const su2double TWO3 = 2.0 / 3.0;   /*!< \brief Two divided by three. */
-const su2double FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
+constexpr passivedouble PI_NUMBER = 3.14159265358979323846;  /*!< \brief Pi number (not using M_PI to avoid Windows issues). */
 
-const su2double PI_NUMBER = 4.0 * atan(1.0);  /*!< \brief Pi number. */
-
-const su2double STEFAN_BOLTZMANN = 5.670367E-08;  /*!< \brief Stefan-Boltzmann constant in W/(m^2*K^4). */
+constexpr passivedouble STEFAN_BOLTZMANN = 5.670367E-08;  /*!< \brief Stefan-Boltzmann constant in W/(m^2*K^4). */
 
 const int MASTER_NODE = 0;      /*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;      /*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;      /*!< \brief There is only a zone. */
 
-const unsigned short COMM_TYPE_UNSIGNED_LONG  = 1;  /*!< \brief Communication type for unsigned long. */
-const unsigned short COMM_TYPE_LONG           = 2;  /*!< \brief Communication type for long. */
-const unsigned short COMM_TYPE_UNSIGNED_SHORT = 3;  /*!< \brief Communication type for unsigned short. */
-const unsigned short COMM_TYPE_DOUBLE         = 4;  /*!< \brief Communication type for double. */
-const unsigned short COMM_TYPE_CHAR           = 5;  /*!< \brief Communication type for char. */
-const unsigned short COMM_TYPE_SHORT          = 6;  /*!< \brief Communication type for short. */
-const unsigned short COMM_TYPE_INT            = 7;  /*!< \brief Communication type for int. */
+enum class COMM_TYPE {
+  UNSIGNED_LONG,  /*!< \brief Communication type for unsigned long. */
+  LONG,           /*!< \brief Communication type for long. */
+  UNSIGNED_SHORT, /*!< \brief Communication type for unsigned short. */
+  FLOAT,          /*!< \brief Communication type for su2mixedfloat. */
+  DOUBLE,         /*!< \brief Communication type for double. */
+  PASSIVE_DOUBLE, /*!< \brief Communication type for passivedouble. */
+  CHAR,           /*!< \brief Communication type for char. */
+  SHORT,          /*!< \brief Communication type for short. */
+  INT,            /*!< \brief Communication type for int. */
+};
 
 /*!
  * \brief Types of geometric entities based on VTK nomenclature
@@ -195,7 +199,7 @@ const int SU2_CONN_SIZE   = 10;  /*!< \brief Size of the connectivity array that
                                              that we read from a mesh file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
 const int SU2_CONN_SKIP   = 2;   /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
 
-const su2double COLORING_EFF_THRESH = 0.875;  /*!< \brief Below this value fallback strategies are used instead. */
+constexpr passivedouble COLORING_EFF_THRESH = 0.875;  /*!< \brief Below this value fallback strategies are used instead. */
 
 /*--- All temperature polynomial fits for the fluid models currently
    assume a quartic form (5 coefficients). For example,
@@ -820,7 +824,8 @@ enum class CENTERED {
   JST,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
   LAX,            /*!< \brief Lax-Friedrich centered numerical method. */
   JST_MAT,        /*!< \brief JST with matrix dissipation. */
-  JST_KE          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
+  JST_KE,         /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
+  LD2             /*!< \brief Low-Dissipation Low-Dispersion (LD2) centered scheme. */
 };
 static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("NONE", CENTERED::NONE)
@@ -828,6 +833,7 @@ static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("JST_KE", CENTERED::JST_KE)
   MakePair("JST_MAT", CENTERED::JST_MAT)
   MakePair("LAX-FRIEDRICH", CENTERED::LAX)
+  MakePair("LD2", CENTERED::LD2)
 };
 
 
@@ -1102,6 +1108,37 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 }
 
 /*!
+ * \brief Structure containing multigrid options.
+ */
+struct CMGOptions {
+  su2double MG_Smooth_Res_Threshold{0.0}; /*!< \brief RMS reduction threshold for MG smoothing early exit. */
+  su2double MG_Smooth_Coeff{0.0};         /*!< \brief Jacobi smoother coefficient for coarse-grid correction. */
+  unsigned long MG_Min_MeshSize{0};       /*!< \brief Minimum CVs on coarsest MG level. */
+  std::vector<unsigned short> MG_PreSmooth;    /*!< \brief Multigrid pre-smoothing iterations per level. */
+  std::vector<unsigned short> MG_PostSmooth;   /*!< \brief Multigrid post-smoothing iterations per level. */
+  std::vector<unsigned short> MG_CorrecSmooth; /*!< \brief Multigrid Jacobi correction-smoothing per level. */
+  bool MG_Smooth_EarlyExit{false};        /*!< \brief Enable early exit for MG smoothing iterations. */
+  bool MG_Smooth_Output{false};           /*!< \brief Output compact per-cycle smoothing summary. */
+  bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
+};
+
+/*!
+ * \brief SST rough-wall boundary conditions Options
+ */
+enum class ROUGHSST_MODEL {
+  WILCOX1998,           /*!< \brief Wilcox 1998 boundary conditions for rough walls. */
+  WILCOX2006,           /*!< \brief Wilcox 2006 boundary conditions for rough walls / default version if roughness is applied. */
+  LIMITER_KNOPP,        /*!< \brief Knopp eddy viscosity limiter. */
+  LIMITER_AUPOIX,       /*!< \brief Aupoix eddy viscosity limiter. */
+};
+static const MapType<std::string, ROUGHSST_MODEL> RoughSST_Model_Map = {
+  MakePair("WILCOX1998", ROUGHSST_MODEL::WILCOX1998)
+  MakePair("WILCOX2006", ROUGHSST_MODEL::WILCOX2006)
+  MakePair("LIMITER_KNOPP", ROUGHSST_MODEL::LIMITER_KNOPP)
+  MakePair("LIMITER_AUPOIX", ROUGHSST_MODEL::LIMITER_AUPOIX)
+};
+
+/*!
  * \brief SA Options
  */
 enum class SA_OPTIONS {
@@ -1333,8 +1370,6 @@ inline LM_ParsedOptions ParseLMOptions(const LM_OPTIONS *LM_Options, unsigned sh
  * \brief Structure containing parsed options for data-driven fluid model.
  */
 struct DataDrivenFluid_ParsedOptions {
-  su2double rho_init_custom = -1;     /*!< \brief Optional initial guess for density in inverse look-up operations. */
-  su2double e_init_custom = -1;       /*!< \brief Optional initial guess for static energy in inverse look-up operations.*/
   su2double Newton_relaxation = 1.0;  /*!< \brief Relaxation factor for Newton solvers in data-driven fluid models. */
   bool use_PINN = false;               /*!< \brief Use physics-informed method for data-driven fluid modeling. */
   ENUM_DATADRIVEN_METHOD interp_algorithm_type = ENUM_DATADRIVEN_METHOD::MLP; /*!< \brief Interpolation algorithm used for data-driven fluid model. */
@@ -1436,6 +1471,8 @@ struct FluidFlamelet_ParsedOptions {
   su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
   unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
+  su2double Flame_T_ignition = 5000;    /*!< \brief Ignition temperature for the flame, used for initialization. */
+
 };
 
 /*!
@@ -1840,6 +1877,18 @@ static const MapType<std::string, RIEMANN_TYPE> Giles_Map = {
 };
 
 /*!
+ * \brief Types of wall species boundary conditions.
+ */
+enum class WALL_SPECIES_TYPE {
+  FLUX,   /*!< \brief Neumann flux boundary condition for wall species. */
+  VALUE   /*!< \brief Dirichlet value boundary condition for wall species. */
+};
+static const MapType<std::string, WALL_SPECIES_TYPE> Wall_Map = {
+  MakePair("FLUX", WALL_SPECIES_TYPE::FLUX)
+  MakePair("VALUE", WALL_SPECIES_TYPE::VALUE)
+};
+
+/*!
  * \brief Types of mixing process for averaging quantities at the boundaries.
  */
 enum AVERAGEPROCESS_TYPE {
@@ -1935,7 +1984,18 @@ enum TURBO_MARKER_TYPE{
 
 enum class RAMP_TYPE{
   GRID,       /*!< \brief flag for rotational/translational ramps */
-  BOUNDARY    /*!< \brief flag for pressure/mass flow ramps*/
+  BOUNDARY,   /*!< \brief flag for pressure/mass flow ramps*/
+  MUSCL       /*!< \brief flag for MUSCL ramps */
+};
+
+enum class MUSCL_RAMP_TYPE{
+  ITERATION,  /*!< \brief flag for linear iteration-based ramp */
+  SMOOTH_FUNCTION      /*!< \brief flag for smooth cosine ramp */
+};
+
+static const MapType<std::string, MUSCL_RAMP_TYPE> MUSCLRamp_Map = {
+  MakePair("ITERATION", MUSCL_RAMP_TYPE::ITERATION)
+  MakePair("SMOOTH_FUNCTION", MUSCL_RAMP_TYPE::SMOOTH_FUNCTION)
 };
 
 /*!
@@ -2021,10 +2081,6 @@ static const MapType<std::string, ACTDISK_TYPE> ActDisk_Map = {
 enum class WALL_TYPE {
   SMOOTH,  /*!< \brief Smooth wall */
   ROUGH,   /*!< \brief Rough wall */
-};
-static const MapType<std::string, WALL_TYPE> WallType_Map = {
-  MakePair("SMOOTH", WALL_TYPE::SMOOTH)
-  MakePair("ROUGH", WALL_TYPE::ROUGH)
 };
 
 /*!
@@ -2252,17 +2308,17 @@ static const MapType<std::string, JUMP_DEFINITION> Jump_Map = {
 /*!
  * \brief Type of multigrid cycle
  */
-enum MG_CYCLE {
-  V_CYCLE = 0,        /*!< \brief V cycle. */
-  W_CYCLE = 1,        /*!< \brief W cycle. */
-  FULLMG_CYCLE = 2    /*!< \brief FullMG cycle. */
-};
-static const MapType<std::string, MG_CYCLE> MG_Cycle_Map = {
-  MakePair("V_CYCLE", V_CYCLE)
-  MakePair("W_CYCLE", W_CYCLE)
-  MakePair("FULLMG_CYCLE", FULLMG_CYCLE)
+enum class MG_CYCLE {
+  V,  /*!< \brief V-cycle multigrid solver. */
+  W,  /*!< \brief W-cycle multigrid solver. */
+  FULL, /*!< \brief Full multigrid (FMG) solver. */
 };
 
+static const MapType<std::string, MG_CYCLE> MG_Cycle_Map = {
+  MakePair("V_CYCLE", MG_CYCLE::V)
+  MakePair("W_CYCLE", MG_CYCLE::W)
+  MakePair("FULLMG_CYCLE", MG_CYCLE::FULL)
+};
 /*!
  * \brief Types of design parameterizations
  */
@@ -2356,9 +2412,10 @@ static const MapType<std::string, ENUM_FFD_BLENDING> Blending_Map = {
  */
 enum ENUM_LINEAR_SOLVER {
   CONJUGATE_GRADIENT,   /*!< \brief Preconditionated conjugate gradient method for grid deformation. */
-  FGMRES,               /*!< \brief Flexible Generalized Minimal Residual method. */
   BCGSTAB,              /*!< \brief BCGSTAB - Biconjugate Gradient Stabilized Method (main solver). */
+  FGMRES,               /*!< \brief Flexible Generalized Minimal Residual method. */
   RESTARTED_FGMRES,     /*!< \brief Flexible Generalized Minimal Residual method with restart. */
+  FGCRODR,              /*!< \brief Flexible Generalized Conjugate Residual Method with Inner Orthogonalization and Deflated Restarting. */
   SMOOTHER,             /*!< \brief Iterative smoother. */
   PASTIX_LDLT,          /*!< \brief PaStiX LDLT (complete) factorization. */
   PASTIX_LU,            /*!< \brief PaStiX LU (complete) factorization. */
@@ -2368,10 +2425,26 @@ static const MapType<std::string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = {
   MakePair("BCGSTAB", BCGSTAB)
   MakePair("FGMRES", FGMRES)
   MakePair("RESTARTED_FGMRES", RESTARTED_FGMRES)
+  MakePair("FGCRODR", FGCRODR)
   MakePair("SMOOTHER", SMOOTHER)
   MakePair("PASTIX_LDLT", PASTIX_LDLT)
   MakePair("PASTIX_LU", PASTIX_LU)
 };
+
+/*!
+ * \brief Inner solver for nested linear solver, only compatible with "flexible" linear solvers.
+ */
+enum class LINEAR_SOLVER_INNER {
+  NONE,     /*!< \brief Do not use a nested linear solver. */
+  BCGSTAB,  /*!< \brief Use BCGSTAB as the preconditioning linear solver. */
+  SMOOTHER, /*!< \brief Iterative smoother. */
+};
+static const MapType<std::string, LINEAR_SOLVER_INNER> Inner_Linear_Solver_Map = {
+  MakePair("NONE", LINEAR_SOLVER_INNER::NONE)
+  MakePair("BCGSTAB", LINEAR_SOLVER_INNER::BCGSTAB)
+  MakePair("SMOOTHER", LINEAR_SOLVER_INNER::SMOOTHER)
+};
+
 
 /*!
  * \brief Types surface continuity at the intersection with the FFD
@@ -2649,6 +2722,8 @@ enum class MPI_QUANTITIES {
   MAX_LENGTH           ,  /*!< \brief Maximum length communication. */
   GRID_VELOCITY        ,  /*!< \brief Grid velocity communication. */
   SOLUTION_EDDY        ,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
+  STOCH_SOURCE_LANG    ,  /*!< \brief Stochastic source term for Langevin equations communication. */
+  DES_LENGTHSCALE      ,  /*!< \brief DES length scale communication. */
   SOLUTION_MATRIX      ,  /*!< \brief Matrix solution communication. */
   SOLUTION_MATRIXTRANS ,  /*!< \brief Matrix transposed solution communication. */
   NEIGHBORS            ,  /*!< \brief Neighbor point count communication (for JST). */

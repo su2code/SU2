@@ -2,14 +2,14 @@
  * \file CSpeciesFlameletSolver.hpp
  * \brief Headers of the CSpeciesFlameletSolver class
  * \author D. Mayer, N. Beishuizen, T. Economon, E. Bunschoten
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -70,9 +70,10 @@ class CSpeciesFlameletSolver final : public CSpeciesSolver {
    * \brief Find maximum progress variable value within the manifold for the current solution.
    * \param[in] fluid_model - pointer to flamelet fluid model.
    * \param[in] scalars - local scalar solution.
+   * \param[in] T_ignition - ignition temperature - at this temperature, the progress variable is considered burnt.
    * \return - maximum progress variable value within manifold bounds.
    */
-  su2double GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalars);
+  su2double GetBurntProgressVariable(CFluidModel* fluid_model, const su2double* scalars, const su2double T_ignition);
 
   /*!
    * \brief Retrieve scalar source terms from manifold.

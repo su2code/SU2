@@ -2,14 +2,14 @@
  * \file nonlinear_models.cpp
  * \brief Definition of nonlinear constitutive models.
  * \author R. Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,38 +34,33 @@ CFEM_NeoHookean_Comp::CFEM_NeoHookean_Comp(unsigned short val_nDim,
                                            CFEANonlinearElasticity(val_nDim, val_nVar, config) {
 }
 
-void CFEM_NeoHookean_Comp::Compute_Plane_Stress_Term(CElement *element, const CConfig *config) {
+void CFEM_NeoHookean_Comp::Compute_Plane_Stress_Term(CElement *element, const CConfig *config, unsigned short iGauss) {
 
-  su2double j_red = 1.0;
-  su2double fx = 0.0, fpx = 1.0;
-  su2double xkm1 = 1.0, xk = 1.0;
-  su2double cte = 0.0;
+  const su2double thermalStress = ThermalStressTerm * (element->GetTemperature(iGauss) - ReferenceTemperature);
 
-  unsigned short iNR, nNR;
-  su2double NRTOL;
+  // Tolerate for NR method.
+  const su2double NRTOL = 1E-14;
 
-  // Maximum number of iterations and tolerance (relative)
-  nNR = 10;
-  NRTOL = 1E-25;
-
-  // j_red: reduced jacobian, for the 2x2 submatrix of F
-  j_red = F_Mat[0][0] * F_Mat[1][1] - F_Mat[1][0] * F_Mat[0][1];
+  // j_red: reduced jacobian, for the 2x2 submatrix of F.
+  const su2double j_red = F_Mat[0][0] * F_Mat[1][1] - F_Mat[1][0] * F_Mat[0][1];
   // cte: constant term in the NR method
-  cte = Lambda*log(j_red) - Mu;
+  const su2double cte = Lambda*log(j_red) - Mu + thermalStress;
 
-  // f(f33)  = mu*f33^2 + lambda*ln(f33) + (lambda*ln(j_red)-mu) = 0
+  // f(f33) = mu*f33^2 + lambda*ln(f33) + (lambda*ln(j_red)-mu+thermalStress) = 0
   // f'(f33) = 2*mu*f33 + lambda/f33
 
-  for (iNR = 0; iNR < nNR; iNR++) {
-    fx  = Mu*pow(xk,2.0) + Lambda*log(xk) + cte;
-    fpx = 2*Mu*xk + (Lambda / xk);
-    xkm1 = xk - fx / fpx;
-    if (((xkm1 - xk) / xk) < NRTOL) break;
-    xk = xkm1;
+  // Initialize as plane strain.
+  su2double xk = 1.0;
+  for (auto iNR = 0; iNR < 20; ++iNR) {
+    const su2double fx = Mu * pow(xk, 2) + Lambda * log(xk) + cte;
+    const su2double fpx = 2 * Mu * xk + Lambda / xk;
+    f33 = xk - fx / fpx;
+    if (fabs(f33 - xk) < NRTOL) break;
+    xk = f33;
   }
-
-  f33 = xkm1;
-
+  if (fabs(f33 - xk) >= NRTOL) {
+    std::cout << "WARNING: Plane Stress term did not converge (residual = " << fabs(f33 - xk) << ")\n";
+  }
 }
 
 void CFEM_NeoHookean_Comp::Compute_Constitutive_Matrix(CElement *element, const CConfig *config) {
@@ -140,7 +135,7 @@ CFEM_Knowles_NearInc::CFEM_Knowles_NearInc(unsigned short val_nDim, unsigned sho
 
 }
 
-void CFEM_Knowles_NearInc::Compute_Plane_Stress_Term(CElement *element, const CConfig *config) {
+void CFEM_Knowles_NearInc::Compute_Plane_Stress_Term(CElement *element, const CConfig *config, unsigned short iGauss) {
 
   SU2_MPI::Error("This material model cannot (yet) be used for plane stress.",CURRENT_FUNCTION);
 
@@ -186,7 +181,7 @@ void CFEM_Knowles_NearInc::Compute_Constitutive_Matrix(CElement *element, const 
 
 void CFEM_Knowles_NearInc::Compute_Stress_Tensor(CElement *element, const CConfig *config, unsigned short iGauss) {
 
-  /* -- Suchocki (2011) (full reference in class constructor). ---*/
+  /*--- Suchocki (2011) (full reference in class constructor). ---*/
 
   unsigned short iVar, jVar;
 
@@ -213,9 +208,7 @@ void CFEM_Knowles_NearInc::Compute_Stress_Tensor(CElement *element, const CConfi
 }
 
 CFEM_DielectricElastomer::CFEM_DielectricElastomer(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config) :
-                          CFEANonlinearElasticity(val_nDim, val_nVar, config) {
-
-}
+                          CFEANonlinearElasticity(val_nDim, val_nVar, config) {}
 
 void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element, const CConfig *config) {
 
@@ -235,36 +228,16 @@ void CFEM_DielectricElastomer::Compute_Constitutive_Matrix(CElement *element, co
     D_Mat[5][0] = 0.0;  D_Mat[5][1] = 0.0;  D_Mat[5][2] = 0.0;  D_Mat[5][3] = 0.0;  D_Mat[5][4] = 0.0;  D_Mat[5][5] = 0.0;
   }
 
-
 }
 
 void CFEM_DielectricElastomer::Compute_Stress_Tensor(CElement *element, const CConfig *config, unsigned short iGauss) {
 
-  unsigned short iDim, jDim;
-
-  su2double E0 = 0.0, E1 = 0.0, E2 = 0.0;
-  su2double E0_2 = 0.0, E1_2 = 0.0, E2_2 = 0.0;
-  su2double E_2 = 0.0;
-
-  Compute_FmT_Mat();
-
-  for (iDim = 0; iDim < nDim; iDim++){
-    EField_Curr_Unit[iDim] = 0.0;
-    for (jDim = 0; jDim < nDim; jDim++){
-      EField_Curr_Unit[iDim] += FmT_Mat[iDim][jDim] * EField_Ref_Unit[jDim];
+  for (unsigned short iDim = 0; iDim < MAXNDIM; ++iDim) {
+    for (unsigned short jDim = 0; jDim < MAXNDIM; ++jDim) {
+      Stress_Tensor[iDim][jDim] = 0;
     }
   }
-
-  E0 = EFieldMod_Ref*EField_Curr_Unit[0];          E0_2 = pow(E0,2);
-  E1 = EFieldMod_Ref*EField_Curr_Unit[1];          E1_2 = pow(E1,2);
-  if (nDim == 3) {E2 = EFieldMod_Ref*EField_Curr_Unit[2];  E2_2 = pow(E2,2);}
-
-  E_2 = E0_2+E1_2+E2_2;
-
-  Stress_Tensor[0][0] = ke_DE*(E0_2-0.5*E_2);  Stress_Tensor[0][1] = ke_DE*E0*E1;      Stress_Tensor[0][2] = ke_DE*E0*E2;
-  Stress_Tensor[1][0] = ke_DE*E1*E0;      Stress_Tensor[1][1] = ke_DE*(E1_2-0.5*E_2);  Stress_Tensor[1][2] = ke_DE*E1*E2;
-  Stress_Tensor[2][0] = ke_DE*E2*E0;      Stress_Tensor[2][1] = ke_DE*E2*E1;      Stress_Tensor[2][2] = ke_DE*(E2_2-0.5*E_2);
-
+  Add_MaxwellStress(element, config);
 }
 
 CFEM_IdealDE::CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar,
@@ -286,7 +259,7 @@ CFEM_IdealDE::CFEM_IdealDE(unsigned short val_nDim, unsigned short val_nVar,
 
 }
 
-void CFEM_IdealDE::Compute_Plane_Stress_Term(CElement *element, const CConfig *config) {
+void CFEM_IdealDE::Compute_Plane_Stress_Term(CElement *element, const CConfig *config, unsigned short iGauss) {
 
   SU2_MPI::Error("This material model cannot (yet) be used for plane stress.", CURRENT_FUNCTION);
 

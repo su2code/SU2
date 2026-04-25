@@ -2,14 +2,14 @@
  * \file CTurbSolver.cpp
  * \brief Main subroutines of CTurbSolver class
  * \author F. Palacios, A. Bueno
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,17 +35,20 @@ template class CScalarSolver<CTurbVariable>;
 
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative)
   : CScalarSolver<CTurbVariable>(geometry, config, conservative) {
+  SU2_ZONE_SCOPED
   /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
   SetImplicitPeriodic(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
 }
 
 CTurbSolver::~CTurbSolver() {
+  SU2_ZONE_SCOPED
   for (auto& mat : SlidingState) {
     for (auto ptr : mat) delete [] ptr;
   }
 }
 
 void CTurbSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
@@ -61,6 +64,7 @@ void CTurbSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CN
 }
 
 void CTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
@@ -77,6 +81,7 @@ void CTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_containe
 
 
 void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 
@@ -102,6 +107,7 @@ void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNum
 
 void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                               bool val_update_geo) {
+  SU2_ZONE_SCOPED
   /*--- Restart the solution from file information ---*/
 
   string restart_filename = config->GetSolution_FileName();
@@ -131,9 +137,13 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
     const bool energy = config->GetEnergy_Equation();
     const bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-    const bool flamelet = (config->GetKind_FluidModel() == FLUID_FLAMELET);
 
-    if (incompressible && ((!energy) && (!weakly_coupled_heat) && (!flamelet))) skipVars--;
+    if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+
+    /*--- Compute how many turbulence variables are present in the restart file. ---*/
+
+    unsigned short nVarInRestart = Restart_Vars[1] - skipVars;
+    if (nVarInRestart > nVar) nVarInRestart = nVar;
 
     /*--- Load data from the restart into correct containers. ---*/
 
@@ -149,7 +159,8 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
          offset in the buffer of data from the restart file and load it. ---*/
 
         const auto index = counter * Restart_Vars[1] + skipVars;
-        for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        for (auto iVar = 0u; iVar < nVarInRestart; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+        for (auto iVar = nVarInRestart; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, 0.0);
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
@@ -192,6 +203,36 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
                                             false);
       solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
     }
+
+    /*--- Overwrite coarse-level eddy viscosity to ensure restart reproducibility. ---*/
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry[iMesh]->GetnPointDomain(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geometry[iMesh]->GetnPointDomain(); iPoint++) {
+      su2double Area_Parent = geometry[iMesh]->nodes->GetVolume(iPoint);
+      su2double EddyVisc = 0.0;
+      for (auto iChildren = 0u; iChildren < geometry[iMesh]->nodes->GetnChildren_CV(iPoint); iChildren++) {
+        auto Point_Fine = geometry[iMesh]->nodes->GetChildren_CV(iPoint, iChildren);
+        su2double Area_Children = geometry[iMesh - 1]->nodes->GetVolume(Point_Fine);
+        EddyVisc += solver[iMesh - 1][TURB_SOL]->GetNodes()->GetmuT(Point_Fine) * Area_Children / Area_Parent;
+      }
+      solver[iMesh][TURB_SOL]->GetNodes()->SetmuT(iPoint, EddyVisc);
+    }
+    END_SU2_OMP_FOR
+
+    /*--- Zero eddy viscosity at viscous walls. ---*/
+    for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetViscous_Wall(iMarker)) {
+        SU2_OMP_FOR_STAT(32)
+        for (auto iVertex = 0ul; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
+          auto Point_Coarse = geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
+          solver[iMesh][TURB_SOL]->GetNodes()->SetmuT(Point_Coarse, 0.0);
+        }
+        END_SU2_OMP_FOR
+      }
+    }
+
+    /*--- Communicate the restricted eddy viscosity. ---*/
+    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION_EDDY);
+    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION_EDDY);
   }
 
   /*--- Go back to single threaded execution. ---*/
@@ -205,6 +246,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 }
 
 void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config){
+  SU2_ZONE_SCOPED
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Check whether turbulence quantities are fixed to far-field values on a half-plane. ---*/
@@ -230,7 +272,7 @@ void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *
         if (implicit) {
           /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
           for(unsigned long iVar=0; iVar<nVar; iVar++)
-            Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+            Jacobian.DeleteValsRowi(iPoint, iVar);
         }
       }
     }
@@ -240,6 +282,7 @@ void CTurbSolver::Impose_Fixed_Values(const CGeometry *geometry, const CConfig *
 }
 
 unsigned long CTurbSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
+  SU2_ZONE_SCOPED
 
   /*--- Register muT as input/output of a RANS iteration. ---*/
   nodes->RegisterEddyViscosity(input);
@@ -248,33 +291,39 @@ unsigned long CTurbSolver::RegisterSolutionExtra(bool input, const CConfig* conf
   return 0;
 }
 
-void CTurbSolver::ComputeUnderRelaxationFactorHelper(su2double allowableRatio) {
+void CTurbSolver::ComputeUnderRelaxationFactorHelper(CSolver** solver_container, su2double allowableRatio) {
+  SU2_ZONE_SCOPED
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
-  
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     su2double localUnderRelaxation = 1.0;
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      const unsigned long index = iPoint * nVar + iVar;
-      su2double ratio = fabs(LinSysSol[index])/(fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
+
+      su2double current_sol = nodes->GetSolution(iPoint, iVar);
+      if (Conservative) {
+        /* Need to multiply by density if this is a conservative variable */
+        current_sol *= solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      }
+
+      su2double ratio = fabs(LinSysSol(iPoint, iVar) / (current_sol + EPS));
 
       /* We impose a limit on the maximum percentage that the
       turbulence variables can change over a nonlinear iteration. */
       if (ratio > allowableRatio) {
         localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-      
       }
     }
 
     /* Threshold the relaxation factor in the event that there is
      a very small value. This helps avoid catastrophic crashes due
      to non-realizable states by canceling the update. */
-    
+
     if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
-    
+
     /* Store the under-relaxation factor for this point. */
 
     nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);

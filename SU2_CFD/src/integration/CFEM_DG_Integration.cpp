@@ -2,14 +2,14 @@
  * \file CFEM_DG_Integration.cpp
  * \brief Definition of time and space integration for the DG solver.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -37,8 +37,9 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
                                                unsigned short RunTime_EqSystem,
                                                unsigned short iZone,
                                                unsigned short iInst) {
+  SU2_ZONE_SCOPED
 
-  unsigned short iMesh, iStep, iLimit = 1;
+  unsigned short iMesh, iStep;
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
 
@@ -60,12 +61,8 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
         complicated algorithm must be used to facilitate time accurate
         local time stepping.  Note that we are currently hard-coding
         the classical RK4 scheme. ---*/
-  bool useADER = false;
-  switch (config[iZone]->GetKind_TimeIntScheme()) {
-    case RUNGE_KUTTA_EXPLICIT: iLimit = config[iZone]->GetnRKStep(); break;
-    case CLASSICAL_RK4_EXPLICIT: iLimit = 4; break;
-    case ADER_DG: iLimit = 1; useADER = true; break;
-    case EULER_EXPLICIT: case EULER_IMPLICIT: iLimit = 1; break; }
+  unsigned short iLimit = config[iZone]->GetnRKStep();
+
 
   /*--- In case an unsteady simulation is carried out, it is possible that a
         synchronization time step is specified. If so, set the boolean
@@ -101,7 +98,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
           space and time integration are tightly coupled and cannot be treated
           segregatedly. Therefore a different function is called for ADER to
           carry out the space and time integration. ---*/
-    if( useADER ) {
+    if( config[iZone]->GetKind_TimeIntScheme() == ADER_DG ) {
       solver_container[iZone][iInst][iMesh][SolContainer_Position]->ADER_SpaceTimeIntegration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
                                                                                               numerics_container[iZone][iInst][iMesh][SolContainer_Position],
                                                                                               config[iZone], iMesh, RunTime_EqSystem);
@@ -147,6 +144,7 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
                                             CConfig *config, unsigned short iMesh,
                                             unsigned short iStep,
                                             unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
@@ -167,6 +165,7 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
 
 void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iStep,
                                     unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 

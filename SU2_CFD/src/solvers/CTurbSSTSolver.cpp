@@ -2,14 +2,14 @@
  * \file CTurbSSTSolver.cpp
  * \brief Main subroutines of CTurbSSTSolver class
  * \author F. Palacios, A. Bueno
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,7 @@
 
 CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     : CTurbSolver(geometry, config, true) {
+  SU2_ZONE_SCOPED
   unsigned long iPoint;
   ifstream restart_file;
   string text_line;
@@ -58,7 +59,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Single grid simulation ---*/
 
-  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == MG_CYCLE::FULL) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 
@@ -197,6 +198,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
 void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
          unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   /*--- Upwind second order reconstruction and gradients ---*/
@@ -205,6 +207,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
 void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container,
                                     CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   const su2double a1 = constants[7];
 
@@ -272,7 +275,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
         }
         shearStress = sqrt(shearStress);
 
-        const su2double FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
+        const su2double FrictionVelocity = max(sqrt(shearStress/flowNodes->GetDensity(iPoint)), EPS);
         const su2double wall_dist = geometry->vertex[iMarker][iVertex]->GetNearestNeighborDistance();
 
         const su2double Derivative = flowNodes->GetLaminarViscosity(jPoint) * pow(nodes->GetSolution(jPoint, 0), 0.673) / wall_dist;
@@ -289,6 +292,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
 void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
@@ -303,6 +307,7 @@ void CTurbSSTSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry
 
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   bool axisymmetric = config->GetAxisymmetric();
 
@@ -398,18 +403,19 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
 void CTurbSSTSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 }
 
 void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                       CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
-  bool rough_wall = false;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   WALL_TYPE WallType; su2double Roughness_Height;
   tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-  if (WallType == WALL_TYPE::ROUGH) rough_wall = true;
+  const bool rough_wall = WallType == WALL_TYPE::ROUGH;
 
   /*--- Evaluate nu tilde at the closest point to the surface using the wall functions. ---*/
 
@@ -424,70 +430,90 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    if (geometry->nodes->GetDomain(iPoint)) {
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-      if (rough_wall) {
+    /*--- distance to closest neighbor ---*/
+    su2double wall_dist = geometry->vertex[val_marker][iVertex]->GetNearestNeighborDistance();
 
-        /*--- Set wall values ---*/
-        su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-        su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-        su2double WallShearStress = solver_container[FLOW_SOL]->GetWallShearStress(val_marker, iVertex);
+    su2double solution[MAXNVAR];
 
-        /*--- Compute non-dimensional velocity ---*/
-        su2double FrictionVel = sqrt(fabs(WallShearStress)/density);
+    if (rough_wall) {
+      /*--- Set wall values ---*/
+      su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+      su2double WallShearStress = solver_container[FLOW_SOL]->GetWallShearStress(val_marker, iVertex);
 
-        /*--- Compute roughness in wall units. ---*/
-        //su2double Roughness_Height = config->GetWall_RoughnessHeight(Marker_Tag);
-        su2double kPlus = FrictionVel*Roughness_Height*density/laminar_viscosity;
+      /*--- Compute non-dimensional velocity ---*/
+      su2double FrictionVel = sqrt(fabs(WallShearStress)/density);
 
-        su2double S_R= 0.0;
-        /*--- Reference 1 original Wilcox (1998) ---*/
-        /*if (kPlus <= 25)
-            S_R = (50/(kPlus+EPS))*(50/(kPlus+EPS));
+      /*--- Compute roughness in wall units. ---*/
+      su2double kPlus = FrictionVel*Roughness_Height*density/laminar_viscosity;
+
+      /*--- Modify the omega and k to account for a rough wall. ---*/
+
+      switch (config->GetKindRoughSSTModel()) {
+        /*--- Reference 1 original Wilcox (1998). ---*/
+        case ROUGHSST_MODEL::WILCOX1998: {
+          su2double S_R = 0.0;
+          if (kPlus <= 25)
+            S_R = pow(50/(kPlus+EPS), 2);
           else
-            S_R = 100/(kPlus+EPS);*/
+            S_R = 100/(kPlus+EPS);
 
+          solution[0] = 0.0;
+          solution[1] = FrictionVel*FrictionVel*S_R/(laminar_viscosity/density);
+        } break;
         /*--- Reference 2 from D.C. Wilcox Turbulence Modeling for CFD (2006) ---*/
-        if (kPlus <= 5)
-          S_R = (200/(kPlus+EPS))*(200/(kPlus+EPS));
-        else
-          S_R = 100/(kPlus+EPS) + ((200/(kPlus+EPS))*(200/(kPlus+EPS)) - 100/(kPlus+EPS))*exp(5-kPlus);
+        case ROUGHSST_MODEL::WILCOX2006: {
+          su2double S_R = 0.0;
+          if (kPlus <= 5)
+            S_R = pow(200/(kPlus+EPS),2);
+          else
+            S_R = 100/(kPlus+EPS) + (pow(200/(kPlus+EPS),2) - 100/(kPlus+EPS))*exp(5-kPlus);
 
-        /*--- Modify the omega to account for a rough wall. ---*/
-        su2double solution[2];
-        solution[0] = 0.0;
-        solution[1] = FrictionVel*FrictionVel*S_R/(laminar_viscosity/density);
+          solution[0] = 0.0;
+          solution[1] = FrictionVel*FrictionVel*S_R/(laminar_viscosity/density);
+        } break;
+        /*--- Knopp eddy viscosity limiter ---*/
+        case ROUGHSST_MODEL::LIMITER_KNOPP: {
+          su2double d0 = 0.03*Roughness_Height*min(1.0, pow((kPlus + EPS )/30.0, 2.0/3.0))*min(1.0, pow((kPlus + EPS)/45.0, 0.25))*min(1.0, pow((kPlus + EPS) /60, 0.25));
+          solution[0] = (FrictionVel*FrictionVel / sqrt(constants[6]))*min(1.0, kPlus / 90.0);
 
-        /*--- Set the solution values and zero the residual ---*/
-        nodes->SetSolution_Old(iPoint,solution);
-        nodes->SetSolution(iPoint,solution);
-        LinSysRes.SetBlock_Zero(iPoint);
+          const su2double kappa = config->GetwallModel_Kappa();
+          su2double beta_1 = constants[4];
+          solution[1] = min( FrictionVel/(sqrt(constants[6])*d0*kappa), 60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2)));
+        } break;
+        /*--- Aupoix eddy viscosity limiter ---*/
+        case (ROUGHSST_MODEL::LIMITER_AUPOIX): {
+          su2double k0Plus = ( 1.0 /sqrt( constants[6])) * tanh((log10((kPlus +EPS ) / 30.0) + 1.0 - 1.0*tanh( (kPlus + EPS) / 125.0))*tanh((kPlus + EPS) / 125.0));
+          su2double kwallPlus = max(0.0, k0Plus);
+          su2double kwall = kwallPlus*FrictionVel*FrictionVel;
 
-      } else { // smooth wall
+          su2double omegawallPlus = (300.0 / pow(kPlus + EPS, 2.0)) * pow(tanh(15.0 / (4.0*kPlus)), -1.0) + (191.0 / (kPlus + EPS))*(1.0 - exp(-kPlus / 250.0));
 
-        /*--- distance to closest neighbor ---*/
-        su2double wall_dist = geometry->vertex[val_marker][iVertex]->GetNearestNeighborDistance();
-
-        /*--- Set wall values ---*/
-        su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-        su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-
-        su2double beta_1 = constants[4];
-        su2double solution[MAXNVAR];
-        solution[0] = 0.0;
-        solution[1] = 60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2));
-
-        /*--- Set the solution values and zero the residual ---*/
-        nodes->SetSolution_Old(iPoint,solution);
-        nodes->SetSolution(iPoint,solution);
-        LinSysRes.SetBlock_Zero(iPoint);
+          solution[0] = kwall;
+          solution[1] = omegawallPlus*FrictionVel*FrictionVel*density/laminar_viscosity;
+        } break;
       }
+    } else { // smooth wall
+      /*--- Set wall values ---*/
+      su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+      su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
 
-      if (implicit) {
-        /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
-        Jacobian.DeleteValsRowi(iPoint*nVar);
-        Jacobian.DeleteValsRowi(iPoint*nVar+1);
-      }
+      su2double beta_1 = constants[4];
+      solution[0] = 0.0;
+      solution[1] = 60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2));
+    }
+
+    /*--- Set the solution values and zero the residual ---*/
+    nodes->SetSolution_Old(iPoint, solution);
+    nodes->SetSolution(iPoint, solution);
+    LinSysRes.SetBlock_Zero(iPoint);
+
+    if (implicit) {
+      /*--- Change rows of the Jacobian (includes 1 in the diagonal) ---*/
+      Jacobian.DeleteValsRowi(iPoint, 0);
+      Jacobian.DeleteValsRowi(iPoint, 1);
     }
   }
   END_SU2_OMP_FOR
@@ -496,6 +522,7 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
 void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_container,
                                     const CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -549,14 +576,15 @@ void CTurbSSTSolver::SetTurbVars_WF(CGeometry *geometry, CSolver **solver_contai
 
     if (implicit) {
       /*--- includes 1 in the diagonal ---*/
-      Jacobian.DeleteValsRowi(iPoint_Neighbor*nVar);
-      Jacobian.DeleteValsRowi(iPoint_Neighbor*nVar+1);
+      Jacobian.DeleteValsRowi(iPoint_Neighbor, 0);
+      Jacobian.DeleteValsRowi(iPoint_Neighbor, 1);
     }
   }
 }
 
 void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                         CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 
@@ -564,6 +592,7 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 
 void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                               CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -697,6 +726,7 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
 void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -794,6 +824,7 @@ void CTurbSSTSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 
 void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                           CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -886,6 +917,7 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
 void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -998,6 +1030,7 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
 void CTurbSSTSolver::SetInletAtVertex(const su2double *val_inlet,
                                      unsigned short iMarker,
                                      unsigned long iVertex) {
+  SU2_ZONE_SCOPED
 
   Inlet_TurbVars[iMarker][iVertex][0] = val_inlet[nDim+2+nDim];
   Inlet_TurbVars[iMarker][iVertex][1] = val_inlet[nDim+2+nDim+1];
@@ -1006,6 +1039,7 @@ void CTurbSSTSolver::SetInletAtVertex(const su2double *val_inlet,
 
 su2double CTurbSSTSolver::GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
                                            const CGeometry* geometry, su2double* val_inlet) const {
+  SU2_ZONE_SCOPED
   const auto tke_position = nDim + 2 + nDim;
   const auto omega_position = tke_position + 1;
   val_inlet[tke_position] = Inlet_TurbVars[iMarker][iVertex][0];
@@ -1018,6 +1052,7 @@ su2double CTurbSSTSolver::GetInletAtVertex(unsigned short iMarker, unsigned long
   return GeometryToolbox::Norm(nDim, Normal);}
 
 void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
+  SU2_ZONE_SCOPED
   if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       Inlet_TurbVars[iMarker][iVertex][0] = GetTke_Inf();
@@ -1027,9 +1062,10 @@ void CTurbSSTSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
 
 }
 
-void CTurbSSTSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+void CTurbSSTSolver::ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   const su2double allowableRatio = config->GetMaxUpdateFractionSST();
 
-  ComputeUnderRelaxationFactorHelper(allowableRatio);
+  ComputeUnderRelaxationFactorHelper(solver_container, allowableRatio);
 }

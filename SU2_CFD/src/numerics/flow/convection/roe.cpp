@@ -2,14 +2,14 @@
  * \file roe.cpp
  * \brief Implementations of Roe-type schemes.
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -170,7 +170,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   /*--- P tensor ---*/
 
-  GetPMatrix(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, P_Tensor);
+  GetPMatrix(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, P_Tensor);
 
   /*--- Projected velocity adjusted for mesh motion ---*/
 
@@ -259,7 +259,7 @@ void CUpwRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_Jac
   unsigned short iVar, jVar, kVar;
 
   /*--- Compute inverse P tensor ---*/
-  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   /*--- Diference between conservative variables at jPoint and iPoint ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -349,7 +349,7 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
   /*--- If implicit use the Jacobians of the standard Roe scheme as an approximation ---*/
 
-  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
@@ -422,7 +422,7 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
 
   /*--- If implicit use the Jacobians of the standard Roe scheme as an approximation ---*/
 
-  GetPMatrix_inv(&RoeDensity, RoeVelocity, &RoeSoundSpeed, UnitNormal, invP_Tensor);
+  GetPMatrix_inv(RoeDensity, RoeVelocity, RoeSoundSpeed, UnitNormal, invP_Tensor);
 
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {

@@ -2,14 +2,14 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,6 +55,8 @@
 #include "../../../Common/include/linear_algebra/blas_structure.hpp"
 #include "../../../Common/include/graph_coloring_structure.hpp"
 #include "../../../Common/include/toolboxes/MMS/CVerificationSolution.hpp"
+#include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
+#include "../limiters/CLimiterDetails.hpp"
 #include "../variables/CVariable.hpp"
 
 #ifdef HAVE_LIBROM
@@ -81,7 +83,6 @@ protected:
   nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nSecondaryVar,                 /*!< \brief Number of primitive variables of the problem. */
-  nSecondaryVarGrad,             /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nVarGrad,                      /*!< \brief Number of variables for deallocating the LS Cvector. */
   nDim;                          /*!< \brief Number of dimensions of the problem. */
   unsigned long nPoint;          /*!< \brief Number of points of the computational grid. */
@@ -190,13 +191,8 @@ public:
 
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector<su2double> LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
-#ifndef CODI_FORWARD_TYPE
-  using JacobianScalarType = su2mixedfloat;
-#else
-  using JacobianScalarType = su2double;
-#endif
-  CSysMatrix<JacobianScalarType> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-  CSysSolve<JacobianScalarType> System;    /*!< \brief Linear solver/smoother. */
+  CSysMatrix<su2mixedfloat> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysSolve<su2mixedfloat> System;    /*!< \brief Linear solver/smoother. */
 
   CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
   string* OutputHeadingNames;               /*!< \brief vector of strings to store the headings for the exra variables */
@@ -242,7 +238,7 @@ public:
   void GetCommCountAndType(const CConfig* config,
                            MPI_QUANTITIES commType,
                            unsigned short &COUNT_PER_POINT,
-                           unsigned short &MPI_TYPE) const;
+                           COMM_TYPE &MPI_TYPE) const;
 
   /*!
    * \brief Routine to load a solver quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs.
@@ -276,7 +272,7 @@ public:
   void GetPeriodicCommCountAndType(const CConfig* config,
                                    unsigned short commType,
                                    unsigned short &COUNT_PER_POINT,
-                                   unsigned short &MPI_TYPE,
+                                   COMM_TYPE &MPI_TYPE,
                                    unsigned short &ICOUNT,
                                    unsigned short &JCOUNT) const;
 
@@ -412,11 +408,6 @@ public:
    * \brief Get the number of variables of the problem.
    */
   inline unsigned short GetnSecondaryVar(void) const { return nSecondaryVar; }
-
-  /*!
-   * \brief Get the number of variables of the problem.
-   */
-  inline unsigned short GetnSecondaryVarGrad(void) const { return nSecondaryVarGrad; }
 
   /*!
    * \brief Get the number of variables of the problem.
@@ -577,6 +568,22 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
+
+  /*!
+   * \brief Compute the projection of a variable for MUSCL reconstruction.
+   * \note The result should be halved when added to i (or subtracted from j).
+   * \param[in] grad - Gradient vector.
+   * \param[in] vector_ij - Distance vector.
+   * \param[in] delta_ij - Centered difference.
+   * \param[in] kappa - Blending coefficient for U-MUSCL reconstruction.
+   * \param[in] ramp_val - Value of the 1st-2nd order MUSCL ramp.
+   * \return - Projected variable.
+   */
+  FORCEINLINE su2double MUSCL_Reconstruction(const su2double* grad, const su2double* vector_ij, su2double delta_ij,
+                                             su2double kappa, su2double ramp_val) const {
+    su2double project_grad = GeometryToolbox::DotProduct(nDim, grad, vector_ij);
+    return ramp_val * LimiterHelpers<>::umusclProjection(project_grad, delta_ij, kappa);
+  }
 
   /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
@@ -785,6 +792,16 @@ public:
                                     CNumerics      *visc_numerics,
                                     CConfig        *config,
                                     unsigned short val_marker) { }
+
+  /*!
+   * \brief Enforce Euler wall BC on a restricted or prolongated multigrid solution by
+   *        projecting the momentum to the tangent plane of the wall.
+   * \param[in] geometry - Coarse grid geometry.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] use_solution_old - If true, project Solution_Old (corrections); if false, project Solution.
+   */
+  inline virtual void MultigridProjectEulerWall(CGeometry* /*geometry*/, const CConfig* /*config*/,
+                                                bool /*use_solution_old*/) {}
 
   /*!
    * \brief A virtual member.
@@ -2839,6 +2856,16 @@ public:
   inline virtual su2double GetInletFlowDir(unsigned short val_marker,
                                            unsigned long val_vertex,
                                            unsigned short val_dim) const { return 0; }
+
+
+  /*!
+   * \brief Set the value of the customized normal scalar values/flux at a specified vertex on a specified marker.
+   * \param[in] val_marker - Marker value
+   * \param[in] val_vertex - Boundary vertex value
+   */
+  inline virtual void SetCustomBoundaryScalar(unsigned short val_marker, unsigned long val_vertex,
+    vector<passivedouble> val_customBoundaryScalar) {  }
+
 
   /*!
    * \brief A virtual member

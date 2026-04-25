@@ -2,14 +2,14 @@
  * \file CRadP1Solver.cpp
  * \brief Main subroutines for solving P1 radiation problems.
  * \author Ruben Sanchez
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,10 +30,12 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CRadP1Solver::CRadP1Solver() : CRadSolver() {
+  SU2_ZONE_SCOPED
 
 }
 
 CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(geometry, config) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar;
   unsigned short direct_diff = config->GetDirectDiff();
@@ -84,7 +86,7 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
   /*--- Read farfield conditions from config ---*/
   Temperature_Inf = config->GetTemperature_FreeStreamND();
 
-  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+  /*--- Initialize the secondary values for direct derivative approximations ---*/
 
   switch(direct_diff){
     case NO_DERIVATIVE: case D_DENSITY:
@@ -131,12 +133,14 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 }
 
 CRadP1Solver::~CRadP1Solver() {
+  SU2_ZONE_SCOPED
 
   delete nodes;
 
 }
 
 void CRadP1Solver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint;
 
@@ -160,6 +164,7 @@ void CRadP1Solver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 }
 
 void CRadP1Solver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint;
   su2double Energy, Temperature;
@@ -189,6 +194,7 @@ void CRadP1Solver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
 
 void CRadP1Solver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[VISC_TERM];
 
@@ -228,6 +234,7 @@ void CRadP1Solver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
 void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                   CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
 
@@ -265,6 +272,7 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
 void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                        unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
@@ -285,7 +293,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   /*--- Compute the constant for the wall theta ---*/
   Theta = Wall_Emissivity / (2.0*(2.0 - Wall_Emissivity));
 
-    /*--- Retrieve the specified wall temperature ---*/
+  /*--- Retrieve the specified wall temperature ---*/
   Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
@@ -320,7 +328,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Compute the radiative heat flux. ---*/
       Radiative_Energy = nodes->GetSolution(iPoint, 0);
-      Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
+      Radiative_Heat_Flux = Theta*(Ib_w - Radiative_Energy);
 
       /*--- Compute the Viscous contribution to the residual ---*/
       Res_Visc[0] = Radiative_Heat_Flux*Area;
@@ -339,6 +347,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
@@ -394,7 +403,7 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Compute the radiative heat flux. ---*/
       Radiative_Energy = nodes->GetSolution(iPoint, 0);
-      Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
+      Radiative_Heat_Flux = Theta*(Ib_w - Radiative_Energy);
 
       /*--- Compute the Viscous contribution to the residual ---*/
       Res_Visc[0] = Radiative_Heat_Flux*Area;
@@ -414,6 +423,7 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
 void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                               unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar, jVar;
   unsigned long iVertex, iPoint;
@@ -489,9 +499,10 @@ void CRadP1Solver::BC_Marshak(CGeometry *geometry, CSolver **solver_container, C
 
 
 void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar;
-  unsigned long iPoint, total_index, IterLinSol = 0;
+  unsigned long iPoint, IterLinSol = 0;
   su2double Vol;
   su2double Delta;
 
@@ -516,19 +527,17 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
     else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
       for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar + iVar;
-        LinSysRes[total_index] = 0.0;
+        LinSysRes(iPoint, iVar) = 0.0;
       }
     }
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = - (LinSysRes[total_index]);
-      LinSysSol[total_index] = 0.0;
-      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
+      LinSysRes(iPoint, iVar) = -LinSysRes(iPoint, iVar);
+      LinSysSol(iPoint, iVar) = 0.0;
+      Residual_RMS[iVar] += LinSysRes(iPoint, iVar)*LinSysRes(iPoint, iVar);
+      AddRes_Max(iVar, fabs(LinSysRes(iPoint, iVar)), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
   }
 
@@ -536,9 +545,8 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
   for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
+      LinSysRes(iPoint, iVar) = 0.0;
+      LinSysSol(iPoint, iVar) = 0.0;
     }
   }
 
@@ -569,13 +577,14 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
 void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                unsigned short iMesh, unsigned long Iteration) {
+  SU2_ZONE_SCOPED
 
   unsigned short iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
   su2double Area, Vol, Lambda;
   su2double Global_Delta_Time = 1E6, Local_Delta_Time = 0.0, K_v = 0.25;
   su2double CFL = config->GetCFL_Rad();
-  su2double GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
+  su2double GammaP1 = 1.0 / (3.0*fmax(Absorption_Coeff + Scattering_Coeff, EPS));
   const su2double* Normal;
 
   /*--- Compute spectral radius based on thermal conductivity ---*/

@@ -2,14 +2,14 @@
  * \file CFluidModel.hpp
  * \brief Defines the main fluid model class for thermophysical properties.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna, T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -47,6 +47,7 @@ class CLookUpTable;
 class CFluidModel {
  protected:
   su2double StaticEnergy{0.0};     /*!< \brief Internal Energy. */
+  su2double Enthalpy{0.0};         /*!<*\brief Enthalpy. */
   su2double Entropy{0.0};          /*!< \brief Entropy. */
   su2double Density{0.0};          /*!< \brief Density. */
   su2double Pressure{0.0};         /*!< \brief Pressure. */
@@ -112,6 +113,11 @@ class CFluidModel {
    * \brief Get fluid internal energy.
    */
   su2double GetStaticEnergy() const { return StaticEnergy; }
+
+  /*!
+   * \brief Get fluid enthalpy.
+   */
+  su2double GetEnthalpy() const { return Enthalpy; }
 
   /*!
    * \brief Get fluid density.
@@ -187,6 +193,30 @@ class CFluidModel {
   }
 
   /*!
+   * \brief Get the enthalpy diffusivity terms for all species being solved.
+   *
+   * This function computes and retrieves the enthalpy diffusion terms required in the energy equation
+   * for multicomponent flows.
+   *
+   * \param[in,out] enthalpy_diffusions - Array containing the enthalpy diffusion terms for all
+   * species to be solved. The size of \p enthalpy_diffusions must be at least (n_species_mixture - 1),
+   * corresponding to the number of species transport equations in the system.
+   */
+  virtual void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions = nullptr) const {}
+
+  /*!
+   * \brief Get the gradient of enthalpy diffusivity terms for all species being solved.
+   *
+   * This function computes and retrieves the gradient of the enthalpy diffusion terms with respect to temperature.
+   * These terms are required for implicit computations when solving the energy equation for multicomponent flows.
+   *
+   * \param[in,out] grad_enthalpy_diffusions - Array containing the gradient of enthalpy diffusion terms for all
+   * species to be solved. The size of \p grad_enthalpy_diffusions must be at least (n_species_mixture - 1),
+   * corresponding to the number of species transport equations in the system.
+   */
+  virtual void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions = nullptr) const {}
+
+  /*!
    * \brief Get fluid pressure partial derivative.
    */
   su2double GetdPdrho_e() const { return dPdrho_e; }
@@ -249,7 +279,7 @@ class CFluidModel {
   /*!
    * \brief Set specific heat Cp model.
    */
-  virtual void SetCpModel(const CConfig* config) {}
+  virtual void SetCpModel(const CConfig* config, su2double val_Temperature_Ref) {}
 
   /*!
    * \brief Set viscosity model.
@@ -338,6 +368,13 @@ class CFluidModel {
    * \param[in] T - Temperature value at the point.
    */
   virtual void SetTDState_T(su2double val_Temperature, const su2double* val_scalars = nullptr) {}
+
+  /*!
+   * \brief Virtual member.
+   * \param[in] val_enthalpy - Enthalpy value at the point.
+   * \param[in] val_scalars - Scalar mass fractions.
+   */
+  virtual void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) {}
 
   /*!
    * \brief Set fluid eddy viscosity provided by a turbulence model needed for computing effective thermal conductivity.

@@ -3,14 +3,14 @@
  * \brief Header file for the class CSU2ASCIIMeshReaderBase.
  *        The implementations are in the <i>CSU2ASCIIMeshReaderBase.cpp</i> file.
  * \author T. Economon
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -81,22 +81,22 @@ class CSU2ASCIIMeshReaderBase : public CMeshReaderBase {
    * elements). \param[in,out] config - Problem configuration where some metadata is updated (e.g. AoA). \returns True
    * if single_pass was successful.
    */
-  bool ReadMetadata(const bool single_pass, CConfig* config);
+  bool ReadMetadata(bool single_pass, CConfig* config);
 
   /*!
    * \brief Reads the grid points from an SU2 zone into linear partitions across all ranks.
    */
-  virtual void ReadPointCoordinates(const bool single_pass = false);
+  virtual void ReadPointCoordinates(bool single_pass = false);
 
   /*!
    * \brief Reads the interior volume elements from one section of an SU2 zone into linear partitions across all ranks.
    */
-  virtual void ReadVolumeElementConnectivity(const bool single_pass = false);
+  virtual void ReadVolumeElementConnectivity(bool single_pass = false);
 
   /*!
    * \brief Reads the surface (boundary) elements from the SU2 zone.
    */
-  virtual void ReadSurfaceElementConnectivity(const bool single_pass = false);
+  virtual void ReadSurfaceElementConnectivity(bool single_pass = false);
 
   /*!
    * \brief Helper function to find the current zone in an SU2 ASCII mesh object.

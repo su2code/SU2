@@ -3,14 +3,14 @@
 ## \file SU2_CFD.py
 #  \brief Python script to launch SU2_CFD through the Python Wrapper.
 #  \author David Thomas
-#  \version 8.3.0 "Harrier"
+#  \version 8.4.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,7 @@
 # ----------------------------------------------------------------------
 
 from __future__ import division, print_function, absolute_import
-from optparse import OptionParser  # use a parser for configuration
+import argparse  # use a parser for configuration
 import SU2  # imports SU2 python tools
 import pysu2  # imports the SU2 wrapped module
 
@@ -42,67 +42,67 @@ import pysu2  # imports the SU2 wrapped module
 def main():
 
     # Command line options
-    parser = OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "-f", "--file", dest="filename", help="Read config from FILE", metavar="FILE"
     )
-    parser.add_option(
+    parser.add_argument(
         "--nDim",
         dest="nDim",
         default=2,
         help="Define the number of DIMENSIONS",
         metavar="DIMENSIONS",
     )
-    parser.add_option(
+    parser.add_argument(
         "--nZone",
         dest="nZone",
         default=1,
         help="Define the number of ZONES",
         metavar="NZONE",
     )
-    parser.add_option(
+    parser.add_argument(
         "--parallel",
         action="store_true",
         help="Specify if we need to initialize MPI",
         dest="with_MPI",
         default=False,
     )
-    parser.add_option(
+    parser.add_argument(
         "--fsi",
         dest="fsi",
         default="False",
         help="Launch the FSI driver",
         metavar="FSI",
     )
-    parser.add_option(
+    parser.add_argument(
         "--fem",
         dest="fem",
         default="False",
         help="Launch the FEM driver (General driver)",
         metavar="FEM",
     )
-    parser.add_option(
+    parser.add_argument(
         "--harmonic_balance",
         dest="harmonic_balance",
         default="False",
         help="Launch the Harmonic Balance (HB) driver",
         metavar="HB",
     )
-    parser.add_option(
+    parser.add_argument(
         "--poisson_equation",
         dest="poisson_equation",
         default="False",
         help="Launch the poisson equation driver (General driver)",
         metavar="POIS_EQ",
     )
-    parser.add_option(
+    parser.add_argument(
         "--wave_equation",
         dest="wave_equation",
         default="False",
         help="Launch the wave equation driver (General driver)",
         metavar="WAVE_EQ",
     )
-    parser.add_option(
+    parser.add_argument(
         "--heat_equation",
         dest="heat_equation",
         default="False",
@@ -110,7 +110,7 @@ def main():
         metavar="HEAT_EQ",
     )
 
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     options.nDim = int(options.nDim)
     options.nZone = int(options.nZone)
     options.fsi = options.fsi.upper() == "TRUE"
@@ -120,7 +120,7 @@ def main():
     options.wave_equation = options.wave_equation.upper() == "TRUE"
     options.heat_equation = options.heat_equation.upper() == "TRUE"
 
-    if options.filename == None:
+    if options.filename is None:
         raise Exception("No config file provided. Use -f flag")
 
     if options.with_MPI == True:
@@ -163,7 +163,7 @@ def main():
     # Finalize the solver and exit cleanly
     SU2Driver.Finalize()
 
-    if SU2Driver != None:
+    if SU2Driver is not None:
         del SU2Driver
 
 

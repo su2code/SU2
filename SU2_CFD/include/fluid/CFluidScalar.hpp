@@ -2,14 +2,14 @@
  * \file CFluidScalar.hpp
  * \brief  Defines the multicomponent incompressible Ideal Gas model for mixtures.
  * \author T. Economon, Mark Heimgartner, Cristopher Morales Ubal
- * \version 8.3.0 "Harrier"
+ * \version 8.4.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,10 +40,12 @@
 class CFluidScalar final : public CFluidModel {
  private:
   const int n_species_mixture;            /*!< \brief Number of species in mixture. */
-  su2double Gas_Constant;           /*!< \brief Specific gas constant. */
+  su2double Gas_Constant;                 /*!< \brief Specific gas constant. */
   const su2double Pressure_Thermodynamic; /*!< \brief Constant pressure thermodynamic. */
   const su2double GasConstant_Ref;        /*!< \brief Gas constant reference needed for Nondimensional problems. */
-  const su2double Prandtl_Number;         /*!< \brief Prandlt number.*/
+  const su2double Std_Ref_Temp_ND;        /*!< \brief Nondimensional standard reference temperature for enthalpy. */
+  const su2double Prandtl_Turb_Number;    /*!< \brief Prandlt turbulent number.*/
+  const su2double Schmidt_Turb_Number;    /*!< \brief Schmidt turbulent number.*/
 
   const bool wilke;
   const bool davidson;
@@ -92,6 +94,11 @@ class CFluidScalar final : public CFluidModel {
   su2double ComputeMeanSpecificHeatCp(const su2double* val_scalars);
 
   /*!
+   * \brief Compute Enthalpy given the temperature and scalars.
+   */
+  su2double ComputeEnthalpyFromT(const su2double val_temperature, const su2double* val_scalars);
+
+  /*!
    * \brief Compute gas constant for mixture.
    */
   su2double ComputeGasConstant();
@@ -130,7 +137,7 @@ class CFluidScalar final : public CFluidModel {
   /*!
    * \brief Get fluid thermal conductivity.
    */
-  inline su2double GetThermalConductivity() override { return Kt + Mu_Turb * Cp / Prandtl_Number; }
+  inline su2double GetThermalConductivity() override { return Kt + Mu_Turb * Cp / Prandtl_Turb_Number; }
 
   /*!
    * \brief Get fluid mass diffusivity.
@@ -138,8 +145,39 @@ class CFluidScalar final : public CFluidModel {
   inline su2double GetMassDiffusivity(int ivar) override { return massDiffusivity[ivar]; }
 
   /*!
+   * \brief Get the enthalpy diffusivity terms for all species being solved.
+   *
+   * This function computes and retrieves the enthalpy diffusion terms required in the energy equation
+   * for multicomponent flows.
+   *
+   * \param[in,out] enthalpy_diffusions - Array containing the enthalpy diffusion terms for all
+   * species to be solved. The size of \p enthalpy_diffusions must be at least (n_species_mixture - 1),
+   * corresponding to the number of species transport equations in the system.
+   */
+  void GetEnthalpyDiffusivity(su2double* enthalpy_diffusions) const override;
+
+  /*!
+   * \brief Get the gradient of enthalpy diffusivity terms for all species being solved.
+   *
+   * This function computes and retrieves the gradient of the enthalpy diffusion terms with respect to temperature.
+   * These terms are required for implicit computations when solving the energy equation for multicomponent flows.
+   *
+   * \param[in,out] grad_enthalpy_diffusions - Array containing the gradient of enthalpy diffusion terms for all
+   * species to be solved. The size of \p grad_enthalpy_diffusions must be at least (n_species_mixture - 1),
+   * corresponding to the number of species transport equations in the system.
+   */
+  void GetGradEnthalpyDiffusivity(su2double* grad_enthalpy_diffusions) const override;
+
+  /*!
    * \brief Set the Dimensionless State using Temperature.
    * \param[in] t - Temperature value at the point.
    */
   void SetTDState_T(su2double val_temperature, const su2double* val_scalars) override;
+
+  /*!
+   * \brief Virtual member.
+   * \param[in] val_enthalpy - Enthalpy value at the point.
+   * \param[in] val_scalars - Scalar mass fractions.
+   */
+  void SetTDState_h(su2double val_enthalpy, const su2double* val_scalars = nullptr) override;
 };
