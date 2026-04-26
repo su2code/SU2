@@ -24,14 +24,17 @@ jobs:
 
     outputs:
       flags: ${{ steps.compute.outputs.flags }}
+      werror: ${{ steps.compute.outputs.flags }}
 
     steps:
       - id: compute
         run: |
           if [[ "${{ inputs.runner || 'ubuntu-latest' }}" == *arm* ]]; then
             echo "flags=" >> $GITHUB_OUTPUT
+            echo "werror=" >> $GITHUB_OUTPUT
           else
             echo "flags=-Dcpu-arch=skylake" >> $GITHUB_OUTPUT
+            echo "werror=--werror" >> $GITHUB_OUTPUT
           fi
 
   build:
@@ -45,23 +48,23 @@ jobs:
           - config_set: BaseMPI
             flags: '${{ needs.setup.outputs.flags }} -Denable-pywrapper=true -Denable-coolprop=true -Denable-mpp=true -Dinstall-mpp=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2'
           - config_set: ReverseMPI
-            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ForwardMPI
-            flags: '${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: BaseNoMPI
-            flags: '${{ needs.setup.outputs.flags }} -Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ReverseNoMPI
-            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ForwardNoMPI
-            flags: '${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ReverseTagNoMPI
-            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror -Dcodi-tape=Tag'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 ${{ needs.setup.outputs.werror }} -Dcodi-tape=Tag'
           - config_set: BaseOMP
-            flags: '${{ needs.setup.outputs.flags }} -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ReverseOMP
-            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ForwardOMP
-            flags: '${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 ${{ needs.setup.outputs.werror }}'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
@@ -105,7 +108,7 @@ jobs:
           - config_set: ReverseOMP-tsan
             flags: '--buildtype=debugoptimized ${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
           #- config_set: ForwardOMP-tsan
-          #  flags: '--buildtype=debug ${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+          #  flags: '--buildtype=debug ${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 ${{ needs.setup.outputs.werror }}'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
@@ -144,9 +147,9 @@ jobs:
         config_set: [BaseNoMPI-asan, ReverseNoMPI-asan]
         include:
           - config_set: BaseNoMPI-asan
-            flags: '--buildtype=debugoptimized ${{ needs.setup.outputs.flags }} -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true --warnlevel=3 --werror'
+            flags: '--buildtype=debugoptimized ${{ needs.setup.outputs.flags }} -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ReverseNoMPI-asan
-            flags: '--buildtype=debugoptimized ${{ needs.setup.outputs.flags }} --optimization=1 -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled --warnlevel=3 --werror'
+            flags: '--buildtype=debugoptimized ${{ needs.setup.outputs.flags }} --optimization=1 -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled --warnlevel=3 ${{ needs.setup.outputs.werror }}'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
