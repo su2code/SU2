@@ -84,8 +84,8 @@ void CInterface::InitializeQuasiNewtonCorrection(CGeometry *donor_geometry, cons
 
     /*--- Initialize the Quasi-Newton correction object for this interface. ---*/
     if(donor_config->GetnQuasiNewtonSamples()) {
-      std::cout << "Applying a Quasi-Newton correction for zone " << donor_config->GetiZone() << " and interface " << iMarkerInt << " with " << nGlobalVertexDonor << " donor vertices and " << nVar << " variables." << std::endl;
-      QuasiNewtonCorrection[iMarkerInt].resize(donor_config->GetnQuasiNewtonSamples(), nGlobalVertexDonor, 4);
+      std::cout << "\n - Applying a Quasi-Newton correction for zone " << donor_config->GetiZone() << " and interface " << iMarkerInt << " with " << nGlobalVertexDonor << " donor vertices and " << nVar << " variables." << std::endl;
+      QuasiNewtonCorrection[iMarkerInt].resize(donor_config->GetnQuasiNewtonSamples(), nGlobalVertexDonor, nVar);
     }
   }
 }
