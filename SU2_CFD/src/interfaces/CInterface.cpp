@@ -196,7 +196,7 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
     if (QuasiNewtonCorrection[iMarkerInt].size()) {
       SetAllValues(donorVar, QuasiNewtonCorrection[iMarkerInt].FPresult(), nGlobalVertexDonor, nVar);
       QuasiNewtonCorrection[iMarkerInt].compute();
-      SetAllValues(donorVar, QuasiNewtonCorrection[iMarkerInt], nGlobalVertexDonor, nVar);
+      SetAllValues(QuasiNewtonCorrection[iMarkerInt], donorVar, nGlobalVertexDonor, nVar);
     }
 
     /*--- Loop over target vertices. ---*/
