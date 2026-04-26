@@ -2521,7 +2521,12 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
           }
 
           if (interface_type != NO_TRANSFER) {
-            auto nVar = 4;
+            auto nVar = 1;
+            /*--- If we use Robin's method, two variables are sent to the solid zone by either the flow zone in a fluid-solid coupling,
+                  or by both solid zones in a solid-solid coupling. ---*/
+            bool Robin = (config[donor]->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX ||
+                          config[donor]->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX);
+            nVar = ((Robin && fluid_donor) || (Robin && interface_type == CONJUGATE_HEAT_SS) ) ? 2 : nVar;
             interface[donor][target] = new CConjugateHeatInterface(nVar, 0);
             if (rank == MASTER_NODE) cout << "conjugate heat variables." << endl;
           }

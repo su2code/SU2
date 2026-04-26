@@ -593,14 +593,15 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
         su2double const* Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
         const su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-        const su2double thermal_diffusivity = GetConjugateHeatVariable(val_marker, iVertex, 2) / rho_cp_solid;
         su2double HeatFlux = 0;
 
         if ((config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
             (config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
 
           const su2double Tinterface = nodes->GetTemperature(iPoint);
-          const su2double Tnormal_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 3) / Temperature_Ref;
+          const su2double Tnormal_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 0) / Temperature_Ref;
+
+          const su2double thermal_diffusivity = GetConjugateHeatVariable(val_marker, iVertex, 1) / rho_cp_solid;
 
           const su2double HeatFluxDensity = thermal_diffusivity * (Tinterface - Tnormal_Conjugate);
           HeatFlux = HeatFluxDensity * Area;
@@ -611,8 +612,7 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
           }
         }
         else {
-          const su2double HeatFluxDensity =
-              GetConjugateHeatVariable(val_marker, iVertex, 1) / config->GetHeat_Flux_Ref();
+          const su2double HeatFluxDensity = GetConjugateHeatVariable(val_marker, iVertex, 0) / config->GetHeat_Flux_Ref();
           HeatFlux = HeatFluxDensity*Area;
         }
 
