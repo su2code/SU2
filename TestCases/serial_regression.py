@@ -798,7 +798,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.073896, 0.027450, -0.001638, -0.000130]
+    aeroelastic.test_vals = [-1.876629, 4.021078, 0.079049, 0.027650, -0.001639, -0.000129, -1.140500]
     aeroelastic.unsteady  = True
     test_list.append(aeroelastic)
 
@@ -1587,20 +1587,6 @@ def main():
     pywrapper_square_cylinder.enabled_with_asan = False
     test_list.append(pywrapper_square_cylinder)
     pass_list.append(pywrapper_square_cylinder.run_test(args.tsan, args.asan))
-
-    # Aeroelastic
-    pywrapper_aeroelastic         = TestCase('pywrapper_aeroelastic')
-    pywrapper_aeroelastic.cfg_dir   = "aeroelastic"
-    pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
-    pywrapper_aeroelastic.test_iter = 2
-    pywrapper_aeroelastic.test_vals = [0.075274, 0.027537, -0.001640, -0.000129]
-    pywrapper_aeroelastic.command   =  TestCase.Command(exec = "SU2_CFD.py", param = "-f")
-    pywrapper_aeroelastic.timeout   = 1600
-    pywrapper_aeroelastic.tol       = 0.01
-    pywrapper_aeroelastic.unsteady  = True
-    pywrapper_aeroelastic.enabled_with_asan = False
-    test_list.append(pywrapper_aeroelastic)
-    pass_list.append(pywrapper_aeroelastic.run_test(args.tsan, args.asan))
 
     # FSI, 2d
     pywrapper_fsi2d           = TestCase('pywrapper_fsi2d')

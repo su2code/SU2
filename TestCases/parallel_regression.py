@@ -1050,15 +1050,6 @@ def main():
     sine_gust.unsteady  = True
     test_list.append(sine_gust)
 
-    # Aeroelastic
-    aeroelastic           = TestCase('aeroelastic')
-    aeroelastic.cfg_dir   = "aeroelastic"
-    aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
-    aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.073686, 0.027423, -0.001644, -0.000125]
-    aeroelastic.unsteady  = True
-    test_list.append(aeroelastic)
-
     # Delayed Detached Eddy Simulation
     ddes_flatplate        = TestCase('ddes_flatplate')
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
@@ -1500,7 +1491,7 @@ def main():
     pywrapper_aeroelastic.cfg_dir   = "aeroelastic"
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
-    pywrapper_aeroelastic.test_vals = [0.073686, 0.027423, -0.001644, -0.000125]
+    pywrapper_aeroelastic.test_vals = [-1.876634, 4.021068, 0.081002, 0.027610, -0.001642, -0.000127, -0.966944]
     pywrapper_aeroelastic.command   = TestCase.Command("mpirun -np 2", "SU2_CFD.py", "--parallel -f")
     pywrapper_aeroelastic.unsteady  = True
     test_list.append(pywrapper_aeroelastic)
