@@ -600,7 +600,6 @@ void CHeatSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solv
 
           const su2double Tinterface = nodes->GetTemperature(iPoint);
           const su2double Tnormal_Conjugate = GetConjugateHeatVariable(val_marker, iVertex, 0) / Temperature_Ref;
-
           const su2double thermal_diffusivity = GetConjugateHeatVariable(val_marker, iVertex, 1) / rho_cp_solid;
 
           const su2double HeatFluxDensity = thermal_diffusivity * (Tinterface - Tnormal_Conjugate);

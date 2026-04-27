@@ -50,6 +50,12 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   GeometryToolbox::Distance(nDim, Coord_Normal, Coord, Edge_Vector);
   const su2double dist = GeometryToolbox::Norm(nDim, Edge_Vector);
 
+  /*--- Determine the type of the donor zone and type of coupling. ---*/
+  bool fluid_donor = (interface_type == CHT_FLUID_SOLID || interface_type == CHT_FLUID_SOLID_WEAKLY);
+  bool heat_donor = (interface_type == CHT_SOLID_FLUID || interface_type == CHT_SOLID_FLUID_WEAKLY);
+  bool Robin = (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX ||
+                donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX);
+
   /*--- Retrieve temperature solution and its gradient ---*/
 
   const su2double Twall   = donor_solution->GetNodes()->GetTemperature(Point_Donor);
@@ -63,28 +69,22 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
   //      dTdn += (Twall - Tnormal)/dist * (Edge_Vector[iDim]/dist) * (Normal[iDim]/Area);
   //    }
 
-  /*--- Calculate the heat flux density (temperature gradient times thermal conductivity) and
-        thermal conductivity divided by distance. ---*/
-  su2double thermal_conductivity = 0.0;
-  su2double heat_flux_density = 0.0;
+  su2double thermal_conductivity   = 0.0;
+  su2double heat_flux_density      = 0.0;
   su2double conductivity_over_dist = 0.0;
 
-  const bool compressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
+  const bool compressible_flow   = (donor_config->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE);
   const bool incompressible_flow = (donor_config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE) &&
                                    (donor_config->GetEnergy_Equation() || (donor_config->GetKind_FluidModel() == ENUM_FLUIDMODEL::FLUID_FLAMELET));
 
   /*--- We assume that a fluid zone is always coupled to a solid zone, so if the donor zone is the fluid zone,
         it sends heat flux data, or Robin data, depending on the configuration. ---*/
 
-  if (compressible_flow) {
+  if (fluid_donor && compressible_flow) {
 
     const su2double thermal_conductivityND = donor_solution->GetNodes()->GetThermalConductivity(Point_Donor);
-    heat_flux_density = thermal_conductivityND*dTdn;
 
-    Donor_Variable[0] = heat_flux_density*donor_config->GetHeat_Flux_Ref();
-
-    if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
-        (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+    if (Robin) {
 
       thermal_conductivity   = thermal_conductivityND*donor_config->GetViscosity_Ref();
       conductivity_over_dist = thermal_conductivity/dist;
@@ -92,18 +92,21 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
       Donor_Variable[0] = Tnormal*donor_config->GetTemperature_Ref();
       Donor_Variable[1] = conductivity_over_dist;
     }
+    else {
+      heat_flux_density = thermal_conductivityND*dTdn;
+      Donor_Variable[0] = heat_flux_density*donor_config->GetHeat_Flux_Ref();
+    }
+
   }
-  else if (incompressible_flow) {
+  else if (fluid_donor && incompressible_flow) {
+
+     /*--- For incompressible flow, we do not have a thermal conductivity variable, so we assume that the user has specified the thermal conductivity in the config file. ---*/
 
     const auto iPoint = donor_geometry->vertex[Marker_Donor][Vertex_Donor]->GetNode();
 
     const su2double thermal_conductivityND  = donor_solution->GetNodes()->GetThermalConductivity(iPoint);
-    heat_flux_density = thermal_conductivityND*dTdn;
 
-    Donor_Variable[0] = heat_flux_density*donor_config->GetHeat_Flux_Ref();
-
-    if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
-        (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+      if (Robin) {
 
       switch (donor_config->GetKind_ConductivityModel()) {
 
@@ -126,16 +129,17 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
       Donor_Variable[0] = Tnormal*donor_config->GetTemperature_Ref();
       Donor_Variable[1] = conductivity_over_dist;
     }
+    else {
+      heat_flux_density = thermal_conductivityND*dTdn;
+      Donor_Variable[0] = heat_flux_density*donor_config->GetHeat_Flux_Ref();
+    }
   }
-  else if (donor_config->GetHeatProblem()) {
+  else if (heat_donor) {
 
     /*--- If the donor zone is a solid zone, it can either appear in a solid-solid coupling, sending Robin data, or in a solid-fluid coupling,
           sending temperature data to the flow zone. ---*/
 
-    Donor_Variable[0] = Twall*donor_config->GetTemperature_Ref();
-
-    if ((donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
-        (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+    if (interface_type == CHT_SOLID_SOLID && Robin) {
 
       /*--- Apply contact resistance to solid-to-solid heat transfer boundary ---*/
       const su2double rho_cp_solid = donor_config->GetSpecific_Heat_Cp()*donor_config->GetMaterialDensity(0);
@@ -145,7 +149,9 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
       Donor_Variable[0] = Tnormal*donor_config->GetTemperature_Ref();
       Donor_Variable[1] = conductivity_over_dist;
-
+    }
+    else {
+      Donor_Variable[0] = Twall*donor_config->GetTemperature_Ref();
     }
   }
 }
