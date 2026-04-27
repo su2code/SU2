@@ -32,8 +32,8 @@
 #include "../../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../../include/solvers/CSolver.hpp"
 
-CConjugateHeatInterface::CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst) :
-  CInterface(val_nVar, val_nConst) {
+CConjugateHeatInterface::CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst, unsigned short val_interface_type) :
+  CInterface(val_nVar, val_nConst), interface_type(val_interface_type) {
 }
 
 void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,

@@ -35,6 +35,7 @@
  * \ingroup Interfaces
  */
 class CConjugateHeatInterface : public CInterface {
+  unsigned short interface_type;   /*!< \brief Type of the conjugate heat transfer interface. */
   su2double ContactResistance = 0; /*!<\brief Contact resistance value of the current inerface. */
 public:
   /*!
@@ -46,7 +47,7 @@ public:
    * \overload
    * \param[in] val_nVar - Number of variables that need to be transferred.
    */
-  CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst);
+  CConjugateHeatInterface(unsigned short val_nVar, unsigned short val_nConst, unsigned short val_interface_type);
 
   /*!
    * \brief Retrieve the variable that will be sent from donor mesh to target mesh.

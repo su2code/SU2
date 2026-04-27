@@ -2506,7 +2506,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
         }
         else if (heat_donor || heat_target) {
           if (heat_donor && heat_target){
-            interface_type = CONJUGATE_HEAT_SS;
+            interface_type = CHT_SOLID_SOLID;
 
           } else {
 
@@ -2527,7 +2527,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
             bool Robin = (config[donor]->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX ||
                           config[donor]->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX);
             nVar = ((Robin && fluid_donor) || (Robin && interface_type == CHT_SOLID_SOLID) ) ? 2 : nVar;
-            interface[donor][target] = new CConjugateHeatInterface(nVar, 0);
+            interface[donor][target] = new CConjugateHeatInterface(nVar, 0, interface_type);
             if (rank == MASTER_NODE) cout << "conjugate heat variables (" << nVar << ")" << endl;
           }
           else {
