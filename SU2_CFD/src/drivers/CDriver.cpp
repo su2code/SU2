@@ -2513,9 +2513,9 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
             const auto fluidZone = heat_target? donor : target;
             if (config[fluidZone]->GetEnergy_Equation() || (config[fluidZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE)
                 || (config[fluidZone]->GetKind_FluidModel() == ENUM_FLUIDMODEL::FLUID_FLAMELET))
-              interface_type = heat_target? CONJUGATE_HEAT_FS : CONJUGATE_HEAT_SF;
+              interface_type = heat_target? CHT_FLUID_SOLID : CHT_SOLID_FLUID;
             else if (config[fluidZone]->GetWeakly_Coupled_Heat())
-              interface_type = heat_target? CONJUGATE_HEAT_WEAKLY_FS : CONJUGATE_HEAT_WEAKLY_SF;
+              interface_type = heat_target? CHT_FLUID_SOLID_WEAKLY : CHT_SOLID_FLUID_WEAKLY;
             else
               interface_type = NO_TRANSFER;
           }
@@ -2526,9 +2526,9 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
                   or by both solid zones in a solid-solid coupling. ---*/
             bool Robin = (config[donor]->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX ||
                           config[donor]->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX);
-            nVar = ((Robin && fluid_donor) || (Robin && interface_type == CONJUGATE_HEAT_SS) ) ? 2 : nVar;
+            nVar = ((Robin && fluid_donor) || (Robin && interface_type == CHT_SOLID_SOLID) ) ? 2 : nVar;
             interface[donor][target] = new CConjugateHeatInterface(nVar, 0);
-            if (rank == MASTER_NODE) cout << "conjugate heat variables." << endl;
+            if (rank == MASTER_NODE) cout << "conjugate heat variables (" << nVar << ")" << endl;
           }
           else {
             if (rank == MASTER_NODE) cout << "NO heat variables." << endl;

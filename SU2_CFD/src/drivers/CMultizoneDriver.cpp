@@ -589,19 +589,19 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
         BroadcastData(SPECIES_SOL, SPECIES_SOL);
       }
       break;
-    case CONJUGATE_HEAT_SS:
+    case CHT_SOLID_SOLID:
       BroadcastData(HEAT_SOL, HEAT_SOL);
       break;
-    case CONJUGATE_HEAT_FS:
+    case CHT_FLUID_SOLID:
       BroadcastData(FLOW_SOL, HEAT_SOL);
       break;
-    case CONJUGATE_HEAT_WEAKLY_FS:
+    case CHT_FLUID_SOLID_WEAKLY:
       BroadcastData(HEAT_SOL, HEAT_SOL);
       break;
-    case CONJUGATE_HEAT_SF:
+    case CHT_SOLID_FLUID:
       BroadcastData(HEAT_SOL, FLOW_SOL);
       break;
-    case CONJUGATE_HEAT_WEAKLY_SF:
+    case CHT_SOLID_FLUID_WEAKLY:
       BroadcastData(HEAT_SOL, HEAT_SOL);
       break;
     case BOUNDARY_DISPLACEMENTS:

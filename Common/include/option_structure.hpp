@@ -406,11 +406,11 @@ enum ENUM_TRANSFER {
   SLIDING_INTERFACE                 = 13,   /*!< \brief Sliding interface (between fluids). */
   CONSERVATIVE_VARIABLES            = 14,   /*!< \brief General coupling that simply transfers the conservative variables (between same solvers). */
   MIXING_PLANE                      = 15,   /*!< \brief Mixing plane between fluids. */
-  CONJUGATE_HEAT_FS                 = 16,   /*!< \brief Conjugate heat transfer (between compressible fluids and solids). */
-  CONJUGATE_HEAT_WEAKLY_FS          = 17,   /*!< \brief Conjugate heat transfer (between incompressible fluids and solids). */
-  CONJUGATE_HEAT_SF                 = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
-  CONJUGATE_HEAT_WEAKLY_SF          = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
-  CONJUGATE_HEAT_SS                 = 20,   /*!< \brief Conjugate heat transfer (between two solids). */
+  CHT_FLUID_SOLID                   = 16,   /*!< \brief Conjugate heat transfer (between compressible fluids and solids). */
+  CHT_FLUID_SOLID_WEAKLY            = 17,   /*!< \brief Conjugate heat transfer (between incompressible fluids and solids). */
+  CHT_SOLID_FLUID                   = 18,   /*!< \brief Conjugate heat transfer (between solids and compressible fluids). */
+  CHT_SOLID_FLUID_WEAKLY            = 19,   /*!< \brief Conjugate heat transfer (between solids and incompressible fluids). */
+  CHT_SOLID_SOLID                   = 20,   /*!< \brief Conjugate heat transfer (between two solids). */
 };
 
 /*!
