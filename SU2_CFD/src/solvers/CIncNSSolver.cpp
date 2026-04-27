@@ -681,7 +681,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
       su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint);
       su2double There = nodes->GetTemperature(Point_Normal);
       su2double HF_FactorHere = thermal_conductivity*config->GetViscosity_Ref()/dist_ij;
-      su2double HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 2);
+      su2double HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 1);
 
       Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
     }

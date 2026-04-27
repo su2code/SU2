@@ -606,7 +606,7 @@ su2double CNSSolver::GetCHTWallTemperature(const CConfig* config, unsigned short
     /*--- Compute wall temperature from both temperatures ---*/
 
     su2double HF_FactorHere = thermal_conductivity*config->GetViscosity_Ref()/dist_ij;
-    su2double HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 2);
+    su2double HF_FactorConjugate = GetConjugateHeatVariable(val_marker, iVertex, 1);
 
     Twall = (There*HF_FactorHere + Tconjugate*HF_FactorConjugate)/(HF_FactorHere + HF_FactorConjugate);
   }
