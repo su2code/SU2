@@ -139,19 +139,6 @@ CMultizoneDriver::~CMultizoneDriver() {
 void CMultizoneDriver::StartSolver() {
   SU2_ZONE_SCOPED
 
-  /*--- Initialize a Quasi-Newton correction for data that is broadcasted at physical interfaces. ---*/
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    for (auto jZone = 0u; jZone < nZone; jZone++) {
-      if (jZone != iZone) {
-        /*--- Donor zone is jzone ---*/
-        if(interface_container[jZone][iZone] != nullptr) {
-          interface_container[jZone][iZone]->InitializeQuasiNewtonCorrection(geometry_container[jZone][INST_0][MESH_0], config_container[jZone]);
-        }
-      }
-    }
-  }
-
   /*--- Find out the minimum of all references times and then set each zone to this (same) value.
         To ensure that all zones run synchronously in time, be it a dimensional or non-dimensionalized one. ---*/
 

@@ -2544,11 +2544,20 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
           if (rank == MASTER_NODE) cout << "generic conservative variables." << endl;
         }
       }
-
     }
-
   }
 
+  /*--- Initialize a Quasi-Newton correction for data that is broadcasted at physical interfaces. ---*/
+
+  for (auto target = 0u; target < nZone; target++) {
+    for (auto donor = 0u; donor < nZone; donor++) {
+      if (donor != target) {
+        if(interface_container[donor][target] != nullptr) {
+          interface_container[donor][target]->InitializeQuasiNewtonCorrection(geometry_container[donor][INST_0][MESH_0], config_container[donor]);
+        }
+      }
+    }
+  }
 }
 
 void CDriver::PreprocessStaticMesh(const CConfig *config, CGeometry** geometry){

@@ -52,12 +52,11 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
   /*--- Determine the type of the donor zone and type of coupling. ---*/
   bool fluid_donor = (interface_type == CHT_FLUID_SOLID || interface_type == CHT_FLUID_SOLID_WEAKLY);
-  bool heat_donor = (interface_type == CHT_SOLID_FLUID || interface_type == CHT_SOLID_FLUID_WEAKLY);
+  bool heat_donor = (interface_type == CHT_SOLID_FLUID || interface_type == CHT_SOLID_FLUID_WEAKLY || interface_type == CHT_SOLID_SOLID);
   bool Robin = (donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX ||
                 donor_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX);
 
   /*--- Retrieve temperature solution and its gradient ---*/
-
   const su2double Twall   = donor_solution->GetNodes()->GetTemperature(Point_Donor);
   const su2double Tnormal = donor_solution->GetNodes()->GetTemperature(PointNormal);
 
@@ -106,7 +105,7 @@ void CConjugateHeatInterface::GetDonor_Variable(CSolver *donor_solution, CGeomet
 
     const su2double thermal_conductivityND  = donor_solution->GetNodes()->GetThermalConductivity(iPoint);
 
-      if (Robin) {
+    if (Robin) {
 
       switch (donor_config->GetKind_ConductivityModel()) {
 
