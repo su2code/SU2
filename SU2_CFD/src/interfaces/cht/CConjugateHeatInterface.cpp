@@ -162,8 +162,11 @@ void CConjugateHeatInterface::SetTarget_Variable(CSolver *target_solution, CGeom
   target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 0,
                                             target_config->GetRelaxation_Factor_CHT(), Target_Variable[0]);
 
-  if ((target_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
-      (target_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX)) {
+  bool Robin = ((target_config->GetKind_CHT_Coupling() == CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX) ||
+                (target_config->GetKind_CHT_Coupling() == CHT_COUPLING::AVERAGED_TEMPERATURE_ROBIN_HEATFLUX));
+  bool fluid_donor = (interface_type == CHT_FLUID_SOLID || interface_type == CHT_FLUID_SOLID_WEAKLY);
+
+  if ((Robin && fluid_donor) || (interface_type == CHT_SOLID_SOLID)) {
 
     target_solution->SetConjugateHeatVariable(Marker_Target, Vertex_Target, 0,
                                               target_config->GetRelaxation_Factor_CHT(), Target_Variable[0]);
