@@ -2,7 +2,7 @@
  * \file CNEMOEulerSolver.cpp
  * \brief Headers of the CNEMOEulerSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier, C. Garbacz, J. Needels
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,6 +35,7 @@
 CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
                            unsigned short iMesh, const bool navier_stokes) :
   CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE>(*geometry, *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
    *    being called by itself, or by its derived class CNEMONSSolver. ---*/
@@ -229,6 +230,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
 }
 
 CNEMOEulerSolver::~CNEMOEulerSolver() {
+  SU2_ZONE_SCOPED
 
   delete node_infty;
   delete FluidModel;
@@ -237,6 +239,7 @@ CNEMOEulerSolver::~CNEMOEulerSolver() {
 
 void CNEMOEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                            unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -287,6 +290,7 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
   const unsigned long InnerIter = config->GetInnerIter();
   const bool muscl       = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool limiter     = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
@@ -315,6 +319,7 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
 }
 
 unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
+  SU2_ZONE_SCOPED
 
   unsigned long nonPhysicalPoints = 0;
   bool nonphysical = true;
@@ -340,6 +345,7 @@ unsigned long CNEMOEulerSolver::SetPrimitive_Variables(CSolver **solver_containe
 
 void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object to compute the speed of sound. ---*/
   struct SoundSpeed {
@@ -390,6 +396,7 @@ void CNEMOEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CNEMOEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object to compute the speed of sound. ---*/
   struct SoundSpeed {
@@ -411,6 +418,7 @@ void CNEMOEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
 
 void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                          CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
@@ -460,6 +468,7 @@ void CNEMOEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 
 void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                        CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   /*--- Set booleans based on config settings ---*/
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -624,8 +633,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   /*--- Warning message about non-physical reconstructions. ---*/
   if ((iMesh == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
     /*--- Add counter results for all threads. ---*/
-    SU2_OMP_ATOMIC
-    ErrorCounter += counter_local;
+    atomicAdd(counter_local, ErrorCounter);
 
     /*--- Add counter results for all ranks. ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -641,6 +649,7 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
 su2double CNEMOEulerSolver::ComputeConsistentExtrapolation(CNEMOGas *fluidmodel, unsigned short nSpecies, su2double *V,
                                                            su2double* dPdU, su2double* dTdU, su2double* dTvedU,
                                                            su2double* val_eves, su2double *val_Cvves) {
+  SU2_ZONE_SCOPED
 
   //NOTE: TODO - this doesnt compute Cvves/ dPdU,etc.yet
 
@@ -672,6 +681,7 @@ su2double CNEMOEulerSolver::ComputeConsistentExtrapolation(CNEMOGas *fluidmodel,
 }
 
 void CNEMOEulerSolver::RecomputeConservativeVector(su2double *U, const su2double *V) const {
+  SU2_ZONE_SCOPED
 
   /*---Useful variables ---*/
   vector<su2double> rhos;
@@ -708,6 +718,7 @@ void CNEMOEulerSolver::RecomputeConservativeVector(su2double *U, const su2double
 }
 
 bool CNEMOEulerSolver::CheckNonPhys(const su2double *V) const {
+  SU2_ZONE_SCOPED
 
   /*--- Set booleans ---*/
   bool nonPhys = false;
@@ -741,6 +752,7 @@ bool CNEMOEulerSolver::CheckNonPhys(const su2double *V) const {
 }
 
 void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   /*--- Assign booleans ---*/
   bool err        = false;
@@ -895,22 +907,26 @@ void CNEMOEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_con
 
 void CNEMOEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                             CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<RUNGE_KUTTA_EXPLICIT>(geometry, solver_container, config, iRKStep);
 }
 
 void CNEMOEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
                                               CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<CLASSICAL_RK4_EXPLICIT>(geometry, solver_container, config, iRKStep);
 }
 
 void CNEMOEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<EULER_EXPLICIT>(geometry, solver_container, config, 0);
 }
 
 void CNEMOEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   struct DummyPrec {
     const bool active = false;
@@ -921,11 +937,13 @@ void CNEMOEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, 
 }
 
 void CNEMOEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   CompleteImplicitIteration_impl<true>(geometry, config);
 }
 
 void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /* Loop over the solution update given by relaxing the linear
    system for this nonlinear iteration. */
@@ -980,6 +998,7 @@ void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
 }
 
 void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   su2double
   Temperature_FreeStream = 0.0, Temperature_ve_FreeStream = 0.0, Mach2Vel_FreeStream         = 0.0,
@@ -1385,6 +1404,7 @@ void CNEMOEulerSolver::SetNondimensionalization(CConfig *config, unsigned short 
 }
 
 void CNEMOEulerSolver::SetReferenceValues(const CConfig& config) {
+  SU2_ZONE_SCOPED
 
   DynamicPressureRef = 0.5 * Density_Inf * GeometryToolbox::SquaredNorm(nDim, Velocity_Inf);
 
@@ -1398,6 +1418,7 @@ void CNEMOEulerSolver::SetReferenceValues(const CConfig& config) {
 
 void CNEMOEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   /*--- Allocate the necessary vector structures ---*/
   su2double Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
@@ -1499,6 +1520,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
                                     CNumerics *conv_numerics,
                                     CNumerics *visc_numerics, CConfig *config,
                                     unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   /*--- Allocate arrays ---*/
   su2double Normal[MAXNDIM] = {0.0};
@@ -1612,6 +1634,7 @@ void CNEMOEulerSolver::BC_Far_Field(CGeometry *geometry,
 
 void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                                 CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   SU2_MPI::Error("BC_INLET: Not operational in NEMO.", CURRENT_FUNCTION);
 
   unsigned short RHO_INDEX, nSpecies;
@@ -1893,6 +1916,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
 void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   su2double UnitNormal[MAXNDIM] = {0.0};
   vector<su2double> rhos;
@@ -2145,6 +2169,7 @@ void CNEMOEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container
 void CNEMOEulerSolver::BC_Supersonic_Inlet(
     CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   /*--- Supersonic inlet flow: there are no outgoing characteristics,
    so all flow variables can be imposed at the inlet.
@@ -2289,6 +2314,7 @@ void CNEMOEulerSolver::BC_Supersonic_Inlet(
 void CNEMOEulerSolver::BC_Supersonic_Outlet(
     CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
     CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   /*--- Supersonic outlet flow: there are no ingoing characteristics,
    so all flow variables can should be interpolated from the domain. ---*/
@@ -2346,6 +2372,7 @@ void CNEMOEulerSolver::BC_Supersonic_Outlet(
 }
 
 void CNEMOEulerSolver::SetPressureDiffusionSensor(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   const auto P_INDEX = nodes->GetPIndex();
 

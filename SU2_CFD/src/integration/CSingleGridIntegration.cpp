@@ -2,7 +2,7 @@
  * \file CSingleGridIntegration.cpp
  * \brief Single (fine) grid integration class implementation.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -35,6 +35,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
                                                   CNumerics ******numerics_container, CConfig **config,
                                                   unsigned short RunTime_EqSystem, unsigned short iZone,
                                                   unsigned short iInst) {
+  SU2_ZONE_SCOPED
 
   const unsigned short Solver_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
@@ -109,6 +110,8 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
 
 void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                     CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+  SU2_ZONE_SCOPED
+
   CSolver::MultigridRestriction(*geo_fine, sol_fine->GetNodes()->GetSolution(),
                                 *geo_coarse, sol_coarse->GetNodes()->GetSolution());
   sol_coarse->InitiateComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION);
@@ -117,6 +120,7 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
 
 void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                     CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iVertex, Point_Fine, Point_Coarse;
   unsigned short iMarker, iChildren;

@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -113,13 +113,17 @@ const int MASTER_NODE = 0;      /*!< \brief Master node for MPI parallelization.
 const int SINGLE_NODE = 1;      /*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;      /*!< \brief There is only a zone. */
 
-const unsigned short COMM_TYPE_UNSIGNED_LONG  = 1;  /*!< \brief Communication type for unsigned long. */
-const unsigned short COMM_TYPE_LONG           = 2;  /*!< \brief Communication type for long. */
-const unsigned short COMM_TYPE_UNSIGNED_SHORT = 3;  /*!< \brief Communication type for unsigned short. */
-const unsigned short COMM_TYPE_DOUBLE         = 4;  /*!< \brief Communication type for double. */
-const unsigned short COMM_TYPE_CHAR           = 5;  /*!< \brief Communication type for char. */
-const unsigned short COMM_TYPE_SHORT          = 6;  /*!< \brief Communication type for short. */
-const unsigned short COMM_TYPE_INT            = 7;  /*!< \brief Communication type for int. */
+enum class COMM_TYPE {
+  UNSIGNED_LONG,  /*!< \brief Communication type for unsigned long. */
+  LONG,           /*!< \brief Communication type for long. */
+  UNSIGNED_SHORT, /*!< \brief Communication type for unsigned short. */
+  FLOAT,          /*!< \brief Communication type for su2mixedfloat. */
+  DOUBLE,         /*!< \brief Communication type for double. */
+  PASSIVE_DOUBLE, /*!< \brief Communication type for passivedouble. */
+  CHAR,           /*!< \brief Communication type for char. */
+  SHORT,          /*!< \brief Communication type for short. */
+  INT,            /*!< \brief Communication type for int. */
+};
 
 /*!
  * \brief Types of geometric entities based on VTK nomenclature
@@ -820,7 +824,8 @@ enum class CENTERED {
   JST,            /*!< \brief Jameson-Smith-Turkel centered numerical method. */
   LAX,            /*!< \brief Lax-Friedrich centered numerical method. */
   JST_MAT,        /*!< \brief JST with matrix dissipation. */
-  JST_KE          /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
+  JST_KE,         /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
+  LD2             /*!< \brief Low-Dissipation Low-Dispersion (LD2) centered scheme. */
 };
 static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("NONE", CENTERED::NONE)
@@ -828,6 +833,7 @@ static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("JST_KE", CENTERED::JST_KE)
   MakePair("JST_MAT", CENTERED::JST_MAT)
   MakePair("LAX-FRIEDRICH", CENTERED::LAX)
+  MakePair("LD2", CENTERED::LD2)
 };
 
 
@@ -1100,6 +1106,21 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 
   return SSTParsedOptions;
 }
+
+/*!
+ * \brief Structure containing multigrid options.
+ */
+struct CMGOptions {
+  su2double MG_Smooth_Res_Threshold{0.0}; /*!< \brief RMS reduction threshold for MG smoothing early exit. */
+  su2double MG_Smooth_Coeff{0.0};         /*!< \brief Jacobi smoother coefficient for coarse-grid correction. */
+  unsigned long MG_Min_MeshSize{0};       /*!< \brief Minimum CVs on coarsest MG level. */
+  std::vector<unsigned short> MG_PreSmooth;    /*!< \brief Multigrid pre-smoothing iterations per level. */
+  std::vector<unsigned short> MG_PostSmooth;   /*!< \brief Multigrid post-smoothing iterations per level. */
+  std::vector<unsigned short> MG_CorrecSmooth; /*!< \brief Multigrid Jacobi correction-smoothing per level. */
+  bool MG_Smooth_EarlyExit{false};        /*!< \brief Enable early exit for MG smoothing iterations. */
+  bool MG_Smooth_Output{false};           /*!< \brief Output compact per-cycle smoothing summary. */
+  bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
+};
 
 /*!
  * \brief SST rough-wall boundary conditions Options
@@ -1446,6 +1467,8 @@ struct FluidFlamelet_ParsedOptions {
   su2double* spark_reaction_rates; /*!< \brief Source terms for flamelet spark ignition option. */
   unsigned short nspark;           /*!< \brief Number of source terms for spark initialization. */
   bool preferential_diffusion = false;  /*!< \brief Preferential diffusion physics for flamelet solver.*/
+  su2double Flame_T_ignition = 5000;    /*!< \brief Ignition temperature for the flame, used for initialization. */
+
 };
 
 /*!
@@ -2287,17 +2310,17 @@ static const MapType<std::string, JUMP_DEFINITION> Jump_Map = {
 /*!
  * \brief Type of multigrid cycle
  */
-enum MG_CYCLE {
-  V_CYCLE = 0,        /*!< \brief V cycle. */
-  W_CYCLE = 1,        /*!< \brief W cycle. */
-  FULLMG_CYCLE = 2    /*!< \brief FullMG cycle. */
-};
-static const MapType<std::string, MG_CYCLE> MG_Cycle_Map = {
-  MakePair("V_CYCLE", V_CYCLE)
-  MakePair("W_CYCLE", W_CYCLE)
-  MakePair("FULLMG_CYCLE", FULLMG_CYCLE)
+enum class MG_CYCLE {
+  V,  /*!< \brief V-cycle multigrid solver. */
+  W,  /*!< \brief W-cycle multigrid solver. */
+  FULL, /*!< \brief Full multigrid (FMG) solver. */
 };
 
+static const MapType<std::string, MG_CYCLE> MG_Cycle_Map = {
+  MakePair("V_CYCLE", MG_CYCLE::V)
+  MakePair("W_CYCLE", MG_CYCLE::W)
+  MakePair("FULLMG_CYCLE", MG_CYCLE::FULL)
+};
 /*!
  * \brief Types of design parameterizations
  */
@@ -2697,6 +2720,8 @@ enum class MPI_QUANTITIES {
   MAX_LENGTH           ,  /*!< \brief Maximum length communication. */
   GRID_VELOCITY        ,  /*!< \brief Grid velocity communication. */
   SOLUTION_EDDY        ,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
+  STOCH_SOURCE_LANG    ,  /*!< \brief Stochastic source term for Langevin equations communication. */
+  DES_LENGTHSCALE      ,  /*!< \brief DES length scale communication. */
   SOLUTION_MATRIX      ,  /*!< \brief Matrix solution communication. */
   SOLUTION_MATRIXTRANS ,  /*!< \brief Matrix transposed solution communication. */
   NEIGHBORS            ,  /*!< \brief Neighbor point count communication (for JST). */

@@ -2,7 +2,7 @@
  * \file CDummyDriver.cpp
  * \brief Dummy driver class for running the preprocessing without geometry preprocessing.
  * \author T. Albring
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,6 +37,8 @@ CDummyDriver::CDummyDriver(char* confFile,
 }
 
 void CDummyDriver::StartSolver(){
+  SU2_ZONE_SCOPED
+
   if (rank == MASTER_NODE){
     cout << endl <<"------------------------------ Begin Solver -----------------------------" << endl;
     cout << endl;

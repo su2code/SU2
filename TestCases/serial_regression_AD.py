@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -76,7 +76,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-3.229386, -3.466956, 0.043983, 0.000000]
+    discadj_arina2k.test_vals    = [-2.928012, -3.351813, 0.073362, 0.000000]
     test_list.append(discadj_arina2k)
 
     #######################################################
@@ -108,7 +108,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -3.977751, -2.562520, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -3.338269, -2.490047, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################

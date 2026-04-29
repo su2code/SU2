@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -26,6 +26,8 @@
  */
 
 #include "../include/SU2_CFD.hpp"
+#include "../../Common/include/tracy_structure.hpp"
+#include "Eigen/src/Core/products/Parallelizer.h"
 
 /* Include file, needed for the runtime NaN catching. You also have to include feenableexcept(...) below. */
 //#include <fenv.h>
@@ -42,7 +44,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Command line parsing ---*/
 
-  CLI::App app{"SU2 v8.4.0 \"Harrier\", The Open-Source CFD Code"};
+  CLI::App app{"SU2 v8.5.0 \"Harrier\", The Open-Source CFD Code"};
   app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n"
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("-t,--threads", num_threads, "Number of OpenMP threads per MPI rank.");
@@ -54,6 +56,7 @@ int main(int argc, char *argv[]) {
   /*--- OpenMP setup ---*/
 
   omp_set_num_threads(num_threads);
+  Eigen::setNbThreads(1);
 
   /*--- MPI initialization, and buffer setting ---*/
 
@@ -95,6 +98,7 @@ int main(int argc, char *argv[]) {
   const bool multizone = config.GetMultizone_Problem();
   const bool harmonic_balance = (config.GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
 
+  BEGIN_SU2_ZONE_N("Preprocessing")
   if (dry_run) {
 
     /*--- Dry Run. ---*/
@@ -133,6 +137,7 @@ int main(int argc, char *argv[]) {
     driver = new CHBDriver(config_file_name, nZone, MPICommunicator);
 
   }
+  END_SU2_ZONE
 
   /*--- Launch the main external loop of the solver. ---*/
 

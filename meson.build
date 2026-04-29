@@ -1,6 +1,6 @@
 
 project('SU2', 'c', 'cpp',
-        version: '8.4.0 "Harrier"',
+        version: '8.5.0 "Harrier"',
         meson_version: '>=1.8.2',
         license: 'LGPL2',
         default_options: ['buildtype=release',
@@ -133,10 +133,10 @@ if get_option('enable-autodiff') and not omp
 endif
 
 # Add Tracy dependency if enabled
-if get_option('enable-tracy')
+if get_option('tracy_enable')
     tracy_dep = dependency('tracy', static: true)
     su2_deps += tracy_dep
-    su2_cpp_args += '-DHAVE_TRACY'
+    su2_cpp_args += '-DTRACY_ENABLE'
 
     # Add build type check
     if get_option('buildtype') != 'debugoptimized'
@@ -187,6 +187,7 @@ endif
 if omp
   # add OpenMP dependency
   su2_deps += omp_dep
+  su2_cpp_args += '-DEIGEN_DONT_PARALLELIZE'
 
   # add opdi dependency
   if get_option('enable-autodiff')
@@ -368,7 +369,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 8.4.0 "Harrier"                           |
+         |   / __| | | |_  )   Release 8.5.0 "Harrier"                           |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
@@ -404,7 +405,7 @@ message('''---------------------------------------------------------------------
 '''.format(get_option('prefix')+'/bin', meson.project_source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
            get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
-           get_option('enable-mlpcpp'), get_option('enable-tracy'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
+           get_option('enable-mlpcpp'), get_option('tracy_enable'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
 
 if get_option('enable-mpp')
   if get_option('install-mpp')

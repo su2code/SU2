@@ -2,7 +2,7 @@
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -122,6 +122,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 }
 
 CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver() {
+  SU2_ZONE_SCOPED
 
   delete direct_iteration;
   delete direct_output;
@@ -129,6 +130,7 @@ CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver() {
 }
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Set the current time iteration in the config and also in the driver
    * because the python interface doesn't offer an explicit way of doing it. ---*/
@@ -153,6 +155,7 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 }
 
 void CDiscAdjSinglezoneDriver::Run() {
+  SU2_ZONE_SCOPED
 
   CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
   if (config->GetnQuasiNewtonSamples() > 1) {
@@ -218,6 +221,7 @@ void CDiscAdjSinglezoneDriver::Run() {
 }
 
 void CDiscAdjSinglezoneDriver::Postprocess() {
+  SU2_ZONE_SCOPED
 
   switch(config->GetKind_Solver())
   {
@@ -247,6 +251,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 }
 
 void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
+  SU2_ZONE_SCOPED
 
   AD::Reset();
 
@@ -314,6 +319,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 }
 
 void CDiscAdjSinglezoneDriver::SetAdjObjFunction(){
+  SU2_ZONE_SCOPED
   su2double seeding = 1.0;
 
   if (config->GetTime_Domain()) {
@@ -336,6 +342,7 @@ void CDiscAdjSinglezoneDriver::SetAdjObjFunction(){
 }
 
 void CDiscAdjSinglezoneDriver::SetObjFunction(){
+  SU2_ZONE_SCOPED
 
   ObjFunc = 0.0;
 
@@ -378,6 +385,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 }
 
 void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
+  SU2_ZONE_SCOPED
 
   /*--- Mesh movement ---*/
 
@@ -402,6 +410,7 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 }
 
 void CDiscAdjSinglezoneDriver::MainRecording(){
+  SU2_ZONE_SCOPED
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
    *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
 
@@ -414,6 +423,7 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
 }
 
 void CDiscAdjSinglezoneDriver::SecondaryRecording(){
+  SU2_ZONE_SCOPED
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
    *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
 

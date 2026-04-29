@@ -2,7 +2,7 @@
  * \file CFEM_DG_Integration.cpp
  * \brief Definition of time and space integration for the DG solver.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,6 +37,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
                                                unsigned short RunTime_EqSystem,
                                                unsigned short iZone,
                                                unsigned short iInst) {
+  SU2_ZONE_SCOPED
 
   unsigned short iMesh, iStep;
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
@@ -143,6 +144,7 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
                                             CConfig *config, unsigned short iMesh,
                                             unsigned short iStep,
                                             unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
@@ -163,6 +165,7 @@ void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,
 
 void CFEM_DG_Integration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iStep,
                                     unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 

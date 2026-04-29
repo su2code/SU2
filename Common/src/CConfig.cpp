@@ -2,7 +2,7 @@
  * \file CConfig.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -46,11 +46,6 @@ using namespace PrintingToolbox;
 #endif
 #endif
 
-vector<string> Profile_Function_tp;       /*!< \brief Vector of string names for profiled functions. */
-vector<double> Profile_Time_tp;           /*!< \brief Vector of elapsed time for profiled functions. */
-vector<double> Profile_ID_tp;             /*!< \brief Vector of group ID number for profiled functions. */
-map<string, vector<int> > Profile_Map_tp; /*!< \brief Map containing the final results for profiled functions. */
-
 map<CLong3T, int> GEMM_Profile_MNK;       /*!< \brief Map, which maps the GEMM size to the index where
                                                       the data for this GEMM is stored in several vectors. */
 vector<long>   GEMM_Profile_NCalls;       /*!< \brief Vector, which stores the number of calls to this
@@ -58,8 +53,6 @@ vector<long>   GEMM_Profile_NCalls;       /*!< \brief Vector, which stores the n
 vector<double> GEMM_Profile_TotTime;      /*!< \brief Total time spent for this GEMM size. */
 vector<double> GEMM_Profile_MinTime;      /*!< \brief Minimum time spent for this GEMM size. */
 vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for this GEMM size. */
-
-//#pragma omp threadprivate(Profile_Function_tp, Profile_Time_tp, Profile_ID_tp, Profile_Map_tp)
 
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], SU2_COMPONENT val_software, bool verb_high) {
@@ -251,7 +244,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config) {
   /*--- Update original config file ---*/
 
   if (runtime_file) {
-    if (all_options.find("TIME_ITER") == all_options.end())
+    if (OptionIsSet("TIME_ITER"))
       config->SetnTime_Iter(nTimeIter);
   }
 }
@@ -993,9 +986,6 @@ void CConfig::SetPointersNull() {
   TimeIntegrationADER_DG    = nullptr;
   WeightsIntegrationADER_DG = nullptr;
   RK_Alpha_Step             = nullptr;
-  MG_CorrecSmooth           = nullptr;
-  MG_PreSmooth              = nullptr;
-  MG_PostSmooth             = nullptr;
   Int_Coeffs                = nullptr;
 
   Kind_Inc_Inlet = nullptr;
@@ -1428,6 +1418,9 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief SPARK_REACTION_RATES \n DESCRIPTION: Net source term values applied to species within spark area during spark ignition. \ingroup Config*/
   addDoubleListOption("SPARK_REACTION_RATES", flamelet_ParsedOptions.nspark, flamelet_ParsedOptions.spark_reaction_rates);
+
+  /*!\brief FLAME_INIT_IGNITION \n DESCRIPTION: Ignition temperature for the flame initialization \ingroup Config*/
+  addDoubleOption("FLAME_INIT_IGNITION", flamelet_ParsedOptions.Flame_T_ignition, 5000.0);
 
   /*--- Options related to mass diffusivity and thereby the species solver. ---*/
 
@@ -1903,6 +1896,8 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
+  /* DESCRIPTION: Use level scheduling for OMP parallelization of the ILU preconditioner */
+  addBoolOption("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING", Linear_Solver_ILU_levels, false);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
   /* DESCRIPTION: Number of vectors used for deflated restarts */
@@ -1973,17 +1968,29 @@ void CConfig::SetConfig_Options() {
   /*!\brief MGLEVEL\n DESCRIPTION: Multi-grid Levels. DEFAULT: 0 \ingroup Config*/
   addUnsignedShortOption("MGLEVEL", nMGLevels, 0);
   /*!\brief MGCYCLE\n DESCRIPTION: Multi-grid cycle. OPTIONS: See \link MG_Cycle_Map \endlink. Defualt V_CYCLE \ingroup Config*/
-  addEnumOption("MGCYCLE", MGCycle, MG_Cycle_Map, V_CYCLE);
+  addEnumOption("MGCYCLE", Kind_MGCycle, MG_Cycle_Map, MG_CYCLE::V);
   /*!\brief MG_PRE_SMOOTH\n DESCRIPTION: Multi-grid pre-smoothing level \ingroup Config*/
-  addUShortListOption("MG_PRE_SMOOTH", nMG_PreSmooth, MG_PreSmooth);
+  addUShortListOption("MG_PRE_SMOOTH", nMG_PreSmooth_p, MG_PreSmooth_p);
   /*!\brief MG_POST_SMOOTH\n DESCRIPTION: Multi-grid post-smoothing level \ingroup Config*/
-  addUShortListOption("MG_POST_SMOOTH", nMG_PostSmooth, MG_PostSmooth);
+  addUShortListOption("MG_POST_SMOOTH", nMG_PostSmooth_p, MG_PostSmooth_p);
   /*!\brief MG_CORRECTION_SMOOTH\n DESCRIPTION: Jacobi implicit smoothing of the correction \ingroup Config*/
-  addUShortListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth, MG_CorrecSmooth);
+  addUShortListOption("MG_CORRECTION_SMOOTH", nMG_CorrecSmooth_p, MG_CorrecSmooth_p);
   /*!\brief MG_DAMP_RESTRICTION\n DESCRIPTION: Damping factor for the residual restriction. DEFAULT: 0.75 \ingroup Config*/
-  addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.75);
+  addDoubleOption("MG_DAMP_RESTRICTION", Damp_Res_Restric, 0.5);
   /*!\brief MG_DAMP_PROLONGATION\n DESCRIPTION: Damping factor for the correction prolongation. DEFAULT 0.75 \ingroup Config*/
-  addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.75);
+  addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.5);
+  /*!\brief MG_SMOOTH_EARLY_EXIT\n DESCRIPTION: Enable early exit for MG smoothing when RMS drops below threshold. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_SMOOTH_EARLY_EXIT", MGOptions.MG_Smooth_EarlyExit, true);
+  /*!\brief MG_SMOOTH_RES_THRESHOLD\n DESCRIPTION: Smoothing stops when current_rms < threshold * initial_rms. DEFAULT: 0.1 \ingroup Config*/
+  addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MGOptions.MG_Smooth_Res_Threshold, 0.5);
+  /*!\brief MG_SMOOTH_OUTPUT\n DESCRIPTION: Print compact per-cycle smoothing iteration summary. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_SMOOTH_OUTPUT", MGOptions.MG_Smooth_Output, false);
+  /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for the correction prolongation Jacobi smoother. DEFAULT: 1.25 \ingroup Config*/
+  addDoubleOption("MG_SMOOTH_COEFF", MGOptions.MG_Smooth_Coeff, 1.25);
+  /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level. Levels that would produce fewer CVs are not created. DEFAULT: 50 \ingroup Config*/
+  addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
+  /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
 
   /*!\par CONFIG_CATEGORY: Spatial Discretization \ingroup Config*/
   /*--- Options related to the spatial discretization ---*/
@@ -2961,8 +2968,47 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: DES Constant */
   addDoubleOption("DES_CONST", Const_DES, 0.65);
 
+  /* DESCRIPTION: SBS lengthscale coefficient */
+  addDoubleOption("SBS_LENGTHSCALE_COEFF", SBSParam.SBS_Cdelta, 0.02);
+
+  /* DESCRIPTION: Maximum number of smoothing iterations for SBS model. */
+  addUnsignedShortOption("SBS_MAX_ITER_SMOOTH", SBSParam.SBS_maxIterSmooth, 100);
+
+  /* DESCRIPTION: SBS timescale coefficient */
+  addDoubleOption("SBS_TIMESCALE_COEFF", SBSParam.SBS_Ctau, 0.05);
+
+  /* DESCRIPTION: SBS intensity coefficient */
+  addDoubleOption("SBS_INTENSITY_COEFF", SBSParam.SBS_Cmag, 1.0);
+
   /* DESCRIPTION: Specify Hybrid RANS/LES model */
   addEnumOption("HYBRID_RANSLES", Kind_HybridRANSLES, HybridRANSLES_Map, NO_HYBRIDRANSLES);
+
+  /* DESCRIPTION: Specify if the Stochastic Backscatter Model must be activated */
+  addBoolOption("STOCHASTIC_BACKSCATTER", SBSParam.StochasticBackscatter, false);
+
+  /* DESCRIPTION: Specify if the LES mode must be enforced */
+  addBoolOption("ENFORCE_LES", enforceLES, false);
+
+  /* DESCRIPTION: Specify if the stochastic source term must be included in the turbulence model equation */
+  addBoolOption("SBS_SOURCE_NU_EQUATION", SBSParam.stochSourceNu, true);
+
+  /* DESCRIPTION: Enable diagnostics of the stochastic source term in Langevin equation. */
+  addBoolOption("SBS_SOURCE_DIAGNOSTICS", SBSParam.stochSourceDiagnostics, false);
+
+  /* DESCRIPTION: Relaxation factor for the stochastic source term (Stochastic Backscatter Model) */
+  addDoubleOption("SBS_RELAXATION_FACTOR", SBSParam.stochSourceRelax, 0.0);
+
+  /* DESCRIPTION: Apply Stochastic Backscatter Model only in a bounded box */
+  addBoolOption("SBS_IN_BOX", SBSParam.StochBackscatterInBox, false);
+
+  /* DESCRIPTION: Specify extents of box where Stochastic Backscatter Model is active */
+  addDoubleArrayOption("SBS_BOX_BOUNDS", 6, false, SBSParam.StochBackscatterBoxBounds);
+
+  /* DESCRIPTION: Shielding function lower threshold for application of Stochastic Backscatter Model */
+  addDoubleOption("SBS_FD_LOWER_THRESHOLD", SBSParam.stochFdThreshold, 0.9);
+
+  /* DESCRIPTION: Filter width for LES (if negative, it is computed based on the local cell size) */
+  addDoubleOption("LES_FILTER_WIDTH", LES_FilterWidth, -1.0);
 
   /* DESCRIPTION: Roe with low dissipation for unsteady flows */
   addEnumOption("ROE_LOW_DISSIPATION", Kind_RoeLowDiss, RoeLowDiss_Map, NO_ROELOWDISS);
@@ -3384,7 +3430,7 @@ void CConfig::SetHeader(SU2_COMPONENT val_software) const{
     cout << "\n";
     cout << "-------------------------------------------------------------------------\n";
     cout << "|    ___ _   _ ___                                                      |\n";
-    cout << "|   / __| | | |_  )   Release 8.4.0 \"Harrier\"                           |\n";
+    cout << "|   / __| | | |_  )   Release 8.5.0 \"Harrier\"                           |\n";
     cout << "|   \\__ \\ |_| |/ /                                                      |\n";
     switch (val_software) {
     case SU2_COMPONENT::SU2_CFD: cout << "|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |\n"; break;
@@ -3998,7 +4044,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
 
   /*--- Set the number of external iterations to 1 for the steady state problem ---*/
 
-  if (Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY) nMGLevels = 0;
+  if (Kind_Solver == MAIN_SOLVER::FEM_ELASTICITY) {
+    nMGLevels = 0;
+    if (!OptionIsSet("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING")) {
+      /*--- Different default behavior for this solver type. ---*/
+      Linear_Solver_ILU_levels = true;
+    }
+  }
 
   Radiation = (Kind_Radiation != RADIATION_MODEL::NONE);
 
@@ -4687,7 +4739,7 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   }
 
   FinestMesh = MESH_0;
-  if (MGCycle == FULLMG_CYCLE) FinestMesh = nMGLevels;
+  if (Kind_MGCycle == MG_CYCLE::FULL) FinestMesh = nMGLevels;
 
   if ((Kind_Solver == MAIN_SOLVER::NAVIER_STOKES) &&
       (Kind_Turb_Model != TURB_MODEL::NONE))
@@ -4708,128 +4760,36 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   Kappa_2nd_AdjFlow = jst_adj_coeff[0];
   Kappa_4th_AdjFlow = jst_adj_coeff[1];
 
-  /*--- Make the MG_PreSmooth, MG_PostSmooth, and MG_CorrecSmooth
-   arrays consistent with nMGLevels ---*/
+  /*--- Fill MG smooth vectors to size nMGLevels+1.
+   Use parsed values (truncating or extending by repeat) or defaults if not set. ---*/
 
-  auto * tmp_smooth = new unsigned short[nMGLevels+1];
+  {
+    auto fillSmooth = [&](unsigned short n, unsigned short* buf,
+                          std::vector<unsigned short>& vec, auto getDefault) {
+      const unsigned short nNew = nMGLevels + 1;
+      vec.resize(nNew);
+      if (n != 0)
+        for (unsigned short i = 0; i < nNew; i++) vec[i] = (i < n) ? buf[i] : buf[n - 1];
+      else
+        for (unsigned short i = 0; i < nNew; i++) vec[i] = getDefault(i);
+    };
 
-  if ((nMG_PreSmooth != nMGLevels+1) && (nMG_PreSmooth != 0)) {
-    if (nMG_PreSmooth > nMGLevels+1) {
-
-      /*--- Truncate by removing unnecessary elements at the end ---*/
-
-      for (unsigned int i = 0; i <= nMGLevels; i++)
-        tmp_smooth[i] = MG_PreSmooth[i];
-      delete [] MG_PreSmooth;
-      MG_PreSmooth=nullptr;
-    }
-    else {
-
-      /*--- Add additional elements equal to last element ---*/
-
-      for (unsigned int i = 0; i < nMG_PreSmooth; i++)
-        tmp_smooth[i] = MG_PreSmooth[i];
-      for (unsigned int i = nMG_PreSmooth; i <= nMGLevels; i++)
-        tmp_smooth[i] = MG_PreSmooth[nMG_PreSmooth-1];
-      delete [] MG_PreSmooth;
-      MG_PreSmooth=nullptr;
-    }
-
-    nMG_PreSmooth = nMGLevels+1;
-    MG_PreSmooth = new unsigned short[nMG_PreSmooth];
-    for (unsigned int i = 0; i < nMG_PreSmooth; i++)
-      MG_PreSmooth[i] = tmp_smooth[i];
-  }
-  if ((nMGLevels != 0) && (nMG_PreSmooth == 0)) {
-    delete [] MG_PreSmooth;
-    nMG_PreSmooth = nMGLevels+1;
-    MG_PreSmooth = new unsigned short[nMG_PreSmooth];
-    for (unsigned int i = 0; i < nMG_PreSmooth; i++)
-      MG_PreSmooth[i] = i+1;
-  }
-
-  if ((nMG_PostSmooth != nMGLevels+1) && (nMG_PostSmooth != 0)) {
-    if (nMG_PostSmooth > nMGLevels+1) {
-
-      /*--- Truncate by removing unnecessary elements at the end ---*/
-
-      for (unsigned int i = 0; i <= nMGLevels; i++)
-        tmp_smooth[i] = MG_PostSmooth[i];
-      delete [] MG_PostSmooth;
-      MG_PostSmooth=nullptr;
-    }
-    else {
-
-      /*--- Add additional elements equal to last element ---*/
-
-      for (unsigned int i = 0; i < nMG_PostSmooth; i++)
-        tmp_smooth[i] = MG_PostSmooth[i];
-      for (unsigned int i = nMG_PostSmooth; i <= nMGLevels; i++)
-        tmp_smooth[i] = MG_PostSmooth[nMG_PostSmooth-1];
-      delete [] MG_PostSmooth;
-      MG_PostSmooth=nullptr;
-    }
-
-    nMG_PostSmooth = nMGLevels+1;
-    MG_PostSmooth = new unsigned short[nMG_PostSmooth];
-    for (unsigned int i = 0; i < nMG_PostSmooth; i++)
-      MG_PostSmooth[i] = tmp_smooth[i];
-
-  }
-
-  if ((nMGLevels != 0) && (nMG_PostSmooth == 0)) {
-    delete [] MG_PostSmooth;
-    nMG_PostSmooth = nMGLevels+1;
-    MG_PostSmooth = new unsigned short[nMG_PostSmooth];
-    for (unsigned int i = 0; i < nMG_PostSmooth; i++)
-      MG_PostSmooth[i] = 0;
-  }
-
-  if ((nMG_CorrecSmooth != nMGLevels+1) && (nMG_CorrecSmooth != 0)) {
-    if (nMG_CorrecSmooth > nMGLevels+1) {
-
-      /*--- Truncate by removing unnecessary elements at the end ---*/
-
-      for (unsigned int i = 0; i <= nMGLevels; i++)
-        tmp_smooth[i] = MG_CorrecSmooth[i];
-      delete [] MG_CorrecSmooth;
-      MG_CorrecSmooth = nullptr;
-    }
-    else {
-
-      /*--- Add additional elements equal to last element ---*/
-
-      for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
-        tmp_smooth[i] = MG_CorrecSmooth[i];
-      for (unsigned int i = nMG_CorrecSmooth; i <= nMGLevels; i++)
-        tmp_smooth[i] = MG_CorrecSmooth[nMG_CorrecSmooth-1];
-      delete [] MG_CorrecSmooth;
-      MG_CorrecSmooth = nullptr;
-    }
-    nMG_CorrecSmooth = nMGLevels+1;
-    MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
-    for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
-      MG_CorrecSmooth[i] = tmp_smooth[i];
-  }
-
-  if ((nMGLevels != 0) && (nMG_CorrecSmooth == 0)) {
-    delete [] MG_CorrecSmooth;
-    nMG_CorrecSmooth = nMGLevels+1;
-    MG_CorrecSmooth = new unsigned short[nMG_CorrecSmooth];
-    for (unsigned int i = 0; i < nMG_CorrecSmooth; i++)
-      MG_CorrecSmooth[i] = 0;
+    fillSmooth(nMG_PreSmooth_p,    MG_PreSmooth_p,    MGOptions.MG_PreSmooth,
+               [](unsigned short i) { return static_cast<unsigned short>(i + 1); });
+    fillSmooth(nMG_PostSmooth_p,   MG_PostSmooth_p,   MGOptions.MG_PostSmooth,
+               [](unsigned short  ) { return (unsigned short)0; });
+    fillSmooth(nMG_CorrecSmooth_p, MG_CorrecSmooth_p, MGOptions.MG_CorrecSmooth,
+               [](unsigned short  ) { return (unsigned short)0; });
   }
 
   /*--- Override MG Smooth parameters ---*/
 
-  if (nMG_PreSmooth != 0) MG_PreSmooth[MESH_0] = 1;
-  if (nMG_PostSmooth != 0) {
-    MG_PostSmooth[MESH_0] = 0;
-    MG_PostSmooth[nMGLevels] = 0;
-  }
-  if (nMG_CorrecSmooth != 0) MG_CorrecSmooth[nMGLevels] = 0;
+  MGOptions.MG_PreSmooth[MESH_0] = 1;
+  MGOptions.MG_PostSmooth[MESH_0] = 0;
+  MGOptions.MG_PostSmooth[nMGLevels] = 0;
+  MGOptions.MG_CorrecSmooth[nMGLevels] = 0;
 
-  if (Restart) MGCycle = V_CYCLE;
+  if (Restart) Kind_MGCycle = MG_CYCLE::V;
 
   if (ContinuousAdjoint) {
     if (Kind_Solver == MAIN_SOLVER::EULER) Kind_Solver = MAIN_SOLVER::ADJ_EULER;
@@ -5148,8 +5108,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                    CURRENT_FUNCTION);
   }
 #endif
-
-  delete [] tmp_smooth;
 
   /*--- Make sure that implicit time integration is disabled
         for the FEM fluid solver (numerics). ---*/
@@ -5787,6 +5745,26 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Number of initial species incompatible with number of controlling variables and user scalars.", CURRENT_FUNCTION);
     /*--- We can have additional user defined transported scalars ---*/
     flamelet_ParsedOptions.n_scalars = flamelet_ParsedOptions.n_control_vars + flamelet_ParsedOptions.n_user_scalars;
+
+    /*--- Check that spark ignition has required parameters defined ---*/
+    if (flamelet_ParsedOptions.ignition_method == FLAMELET_INIT_TYPE::SPARK) {
+      /*--- Check if SPARK_INIT was explicitly set in config file ---*/
+      if (!OptionIsSet("SPARK_INIT")) {
+        SU2_MPI::Error("FLAME_INIT_METHOD= SPARK requires SPARK_INIT to be defined in the config file.", CURRENT_FUNCTION);
+      }
+      /*--- Check if SPARK_REACTION_RATES was explicitly set in config file ---*/
+      if (!OptionIsSet("SPARK_REACTION_RATES")) {
+        SU2_MPI::Error("FLAME_INIT_METHOD= SPARK requires SPARK_REACTION_RATES to be defined in the config file.", CURRENT_FUNCTION);
+      }
+      if (flamelet_ParsedOptions.nspark < flamelet_ParsedOptions.n_scalars) {
+        SU2_MPI::Error("SPARK_REACTION_RATES must have at least " + to_string(flamelet_ParsedOptions.n_scalars) +
+                       " values (one for each scalar variable), but only " + to_string(flamelet_ParsedOptions.nspark) + " were provided.", CURRENT_FUNCTION);
+      }
+    }
+    /*--- Check if flame ignition temperature is valid ---*/
+    if (flamelet_ParsedOptions.Flame_T_ignition <= Inc_Temperature_Init) {
+      SU2_MPI::Error("Flame ignition temperature must be higher than the initial temperature of the flow field.", CURRENT_FUNCTION);
+    }
   }
 
   if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
@@ -6515,6 +6493,60 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES: cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
+        if (Kind_HybridRANSLES != NO_HYBRIDRANSLES) {
+          if (LES_FilterWidth > 0.0) cout << "User-specified LES filter width: " << LES_FilterWidth << endl;
+          cout << "Stochastic Backscatter: ";
+          if (SBSParam.StochasticBackscatter) {
+            cout << "ON" << endl;
+            if (GetnDim(GetMesh_FileName(), Mesh_FileFormat) < 3)
+              SU2_MPI::Error("Stochastic Backscatter Model available for 3D flow simulations only.", CURRENT_FUNCTION);
+            cout << "Backscatter intensity coefficient: " << SBSParam.SBS_Cmag << endl;
+            if (SBSParam.SBS_Cmag < 0.0)
+              SU2_MPI::Error("Backscatter intensity coefficient must be non-negative.", CURRENT_FUNCTION);
+            if (SBSParam.SBS_Ctau > 0.0)
+              cout << "Backscatter timescale coefficient: " << SBSParam.SBS_Ctau << endl;
+            else
+              cout << "Langevin equations not integrated (temporally uncorrelated stochastic field)." << endl;
+            if (SBSParam.SBS_maxIterSmooth > 0) {
+              cout << "Maximum number of iterations for implicit smoothing: " << SBSParam.SBS_maxIterSmooth << endl;
+              cout << "Backscatter lengthscale coefficient: " << SBSParam.SBS_Cdelta << endl;
+              if (SBSParam.SBS_Cdelta < 0.0)
+                SU2_MPI::Error("Backscatter lengthscale coefficient must be non-negative.", CURRENT_FUNCTION);
+            } else {
+              cout << "No smoothing applied to stochastic source terms in Langevin equations." << endl;
+            }
+            if (SBSParam.stochSourceNu)
+              cout << "Stochastic source term included in turbulence model equation." << endl;
+            else
+              cout << "Stochastic source term NOT included in turbulence model equation." << endl;
+            if (SBSParam.stochSourceRelax > 0.0)
+              cout << "Relaxation factor for stochastic source term: " << SBSParam.stochSourceRelax << endl;
+            else
+              cout << "No relaxation factor for stochastic source term." << endl;
+            if (SBSParam.StochBackscatterInBox) {
+              cout << "Stochastic Backscatter Model activated only in a bounded box." << endl;
+              cout << "Box bounds: " << endl;
+              cout << "  X: " << setw(10) << fixed << setprecision(4) << SBSParam.StochBackscatterBoxBounds[0] << " , "
+                              << setw(10) << fixed << setprecision(4) << SBSParam.StochBackscatterBoxBounds[1] << endl;
+              cout << "  Y: " << setw(10) << fixed << setprecision(4) << SBSParam.StochBackscatterBoxBounds[2] << " , "
+                              << setw(10) << fixed << setprecision(4) << SBSParam.StochBackscatterBoxBounds[3] << endl;
+              cout << "  Z: " << setw(10) << fixed << setprecision(4) << SBSParam.StochBackscatterBoxBounds[4] << " , "
+                              << setw(10) << fixed << setprecision(4) << SBSParam.StochBackscatterBoxBounds[5] << endl;
+            }
+            if (Kind_HybridRANSLES != SA_DES)
+              cout << "Stochastic source terms suppressed where the shielding function is lower than: " << setw(5) << setprecision(3) << SBSParam.stochFdThreshold << endl;
+          } else {
+            cout << "OFF" << endl;
+          }
+        }
+        if (Kind_HybridRANSLES == NO_HYBRIDRANSLES && SBSParam.StochasticBackscatter)
+          SU2_MPI::Error("Stochastic Backscatter can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
+        if (enforceLES) {
+          if (Kind_HybridRANSLES == NO_HYBRIDRANSLES)
+            SU2_MPI::Error("ENFORCE_LES can only be activated with Hybrid RANS/LES.", CURRENT_FUNCTION);
+          else
+            cout << "LES enforced in the whole computational domain." << endl;
+        }
         break;
       case MAIN_SOLVER::NEMO_EULER:
         if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
@@ -7084,11 +7116,20 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           cout << "Lax viscous coefficients (1st): " << Kappa_1st_Flow << ".\n";
           cout << "First order integration." << endl;
         }
-        else {
-          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms.\n";
-          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << ".\n";
-          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
+        else if (Kind_Centered_Flow == CENTERED::LD2) {
+          cout << "Low-Dissipation Low-Dispersion (LD2) scheme for the flow inviscid terms." << endl;
+          if (!(Kind_Solver==MAIN_SOLVER::INC_EULER || Kind_Solver==MAIN_SOLVER::INC_NAVIER_STOKES || Kind_Solver==MAIN_SOLVER::INC_RANS))
+            SU2_MPI::Error("LD2 scheme not yet implemented for the compressible flow solver.", CURRENT_FUNCTION);
+          if (Kind_FluidModel != CONSTANT_DENSITY)
+            SU2_MPI::Error("LD2 scheme available for constant density flows only.", CURRENT_FUNCTION);
+          if (Energy_Equation)
+            cout << "WARNING: Current implementation of the LD2 scheme not compatible with the energy equation. JST employed in energy equation instead." << endl;
         }
+        else {
+            cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms.\n";
+        }
+        cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_Flow << ", " << Kappa_4th_Flow << ".\n";
+        cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
       }
 
       if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
@@ -7462,9 +7503,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
 
     if (nMGLevels !=0) {
 
-      if (MGCycle == V_CYCLE) cout << "V Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
-      if (MGCycle == W_CYCLE) cout << "W Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
-      if (MGCycle == FULLMG_CYCLE) cout << "Full Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
+      if (Kind_MGCycle == MG_CYCLE::V) cout << "V Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
+      if (Kind_MGCycle == MG_CYCLE::W) cout << "W Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
+      if (Kind_MGCycle == MG_CYCLE::FULL) cout << "Full Multigrid Cycle, with " << nMGLevels << " multigrid levels."<< endl;
 
       cout << "Damping factor for the residual restriction: " << Damp_Res_Restric <<"."<< endl;
       cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;
@@ -7488,7 +7529,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         MGTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
         MGTable.PrintHeader();
         for (unsigned short iLevel = 0; iLevel < nMGLevels+1; iLevel++) {
-          MGTable << iLevel << MG_PreSmooth[iLevel] << MG_PostSmooth[iLevel] << MG_CorrecSmooth[iLevel];
+          MGTable << iLevel << MGOptions.MG_PreSmooth[iLevel] << MGOptions.MG_PostSmooth[iLevel] << MGOptions.MG_CorrecSmooth[iLevel];
         }
         MGTable.PrintFooter();
       }

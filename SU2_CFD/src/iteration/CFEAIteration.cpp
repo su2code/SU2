@@ -2,7 +2,7 @@
  * \file CFEAIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,6 +32,7 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
                             CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                             CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                             unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
   bool StopCalc = false;
   unsigned long IntIter = 0;
 
@@ -124,12 +125,10 @@ void CFEAIteration::Iterate(COutput* output, CIntegration**** integration, CGeom
         break;
       }
       /*--- Linear elasticity without thermal effects and double precision only needs one iteration. ---*/
-#ifndef USE_MIXED_PRECISION
-      if (linear && !heat) {
+      if (!std::is_same_v<su2mixedfloat, float> && linear && !heat) {
         output->SetConvergence(true);
         break;
       }
-#endif
       /*--- Normal stopping criteria. ---*/
       if (StopCalc && IntIter > 0) break;
     }
@@ -200,6 +199,7 @@ void CFEAIteration::Update(COutput* output, CIntegration**** integration, CGeome
                            CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                            CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                            unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
   /*----------------- Update structural solver ----------------------*/
@@ -220,6 +220,7 @@ void CFEAIteration::Predictor(COutput* output, CIntegration**** integration, CGe
                               CSolver***** solver, CNumerics****** numerics, CConfig** config,
                               CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                               CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
   feaSolver->PredictStruct_Displacement(geometry[val_iZone][val_iInst][MESH_0], config[val_iZone]);
@@ -229,6 +230,7 @@ void CFEAIteration::Relaxation(COutput* output, CIntegration**** integration, CG
                                CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
   CSolver* feaSolver = solver[val_iZone][val_iInst][MESH_0][FEA_SOL];
 
   /*-------------------- Aitken's relaxation ------------------------*/
@@ -247,6 +249,7 @@ bool CFEAIteration::Monitor(COutput* output, CIntegration**** integration, CGeom
                             CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                             CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                             unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
   StopTime = SU2_MPI::Wtime();
 
   UsedTime = StopTime - StartTime;
@@ -262,6 +265,7 @@ void CFEAIteration::Solve(COutput* output, CIntegration**** integration, CGeomet
                           CNumerics****** numerics, CConfig** config, CSurfaceMovement** surface_movement,
                           CVolumetricMovement*** grid_movement, CFreeFormDefBox*** FFDBox, unsigned short val_iZone,
                           unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
   /*------------------ Structural subiteration ----------------------*/
   Iterate(output, integration, geometry, solver, numerics, config, surface_movement, grid_movement, FFDBox, val_iZone,
           val_iInst);
