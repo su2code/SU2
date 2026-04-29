@@ -1515,7 +1515,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
         Velocity_Cyl[1] = sin(Beta)*Mach_Cyl*Mach2Vel_Cyl;
         Velocity_Cyl[2] = sin(Alpha)*cos(Beta)*Mach_Cyl*Mach2Vel_Cyl;
 
-        ModVel_Cyl = GeometryToolbox::Norm(nDim, Velocity_Cyl);
+        ModVel_Cyl = GeometryToolbox::Norm(3, Velocity_Cyl);
 
         if (config->GetViscous()) {
           if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }

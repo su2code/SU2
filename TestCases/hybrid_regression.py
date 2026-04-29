@@ -491,11 +491,9 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals         = [0.076965, 0.027533, -0.001374, -0.000299]
-    aeroelastic.test_vals_aarch64 = [0.074170, 0.027590, -0.001579, -0.000160]
+    aeroelastic.test_vals = [-1.876630, 4.021077, 0.078661, 0.027698, -0.001639, -0.000129, -1.056256]
     aeroelastic.unsteady  = True
     aeroelastic.enabled_on_cpu_arch = ["x86_64"] # Requires AVX-capable architecture
-    aeroelastic.enabled_with_tsan = False
     test_list.append(aeroelastic)
 
     # Delayed Detached Eddy Simulation
