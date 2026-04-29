@@ -635,7 +635,8 @@ private:
   unsigned short nInc_Outlet;      /*!< \brief Number of inlet boundary treatment types listed. */
   su2double Inc_Inlet_Damping;     /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
   su2double Inc_Outlet_Damping;    /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
-  bool Inc_Outlet_BackflowPrevention; /*!< \brief Enable removal of the reversed normal velocity component at outlet faces where backflow is detected. */
+  bool Inc_Outlet_BackflowPrevention;          /*!< \brief Enable removal of the reversed normal velocity component at outlet faces where backflow is detected. */
+  unsigned long Inc_Outlet_BackflowPrevention_Iter; /*!< \brief Number of outer iterations for which backflow prevention is active; after this the BC reverts to pure Neumann. Default ULONG_MAX (always active). */
   bool InletUseNormal;             /*!< \brief Flag for whether to use the local normal as the flow direction for a pressure inlet. */
   su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
@@ -5197,6 +5198,13 @@ public:
    * \return True if the reversed normal velocity component should be zeroed on backflow faces.
    */
   bool GetInc_Outlet_BackflowPrevention(void) const { return Inc_Outlet_BackflowPrevention; }
+
+  /*!
+   * \brief Get the outer-iteration limit for backflow prevention at incompressible outlets.
+   * Backflow prevention is active while GetOuterIter() < this value.
+   * Returns ULONG_MAX (always active) when INC_OUTLET_BACKFLOW_PREVENTION_ITER is not set.
+   */
+  unsigned long GetInc_Outlet_BackflowPrevention_Iter(void) const { return Inc_Outlet_BackflowPrevention_Iter; }
 
   /*!
    * \brief Get the kind of mixing process for averaging quantities at the boundaries.

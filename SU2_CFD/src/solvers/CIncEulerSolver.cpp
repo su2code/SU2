@@ -2622,7 +2622,8 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   su2double Normal[MAXNDIM] = {0.0};
   passivedouble nBackflow_loc = 0.0;
 
-  const bool backflow_prevention = config->GetInc_Outlet_BackflowPrevention();
+  const bool backflow_prevention = config->GetInc_Outlet_BackflowPrevention() &&
+                                   (config->GetOuterIter() < config->GetInc_Outlet_BackflowPrevention_Iter());
   INC_OUTLET_TYPE Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
 
   /*--- Loop over all the vertices on this boundary marker ---*/

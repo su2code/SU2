@@ -428,8 +428,11 @@ void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_con
                                        CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
 
-  /*--- When backflow prevention is disabled, fall back to the base Neumann outlet. ---*/
-  if (!config->GetInc_Outlet_BackflowPrevention()) {
+  /*--- When backflow prevention is disabled, or the outer-iteration window has elapsed,
+   *    fall back to the base Neumann outlet so that physically real backflow (e.g.
+   *    recirculation zones at a converged solution) is not artificially suppressed. ---*/
+  if (!config->GetInc_Outlet_BackflowPrevention() ||
+      config->GetOuterIter() >= config->GetInc_Outlet_BackflowPrevention_Iter()) {
     CSpeciesSolver::BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     return;
   }
