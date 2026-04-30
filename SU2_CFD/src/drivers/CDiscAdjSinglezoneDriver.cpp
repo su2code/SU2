@@ -155,8 +155,6 @@ CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver() {
 
   delete direct_iteration;
   delete direct_output;
-  delete PrimalJacobian;
-  delete PrimalPreconditioner;
 }
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
@@ -195,6 +193,7 @@ void CDiscAdjSinglezoneDriver::Run() {
 }
 
 void CDiscAdjSinglezoneDriver::RunFixedPoint() {
+  SU2_ZONE_SCOPED
 
   CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
   if (config->GetnQuasiNewtonSamples() > 1) {
@@ -237,6 +236,8 @@ void CDiscAdjSinglezoneDriver::RunFixedPoint() {
 }
 
 void CDiscAdjSinglezoneDriver::RunResidual() {
+  SU2_ZONE_SCOPED
+
   if (!KrylovSet) {
     /*--- Initialize the solution, right-hand-side, and system. ---*/
     const auto nVar = GetTotalNumberOfVariables(ZONE_0, true);
@@ -246,17 +247,15 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
     AdjRHS.Initialize(nPoint, nPointDomain, nVar, nullptr);
     AdjSol.Initialize(nPoint, nPointDomain, nVar, nullptr);
 
-    AdjSolver.SetToleranceType(LinearToleranceType::RELATIVE);
+    AdjSolver.SetToleranceType(LinearToleranceType::ABSOLUTE);
     KrylovSet = true;
 
     /*--- Initialize the preconditioner using the (transpose) approximate Jacobian from the primal problem. ---*/
 
     if (config->GetKind_TimeIntScheme() != EULER_IMPLICIT) {
-      std::cout << "Cannot build a preconditioner for the discrete-adjoint system (missing primal Jacobian structure) !"
-                << std::endl;
-
-      return;
-    };
+      SU2_MPI::Error("Cannot build a preconditioner for the discrete-adjoint system "
+        "(missing primal Jacobian structure)!", CURRENT_FUNCTION);
+    }
 
     UpdateJacobians();
 
@@ -269,13 +268,6 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
         CopiedJacobian.SetBlock(iPoint, jPoint, value);
       }
     }
-
-    CopiedJacobian.TransposeInPlace();
-    PrimalJacobian = new CSysMatrixVectorProduct<LinSolScalar>(CopiedJacobian, geometry, config);
-
-    const auto kindPreconditioner = static_cast<ENUM_LINEAR_SOLVER_PREC>(config->GetKind_Linear_Solver_Prec());
-    PrimalPreconditioner = CPreconditioner<LinSolScalar>::Create(kindPreconditioner, CopiedJacobian, geometry, config);
-    PrimalPreconditioner->Build();
   }
 
   /*--- Use FGMRES to solve the adjoint system, where:
@@ -298,20 +290,19 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
   LinPreconditioner AdjPreconditioner{this};
 
   LinSolScalar eps = 1.0;
+  unsigned long nKrylov_Iter = 0;
 
-  unsigned long nKrylov_Iter;
-  for (nKrylov_Iter = nAdjoint_Iter; nKrylov_Iter >= KrylovMinIters && eps > KrylovSysTol;) {
-    std::cout << "Adjoint iteration: " << nKrylov_Iter << " ... " << std::endl;
-
-    auto nIter = min(nKrylov_Iter - 2ul, config->GetLinear_Solver_Iter());
-    LinSolScalar eps_l = 0.0;
-    LinSolScalar tol_l = KrylovSysTol / eps;
-
-    nIter = AdjSolver.FGMRES_LinSolver(AdjRHS, AdjSol, AdjOperator, AdjPreconditioner, tol_l, nIter, eps_l, monitor,
-                                       config);
-    nKrylov_Iter -= nIter + 1;
-
-    eps *= eps_l;
+  while (nKrylov_Iter < nAdjoint_Iter && eps > KrylovSysTol) {
+    if (rank == MASTER_NODE) {
+      std::cout << "Adjoint iteration: " << nKrylov_Iter << " ... " << std::endl;
+    }
+    auto nIter = min(nAdjoint_Iter - nKrylov_Iter, config->GetLinear_Solver_Restart_Frequency());
+    if (nIter < config->GetLinear_Solver_Restart_Deflation()) {
+      break;
+    }
+    nIter = AdjSolver.FGCRODR_LinSolver(AdjRHS, AdjSol, AdjOperator, AdjPreconditioner, KrylovSysTol, nIter, eps, monitor,
+                                        config, FgcrodrMode::SAME_MAT);
+    nKrylov_Iter += nIter;
   }
 
   /*--- Store the solution and restore user settings. ---*/
@@ -328,13 +319,14 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
   for (iInst = 0; iInst < nInst[ZONE_0]; ++iInst) {
     config_container[ZONE_0]->SetiInst(iInst);
     output_container[ZONE_0]->SetResultFiles(geometry_container[ZONE_0][iInst][MESH_0], config_container[ZONE_0],
-                                              solver_container[ZONE_0][iInst][MESH_0], nAdjoint_Iter - nKrylov_Iter,
-                                              true);
+                                              solver_container[ZONE_0][iInst][MESH_0], nKrylov_Iter, true);
   }
   config_container[ZONE_0]->SetiInst(inst);
 }
 
 void CDiscAdjSinglezoneDriver::UpdateAdjoints() {
+  SU2_ZONE_SCOPED
+
   if (config->GetKind_DiscreteAdjoint() == DISC_ADJ_TYPE::RESIDUALS) {
     UpdateAdjointsResidual();
   } else {
@@ -343,6 +335,8 @@ void CDiscAdjSinglezoneDriver::UpdateAdjoints() {
 }
 
 void CDiscAdjSinglezoneDriver::UpdateAdjointsFixedPoint() {
+  SU2_ZONE_SCOPED
+
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
    *--- of the previous iteration. The values are passed to the AD tool.
    *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
@@ -369,6 +363,8 @@ void CDiscAdjSinglezoneDriver::UpdateAdjointsFixedPoint() {
 }
 
 void CDiscAdjSinglezoneDriver::UpdateAdjointsResidual() {
+  SU2_ZONE_SCOPED
+
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
    *--- of the previous iteration. The values are passed to the AD tool.
    *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
@@ -417,6 +413,8 @@ void CDiscAdjSinglezoneDriver::UpdateAdjointsResidual() {
 }
 
 void CDiscAdjSinglezoneDriver::SetAdjointObjective() {
+  SU2_ZONE_SCOPED
+
   su2double seeding = 1.0;
 
   if (config->GetTime_Domain()) {
@@ -579,6 +577,8 @@ void CDiscAdjSinglezoneDriver::DirectRunFixedPoint(RECORDING kind_recording) {
 }
 
 void CDiscAdjSinglezoneDriver::DirectRunResidual(RECORDING kind_recording) {
+  SU2_ZONE_SCOPED
+
   /*--- Deform the mesh. ---*/
   DeformGeometry();
 
@@ -626,6 +626,8 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 }
 
 void CDiscAdjSinglezoneDriver::SecondaryRunFixedPoint() {
+  SU2_ZONE_SCOPED
+
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
    *    of the current iteration. The values are passed to the AD tool. ---*/
 
@@ -651,6 +653,8 @@ void CDiscAdjSinglezoneDriver::SecondaryRunFixedPoint() {
 }
 
 void CDiscAdjSinglezoneDriver::SecondaryRunResidual() {
+  SU2_ZONE_SCOPED
+
   /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
    *--- of the previous iteration. The values are passed to the AD tool.
    *--- Issues with iteration number should be dealt with once the output structure is in place. ---*/
@@ -777,8 +781,7 @@ void CDiscAdjSinglezoneDriver::UpdateFarfield() {
 }
 
 void CDiscAdjSinglezoneDriver::UpdateGeometry() {
-  /*--- Update the geometry (i.e. dual grid, without multi-grid). ---*/
-
+  SU2_ZONE_SCOPED
   geometry->InitiateComms(geometry, config, MPI_QUANTITIES::COORDINATES);
   geometry->CompleteComms(geometry, config, MPI_QUANTITIES::COORDINATES);
 
@@ -788,13 +791,14 @@ void CDiscAdjSinglezoneDriver::UpdateGeometry() {
 }
 
 void CDiscAdjSinglezoneDriver::DeformGeometry() {
-  /*--- Deform the geometry. ---*/
-
+  SU2_ZONE_SCOPED
   direct_iteration->SetMesh_Deformation(geometry_container[ZONE_0][INST_0], solver, numerics, config,
                                         SecondaryVariables);
 }
 
 void CDiscAdjSinglezoneDriver::UpdateObjective() {
+  SU2_ZONE_SCOPED
+
   ObjFunc = 0.0;
 
   /*--- Specific scalar objective functions ---*/
@@ -829,6 +833,7 @@ void CDiscAdjSinglezoneDriver::UpdateObjective() {
 }
 
 void CDiscAdjSinglezoneDriver::UpdateStates() {
+  SU2_ZONE_SCOPED
   /*--- Update the flow and turbulent conservative state variables, preparing for other updates. ---*/
   direct_iteration->Preprocess(direct_output, integration_container, geometry_container, solver_container,
                                numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0,
@@ -836,6 +841,7 @@ void CDiscAdjSinglezoneDriver::UpdateStates() {
 }
 
 void CDiscAdjSinglezoneDriver::UpdateResiduals() {
+  SU2_ZONE_SCOPED
   /*--- Update the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) residuals and objective function (no
    * system solve). ---*/
   integration[FLOW_SOL]->ComputeResiduals(geometry_container, solver_container, numerics_container, config_container,
@@ -843,6 +849,7 @@ void CDiscAdjSinglezoneDriver::UpdateResiduals() {
 }
 
 void CDiscAdjSinglezoneDriver::UpdateTractions() {
+  SU2_ZONE_SCOPED
   /*--- Update the surface tractions. ---*/
   direct_iteration->Postprocess(direct_output, integration_container, geometry_container, solver_container,
                                 numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0,
@@ -850,22 +857,19 @@ void CDiscAdjSinglezoneDriver::UpdateTractions() {
 }
 
 void CDiscAdjSinglezoneDriver::UpdateJacobians() {
+  SU2_ZONE_SCOPED
   /*--- Compute the approximate Jacobian for preconditioning. ---*/
   solver[FLOW_SOL]->PrepareImplicitIteration(geometry, solver, config);
 }
 
 void CDiscAdjSinglezoneDriver::ApplyPreconditioner(const CSysVector<LinSolScalar>& u, CSysVector<LinSolScalar>& v) {
-  /*--- Use an approximate diagonal preconditioning based on the transpose of the primal Jacobian. ---*/
-  (*PrimalPreconditioner)(u, v);
-
-  /*--- Apply a few FGMRES iterations in addition to the above preconditioner. ---*/
-  LinSolScalar KrylovPreEps = KrylovPreTol;
-  auto MaxIter = 5;
-  solver[FLOW_SOL]->System.FGMRES_LinSolver(u, v, *PrimalJacobian, *PrimalPreconditioner, KrylovPreTol, MaxIter,
-                                                    KrylovPreEps, false, config);
+  SU2_ZONE_SCOPED
+  solver[FLOW_SOL]->System.Solve_b(CopiedJacobian, u, v, geometry, config, !PreconditionerSet);
+  PreconditionerSet = true;
 }
 
 void CDiscAdjSinglezoneDriver::ApplyOperator(const CSysVector<LinSolScalar>& u, CSysVector<LinSolScalar>& v) {
+  SU2_ZONE_SCOPED
   /*--- Set the adjoint variables used in the seeding of the tape. ---*/
   SetAllSolutions(ZONE_0, true, u);
 
@@ -877,6 +881,7 @@ void CDiscAdjSinglezoneDriver::ApplyOperator(const CSysVector<LinSolScalar>& u, 
 }
 
 void CDiscAdjSinglezoneDriver::SetWallNormalConstraint() {
+  SU2_ZONE_SCOPED
   const unsigned short iVel = 1;
 
   for (auto iMarker = 0ul; iMarker < config->GetnMarker_All(); iMarker++) {

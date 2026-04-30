@@ -767,6 +767,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
   }
   ScalarType rNorm = r.norm();
   auto iter = k;
+  auto iter_adjust = same_mat ? deflation : 0;
 
   /*--- Set the norm to the initial initial residual value for relative tolerance. ---*/
 
@@ -780,7 +781,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       cout << "CSysSolve::FGCRODR(): system solved by initial guess." << endl;
       END_SU2_OMP_MASTER
     }
-    return iter;
+    return iter - iter_adjust;
   }
 
   /*--- Output header information including initial residual. ---*/
@@ -1028,7 +1029,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       }
     }
   }
-  return iter;
+  return iter - iter_adjust;
 }
 
 template <class ScalarType>

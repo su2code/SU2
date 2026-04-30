@@ -45,7 +45,7 @@ class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
   #ifdef CODI_FORWARD_TYPE
     using LinSolScalar = su2double;
   #else
-    using LinSolScalar = su2mixedfloat;
+    using LinSolScalar = passivedouble;
   #endif
 
  protected:
@@ -70,16 +70,14 @@ class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
 
   /*!< \brief Members to use GMRES to drive inner iterations (alternative to quasi-Newton) of the residual-based formulation. */
   static constexpr unsigned long KrylovMinIters = 3;
-  const LinSolScalar KrylovSysTol = 1E-10;
-  const LinSolScalar KrylovPreTol = 0.1;
+  const LinSolScalar KrylovSysTol = 1E-8;
   bool KrylovSet = false;
+  bool PreconditionerSet = false;
 
-  CSysMatrix<LinSolScalar> CopiedJacobian;
+  CSysMatrix<su2mixedfloat> CopiedJacobian;
   CSysSolve<LinSolScalar> AdjSolver;
   CSysVector<LinSolScalar> AdjRHS;
   CSysVector<LinSolScalar> AdjSol;
-  CPreconditioner<LinSolScalar>* PrimalPreconditioner = nullptr;
-  CSysMatrixVectorProduct<LinSolScalar>* PrimalJacobian = nullptr;
 
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
