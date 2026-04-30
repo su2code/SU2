@@ -158,6 +158,9 @@ private:
       (*preconditioner)(u, v);
       return 0;
     }
+#ifdef HAVE_CUDA
+    if (config->GetCUDA()) solvers[FLOW_SOL]->Jacobian.HtDTransfer();
+#endif
     auto product = CSysMatrixVectorProduct<MixedScalar>(solvers[FLOW_SOL]->Jacobian, geometry, config);
     v = MixedScalar(0.0);
     MixedScalar eps_t = eps;
