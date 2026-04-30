@@ -245,7 +245,7 @@ private:
    *
    * \param[in,out] config - Problem configuration.
    */
-  void adaptRestrictionDamping(CConfig* config);
+  void adaptRestrictionDamping(CConfig* config, passivedouble crossCycleRatio);
 
   /*!
    * \brief Adapt the correction prolongation damping factor.
@@ -261,7 +261,7 @@ private:
    *
    * \param[in,out] config - Problem configuration; \c SetDamp_Correc_Prolong is called to persist the result.
    */
-  void adaptProlongationDamping(CConfig* config);
+  void adaptProlongationDamping(CConfig* config, passivedouble crossCycleRatio);
 
   /*--- CFL adaptation state variables.
    *    These must be passivedouble: AD::Reset() clears the tape between adjoint recordings,
@@ -281,8 +281,10 @@ private:
   bool mg_early_exit_flag = false;             /*!< \brief Shared flag for early exit across OMP threads. */
   passivedouble mg_initial_smooth_rms = 0.0;    /*!< \brief Initial RMS before current smoothing phase. */
   passivedouble mg_initial_smooth_defect = 0.0; /*!< \brief Initial defect norm ||R+tau|| before current smoothing phase (FAS). */
-  passivedouble mg_last_smooth_rms = 0.0;     /*!< \brief Last computed RMS; cached to avoid redundant Allreduce. */
-  passivedouble mg_prev_smooth_rms = 0.0;     /*!< \brief RMS from previous smoothing step; used for stagnation detection. */
+  passivedouble mg_last_smooth_rms = 0.0;      /*!< \brief Last computed RMS; cached to avoid redundant Allreduce. */
+  passivedouble mg_prev_smooth_rms = 0.0;      /*!< \brief RMS from previous smoothing step; used for stagnation detection. */
+  passivedouble mg_prev_smooth_defect = 0.0;   /*!< \brief Defect norm from previous smoothing step; used for defect-based early exit. */
+  passivedouble mg_fine_rms_ema = 0.0;         /*!< \brief EMA of fine-grid pre-smooth r0 across outer iterations; cross-cycle blowup detection. */
 
   /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
   unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
@@ -304,5 +306,11 @@ private:
   passivedouble lastPreSmoothRMS[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+
+  /*--- Per-level start/end defect ||R+tau|| for adaptive damping.
+   *    Defect changes with smoothing even when tau/F >> 1 (unlike RMS which stays flat),
+   *    so it is the correct signal for the damping adaptation logic. ---*/
+  passivedouble lastPreSmoothDefect[MAX_MG_LEVELS+1][2] = {};
+  passivedouble lastPostSmoothDefect[MAX_MG_LEVELS+1][2] = {};
 
 };
