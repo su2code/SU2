@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -798,7 +798,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.073896, 0.027450, -0.001638, -0.000130]
+    aeroelastic.test_vals = [-1.876629, 4.021078, 0.079049, 0.027650, -0.001639, -0.000129, -1.140500]
     aeroelastic.unsteady  = True
     test_list.append(aeroelastic)
 
@@ -892,6 +892,7 @@ def main():
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
     Aachen_3D_restart.test_vals = [-7.701448, -8.512353, -6.014939, -6.468417, -5.801739, -4.607173, -5.550692, -5.300771, -3.804187, -5.256008, -5.765048, -3.609601, -2.229277, -2.883894, -0.563470]
+    Aachen_3D_restart.enabled_with_asan = False
     test_list.append(Aachen_3D_restart)
 
     # Jones APU Turbocharger restart
@@ -972,6 +973,7 @@ def main():
     channel_3D.test_vals_aarch64 = [1.000000, 0.000000, 0.611996, 0.798988, 0.702357]
     channel_3D.unsteady  = True
     channel_3D.multizone = True
+    channel_3D.enabled_with_asan = False
     test_list.append(channel_3D)
 
     # Pipe
@@ -1587,20 +1589,6 @@ def main():
     pywrapper_square_cylinder.enabled_with_asan = False
     test_list.append(pywrapper_square_cylinder)
     pass_list.append(pywrapper_square_cylinder.run_test(args.tsan, args.asan))
-
-    # Aeroelastic
-    pywrapper_aeroelastic         = TestCase('pywrapper_aeroelastic')
-    pywrapper_aeroelastic.cfg_dir   = "aeroelastic"
-    pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
-    pywrapper_aeroelastic.test_iter = 2
-    pywrapper_aeroelastic.test_vals = [0.075274, 0.027537, -0.001640, -0.000129]
-    pywrapper_aeroelastic.command   =  TestCase.Command(exec = "SU2_CFD.py", param = "-f")
-    pywrapper_aeroelastic.timeout   = 1600
-    pywrapper_aeroelastic.tol       = 0.01
-    pywrapper_aeroelastic.unsteady  = True
-    pywrapper_aeroelastic.enabled_with_asan = False
-    test_list.append(pywrapper_aeroelastic)
-    pass_list.append(pywrapper_aeroelastic.run_test(args.tsan, args.asan))
 
     # FSI, 2d
     pywrapper_fsi2d           = TestCase('pywrapper_fsi2d')

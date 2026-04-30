@@ -2,7 +2,7 @@
  * \file CEulerSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Euler flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1515,7 +1515,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
         Velocity_Cyl[1] = sin(Beta)*Mach_Cyl*Mach2Vel_Cyl;
         Velocity_Cyl[2] = sin(Alpha)*cos(Beta)*Mach_Cyl*Mach2Vel_Cyl;
 
-        ModVel_Cyl = GeometryToolbox::Norm(nDim, Velocity_Cyl);
+        ModVel_Cyl = GeometryToolbox::Norm(3, Velocity_Cyl);
 
         if (config->GetViscous()) {
           if (config->GetSystemMeasurements() == SI) { T_ref = 273.15; S = 110.4; Mu_ref = 1.716E-5; }
@@ -4174,7 +4174,7 @@ void CEulerSolver::SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_con
    * Institution: Computational and Theoretical Fluid Dynamics (CTFD),
    *            CSIR - National Aerospace Laboratories, Bangalore
    *            Academy of Scientific and Innovative Research, Ghaziabad
-   * \version 8.4.0 "Harrier"
+   * \version 8.5.0 "Harrier"
    * First release date : September 26 2023
    * modified on:
    *
