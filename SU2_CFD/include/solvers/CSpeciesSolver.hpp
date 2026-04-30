@@ -70,6 +70,11 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   void Initialize(CGeometry* geometry, CConfig* config, unsigned short iMesh, unsigned short nVar);
 
   /*!
+   * \brief Virtual function returning whether this is the species solver.
+   */
+  inline bool IsSpeciesSolver() const override { return true; }
+
+  /*!
    * \brief Restart residual and compute gradients.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

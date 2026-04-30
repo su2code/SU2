@@ -684,13 +684,25 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
        time discretization scheme (1st- or 2nd-order).---*/
 
       for (iVar = 0; iVar < nVar; iVar++) {
+        su2double unsteady_term = 0.0;
         if (first_order)
-          LinSysRes(iPoint, iVar) +=
-              (Density_nP1 * U_time_nP1[iVar] - Density_n * U_time_n[iVar]) * Volume_nP1 / TimeStep;
+          unsteady_term = (Density_nP1 * U_time_nP1[iVar] - Density_n * U_time_n[iVar]) * Volume_nP1 / TimeStep;
         if (second_order)
-          LinSysRes(iPoint, iVar) += (3.0 * Density_nP1 * U_time_nP1[iVar] - 4.0 * Density_n * U_time_n[iVar] +
+          unsteady_term = (3.0 * Density_nP1 * U_time_nP1[iVar] - 4.0 * Density_n * U_time_n[iVar] +
                                       1.0 * Density_nM1 * U_time_nM1[iVar]) *
                                      Volume_nP1 / (2.0 * TimeStep);
+
+        bool bounded_scalar = false;
+        if (config->GetKind_Solver() == MAIN_SOLVER::INC_EULER || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES) {
+          if (IsSpeciesSolver()) bounded_scalar = config->GetBounded_Species();
+          else if (IsTurbSolver()) bounded_scalar = config->GetBounded_Turb();
+        }
+        if (bounded_scalar) {
+          if (first_order) unsteady_term -= U_time_nP1[iVar] * (Density_nP1 - Density_n) * Volume_nP1 / TimeStep;
+          if (second_order) unsteady_term -= U_time_nP1[iVar] * (3.0 * Density_nP1 - 4.0 * Density_n + 1.0 * Density_nM1) * Volume_nP1 / (2.0 * TimeStep);
+        }
+
+        LinSysRes(iPoint, iVar) += unsteady_term;
       }
 
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
@@ -827,13 +839,26 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
       }
 
       for (iVar = 0; iVar < nVar; iVar++) {
+        su2double unsteady_term = 0.0;
         if (first_order)
-          LinSysRes(iPoint, iVar) +=
-              (Density_nP1 * U_time_nP1[iVar] - Density_n * U_time_n[iVar]) * (Volume_nP1 / TimeStep);
+          unsteady_term = (Density_nP1 * U_time_nP1[iVar] - Density_n * U_time_n[iVar]) * (Volume_nP1 / TimeStep);
         if (second_order)
-          LinSysRes(iPoint, iVar) +=
-              (Density_nP1 * U_time_nP1[iVar] - Density_n * U_time_n[iVar]) * (3.0 * Volume_nP1 / (2.0 * TimeStep)) +
+          unsteady_term = (Density_nP1 * U_time_nP1[iVar] - Density_n * U_time_n[iVar]) * (3.0 * Volume_nP1 / (2.0 * TimeStep)) +
               (Density_nM1 * U_time_nM1[iVar] - Density_n * U_time_n[iVar]) * (Volume_nM1 / (2.0 * TimeStep));
+
+        bool bounded_scalar = false;
+        if (config->GetKind_Solver() == MAIN_SOLVER::INC_EULER || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES) {
+          if (IsSpeciesSolver()) bounded_scalar = config->GetBounded_Species();
+          else if (IsTurbSolver()) bounded_scalar = config->GetBounded_Turb();
+        }
+
+        if (bounded_scalar) {
+          if (first_order) unsteady_term -= U_time_nP1[iVar] * (Density_nP1 - Density_n) * (Volume_nP1 / TimeStep);
+          if (second_order) unsteady_term -= U_time_nP1[iVar] * ((Density_nP1 - Density_n) * (3.0 * Volume_nP1 / (2.0 * TimeStep)) +
+                                                                 (Density_nM1 - Density_n) * (Volume_nM1 / (2.0 * TimeStep)));
+        }
+
+        LinSysRes(iPoint, iVar) += unsteady_term;
       }
 
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/

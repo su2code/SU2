@@ -56,6 +56,11 @@ public:
   CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative);
 
   /*!
+   * \brief Virtual function returning whether this is the turbulent solver.
+   */
+  inline bool IsTurbSolver() const override { return true; }
+
+  /*!
    * \brief Impose via the residual the Euler wall boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -147,7 +152,7 @@ public:
    * \returns The number of extra variables.
    */
   unsigned long RegisterSolutionExtra(bool input, const CConfig* config) final;
-  
+
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
    * a nonlinear iteration for stability.
