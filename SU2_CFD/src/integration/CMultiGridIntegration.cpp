@@ -90,7 +90,7 @@ inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
 /*! \brief Compute RMS of LinSysRes directly over domain points, with MPI reduction.
  *  Reads the vector itself (not Residual_RMS), so it gives R(u_current) immediately
  *  after a Preprocessing + Space_Integration call without needing Time_Integration.
- *  Must be called from master only (inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS). */
+ *  Must be called from inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS (collective MPI). */
 inline passivedouble ComputeLinSysVecRMS(const CSolver* solver, const CGeometry* geometry) {
   const unsigned short nVar = solver->GetnVar();
   const unsigned long nPtDomain = geometry->GetnPointDomain();
@@ -104,7 +104,79 @@ inline passivedouble ComputeLinSysVecRMS(const CSolver* solver, const CGeometry*
   SU2_MPI::Allreduce(&local_sq, &global_sq, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
   return sqrt(global_sq / (nVar * geometry->GetGlobal_nPointDomain()));
 }
+
+/*! \brief Compute RMS of the solution delta (u_new - u_old) and of u_old over domain points.
+ *  Call after Time_Integration (Solution = u_new, Solution_Old = u_old).
+ *  Returns {delta_rms, sol_rms} — ratio delta_rms/sol_rms is the relative update size.
+ *  Must be called from inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS (collective MPI). */
+inline std::pair<passivedouble,passivedouble>
+ComputeSolutionDeltaNorms(const CSolver* solver, const CGeometry* geometry) {
+  const unsigned short nVar = solver->GetnVar();
+  const unsigned long nPtDomain = geometry->GetnPointDomain();
+  const CVariable* nodes = solver->GetNodes();
+  passivedouble local_delta_sq = 0.0, local_sol_sq = 0.0;
+  for (auto iPoint = 0ul; iPoint < nPtDomain; iPoint++)
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      const passivedouble u     = SU2_TYPE::GetValue(nodes->GetSolution(iPoint, iVar));
+      const passivedouble u_old = SU2_TYPE::GetValue(nodes->GetSolution_Old(iPoint, iVar));
+      local_delta_sq += (u - u_old) * (u - u_old);
+      local_sol_sq   += u_old * u_old;
+    }
+  passivedouble buf[2] = {local_delta_sq, local_sol_sq};
+  passivedouble gbuf[2] = {0.0, 0.0};
+  SU2_MPI::Allreduce(buf, gbuf, 2, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  const passivedouble denom = nVar * geometry->GetGlobal_nPointDomain();
+  return {sqrt(gbuf[0] / denom), sqrt(gbuf[1] / denom)};
 }
+
+/*! \brief Compute the FAS defect norm ||LinSysRes + Res_TruncError|| over domain points.
+ *  At coarse levels this is the quantity that the smoother is actually reducing: the
+ *  coarse-grid smoother drives F_k(u_k) toward -tau_k, so ||F_k(u_k) + tau_k|| -> 0.
+ *  At the finest level Res_TruncError = 0, so this equals ComputeLinSysVecRMS.
+ *  Call after a fresh Preprocessing + Space_Integration.
+ *  Must be called from inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS (collective MPI). */
+inline passivedouble ComputeDefectNorm(const CSolver* solver, const CGeometry* geometry) {
+  const unsigned short nVar = solver->GetnVar();
+  const unsigned long nPtDomain = geometry->GetnPointDomain();
+  const CVariable* nodes = solver->GetNodes();
+  passivedouble local_sq = 0.0;
+  std::vector<su2double> trunc(nVar);
+  for (auto iPoint = 0ul; iPoint < nPtDomain; iPoint++) {
+    nodes->GetResTruncError(iPoint, trunc.data());
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      const passivedouble d = SU2_TYPE::GetValue(solver->LinSysRes(iPoint, iVar))
+                            + SU2_TYPE::GetValue(trunc[iVar]);
+      local_sq += d * d;
+    }
+  }
+  passivedouble global_sq = 0.0;
+  SU2_MPI::Allreduce(&local_sq, &global_sq, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  return sqrt(global_sq / (nVar * geometry->GetGlobal_nPointDomain()));
+}
+
+/*! \brief Compute RMS of Res_TruncError (the FAS forcing term tau_k) over domain points.
+ *  After SetForcing_Term, tau_{k+1} is stored in Res_TruncError of the coarse solver.
+ *  ||tau_{k+1}|| / ||F_k(u_after)|| is the restriction fidelity ratio:
+ *  how much of the pre-smoothed fine-grid residual survived restriction as coarse forcing.
+ *  Must be called from inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS (collective MPI). */
+inline passivedouble ComputeTruncErrorNorm(const CSolver* solver, const CGeometry* geometry) {
+  const unsigned short nVar = solver->GetnVar();
+  const unsigned long nPtDomain = geometry->GetnPointDomain();
+  const CVariable* nodes = solver->GetNodes();
+  passivedouble local_sq = 0.0;
+  std::vector<su2double> trunc(nVar);
+  for (auto iPoint = 0ul; iPoint < nPtDomain; iPoint++) {
+    nodes->GetResTruncError(iPoint, trunc.data());
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      const passivedouble t = SU2_TYPE::GetValue(trunc[iVar]);
+      local_sq += t * t;
+    }
+  }
+  passivedouble global_sq2 = 0.0;
+  SU2_MPI::Allreduce(&local_sq, &global_sq2, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+  return sqrt(global_sq2 / (nVar * geometry->GetGlobal_nPointDomain()));
+}
+}  // anonymous namespace
 
 void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
   SU2_ZONE_SCOPED
@@ -251,7 +323,8 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsign
   }
 
   /*--- Clamp coefficient between 0.5 and 1.0 ---*/
-  new_coeff = max(0.5, min(1.0, new_coeff));
+  //new_coeff = max(0.5, min(1.0, new_coeff));
+  new_coeff = 0.85;
 
   /*--- Update coarse grid CFL ---*/
   CFL_coarse_new = max(0.5 * CFL_fine, min(CFL_fine, CFL_fine * new_coeff));
@@ -456,6 +529,15 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                           lastCorrecSmoothRMS[i][0], lastCorrecSmoothRMS[i][1]);
       table << "-";
 
+      /*--- CFL per level. ---*/
+      table << "CFL";
+      for (unsigned short i = 0; i <= nMGLevels; ++i) {
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(4)
+           << SU2_TYPE::GetValue(config[iZone]->GetCFL(i));
+        table << ss.str();
+      }
+
       table.PrintFooter();
 
       cout << std::fixed << std::setprecision(4)
@@ -540,6 +622,25 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
 
+    /*--- Restriction fidelity diagnostic: compare ||tau_{k+1}|| vs ||F_k(u_after_presmooth)||.
+     *    tau/F close to 1 means restriction faithfully transferred the pre-smoothed residual;
+     *    tau/F << 1 means high-frequency aliasing destroyed the signal during restriction.
+     *    Only printed when MG_SMOOTH_OUTPUT= YES (same gate as pre/post-smooth lines). ---*/
+    if (config->GetMGOptions().MG_Smooth_Output) {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        if (SU2_MPI::GetRank() == MASTER_NODE) {
+          const passivedouble tau_norm  = ComputeTruncErrorNorm(solver_coarse, geometry_coarse);
+          const passivedouble fine_rms  = lastPreSmoothRMS[iMesh][1]; /*--- ||F_k(u_after)|| ---*/
+          const passivedouble fidelity  = (fine_rms > 0.0) ? tau_norm / fine_rms : 0.0;
+          cout << "  Restrict  L" << iMesh << "->L" << iMesh+1
+               << "  ||F_fine||=" << scientific << setprecision(3) << fine_rms
+               << "  ||tau||=" << tau_norm
+               << "  tau/F=" << fixed << setprecision(4) << fidelity << "\n";
+        }
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+    }
+
     /*--- Restore the time integration settings. ---*/
 
     if (implicit) {
@@ -604,14 +705,15 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   /*--- Pre-loop: evaluate the true baseline R(u_0) before any solution update.
    *    Runs Preprocessing + Space_Integration without modifying the solution, then
    *    reads LinSysRes directly so Residual_RMS does not need to be current.
-   *    Only done when per-step monitoring is active (output or early exit). ---*/
-  if (need_per_step_rms) {
+   *    Only done when per-step monitoring is active AND there are iterations to run. ---*/
+  if (need_per_step_rms && nPreSmooth > 0) {
     solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, 0, RunTime_EqSystem, false);
     Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, 0, RunTime_EqSystem);
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       const passivedouble pre_rms = ComputeLinSysVecRMS(solver_fine, geometry_fine);
-      mg_initial_smooth_rms = pre_rms;
-      mg_prev_smooth_rms    = pre_rms;
+      mg_initial_smooth_rms    = pre_rms;
+      mg_initial_smooth_defect = ComputeDefectNorm(solver_fine, geometry_fine);
+      mg_prev_smooth_rms       = pre_rms;
       lastPreSmoothRMS[iMesh][0] = pre_rms;
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -662,16 +764,25 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, 0, RunTime_EqSystem, false);
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, 0, RunTime_EqSystem);
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-        const passivedouble current_rms = ComputeLinSysVecRMS(solver_fine, geometry_fine);
+        const passivedouble current_rms    = ComputeLinSysVecRMS(solver_fine, geometry_fine);
+        const passivedouble current_defect = ComputeDefectNorm(solver_fine, geometry_fine);
+        const auto [delta_rms, sol_rms] = ComputeSolutionDeltaNorms(solver_fine, geometry_fine);
         mg_last_smooth_rms = current_rms;
 
         if (mgOpts.MG_Smooth_Output && SU2_MPI::GetRank() == MASTER_NODE) {
           const passivedouble ratio = (mg_initial_smooth_rms > 0.0) ?
                                       current_rms / mg_initial_smooth_rms : 1.0;
+          const passivedouble rel_du = (sol_rms > 0.0) ? delta_rms / sol_rms : 0.0;
+          const passivedouble defect_ratio = (mg_initial_smooth_defect > 0.0) ?
+                                              current_defect / mg_initial_smooth_defect : 1.0;
           cout << "  Pre-smooth [MG level " << iMesh << "] step " << iPreSmooth+1
                << "/" << nPreSmooth << "  r0=" << scientific << setprecision(3)
                << mg_initial_smooth_rms << "  r=" << current_rms
-               << "  ratio=" << fixed << setprecision(4) << ratio << "\n";
+               << "  ratio=" << fixed << setprecision(4) << ratio
+               << "  d=" << scientific << setprecision(3) << current_defect
+               << "  d/d0=" << fixed << setprecision(4) << defect_ratio
+               << "  du=" << scientific << setprecision(3) << delta_rms
+               << "  du/u=" << scientific << setprecision(3) << rel_du << "\n";
         }
 
         if (early_exit) {
@@ -693,20 +804,21 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   }
 
   /*--- Record final RMS and progress flag.
-   *    In the verbose/early-exit path mg_last_smooth_rms is always kept current by the
-   *    per-step ComputeLinSysVecRMS call, so no recompute is needed.
-   *    In the normal path recompute once from Residual_RMS (stale-by-one-step but cheap). ---*/
-  passivedouble final_pre_rms = mg_last_smooth_rms;
-  if (!need_per_step_rms) {
-    final_pre_rms = ComputeLinSysResRMS(solver_fine);
+   *    Skip entirely when nPreSmooth==0: lastPreSmoothRMS[iMesh] stays {0,0} (initialized).
+   *    In the verbose/early-exit path mg_last_smooth_rms is kept current; otherwise recompute. ---*/
+  if (nPreSmooth > 0) {
+    passivedouble final_pre_rms = mg_last_smooth_rms;
+    if (!need_per_step_rms) {
+      final_pre_rms = ComputeLinSysResRMS(solver_fine);
+    }
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      mg_last_smooth_rms = final_pre_rms;
+      lastPreSmoothRMS[iMesh][1] = final_pre_rms;
+      lastPreSmoothProgress[iMesh] = mg_early_exit_flag ||
+                                     (final_pre_rms < lastPreSmoothRMS[iMesh][0]);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    mg_last_smooth_rms = final_pre_rms;
-    lastPreSmoothRMS[iMesh][1] = final_pre_rms;
-    lastPreSmoothProgress[iMesh] = mg_early_exit_flag ||
-                                   (final_pre_rms < lastPreSmoothRMS[iMesh][0]);
-  }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 
@@ -732,14 +844,16 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
   /*--- Pre-loop: evaluate the true baseline R(u_0) before any solution update.
    *    Same rationale as PreSmoothing: reads LinSysRes directly after a fresh
-   *    Preprocessing + Space_Integration, so Residual_RMS need not be current. ---*/
-  if (need_per_step_rms) {
+   *    Preprocessing + Space_Integration, so Residual_RMS need not be current.
+   *    Only done when per-step monitoring is active AND there are iterations to run. ---*/
+  if (need_per_step_rms && nPostSmooth > 0) {
     solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, 0, RunTime_EqSystem, false);
     Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, 0, RunTime_EqSystem);
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       const passivedouble pre_rms = ComputeLinSysVecRMS(solver_fine, geometry_fine);
-      mg_initial_smooth_rms = pre_rms;
-      mg_prev_smooth_rms    = pre_rms;
+      mg_initial_smooth_rms    = pre_rms;
+      mg_initial_smooth_defect = ComputeDefectNorm(solver_fine, geometry_fine);
+      mg_prev_smooth_rms       = pre_rms;
       lastPostSmoothRMS[iMesh][0] = pre_rms;
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -786,16 +900,25 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, 0, RunTime_EqSystem, false);
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, 0, RunTime_EqSystem);
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-        const passivedouble current_rms = ComputeLinSysVecRMS(solver_fine, geometry_fine);
+        const passivedouble current_rms    = ComputeLinSysVecRMS(solver_fine, geometry_fine);
+        const passivedouble current_defect = ComputeDefectNorm(solver_fine, geometry_fine);
+        const auto [delta_rms, sol_rms] = ComputeSolutionDeltaNorms(solver_fine, geometry_fine);
         mg_last_smooth_rms = current_rms;
 
         if (mgOpts.MG_Smooth_Output && SU2_MPI::GetRank() == MASTER_NODE) {
           const passivedouble ratio = (mg_initial_smooth_rms > 0.0) ?
                                       current_rms / mg_initial_smooth_rms : 1.0;
+          const passivedouble rel_du = (sol_rms > 0.0) ? delta_rms / sol_rms : 0.0;
+          const passivedouble defect_ratio = (mg_initial_smooth_defect > 0.0) ?
+                                              current_defect / mg_initial_smooth_defect : 1.0;
           cout << "  Post-smooth [MG level " << iMesh << "] step " << iPostSmooth+1
                << "/" << nPostSmooth << "  r0=" << scientific << setprecision(3)
                << mg_initial_smooth_rms << "  r=" << current_rms
-               << "  ratio=" << fixed << setprecision(4) << ratio << "\n";
+               << "  ratio=" << fixed << setprecision(4) << ratio
+               << "  d=" << scientific << setprecision(3) << current_defect
+               << "  d/d0=" << fixed << setprecision(4) << defect_ratio
+               << "  du=" << scientific << setprecision(3) << delta_rms
+               << "  du/u=" << scientific << setprecision(3) << rel_du << "\n";
         }
 
         if (early_exit) {
@@ -817,19 +940,21 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   }
 
   /*--- Record final RMS after post-smoothing.
-   *    In the verbose/early-exit path mg_last_smooth_rms is kept current by the per-step
-   *    ComputeLinSysVecRMS call; in the normal path recompute once from Residual_RMS. ---*/
-  passivedouble final_post_rms = mg_last_smooth_rms;
-  if (!need_per_step_rms) {
-    final_post_rms = ComputeLinSysResRMS(solver_fine);
+   *    Skip entirely when nPostSmooth==0: lastPostSmoothRMS[iMesh] stays {0,0} (initialized).
+   *    In the verbose/early-exit path mg_last_smooth_rms is kept current; otherwise recompute. ---*/
+  if (nPostSmooth > 0) {
+    passivedouble final_post_rms = mg_last_smooth_rms;
+    if (!need_per_step_rms) {
+      final_post_rms = ComputeLinSysResRMS(solver_fine);
+    }
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      mg_last_smooth_rms = final_post_rms;
+      lastPostSmoothRMS[iMesh][1] = final_post_rms;
+      lastPostSmoothProgress[iMesh] = mg_early_exit_flag ||
+                                      (final_post_rms < lastPostSmoothRMS[iMesh][0]);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    mg_last_smooth_rms = final_post_rms;
-    lastPostSmoothRMS[iMesh][1] = final_post_rms;
-    lastPostSmoothProgress[iMesh] = mg_early_exit_flag ||
-                                    (final_post_rms < lastPostSmoothRMS[iMesh][0]);
-  }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
 

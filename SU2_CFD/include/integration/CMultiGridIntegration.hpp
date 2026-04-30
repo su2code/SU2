@@ -279,7 +279,8 @@ private:
 
   /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
   bool mg_early_exit_flag = false;             /*!< \brief Shared flag for early exit across OMP threads. */
-  passivedouble mg_initial_smooth_rms = 0.0;  /*!< \brief Initial RMS before current smoothing phase. */
+  passivedouble mg_initial_smooth_rms = 0.0;    /*!< \brief Initial RMS before current smoothing phase. */
+  passivedouble mg_initial_smooth_defect = 0.0; /*!< \brief Initial defect norm ||R+tau|| before current smoothing phase (FAS). */
   passivedouble mg_last_smooth_rms = 0.0;     /*!< \brief Last computed RMS; cached to avoid redundant Allreduce. */
   passivedouble mg_prev_smooth_rms = 0.0;     /*!< \brief RMS from previous smoothing step; used for stagnation detection. */
 
