@@ -968,8 +968,6 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   const bool outlet     = (config->GetnMarker_Outlet() != 0);
   const bool dual_time  = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                           (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
-  const bool restart    = config->GetRestart() || config->GetRestart_Flow();
-  const auto TimeIter   = config->GetTimeIter();
 
   /*--- Set the primitive variables ---*/
 
@@ -978,9 +976,11 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
 
-  /*--- For the first time iteration without restart, update density time-levels after computing
-        actual density from SetPrimitive_Variables. ---*/
-  if (dual_time && TimeIter == 0 && !restart && iRKStep == 0 && iMesh == MESH_0) {
+  /*--- Provide a valid initial Density_time_n for restart or step 0 since
+        it was 0.0 before SetPrimitive_Variables evaluated the exact field.
+        Checking GetDensity_time_n(0) == 0.0 ensures we only evaluate this
+        once when the history arrays are uninitialized. ---*/
+  if (dual_time && nPoint > 0 && nodes->GetDensity_time_n(0) == 0.0 && iMesh == MESH_0) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       su2double density = nodes->GetDensity(iPoint);
@@ -1199,7 +1199,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
     if (LD2_Scheme) {
       numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(jPoint));
-      if (!geometry->nodes->GetPeriodicBoundary(iPoint) || (geometry->nodes->GetPeriodicBoundary(iPoint) 
+      if (!geometry->nodes->GetPeriodicBoundary(iPoint) || (geometry->nodes->GetPeriodicBoundary(iPoint)
           && !geometry->nodes->GetPeriodicBoundary(jPoint))) {
         numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
       } else {

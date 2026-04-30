@@ -86,6 +86,14 @@ def main():
     flame_init_methods.new_output = True
     test_list.append(flame_init_methods)
 
+    # 2D laminar premixed ch4-air flame, transient flame propagation  
+    cfd_flamelet_ch4_unsteady = TestCase('cfd_flamelet_ch4_unsteady')
+    cfd_flamelet_ch4_unsteady.cfg_dir = "flamelet/09_laminar_premixed_ch4_unsteady"
+    cfd_flamelet_ch4_unsteady.cfg_file = "lam_prem_ch4_unsteady.cfg"
+    cfd_flamelet_ch4_unsteady.test_iter = 5
+    cfd_flamelet_ch4_unsteady.test_vals = [-8.036958, -8.372668, -1.842800, -9.388446]
+    test_list.append(cfd_flamelet_ch4_unsteady)
+
     #########################
     ## NEMO solver ###
     #########################
