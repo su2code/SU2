@@ -335,7 +335,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   /*!
    * \brief Sets to zero all the entries of the vector.
    */
-  inline void SetValZero(void) { *this = ScalarType(0); }
+  inline void SetValZero() { *this = ScalarType(0); }
 
   /*!
    * \brief Dot product between "this" and an expression.

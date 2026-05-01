@@ -74,7 +74,6 @@ class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
   bool KrylovSet = false;
   bool PreconditionerSet = false;
 
-  CSysMatrix<su2mixedfloat> CopiedJacobian;
   CSysSolve<LinSolScalar> AdjSolver;
   CSysVector<LinSolScalar> AdjRHS;
   CSysVector<LinSolScalar> AdjSol;
@@ -182,11 +181,6 @@ public:
   void UpdateAdjoints();
 
   /*!
-   * \brief Update the primal time iteration.
-   */
-  void UpdateTimeIter();
-
-  /*!
    * \brief Update the primal far-field variables.
    */
   void UpdateFarfield();
@@ -225,11 +219,6 @@ public:
    * \brief Update the primal objective.
    */
   void UpdateObjective();
-
-  /*!
-   * \brief Update the primal jacobian.
-   */
-  void UpdateJacobians();
 
   /*!
    * \brief Postprocess the adjoint iteration for ZONE_0.

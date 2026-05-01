@@ -280,6 +280,8 @@ void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver
 void CIntegration::ComputeResiduals(CGeometry**** geometry_container, CSolver***** solvers_container,
                                     CNumerics****** numerics_container, CConfig** config_container,
                                     unsigned short EqSystem, unsigned short iZone, unsigned short iInst) {
+  SU2_ZONE_SCOPED
+
   CGeometry* geometry = geometry_container[iZone][iInst][MESH_0];
   CConfig* config = config_container[iZone];
   CSolver** solvers = solvers_container[iZone][iInst][MESH_0];
@@ -321,14 +323,14 @@ void CIntegration::ComputeResiduals(CGeometry**** geometry_container, CSolver***
 
   /*--- Space integration computes the residuals. ---*/
 
-  /*--- Set the Jacobian to zero since this is not done inside the fluid iteration
-   when running the discrete adjoint solver. ---*/
-
-  solvers[EqSystem]->Jacobian.SetValZero();  // TODO: Check if actually necessary (already done in Preprocessing)
-
   Space_Integration(geometry, solvers, numerics, config, MESH_0, NO_RK_ITER, EqSystem);
 
-  solvers[EqSystem]->ComputeResidual_RMS(geometry, config);
+  const bool wasActive = AD::BeginPassive();
+  solvers[EqSystem]->SetTime_Step(geometry, solvers, config, MESH_0, config->GetTimeIter());
+  AD::EndPassive(wasActive);
+
+  solvers[EqSystem]->PrepareImplicitIteration(geometry, solvers, config);
+  solvers[EqSystem]->LinSysRes *= -1;
 
   /*--- Post-processing. ---*/
 

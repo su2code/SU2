@@ -328,12 +328,6 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_RMS(const CGeometry* geometry, const CConfig* config);
-
-  /*!
-   * \brief Set the value of the max residual and RMS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
   void ComputeResidual_Multizone(const CGeometry *geometry, const CConfig *config);
 
   /*!
@@ -1801,77 +1795,77 @@ public:
   /*! \brief Get a reference to the matrix of partial sensitivities dObjective/dStates. */
   inline virtual const su2matrix<su2double>& GetPartialMatrix_dObjective_dStates() const {
     SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
-    static su2matrix<su2double> sens_matrix; 
+    static su2matrix<su2double> sens_matrix;
     return sens_matrix;
   }
 
   /*! \brief Get a reference to the matrix of partial products dResiduals/dStates^T * psi. */
   inline virtual const su2matrix<su2double>& GetPartialMatrix_dResiduals_dStates() const {
     SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
-    static su2matrix<su2double> sens_matrix; 
+    static su2matrix<su2double> sens_matrix;
     return sens_matrix;
   }
 
   /*! \brief Get a reference to the matrix of partial products dTractions/dStates^T * psi. */
   inline virtual const su2matrix<su2double>& GetPartialMatrix_dTractions_dStates() const {
     SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
-    static su2matrix<su2double> sens_matrix; 
+    static su2matrix<su2double> sens_matrix;
     return sens_matrix;
   }
 
   /*! \brief Get a reference to the matrix of partial sensitivities dObjective/dCoordinates. */
   inline virtual const su2matrix<su2double>& GetPartialMatrix_dObjective_dCoordinates() const {
     SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
-    static su2matrix<su2double> sens_matrix; 
+    static su2matrix<su2double> sens_matrix;
     return sens_matrix;
   }
 
   /*! \brief Get a reference to the matrix of partial products dResiduals/dCoordinates^T * psi. */
   inline virtual const su2matrix<su2double>& GetPartialMatrix_dResiduals_dCoordinates() const {
     SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
-    static su2matrix<su2double> sens_matrix; 
+    static su2matrix<su2double> sens_matrix;
     return sens_matrix;
   }
 
   /*! \brief Get a reference to the matrix of partial products dTractions/dCoordinates^T * psi. */
   inline virtual const su2matrix<su2double>& GetPartialMatrix_dTractions_dCoordinates() const {
     SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
-    static su2matrix<su2double> sens_matrix; 
+    static su2matrix<su2double> sens_matrix;
     return sens_matrix;
   }
 
   /*! \brief Get a reference to the matrix of partial products dCoordinates/dCoordinates^T * psi. */
   inline virtual const su2matrix<su2double>& GetPartialMatrix_dCoordinates_dCoordinates() const {
     SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
-    static su2matrix<su2double> sens_matrix; 
+    static su2matrix<su2double> sens_matrix;
     return sens_matrix;
   }
 
   /*! \brief Get a reference to the marker matrix of partial sensitivities dObjective/dDisplacements. */
   inline virtual const su2matrix<su2double>& GetPartialMatrix_dObjective_dDisplacements(unsigned short iMarker) const {
     SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
-    static su2matrix<su2double> sens_matrix; 
+    static su2matrix<su2double> sens_matrix;
     return sens_matrix;
   }
 
   /*! \brief Get a reference to the marker matrix of partial products dResiduals/dDisplacements^T * psi. */
   inline virtual const su2matrix<su2double>& GetPartialMatrix_dResiduals_dDisplacements(unsigned short iMarker) const {
     SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
-    static su2matrix<su2double> sens_matrix; 
+    static su2matrix<su2double> sens_matrix;
     return sens_matrix;
   }
 
   /*! \brief Get a reference to the marker matrix of partial products dTractions/dDisplacements^T * psi. */
   inline virtual const su2matrix<su2double>& GetPartialMatrix_dTractions_dDisplacements(unsigned short iMarker) const {
     SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
-    static su2matrix<su2double> sens_matrix; 
+    static su2matrix<su2double> sens_matrix;
     return sens_matrix;
   }
 
   /*! \brief Get a reference to the marker matrix of partial products dCoordinates/dDisplacements^T * psi. */
   inline virtual const su2matrix<su2double>& GetPartialMatrix_dCoordinates_dDisplacements(unsigned short iMarker) const {
     SU2_MPI::Error("Not available for this solver.", CURRENT_FUNCTION);
-    static su2matrix<su2double> sens_matrix; 
+    static su2matrix<su2double> sens_matrix;
     return sens_matrix;
   }
 

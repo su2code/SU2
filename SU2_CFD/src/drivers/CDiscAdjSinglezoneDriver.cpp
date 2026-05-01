@@ -60,6 +60,26 @@ class LinPreconditioner final : public CPreconditioner<CDiscAdjSinglezoneDriver:
  private:
   CDiscAdjSinglezoneDriver* const driver;
 };
+
+class VectorSlice {
+  public:
+    VectorSlice(CSysVector<CDiscAdjSinglezoneDriver::LinSolScalar>& vector, unsigned long offset, unsigned long nVar) :
+      vector(vector), offset(offset), nVar(nVar) {}
+
+    auto GetNBlk() const { return vector.GetNBlk(); }
+    auto GetNBlkDomain() const { return vector.GetNBlkDomain(); }
+    auto GetNVar() const { return nVar; }
+
+    const auto& operator() (unsigned long i, unsigned long j) const {
+      return vector(i, offset + j);
+    }
+    auto& operator() (unsigned long i, unsigned long j) {
+      return vector(i, offset + j);
+    }
+  private:
+    CSysVector<CDiscAdjSinglezoneDriver::LinSolScalar>& vector;
+    const unsigned long offset, nVar;
+};
 }
 
 CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
@@ -254,19 +274,7 @@ void CDiscAdjSinglezoneDriver::RunResidual() {
 
     if (config->GetKind_TimeIntScheme() != EULER_IMPLICIT) {
       SU2_MPI::Error("Cannot build a preconditioner for the discrete-adjoint system "
-        "(missing primal Jacobian structure)!", CURRENT_FUNCTION);
-    }
-
-    UpdateJacobians();
-
-    CopiedJacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
-
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      for (unsigned long jPoint = 0; jPoint < nPoint; jPoint++) {
-        auto value = solver[FLOW_SOL]->Jacobian.GetBlock(iPoint, jPoint);
-
-        CopiedJacobian.SetBlock(iPoint, jPoint, value);
-      }
+                     "(missing primal Jacobian structure)!", CURRENT_FUNCTION);
     }
   }
 
@@ -583,7 +591,6 @@ void CDiscAdjSinglezoneDriver::DirectRunResidual(RECORDING kind_recording) {
   DeformGeometry();
 
   /*--- Pre-process the primal solver state. ---*/
-  UpdateTimeIter();
   UpdateFarfield();
   UpdateGeometry();
   UpdateStates();
@@ -752,11 +759,6 @@ void CDiscAdjSinglezoneDriver::SecondaryRunResidual() {
   }
 }
 
-void CDiscAdjSinglezoneDriver::UpdateTimeIter() {
-  /*--- Update the primal time iteration. ---*/
-  solver[FLOW_SOL]->SetTime_Step(geometry, solver, config, MESH_0, config->GetTimeIter());
-}
-
 void CDiscAdjSinglezoneDriver::UpdateFarfield() {
   /*--- Update the primal far-field variables. ---*/
 
@@ -856,15 +858,19 @@ void CDiscAdjSinglezoneDriver::UpdateTractions() {
                                 INST_0);
 }
 
-void CDiscAdjSinglezoneDriver::UpdateJacobians() {
-  SU2_ZONE_SCOPED
-  /*--- Compute the approximate Jacobian for preconditioning. ---*/
-  solver[FLOW_SOL]->PrepareImplicitIteration(geometry, solver, config);
-}
-
 void CDiscAdjSinglezoneDriver::ApplyPreconditioner(const CSysVector<LinSolScalar>& u, CSysVector<LinSolScalar>& v) {
   SU2_ZONE_SCOPED
-  solver[FLOW_SOL]->System.Solve_b(CopiedJacobian, u, v, geometry, config, !PreconditionerSet);
+
+  unsigned long offset = 0;
+  for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++) {
+    auto* solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+    if (solver && !solver->GetAdjoint()) {
+      VectorSlice u_view(const_cast<CSysVector<LinSolScalar>&>(u), offset, solver->GetnVar());
+      VectorSlice v_view(v, offset, solver->GetnVar());
+      solver->System.Solve_b(solver->Jacobian, u_view, v_view, geometry, config, !PreconditionerSet);
+      offset += solver->GetnVar();
+    }
+  }
   PreconditionerSet = true;
 }
 
