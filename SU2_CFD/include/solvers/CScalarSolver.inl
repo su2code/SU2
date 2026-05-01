@@ -693,7 +693,8 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
                                      Volume_nP1 / (2.0 * TimeStep);
 
         bool bounded_scalar = false;
-        if (config->GetKind_Solver() == MAIN_SOLVER::INC_EULER || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES) {
+        if (config->GetKind_Solver() == MAIN_SOLVER::INC_EULER || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES ||
+            config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) {
           if (IsSpeciesSolver()) bounded_scalar = config->GetBounded_Species();
           else if (IsTurbSolver()) bounded_scalar = config->GetBounded_Turb();
         }
@@ -847,7 +848,8 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
               (Density_nM1 * U_time_nM1[iVar] - Density_n * U_time_n[iVar]) * (Volume_nM1 / (2.0 * TimeStep));
 
         bool bounded_scalar = false;
-        if (config->GetKind_Solver() == MAIN_SOLVER::INC_EULER || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES) {
+        if (config->GetKind_Solver() == MAIN_SOLVER::INC_EULER || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES ||
+            config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) {
           if (IsSpeciesSolver()) bounded_scalar = config->GetBounded_Species();
           else if (IsTurbSolver()) bounded_scalar = config->GetBounded_Turb();
         }
@@ -864,7 +866,8 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
       if (implicit) {
 	bool bounded_scalar = false;
-	if (config->GetKind_Solver() == MAIN_SOLVER::INC_EULER || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES) {
+	if (config->GetKind_Solver() == MAIN_SOLVER::INC_EULER || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES ||
+            config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) {
 	  if (IsSpeciesSolver()) bounded_scalar = config->GetBounded_Species();
 	  else if (IsTurbSolver()) bounded_scalar = config->GetBounded_Turb();
 	}
