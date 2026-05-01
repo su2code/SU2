@@ -229,7 +229,8 @@ private:
    */
   passivedouble computeMultigridCFL(CConfig* config, unsigned short iMesh,
                                      passivedouble CFL_fine, passivedouble CFL_coarse_current,
-                                     passivedouble rms_res_coarse);
+                                     passivedouble rms_res_coarse,
+                                     passivedouble initial_ratio);
 
   /*!
    * \brief Adapt the residual restriction damping factor.
@@ -285,6 +286,7 @@ private:
   passivedouble mg_prev_smooth_rms = 0.0;      /*!< \brief RMS from previous smoothing step; used for stagnation detection. */
   passivedouble mg_prev_smooth_defect = 0.0;   /*!< \brief Defect norm from previous smoothing step; used for defect-based early exit. */
   passivedouble mg_fine_rms_ema = 0.0;         /*!< \brief EMA of fine-grid pre-smooth r0 across outer iterations; cross-cycle blowup detection. */
+  passivedouble mg_coarse_cfl_ratio[MAX_MG_LEVELS] = {}; /*!< \brief Initial CFL(iMesh+1)/CFL(0) ratios captured once at first cycle; used to scale coarse CFLs from Avg_CFL_Local. */
 
   /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
   unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};

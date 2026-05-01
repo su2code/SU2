@@ -69,10 +69,10 @@ static void adaptMGDampingFactor(const unsigned short* performed,
      *    strict d1<d0 check misfires on every cycle, triggering SCALE_STAGNANT
      *    until the damping floor is reached permanently. ---*/
     const bool diverging = (d0 > 0.0) && (d1 > d0 * 1.05);
-    const bool improving = (d0 > 0.0) && (d1 < d0 * 1.02);
+    const bool improving = (d0 > 0.0) && (d1 < d0);
 
     if (hit_max)                all_early     = false;
-    if (hit_max && !improving)  all_improving = false;  /*--- symmetric with any_stagnant ---*/
+    if (!improving)             all_improving = false;
     if (hit_max && !improving)  any_stagnant  = true;
     if (diverging)              any_diverge   = true;
   }
@@ -82,16 +82,16 @@ static void adaptMGDampingFactor(const unsigned short* performed,
    *    to its recent EMA.  This fires even when the per-cycle smoother appears healthy
    *    (r1 < r0) because the smoother may reduce a residual that is already 10x larger
    *    than last cycle's baseline.  Treat as divergence. ---*/
-  constexpr passivedouble CROSS_CYCLE_THRESHOLD = 3.0;
+  constexpr passivedouble CROSS_CYCLE_THRESHOLD = 2.0;
   if (crossCycleRatio > CROSS_CYCLE_THRESHOLD) any_diverge = true;
 
   /*--- Asymmetric factors: gradual scale-up, fast scale-down, emergency cut on divergence.
-   *    SCALE_UP = 1.05 (5%/cycle) means ~50 cycles to recover from the 0.10 floor to clampMax=0.90.
-   *    SCALE_DIVERGE = 0.85 (15% cut) provides a hard brake on instability. ---*/
+   *    SCALE_UP = 1.02 (2%/cycle) means ~110 cycles to recover from the 0.10 floor to clampMax=0.90.
+   *    SCALE_DIVERGE = 0.75 (25% cut) provides a hard brake on instability. ---*/
   const su2double CLAMP_MIN      = 0.10;
-  const su2double SCALE_UP       = 1.05;  /*--- 5%/cycle: recover from floor in ~50 cycles   ---*/
+  const su2double SCALE_UP       = 1.02;  /*--- 2%/cycle: recover from floor in ~110 cycles  ---*/
   const su2double SCALE_STAGNANT = 0.93;  /*--- 7%/cycle: hit cap without progress            ---*/
-  const su2double SCALE_DIVERGE  = 0.85;  /*--- 15% emergency cut: smoother/cycle diverged    ---*/
+  const su2double SCALE_DIVERGE  = 0.75;  /*--- 25% emergency cut: smoother/cycle diverged    ---*/
 
   su2double factor = getCurrent();
   if      (any_diverge)               factor *= SCALE_DIVERGE;
@@ -233,7 +233,8 @@ void CMultiGridIntegration::adaptProlongationDamping(CConfig* config, passivedou
 
 passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsigned short iMesh,
                                                           passivedouble CFL_fine, passivedouble CFL_coarse_current,
-                                                          passivedouble rms_res_coarse) {
+                                                          passivedouble rms_res_coarse,
+                                                          passivedouble initial_ratio) {
   SU2_ZONE_SCOPED
 
   const bool wasActive = AD::BeginPassive();
@@ -352,9 +353,13 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsign
     last_update_iter[lvl] = iter;
   }
 
-  /*--- Clamp coefficient in [0.50, 0.95].  The upper bound prevents the coarse-grid CFL
-   *    from equalling the fine-grid CFL, which causes numerical issues in the smoother. ---*/
-  new_coeff = max(passivedouble(0.50), min(passivedouble(0.95), new_coeff));
+  /*--- Clamp coefficient.  Lower bound: 0.50 × initial_ratio (never below half the
+   *    intended structural ratio).  Upper bound: initial_ratio (never above the initial
+   *    structural ratio so the coarse CFL cannot exceed its intended fraction of CFL_fine
+   *    regardless of how large Avg_CFL_Local grows at the fine level). ---*/
+  const passivedouble coeff_min = max(passivedouble(0.50) * initial_ratio, passivedouble(0.10));
+  const passivedouble coeff_max = min(initial_ratio, passivedouble(0.95));
+  new_coeff = max(coeff_min, min(coeff_max, new_coeff));
 
   /*--- Update coarse grid CFL ---*/
   CFL_coarse_new = CFL_fine * new_coeff;
@@ -472,27 +477,41 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
    *    CFL from the previous cycle as its "fine" reference, preventing a cascade where an
    *    update to CFL[i] corrupts the fine-grid reference for the iMesh=i call.
    *
-   *    Use Avg_CFL_Local (per-point average) from the fine-grid solver as the L0 reference.
-   *    config->GetCFL(FinestMesh) is the fixed base CFL (e.g., 10.0) which never grows with
-   *    CFL_ADAPT — anchoring coarse CFLs to it permanently limits them to ~9.5 regardless of
-   *    the actual adaptive CFL at the fine grid (which may reach 400+).  Using Avg_CFL_Local
-   *    ensures coarse levels scale proportionally: if L0 runs at CFL=400, L1 runs at ~380,
-   *    L2 at ~361, etc. — consistent with standard multigrid practice. ---*/
+   *    We use Avg_CFL_Local (per-point average on L0) as the fine-grid anchor so that
+   *    coarse-level smoother CFLs scale with the actual adaptive CFL.  The initial CFL
+   *    ratios CFL(iMesh)/CFL(0) are captured once from config and stored in
+   *    mg_coarse_cfl_ratio[]; they define the structural relationship between levels.
+   *    computeMultigridCFL then adapts those ratios slightly based on smoother residuals,
+   *    and the absolute coarse CFL is clamped to CFL_fine * initial_ratio[level] as an
+   *    upper bound so that coarse smoothers never exceed their intended fraction of the
+   *    fine-grid CFL regardless of how high Avg_CFL_Local grows. ---*/
   const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
+    /*--- Capture initial coarse CFL ratios on the very first call (ratios set by
+     *    CMultiGridGeometry before any adaptation).  We read config->GetCFL() now
+     *    before our own SetCFL calls overwrite them. ---*/
+    const passivedouble cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh));
+    if (mg_coarse_cfl_ratio[0] < EPS && cfl_base > EPS) {
+      for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
+        const passivedouble r = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh+1)) / cfl_base;
+        mg_coarse_cfl_ratio[iMesh] = (r > EPS) ? r : passivedouble(0.667);
+      }
+    }
+
     passivedouble cfl_snapshot[MAX_MG_LEVELS + 2] = {};
     cfl_snapshot[FinestMesh] = SU2_TYPE::GetValue(
       solver_container[iZone][iInst][FinestMesh][Solver_Position]->GetAvg_CFL_Local());
-    if (cfl_snapshot[FinestMesh] < EPS)  /*--- CFL_ADAPT=NO: Avg_CFL_Local stays 0 ---*/
-      cfl_snapshot[FinestMesh] = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh));
+    if (cfl_snapshot[FinestMesh] < EPS)  /*--- CFL_ADAPT=NO: fall back to config scalar ---*/
+      cfl_snapshot[FinestMesh] = cfl_base;
     for (unsigned short iMesh = FinestMesh + 1; iMesh <= nMGLevels; ++iMesh)
       cfl_snapshot[iMesh] = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh));
 
     for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh)
       computeMultigridCFL(config[iZone], iMesh,
                           cfl_snapshot[iMesh], cfl_snapshot[iMesh+1],
-                          lastPreSmoothRMS[iMesh+1][1]);
+                          lastPreSmoothRMS[iMesh+1][1],
+                          mg_coarse_cfl_ratio[iMesh]);
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -529,7 +548,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       /*--- Cross-cycle blowup detection via EMA of the fine-grid residual entering each cycle.
        *    When the current value exceeds the EMA by >2x, the cycle is amplifying global error
        *    even though the per-cycle smoother may look healthy (r1 < r0 within each sweep). ---*/
-      constexpr passivedouble EMA_ALPHA = 0.25;
+      constexpr passivedouble EMA_ALPHA = 0.15;
       const passivedouble fine_r0 = lastPreSmoothRMS[FinestMesh][0];
       if (mg_fine_rms_ema < EPS)
         mg_fine_rms_ema = fine_r0;
