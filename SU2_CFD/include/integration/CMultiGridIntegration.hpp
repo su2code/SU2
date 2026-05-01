@@ -291,13 +291,6 @@ private:
   unsigned short lastPostSmoothIters[MAX_MG_LEVELS+1] = {};
   unsigned short lastCorrecSmoothIters[MAX_MG_LEVELS+1] = {};
 
-  /*--- Per-level residual progress flags: true if the final RMS after that phase was lower
-   *    than the initial RMS.  Used by the adaptive damping routines to distinguish
-   *    "hit max iters but still converging" from "hit max iters and stagnated". ---*/
-  bool lastPreSmoothProgress[MAX_MG_LEVELS+1] = {};
-  bool lastPostSmoothProgress[MAX_MG_LEVELS+1] = {};
-  bool lastCorrecSmoothProgress[MAX_MG_LEVELS+1] = {};
-
   /*--- Per-level start/end RMS for the compact output summary.
    *    [0] = initial RMS before smoothing, [1] = final RMS after smoothing.
    *    Filled unconditionally (early-exit path and exhaustion path).

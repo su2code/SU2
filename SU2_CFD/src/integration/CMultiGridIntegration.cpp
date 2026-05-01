@@ -51,7 +51,7 @@ static void adaptMGDampingFactor(const unsigned short* performed,
   bool any_diverge   = false; /*--- smoother made the defect grow by >5%            ---*/
   bool any_stagnant  = false; /*--- hit max iters without reducing defect            ---*/
   bool all_early     = true;  /*--- every level exited before hitting max            ---*/
-  bool all_improving = true;  /*--- every level reduced defect (even if hit max)     ---*/
+  bool all_improving = true;  /*--- all max-hit levels reduced defect                ---*/
   int  local_inspected = 0;
 
   for (unsigned short lvl = levelStart; lvl <= levelEnd; ++lvl) {
@@ -62,12 +62,17 @@ static void adaptMGDampingFactor(const unsigned short* performed,
     const passivedouble d0       = defectData[lvl][0];
     const passivedouble d1       = defectData[lvl][1];
     /*--- Use defect ||R+tau||: unlike RMS, defect changes with smoothing even when
-     *    tau/F >> 1, giving a reliable signal of whether the smoother is helping. ---*/
+     *    tau/F >> 1, giving a reliable signal of whether the smoother is helping.
+     *    Allow 2% noise tolerance for "improving": at coarse levels near convergence
+     *    the truncation error dominates and the defect can fluctuate by O(1%) even
+     *    when the smoother is genuinely helping the cycle.  Without tolerance the
+     *    strict d1<d0 check misfires on every cycle, triggering SCALE_STAGNANT
+     *    until the damping floor is reached permanently. ---*/
     const bool diverging = (d0 > 0.0) && (d1 > d0 * 1.05);
-    const bool improving = (d0 > 0.0) && (d1 < d0);
+    const bool improving = (d0 > 0.0) && (d1 < d0 * 1.02);
 
     if (hit_max)                all_early     = false;
-    if (!improving)             all_improving = false;
+    if (hit_max && !improving)  all_improving = false;  /*--- symmetric with any_stagnant ---*/
     if (hit_max && !improving)  any_stagnant  = true;
     if (diverging)              any_diverge   = true;
   }
@@ -77,16 +82,16 @@ static void adaptMGDampingFactor(const unsigned short* performed,
    *    to its recent EMA.  This fires even when the per-cycle smoother appears healthy
    *    (r1 < r0) because the smoother may reduce a residual that is already 10x larger
    *    than last cycle's baseline.  Treat as divergence. ---*/
-  constexpr passivedouble CROSS_CYCLE_THRESHOLD = 2.0;
+  constexpr passivedouble CROSS_CYCLE_THRESHOLD = 3.0;
   if (crossCycleRatio > CROSS_CYCLE_THRESHOLD) any_diverge = true;
 
   /*--- Asymmetric factors: gradual scale-up, fast scale-down, emergency cut on divergence.
-   *    SCALE_UP = 1.02 (2%/cycle) means ~110 cycles to recover from the 0.10 floor to clampMax=0.90.
-   *    SCALE_DIVERGE = 0.75 (25% cut) provides a hard brake on instability. ---*/
+   *    SCALE_UP = 1.05 (5%/cycle) means ~50 cycles to recover from the 0.10 floor to clampMax=0.90.
+   *    SCALE_DIVERGE = 0.85 (15% cut) provides a hard brake on instability. ---*/
   const su2double CLAMP_MIN      = 0.10;
-  const su2double SCALE_UP       = 1.02;  /*--- 2%/cycle: recover from floor in ~110 cycles  ---*/
+  const su2double SCALE_UP       = 1.05;  /*--- 5%/cycle: recover from floor in ~50 cycles   ---*/
   const su2double SCALE_STAGNANT = 0.93;  /*--- 7%/cycle: hit cap without progress            ---*/
-  const su2double SCALE_DIVERGE  = 0.75;  /*--- 25% emergency cut: smoother/cycle diverged    ---*/
+  const su2double SCALE_DIVERGE  = 0.85;  /*--- 15% emergency cut: smoother/cycle diverged    ---*/
 
   su2double factor = getCurrent();
   if      (any_diverge)               factor *= SCALE_DIVERGE;
@@ -425,9 +430,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       lastPreSmoothIters[i] = mgOpts.MG_PreSmooth[i];
       lastPostSmoothIters[i] = mgOpts.MG_PostSmooth[i];
       lastCorrecSmoothIters[i] = mgOpts.MG_CorrecSmooth[i];
-      lastPreSmoothProgress[i] = false;
-      lastPostSmoothProgress[i] = false;
-      lastCorrecSmoothProgress[i] = false;
       lastPreSmoothRMS[i][0] = lastPreSmoothRMS[i][1] = 0.0;
       lastPostSmoothRMS[i][0] = lastPostSmoothRMS[i][1] = 0.0;
       lastCorrecSmoothRMS[i][0] = lastCorrecSmoothRMS[i][1] = 0.0;
@@ -470,24 +472,27 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
    *    CFL from the previous cycle as its "fine" reference, preventing a cascade where an
    *    update to CFL[i] corrupts the fine-grid reference for the iMesh=i call.
    *
-   *    Note: for the finest mesh we intentionally use config->GetCFL(FinestMesh) (the
-   *    configured base CFL, e.g. 10.0) rather than Avg_CFL_Local (~513 at convergence).
-   *    computeMultigridCFL adapts the structural RATIO between fine and coarse CFLs;
-   *    the per-point adaptive CFL on the fine mesh is an independent time-step control
-   *    and must NOT be used as this reference — doing so drives coarse CFLs to follow
-   *    the adaptive CFL (to 400+), which breaks coarse-grid smoothing. ---*/
+   *    Use Avg_CFL_Local (per-point average) from the fine-grid solver as the L0 reference.
+   *    config->GetCFL(FinestMesh) is the fixed base CFL (e.g., 10.0) which never grows with
+   *    CFL_ADAPT — anchoring coarse CFLs to it permanently limits them to ~9.5 regardless of
+   *    the actual adaptive CFL at the fine grid (which may reach 400+).  Using Avg_CFL_Local
+   *    ensures coarse levels scale proportionally: if L0 runs at CFL=400, L1 runs at ~380,
+   *    L2 at ~361, etc. — consistent with standard multigrid practice. ---*/
   const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
     passivedouble cfl_snapshot[MAX_MG_LEVELS + 2] = {};
-    for (unsigned short iMesh = FinestMesh; iMesh <= nMGLevels; ++iMesh)
+    cfl_snapshot[FinestMesh] = SU2_TYPE::GetValue(
+      solver_container[iZone][iInst][FinestMesh][Solver_Position]->GetAvg_CFL_Local());
+    if (cfl_snapshot[FinestMesh] < EPS)  /*--- CFL_ADAPT=NO: Avg_CFL_Local stays 0 ---*/
+      cfl_snapshot[FinestMesh] = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh));
+    for (unsigned short iMesh = FinestMesh + 1; iMesh <= nMGLevels; ++iMesh)
       cfl_snapshot[iMesh] = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh));
 
-    for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
+    for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh)
       computeMultigridCFL(config[iZone], iMesh,
                           cfl_snapshot[iMesh], cfl_snapshot[iMesh+1],
                           lastPreSmoothRMS[iMesh+1][1]);
-    }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -524,7 +529,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       /*--- Cross-cycle blowup detection via EMA of the fine-grid residual entering each cycle.
        *    When the current value exceeds the EMA by >2x, the cycle is amplifying global error
        *    even though the per-cycle smoother may look healthy (r1 < r0 within each sweep). ---*/
-      constexpr passivedouble EMA_ALPHA = 0.15;
+      constexpr passivedouble EMA_ALPHA = 0.25;
       const passivedouble fine_r0 = lastPreSmoothRMS[FinestMesh][0];
       if (mg_fine_rms_ema < EPS)
         mg_fine_rms_ema = fine_r0;
@@ -544,12 +549,15 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     if (SU2_MPI::GetRank() == MASTER_NODE) {
 
       /*--- Helper: format one cell as "act/max [init->final]". ---*/
+      /*--- Cells show "act/max [v0->v1]": v0/v1 are defect for Pre/Post-smooth
+       *    (the metric driving early exit and restriction-damping adaptation),
+       *    and RMS for Corr-smooth (no defect tracking for correction smoothing). ---*/
       auto cellStr = [](unsigned short act, unsigned short mx,
-                        su2double rms0, su2double rms1) -> std::string {
+                        su2double v0, su2double v1) -> std::string {
         std::ostringstream ss;
         ss << act << "/" << mx << " ["
             << std::scientific << std::setprecision(2)
-            << rms0 << "->" << rms1 << "]";
+            << v0 << "->" << v1 << "]";
         return ss.str();
       };
 
@@ -559,17 +567,17 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
         table.AddColumn("Level " + std::to_string(i), 26);
       table.PrintHeader();
 
-      /*--- Pre-smooth: defined on all levels 0..nMGLevels. ---*/
+      /*--- Pre-smooth: defect [d0->d1] — what early exit and damping adaptation read. ---*/
       table << "Pre-smooth";
       for (unsigned short i = 0; i <= nMGLevels; ++i)
         table << cellStr(lastPreSmoothIters[i], mgOptsZone.MG_PreSmooth[i],
-                          lastPreSmoothRMS[i][0], lastPreSmoothRMS[i][1]);
+                          lastPreSmoothDefect[i][0], lastPreSmoothDefect[i][1]);
 
-      /*--- Post-smooth: defined on levels 0..nMGLevels-1; coarsest has none. ---*/
+      /*--- Post-smooth: defect [d0->d1] — what early exit and prolongation-damping read. ---*/
       table << "Post-smooth";
       for (unsigned short i = 0; i < nMGLevels; ++i)
         table << cellStr(lastPostSmoothIters[i], mgOptsZone.MG_PostSmooth[i],
-                          lastPostSmoothRMS[i][0], lastPostSmoothRMS[i][1]);
+                          lastPostSmoothDefect[i][0], lastPostSmoothDefect[i][1]);
       table << "-";
 
       /*--- Corr.-smooth: defined on levels 0..nMGLevels-1; coarsest has none. ---*/
@@ -579,9 +587,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                           lastCorrecSmoothRMS[i][0], lastCorrecSmoothRMS[i][1]);
       table << "-";
 
-      /*--- CFL per level. For the finest mesh (Level 0) report the actual average
-       *    adaptive CFL from the per-point values; for coarse levels use the value
-       *    set by computeMultigridCFL which is stored in config. ---*/
+      /*--- CFL per level. All levels show the actual per-point average CFL used by
+       *    the smoother: Avg_CFL_Local for L0 (adaptive, per-point), and
+       *    config->GetCFL(i) for coarse levels (scalar, set by computeMultigridCFL
+       *    which is now anchored to Avg_CFL_Local at L0, so all levels are comparable). ---*/
       table << "CFL";
       for (unsigned short i = 0; i <= nMGLevels; ++i) {
         std::ostringstream ss;
@@ -690,8 +699,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
           const passivedouble fine_rms = lastPreSmoothRMS[iMesh][1]; /*--- ||F_k(u_after)|| ---*/
           const passivedouble fidelity = (fine_rms > 0.0) ? tau_norm / fine_rms : 0.0;
           cout << "  Restrict  L" << iMesh << "->L" << iMesh+1
-               << "  ||F_fine||=" << scientific << setprecision(3) << fine_rms
-               << "  ||tau||=" << tau_norm
+               << "  ||tau||=" << scientific << setprecision(3) << tau_norm
                << "  tau/F=" << fixed << setprecision(4) << fidelity << "\n";
         }
       }
@@ -829,44 +837,38 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
         mg_last_smooth_rms = current_rms;
 
         if (mgOpts.MG_Smooth_Output && SU2_MPI::GetRank() == MASTER_NODE) {
-          const passivedouble ratio = (mg_initial_smooth_rms > 0.0) ?
-                                      current_rms / mg_initial_smooth_rms : 1.0;
           const passivedouble rel_du = (sol_rms > 0.0) ? delta_rms / sol_rms : 0.0;
           const passivedouble defect_ratio = (mg_initial_smooth_defect > 0.0) ?
                                               current_defect / mg_initial_smooth_defect : 1.0;
           cout << "  Pre-smooth [MG level " << iMesh << "] step " << iPreSmooth+1
-               << "/" << nPreSmooth << "  r0=" << scientific << setprecision(3)
-               << mg_initial_smooth_rms << "  r=" << current_rms
-               << "  ratio=" << fixed << setprecision(4) << ratio
-               << "  d=" << scientific << setprecision(3) << current_defect
+               << "/" << nPreSmooth
                << "  d/d0=" << fixed << setprecision(4) << defect_ratio
-               << "  du=" << scientific << setprecision(3) << delta_rms
-               << "  du/u=" << scientific << setprecision(3) << rel_du
-               << "  cfl=" << fixed << setprecision(4)
-               << (iMesh == MESH_0 ? SU2_TYPE::GetValue(solver_fine->GetAvg_CFL_Local())
-                                   : SU2_TYPE::GetValue(config->GetCFL(iMesh))) << "\n";
+               << "  du/u=" << scientific << setprecision(3) << rel_du << "\n";
         }
 
         if (early_exit) {
-          if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
+          /*--- Threshold exit: defect fell below target fraction of its initial value. ---*/
+          if (current_defect < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_defect) {
             lastPreSmoothIters[iMesh] = iPreSmooth + 1;
             mg_early_exit_flag = true;
           } else if (iPreSmooth > 0) {
-            /*--- Stagnation exit: if per-step RMS improvement falls below the configured
-             *    tolerance, the smoother has nothing more to offer on this level.
+            /*--- Stagnation exit on defect (not RMS): at coarse levels RMS ≈ ||tau|| is
+             *    constant regardless of smoother progress, so it cannot detect stagnation.
+             *    The defect ||F_k + tau_k|| directly tracks what the smoother is reducing.
              *    When MG_Smooth_StagnationTol is unset (0.0) a default of 1.0 is used,
-             *    meaning "exit as soon as the RMS stops decreasing step-to-step." ---*/
+             *    meaning "exit as soon as the defect stops decreasing step-to-step." ---*/
             const passivedouble stag_tol = (mgOpts.MG_Smooth_StagnationTol > 0.0)
                                          ? mgOpts.MG_Smooth_StagnationTol
                                          : passivedouble(1.0);
-            if (current_rms >= mg_prev_smooth_rms * stag_tol) {
+            if (current_defect >= mg_prev_smooth_defect * stag_tol) {
               lastPreSmoothIters[iMesh] = iPreSmooth + 1;
               mg_early_exit_flag = true;
             }
           }
         }
 
-        mg_prev_smooth_rms = current_rms;
+        mg_prev_smooth_rms    = current_rms;
+        mg_prev_smooth_defect = current_defect;  /*--- must mirror PostSmoothing; used by lastPreSmoothDefect[1] ---*/
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
       if (mg_early_exit_flag) break;
@@ -885,8 +887,6 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       mg_last_smooth_rms = final_pre_rms;
       lastPreSmoothRMS[iMesh][1]    = final_pre_rms;
       lastPreSmoothDefect[iMesh][1] = mg_prev_smooth_defect;
-      lastPreSmoothProgress[iMesh] = mg_early_exit_flag ||
-                                     (final_pre_rms < lastPreSmoothRMS[iMesh][0]);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
@@ -979,22 +979,13 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
         mg_last_smooth_rms = current_rms;
 
         if (mgOpts.MG_Smooth_Output && SU2_MPI::GetRank() == MASTER_NODE) {
-          const passivedouble ratio = (mg_initial_smooth_rms > 0.0) ?
-                                      current_rms / mg_initial_smooth_rms : 1.0;
           const passivedouble rel_du = (sol_rms > 0.0) ? delta_rms / sol_rms : 0.0;
           const passivedouble defect_ratio = (mg_initial_smooth_defect > 0.0) ?
                                               current_defect / mg_initial_smooth_defect : 1.0;
           cout << "  Post-smooth [MG level " << iMesh << "] step " << iPostSmooth+1
-               << "/" << nPostSmooth << "  r0=" << scientific << setprecision(3)
-               << mg_initial_smooth_rms << "  r=" << current_rms
-               << "  ratio=" << fixed << setprecision(4) << ratio
-               << "  d=" << scientific << setprecision(3) << current_defect
+               << "/" << nPostSmooth
                << "  d/d0=" << fixed << setprecision(4) << defect_ratio
-               << "  du=" << scientific << setprecision(3) << delta_rms
-               << "  du/u=" << scientific << setprecision(3) << rel_du
-               << "  cfl=" << fixed << setprecision(4)
-               << (iMesh == MESH_0 ? SU2_TYPE::GetValue(solver_fine->GetAvg_CFL_Local())
-                                   : SU2_TYPE::GetValue(config->GetCFL(iMesh))) << "\n";
+               << "  du/u=" << scientific << setprecision(3) << rel_du << "\n";
         }
 
         if (early_exit) {
@@ -1038,8 +1029,6 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       mg_last_smooth_rms = final_post_rms;
       lastPostSmoothRMS[iMesh][1]    = final_post_rms;
       lastPostSmoothDefect[iMesh][1] = mg_prev_smooth_defect;
-      lastPostSmoothProgress[iMesh] = mg_early_exit_flag ||
-                                      (final_post_rms < lastPostSmoothRMS[iMesh][0]);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
