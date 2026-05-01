@@ -863,9 +863,23 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
 
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
       if (implicit) {
-        if (first_order) Jacobian.AddVal2Diag(iPoint, Volume_nP1 / TimeStep);
-        if (second_order) Jacobian.AddVal2Diag(iPoint, (Volume_nP1 * 3.0) / (2.0 * TimeStep));
-      }
+	bool bounded_scalar = false;
+	if (config->GetKind_Solver() == MAIN_SOLVER::INC_EULER || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES) {
+	  if (IsSpeciesSolver()) bounded_scalar = config->GetBounded_Species();
+	  else if (IsTurbSolver()) bounded_scalar = config->GetBounded_Turb();
+	}
+	su2double diag_factor = 1.0;
+	if (Conservative) {
+	  if (bounded_scalar) {
+           if (first_order)  diag_factor = Density_n;
+           if (second_order) diag_factor = (4.0 * Density_n - Density_nM1) / 3.0;
+	 } else {
+	  diag_factor = Density_nP1;
+	 }
+        }
+	if (first_order)  Jacobian.AddVal2Diag(iPoint, diag_factor * Volume_nP1 / TimeStep);
+	if (second_order) Jacobian.AddVal2Diag(iPoint, diag_factor * 3.0 * Volume_nP1 / (2.0 * TimeStep));
+     }
     }
     END_SU2_OMP_FOR
 
