@@ -2,7 +2,7 @@
  * \file CSolver.cpp
  * \brief Main subroutines for CSolver class.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -193,50 +193,50 @@ CSolver::~CSolver() {
 void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
                                           unsigned short commType,
                                           unsigned short &COUNT_PER_POINT,
-                                          unsigned short &MPI_TYPE,
+                                          COMM_TYPE &MPI_TYPE,
                                           unsigned short &ICOUNT,
                                           unsigned short &JCOUNT) const {
   SU2_ZONE_SCOPED
   switch (commType) {
     case PERIODIC_VOLUME:
       COUNT_PER_POINT  = 1;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case PERIODIC_NEIGHBORS:
       COUNT_PER_POINT  = 1;
-      MPI_TYPE         = COMM_TYPE_UNSIGNED_SHORT;
+      MPI_TYPE         = COMM_TYPE::UNSIGNED_SHORT;
       break;
     case PERIODIC_RESIDUAL:
       COUNT_PER_POINT  = nVar + nVar*nVar + 1;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case PERIODIC_IMPLICIT:
       COUNT_PER_POINT  = nVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case PERIODIC_LAPLACIAN:
       COUNT_PER_POINT  = nVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case PERIODIC_MAX_EIG:
       COUNT_PER_POINT  = 1;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case PERIODIC_SENSOR:
       COUNT_PER_POINT  = 2;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case PERIODIC_SOL_GG:
     case PERIODIC_SOL_GG_R:
       COUNT_PER_POINT  = nVar*nDim;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nVar;
       JCOUNT           = nDim;
       break;
     case PERIODIC_PRIM_GG:
     case PERIODIC_PRIM_GG_R:
       COUNT_PER_POINT  = nPrimVarGrad*nDim;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nPrimVarGrad;
       JCOUNT           = nDim;
       break;
@@ -245,7 +245,7 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
     case PERIODIC_SOL_LS_R:
     case PERIODIC_SOL_ULS_R:
       COUNT_PER_POINT  = nDim*nDim + nVar*nDim;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nVar;
       JCOUNT           = nDim;
       break;
@@ -254,28 +254,28 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
     case PERIODIC_PRIM_LS_R:
     case PERIODIC_PRIM_ULS_R:
       COUNT_PER_POINT  = nDim*nDim + nPrimVarGrad*nDim;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nPrimVarGrad;
       JCOUNT           = nDim;
       break;
     case PERIODIC_LIM_PRIM_1:
       COUNT_PER_POINT  = nPrimVarGrad*2;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nPrimVarGrad;
       break;
     case PERIODIC_LIM_PRIM_2:
       COUNT_PER_POINT  = nPrimVarGrad;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nPrimVarGrad;
       break;
     case PERIODIC_LIM_SOL_1:
       COUNT_PER_POINT  = nVar*2;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nVar;
       break;
     case PERIODIC_LIM_SOL_2:
       COUNT_PER_POINT  = nVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nVar;
       break;
     default:
@@ -357,7 +357,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   unsigned short iVar, jVar, iDim;
   unsigned short nNeighbor       = 0;
   unsigned short COUNT_PER_POINT = 0;
-  unsigned short MPI_TYPE        = 0;
+  COMM_TYPE MPI_TYPE{};
   unsigned short ICOUNT          = nVar;
   unsigned short JCOUNT          = nVar;
 
@@ -1011,7 +1011,8 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
   /*--- Set the size of the data packet and type depending on quantity. ---*/
 
-  unsigned short COUNT_PER_POINT = 0, MPI_TYPE = 0, ICOUNT = 0, JCOUNT = 0;
+  unsigned short COUNT_PER_POINT = 0, ICOUNT = 0, JCOUNT = 0;
+  COMM_TYPE MPI_TYPE{};
   GetPeriodicCommCountAndType(config, commType, COUNT_PER_POINT, MPI_TYPE, ICOUNT, JCOUNT);
 
   /*--- Local variables ---*/
@@ -1335,7 +1336,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 void CSolver::GetCommCountAndType(const CConfig* config,
                                   MPI_QUANTITIES commType,
                                   unsigned short &COUNT_PER_POINT,
-                                  unsigned short &MPI_TYPE) const {
+                                  COMM_TYPE &MPI_TYPE) const {
   SU2_ZONE_SCOPED
   switch (commType) {
     case MPI_QUANTITIES::SOLUTION:
@@ -1343,53 +1344,61 @@ void CSolver::GetCommCountAndType(const CConfig* config,
     case MPI_QUANTITIES::UNDIVIDED_LAPLACIAN:
     case MPI_QUANTITIES::SOLUTION_LIMITER:
       COUNT_PER_POINT  = nVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::MAX_EIGENVALUE:
     case MPI_QUANTITIES::SENSOR:
       COUNT_PER_POINT  = 1;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::SOLUTION_GRADIENT:
     case MPI_QUANTITIES::SOLUTION_GRAD_REC:
       COUNT_PER_POINT  = nVar*nDim;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::PRIMITIVE_GRADIENT:
     case MPI_QUANTITIES::PRIMITIVE_GRAD_REC:
       COUNT_PER_POINT  = nPrimVarGrad*nDim;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::PRIMITIVE_LIMITER:
       COUNT_PER_POINT  = nPrimVarGrad;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::SOLUTION_EDDY:
       COUNT_PER_POINT  = nVar+1;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
+      break;
+    case MPI_QUANTITIES::STOCH_SOURCE_LANG:
+      COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
+      break;
+    case MPI_QUANTITIES::DES_LENGTHSCALE:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::SOLUTION_FEA:
       if (config->GetTime_Domain())
         COUNT_PER_POINT  = nVar*3;
       else
         COUNT_PER_POINT  = nVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::AUXVAR_GRADIENT:
       COUNT_PER_POINT  = nDim*base_nodes->GetnAuxVar();
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::MESH_DISPLACEMENTS:
       COUNT_PER_POINT  = nDim;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::SOLUTION_TIME_N:
       COUNT_PER_POINT  = nVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::SOLUTION_TIME_N1:
       COUNT_PER_POINT  = nVar;
-      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -1424,7 +1433,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
   unsigned short iVar, iDim;
   unsigned short COUNT_PER_POINT = 0;
-  unsigned short MPI_TYPE        = 0;
+  COMM_TYPE MPI_TYPE{};
 
   unsigned long iPoint, msg_offset, buf_offset;
 
@@ -1495,6 +1504,13 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution(iPoint, iVar);
             bufDSend[buf_offset+nVar]   = base_nodes->GetmuT(iPoint);
+            break;
+          case MPI_QUANTITIES::STOCH_SOURCE_LANG:
+            for (iDim = 0; iDim < nDim; iDim++)
+              bufDSend[buf_offset+iDim] = base_nodes->GetLangevinSourceTerms(iPoint, iDim);
+            break;
+          case MPI_QUANTITIES::DES_LENGTHSCALE:
+            bufDSend[buf_offset] = base_nodes->GetDES_LengthScale(iPoint);
             break;
           case MPI_QUANTITIES::UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)
@@ -1568,7 +1584,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
   unsigned short iDim, iVar;
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
   unsigned short COUNT_PER_POINT = 0;
-  unsigned short MPI_TYPE = 0;
+  COMM_TYPE MPI_TYPE{};
 
   int ind, source, iMessage, jRecv;
 
@@ -1644,6 +1660,13 @@ void CSolver::CompleteComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->SetSolution(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             base_nodes->SetmuT(iPoint,bufDRecv[buf_offset+nVar]);
+            break;
+          case MPI_QUANTITIES::STOCH_SOURCE_LANG:
+            for (iDim = 0; iDim < nDim; iDim++)
+              base_nodes->SetLangevinSourceTerms(iPoint, iDim, bufDRecv[buf_offset+iDim]);
+            break;
+          case MPI_QUANTITIES::DES_LENGTHSCALE:
+            base_nodes->SetDES_LengthScale(iPoint, bufDRecv[buf_offset]);
             break;
           case MPI_QUANTITIES::UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)

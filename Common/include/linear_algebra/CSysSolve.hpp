@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to linear solvers (CG, FGMRES, etc)
  *        The subroutines and functions are in the <i>CSysSolve.cpp</i> file.
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -112,10 +112,11 @@ class CSysSolve {
   mutable VectorType r_0; /*!< \brief The "arbitrary" vector in BCGSTAB. */
   mutable VectorType v;   /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
 
-  mutable unsigned long k = 0;
+  mutable bool ritz_failed = false;
+  mutable unsigned long k = 0, k_new = 0;
   mutable std::vector<VectorType> Z, V; /*!< \brief Large matrices used by FGMRES, v^i+1 = A * z^i. */
   mutable std::vector<VectorType> W, T; /*!< \brief Large matrices used by FGCRODR for deflation vectors. */
-  mutable Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> VkWk;
+  mutable Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic> VkWk, Q, PinvR;
 
   /*!< \brief Temporary used when it is necessary to interface between active and passive types. */
   VectorType LinSysSol_tmp;
@@ -425,8 +426,17 @@ class CSysSolve {
    * \param[in] config - Definition of the particular problem.
    * \param[in] directCall - If this method is called directly, or in AD context.
    */
-  unsigned long Solve_b(MatrixType& Jacobian, const CSysVector<su2double>& LinSysRes, CSysVector<su2double>& LinSysSol,
-                        CGeometry* geometry, const CConfig* config, bool directCall = true);
+  unsigned long Solve_b(MatrixType& Jacobian, const VectorType& LinSysRes, VectorType& LinSysSol, CGeometry* geometry,
+                        const CConfig* config, bool directCall = true);
+
+  template <class OtherType, su2enable_if<!std::is_same_v<ScalarType, OtherType>> = 0>
+  unsigned long Solve_b(MatrixType& Jacobian, const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol,
+                        CGeometry* geometry, const CConfig* config, bool directCall = true) {
+    HandleTemporariesIn(LinSysRes, LinSysSol);
+    auto iter = Solve_b(Jacobian, *LinSysRes_ptr, *LinSysSol_ptr, geometry, config, directCall);
+    HandleTemporariesOut(LinSysSol);
+    return iter;
+  }
 
   /*!
    * \brief Get the number of iterations.

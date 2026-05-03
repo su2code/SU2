@@ -2,7 +2,7 @@
  * \file code_config.hpp
  * \brief Header file for collecting common macros, definitions and type configurations.
  * \author T. Albring, P. Gomes, J. Blühdorn
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -139,10 +139,19 @@ using su2double = double;
 using passivedouble = double;
 
 /*--- Define a type for potentially lower precision operations. ---*/
+#ifndef CODI_FORWARD_TYPE
 #ifdef USE_MIXED_PRECISION
 using su2mixedfloat = float;
 #else
 using su2mixedfloat = passivedouble;
+#endif
+#else
+/*--- There is no lower precision for forward AD so undefine the macro to simplify
+ * the logic needed to deal with the multiple type configurations. ---*/
+#ifdef USE_MIXED_PRECISION
+#undef USE_MIXED_PRECISION
+#endif
+using su2mixedfloat = su2double;
 #endif
 
 /*--- Detect if OpDiLib has to be used. ---*/

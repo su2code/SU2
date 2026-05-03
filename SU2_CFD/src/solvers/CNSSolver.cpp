@@ -2,7 +2,7 @@
  * \file CNSSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -153,13 +153,16 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
         su2double DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
         nodes->SetDES_LengthScale(iPoint, DES_LengthScale);
+        su2double LES_Mode = solver_container[TURB_SOL]->GetNodes()->GetLES_Mode(iPoint);
+        nodes->SetLES_Mode(iPoint, LES_Mode);
       }
     }
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
 
-    bool physical = static_cast<CNSVariable*>(nodes)->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel());
-    nodes->SetSecondaryVar(iPoint, GetFluidModel());
+    auto* ns_nodes = static_cast<CNSVariable*>(nodes);
+    bool physical = ns_nodes->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel());
+    ns_nodes->SetSecondaryVar(iPoint, GetFluidModel());
 
     /*--- Check for non-realizable states for reporting. ---*/
 
@@ -1032,11 +1035,8 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
     ompMasterAssignBarrier(globalCounter1,0, globalCounter2,0);
 
-    SU2_OMP_ATOMIC
-    globalCounter1 += notConvergedCounter;
-
-    SU2_OMP_ATOMIC
-    globalCounter2 += smallYPlusCounter;
+    atomicAdd(notConvergedCounter, globalCounter1);
+    atomicAdd(smallYPlusCounter, globalCounter2);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());

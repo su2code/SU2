@@ -1,7 +1,7 @@
 /*!
  * \file CFVMFlowSolverBase.hpp
  * \brief Base class template for all FVM flow solvers.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -303,12 +303,10 @@ class CFVMFlowSolverBase : public CSolver {
     /*--- Warning message about non-physical reconstructions. ---*/
     if ((MGLevel == MESH_0) && (config->GetComm_Level() == COMM_FULL)) {
       /*--- Add counter results for all threads. ---*/
-      SU2_OMP_ATOMIC
-      ErrorCounter += localCounter;
+      atomicAdd(localCounter, ErrorCounter);
 
       /*--- Add counter results for all ranks. ---*/
-      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-      {
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
         localCounter = ErrorCounter;
         SU2_MPI::Reduce(&localCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
         config->SetNonphysical_Reconstr(ErrorCounter);
