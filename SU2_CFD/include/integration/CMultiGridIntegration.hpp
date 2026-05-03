@@ -286,12 +286,16 @@ private:
   passivedouble mg_prev_smooth_rms = 0.0;       /*!< \brief RMS from previous smoothing step; used for stagnation detection. */
   passivedouble mg_prev_smooth_defect = 0.0;    /*!< \brief Defect norm from previous smoothing step; used for defect-based early exit. */
   passivedouble mg_fine_rms_ema = 0.0;          /*!< \brief EMA of fine-grid pre-smooth r0 across outer iterations; cross-cycle blowup detection. */
+  passivedouble last_crossCycleRatio = 1.0;     /*!< \brief crossCycleRatio from the most recent cycle; stored for display only. */
   passivedouble mg_coarse_cfl_ratio[MAX_MG_LEVELS] = {}; /*!< \brief Initial CFL(iMesh+1)/CFL(0) ratios captured once at first cycle; used to scale coarse CFLs from Avg_CFL_Local. */
 
   /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
   unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
   unsigned short lastPostSmoothIters[MAX_MG_LEVELS+1] = {};
   unsigned short lastCorrecSmoothIters[MAX_MG_LEVELS+1] = {};
+  /*--- Early-exit reason per level: 'T'=threshold, 'S'=stagnation, ' '=ran to completion. ---*/
+  char lastPreSmoothExitReason[MAX_MG_LEVELS+1]  = {};
+  char lastPostSmoothExitReason[MAX_MG_LEVELS+1] = {};
 
   /*--- Per-level start/end defect ||R+tau|| for adaptive damping.
    *    Defect changes with smoothing even when tau/F >> 1 (unlike RMS which stays flat),
@@ -305,7 +309,7 @@ private:
    *    Must be passivedouble: class members survive tape resets; su2double would
    *    carry stale AD indices referencing a cleared tape. ---*/
   passivedouble lastPreSmoothRMS[MAX_MG_LEVELS+1][2] = {};
-  passivedouble lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+  //passivedouble lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
 
 };
