@@ -138,7 +138,7 @@ void CIncEulerVariable::Set_Solution_time_n() {
 
   /*--- Store the current density at time n ---*/
   if (Density_time_n.size() > 0) {
-    SU2_OMP_FOR_STAT(omp_chunk_size)
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint, omp_get_num_threads()))
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       Density_time_n(iPoint) = GetDensity(iPoint);
     }
@@ -152,7 +152,7 @@ void CIncEulerVariable::Set_Solution_time_n1() {
 
   /*--- Store the density at time n-1 by copying from time n ---*/
   if (Density_time_n1.size() > 0 && Density_time_n.size() > 0) {
-    SU2_OMP_FOR_STAT(omp_chunk_size)
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint, omp_get_num_threads()))
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
       Density_time_n1(iPoint) = Density_time_n(iPoint);
     }
