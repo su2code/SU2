@@ -280,11 +280,9 @@ private:
 
   /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
   bool mg_early_exit_flag = false;              /*!< \brief Shared flag for early exit across OMP threads. */
-  passivedouble mg_initial_smooth_rms = 0.0;    /*!< \brief Initial RMS before current smoothing phase. */
   passivedouble mg_initial_smooth_defect = 0.0; /*!< \brief Initial defect norm ||R+tau|| before current smoothing phase (FAS). */
-  passivedouble mg_last_smooth_rms = 0.0;       /*!< \brief Last computed RMS; cached to avoid redundant Allreduce. */
-  passivedouble mg_prev_smooth_rms = 0.0;       /*!< \brief RMS from previous smoothing step; used for stagnation detection. */
-  passivedouble mg_prev_smooth_defect = 0.0;    /*!< \brief Defect norm from previous smoothing step; used for defect-based early exit. */
+  passivedouble mg_last_smooth_rms = 0.0;       /*!< \brief Last computed RMS after pre-smooth; cached for lastPreSmoothRMS recording. */
+  passivedouble mg_prev_smooth_defect = 0.0;    /*!< \brief Defect norm from previous smoothing step; used for stagnation detection. */
   passivedouble mg_fine_rms_ema = 0.0;          /*!< \brief EMA of fine-grid pre-smooth r0 across outer iterations; cross-cycle blowup detection. */
   passivedouble last_crossCycleRatio = 1.0;     /*!< \brief crossCycleRatio from the most recent cycle; stored for display only. */
   passivedouble mg_coarse_cfl_ratio[MAX_MG_LEVELS] = {}; /*!< \brief Initial CFL(iMesh+1)/CFL(0) ratios captured once at first cycle; used to scale coarse CFLs from Avg_CFL_Local. */

@@ -694,9 +694,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
     Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, 0, RunTime_EqSystem);
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       const passivedouble pre_rms = ComputeLinSysVecRMS(solver_fine, geometry_fine);
-      mg_initial_smooth_rms = pre_rms;
       mg_initial_smooth_defect = ComputeDefectNorm(solver_fine, geometry_fine);
-      mg_prev_smooth_rms = pre_rms;
       mg_prev_smooth_defect = mg_initial_smooth_defect;
       lastPreSmoothRMS[iMesh][0] = pre_rms;
       lastPreSmoothDefect[iMesh][0] = mg_initial_smooth_defect;
@@ -759,8 +757,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
           }
         }
 
-        mg_prev_smooth_rms = current_rms;
-        mg_prev_smooth_defect = current_defect;  /*--- must mirror PostSmoothing; used by lastPreSmoothDefect[1] ---*/
+        mg_prev_smooth_defect = current_defect;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
       if (mg_early_exit_flag) break;
@@ -808,12 +805,8 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
     solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, 0, RunTime_EqSystem, false);
     Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, 0, RunTime_EqSystem);
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      const passivedouble pre_rms = ComputeLinSysVecRMS(solver_fine, geometry_fine);
-      mg_initial_smooth_rms = pre_rms;
       mg_initial_smooth_defect = ComputeDefectNorm(solver_fine, geometry_fine);
-      mg_prev_smooth_rms = pre_rms;
       mg_prev_smooth_defect = mg_initial_smooth_defect;
-      //lastPostSmoothRMS[iMesh][0] = pre_rms;
       lastPostSmoothDefect[iMesh][0] = mg_initial_smooth_defect;
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -849,22 +842,18 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, 0, RunTime_EqSystem, false);
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, 0, RunTime_EqSystem);
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-        const passivedouble current_rms = ComputeLinSysVecRMS(solver_fine, geometry_fine);
         const passivedouble current_defect = ComputeDefectNorm(solver_fine, geometry_fine);
-        mg_last_smooth_rms = current_rms;
 
         if (early_exit) {
-          if (mg_last_smooth_rms < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
+          /*--- Threshold exit: defect fell below target fraction of its initial value.
+           *    Using defect ||R+tau|| (not RMS ||R||) so coarse-level tau-saturation
+           *    does not prevent threshold from firing. ---*/
+          if (current_defect < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_defect) {
             lastPostSmoothIters[iMesh] = iPostSmooth + 1;
             lastPostSmoothExitReason[iMesh] = 'T';
             mg_early_exit_flag = true;
           } else if (iPostSmooth > 0) {
-            /*--- Stagnation exit on defect (not RMS): at coarse levels RMS is dominated by
-             *    tau and stays flat regardless of smoother progress.  The defect ||R+tau||
-             *    directly reflects the error being smoothed.  Exit when the defect stops
-             *    decreasing step-to-step.  Default stag_tol=1.0 means "exit when defect
-             *    increases" — handles the common case where the post-smoother actively
-             *    makes things worse after a prolonged correction. ---*/
+            /*--- Stagnation exit: defect stopped decreasing step-to-step. ---*/
             const passivedouble stag_tol = (mgOpts.MG_Smooth_StagnationTol > 0.0)
                                          ? mgOpts.MG_Smooth_StagnationTol
                                          : passivedouble(1.0);
@@ -876,7 +865,6 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
           }
         }
 
-        mg_prev_smooth_rms    = current_rms;
         mg_prev_smooth_defect = current_defect;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -884,9 +872,8 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
     }
   }
 
-  /*--- Record final RMS after post-smoothing.
-   *    Skip entirely when nPostSmooth==0: lastPostSmoothRMS[iMesh] stays {0,0} (initialized).
-   *    mg_last_smooth_rms is kept current by the per-step loop above. ---*/
+  /*--- Record final defect after post-smoothing.
+   *    Skip entirely when nPostSmooth==0: lastPostSmoothDefect[iMesh] stays {0,0} (initialized). ---*/
   if (nPostSmooth > 0) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       lastPostSmoothDefect[iMesh][1] = mg_prev_smooth_defect;
