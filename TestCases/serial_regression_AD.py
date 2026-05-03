@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -206,7 +206,7 @@ def main():
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 6
-    discadj_fsi.test_vals = [6, -8.929655, -10.097091, 3.0939e-11, -1.7573e-06]
+    discadj_fsi.test_vals = [6, -8.931715, -10.103841, 3.0937e-11, -1.7573e-06]
     discadj_fsi.test_vals_aarch64 = [6, -8.928820, -10.067497, 3.0979e-11, -1.7585e-06]
     test_list.append(discadj_fsi)
 
