@@ -2,7 +2,7 @@
  * \file CTurboIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,6 +33,7 @@ void CTurboIteration::Preprocess(COutput* output, CIntegration**** integration, 
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                  CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
   /*--- Average quantities at the inflow and outflow boundaries ---*/
   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
       solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], INFLOW);
@@ -49,6 +50,7 @@ void CTurboIteration::Postprocess(COutput* output, CIntegration**** integration,
                                   CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                   CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                   CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
   /*--- Average quantities at the inflow and outflow boundaries ---*/
   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->TurboAverageProcess(
       solver[val_iZone][val_iInst][MESH_0], geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], INFLOW);
@@ -61,6 +63,7 @@ void CTurboIteration::Postprocess(COutput* output, CIntegration**** integration,
 }
 
 void CTurboIteration::InitTurboPerformance(CGeometry* geometry, CConfig** config, CFluidModel* fluid) {
+  SU2_ZONE_SCOPED
   TurbomachineryPerformance = std::make_shared<CTurboOutput>(config, *geometry, *fluid);
   TurbomachineryStagePerformance = std::make_shared<CTurbomachineryStagePerformance>(*fluid);
 }

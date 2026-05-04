@@ -3,7 +3,7 @@
  * \brief Reads a 2D rectangular grid into linear partitions for the
  *        finite element solver (FEM).
  * \author T. Economon, E. van der Weide
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -59,6 +59,9 @@ CRectangularMeshReaderFEM::CRectangularMeshReaderFEM(const CConfig* val_config, 
   ComputeRectangularVolumeConnectivity();
   ComputeRectangularPointCoordinates();
   ComputeRectangularSurfaceConnectivity();
+
+  /*--- Duplicate some markers if requested. ---*/
+  CopyMarkers(val_config->GetMarkerCreateCopy());
 }
 
 CRectangularMeshReaderFEM::~CRectangularMeshReaderFEM() = default;

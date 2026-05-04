@@ -2,7 +2,7 @@
  * \file CNSSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -38,6 +38,7 @@ template class CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>;
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
            CEulerSolver(geometry, config, iMesh, true) {
+  SU2_ZONE_SCOPED
 
   /*--- This constructor only allocates/inits what is extra to CEulerSolver. ---*/
 
@@ -69,6 +70,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                               unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
@@ -126,6 +128,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 }
 
 unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Number of non-physical points, local to the thread, needs
    *    further reduction if function is called in parallel ---*/
@@ -150,13 +153,16 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
         su2double DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
         nodes->SetDES_LengthScale(iPoint, DES_LengthScale);
+        su2double LES_Mode = solver_container[TURB_SOL]->GetNodes()->GetLES_Mode(iPoint);
+        nodes->SetLES_Mode(iPoint, LES_Mode);
       }
     }
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
 
-    bool physical = static_cast<CNSVariable*>(nodes)->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel());
-    nodes->SetSecondaryVar(iPoint, GetFluidModel());
+    auto* ns_nodes = static_cast<CNSVariable*>(nodes);
+    bool physical = ns_nodes->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel());
+    ns_nodes->SetSecondaryVar(iPoint, GetFluidModel());
 
     /*--- Check for non-realizable states for reporting. ---*/
 
@@ -172,11 +178,13 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
 
 void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
 }
 
 void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iVertex, iMarker;
   unsigned short iMarker_Monitoring;
@@ -265,6 +273,7 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 }
 
 void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
+  SU2_ZONE_SCOPED
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;
@@ -292,6 +301,7 @@ void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
 }
 
 void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   const unsigned short kind_roe_dissipation = config->GetKind_RoeLowDiss();
 
@@ -320,6 +330,7 @@ void CNSSolver::AddDynamicGridResidualContribution(unsigned long iPoint, unsigne
                                                    su2double Area, const su2double* GridVel,
                                                    su2double** Jacobian_i, su2double& Res_Conv,
                                                    su2double& Res_Visc) const {
+  SU2_ZONE_SCOPED
 
   su2double ProjGridVel = Area * GeometryToolbox::DotProduct(nDim, GridVel, UnitNormal);
 
@@ -411,17 +422,20 @@ void CNSSolver::AddDynamicGridResidualContribution(unsigned long iPoint, unsigne
 
 void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver**, CNumerics*,
                                  CNumerics*, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   BC_HeatFlux_Wall_Generic(geometry, config, val_marker, HEAT_FLUX);
 }
 
 void CNSSolver::BC_HeatTransfer_Wall(const CGeometry *geometry, const CConfig *config, const unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   BC_HeatFlux_Wall_Generic(geometry, config, val_marker, HEAT_TRANSFER);
 }
 
 void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfig* config, unsigned short val_marker,
                                          unsigned short kind_boundary) {
+  SU2_ZONE_SCOPED
   /*--- Identify the boundary by string name and get the specified wall
    heat flux from config as well as the wall function treatment. ---*/
 
@@ -563,8 +577,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
       }
 
       for (auto iVar = 1u; iVar <= nDim; iVar++) {
-        auto total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     }
   }
@@ -581,6 +594,7 @@ su2double CNSSolver::GetCHTWallTemperature(const CConfig* config, unsigned short
                                            unsigned long iVertex, su2double thermal_conductivity,
                                            su2double dist_ij, su2double There,
                                            su2double Temperature_Ref) const {
+  SU2_ZONE_SCOPED
 
   /*--- Compute the normal gradient in temperature using Twall ---*/
 
@@ -615,6 +629,7 @@ su2double CNSSolver::GetCHTWallTemperature(const CConfig* config, unsigned short
 void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver_container,
                                            CNumerics *conv_numerics, CNumerics *visc_numerics,
                                            CConfig *config, unsigned short val_marker, bool cht_mode) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const su2double Temperature_Ref = config->GetTemperature_Ref();
@@ -755,8 +770,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
       Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
       for (auto iVar = 1u; iVar <= nDim; iVar++) {
-        auto total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     }
   }
@@ -771,15 +785,18 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
 void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
 void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                            CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, nullptr, config, val_marker, true);
 }
 
 void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
   /*---
    The wall function implemented herein is based on Nichols and Nelson, AIAA J. v32 n6 2004.
    ---*/
@@ -1018,11 +1035,8 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
     ompMasterAssignBarrier(globalCounter1,0, globalCounter2,0);
 
-    SU2_OMP_ATOMIC
-    globalCounter1 += notConvergedCounter;
-
-    SU2_OMP_ATOMIC
-    globalCounter2 += smallYPlusCounter;
+    atomicAdd(notConvergedCounter, globalCounter1);
+    atomicAdd(smallYPlusCounter, globalCounter2);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());

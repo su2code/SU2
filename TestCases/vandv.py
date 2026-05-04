@@ -6,7 +6,7 @@
 #   - Use the SU2 --dry_run mode for configs of large tests.
 #   - Restart from converged results for medium problems.
 #   - Run small cases (<20s) to convergence.
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -28,7 +28,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-import sys
+import sys, shutil
 from TestCase import TestCase
 
 def main():
@@ -48,12 +48,22 @@ def main():
     p30n30.test_vals = [-11.267106, -11.168215, -11.182822, -10.949673, -14.233489, 0.052235, 2.830394, 1.318894, -1.210648, 1, 1.2763e+01]
     test_list.append(p30n30)
 
+    # This is not part of the V&V cases yet, its tested in this script because it is a relatively long test (~1 min).
+    shutil.copy("vandv/rans/30p30n/solution.dat", "vandv/rans/30p30n/solution_0.dat")
+    p30n30_ad = TestCase('30P30N_ad')
+    p30n30_ad.cfg_dir = "vandv/rans/30p30n"
+    p30n30_ad.cfg_file = "config_ad.cfg"
+    p30n30_ad.test_iter = 9
+    p30n30_ad.test_vals = [-7.283709, -6.072615, -5.995304, -7.197048, -4.568373, -1.167146, -2.316777, 1.1791e-01, 3.4123e+01]
+    p30n30_ad.command = TestCase.Command("mpirun -n 2", "SU2_CFD_AD")
+    test_list.append(p30n30_ad)
+
     # flat plate - sst-v1994m
     flatplate_sst1994m           = TestCase('flatplate_sst1994m')
     flatplate_sst1994m.cfg_dir   = "vandv/rans/flatplate"
     flatplate_sst1994m.cfg_file  = "turb_flatplate_sst.cfg"
     flatplate_sst1994m.test_iter = 5
-    flatplate_sst1994m.test_vals         = [-13.041770, -10.137183, -10.939993, -7.992281, -10.323862, -4.732832, 0.002801]
+    flatplate_sst1994m.test_vals = [-13.040446, -10.136636, -10.945108, -7.983081, -10.323877, -4.733046, 0.002801]
     flatplate_sst1994m.test_vals_aarch64 = [-13.021715, -9.534786, -10.401912, -7.501836, -9.750800, -4.850665, 0.002807]
     test_list.append(flatplate_sst1994m)
 
@@ -62,7 +72,7 @@ def main():
     bump_sst1994m.cfg_dir   = "vandv/rans/bump_in_channel"
     bump_sst1994m.cfg_file  = "turb_bump_sst.cfg"
     bump_sst1994m.test_iter = 5
-    bump_sst1994m.test_vals         = [-13.025922, -11.014048, -10.634022, -7.540700, -11.769195, -6.978039, 0.004931]
+    bump_sst1994m.test_vals = [-11.928190, -10.095673, -9.512453, -6.445471, -11.773665, -6.998333, 0.004931]
     bump_sst1994m.test_vals_aarch64 = [-13.042689, -10.812982, -10.604523, -7.655547, -10.816257, -5.308083, 0.004911]
     test_list.append(bump_sst1994m)
 
@@ -81,7 +91,7 @@ def main():
     swbli_sst.cfg_dir   = "vandv/rans/swbli"
     swbli_sst.cfg_file  = "config_sst.cfg"
     swbli_sst.test_iter = 5
-    swbli_sst.test_vals = [-11.569218, -10.909085, -11.607979, -10.431162, -11.407582, -2.637788, 0.001816, -1.305819, -3.514509, 13.399000]
+    swbli_sst.test_vals = [-11.569218, -10.909086, -11.607984, -10.431163, -11.407588, -2.637660, 0.001816, -1.305818, -3.514590, 13.399000]
     test_list.append(swbli_sst)
 
     # DSMA661 - SA
@@ -89,7 +99,7 @@ def main():
     dsma661_sa.cfg_dir    = "vandv/rans/dsma661"
     dsma661_sa.cfg_file   = "dsma661_sa_config.cfg"
     dsma661_sa.test_iter  = 5
-    dsma661_sa.test_vals  = [-11.230903, -8.242025, -9.022553, -5.871551, -10.737683, 0.155687, 0.024232]
+    dsma661_sa.test_vals  = [-11.266227, -8.243175, -9.037538, -5.941643, -10.737679, 0.155687, 0.024232]
     dsma661_sa.test_vals_aarch64 = [-11.293183, -8.241775, -9.083761, -6.011398, -10.737680, 0.155687, 0.024232]
     test_list.append(dsma661_sa)
 
@@ -98,7 +108,7 @@ def main():
     dsma661_sst.cfg_dir   = "vandv/rans/dsma661"
     dsma661_sst.cfg_file  = "dsma661_sst_config.cfg"
     dsma661_sst.test_iter = 5
-    dsma661_sst.test_vals = [-11.017795, -8.156464, -9.007731, -5.893887, -10.650405, -7.860166, 0.155882, 0.023344]
+    dsma661_sst.test_vals = [-11.020377, -8.157152, -8.998182, -5.917729, -10.650155, -7.856100, 0.155882, 0.023344]
     dsma661_sst.test_vals_aarch64 = [-10.977195, -8.403731, -8.747068, -5.808899, -10.522786, -7.369851, 0.155875, 0.023353]
     test_list.append(dsma661_sst)
 
@@ -120,7 +130,8 @@ def main():
     #################
 
     for test in test_list:
-        test.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
+        if test.command.empty():
+            test.command = TestCase.Command("mpirun -n 2", "SU2_CFD")
         test.timeout = 300
         test.tol = 1e-5
     #end

@@ -2,7 +2,7 @@
  * \file CAdjElasticityOutput.cpp
  * \brief Main subroutines for elasticity discrete adjoint output
  * \author R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,12 +27,15 @@
 
 
 #include "../../include/output/CAdjElasticityOutput.hpp"
+#include "../../include/output/CAdjHeatOutput.hpp"
 #include <string>
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
 CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
+
+  coupled_heat = config->GetWeakly_Coupled_Heat();
 
   /*--- Initialize number of variables ---*/
   nVar_FEM = nDim;
@@ -51,8 +54,10 @@ CAdjElasticityOutput::CAdjElasticityOutput(CConfig *config, unsigned short nDim)
     requestedScreenFields.emplace_back("INNER_ITER");
     requestedScreenFields.emplace_back("ADJOINT_DISP_X");
     requestedScreenFields.emplace_back("ADJOINT_DISP_Y");
+    if (coupled_heat) requestedScreenFields.emplace_back("RMS_ADJ_TEMPERATURE");
     requestedScreenFields.emplace_back("SENS_E_0");
     requestedScreenFields.emplace_back("SENS_NU_0");
+    if (coupled_heat) requestedScreenFields.emplace_back("SENS_GEO");
     nRequestedScreenFields = requestedScreenFields.size();
   }
 
@@ -134,6 +139,12 @@ void CAdjElasticityOutput::SetHistoryOutputFields(CConfig *config){
       AddHistoryOutput("BGS_ADJ_DISP_Z", "bgs[A_Uz]", ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint Z displacement.", HistoryFieldType::RESIDUAL);
     }
   }
+
+  if (coupled_heat) {
+    CAdjHeatOutput::SetHistoryOutputFieldsImpl(config, this);
+    AddHistoryOutput("LINSOL_ITER_HEAT", "LinSolIterHeat", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
+    AddHistoryOutput("LINSOL_RESIDUAL_HEAT", "LinSolResHeat", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
+  }
 }
 
 inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
@@ -173,6 +184,13 @@ inline void CAdjElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *ge
     }
   }
 
+  /*--- Add heat solver data if available. ---*/
+  if (coupled_heat) {
+    CAdjHeatOutput::LoadHistoryDataImpl(config, geometry, solver, this);
+    SetHistoryOutputValue("LINSOL_ITER_HEAT", solver[ADJHEAT_SOL]->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_HEAT", log10(solver[ADJHEAT_SOL]->GetResLinSolver()));
+  }
+
   ComputeSimpleCustomOutputs(config);
 }
 
@@ -190,6 +208,11 @@ void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, 
   SetVolumeOutputValue("ADJOINT-Y", iPoint, Node_Struc->GetSolution(iPoint, 1));
   if (nVar_FEM == 3)
     SetVolumeOutputValue("ADJOINT-Z", iPoint, Node_Struc->GetSolution(iPoint, 2));
+
+  if (coupled_heat) {
+    const auto* Node_Heat = solver[ADJHEAT_SOL]->GetNodes();
+    SetVolumeOutputValue("ADJ_TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
+  }
 
   SetVolumeOutputValue("SENSITIVITY-X", iPoint, Node_Struc->GetSensitivity(iPoint, 0));
   SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_Struc->GetSensitivity(iPoint, 1));
@@ -212,6 +235,14 @@ void CAdjElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, 
   SetVolumeOutputValue("SENS_ACCEL-Y", iPoint, Node_Struc->GetSolution_time_n(iPoint, 2 * nDim + 1));
   if (nDim == 3)
     SetVolumeOutputValue("SENS_ACCEL-Z", iPoint, Node_Struc->GetSolution_time_n(iPoint, 8));
+
+  if (coupled_heat) {
+    const auto* Node_Heat = solver[ADJHEAT_SOL]->GetNodes();
+    SetVolumeOutputValue("SENS_TEMP_N", iPoint, Node_Heat->GetSolution_time_n(iPoint, 0));
+    if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
+      SetVolumeOutputValue("SENS_TEMP_N1", iPoint, Node_Heat->GetSolution_time_n1(iPoint, 0));
+    }
+  }
 }
 
 void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
@@ -231,6 +262,10 @@ void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
     /// DESCRIPTION: Adjoint z-component.
     AddVolumeOutput("ADJOINT-Z", "Adjoint_z", "SOLUTION", "adjoint of displacement in the z direction");
   /// END_GROUP
+
+  if (coupled_heat) {
+    AddVolumeOutput("ADJ_TEMPERATURE", "Adjoint_Temperature", "SOLUTION", "Adjoint Temperature");
+  }
 
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
   /// DESCRIPTION: Sensitivity x-component.
@@ -261,4 +296,10 @@ void CAdjElasticityOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("SENS_ACCEL-Z", "SensitivityAccelN_z", "SENSITIVITY_N", "sensitivity to the previous z acceleration");
 
+  if (coupled_heat) {
+    AddVolumeOutput("SENS_TEMP_N", "SensitivityTempN", "SENSITIVITY_N", "sensitivity to the previous temperature");
+    if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
+      AddVolumeOutput("SENS_TEMP_N1", "SensitivityTempN1", "SENSITIVITY_N", "sensitivity to the previous-1 temperature");
+    }
+  }
 }

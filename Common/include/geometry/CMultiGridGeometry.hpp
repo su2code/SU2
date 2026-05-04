@@ -2,7 +2,7 @@
  * \file CMultiGridGeometry.hpp
  * \brief Headers of the multigrid geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,27 +29,29 @@
 
 #include "CGeometry.hpp"
 
+class CMultiGridQueue;
+
 /*!
  * \class CMultiGridGeometry
- * \brief Class for defining the multigrid geometry, the main delicated part is the
+ * \brief Class for defining the multigrid geometry, the main dedicated part is the
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios
  */
 class CMultiGridGeometry final : public CGeometry {
  private:
   /*!
-   * \brief Determine if a CVPoint van be agglomerated, if it have the same marker point as the seed.
+   * \brief Determine if a CVPoint can be agglomerated, if it has the same marker point as the seed.
    * \param[in] CVPoint - Control volume to be agglomerated.
    * \param[in] marker_seed - Marker of the seed.
    * \param[in] fine_grid - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \return <code>TRUE</code> or <code>FALSE</code> depending if the control volume can be agglomerated.
    */
-  bool SetBoundAgglomeration(unsigned long CVPoint, short marker_seed, const CGeometry* fine_grid,
+  bool SetBoundAgglomeration(unsigned long CVPoint, vector<short> marker_seed, const CGeometry* fine_grid,
                              const CConfig* config) const;
 
   /*!
-   * \brief Determine if a can be agglomerated using geometrical criteria.
+   * \brief Determine if a Point can be agglomerated using geometrical criteria.
    * \param[in] iPoint - Seed point.
    * \param[in] fine_grid - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -57,7 +59,7 @@ class CMultiGridGeometry final : public CGeometry {
   bool GeometricalCheck(unsigned long iPoint, const CGeometry* fine_grid, const CConfig* config) const;
 
   /*!
-   * \brief Determine if a CVPoint van be agglomerated, if it have the same marker point as the seed.
+   * \brief Determine if a CVPoint can be agglomerated, if it has the same marker point as the seed.
    * \param[out] Suitable_Indirect_Neighbors - List of Indirect Neighbours that can be agglomerated.
    * \param[in] iPoint - Seed point.
    * \param[in] Index_CoarseCV - Index of agglomerated point.
@@ -65,6 +67,25 @@ class CMultiGridGeometry final : public CGeometry {
    */
   void SetSuitableNeighbors(vector<unsigned long>& Suitable_Indirect_Neighbors, unsigned long iPoint,
                             unsigned long Index_CoarseCV, const CGeometry* fine_grid) const;
+
+  /*!
+   * \brief Compute local curvature at a boundary vertex on Euler wall.
+   * \param[in] fine_grid - Fine grid geometry.
+   * \param[in] iPoint - Point index.
+   * \param[in] iMarker - Marker index.
+   * \return Maximum angle (in degrees) between this vertex normal and adjacent vertex normals.
+   */
+  su2double ComputeLocalCurvature(const CGeometry* fine_grid, unsigned long iPoint, unsigned short iMarker) const;
+
+  /*!
+   * \brief Agglomerate high-aspect-ratio interior cells along implicit lines from wall vertices.
+   * \param[in,out] Index_CoarseCV - Current coarse CV index, incremented as new coarse CVs are created.
+   * \param[in] fine_grid - Fine grid geometry.
+   * \param[in] config - Configuration.
+   * \param[in,out] MGQueue_InnerCV - Queue for domain agglomeration; processed points are removed.
+   */
+  void AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid, const CConfig* config,
+                                CMultiGridQueue& MGQueue_InnerCV);
 
  public:
   /*--- This is to suppress Woverloaded-virtual, omitting it has no negative impact. ---*/
@@ -133,13 +154,6 @@ class CMultiGridGeometry final : public CGeometry {
    * \param[in] config - Definition of the particular problem.
    */
   void MatchActuator_Disk(const CConfig* config) override;
-
-  /*!
-   * \brief Mach the periodic boundary conditions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_periodic - Index of the first periodic face in a pair.
-   */
-  void MatchPeriodic(const CConfig* config, unsigned short val_periodic) override;
 
   /*!
    * \brief Set a representative wall normal heat flux of the agglomerated control volume on a particular boundary

@@ -3,7 +3,7 @@
 ## \file profiling.py
 #  \brief Python script for postprocessing the SU2 custom profiling (profiling.csv)
 #  \author T. Economon
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -25,17 +25,17 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
-from optparse import OptionParser
+import argparse
 from pylab import *
 from numpy import *
 from matplotlib import pyplot as plt
 from matplotlib import mlab
 
-parser = OptionParser()
-parser.add_option(
+parser = argparse.ArgumentParser()
+parser.add_argument(
     "-f", "--file", dest="file", help="profiling CSV file", metavar="FILE"
 )
-(options, args) = parser.parse_args()
+options = parser.parse_args()
 
 # Store the file name
 filename = options.file

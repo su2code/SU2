@@ -2,7 +2,7 @@
  * \file CNEMONSSolver.cpp
  * \brief Headers of the CNEMONSSolver class
  * \author S. R. Copeland, F. Palacios, W. Maier.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,6 +37,7 @@ template class CFVMFlowSolverBase<CNEMOEulerVariable, ENUM_REGIME::COMPRESSIBLE>
 
 CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
                CNEMOEulerSolver(geometry, config, iMesh, true) {
+  SU2_ZONE_SCOPED
 
   Viscosity_Inf      = config->GetViscosity_FreeStreamND();
   Prandtl_Lam        = config->GetPrandtl_Lam();
@@ -56,6 +57,7 @@ CNEMONSSolver::CNEMONSSolver(CGeometry *geometry, CConfig *config, unsigned shor
 
 void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                               unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   const auto InnerIter = config->GetInnerIter();
   const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
@@ -108,6 +110,7 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 }
 
 unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,CConfig *config, bool Output) {
+  SU2_ZONE_SCOPED
 
   /*--- Number of non-physical points, local to the thread, needs
    *    further reduction if function is called in parallel ---*/
@@ -144,6 +147,7 @@ unsigned long CNEMONSSolver::SetPrimitive_Variables(CSolver **solver_container,C
 }
 
 void CNEMONSSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, const CConfig *config, bool reconstruction) {
+  SU2_ZONE_SCOPED
 
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
   const auto comm = reconstruction? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
@@ -174,6 +178,7 @@ void CNEMONSSolver::Viscous_Residual(CGeometry *geometry,
                                      CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   CNumerics* numerics = numerics_container[VISC_TERM];
@@ -245,6 +250,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
                                                  CNumerics *sour_numerics,
                                                  CConfig *config,
                                                  unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   /*--- Local variables ---*/
   const auto Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -313,8 +319,7 @@ void CNEMONSSolver::BC_HeatFluxNonCatalytic_Wall(CGeometry *geometry,
     if (implicit) {
       /*--- Enforce the no-slip boundary condition in a strong way ---*/
       for (int iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
-        auto total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     }
 
@@ -328,6 +333,7 @@ void CNEMONSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
                                      CNumerics *sour_numerics,
                                      CConfig *config,
                                      unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   bool catalytic = config->GetCatalytic_Wall(val_marker);
 
@@ -345,11 +351,12 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
                                               CNumerics *sour_numerics,
                                               CConfig *config,
                                               unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   SU2_MPI::Error("BC_HEATFLUX with catalytic wall: Not operational in NEMO.", CURRENT_FUNCTION);
   //TODO: SCALE WITH EDDY VISC
   /*--- Local variables ---*/
-  unsigned long iPoint, total_index;
+  unsigned long iPoint;
   su2double rho, Ys;
   su2double *Normal, Area;
   su2double *Ds, *dYdn, SdYdn;
@@ -493,8 +500,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
       if (implicit) {
         /*--- Enforce the no-slip boundary condition in a strong way ---*/
         for (auto iVar = nSpecies; iVar < nSpecies+nDim; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
+          Jacobian.DeleteValsRowi(iPoint, iVar);
         }
       }
 
@@ -510,6 +516,7 @@ void CNEMONSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
 void CNEMONSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container,
                                        CNumerics *conv_numerics, CNumerics *sour_numerics,
                                        CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   bool catalytic = config->GetCatalytic_Wall(val_marker);
 
@@ -527,6 +534,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
                                                    CNumerics *sour_numerics,
                                                    CConfig *config,
                                                    unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool ionization = config->GetIonization();
@@ -632,8 +640,7 @@ void CNEMONSSolver::BC_IsothermalNonCatalytic_Wall(CGeometry *geometry,
       Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 
       for (auto iVar = 1u; iVar <= nDim; iVar++) {
-        auto total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     }
   }
@@ -652,6 +659,7 @@ void CNEMONSSolver::BC_IsothermalCatalytic_Wall(CGeometry *geometry,
                                                 CNumerics *sour_numerics,
                                                 CConfig *config,
                                                 unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   /*--- Call standard isothermal BC to apply no-slip and energy b.c.'s ---*/
   BC_IsothermalNonCatalytic_Wall(geometry, solver_container, conv_numerics,
@@ -847,6 +855,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
                                             CNumerics *visc_numerics,
                                             CConfig *config,
                                             unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
 
   const bool ionization = config->GetIonization();
@@ -993,6 +1002,7 @@ void CNEMONSSolver::BC_Smoluchowski_Maxwell(CGeometry *geometry,
 }
 
 void CNEMONSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
     SU2_MPI::Error("Wall Functions not yet operational in NEMO.", CURRENT_FUNCTION);
 }
 

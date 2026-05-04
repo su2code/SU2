@@ -2,7 +2,7 @@
  * \file CMeshSolver.cpp
  * \brief Main subroutines to solve moving meshes using a pseudo-linear elastic approach.
  * \author Ruben Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,6 +34,7 @@ using namespace GeometryToolbox;
 
 
 CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(LINEAR_SOLVER_MODE::MESH_DEFORM) {
+  SU2_ZONE_SCOPED
 
   /*--- Initialize some booleans that determine the kind of problem at hand. ---*/
 
@@ -170,6 +171,7 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CFEASolver(LINE
 }
 
 void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
+  SU2_ZONE_SCOPED
 
   /*--- This routine is for post processing, it does not need to be recorded. ---*/
   const bool wasActive = AD::BeginPassive();
@@ -232,13 +234,9 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
     if (ElemVolume <= 0.0) elCount++;
   }
   END_SU2_OMP_FOR
-  SU2_OMP_CRITICAL
-  {
-    MaxVolume = max(MaxVolume, maxVol);
-    MinVolume = min(MinVolume, minVol);
-    ElemCounter += elCount;
-  }
-  END_SU2_OMP_CRITICAL
+  atomicMax(maxVol, MaxVolume);
+  atomicMin(minVol, MinVolume);
+  atomicAdd(elCount, ElemCounter);
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
@@ -286,6 +284,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
 }
 
 void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Initialize min and max distance ---*/
 
@@ -367,12 +366,9 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
     }
     END_SU2_OMP_FOR
-    SU2_OMP_CRITICAL
-    {
-      MaxDistance = max(MaxDistance, MaxDistance_Local);
-      MinDistance = min(MinDistance, MinDistance_Local);
-    }
-    END_SU2_OMP_CRITICAL
+
+    atomicMax(MaxDistance_Local, MaxDistance);
+    atomicMin(MinDistance_Local, MinDistance);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
@@ -418,6 +414,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 }
 
 void CMeshSolver::SetMesh_Stiffness(CNumerics **numerics, CConfig *config){
+  SU2_ZONE_SCOPED
 
   if (stiffness_set) return;
 
@@ -475,6 +472,7 @@ void CMeshSolver::SetMesh_Stiffness(CNumerics **numerics, CConfig *config){
 }
 
 void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig *config){
+  SU2_ZONE_SCOPED
 
   if (multizone) nodes->Set_BGSSolution_k();
 
@@ -542,6 +540,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CNumerics **numerics, CConfig
 }
 
 void CMeshSolver::UpdateGridCoord(CGeometry *geometry, const CConfig *config){
+  SU2_ZONE_SCOPED
 
   /*--- Update the grid coordinates using the solution of the linear system ---*/
 
@@ -568,6 +567,7 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, const CConfig *config){
 }
 
 void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumerics **numerics, CConfig *config){
+  SU2_ZONE_SCOPED
 
   if (config->GetnZone() == 1)
     SU2_MPI::Error("It is not possible to compute grid velocity from boundary velocity for single zone problems.\n"
@@ -617,6 +617,7 @@ void CMeshSolver::ComputeGridVelocity_FromBoundary(CGeometry **geometry, CNumeri
 }
 
 void CMeshSolver::ComputeGridVelocity(CGeometry **geometry, const CConfig *config) const {
+  SU2_ZONE_SCOPED
 
   /*--- Compute the velocity of each node. ---*/
 
@@ -654,6 +655,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry **geometry, const CConfig *confi
 }
 
 void CMeshSolver::BC_Deforming(CGeometry *geometry, const CConfig *config, unsigned short val_marker, bool velocity){
+  SU2_ZONE_SCOPED
 
   for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -670,6 +672,7 @@ void CMeshSolver::BC_Deforming(CGeometry *geometry, const CConfig *config, unsig
 }
 
 void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config, bool velocity_transfer){
+  SU2_ZONE_SCOPED
 
   /* Surface motions are not applied during discrete adjoint runs as the corresponding
    * boundary displacements are computed when loading the primal solution, and it
@@ -756,12 +759,14 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config,
 }
 
 void CMeshSolver::SetDualTime_Mesh(){
+  SU2_ZONE_SCOPED
 
   nodes->Set_Solution_time_n1();
   nodes->Set_Solution_time_n();
 }
 
 void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  SU2_ZONE_SCOPED
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -864,6 +869,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 }
 
 void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- This function is intended for dual time simulations ---*/
 
@@ -961,6 +967,7 @@ void CMeshSolver::RestartOldGeometry(CGeometry *geometry, const CConfig *config)
 }
 
 void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigned long iter) {
+  SU2_ZONE_SCOPED
 
   su2double deltaT, time_new, time_old, Lref;
   su2double Center[3] = {0.0}, VarCoord[3] = {0.0}, Omega[3] = {0.0}, Ampl[3] = {0.0}, Phase[3] = {0.0};
@@ -1094,6 +1101,7 @@ void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigne
 }
 
 void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigned long iter) {
+  SU2_ZONE_SCOPED
 
   su2double deltaT, time_new, time_old, Lref;
   su2double VarCoordAbs[3] = {0.0};
@@ -1275,6 +1283,7 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigne
 }
 
 void CMeshSolver::Surface_Plunging(CGeometry *geometry, CConfig *config, unsigned long iter) {
+  SU2_ZONE_SCOPED
 
   su2double deltaT, time_new, time_old, Lref;
   su2double Center[3] = {0.0}, VarCoord[3] = {0.0}, Omega[3] = {0.0}, Ampl[3] = {0.0};
@@ -1402,6 +1411,7 @@ void CMeshSolver::Surface_Plunging(CGeometry *geometry, CConfig *config, unsigne
 }
 
 void CMeshSolver::Surface_Translating(CGeometry *geometry, CConfig *config, unsigned long iter) {
+  SU2_ZONE_SCOPED
 
   su2double deltaT, time_new, time_old;
   su2double Center[3] = {0.0}, VarCoord[3] = {0.0};

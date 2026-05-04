@@ -2,7 +2,7 @@
  * \file CIncNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,6 +37,7 @@ template class CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE
 
 CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
   CIncEulerSolver(geometry, config, iMesh, true) {
+  SU2_ZONE_SCOPED
 
   /*--- Read farfield conditions from config ---*/
 
@@ -62,6 +63,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
 void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                  unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
@@ -108,8 +110,6 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   if (wall_functions) {
     SU2_OMP_SAFE_GLOBAL_ACCESS(SetTau_Wall_WF(geometry, solver_container, config);)
-    // nijso: we have to set this as well??
-    // seteddyviscfirstpoint
   }
 
   /*--- Compute recovered pressure and temperature for streamwise periodic flow ---*/
@@ -120,6 +120,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
                                                      CConfig *config,
                                                      const unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   /*---------------------------------------------------------------------------------------------*/
   // 1. Evaluate massflow, area avg density & Temperature and Area at streamwise periodic outlet.
@@ -235,6 +236,7 @@ void CIncNSSolver::GetStreamwise_Periodic_Properties(const CGeometry *geometry,
 
 void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config, const CGeometry *geometry,
                                                                 const unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   const bool energy = (config->GetEnergy_Equation() && config->GetStreamwise_Periodic_Temperature());
   const auto InnerIter = config->GetInnerIter();
@@ -275,6 +277,7 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
 
 void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
                                     CNumerics *numerics, CConfig *config) {
+  SU2_ZONE_SCOPED
   const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
 
   /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
@@ -289,6 +292,7 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
 
 void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,
                                             CNumerics* numerics, const int n_species, const bool implicit) {
+  SU2_ZONE_SCOPED
 
   CVariable* speciesNodes = solver_container[SPECIES_SOL]->GetNodes();
   /*--- Points in edge ---*/
@@ -358,9 +362,10 @@ void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* ge
 }
 
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint, nonPhysicalPoints = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0, LES_Mode = 0.0;
   const su2double* scalar = nullptr;
   const TURB_MODEL turb_model = config->GetKind_Turb_Model();
   const SPECIES_MODEL species_model = config->GetKind_Species_Model();
@@ -380,6 +385,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
         DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
+        LES_Mode = solver_container[TURB_SOL]->GetNodes()->GetLES_Mode(iPoint); 
       }
     }
 
@@ -400,6 +406,10 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
     nodes->SetDES_LengthScale(iPoint,DES_LengthScale);
 
+    /*--- Set the LES sensor ---*/
+
+    nodes->SetLES_Mode(iPoint, LES_Mode);
+
   }
   END_SU2_OMP_FOR
 
@@ -411,6 +421,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
 void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *config,
                                    unsigned short val_marker, unsigned short kind_boundary) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool energy = config->GetEnergy_Equation();
@@ -492,7 +503,7 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
     if (implicit) {
       for (unsigned short iVar = 1; iVar <= nDim; iVar++)
-        Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
     }
 
     if (!energy) continue;
@@ -582,23 +593,27 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
 void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver**, CNumerics*,
                                     CNumerics*, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   BC_Wall_Generic(geometry, config, val_marker, HEAT_FLUX);
 }
 
 void CIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver**, CNumerics*,
                                     CNumerics*, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   BC_Wall_Generic(geometry, config, val_marker, ISOTHERMAL);
 }
 
 void CIncNSSolver::BC_HeatTransfer_Wall(const CGeometry *geometry, const CConfig *config, const unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   BC_Wall_Generic(geometry, config, val_marker, HEAT_TRANSFER);
 }
 
 void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                               CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const su2double Temperature_Ref = config->GetTemperature_Ref();
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -644,8 +659,8 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
     if (implicit) {
       for (unsigned short iVar = 1; iVar <= nDim; iVar++)
-        Jacobian.DeleteValsRowi(iPoint*nVar+iVar);
-      if (energy) Jacobian.DeleteValsRowi(iPoint*nVar+nDim+1);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
+      if (energy) Jacobian.DeleteValsRowi(iPoint, nDim + 1);
     }
 
     if (!energy) continue;
@@ -706,6 +721,7 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 }
 
 void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
   /*--- The wall function implemented herein is based on Nichols and Nelson, AIAA J. v32 n6 2004. ---*/
 
   unsigned long notConvergedCounter = 0;  /*--- Counts the number of wall cells that are not converged ---*/
@@ -739,6 +755,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
       const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
       /*--- On the finest mesh compute also on halo nodes to avoid communication of tau wall. ---*/
       if ((!geometry->nodes->GetDomain(iPoint)) && !(MGLevel==MESH_0)) continue;
 
@@ -882,11 +899,8 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
     ompMasterAssignBarrier(globalCounter1,0, globalCounter2,0);
 
-    SU2_OMP_ATOMIC
-    globalCounter1 += notConvergedCounter;
-
-    SU2_OMP_ATOMIC
-    globalCounter2 += smallYPlusCounter;
+    atomicAdd(notConvergedCounter, globalCounter1);
+    atomicAdd(smallYPlusCounter, globalCounter2);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());

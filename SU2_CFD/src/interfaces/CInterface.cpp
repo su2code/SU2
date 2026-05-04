@@ -2,7 +2,7 @@
  * \file CInterface.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -63,7 +63,7 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
                                CSolver *donor_solution, CSolver *target_solution,
                                CGeometry *donor_geometry, CGeometry *target_geometry,
                                const CConfig *donor_config, const CConfig *target_config) {
-  static_assert(su2activematrix::Storage == StorageType::RowMajor,"");
+  static_assert(su2activematrix::Storage == StorageType::RowMajor);
 
   GetPhysical_Constants(donor_solution, target_solution, donor_geometry, target_geometry,
                         donor_config, target_config);
@@ -110,7 +110,7 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
     if (markDonor >= 0) {
 
       /*--- Apply contact resistance if specified. ---*/
-      
+
       SetContactResistance(donor_config->GetContactResistance(iMarkerInt));
 
       for (auto iVertex = 0ul, iSend = 0ul; iVertex < donor_geometry->GetnVertex(markDonor); iVertex++) {
@@ -235,7 +235,7 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
           /*--- If the tag hasn't matched any tag within the donor markers ---*/
       Marker_Donor = -1;
       Donor_Flag   = -1;
-   
+
   }
 
 #ifdef HAVE_MPI
@@ -423,7 +423,7 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
     }
           /*--- If the tag hasn't matched any tag within the donor markers ---*/
       Marker_Donor = -1;
-   
+
   }
   /*--- Here we want to make available the quantities for all the processors and collect them in a buffer
    * for each span of the donor the span-wise height vector also so
@@ -538,7 +538,7 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
     }
           /*--- If the tag hasn't matched any tag within the Flow markers ---*/
       Marker_Target = -1;
-   
+
   }
 
 

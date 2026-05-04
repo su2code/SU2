@@ -2,7 +2,7 @@
  * \file CFEASolverBase.cpp
  * \brief Common class template for FEA solvers
  * \author T. Dick
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -29,6 +29,7 @@
 #include <algorithm>
 
 CFEASolverBase::CFEASolverBase(LINEAR_SOLVER_MODE mesh_deform_mode) : CSolver(mesh_deform_mode) {
+  SU2_ZONE_SCOPED
 
   nElement = 0;
   nDim = 0;
@@ -43,6 +44,7 @@ CFEASolverBase::CFEASolverBase(LINEAR_SOLVER_MODE mesh_deform_mode) : CSolver(me
 }
 
 CFEASolverBase::CFEASolverBase(CGeometry *geometry, CConfig *config, LINEAR_SOLVER_MODE mesh_deform_mode) : CSolver(mesh_deform_mode) {
+  SU2_ZONE_SCOPED
 
   nElement      = geometry->GetnElem();
   nDim          = geometry->GetnDim();
@@ -58,6 +60,7 @@ CFEASolverBase::CFEASolverBase(CGeometry *geometry, CConfig *config, LINEAR_SOLV
 }
 
 CFEASolverBase::~CFEASolverBase() {
+  SU2_ZONE_SCOPED
 
   if (element_container != nullptr) {
     for (unsigned int iVar = 0; iVar < MAX_TERMS; iVar++) {
@@ -72,6 +75,7 @@ CFEASolverBase::~CFEASolverBase() {
 }
 
 void CFEASolverBase::CommunicateExtraEliminationVertices(const CGeometry* geometry, vector<unsigned long>& myPoints) {
+  SU2_ZONE_SCOPED
 
   /*--- communicate the boundary points ---*/
 

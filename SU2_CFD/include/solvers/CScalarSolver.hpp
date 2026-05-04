@@ -1,7 +1,7 @@
 /*!
  * \file CScalarSolver.hpp
  * \brief Headers of the CScalarSolver class
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -181,14 +181,14 @@ class CScalarSolver : public CSolver {
       numerics->SetScalarVar(nodes->GetSolution(iPoint), nodes->GetSolution(jPoint));
       numerics->SetScalarVarGradient(nodes->GetGradient(iPoint), nodes->GetGradient(jPoint));
 
-      return numerics->ComputeResidual(config); 
+      return numerics->ComputeResidual(config);
     };
 
     /*--- Compute fluxes and jacobians i->j ---*/
     const su2double* normal = geometry->edges->GetNormal(iEdge);
     auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
 
-    JacobianScalarType *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
+    su2mixedfloat *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
     if (implicit) {
       Jacobian.GetBlocks(iEdge, iPoint, jPoint, Block_ii, Block_ij, Block_ji, Block_jj);
     }
@@ -241,7 +241,7 @@ class CScalarSolver : public CSolver {
       }
     }
   }
-  
+
   /*!
    * \brief Generic implementation of the fluid interface boundary condition for scalar solvers.
    * \tparam SolverSpecificNumericsFunc - lambda that implements solver specific contributions to viscous numerics.
@@ -427,7 +427,7 @@ class CScalarSolver : public CSolver {
    * a nonlinear iteration for stability. Default value 1.0 set in ctor of CScalarVariable.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void ComputeUnderRelaxationFactor(const CConfig* config) {}
+  virtual void ComputeUnderRelaxationFactor(CSolver** solver_container, const CConfig* config) {}
 
  public:
   /*!

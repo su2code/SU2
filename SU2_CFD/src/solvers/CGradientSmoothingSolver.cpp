@@ -2,7 +2,7 @@
  * \file CGradientSmoothing.cpp
  * \brief Main solver routines for the gradient smoothing problem.
  * \author T. Dick
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,8 +37,8 @@
  */
 namespace CGradientSmoothingSolverDetails {
 
-template<typename su2matvecscalar>
-void WriteVectorToGeometry(CGeometry* geometry, const CSysVector<su2matvecscalar>& vector) {
+template<typename Scalar>
+void WriteVectorToGeometry(CGeometry* geometry, const CSysVector<Scalar>& vector) {
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
     for (auto iDim = 0u; iDim < geometry->GetnDim(); iDim++) {
       geometry->SetSensitivity(iPoint,iDim, vector(iPoint, iDim));
@@ -46,8 +46,8 @@ void WriteVectorToGeometry(CGeometry* geometry, const CSysVector<su2matvecscalar
   }
 }
 
-template<typename su2matvecscalar>
-void ReadVectorToGeometry(const CGeometry* geometry, CSysVector<su2matvecscalar>& vector) {
+template<typename Scalar>
+void ReadVectorToGeometry(const CGeometry* geometry, CSysVector<Scalar>& vector) {
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
     for (auto iDim = 0u; iDim < geometry->GetnDim(); iDim++) {
       vector(iPoint, iDim) = SU2_TYPE::GetValue(geometry->GetSensitivity(iPoint,iDim));
@@ -57,6 +57,7 @@ void ReadVectorToGeometry(const CGeometry* geometry, CSysVector<su2matvecscalar>
 } // namespace CGradientSmoothingSolverDetails
 
 CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig *config) : CFEASolverBase(LINEAR_SOLVER_MODE::GRADIENT_MODE) {
+  SU2_ZONE_SCOPED
   unsigned int marker_count = 0;
   unsigned long iPoint;
 
@@ -164,6 +165,7 @@ CGradientSmoothingSolver::CGradientSmoothingSolver(CGeometry *geometry, CConfig 
 }
 
 CGradientSmoothingSolver::~CGradientSmoothingSolver() {
+  SU2_ZONE_SCOPED
 
   delete nodes;
 
@@ -171,6 +173,7 @@ CGradientSmoothingSolver::~CGradientSmoothingSolver() {
 
 void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry* geometry, CNumerics* numerics,
                                                             const CConfig* config) {
+  SU2_ZONE_SCOPED
   /*--- current dimension if we run consecutive on each dimension ---*/
   unsigned int iDim = 0;
 
@@ -213,6 +216,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingVolume(CGeometry* geometry,
 
 void CGradientSmoothingSolver::ApplyGradientSmoothingSurface(CGeometry* geometry, CNumerics* numerics,
                                                              const CConfig* config) {
+  SU2_ZONE_SCOPED
   /*--- Set vector and sparse matrix to 0 ---*/
   LinSysSol.SetValZero();
   LinSysRes.SetValZero();
@@ -246,6 +250,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
                                                         CSurfaceMovement* surface_movement,
                                                         CVolumetricMovement* grid_movement, CConfig* config,
                                                         su2double** Gradient) {
+  SU2_ZONE_SCOPED
   unsigned nDVtotal=config->GetnDV_Total();
   unsigned column, row;
   unsigned long iPoint;
@@ -267,7 +272,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
   /*--- Compute the full Sobolev Hessian approximation column by column. ---*/
   if (rank == MASTER_NODE)  cout << " computing the system matrix line by line" << endl;
 
-  auto mat_vec = GetStiffnessMatrixVectorProduct<su2matvecscalar>(geometry, numerics, config);
+  auto mat_vec = GetStiffnessMatrixVectorProduct<su2mixedfloat>(geometry, numerics, config);
 
   for (column=0; column<nDVtotal; column++) {
 
@@ -302,9 +307,9 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
     } else {
 
       /*--- Forward evaluation of the mesh deformation ---*/
-      CGradientSmoothingSolverDetails::WriteVectorToGeometry<su2matvecscalar>(geometry, helperVecIn);
+      CGradientSmoothingSolverDetails::WriteVectorToGeometry<su2mixedfloat>(geometry, helperVecIn);
       grid_movement->SetVolume_Deformation(geometry, config, false, true, true);
-      CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2matvecscalar>(geometry, helperVecIn);
+      CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2mixedfloat>(geometry, helperVecIn);
 
       CSysMatrixComms::Initiate(helperVecIn, geometry, config, MPI_QUANTITIES::SOLUTION_MATRIX);
       CSysMatrixComms::Complete(helperVecIn, geometry, config, MPI_QUANTITIES::SOLUTION_MATRIX);
@@ -319,9 +324,9 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
       }
 
       /*--- Forward evaluation of the mesh deformation ---*/
-      CGradientSmoothingSolverDetails::WriteVectorToGeometry<su2matvecscalar>(geometry, helperVecOut);
+      CGradientSmoothingSolverDetails::WriteVectorToGeometry<su2mixedfloat>(geometry, helperVecOut);
       grid_movement->SetVolume_Deformation(geometry, config, false, true, false);
-      CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2matvecscalar>(geometry, helperVecOut);
+      CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2mixedfloat>(geometry, helperVecOut);
 
     }
 
@@ -363,6 +368,7 @@ void CGradientSmoothingSolver::ApplyGradientSmoothingDV(CGeometry* geometry, CNu
 }
 
 void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry* geometry, CNumerics* numerics, const CConfig* config) {
+  SU2_ZONE_SCOPED
   unsigned long iElem, iNode;
   unsigned int iDim, nNodes = 0, NelNodes, jNode;
   std::array<unsigned long, MAXNNODE_3D> indexNode;
@@ -423,6 +429,7 @@ void CGradientSmoothingSolver::Compute_StiffMatrix(CGeometry* geometry, CNumeric
 void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry* geometry, CNumerics* numerics,
                                                            const CConfig* config, unsigned long val_marker,
                                                            unsigned int nSurfDim) {
+  SU2_ZONE_SCOPED
   unsigned long iElem, iPoint, iVertex, iDim, iSurfDim;
   unsigned int iNode, jNode, nNodes = 0, NelNodes;
   std::array<unsigned long, MAXNNODE_2D> indexNode;
@@ -487,6 +494,7 @@ void CGradientSmoothingSolver::Compute_Surface_StiffMatrix(CGeometry* geometry, 
 }
 
 void CGradientSmoothingSolver::Compute_Residual(CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
   unsigned long iElem;
   unsigned int iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
@@ -545,13 +553,12 @@ void CGradientSmoothingSolver::Compute_Residual(CGeometry* geometry, const CConf
 
 void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry* geometry, const CConfig* config,
                                                         unsigned long val_marker) {
+  SU2_ZONE_SCOPED
   unsigned long iElem, iPoint, iVertex;
   unsigned int iDim, iNode, nNodes = 0;
   int EL_KIND = 0;
   std::array<unsigned long, MAXNNODE_2D> indexNode;
   std::array<unsigned long, MAXNNODE_2D> indexVertex;
-  su2double Weight, Jac_X, norm, val_Coord, normalSens = 0.0, Residual=0.0;
-  su2double normal[MAXNDIM];
 
   for (iElem = 0; iElem < geometry->GetnElem_Bound(val_marker); iElem++) {
     /*--- Identify the kind of boundary element ---*/
@@ -562,7 +569,7 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry* geometry, con
       indexNode[iNode] = geometry->bound[val_marker][iElem]->GetNode(iNode);
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
+        const su2double val_Coord = Get_ValCoord(geometry, indexNode[iNode], iDim);
         element_container[GRAD_TERM][EL_KIND]->SetRef_Coord(iNode, iDim, val_Coord);
       }
     }
@@ -575,37 +582,34 @@ void CGradientSmoothingSolver::Compute_Surface_Residual(CGeometry* geometry, con
       }
     }
 
-    element_container[GRAD_TERM][EL_KIND]
-        ->ClearElement(); /*--- Restarts the element: avoids adding over previous results in other elements --*/
+    /*--- Restarts the element: avoids adding over previous results in other elements --*/
+    element_container[GRAD_TERM][EL_KIND]->ClearElement();
     element_container[GRAD_TERM][EL_KIND]->ComputeGrad_SurfaceEmbedded();
     unsigned int nGauss = element_container[GRAD_TERM][EL_KIND]->GetnGaussPoints();
 
     for (unsigned int iGauss = 0; iGauss < nGauss; iGauss++) {
-      Weight = element_container[GRAD_TERM][EL_KIND]->GetWeight(iGauss);
-      Jac_X = element_container[GRAD_TERM][EL_KIND]->GetJ_X(iGauss);
+      const su2double Weight = element_container[GRAD_TERM][EL_KIND]->GetWeight(iGauss);
+      const su2double Jac_X = element_container[GRAD_TERM][EL_KIND]->GetJ_X(iGauss);
 
       for (unsigned int iNode = 0; iNode < nNodes; iNode++) {
+        su2double normal[MAXNDIM] = {};
         geometry->vertex[val_marker][indexVertex[iNode]]->GetNormal(normal);
-        norm = GeometryToolbox::Norm(nDim, normal);
+        const su2double norm = GeometryToolbox::Norm(nDim, normal);
         for (iDim = 0; iDim < nDim; iDim++) {
           normal[iDim] = normal[iDim] / norm;
         }
-
+        su2double normalSens = 0;
         for (iDim = 0; iDim < nDim; iDim++) {
           normalSens += normal[iDim] * nodes->GetSensitivity(indexNode[iNode], iDim);
         }
-
-        Residual += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode, iGauss) * normalSens;
-        LinSysRes.AddBlock(indexNode[iNode], &Residual);
-
-        Residual = 0;
-        normalSens = 0;
+        LinSysRes(indexNode[iNode], 0) += Weight * Jac_X * element_container[GRAD_TERM][EL_KIND]->GetNi(iNode, iGauss) * normalSens;
       }
     }
   }
 }
 
 void CGradientSmoothingSolver::Impose_BC(const CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
   unsigned int iMarker;
 
   /*--- Get the boundary markers and iterate over them
@@ -619,6 +623,7 @@ void CGradientSmoothingSolver::Impose_BC(const CGeometry* geometry, const CConfi
 }
 
 void CGradientSmoothingSolver::BC_Dirichlet(const CGeometry* geometry, const CConfig* config, unsigned int val_marker) {
+  SU2_ZONE_SCOPED
   unsigned long iPoint, iVertex;
   const su2double zeros[MAXNDIM] = {0.0};
 
@@ -637,6 +642,7 @@ void CGradientSmoothingSolver::BC_Dirichlet(const CGeometry* geometry, const CCo
 
 void CGradientSmoothingSolver::BC_Surface_Dirichlet(const CGeometry* geometry, const CConfig* config,
                                                     unsigned int val_marker) {
+  SU2_ZONE_SCOPED
   unsigned long iPoint, iVertex;
   const su2double zeros[MAXNDIM] = {0.0};
 
@@ -654,6 +660,7 @@ void CGradientSmoothingSolver::BC_Surface_Dirichlet(const CGeometry* geometry, c
 }
 
 void CGradientSmoothingSolver::Solve_Linear_System(CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
   /* For MPI prescribe vector entries across the ranks before solving the system.
    * Analog to FEA solver this is only done for the solution */
   CSysMatrixComms::Initiate(LinSysSol, geometry, config);
@@ -677,10 +684,11 @@ void CGradientSmoothingSolver::Solve_Linear_System(CGeometry* geometry, const CC
   END_SU2_OMP_PARALLEL
 }
 
-template <typename scalar_type>
-CSysMatrixVectorProduct<scalar_type> CGradientSmoothingSolver::GetStiffnessMatrixVectorProduct(CGeometry* geometry,
+template <typename Scalar>
+CSysMatrixVectorProduct<Scalar> CGradientSmoothingSolver::GetStiffnessMatrixVectorProduct(CGeometry* geometry,
                                                                                                CNumerics* numerics,
                                                                                                const CConfig* config) {
+  SU2_ZONE_SCOPED
 
   /*--- Compute the sparse stiffness matrix ---*/
   if (config->GetSmoothOnSurface()) {
@@ -694,10 +702,11 @@ CSysMatrixVectorProduct<scalar_type> CGradientSmoothingSolver::GetStiffnessMatri
     Compute_StiffMatrix(geometry, numerics, config);
   }
 
-  return CSysMatrixVectorProduct<scalar_type>(Jacobian, geometry, config);
+  return CSysMatrixVectorProduct<Scalar>(Jacobian, geometry, config);
 }
 
 void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CVolumetricMovement *grid_movement, CConfig *config, su2double** Gradient) {
+  SU2_ZONE_SCOPED
 
   unsigned int iDV, iDV_Value, iDV_index;
 
@@ -707,7 +716,7 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
 
   grid_movement->SetVolume_Deformation(geometry, config, false, true);
 
-  CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2matvecscalar>(geometry, helperVecOut);
+  CGradientSmoothingSolverDetails::ReadVectorToGeometry<su2mixedfloat>(geometry, helperVecOut);
 
   ProjectMeshToDV(geometry, helperVecOut, deltaP, activeCoord, config);
 
@@ -723,6 +732,7 @@ void CGradientSmoothingSolver::CalculateOriginalGradient(CGeometry *geometry, CV
 }
 
 void CGradientSmoothingSolver::RecordTapeAndCalculateOriginalGradient(CGeometry *geometry, CSurfaceMovement *surface_movement, CVolumetricMovement *grid_movement, CConfig *config, su2double **Gradient) {
+  SU2_ZONE_SCOPED
 
   /*--- Record the parameterization on the AD tape. ---*/
   if (rank == MASTER_NODE)  cout << " calculate the original gradient" << endl;
@@ -734,6 +744,7 @@ void CGradientSmoothingSolver::RecordTapeAndCalculateOriginalGradient(CGeometry 
 }
 
 void CGradientSmoothingSolver::OutputDVGradient(const CConfig* config, string out_file) {
+  SU2_ZONE_SCOPED
   unsigned iDV;
   if (rank == MASTER_NODE) {
     /*--- For multizone append zone number to filename. ---*/
@@ -751,6 +762,7 @@ void CGradientSmoothingSolver::OutputDVGradient(const CConfig* config, string ou
 }
 
 void CGradientSmoothingSolver::RecordParameterizationJacobian(CGeometry *geometry, CSurfaceMovement *surface_movement, CSysVector<su2double>& registeredCoord, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned int nDim, nMarker, nDV, nDV_Value, nPoint, nVertex;
   unsigned int iDV, iDV_Value, iMarker, iPoint, iVertex, iDim;
@@ -808,7 +820,8 @@ void CGradientSmoothingSolver::RecordParameterizationJacobian(CGeometry *geometr
 
 }
 
-void CGradientSmoothingSolver::ProjectDVtoMesh(CGeometry *geometry, std::vector<su2double>& seeding, CSysVector<su2matvecscalar>& result, CSysVector<su2double>& registeredCoord, CConfig *config) {
+void CGradientSmoothingSolver::ProjectDVtoMesh(CGeometry *geometry, std::vector<su2double>& seeding, CSysVector<su2mixedfloat>& result, CSysVector<su2double>& registeredCoord, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned int nDim, nMarker, nDV, nDV_Value, nVertex;
   unsigned int iDV, iDV_Value, iDV_index, iMarker, iVertex, iPoint, iDim;
@@ -847,7 +860,8 @@ void CGradientSmoothingSolver::ProjectDVtoMesh(CGeometry *geometry, std::vector<
 
 }
 
-void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<su2matvecscalar>& sensitivity, std::vector<su2double>& output, CSysVector<su2double>& registeredCoord, CConfig *config) {
+void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<su2mixedfloat>& sensitivity, std::vector<su2double>& output, CSysVector<su2double>& registeredCoord, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- adjoint surface deformation ---*/
 
@@ -894,6 +908,7 @@ void CGradientSmoothingSolver::ProjectMeshToDV(CGeometry *geometry, CSysVector<s
 }
 
 void CGradientSmoothingSolver::WriteSensToGeometry(CGeometry* geometry) const {
+  SU2_ZONE_SCOPED
   unsigned long iPoint;
   unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -904,6 +919,7 @@ void CGradientSmoothingSolver::WriteSensToGeometry(CGeometry* geometry) const {
 }
 
 void CGradientSmoothingSolver::ReadSensFromGeometry(const CGeometry* geometry) {
+  SU2_ZONE_SCOPED
   unsigned long iPoint;
   unsigned int iDim;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -914,6 +930,7 @@ void CGradientSmoothingSolver::ReadSensFromGeometry(const CGeometry* geometry) {
 }
 
 void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
 
   unsigned int iDim;
   su2double normal[MAXNDIM];
@@ -950,6 +967,7 @@ void CGradientSmoothingSolver::WriteSensitivity(CGeometry* geometry, const CConf
 }
 
 void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
   /*--- Store global point indices of essential BC markers. ---*/
   vector<unsigned long> myPoints;
 
@@ -998,6 +1016,7 @@ void CGradientSmoothingSolver::Set_VertexEliminationSchedule(CGeometry* geometry
 }
 
 void CGradientSmoothingSolver::Complete_Surface_StiffMatrix(const CGeometry* geometry) {
+  SU2_ZONE_SCOPED
 
   /*--- Assembling the stiffness matrix on the design surface means the Jacobian is the identity for nodes inside the domain. ---*/
   for (unsigned long iPoint = 0ul; iPoint < geometry->GetnPointDomain(); iPoint++){

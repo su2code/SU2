@@ -3,7 +3,7 @@
  * \brief A class template that allows defining limiters via
  *        specialization of particular details.
  * \author P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -369,13 +369,11 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>
 
     /*--- Per rank reduction. ---*/
 
-    SU2_OMP_CRITICAL
     for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
     {
-      sharedMin(iVar) = min(sharedMin(iVar), localMin(iVar));
-      sharedMax(iVar) = max(sharedMax(iVar), localMax(iVar));
+      atomicMin(localMin(iVar), sharedMin(iVar));
+      atomicMax(localMax(iVar), sharedMax(iVar));
     }
-    END_SU2_OMP_CRITICAL
 
     /*--- Global reduction. ---*/
 

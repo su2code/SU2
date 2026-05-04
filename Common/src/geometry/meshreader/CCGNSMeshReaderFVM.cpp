@@ -3,7 +3,7 @@
  * \brief Class that reads a single zone of a CGNS mesh file from disk into
  *        linear partitions across all ranks.
  * \author T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -64,6 +64,9 @@ CCGNSMeshReaderFVM::CCGNSMeshReaderFVM(const CConfig* val_config, unsigned short
   /*--- Put our CGNS data into the class data for the mesh reader. ---*/
   ReformatCGNSVolumeConnectivity();
   ReformatCGNSSurfaceConnectivity();
+
+  /*--- Duplicate some markers if requested. ---*/
+  CopyMarkers(val_config->GetMarkerCreateCopy());
 
 #else
   SU2_MPI::Error(string(" SU2 built without CGNS support. \n") + string(" To use CGNS, build SU2 accordingly."),
@@ -407,7 +410,7 @@ void CCGNSMeshReaderFVM::ReadCGNSVolumeSection(int val_section) {
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(connSend, nElem_Send, connSendReq, connRecv, nElem_Recv, connRecvReq, SU2_CONN_SIZE,
-                   COMM_TYPE_UNSIGNED_LONG);
+                   COMM_TYPE::UNSIGNED_LONG);
 
   /*--- Copy the current rank's data into the recv buffer directly. ---*/
 
@@ -654,7 +657,7 @@ void CCGNSMeshReaderFVM::ReformatCGNSSurfaceConnectivity() {
 
 void CCGNSMeshReaderFVM::InitiateCommsAll(void* bufSend, const int* nElemSend, SU2_MPI::Request* sendReq, void* bufRecv,
                                           const int* nElemRecv, SU2_MPI::Request* recvReq, unsigned short countPerElem,
-                                          unsigned short commType) {
+                                          COMM_TYPE commType) {
   /*--- Local variables ---*/
 
   int iMessage, iProc, offset, nElem, count, source, dest, tag;
@@ -687,31 +690,31 @@ void CCGNSMeshReaderFVM::InitiateCommsAll(void* bufSend, const int* nElemSend, S
       tag = iProc + 1;
 
       switch (commType) {
-        case COMM_TYPE_DOUBLE:
+        case COMM_TYPE::DOUBLE:
           SU2_MPI::Irecv(&(static_cast<su2double*>(bufRecv)[offset]), count, MPI_DOUBLE, source, tag,
                          SU2_MPI::GetComm(), &(recvReq[iMessage]));
           break;
-        case COMM_TYPE_UNSIGNED_LONG:
+        case COMM_TYPE::UNSIGNED_LONG:
           SU2_MPI::Irecv(&(static_cast<unsigned long*>(bufRecv)[offset]), count, MPI_UNSIGNED_LONG, source, tag,
                          SU2_MPI::GetComm(), &(recvReq[iMessage]));
           break;
-        case COMM_TYPE_LONG:
+        case COMM_TYPE::LONG:
           SU2_MPI::Irecv(&(static_cast<long*>(bufRecv)[offset]), count, MPI_LONG, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
-        case COMM_TYPE_UNSIGNED_SHORT:
+        case COMM_TYPE::UNSIGNED_SHORT:
           SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufRecv)[offset]), count, MPI_UNSIGNED_SHORT, source, tag,
                          SU2_MPI::GetComm(), &(recvReq[iMessage]));
           break;
-        case COMM_TYPE_CHAR:
+        case COMM_TYPE::CHAR:
           SU2_MPI::Irecv(&(static_cast<char*>(bufRecv)[offset]), count, MPI_CHAR, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
-        case COMM_TYPE_SHORT:
+        case COMM_TYPE::SHORT:
           SU2_MPI::Irecv(&(static_cast<short*>(bufRecv)[offset]), count, MPI_SHORT, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
-        case COMM_TYPE_INT:
+        case COMM_TYPE::INT:
           SU2_MPI::Irecv(&(static_cast<int*>(bufRecv)[offset]), count, MPI_INT, source, tag, SU2_MPI::GetComm(),
                          &(recvReq[iMessage]));
           break;
@@ -753,31 +756,31 @@ void CCGNSMeshReaderFVM::InitiateCommsAll(void* bufSend, const int* nElemSend, S
       tag = rank + 1;
 
       switch (commType) {
-        case COMM_TYPE_DOUBLE:
+        case COMM_TYPE::DOUBLE:
           SU2_MPI::Isend(&(static_cast<su2double*>(bufSend)[offset]), count, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
-        case COMM_TYPE_UNSIGNED_LONG:
+        case COMM_TYPE::UNSIGNED_LONG:
           SU2_MPI::Isend(&(static_cast<unsigned long*>(bufSend)[offset]), count, MPI_UNSIGNED_LONG, dest, tag,
                          SU2_MPI::GetComm(), &(sendReq[iMessage]));
           break;
-        case COMM_TYPE_LONG:
+        case COMM_TYPE::LONG:
           SU2_MPI::Isend(&(static_cast<long*>(bufSend)[offset]), count, MPI_LONG, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
-        case COMM_TYPE_UNSIGNED_SHORT:
+        case COMM_TYPE::UNSIGNED_SHORT:
           SU2_MPI::Isend(&(static_cast<unsigned short*>(bufSend)[offset]), count, MPI_UNSIGNED_SHORT, dest, tag,
                          SU2_MPI::GetComm(), &(sendReq[iMessage]));
           break;
-        case COMM_TYPE_CHAR:
+        case COMM_TYPE::CHAR:
           SU2_MPI::Isend(&(static_cast<char*>(bufSend)[offset]), count, MPI_CHAR, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
-        case COMM_TYPE_SHORT:
+        case COMM_TYPE::SHORT:
           SU2_MPI::Isend(&(static_cast<short*>(bufSend)[offset]), count, MPI_SHORT, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;
-        case COMM_TYPE_INT:
+        case COMM_TYPE::INT:
           SU2_MPI::Isend(&(static_cast<int*>(bufSend)[offset]), count, MPI_INT, dest, tag, SU2_MPI::GetComm(),
                          &(sendReq[iMessage]));
           break;

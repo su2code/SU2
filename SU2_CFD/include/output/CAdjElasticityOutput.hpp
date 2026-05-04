@@ -2,7 +2,7 @@
  * \file CAdjElasticityOutput.hpp
  * \brief Headers of the adjoint elasticity output class.
  * \author T. Albring, R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,6 +36,7 @@
  */
 class CAdjElasticityOutput final : public COutput {
 private:
+  bool coupled_heat; //!< Boolean indicating a thermoelastic analysis
   unsigned short nVar_FEM; //!< Number of FEM variables
 
 public:

@@ -2,7 +2,7 @@
  * \file vector_expressions.hpp
  * \brief Expression templates for vector types with coefficient-wise operations.
  * \author P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -138,6 +138,7 @@ namespace math = ::std;
 #define sign_impl(x) Scalar(1 - 2 * (x < 0))
 MAKE_UNARY_FUN(operator-, minus_, -)
 MAKE_UNARY_FUN(abs, abs_, math::abs)
+MAKE_UNARY_FUN(exp, exp_, math::exp)
 MAKE_UNARY_FUN(sqrt, sqrt_, math::sqrt)
 MAKE_UNARY_FUN(sign, sign_, sign_impl)
 #undef sign_impl

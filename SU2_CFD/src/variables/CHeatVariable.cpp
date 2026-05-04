@@ -2,7 +2,7 @@
  * \file CHeatVariable.cpp
  * \brief Definition of the variables for heat equation problems.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,7 +45,7 @@ CHeatVariable::CHeatVariable(su2double heat, unsigned long npoint, unsigned long
   /*--- Only for residual smoothing (multigrid) ---*/
 
   for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    if (config->GetMG_CorrecSmooth(iMesh) > 0) {
+    if (config->GetMGOptions().MG_CorrecSmooth[iMesh] > 0) {
       Residual_Sum.resize(nPoint, nVar);
       Residual_Old.resize(nPoint, nVar);
       break;

@@ -2,7 +2,7 @@
  * \file graph_toolbox.hpp
  * \brief Functions and classes to build/represent sparse graphs or sparse patterns.
  * \author P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -56,7 +56,7 @@ enum class ConnectivityType { FiniteVolume = 0, FiniteElement = 1 };
  */
 template <typename Index_t>
 class CCompressedSparsePattern {
-  static_assert(std::is_integral<Index_t>::value, "");
+  static_assert(std::is_integral<Index_t>::value);
 
  private:
   su2vector<Index_t> m_outerPtr;       /*!< \brief Start positions of the inner indices for each outer index. */
@@ -490,8 +490,8 @@ T createNaturalColoring(Index_t numInnerIndexes) {
 template <typename Color_t = unsigned char, size_t MaxColors = 255, size_t MaxMB = 128, class T>
 T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool includeOuterIdx = false, bool balanceColors = false,
                      std::vector<Color_t>* indexColor = nullptr) {
-  static_assert(std::is_integral<Color_t>::value, "");
-  static_assert(std::numeric_limits<Color_t>::max() >= MaxColors, "");
+  static_assert(std::is_integral<Color_t>::value);
+  static_assert(std::numeric_limits<Color_t>::max() >= MaxColors);
 
   using Index_t = typename T::IndexType;
 
@@ -516,7 +516,7 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool includeOuterId
 
   {
     /*--- For each color keep track of the inner indices that are in it. ---*/
-    std::vector<std::vector<bool> > innerInColor;
+    std::vector<std::vector<bool>> innerInColor;
     innerInColor.emplace_back(nInner, false);
 
     /*--- Order in which we look for space in the colors to insert a new group. ---*/
@@ -607,7 +607,7 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool includeOuterId
  */
 template <typename T = unsigned long>
 struct GridColor {
-  static_assert(std::is_integral<T>::value, "");
+  static_assert(std::is_integral<T>::value);
 
   const T size;
   T groupSize;
@@ -625,7 +625,7 @@ struct GridColor {
  */
 template <typename T = unsigned long>
 struct DummyGridColor {
-  static_assert(std::is_integral<T>::value, "");
+  static_assert(std::is_integral<T>::value);
 
   T size;
   struct {
@@ -670,6 +670,33 @@ su2double coloringEfficiency(const SparsePattern& coloring, int numThreads, int 
     real += chunkSize * roundUpDiv(roundUpDiv(coloring.getNumNonZeros(color), chunkSize), numThreads);
 
   return ideal / real;
+}
+
+/*!
+ * \brief Compute the levels for the lower part of a sparse pattern.
+ * For example, corresponding to the dependencies of forward substitution.
+ */
+template <class T>
+T computeLevels(const T& pattern) {
+  using Index = typename T::IndexType;
+
+  std::vector<std::vector<Index>> levels;
+  {
+    const auto n = pattern.getOuterSize();
+    su2vector<int> level(n);
+    for (Index i = 0; i < n; ++i) {
+      level(i) = 0;
+      for (const auto j : pattern.getInnerIter(i)) {
+        if (j >= i) continue;
+        level(i) = std::max(level(i), level(j) + 1);
+      }
+      if (static_cast<std::size_t>(level(i) + 1) > levels.size()) {
+        levels.emplace_back();
+      }
+      levels[level(i)].push_back(i);
+    }
+  }
+  return T(levels);
 }
 
 /// @}

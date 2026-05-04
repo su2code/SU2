@@ -3,7 +3,7 @@
 ## \file fsi_computation.py
 #  \brief Python wrapper code for FSI computation by coupling a third-party structural solver to SU2.
 #  \authors Nicola Fonzi, Vittorio Cavalieri based on the work of David Thomas
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -35,7 +35,7 @@ import shutil
 import copy
 import time as timer
 from math import *  # use mathematical expressions
-from optparse import OptionParser  # use a parser for configuration
+import argparse  # use a parser for configuration
 
 # imports the CFD (SU2) module for FSI computation
 import pysu2
@@ -49,11 +49,11 @@ import FSI_tools as FSI  # imports FSI python tools
 def main():
 
     # --- Get the FSI conig file name form the command line options --- #
-    parser = OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "-f", "--file", dest="filename", help="read config from FILE", metavar="FILE"
     )
-    parser.add_option(
+    parser.add_argument(
         "--parallel",
         action="store_true",
         help="Specify if we need to initialize MPI",
@@ -61,7 +61,7 @@ def main():
         default=False,
     )
 
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
 
     if options.with_MPI:
         from mpi4py import (

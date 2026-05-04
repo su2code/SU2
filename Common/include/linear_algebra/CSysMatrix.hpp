@@ -3,7 +3,7 @@
  * \brief Declaration of the block-sparse matrix class.
  *        The implemtation is in <i>CSysMatrix.cpp</i>.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,9 +28,10 @@
 
 #pragma once
 
-#include "../../include/CConfig.hpp"
+#include "../CConfig.hpp"
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"
+#include "../toolboxes/graph_toolbox.hpp"
 
 #include <cstdlib>
 #include <vector>
@@ -120,10 +121,9 @@ class CSysMatrix {
   const int rank; /*!< \brief MPI Rank. */
   const int size; /*!< \brief MPI Size. */
 
-  enum : size_t {
-    MAXNVAR = 20
-  }; /*!< \brief Maximum number of variables the matrix can handle. The static
-                 size is needed for fast, per-thread, static memory allocation. */
+  /*!< \brief Maximum number of variables the matrix can handle. The static
+   * size is needed for fast, per-thread, static memory allocation. */
+  enum : size_t { MAXNVAR = 20 };
 
   enum { OMP_MAX_SIZE_L = 8192 }; /*!< \brief Max. chunk size used in light parallel for loops. */
   enum { OMP_MAX_SIZE_H = 512 };  /*!< \brief Max. chunk size used in heavy parallel for loops. */
@@ -148,7 +148,7 @@ class CSysMatrix {
   ScalarType* d_matrix;           /*!< \brief Device Pointer to store the matrix values on the GPU. */
   const unsigned long* d_row_ptr; /*!< \brief Device Pointers to the first element in each row. */
   const unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
-  bool useCuda;                   /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
+  bool useCuda = false;           /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
                                      Mainly used to conditionally free GPU memory in the class destructor. */
 
   ScalarType* ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
@@ -158,7 +158,10 @@ class CSysMatrix {
   const unsigned long* col_ind_ilu; /*!< \brief Column index for each of the elements in val() (ILU). */
   unsigned short ilu_fill_in;       /*!< \brief Fill in level for the ILU preconditioner. */
 
-  ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner, or diagonal of ILU. */
+  /*!< \brief Level structure for alternative shared memory parallelization of ILU. */
+  CCompressedSparsePatternUL levels_ilu;
+
+  ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */
 
   /*--- Temporary (hence mutable) working memory used in the Linelet preconditioner, outer vector is for threads ---*/
   mutable vector<vector<const ScalarType*> >
@@ -275,6 +278,14 @@ class CSysMatrix {
   }
 
   /*!
+   * \brief Zero a matrix.
+   */
+  FORCEINLINE void ZeroMatrix(ScalarType* mat) const {
+    SU2_OMP_SIMD
+    for (auto iVar = 0ul; iVar < nVar * nEqn; ++iVar) mat[iVar] = 0;
+  }
+
+  /*!
    * \brief Solve a small (nVar x nVar) linear system using Gaussian elimination.
    * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
    * \param[in,out] vec - On entry the rhs, on exit the solution.
@@ -304,11 +315,11 @@ class CSysMatrix {
   inline void InverseDiagonalBlock(unsigned long block_i, ScalarType* invBlock) const;
 
   /*!
-   * \brief Inverse diagonal block.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[out] invBlock - Inverse block.
+   * \brief Invert diagonal block (Uii) of the ILU matrix in place.
+   * \param[in] block_i - Index of the block to invert.
+   * \return Inverted block.
    */
-  inline void InverseDiagonalBlock_ILUMatrix(unsigned long block_i, ScalarType* invBlock) const;
+  inline const ScalarType* InvertDiagonalBlockILUMatrix(unsigned long block_i);
 
   /*!
    * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
@@ -365,12 +376,12 @@ class CSysMatrix {
   /*!
    * \brief Constructor of the class.
    */
-  CSysMatrix(void);
+  CSysMatrix();
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CSysMatrix(void);
+  ~CSysMatrix();
 
   /*!
    * \brief Initializes the sparse matrix.
@@ -390,12 +401,12 @@ class CSysMatrix {
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
    */
-  void SetValZero(void);
+  void SetValZero();
 
   /*!
    * \brief Sets to zero all the block diagonal entries of the sparse matrix.
    */
-  void SetValDiagonalZero(void);
+  void SetValDiagonalZero();
 
   /*!
    * \brief Performs the memory copy from host to device.
@@ -816,10 +827,11 @@ class CSysMatrix {
   }
 
   /*!
-   * \brief Deletes the values of the row i of the sparse matrix.
-   * \param[in] i - Index of the row.
+   * \brief Deletes the values of a row of the sparse matrix.
+   * \param[in] block_i - Index of the block.
+   * \param[in] row - Row within the block.
    */
-  void DeleteValsRowi(unsigned long i);
+  void DeleteValsRowi(unsigned long block_i, unsigned long row);
 
   /*!
    * \brief Modifies this matrix (A) and a rhs vector (b) such that (A^-1 * b)_i = x_i.

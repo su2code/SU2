@@ -2,7 +2,7 @@
  * \file CGeometry.cpp
  * \brief Implementation of the base geometry class.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -96,12 +96,22 @@ CGeometry::~CGeometry() {
 
   delete[] bufD_P2PRecv;
   delete[] bufD_P2PSend;
-
+#ifdef CODI_REVERSE_TYPE
+  delete[] bufPD_P2PRecv;
+  delete[] bufPD_P2PSend;
+#endif
+#ifdef USE_MIXED_PRECISION
+  delete[] bufF_P2PRecv;
+  delete[] bufF_P2PSend;
+#endif
   delete[] bufS_P2PRecv;
   delete[] bufS_P2PSend;
 
   delete[] req_P2PSend;
   delete[] req_P2PRecv;
+
+  delete[] reqP_P2PSend;
+  delete[] reqP_P2PRecv;
 
   delete[] nPoint_P2PRecv;
   delete[] nPoint_P2PSend;
@@ -279,12 +289,11 @@ void CGeometry::PreprocessP2PComms(CGeometry* geometry, CConfig* config) {
 
   /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
 
-  if (nP2PSend > 0) {
-    req_P2PSend = new SU2_MPI::Request[nP2PSend];
-  }
-  if (nP2PRecv > 0) {
-    req_P2PRecv = new SU2_MPI::Request[nP2PRecv];
-  }
+  if (nP2PSend > 0) req_P2PSend = new SU2_MPI::Request[nP2PSend];
+  if (nP2PRecv > 0) req_P2PRecv = new SU2_MPI::Request[nP2PRecv];
+
+  if (nP2PSend > 0) reqP_P2PSend = new PassiveRequest[nP2PSend];
+  if (nP2PRecv > 0) reqP_P2PRecv = new PassiveRequest[nP2PRecv];
 
   /*--- Build lists of local index values for send. ---*/
 
@@ -345,25 +354,30 @@ void CGeometry::AllocateP2PComms(unsigned short countPerPoint) {
     /*--- Store the larger packet size to the class data. ---*/
 
     maxCountPerPoint = countPerPoint;
+    const auto send_size = maxCountPerPoint * nPoint_P2PSend[nP2PSend];
+    const auto recv_size = maxCountPerPoint * nPoint_P2PRecv[nP2PSend];
 
     /*-- Deallocate and reallocate our su2double cummunication memory. ---*/
+#define SU2_ALLOC_COMM_BUFFERS(SEND, RECV, TYPE) \
+  delete[] SEND;                                 \
+  SEND = new TYPE[send_size]();                  \
+  delete[] RECV;                                 \
+  RECV = new TYPE[recv_size]();
 
-    delete[] bufD_P2PSend;
-    bufD_P2PSend = new su2double[maxCountPerPoint * nPoint_P2PSend[nP2PSend]]();
-
-    delete[] bufD_P2PRecv;
-    bufD_P2PRecv = new su2double[maxCountPerPoint * nPoint_P2PRecv[nP2PRecv]]();
-
-    delete[] bufS_P2PSend;
-    bufS_P2PSend = new unsigned short[maxCountPerPoint * nPoint_P2PSend[nP2PSend]]();
-
-    delete[] bufS_P2PRecv;
-    bufS_P2PRecv = new unsigned short[maxCountPerPoint * nPoint_P2PRecv[nP2PRecv]]();
+    SU2_ALLOC_COMM_BUFFERS(bufD_P2PSend, bufD_P2PRecv, su2double)
+    SU2_ALLOC_COMM_BUFFERS(bufS_P2PSend, bufS_P2PRecv, unsigned short)
+#ifdef CODI_REVERSE_TYPE
+    SU2_ALLOC_COMM_BUFFERS(bufPD_P2PSend, bufPD_P2PRecv, passivedouble)
+#endif
+#ifdef USE_MIXED_PRECISION
+    SU2_ALLOC_COMM_BUFFERS(bufF_P2PSend, bufF_P2PRecv, su2mixedfloat)
+#endif
+#undef SU2_ALLOC_COMM_BUFFERS
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
-void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, unsigned short commType,
+void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                              unsigned short countPerPoint, bool val_reverse) const {
   /*--- Launch the non-blocking recv's first. Note that we have stored
    the counts and sources, so we can launch these before we even load
@@ -404,11 +418,23 @@ void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, unsigne
        are the correct size. ---*/
 
       switch (commType) {
-        case COMM_TYPE_DOUBLE:
+        case COMM_TYPE::DOUBLE:
           SU2_MPI::Irecv(&(bufD_P2PSend[offset]), count, MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
                          &(req_P2PRecv[iRecv]));
           break;
-        case COMM_TYPE_UNSIGNED_SHORT:
+#ifdef CODI_REVERSE_TYPE
+        case COMM_TYPE::PASSIVE_DOUBLE:
+          SelectMPIWrapper<passivedouble>::W::Irecv(&(bufPD_P2PSend[offset]), count, MPI_DOUBLE, source, tag,
+                                                    SU2_MPI::GetComm(), &GetP2PRecvReq<passivedouble>()[iRecv]);
+          break;
+#endif
+#ifdef USE_MIXED_PRECISION
+        case COMM_TYPE::FLOAT:
+          SelectMPIWrapper<su2mixedfloat>::W::Irecv(&(bufF_P2PSend[offset]), count, MPI_FLOAT, source, tag,
+                                                    SU2_MPI::GetComm(), &GetP2PRecvReq<su2mixedfloat>()[iRecv]);
+          break;
+#endif
+        case COMM_TYPE::UNSIGNED_SHORT:
           SU2_MPI::Irecv(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT, source, tag, SU2_MPI::GetComm(),
                          &(req_P2PRecv[iRecv]));
           break;
@@ -439,11 +465,23 @@ void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, unsigne
       /*--- Post non-blocking recv for this proc. ---*/
 
       switch (commType) {
-        case COMM_TYPE_DOUBLE:
+        case COMM_TYPE::DOUBLE:
           SU2_MPI::Irecv(&(bufD_P2PRecv[offset]), count, MPI_DOUBLE, source, tag, SU2_MPI::GetComm(),
                          &(req_P2PRecv[iMessage]));
           break;
-        case COMM_TYPE_UNSIGNED_SHORT:
+#ifdef CODI_REVERSE_TYPE
+        case COMM_TYPE::PASSIVE_DOUBLE:
+          SelectMPIWrapper<passivedouble>::W::Irecv(&(bufPD_P2PRecv[offset]), count, MPI_DOUBLE, source, tag,
+                                                    SU2_MPI::GetComm(), &GetP2PRecvReq<passivedouble>()[iMessage]);
+          break;
+#endif
+#ifdef USE_MIXED_PRECISION
+        case COMM_TYPE::FLOAT:
+          SelectMPIWrapper<su2mixedfloat>::W::Irecv(&(bufF_P2PRecv[offset]), count, MPI_FLOAT, source, tag,
+                                                    SU2_MPI::GetComm(), &GetP2PRecvReq<su2mixedfloat>()[iMessage]);
+          break;
+#endif
+        case COMM_TYPE::UNSIGNED_SHORT:
           SU2_MPI::Irecv(&(bufS_P2PRecv[offset]), count, MPI_UNSIGNED_SHORT, source, tag, SU2_MPI::GetComm(),
                          &(req_P2PRecv[iMessage]));
           break;
@@ -456,7 +494,7 @@ void CGeometry::PostP2PRecvs(CGeometry* geometry, const CConfig* config, unsigne
   END_SU2_OMP_MASTER
 }
 
-void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, unsigned short commType,
+void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                              unsigned short countPerPoint, int val_iSend, bool val_reverse) const {
   /*--- Post the non-blocking send as soon as the buffer is loaded. ---*/
 
@@ -492,11 +530,23 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, unsigne
      are the correct size. ---*/
 
     switch (commType) {
-      case COMM_TYPE_DOUBLE:
+      case COMM_TYPE::DOUBLE:
         SU2_MPI::Isend(&(bufD_P2PRecv[offset]), count, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                        &(req_P2PSend[val_iSend]));
         break;
-      case COMM_TYPE_UNSIGNED_SHORT:
+#ifdef CODI_REVERSE_TYPE
+      case COMM_TYPE::PASSIVE_DOUBLE:
+        SelectMPIWrapper<passivedouble>::W::Isend(&(bufPD_P2PRecv[offset]), count, MPI_DOUBLE, dest, tag,
+                                                  SU2_MPI::GetComm(), &GetP2PSendReq<passivedouble>()[val_iSend]);
+        break;
+#endif
+#ifdef USE_MIXED_PRECISION
+      case COMM_TYPE::FLOAT:
+        SelectMPIWrapper<su2mixedfloat>::W::Isend(&(bufF_P2PRecv[offset]), count, MPI_FLOAT, dest, tag,
+                                                  SU2_MPI::GetComm(), &GetP2PSendReq<su2mixedfloat>()[val_iSend]);
+        break;
+#endif
+      case COMM_TYPE::UNSIGNED_SHORT:
         SU2_MPI::Isend(&(bufS_P2PRecv[offset]), count, MPI_UNSIGNED_SHORT, dest, tag, SU2_MPI::GetComm(),
                        &(req_P2PSend[val_iSend]));
         break;
@@ -527,11 +577,23 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, unsigne
     /*--- Post non-blocking send for this proc. ---*/
 
     switch (commType) {
-      case COMM_TYPE_DOUBLE:
+      case COMM_TYPE::DOUBLE:
         SU2_MPI::Isend(&(bufD_P2PSend[offset]), count, MPI_DOUBLE, dest, tag, SU2_MPI::GetComm(),
                        &(req_P2PSend[val_iSend]));
         break;
-      case COMM_TYPE_UNSIGNED_SHORT:
+#ifdef CODI_REVERSE_TYPE
+      case COMM_TYPE::PASSIVE_DOUBLE:
+        SelectMPIWrapper<passivedouble>::W::Isend(&(bufPD_P2PSend[offset]), count, MPI_DOUBLE, dest, tag,
+                                                  SU2_MPI::GetComm(), &GetP2PSendReq<passivedouble>()[val_iSend]);
+        break;
+#endif
+#ifdef USE_MIXED_PRECISION
+      case COMM_TYPE::FLOAT:
+        SelectMPIWrapper<su2mixedfloat>::W::Isend(&(bufF_P2PSend[offset]), count, MPI_FLOAT, dest, tag,
+                                                  SU2_MPI::GetComm(), &GetP2PSendReq<su2mixedfloat>()[val_iSend]);
+        break;
+#endif
+      case COMM_TYPE::UNSIGNED_SHORT:
         SU2_MPI::Isend(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT, dest, tag, SU2_MPI::GetComm(),
                        &(req_P2PSend[val_iSend]));
         break;
@@ -544,30 +606,30 @@ void CGeometry::PostP2PSends(CGeometry* geometry, const CConfig* config, unsigne
 }
 
 void CGeometry::GetCommCountAndType(const CConfig* config, MPI_QUANTITIES commType, unsigned short& COUNT_PER_POINT,
-                                    unsigned short& MPI_TYPE) const {
+                                    COMM_TYPE& MPI_TYPE) const {
   switch (commType) {
     case MPI_QUANTITIES::COORDINATES:
       COUNT_PER_POINT = nDim;
-      MPI_TYPE = COMM_TYPE_DOUBLE;
+      MPI_TYPE = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::GRID_VELOCITY:
       COUNT_PER_POINT = nDim;
-      MPI_TYPE = COMM_TYPE_DOUBLE;
+      MPI_TYPE = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::COORDINATES_OLD:
       if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)
         COUNT_PER_POINT = nDim * 2;
       else
         COUNT_PER_POINT = nDim;
-      MPI_TYPE = COMM_TYPE_DOUBLE;
+      MPI_TYPE = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::MAX_LENGTH:
       COUNT_PER_POINT = 1;
-      MPI_TYPE = COMM_TYPE_DOUBLE;
+      MPI_TYPE = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::NEIGHBORS:
       COUNT_PER_POINT = 1;
-      MPI_TYPE = COMM_TYPE_UNSIGNED_SHORT;
+      MPI_TYPE = COMM_TYPE::UNSIGNED_SHORT;
       break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.", CURRENT_FUNCTION);
@@ -582,7 +644,7 @@ void CGeometry::InitiateComms(CGeometry* geometry, const CConfig* config, MPI_QU
 
   unsigned short iDim;
   unsigned short COUNT_PER_POINT = 0;
-  unsigned short MPI_TYPE = 0;
+  COMM_TYPE MPI_TYPE{};
 
   unsigned long iPoint, msg_offset, buf_offset;
 
@@ -677,7 +739,8 @@ void CGeometry::CompleteComms(CGeometry* geometry, const CConfig* config, MPI_QU
 
   /*--- Local variables ---*/
 
-  unsigned short iDim, COUNT_PER_POINT = 0, MPI_TYPE = 0;
+  unsigned short iDim, COUNT_PER_POINT = 0;
+  COMM_TYPE MPI_TYPE{};
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
 
   int ind, source, iMessage, jRecv;
@@ -766,6 +829,330 @@ void CGeometry::CompleteComms(CGeometry* geometry, const CConfig* config, MPI_QU
 #ifdef HAVE_MPI
   SU2_OMP_SAFE_GLOBAL_ACCESS(SU2_MPI::Waitall(nP2PSend, req_P2PSend, MPI_STATUS_IGNORE);)
 #endif
+}
+
+void CGeometry::MatchPeriodic(const CConfig* config, unsigned short val_periodic) {
+  unsigned short iMarker, iDim, jMarker, pMarker = 0;
+  unsigned short iPeriodic, nPeriodic;
+
+  unsigned long iVertex, iPoint, iPointGlobal, index;
+  unsigned long jVertex, jVertex_, jPoint, jPointGlobal;
+  unsigned long pVertex = 0, pPoint = 0, pPointGlobal = 0;
+  unsigned long nLocalVertex_Periodic = 0, MaxLocalVertex_Periodic = 0;
+  unsigned long nPointMatch = 0;
+
+  int iProcessor, pProcessor = 0, nProcessor = size;
+
+  bool isBadMatch = false;
+
+  string Marker_Tag;
+
+  su2double Coord_j[3], dist, mindist, maxdist_local, maxdist_global;
+  const su2double *center, *angles, *trans;
+  su2double translation[3] = {0.0, 0.0, 0.0}, dx, dy, dz;
+  su2double rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+  su2double rotCoord[3] = {0.0, 0.0, 0.0};
+
+  bool pointOnAxis = false;
+  bool chkSamePoint = false;
+  su2double distToAxis = 0.0;
+
+  /*--- Tolerance for distance-based match to report warning. ---*/
+
+  su2double epsilon = 1e-6;
+
+  /*--- Evaluate the number of periodic boundary conditions ---*/
+
+  nPeriodic = config->GetnMarker_Periodic();
+
+  /*--- Send an initial message to the console. ---*/
+
+  if (rank == MASTER_NODE) {
+    cout << "Matching the periodic boundary points for marker pair ";
+    cout << val_periodic << "." << endl;
+  }
+
+  /*--- Compute the total number of vertices that sit on a periodic
+   boundary on our local rank. We only include our "owned" nodes. ---*/
+
+  nLocalVertex_Periodic = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if ((iPeriodic == val_periodic) || (iPeriodic == val_periodic + nPeriodic / 2)) {
+        for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          if (nodes->GetDomain(iPoint)) nLocalVertex_Periodic++;
+        }
+      }
+    }
+  }
+
+  /*--- Communicate our local periodic point count globally
+   and receive the counts of periodic points from all other ranks.---*/
+
+  auto* Buffer_Send_nVertex = new unsigned long[1];
+  auto* Buffer_Recv_nVertex = new unsigned long[nProcessor];
+
+  Buffer_Send_nVertex[0] = nLocalVertex_Periodic;
+
+  /*--- Copy our own count in serial or use collective comms with MPI. ---*/
+
+  SU2_MPI::Allreduce(&nLocalVertex_Periodic, &MaxLocalVertex_Periodic, 1, MPI_UNSIGNED_LONG, MPI_MAX,
+                     SU2_MPI::GetComm());
+  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertex, 1, MPI_UNSIGNED_LONG,
+                     SU2_MPI::GetComm());
+
+  /*--- Prepare buffers to send the information for each
+   periodic point to all ranks so that we can match pairs. ---*/
+
+  auto* Buffer_Send_Coord = new su2double[MaxLocalVertex_Periodic * nDim];
+  auto* Buffer_Send_Point = new unsigned long[MaxLocalVertex_Periodic];
+  auto* Buffer_Send_GlobalIndex = new unsigned long[MaxLocalVertex_Periodic];
+  auto* Buffer_Send_Vertex = new unsigned long[MaxLocalVertex_Periodic];
+  auto* Buffer_Send_Marker = new unsigned long[MaxLocalVertex_Periodic];
+
+  auto* Buffer_Recv_Coord = new su2double[nProcessor * MaxLocalVertex_Periodic * nDim];
+  auto* Buffer_Recv_Point = new unsigned long[nProcessor * MaxLocalVertex_Periodic];
+  auto* Buffer_Recv_GlobalIndex = new unsigned long[nProcessor * MaxLocalVertex_Periodic];
+  auto* Buffer_Recv_Vertex = new unsigned long[nProcessor * MaxLocalVertex_Periodic];
+  auto* Buffer_Recv_Marker = new unsigned long[nProcessor * MaxLocalVertex_Periodic];
+
+  unsigned long nBuffer_Coord = MaxLocalVertex_Periodic * nDim;
+  unsigned long nBuffer_Point = MaxLocalVertex_Periodic;
+  unsigned long nBuffer_GlobalIndex = MaxLocalVertex_Periodic;
+  unsigned long nBuffer_Vertex = MaxLocalVertex_Periodic;
+  unsigned long nBuffer_Marker = MaxLocalVertex_Periodic;
+
+  for (iVertex = 0; iVertex < MaxLocalVertex_Periodic; iVertex++) {
+    Buffer_Send_Point[iVertex] = 0;
+    Buffer_Send_GlobalIndex[iVertex] = 0;
+    Buffer_Send_Vertex[iVertex] = 0;
+    Buffer_Send_Marker[iVertex] = 0;
+    for (iDim = 0; iDim < nDim; iDim++) Buffer_Send_Coord[iVertex * nDim + iDim] = 0.0;
+  }
+
+  /*--- Store the local index, global index, local boundary index,
+   marker index, and point coordinates in the buffers for sending.
+   Note again that this is only for the current pair of periodic
+   markers and for only the "owned" points on each rank. ---*/
+
+  nLocalVertex_Periodic = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if ((iPeriodic == val_periodic) || (iPeriodic == val_periodic + nPeriodic / 2)) {
+        for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          iPointGlobal = nodes->GetGlobalIndex(iPoint);
+          if (nodes->GetDomain(iPoint)) {
+            Buffer_Send_Point[nLocalVertex_Periodic] = iPoint;
+            Buffer_Send_GlobalIndex[nLocalVertex_Periodic] = iPointGlobal;
+            Buffer_Send_Vertex[nLocalVertex_Periodic] = iVertex;
+            Buffer_Send_Marker[nLocalVertex_Periodic] = iMarker;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Buffer_Send_Coord[nLocalVertex_Periodic * nDim + iDim] = nodes->GetCoord(iPoint, iDim);
+            nLocalVertex_Periodic++;
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Gather the data for all points on each rank with MPI. ---*/
+
+  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Recv_Coord, nBuffer_Coord, MPI_DOUBLE,
+                     SU2_MPI::GetComm());
+  SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Recv_Point, nBuffer_Point,
+                     MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(Buffer_Send_GlobalIndex, nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex,
+                     nBuffer_GlobalIndex, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(Buffer_Send_Vertex, nBuffer_Vertex, MPI_UNSIGNED_LONG, Buffer_Recv_Vertex, nBuffer_Vertex,
+                     MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+  SU2_MPI::Allgather(Buffer_Send_Marker, nBuffer_Marker, MPI_UNSIGNED_LONG, Buffer_Recv_Marker, nBuffer_Marker,
+                     MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
+
+  /*--- Now that all ranks have the data for all periodic points for
+   this pair of periodic markers, we match the individual points
+   based on the translation / rotation specified for the marker pair. ---*/
+
+  maxdist_local = 0.0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if ((iPeriodic == val_periodic) || (iPeriodic == val_periodic + nPeriodic / 2)) {
+        /*--- Retrieve the supplied periodic information. ---*/
+
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        center = config->GetPeriodicRotCenter(Marker_Tag);
+        angles = config->GetPeriodicRotAngles(Marker_Tag);
+        trans = config->GetPeriodicTranslation(Marker_Tag);
+
+        /*--- Store (center+trans) as it is constant and will be added. ---*/
+
+        translation[0] = center[0] + trans[0];
+        translation[1] = center[1] + trans[1];
+        translation[2] = center[2] + trans[2];
+
+        /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+
+        const su2double Theta = angles[0];
+        const su2double Phi = angles[1];
+        const su2double Psi = angles[2];
+        const su2double cosTheta = cos(Theta), sinTheta = sin(Theta);
+        const su2double cosPhi = cos(Phi), sinPhi = sin(Phi);
+        const su2double cosPsi = cos(Psi), sinPsi = sin(Psi);
+
+        /*--- Compute the rotation matrix. Note that the implicit
+         ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+
+        rotMatrix[0][0] = cosPhi * cosPsi;
+        rotMatrix[1][0] = cosPhi * sinPsi;
+        rotMatrix[2][0] = -sinPhi;
+
+        rotMatrix[0][1] = sinTheta * sinPhi * cosPsi - cosTheta * sinPsi;
+        rotMatrix[1][1] = sinTheta * sinPhi * sinPsi + cosTheta * cosPsi;
+        rotMatrix[2][1] = sinTheta * cosPhi;
+
+        rotMatrix[0][2] = cosTheta * sinPhi * cosPsi + sinTheta * sinPsi;
+        rotMatrix[1][2] = cosTheta * sinPhi * sinPsi - sinTheta * cosPsi;
+        rotMatrix[2][2] = cosTheta * cosPhi;
+
+        /*--- Loop over each point on the periodic marker that this rank
+         holds locally and find the matching point from the donor marker. ---*/
+
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          iPointGlobal = nodes->GetGlobalIndex(iPoint);
+
+          if (nodes->GetDomain(iPoint)) {
+            /*--- Coordinates of the current boundary point ---*/
+
+            const su2double* Coord_i = nodes->GetCoord(iPoint);
+
+            /*--- Get the position vector from rotation center to point. ---*/
+
+            dx = Coord_i[0] - center[0];
+            dy = Coord_i[1] - center[1];
+            dz = su2double(0.0);
+            if (nDim == 3) dz = Coord_i[2] - center[2];
+
+            /*--- Compute transformed point coordinates. ---*/
+
+            rotCoord[0] = rotMatrix[0][0] * dx + rotMatrix[0][1] * dy + rotMatrix[0][2] * dz + translation[0];
+            rotCoord[1] = rotMatrix[1][0] * dx + rotMatrix[1][1] * dy + rotMatrix[1][2] * dz + translation[1];
+            rotCoord[2] = rotMatrix[2][0] * dx + rotMatrix[2][1] * dy + rotMatrix[2][2] * dz + translation[2];
+
+            /*--- Check if the point lies on the axis of rotation. ---*/
+
+            pointOnAxis = false;
+            distToAxis = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              distToAxis += (rotCoord[iDim] - Coord_i[iDim]) * (rotCoord[iDim] - Coord_i[iDim]);
+            distToAxis = sqrt(distToAxis);
+
+            if (distToAxis < epsilon) pointOnAxis = true;
+
+            /*--- Initialize the distance to a large value. ---*/
+
+            mindist = 1E6;
+            pProcessor = 0;
+            pPoint = 0;
+
+            /*--- Loop over all of the periodic data that was gathered from
+             all ranks in order to find the matching periodic point. ---*/
+
+            for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+              for (jVertex = 0; jVertex < Buffer_Recv_nVertex[iProcessor]; jVertex++) {
+                index = iProcessor * MaxLocalVertex_Periodic + jVertex;
+
+                jPoint = Buffer_Recv_Point[index];
+                jPointGlobal = Buffer_Recv_GlobalIndex[index];
+                jVertex_ = Buffer_Recv_Vertex[index];
+                jMarker = Buffer_Recv_Marker[index];
+
+                /*--- Avoid matching the point to itself. Use local point
+                 index + processor rather than global index, because global
+                 indices are not set on coarse multigrid levels. ---*/
+
+                if ((iProcessor != rank || jPoint != iPoint) || (pointOnAxis)) {
+                  dist = 0.0;
+                  for (iDim = 0; iDim < nDim; iDim++) {
+                    Coord_j[iDim] = Buffer_Recv_Coord[index * nDim + iDim];
+                    dist += pow(Coord_j[iDim] - rotCoord[iDim], 2.0);
+                  }
+                  dist = sqrt(dist);
+
+                  chkSamePoint = (((dist < mindist) && (iProcessor != rank)) ||
+                                  ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint)));
+
+                  if (chkSamePoint || ((dist < mindist) && (pointOnAxis))) {
+                    mindist = dist;
+                    pProcessor = iProcessor;
+                    pPoint = jPoint;
+                    pPointGlobal = jPointGlobal;
+                    pVertex = jVertex_;
+                    pMarker = jMarker;
+                  }
+                }
+              }
+
+            /*--- Store the data for the best match found. ---*/
+
+            vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pPointGlobal, pVertex, pMarker, pProcessor);
+            maxdist_local = max(maxdist_local, mindist);
+            nPointMatch++;
+
+            if (mindist > epsilon) {
+              cout.precision(10);
+              cout << endl;
+              cout << "   Bad match for point " << iPointGlobal << ".\tNearest";
+              cout << " donor distance: " << scientific << mindist << ".";
+              maxdist_local = min(maxdist_local, 0.0);
+              isBadMatch = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Communicate the final count of matched points and max distance. ---*/
+
+  unsigned long nPointMatch_Local = nPointMatch;
+  SU2_MPI::Reduce(&nPointMatch_Local, &nPointMatch, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+  SU2_MPI::Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
+
+  if (rank == MASTER_NODE) {
+    if (nPointMatch > 0) {
+      cout << " Matched " << nPointMatch << " points with a max distance of: ";
+      cout << maxdist_global << "." << endl;
+    } else {
+      cout << " No matching points for periodic marker pair ";
+      cout << val_periodic << " in current zone." << endl;
+    }
+
+    if (isBadMatch) {
+      cout << endl;
+      cout << "\n !!! Warning !!!" << endl;
+      cout << "Bad matches found. Computation will continue, but be cautious.\n";
+    }
+  }
+
+  /*--- Free local memory for communications. ---*/
+
+  delete[] Buffer_Send_Coord;
+  delete[] Buffer_Send_Point;
+  delete[] Buffer_Recv_Coord;
+  delete[] Buffer_Recv_Point;
+  delete[] Buffer_Send_nVertex;
+  delete[] Buffer_Recv_nVertex;
+  delete[] Buffer_Send_GlobalIndex;
+  delete[] Buffer_Send_Vertex;
+  delete[] Buffer_Send_Marker;
+  delete[] Buffer_Recv_GlobalIndex;
+  delete[] Buffer_Recv_Vertex;
+  delete[] Buffer_Recv_Marker;
 }
 
 void CGeometry::PreprocessPeriodicComms(CGeometry* geometry, CConfig* config) {
@@ -1141,7 +1528,7 @@ void CGeometry::AllocatePeriodicComms(unsigned short countPerPeriodicPoint) {
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
 
-void CGeometry::PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, unsigned short commType,
+void CGeometry::PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                                   unsigned short countPerPeriodicPoint) {
   /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
 
@@ -1174,11 +1561,11 @@ void CGeometry::PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, un
     /*--- Post non-blocking recv for this proc. ---*/
 
     switch (commType) {
-      case COMM_TYPE_DOUBLE:
+      case COMM_TYPE::DOUBLE:
         SU2_MPI::Irecv(&(static_cast<su2double*>(bufD_PeriodicRecv)[offset]), count, MPI_DOUBLE, source, tag,
                        SU2_MPI::GetComm(), &(req_PeriodicRecv[iRecv]));
         break;
-      case COMM_TYPE_UNSIGNED_SHORT:
+      case COMM_TYPE::UNSIGNED_SHORT:
         SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufS_PeriodicRecv)[offset]), count, MPI_UNSIGNED_SHORT, source,
                        tag, SU2_MPI::GetComm(), &(req_PeriodicRecv[iRecv]));
         break;
@@ -1192,7 +1579,7 @@ void CGeometry::PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, un
 #endif
 }
 
-void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, unsigned short commType,
+void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                                   unsigned short countPerPeriodicPoint, int val_iSend) const {
   /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
 
@@ -1221,11 +1608,11 @@ void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, un
     /*--- Post non-blocking send for this proc. ---*/
 
     switch (commType) {
-      case COMM_TYPE_DOUBLE:
+      case COMM_TYPE::DOUBLE:
         SU2_MPI::Isend(&(static_cast<su2double*>(bufD_PeriodicSend)[offset]), count, MPI_DOUBLE, dest, tag,
                        SU2_MPI::GetComm(), &(req_PeriodicSend[val_iSend]));
         break;
-      case COMM_TYPE_UNSIGNED_SHORT:
+      case COMM_TYPE::UNSIGNED_SHORT:
         SU2_MPI::Isend(&(static_cast<unsigned short*>(bufS_PeriodicSend)[offset]), count, MPI_UNSIGNED_SHORT, dest, tag,
                        SU2_MPI::GetComm(), &(req_PeriodicSend[val_iSend]));
         break;
@@ -1246,10 +1633,10 @@ void CGeometry::PostPeriodicSends(CGeometry* geometry, const CConfig* config, un
   myFinal = nPoint_PeriodicSend[val_iSend + 1] * countPerPeriodicPoint;
 
   switch (commType) {
-    case COMM_TYPE_DOUBLE:
+    case COMM_TYPE::DOUBLE:
       parallelCopy(myFinal - myStart, &bufD_PeriodicSend[myStart], &bufD_PeriodicRecv[iRecv]);
       break;
-    case COMM_TYPE_UNSIGNED_SHORT:
+    case COMM_TYPE::UNSIGNED_SHORT:
       parallelCopy(myFinal - myStart, &bufS_PeriodicSend[myStart], &bufS_PeriodicRecv[iRecv]);
       break;
     default:
@@ -2468,6 +2855,9 @@ su2double CGeometry::GetSurfaceArea(const CConfig* config, unsigned short val_ma
 }
 
 void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
+  const su2double MIN_AREA = 1e-12;            // minimum area to consider a normal valid
+  const su2double PARALLEL_TOLERANCE = 0.001;  // min. angle between symm. planes to consider them non-parallel.
+
   /* Check how many symmetry planes there are and use the first (lowest ID) as the basis to orthogonalize against.
    * All nodes that are shared by multiple symmetries have to get a corrected normal. */
 
@@ -2558,6 +2948,8 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
       /*--- Loop over previous symmetries and if this point shares them, make this normal orthogonal to them.
        * It's ok if we normalize merged normals against themselves, we get 0 area and this becomes a no-op. ---*/
 
+      std::vector<size_t> parallelMarkers;  // Track markers with nearly-parallel normals
+
       for (size_t j = 0; j < i; ++j) {
         const auto jMarker = symMarkers[j];
         const auto jVertex = nodes->GetVertex(iPoint, jMarker);
@@ -2567,14 +2959,48 @@ void CGeometry::ComputeModifiedSymmetryNormals(const CConfig* config) {
         GetNormal(jMarker, jVertex, jNormal);
 
         const su2double proj = GeometryToolbox::DotProduct(int(MAXNDIM), jNormal.data(), iNormal.data());
+        const su2double angleDiff = std::abs(1.0 - std::abs(proj));
+
+        // Check if normals are nearly parallel (within ~2.5 degrees)
+        // cos(2.5°) ≈ 0.999, so (1 - cos(2.5°)) ≈ 0.001
+        if (angleDiff < PARALLEL_TOLERANCE) {
+          // These normals are nearly parallel - average them instead of orthogonalizing
+          parallelMarkers.push_back(j);
+          for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] += jNormal[iDim];
+          continue;
+        }
+
         for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] -= proj * jNormal[iDim];
+      }
+
+      /*--- If we found parallel markers, average and store the result for all involved markers ---*/
+      if (!parallelMarkers.empty()) {
+        // Normalize the averaged normal
+        const su2double avgArea = GeometryToolbox::Norm(int(MAXNDIM), iNormal.data());
+        if (avgArea > MIN_AREA) {
+          for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] /= avgArea;
+
+          // Store the averaged normal for the current marker
+          symmetryNormals[iMarker][iVertex] = iNormal;
+
+          // Also update all parallel markers with the same averaged normal
+          for (const auto j : parallelMarkers) {
+            const auto jMarker = symMarkers[j];
+            const auto jVertex = nodes->GetVertex(iPoint, jMarker);
+            if (jVertex >= 0) {
+              symmetryNormals[jMarker][jVertex] = iNormal;
+            }
+          }
+        }
+        continue;  // Skip the normal orthogonalization path below
       }
 
       /*--- Normalize. If the norm is close to zero it means the normal is a linear combination of previous
        * normals, in this case we don't need to store the corrected normal, using the original in the gradient
        * correction will have no effect since previous corrections will remove components in this direction). ---*/
       const su2double area = GeometryToolbox::Norm(int(MAXNDIM), iNormal.data());
-      if (area > 1e-12) {
+
+      if (area > MIN_AREA) {
         for (auto iDim = 0ul; iDim < MAXNDIM; ++iDim) iNormal[iDim] /= area;
         symmetryNormals[iMarker][iVertex] = iNormal;
       }
@@ -2591,16 +3017,14 @@ void CGeometry::ComputeSurfStraightness(const CConfig* config, bool print_on_scr
   string Local_TagBound, Global_TagBound;
 
   vector<su2double> Normal(nDim), UnitNormal(nDim), RefUnitNormal(nDim);
-
   /*--- Assume now that this boundary marker is straight. As soon as one
-        AreaElement is found that is not aligend with a Reference then it is
-        certain that the boundary marker is not straight and one can stop
-        searching. Another possibility is that this process doesn't own
+        AreaElement is found that is not aligned with a Reference then it
+        is certain that the boundary marker is not straight and one can
+        stop searching. Another possibility is that this process doesn't own
         any nodes of that boundary, in that case we also have to assume the
-        boundary is straight.
-        Any boundary type other than SYMMETRY_PLANE or EULER_WALL gets
-        the value false (or see cases specified in the conditional below)
-        which could be wrong. ---*/
+        boundary is straight. Any boundary type other than SYMMETRY_PLANE or
+        EULER_WALL gets the value false (or see cases specified in the
+        conditional below) which could be wrong. ---*/
   boundIsStraight.resize(nMarker);
   fill(boundIsStraight.begin(), boundIsStraight.end(), true);
 
@@ -3902,11 +4326,13 @@ void CGeometry::ColorMGLevels(unsigned short nMGLevels, const CGeometry* const* 
     for (auto step = 0u; step < iMesh; ++step) {
       auto coarseMesh = geometry[iMesh - 1 - step];
       if (step)
-        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint) {
           CoarseGridColor_(iPoint, step) = CoarseGridColor_(coarseMesh->nodes->GetParent_CV(iPoint), step - 1);
+        }
       else
-        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint)
+        for (auto iPoint = 0ul; iPoint < coarseMesh->GetnPoint(); ++iPoint) {
           CoarseGridColor_(iPoint, step) = color[coarseMesh->nodes->GetParent_CV(iPoint)];
+        }
     }
   }
 }
@@ -4110,7 +4536,7 @@ su2double NearestNeighborDistance(CGeometry* geometry, const CConfig* config, co
     }
   }
   const su2double Vol = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
-  return 2 * Vol / GeometryToolbox::Norm(nDim, Normal);
+  return 2 * Vol / GeometryToolbox::Norm(3, Normal);
 }
 }  // namespace
 

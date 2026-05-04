@@ -2,7 +2,7 @@
  * \file CElasticityOutput.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,10 +36,6 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
   nonlinear_analysis = config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE;
   coupled_heat = config->GetWeakly_Coupled_Heat();
   dynamic = config->GetTime_Domain();
-
-  /*--- Initialize number of variables ---*/
-  if (linear_analysis) nVar_FEM = nDim;
-  if (nonlinear_analysis) nVar_FEM = 3;
 
   /*--- Default fields for screen output ---*/
   if (nRequestedHistoryFields == 0){

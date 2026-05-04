@@ -2,7 +2,7 @@
  * \file CFlowCompOutput.cpp
  * \brief Main subroutines for compressible flow output
  * \author R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -288,6 +288,10 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("LIMITER_ENTHALPY", "Limiter_Enthalpy", "LIMITER", "Limiter value of the enthalpy");
   }
 
+  if (config->GetKind_Upwind_Flow() == UPWIND::MSW) {
+    AddVolumeOutput("MSW_SENSOR", "MSW_Sensor", "LIMITER", "Value of sensor used to switch from SW to MSW");
+  }
+
   SetVolumeOutputFieldsScalarLimiter(config);
 
   SetVolumeOutputFieldsScalarSource(config);
@@ -304,13 +308,15 @@ void CFlowCompOutput::SetVolumeOutputFields(CConfig *config){
   AddCommonFVMOutputs(config);
 
   if (config->GetTime_Domain()) {
-    SetTimeAveragedFields();
+    SetTimeAveragedFields(config);
   }
 }
 
 void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   const auto* Node_Flow = solver[FLOW_SOL]->GetNodes();
+  const CVariable* Node_Turb = nullptr;
+  if (config->GetKind_Turb_Model() != TURB_MODEL::NONE) Node_Turb = solver[TURB_SOL]->GetNodes();
   auto* Node_Geo  = geometry->nodes;
 
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
@@ -378,6 +384,10 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
     }
   }
 
+  if (config->GetKind_Upwind_Flow() == UPWIND::MSW) {
+    SetVolumeOutputValue("MSW_SENSOR", iPoint, Node_Flow->GetSensor(iPoint));
+  }
+
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
     SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation(iPoint));
   }
@@ -387,7 +397,7 @@ void CFlowCompOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolv
   LoadCommonFVMOutputs(config, geometry, iPoint);
 
   if (config->GetTime_Domain()) {
-    LoadTimeAveragedData(iPoint, Node_Flow);
+    LoadTimeAveragedData(iPoint, Node_Flow, Node_Turb, config);
   }
 }
 

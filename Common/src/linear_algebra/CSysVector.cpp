@@ -2,7 +2,7 @@
  * \file CSysVector.cpp
  * \brief Implementation and explicit instantiations of CSysVector.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -54,6 +54,10 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
   d_vec_val = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
 
+#ifdef HAVE_OMP
+  dot_scratch.reset(new ScalarType[omp_get_max_threads()]);
+#endif
+
   if (val != nullptr) {
     if (!valIsArray) {
       for (auto i = 0ul; i < nElm; i++) vec_val[i] = *val;
@@ -64,21 +68,85 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 }
 
 template <class ScalarType>
+const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<CSysVector<ScalarType>>& V,
+                                                              const size_t i0, const size_t n,
+                                                              const std::vector<CSysVector<ScalarType>>& W,
+                                                              const size_t m) {
+  SU2_ZONE_SCOPED
+  static constexpr size_t BLOCK_SIZE = 1024;
+  static su2matrix<ScalarType> shared;
+
+  if (n == 0 || m == 0) return shared;
+
+  SU2_OMP_BARRIER
+  const size_t size = V[0].nElmDomain;
+
+  su2matrix<ScalarType> local(n, m);
+  local.setConstant(0);
+
+  SU2_OMP_FOR_(schedule(static) SU2_NOWAIT)
+  for (size_t offset = 0; offset < size; offset += BLOCK_SIZE) {
+    const auto limit = std::min(offset + BLOCK_SIZE, size);
+    for (size_t i = 0; i < n; ++i) {
+      const auto& vi = V[i0 + i];
+      for (size_t j = 0; j < m; ++j) {
+        const auto& wj = W[j];
+        ScalarType sum = 0.0;
+        SU2_OMP_SIMD
+        for (auto k = offset; k < limit; ++k) {
+          sum += vi[k] * wj[k];
+        }
+        local(i, j) += sum;
+      }
+    }
+  }
+  END_SU2_OMP_FOR
+
+  /*--- Reduce over all threads in an ordered way to ensure a deterministic result. ---*/
+  for (size_t i = 0; i < n; ++i) {
+    for (size_t j = 0; j < m; ++j) {
+      W[j].dot_scratch[omp_get_thread_num()] = local(i, j);
+    }
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    for (size_t j = 0; j < m; ++j) {
+      for (int t = 1; t < omp_get_num_threads(); ++t) {
+        local(i, j) += W[j].dot_scratch[t];
+      }
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
+
+  /*--- Single AllReduce of the result, only the master thread communicates. ---*/
+  SU2_OMP_MASTER {
+    shared.resize(n, m);
+
+    const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
+    SelectMPIWrapper<ScalarType>::W::Allreduce(local.data(), shared.data(), n * m, mpi_type, MPI_SUM,
+                                               SU2_MPI::GetComm());
+  }
+  END_SU2_OMP_MASTER
+
+  /*--- All threads have the same view of the result. ---*/
+  SU2_OMP_BARRIER
+
+  return shared;
+}
+
+template <class ScalarType>
 CSysVector<ScalarType>::~CSysVector() {
-  if (!std::is_trivial<ScalarType>::value)
+  if constexpr (!std::is_trivial_v<ScalarType>) {
     for (auto i = 0ul; i < nElm; i++) vec_val[i].~ScalarType();
+  }
   MemoryAllocation::aligned_free(vec_val);
 
   GPUMemoryAllocation::gpu_free(d_vec_val);
 }
 
 /*--- Explicit instantiations ---*/
-/*--- We allways need su2double (regardless if it is passive or active). ---*/
-template class CSysVector<su2double>;
-#ifdef USE_MIXED_PRECISION
-/*--- In reverse AD (or with mixed precision) we will also have passive (or float) vectors. ---*/
 template class CSysVector<su2mixedfloat>;
+#ifdef USE_MIXED_PRECISION
+template class CSysVector<passivedouble>;
 #endif
 #ifdef CODI_REVERSE_TYPE
-template class CSysVector<passivedouble>;
+template class CSysVector<su2double>;
 #endif

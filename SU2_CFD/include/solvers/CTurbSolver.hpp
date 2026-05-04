@@ -2,7 +2,7 @@
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -153,5 +153,5 @@ public:
    * a nonlinear iteration for stability.
    * \param[in] allowableRatio - Maximum percentage update in variable per iteration.
    */
-  void ComputeUnderRelaxationFactorHelper(su2double allowableRatio);
+  void ComputeUnderRelaxationFactorHelper(CSolver** solver_container, su2double allowableRatio);
 };

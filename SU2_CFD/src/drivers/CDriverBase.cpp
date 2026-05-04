@@ -2,7 +2,7 @@
  * \file CDriverBase.hpp
  * \brief Base class template for all drivers.
  * \author H. Patel, A. Gastaldi
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -85,6 +85,7 @@ void CDriverBase::InitializeContainers() {
 }
 
 void CDriverBase::CommonFinalize() {
+  SU2_ZONE_SCOPED
 
   if (numerics_container != nullptr) {
     for (iZone = 0; iZone < nZone; iZone++) {

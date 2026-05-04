@@ -3,7 +3,7 @@
 ## \file shape_optimization.py
 #  \brief Python script for performing the shape optimization.
 #  \author T. Economon, T. Lukaczyk, F. Palacios
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -26,7 +26,7 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 import os, sys, shutil
-from optparse import OptionParser
+import argparse
 
 sys.path.append(os.environ["SU2_RUN"])
 import SU2
@@ -38,11 +38,11 @@ import SU2
 
 def main():
 
-    parser = OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser(description="SU2 shape optimization.")
+    parser.add_argument(
         "-f", "--file", dest="filename", help="read config from FILE", metavar="FILE"
     )
-    parser.add_option(
+    parser.add_argument(
         "-r",
         "--name",
         dest="projectname",
@@ -50,7 +50,7 @@ def main():
         help="try to restart from project file NAME",
         metavar="NAME",
     )
-    parser.add_option(
+    parser.add_argument(
         "-n",
         "--partitions",
         dest="partitions",
@@ -58,7 +58,7 @@ def main():
         help="number of PARTITIONS",
         metavar="PARTITIONS",
     )
-    parser.add_option(
+    parser.add_argument(
         "-g",
         "--gradient",
         dest="gradient",
@@ -66,7 +66,7 @@ def main():
         help="Method for computing the GRADIENT (CONTINUOUS_ADJOINT, DISCRETE_ADJOINT, FINDIFF, NONE)",
         metavar="GRADIENT",
     )
-    parser.add_option(
+    parser.add_argument(
         "-o",
         "--optimization",
         dest="optimization",
@@ -74,7 +74,7 @@ def main():
         help="OPTIMIZATION techique (SLSQP, CG, BFGS, POWELL)",
         metavar="OPTIMIZATION",
     )
-    parser.add_option(
+    parser.add_argument(
         "-q",
         "--quiet",
         dest="quiet",
@@ -82,7 +82,7 @@ def main():
         help="True/False Quiet all SU2 output (optimizer output only)",
         metavar="QUIET",
     )
-    parser.add_option(
+    parser.add_argument(
         "-z",
         "--zones",
         dest="nzones",
@@ -91,7 +91,7 @@ def main():
         metavar="ZONES",
     )
 
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
 
     # process inputs
     options.partitions = int(options.partitions)
@@ -106,7 +106,7 @@ def main():
         "|    ___ _   _ ___                                                      |\n"
     )
     sys.stdout.write(
-        '|   / __| | | |_  )   Release 8.4.0 "Harrier"                           |\n'
+        '|   / __| | | |_  )   Release 8.5.0 "Harrier"                           |\n'
     )
     sys.stdout.write(
         "|   \\__ \\ |_| |/ /                                                      |\n"

@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.cpp
  * \brief Main subroutines for solving incompressible flow (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,6 +40,7 @@
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh,
                                  const bool navier_stokes) :
   CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>(*geometry, *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Based on the navier_stokes boolean, determine if this constructor is
    *    being called by itself, or by its derived class CIncNSSolver. ---*/
@@ -228,11 +229,13 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 }
 
 CIncEulerSolver::~CIncEulerSolver() {
+  SU2_ZONE_SCOPED
 
   for(auto& model : FluidModel) delete model;
 }
 
 void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   su2double Temperature_FreeStream = 0.0,  ModVel_FreeStream = 0.0,Energy_FreeStream = 0.0,
   ModVel_FreeStreamND = 0.0, Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
@@ -923,6 +926,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 }
 
 void CIncEulerSolver::SetReferenceValues(const CConfig& config) {
+  SU2_ZONE_SCOPED
 
   /*--- Evaluate reference values for non-dimensionalization. For dimensional or non-dim
    based on initial values, use the far-field state (inf). For a custom non-dim based
@@ -952,10 +956,11 @@ void CIncEulerSolver::SetReferenceValues(const CConfig& config) {
 
 void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                           unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   const bool implicit   = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool center     = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
-  const bool center_jst = (config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0);
+  const bool center_jst = (config->GetKind_Centered_Flow() == CENTERED::JST || config->GetKind_Centered_Flow() == CENTERED::LD2) && (iMesh == MESH_0);
   const bool outlet     = (config->GetnMarker_Outlet() != 0);
 
   /*--- Set the primitive variables ---*/
@@ -1011,6 +1016,7 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
 
 void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                                     unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -1043,6 +1049,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 }
 
 unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint, nonPhysicalPoints = 0;
 
@@ -1068,6 +1075,7 @@ unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container
 
 void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                    unsigned short iMesh, unsigned long Iteration) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object to compute the speed of sound. ---*/
   struct SoundSpeed {
@@ -1122,14 +1130,16 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 
 void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
   unsigned long iPoint, jPoint;
 
   const bool implicit    = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  const bool jst_scheme  = ((config->GetKind_Centered_Flow() == CENTERED::JST) && (iMesh == MESH_0));
+  const bool jst_scheme  = ((config->GetKind_Centered_Flow() == CENTERED::JST || config->GetKind_Centered_Flow() == CENTERED::LD2) && (iMesh == MESH_0));
   const bool bounded_scalar = config->GetBounded_Scalar();
+  const bool LD2_Scheme = (config->GetKind_Centered_Flow() == CENTERED::LD2);
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1165,6 +1175,16 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
     if (jst_scheme) {
       numerics->SetUndivided_Laplacian(nodes->GetUndivided_Laplacian(iPoint), nodes->GetUndivided_Laplacian(jPoint));
       numerics->SetSensor(nodes->GetSensor(iPoint), nodes->GetSensor(jPoint));
+    }
+
+    if (LD2_Scheme) {
+      numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(jPoint));
+      if (!geometry->nodes->GetPeriodicBoundary(iPoint) || (geometry->nodes->GetPeriodicBoundary(iPoint) 
+          && !geometry->nodes->GetPeriodicBoundary(jPoint))) {
+        numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
+      } else {
+        numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
+      }
     }
 
     /*--- Grid movement ---*/
@@ -1217,6 +1237,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
 void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                       CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[CONV_TERM + omp_get_thread_num()*MAX_TERMS];
 
@@ -1386,6 +1407,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
 void CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, unsigned short nDim,
                                                      const su2double* scalar, su2double* primitive) {
+  SU2_ZONE_SCOPED
   const CIncEulerVariable::CIndices<unsigned short> prim_idx(nDim, 0);
   const su2double enthalpy = primitive[prim_idx.Enthalpy()];
   fluidModel->SetTDState_h(enthalpy, scalar);
@@ -1396,6 +1418,7 @@ void CIncEulerSolver::ComputeConsistentExtrapolation(CFluidModel* fluidModel, un
 
 void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                       CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   /*--- Pick one numerics object per thread. ---*/
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM + omp_get_thread_num()*MAX_TERMS];
@@ -1870,6 +1893,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
 void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   /* This method should be used to call any new source terms for a particular problem*/
   /* This method calls the new child class in CNumerics, where the new source term should be implemented.  */
@@ -1883,6 +1907,7 @@ void CIncEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object to compute the speed of sound. ---*/
   struct SoundSpeed {
@@ -1903,6 +1928,7 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, const CConfig *conf
 }
 
 void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Define an object for the sensor variable, density. ---*/
   struct SensVar {
@@ -1919,6 +1945,7 @@ void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, const 
 template<ENUM_TIME_INT IntegrationType>
 FORCEINLINE void CIncEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                      CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
   struct Precond {
     const CIncEulerSolver* solver;
     su2activematrix matrix;
@@ -1945,22 +1972,26 @@ FORCEINLINE void CIncEulerSolver::Explicit_Iteration(CGeometry *geometry, CSolve
 
 void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                            CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<RUNGE_KUTTA_EXPLICIT>(geometry, solver_container, config, iRKStep);
 }
 
 void CIncEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
                                              CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<CLASSICAL_RK4_EXPLICIT>(geometry, solver_container, config, iRKStep);
 }
 
 void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   Explicit_Iteration<EULER_EXPLICIT>(geometry, solver_container, config, 0);
 }
 
 void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   struct IncPrec {
     const CIncEulerSolver* solver;
@@ -1980,12 +2011,14 @@ void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, C
 }
 
 void CIncEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   CompleteImplicitIteration_impl<false>(geometry, config);
 }
 
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
   static su2double MaxVel2;
   const su2double epsilon2_default = 4.1;
 
@@ -2002,9 +2035,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
       maxVel2 = max(maxVel2, nodes->GetVelocity2(iPoint));
     END_SU2_OMP_FOR
 
-    SU2_OMP_CRITICAL
-    MaxVel2 = max(MaxVel2, maxVel2);
-    END_SU2_OMP_CRITICAL
+    atomicMax(maxVel2, MaxVel2);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
@@ -2029,6 +2060,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
 
 void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
   static su2double MinP, MaxP;
 
   if (iMesh == MESH_0) {
@@ -2047,14 +2079,10 @@ void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_con
     }
     END_SU2_OMP_FOR
 
-    SU2_OMP_CRITICAL {
-      MinP = min(MinP, minP);
-      MaxP = max(MaxP, maxP);
-    }
-    END_SU2_OMP_CRITICAL
+    atomicMin(minP, MinP);
+    atomicMax(maxP, MaxP);
 
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       minP = MinP;
       SU2_MPI::Allreduce(&minP, &MinP, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
       maxP = MaxP;
@@ -2069,6 +2097,7 @@ void CIncEulerSolver::SetRangePressure(CGeometry *geometry, CSolver **solver_con
 
 void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint,
                                         su2double delta, su2activematrix& Preconditioner) const {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim, jDim, iVar, jVar;
 
@@ -2181,6 +2210,7 @@ void CIncEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPo
 
 void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -2320,6 +2350,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
 void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   unsigned long Point_Normal;
@@ -2583,6 +2614,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
 void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *V_outlet, *V_domain, P_Outlet = 0.0, P_domain;
@@ -2790,6 +2822,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
 void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                         unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
 
   /*--- Local variables ---*/
 
@@ -3020,6 +3053,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 }
 
 void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
@@ -3231,6 +3265,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
 }
 
 void CIncEulerSolver::PrintVerificationError(const CConfig *config) const {
+  SU2_ZONE_SCOPED
 
   if ((rank != MASTER_NODE) || (MGLevel != MESH_0)) return;
 
@@ -3271,6 +3306,7 @@ void CIncEulerSolver::PrintVerificationError(const CConfig *config) const {
 }
 
 void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  SU2_ZONE_SCOPED
 
   /*--- Adjust the number of solution variables in the restart. We always
    carry a space in nVar for the energy equation in the solver, but we only
@@ -3290,6 +3326,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 }
 
 void CIncEulerSolver::SetFreeStream_Solution(const CConfig *config){
+  SU2_ZONE_SCOPED
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
     nodes->SetSolution(iPoint,0, Pressure_Inf);
@@ -3303,6 +3340,7 @@ void CIncEulerSolver::SetFreeStream_Solution(const CConfig *config){
 }
 
 unsigned long CIncEulerSolver::RegisterSolutionExtra(bool input, const CConfig* config) {
+  SU2_ZONE_SCOPED
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
     if (input) AD::RegisterInput(SPvals.Streamwise_Periodic_PressureDrop);
     else AD::RegisterOutput(SPvalsUpdated.Streamwise_Periodic_PressureDrop);
@@ -3312,12 +3350,14 @@ unsigned long CIncEulerSolver::RegisterSolutionExtra(bool input, const CConfig* 
 }
 
 void CIncEulerSolver::SetAdjoint_SolutionExtra(const su2activevector& adj_sol, const CConfig* config) {
+  SU2_ZONE_SCOPED
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
     SU2_TYPE::SetDerivative(SPvalsUpdated.Streamwise_Periodic_PressureDrop, SU2_TYPE::GetValue(adj_sol[0]));
   }
 }
 
 void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, const CConfig* config) {
+  SU2_ZONE_SCOPED
   if (config->GetKind_Streamwise_Periodic() == ENUM_STREAMWISE_PERIODIC::MASSFLOW) {
     adj_sol[0] = SU2_TYPE::GetDerivative(SPvals.Streamwise_Periodic_PressureDrop);
   }

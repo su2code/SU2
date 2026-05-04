@@ -2,7 +2,7 @@
  * \file CIntegrationFactory.cpp
  * \brief Main subroutines for CIntegrationFactory .
  * \author T. Albring
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,6 +34,7 @@
 
 CIntegration** CIntegrationFactory::CreateIntegrationContainer(MAIN_SOLVER kindMainSolver,
                                                                const CSolver* const* solver_container){
+  SU2_ZONE_SCOPED
 
   auto **integration = new CIntegration* [MAX_SOLS]();
 
@@ -48,6 +49,7 @@ CIntegration** CIntegrationFactory::CreateIntegrationContainer(MAIN_SOLVER kindM
 }
 
 CIntegration* CIntegrationFactory::CreateIntegration(INTEGRATION_TYPE integrationType){
+  SU2_ZONE_SCOPED
 
   CIntegration *integration = nullptr;
 
