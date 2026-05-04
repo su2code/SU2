@@ -586,7 +586,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     /*--- LinSysRes = R(u_N) here, before tau is added by SetResidual_Term. ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      //lastPreSmoothDefect[iMesh][1] = ComputeDefectNorm(solver_fine, geometry_fine);
       lastPreSmoothDefect[iMesh][1] = ComputeLinSysResRMS(solver_fine);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
