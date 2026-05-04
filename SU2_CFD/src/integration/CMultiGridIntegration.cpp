@@ -78,18 +78,18 @@ static void adaptMGDampingFactor(const unsigned short* performed,
    *    than last cycle's baseline.  Treat as divergence. ---*/
   constexpr passivedouble CROSS_CYCLE_THRESHOLD = 2.0;
   if (crossCycleRatio > CROSS_CYCLE_THRESHOLD) any_diverge = true;
-  const su2double SCALE_DOWN = 0.75;
-  const su2double SCALE_UP = 1.02;
-  const su2double SCALE_STAGNANT = 0.93;
-  const su2double CLAMP_MIN = 0.05;
-  const su2double CLAMP_MAX = 0.95;
+  constexpr passivedouble SCALE_DOWN    = 0.75;
+  constexpr passivedouble SCALE_UP      = 1.02;
+  constexpr passivedouble SCALE_STAGNANT = 0.93;
+  constexpr passivedouble CLAMP_MIN     = 0.05;
+  constexpr passivedouble CLAMP_MAX     = 0.95;
 
-  su2double factor = getCurrent();
+  passivedouble factor = getCurrent();
   if (any_diverge) factor *= SCALE_DOWN;
   else if (any_stagnant) factor *= SCALE_STAGNANT;
   else if (all_early || all_improving) factor *= SCALE_UP;
   factor = max(CLAMP_MIN, min(CLAMP_MAX, factor));
-  setPersist(factor);
+  setPersist(static_cast<su2double>(factor));
 }
 
 /*! \brief Compute the FAS defect norm ||LinSysRes + Res_TruncError|| over domain points.
