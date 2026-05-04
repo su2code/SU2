@@ -84,12 +84,12 @@ static void adaptMGDampingFactor(const unsigned short* performed,
   constexpr passivedouble CLAMP_MIN     = 0.05;
   constexpr passivedouble CLAMP_MAX     = 0.95;
 
-  passivedouble factor = getCurrent();
+  su2double factor = getCurrent();
   if (any_diverge) factor *= SCALE_DOWN;
   else if (any_stagnant) factor *= SCALE_STAGNANT;
   else if (all_early || all_improving) factor *= SCALE_UP;
-  factor = max(CLAMP_MIN, min(CLAMP_MAX, factor));
-  setPersist(static_cast<su2double>(factor));
+  factor = max(su2double{CLAMP_MIN}, min(su2double{CLAMP_MAX}, factor));
+  setPersist(factor);
 }
 
 inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
