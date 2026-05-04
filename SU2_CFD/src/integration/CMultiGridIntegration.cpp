@@ -703,7 +703,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
             } else if (iPreSmooth > 1) {
               /*--- Stagnation: compare to previous step. ---*/
               const passivedouble stag_tol = (mgOpts.MG_Smooth_StagnationTol > 0.0)
-                                             ? mgOpts.MG_Smooth_StagnationTol : passivedouble(1.0);
+                                             ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
               if (defect >= mg_prev_smooth_defect * stag_tol) {
                 lastPreSmoothIters[iMesh] = iPreSmooth;
                 lastPreSmoothExitReason[iMesh] = 'S';
@@ -791,7 +791,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
               mg_early_exit_flag = true;
             } else if (iPostSmooth > 1) {
               const passivedouble stag_tol = (mgOpts.MG_Smooth_StagnationTol > 0.0)
-                                             ? mgOpts.MG_Smooth_StagnationTol : passivedouble(1.0);
+                                             ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
               if (defect >= mg_prev_smooth_defect * stag_tol) {
                 lastPostSmoothIters[iMesh] = iPostSmooth;
                 lastPostSmoothExitReason[iMesh] = 'S';
