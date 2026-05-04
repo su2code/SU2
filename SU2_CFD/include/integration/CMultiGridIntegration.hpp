@@ -294,12 +294,9 @@ private:
   char lastPreSmoothExitReason[MAX_MG_LEVELS+1]  = {};
   char lastPostSmoothExitReason[MAX_MG_LEVELS+1] = {};
 
-  /*--- Per-level start/end defect ||R+tau|| for adaptive damping.
-   *    Defect changes with smoothing even when tau/F >> 1 (unlike RMS which stays flat),
-   *    so it is the correct signal for the damping adaptation logic. ---*/
+  /*--- Per-level start/end defect ||R+tau|| for adaptive damping. ---*/
   passivedouble lastPreSmoothDefect[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastPostSmoothDefect[MAX_MG_LEVELS+1][2] = {};
-
   passivedouble lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
 
 };

@@ -130,11 +130,9 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                                                                      RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
   }
 
-  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
-
-  /*--- During Full-MG warmup (FinestMesh > MESH_0), inactive finer mesh levels are never iterated so
-   *    their under-relaxation stays at 1.0, causing AdaptCFLNumber to inflate their per-point CFL to
-   *    CFLMax every iteration.  Skip adaptation entirely until the finest mesh is active. ---*/
+  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach.
+        During Full-MG warmup (FinestMesh > MESH_0), skip adaptation entirely until the finest
+        mesh is active. ---*/
   if ((config[val_iZone]->GetCFL_Adapt() == YES) && (!disc_adj) &&
       (config[val_iZone]->GetFinestMesh() == MESH_0)) {
     SU2_OMP_PARALLEL
@@ -249,8 +247,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   if (config[val_iZone]->GetMUSCLRamp())
     UpdateRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::MUSCL);
 
-  /*--- During Full-MG startup FinestMesh > 0: read residuals from the active (coarse) level
-   *    so the history log shows real values instead of log10(0) = -inf. ---*/
+  /*--- During Full-MG startup FinestMesh > 0: read residuals from the active (coarse) level. ---*/
   const unsigned short finestMesh = config[val_iZone]->GetFinestMesh();
   output->SetHistoryOutput(geometry[val_iZone][val_iInst][finestMesh], solver[val_iZone][val_iInst][finestMesh],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
