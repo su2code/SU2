@@ -60,13 +60,8 @@ static void adaptMGDampingFactor(const unsigned short* performed,
     const bool hit_max = (performed[lvl] >= configured);
     const passivedouble d0 = defectData[lvl][0];
     const passivedouble d1 = defectData[lvl][1];
-    /*--- Use defect ||R+tau||: unlike RMS, defect changes with smoothing even when
-     *    tau/F >> 1, giving a reliable signal of whether the smoother is helping.
-     *    Allow 2% noise tolerance for "improving": at coarse levels near convergence
-     *    the truncation error dominates and the defect can fluctuate by O(1%) even
-     *    when the smoother is genuinely helping the cycle.  Without tolerance the
-     *    strict d1<d0 check misfires on every cycle, triggering SCALE_STAGNANT
-     *    until the damping floor is reached permanently. ---*/
+    /*--- Use defect ||R+tau||: defect changes with smoothing even when
+     *    tau/F >> 1, giving a reliable signal of whether the smoother is helping. ---*/
     const bool diverging = (d0 > 0.0) && (d1 > d0 * 1.05);
     const bool improving = (d0 > 0.0) && (d1 < d0);
 
@@ -256,7 +251,7 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsign
       prev_avg[lvl] = current_avg[lvl];
       last_update_iter[lvl] = iter;
     } else {
-      /*--- No clear signal: slowly recover toward the nominal coefficient (0.85). ---*/
+      /*--- No clear signal: slowly recover. ---*/
       new_coeff = current_coeff;
       if (new_coeff < 0.85)
         new_coeff = min(new_coeff * 1.005, passivedouble(0.85));
@@ -412,6 +407,17 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                           cfl_snapshot[iMesh], cfl_snapshot[iMesh+1],
                           lastPreSmoothDefect[iMesh+1][1],
                           mg_coarse_cfl_ratio[iMesh]);
+
+    /*--- Hard CFL caps per coarse level: each level is capped at 1/3 of its
+     *    parent level CFL. ---*/
+    constexpr passivedouble MG_CFL_CAP_RATIO = 1.0 / 3.0;
+
+    for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
+      const unsigned short lvl = iMesh + 1;
+      const passivedouble cap = cfl_snapshot[iMesh] * MG_CFL_CAP_RATIO;
+      const passivedouble cfl_cur = SU2_TYPE::GetValue(config[iZone]->GetCFL(lvl));
+      if (cfl_cur > cap) config[iZone]->SetCFL(lvl, cap);
+    }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -593,9 +599,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, NO_RK_ITER, RunTime_EqSystem);
 
-    /*--- LinSysRes = R(u_N) here, before tau is added by SetResidual_Term.
-          Capture the exact final pre-smooth defect d_N at zero additional cost,
-          overwriting the d_{N-1} estimate written by PreSmoothing. ---*/
+    /*--- LinSysRes = R(u_N) here, before tau is added by SetResidual_Term. ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       lastPreSmoothDefect[iMesh][1] = ComputeDefectNorm(solver_fine, geometry_fine);
     }
@@ -696,12 +700,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       /*--- Space integration ---*/
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
 
-      /*--- At iRKStep==0 LinSysRes = R(u_k) before any update; capture the defect at zero
-           additional cost (no extra Preprocessing/Space_Integration pairs needed):
-           - iPreSmooth==0: baseline d_0, recorded before the first iteration runs.
-           - iPreSmooth==k: d_k, the result after k completed iterations.
-           Early exit fires here rather than after the redundant re-evaluation, so the
-           reported iteration count equals the number of iterations that actually ran. ---*/
+      /*--- At iRKStep==0 LinSysRes = R(u_k). ---*/
       if (iRKStep == 0 && need_per_step_rms) {
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
           const passivedouble defect = ComputeDefectNorm(solver_fine, geometry_fine);
@@ -714,8 +713,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
               lastPreSmoothExitReason[iMesh] = 'T';
               mg_early_exit_flag = true;
             } else if (iPreSmooth > 1) {
-              /*--- Stagnation: compare to previous step. Condition >1 matches the
-                    original behaviour of not checking stagnation after the first step. ---*/
+              /*--- Stagnation: compare to previous step. ---*/
               const passivedouble stag_tol = (mgOpts.MG_Smooth_StagnationTol > 0.0)
                                              ? mgOpts.MG_Smooth_StagnationTol : passivedouble(1.0);
               if (defect >= mg_prev_smooth_defect * stag_tol) {
@@ -790,7 +788,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       /*--- Space integration ---*/
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
 
-      /*--- At iRKStep==0 LinSysRes = R(u_k); capture defect at zero additional cost. ---*/
+      /*--- At iRKStep==0 LinSysRes = R(u_k) ---*/
       if (iRKStep == 0 && need_per_step_rms) {
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
           const passivedouble defect = ComputeDefectNorm(solver_fine, geometry_fine);
