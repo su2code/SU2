@@ -344,7 +344,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       lastPreSmoothIters[i] = mgOpts.MG_PreSmooth[i];
       lastPostSmoothIters[i] = mgOpts.MG_PostSmooth[i];
       lastCorrecSmoothIters[i] = mgOpts.MG_CorrecSmooth[i];
-      //lastPostSmoothRMS[i][0] = lastPostSmoothRMS[i][1] = 0.0;
       lastCorrecSmoothRMS[i][0] = lastCorrecSmoothRMS[i][1] = 0.0;
       lastPreSmoothDefect[i][0] = lastPreSmoothDefect[i][1] = 0.0;
       lastPostSmoothDefect[i][0] = lastPostSmoothDefect[i][1] = 0.0;
