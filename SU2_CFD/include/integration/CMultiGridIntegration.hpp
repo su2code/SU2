@@ -300,7 +300,6 @@ private:
   passivedouble lastPreSmoothDefect[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastPostSmoothDefect[MAX_MG_LEVELS+1][2] = {};
 
-  //passivedouble lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
 
 };
