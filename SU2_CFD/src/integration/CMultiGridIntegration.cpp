@@ -237,8 +237,13 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
-    // get the current adaptive CFL of the finest mesh
-    passivedouble cfl_base = solver_container[iZone][iInst][FinestMesh][Solver_Position]->GetAvg_CFL_Local();
+    /*--- Use the current finest-grid CFL as the base for deterministic
+     *    coarse-level scaling. Fall back to config scalar when local CFL
+     *    adaptation is disabled. ---*/
+    passivedouble cfl_base = SU2_TYPE::GetValue(
+      solver_container[iZone][iInst][FinestMesh][Solver_Position]->GetAvg_CFL_Local());
+    if (cfl_base < EPS)
+      cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh));
 
     constexpr passivedouble MG_CFL_CAP_RATIO = 1.0 / 3.0;
 
