@@ -186,19 +186,22 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
 
-  /*--- Initialize per-level smoothing iteration counters to the configured maximum.
-   *    If early exit never fires, the output will show actual == max. ---*/
+  /*--- Initialize per-level smoothing diagnostics for the current cycle. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
     const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
     const auto& mgOpts = config[iZone]->GetMGOptions();
     for (unsigned short i = 0; i <= nMGLevels; ++i) {
-      lastPreSmoothIters[i] = mgOpts.MG_PreSmooth[i];
-      lastPostSmoothIters[i] = mgOpts.MG_PostSmooth[i];
+      lastPreSmoothIters[i] = 0;
+      lastPostSmoothIters[i] = 0;
       lastCorrecSmoothIters[i] = mgOpts.MG_CorrecSmooth[i];
       lastCorrecSmoothRMS[i][0] = lastCorrecSmoothRMS[i][1] = 0.0;
       lastPreSmoothRMS[i][0] = lastPreSmoothRMS[i][1] = 0.0;
       lastPostSmoothRMS[i][0] = lastPostSmoothRMS[i][1] = 0.0;
+      lastPreSmoothWorstStepRatio[i] = 0.0;
+      lastPostSmoothWorstStepRatio[i] = 0.0;
+      lastPreSmoothWorstStep[i] = 0;
+      lastPostSmoothWorstStep[i] = 0;
       lastPreSmoothExitReason[i]  = ' ';
       lastPostSmoothExitReason[i] = ' ';
     }
@@ -245,7 +248,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     if (cfl_base < EPS)
       cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh));
 
-    constexpr passivedouble MG_CFL_CAP_RATIO = 1.0 / 3.0;
+    constexpr passivedouble MG_CFL_CAP_RATIO = 1.0 / 4.0;
 
     passivedouble CFL_local = cfl_base;
     for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
@@ -308,7 +311,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
       /*--- Helper: format one cell as "act/max [init->final]". ---*/
       auto cellStr = [](unsigned short act, unsigned short mx, char reason,
-                        su2double d0, su2double d1) -> std::string {
+            su2double d0, su2double d1,
+            passivedouble worstStepRatio,
+            unsigned short worstStep) -> std::string {
         /*--- Show: steps taken / max + exit reason + initial defect scale + d1/d0 ratio.
          *    r=d1/d0 < 1 means smoother reduced the defect (good).
          *    r > 1 means smoother grew the defect (drives SCALE_DIVERGE damping cut).
@@ -320,13 +325,16 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
         if (d0 > 0.0) {
           ss << std::fixed << std::setprecision(3) << " r=" << d1 / d0;
         }
+        if (worstStep > 0) {
+          ss << " rw" << worstStep << "=" << std::fixed << std::setprecision(3) << worstStepRatio;
+        }
         return ss.str();
       };
 
       PrintingToolbox::CTablePrinter table(&std::cout);
       table.AddColumn("Smoother", 13);
       for (unsigned short i = 0; i <= nMGLevels; ++i)
-        table.AddColumn("Level " + std::to_string(i), 26);
+        table.AddColumn("Level " + std::to_string(i), 38);
       table.PrintHeader();
 
       /*--- Pre-smooth: defect [d0->d1] — what early exit and damping adaptation read. ---*/
@@ -334,21 +342,24 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       for (unsigned short i = 0; i <= nMGLevels; ++i)
         table << cellStr(lastPreSmoothIters[i], mgOptsZone.MG_PreSmooth[i],
                           lastPreSmoothExitReason[i],
-                          lastPreSmoothRMS[i][0], lastPreSmoothRMS[i][1]);
+                          lastPreSmoothRMS[i][0], lastPreSmoothRMS[i][1],
+                          lastPreSmoothWorstStepRatio[i], lastPreSmoothWorstStep[i]);
 
       /*--- Post-smooth: defect [d0->d1] — what early exit and prolongation-damping read. ---*/
       table << "Post-smooth";
       for (unsigned short i = 0; i < nMGLevels; ++i)
         table << cellStr(lastPostSmoothIters[i], mgOptsZone.MG_PostSmooth[i],
                           lastPostSmoothExitReason[i],
-                          lastPostSmoothRMS[i][0], lastPostSmoothRMS[i][1]);
+                          lastPostSmoothRMS[i][0], lastPostSmoothRMS[i][1],
+                          lastPostSmoothWorstStepRatio[i], lastPostSmoothWorstStep[i]);
       table << "-";
 
       /*--- Corr.-smooth: defined on levels 0..nMGLevels-1; coarsest has none. ---*/
       table << "Corr-smooth";
       for (unsigned short i = 0; i < nMGLevels; ++i)
         table << cellStr(lastCorrecSmoothIters[i], mgOptsZone.MG_CorrecSmooth[i],
-                          ' ', lastCorrecSmoothRMS[i][0], lastCorrecSmoothRMS[i][1]);
+                          ' ', lastCorrecSmoothRMS[i][0], lastCorrecSmoothRMS[i][1],
+                          0.0, 0);
       table << "-";
 
       table << "CFL";
@@ -511,6 +522,8 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   const unsigned long timeIter = config->GetTimeIter();
   const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPreSmooth > 1);
   const bool need_per_step_rms = early_exit || mgOpts.MG_Smooth_Output;
+  const passivedouble stag_tol = (mgOpts.MG_Smooth_StagnationTol > 0.0)
+                                 ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
 
   /*--- Reset the shared early-exit flag (master only). ---*/
   SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
@@ -545,17 +558,20 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
           if (iPreSmooth == 0) {
             mg_initial_smooth_rms = defect;
             lastPreSmoothRMS[iMesh][0] = defect;
-          } else if (early_exit) {
-            if (defect < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
-              lastPreSmoothIters[iMesh] = iPreSmooth;
-              lastPreSmoothExitReason[iMesh] = 'T';
-              mg_early_exit_flag = true;
-            } else if (iPreSmooth > 1) {
-              /*--- Stagnation: compare to previous step. ---*/
-              const passivedouble stag_tol = (mgOpts.MG_Smooth_StagnationTol > 0.0)
-                                             ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
-              if (defect >= mg_prev_smooth_rms * stag_tol) {
-                lastPreSmoothIters[iMesh] = iPreSmooth;
+          } else {
+            if (mg_prev_smooth_rms > EPS) {
+              const passivedouble step_ratio = defect / mg_prev_smooth_rms;
+              if (step_ratio > lastPreSmoothWorstStepRatio[iMesh]) {
+                lastPreSmoothWorstStepRatio[iMesh] = step_ratio;
+                lastPreSmoothWorstStep[iMesh] = iPreSmooth + 1;
+              }
+            }
+
+            if (early_exit) {
+              if (defect < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
+                lastPreSmoothExitReason[iMesh] = 'T';
+                mg_early_exit_flag = true;
+              } else if (defect >= mg_prev_smooth_rms * stag_tol) {
                 lastPreSmoothExitReason[iMesh] = 'S';
                 mg_early_exit_flag = true;
               }
@@ -571,6 +587,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
     }
+    SU2_OMP_SAFE_GLOBAL_ACCESS(lastPreSmoothIters[iMesh] = iPreSmooth + 1;)
     if (mg_early_exit_flag) break;
   }
 
@@ -603,6 +620,8 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   const unsigned long timeIter = config->GetTimeIter();
   const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPostSmooth > 1);
   const bool need_per_step_rms = early_exit || mgOpts.MG_Smooth_Output;
+  const passivedouble stag_tol = (mgOpts.MG_Smooth_StagnationTol > 0.0)
+                                 ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
 
   /*--- Reset the shared early-exit flag (master only). ---*/
   SU2_OMP_SAFE_GLOBAL_ACCESS(mg_early_exit_flag = false;)
@@ -634,16 +653,20 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
           if (iPostSmooth == 0) {
             mg_initial_smooth_rms = defect;
             lastPostSmoothRMS[iMesh][0] = defect;
-          } else if (early_exit) {
-            if (defect < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
-              lastPostSmoothIters[iMesh] = iPostSmooth;
-              lastPostSmoothExitReason[iMesh] = 'T';
-              mg_early_exit_flag = true;
-            } else if (iPostSmooth > 1) {
-              const passivedouble stag_tol = (mgOpts.MG_Smooth_StagnationTol > 0.0)
-                                             ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
-              if (defect >= mg_prev_smooth_rms * stag_tol) {
-                lastPostSmoothIters[iMesh] = iPostSmooth;
+          } else {
+            if (mg_prev_smooth_rms > EPS) {
+              const passivedouble step_ratio = defect / mg_prev_smooth_rms;
+              if (step_ratio > lastPostSmoothWorstStepRatio[iMesh]) {
+                lastPostSmoothWorstStepRatio[iMesh] = step_ratio;
+                lastPostSmoothWorstStep[iMesh] = iPostSmooth + 1;
+              }
+            }
+
+            if (early_exit) {
+              if (defect < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
+                lastPostSmoothExitReason[iMesh] = 'T';
+                mg_early_exit_flag = true;
+              } else if (defect >= mg_prev_smooth_rms * stag_tol) {
                 lastPostSmoothExitReason[iMesh] = 'S';
                 mg_early_exit_flag = true;
               }
@@ -660,6 +683,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
 
     }
+    SU2_OMP_SAFE_GLOBAL_ACCESS(lastPostSmoothIters[iMesh] = iPostSmooth + 1;)
     if (mg_early_exit_flag) break;
   }
 

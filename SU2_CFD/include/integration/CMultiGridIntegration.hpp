@@ -217,22 +217,6 @@ private:
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
   /*!
-   * \brief Compute adaptive CFL for multigrid coarse levels.
-   * \param[in] config - Problem configuration.
-   * \param[in] solver_coarse - Coarse grid solver.
-   * \param[in] geometry_coarse - Coarse grid geometry.
-   * \param[in] iMesh - Current multigrid level.
-   * \param[in] CFL_fine - Fine grid CFL value (passive).
-   * \param[in] CFL_coarse_current - Current coarse grid CFL value (passive).
-   * \param[in] rms_res_coarse - Coarse-grid RMS residual (already MPI-reduced, from lastPreSmoothRMS).
-   * \return New CFL value for the coarse grid.
-   */
-  passivedouble computeMultigridCFL(CConfig* config, unsigned short iMesh,
-                                     passivedouble CFL_fine, passivedouble CFL_coarse_current,
-                                     passivedouble rms_res_coarse,
-                                     passivedouble initial_ratio);
-
-  /*!
    * \brief Adapt the residual restriction damping factor.
    *
    * Uses \c lastPreSmoothIters[] (filled by the previous multigrid cycle) to assess
@@ -264,19 +248,7 @@ private:
    */
   void adaptProlongationDamping(CConfig* config, passivedouble crossCycleRatio);
 
-  /*--- CFL adaptation state variables.
-   *    These must be passivedouble: AD::Reset() clears the tape between adjoint recordings,
-   *    but class members survive. If these were su2double their stale AD indices would
-   *    reference the cleared tape, causing invalid memory access during the backward pass. ---*/
   static constexpr int MAX_MG_LEVELS = 10;
-  passivedouble current_avg[MAX_MG_LEVELS] = {};
-  passivedouble prev_avg[MAX_MG_LEVELS] = {};
-  passivedouble last_res[MAX_MG_LEVELS] = {};
-  bool last_was_increase[MAX_MG_LEVELS] = {};
-  int oscillation_count[MAX_MG_LEVELS] = {};
-  unsigned long last_check_iter[MAX_MG_LEVELS] = {};
-  unsigned long last_update_iter[MAX_MG_LEVELS] = {};
-  unsigned long last_reset_iter = std::numeric_limits<unsigned long>::max();
 
   /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
   bool mg_early_exit_flag = false;              /*!< \brief Shared flag for early exit across OMP threads. */
@@ -284,7 +256,6 @@ private:
   passivedouble mg_prev_smooth_rms = 0.0;    /*!< \brief RMS residual from previous smoothing step; used for stagnation detection. */
   passivedouble mg_fine_rms_ema = 0.0;          /*!< \brief EMA of fine-grid pre-smooth RMS residual across outer iterations; cross-cycle blowup detection. */
   passivedouble last_crossCycleRatio = 1.0;     /*!< \brief crossCycleRatio from the most recent cycle; stored for display only. */
-  passivedouble mg_coarse_cfl_ratio[MAX_MG_LEVELS] = {}; /*!< \brief Initial CFL(iMesh+1)/CFL(0) ratios captured once at first cycle; used to scale coarse CFLs from Avg_CFL_Local. */
 
   /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
   unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
@@ -298,5 +269,12 @@ private:
   passivedouble lastPreSmoothRMS[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+
+  /*--- Per-level worst step-to-step amplification seen inside a smoothing phase.
+   *    step==0 means no intra-smoother ratio was available (fewer than 2 sweeps). ---*/
+  passivedouble lastPreSmoothWorstStepRatio[MAX_MG_LEVELS+1] = {};
+  passivedouble lastPostSmoothWorstStepRatio[MAX_MG_LEVELS+1] = {};
+  unsigned short lastPreSmoothWorstStep[MAX_MG_LEVELS+1] = {};
+  unsigned short lastPostSmoothWorstStep[MAX_MG_LEVELS+1] = {};
 
 };
