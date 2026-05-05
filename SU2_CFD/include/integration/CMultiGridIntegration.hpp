@@ -224,7 +224,7 @@ private:
    * \param[in] iMesh - Current multigrid level.
    * \param[in] CFL_fine - Fine grid CFL value (passive).
    * \param[in] CFL_coarse_current - Current coarse grid CFL value (passive).
-   * \param[in] rms_res_coarse - Coarse-grid defect norm (already MPI-reduced, from lastPreSmoothDefect).
+   * \param[in] rms_res_coarse - Coarse-grid RMS residual (already MPI-reduced, from lastPreSmoothRMS).
    * \return New CFL value for the coarse grid.
    */
   passivedouble computeMultigridCFL(CConfig* config, unsigned short iMesh,
@@ -280,9 +280,9 @@ private:
 
   /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
   bool mg_early_exit_flag = false;              /*!< \brief Shared flag for early exit across OMP threads. */
-  passivedouble mg_initial_smooth_defect = 0.0; /*!< \brief Initial defect norm ||R+tau|| before current smoothing phase (FAS). */
-  passivedouble mg_prev_smooth_defect = 0.0;    /*!< \brief Defect norm from previous smoothing step; used for stagnation detection. */
-  passivedouble mg_fine_rms_ema = 0.0;          /*!< \brief EMA of fine-grid pre-smooth defect d0 across outer iterations; cross-cycle blowup detection. */
+  passivedouble mg_initial_smooth_rms = 0.0; /*!< \brief Initial RMS residual before current smoothing phase (FAS). */
+  passivedouble mg_prev_smooth_rms = 0.0;    /*!< \brief RMS residual from previous smoothing step; used for stagnation detection. */
+  passivedouble mg_fine_rms_ema = 0.0;          /*!< \brief EMA of fine-grid pre-smooth RMS residual across outer iterations; cross-cycle blowup detection. */
   passivedouble last_crossCycleRatio = 1.0;     /*!< \brief crossCycleRatio from the most recent cycle; stored for display only. */
   passivedouble mg_coarse_cfl_ratio[MAX_MG_LEVELS] = {}; /*!< \brief Initial CFL(iMesh+1)/CFL(0) ratios captured once at first cycle; used to scale coarse CFLs from Avg_CFL_Local. */
 
@@ -294,9 +294,9 @@ private:
   char lastPreSmoothExitReason[MAX_MG_LEVELS+1]  = {};
   char lastPostSmoothExitReason[MAX_MG_LEVELS+1] = {};
 
-  /*--- Per-level start/end defect ||R+tau|| for adaptive damping. ---*/
-  passivedouble lastPreSmoothDefect[MAX_MG_LEVELS+1][2] = {};
-  passivedouble lastPostSmoothDefect[MAX_MG_LEVELS+1][2] = {};
+  /*--- Per-level start/end RMS residual for adaptive damping. ---*/
+  passivedouble lastPreSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+  passivedouble lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
 
 };

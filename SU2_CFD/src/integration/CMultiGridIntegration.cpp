@@ -81,7 +81,7 @@ static void adaptMGDampingFactor(const unsigned short* performed,
   constexpr passivedouble SCALE_DOWN    = 0.75;
   constexpr passivedouble SCALE_UP      = 1.02;
   constexpr passivedouble SCALE_STAGNANT = 0.93;
-  constexpr passivedouble CLAMP_MIN     = 0.05;
+  constexpr passivedouble CLAMP_MIN     = 0.10;
   constexpr passivedouble CLAMP_MAX     = 0.95;
 
   su2double factor = getCurrent();
@@ -108,7 +108,7 @@ void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config, passivedoub
   const unsigned short nMGLevels = config->GetnMGLevels();
   adaptMGDampingFactor(
     lastPreSmoothIters,
-    lastPreSmoothDefect,
+    lastPreSmoothRMS,
     [&mgOpts](unsigned short lvl){ return mgOpts.MG_PreSmooth[lvl]; },
     /*levelStart=*/1, nMGLevels,
     [config](){ return config->GetDamp_Res_Restric(); },
@@ -123,146 +123,12 @@ void CMultiGridIntegration::adaptProlongationDamping(CConfig* config, passivedou
   if (nMGLevels == 0) return;
   adaptMGDampingFactor(
     lastPostSmoothIters,
-    lastPostSmoothDefect,
+    lastPostSmoothRMS,
     [&mgOpts](unsigned short lvl){ return mgOpts.MG_PostSmooth[lvl]; },
     /*levelStart=*/0, static_cast<unsigned short>(nMGLevels - 1),
     [config](){ return config->GetDamp_Correc_Prolong(); },
     [config](su2double v){ config->SetDamp_Correc_Prolong(v); },
     crossCycleRatio);
-}
-
-passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsigned short iMesh,
-                                                          passivedouble CFL_fine, passivedouble CFL_coarse_current,
-                                                          passivedouble rms_res_coarse,
-                                                          passivedouble initial_ratio) {
-  SU2_ZONE_SCOPED
-
-  const bool wasActive = AD::BeginPassive();
-
-  passivedouble current_coeff = CFL_coarse_current / CFL_fine;
-
-  /*--- Adaptive CFL using Exponential Moving Average (EMA) ---*/
-  constexpr int AVG_WINDOW = 5;
-
-  passivedouble CFL_coarse_new = CFL_coarse_current; // Default: keep current value
-
-  /*--- Get global iteration count first ---*/
-  unsigned long current_iter;
-  if (config->GetTime_Domain())
-    current_iter = config->GetTimeIter();
-  else
-    current_iter = config->GetInnerIter();
-
-  /*--- Reset state at the beginning of a new solve (iter 0 or 1) ---*/
-  /*--- This ensures deterministic behavior across multiple runs ---*/
-  if (current_iter <= 1 && last_reset_iter != current_iter) {
-    for (int i = 0; i < MAX_MG_LEVELS; i++) {
-      current_avg[i] = 0.0;
-      prev_avg[i] = 0.0;
-      last_res[i] = 0.0;
-      last_was_increase[i] = false;
-      oscillation_count[i] = 0;
-      last_check_iter[i] = 0;
-      last_update_iter[i] = 0;
-    }
-    last_reset_iter = current_iter;
-  }
-
-  unsigned short lvl = min<unsigned short>(iMesh, MAX_MG_LEVELS - 1);
-  unsigned long iter = current_iter;
-
-  /*--- rms_res_coarse is passed in (from lastPreSmoothRMS, already MPI-reduced). ---*/
-
-  /*--- Flip-flop detection: detect oscillating residuals (once per outer iteration) ---*/
-  bool oscillation_detected = false;
-  if (iter != last_check_iter[lvl]) {
-    last_check_iter[lvl] = iter;
-
-    if (last_res[lvl] > EPS) {
-      bool current_is_increase = (rms_res_coarse > last_res[lvl]);
-      if (current_is_increase != last_was_increase[lvl]) {
-        /*--- Direction changed, increment oscillation counter ---*/
-        oscillation_count[lvl]++;
-        if (oscillation_count[lvl] >= 4) {
-          /*--- Detected 4 consecutive direction changes = oscillation ---*/
-          oscillation_detected = true;
-          oscillation_count[lvl] = 0;  // Reset counter after detecting
-        }
-      } else {
-        /*--- Same direction, reset counter ---*/
-        oscillation_count[lvl] = 0;
-      }
-      last_was_increase[lvl] = current_is_increase;
-    }
-    last_res[lvl] = rms_res_coarse;
-  }
-
-  /*--- Update exponential moving average ---*/
-  if (current_avg[lvl] < EPS) {
-    current_avg[lvl] = rms_res_coarse;  // Initialize with first value
-  } else {
-    current_avg[lvl] = (current_avg[lvl] * (AVG_WINDOW - 1) + rms_res_coarse) / AVG_WINDOW;
-  }
-
-  /*--- Check if we should compare and adapt CFL ---*/
-  passivedouble new_coeff = current_coeff;
-  const passivedouble MIN_REDUCTION_FACTOR = 0.98;  // Require at least 2% reduction
-  const int UPDATE_INTERVAL = 5;  // Update reference every N iterations
-
-  /*--- Initialize prev_avg on first use ---*/
-  if (prev_avg[lvl] < EPS) {
-    prev_avg[lvl] = current_avg[lvl];
-  }
-
-  /*--- Periodically update prev_avg to allow ratio to reflect accumulated decrease ---*/
-  bool should_update = (iter - last_update_iter[lvl] >= UPDATE_INTERVAL);
-
-  /*--- Asymmetric adaptation for robustness ---*/
-  if (prev_avg[lvl] > EPS) {
-    passivedouble ratio = current_avg[lvl] / prev_avg[lvl];
-    bool sufficient_decrease = (ratio < MIN_REDUCTION_FACTOR);
-    /*--- Require a clear increase (>2%) ---*/
-    bool increasing_trend = (ratio > 1.02);
-
-    if (increasing_trend) {
-      /*--- Residual increasing: reduce CFL immediately for robustness ---*/
-      new_coeff = current_coeff * 0.90;
-      /*--- Update reference since we're reacting immediately ---*/
-      prev_avg[lvl] = current_avg[lvl];
-      last_update_iter[lvl] = iter;
-    } else if (sufficient_decrease && should_update) {
-      /*--- Residual decreasing sufficiently: increase CFL ---*/
-      new_coeff = current_coeff * 1.05;
-      /*--- Update reference only when we actually increase CFL ---*/
-      prev_avg[lvl] = current_avg[lvl];
-      last_update_iter[lvl] = iter;
-    } else {
-      /*--- No clear signal: slowly recover. ---*/
-      new_coeff = current_coeff;
-      if (new_coeff < 0.85)
-        new_coeff = min(new_coeff * 1.005, passivedouble(0.85));
-    }
-  }
-
-  /*--- CFL reduction for oscillation detection ---*/
-  if (oscillation_detected) {
-    new_coeff = current_coeff * 0.75;
-    /*--- Update reference after oscillation response ---*/
-    prev_avg[lvl] = current_avg[lvl];
-    last_update_iter[lvl] = iter;
-  }
-
-  const passivedouble coeff_min = max(passivedouble(0.50) * initial_ratio, passivedouble(0.10));
-  const passivedouble coeff_max = min(initial_ratio, passivedouble(0.95));
-  new_coeff = max(coeff_min, min(coeff_max, new_coeff));
-
-  /*--- Update coarse grid CFL ---*/
-  CFL_coarse_new = CFL_fine * new_coeff;
-
-  config->SetCFL(iMesh+1, CFL_coarse_new);
-
-  AD::EndPassive(wasActive);
-  return CFL_coarse_new;
 }
 
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
@@ -331,8 +197,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       lastPostSmoothIters[i] = mgOpts.MG_PostSmooth[i];
       lastCorrecSmoothIters[i] = mgOpts.MG_CorrecSmooth[i];
       lastCorrecSmoothRMS[i][0] = lastCorrecSmoothRMS[i][1] = 0.0;
-      lastPreSmoothDefect[i][0] = lastPreSmoothDefect[i][1] = 0.0;
-      lastPostSmoothDefect[i][0] = lastPostSmoothDefect[i][1] = 0.0;
+      lastPreSmoothRMS[i][0] = lastPreSmoothRMS[i][1] = 0.0;
+      lastPostSmoothRMS[i][0] = lastPostSmoothRMS[i][1] = 0.0;
       lastPreSmoothExitReason[i]  = ' ';
       lastPostSmoothExitReason[i] = ' ';
     }
@@ -371,37 +237,16 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
-    const passivedouble cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh));
-    if (mg_coarse_cfl_ratio[0] < EPS && cfl_base > EPS) {
-      for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
-        const passivedouble r = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh+1)) / cfl_base;
-        mg_coarse_cfl_ratio[iMesh] = (r > EPS) ? r : passivedouble(0.667);
-      }
-    }
+    // get the current adaptive CFL of the finest mesh
+    passivedouble cfl_base = solver_container[iZone][iInst][FinestMesh][Solver_Position]->GetAvg_CFL_Local();
 
-    passivedouble cfl_snapshot[MAX_MG_LEVELS + 2] = {};
-    cfl_snapshot[FinestMesh] = SU2_TYPE::GetValue(
-      solver_container[iZone][iInst][FinestMesh][Solver_Position]->GetAvg_CFL_Local());
-    if (cfl_snapshot[FinestMesh] < EPS)  /*--- CFL_ADAPT=NO: fall back to config scalar ---*/
-      cfl_snapshot[FinestMesh] = cfl_base;
-    for (unsigned short iMesh = FinestMesh + 1; iMesh <= nMGLevels; ++iMesh)
-      cfl_snapshot[iMesh] = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh));
-
-    for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh)
-      computeMultigridCFL(config[iZone], iMesh,
-                          cfl_snapshot[iMesh], cfl_snapshot[iMesh+1],
-                          lastPreSmoothDefect[iMesh+1][1],
-                          mg_coarse_cfl_ratio[iMesh]);
-
-    /*--- Hard CFL caps per coarse level: each level is capped at 1/3 of its
-     *    parent level CFL. ---*/
     constexpr passivedouble MG_CFL_CAP_RATIO = 1.0 / 3.0;
 
+    passivedouble CFL_local = cfl_base;
     for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
       const unsigned short lvl = iMesh + 1;
-      const passivedouble cap = cfl_snapshot[iMesh] * MG_CFL_CAP_RATIO;
-      const passivedouble cfl_cur = SU2_TYPE::GetValue(config[iZone]->GetCFL(lvl));
-      if (cfl_cur > cap) config[iZone]->SetCFL(lvl, cap);
+      CFL_local *= MG_CFL_CAP_RATIO;
+      config[iZone]->SetCFL(lvl, CFL_local);
     }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -437,7 +282,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   if (mgOptsZone.MG_Smooth_EarlyExit) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       constexpr passivedouble EMA_ALPHA = 0.15;
-      const passivedouble fine_d0 = lastPreSmoothDefect[FinestMesh][0];
+      const passivedouble fine_d0 = lastPreSmoothRMS[FinestMesh][0];
       if (mg_fine_rms_ema < EPS)
         mg_fine_rms_ema = fine_d0;
       else
@@ -484,14 +329,14 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       for (unsigned short i = 0; i <= nMGLevels; ++i)
         table << cellStr(lastPreSmoothIters[i], mgOptsZone.MG_PreSmooth[i],
                           lastPreSmoothExitReason[i],
-                          lastPreSmoothDefect[i][0], lastPreSmoothDefect[i][1]);
+                          lastPreSmoothRMS[i][0], lastPreSmoothRMS[i][1]);
 
       /*--- Post-smooth: defect [d0->d1] — what early exit and prolongation-damping read. ---*/
       table << "Post-smooth";
       for (unsigned short i = 0; i < nMGLevels; ++i)
         table << cellStr(lastPostSmoothIters[i], mgOptsZone.MG_PostSmooth[i],
                           lastPostSmoothExitReason[i],
-                          lastPostSmoothDefect[i][0], lastPostSmoothDefect[i][1]);
+                          lastPostSmoothRMS[i][0], lastPostSmoothRMS[i][1]);
       table << "-";
 
       /*--- Corr.-smooth: defined on levels 0..nMGLevels-1; coarsest has none. ---*/
@@ -586,7 +431,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     /*--- LinSysRes = R(u_N) here, before tau is added by SetResidual_Term. ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      lastPreSmoothDefect[iMesh][1] = ComputeLinSysResRMS(solver_fine);
+      lastPreSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver_fine);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -693,10 +538,10 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
           const passivedouble defect = ComputeLinSysResRMS(solver_fine);
           if (iPreSmooth == 0) {
-            mg_initial_smooth_defect = defect;
-            lastPreSmoothDefect[iMesh][0] = defect;
+            mg_initial_smooth_rms = defect;
+            lastPreSmoothRMS[iMesh][0] = defect;
           } else if (early_exit) {
-            if (defect < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_defect) {
+            if (defect < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
               lastPreSmoothIters[iMesh] = iPreSmooth;
               lastPreSmoothExitReason[iMesh] = 'T';
               mg_early_exit_flag = true;
@@ -704,14 +549,14 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
               /*--- Stagnation: compare to previous step. ---*/
               const passivedouble stag_tol = (mgOpts.MG_Smooth_StagnationTol > 0.0)
                                              ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
-              if (defect >= mg_prev_smooth_defect * stag_tol) {
+              if (defect >= mg_prev_smooth_rms * stag_tol) {
                 lastPreSmoothIters[iMesh] = iPreSmooth;
                 lastPreSmoothExitReason[iMesh] = 'S';
                 mg_early_exit_flag = true;
               }
             }
           }
-          mg_prev_smooth_defect = defect;
+          mg_prev_smooth_rms = defect;
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
         if (mg_early_exit_flag) break;
@@ -730,7 +575,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
    *    Skip when nPreSmooth==0: lastPreSmoothDefect[iMesh] stays {0,0} (initialized). ---*/
   if (nPreSmooth > 0) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      lastPreSmoothDefect[iMesh][1] = mg_prev_smooth_defect;
+      lastPreSmoothRMS[iMesh][1] = mg_prev_smooth_rms;
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
@@ -782,24 +627,24 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
           const passivedouble defect = ComputeLinSysResRMS(solver_fine);
           if (iPostSmooth == 0) {
-            mg_initial_smooth_defect = defect;
-            lastPostSmoothDefect[iMesh][0] = defect;
+            mg_initial_smooth_rms = defect;
+            lastPostSmoothRMS[iMesh][0] = defect;
           } else if (early_exit) {
-            if (defect < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_defect) {
+            if (defect < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
               lastPostSmoothIters[iMesh] = iPostSmooth;
               lastPostSmoothExitReason[iMesh] = 'T';
               mg_early_exit_flag = true;
             } else if (iPostSmooth > 1) {
               const passivedouble stag_tol = (mgOpts.MG_Smooth_StagnationTol > 0.0)
                                              ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
-              if (defect >= mg_prev_smooth_defect * stag_tol) {
+              if (defect >= mg_prev_smooth_rms * stag_tol) {
                 lastPostSmoothIters[iMesh] = iPostSmooth;
                 lastPostSmoothExitReason[iMesh] = 'S';
                 mg_early_exit_flag = true;
               }
             }
           }
-          mg_prev_smooth_defect = defect;
+          mg_prev_smooth_rms = defect;
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
         if (mg_early_exit_flag) break;
@@ -814,10 +659,10 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   }
 
   /*--- Record d_{N-1} as the final post-smooth defect (display only).
-   *    Skip when nPostSmooth==0: lastPostSmoothDefect[iMesh] stays {0,0} (initialized). ---*/
+   *    Skip when nPostSmooth==0: lastPostSmoothRMS[iMesh] stays {0,0} (initialized). ---*/
   if (nPostSmooth > 0) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      lastPostSmoothDefect[iMesh][1] = mg_prev_smooth_defect;
+      lastPostSmoothRMS[iMesh][1] = mg_prev_smooth_rms;
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
