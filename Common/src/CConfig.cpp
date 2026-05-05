@@ -1311,9 +1311,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Definition of the turbulent thermal conductivity model (CONSTANT_PRANDTL_TURB (default), NONE). */
   addEnumOption("TURBULENT_CONDUCTIVITY_MODEL", Kind_ConductivityModel_Turb, TurbConductivityModel_Map, CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL);
 
- /*--- Options related to Constant Thermal Conductivity Model ---*/
+  /*--- Options related to Constant Thermal Conductivity Model ---*/
 
- /* DESCRIPTION: default value for AIR */
+  /* DESCRIPTION: default value for AIR */
   addDoubleListOption("THERMAL_CONDUCTIVITY_CONSTANT", nThermal_Conductivity_Constant , Thermal_Conductivity_Constant);
 
   /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
