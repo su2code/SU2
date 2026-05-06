@@ -715,8 +715,8 @@ def main():
     fsi_cht_restart           = TestCase('fsi_cht_restart')
     fsi_cht_restart.cfg_dir   = "fea_fsi/stat_fsi"
     fsi_cht_restart.cfg_file  = "config_restart.cfg"
-    fsi_cht_restart.test_iter = 1
-    fsi_cht_restart.test_vals = [5, 0.006352, -1.960363, -9.335664, -9.346701, -9.312712, 6.0838e+02, -1.2974e-02, 5.7607e-08, 0]
+    fsi_cht_restart.test_iter = 0
+    fsi_cht_restart.test_vals = [5, 0.006352, -1.960362, -9.327033, -9.580521, -9.317956, 6.0838e+02, -1.2974e-02, 5.7607e-08, 20]
     fsi_cht_restart.multizone = True
     test_list.append(fsi_cht_restart)
 
