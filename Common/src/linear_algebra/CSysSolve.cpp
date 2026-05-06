@@ -1464,9 +1464,6 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 
     HandleTemporariesIn(LinSysRes, LinSysSol);
 
-#ifdef HAVE_CUDA
-    if (config->GetCUDA()) Jacobian.HtDTransfer();
-#endif
     auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
     /*--- Build preconditioner. ---*/
@@ -1646,9 +1643,6 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
 
   /*--- Set up preconditioner and matrix-vector product ---*/
 
-#ifdef HAVE_CUDA
-  if (config->GetCUDA()) Jacobian.HtDTransfer();
-#endif
   auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
   const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);

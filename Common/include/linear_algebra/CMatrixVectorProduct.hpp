@@ -82,7 +82,11 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    */
   inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref,
                                  const CConfig* config_ref)
-      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {}
+      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {
+#ifdef HAVE_CUDA
+    if (config->GetCUDA()) matrix.HtDTransfer();
+#endif
+  }
 
   /*!
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
