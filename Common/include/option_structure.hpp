@@ -261,6 +261,7 @@ enum class MAIN_SOLVER {
   FEM_RANS,                    /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
   FEM_LES,                     /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIPHYSICS,
+  POISSON_EQUATION,            /*!< \brief Definition of the Poisson equation solver. */
   NEMO_EULER,                  /*!< \brief Definition of the NEMO Euler solver. */
   NEMO_NAVIER_STOKES,          /*!< \brief Definition of the NEMO NS solver. */
 };
@@ -334,6 +335,33 @@ enum class STRUCT_COMPRESS {
 static const MapType<std::string, STRUCT_COMPRESS> MatComp_Map = {
   MakePair("COMPRESSIBLE", STRUCT_COMPRESS::COMPRESSIBLE)
   MakePair("NEARLY_INCOMPRESSIBLE", STRUCT_COMPRESS::NEARLY_INCOMP)
+};
+
+/*!
+ * \brief Type of incompressible solver
+ */
+enum class ENUM_INCOMP_SYSTEM {
+  DENSITY_BASED,		/*!< \brief Density-based. */
+  PRESSURE_BASED,       /*!< \brief Pressure-based. */
+};
+static const MapType<std::string, ENUM_INCOMP_SYSTEM> Incomp_Map = {
+ MakePair("DENSITY_BASED", ENUM_INCOMP_SYSTEM::DENSITY_BASED)
+ MakePair("PRESSURE_BASED", ENUM_INCOMP_SYSTEM::PRESSURE_BASED)
+};
+
+/*!
+ * \brief Type of iteration
+ */
+enum class ENUM_PBITER {
+  SIMPLE,		/*!< \brief SIMPLE algorithm. */
+  SIMPLEC,		/*!< \brief SIMPLE algorithm. */
+  PISO,         /*!< \brief PISO algorithm. */
+};
+
+static const MapType<std::string, ENUM_PBITER> PBIter_Map = {
+ MakePair("SIMPLE", ENUM_PBITER::SIMPLE)
+ MakePair("SIMPLEC", ENUM_PBITER::SIMPLEC)
+ MakePair("PISO", ENUM_PBITER::PISO)
 };
 
 /*!
@@ -476,6 +504,7 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJRAD_SYS = 24,    /*!< \brief One-physics case, the code is solving the adjoint radiation model. */
   RUNTIME_SPECIES_SYS = 25,   /*!< \brief One-physics case, the code is solving the species model. */
   RUNTIME_ADJSPECIES_SYS = 26,/*!< \brief One-physics case, the code is solving the adjoint species model. */
+  RUNTIME_POISSON_SYS = 27,   /*!< \brief One-physics case, the code is solving the poisson equation. */
 };
 
  enum SOLVER_TYPE : const int {
@@ -494,6 +523,7 @@ enum RUNTIME_TYPE {
    ADJSPECIES_SOL=12, /*!< \brief Position of the adjoint of the species solver. */
    FEA_SOL=0,        /*!< \brief Position of the Finite Element flow solution in the solver container array. */
    ADJFEA_SOL=1,     /*!< \brief Position of the continuous adjoint Finite Element flow solution in the solver container array. */
+   POISSON_SOL=13,   /*!< \brief Position of the poisson solution in the solver container array */
    TEMPLATE_SOL=0,   /*!< \brief Position of the template solution. */
  };
 
@@ -825,7 +855,8 @@ enum class CENTERED {
   LAX,            /*!< \brief Lax-Friedrich centered numerical method. */
   JST_MAT,        /*!< \brief JST with matrix dissipation. */
   JST_KE,         /*!< \brief Kinetic Energy preserving Jameson-Smith-Turkel centered numerical method. */
-  LD2             /*!< \brief Low-Dissipation Low-Dispersion (LD2) centered scheme. */
+  LD2,            /*!< \brief Low-Dissipation Low-Dispersion (LD2) centered scheme. */
+  CDS             /*!< \brief Central Difference Scheme used for pressure based solver. */
 };
 static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("NONE", CENTERED::NONE)
@@ -834,6 +865,7 @@ static const MapType<std::string, CENTERED> Centered_Map = {
   MakePair("JST_MAT", CENTERED::JST_MAT)
   MakePair("LAX-FRIEDRICH", CENTERED::LAX)
   MakePair("LD2", CENTERED::LD2)
+  MakePair("CDS", CENTERED::CDS)
 };
 
 
@@ -860,7 +892,8 @@ enum class UPWIND {
   AUSMPLUSUP,             /*!< \brief AUSM+ -up numerical method (All Speed) */
   AUSMPLUSUP2,            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
   AUSMPLUSM,              /*!< \breif AUSM+M numerical method. (NEMO Only)*/
-  BOUNDED_SCALAR          /*!< \brief Scalar advection numerical method. */
+  BOUNDED_SCALAR,         /*!< \brief Scalar advection numerical method. */
+  UDS                     /*!< \brief Upwind Difference Scheme used for pressure based solver. */
 };
 static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("NONE", UPWIND::NONE)
@@ -882,6 +915,7 @@ static const MapType<std::string, UPWIND> Upwind_Map = {
   MakePair("SLAU2", UPWIND::SLAU2)
   MakePair("FDS", UPWIND::FDS)
   MakePair("LAX-FRIEDRICH", UPWIND::LAX_FRIEDRICH)
+  MakePair("UDS", UPWIND::UDS)
 };
 
 /*!
@@ -2694,6 +2728,7 @@ enum PERIODIC_QUANTITIES {
   PERIODIC_LIM_PRIM_1 ,  /*!< \brief Primitive limiter communication phase 1 of 2 (periodic only). */
   PERIODIC_LIM_PRIM_2 ,  /*!< \brief Primitive limiter communication phase 2 of 2 (periodic only). */
   PERIODIC_IMPLICIT   ,  /*!< \brief Implicit update communication to ensure consistency across periodic boundaries. */
+  PERIODIC_PRESSURE   ,  /*!< \brief Corrected pressure communication. */
 };
 
 /*!
@@ -2727,6 +2762,9 @@ enum class MPI_QUANTITIES {
   MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
+  PRESSURE_VAR         ,  /*!< \brief Primitive variable (pressure) communication. */
+  MASS_FUX             ,  /*!< \brief Primitive variable (mass flux) communication. */
+  MOM_COEFF            ,  
 };
 
 /*!

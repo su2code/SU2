@@ -1137,6 +1137,11 @@ void CConfig::SetConfig_Options() {
   /*!\brief SST_OPTIONS \n DESCRIPTION: Specify SA turbulence model options/corrections. \n Options: see \link SA_Options_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumListOption("SA_OPTIONS", nSA_Options, SA_Options, SA_Options_Map);
 
+  /*!\brief KIND_INCOMP_SYSTEM \n DESCRIPTION: Incomp type \n OPTIONS: see \link Incomp_Map \endlink DEFAULT: NONE \ingroup Config*/
+  addEnumOption("KIND_INCOMP_SYSTEM", Kind_Incomp_System, Incomp_Map, ENUM_INCOMP_SYSTEM::DENSITY_BASED);
+  /*!\brief KIND_PB_ITER \n  DESCRIPTION: Kind_PBIter \n OPTIONS: see \link PBIter_Map \endlink \ingroup Config*/
+  addEnumOption("KIND_PB_ITER", Kind_PBIter, PBIter_Map, ENUM_PBITER::SIMPLE);
+
   /*!\brief ROUGHSST_OPTIONS \n DESCRIPTION: Specify type of boundary condition for rough walls for SST turbulence model. \n Options: see \link ROUGHSST_Options_Map \endlink \n DEFAULT: wilcox1998 \ingroup Config*/
   addEnumOption("KIND_ROUGHSST_MODEL", Kind_RoughSST_Model, RoughSST_Model_Map, ROUGHSST_MODEL::WILCOX1998);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
@@ -1880,6 +1885,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIMESTEP_HEAT", Kind_TimeStep_Heat, Heat_TimeStep_Map, MINIMUM);
+  /* DESCRIPTION: Time discretization */
+  addEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, EULER_IMPLICIT);
 
   /*!\par CONFIG_CATEGORY: Linear solver definition \ingroup Config*/
   /*--- Options related to the linear solvers ---*/
@@ -1894,6 +1901,8 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-6);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
+  /* DESCRIPTION: Maximum number of iterations of the poisson linear solver for the implicit formulation */
+  addUnsignedLongOption("POISSON_LINEAR_SOLVER_ITER", Poisson_Linear_Solver_Iter, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
   /* DESCRIPTION: Use level scheduling for OMP parallelization of the ILU preconditioner */
@@ -1908,6 +1917,10 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("LINEAR_SOLVER_PREC_THREADS", Linear_Solver_Prec_Threads, 0);
   /* DESCRIPTION: Use an inner linear solver. */
   addEnumOption("LINEAR_SOLVER_INNER", Kind_Linear_Solver_Inner, Inner_Linear_Solver_Map, LINEAR_SOLVER_INNER::NONE);
+  /* DESCRIPTION: Relaxation of the pressure based flow corrections */
+  addDoubleOption("RELAXATION_FACTOR_PBFLOW", Relaxation_Factor_PBFlow, 0.5);
+  /* DESCRIPTION: Relaxation of the Rhie Chow interpolation contribution in pressure based flow. */
+  addDoubleOption("RELAXATION_FACTOR_RHIECHOW", RCFactor, 0.0);
   /* DESCRIPTION: Relaxation factor for updates of adjoint variables. */
   addDoubleOption("RELAXATION_FACTOR_ADJOINT", Relaxation_Factor_Adjoint, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */
@@ -8805,6 +8818,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_ADJSPECIES_SYS:return ADJSPECIES_SOL;
     case RUNTIME_ADJFEA_SYS:    return ADJFEA_SOL;
     case RUNTIME_RADIATION_SYS: return RAD_SOL;
+    case RUNTIME_POISSON_SYS:   return POISSON_SOL;
     case RUNTIME_MULTIGRID_SYS: return 0;
   }
   return 0;
@@ -8942,6 +8956,13 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
+
+    case MAIN_SOLVER::POISSON_EQUATION:
+    if (val_system == RUNTIME_POISSON_SYS) {
+      SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, 0.0, NONE);
+      SetKind_TimeIntScheme(Kind_TimeIntScheme_Poisson); 
+    }
+    break;
 
     case MAIN_SOLVER::FEM_ELASTICITY:
     case MAIN_SOLVER::DISC_ADJ_FEM:

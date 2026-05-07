@@ -135,7 +135,8 @@ private:
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
   Enable_Cuda,              /*!< \brief Flag for switching GPU computing*/
-  Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Integrated_HeatFlux,      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Pressure_based;           /*!< \brief FLag to check if we are using a pressure-based system.*/
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;   /*!< \brief Damping factor for the engine inlet. */
@@ -538,6 +539,7 @@ private:
   Kind_TimeIntScheme_AdjTurb,   /*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Species,   /*!< \brief Time integration for the species model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
+  Kind_TimeIntScheme_Poisson,   /*!< \brief Time integration for the poisson (pressure correction) equation/ */
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
   n_Datadriven_files;
 
@@ -586,6 +588,11 @@ private:
   Kind_Upwind_Species,          /*!< \brief Upwind scheme for the species model. */
   Kind_Upwind_Heat,             /*!< \brief Upwind scheme for the heat transfer model. */
   Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
+
+  ENUM_PBITER             /*< \brief Pressure-based solver for incompressible flows. */
+  Kind_PBIter;
+  ENUM_INCOMP_SYSTEM
+  Kind_Incomp_System;
 
   bool MUSCL,              /*!< \brief MUSCL scheme (for the runtime eq. system). */
   MUSCL_Flow,              /*!< \brief MUSCL scheme for the flow equations.*/
@@ -640,6 +647,7 @@ private:
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
+  unsigned long Poisson_Linear_Solver_Iter;      /*!< \brief Max iterations of the linear solver for the poisson solver*/
   unsigned long Deform_Linear_Solver_Iter;       /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Restart_Deflation; /*!< \brief Number of vectors used for deflated restarts. */
@@ -649,6 +657,8 @@ private:
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
   su2double MSW_Alpha;                  /*!< \brief Coefficient for blending states in the MSW scheme. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
+  su2double RCFactor;                   /*!< \brief Relaxation for the Rhie-Chow interpolation contribution. */
+  su2double Relaxation_Factor_PBFlow;   /*!< \brief Relaxation coefficient of the flow corrections in the PB solver. */
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
@@ -3993,6 +4003,30 @@ public:
   ENUM_REGIME GetKind_Regime(void) const { return Kind_Regime; }
 
   /*!
+   * \brief Kind of incompressible solver formulation.
+   * \return Kind of incompressible solver.
+   */
+  ENUM_INCOMP_SYSTEM GetKind_Incomp_System(void) const { return Kind_Incomp_System; }
+  
+  /*!
+   * \brief Kind of iteration used for pressure based iterations.
+   * \return Kind of iteration used for pressure based iterations.
+   */
+  ENUM_PBITER GetKind_PBIter(void) const { return Kind_PBIter; }
+  
+  /*!
+   * \brief Set the kind of incompressible solver formulation that is used.
+   * \param[in] val_system - the type of system to use.
+   */
+  void SetIncomp_System(unsigned short val_system);
+  
+  /*!
+   * \brief Set the pressure based iteration method.
+   * \param[in] val_PBIter - The iteration method for the pressure based solver.
+   */
+  void SetPBIter(unsigned short val_PBIter);
+
+  /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
    * \param[in] val_zone - Zone where the soler is applied.
    * \return Governing equation that we are solving.
@@ -4367,6 +4401,12 @@ public:
   unsigned long GetLinear_Solver_Iter(void) const { return Linear_Solver_Iter; }
 
   /*!
+   * \brief Get max number of iterations of the linear solver for the poisson equation.
+   * \return Max number of iterations of the linear solver for the poisson equation.
+   */
+  unsigned long GetPoisson_Linear_Solver_Iter(void) const { return Poisson_Linear_Solver_Iter; }
+
+  /*!
    * \brief Get max number of iterations of the linear solver for the implicit formulation.
    * \return Max number of iterations of the linear solver for the implicit formulation.
    */
@@ -4399,6 +4439,18 @@ public:
    * \return Relaxation factor.
    */
   su2double GetLinear_Solver_Smoother_Relaxation(void) const { return Linear_Solver_Smoother_Relaxation; }
+  
+  /*!
+   * \brief Get the relaxation coefficient of the flow correction for PB solver.
+   * \return relaxation coefficient of the flow correction for PB solver
+   */
+  su2double GetRelaxation_Factor_PBFlow(void) const { return Relaxation_Factor_PBFlow; }
+
+  /*!
+   * \brief Get the relaxation coefficient for the Rhie-Chow interpolation in the PB solver.
+   * \return relaxation coefficient of the Rhie-Chow interpolation.
+   */
+  su2double GetRCFactor(void) const  { return RCFactor; }
 
   /*!
    * \brief Get the relaxation factor for solution updates of adjoint solvers.
@@ -4654,6 +4706,15 @@ public:
    * \return Kind of time integration method.
    */
   unsigned short GetKind_TimeIntScheme(void) const { return Kind_TimeNumScheme; }
+
+  /*!
+   * \brief Get the kind of integration scheme (explicit or implicit)
+   *        for the poisson/pressure correction equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of integration scheme for the poisson/pressure correction equations.
+   */
+  unsigned short GetKind_TimeIntScheme_Poisson(void) const { return Kind_TimeIntScheme_Poisson; }
 
   /*!
    * \brief Get the kind of convective numerical scheme.
