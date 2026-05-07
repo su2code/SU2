@@ -2,17 +2,27 @@ name: Release Management
 
 on:
   push:
-    # branches to consider in the event; optional, defaults to all
     branches:
       - develop
 
+permissions:
+  contents: write
+
 jobs:
   build_and_upload:
-    name: Build SU2
+    name: Build SU2 (${{ matrix.os_bin }})
+    runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
-        os_bin: [macos64, macos64-mpi, linux64-omp, linux64-mpi, win64-omp, win64-mpi]
+        os_bin:
+          - macos64
+          - macos64-mpi
+          - linux64-omp
+          - linux64-mpi
+          - win64-omp
+          - win64-mpi
         include:
           - os_bin: win64-omp
             flags: '-Dcpu-arch=haswell -Dwith-omp=true -Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_windows'
@@ -26,42 +36,43 @@ jobs:
             flags: '-Dcpu-arch=haswell -Dwith-omp=true -Dwith-mpi=disabled -Dstatic-cgns-deps=true --cross-file=/hostfiles/hostfile_linux'
           - os_bin: linux64-mpi
             flags: '-Dcpu-arch=haswell -Dcustom-mpi=true --cross-file=/hostfiles/hostfile_linux_mpi'
-    runs-on: ubuntu-latest
+
     steps:
       - name: Cache Object Files
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ccache
           key: ${{ matrix.os_bin }}-${{ github.sha }}
           restore-keys: ${{ matrix.os_bin }}
+
       - name: Build
         uses: docker://ghcr.io/su2code/su2/build-su2-cross:260405-0054
         with:
-          args: -b ${{ github.sha }} -f "${{matrix.flags}}"
+          args: -b ${{ github.sha }} -f "${{ matrix.flags }}"
+
       - name: Create Archive
         run: |
           cd install
-          zip -r ../${{matrix.os_bin}}.zip bin/*
-        # Uploads binaries as artifacts (just as a backup)
-      - name: Upload Binaries
-        uses: actions/upload-artifact@v7
+          zip -r ../${{ matrix.os_bin }}.zip bin/*
+
+      - name: Upload Workflow Artifact
+        uses: actions/upload-artifact@v5
         with:
-          name: ${{matrix.os_bin}}
-          path: ${{matrix.os_bin}}.zip
-        # Update the release notes of latest draft release
-      - uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-11
-        name: Update Release
-        id: update_release
+          name: ${{ matrix.os_bin }}
+          path: ${{ matrix.os_bin }}.zip
+
+      - name: Update Release Draft
+        id: release_drafter
+        uses: release-drafter/release-drafter@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # Upload binaries as assets to draft release
+
       - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1.0.2
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.update_release.outputs.uploadurl }}
-          asset_path: ${{matrix.os_bin}}.zip
-          asset_name: SU2-${{ steps.update_release.outputs.tagname }}-${{matrix.os_bin}}.zip
+          upload_url: ${{ steps.release_drafter.outputs.upload_url }}
+          asset_path: ${{ matrix.os_bin }}.zip
+          asset_name: SU2-${{ steps.release_drafter.outputs.tag_name }}-${{ matrix.os_bin }}.zip
           asset_content_type: application/zip

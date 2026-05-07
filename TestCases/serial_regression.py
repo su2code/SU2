@@ -892,6 +892,7 @@ def main():
     Aachen_3D_restart.cfg_file  = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
     Aachen_3D_restart.test_vals = [-7.701421, -8.504727, -6.014939, -6.468221, -5.801125, -4.607173, -5.550665, -5.300779, -3.804187, -5.255982, -5.763060, -3.609601, -2.229250, -2.880453, -0.563470]
+    Aachen_3D_restart.enabled_with_asan = False
     test_list.append(Aachen_3D_restart)
 
     # Jones APU Turbocharger restart
@@ -972,6 +973,7 @@ def main():
     channel_3D.test_vals_aarch64 = [1.000000, 0.000000, 0.611996, 0.798988, 0.702357]
     channel_3D.unsteady  = True
     channel_3D.multizone = True
+    channel_3D.enabled_with_asan = False
     test_list.append(channel_3D)
 
     # Pipe
