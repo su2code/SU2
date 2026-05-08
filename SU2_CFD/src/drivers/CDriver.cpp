@@ -2485,7 +2485,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
         /*--- Initialize the appropriate transfer strategy. ---*/
 
         if (fluid_donor && structural_target) {
-
+          interface_type = FLOW_TRACTION;
           auto nConst = 2;
           bool conservative = config[target]->GetConservativeInterpolation();
           if(!config[ZONE_0]->GetDiscrete_Adjoint()) {
@@ -2526,6 +2526,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
                 string fname = "TURBOMACHINERY/Mixing_Plane_Interpolator_Donor_" + to_string(donor) + "_Target_" + to_string(target) + ".dat";
                 interpolation[donor][target]->WriteInterpolationDetails(fname, config);
                 if (rank == MASTER_NODE) cout << " Transferring ";
+                interface_type = MIXING_PLANE;
                 auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
                 interface[donor][target] = new CMixingPlaneInterface(nVar, 0);
                 if (rank == MASTER_NODE) cout << " Using a mixing-plane interface from donor zone " << donor << " to target zone " << target << "." << endl;
@@ -2535,6 +2536,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
                 interpolation[donor][target] = unique_ptr<CInterpolator>(CInterpolatorFactory::CreateInterpolator(
                                        geometry, config, interpolation[target][donor].get(), donor, target, false));
                 if (rank == MASTER_NODE) cout << " Transferring ";
+                interface_type = SLIDING_INTERFACE;
                 auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
                 interface[donor][target] = new CSlidingInterface(nVar, 0);
                 if (rank == MASTER_NODE) cout << " Using a fluid interface interface from donor zone " << donor << " to target zone " << target << "." << endl;
@@ -2542,6 +2544,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
             }
           }
           else{
+            interface_type = SLIDING_INTERFACE;
             auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
               interface[donor][target] = new CSlidingInterface(nVar, 0);
               if (rank == MASTER_NODE) cout << " Sliding interface." << endl;
@@ -2555,6 +2558,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
           if (solver[donor][INST_0][MESH_0][FLOW_SOL] == nullptr)
             SU2_MPI::Error("Could not determine the number of variables for transfer.", CURRENT_FUNCTION);
 
+          interface_type = CONSERVATIVE_VARIABLES;
           auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
           interface[donor][target] = new CConservativeVarsInterface(nVar, 0);
           if (rank == MASTER_NODE) cout << " Generic conservative variables." << endl;
