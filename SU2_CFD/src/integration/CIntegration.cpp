@@ -2,7 +2,7 @@
  * \file CIntegration.cpp
  * \brief Implementation of the base class for space and time integration.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -30,6 +30,7 @@
 
 
 CIntegration::CIntegration() {
+  SU2_ZONE_SCOPED
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
 }
@@ -40,6 +41,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
+
   unsigned short iMarker, KindBC;
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
@@ -81,16 +84,17 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config);
 
-  /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied---*/
+  /*--- Compute Fourier Transformations for markers where NRBC_BOUNDARY is applied.
+   Turbomachinery span-wise data structures are only initialized on the fine grid. ---*/
 
-  if (config->GetBoolGiles() && config->GetSpatialFourier()){
+  if (iMesh == MESH_0 && config->GetBoolGiles() && config->GetSpatialFourier()){
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, conv_bound_numerics, INFLOW);
 
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, conv_bound_numerics, OUTFLOW);
   }
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    if (config->GetBoolTurbomachinery()){
+    if (iMesh == MESH_0 && config->GetBoolTurbomachinery()){
         /*--- Average quantities at the inflow and outflow boundaries ---*/
       solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry,config,INFLOW);
       solver_container[MainSolver]->TurboAverageProcess(solver_container, geometry, config, OUTFLOW);
@@ -128,10 +132,14 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Supersonic_Outlet(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         break;
       case GILES_BOUNDARY:
-        solver_container[MainSolver]->BC_Giles(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        /*--- Giles BC uses turbo geometry data only available on the fine grid. ---*/
+        if (iMesh == MESH_0) {
+          solver_container[MainSolver]->BC_Giles(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
+        }
         break;
       case RIEMANN_BOUNDARY:
-        if (config->GetBoolTurbomachinery()){
+        /*--- TurboRiemann uses turbo geometry data only available on the fine grid. ---*/
+        if (config->GetBoolTurbomachinery() && iMesh == MESH_0){
           solver_container[MainSolver]->BC_TurboRiemann(geometry, solver_container, conv_bound_numerics, visc_bound_numerics, config, iMarker);
         }
         else{
@@ -202,6 +210,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
 void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iRKStep, unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
 
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
@@ -223,6 +232,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CIntegration::SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solver, const CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_PARALLEL
   {
@@ -242,6 +252,7 @@ void CIntegration::SetDualTime_Geometry(CGeometry *geometry, CSolver *mesh_solve
 }
 
 void CIntegration::SetDualTime_Solver(const CGeometry *geometry, CSolver *solver, const CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_PARALLEL
   {

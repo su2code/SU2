@@ -2,7 +2,7 @@
  * \file COutput.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -72,6 +72,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
 
   cauchyTimeConverged = false;
   maxTimeDelayActive = false;
+  PrevStopTime = 0.0;
 
   convergenceTable = new PrintingToolbox::CTablePrinter(&std::cout);
   multiZoneHeaderTable = new PrintingToolbox::CTablePrinter(&std::cout);
@@ -2115,8 +2116,12 @@ void COutput::SetCommonHistoryFields() {
   /// Description: The current time step
   AddHistoryOutput("TIME_STEP", "Time_Step", ScreenOutputFormat::SCIENTIFIC, "TIME_DOMAIN", "Current time step (s)");
 
+  /// BEGIN_GROUP: WALL_TIME, DESCRIPTION: Wall-clock timing information.
+  /// DESCRIPTION: The current iteration wall-clock time.
+  AddHistoryOutput("ITER_TIME", "Time(sec)", ScreenOutputFormat::FIXED, "WALL_TIME", "Time per iteration (s)");
   /// DESCRIPTION: Currently used wall-clock time.
   AddHistoryOutput("WALL_TIME", "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time since the start of inner iterations.");
+  /// END_GROUP
 
   AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
 
@@ -2308,13 +2313,21 @@ void COutput::LoadCommonHistoryData(const CConfig *config) {
   SetHistoryOutputValue("INNER_ITER", curInnerIter);
   SetHistoryOutputValue("OUTER_ITER", curOuterIter);
 
-  su2double StopTime, UsedTime;
+  su2double StopTime, UsedTime, IterTime;
 
   StopTime = SU2_MPI::Wtime();
 
   UsedTime = (StopTime - config->Get_StartTime())/(curInnerIter+1);
 
+  if (curInnerIter == 0) {
+    IterTime = StopTime - config->Get_StartTime(); // First iteration measured from start
+  } else {
+    IterTime = StopTime - PrevStopTime;
+  }
+  PrevStopTime = StopTime;
+
   SetHistoryOutputValue("WALL_TIME", UsedTime);
+  SetHistoryOutputValue("ITER_TIME", IterTime);
 
   SetHistoryOutputValue("NONPHYSICAL_POINTS", config->GetNonphysical_Points());
 }

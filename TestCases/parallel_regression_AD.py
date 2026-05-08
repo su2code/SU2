@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -63,7 +63,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-3.254894, -3.550776, 0.053099, 0.000000]
+    discadj_arina2k.test_vals    = [-2.931649, -3.356322, 0.073332, 0.000000]
     test_list.append(discadj_arina2k)
 
     # Equivalent area NACA64-206
@@ -104,7 +104,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -4.096681, -2.686537, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -3.319959, -2.489110, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################
@@ -217,7 +217,8 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.226212, -1.647429, -0.007557, 0.000012]
+    discadj_pitchingNACA0012.test_vals = [-1.126077, -1.582787, -0.005904, 0.000009]
+    discadj_pitchingNACA0012.tol = 0.01
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
 
@@ -230,7 +231,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, 0.667037, 0.483920, 0.518405, -1.013536]
+    discadj_trans_stator.test_vals = [79.000000, 2.599441, 2.336307, 2.140979, 0.786891]
     discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.696755, 0.485950, 0.569475, -0.990065]
     test_list.append(discadj_trans_stator)
 
@@ -243,7 +244,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
-    discadj_fea.test_vals         = [-2.849453, -3.238429, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_vals         = [-2.849687, -3.238608, -0.000364, -8.708700] #last 4 columns
     discadj_fea.test_vals_aarch64 = [-2.849646, -3.238577, -0.000364, -8.708700] #last 4 columns
     test_list.append(discadj_fea)
 
@@ -253,7 +254,7 @@ def main():
     discadj_thermoelastic.cfg_dir = "fea_fsi/ThermalBeam_3d"
     discadj_thermoelastic.cfg_file = "configBeamNonlinear_3d_ad.cfg"
     discadj_thermoelastic.test_iter = 10
-    discadj_thermoelastic.test_vals = [-5.355510, -5.293378, -6.164317, -6.433862, 43, -4.049556, 27, -4.164192, 0, 0.192640, 0]
+    discadj_thermoelastic.test_vals = [-5.355531, -5.293380, -6.164482, -6.433863, 43, -4.049760, 27, -4.164183, 0, 0.192640, 0]
     test_list.append(discadj_thermoelastic)
 
     ###################################
@@ -285,8 +286,8 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-4.772641, 0.917601, -3.863369, 0.295450, 3.839800]
-    discadj_fsi2.test_vals_aarch64 = [-4.772641, 0.917601, -3.863369, 0.295450, 3.839800]
+    discadj_fsi2.test_vals         = [-3.824630, 1.979615, -3.863368, 0.295450, 3.839800]
+    discadj_fsi2.test_vals_aarch64 = [-3.824870, 1.979160, -3.863368, 0.295450, 3.839800]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
 
@@ -307,7 +308,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-2.508527, -3.227843, -2.608921]
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-3.011140, -3.635369, -3.161207]
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
@@ -325,7 +326,7 @@ def main():
     da_unsteadyCHT_cylinder.cfg_dir   = "coupled_cht/disc_adj_unsteadyCHT_cylinder"
     da_unsteadyCHT_cylinder.cfg_file  = "chtMaster.cfg"
     da_unsteadyCHT_cylinder.test_iter = 2
-    da_unsteadyCHT_cylinder.test_vals         = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662033, 0.000000, 10.627000, 0.295190]
+    da_unsteadyCHT_cylinder.test_vals         = [-8.479629, -9.239920, -9.234868, -15.934511, -13.661991, 0.000000, 10.627000, 0.295190]
     da_unsteadyCHT_cylinder.test_vals_aarch64 = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662012, 0.000000, 89.932000, 0.295190]
     da_unsteadyCHT_cylinder.unsteady  = True
     da_unsteadyCHT_cylinder.multizone = True
@@ -558,6 +559,8 @@ def main():
     dyn_discadj_fsi.reference_file = "grad_dv.opt.ref"
     dyn_discadj_fsi.reference_file_aarch64 = "grad_dv_aarch64.opt.ref"
     dyn_discadj_fsi.test_file = "grad_young.opt"
+    dyn_discadj_fsi.comp_threshold = 1e-6
+    dyn_discadj_fsi.tol_file_percent = 0.1
     dyn_discadj_fsi.unsteady  = True
     pass_list.append(dyn_discadj_fsi.run_filediff())
     test_list.append(dyn_discadj_fsi)

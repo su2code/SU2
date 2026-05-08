@@ -2,7 +2,7 @@
  * \file CSolver.hpp
  * \brief Headers of the CSolver class which is inherited by all of the other solvers
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -83,7 +83,6 @@ protected:
   nPrimVar,                      /*!< \brief Number of primitive variables of the problem. */
   nPrimVarGrad,                  /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nSecondaryVar,                 /*!< \brief Number of primitive variables of the problem. */
-  nSecondaryVarGrad,             /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nVarGrad,                      /*!< \brief Number of variables for deallocating the LS Cvector. */
   nDim;                          /*!< \brief Number of dimensions of the problem. */
   unsigned long nPoint;          /*!< \brief Number of points of the computational grid. */
@@ -192,13 +191,8 @@ public:
 
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector<su2double> LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
-#ifndef CODI_FORWARD_TYPE
-  using JacobianScalarType = su2mixedfloat;
-#else
-  using JacobianScalarType = su2double;
-#endif
-  CSysMatrix<JacobianScalarType> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-  CSysSolve<JacobianScalarType> System;    /*!< \brief Linear solver/smoother. */
+  CSysMatrix<su2mixedfloat> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysSolve<su2mixedfloat> System;    /*!< \brief Linear solver/smoother. */
 
   CSysVector<su2double> OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
   string* OutputHeadingNames;               /*!< \brief vector of strings to store the headings for the exra variables */
@@ -244,7 +238,7 @@ public:
   void GetCommCountAndType(const CConfig* config,
                            MPI_QUANTITIES commType,
                            unsigned short &COUNT_PER_POINT,
-                           unsigned short &MPI_TYPE) const;
+                           COMM_TYPE &MPI_TYPE) const;
 
   /*!
    * \brief Routine to load a solver quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs.
@@ -278,7 +272,7 @@ public:
   void GetPeriodicCommCountAndType(const CConfig* config,
                                    unsigned short commType,
                                    unsigned short &COUNT_PER_POINT,
-                                   unsigned short &MPI_TYPE,
+                                   COMM_TYPE &MPI_TYPE,
                                    unsigned short &ICOUNT,
                                    unsigned short &JCOUNT) const;
 
@@ -414,11 +408,6 @@ public:
    * \brief Get the number of variables of the problem.
    */
   inline unsigned short GetnSecondaryVar(void) const { return nSecondaryVar; }
-
-  /*!
-   * \brief Get the number of variables of the problem.
-   */
-  inline unsigned short GetnSecondaryVarGrad(void) const { return nSecondaryVarGrad; }
 
   /*!
    * \brief Get the number of variables of the problem.
@@ -803,6 +792,16 @@ public:
                                     CNumerics      *visc_numerics,
                                     CConfig        *config,
                                     unsigned short val_marker) { }
+
+  /*!
+   * \brief Enforce Euler wall BC on a restricted or prolongated multigrid solution by
+   *        projecting the momentum to the tangent plane of the wall.
+   * \param[in] geometry - Coarse grid geometry.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] use_solution_old - If true, project Solution_Old (corrections); if false, project Solution.
+   */
+  inline virtual void MultigridProjectEulerWall(CGeometry* /*geometry*/, const CConfig* /*config*/,
+                                                bool /*use_solution_old*/) {}
 
   /*!
    * \brief A virtual member.

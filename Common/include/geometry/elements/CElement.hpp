@@ -3,7 +3,7 @@
  * \brief Main header of the Finite Element structure declaring the abstract
  *        interface and the available finite element types.
  * \author R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -249,7 +249,8 @@ class CElement {
    * \param[in] nodeB - index of Node b.
    * \param[in] val_Kab - value of the matrix K.
    */
-  inline void Add_Kab(unsigned short nodeA, unsigned short nodeB, su2double** val_Kab) {
+  template <typename Matrix>
+  inline void Add_Kab(unsigned short nodeA, unsigned short nodeB, Matrix& val_Kab) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       for (unsigned short jDim = 0; jDim < nDim; jDim++) Kab[nodeA](nodeB, iDim * nDim + jDim) += val_Kab[iDim][jDim];
   }
@@ -259,7 +260,8 @@ class CElement {
    * transpose) \param[in] nodeA - index of Node a. \param[in] nodeB - index of Node b. \param[in] val_Kab - value of
    * the matrix K.
    */
-  inline void Add_Kab_T(unsigned short nodeA, unsigned short nodeB, su2double** val_Kab) {
+  template <typename Matrix>
+  inline void Add_Kab_T(unsigned short nodeA, unsigned short nodeB, Matrix& val_Kab) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       for (unsigned short jDim = 0; jDim < nDim; jDim++) Kab[nodeA](nodeB, iDim * nDim + jDim) += val_Kab[jDim][iDim];
   }
@@ -927,7 +929,7 @@ class CPYRAM5 final : public CElementWithKnownSizes<5, 5, 3> {
  * \ingroup FemAlgos
  * \brief Prism element with 6 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  */
 class CPRISM6 final : public CElementWithKnownSizes<6, 6, 3> {
  private:

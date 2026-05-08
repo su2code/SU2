@@ -2,7 +2,7 @@
  * \file CSysSolve.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -25,10 +25,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Eigen/Core"
-#include "Eigen/Dense"
-#include "Eigen/Eigenvalues"
-
 #include "../../include/linear_algebra/CSysSolve.hpp"
 #include "../../include/linear_algebra/CSysSolve_b.hpp"
 #include "../../include/parallelization/omp_structure.hpp"
@@ -37,6 +33,10 @@
 #include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../include/linear_algebra/CPreconditioner.hpp"
+
+SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+#include "Eigen/Eigenvalues"
+SU2_RESTORE_WARNING
 
 #include <complex>
 #include <iostream>
@@ -60,8 +60,10 @@ constexpr float linSolEpsilon<float>() {
 
 /*--- Computes v = vs * ws or v += vs * ws with unrolling of up to 4 iterations. ---*/
 template <class ScalarType, class Weights, class Vectors>
-void LinearCombination(const unsigned long n, const Vectors& vs, const Weights& ws, CSysVector<ScalarType>& v,
-                       bool inc = false) {
+void LinearCombinationImpl(const unsigned long n, const Vectors& vs, const Weights& ws, CSysVector<ScalarType>& v,
+                           bool inc = false) {
+  SU2_ZONE_SCOPED
+
   if (n == 0) {
     if (!inc) v = ScalarType{};
     return;
@@ -103,19 +105,32 @@ void LinearCombination(const unsigned long n, const Vectors& vs, const Weights& 
 
 /*--- Overload to handle a vector of CSysVector directly. ---*/
 template <class ScalarType, class Weights>
-void LinearCombination(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs, const Weights& ws,
-                       CSysVector<ScalarType>& v, bool inc = false) {
-  LinearCombination(
+void LinearCombinationImpl(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs, const Weights& ws,
+                           CSysVector<ScalarType>& v, bool inc = false) {
+  LinearCombinationImpl(
       n, [&vs](auto i) -> auto& { return vs[i]; }, ws, v, inc);
 }
 
 /*--- Overload to handle a std::vector<T> of weights directly. ---*/
 template <class ScalarType, class Vectors>
-void LinearCombination(const unsigned long n, const Vectors& vs, const std::vector<ScalarType>& ws,
-                       CSysVector<ScalarType>& v, bool inc = false) {
-  LinearCombination(
+void LinearCombinationImpl(const unsigned long n, const Vectors& vs, const std::vector<ScalarType>& ws,
+                           CSysVector<ScalarType>& v, bool inc = false) {
+  LinearCombinationImpl(
       n, vs, [&ws](auto i) { return ws[i]; }, v, inc);
 }
+
+/*--- Wrapper around LinearCombinationImpl. ---*/
+template <class... Ts>
+void LinearCombination(bool parallel, Ts&&... args) {
+  if (parallel) {
+    SU2_OMP_PARALLEL
+    LinearCombinationImpl(std::forward<Ts>(args)...);
+    END_SU2_OMP_PARALLEL
+  } else {
+    LinearCombinationImpl(std::forward<Ts>(args)...);
+  }
+}
+
 }  // namespace
 
 template <class ScalarType>
@@ -176,8 +191,9 @@ void CSysSolve<ScalarType>::SolveReduced(int n, const su2matrix<ScalarType>& Hsb
 }
 
 template <class ScalarType>
-void CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg,
+bool CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<ScalarType>& Hsbg,
                                            vector<CSysVector<ScalarType>>& w) const {
+  SU2_ZONE_SCOPED
   const auto thread = omp_get_thread_num();
 
   /*--- If Hsbg is shared by multiple threads calling this function, only one
@@ -189,54 +205,35 @@ void CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<Sc
     }
   };
 
-  /*--- Parameter for reorthonormalization ---*/
+  /*--- Classical Gram Schmidt twice is faster and at least as accurate
+   * as Modified Gram Schmidt. ---*/
 
-  const ScalarType reorth = 0.98;
+  const auto h_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
+  LinearCombination(
+      shared_hsbg, i + 1, w, [&h_i](int k) { return -h_i(0, k); }, w[i + 1], true);
 
-  /*--- Get the norm of the vector being orthogonalized, and find the
-  threshold for re-orthogonalization ---*/
+  const auto& dh_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
+  LinearCombination(
+      shared_hsbg, i + 1, w, [&dh_i](int k) { return -dh_i(0, k); }, w[i + 1], true);
 
-  ScalarType nrm = w[i + 1].squaredNorm();
-  ScalarType thr = nrm * reorth;
+  for (int k = 0; k < i + 1; k++) SetHsbg(k, i, h_i(0, k) + dh_i(0, k));
 
-  /*--- The norm of w[i+1] < 0.0 or w[i+1] = NaN ---*/
+  /*--- The norm of w[i+1] is 0 or NaN: the input vector from mat_vec is
+   * zero or contains NaN. Cannot proceed with orthogonalization. ---*/
 
-  if ((nrm <= 0.0) || (nrm != nrm)) {
+  ScalarType nrm = w[i + 1].norm();
+
+  if (nrm <= 0.0 || nrm != nrm) {
     /*--- nrm is the result of a dot product, communications are implicitly handled. ---*/
-    SU2_MPI::Error("FGMRES orthogonalization failed, linear solver diverged.", CURRENT_FUNCTION);
+    SetHsbg(i + 1, i, ScalarType(0));
+    return false;
   }
 
-  /*--- Begin main Gram-Schmidt loop ---*/
-
-  for (int k = 0; k < i + 1; k++) {
-    ScalarType prod = w[i + 1].dot(w[k]);
-    ScalarType h_ki = prod;
-    w[i + 1] -= prod * w[k];
-
-    /*--- Check if reorthogonalization is necessary ---*/
-
-    if (prod * prod > thr) {
-      prod = w[i + 1].dot(w[k]);
-      h_ki += prod;
-      w[i + 1] -= prod * w[k];
-    }
-    SetHsbg(k, i, h_ki);
-
-    /*--- Update the norm and check its size ---*/
-
-    nrm -= pow(h_ki, 2);
-    nrm = max<ScalarType>(nrm, 0.0);
-    thr = nrm * reorth;
-  }
-
-  /*--- Test the resulting vector ---*/
-
-  nrm = w[i + 1].norm();
+  /*--- Normalize the resulting vector. ---*/
   SetHsbg(i + 1, i, nrm);
-
-  /*--- Scale the resulting vector ---*/
-
   w[i + 1] /= nrm;
+
+  return true;
 }
 
 template <class ScalarType>
@@ -271,6 +268,8 @@ unsigned long CSysSolve<ScalarType>::CG_LinSolver(const CSysVector<ScalarType>& 
                                                   const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                   unsigned long m, ScalarType& residual, bool monitoring,
                                                   const CConfig* config) const {
+  SU2_ZONE_SCOPED
+
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   ScalarType norm_r = 0.0, norm0 = 0.0;
   unsigned long i = 0;
@@ -420,6 +419,8 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
                                                       const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                       unsigned long m, ScalarType& residual, bool monitoring,
                                                       const CConfig* config) const {
+  SU2_ZONE_SCOPED
+
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   const bool flexible = !precond.IsIdentity();
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
@@ -541,13 +542,23 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
     /*---  Modified Gram-Schmidt orthogonalization ---*/
 
+    bool orthog_ok;
     if (nestedParallel) {
       /*--- "omp parallel if" does not work well here ---*/
       SU2_OMP_PARALLEL
-      ModGramSchmidt(true, i, H, V);
+      orthog_ok = ModGramSchmidt(true, i, H, V);
       END_SU2_OMP_PARALLEL
     } else {
-      ModGramSchmidt(false, i, H, V);
+      orthog_ok = ModGramSchmidt(false, i, H, V);
+    }
+
+    if (!orthog_ok) {
+      if (masterRank) {
+        SU2_OMP_MASTER
+        cout << "WARNING: FGMRES orthogonalization failed, linear solver diverged." << endl;
+        END_SU2_OMP_MASTER
+      }
+      break;
     }
 
     /*---  Apply old Givens rotations to new column of the Hessenberg matrix then generate the
@@ -576,13 +587,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
 
   const auto& basis = flexible ? Z : V;
 
-  if (nestedParallel) {
-    SU2_OMP_PARALLEL
-    LinearCombination(i, basis, y, x, true);
-    END_SU2_OMP_PARALLEL
-  } else {
-    LinearCombination(i, basis, y, x, true);
-  }
+  LinearCombination(nestedParallel, i, basis, y, x, true);
 
   /*---  Recalculate final (neg.) residual (this should be optional) ---*/
 
@@ -643,15 +648,18 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
                                                            const CMatrixVectorProduct<ScalarType>& mat_vec,
                                                            const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                            unsigned long max_iter, ScalarType& residual,
-                                                           bool monitoring, const CConfig* config,
-                                                           FgcrodrMode mode) const {
+                                                           bool monitoring, const CConfig* config, FgcrodrMode mode,
+                                                           unsigned long custom_m) const {
+  SU2_ZONE_SCOPED
   using EigenMatrix = Eigen::Matrix<ScalarType, Eigen::Dynamic, Eigen::Dynamic>;
   using EigenVector = Eigen::Matrix<ScalarType, Eigen::Dynamic, 1>;
 
-  auto m = min(config->GetLinear_Solver_Restart_Frequency(), max_iter);
+  auto m = min(custom_m != 0 ? custom_m : config->GetLinear_Solver_Restart_Frequency(), max_iter);
   const auto deflation = min(config->GetLinear_Solver_Restart_Deflation(), m - 1);
 
-  const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
+  const bool flexible = !precond.IsIdentity();
+  const bool same_mat = mode == FgcrodrMode::SAME_MAT;
+  const bool masterRank = SU2_MPI::GetRank() == MASTER_NODE;
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
    * we still want to parallelize some of the expensive operations. ---*/
   const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
@@ -676,8 +684,10 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       r.Initialize(nBlk, nBlkDomain, nVar, nullptr);
       V.resize(m + 1);
       for (auto& v : V) v.Initialize(nBlk, nBlkDomain, nVar, nullptr);
-      Z.resize(m);
-      for (auto& z : Z) z.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+      if (flexible) {
+        Z.resize(m);
+        for (auto& z : Z) z.Initialize(nBlk, nBlkDomain, nVar, nullptr);
+      }
       W.resize(deflation + 1);
       for (auto& w : W) w.Initialize(nBlk, nBlkDomain, nVar, nullptr);
       T.resize(deflation + 1);
@@ -698,11 +708,20 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
   /*--- Calculate the initial residual and compute its norm. ---*/
 
   if (!xIsZero) {
-    mat_vec(x, Z.back());
-    r = b - Z.back();
+    mat_vec(x, T[0]);
+    r = b - T[0];
   } else {
     r = b;
   }
+
+  /*--- We don't store the part of W that is equal to V explicitly, W(:, k:m) = V(:, k:m). ---*/
+  auto GetW = [&](auto i) -> auto& { return i < k ? W[i] : V[i]; };
+
+  /*--- With an identity preconditioner Z = W. ---*/
+  auto GetZ = [&](auto i) -> auto& {
+    if (flexible) return Z[i];
+    return GetW(i);
+  };
 
   /*--- Rebuild Z, V, and W for the new matrix if necessary.
    * Q * R = A * Z
@@ -713,10 +732,10 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
     EigenMatrix R = EigenMatrix::Zero(k, k);
     EigenVector vr = EigenVector::Zero(k);
     for (auto j = 0ul; j < k; ++j) {
-      if (mode != FgcrodrMode::SAME_MAT) {
+      if (!same_mat) {
         /*--- When k = 0, Z = M(W), we could keep that property but it is not
          * critical and so we choose to save the cost of precond(W[j], Z[j]); ---*/
-        mat_vec(Z[j], V[j]);
+        mat_vec(GetZ(j), V[j]);
 
         for (auto i = 0ul; i < j; ++i) {
           R(i, j) = V[i].dot(V[j]);
@@ -728,22 +747,23 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       /*--- Make r orthogonal to the rebuilt V so we can proceed with the usual Arnoldi process. ---*/
       vr(j) = r.dot(V[j]);
     }
-    LinearCombination(k, V, -vr, r, true);
+    LinearCombination(nestedParallel, k, V, -vr, r, true);
 
     /*--- Apply R^-1 to Z and W and update x accordingly. R is uppper triangular,
      * so we loop backwards to compute the products in-place. ---*/
-    if (mode != FgcrodrMode::SAME_MAT) {
+    if (!same_mat) {
       EigenMatrix invR = R.template triangularView<Eigen::Upper>().solve(EigenMatrix::Identity(k, k));
       for (auto j = k - 1;; --j) {
         for (auto* basis : {&W, &Z}) {
           auto reversed = [&](auto i) -> const auto& { return (*basis)[j - i]; };
           LinearCombination(
-              j + 1, reversed, [&](auto i) { return invR(j - i, j); }, (*basis)[j]);
+              nestedParallel, j + 1, reversed, [&](auto i) { return invR(j - i, j); }, (*basis)[j]);
+          if (!flexible) break;  // skip Z.
         }
         if (j == 0) break;  // j is unsigned, avoid underflow.
       }
     }
-    LinearCombination(k, Z, vr, x, true);
+    LinearCombination(nestedParallel, k, GetZ, vr, x, true);
   }
   ScalarType rNorm = r.norm();
   auto iter = k;
@@ -791,16 +811,32 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
     bool converged = false;
     for (auto j = k; j < m; ++j) {
       ++iter;
-      precond(V[j], Z[j]);
-      mat_vec(Z[j], V[j + 1]);
+      if (flexible) {
+        precond(V[j], Z[j]);
+        mat_vec(Z[j], V[j + 1]);
+      } else {
+        mat_vec(V[j], V[j + 1]);
+      }
 
+      bool orthog_ok;
       if (nestedParallel) {
         /*--- "omp parallel if" does not work well here ---*/
         SU2_OMP_PARALLEL
-        ModGramSchmidt(true, j, H, V);
+        orthog_ok = ModGramSchmidt(true, j, H, V);
         END_SU2_OMP_PARALLEL
       } else {
-        ModGramSchmidt(false, j, H, V);
+        orthog_ok = ModGramSchmidt(false, j, H, V);
+      }
+
+      if (!orthog_ok) {
+        if (masterRank) {
+          SU2_OMP_MASTER
+          cout << "WARNING: FGCRODR orthogonalization failed, linear solver diverged." << endl;
+          END_SU2_OMP_MASTER
+        }
+        converged = true; /*--- Force exit from inner and outer loops. ---*/
+        m = j;            /*--- Only use iterations that completed successfully. ---*/
+        break;
       }
 
       /*--- Solve the reduced system. We do not use Given's rotations to factor H in place
@@ -832,13 +868,10 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       }
     }
 
-    /*--- We don't store the part of W that is equal to V explicitly,
-     * W(:, k:m) = V(:, k:m). ---*/
-
     /*--- Update the solution and residual. The latter is only required if we restart. ---*/
 
-    LinearCombination(m, Z, y, x, true);
-    if (!converged) LinearCombination(m + 1, V, rls, r);
+    LinearCombination(nestedParallel, m, GetZ, y, x, true);
+    if (!converged) LinearCombination(nestedParallel, m + 1, V, rls, r);
 
     /*--- Update deflation vectors. ---*/
 
@@ -850,78 +883,102 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
     /*--- Compute Ritz values and keep the ones with the smallest real part. ---*/
 
     EigenMatrix VW = EigenMatrix::Identity(m + 1, m);
-    for (auto i = 0ul; i <= m; ++i) {
-      for (auto j = 0ul; j < k; ++j) {
-        // TODO(pedro): There are clever ways to avoid this multiplication, or at least use BLAS.
-        VW(i, j) = V[i].dot(W[j]);
+    {
+      /*--- Part of VW known from previous cycle. See notes near the end of the outer loop. ---*/
+      if (same_mat && k > 0) VW.topLeftCorner(k, k) = VkWk;
+
+      /*--- Rest of VW. Either V[k] * Wk or the entire V * Wk depending on the mode.
+       * When the matrix stays constant, V[k+1:m+1] are orthogonal to Wk, but when it changes,
+       * we need to compute that part of the product. Since m >> k, there is less benefit in
+       * avoiding the cost of V[0:k] * Wk and we opt to make the code a little simpler. ---*/
+      const su2matrix<ScalarType>* VWk = nullptr;
+      const auto i0 = same_mat ? k : 0;
+      const auto n = same_mat ? 1 : m + 1;
+      if (nestedParallel) {
+        SU2_OMP_PARALLEL
+        VWk = &CSysVector<ScalarType>::multiDot(V, i0, n, W, k);
+        END_SU2_OMP_PARALLEL
+      } else {
+        VWk = &CSysVector<ScalarType>::multiDot(V, i0, n, W, k);
+      }
+      for (auto i = 0ul; i < n; ++i) {
+        for (auto j = 0ul; j < k; ++j) {
+          VW(i0 + i, j) = (*VWk)(i, j);
+        }
       }
     }
-    const auto Hm = Heigen.topLeftCorner(m + 1, m);
-    EigenMatrix HTVW = Hm.transpose() * VW;
 
-    /*--- If the "B" matrix in the generalized eigenvalue problem is not invertible we reset. ---*/
-    if (Eigen::ColPivHouseholderQR<EigenMatrix> qr(HTVW); !qr.isInvertible()) {
-      if (masterRank) {
-        SU2_OMP_MASTER
-        cout << "WARNING: (VH)^T W in FGCRODR is not invertible.\n";
-        END_SU2_OMP_MASTER
+    auto RitzValues = [&]() {
+      SU2_ZONE_SCOPED_N("RitzValues")
+      ritz_failed = false;
+      const auto Hm = Heigen.topLeftCorner(m + 1, m);
+      EigenMatrix HTVW = Hm.transpose() * VW;
+
+      /*--- If the "B" matrix in the generalized eigenvalue problem is not invertible we reset. ---*/
+      if (Eigen::ColPivHouseholderQR<EigenMatrix> qr(HTVW); !qr.isInvertible()) {
+        if (masterRank) cout << "WARNING: (VH)^T W in FGCRODR is not invertible.\n";
+        ResetDeflation();
+        ritz_failed = true;
+        return;
       }
-      SU2_OMP_SAFE_GLOBAL_ACCESS(ResetDeflation();)
+      EigenMatrix HTH = Hm.transpose() * Hm;
+      Eigen::GeneralizedEigenSolver<EigenMatrix> ges(HTH, HTVW);
+      const auto& lambda = ges.eigenvalues();
+
+      std::vector<int> order(m);
+      std::iota(order.begin(), order.end(), 0);
+      std::sort(order.begin(), order.end(),
+                [&lambda](int i, int j) { return fabs(std::real(lambda(i))) < fabs(std::real(lambda(j))); });
+
+      EigenMatrix P(m, deflation + 1);
+      k_new = 0;
+      for (auto i = 0ul; i < m; ++i) {
+        const auto j = order[i];
+
+        /*--- Skip conjugate pairs because we split complex vectors into real and imag. ---*/
+        if (i > 0 && abs(lambda(j) - std::conj(lambda(order[i - 1]))) / abs(lambda(j)) < 1e-3) {
+          continue;
+        }
+        if (monitoring && masterRank && config->GetComm_Level() == COMM_FULL) {
+          cout << "     FGCRODR Ritz value #" << i << ": " << lambda(j) << "\n";
+        }
+        P.col(k_new++) = ges.eigenvectors().col(j).real();
+
+        if (fabs(std::imag(lambda(j))) > 1e-2 * fabs(std::real(lambda(j)))) {
+          P.col(k_new++) = ges.eigenvectors().col(j).imag();
+        }
+        if (k_new >= deflation) break;
+      }
+      P.conservativeResize(m, k_new);
+
+      /*--- Modify the Krylov basis vectors using P.
+       * A Z P = V H P <=> A Z P = V Q R <=> A Z P R^-1 = V Q <=> A Zk = Vk.
+       * W is updated the same way as Z since Z = M(W). ---*/
+
+      EigenMatrix HP = Hm * P;
+      Eigen::HouseholderQR<EigenMatrix> qr(HP);
+      Q = qr.householderQ() * EigenMatrix::Identity(m + 1, k_new);
+      auto R = qr.matrixQR().topRows(k_new).template triangularView<Eigen::Upper>();
+
+      PinvR = P * R.solve(EigenMatrix::Identity(k_new, k_new));
+    };
+    SU2_OMP_SAFE_GLOBAL_ACCESS(RitzValues();)
+    if (ritz_failed) {
       if (converged) break;
       continue;
     }
-    EigenMatrix HTH = Hm.transpose() * Hm;
-    Eigen::GeneralizedEigenSolver<EigenMatrix> ges(HTH, HTVW);
-    const auto& lambda = ges.eigenvalues();
-
-    std::vector<int> order(m);
-    std::iota(order.begin(), order.end(), 0);
-    std::sort(order.begin(), order.end(),
-              [&lambda](int i, int j) { return fabs(std::real(lambda(i))) < fabs(std::real(lambda(j))); });
-
-    EigenMatrix P(m, deflation + 1);
-    auto k_new = 0ul;
-    for (auto i = 0ul; i < m; ++i) {
-      const auto j = order[i];
-
-      /*--- Skip conjugate pairs because we split complex vectors into real and imag. ---*/
-      if (i > 0 && abs(lambda(j) - std::conj(lambda(order[i - 1]))) / abs(lambda(j)) < 1e-3) {
-        continue;
-      }
-      if (monitoring && masterRank && config->GetComm_Level() == COMM_FULL) {
-        SU2_OMP_MASTER
-        cout << "     FGCRODR Ritz value #" << i << ": " << lambda(j) << "\n";
-        END_SU2_OMP_MASTER
-      }
-      P.col(k_new++) = ges.eigenvectors().col(j).real();
-
-      if (fabs(std::imag(lambda(j))) > 1e-2 * fabs(std::real(lambda(j)))) {
-        P.col(k_new++) = ges.eigenvectors().col(j).imag();
-      }
-      if (k_new >= deflation) break;
-    }
-    P.conservativeResize(m, k_new);
-
-    /*--- Modify the Krylov basis vectors using P.
-     * A Z P = V H P <=> A Z P = V Q R <=> A Z P R^-1 = V Q <=> A Zk = Vk.
-     * W is updated the same way as Z since Z = M(W). ---*/
-
-    EigenMatrix HP = Hm * P;
-    Eigen::HouseholderQR<EigenMatrix> qr(HP);
-    EigenMatrix Q = qr.householderQ() * EigenMatrix::Identity(m + 1, k_new);
-    auto R = qr.matrixQR().topRows(k_new).template triangularView<Eigen::Upper>();
-
-    EigenMatrix PinvR = P * (R.solve(EigenMatrix::Identity(k_new, k_new)));
 
     auto modify = [&](const EigenMatrix& mod, const auto& basis) {
       for (auto j = 0ul; j < k_new; ++j) {
-        LinearCombination(mod.rows(), basis, mod.col(j), T[j]);
+        LinearCombination(nestedParallel, mod.rows(), basis, mod.col(j), T[j]);
       }
     };
-    modify(
-        PinvR, [&](auto i) -> auto& { return i < k ? W[i] : V[i]; });
+    modify(PinvR, GetW);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      /*--- Apply the V and W modifications to the left and right of the current VW, respectively. ---*/
+      if (same_mat) VkWk.noalias() = Q.transpose() * (VW * PinvR);
+
       /*--- T and W are the same size, so we can swap them. ---*/
       std::swap(T, W);
       k = k_new;
@@ -936,11 +993,13 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
     };
 
-    modify(PinvR, Z);
-    update(Z);
+    if (flexible) {
+      modify(PinvR, Z);
+      update(Z);
+    }
 
     /*--- Update V only if necessary. ---*/
-    if (!converged || mode == FgcrodrMode::SAME_MAT) {
+    if (!converged || same_mat) {
       modify(Q, V);
       update(V);
     }
@@ -956,9 +1015,9 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
       END_SU2_OMP_MASTER
     }
     if (recomputeRes) {
-      mat_vec(x, Z.back());
-      Z.back() -= b;
-      ScalarType res = Z.back().norm();
+      mat_vec(x, T[0]);
+      T[0] -= b;
+      ScalarType res = T[0].norm();
 
       if (fabs(res - rNorm) > tol * 10) {
         if (masterRank) {
@@ -977,9 +1036,10 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolver(const CSysVector<ScalarTy
                                                        const CMatrixVectorProduct<ScalarType>& mat_vec,
                                                        const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                        unsigned long max_iter, ScalarType& residual, bool monitoring,
-                                                       const CConfig* config, [[maybe_unused]] FgcrodrMode mode) const {
+                                                       const CConfig* config, [[maybe_unused]] FgcrodrMode mode,
+                                                       [[maybe_unused]] unsigned long custom_m) const {
   if constexpr (std::is_same_v<ScalarType, float> || std::is_same_v<ScalarType, double>) {
-    return FGCRODR_LinSolverImpl<>(b, x, mat_vec, precond, tol, max_iter, residual, monitoring, config, mode);
+    return FGCRODR_LinSolverImpl<>(b, x, mat_vec, precond, tol, max_iter, residual, monitoring, config, mode, custom_m);
   } else {
     return RFGMRES_LinSolver(b, x, mat_vec, precond, tol, max_iter, residual, monitoring, config);
   }
@@ -991,6 +1051,8 @@ unsigned long CSysSolve<ScalarType>::BCGSTAB_LinSolver(const CSysVector<ScalarTy
                                                        const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                        unsigned long m, ScalarType& residual, bool monitoring,
                                                        const CConfig* config) const {
+  SU2_ZONE_SCOPED
+
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   ScalarType norm_r = 0.0, norm0 = 0.0;
   unsigned long i = 0;
@@ -1164,6 +1226,8 @@ unsigned long CSysSolve<ScalarType>::Smoother_LinSolver(const CSysVector<ScalarT
                                                         const CPreconditioner<ScalarType>& precond, ScalarType tol,
                                                         unsigned long m, ScalarType& residual, bool monitoring,
                                                         const CConfig* config) const {
+  SU2_ZONE_SCOPED
+
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   const bool fix_iter_mode = tol < eps;
   ScalarType norm_r = 0.0, norm0 = 0.0;
@@ -1318,6 +1382,7 @@ template <class ScalarType>
 unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, const CSysVector<su2double>& LinSysRes,
                                            CSysVector<su2double>& LinSysSol, CGeometry* geometry,
                                            const CConfig* config) {
+  SU2_ZONE_SCOPED
   /*---
    A word about the templated types. It is assumed that the residual and solution vectors are always of su2doubles,
    meaning that they are active in the discrete adjoint. The same assumption is made in SetExternalSolve.
@@ -1380,8 +1445,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       AD::SetExtFuncIn(&LinSysRes[0], LinSysRes.GetLocSize());
       AD::SetExtFuncOut(&LinSysSol[0], LinSysSol.GetLocSize());
-      AD::FuncHelper.addUserData(&LinSysRes);
-      AD::FuncHelper.addUserData(&LinSysSol);
+      AD::FuncHelper.addUserData(&LinSysRes_tmp);
+      AD::FuncHelper.addUserData(&LinSysSol_tmp);
       AD::FuncHelper.addUserData(&Jacobian);
       AD::FuncHelper.addUserData(geometry);
       AD::FuncHelper.addUserData(config);
@@ -1531,9 +1596,11 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 }
 
 template <class ScalarType>
-unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, const CSysVector<su2double>& LinSysRes,
-                                             CSysVector<su2double>& LinSysSol, CGeometry* geometry,
+unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, const CSysVector<ScalarType>& LinSysRes,
+                                             CSysVector<ScalarType>& LinSysSol, CGeometry* geometry,
                                              const CConfig* config, const bool directCall) {
+  SU2_ZONE_SCOPED
+
   unsigned short KindSolver, KindPrecond;
   unsigned long MaxIter, IterLinSol = 0;
   ScalarType SolverTol;
@@ -1609,37 +1676,35 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
   /*--- Local variable to prevent all threads from writing to a shared location (this->Residual). ---*/
   ScalarType residual = 0.0;
 
-  HandleTemporariesIn(LinSysRes, LinSysSol);
-
   switch (KindSolver) {
     case FGMRES:
-      IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
-                                    ScreenOutput, config);
+      IterLinSol =
+          FGMRES_LinSolver(LinSysRes, LinSysSol, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
       break;
     case FGCRODR:
-      IterLinSol = FGCRODR_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+      IterLinSol = FGCRODR_LinSolver(LinSysRes, LinSysSol, mat_vec, *precond, SolverTol, MaxIter, residual,
                                      ScreenOutput, config);
       break;
     case RESTARTED_FGMRES:
-      IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+      IterLinSol = RFGMRES_LinSolver(LinSysRes, LinSysSol, mat_vec, *precond, SolverTol, MaxIter, residual,
                                      ScreenOutput, config);
       break;
     case BCGSTAB:
-      IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+      IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, mat_vec, *precond, SolverTol, MaxIter, residual,
                                      ScreenOutput, config);
       break;
     case CONJUGATE_GRADIENT:
-      IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
-                                ScreenOutput, config);
+      IterLinSol =
+          CG_LinSolver(LinSysRes, LinSysSol, mat_vec, *precond, SolverTol, MaxIter, residual, ScreenOutput, config);
       break;
     case SMOOTHER:
-      IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+      IterLinSol = Smoother_LinSolver(LinSysRes, LinSysSol, mat_vec, *precond, SolverTol, MaxIter, residual,
                                       ScreenOutput, config);
       break;
     case PASTIX_LDLT:
     case PASTIX_LU:
       if (directCall) Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
-      Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
+      Jacobian.ComputePastixPreconditioner(LinSysRes, LinSysSol, geometry, config);
       IterLinSol = 1;
       residual = 1e-20;
       break;
@@ -1647,8 +1712,6 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
       SU2_MPI::Error("Unknown type of linear solver.", CURRENT_FUNCTION);
       break;
   }
-
-  HandleTemporariesOut(LinSysSol);
 
   delete normal_prec;
   delete nested_prec;
@@ -1664,11 +1727,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
 
 /*--- Explicit instantiations ---*/
 
-#ifdef CODI_FORWARD_TYPE
-template class CSysSolve<su2double>;
-#else
 template class CSysSolve<su2mixedfloat>;
 #ifdef USE_MIXED_PRECISION
 template class CSysSolve<passivedouble>;
-#endif
 #endif

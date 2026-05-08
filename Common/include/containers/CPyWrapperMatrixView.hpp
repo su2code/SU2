@@ -2,7 +2,7 @@
  * \file CPyWrapperMatrixView.hpp
  * \brief Simple matrix views to use with the python wrapper.
  * \author P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -84,7 +84,7 @@
  */
 class CPyWrapperMatrixView {
  protected:
-  static_assert(su2activematrix::IsRowMajor, "");
+  static_assert(su2activematrix::IsRowMajor);
   su2double* data_ = nullptr;
   unsigned long rows_ = 0, cols_ = 0;
   std::string name_;
@@ -124,7 +124,7 @@ class CPyWrapperMatrixView {
  */
 class CPyWrapperMarkerMatrixView {
  private:
-  static_assert(su2activematrix::IsRowMajor, "");
+  static_assert(su2activematrix::IsRowMajor);
   su2double* data_ = nullptr;
   const CVertex* const* vertices_ = nullptr;
   unsigned long rows_ = 0, cols_ = 0;
@@ -175,7 +175,7 @@ class CPyWrapperMarkerMatrixView {
  */
 class CPyWrapper3DMatrixView {
  protected:
-  static_assert(su2activematrix::IsRowMajor, "");
+  static_assert(su2activematrix::IsRowMajor);
   su2double* data_ = nullptr;
   unsigned long rows_ = 0, cols_ = 0, dims_ = 0;
   std::string name_;

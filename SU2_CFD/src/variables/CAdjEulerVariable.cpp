@@ -2,7 +2,7 @@
  * \file CAdjEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,7 +40,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
 
   /*--- Only for residual smoothing (multigrid) ---*/
   for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    if (config->GetMG_CorrecSmooth(iMesh) > 0) {
+    if (config->GetMGOptions().MG_CorrecSmooth[iMesh] > 0) {
       Residual_Sum.resize(nPoint,nVar);
       Residual_Old.resize(nPoint,nVar);
       break;
@@ -94,6 +94,9 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   /*--- Allocate space for the harmonic balance source terms ---*/
   if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE)
     HB_Source.resize(nPoint,nVar) = su2double(0.0);
+
+  /*--- Allocate LocalCFL for multigrid support ---*/
+  LocalCFL.resize(nPoint) = su2double(0.0);
 
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();

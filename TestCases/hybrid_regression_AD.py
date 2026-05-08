@@ -3,7 +3,7 @@
 ## \file hybrid_regression_AD.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -66,7 +66,7 @@ def main():
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
     discadj_arina2k.test_iter    = 20
-    discadj_arina2k.test_vals    = [-3.254503, -3.495599, 0.052373, 0.000000]
+    discadj_arina2k.test_vals    = [-2.928012, -3.351754, 0.073361, 0.000000]
     test_list.append(discadj_arina2k)
 
     ####################################
@@ -86,7 +86,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-2.201504, -0.175221, 3.044800, -0.041845]
+    discadj_rans_naca0012_sst.test_vals = [-2.201517, -0.175212, 3.044200, -0.041842]
     discadj_rans_naca0012_sst.test_vals_aarch64 = [-2.201855, -0.172443, 3.043400, -0.041820]
     test_list.append(discadj_rans_naca0012_sst)
 
@@ -99,7 +99,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -4.091640, -2.655563, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -3.338267, -2.490046, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################
@@ -133,7 +133,7 @@ def main():
     discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
     discadj_incomp_turb_NACA0012_sst.test_iter = 10
-    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.775646, -3.089083, -7.142512, 0.000000, -0.897106]
+    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.775388, -3.089117, -7.143490, 0.000000, -0.896797]
     test_list.append(discadj_incomp_turb_NACA0012_sst)
 
     #######################################################
@@ -187,7 +187,8 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.220333, -1.646832, -0.007539, 0.000013]
+    discadj_pitchingNACA0012.test_vals = [-1.124927, -1.586220, -0.006032, 0.000009]
+    discadj_pitchingNACA0012.tol = 0.01
     discadj_pitchingNACA0012.unsteady  = True
     discadj_pitchingNACA0012.enabled_with_tsan = False
     test_list.append(discadj_pitchingNACA0012)
@@ -201,7 +202,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg"
     discadj_fea.test_iter = 4
-    discadj_fea.test_vals         = [1.774569, 1.928023, -0.000364, -8.690300]
+    discadj_fea.test_vals = [2.149620, 2.014985, -0.000364, -8.767900]
     discadj_fea.test_vals_aarch64 = [1.794371, 2.005865, -0.000365, -8.718100]
     test_list.append(discadj_fea)
 
@@ -212,7 +213,8 @@ def main():
     for test in test_list:
         test.command = TestCase.Command(exec = "SU2_CFD_AD", param = "-t 2")
         test.timeout = 600
-        test.tol = 1e-4
+        if test.tol == 0.0:
+            test.tol = 1.0e-4
     #end
 
     pass_list = [ test.run_test(args.tsan) for test in test_list ]

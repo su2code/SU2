@@ -27,10 +27,14 @@ class SU2Interface:
         self.comm.barrier()
         # run solver
         self.FluidSolver.Preprocess(0)
+        self.comm.barrier()
         self.FluidSolver.Run()
+        self.comm.barrier()
         self.FluidSolver.Postprocess()
+        self.comm.barrier()
         # write outputs
         self.FluidSolver.Monitor(0)
+        self.comm.barrier()
         self.FluidSolver.Output(0)
         self.comm.barrier()
 

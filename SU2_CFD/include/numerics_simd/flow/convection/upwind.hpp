@@ -2,7 +2,7 @@
  * \file upwind.hpp
  * \brief Roe-family of convective schemes.
  * \author P. Gomes, A. Bueno, F. Palacios
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *

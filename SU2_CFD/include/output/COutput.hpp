@@ -2,7 +2,7 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -92,6 +92,8 @@ protected:
   curAbsTimeIter,                 /*!< \brief Current value of the time iteration index */
   curOuterIter,                   /*!< \brief Current value of the outer iteration index */
   curInnerIter;                   /*!< \brief Current value of the inner iteration index */
+
+  su2double PrevStopTime;         /*!< \brief Previous stop time for iteration timing. */
 
   string historyFilename;   /*!< \brief The history filename*/
   ofstream histFile;        /*!< \brief Output file stream for the history */

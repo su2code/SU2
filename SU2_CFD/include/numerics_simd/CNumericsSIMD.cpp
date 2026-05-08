@@ -4,7 +4,7 @@
  * \note This should be the only cpp for this family of classes
  * (which are all templates). All compilation takes place here.
  * \author P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -81,6 +81,9 @@ CNumericsSIMD* createCenteredNumerics(const CConfig& config, int iMesh, const CV
       break;
     case CENTERED::JST_MAT:
       obj = new CJSTmatScheme<ViscousDecorator>(config, iMesh, turbVars);
+      break;
+    case CENTERED::LD2:
+      /*--- LD2 implemented only in the incompressible solver. ---*/
       break;
   }
   return obj;
