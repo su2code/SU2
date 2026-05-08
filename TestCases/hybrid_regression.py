@@ -711,15 +711,14 @@ def main():
     dyn_fsi.unsteady  = True
     test_list.append(dyn_fsi)
 
-    # FSI, Static, 2D, new mesh solver, restart
-    stat_fsi_restart           = TestCase('stat_fsi_restart')
-    stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
-    stat_fsi_restart.cfg_file  = "config_restart.cfg"
-    stat_fsi_restart.test_iter = 1
-    stat_fsi_restart.test_vals         = [-3.549586, -4.460650, 0.000000, 35.000000]
-    stat_fsi_restart.test_vals_aarch64 = [-3.549586, -4.460713, 0.000000, 35.000000]
-    stat_fsi_restart.multizone = True
-    test_list.append(stat_fsi_restart)
+    # FSI+CHT, Static, 2D, new mesh solver, restart
+    fsi_cht_restart           = TestCase('fsi_cht_restart')
+    fsi_cht_restart.cfg_dir   = "fea_fsi/stat_fsi"
+    fsi_cht_restart.cfg_file  = "config_restart.cfg"
+    fsi_cht_restart.test_iter = 0
+    fsi_cht_restart.test_vals = [5, 0.006352, -1.960362, -9.327033, -9.580521, -9.317956, 6.0838e+02, -1.2974e-02, 5.7607e-08, 20]
+    fsi_cht_restart.multizone = True
+    test_list.append(fsi_cht_restart)
 
     ##############################################
     ### Method of Manufactured Solutions (MMS) ###

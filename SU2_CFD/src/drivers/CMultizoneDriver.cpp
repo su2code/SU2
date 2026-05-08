@@ -548,23 +548,24 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
   bool UpdateMesh = false;
 
   /*--- Select the transfer method according to the magnitudes being transferred ---*/
-
-  auto BroadcastData = [&](int donorSol, int targetSol) {
-    interface_container[donorZone][targetZone]->BroadcastData(
-      *interpolator_container[donorZone][targetZone].get(),
-      solver_container[donorZone][INST_0][MESH_0][donorSol],
-      solver_container[targetZone][INST_0][MESH_0][targetSol],
-      geometry_container[donorZone][INST_0][MESH_0],
-      geometry_container[targetZone][INST_0][MESH_0],
-      config_container[donorZone],
-      config_container[targetZone]);
-  };
-
   // Zones are equal or unconnected
   if(donorZone == targetZone || interface_container[donorZone][targetZone] == nullptr) return UpdateMesh;
 
   switch (interface_container[donorZone][targetZone]->GetInterfaceType()) {
 
+  auto HandleInterfaceType = [&] (const auto interface_type, auto* interface) {
+    auto BroadcastData = [&](int donorSol, int targetSol) {
+      interface->BroadcastData(
+        *interpolator_container[donorZone][targetZone],
+        solver_container[donorZone][INST_0][MESH_0][donorSol],
+        solver_container[targetZone][INST_0][MESH_0][targetSol],
+        geometry_container[donorZone][INST_0][MESH_0],
+        geometry_container[targetZone][INST_0][MESH_0],
+        config_container[donorZone],
+        config_container[targetZone]);
+    };
+
+    switch (interface_type) {
     case SLIDING_INTERFACE:
       BroadcastData(FLOW_SOL, FLOW_SOL);
 
@@ -617,10 +618,21 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
       break;
     }
     default:
-      if(rank == MASTER_NODE)
+      if (rank == MASTER_NODE) {
         cout << "WARNING: One of the intended interface transfer routines is not "
              << "known to the chosen driver and has not been executed." << endl;
+      }
       break;
+    }
+  };
+
+  auto type = interface_types[donorZone][targetZone];
+  auto* interface = interface_container[donorZone][targetZone];
+
+  while (interface != nullptr) {
+    HandleInterfaceType(type, interface);
+    type = interface->NextInterfaceType;
+    interface = interface->NextInterface;
   }
 
   return UpdateMesh;

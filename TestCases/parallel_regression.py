@@ -1357,15 +1357,6 @@ def main():
     fsi2d.unsteady = True
     test_list.append(fsi2d)
 
-    # FSI, Static, 2D, new mesh solver
-    stat_fsi           = TestCase('stat_fsi')
-    stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
-    stat_fsi.cfg_file  = "config.cfg"
-    stat_fsi.test_iter = 7
-    stat_fsi.test_vals = [-3.301938, -4.971986, 0.000000, 11.000000]
-    stat_fsi.multizone = True
-    test_list.append(stat_fsi)
-
     # FSI, Dynamic, 2D, new mesh solver
     dyn_fsi           = TestCase('dyn_fsi')
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
@@ -1375,15 +1366,6 @@ def main():
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     test_list.append(dyn_fsi)
-
-    # FSI, Static, 2D, new mesh solver, restart
-    stat_fsi_restart           = TestCase('stat_fsi_restart')
-    stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
-    stat_fsi_restart.cfg_file  = "config_restart.cfg"
-    stat_fsi_restart.test_iter = 1
-    stat_fsi_restart.test_vals = [-3.486655, -4.425104, 0.000000, 27.000000]
-    stat_fsi_restart.multizone = True
-    test_list.append(stat_fsi_restart)
 
     # ###############################
     # ### Radiative Heat Transfer ###

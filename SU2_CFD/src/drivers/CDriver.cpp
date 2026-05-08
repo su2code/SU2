@@ -2428,6 +2428,31 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
           if (rank == MASTER_NODE) cout << " Transferring ";
           }
 
+        /*--- Helpers with logic to create CHT interfaces. ---*/
+
+        auto GetChtInterfaceType = [donor, target, config](bool heat_donor, bool heat_target) {
+          if (heat_donor && heat_target) return CONJUGATE_HEAT_SS;
+
+          const auto fluidZone = heat_target ? donor : target;
+          if (config[fluidZone]->GetEnergy_Equation() ||
+              config[fluidZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE ||
+              config[fluidZone]->GetKind_FluidModel() == ENUM_FLUIDMODEL::FLUID_FLAMELET) {
+            return heat_target ? CONJUGATE_HEAT_FS : CONJUGATE_HEAT_SF;
+          } else if (config[fluidZone]->GetWeakly_Coupled_Heat()) {
+            return heat_target ? CONJUGATE_HEAT_WEAKLY_FS : CONJUGATE_HEAT_WEAKLY_SF;
+          }
+          return NO_TRANSFER;
+        };
+
+        auto MakeChtInterface = [&](const auto type) {
+          if (type != NO_TRANSFER) {
+            if (rank == MASTER_NODE) cout << " Conjugate heat variables." << endl;
+            return new CConjugateHeatInterface(4, 0);
+          }
+          if (rank == MASTER_NODE) cout << " NO heat variables." << endl;
+          return static_cast<CConjugateHeatInterface*>(nullptr);
+        };
+
         /*--- The type of variables transferred depends on the donor/target physics. ---*/
 
         const bool heat_target = config[target]->GetHeatProblem();
@@ -2450,15 +2475,26 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
             interface[donor][target] = new CDiscAdjFlowTractionInterface(nDim, nConst, config[donor], conservative);
           }
           if (rank == MASTER_NODE) cout << "fluid " << (conservative? "forces." : "tractions.") << endl;
+
+          if (config[target]->GetWeakly_Coupled_Heat()) {
+            interface[donor][target]->NextInterfaceType = GetChtInterfaceType(false, true);
+            interface[donor][target]->NextInterface = MakeChtInterface(interface[donor][target]->NextInterfaceType);
+          }
         }
         else if (structural_donor && (fluid_target || heat_target)) {
           if (solver_container[target][INST_0][MESH_0][MESH_SOL] == nullptr) {
             SU2_MPI::Error("Mesh deformation was not correctly specified for the fluid/heat zone.\n"
                            "Use DEFORM_MESH=YES, and setup MARKER_DEFORM_MESH=(...)", CURRENT_FUNCTION);
           }
-          if (!config[donor]->GetTime_Domain()) interface[donor][target] = new CDisplacementsInterface(nDim, 0);
-          else interface[donor][target] = new CDisplacementsInterface(2*nDim, 0);
+          interface_type = BOUNDARY_DISPLACEMENTS;
+          const auto nVar = config[donor]->GetTime_Domain() ? 2 * nDim : nDim;
+          interface[donor][target] = new CDisplacementsInterface(nVar, 0);
           if (rank == MASTER_NODE) cout << "boundary displacements from the structural solver." << endl;
+
+          if (fluid_target && config[donor]->GetWeakly_Coupled_Heat()) {
+            interface[donor][target]->NextInterfaceType = GetChtInterfaceType(true, false);
+            interface[donor][target]->NextInterface = MakeChtInterface(interface[donor][target]->NextInterfaceType);
+          }
         }
         else if (fluid_donor && fluid_target) {
           /*--- Interface handling for turbomachinery applications. ---*/
@@ -2473,7 +2509,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
                 if (rank == MASTER_NODE) cout << " Transferring ";
                 auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
                 interface[donor][target] = new CMixingPlaneInterface(nVar, 0);
-                if (rank == MASTER_NODE) cout << "using a mixing-plane interface from donor zone " << donor << " to target zone " << target << "." << endl;
+                if (rank == MASTER_NODE) cout << " Using a mixing-plane interface from donor zone " << donor << " to target zone " << target << "." << endl;
                 break;
               }
               case TURBO_INTERFACE_KIND::FROZEN_ROTOR: {
@@ -2482,42 +2518,19 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
                 if (rank == MASTER_NODE) cout << " Transferring ";
                 auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
                 interface[donor][target] = new CSlidingInterface(nVar, 0);
-                if (rank == MASTER_NODE) cout << "using a fluid interface interface from donor zone " << donor << " to target zone " << target << "." << endl;
+                if (rank == MASTER_NODE) cout << " Using a fluid interface interface from donor zone " << donor << " to target zone " << target << "." << endl;
               }
             }
           }
           else{
             auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnPrimVar();
               interface[donor][target] = new CSlidingInterface(nVar, 0);
-              if (rank == MASTER_NODE) cout << "sliding interface." << endl;
+              if (rank == MASTER_NODE) cout << " Sliding interface." << endl;
           }
         }
         else if (heat_donor || heat_target) {
-          unsigned short interface_type;
-          if (heat_donor && heat_target){
-            interface_type = ENUM_TRANSFER::CONJUGATE_HEAT_SS;
-
-          } else {
-
-            const auto fluidZone = heat_target? donor : target;
-            if (config[fluidZone]->GetEnergy_Equation() || (config[fluidZone]->GetKind_Regime() == ENUM_REGIME::COMPRESSIBLE)
-                || (config[fluidZone]->GetKind_FluidModel() == ENUM_FLUIDMODEL::FLUID_FLAMELET))
-              interface_type = heat_target? ENUM_TRANSFER::CONJUGATE_HEAT_FS : ENUM_TRANSFER::CONJUGATE_HEAT_SF;
-            else if (config[fluidZone]->GetWeakly_Coupled_Heat())
-              interface_type = heat_target? ENUM_TRANSFER::CONJUGATE_HEAT_WEAKLY_FS : ENUM_TRANSFER::CONJUGATE_HEAT_WEAKLY_SF;
-            else
-              interface_type = ENUM_TRANSFER::NO_TRANSFER;
-          }
-
-          if (interface_type != NO_TRANSFER) {
-            auto nVar = 4;
-            interface[donor][target] = new CConjugateHeatInterface(nVar, 0);
-            interface[donor][target]->SetInterfaceType(interface_type);
-            if (rank == MASTER_NODE) cout << "conjugate heat variables." << endl;
-          }
-          else {
-            if (rank == MASTER_NODE) cout << "NO heat variables." << endl;
-          }
+          interface_type = GetChtInterfaceType(heat_donor, heat_target);
+          interface[donor][target] = MakeChtInterface(interface_type);
         }
         else {
           if (solver[donor][INST_0][MESH_0][FLOW_SOL] == nullptr)
@@ -2525,7 +2538,7 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
 
           auto nVar = solver[donor][INST_0][MESH_0][FLOW_SOL]->GetnVar();
           interface[donor][target] = new CConservativeVarsInterface(nVar, 0);
-          if (rank == MASTER_NODE) cout << "generic conservative variables." << endl;
+          if (rank == MASTER_NODE) cout << " Generic conservative variables." << endl;
         }
       }
 

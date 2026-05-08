@@ -1074,7 +1074,7 @@ def main():
     dynbeam2d.test_vals = [-3.240012, 2.895060, -0.353140, 76220]
     test_list.append(dynbeam2d)
 
-    # # FSI, 2d
+    # FSI, 2d
     fsi2d           = TestCase('fsi2d')
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
@@ -1084,23 +1084,14 @@ def main():
     fsi2d.unsteady  = True
     test_list.append(fsi2d)
 
-    # FSI, Static, 2D, new mesh solver
-    stat_fsi           = TestCase('stat_fsi')
-    stat_fsi.cfg_dir   = "fea_fsi/stat_fsi"
-    stat_fsi.cfg_file  = "config.cfg"
-    stat_fsi.test_iter = 7
-    stat_fsi.test_vals = [-3.336320, -4.991964, 0.000000, 7.000000]
-    stat_fsi.multizone = True
-    test_list.append(stat_fsi)
-
-    # FSI, Static, 2D, new mesh solver, restart
-    stat_fsi_restart           = TestCase('stat_fsi_restart')
-    stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
-    stat_fsi_restart.cfg_file  = "config_restart.cfg"
-    stat_fsi_restart.test_iter = 1
-    stat_fsi_restart.test_vals = [-3.401553, -4.672932, 0.000000, 26.000000]
-    stat_fsi_restart.multizone = True
-    test_list.append(stat_fsi_restart)
+    # FSI+CHT, Static, 2D, new mesh solver
+    fsi_cht           = TestCase('fsi_cht')
+    fsi_cht.cfg_dir   = "fea_fsi/stat_fsi"
+    fsi_cht.cfg_file  = "config.cfg"
+    fsi_cht.test_iter = 20
+    fsi_cht.test_vals = [5, -5.077012, -5.379779, -9.247804, -9.277819, -9.183796, 6.0835e+02, -1.2973e-02, 5.7607e-08, 29]
+    fsi_cht.multizone = True
+    test_list.append(fsi_cht)
 
     # FSI, Dynamic, 2D, new mesh solver
     dyn_fsi           = TestCase('dyn_fsi')
