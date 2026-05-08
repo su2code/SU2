@@ -237,7 +237,7 @@ CDriverBase(confFile, val_nZone, MPICommunicator), StopCalc(false), fsi(false), 
       cout << endl <<"------------------- Multizone Interface Preprocessing -------------------" << endl;
 
     InitializeInterface(config_container, solver_container, geometry_container,
-                          interface_container, interpolator_container);
+                          interface_types, interface_container, interpolator_container);
   }
 
   if (fsi) {
@@ -331,13 +331,16 @@ void CDriver::InitializeContainers(){
   FFDBox                         = new CFreeFormDefBox**[nZone] ();
   interpolator_container.resize(nZone);
   interface_container            = new CInterface**[nZone] ();
+  interface_types                = new unsigned short*[nZone] ();
   output_container               = new COutput*[nZone] ();
   nInst                          = new unsigned short[nZone] ();
   driver_config                  = nullptr;
   driver_output                  = nullptr;
 
-  for (iZone = 0; iZone < nZone; iZone++) nInst[iZone] = 1;
-
+  for (iZone = 0; iZone < nZone; iZone++) {
+    interface_types[iZone] = new unsigned short[nZone];
+    nInst[iZone] = 1;
+  }
 }
 
 
@@ -413,6 +416,12 @@ void CDriver::Finalize() {
     }
     delete [] interface_container;
     if (rank == MASTER_NODE) cout << "Deleted CInterface container." << endl;
+
+    if (interface_types != nullptr) {
+      for (iZone = 0; iZone < nZone; iZone++)
+        delete [] interface_types[iZone];
+      delete [] interface_types;
+    }
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -2402,7 +2411,8 @@ void CDriver::PreprocessDynamicMesh(CConfig *config, CGeometry **geometry, CSolv
 
 }
 
-void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeometry**** geometry, CInterface ***interface,
+void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeometry**** geometry,
+                                      unsigned short** interface_types, CInterface ***interface,
                                       vector<vector<unique_ptr<CInterpolator> > >& interpolation) {
 
   /*--- Setup interpolation and transfer for all possible donor/target pairs. ---*/
@@ -2411,9 +2421,18 @@ void CDriver::InitializeInterface(CConfig **config, CSolver***** solver, CGeomet
 
     for (auto donor = 0u; donor < nZone; donor++) {
 
-      /*--- If there is a common interface setup the interpolation and transfer. ---*/
-      if (!CInterpolator::CheckZonesInterface(config[donor], config[target]) || donor == target) {
+      /*--- Aliases to make code less verbose. ---*/
+      auto& interface_type = interface_types[donor][target];
+
+      if (donor == target) {
+        interface_type = ZONES_ARE_EQUAL;
         continue;
+      }
+      interface_type = NO_TRANSFER;
+
+      /*--- If there is a common interface setup the interpolation and transfer. ---*/
+      if (!CInterpolator::CheckZonesInterface(config[donor], config[target])) {
+        interface_type = NO_COMMON_INTERFACE;
       }
       else {
         /*--- Begin the creation of the communication pattern among zones. ---*/

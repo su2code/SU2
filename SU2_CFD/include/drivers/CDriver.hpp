@@ -77,6 +77,7 @@ class CDriver : public CDriverBase {
       interpolator_container; /*!< \brief Definition of the interpolation method between non-matching discretizations of
                                  the interface. */
   CInterface*** interface_container; /*!< \brief Definition of the interface of information and physics. */
+  unsigned short** interface_types;  /*!< \brief Type of coupling between the distinct (physical) zones. */
   bool dry_run;                      /*!< \brief Flag if SU2_CFD was started as dry-run via "SU2_CFD -d <config>.cfg" */
 
   //std::shared_ptr<CTurbomachineryStagePerformance> TurbomachineryStagePerformance;  /*!< \brief turbo stage performance calculator. */
@@ -200,11 +201,13 @@ class CDriver : public CDriverBase {
    * \param[in] config - Definition of the particular problem.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] interface_types - Type of coupling between the distinct (physical) zones.
    * \param[in] interface - Class defining the physical transfer of information.
    * \param[in] interpolation -  Object defining the interpolation.
    */
   void InitializeInterface(CConfig** config, CSolver***** solver, CGeometry**** geometry,
-                              CInterface*** interface, vector<vector<unique_ptr<CInterpolator>>>& interpolation);
+                              unsigned short** interface_types, CInterface*** interface,
+                              vector<vector<unique_ptr<CInterpolator>>>& interpolation);
 
   /*!
    * \brief Definition and allocation of all solver classes.

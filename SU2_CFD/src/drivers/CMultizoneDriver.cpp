@@ -548,10 +548,7 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
   bool UpdateMesh = false;
 
   /*--- Select the transfer method according to the magnitudes being transferred ---*/
-  // Zones are equal or unconnected
-  if(donorZone == targetZone || interface_container[donorZone][targetZone] == nullptr) return UpdateMesh;
-
-  switch (interface_container[donorZone][targetZone]->GetInterfaceType()) {
+  if(donorZone == targetZone || interface_container[donorZone][targetZone] == nullptr) return UpdateMesh; // Zones are equal or unconnected
 
   auto HandleInterfaceType = [&] (const auto interface_type, auto* interface) {
     auto BroadcastData = [&](int donorSol, int targetSol) {

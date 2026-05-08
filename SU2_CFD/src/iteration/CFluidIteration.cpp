@@ -263,6 +263,7 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
 }
 
 void CFluidIteration::UpdateRamps(CGeometry**** geometry_container, CConfig** config_container, unsigned long iter, unsigned short iZone, RAMP_TYPE ramp_flag) {
+  SU2_ZONE_SCOPED
   /*--- Generic function for handling ramps ---*/
   // Grid updates (i.e. rotation/translation) handled seperately to boundary (i.e. pressure/mass flow) updates
   auto* config = config_container[iZone];
