@@ -77,7 +77,7 @@ const unsigned int MAX_PARAMETERS = 10;       /*!< \brief Maximum number of para
 const unsigned int MAX_NUMBER_PERIODIC = 10;  /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 400;     /*!< \brief Maximum size of a generic string. */
 const unsigned int MAX_NUMBER_FFD = 15;       /*!< \brief Maximum number of FFDBoxes for the FFD. */
-enum: unsigned int{MAX_SOLS = 13};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
+enum: unsigned int{MAX_SOLS = 14};            /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 7;             /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_ZONES = 3;             /*!< \brief Maximum number of zones. */
 const unsigned int MAX_FE_KINDS = 7;          /*!< \brief Maximum number of Finite Elements. */
@@ -341,7 +341,7 @@ static const MapType<std::string, STRUCT_COMPRESS> MatComp_Map = {
  * \brief Type of incompressible solver
  */
 enum class ENUM_INCOMP_SYSTEM {
-  DENSITY_BASED,		/*!< \brief Density-based. */
+  DENSITY_BASED,        /*!< \brief Density-based. */
   PRESSURE_BASED,       /*!< \brief Pressure-based. */
 };
 static const MapType<std::string, ENUM_INCOMP_SYSTEM> Incomp_Map = {
@@ -353,8 +353,8 @@ static const MapType<std::string, ENUM_INCOMP_SYSTEM> Incomp_Map = {
  * \brief Type of iteration
  */
 enum class ENUM_PBITER {
-  SIMPLE,		/*!< \brief SIMPLE algorithm. */
-  SIMPLEC,		/*!< \brief SIMPLE algorithm. */
+  SIMPLE,       /*!< \brief SIMPLE algorithm. */
+  SIMPLEC,      /*!< \brief SIMPLE algorithm. */
   PISO,         /*!< \brief PISO algorithm. */
 };
 
