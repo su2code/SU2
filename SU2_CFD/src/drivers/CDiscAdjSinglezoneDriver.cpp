@@ -273,7 +273,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
     case RECORDING::CLEAR_INDICES: cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:   cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
     case RECORDING::SOLUTION_VARIABLES:
-      cout << "Direct iteration to store the primal computational graph." << endl;
+      cout << "Direct iteration to store the primal computational graph.\n";
       cout << "Computing residuals to check the convergence of the direct problem." << endl; break;
     default: break;
     }
@@ -308,6 +308,11 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   /*--- Extract the objective function and store it --- */
 
   SetObjFunction();
+
+  if (rank == MASTER_NODE && kind_recording == RECORDING::SOLUTION_VARIABLES) {
+    cout << "\nObjective function value: " << std::setprecision(config_container[ZONE_0]->GetOutput_Precision()) << ObjFunc;
+    cout << "\n-------------------------------------------------------------------------\n" << endl;
+  }
 
   if (kind_recording != RECORDING::CLEAR_INDICES && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
     AD::PrintStatistics(SU2_MPI::GetComm(), rank == MASTER_NODE);

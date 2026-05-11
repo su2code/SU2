@@ -2886,8 +2886,6 @@ void CDriver::PrintDirectResidual(RECORDING kind_recording) {
 
   } // for addVals
 
-  cout << "\n-------------------------------------------------------------------------\n" << endl;
-
 }
 
 
