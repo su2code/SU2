@@ -2,7 +2,7 @@
  * \file CSysMatrixGPU.cu
  * \brief Implementations of Kernels and Functions for Matrix Operations on the GPU
  * \author A. Raj
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -70,7 +70,6 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
    ScalarType* d_vec = vec.GetDevicePointer();
    ScalarType* d_prod = prod.GetDevicePointer();
 
-   HtDTransfer();
    vec.HtDTransfer();
    prod.GPUSetVal(0.0);
 

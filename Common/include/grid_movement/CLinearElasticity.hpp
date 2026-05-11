@@ -2,7 +2,7 @@
  * \file CLinearElasticity.hpp
  * \brief Headers of the CLinearElasticity class.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -45,13 +45,8 @@ class CLinearElasticity final : public CVolumetricMovement {
 
   unsigned long nIterMesh; /*!< \brief Number of iterations in the mesh update. +*/
 
-#ifndef CODI_FORWARD_TYPE
   CSysMatrix<su2mixedfloat> StiffMatrix; /*!< \brief Stiffness matrix of the elasticity problem. */
   CSysSolve<su2mixedfloat> System;       /*!< \brief Linear solver/smoother. */
-#else
-  CSysMatrix<su2double> StiffMatrix;
-  CSysSolve<su2double> System;
-#endif
   CSysVector<su2double> LinSysSol;
   CSysVector<su2double> LinSysRes;
 
