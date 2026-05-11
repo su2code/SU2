@@ -36,19 +36,21 @@
  * \brief Block Gauss-Seidel driver for multizone / multiphysics discrete adjoint problems.
  * \ingroup DiscAdj
  */
-#ifdef CODI_FORWARD_TYPE
-  using Scalar = su2double;
-#else
-  using Scalar = passivedouble;
-#endif
+
+template<class> class AdjointProduct;
+template<class> class Identity;
 
 class CDiscAdjMultizoneDriver : public CMultizoneDriver {
 
 protected:
+  #ifdef CODI_FORWARD_TYPE
+    using Scalar = su2double;
+  #else
+    using Scalar = passivedouble;
+  #endif
 
-  friend class AdjointProduct;
-  friend class Identity;
-  
+  friend class AdjointProduct<Scalar>;
+  friend class Identity<Scalar>;
   /*!
    * \brief Kinds of recordings.
    */
@@ -286,7 +288,9 @@ protected:
 
 };
 
-class AdjointProduct : public CMatrixVectorProduct<Scalar> {
+
+template<class Scalar_t>
+class AdjointProduct : public CMatrixVectorProduct<Scalar_t> {
 public:
   CDiscAdjMultizoneDriver* const driver;
   const unsigned short iZone = 0;
@@ -294,7 +298,7 @@ public:
 
   AdjointProduct(CDiscAdjMultizoneDriver* d, unsigned short i) : driver(d), iZone(i) {}
 
-  inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
+  inline void operator()(const CSysVector<Scalar_t> & u, CSysVector<Scalar_t> & v) const override {
     driver->SetAllSolutions(iZone, true, u);
     driver->Iterate(iZone, iInnerIter, true);
     driver->GetAllSolutions(iZone, true, v);
@@ -303,8 +307,9 @@ public:
   }
 };
 
-class Identity : public CPreconditioner<Scalar> {
+template<class Scalar_t>
+class Identity : public CPreconditioner<Scalar_t> {
 public:
   inline bool IsIdentity() const override { return true; }
-  inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
+  inline void operator()(const CSysVector<Scalar_t> & u, CSysVector<Scalar_t> & v) const override { v = u; }
 };

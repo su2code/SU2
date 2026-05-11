@@ -376,7 +376,7 @@ void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
   GetAllSolutions(iZone, true, AdjSol[iZone]);
 
   const bool monitor = config_container[iZone]->GetWrt_ZoneConv();
-  const auto product = AdjointProduct(this, iZone);
+  const auto product = AdjointProduct<Scalar>(this, iZone);
 
   /*--- Manipulate the screen output frequency to avoid printing garbage. ---*/
   const auto wrtFreq = config_container[iZone]->GetScreen_Wrt_Freq(2);
@@ -388,7 +388,7 @@ void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
     Scalar eps_l = 0.0;
     Scalar tol_l = KrylovTol / eps;
     auto iter = min(totalIter-2ul, config_container[iZone]->GetnQuasiNewtonSamples()-2ul);
-    iter = LinSolver[iZone].FGCRODR_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
+    iter = LinSolver[iZone].FGCRODR_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity<Scalar>(),
                                               tol_l, iter, eps_l, monitor, config_container[iZone],
                                               FgcrodrMode::SAME_MAT, iter);
     totalIter -= iter+1;
