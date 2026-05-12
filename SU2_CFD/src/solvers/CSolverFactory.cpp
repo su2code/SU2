@@ -29,8 +29,11 @@
 #include "../../include/solvers/CSolverFactory.hpp"
 #include "../../include/solvers/CEulerSolver.hpp"
 #include "../../include/solvers/CIncEulerSolver.hpp"
+#include "../../include/solvers/CPBIncEulerSolver.hpp"
 #include "../../include/solvers/CNSSolver.hpp"
 #include "../../include/solvers/CIncNSSolver.hpp"
+#include "../../include/solvers/CPBIncNSSolver.hpp"
+#include "../../include/solvers/CPoissonSolver.hpp"
 #include "../../include/solvers/CNEMOEulerSolver.hpp"
 #include "../../include/solvers/CNEMONSSolver.hpp"
 #include "../../include/solvers/CTurbSASolver.hpp"
@@ -69,6 +72,7 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
     case MAIN_SOLVER::INC_EULER:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::INC_EULER, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
+      solver[POISSON_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::POISSON, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::EULER:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::EULER, solver, geometry, config, iMGLevel);
@@ -81,6 +85,7 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
+      solver[POISSON_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::POISSON, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::NAVIER_STOKES:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::NAVIER_STOKES, solver, geometry, config, iMGLevel);
@@ -103,6 +108,7 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       solver[TURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TURB, solver, geometry, config, iMGLevel);
       solver[TRANS_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::TRANSITION, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
+      solver[POISSON_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::POISSON, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::HEAT_EQUATION:
       solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
@@ -144,6 +150,7 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       solver[ADJFLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FLOW, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
+      solver[POISSON_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::POISSON, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
@@ -154,6 +161,7 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
       solver[SPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::SPECIES, solver, geometry, config, iMGLevel);
       solver[ADJSPECIES_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_SPECIES, solver, geometry, config, iMGLevel);
+      solver[POISSON_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::POISSON, solver, geometry, config, iMGLevel);
       break;
     case MAIN_SOLVER::DISC_ADJ_INC_RANS:
       solver[FLOW_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::INC_NAVIER_STOKES, solver, geometry, config, iMGLevel);
@@ -166,6 +174,7 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       solver[ADJTURB_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_TURB, solver, geometry, config, iMGLevel);
       solver[RAD_SOL]     = CreateSubSolver(SUB_SOLVER_TYPE::RADIATION, solver, geometry, config, iMGLevel);
       solver[ADJRAD_SOL]  = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_RADIATION, solver, geometry, config, iMGLevel);
+      solver[POISSON_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::POISSON, solver, geometry, config, iMGLevel);
     break;
     case MAIN_SOLVER::DISC_ADJ_HEAT:
       solver[HEAT_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
@@ -331,6 +340,11 @@ CSolver* CSolverFactory::CreateSubSolver(SUB_SOLVER_TYPE kindSolver, CSolver **s
       }
       metaData.integrationType = INTEGRATION_TYPE::DEFAULT;
       break;
+    case SUB_SOLVER_TYPE::POISSON:
+      if (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED)
+        genericSolver = new CPoissonSolver(geometry, config, iMGLevel);
+      metaData.integrationType = INTEGRATION_TYPE::SINGLEGRID;
+      break;
     default:
       SU2_MPI::Error("No proper allocation found for requested sub solver", CURRENT_FUNCTION);
       break;
@@ -491,11 +505,31 @@ CSolver* CSolverFactory::CreateFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolve
       flowSolver = new CNSSolver(geometry, config, iMGLevel);
       break;
     case SUB_SOLVER_TYPE::INC_EULER:
-      flowSolver = new CIncEulerSolver(geometry, config, iMGLevel);
+      switch (config->GetKind_Incomp_System()) {
+        case ENUM_INCOMP_SYSTEM::DENSITY_BASED:
+          flowSolver = new CIncEulerSolver(geometry, config, iMGLevel);
+          break;
+        case ENUM_INCOMP_SYSTEM::PRESSURE_BASED:
+          flowSolver = new CPBIncEulerSolver(geometry, config, iMGLevel);
+          break;
+        default:
+          SU2_MPI::Error("Flow solver not found due to invalid incompressible method", CURRENT_FUNCTION);
+          break;  
+      }
       flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       break;
     case SUB_SOLVER_TYPE::INC_NAVIER_STOKES:
-      flowSolver = new CIncNSSolver(geometry, config, iMGLevel);
+      switch (config->GetKind_Incomp_System()) {
+        case ENUM_INCOMP_SYSTEM::DENSITY_BASED:
+          flowSolver = new CIncNSSolver(geometry, config, iMGLevel);
+          break;
+        case ENUM_INCOMP_SYSTEM::PRESSURE_BASED:
+          flowSolver = new CPBIncNSSolver(geometry, config, iMGLevel);
+          break;
+        default:
+          SU2_MPI::Error("Flow solver not found due to invalid incompressible method", CURRENT_FUNCTION);
+          break;  
+      }
       break;
     case SUB_SOLVER_TYPE::NEMO_EULER:
       flowSolver = new CNEMOEulerSolver(geometry, config, iMGLevel);

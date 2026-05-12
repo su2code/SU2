@@ -51,6 +51,7 @@
 
 #include "../../include/variables/CEulerVariable.hpp"
 #include "../../include/variables/CIncEulerVariable.hpp"
+#include "../../include/variables/CPBIncEulerVariable.hpp"
 #include "../../include/variables/CNEMOEulerVariable.hpp"
 
 #include "../../include/numerics/template.hpp"
@@ -2083,10 +2084,10 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
     if (incompressible)
       if (!pressure_based)
         InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
-                                                                                 solver[MESH_0][TURB_SOL], numerics);
-      // else
-      //   InstantiateTurbulentNumerics<CPBIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
-      //                                                                           solver[MESH_0][TURB_SOL], numerics);
+                                                                                   solver[MESH_0][TURB_SOL], numerics);
+      else
+        InstantiateTurbulentNumerics<CPBIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
+                                                                                     solver[MESH_0][TURB_SOL], numerics);
 
     else if (NEMO_ns)
       InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
