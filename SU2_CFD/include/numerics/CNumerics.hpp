@@ -57,7 +57,6 @@ protected:
   su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl's number. */
   su2double MassFlux;         /*!< \brief Mass flux across edge. */
   su2double
-  **Flux_Tensor,      /*!< \brief Flux tensor (used for viscous and inviscid purposes). */
   *Proj_Flux_Tensor;  /*!< \brief Flux tensor projected in a direction. */
   su2double **tau;    /*!< \brief Viscous stress tensor. */
   const su2double delta [3][3] = {{1.0, 0.0, 0.0},{0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}; /*!< \brief Identity matrix. */
@@ -157,12 +156,6 @@ protected:
   TurbPsi_Grad_j,  /*!< \brief Gradient of adjoint turbulent variables at point j. */
   AuxVar_Grad_i,   /*!< \brief Gradient of an auxiliary variable at point i. */
   AuxVar_Grad_j;   /*!< \brief Gradient of an auxiliary variable at point i. */
-  su2double 
-  Poisson_Coeff_i, /*!< \brief Poisson coefficient at point i. */
-  Poisson_Coeff_j; /*!< \brief Poisson coefficient at point j. */
-  su2double 
-  Poissonval_i,    /*!< \brief Poisson value at point i. */
-  Poissonval_j;    /*!< \brief Poisson value at point j. */
   su2double
   LocalGridLength_i; /*!< \brief Local grid length at point i. */
   const su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
@@ -187,7 +180,6 @@ protected:
   su2double StrainMag_i, StrainMag_j;      /*!< \brief Strain rate magnitude. */
   su2double Dissipation_i, Dissipation_j;  /*!< \brief Dissipation. */
   su2double Dissipation_ij;
-  su2double Source_Term;                   /*!< \brief Source term for poisson equation. */
   su2double roughness_i = 0.0,             /*!< \brief Roughness of the wall nearest to point i. */
   roughness_j = 0.0;                       /*!< \brief Roughness of the wall nearest to point j. */
 
@@ -207,7 +199,6 @@ protected:
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
   su2double uq_urlx;              /*!< \brief Under-relaxation factor for numerical stability */
   bool uq_permute;                /*!< \brief Flag for eigenvector permutation */
-  su2double Face_Flux;            /*!< \brief Face flux */
 
   bool nemo;                      /*!< \brief Flag for NEMO problems  */
 
@@ -1114,40 +1105,6 @@ public:
   inline su2double GetDissipation() const { return Dissipation_ij; }
 
   /*!
-   * \brief Set the Poisson coefficient
-   * \param[in] val_Poisson_i - Value of the Poisson coefficient at point i.
-   * \param[in] val_Poisson_j - Value of the Poisson coefficient at point j.
-   */
-  inline void SetPoisson_Coeff(su2double val_Poisson_Coeff_i,su2double val_Poisson_Coeff_j){
-    Poisson_Coeff_i = val_Poisson_Coeff_i;
-    Poisson_Coeff_j = val_Poisson_Coeff_j;
-  }
-  
-  /*!
-   * \brief Set the Poisson value 
-   * \param[in] val_Poisson_i - Value of the Poisson variable at point i.
-   * \param[in] val_Poisson_j - Value of the Poisson variable at point j.
-   */
-  inline void SetPoissonval(su2double val_Poisson_i,su2double val_Poisson_j){
-    Poissonval_i = val_Poisson_i;
-    Poissonval_j = val_Poisson_j;
-  }   
-   
-  /*!
-   * \brief Set the Poisson value 
-   * \param[in] val_Poisson_i - Value of the Poisson variable at point i.
-   * \param[in] val_Poisson_j - Value of the Poisson variable at point j.
-   */
-  inline void SetSourcePoisson(su2double val_Source_Term) { Source_Term = val_Source_Term; }
-
-  /*!
-   * \brief Set the value of the momentum equation coefficients for Poisson eq.
-   * \param[in] val_Mom_Coeff_i - Value of the cross coefficient at point i.
-   * \param[in] val_Mom_Coeff_j - Value of the cross coefficient at point j.
-   */
-  inline virtual void SetInvMomCoeff(su2double *val_Mom_Coeff_i, su2double *val_Mom_Coeff_j) { }
-
-  /*!
    * \brief Compute the projected inviscid flux vector.
    * \param[in] val_density - Pointer to the density.
    * \param[in] val_velocity - Pointer to the velocity.
@@ -1220,21 +1177,6 @@ public:
                              su2double val_scale,
                              su2double **val_Proj_Jac_Tensor) const;
 
-   /*!
-   * \brief Compute the projected inviscid flux vector for (pressure based) incompresible simulations
-   * \param[in] val_density - Pointer to the density.
-   * \param[in] val_velocity - Pointer to the velocity.
-   * \param[in] val_pressure - Pointer to the pressure.
-   * \param[in] val_betainc2 - Value of the artificial compresibility factor.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[out] val_Proj_Flux - Pointer to the projected flux.
-   */
-  void GetInviscidPBProjFlux(const su2double *val_density,
-                             const su2double *val_velocity,
-                             const su2double *val_pressure,
-                             const su2double *val_normal,
-                             su2double *val_Proj_Flux);
-
   /*!
    * \brief Compute the low speed preconditioning matrix.
    * \param[in] val_density - Value of the density.
@@ -1287,19 +1229,6 @@ public:
   void GetPrimitive2Conservative (const su2double *val_Mean_PrimVar,
                                   const su2double *val_Mean_SecVar,
                                   su2double **val_Jac_PC) const;
-
-  /*!
-   * \brief Compute the projection of the inviscid Jacobian matrices (Pressure based method).
-   * \param[in] val_density - Value of the density.
-   * \param[in] val_velocity - Pointer to the velocity.
-   * \param[in] val_cp - Value of the specific heat at constant pressure.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_scale - Scale of the projection.
-   * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
-   */                          
-  void GetInviscidPBProjJac(const su2double val_density, const su2double *val_velocity,
-                            const su2double *val_normal, const su2double val_scale,
-                                 su2double **val_Proj_Jac_tensor); 
 
   /*!
    * \overload
@@ -1925,38 +1854,6 @@ public:
    * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
    */
   inline bool GetBoundedScalar() const { return bounded_scalar;}
-
-  /*!
-   * \brief Compute the projection of the viscous Jacobian matrices.
-   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
-   * \param[in] val_dist_ij - Distance between the points.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_dS - Area of the face between two nodes.
-   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
-   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
-   */                              
-  void GetViscousPBIncProjJacs(const su2double val_laminar_viscosity,
-                               const su2double val_eddy_viscosity, 
-                               const su2double val_dist_ij, 
-                               const su2double *val_normal, 
-                               const su2double val_dS,
-                                     su2double **val_Proj_Jac_Tensor_i, 
-                                     su2double **val_Proj_Jac_Tensor_j);
-  /*!
-   * \brief Compute the projection of the viscous fluxes into a direction (pressure based method).
-   * \param[in] val_primvar - Primitive variables.
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
-   */                                                        
-  void GetViscousPBIncProjFlux(const su2double *val_primvar,
-                                     su2double **val_gradprimvar,
-                               const su2double *val_normal,
-                               const su2double val_laminar_viscosity,
-                               const su2double val_eddy_viscosity,
-                               const su2double val_turb_ke);
 };
 
 /*!
