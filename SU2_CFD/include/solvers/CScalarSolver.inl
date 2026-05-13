@@ -625,6 +625,10 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
+  /*--- The bounded-scalar correction is currently only used by the incompressible solvers. ---*/
+  const bool bounded_scalar = incompressible && ((IsSpeciesSolver() && config->GetBounded_Species()) ||
+                                                 (IsTurbSolver()    && config->GetBounded_Turb()));
+
   /*--- Flow solution, needed to get density. ---*/
 
   CVariable* flowNodes = solver_container[FLOW_SOL]->GetNodes();
@@ -692,12 +696,6 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
                                       1.0 * Density_nM1 * U_time_nM1[iVar]) *
                                      Volume_nP1 / (2.0 * TimeStep);
 
-        bool bounded_scalar = false;
-        if (config->GetKind_Solver() == MAIN_SOLVER::INC_EULER || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES ||
-            config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) {
-          if (IsSpeciesSolver()) bounded_scalar = config->GetBounded_Species();
-          else if (IsTurbSolver()) bounded_scalar = config->GetBounded_Turb();
-        }
         if (bounded_scalar) {
           if (first_order) unsteady_term -= U_time_nP1[iVar] * (Density_nP1 - Density_n) * Volume_nP1 / TimeStep;
           if (second_order) unsteady_term -= U_time_nP1[iVar] * (3.0 * Density_nP1 - 4.0 * Density_n + 1.0 * Density_nM1) * Volume_nP1 / (2.0 * TimeStep);
@@ -847,13 +845,6 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
           unsteady_term = (Density_nP1 * U_time_nP1[iVar] - Density_n * U_time_n[iVar]) * (3.0 * Volume_nP1 / (2.0 * TimeStep)) +
               (Density_nM1 * U_time_nM1[iVar] - Density_n * U_time_n[iVar]) * (Volume_nM1 / (2.0 * TimeStep));
 
-        bool bounded_scalar = false;
-        if (config->GetKind_Solver() == MAIN_SOLVER::INC_EULER || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES ||
-            config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) {
-          if (IsSpeciesSolver()) bounded_scalar = config->GetBounded_Species();
-          else if (IsTurbSolver()) bounded_scalar = config->GetBounded_Turb();
-        }
-
         if (bounded_scalar) {
           if (first_order) unsteady_term -= U_time_nP1[iVar] * (Density_nP1 - Density_n) * (Volume_nP1 / TimeStep);
           if (second_order) unsteady_term -= U_time_nP1[iVar] * ((Density_nP1 - Density_n) * (3.0 * Volume_nP1 / (2.0 * TimeStep)) +
@@ -865,24 +856,18 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
 
       /*--- Compute the Jacobian contribution due to the dual time source term. ---*/
       if (implicit) {
-	bool bounded_scalar = false;
-	if (config->GetKind_Solver() == MAIN_SOLVER::INC_EULER || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES ||
-            config->GetKind_Solver() == MAIN_SOLVER::INC_RANS) {
-	  if (IsSpeciesSolver()) bounded_scalar = config->GetBounded_Species();
-	  else if (IsTurbSolver()) bounded_scalar = config->GetBounded_Turb();
-	}
-	su2double diag_factor = 1.0;
-	if (Conservative) {
-	  if (bounded_scalar) {
-           if (first_order)  diag_factor = Density_n;
-           if (second_order) diag_factor = (4.0 * Density_n - Density_nM1) / 3.0;
-	 } else {
-	  diag_factor = Density_nP1;
-	 }
+        su2double diag_factor = 1.0;
+        if (Conservative) {
+          if (bounded_scalar) {
+            if (first_order)  diag_factor = Density_n;
+            if (second_order) diag_factor = (4.0 * Density_n - Density_nM1) / 3.0;
+          } else {
+            diag_factor = Density_nP1;
+          }
         }
-	if (first_order)  Jacobian.AddVal2Diag(iPoint, diag_factor * Volume_nP1 / TimeStep);
-	if (second_order) Jacobian.AddVal2Diag(iPoint, diag_factor * 3.0 * Volume_nP1 / (2.0 * TimeStep));
-     }
+        if (first_order)  Jacobian.AddVal2Diag(iPoint, diag_factor * Volume_nP1 / TimeStep);
+        if (second_order) Jacobian.AddVal2Diag(iPoint, diag_factor * 3.0 * Volume_nP1 / (2.0 * TimeStep));
+      }
     }
     END_SU2_OMP_FOR
 
