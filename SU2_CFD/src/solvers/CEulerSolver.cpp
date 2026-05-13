@@ -9111,7 +9111,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
     su2double TotalDensity{0}, TotalPressure{0}, TotalNu{0}, TotalOmega{0}, TotalKine{0}, TotalVelocity[MAXNDIM],
               TotalAreaDensity{0}, TotalAreaPressure{0}, TotalAreaNu{0}, TotalAreaOmega{0}, TotalAreaKine{0}, TotalAreaVelocity[MAXNDIM],
               TotalMassDensity{0}, TotalMassPressure{0}, TotalMassNu{0}, TotalMassOmega{0}, TotalMassKine{0}, TotalMassVelocity[MAXNDIM],
-              TotalRelTangVel{0}, TotalTangFlux{0}, TotalAreaRelTangVel{0};
+              TotalRelTangVel{0}, TotalTangFlux{0}, TotalAreaRelTangVel{0},
+              TotalAbsTangVel{0}, TotalAreaAbsTangVel{0}, TotalMassAbsTangVel{0};
 
     su2double TotalFluxes[MAXNVAR];
     /*--- Forces initialization for contenitors ---*/
@@ -9173,6 +9174,10 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
       TotalRelTangVel += (TurboVelocity[1] - TurboGridVelocity[1]);
       TotalAreaRelTangVel += Area*(TurboVelocity[1] - TurboGridVelocity[1]);
       TotalTangFlux += Area*Density*TurboVelocity[0]*(TurboVelocity[1] - TurboGridVelocity[1]);
+
+      TotalAbsTangVel += TurboVelocity[1];
+      TotalAreaAbsTangVel += Area*TurboVelocity[1];
+      TotalMassAbsTangVel += Area*Density*TurboVelocity[0]*TurboVelocity[1];
 
       /*--- Compute turbulent integral quantities for the boundary of interest ---*/
 
@@ -9255,6 +9260,10 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
     TotalAreaRelTangVel = Allreduce(TotalAreaRelTangVel);
     TotalTangFlux = Allreduce(TotalTangFlux);
 
+    TotalAbsTangVel = Allreduce(TotalAbsTangVel);
+    TotalAreaAbsTangVel = Allreduce(TotalAreaAbsTangVel);
+    TotalMassAbsTangVel = Allreduce(TotalMassAbsTangVel);
+
     auto* buffer = new su2double[max(nVar,nDim)];
 
     auto Allreduce_inplace = [buffer](int size, su2double* x) {
@@ -9289,7 +9298,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             /*--- Compute the averaged value for the boundary of interest for the span of interest ---*/
 
             const bool belowMachLimit = (abs(MachTest)< config->GetAverageMachLimit());
-            su2double avgDensity{0}, avgPressure{0}, avgKine{0}, avgOmega{0}, avgNu{0}, avgVelocity[MAXNDIM] = {0}, avgRelTangVel{0};
+            su2double avgDensity{0}, avgPressure{0}, avgKine{0}, avgOmega{0}, avgNu{0}, avgVelocity[MAXNDIM] = {0}, avgRelTangVel{0}, avgAbsTangVel{0};
             for (auto iVar = 0u; iVar<nVar; iVar++){
               AverageFlux[iMarker][iSpan][iVar]   = TotalFluxes[iVar]/TotalArea;
               SpanTotalFlux[iMarker][iSpan][iVar] = TotalFluxes[iVar];
@@ -9308,6 +9317,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 avgNu             = TotalNu/nVert;
               }
               avgRelTangVel = TotalRelTangVel/nVert;
+              avgAbsTangVel = TotalAbsTangVel/nVert;
               break;
             case AREA:
             /*--- compute area average ---*/
@@ -9320,6 +9330,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 avgNu = TotalAreaNu / TotalArea;
               }
               avgRelTangVel = TotalAreaRelTangVel / TotalArea;
+              avgAbsTangVel = TotalAreaAbsTangVel / TotalArea;
               break;
             case MASSFLUX:
             /*--- compute mass-flux average ---*/
@@ -9333,6 +9344,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   avgNu = TotalAreaNu / TotalArea;
                 }
                 avgRelTangVel = TotalAreaRelTangVel / TotalArea;
+                avgAbsTangVel = TotalAreaAbsTangVel / TotalArea;
               } else {
                 avgDensity = TotalMassDensity / TotalFluxes[0];
                 avgPressure = TotalMassPressure / TotalFluxes[0];
@@ -9343,6 +9355,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   avgNu = TotalMassNu / TotalFluxes[0];
                 }
                 avgRelTangVel = TotalTangFlux / TotalFluxes[0];
+                avgAbsTangVel = TotalMassAbsTangVel / TotalFluxes[0];
               }
               break;
             case MIXEDOUT:
@@ -9358,6 +9371,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   avgNu = TotalAreaNu / TotalArea;
                 }
                 avgRelTangVel = TotalAreaRelTangVel / TotalArea;
+                avgAbsTangVel = TotalAreaAbsTangVel / TotalArea;
               }else {
                 auto val_init_pressure = OldAveragePressure[iMarker][iSpan];
                 MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgPressure, avgDensity);
@@ -9373,6 +9387,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                     avgVelocity[iDim-1]   = AverageFlux[iMarker][iSpan][iDim] / AverageFlux[iMarker][iSpan][0];
                 }
                 avgRelTangVel = TotalTangFlux / TotalFluxes[0];
+                avgAbsTangVel = TotalMassAbsTangVel / TotalFluxes[0];
                 if (turbulent) {
                   avgKine       = TotalMassKine / TotalFluxes[0];
                   avgOmega      = TotalMassOmega / TotalFluxes[0];
@@ -9455,6 +9470,9 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             } else {
               ComputeTurboVelocity(avgVelocity, AverageTurboNormal , TurboVel, marker_flag, config->GetKind_TurboMachinery(iZone));
             }
+            /*--- Override the tangential component with the direct per-vertex turbo-frame average
+             *    so that TurboVel[1] - RelTangVelocity = avg(grid tang. vel.) ---*/
+            TurboVel[1] = avgAbsTangVel;
           }
         }
       } // iMarkerTP

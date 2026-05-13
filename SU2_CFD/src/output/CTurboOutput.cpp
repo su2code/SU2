@@ -83,7 +83,7 @@ void CTurbomachineryState::ComputeState(CFluidModel& fluidModel, const CTurbomac
   su2double tangVel2 = TangVelocity * TangVelocity;
   RelVelocity.assign(Velocity.begin(), Velocity.end());
   RelVelocity[1] -= TangVelocity;
-  su2double relVel2 = GetRelVelocityValue();
+  su2double relVel2 = GetRelVelocityValue() * GetRelVelocityValue();
   FlowAngle = atan(RelVelocity[1] / RelVelocity[0]);
   RelMach.assign(RelVelocity.begin(), RelVelocity.end());
   std::for_each(RelMach.begin(), RelMach.end(), [&](su2double& el) { el /= soundSpeed; });
