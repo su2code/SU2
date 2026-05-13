@@ -43,16 +43,13 @@ __global__ void GPUMatrixVectorProductAdd(matrixType* matrix, vectorType* vec, v
 
    if(row<nPointDomain && threadNo<activeThreads)
    {
-      vectorType res = 0.0;
-
       for(int index = d_row_ptr[row] * nVar * nEqn + threadNo; index < d_row_ptr[row+1] * nVar * nEqn; index+=activeThreads)
       {
          int blockCol = index%nEqn;
          int blockNo = index/(nVar * nEqn);
-         res += matrix[index] * vec[(d_col_ind[blockNo])*nVar + blockCol];
+         int trueBlockRow = (index % (nVar * nEqn)) / nEqn;
+         atomicAdd(&prod[row * nVar + trueBlockRow], matrix[index] * vec[(d_col_ind[blockNo])*nVar + blockCol]);
       }
-
-      atomicAdd(&prod[row * nVar + blockRow], res);
    }
 }
 
