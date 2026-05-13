@@ -72,7 +72,7 @@ class CSpeciesSolver : public CScalarSolver<CSpeciesVariable> {
   /*!
    * \brief Virtual function returning whether this is the species solver.
    */
-  inline bool IsSpeciesSolver() const override { return true; }
+  inline bool IsSpeciesSolver() const final { return true; }
 
   /*!
    * \brief Restart residual and compute gradients.
