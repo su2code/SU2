@@ -58,7 +58,7 @@ public:
   /*!
    * \brief Virtual function returning whether this is the turbulent solver.
    */
-  inline bool IsTurbSolver() const override { return true; }
+  inline bool IsTurbSolver() const final { return true; }
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
