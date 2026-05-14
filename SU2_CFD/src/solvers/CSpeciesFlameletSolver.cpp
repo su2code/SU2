@@ -283,6 +283,34 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       }
       END_SU2_OMP_FOR
 
+      /*--- Override species at inlet boundary nodes with their temperature-consistent
+       prescribed values. Without this, all nodes start at the domain-initial scalars
+       (e.g. Z=0, H_domain). At the fuel inlet (Z=1) the extrapolated density from
+       {Z=0, H_domain} is ~1.177 kg/m3 (air) instead of ~0.652 kg/m3 (fuel). The
+       flow Preprocessing runs before the species BC and uses these node scalars to
+       set the flow node density. So the very first flow BC would see rho=1.177 at
+       the fuel inlet, creating an 80% mass-flux overestimate that can diverge.
+       By setting the correct inlet species here (including the enthalpy corrected
+       by GetEnthFromTemp to be consistent with the prescribed temperature), the
+       flow Preprocessing computes the right density at inlet nodes from iteration 0. ---*/
+      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetMarker_All_KindBC(iMarker) != INLET_FLOW) continue;
+        const string InletTag = config->GetMarker_All_TagBound(iMarker);
+        const su2double* inlet_species = config->GetInlet_SpeciesVal(InletTag);
+        if (inlet_species == nullptr) continue;
+        su2double temp_bc = config->GetInletTtotal(InletTag);
+        su2double scalar_bc[MAXNVAR];
+        for (auto iVar = 0u; iVar < nVar; iVar++) scalar_bc[iVar] = inlet_species[iVar];
+        su2double enth_bc = scalar_bc[I_ENTH];
+        GetEnthFromTemp(fluid_model_local, temp_bc, scalar_bc, &enth_bc);
+        scalar_bc[I_ENTH] = enth_bc;
+        for (unsigned long iVertex = 0; iVertex < geometry[i_mesh]->nVertex[iMarker]; iVertex++) {
+          unsigned long iPoint = geometry[i_mesh]->vertex[iMarker][iVertex]->GetNode();
+          if (!geometry[i_mesh]->nodes->GetDomain(iPoint)) continue;
+          solver_container[i_mesh][SPECIES_SOL]->GetNodes()->SetSolution(iPoint, scalar_bc);
+        }
+      }
+
       solver_container[i_mesh][SPECIES_SOL]->InitiateComms(geometry[i_mesh], config, MPI_QUANTITIES::SOLUTION);
       solver_container[i_mesh][SPECIES_SOL]->CompleteComms(geometry[i_mesh], config, MPI_QUANTITIES::SOLUTION);
 
@@ -330,7 +358,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
 void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config) {
   SU2_ZONE_SCOPED
-  const bool variable_density = (config->GetVariable_Density_Model());
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -338,22 +365,33 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
     /*--- Access the primitive variables at this node. ---*/
 
     su2double Density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-    su2double BetaInc2 = solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(iPoint);
-    su2double Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
 
-    su2double SolP = solver_container[FLOW_SOL]->LinSysSol(iPoint, prim_idx.Pressure());
-    su2double SolT = solver_container[FLOW_SOL]->LinSysSol(iPoint, prim_idx.Temperature());
+    /*--- Exact Jacobian linearisation of d(rho*phi)/d(phi) = rho + phi*(d rho/d phi).
+     In both density models (VARIABLE and FLAMELET), density in the flamelet solver
+     is ultimately derived from the ideal gas law: rho = (M/1000)*p/(R*T) for VARIABLE
+     and rho is read directly from the LUT (where it was precomputed the same way) for
+     FLAMELET. So dRhodC is in principle non-zero for both Z and H.
 
-    /*--- We need the derivative of the equation of state to build the
-     preconditioning matrix. For now, the only option is the ideal gas
-     law, but in the future, dRhodT should be in the fluid model. ---*/
+     However, using the exact dRhodC is deliberately avoided:
+       - For Z  (I_PROGVAR): drho/dZ < 0 everywhere (pure fuel lighter than air).
+         At Z=1, drho/dZ is large enough that (rho + Z*drho/dZ) can be negative,
+         which makes the Jacobian diagonal negative and destabilises the system.
+       - For H  (I_ENTH): drho/dH < 0 (higher H -> higher T -> lower rho).
+         dRhodH is not exposed by the CFluidModel interface (neither VARIABLE nor
+         FLAMELET mode provides it), so using 0 is also the only practical choice.
 
-    su2double dRhodT = 0.0;
-    if (variable_density) {
-      dRhodT = -Density / Temperature;
-    }
+     The pressure-lag correction artcompc1 = SolP*scalar/(rho*beta2) is inapplicable
+     because in the incompressible formulation the thermodynamic pressure is fixed
+     (p_thermo = const), so dRho/dp_gauge = 0. The temperature-lag correction
+     artcompc2 = SolT*dRhodT*scalar/rho is similarly inapplicable: T is not a primary
+     scalar variable — H is — so the flow-temperature update (SolT) does not directly
+     correspond to a flamelet scalar correction. The physically correct correction would
+     require dRho/dH which is unavailable.
 
-    /*--- Passive scalars have no impact on the density. ---*/
+     Setting dRhodC=0 (i.e. Jaccomp=rho) is therefore the safe deliberate choice:
+     it guarantees a strictly positive diagonal for every variable and for every point,
+     at the cost of underestimating the H-equation diagonal. This affects convergence
+     rate only, never stability. ---*/
 
     su2double dRhodC = 0.0;
 
@@ -369,15 +407,6 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
     if (implicit) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         su2double scalar = nodes->GetSolution(iPoint, iVar);
-
-        /*--- Compute the lag terms for the decoupled linear system from
-         the mean flow equations and add to the residual for the scalar.
-         In short, we are effectively making these terms explicit. ---*/
-
-        su2double artcompc1 = SolP * scalar / (Density * BetaInc2);
-        su2double artcompc2 = SolT * dRhodT * scalar / (Density);
-
-        LinSysRes(iPoint, iVar) += artcompc1 + artcompc2;
 
         /*--- Add the extra Jacobian term to the scalar system. ---*/
 
@@ -407,6 +436,39 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
   /*--- call the species solver for the shared sources (axisymmetric and custom python source term) ---*/
   CSpeciesSolver::Source_Residual(geometry, solver_container, numerics_container, config, iMesh);
 
+}
+
+void CSpeciesFlameletSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container,
+                                               CNumerics* conv_numerics, CNumerics* visc_numerics,
+                                               CConfig* config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
+
+  /*--- In FLOW_MARKERS mode: read MARKER_HEATFLUX.
+   In SPECIES_MARKERS mode: read flux/value from MARKER_WALL_SPECIES. ---*/
+
+  if (config->GetFlamelet_Enthalpy_BC() != FLAMELET_ENTHALPY_BC::FLOW_MARKERS) {
+    CSpeciesSolver::BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    return;
+  }
+
+  const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  if (config->GetIntegrated_HeatFlux())
+    Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
+
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+    const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+    /*--- Neumann condition: q_wall is the prescribed heat flux (W/m^2, positive into domain).
+     This adds a source term dH/dn * lambda = q_wall to the enthalpy residual. ---*/
+    LinSysRes(iPoint, I_ENTH) -= Wall_HeatFlux * Area;
+  }
+  END_SU2_OMP_FOR
 }
 
 void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
