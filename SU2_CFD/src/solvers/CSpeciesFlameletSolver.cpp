@@ -283,16 +283,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       }
       END_SU2_OMP_FOR
 
-      /*--- Override species at inlet boundary nodes with their temperature-consistent
-       prescribed values. Without this, all nodes start at the domain-initial scalars
-       (e.g. Z=0, H_domain). At the fuel inlet (Z=1) the extrapolated density from
-       {Z=0, H_domain} is ~1.177 kg/m3 (air) instead of ~0.652 kg/m3 (fuel). The
-       flow Preprocessing runs before the species BC and uses these node scalars to
-       set the flow node density. So the very first flow BC would see rho=1.177 at
-       the fuel inlet, creating an 80% mass-flux overestimate that can diverge.
-       By setting the correct inlet species here (including the enthalpy corrected
-       by GetEnthFromTemp to be consistent with the prescribed temperature), the
-       flow Preprocessing computes the right density at inlet nodes from iteration 0. ---*/
+      /*--- Override species at inlet boundary nodes. ---*/
       for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
         if (config->GetMarker_All_KindBC(iMarker) != INLET_FLOW) continue;
         const string InletTag = config->GetMarker_All_TagBound(iMarker);
