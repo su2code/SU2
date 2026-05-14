@@ -349,6 +349,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
 
 void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** solver_container, CConfig* config) {
   SU2_ZONE_SCOPED
+  const bool variable_density = (config->GetVariable_Density_Model());
   const bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -356,33 +357,22 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
     /*--- Access the primitive variables at this node. ---*/
 
     su2double Density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    su2double BetaInc2 = solver_container[FLOW_SOL]->GetNodes()->GetBetaInc2(iPoint);
+    su2double Temperature = solver_container[FLOW_SOL]->GetNodes()->GetTemperature(iPoint);
 
-    /*--- Exact Jacobian linearisation of d(rho*phi)/d(phi) = rho + phi*(d rho/d phi).
-     In both density models (VARIABLE and FLAMELET), density in the flamelet solver
-     is ultimately derived from the ideal gas law: rho = (M/1000)*p/(R*T) for VARIABLE
-     and rho is read directly from the LUT (where it was precomputed the same way) for
-     FLAMELET. So dRhodC is in principle non-zero for both Z and H.
+    su2double SolP = solver_container[FLOW_SOL]->LinSysSol(iPoint, prim_idx.Pressure());
+    su2double SolT = solver_container[FLOW_SOL]->LinSysSol(iPoint, prim_idx.Temperature());
 
-     However, using the exact dRhodC is deliberately avoided:
-       - For Z  (I_PROGVAR): drho/dZ < 0 everywhere (pure fuel lighter than air).
-         At Z=1, drho/dZ is large enough that (rho + Z*drho/dZ) can be negative,
-         which makes the Jacobian diagonal negative and destabilises the system.
-       - For H  (I_ENTH): drho/dH < 0 (higher H -> higher T -> lower rho).
-         dRhodH is not exposed by the CFluidModel interface (neither VARIABLE nor
-         FLAMELET mode provides it), so using 0 is also the only practical choice.
+    /*--- We need the derivative of the equation of state to build the
+     preconditioning matrix. For now, the only option is the ideal gas
+     law, but in the future, dRhodT should be in the fluid model. ---*/
 
-     The pressure-lag correction artcompc1 = SolP*scalar/(rho*beta2) is inapplicable
-     because in the incompressible formulation the thermodynamic pressure is fixed
-     (p_thermo = const), so dRho/dp_gauge = 0. The temperature-lag correction
-     artcompc2 = SolT*dRhodT*scalar/rho is similarly inapplicable: T is not a primary
-     scalar variable — H is — so the flow-temperature update (SolT) does not directly
-     correspond to a flamelet scalar correction. The physically correct correction would
-     require dRho/dH which is unavailable.
+    su2double dRhodT = 0.0;
+    if (variable_density) {
+      dRhodT = -Density / Temperature;
+    }
 
-     Setting dRhodC=0 (i.e. Jaccomp=rho) is therefore the safe deliberate choice:
-     it guarantees a strictly positive diagonal for every variable and for every point,
-     at the cost of underestimating the H-equation diagonal. This affects convergence
-     rate only, never stability. ---*/
+    /*--- Passive scalars have no impact on the density. ---*/
 
     su2double dRhodC = 0.0;
 
@@ -398,6 +388,15 @@ void CSpeciesFlameletSolver::SetPreconditioner(CGeometry* geometry, CSolver** so
     if (implicit) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         su2double scalar = nodes->GetSolution(iPoint, iVar);
+
+        /*--- Compute the lag terms for the decoupled linear system from
+         the mean flow equations and add to the residual for the scalar.
+         In short, we are effectively making these terms explicit. ---*/
+
+        su2double artcompc1 = SolP * scalar / (Density * BetaInc2);
+        su2double artcompc2 = SolT * dRhodT * scalar / (Density);
+
+        LinSysRes(iPoint, iVar) += artcompc1 + artcompc2;
 
         /*--- Add the extra Jacobian term to the scalar system. ---*/
 
