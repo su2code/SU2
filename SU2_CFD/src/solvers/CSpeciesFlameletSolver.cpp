@@ -283,25 +283,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       }
       END_SU2_OMP_FOR
 
-      /*--- Override species at inlet boundary nodes. ---*/
-      for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_KindBC(iMarker) != INLET_FLOW) continue;
-        const string InletTag = config->GetMarker_All_TagBound(iMarker);
-        const su2double* inlet_species = config->GetInlet_SpeciesVal(InletTag);
-        if (inlet_species == nullptr) continue;
-        su2double temp_bc = config->GetInletTtotal(InletTag);
-        su2double scalar_bc[MAXNVAR];
-        for (auto iVar = 0u; iVar < nVar; iVar++) scalar_bc[iVar] = inlet_species[iVar];
-        su2double enth_bc = scalar_bc[I_ENTH];
-        GetEnthFromTemp(fluid_model_local, temp_bc, scalar_bc, &enth_bc);
-        scalar_bc[I_ENTH] = enth_bc;
-        for (unsigned long iVertex = 0; iVertex < geometry[i_mesh]->nVertex[iMarker]; iVertex++) {
-          unsigned long iPoint = geometry[i_mesh]->vertex[iMarker][iVertex]->GetNode();
-          if (!geometry[i_mesh]->nodes->GetDomain(iPoint)) continue;
-          solver_container[i_mesh][SPECIES_SOL]->GetNodes()->SetSolution(iPoint, scalar_bc);
-        }
-      }
-
       solver_container[i_mesh][SPECIES_SOL]->InitiateComms(geometry[i_mesh], config, MPI_QUANTITIES::SOLUTION);
       solver_container[i_mesh][SPECIES_SOL]->CompleteComms(geometry[i_mesh], config, MPI_QUANTITIES::SOLUTION);
 
