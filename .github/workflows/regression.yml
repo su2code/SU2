@@ -18,64 +18,85 @@ on:
         type: string
 
 jobs:
+  setup:
+    name: Compute shared flags
+    runs-on: ubuntu-latest
+
+    outputs:
+      flags: ${{ steps.compute.outputs.flags }}
+      werror: ${{ steps.compute.outputs.flags }}
+
+    steps:
+      - id: compute
+        run: |
+          if [[ "${{ inputs.runner || 'ubuntu-latest' }}" == *arm* ]]; then
+            echo "flags=" >> $GITHUB_OUTPUT
+            echo "werror=" >> $GITHUB_OUTPUT
+          else
+            echo "flags=-Dcpu-arch=skylake" >> $GITHUB_OUTPUT
+            echo "werror=--werror" >> $GITHUB_OUTPUT
+          fi
+
   build:
     name: Build SU2
+    needs: setup
     strategy:
       fail-fast: false
       matrix:
         config_set: [BaseMPI, ReverseMPI, ForwardMPI, BaseNoMPI, ReverseNoMPI, ForwardNoMPI, ReverseTagNoMPI, BaseOMP, ReverseOMP, ForwardOMP]
         include:
           - config_set: BaseMPI
-            flags: '-Denable-pywrapper=true -Denable-coolprop=true -Denable-mpp=true -Dinstall-mpp=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-pywrapper=true -Denable-coolprop=true -Denable-mpp=true -Dinstall-mpp=true -Denable-mlpcpp=true -Denable-tests=true --warnlevel=2'
           - config_set: ReverseMPI
-            flags: '-Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Denable-pywrapper=true -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ForwardMPI
-            flags: '-Denable-directdiff=true -Denable-normal=false -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Denable-tests=true -Denable-mlpcpp=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: BaseNoMPI
-            flags: '-Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-pywrapper=true -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true -Denable-tests=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ReverseNoMPI
-            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ForwardNoMPI
-            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-tests=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ReverseTagNoMPI
-            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 --werror -Dcodi-tape=Tag'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled -Denable-pywrapper=true -Denable-tests=true --warnlevel=3 ${{ needs.setup.outputs.werror }} -Dcodi-tape=Tag'
           - config_set: BaseOMP
-            flags: '-Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ReverseOMP
-            flags: '-Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ForwardOMP
-            flags: '-Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+            flags: '${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 ${{ needs.setup.outputs.werror }}'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ccache
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2:250717-1402
+        uses: docker://ghcr.io/su2code/su2/build-su2:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Build
-        uses: docker://ghcr.io/su2code/su2/build-su2:250717-1402
+        uses: docker://ghcr.io/su2code/su2/build-su2:260405-0054
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
       - name: Post Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2:250717-1402
+        uses: docker://ghcr.io/su2code/su2/build-su2:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   build_tsan:
     name: Build SU2 (tsan)
+    needs: setup
     if: ${{ !contains(inputs.runner, 'arm') }}
     strategy:
       fail-fast: false
@@ -83,75 +104,76 @@ jobs:
         config_set: [BaseOMP-tsan, ReverseOMP-tsan] #ForwardOMP-tsan
         include:
           - config_set: BaseOMP-tsan
-            flags: '--buildtype=debugoptimized -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
+            flags: '--buildtype=debugoptimized ${{ needs.setup.outputs.flags }} -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
           - config_set: ReverseOMP-tsan
-            flags: '--buildtype=debugoptimized -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
+            flags: '--buildtype=debugoptimized ${{ needs.setup.outputs.flags }} -Denable-autodiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-tecio=false --warnlevel=3'
           #- config_set: ForwardOMP-tsan
-          #  flags: '--buildtype=debug -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 --werror'
+          #  flags: '--buildtype=debug ${{ needs.setup.outputs.flags }} -Denable-directdiff=true -Denable-normal=false -Dwith-omp=true -Denable-mixedprec=true -Denable-pywrapper=true -Denable-tecio=false --warnlevel=3 ${{ needs.setup.outputs.werror }}'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ccache
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:250717-1402
+        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Build
-        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:250717-1402
+        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:260405-0054
         with:
           args: -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
       - name: Post Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:250717-1402
+        uses: docker://ghcr.io/su2code/su2/build-su2-tsan:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
   build_asan:
     name: Build SU2 (asan)
+    needs: setup
     strategy:
       fail-fast: false
       matrix:
         config_set: [BaseNoMPI-asan, ReverseNoMPI-asan]
         include:
           - config_set: BaseNoMPI-asan
-            flags: '--buildtype=debugoptimized -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true --warnlevel=3 --werror'
+            flags: '--buildtype=debugoptimized ${{ needs.setup.outputs.flags }} -Denable-openblas=true -Dwith-mpi=disabled -Denable-mlpcpp=true --warnlevel=3 ${{ needs.setup.outputs.werror }}'
           - config_set: ReverseNoMPI-asan
-            flags: '--buildtype=debugoptimized --optimization=1 -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled --warnlevel=3 --werror'
+            flags: '--buildtype=debugoptimized ${{ needs.setup.outputs.flags }} --optimization=1 -Denable-autodiff=true -Denable-normal=false -Dwith-mpi=disabled --warnlevel=3 ${{ needs.setup.outputs.werror }}'
     runs-on: ${{ inputs.runner || 'ubuntu-latest' }}
     steps:
       - name: Cache Object Files
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ccache
           key: ${{ matrix.config_set }}-${{ github.sha }}
           restore-keys: ${{ matrix.config_set }}
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2-asan:250717-1402
+        uses: docker://ghcr.io/su2code/su2/build-su2-asan:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Build
-        run: docker run --rm --cap-add SYS_PTRACE -v $(pwd):${{ github.workspace }} -w ${{ github.workspace }} ghcr.io/su2code/su2/build-su2-asan:250717-1402 -b ${{github.ref}} -f "${{matrix.flags}}"
+        run: docker run --rm --cap-add SYS_PTRACE -v $(pwd):${{ github.workspace }} -w ${{ github.workspace }} ghcr.io/su2code/su2/build-su2-asan:260405-0054 -b ${{github.ref}} -f "${{matrix.flags}}"
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
       - name: Post Cleanup
-        uses: docker://ghcr.io/su2code/su2/build-su2-asan:250717-1402
+        uses: docker://ghcr.io/su2code/su2/build-su2-asan:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -182,12 +204,12 @@ jobs:
             tag: OMP
     steps:
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Download All artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
       - name: Uncompress and Move Binaries
         run: |
           BIN_FOLDER="$PWD/install/bin"
@@ -208,12 +230,12 @@ jobs:
           chmod a+x $BIN_FOLDER/*
           ls -lahR $BIN_FOLDER
       - name: Run Tests in Container
-        uses: docker://ghcr.io/su2code/su2/test-su2:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
       - name: Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -231,12 +253,12 @@ jobs:
             tag: TagNoMPI
     steps:
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Download All artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
       - name: Uncompress and Move Binaries
         run: |
           BIN_FOLDER="$PWD/install/bin"
@@ -257,12 +279,12 @@ jobs:
           chmod a+x $BIN_FOLDER/*
           ls -lahR $BIN_FOLDER
       - name: Run Tests in Container
-        uses: docker://ghcr.io/su2code/su2/test-su2:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--tapetests"
       - name: Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -277,12 +299,12 @@ jobs:
         testscript: ['hybrid_regression.py', 'hybrid_regression_AD.py']
     steps:
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Download All artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
       - name: Uncompress and Move Binaries
         run: |
           BIN_FOLDER="$PWD/install/bin"
@@ -303,12 +325,14 @@ jobs:
           chmod a+x $BIN_FOLDER/*
           ls -lahR $BIN_FOLDER
       - name: Run Tests in Container
-        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:260405-0054
+        env:
+          PMIX_MCA_gds: hash
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--tsan"
       - name: Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2-tsan:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -322,12 +346,12 @@ jobs:
         testscript: ['serial_regression.py', 'serial_regression_AD.py']
     steps:
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2-asan:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2-asan:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Download All artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
       - name: Uncompress and Move Binaries
         run: |
           BIN_FOLDER="$PWD/install/bin"
@@ -348,12 +372,12 @@ jobs:
           chmod a+x $BIN_FOLDER/*
           ls -lahR $BIN_FOLDER
       - name: Run Tests in Container
-        uses: docker://ghcr.io/su2code/su2/test-su2-asan:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2-asan:260405-0054
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--asan"
       - name: Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2-asan:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2-asan:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
@@ -374,22 +398,22 @@ jobs:
             tag: MPI
     steps:
       - name: Pre Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}
       - name: Download Base
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: ${{format('Base{0}', matrix.tag)}}
           path: ${{format('Base{0}', matrix.tag)}}
       - name: Download Reverse
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: ${{format('Reverse{0}', matrix.tag)}}
           path: ${{format('Reverse{0}', matrix.tag)}}
       - name: Download Forward
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v8
         with:
           name: ${{format('Forward{0}', matrix.tag)}}
           path: ${{format('Forward{0}', matrix.tag)}}
@@ -435,11 +459,13 @@ jobs:
           echo $PWD
           ls -lahR
       - name: Run Unit Tests
-        uses: docker://ghcr.io/su2code/su2/test-su2:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
+        env:
+          OMPI_MCA_osc: pt2pt
         with:
           entrypoint: install/bin/${{matrix.testdriver}}
       - name: Post Cleanup
-        uses: docker://ghcr.io/su2code/su2/test-su2:250717-1402
+        uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
           entrypoint: /bin/rm
           args: -rf install install_bin.tgz src ccache ${{ matrix.config_set }}

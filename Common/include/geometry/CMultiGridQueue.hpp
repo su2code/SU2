@@ -3,7 +3,7 @@
  * \brief Header of the multigrid queue class for the FVM solver.
  *        The subroutines and functions are in the <i>CMultiGridQueue.cpp</i> file.
  * \author F. Palacios
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -93,7 +93,7 @@ class CMultiGridQueue {
   void IncrPriorityCV(unsigned long incrPoint);
 
   /*!
-   * \brief Increase the priority of the CV.
+   * \brief Reduce the priority of the CV.
    * \param[in] redPoint - Index of the control volume.
    */
   void RedPriorityCV(unsigned long redPoint);

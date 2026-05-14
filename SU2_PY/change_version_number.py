@@ -3,7 +3,7 @@
 ## \file change_version_number.py
 #  \brief Python script for updating the version number of the SU2 suite.
 #  \author A. Aranake
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -27,36 +27,35 @@
 
 # make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
 from __future__ import print_function
-from optparse import OptionParser
+import argparse
 
 # Run the script from the base directory (ie $SU2HOME). Grep will search directories recursively for matches in version number
 import os, sys
 
-parser = OptionParser()
-parser.add_option(
+parser = argparse.ArgumentParser()
+parser.add_argument(
     "-v", "--version", dest="version", help="the new version number", metavar="VERSION"
 )
-parser.add_option(
+parser.add_argument(
     "-r",
     "--releasename",
     dest="releasename",
     help="Name of the new release",
     metavar="RELEASENAME",
 )
-parser.add_option(
+parser.add_argument(
     "-y",
     action="store_true",
     dest="yes",
     help="Answer yes to all questions",
-    metavar="YES",
 )
-(options, args) = parser.parse_args()
+options = parser.parse_args()
 
 if not options.version:
     parser.error("new version number must be provided with -v option")
 
-oldvers = '8.4.0 "Harrier"'
-oldvers_q = r"8.4.0 \"Harrier\""
+oldvers = '8.5.0 "Harrier"'
+oldvers_q = r"8.5.0 \"Harrier\""
 newvers = str(options.version) + ' "' + str(options.releasename) + '"'
 newvers_q = str(options.version) + ' \\"' + str(options.releasename) + '\\"'
 # oldvers = 'Copyright 2012-2026, SU2'

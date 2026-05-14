@@ -3,7 +3,7 @@
  * \brief Headers for the classes related to sparse matrix-vector product wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -72,6 +72,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
   const CSysMatrix<ScalarType>& matrix; /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                  /*!< \brief geometry associated with the matrix. */
   const CConfig* config;                /*!< \brief config of the problem. */
+  mutable bool matrix_uploaded = false; /*!< \brief Upload the matrix lazily on the first actual GPU matvec. */
 
  public:
   /*!
@@ -97,6 +98,10 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
     if (config->GetCUDA()) {
 #ifdef HAVE_CUDA
+      if (!matrix_uploaded) {
+        matrix.HtDTransfer();
+        matrix_uploaded = true;
+      }
       matrix.GPUMatrixVectorProduct(u, v, geometry, config);
 #else
       SU2_MPI::Error(

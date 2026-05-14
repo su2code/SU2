@@ -4,7 +4,7 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -103,14 +103,12 @@ protected:
 
   VectorType SolutionExtra_BGS_k; /*!< \brief Intermediate storage, enables cross term extraction as that is also pushed to Solution. */
 
- protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
   unsigned long nVar = 0;        /*!< \brief Number of variables of the problem. */
   unsigned long nPrimVar = 0;      /*!< \brief Number of primitive variables. */
   unsigned long nPrimVarGrad = 0;    /*!< \brief Number of primitives for which a gradient is computed. */
   unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
-  unsigned long nSecondaryVarGrad = 0;   /*!< \brief Number of secondaries for which a gradient is computed. */
   unsigned long nAuxVar = 0; /*!< \brief Number of auxiliary variables. */
 
   /*--- Only allow default construction by derived classes. ---*/
@@ -396,6 +394,46 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline virtual void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   */
+  inline virtual su2double GetLES_Mode(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_les_mode - Value of the LES sensor.
+   */
+  inline virtual void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   */
+  inline virtual su2double GetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSource - Source term in Langevin equations.
+   */
+  inline virtual void SetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim, su2double val_stochSource) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_integral - Value of the integral.
+   */
+  inline virtual void SetBesselIntegral(unsigned long iPoint, su2double val_integral) {}
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double GetBesselIntegral(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member.
@@ -1169,6 +1207,13 @@ public:
    */
   inline virtual su2double *GetVorticity(unsigned long iPoint) { return nullptr; }
   inline virtual const su2double *GetVorticity(unsigned long iPoint) const { return nullptr; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \return Value of strain rate magnitude.
+   */
+  inline virtual su2double GetStrainMag(unsigned long iPoint) const { return 0.0; }
 
   /*!
    * \brief A virtual member.

@@ -2,7 +2,7 @@
  * \file CFEANonlinearElasticity.hpp
  * \brief Declaration and inlines of the nonlinear elasticity FE numerics class.
  * \author Ruben Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,21 +37,15 @@
  *        Compute_Plane_Stress_Term and Compute_Stress_Tensor.
  * \ingroup Elasticity_Equations
  * \author R.Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  */
 class CFEANonlinearElasticity : public CFEAElasticity {
 
 protected:
 
-  su2double **F_Mat;             /*!< \brief Deformation gradient. */
-  su2double **b_Mat;             /*!< \brief Left Cauchy-Green Tensor. */
-  su2double **currentCoord;      /*!< \brief Current coordinates. */
-  su2double **Stress_Tensor;     /*!< \brief Cauchy stress tensor */
-
-  su2double **FmT_Mat;           /*!< \brief Deformation gradient inverse and transpose. */
-
-  su2double **KAux_P_ab;         /*!< \brief Auxiliar matrix for the pressure term */
-  su2double *KAux_t_a;           /*!< \brief Auxiliar matrix for the pressure term */
+  su2double F_Mat[MAXNDIM][MAXNDIM];   /*!< \brief Deformation gradient. */
+  su2double b_Mat[MAXNDIM][MAXNDIM];   /*!< \brief Left Cauchy-Green Tensor. */
+  su2double Stress_Tensor[MAXNDIM][MAXNDIM];
 
   su2double J_F;                 /*!< \brief Jacobian of the transformation (determinant of F) */
 
@@ -59,23 +53,19 @@ protected:
 
   bool nearly_incompressible;    /*!< \brief Boolean to consider nearly_incompressible effects */
 
-  su2double **F_Mat_Iso;         /*!< \brief Isocoric component of the deformation gradient. */
-  su2double **b_Mat_Iso;         /*!< \brief Isocoric component of the left Cauchy-Green tensor. */
-
-  su2double C10, D1;             /*!< \brief C10 = Mu/2. D1 = Kappa/2. */
-  su2double J_F_Iso;             /*!< \brief J_F_Iso: det(F)^-1/3. */
+  su2double b_Mat_Iso[MAXNDIM][MAXNDIM]; /*!< \brief Isocoric component of the left Cauchy-Green tensor. */
 
   su2double cijkl[3][3][3][3];   /*!< \brief Constitutive tensor i,j,k,l (defined only for incompressibility - near inc.). */
 
   bool maxwell_stress;           /*!< \brief Consider the effects of the dielectric loads */
 
-  su2double *EField_Ref_Unit,    /*!< \brief Electric Field, unitary, in the reference configuration. */
-  *EField_Ref_Mod;               /*!< \brief Electric Field, modulus, in the reference configuration. */
-  su2double *EField_Curr_Unit;   /*!< \brief Auxiliary vector for the unitary Electric Field in the current configuration. */
+  std::unique_ptr<su2double[]> EField_Ref_Unit;    /*!< \brief Electric Field, unitary, in the reference configuration. */
+  std::unique_ptr<su2double[]> EField_Ref_Mod;     /*!< \brief Electric Field, modulus, in the reference configuration. */
+  std::unique_ptr<su2double[]> EField_Curr_Unit;   /*!< \brief Auxiliary vector for the unitary Electric Field in the current configuration. */
   unsigned short nElectric_Field,
   nDim_Electric_Field;
 
-  su2double *ke_DE_i;            /*!< \brief Electric Constant for Dielectric Elastomers. */
+  std::unique_ptr<su2double[]> ke_DE_i;  /*!< \brief Electric Constant for Dielectric Elastomers. */
 
   su2double ke_DE;               /*!< \brief Electric Constant for Dielectric Elastomers. */
   su2double EFieldMod_Ref;       /*!< \brief Modulus of the electric field in the reference configuration. */
@@ -93,11 +83,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CFEANonlinearElasticity(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEANonlinearElasticity(void) override;
 
   /*!
    * \brief Set element electric field.
@@ -161,9 +146,48 @@ protected:
   void SetElectric_Properties(const CElement *element_container, const CConfig *config);
 
   /*!
-   * \brief TODO: Describe what this does.
+   * \brief Computes b_Mat.
    */
-  void Compute_FmT_Mat(void);
+  void ComputeLeftCauchyGreenTensor() {
+    for (unsigned short iVar = 0; iVar < MAXNDIM; iVar++) {
+      for (unsigned short jVar = 0; jVar < MAXNDIM; jVar++) {
+        b_Mat[iVar][jVar] = 0;
+        for (unsigned short kVar = 0; kVar < MAXNDIM; kVar++) {
+          b_Mat[iVar][jVar] += F_Mat[iVar][kVar]*F_Mat[jVar][kVar];
+        }
+      }
+    }
+  }
+
+  /*!
+   * \brief Computes the determinant of the deformation gradient.
+   */
+  void ComputeJ_F() {
+    J_F = F_Mat[0][0]*F_Mat[1][1]*F_Mat[2][2]+
+          F_Mat[0][1]*F_Mat[1][2]*F_Mat[2][0]+
+          F_Mat[0][2]*F_Mat[1][0]*F_Mat[2][1]-
+          F_Mat[0][2]*F_Mat[1][1]*F_Mat[2][0]-
+          F_Mat[1][2]*F_Mat[2][1]*F_Mat[0][0]-
+          F_Mat[2][2]*F_Mat[0][1]*F_Mat[1][0];
+  }
+
+  /*!
+   * \brief Computes the deformation gradient transpose inverse.
+   */
+  template <typename Mat>
+  void Compute_FmT_Mat(const Mat& F_Mat, const su2double& J_F, Mat& FmT_Mat) const {
+    FmT_Mat[0][0] = (F_Mat[1][1]*F_Mat[2][2] - F_Mat[1][2]*F_Mat[2][1]) / J_F;
+    FmT_Mat[0][1] = (F_Mat[1][2]*F_Mat[2][0] - F_Mat[2][2]*F_Mat[1][0]) / J_F;
+    FmT_Mat[0][2] = (F_Mat[1][0]*F_Mat[2][1] - F_Mat[1][1]*F_Mat[2][0]) / J_F;
+
+    FmT_Mat[1][0] = (F_Mat[0][2]*F_Mat[2][1] - F_Mat[0][1]*F_Mat[2][2]) / J_F;
+    FmT_Mat[1][1] = (F_Mat[0][0]*F_Mat[2][2] - F_Mat[2][0]*F_Mat[0][2]) / J_F;
+    FmT_Mat[1][2] = (F_Mat[0][1]*F_Mat[2][1] - F_Mat[0][0]*F_Mat[2][0]) / J_F;
+
+    FmT_Mat[2][0] = (F_Mat[0][1]*F_Mat[1][2] - F_Mat[0][2]*F_Mat[1][1]) / J_F;
+    FmT_Mat[2][1] = (F_Mat[0][2]*F_Mat[1][0] - F_Mat[0][0]*F_Mat[1][2]) / J_F;
+    FmT_Mat[2][2] = (F_Mat[0][0]*F_Mat[1][1] - F_Mat[0][1]*F_Mat[1][0]) / J_F;
+  }
 
   /*!
    * \brief TODO: Describe what this does.

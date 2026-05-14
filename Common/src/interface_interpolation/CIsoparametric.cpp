@@ -2,7 +2,7 @@
  * \file CIsoparametric.cpp
  * \brief Implementation isoparametric interpolation (using FE shape functions).
  * \author P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -245,12 +245,9 @@ void CIsoparametric::SetTransferCoeff(const CConfig* const* config) {
         }
       }
       END_SU2_OMP_FOR
-      SU2_OMP_CRITICAL {
-        MaxDistance = max(MaxDistance, maxDist);
-        ErrorCounter += errorCount;
-        nGlobalVertexTarget += totalCount;
-      }
-      END_SU2_OMP_CRITICAL
+      atomicMax(maxDist, MaxDistance);
+      atomicAdd(errorCount, ErrorCounter);
+      atomicAdd(totalCount, nGlobalVertexTarget);
     }
     END_SU2_OMP_PARALLEL
 

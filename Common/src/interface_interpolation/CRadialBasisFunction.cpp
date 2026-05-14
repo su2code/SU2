@@ -2,7 +2,7 @@
  * \file CRadialBasisFunction.cpp
  * \brief Implementation of RBF interpolation.
  * \author Joel Ho, P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -373,14 +373,11 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
         }
       }  // end target vertex loop
       END_SU2_OMP_FOR
-      SU2_OMP_CRITICAL {
-        totalDonorPoints += totalDonors;
-        MinDonors = min(MinDonors, minDonors);
-        MaxDonors = max(MaxDonors, maxDonors);
-        AvgCorrection += sumCorr;
-        MaxCorrection = max(MaxCorrection, maxCorr);
-      }
-      END_SU2_OMP_CRITICAL
+      atomicAdd(totalDonors, totalDonorPoints);
+      atomicMin(minDonors, MinDonors);
+      atomicMax(maxDonors, MaxDonors);
+      atomicAdd(sumCorr, AvgCorrection);
+      atomicMax(maxCorr, MaxCorrection);
     }
     END_SU2_OMP_PARALLEL
 

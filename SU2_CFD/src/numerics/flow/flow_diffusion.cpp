@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -120,7 +120,8 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
                            const su2double* const *val_gradprimvar,
                            const su2double val_turb_ke,
                            const su2double val_laminar_viscosity,
-                           const su2double val_eddy_viscosity) {
+                           const su2double val_eddy_viscosity,
+                           const CConfig* config) {
 
   const su2double Density = val_primvar[nDim+2];
 
@@ -140,6 +141,30 @@ void CAvgGrad_Base::SetStressTensor(const su2double *val_primvar,
     // turb_ke is not considered in the stress tensor, see #797
     ComputeStressTensor(nDim, tau, val_gradprimvar+1, total_viscosity, Density, su2double(0.0));
   }
+
+  /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
+
+  if (config->GetSBSParam().StochasticBackscatter) {
+    for (unsigned short iDim = 0 ; iDim < nDim; iDim++)
+      for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+        tau[iDim][jDim] += stochReynStress[iDim][jDim];
+      }
+  }
+
+}
+
+void CAvgGrad_Base::SetStochReynStress(const CConfig* config) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Mean_StochVar[iDim] = 0.5*(stochVar_i[iDim] + stochVar_j[iDim]);
+  su2double tkeEstim_i = 0.0, tkeEstim_j = 0.0;
+  if (max(lesMode_i, lesMode_j) > config->GetSBSParam().stochFdThreshold) {
+    tkeEstim_i = pow(Eddy_Viscosity_i/dist_i, 2);
+    tkeEstim_j = pow(Eddy_Viscosity_j/dist_j, 2);
+  }
+  su2double Mean_turb_ke_estim = 0.5*(tkeEstim_i + tkeEstim_j);
+  su2double intensityCoeff = ComputeStochRelaxFactor(config);
+  ComputeStochReynStress(Mean_PrimVar[nDim+2], Mean_turb_ke_estim,
+                         Mean_StochVar, intensityCoeff, stochReynStress);
 }
 
 void CAvgGrad_Base::SetHeatFluxVector(const su2double* const* val_gradprimvar, const su2double val_eddy_viscosity,
@@ -445,10 +470,14 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
                         Mean_turb_ke, MeanPerturbedRSM);
   }
 
+  /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
+
+  if (config->GetSBSParam().StochasticBackscatter) SetStochReynStress(config);
+
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
@@ -619,9 +648,14 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
                         Mean_turb_ke, MeanPerturbedRSM);
   }
 
+  /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
+
+  if (config->GetSBSParam().StochasticBackscatter) SetStochReynStress(config);
+
   /*--- Get projected flux tensor (viscous residual) ---*/
+
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
@@ -944,10 +978,14 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
                         Mean_turb_ke, MeanPerturbedRSM);
   }
 
+  /* --- If the Stochastic Backscatter Model is active, add random contribution to stress tensor ---*/
+
+  if (config->GetSBSParam().StochasticBackscatter) SetStochReynStress(config);
+
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
   if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 

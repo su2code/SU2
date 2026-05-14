@@ -2,7 +2,7 @@
  * \file C2DContainer.hpp
  * \brief A templated vector/matrix object.
  * \author P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -421,7 +421,7 @@ class C2DContainer
   template <class IndexSIMD_t>
   class CInnerIterGather {
    private:
-    static_assert(std::is_integral<typename IndexSIMD_t::Scalar>::value, "");
+    static_assert(std::is_integral<typename IndexSIMD_t::Scalar>::value);
     enum { Size = IndexSIMD_t::Size };
     IndexSIMD_t m_offsets;
     const Index m_increment;
@@ -545,7 +545,10 @@ class C2DContainer
    * \brief Set value of all entries to "value".
    */
   void setConstant(const Scalar_t& value) noexcept {
+    // GCC 13 has a false-positive about overflow of memcpy due to size being uint64_t, and its memcpy just int64_t.
+    SU2_IGNORE_WARNING("-Wstringop-overflow")
     for (size_t i = 0; i < size(); ++i) m_data[i] = value;
+    SU2_RESTORE_WARNING
   }
 
   /*!

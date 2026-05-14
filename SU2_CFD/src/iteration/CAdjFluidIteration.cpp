@@ -2,7 +2,7 @@
  * \file CAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,6 +32,7 @@ void CAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integratio
                                     CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                     CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                     CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
   unsigned short iMesh;
   bool harmonic_balance = (config[ZONE_0]->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   bool dynamic_mesh = config[ZONE_0]->GetGrid_Movement();
@@ -132,6 +133,7 @@ void CAdjFluidIteration::Iterate(COutput* output, CIntegration**** integration, 
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                  CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                  CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
   const auto kind_solver = config[val_iZone]->GetKind_Solver();
   switch (kind_solver) {
     case MAIN_SOLVER::ADJ_EULER:
@@ -162,6 +164,7 @@ void CAdjFluidIteration::Update(COutput* output, CIntegration**** integration, C
                                 CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                 CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                 CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst) {
+  SU2_ZONE_SCOPED
   /*--- Dual time stepping strategy ---*/
 
   if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||

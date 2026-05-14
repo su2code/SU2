@@ -2,7 +2,7 @@
  * \file centered.cpp
  * \brief Implementations of centered schemes.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -311,6 +311,8 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
 
   su2double U_i[5] = {0.0}, U_j[5] = {0.0};
   su2double ProjGridVel = 0.0;
+  bool LD2_Scheme = (config->GetKind_Centered_Flow() == CENTERED::LD2);
+  const su2double alpha_LD2 = 0.36;
 
   /*--- Primitive variables at point i and j ---*/
 
@@ -343,6 +345,21 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
   MeanEnthalpy    = 0.5*(Enthalpy_i    + Enthalpy_j);
   MeanCp          = 0.5*(Cp_i          + Cp_j);
   MeanTemperature = 0.5*(Temperature_i + Temperature_j);
+
+  if (LD2_Scheme) {
+    su2double d_ij[3] = {0.0};
+    GeometryToolbox::Distance(nDim, Coord_j, Coord_i, d_ij);
+    su2double diffPresGrad[3] = {0.0};
+    for (iDim = 0; iDim < nDim; iDim++) {
+      diffPresGrad[iDim] = PrimVar_Grad_i[0][iDim] - PrimVar_Grad_j[0][iDim];
+      su2double diffVelGrad[3];
+      for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+        diffVelGrad[jDim] = PrimVar_Grad_i[iDim+1][jDim] - PrimVar_Grad_j[iDim+1][jDim];
+      }
+      MeanVelocity[iDim] += 0.5 * alpha_LD2 * GeometryToolbox::DotProduct(nDim, diffVelGrad, d_ij);
+    }
+    MeanPressure += 0.5 * alpha_LD2 * GeometryToolbox::DotProduct(nDim, diffPresGrad, d_ij);
+  }
 
   /*--- We need the derivative of the equation of state to build the
    preconditioning matrix. For now, the only option is the ideal gas
