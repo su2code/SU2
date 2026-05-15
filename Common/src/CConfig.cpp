@@ -1410,8 +1410,8 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief FLAME_INIT_METHOD \n DESCRIPTION: Ignition method for flamelet solver \n DEFAULT: no ignition; cold flow only. */
   addEnumOption("FLAME_INIT_METHOD", flamelet_ParsedOptions.ignition_method, Flamelet_Init_Map, FLAMELET_INIT_TYPE::NONE);
-  /*!\brief FLAMELET_ENTHALPY_BC \n DESCRIPTION: enthalpy BC from flow solver config or species markers \n DEFAULT: FLOW_MARKERS \ingroup Config */
-  addEnumOption("FLAMELET_ENTHALPY_BC", flamelet_ParsedOptions.enthalpy_bc, Flamelet_Enthalpy_BC_Map, FLAMELET_ENTHALPY_BC::FLOW_MARKERS);
+  /*!\brief FLAMELET_ENTHALPY_BC \n DESCRIPTION: enthalpy BC from species markers (default, backward-compatible) or flow markers \n DEFAULT: SPECIES_MARKERS \ingroup Config */
+  addEnumOption("FLAMELET_ENTHALPY_BC", flamelet_ParsedOptions.enthalpy_bc, Flamelet_Enthalpy_BC_Map, FLAMELET_ENTHALPY_BC::SPECIES_MARKERS);
   /*!\brief FLAME_INIT \n DESCRIPTION: flame front initialization using the flamelet model \ingroup Config*/
   addDoubleArrayOption("FLAME_INIT", flamelet_ParsedOptions.flame_init.size(), false, flamelet_ParsedOptions.flame_init.begin());
 
