@@ -447,12 +447,20 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
   SU2_ZONE_SCOPED
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double temp_inlet = config->GetInletTtotal(Marker_Tag);
-
-  /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
   su2double enth_inlet;
-  GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet, config->GetInlet_SpeciesVal(Marker_Tag),
-                  &enth_inlet);
+  if (config->GetFlamelet_Enthalpy_BC() == FLAMELET_ENTHALPY_BC::FLOW_MARKERS) {
+    /*--- Derive inlet enthalpy from MARKER_INLET temperature via Newton iteration on the LUT.
+     This ensures the enthalpy is thermodynamically consistent with the prescribed temperature,
+     regardless of the value given in MARKER_INLET_SPECIES. ---*/
+    su2double temp_inlet = config->GetInletTtotal(Marker_Tag);
+    GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet,
+                    config->GetInlet_SpeciesVal(Marker_Tag), &enth_inlet);
+  } else {
+    /*--- Use the enthalpy value directly from MARKER_INLET_SPECIES (default).
+     The user is responsible for providing a thermodynamically consistent value. ---*/
+    enth_inlet = config->GetInlet_SpeciesVal(Marker_Tag)[I_ENTH];
+  }
+
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
