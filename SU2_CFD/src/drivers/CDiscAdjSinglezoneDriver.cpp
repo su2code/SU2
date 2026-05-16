@@ -156,6 +156,12 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 void CDiscAdjSinglezoneDriver::Run() {
   SU2_ZONE_SCOPED
 
+  /*--- No need to solve anything, the tape for the main recording is empty. ---*/
+  if (TrivialFunction()) {
+    SetAllSolutions(ZONE_0, true, [](auto, auto) { return 0; });
+    return;
+  }
+
   CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
   if (config->GetnQuasiNewtonSamples() > 1) {
     fixPtCorrector.resize(config->GetnQuasiNewtonSamples(),
@@ -309,7 +315,8 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   SetObjFunction();
 
-  if (rank == MASTER_NODE && kind_recording == RECORDING::SOLUTION_VARIABLES) {
+  if (rank == MASTER_NODE &&
+      (kind_recording == RECORDING::SOLUTION_VARIABLES || (TrivialFunction() && kind_recording == RECORDING::MESH_COORDS))) {
     cout << "\nObjective function value: " << std::setprecision(config_container[ZONE_0]->GetOutput_Precision()) << ObjFunc;
     cout << "\n-------------------------------------------------------------------------\n" << endl;
   }
@@ -415,6 +422,16 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 
 void CDiscAdjSinglezoneDriver::MainRecording(){
   SU2_ZONE_SCOPED
+
+  /*--- We know this function only depends on the secondary variables, hence skip the main recording. ---*/
+
+  if (TrivialFunction()) {
+    if (rank == MASTER_NODE) {
+      cout << "Trivial objective function, skipping the solution of the adjoint equations." << endl;
+    }
+    return;
+  }
+
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
    *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
 
