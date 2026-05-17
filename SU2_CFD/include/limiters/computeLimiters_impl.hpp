@@ -192,11 +192,11 @@ void computeLimiters_impl(CSolver* solver,
         const su2double cent = 0.5 * (field(jPoint,iVar) - field(iPoint,iVar));
         proj = LimiterHelpers<>::umusclProjection(proj, cent, umusclKappa);
 
-        projMax[iVar] = fmax(projMax[iVar], proj);
-        projMin[iVar] = fmin(projMin[iVar], proj);
+        projMax[iVar] = max(projMax[iVar], proj);
+        projMin[iVar] = min(projMin[iVar], proj);
 
-        fieldMax(iPoint,iVar) = fmax(fieldMax(iPoint,iVar), field(jPoint,iVar));
-        fieldMin(iPoint,iVar) = fmin(fieldMin(iPoint,iVar), field(jPoint,iVar));
+        fieldMax(iPoint,iVar) = max(fieldMax(iPoint,iVar), field(jPoint,iVar));
+        fieldMin(iPoint,iVar) = min(fieldMin(iPoint,iVar), field(jPoint,iVar));
       }
     }
 

@@ -224,10 +224,10 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, unsign
   }
 
     /*--- Clamp coefficient between 0.5 and 1.0 ---*/
-    new_coeff = fmax(0.5, fmin(1.0, new_coeff));
+    new_coeff = max(0.5, min(1.0, new_coeff));
 
     /*--- Update coarse grid CFL ---*/
-    CFL_coarse_new = fmax(0.5 * CFL_fine, fmin(CFL_fine, CFL_fine * new_coeff));
+    CFL_coarse_new = max(0.5 * CFL_fine, min(CFL_fine, CFL_fine * new_coeff));
 
     config->SetCFL(iMesh+1, CFL_coarse_new);
 

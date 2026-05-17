@@ -112,7 +112,7 @@ void CTurbSAVariable::SetVortex_Tilting(unsigned long iPoint, CMatrixView<const 
   trace1 = pow(Strain[0][0] + Strain[1][1] + Strain[2][2],2.0);
   denominator = pow(Omega, 2.0) * sqrt(trace0-trace1);
 
-  Vortex_Tilting(iPoint) = (numerator/denominator) * fmax(1.0,0.2*LaminarViscosity/muT(iPoint));
+  Vortex_Tilting(iPoint) = (numerator/denominator) * max(1.0,0.2*LaminarViscosity/muT(iPoint));
 
   AD::SetPreaccOut(Vortex_Tilting(iPoint));
   AD::EndPreacc();

@@ -209,15 +209,15 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double dist = geometry->nodes->GetWall_Distance(iPoint);
     su2double VorticityMag = GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint));
     su2double StrainMag =flowNodes->GetStrainMag(iPoint);
-    VorticityMag = fmax(VorticityMag, 1e-12);
-    StrainMag = fmax(StrainMag, 1e-12); // safety against division by zero
+    VorticityMag = max(VorticityMag, 1e-12);
+    StrainMag = max(StrainMag, 1e-12); // safety against division by zero
     const su2double Intermittency = nodes->GetSolution(iPoint,0);
     const su2double Re_t = nodes->GetSolution(iPoint,1);
     const su2double Re_v = rho*dist*dist*StrainMag/mu;
     const su2double vel_u = flowNodes->GetVelocity(iPoint, 0);
     const su2double vel_v = flowNodes->GetVelocity(iPoint, 1);
     const su2double vel_w = (nDim ==3) ? flowNodes->GetVelocity(iPoint, 2) : 0.0;
-    const su2double VelocityMag = fmax(sqrt(pow(vel_u, 2) + pow(vel_v, 2) + pow(vel_w, 2)), EPS);
+    const su2double VelocityMag = max(sqrt(pow(vel_u, 2) + pow(vel_v, 2) + pow(vel_w, 2)), EPS);
     su2double omega = 0.0;
     su2double k = 0.0;
     if(TurbFamily == TURB_FAMILY::KW){
@@ -226,7 +226,7 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     }
     su2double Tu = 1.0;
     if(TurbFamily == TURB_FAMILY::KW)
-      Tu = fmax(100.0*sqrt( 2.0 * k / 3.0 ) / VelocityMag,0.027);
+      Tu = max(100.0*sqrt( 2.0 * k / 3.0 ) / VelocityMag,0.027);
     if(TurbFamily == TURB_FAMILY::SA)
       Tu = config->GetTurbulenceIntensity_FreeStream()*100;
 
@@ -252,10 +252,10 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double delta      = 50.0*VorticityMag*dist/VelocityMag*delta_bl + 1e-20;
     const su2double var1 = (Intermittency-1.0/50.0)/(1.0-1.0/50.0);
     const su2double var2 = 1.0 - pow(var1,2.0);
-    const su2double f_theta = fmin(fmax(f_wake*exp(-pow(dist/delta, 4)), var2), 1.0);
-    su2double Intermittency_Sep = 2.0*fmax(0.0, Re_v/(3.235*Corr_Rec)-1.0)*f_reattach;
-    Intermittency_Sep = fmin(Intermittency_Sep,2.0)*f_theta;
-    Intermittency_Sep = fmin(fmax(0.0, Intermittency_Sep), 2.0);
+    const su2double f_theta = min(max(f_wake*exp(-pow(dist/delta, 4)), var2), 1.0);
+    su2double Intermittency_Sep = 2.0*max(0.0, Re_v/(3.235*Corr_Rec)-1.0)*f_reattach;
+    Intermittency_Sep = min(Intermittency_Sep,2.0)*f_theta;
+    Intermittency_Sep = min(max(0.0, Intermittency_Sep), 2.0);
     nodes->SetIntermittencySep(iPoint, Intermittency_Sep);
     nodes->SetIntermittencyEff(iPoint, Intermittency_Sep);
 

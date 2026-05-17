@@ -604,7 +604,7 @@ class CFVMFlowSolverBase : public CSolver {
     if (dual_time && !implicit) {
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-        su2double dt = fmin((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
+        su2double dt = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
         nodes->SetDelta_Time(iPoint, dt);
       }
       END_SU2_OMP_FOR

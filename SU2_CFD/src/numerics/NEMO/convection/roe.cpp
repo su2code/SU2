@@ -145,16 +145,16 @@ CNumerics::ResidualType<> CUpwRoe_NEMO::ComputeResidual(const CConfig *config) {
 
   /*--- Harten and Hyman (1983) entropy correction ---*/
   for (auto iSpecies = 0ul; iSpecies < nSpecies; iSpecies++)
-    Epsilon[iSpecies] = 4.0*fmax(0.0, fmax(Lambda[iSpecies]-ProjVelocity_i,
+    Epsilon[iSpecies] = 4.0*max(0.0, max(Lambda[iSpecies]-ProjVelocity_i,
                                          ProjVelocity_j-Lambda[iSpecies] ));
   for (auto iDim = 0; iDim < nDim-1; iDim++)
-    Epsilon[nSpecies+iDim] = 4.0*fmax(0.0, fmax(Lambda[iDim]-ProjVelocity_i,
+    Epsilon[nSpecies+iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
                                               ProjVelocity_j-Lambda[iDim] ));
-  Epsilon[nSpecies+nDim-1] = 4.0*fmax(0.0, fmax(Lambda[nSpecies+nDim-1]-(ProjVelocity_i+V_i[A_INDEX]),
+  Epsilon[nSpecies+nDim-1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim-1]-(ProjVelocity_i+V_i[A_INDEX]),
                                      (ProjVelocity_j+V_j[A_INDEX])-Lambda[nSpecies+nDim-1]));
-  Epsilon[nSpecies+nDim]   = 4.0*fmax(0.0, fmax(Lambda[nSpecies+nDim]-(ProjVelocity_i-V_i[A_INDEX]),
+  Epsilon[nSpecies+nDim]   = 4.0*max(0.0, max(Lambda[nSpecies+nDim]-(ProjVelocity_i-V_i[A_INDEX]),
                                      (ProjVelocity_j-V_j[A_INDEX])-Lambda[nSpecies+nDim]));
-  Epsilon[nSpecies+nDim+1] = 4.0*fmax(0.0, fmax(Lambda[nSpecies+nDim+1]-ProjVelocity_i,
+  Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim+1]-ProjVelocity_i,
                                               ProjVelocity_j-Lambda[nSpecies+nDim+1] ));
   for (auto iVar = 0ul; iVar < nVar; iVar++)
     if ( fabs(Lambda[iVar]) < Epsilon[iVar] )

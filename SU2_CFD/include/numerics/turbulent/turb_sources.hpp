@@ -73,7 +73,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
   /*--- Residual and Jacobian ---*/
   su2double Residual[4], *Jacobian_i[4]; /*!< \brief Increase the size of residual and Jacobian for Langevin equations (Stochastic Backscatter Model).*/
-  su2double Jacobian_Buffer[16]; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */
+  su2double Jacobian_Buffer[16]; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */ 
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
@@ -113,34 +113,34 @@ class CSourceBase_TurbSA : public CNumerics {
   }
 
   /*!
-   * \brief Include source-term residuals for Langevin equations (Stochastic Backscatter Model)
+   * \brief Include source-term residuals for Langevin equations (Stochastic Backscatter Model) 
    */
-  inline void ResidualStochEquations(su2double timeStep, const su2double ct,
+  inline void ResidualStochEquations(su2double timeStep, const su2double ct, 
                                      su2double lengthScale, su2double DES_const,
                                      const CSAVariables& var, TIME_MARCHING time_marching,
                                      su2double threshold) {
 
     const su2double& nue = ScalarVar_i[0];
-    const su2double nut = fmax(nue*var.fv1, 1e-10);
+    const su2double nut = max(nue*var.fv1, 1e-10);
     const su2double delta = lengthScale/DES_const;
 
     if (delta > 1e-10) {
 
       su2double tTurb = ct*pow(delta, 2)/nut;
       su2double tRat = timeStep / tTurb;
-
+    
       su2double corrFac = 1.0;
       if (time_marching == TIME_MARCHING::DT_STEPPING_2ND) {
         corrFac = sqrt(0.5*(1.0+tRat)*(4.0+tRat)/(2.0+tRat));
       } else if (time_marching == TIME_MARCHING::DT_STEPPING_1ST) {
         corrFac = sqrt(1.0+0.5*tRat);
       }
-
+    
       su2double scaleFactor = 0.0;
       if (lesMode_i > threshold)
         scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * corrFac;
       else
-        tTurb = fmin(tTurb, 10.0*timeStep);
+        tTurb = min(tTurb, 10.0*timeStep);
 
       for (unsigned short iVar = 1; iVar < nVar; iVar++) {
         Residual[iVar] = scaleFactor * stochSource[iVar-1] - 1.0/tTurb * ScalarVar_i[iVar];
@@ -178,7 +178,7 @@ class CSourceBase_TurbSA : public CNumerics {
     su2double fac = 1.0 / (var.fv1 + ScalarVar_i[0]*Dfv1Dnut);
     su2double stochProdNut = RGradU * dist_i*dist_i/(2.0*ScalarVar_i[0]) * fac;
     stochProdNut *= sbsInBox_i;
-    stochProdNut = fmax(-limiter*prod, fmin(limiter*prod, stochProdNut));
+    stochProdNut = max(-limiter*prod, min(limiter*prod, stochProdNut));
 
     prod += stochProdNut;
 
@@ -275,7 +275,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
       /*--- Dacles-Mariani et. al. rotation correction ("-R"). ---*/
       if (options.rot) {
-        var.Prod += var.CRot * fmin(0.0, StrainMag_i - var.Omega);
+        var.Prod += var.CRot * min(0.0, StrainMag_i - var.Omega);
         /*--- Do not allow negative production for SA-neg. ---*/
         if (ScalarVar_i[0] < 0) var.Prod = abs(var.Prod);
       }
@@ -315,8 +315,8 @@ class CSourceBase_TurbSA : public CNumerics {
         /*--- Menter correlation. ---*/
         const su2double re_theta_t = 803.73 * pow(tu + 0.6067, -1.027);
 
-        const su2double term1 = sqrt(fmax(re_theta - re_theta_t, 0.0) / (chi_1 * re_theta_t));
-        const su2double term2 = sqrt(fmax((nu_t * chi_2) / nu, 0.0));
+        const su2double term1 = sqrt(max(re_theta - re_theta_t, 0.0) / (chi_1 * re_theta_t));
+        const su2double term2 = sqrt(max((nu_t * chi_2) / nu, 0.0));
         const su2double term_exponential = (term1 + term2);
 
         intermittency_eff_i = 1.0 - exp(-term_exponential);
@@ -328,7 +328,7 @@ class CSourceBase_TurbSA : public CNumerics {
         var.intermittency = intermittency_eff_i;
         // Is wrong the reference from NASA?
         // Original max(min(gamma, 0.5), 1.0) always gives 1 as result.
-        var.interDestrFactor = fmin(fmax(intermittency_i, 0.5), 1.0);
+        var.interDestrFactor = min(max(intermittency_i, 0.5), 1.0);
 
       } else {
         /*--- Do not modify the production. ---*/
@@ -402,7 +402,7 @@ struct Edw {
     for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
       Sbar -= (2.0 / 3.0) * pow(velocity_grad[iDim][iDim], 2);
     }
-    var.Omega = sqrt(fmax(Sbar, 0.0));
+    var.Omega = sqrt(max(Sbar, 0.0));
   }
 };
 };
@@ -469,8 +469,8 @@ struct Bsl {
 /*! \brief Edward. */
 struct Edw {
   static void get(const su2double& nue, const su2double& nu, CSAVariables& var) {
-    var.Shat = fmax(var.Omega * ((1.0 / fmax(var.Ji, 1.0e-16)) + var.fv1), 1.0e-16);
-    var.Shat = fmax(var.Shat, 1.0e-10);
+    var.Shat = max(var.Omega * ((1.0 / max(var.Ji, 1.0e-16)) + var.fv1), 1.0e-16);
+    var.Shat = max(var.Shat, 1.0e-10);
     if (var.Shat <= 1.0e-10) {
       var.d_Shat = 0.0;
     } else {
@@ -508,7 +508,7 @@ struct r {
 /*! \brief Baseline. */
 struct Bsl {
   static void get(const su2double& nue, CSAVariables& var) {
-    var.r = fmin(nue * var.inv_Shat * var.inv_k2_d2, 10.0);
+    var.r = min(nue * var.inv_Shat * var.inv_k2_d2, 10.0);
     var.d_r = (var.Shat - nue * var.d_Shat) * pow(var.inv_Shat, 2) * var.inv_k2_d2;
     if (var.r >= 10.0) var.d_r = 0.0;
   }
@@ -517,7 +517,7 @@ struct Bsl {
 /*! \brief Edward. */
 struct Edw {
   static void get(const su2double& nue, CSAVariables& var) {
-    var.r = fmin(nue * var.inv_Shat * var.inv_k2_d2, 10.0);
+    var.r = min(nue * var.inv_Shat * var.inv_k2_d2, 10.0);
     var.r = tanh(var.r) / tanh(1.0);
 
     var.d_r = (var.Shat - nue * var.d_Shat) * pow(var.inv_Shat, 2) * var.inv_k2_d2;
@@ -962,10 +962,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       const su2double prod_limit = prod_lim_const * beta_star * Density_i * ScalarVar_i[1] * ScalarVar_i[0];
 
       su2double P = Eddy_Viscosity_i * pow(P_Base, 2);
-      su2double pk = fmax(0.0, fmin(P, prod_limit));
+      su2double pk = max(0.0, min(P, prod_limit));
 
       const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag_i;
-      const su2double zeta = fmax(ScalarVar_i[1], eddy_visc_var * F2_i / a1);
+      const su2double zeta = max(ScalarVar_i[1], eddy_visc_var * F2_i / a1);
 
       /*--- Production limiter only for V2003, recompute for V1994. ---*/
       su2double pw;
@@ -984,8 +984,8 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       if (sstParsedOptions.sust) {
         const su2double sust_k = beta_star * Density_i * kAmb * omegaAmb;
         const su2double sust_w = beta_blended * Density_i * omegaAmb * omegaAmb;
-        pk = fmax(pk, sust_k);
-        pw = fmax(pw, sust_w);
+        pk = max(pk, sust_k);
+        pw = max(pw, sust_w);
       }
 
       if (sstParsedOptions.production == SST_OPTIONS::COMP_Sarkar) {
@@ -1001,7 +1001,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
       /*--- LM model coupling with production and dissipation term for k transport equation---*/
       if (config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
         pk = pk * eff_intermittency;
-        dk = fmin(fmax(eff_intermittency, 0.1), 1.0) * dk;
+        dk = min(max(eff_intermittency, 0.1), 1.0) * dk;
       }
 
       /*--- Add the production terms to the residuals. ---*/

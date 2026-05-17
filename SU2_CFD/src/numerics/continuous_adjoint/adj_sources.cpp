@@ -146,9 +146,9 @@ void CSourceConservative_AdjFlow::ComputeResidual (su2double *val_residual, CCon
     fv1 = Ji_3/(Ji_3+cv1_3);
     one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
     fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-    Shat = fmax(Omega + ScalarVar_i[0]*fv2/(k2*dist_sq), TURB_EPS);
+    Shat = max(Omega + ScalarVar_i[0]*fv2/(k2*dist_sq), TURB_EPS);
 
-    r = fmin(ScalarVar_i[0]/(Shat*k2*dist_sq),10.);
+    r = min(ScalarVar_i[0]/(Shat*k2*dist_sq),10.);
     g = r + cw2*(pow(r,6.)-r);
     g_6 = pow(g,6.);
     glim = pow((1+cw3_6)/(g_6+cw3_6),1./6.);
@@ -201,9 +201,9 @@ void CSourceConservative_AdjFlow::ComputeResidual (su2double *val_residual, CCon
     fv1 = Ji_3/(Ji_3+cv1_3);
     one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
     fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-    Shat = fmax(Omega + ScalarVar_j[0]*fv2/(k2*dist_sq), TURB_EPS);
+    Shat = max(Omega + ScalarVar_j[0]*fv2/(k2*dist_sq), TURB_EPS);
 
-    r = fmin(ScalarVar_j[0]/(Shat*k2*dist_sq),10.);
+    r = min(ScalarVar_j[0]/(Shat*k2*dist_sq),10.);
     g = r + cw2*(pow(r,6.)-r);
     g_6 = pow(g,6.);
     glim = pow((1+cw3_6)/(g_6+cw3_6),1./6.);
@@ -553,7 +553,7 @@ void CSourceViscous_AdjFlow::ComputeResidual (su2double *val_residual, CConfig *
 //      fv2 = 1.0 - Ji*one_o_oneplusJifv1;
 //      Shat = max(Omega + ScalarVar_i[0]*fv2/(k2*dist_0_2), TURB_EPS);
 //
-//      r = fmin(ScalarVar_i[0]/(Shat*k2*dist_0_2), 10.);
+//      r = min(ScalarVar_i[0]/(Shat*k2*dist_0_2), 10.);
 //      g = r + cw2*(pow(r,6.)-r);
 //      g_6 = pow(g,6.);
 //      glim = pow((1+cw3_6)/(g_6+cw3_6),1./6.);
@@ -718,10 +718,10 @@ void CSourcePieceWise_AdjTurb::ComputeResidual(su2double *val_residual, su2doubl
     fv1 = Ji_3/(Ji_3+cv1_3);
     one_o_oneplusJifv1 = 1.0/(1.0+Ji*fv1);
     fv2 = 1.0 - Ji*one_o_oneplusJifv1;
-    Shat = fmax(Vorticity + ScalarVar_i[0]*fv2/(k2*dist_0_2), TURB_EPS);
+    Shat = max(Vorticity + ScalarVar_i[0]*fv2/(k2*dist_0_2), TURB_EPS);
 
     //    r = ScalarVar_i[0]/(Shat*k2*dist_0_2);
-    r = fmin(ScalarVar_i[0]/(Shat*k2*dist_0_2),10.);
+    r = min(ScalarVar_i[0]/(Shat*k2*dist_0_2),10.);
     g = r + cw2*(pow(r,6.)-r);
     g_6 = pow(g,6.);
     glim = pow((1+cw3_6)/(g_6+cw3_6),1./6.);

@@ -2051,7 +2051,7 @@ void CEulerSolver::LowMachPrimitiveCorrection(CFluidModel *fluidModel, unsigned 
   su2double mach_i = sqrt(velocity2_i)/primitive_i[nDim+4];
   su2double mach_j = sqrt(velocity2_j)/primitive_j[nDim+4];
 
-  su2double z = fmin(fmax(mach_i,mach_j),1.0);
+  su2double z = min(max(mach_i,mach_j),1.0);
   velocity2_i = 0.0;
   velocity2_j = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -2262,7 +2262,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- set vorticity magnitude as auxilliary variable ---*/
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-      const su2double VorticityMag = fmax(GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)), 1e-12);
+      const su2double VorticityMag = max(GeometryToolbox::Norm(3, nodes->GetVorticity(iPoint)), 1e-12);
       nodes->SetAuxVar(iPoint, 0, VorticityMag);
     }
     END_SU2_OMP_FOR
@@ -2466,7 +2466,7 @@ void CEulerSolver::SetUpwind_Ducros_Sensor(CGeometry *geometry, CConfig *config)
       else if (config->GetKind_RoeLowDiss() == NTS_DUCROS) {
         Ducros_j = pow(uixi,2.0) /(pow(uixi,2.0)+ pow(Omega,2.0) + 1e-20);
       }
-      Ducros_i = fmax(Ducros_i, Ducros_j);
+      Ducros_i = max(Ducros_i, Ducros_j);
     }
 
     nodes->SetSensor(iPoint, Ducros_i);
@@ -2542,8 +2542,8 @@ void CEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint
   /*--- Weiss and Smith Preconditioning---*/
   Mach_infty2 = pow(config->GetMach(),2.0);
   Mach_lim2 = pow(0.00001,2.0);
-  aux = fmax(pow(local_Mach,2.0),Mach_lim2);
-  parameter = fmin(1.0, fmax(aux,Beta_max*Mach_infty2));
+  aux = max(pow(local_Mach,2.0),Mach_lim2);
+  parameter = min(1.0, max(aux,Beta_max*Mach_infty2));
 
   U_i = nodes->GetSolution(iPoint);
 
@@ -2692,16 +2692,16 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             Mach = sqrt(Velocity2)/SoundSpeed;
             TotalPressure = Pressure * pow( 1.0 + Mach * Mach * 0.5 * (Gamma - 1.0), Gamma    / (Gamma - 1.0));
             TotalTemperature = Temperature * (1.0 + Mach * Mach * 0.5 * (Gamma - 1.0));
-            MinPressure = fmin(MinPressure, TotalPressure);
-            MaxPressure = fmax(MaxPressure, TotalPressure);
+            MinPressure = min(MinPressure, TotalPressure);
+            MaxPressure = max(MaxPressure, TotalPressure);
 
             RamDrag = MassFlow * Vel_Infty;
 
             Inlet_MassFlow[iMarker]         += MassFlow;
             Inlet_Pressure[iMarker]         += Pressure*MassFlow;
             Inlet_Mach[iMarker]             += Mach*MassFlow;
-            Inlet_MinPressure[iMarker]       = fmin(MinPressure, Inlet_MinPressure[iMarker]);
-            Inlet_MaxPressure[iMarker]       = fmax(MaxPressure, Inlet_MaxPressure[iMarker]);
+            Inlet_MinPressure[iMarker]       = min (MinPressure, Inlet_MinPressure[iMarker]);
+            Inlet_MaxPressure[iMarker]       = max(MaxPressure, Inlet_MaxPressure[iMarker]);
             Inlet_TotalPressure[iMarker]    += TotalPressure*MassFlow;
             Inlet_Temperature[iMarker]      += Temperature*MassFlow;
             Inlet_TotalTemperature[iMarker] += TotalTemperature*MassFlow;
@@ -3586,12 +3586,12 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
         }
         else {
           if (config->GetMach()  < 0.5) {
-            DeltaP       = fmax(0.0, config->GetActDisk_PressJump(Marker_Tag, 0) / config->GetPressure_Ref());
-            DeltaT       = fmax(0.0, config->GetActDisk_TempJump(Marker_Tag, 0) / config->GetTemperature_Ref());
+            DeltaP       = max(0.0, config->GetActDisk_PressJump(Marker_Tag, 0) / config->GetPressure_Ref());
+            DeltaT       = max(0.0, config->GetActDisk_TempJump(Marker_Tag, 0) / config->GetTemperature_Ref());
           }
           else {
-            DeltaP       = fmax(0.0, config->GetActDisk_PressJump(Marker_Tag, 1) / config->GetPressure_Ref());
-            DeltaT       = fmax(0.0, config->GetActDisk_TempJump(Marker_Tag, 1) / config->GetTemperature_Ref());
+            DeltaP       = max(0.0, config->GetActDisk_PressJump(Marker_Tag, 1) / config->GetPressure_Ref());
+            DeltaT       = max(0.0, config->GetActDisk_TempJump(Marker_Tag, 1) / config->GetTemperature_Ref());
           }
         }
 
@@ -3714,7 +3714,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
             BCThrust_old = config->GetActDisk_BCThrust_Old(Marker_Tag);
             BCThrust_inc = (1.0/dNetThrust_dBCThrust)*(Target_NetThrust - NetThrust);
 
-            if (iMesh == MESH_0) BCThrust = fmax(0.0,(BCThrust_old + BCThrust_inc));
+            if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
             else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
 
             if (iMesh == MESH_0) {
@@ -3733,7 +3733,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
             BCThrust_old = config->GetActDisk_BCThrust_Old(Marker_Tag);
             BCThrust_inc = (1.0/dNetThrust_dBCThrust)*(Target_Force - Force);
 
-            if (iMesh == MESH_0) BCThrust = fmax(0.0,(BCThrust_old + BCThrust_inc));
+            if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
             else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
 
             if (iMesh == MESH_0) {
@@ -3752,7 +3752,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
             BCThrust_old = config->GetActDisk_BCThrust_Old(Marker_Tag);
             BCThrust_inc = (1.0/dNetThrust_dBCThrust)*(Target_Power - Power);
 
-            if (iMesh == MESH_0) BCThrust = fmax(0.0,(BCThrust_old + BCThrust_inc));
+            if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
             else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
 
             if (iMesh == MESH_0) {
@@ -3771,7 +3771,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
             BCThrust_old    = config->GetActDisk_BCThrust_Old(Marker_Tag);
             BCThrust_inc    = -(1.0/dNetThrust_dBCThrust)*(Target_DragMinusThrust - DragMinusThrust);
 
-            if (iMesh == MESH_0) BCThrust = fmax(0.0,(BCThrust_old + BCThrust_inc));
+            if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
             else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
 
             if (iMesh == MESH_0) {
@@ -3796,7 +3796,7 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
             Massflow = config->GetActDisk_MassFlow(Marker_Tag);
             BCThrust_old    = config->GetActDisk_BCThrust_Old(Marker_Tag);
             BCThrust_inc    = (1.0/dNetThrust_dBCThrust)*(Target_Massflow - Massflow);
-            if (iMesh == MESH_0) BCThrust = fmax(0.0,(BCThrust_old + BCThrust_inc));
+            if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
             else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
             if (iMesh == MESH_0) {
               config->SetActDisk_BCThrust(Marker_Tag, BCThrust);
@@ -3925,12 +3925,12 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
 
                 /*--- Laval is bounded ---*/
 
-                La = fmin(La, sqrt(6.0));  La = fmax(La, 0.0);
+                La = min(La, sqrt(6.0));  La = max(La, 0.0);
 
-                To_Ti = fmax(1.0, T0_Ti*(1.0-CTerm_*La*La));
+                To_Ti = max(1.0, T0_Ti*(1.0-CTerm_*La*La));
                 ActDisk_DeltaT[iMarker][iVertex] = To_Ti;
 
-                Po_Pi = fmax(1.0, pow(To_Ti, PolyCoeff*DTerm_));
+                Po_Pi = max(1.0, pow(To_Ti, PolyCoeff*DTerm_));
                 ActDisk_DeltaP[iMarker][iVertex] = Po_Pi;
 
               }
@@ -7090,9 +7090,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             be positive, so the choice of root is clear. ---*/
 
         dd = bb*bb - 4.0*aa*cc;
-        dd = sqrt(fmax(0.0, dd));
+        dd = sqrt(max(0.0, dd));
         Vel_Mag   = (-bb + dd)/(2.0*aa);
-        Vel_Mag   = fmax(0.0, Vel_Mag);
+        Vel_Mag   = max(0.0, Vel_Mag);
         Velocity2 = Vel_Mag*Vel_Mag;
 
         /*--- Compute speed of sound from total speed of sound eqn. ---*/
@@ -7102,7 +7102,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
 
         Mach2 = Velocity2/SoundSpeed2;
-        Mach2 = fmin(1.0, Mach2);
+        Mach2 = min(1.0, Mach2);
         Velocity2   = Mach2*SoundSpeed2;
         Vel_Mag     = sqrt(Velocity2);
         SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
@@ -7189,7 +7189,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         for (iDim = 0; iDim < nDim; iDim++)
           SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
 
-        SoundSpeed2 = fmax(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
+        SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
         SoundSpeed2 = SoundSpeed2*SoundSpeed2;
 
         /*--- Pressure for the fictitious inlet state ---*/
@@ -7979,7 +7979,7 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
        be positive, so the choice of root is clear. ---*/
 
       dd      = bb*bb - 4.0*aa*cc;
-      dd      = sqrt(fmax(0.0, dd));
+      dd      = sqrt(max(0.0, dd));
       Vel_Mag = (-bb + dd)/(2.0*aa);
 
       if (Vel_Mag >= 0.0) {
@@ -8366,7 +8366,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         }
         Vel_outlet_ = sqrt(Vel_outlet_);
 
-        Mach_Outlet = fmin(Vel_outlet_/SoS_outlet, 1.0);
+        Mach_Outlet = min(Vel_outlet_/SoS_outlet, 1.0);
 
         /*--- Reevaluate the Total Pressure and Total Temperature using the
          Fan Face Mach number and the static values from the jum condition ---*/
@@ -8425,9 +8425,9 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
          be positive, so the choice of root is clear. ---*/
 
         dd = bb*bb - 4.0*aa*cc;
-        dd = sqrt(fmax(0.0, dd));
+        dd = sqrt(max(0.0, dd));
         Vel_Mag   = (-bb + dd)/(2.0*aa);
-        Vel_Mag   = fmax(0.0, Vel_Mag);
+        Vel_Mag   = max(0.0, Vel_Mag);
         Velocity2 = Vel_Mag*Vel_Mag;
 
         /*--- Compute speed of sound from total speed of sound eqn. ---*/
@@ -8436,7 +8436,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 
         /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
 
-        Mach2 = fmin(1.0, Velocity2/SoundSpeed2);
+        Mach2 = min(1.0, Velocity2/SoundSpeed2);
         Velocity2   = Mach2*SoundSpeed2;
         Vel_Mag     = sqrt(Velocity2);
         SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
@@ -8730,7 +8730,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
           Vnextr[iDim] = V_domain[iDim+1]*Prop_Axis[iDim];
           Vnextr_ += Vnextr[iDim]*Vnextr[iDim];
         }
-        Vnextr_ = sqrt(fmax(0.0,Vnextr_));
+        Vnextr_ = sqrt(max(0.0,Vnextr_));
         RiemannExtr = Vnextr_ - ((2*SoSextr)/(Gamma_Minus_One));
 
         /*--- Assigning the momentum in tangential direction jump and the pressure jump. ---*/
@@ -8749,7 +8749,7 @@ void CEulerSolver::BC_ActDisk_VariableLoad(CGeometry *geometry, CSolver **solver
 
         /*--- Resolving the second grade equation for the density. ---*/
         appo2 = -((2*sqrt(QdMnorm2)*RiemannExtr)+((4*Gamma*Pressure_out)/(pow(Gamma_Minus_One,2))));
-        Density_out = (-appo2+sqrt(fmax(0.0,pow(appo2,2)-4*QdMnorm2*pow(RiemannExtr,2))))/(2*pow(RiemannExtr,2));
+        Density_out = (-appo2+sqrt(max(0.0,pow(appo2,2)-4*QdMnorm2*pow(RiemannExtr,2))))/(2*pow(RiemannExtr,2));
 
         Velocity2 = 0;
         for (iDim = 0; iDim < nDim; iDim++) Velocity2 += (Velocity[iDim]*Velocity[iDim]);

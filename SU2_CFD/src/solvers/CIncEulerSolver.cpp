@@ -1183,7 +1183,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
     if (LD2_Scheme) {
       numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(jPoint));
-      if (!geometry->nodes->GetPeriodicBoundary(iPoint) || (geometry->nodes->GetPeriodicBoundary(iPoint)
+      if (!geometry->nodes->GetPeriodicBoundary(iPoint) || (geometry->nodes->GetPeriodicBoundary(iPoint) 
           && !geometry->nodes->GetPeriodicBoundary(jPoint))) {
         numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
       } else {
@@ -2046,7 +2046,7 @@ void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_co
       maxVel2 = MaxVel2;
       SU2_MPI::Allreduce(&maxVel2, &MaxVel2, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
 
-      config->SetMax_Vel2(fmax(1e-10, MaxVel2));
+      config->SetMax_Vel2(max(1e-10, MaxVel2));
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }

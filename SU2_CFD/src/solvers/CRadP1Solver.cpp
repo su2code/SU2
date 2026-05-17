@@ -647,9 +647,9 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Min-Max-Logic ---*/
 
-      Global_Delta_Time = fmin(Global_Delta_Time, Local_Delta_Time);
-      Min_Delta_Time = fmin(Min_Delta_Time, Local_Delta_Time);
-      Max_Delta_Time = fmax(Max_Delta_Time, Local_Delta_Time);
+      Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
+      Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
+      Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
       if (Local_Delta_Time > config->GetMax_DeltaTime())
         Local_Delta_Time = config->GetMax_DeltaTime();
 

@@ -83,17 +83,17 @@ void CNSVariable::SetRoe_Dissipation_NTS(unsigned long iPoint,
   }
   Omega = sqrt(Omega_2);
 
-  Baux = (ch3 * Omega * fmax(StrainMag(iPoint), Omega)) /
-      fmax((pow(StrainMag(iPoint),2)+Omega_2)*0.5, 1E-20);
+  Baux = (ch3 * Omega * max(StrainMag(iPoint), Omega)) /
+      max((pow(StrainMag(iPoint),2)+Omega_2)*0.5, 1E-20);
   Gaux = tanh(pow(Baux,4.0));
 
-  Kaux = fmax(sqrt((Omega_2 + pow(StrainMag(iPoint), 2))*0.5), 0.1 * inv_TimeScale);
+  Kaux = max(sqrt((Omega_2 + pow(StrainMag(iPoint), 2))*0.5), 0.1 * inv_TimeScale);
 
   const su2double nu = GetLaminarViscosity(iPoint)/GetDensity(iPoint);
   const su2double nu_t = GetEddyViscosity(iPoint)/GetDensity(iPoint);
   Lturb = sqrt((nu + nu_t)/(cnu*Kaux));
 
-  Aaux = ch2*fmax((val_const_DES*val_delta/Lturb)/Gaux -  0.5, 0.0);
+  Aaux = ch2*max((val_const_DES*val_delta/Lturb)/Gaux -  0.5, 0.0);
 
   Roe_Dissipation(iPoint) = sigma_max * tanh(pow(Aaux, ch1));
 
@@ -124,7 +124,7 @@ void CNSVariable::SetRoe_Dissipation_FD(unsigned long iPoint, su2double val_wall
     for(unsigned long jDim = 0; jDim < nDim; ++jDim)
       uijuij += pow(Gradient_Primitive(iPoint, indices.Velocity()+iDim, jDim),2);
 
-  uijuij = fmax(sqrt(uijuij),1e-10);
+  uijuij = max(sqrt(uijuij),1e-10);
 
   const su2double nu = GetLaminarViscosity(iPoint)/GetDensity(iPoint);
   const su2double nu_t = GetEddyViscosity(iPoint)/GetDensity(iPoint);

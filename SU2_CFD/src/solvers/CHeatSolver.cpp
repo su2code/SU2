@@ -848,7 +848,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
               local_delta_time = flow_nodes->GetDelta_Time(iPoint);
               break;
             case MINIMUM:
-              local_delta_time = fmin(local_delta_time, flow_nodes->GetDelta_Time(iPoint));
+              local_delta_time = min(local_delta_time, flow_nodes->GetDelta_Time(iPoint));
               break;
             case VISCOUS:
               break;
@@ -856,8 +856,8 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
               break;
           }
         }
-        minDt = fmin(minDt, local_delta_time);
-        maxDt = fmax(maxDt, local_delta_time);
+        minDt = min(minDt, local_delta_time);
+        maxDt = max(maxDt, local_delta_time);
       }
       nodes->SetDelta_Time(iPoint, local_delta_time);
     }
@@ -942,7 +942,7 @@ void CHeatSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, 
   if (dual_time && !implicit) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
-      su2double dt = fmin((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
+      su2double dt = min((2.0/3.0)*config->GetDelta_UnstTimeND(), nodes->GetDelta_Time(iPoint));
       nodes->SetDelta_Time(iPoint, dt);
     }
     END_SU2_OMP_FOR

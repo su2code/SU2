@@ -2872,7 +2872,7 @@ void CSurfaceMovement::SetHicksHenne(CGeometry* boundary, CConfig* config, unsig
         ValSin = sin(AoA * PI_NUMBER / 180.0);
 
         Coord[0] = Coord_[0] * ValCos - Coord_[1] * ValSin;
-        Coord[0] = fmax(0.0, Coord[0]);  // Coord x should be always positive
+        Coord[0] = max(0.0, Coord[0]);  // Coord x should be always positive
         Coord[1] = Coord_[1] * ValCos + Coord_[0] * ValSin;
 
         Normal[0] = Normal_[0] * ValCos - Normal_[1] * ValSin;
@@ -3116,7 +3116,7 @@ void CSurfaceMovement::SetCST(CGeometry* boundary, CConfig* config, unsigned sho
         ValSin = sin(AoA * PI_NUMBER / 180.0);
 
         Coord[0] = Coord_[0] * ValCos - Coord_[1] * ValSin;
-        Coord[0] = fmax(0.0, Coord[0]);  // Coord x should be always positive
+        Coord[0] = max(0.0, Coord[0]);  // Coord x should be always positive
         Coord[1] = Coord_[1] * ValCos + Coord_[0] * ValSin;
 
         Normal[0] = Normal_[0] * ValCos - Normal_[1] * ValSin;
@@ -3791,7 +3791,7 @@ void CSurfaceMovement::SetHicksHenneCamber(CGeometry* boundary, CConfig* config)
 
         /*--- Transform the coordinates ---*/
         Coord[0] = (CoordTrans[0] - LPCoord[0]) * ValCos - (CoordTrans[1] - LPCoord[1]) * ValSin;
-        Coord[0] = fmax(0.0, Coord[0]);  // Coord x should be always positive
+        Coord[0] = max(0.0, Coord[0]);  // Coord x should be always positive
         Coord[1] = (CoordTrans[1] - LPCoord[1]) * ValCos + (CoordTrans[0] - LPCoord[0]) * ValSin;
 
         /*--- Special case: surface point is part of trailing edge ---*/

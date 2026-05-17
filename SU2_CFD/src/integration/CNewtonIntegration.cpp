@@ -173,7 +173,7 @@ void CNewtonIntegration::ComputeFinDiffStep() {
   {
     su2double t = rmsSol;
     SU2_MPI::Allreduce(&t, &rmsSol, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-    finDiffStep = finDiffStepND * fmax(1.0, sqrt(SU2_TYPE::GetValue(rmsSol) / geometry->GetGlobal_nPointDomain()));
+    finDiffStep = finDiffStepND * max(1.0, sqrt(SU2_TYPE::GetValue(rmsSol) / geometry->GetGlobal_nPointDomain()));
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }

@@ -157,7 +157,7 @@ void CAvgGrad_Base::SetStochReynStress(const CConfig* config) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Mean_StochVar[iDim] = 0.5*(stochVar_i[iDim] + stochVar_j[iDim]);
   su2double tkeEstim_i = 0.0, tkeEstim_j = 0.0;
-  if (fmax(lesMode_i, lesMode_j) > config->GetSBSParam().stochFdThreshold) {
+  if (max(lesMode_i, lesMode_j) > config->GetSBSParam().stochFdThreshold) {
     tkeEstim_i = pow(Eddy_Viscosity_i/dist_i, 2);
     tkeEstim_j = pow(Eddy_Viscosity_j/dist_j, 2);
   }
@@ -460,7 +460,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   /*--- Wall shear stress values (wall functions) only used if present for one but not both points (xor) ---*/
 
   const int scale = (TauWall_i > 0.0) ^ (TauWall_j > 0.0);
-  Mean_TauWall = (fmax(TauWall_i,0.0) + fmax(TauWall_j,0.0)) * scale;
+  Mean_TauWall = (max(TauWall_i,0.0) + max(TauWall_j,0.0)) * scale;
 
   /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
@@ -638,7 +638,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   /*--- Wall shear stress values (wall functions) only used if present for one but not both points (xor) ---*/
 
   const int scale = (TauWall_i > 0.0) ^ (TauWall_j > 0.0);
-  Mean_TauWall = (fmax(TauWall_i,0.0) + fmax(TauWall_j,0.0)) * scale;
+  Mean_TauWall = (max(TauWall_i,0.0) + max(TauWall_j,0.0)) * scale;
 
   /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 
@@ -968,7 +968,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   /*--- Wall shear stress values (wall functions) only used if present for one but not both points (xor) ---*/
 
   const int scale = (TauWall_i > 0.0) ^ (TauWall_j > 0.0);
-  Mean_TauWall = (fmax(TauWall_i,0.0) + fmax(TauWall_j,0.0)) * scale;
+  Mean_TauWall = (max(TauWall_i,0.0) + max(TauWall_j,0.0)) * scale;
 
   /*--- If using UQ methodology, set Reynolds Stress tensor and perform perturbation ---*/
 

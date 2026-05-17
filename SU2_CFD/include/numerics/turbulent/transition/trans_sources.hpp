@@ -130,7 +130,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
     if (dist_i > 1e-10) {
       su2double Tu = 1.0;
-      if (TurbFamily == TURB_FAMILY::KW) Tu = fmax(100.0 * sqrt(2.0 * ScalarVar_i[0] / 3.0) / Velocity_Mag, 0.027);
+      if (TurbFamily == TURB_FAMILY::KW) Tu = max(100.0 * sqrt(2.0 * ScalarVar_i[0] / 3.0) / Velocity_Mag, 0.027);
       if (TurbFamily == TURB_FAMILY::SA) Tu = config->GetTurbulenceIntensity_FreeStream() * 100;
 
       /*--- Corr_RetC correlation*/
@@ -158,14 +158,14 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       su2double F_onset2 = 1.0;
       su2double F_onset3 = 1.0;
       if (TurbFamily == TURB_FAMILY::KW) {
-        F_onset2 = fmin(fmax(F_onset1, pow(F_onset1, 4.0)), 2.0);
-        F_onset3 = fmax(1.0 - pow(R_t / 2.5, 3.0), 0.0);
+        F_onset2 = min(max(F_onset1, pow(F_onset1, 4.0)), 2.0);
+        F_onset3 = max(1.0 - pow(R_t / 2.5, 3.0), 0.0);
       }
       if (TurbFamily == TURB_FAMILY::SA) {
-        F_onset2 = fmin(fmax(F_onset1, pow(F_onset1, 4.0)), 4.0);
-        F_onset3 = fmax(2.0 - pow(R_t / 2.5, 3.0), 0.0);
+        F_onset2 = min(max(F_onset1, pow(F_onset1, 4.0)), 4.0);
+        F_onset3 = max(2.0 - pow(R_t / 2.5, 3.0), 0.0);
       }
-      const su2double F_onset = fmax(F_onset2 - F_onset3, 0.0);
+      const su2double F_onset = max(F_onset2 - F_onset3, 0.0);
 
       /*-- Gradient of velocity magnitude ---*/
 
@@ -187,7 +187,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       /*-- Calculate blending function f_theta --*/
       su2double time_scale = 500.0 * Laminar_Viscosity_i / Density_i / Velocity_Mag / Velocity_Mag;
       if (options.LM2015)
-        time_scale = fmin(time_scale,
+        time_scale = min(time_scale,
                          Density_i * LocalGridLength_i * LocalGridLength_i / (Laminar_Viscosity_i + Eddy_Viscosity_i));
       const su2double theta_bl = TransVar_i[1] * Laminar_Viscosity_i / Density_i / Velocity_Mag;
       const su2double delta_bl = 7.5 * theta_bl;
@@ -202,12 +202,12 @@ class CSourcePieceWise_TransLM final : public CNumerics {
 
       const su2double var1 = (TransVar_i[0] - 1.0 / c_e2) / (1.0 - 1.0 / c_e2);
       const su2double var2 = 1.0 - pow(var1, 2.0);
-      const su2double f_theta = fmin(fmax(f_wake * exp(-pow(dist_i / delta, 4)), var2), 1.0);
+      const su2double f_theta = min(max(f_wake * exp(-pow(dist_i / delta, 4)), var2), 1.0);
       const su2double f_turb = exp(-pow(R_t / 4, 4));
 
       su2double f_theta_2 = 0.0;
       if (options.LM2015)
-        f_theta_2 = fmin(f_wake * exp(-pow(dist_i / delta, 4.0)), 1.0);
+        f_theta_2 = min(f_wake * exp(-pow(dist_i / delta, 4.0)), 1.0);
 
       /*--- Corr_Ret correlation*/
       const su2double Corr_Ret_lim = 20.0;
@@ -220,7 +220,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       for (int iter = 0; iter < 100; iter++) {
         su2double theta = Corr_Ret * Laminar_Viscosity_i / Density_i / Velocity_Mag;
         lambda = Density_i * theta * theta / Laminar_Viscosity_i * du_ds;
-        lambda = fmin(fmax(-0.1, lambda), 0.1);
+        lambda = min(max(-0.1, lambda), 0.1);
 
         if (lambda <= 0.0) {
           f_lambda = 1. - (-12.986 * lambda - 123.66 * lambda * lambda - 405.689 * lambda * lambda * lambda) *
@@ -234,7 +234,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
         } else {
           Corr_Ret = 331.5 * f_lambda * pow(Tu - 0.5658, -0.671);
         }
-        Corr_Ret = fmax(Corr_Ret, Corr_Ret_lim);
+        Corr_Ret = max(Corr_Ret, Corr_Ret_lim);
 
         Retheta_Error = fabs(Retheta_old - Corr_Ret) / Retheta_old;
 
@@ -260,9 +260,9 @@ class CSourcePieceWise_TransLM final : public CNumerics {
         StreamwiseVort = abs(StreamwiseVort);
 
         const su2double H_CF = StreamwiseVort * dist_i / Velocity_Mag;
-        const su2double DeltaH_CF = H_CF * (1.0 + fmin(Eddy_Viscosity_i / Laminar_Viscosity_i, 0.4));
-        const su2double DeltaH_CF_Minus = fmax(-1.0 * (0.1066 - DeltaH_CF), 0.0);
-        const su2double DeltaH_CF_Plus = fmax(0.1066 - DeltaH_CF, 0.0);
+        const su2double DeltaH_CF = H_CF * (1.0 + min(Eddy_Viscosity_i / Laminar_Viscosity_i, 0.4));
+        const su2double DeltaH_CF_Minus = max(-1.0 * (0.1066 - DeltaH_CF), 0.0);
+        const su2double DeltaH_CF_Plus = max(0.1066 - DeltaH_CF, 0.0);
         const su2double fDeltaH_CF_Minus = 75.0 * tanh(DeltaH_CF_Minus / 0.0125);
         const su2double fDeltaH_CF_Plus = 6200 * DeltaH_CF_Plus + 50000 * DeltaH_CF_Plus * DeltaH_CF_Plus;
 
@@ -275,7 +275,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
         int iter;
         for (iter = 0; iter < nMax && error > toll; iter++) {
           thetat_SCF = rethetat_SCF_old * Laminar_Viscosity_i / (Density_i * (Velocity_Mag / 0.82));
-          thetat_SCF = fmax(1e-20, thetat_SCF);
+          thetat_SCF = max(1e-20, thetat_SCF);
 
           ReThetat_SCF = -35.088 * log(hRoughness / thetat_SCF) + 319.51 + fDeltaH_CF_Plus - fDeltaH_CF_Minus;
 
@@ -299,7 +299,7 @@ class CSourcePieceWise_TransLM final : public CNumerics {
       // It should not be with the minus sign but I put for consistency
       su2double DRethetat = 0.0;
       if (options.LM2015)
-        DRethetat = -c_theta * (Density_i / time_scale) * c_CF * fmin(ReThetat_SCF - TransVar_i[1], 0.0) * f_theta_2;
+        DRethetat = -c_theta * (Density_i / time_scale) * c_CF * min(ReThetat_SCF - TransVar_i[1], 0.0) * f_theta_2;
 
       /*--- Source ---*/
       Residual[0] += (Pg - Dg) * Volume;

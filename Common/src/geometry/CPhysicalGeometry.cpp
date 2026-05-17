@@ -6561,7 +6561,7 @@ void CPhysicalGeometry::MatchActuator_Disk(const CConfig* config) {
                 cout << "   Bad match for point " << iPoint << ".\tNearest";
                 cout << " donor distance: " << scientific << mindist << ".";
                 vertex[iMarker][iVertex]->SetDonorPoint(iPoint, iPointGlobal, pVertex, pMarker, pProcessor);
-                maxdist_local = fmin(maxdist_local, 0.0);
+                maxdist_local = min(maxdist_local, 0.0);
               }
             }
           }

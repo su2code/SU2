@@ -122,7 +122,7 @@ void check(const T& ref, const U& calc, su2double tol = 1e-9) {
   for (auto iPoint = 0ul; iPoint < calc.length(); ++iPoint) {
     for (auto iVar = 0ul; iVar < calc.rows(); ++iVar)
       for (auto iDim = 0ul; iDim < calc.cols(); ++iDim)
-        err = fmax(err, abs(calc(iPoint, iVar, iDim) - ref.grad(iPoint, iVar, iDim)));
+        err = max(err, abs(calc(iPoint, iVar, iDim) - ref.grad(iPoint, iVar, iDim)));
   }
   CHECK(err < tol);
 }

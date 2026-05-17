@@ -345,7 +345,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange, con
   const su2double nu_wall = mu_wall / rho_wall;
 
   /* Initial guess of the friction velocity. */
-  su2double u_tau = fmax(0.01 * velExchange, 1.e-5);
+  su2double u_tau = max(0.01 * velExchange, 1.e-5);
 
   /* Set parameters for control of the Newton iteration. */
   bool converged = false;

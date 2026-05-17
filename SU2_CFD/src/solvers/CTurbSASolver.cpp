@@ -314,7 +314,7 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
               FrictionVelocity = sqrt(shearStress/flowNodes->GetDensity(iPoint));
             } else {
-              su2double VorticityMag = fmax(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
+              su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
               FrictionVelocity = sqrt(flowNodes->GetLaminarViscosity(iPoint)*VorticityMag);
             }
 
@@ -1449,7 +1449,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
       }
     }
     uijuij = sqrt(fabs(uijuij));
-    uijuij = fmax(uijuij,1e-10);
+    uijuij = max(uijuij,1e-10);
 
     /*--- Low Reynolds number correction term ---*/
 
@@ -1462,8 +1462,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
     const su2double ft2 = ct3*exp(-ct4*Ji_2);
     const su2double cw1 = cb1/k2+(1.0+cb2)/sigma;
 
-    su2double psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * fmax(1.0e-10,1.0-ft2));
-    psi_2 = fmin(100.0,psi_2);
+    su2double psi_2 = (1.0 - (cb1/(cw1*k2*fw_star))*(ft2 + (1.0 - ft2)*fv2))/(fv1 * max(1.0e-10,1.0-ft2));
+    psi_2 = min(100.0,psi_2);
 
     su2double lengthScale = 0.0, lesSensor = 0.0;
 
@@ -1506,7 +1506,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         const su2double f_d = 1.0-tanh(pow(8.0*r_d,3.0));
 
         const su2double distDES = constDES * maxDelta;
-        lengthScale = wallDistance-f_d*fmax(0.0,(wallDistance-distDES));
+        lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
         lesSensor = (wallDistance<=distDES) ? 0.0 : f_d;
 
         if (config->GetEnforceLES()) {
@@ -1530,7 +1530,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
           const auto coord_j = geometry->nodes->GetCoord(jPoint);
           for (auto iDim = 0u; iDim < nDim; iDim++){
             const su2double deltaAux = abs(coord_j[iDim] - coord_i[iDim]);
-            delta[iDim] = fmax(delta[iDim], deltaAux);
+            delta[iDim] = max(delta[iDim], deltaAux);
           }
         }
 
@@ -1555,7 +1555,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
           maxDelta = LES_FilterWidth;
         }
         const su2double distDES = constDES * maxDelta;
-        lengthScale = wallDistance-f_d*fmax(0.0,(wallDistance-distDES));
+        lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
         lesSensor = (wallDistance<=distDES) ? 0.0 : f_d;
 
         if (config->GetEnforceLES()) {
@@ -1595,13 +1595,13 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
           ln[1] = delta[2]*ratioOmega[0] - delta[0]*ratioOmega[2];
           ln[2] = delta[0]*ratioOmega[1] - delta[1]*ratioOmega[0];
           const su2double aux_ln = sqrt(ln[0]*ln[0] + ln[1]*ln[1] + ln[2]*ln[2]);
-          ln_max = fmax(ln_max, aux_ln);
+          ln_max = max(ln_max, aux_ln);
           vortexTiltingMeasure += nodes->GetVortex_Tilting(jPoint);
         }
         vortexTiltingMeasure /= (nNeigh + 1);
 
-        const su2double f_kh = fmax(f_min,
-                                   fmin(f_max,
+        const su2double f_kh = max(f_min,
+                                   min(f_max,
                                        f_min + ((f_max - f_min)/(a2 - a1)) * (vortexTiltingMeasure - a1)));
 
         const su2double r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
@@ -1616,7 +1616,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
           maxDelta = LES_FilterWidth;
         }
         const su2double distDES = constDES * maxDelta;
-        lengthScale = wallDistance-f_d*fmax(0.0,(wallDistance-distDES));
+        lengthScale = wallDistance-f_d*max(0.0,(wallDistance-distDES));
         lesSensor = (wallDistance<=distDES) ? 0.0 : f_d;
 
         if (config->GetEnforceLES()) {
@@ -1846,8 +1846,8 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
               su2double dist2_ij = GeometryToolbox::SquaredNorm(nDim, dist_ij_vec);
               su2double dist_ij_parallel = GeometryToolbox::DotProduct(nDim, dist_ij_vec, maxDelta_vec);
               dist_ij_parallel /= maxDelta;
-              su2double dist_ij_normal = sqrt(fmax(dist2_ij - pow(dist_ij_parallel, 2), 0.0));
-              max_dist_ij_normal = fmax(max_dist_ij_normal, dist_ij_normal);
+              su2double dist_ij_normal = sqrt(max(dist2_ij - pow(dist_ij_parallel, 2), 0.0));
+              max_dist_ij_normal = max(max_dist_ij_normal, dist_ij_normal);
             }
             su2double dI = maxDelta;
             su2double dJ = max_dist_ij_normal;
@@ -1863,7 +1863,7 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
           } else {
             integral = nodes->GetBesselIntegral(iPoint);
           }
-          su2double scaleFactor = 1.0 / sqrt(fmax(integral, 1e-10));
+          su2double scaleFactor = 1.0 / sqrt(max(integral, 1e-10));
           source *= scaleFactor;
           if (source < -sourceLim || source > sourceLim) source = 0.0;
           mean_check_new += source;

@@ -4214,7 +4214,7 @@ void CFlowOutput::LoadTimeAveragedData(unsigned long iPoint, const CVariable *No
     }
 
     if (config->GetSBSParam().StochasticBackscatter) {
-      const su2double DES_lengthscale = fmax(Node_Flow->GetDES_LengthScale(iPoint), 1e-10);
+      const su2double DES_lengthscale = max(Node_Flow->GetDES_LengthScale(iPoint), 1e-10);
       const su2double lesSensor = Node_Flow->GetLES_Mode(iPoint);
       const su2double mag = config->GetSBSParam().SBS_Cmag;
       const su2double threshold = config->GetSBSParam().stochFdThreshold;

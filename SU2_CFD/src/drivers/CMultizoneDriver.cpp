@@ -144,7 +144,7 @@ void CMultizoneDriver::StartSolver() {
 
   su2double Time_Ref = std::numeric_limits<su2double>::max();
   for (iZone = 0; iZone < nZone; iZone++)
-    Time_Ref = fmin(Time_Ref, config_container[iZone]->GetTime_Ref());
+    Time_Ref = min(Time_Ref, config_container[iZone]->GetTime_Ref());
 
   for (iZone = 0; iZone < nZone; iZone++) {
 

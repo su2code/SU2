@@ -103,7 +103,7 @@ void CDataDrivenFluid::MapInputs_to_Outputs() {
     iomap_rhoe.AddQueryInput(varname_rho, &rho_query);
     iomap_rhoe.AddQueryInput(varname_e, &e_query);
     iomap_rhoe.AddQueryOutput(name_entropy, &Entropy);
-
+    
     if (use_MLP_derivatives) {
       iomap_rhoe.AddQueryJacobian(name_entropy, varname_rho, &dsdrho_e);
       iomap_rhoe.AddQueryJacobian(name_entropy, varname_e, &dsde_rho);
@@ -153,7 +153,7 @@ void CDataDrivenFluid::SetTDState_rhoe(su2double rho, su2double e) {
   AD::SetPreaccIn(StaticEnergy);
 
   /*--- Compute thermodynamic state based on density and energy. ---*/
-
+  
   Density = max(min(rho, rho_max), rho_min);
   StaticEnergy = max(min(e, e_max), e_min);
 
@@ -209,7 +209,7 @@ void CDataDrivenFluid::SetTDState_PT(su2double P, su2double T) {
   const auto iNearest = coarse_TD_table.FindNode(iP, P, iT, T);
   e_start = vals_e_table[iNearest];
   rho_start = vals_rho_table[iNearest];
-
+  
   /*--- Run 2D Newton solver for pressure and temperature ---*/
   Run_Newton_Solver(P, T, Pressure, Temperature, dPdrho_e, dPde_rho, dTdrho_e, dTde_rho);
 }
@@ -273,7 +273,7 @@ unsigned long CDataDrivenFluid::Predict_MLP(su2double rho, su2double e) {
   e_query = e;
   if(!lookup_mlp->Predict(iomap_rhoe)) exit_code=1;
 #endif
-
+  
   return exit_code;
 }
 
@@ -320,7 +320,7 @@ void CDataDrivenFluid::Run_Newton_Solver(const su2double Y1_target, const su2dou
     /*--- Determine residuals. ---*/
     const su2double delta_Y1 = Y1 - Y1_target;
     const su2double delta_Y2 = Y2 - Y2_target;
-
+    
     /*--- Continue iterative process if residuals are outside tolerances. ---*/
     if ((abs(delta_Y1 / Y1) < Newton_Tolerance) && (abs(delta_Y2 / Y2) < Newton_Tolerance)) {
       converged = true;
@@ -332,11 +332,11 @@ void CDataDrivenFluid::Run_Newton_Solver(const su2double Y1_target, const su2dou
 
       extra_relaxation = 1.0;
       /*--- Check if updated values exceed the bounds. If so, apply extra relaxation. ---*/
-      if (rho - delta_rho <= rho_min) extra_relaxation = fmin(extra_relaxation, 0.5*(rho - rho_min) / (Newton_Relaxation * delta_rho));
-      if (rho - delta_rho >= rho_max) extra_relaxation = fmin(extra_relaxation, 0.5*(rho - rho_max) / (Newton_Relaxation * delta_rho));
-
-      if (e - delta_e <= e_min) extra_relaxation = fmin(extra_relaxation, 0.5*(e - e_min) / (Newton_Relaxation * delta_e));
-      if (e - delta_e >= e_max) extra_relaxation = fmin(extra_relaxation, 0.5*(e - e_max) / (Newton_Relaxation * delta_e));
+      if (rho - delta_rho <= rho_min) extra_relaxation = min(extra_relaxation, 0.5*(rho - rho_min) / (Newton_Relaxation * delta_rho));
+      if (rho - delta_rho >= rho_max) extra_relaxation = min(extra_relaxation, 0.5*(rho - rho_max) / (Newton_Relaxation * delta_rho));
+      
+      if (e - delta_e <= e_min) extra_relaxation = min(extra_relaxation, 0.5*(e - e_min) / (Newton_Relaxation * delta_e));
+      if (e - delta_e >= e_max) extra_relaxation = min(extra_relaxation, 0.5*(e - e_max) / (Newton_Relaxation * delta_e));
 
       /*--- Update density and energy values. ---*/
       rho -= extra_relaxation * Newton_Relaxation * delta_rho;
@@ -391,7 +391,7 @@ void CDataDrivenFluid::Run_Newton_Solver(const su2double Y_target, const su2doub
 }
 
 void CDataDrivenFluid::ComputeIdealGasQuantities() {
-
+ 
   /*--- Obtain minimum and maximum density and static energy from data set. ---*/
   switch (Kind_DataDriven_Method)
   {
@@ -471,4 +471,4 @@ size_t MiniTable2D::FindNode(const size_t iX, const su2double val_x, const size_
         }
     }
     return iMin;
-}
+}  

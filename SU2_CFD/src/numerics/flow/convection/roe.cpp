@@ -197,7 +197,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   su2double MaxLambda = fabs(ProjVelocity) + RoeSoundSpeed;
 
   for (iVar = 0; iVar < nVar; iVar++)
-    Lambda[iVar] = fmax(fabs(Lambda[iVar]), config->GetEntropyFix_Coeff()*MaxLambda);
+    Lambda[iVar] = max(fabs(Lambda[iVar]), config->GetEntropyFix_Coeff()*MaxLambda);
 
   /*--- Reconstruct conservative variables ---*/
 
@@ -312,7 +312,7 @@ void CUpwL2Roe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
   M_i = sqrt(M_i / fabs(Pressure_i*Gamma/Density_i));
   M_j = sqrt(M_j / fabs(Pressure_j*Gamma/Density_j));
 
-  su2double zeta = fmax(0.05,fmin(fmax(M_i,M_j),1.0));
+  su2double zeta = max(0.05,min(max(M_i,M_j),1.0));
 
   /*--- Compute wave amplitudes (characteristics) ---*/
 
@@ -385,7 +385,7 @@ void CUpwLMRoe_Flow::FinalizeResidual(su2double *val_residual, su2double **val_J
   M_i = sqrt(M_i / fabs(Pressure_i*Gamma/Density_i));
   M_j = sqrt(M_j / fabs(Pressure_j*Gamma/Density_j));
 
-  su2double zeta = fmax(0.05,fmin(fmax(M_i,M_j),1.0));
+  su2double zeta = max(0.05,min(max(M_i,M_j),1.0));
 
   /*--- Compute wave amplitudes (characteristics) ---*/
 
@@ -592,7 +592,7 @@ CNumerics::ResidualType<> CUpwTurkel_Flow::ComputeResidual(const CConfig* config
     Lambda[iDim] = ProjVelocity;
 
   local_Mach = sqrt(sq_vel)/RoeSoundSpeed;
-  Beta       = fmax(Beta_min, fmin(local_Mach, Beta_max));
+  Beta       = max(Beta_min, min(local_Mach, Beta_max));
   Beta2      = Beta*Beta;
 
   one_m_Betasqr        = 1.0 - Beta2;  // 1-Beta*Beta
@@ -862,15 +862,15 @@ CNumerics::ResidualType<> CUpwGeneralRoe_Flow::ComputeResidual(const CConfig* co
   Delta = config->GetEntropyFix_Coeff();
 
   for (iVar = 0; iVar < nVar; iVar++) {
-    Lambda[iVar] = fmax(fabs(Lambda[iVar]), Delta*MaxLambda);
+    Lambda[iVar] = max(fabs(Lambda[iVar]), Delta*MaxLambda);
    }
 
 //  /*--- Harten and Hyman (1983) entropy correction ---*/
 //  for (iDim = 0; iDim < nDim; iDim++)
-//    Epsilon[iDim] = 4.0*fmax(0.0, fmax(Lambda[iDim]-ProjVelocity_i, ProjVelocity_j-Lambda[iDim]));
+//    Epsilon[iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i, ProjVelocity_j-Lambda[iDim]));
 //
-//  Epsilon[nVar-2] = 4.0*fmax(0.0, fmax(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
-//  Epsilon[nVar-1] = 4.0*fmax(0.0, fmax(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
+//  Epsilon[nVar-2] = 4.0*max(0.0, max(Lambda[nVar-2]-(ProjVelocity_i+SoundSpeed_i),(ProjVelocity_j+SoundSpeed_j)-Lambda[nVar-2]));
+//  Epsilon[nVar-1] = 4.0*max(0.0, max(Lambda[nVar-1]-(ProjVelocity_i-SoundSpeed_i),(ProjVelocity_j-SoundSpeed_j)-Lambda[nVar-1]));
 //
 //  for (iVar = 0; iVar < nVar; iVar++)
 //    if ( fabs(Lambda[iVar]) < Epsilon[iVar] )

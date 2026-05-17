@@ -39,7 +39,7 @@ CNumericsRadiation::CNumericsRadiation(unsigned short val_nDim,
   Absorption_Coeff = config->GetAbsorption_Coeff();
   Scattering_Coeff = config->GetScattering_Coeff();
 
-  Absorption_Coeff = fmax(Absorption_Coeff,0.001);
+  Absorption_Coeff = max(Absorption_Coeff,0.001);
 
   Temperature_Ref = config->GetTemperature_Ref();
 

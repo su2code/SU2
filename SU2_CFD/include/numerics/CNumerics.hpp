@@ -535,7 +535,7 @@ public:
     for (size_t iDim = 0; iDim < nDim; iDim++)
       for (size_t jDim = 0; jDim < nDim; jDim++)
         factor += gradvel[iDim][jDim] * gradvel[iDim][jDim];
-    factor = 1.0 / sqrt(fmax(factor,1E-10));
+    factor = 1.0 / sqrt(max(factor,1E-10));
 
     /*--- Adding the QCR contribution ---*/
 
@@ -673,9 +673,9 @@ public:
     stochReynStress[0][0] =   0.0;
     stochReynStress[1][1] =   0.0;
     stochReynStress[2][2] =   0.0;
-    stochReynStress[0][1] = - Cmag * density * tke * fmax(-stochLim, fmin(stochLim, rndVec[2]));
-    stochReynStress[0][2] = + Cmag * density * tke * fmax(-stochLim, fmin(stochLim, rndVec[1]));
-    stochReynStress[1][2] = - Cmag * density * tke * fmax(-stochLim, fmin(stochLim, rndVec[0]));
+    stochReynStress[0][1] = - Cmag * density * tke * max(-stochLim, min(stochLim, rndVec[2]));
+    stochReynStress[0][2] = + Cmag * density * tke * max(-stochLim, min(stochLim, rndVec[1]));
+    stochReynStress[1][2] = - Cmag * density * tke * max(-stochLim, min(stochLim, rndVec[0]));
     stochReynStress[1][0] = - stochReynStress[0][1];
     stochReynStress[2][0] = - stochReynStress[0][2];
     stochReynStress[2][1] = - stochReynStress[1][2];
