@@ -94,6 +94,18 @@ FORCEINLINE Out su2staticcast_p(In ptr) {
 #define HAVE_OMP
 #endif
 
+#if (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)) && defined(USE_SINGLE_PRECISION)
+#undef USE_SINGLE_PRECISION
+#endif
+
+/*--- This type can be used for (rare) compatibility cases or for
+- * computations that are intended to be (always) passive. ---*/
+#ifdef USE_SINGLE_PRECISION
+using passivedouble = float;
+#else
+using passivedouble = double;
+#endif
+
 /*--- Depending on the datatype defined during the configuration,
  * include the correct definition, and create the main typedef. ---*/
 
@@ -131,12 +143,8 @@ using su2double = codi::RealReverseTag;
 #include "codi.hpp"
 using su2double = codi::RealForward;
 #else  // primal / direct / no AD
-using su2double = double;
+using su2double = passivedouble;
 #endif
-
-/*--- This type can be used for (rare) compatibility cases or for
- * computations that are intended to be (always) passive. ---*/
-using passivedouble = double;
 
 /*--- Define a type for potentially lower precision operations. ---*/
 #ifndef CODI_FORWARD_TYPE

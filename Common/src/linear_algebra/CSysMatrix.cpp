@@ -1364,7 +1364,7 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 
 INSTANTIATE_MATRIX(su2mixedfloat)
 
-#ifdef USE_MIXED_PRECISION
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
 INSTANTIATE_MATRIX(passivedouble)
 #endif
 #ifdef CODI_REVERSE_TYPE
