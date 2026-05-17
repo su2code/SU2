@@ -59,12 +59,12 @@ class TransLMCorrelations {
 
     switch (options.Correlation) {
       case TURB_TRANS_CORRELATION::MALAN: {
-        rethetac = min(0.615 * Re_theta_t + 61.5, Re_theta_t);
+        rethetac = fmin(0.615 * Re_theta_t + 61.5, Re_theta_t);
         break;
       }
 
       case TURB_TRANS_CORRELATION::SULUKSNA: {
-        rethetac = min(0.1 * exp(-0.0022 * Re_theta_t + 12), 300.0);
+        rethetac = fmin(0.1 * exp(-0.0022 * Re_theta_t + 12), 300.0);
         break;
       }
 
@@ -128,13 +128,13 @@ class TransLMCorrelations {
 
     switch (options.Correlation) {
       case TURB_TRANS_CORRELATION::MALAN: {
-        F_length1 = min(exp(7.168 - 0.01173 * Re_theta_t) + 0.5, 300.0);
+        F_length1 = fmin(exp(7.168 - 0.01173 * Re_theta_t) + 0.5, 300.0);
         break;
       }
 
       case TURB_TRANS_CORRELATION::SULUKSNA: {
         const su2double FirstTerm = -pow(0.025 * Re_theta_t, 2) + 1.47 * Re_theta_t - 120.0;
-        F_length1 = min(max(FirstTerm, 125.0), Re_theta_t);
+        F_length1 = fmin(fmax(FirstTerm, 125.0), Re_theta_t);
         break;
       }
 

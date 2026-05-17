@@ -1537,7 +1537,7 @@ su2double CNumerics::GetRoe_Dissipation(const su2double Dissipation_i,
 
   if (roe_low_diss == FD || roe_low_diss == FD_DUCROS){
 
-    Dissipation_ij = max(0.05,1.0 - (0.5 * (Dissipation_i + Dissipation_j)));
+    Dissipation_ij = fmax(0.05,1.0 - (0.5 * (Dissipation_i + Dissipation_j)));
 
     if (roe_low_diss == FD_DUCROS){
 
@@ -1550,12 +1550,12 @@ su2double CNumerics::GetRoe_Dissipation(const su2double Dissipation_i,
       else
         Ducros_ij = 0.05;
 
-      Dissipation_ij = max(Ducros_ij, Dissipation_ij);
+      Dissipation_ij = fmax(Ducros_ij, Dissipation_ij);
     }
 
   } else if (roe_low_diss == NTS) {
 
-    Dissipation_ij = max(Min_Dissipation, Mean_Dissipation);
+    Dissipation_ij = fmax(Min_Dissipation, Mean_Dissipation);
 
   } else if (roe_low_diss == NTS_DUCROS) {
 

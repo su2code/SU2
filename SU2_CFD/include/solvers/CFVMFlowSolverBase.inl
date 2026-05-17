@@ -499,8 +499,8 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
         numerics->SetStochVar(iDim, turbNodes->GetLangevinSourceTerms(iPoint, iDim),
                                     turbNodes->GetLangevinSourceTerms(jPoint, iDim));
     }
-    su2double DES_length_i = max(turbNodes->GetDES_LengthScale(iPoint), 1e-10);
-    su2double DES_length_j = max(turbNodes->GetDES_LengthScale(jPoint), 1e-10);
+    su2double DES_length_i = fmax(turbNodes->GetDES_LengthScale(iPoint), 1e-10);
+    su2double DES_length_j = fmax(turbNodes->GetDES_LengthScale(jPoint), 1e-10);
     su2double lesMode_i = turbNodes->GetLES_Mode(iPoint);
     su2double lesMode_j = turbNodes->GetLES_Mode(jPoint);
     numerics->SetDistance(DES_length_i, DES_length_j);
@@ -721,8 +721,8 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
 
     /*--- The derivative with respect to strainMax and omegaMax is not required. ---*/
     bool wa = AD::PauseRecording();
-    strainMax = max(strainMax, StrainMag(iPoint));
-    omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
+    strainMax = fmax(strainMax, StrainMag(iPoint));
+    omegaMax = fmax(omegaMax, GeometryToolbox::Norm(3, Vorticity));
     AD::ResumeRecording(wa);
   }
   END_SU2_OMP_FOR

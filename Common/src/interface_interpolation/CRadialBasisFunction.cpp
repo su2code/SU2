@@ -356,7 +356,7 @@ void CRadialBasisFunction::SetTransferCoeff(const CConfig* const* config) {
           maxDonors = max(maxDonors, nnz);
           auto corr = fabs(info.second - 1.0);  // far from 1 either way is bad;
           sumCorr += corr;
-          maxCorr = max(maxCorr, corr);
+          maxCorr = fmax(maxCorr, corr);
 
           /*--- Allocate and set donor information for this target point. ---*/
           targetVertex.resize(nnz);
@@ -544,7 +544,7 @@ int CRadialBasisFunction::CheckPolynomialTerms(su2double max_diff_tol, vector<in
 
     /*--- 1.0 is the arbitrary constant we are assuming when fitting
      the plane, i.e. the vector of ones used to generate the RHS. ---*/
-    max_diff = max(abs(1.0 - sum), max_diff);
+    max_diff = fmax(abs(1.0 - sum), max_diff);
   }
 
   /*--- If points lie on plane remove row associated with the maximum coefficient. ---*/

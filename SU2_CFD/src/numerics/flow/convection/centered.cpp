@@ -425,7 +425,7 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
       Diff_V[iVar] = V_i[iVar] - V_j[iVar];
     }
   }
-  
+
 
   /*--- Build the preconditioning matrix using mean values ---*/
 
@@ -462,7 +462,7 @@ CNumerics::ResidualType<> CCentJSTInc_Flow::ComputeResidual(const CConfig* confi
   sc4 = sc2*sc2/4.0;
 
   Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
-  Epsilon_4 = max(0.0, Param_Kappa_4-Epsilon_2)*sc4;
+  Epsilon_4 = fmax(0.0, Param_Kappa_4-Epsilon_2)*sc4;
 
   /*--- Compute viscous part of the residual ---*/
 

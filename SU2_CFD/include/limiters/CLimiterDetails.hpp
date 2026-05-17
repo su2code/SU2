@@ -102,7 +102,7 @@ struct LimiterHelpers
   FORCEINLINE static Type raisedSine(const Type& dist)
   {
     Type factor = 0.5*(1.0+dist+sin(PI_NUMBER*dist)/PI_NUMBER);
-    return max(0.0, min(factor, 1.0));
+    return fmax(0.0, fmin(factor, 1.0));
   }
 
   FORCEINLINE static Type r3Function(const Type& proj, const Type& delta, const Type& epsp)
@@ -187,7 +187,7 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN>
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
-    eps2 = max(eps1*eps1*eps1, LimiterHelpers<>::epsilon());
+    eps2 = fmax(eps1*eps1*eps1, LimiterHelpers<>::epsilon());
   }
 
   /*!
@@ -225,7 +225,7 @@ struct CLimiterDetails<LIMITER::NISHIKAWA_R3>
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
-    epsp = max(pow(eps1, 4), LimiterHelpers<>::epsilon());
+    epsp = fmax(pow(eps1, 4), LimiterHelpers<>::epsilon());
   }
 
   /*!
@@ -263,7 +263,7 @@ struct CLimiterDetails<LIMITER::NISHIKAWA_R4>
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
-    epsp = max(pow(eps1, 5), LimiterHelpers<>::epsilon());
+    epsp = fmax(pow(eps1, 5), LimiterHelpers<>::epsilon());
   }
 
   /*!
@@ -301,7 +301,7 @@ struct CLimiterDetails<LIMITER::NISHIKAWA_R5>
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
     su2double eps1 = fabs(L*K);
-    epsp = max(pow(eps1, 6), LimiterHelpers<>::epsilon());
+    epsp = fmax(pow(eps1, 6), LimiterHelpers<>::epsilon());
   }
 
   /*!
@@ -361,8 +361,8 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>
     {
       for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
       {
-        localMin(iVar) = min(localMin(iVar), field(iPoint, iVar));
-        localMax(iVar) = max(localMax(iVar), field(iPoint, iVar));
+        localMin(iVar) = fmin(localMin(iVar), field(iPoint, iVar));
+        localMax(iVar) = fmax(localMax(iVar), field(iPoint, iVar));
       }
     }
     END_SU2_OMP_FOR
@@ -395,7 +395,7 @@ struct CLimiterDetails<LIMITER::VENKATAKRISHNAN_WANG>
     for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
     {
       su2double range = sharedMax(iVar) - sharedMin(iVar);
-      eps2(iVar) = max(pow(K*range, 2), LimiterHelpers<>::epsilon());
+      eps2(iVar) = fmax(pow(K*range, 2), LimiterHelpers<>::epsilon());
     }
   }
 
@@ -435,7 +435,7 @@ struct CLimiterDetails<LIMITER::SHARP_EDGES>
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
     eps1 = fabs(L*K);
-    eps2 = max(eps1*eps1*eps1, LimiterHelpers<>::epsilon());
+    eps2 = fmax(eps1*eps1*eps1, LimiterHelpers<>::epsilon());
   }
 
   /*!
@@ -477,7 +477,7 @@ struct CLimiterDetails<LIMITER::WALL_DISTANCE>
     su2double L = config.GetRefElemLength();
     su2double K = config.GetVenkat_LimiterCoeff();
     eps1 = fabs(L*K);
-    eps2 = max(eps1*eps1*eps1, LimiterHelpers<>::epsilon());
+    eps2 = fmax(eps1*eps1*eps1, LimiterHelpers<>::epsilon());
   }
 
   /*!

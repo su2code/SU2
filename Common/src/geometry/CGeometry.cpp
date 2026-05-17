@@ -1108,7 +1108,7 @@ void CGeometry::MatchPeriodic(const CConfig* config, unsigned short val_periodic
               cout << endl;
               cout << "   Bad match for point " << iPointGlobal << ".\tNearest";
               cout << " donor distance: " << scientific << mindist << ".";
-              maxdist_local = min(maxdist_local, 0.0);
+              maxdist_local = fmin(maxdist_local, 0.0);
               isBadMatch = true;
             }
           }
@@ -3341,7 +3341,7 @@ void CGeometry::ComputeSurf_Curvature(CConfig* config) {
             for (iDim = 0; iDim < nDim; iDim++) MeanK += NormalMeanK[iPoint][iDim] * NormalMeanK[iPoint][iDim];
             MeanK = sqrt(MeanK);
 
-            delta = max((MeanK * MeanK - GaussK), 0.0);
+            delta = fmax((MeanK * MeanK - GaussK), 0.0);
 
             MaxPrinK = MeanK + sqrt(delta);
 

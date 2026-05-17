@@ -165,8 +165,8 @@ CNumerics::ResidualType<> CUpwHLLC_Flow::ComputeResidual(const CConfig* config) 
 
   /*--- Speed of sound at L and R ---*/
 
-  sL = min( RoeProjVelocity - RoeSoundSpeed, ProjVelocity_i - SoundSpeed_i);
-  sR = max( RoeProjVelocity + RoeSoundSpeed, ProjVelocity_j + SoundSpeed_j);
+  sL = fmin( RoeProjVelocity - RoeSoundSpeed, ProjVelocity_i - SoundSpeed_i);
+  sR = fmax( RoeProjVelocity + RoeSoundSpeed, ProjVelocity_j + SoundSpeed_j);
 
   /*--- speed of contact surface ---*/
 
@@ -695,8 +695,8 @@ CNumerics::ResidualType<> CUpwGeneralHLLC_Flow::ComputeResidual(const CConfig* c
 
   /*--- Speed of sound at L and R ---*/
 
-  sL = min( RoeProjVelocity - RoeSoundSpeed, ProjVelocity_i - SoundSpeed_i );
-  sR = max( RoeProjVelocity + RoeSoundSpeed, ProjVelocity_j + SoundSpeed_j );
+  sL = fmin( RoeProjVelocity - RoeSoundSpeed, ProjVelocity_i - SoundSpeed_i );
+  sR = fmax( RoeProjVelocity + RoeSoundSpeed, ProjVelocity_j + SoundSpeed_j );
 
   /*--- speed of contact surface ---*/
 

@@ -558,17 +558,17 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
           if (van_albada) {
             su2double va_lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i[iVar], V_ij, EPS);
             su2double va_lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j[iVar], V_ij, EPS);
-            lim_i = min(lim_i, va_lim_i);
-            lim_j = min(lim_j, va_lim_j);
+            lim_i = fmin(lim_i, va_lim_i);
+            lim_j = fmin(lim_j, va_lim_j);
           } else {
-            lim_i = min(lim_i, Limiter_i[iVar]);
-            lim_j = min(lim_j, Limiter_j[iVar]);
+            lim_i = fmin(lim_i, Limiter_i[iVar]);
+            lim_j = fmin(lim_j, Limiter_j[iVar]);
           }
         } else {
           lim_i = lim_j = 1.0;
         }
       }
-      su2double lim_ij = min(lim_i, lim_j);
+      su2double lim_ij = fmin(lim_i, lim_j);
 
       for (auto iVar = 0ul; iVar < nPrimVarGrad; iVar++) {
         Primitive_i[iVar] = V_i[iVar] + 0.5 * lim_ij * Project_Grad_i[iVar];
@@ -970,7 +970,7 @@ void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
         if (iVar == (config ->GetnSpecies()-1)){
           su2double ratio = (num/(denom+EPS));
           if (ratio > allowableRatio) {
-            localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+            localUnderRelaxation = fmin(allowableRatio / ratio, localUnderRelaxation);
           }
         }
 
@@ -978,7 +978,7 @@ void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
         if (iVar == (nVar-2)){
           su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
           if (ratio > allowableRatio) {
-            localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
+            localUnderRelaxation = fmin(allowableRatio / ratio, localUnderRelaxation);
           }
         }
       }
@@ -1748,9 +1748,9 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         /*--- Solve quadratic equation for velocity magnitude. Value must
            be positive, so the choice of root is clear. ---*/
         dd = bb*bb - 4.0*aa*cc;
-        dd = sqrt(max(0.0,dd));
+        dd = sqrt(fmax(0.0,dd));
         Vel_Mag   = (-bb + dd)/(2.0*aa);
-        Vel_Mag   = max(0.0,Vel_Mag);
+        Vel_Mag   = fmax(0.0,Vel_Mag);
         Velocity2 = Vel_Mag*Vel_Mag;
 
         /*--- Compute speed of sound from total speed of sound eqn. ---*/
@@ -1758,7 +1758,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
         Mach2 = Velocity2/SoundSpeed2;
-        Mach2 = min(1.0,Mach2);
+        Mach2 = fmin(1.0,Mach2);
         Velocity2   = Mach2*SoundSpeed2;
         Vel_Mag     = sqrt(Velocity2);
         SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
@@ -1834,7 +1834,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         for (auto iDim = 0ul; iDim < nDim; iDim++)
           SoundSpeed2 -= Vel_Mag*Flow_Dir[iDim]*UnitNormal[iDim];
 
-        SoundSpeed2 = max(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
+        SoundSpeed2 = fmax(0.0,0.5*Gamma_Minus_One*SoundSpeed2);
         SoundSpeed2 = SoundSpeed2*SoundSpeed2;
 
         /*--- Pressure for the fictitious inlet state ---*/
@@ -2382,7 +2382,7 @@ void CNEMOEulerSolver::SetPressureDiffusionSensor(CGeometry *geometry, CConfig *
 
     for (auto jPoint : geometry->nodes->GetPoints(iPoint)) {
       const su2double P_k = nodes->GetPrimitive(jPoint, P_INDEX) / nodes->GetPrimitive(iPoint, P_INDEX);
-      Sensor = min(Sensor, min(P_k, 1.0/P_k));
+      Sensor = fmin(Sensor, fmin(P_k, 1.0/P_k));
     }
 
     nodes->SetSensor(iPoint,Sensor);

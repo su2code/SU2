@@ -279,7 +279,7 @@ int CIsoparametric::LineIsoparameters(const su2double X[][3], const su2double* x
 
   const int outOfBounds = (l0j + lj1) > (2 * l01);
 
-  isoparams[0] = max(-0.5, min(lj1 / l01, 1.5));
+  isoparams[0] = fmax(-0.5, fmin(lj1 / l01, 1.5));
   isoparams[1] = 1.0 - isoparams[0];
 
   return outOfBounds;

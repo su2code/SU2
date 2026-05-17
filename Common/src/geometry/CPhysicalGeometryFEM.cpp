@@ -2256,7 +2256,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(CConfig* config, const vector
     /* Also the viscous contribution to the time step is constant. Compute it. */
     const su2double factHeatFlux = (Thermal_Conductivity * Gamma) / (Cp * Viscosity);
     const su2double lambdaOverMu = -TWO3;
-    const su2double radVisc = max(max(1.0, 2.0 + lambdaOverMu), factHeatFlux) * Viscosity / Density;
+    const su2double radVisc = fmax(fmax(1.0, 2.0 + lambdaOverMu), factHeatFlux) * Viscosity / Density;
 
     /*--- Allocate the memory for time step estimate of the local elements and
           determine the values. Also keep track of the minimum value. ---*/

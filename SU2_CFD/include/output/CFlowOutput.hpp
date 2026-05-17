@@ -367,7 +367,7 @@ protected:
   inline su2double GetEnergyBackscatterRatio(unsigned long iPoint, const CConfig *config, const CVariable *node_flow, const CVariable *node_turb) {
     const su2double rho = node_flow->GetDensity(iPoint);
     const su2double nu_t = node_flow->GetEddyViscosity(iPoint) / rho;
-    const su2double DES_lengthscale = max(node_flow->GetDES_LengthScale(iPoint), 1e-10);
+    const su2double DES_lengthscale = fmax(node_flow->GetDES_LengthScale(iPoint), 1e-10);
     const su2double lesSensor = node_flow->GetLES_Mode(iPoint);
     const su2double mag = config->GetSBSParam().SBS_Cmag;
     const su2double threshold = config->GetSBSParam().stochFdThreshold;

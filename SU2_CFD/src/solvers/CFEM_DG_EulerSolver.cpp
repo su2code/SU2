@@ -1081,10 +1081,10 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
-  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max((Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream()), 1.e-25);
+  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/fmax((Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream()), 1.e-25);
   config->SetOmega_FreeStream(Omega_FreeStream);
 
-  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max((Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream()), 1.e-25);
+  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/fmax((Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream()), 1.e-25);
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
@@ -7710,15 +7710,15 @@ void CFEM_DG_EulerSolver::BoundaryStates_Inlet(CConfig                  *config,
             Riemann is positive up till Mach = 5.0 or so, which is not really subsonic
             anymore), it is clear which of the two possible solutions must be taken.
             Some clipping is present, but this is normally not active. ---*/
-      su2double dd      = bb*bb - 4.0*aa*cc;   dd      = sqrt(max(0.0, dd));
-      su2double Vel_Mag = (-bb + dd)/(2.0*aa); Vel_Mag = max(0.0, Vel_Mag);
+      su2double dd      = bb*bb - 4.0*aa*cc;   dd      = sqrt(fmax(0.0, dd));
+      su2double Vel_Mag = (-bb + dd)/(2.0*aa); Vel_Mag = fmax(0.0, Vel_Mag);
       Velocity2 = Vel_Mag*Vel_Mag;
 
       /*--- Compute speed of sound from total speed of sound eqn. ---*/
       SoundSpeed2 = SoundSpeed_Total2 - 0.5*Gamma_Minus_One*Velocity2;
 
       /*--- Mach squared (cut between 0-1), use to adapt velocity ---*/
-      su2double Mach2 = Velocity2/SoundSpeed2; Mach2 = min(1.0, Mach2);
+      su2double Mach2 = Velocity2/SoundSpeed2; Mach2 = fmin(1.0, Mach2);
 
       Velocity2 = Mach2*SoundSpeed2;
       Vel_Mag   = sqrt(Velocity2);

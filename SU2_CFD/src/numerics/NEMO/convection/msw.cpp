@@ -149,7 +149,7 @@ CNumerics::ResidualType<> CUpwMSW_NEMO::ComputeResidual(const CConfig *config) {
   ProjVelocity_j = GeometryToolbox::DotProduct(nDim, Velocity_j, UnitNormal);
 
   /*--- Calculate the state weighting function ---*/
-  const su2double dp = fabs(Pressure_j-Pressure_i) / min(Pressure_j, Pressure_i);
+  const su2double dp = fabs(Pressure_j-Pressure_i) / fmin(Pressure_j, Pressure_i);
   const su2double w = 0.5 * (1.0/(pow(alpha*dp,2.0) +1.0));
   const su2double onemw = 1.0 - w;
 

@@ -183,7 +183,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(const CConfig* config, su2dou
 
     for (iVar = 0; iVar < nDim+3; ++iVar) {
       /*--- Perturb side i ---*/
-      su2double epsilon = FinDiffStep * max(1.0, fabs(*primitives_i[iVar]));
+      su2double epsilon = FinDiffStep * fmax(1.0, fabs(*primitives_i[iVar]));
       *primitives_i[iVar] += epsilon;
       ComputeMassAndPressureFluxes(config, MassFlux, Pressure);
       dmdot_dVi[iVar] += MassFlux;  dpres_dVi[iVar] += Pressure;
@@ -191,7 +191,7 @@ void CUpwAUSMPLUS_SLAU_Base_Flow::AccurateJacobian(const CConfig* config, su2dou
       *primitives_i[iVar] -= epsilon;
 
       /*--- Perturb side j ---*/
-      epsilon = FinDiffStep * max(1.0, fabs(*primitives_j[iVar]));
+      epsilon = FinDiffStep * fmax(1.0, fabs(*primitives_j[iVar]));
       *primitives_j[iVar] += epsilon;
       ComputeMassAndPressureFluxes(config, MassFlux, Pressure);
       dmdot_dVj[iVar] += MassFlux;  dpres_dVj[iVar] += Pressure;
@@ -419,7 +419,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su
   su2double ahatL = astarL*astarL/max(astarL, ProjVelocity_i);
   su2double ahatR = astarR*astarR/max(astarR,-ProjVelocity_j);
 
-  su2double aF = min(ahatL,ahatR);
+  su2double aF = fmin(ahatL,ahatR);
 
   /*--- Left and right pressures and Mach numbers ---*/
 
@@ -429,8 +429,8 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su
   su2double mR = ProjVelocity_j/aF;
 
   su2double MFsq = 0.5*(mL*mL+mR*mR);
-  su2double param1 = max(MFsq, Minf*Minf);
-  su2double Mrefsq = min(1.0, param1);
+  su2double param1 = fmax(MFsq, Minf*Minf);
+  su2double Mrefsq = fmin(1.0, param1);
 
   su2double fa = 2.0*sqrt(Mrefsq)-Mrefsq;
 
@@ -471,7 +471,7 @@ void CUpwAUSMPLUSUP_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su
   /*--- Finally the fluxes ---*/
 
   su2double mF = mLP + mRM + Mp;
-  mdot = aF * (max(mF,0.0)*Density_i + min(mF,0.0)*Density_j);
+  mdot = aF * (fmax(mF,0.0)*Density_i + fmin(mF,0.0)*Density_j);
 
   pressure = betaLP*Pressure_i + betaRM*Pressure_j + Pu;
 
@@ -645,7 +645,7 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(const CConfig* config, s
   su2double ahatL = astarL*astarL/max(astarL, ProjVelocity_i);
   su2double ahatR = astarR*astarR/max(astarR,-ProjVelocity_j);
 
-  su2double aF = min(ahatL,ahatR);
+  su2double aF = fmin(ahatL,ahatR);
 
   /*--- Left and right pressure functions and Mach numbers ---*/
 
@@ -655,8 +655,8 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(const CConfig* config, s
   su2double mR = ProjVelocity_j/aF;
 
   su2double MFsq = 0.5*(mL*mL+mR*mR);
-  su2double param1 = max(MFsq, Minf*Minf);
-  su2double Mrefsq = min(1.0, param1);
+  su2double param1 = fmax(MFsq, Minf*Minf);
+  su2double Mrefsq = fmin(1.0, param1);
 
   su2double fa = 2.0*sqrt(Mrefsq)-Mrefsq;
 
@@ -693,7 +693,7 @@ void CUpwAUSMPLUSUP2_Flow::ComputeMassAndPressureFluxes(const CConfig* config, s
   su2double Mp = -(Kp/fa)*max((1.0-sigma*MFsq),0.0)*(Pressure_j-Pressure_i)/(rhoF*aF*aF);
 
   su2double mF = mLP + mRM + Mp;
-  mdot = aF * (max(mF,0.0)*Density_i + min(mF,0.0)*Density_j);
+  mdot = aF * (fmax(mF,0.0)*Density_i + fmin(mF,0.0)*Density_j);
 
   /*--- Modified pressure flux ---*/
 
@@ -745,9 +745,9 @@ void CUpwSLAU_Flow::ComputeMassAndPressureFluxes(const CConfig* config, su2doubl
 
   /*--- Smooth function of the local Mach number---*/
 
-  su2double Mach_tilde = min(1.0, (1.0/aF) * sqrt(0.5*(sq_veli+sq_velj)));
+  su2double Mach_tilde = fmin(1.0, (1.0/aF) * sqrt(0.5*(sq_veli+sq_velj)));
   su2double Chi = pow((1.0 - Mach_tilde),2.0);
-  su2double f_rho = -max(min(mL,0.0),-1.0) * min(max(mR,0.0),1.0);
+  su2double f_rho = -fmax(fmin(mL,0.0),-1.0) * fmin(fmax(mR,0.0),1.0);
 
   /*--- Mean normal velocity with density weighting ---*/
 

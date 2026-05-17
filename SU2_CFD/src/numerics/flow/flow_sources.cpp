@@ -622,13 +622,13 @@ CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CCo
   /*--- velocity, U = (u, v, w) ---*/
   su2double U[3] = {V_i[1], V_i[2], 0.0};
   if (nDim == 3) U[2] = V_i[3];
-  const su2double U_abs = max(GeometryToolbox::Norm(3, U), 1e-12);
+  const su2double U_abs = fmax(GeometryToolbox::Norm(3, U), 1e-12);
 
   /*--- vorticity, \omega ---*/
   const su2double omega[3] = {Vorticity_i[0], Vorticity_i[1], Vorticity_i[2]};
 
   /*--- grad of the mag of vorticity, \nabla|\omega| = AuxVar_Grad_i[0] ---*/
-  const su2double omega_abs_grad_abs = max(GeometryToolbox::Norm(3, AuxVar_Grad_i[0]), 1e-12);
+  const su2double omega_abs_grad_abs = fmax(GeometryToolbox::Norm(3, AuxVar_Grad_i[0]), 1e-12);
 
   /*--- unit vector, n along \nabla|\omega| ---*/
   const su2double n[3] = {
@@ -651,7 +651,7 @@ CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CCo
   if (viscous) {
     su2double U_infty[3] = {config->GetVelocity_FreeStreamND()[0], config->GetVelocity_FreeStreamND()[1], 0.0};
     if (nDim == 3) U_infty[2] = config->GetVelocity_FreeStreamND()[2];
-    const su2double U_infty_abs = max(GeometryToolbox::Norm(3, U_infty), 1e-12);
+    const su2double U_infty_abs = fmax(GeometryToolbox::Norm(3, U_infty), 1e-12);
     const su2double L = config->GetLength_Reynolds();
     const su2double mu = V_i[nDim + 5];                   // viscosity
     const su2double mu_t = V_i[nDim + 6];                 // turbulent or eddy viscosity

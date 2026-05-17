@@ -48,7 +48,7 @@ CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, 
 void CTransLMVariable::SetIntermittencyEff(unsigned long iPoint, su2double val_Intermittency_sep) {
 
   /*--- Effective intermittency ---*/
-  Intermittency_Eff(iPoint) = max(Solution(iPoint,0), val_Intermittency_sep);
+  Intermittency_Eff(iPoint) = fmax(Solution(iPoint,0), val_Intermittency_sep);
 
 }
 

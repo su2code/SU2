@@ -278,7 +278,7 @@ inline su2double CWALEModel::ComputeEddyViscosity_2D(const su2double rho,
   const su2double denom       = sumSPow5_2 + sumSdPow5_4;
 
   const su2double nuEddy = lenScaleWale*lenScaleWale*sumSdPow3_2
-                         / max(denom, 1.e-20);
+                         / fmax(denom, 1.e-20);
 
   /* Return the SGS dynamic viscosity. */
   return rho*nuEddy;
@@ -338,7 +338,7 @@ inline su2double CWALEModel::ComputeEddyViscosity_3D(const su2double rho,
   const su2double denom       = sumSPow5_2 + sumSdPow5_4;
 
   const su2double nuEddy = lenScaleWale*lenScaleWale*sumSdPow3_2
-                         / max(denom, 1.e-20);
+                         / fmax(denom, 1.e-20);
 
   /* Return the SGS dynamic viscosity. */
   return rho*nuEddy;

@@ -436,7 +436,7 @@ void CCentJST_AdjFlow::ComputeResidual (su2double *val_resconv_i, su2double *val
   su2double sc2 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
   sc4 = sc2*sc2/4.0;
   Epsilon_2 = Param_Kappa_2*0.5*(Sensor_i+Sensor_j)*sc2;
-  Epsilon_4 = max(0.0, Param_Kappa_4-Epsilon_2)*sc4;
+  Epsilon_4 = fmax(0.0, Param_Kappa_4-Epsilon_2)*sc4;
 
   /*--- Compute viscous residual 1st- & 3rd-order dissipation ---*/
 

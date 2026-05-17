@@ -504,11 +504,11 @@ void CUpwAUSMPLUSUP2_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2
   const su2double CstarR = sqrt(2.0 * (Gamma_j - 1.0) / (Gamma_j + 1.0) * Enthalpy_j);
 
   /*--- Compute C^ ---*/
-  const su2double ChatL = CstarL * CstarL / max(CstarL, ProjVelocity_i);
-  const su2double ChatR = CstarR * CstarR / max(CstarR, -ProjVelocity_j);
+  const su2double ChatL = CstarL * CstarL / fmax(CstarL, ProjVelocity_i);
+  const su2double ChatR = CstarR * CstarR / fmax(CstarR, -ProjVelocity_j);
 
   /*--- Interface speed of sound ---*/
-  const su2double aF = min(ChatL, ChatR);
+  const su2double aF = fmin(ChatL, ChatR);
   interface_soundspeed[0] = interface_soundspeed[1] = aF;
 
   const su2double M_L = ProjVelocity_i / aF;
@@ -517,15 +517,15 @@ void CUpwAUSMPLUSUP2_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2
   const su2double rhoF = 0.5 * (Density_i + Density_j);
   const su2double MFsq = 0.5 * (M_L * M_L + M_R * M_R);
 
-  const su2double param1 = max(MFsq, Minf * Minf);
-  const su2double Mrefsq = (min(1.0, param1));
+  const su2double param1 = fmax(MFsq, Minf * Minf);
+  const su2double Mrefsq = (fmin(1.0, param1));
   const su2double fa = 2.0 * sqrt(Mrefsq) - Mrefsq;
 
   const su2double alpha = 3.0 / 16.0 * (-4.0 + 5.0 * fa * fa);
   const su2double beta = 1.0 / 8.0;
 
   /*--- Pressure diffusion term ---*/
-  const su2double Mp = -(Kp / fa) * max((1.0 - sigma * MFsq), 0.0) * (Pressure_j - Pressure_i) / (rhoF * aF * aF);
+  const su2double Mp = -(Kp / fa) * fmax((1.0 - sigma * MFsq), 0.0) * (Pressure_j - Pressure_i) / (rhoF * aF * aF);
 
   su2double M_LP, P_LP, M_RM, P_RM;
 
@@ -579,9 +579,9 @@ void CUpwAUSMPLUSM_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2do
 
   su2double A_F;
   if (0.5 * (ProjVelocity_i + ProjVelocity_j) >= 0.0)
-    A_F = A_s * A_s / max(fabs(ProjVelocity_i), A_s);
+    A_F = A_s * A_s / fmax(fabs(ProjVelocity_i), A_s);
   else
-    A_F = A_s * A_s / max(fabs(ProjVelocity_j), A_s);
+    A_F = A_s * A_s / fmax(fabs(ProjVelocity_j), A_s);
 
   /*--- Compute L/R Mach numbers ---*/
   interface_soundspeed[0] = interface_soundspeed[1] = A_F;
@@ -592,17 +592,17 @@ void CUpwAUSMPLUSM_NEMO::ComputeInterfaceQuantities(const CConfig* config, su2do
   const su2double Density_F = 0.5 * (Density_i + Density_j);
   const su2double MF_sq = 0.5 * (sq_veli + sq_velj) / (A_F * A_F);
 
-  const su2double param1 = max(MF_sq, Minf * Minf);
-  const su2double Mrefsq = (min(1.0, param1));
+  const su2double param1 = fmax(MF_sq, Minf * Minf);
+  const su2double Mrefsq = (fmin(1.0, param1));
   const su2double fa = 2.0 * sqrt(Mrefsq) - Mrefsq;
 
   const su2double alpha = 3.0 / 16.0 * (-4.0 + 5.0 * fa * fa);
-  const su2double f = 0.5 * (1 - cos(PI_NUMBER * min(1.0, max(abs(M_L), abs(M_R)))));
+  const su2double f = 0.5 * (1 - cos(PI_NUMBER * fmin(1.0, fmax(abs(M_L), abs(M_R)))));
 
   /*--- Pressure sensor terms ---*/
-  const su2double h = min(Sensor_i, Sensor_j);
+  const su2double h = fmin(Sensor_i, Sensor_j);
   const su2double g = 0.5 * (1 + cos(PI_NUMBER * h));
-  const su2double f0 = min(1.0, max(f, Minf * Minf));
+  const su2double f0 = fmin(1.0, fmax(f, Minf * Minf));
 
   /*--- Pressure diffusion term ---*/
   const su2double M_p = -0.5 * (1.0 - f) * (Pressure_j - Pressure_i) / (Density_F * A_F * A_F) * (1.0 - g);

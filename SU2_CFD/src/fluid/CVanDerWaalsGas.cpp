@@ -61,7 +61,7 @@ void CVanDerWaalsGas::SetTDState_PT(su2double P, su2double T) {
   B = b * P / (T * Gas_Constant);
 
   if (Zed > 0.1)
-    Z = min(Zed, 0.99);
+    Z = fmin(Zed, 0.99);
   else
     Z = 0.99;
 

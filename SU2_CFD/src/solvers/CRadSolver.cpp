@@ -39,7 +39,7 @@ CRadSolver::CRadSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   Absorption_Coeff = config->GetAbsorption_Coeff();
   Scattering_Coeff = config->GetScattering_Coeff();
 
-  Absorption_Coeff = max(Absorption_Coeff,0.01);
+  Absorption_Coeff = fmax(Absorption_Coeff,0.01);
 
 }
 

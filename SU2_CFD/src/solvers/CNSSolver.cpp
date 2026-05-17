@@ -921,7 +921,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
       unsigned long counter = 0;
       su2double diff = 1.0;
-      su2double U_Tau = max(1.0e-6,sqrt(WallShearStress/Density_Wall));
+      su2double U_Tau = fmax(1.0e-6,sqrt(WallShearStress/Density_Wall));
       /*--- Use minimum y+ as defined in the config, in case the routine below for computing y+ does not converge ---*/
       su2double Y_Plus = 0.99*config->GetwallModel_MinYPlus(); // use clipping value as minimum
 
@@ -984,7 +984,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
         Eddy_Visc_Wall = Lam_Visc_Wall*(1.0 + dypw_dyp - kappa*exp(-1.0*kappa*B)*
                                          (1.0 + kappa*U_Plus + kappa*kappa*U_Plus*U_Plus/2.0)
                                          - Lam_Visc_Normal/Lam_Visc_Wall);
-        Eddy_Visc_Wall = max(1.0e-6, Eddy_Visc_Wall);
+        Eddy_Visc_Wall = fmax(1.0e-6, Eddy_Visc_Wall);
 
         /* --- Define function for Newton method to zero --- */
 

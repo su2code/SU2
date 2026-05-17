@@ -1264,7 +1264,7 @@ su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, 
     }
 
     /*--- Clamp to [-1, 1] to avoid numerical issues with acos ---*/
-    dot_product = max(-1.0, min(1.0, dot_product));
+    dot_product = fmax(-1.0, fmin(1.0, dot_product));
 
     /*--- Compute angle in degrees ---*/
     su2double angle_rad = acos(dot_product);

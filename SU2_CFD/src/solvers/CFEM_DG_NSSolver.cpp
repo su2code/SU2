@@ -366,7 +366,7 @@ void CFEM_DG_NSSolver::Friction_Forces(const CGeometry* geometry, const CConfig*
                 /* Determine the magnitude of the tangential velocity as well
                    as its direction (unit vector). */
                 su2double velTan = sqrt(vel[0]*vel[0] + vel[1]*vel[1] + vel[2]*vel[2]);
-                velTan = max(velTan,1.e-25);
+                velTan = fmax(velTan,1.e-25);
 
                 su2double dirTan[] = {0.0, 0.0, 0.0};
                 for(unsigned short k=0; k<nDim; ++k) dirTan[k] = vel[k]/velTan;
@@ -919,7 +919,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
      are 1.0, 2.0 + lambdaOverMu and kOverCv/Mu. The last is variable due to the
      possible presence of an eddy viscosity, but the first two are constant and
      the maximum can be determined. */
-  const su2double radOverNuTerm = max(1.0, 2.0+lambdaOverMu);
+  const su2double radOverNuTerm = fmax(1.0, 2.0+lambdaOverMu);
 
   /* Store the number of metric points per DOF, which depends
      on the number of dimensions. */
@@ -4534,7 +4534,7 @@ void CFEM_DG_NSSolver::PenaltyTermsFluxFace(const unsigned short indFaceChunk,
      are 1.0, 2.0 + lambdaOverMu and kOverCv/Mu. The last is variable due to the
      possible presence of an eddy viscosity, but the first two are constant and
      the maximum can be determined. */
-  const su2double radOverNuTerm = max(1.0, 2.0+lambdaOverMu);
+  const su2double radOverNuTerm = fmax(1.0, 2.0+lambdaOverMu);
 
   /*--- Make a distinction between 2D and 3D for efficiency. ---*/
   switch ( nDim ) {
@@ -6372,7 +6372,7 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
         /* Determine the magnitude of the tangential velocity as well
            as its direction (unit vector). */
         su2double velTan = sqrt(vel[0]*vel[0] + vel[1]*vel[1] + vel[2]*vel[2]);
-        velTan = max(velTan,1.e-25);
+        velTan = fmax(velTan,1.e-25);
 
         su2double dirTan[] = {0.0, 0.0, 0.0};
         for(unsigned short k=0; k<nDim; ++k) dirTan[k] = vel[k]/velTan;

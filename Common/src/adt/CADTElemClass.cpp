@@ -243,7 +243,7 @@ CADTElemClass::CADTElemClass(unsigned short val_nDim, vector<su2double>& val_coo
        the tree traversal does not go wrong due to round off error. */
     for (unsigned short k = 0; k < nDim; ++k) {
       const su2double lenScale = BBMax[k] - BBMin[k];
-      const su2double tol = max(1.e-25, 1.e-6 * lenScale);
+      const su2double tol = fmax(1.e-25, 1.e-6 * lenScale);
 
       BBMin[k] -= tol;
       BBMax[k] += tol;
@@ -398,12 +398,12 @@ void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxT
           coorBBMax = coorBBMin + nDim;
 
           su2double posDist2 = 0.0, ds;
-          ds = min(0.0, coor[0] - coorBBMin[0]) + max(0.0, coor[0] - coorBBMax[0]);
+          ds = fmin(0.0, coor[0] - coorBBMin[0]) + fmax(0.0, coor[0] - coorBBMax[0]);
           posDist2 += ds * ds;
-          ds = min(0.0, coor[1] - coorBBMin[1]) + max(0.0, coor[1] - coorBBMax[1]);
+          ds = fmin(0.0, coor[1] - coorBBMin[1]) + fmax(0.0, coor[1] - coorBBMax[1]);
           posDist2 += ds * ds;
           if (nDim == 3) {
-            ds = min(0.0, coor[2] - coorBBMin[2]) + max(0.0, coor[2] - coorBBMax[2]);
+            ds = fmin(0.0, coor[2] - coorBBMin[2]) + fmax(0.0, coor[2] - coorBBMax[2]);
             posDist2 += ds * ds;
           }
 
@@ -435,12 +435,12 @@ void CADTElemClass::DetermineNearestElement_impl(vector<CBBoxTargetClass>& BBoxT
           coorBBMax = leaves[kk].xMax + nDim;
 
           su2double posDist2 = 0.0, ds;
-          ds = min(0.0, coor[0] - coorBBMin[0]) + max(0.0, coor[0] - coorBBMax[0]);
+          ds = fmin(0.0, coor[0] - coorBBMin[0]) + fmax(0.0, coor[0] - coorBBMax[0]);
           posDist2 += ds * ds;
-          ds = min(0.0, coor[1] - coorBBMin[1]) + max(0.0, coor[1] - coorBBMax[1]);
+          ds = fmin(0.0, coor[1] - coorBBMin[1]) + fmax(0.0, coor[1] - coorBBMax[1]);
           posDist2 += ds * ds;
           if (nDim == 3) {
-            ds = min(0.0, coor[2] - coorBBMin[2]) + max(0.0, coor[2] - coorBBMax[2]);
+            ds = fmin(0.0, coor[2] - coorBBMin[2]) + fmax(0.0, coor[2] - coorBBMax[2]);
             posDist2 += ds * ds;
           }
 
@@ -2066,7 +2066,7 @@ void CADTElemClass::Dist2ToLine(const unsigned long i0, const unsigned long i1, 
     dotV1V1 += V1[k] * V1[k];
   }
   su2double r = dotV0V1 / dotV1V1;
-  r = max(-1.0, min(1.0, r));
+  r = fmax(-1.0, fmin(1.0, r));
 
   /*--- Determine the minimum distance squared. ---*/
   dist2Line = 0.0;
@@ -2249,8 +2249,8 @@ bool CADTElemClass::Dist2ToQuadrilateral(const unsigned long i0, const unsigned 
     s -= ds;
 
     /* Clipping, such that s is bounded to a bit outside the quadrilateral. */
-    s = max(s, -1.5);
-    s = min(s, 1.5);
+    s = fmax(s, -1.5);
+    s = fmin(s, 1.5);
 
     /* Set the actual value of ds. */
     ds = sOld - s;

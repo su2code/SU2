@@ -69,26 +69,26 @@ void CTurbSSTVariable::SetBlendingFunc(unsigned long iPoint, su2double val_visco
   for (unsigned long iDim = 0; iDim < nDim; iDim++)
     CDkw(iPoint) += Gradient(iPoint,0,iDim)*Gradient(iPoint,1,iDim);
   CDkw(iPoint) *= 2.0*val_density*sigma_om2/Solution(iPoint,1);
-  CDkw(iPoint) = max(CDkw(iPoint), pow(10.0, -prod_lim_const));
+  CDkw(iPoint) = fmax(CDkw(iPoint), pow(10.0, -prod_lim_const));
 
   /*--- F1 ---*/
 
   arg2A = sqrt(Solution(iPoint,0))/(beta_star*Solution(iPoint,1)*val_dist+EPS*EPS);
   arg2B = 500.0*val_viscosity / (val_density*val_dist*val_dist*Solution(iPoint,1)+EPS*EPS);
-  arg2 = max(arg2A, arg2B);
-  arg1 = min(arg2, 4.0*val_density*sigma_om2*Solution(iPoint,0) / (CDkw(iPoint)*val_dist*val_dist+EPS*EPS));
+  arg2 = fmax(arg2A, arg2B);
+  arg1 = fmin(arg2, 4.0*val_density*sigma_om2*Solution(iPoint,0) / (CDkw(iPoint)*val_dist*val_dist+EPS*EPS));
   F1(iPoint) = tanh(pow(arg1, 4.0));
 
   /*--- F2 ---*/
 
-  arg2 = max(2.0*arg2A, arg2B);
+  arg2 = fmax(2.0*arg2A, arg2B);
   F2(iPoint) = tanh(pow(arg2, 2.0));
 
   /*--- LM model for F1 ---*/
   if (trans_model == TURB_TRANS_MODEL::LM) {
     su2double Ry = val_density*val_dist*sqrt(Solution(iPoint,0))/val_viscosity;
     su2double F3 = exp(-pow(Ry/120.0, 8.0));
-    F1(iPoint) = max(F1(iPoint), F3);
+    F1(iPoint) = fmax(F1(iPoint), F3);
   }
 
   AD::SetPreaccOut(F1(iPoint)); AD::SetPreaccOut(F2(iPoint)); AD::SetPreaccOut(CDkw(iPoint));

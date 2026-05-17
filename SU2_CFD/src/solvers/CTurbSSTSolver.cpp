@@ -234,8 +234,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
     const su2double dist = geometry->nodes->GetWall_Distance(iPoint);
 
-    const su2double VorticityMag = max(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
-    const su2double StrainMag = max(flowNodes->GetStrainMag(iPoint), 1e-12);
+    const su2double VorticityMag = fmax(GeometryToolbox::Norm(3, flowNodes->GetVorticity(iPoint)), 1e-12);
+    const su2double StrainMag = fmax(flowNodes->GetStrainMag(iPoint), 1e-12);
     nodes->SetBlendingFunc(iPoint, mu, dist, rho, config->GetKind_Trans_Model());
 
     const su2double F2 = nodes->GetF2blending(iPoint);
@@ -246,7 +246,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     const su2double omega = nodes->GetSolution(iPoint,1);
 
     const auto& eddy_visc_var = sstParsedOptions.version == SST_OPTIONS::V1994 ? VorticityMag : StrainMag;
-    const su2double muT = max(0.0, rho * a1 * kine / max(a1 * omega, eddy_visc_var * F2));
+    const su2double muT = fmax(0.0, rho * a1 * kine / fmax(a1 * omega, eddy_visc_var * F2));
 
     nodes->SetmuT(iPoint, muT);
 
@@ -275,7 +275,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
         }
         shearStress = sqrt(shearStress);
 
-        const su2double FrictionVelocity = max(sqrt(shearStress/flowNodes->GetDensity(iPoint)), EPS);
+        const su2double FrictionVelocity = fmax(sqrt(shearStress/flowNodes->GetDensity(iPoint)), EPS);
         const su2double wall_dist = geometry->vertex[iMarker][iVertex]->GetNearestNeighborDistance();
 
         const su2double Derivative = flowNodes->GetLaminarViscosity(jPoint) * pow(nodes->GetSolution(jPoint, 0), 0.673) / wall_dist;
@@ -481,12 +481,12 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
 
           const su2double kappa = config->GetwallModel_Kappa();
           su2double beta_1 = constants[4];
-          solution[1] = min( FrictionVel/(sqrt(constants[6])*d0*kappa), 60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2)));
+          solution[1] = fmin( FrictionVel/(sqrt(constants[6])*d0*kappa), 60.0*laminar_viscosity/(density*beta_1*pow(wall_dist,2)));
         } break;
         /*--- Aupoix eddy viscosity limiter ---*/
         case (ROUGHSST_MODEL::LIMITER_AUPOIX): {
           su2double k0Plus = ( 1.0 /sqrt( constants[6])) * tanh((log10((kPlus +EPS ) / 30.0) + 1.0 - 1.0*tanh( (kPlus + EPS) / 125.0))*tanh((kPlus + EPS) / 125.0));
-          su2double kwallPlus = max(0.0, k0Plus);
+          su2double kwallPlus = fmax(0.0, k0Plus);
           su2double kwall = kwallPlus*FrictionVel*FrictionVel;
 
           su2double omegawallPlus = (300.0 / pow(kPlus + EPS, 2.0)) * pow(tanh(15.0 / (4.0*kPlus)), -1.0) + (191.0 / (kPlus + EPS))*(1.0 - exp(-kPlus / 250.0));

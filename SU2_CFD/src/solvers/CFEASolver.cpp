@@ -1309,7 +1309,7 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CNumerics **numerics, 
 
       nodes->SetVonMises_Stress(iPoint, vms);
 
-      maxVonMises = max(maxVonMises, vms);
+      maxVonMises = fmax(maxVonMises, vms);
     }
     END_SU2_OMP_FOR
     atomicMax(maxVonMises, MaxVonMises_Stress);
@@ -2143,8 +2143,8 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
 
     if (TransferTime > 1.0) LoadCoeff = 1.0;
 
-    LoadCoeff = max(LoadCoeff,0.0);
-    LoadCoeff = min(LoadCoeff,1.0);
+    LoadCoeff = fmax(LoadCoeff,0.0);
+    LoadCoeff = fmin(LoadCoeff,1.0);
 
   }
   else if (Sine_Load){
@@ -2674,8 +2674,8 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, const CConfig *c
       WAitkDyn_Max = config->GetAitkenDynMaxInit();
       WAitkDyn_Min = config->GetAitkenDynMinInit();
 
-      WAitkDyn = min(WAitkDyn_tn1, WAitkDyn_Max);
-      WAitkDyn = max(WAitkDyn, WAitkDyn_Min);
+      WAitkDyn = fmin(WAitkDyn_tn1, WAitkDyn_Max);
+      WAitkDyn = fmax(WAitkDyn, WAitkDyn_Min);
 
       WAitken_Dyn = WAitkDyn;
 
@@ -2714,8 +2714,8 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry *geometry, const CConfig *c
         WAitkDyn = - 1.0 * WAitkDyn * rbuf_numAitk / rbuf_denAitk ;
       }
 
-      WAitkDyn = max(WAitkDyn, 0.1);
-      WAitkDyn = min(WAitkDyn, 1.0);
+      WAitkDyn = fmax(WAitkDyn, 0.1);
+      WAitkDyn = fmin(WAitkDyn, 1.0);
 
       WAitken_Dyn = WAitkDyn;
 

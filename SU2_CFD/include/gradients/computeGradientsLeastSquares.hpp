@@ -95,9 +95,9 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
   su2double r22 = Rmatrix(iPoint,1,1);
   su2double r13 = 0.0, r23 = 0.0, r33 = 1.0;
 
-  r11 = sqrt(max(r11, eps));
+  r11 = sqrt(fmax(r11, eps));
   r12 /= r11;
-  r22 = sqrt(max(r22 - r12*r12, eps));
+  r22 = sqrt(fmax(r22 - r12*r12, eps));
 
   if (nDim == 3) {
     if (periodic) {
@@ -114,7 +114,7 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
 
     r13 /= r11;
     r23 = r23_a/r22 - r23_b*r12/(r11*r22);
-    r33 = sqrt(max(r33 - r23*r23 - r13*r13, eps));
+    r33 = sqrt(fmax(r33 - r23*r23 - r13*r13, eps));
   }
 
   /*--- Compute determinant ---*/

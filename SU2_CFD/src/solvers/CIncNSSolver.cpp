@@ -385,7 +385,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
 
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
         DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
-        LES_Mode = solver_container[TURB_SOL]->GetNodes()->GetLES_Mode(iPoint); 
+        LES_Mode = solver_container[TURB_SOL]->GetNodes()->GetLES_Mode(iPoint);
       }
     }
 
@@ -816,7 +816,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
 
       unsigned long counter = 0;
       su2double diff = 1.0;
-      su2double U_Tau = max(1.0e-6,sqrt(WallShearStress/Density_Wall));
+      su2double U_Tau = fmax(1.0e-6,sqrt(WallShearStress/Density_Wall));
       /*--- Use minimum y+ as defined in the config, in case the routine below for computing y+ does not converge ---*/
       su2double Y_Plus = 0.99*config->GetwallModel_MinYPlus();
 
@@ -851,7 +851,7 @@ void CIncNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_containe
         /*--- incompressible formulation ---*/
         Eddy_Visc_Wall = Lam_Visc_Wall * kappa*exp(-kappa*B) * (exp(kUp) -1.0 - kUp - kUp * kUp / 2.0);
 
-        Eddy_Visc_Wall = max(1.0e-6, Eddy_Visc_Wall);
+        Eddy_Visc_Wall = fmax(1.0e-6, Eddy_Visc_Wall);
 
         /* --- Define function for Newton method to zero --- */
 
