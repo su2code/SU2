@@ -288,6 +288,32 @@ protected:
   }
 
   /*!
+   * \brief Compute the strain rate magnitude from the velocity gradient tensor.
+   *        S = sqrt(s11^2 + s22^2 + s33^2 + 2*(s12^2 + s13^2 + s23^2))
+   * \param[in] VelocityGradient - Velocity gradients
+   * \return Frobenius norm of the strain rate tensor
+   */
+  template<class T>
+  su2double GetStrainRateMagnitude(const T& VelocityGradient) const {
+
+    /*--- Make a 3D copy so we do not have to worry about nDim. ---*/
+    su2double Grad_Vel[3][3] = {{0.0}};
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      for (unsigned short jDim = 0; jDim < nDim; jDim++)
+        Grad_Vel[iDim][jDim] = VelocityGradient[iDim][jDim];
+
+    /*--- Symmetric strain-rate components. ---*/
+    const su2double s11 = Grad_Vel[0][0];
+    const su2double s12 = 0.5 * (Grad_Vel[0][1] + Grad_Vel[1][0]);
+    const su2double s13 = 0.5 * (Grad_Vel[0][2] + Grad_Vel[2][0]);
+    const su2double s22 = Grad_Vel[1][1];
+    const su2double s23 = 0.5 * (Grad_Vel[1][2] + Grad_Vel[2][1]);
+    const su2double s33 = Grad_Vel[2][2];
+
+    return sqrt(s11*s11 + s22*s22 + s33*s33 + 2.0*(s12*s12 + s13*s13 + s23*s23));
+  }
+
+  /*!
    * \brief Returns the axisymmetric factor for a point on a marker.
    */
   template <class GeoNodes>

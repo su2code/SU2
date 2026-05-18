@@ -37,6 +37,7 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CSolver.hpp"
 #include "../../include/variables/CPrimitiveIndices.hpp"
+#include "../../include/variables/CSpeciesFlameletVariable.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
 
 
@@ -1581,7 +1582,16 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLookup(const CConfig* config) {
       string strname1 = "lookup_" + flamelet_config_options.lookup_names[i_lookup];
       AddVolumeOutput(flamelet_config_options.lookup_names[i_lookup], strname1,"LOOKUP", flamelet_config_options.lookup_names[i_lookup]);
     }
-    AddVolumeOutput("TABLE_MISSES"       , "Table_misses"       , "LOOKUP", "Lookup table misses");
+    AddVolumeOutput("TABLE_MISSES", "Table_misses", "LOOKUP", "Lookup table misses");
+
+    /*--- Scalar dissipation χ = 2D|∇Z|² for each controlling variable (shows high-strain regions). ---*/
+    for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; ++iCV) {
+      const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
+      AddVolumeOutput("SCALAR_DISSIPATION_" + cv_name,
+                      "Scalar_Dissipation_" + cv_name,
+                      "LOOKUP",
+                      "Scalar dissipation rate of " + cv_name + " (2*D*|grad(" + cv_name + ")|^2)");
+    }
   }
 }
 
@@ -1613,7 +1623,8 @@ void CFlowOutput::SetVolumeOutputFieldsScalarMisc(const CConfig* config) {
     } else {
       AddVolumeOutput("VORTICITY", "Vorticity", "VORTEX_IDENTIFICATION", "Value of the vorticity");
     }
-    AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
+    AddVolumeOutput("Q_CRITERION",    "Q_Criterion",    "VORTEX_IDENTIFICATION", "Value of the Q-Criterion");
+    AddVolumeOutput("STRAIN_RATE_MAG","Strain_Rate_Mag","VORTEX_IDENTIFICATION", "Frobenius norm of the strain rate tensor");
   }
 
   // Timestep info
@@ -1646,7 +1657,8 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
     } else {
       SetVolumeOutputValue("VORTICITY", iPoint, Node_Flow->GetVorticity(iPoint)[2]);
     }
-    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
+    SetVolumeOutputValue("Q_CRITERION",     iPoint, GetQCriterion(Node_Flow->GetVelocityGradient(iPoint)));
+    SetVolumeOutputValue("STRAIN_RATE_MAG", iPoint, GetStrainRateMagnitude(Node_Flow->GetVelocityGradient(iPoint)));
   }
 
   const bool limiter = (config->GetKind_SlopeLimit_Turb() != LIMITER::NONE);
@@ -1776,6 +1788,15 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
       }
 
       SetVolumeOutputValue("TABLE_MISSES", iPoint, Node_Species->GetTableMisses(iPoint));
+
+      /*--- Scalar dissipation rate χ = 2·D·|∇CV|²: read pre-computed value stored in Preprocessing.
+       *    Avoids re-accessing the gradient matrix (cold cache) in the output/time-averaging hot path. ---*/
+      const auto* flamelet_nodes = su2staticcast_p<const CSpeciesFlameletVariable*>(Node_Species);
+      for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; ++iCV) {
+        const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
+        SetVolumeOutputValue("SCALAR_DISSIPATION_" + cv_name, iPoint,
+                             flamelet_nodes->GetScalarDissipation(iPoint, iCV));
+      }
 
     }
     break;

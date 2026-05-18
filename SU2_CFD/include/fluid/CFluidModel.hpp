@@ -388,6 +388,26 @@ class CFluidModel {
   virtual unsigned long GetExtrapolation() const { return 0; }
 
   /*!
+   * \brief Get the minimum and maximum allowable enthalpy for the fluid model.
+   * The default returns an unconstrained range; flamelet models override this
+   * with the actual table bounds so Newton iterations cannot walk outside the manifold.
+   * \returns Pair of {minimum, maximum} enthalpy values.
+   */
+  virtual std::pair<su2double, su2double> GetEnthalpyBounds() const { return {-1e30, 1e30}; }
+
+  /*!
+   * \brief Get the minimum and maximum allowable progress variable for the fluid model.
+   * \returns Pair of {minimum, maximum} progress variable values.
+   */
+  virtual std::pair<su2double, su2double> GetProgressVariableBounds() const { return {-1e30, 1e30}; }
+
+  /*!
+   * \brief Get the minimum and maximum allowable mixture fraction for the fluid model.
+   * \returns Pair of {minimum, maximum} mixture fraction values.
+   */
+  virtual std::pair<su2double, su2double> GetMixtureFractionBounds() const { return {-1e30, 1e30}; }
+
+  /*!
    * \brief Get the state of the Preferential diffusion model for flamelet simulations.
    * \return True if preferential diffusion model is active, false otherwise.
    */

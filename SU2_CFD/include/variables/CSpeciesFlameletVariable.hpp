@@ -35,8 +35,9 @@
  */
 class CSpeciesFlameletVariable final : public CSpeciesVariable {
  protected:
-  MatrixType source_scalar; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
-  MatrixType lookup_scalar; /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
+  MatrixType source_scalar;      /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
+  MatrixType lookup_scalar;      /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
+  MatrixType scalar_dissipation; /*!< \brief Per-CV scalar dissipation rate χ = 2·D·|∇CV|², pre-computed in Preprocessing. */
   su2vector<unsigned short> table_misses; /*!< \brief Vector of lookup table misses. */
 
  public:
@@ -87,4 +88,24 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
   inline void SetTableMisses(unsigned long iPoint, unsigned short misses) override { table_misses[iPoint] = misses; }
 
   inline unsigned short GetTableMisses(unsigned long iPoint) const override { return table_misses[iPoint]; }
+
+  /*!
+   * \brief Store the scalar dissipation rate for a controlling variable (pre-computed in Preprocessing).
+   * \param[in] iPoint - Node index.
+   * \param[in] iCV    - Controlling variable index.
+   * \param[in] val    - Scalar dissipation rate χ = 2·D·|∇CV|².
+   */
+  inline void SetScalarDissipation(unsigned long iPoint, unsigned short iCV, su2double val) {
+    scalar_dissipation(iPoint, iCV) = val;
+  }
+
+  /*!
+   * \brief Get the pre-computed scalar dissipation rate for a controlling variable.
+   * \param[in] iPoint - Node index.
+   * \param[in] iCV    - Controlling variable index.
+   * \return Scalar dissipation rate χ = 2·D·|∇CV|².
+   */
+  inline su2double GetScalarDissipation(unsigned long iPoint, unsigned short iCV) const {
+    return scalar_dissipation(iPoint, iCV);
+  }
 };

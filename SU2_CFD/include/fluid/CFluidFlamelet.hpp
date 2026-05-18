@@ -167,4 +167,22 @@ class CFluidFlamelet final : public CFluidModel {
    * \return Inclusion of preferential diffusion model.
    */
   inline bool GetPreferentialDiffusion() const override { return preferential_diffusion; }
+
+  /*!
+   * \brief Get the global minimum and maximum enthalpy from the flamelet table.
+   * \returns Pair of {minimum, maximum} enthalpy values from the lookup table.
+   */
+  std::pair<su2double, su2double> GetEnthalpyBounds() const override;
+
+  /*!
+   * \brief Get the global minimum and maximum progress variable from the flamelet table.
+   * \returns Pair of {minimum, maximum} progress variable values from the lookup table.
+   */
+  std::pair<su2double, su2double> GetProgressVariableBounds() const override;
+
+  /*!
+   * \brief Get the minimum and maximum mixture fraction from the flamelet table levels.
+   * \returns Pair of {minimum, maximum} mixture fraction values from the lookup table.
+   */
+  std::pair<su2double, su2double> GetMixtureFractionBounds() const override;
 };

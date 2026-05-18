@@ -179,6 +179,19 @@ void CLookUpTable::FindTableLimits(const string& name_cv1, const string& name_cv
   if (table_dim == 3) {
     limits_table_z = minmax_element(z_values_levels.data(), z_values_levels.data() + z_values_levels.size());
   }
+
+  /*--- Compute global X and Y limits as the min-of-mins and max-of-maxes across all levels.
+   *    Stored by value to survive level-local pointer lifetimes. ---*/
+  limits_table_x_global.first  = *limits_table_x[0].first;
+  limits_table_x_global.second = *limits_table_x[0].second;
+  limits_table_y_global.first  = *limits_table_y[0].first;
+  limits_table_y_global.second = *limits_table_y[0].second;
+  for (auto i_level = 1u; i_level < n_table_levels; i_level++) {
+    limits_table_x_global.first  = min(limits_table_x_global.first,  *limits_table_x[i_level].first);
+    limits_table_x_global.second = max(limits_table_x_global.second, *limits_table_x[i_level].second);
+    limits_table_y_global.first  = min(limits_table_y_global.first,  *limits_table_y[i_level].first);
+    limits_table_y_global.second = max(limits_table_y_global.second, *limits_table_y[i_level].second);
+  }
 }
 
 void CLookUpTable::PrintTableInfo() {

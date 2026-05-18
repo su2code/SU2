@@ -2255,6 +2255,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Enable preferential diffusion for FGM simulations. \n DEFAULT: false */
   addBoolOption("PREFERENTIAL_DIFFUSION", flamelet_ParsedOptions.preferential_diffusion, false);
 
+  /* DESCRIPTION: Print per-CV breakdown of manifold out-of-domain points (can slow solver). \n DEFAULT: false */
+  addBoolOption("FLAMELET_VERBOSE_MISSES", flamelet_ParsedOptions.verbose_misses, false);
+
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
   /*!\brief BREAKDOWN_FILENAME \n DESCRIPTION: Output file forces breakdown \ingroup Config*/

@@ -117,6 +117,26 @@ CFluidFlamelet::~CFluidFlamelet() {
 #endif
 }
 
+std::pair<su2double, su2double> CFluidFlamelet::GetEnthalpyBounds() const {
+  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT)
+    return look_up_table->GetTableLimitsY_Global();
+  return {-1e30, 1e30};
+}
+
+std::pair<su2double, su2double> CFluidFlamelet::GetProgressVariableBounds() const {
+  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT)
+    return look_up_table->GetTableLimitsX_Global();
+  return {-1e30, 1e30};
+}
+
+std::pair<su2double, su2double> CFluidFlamelet::GetMixtureFractionBounds() const {
+  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT && include_mixture_fraction) {
+    const auto z_limits = look_up_table->GetTableLimitsZ();
+    return {*z_limits.first, *z_limits.second};
+  }
+  return {-1e30, 1e30};
+}
+
 void CFluidFlamelet::SetTDState_h(su2double val_enthalpy, const su2double* val_scalars) {
   /*--- For the fluid flamelet model, the enthalpy (and the temperature) are passive scalars.
   val_scalars contains the enthalpy as the second variable: val_scalars= (Progress_variable, enthalpy,...).
@@ -279,6 +299,20 @@ unsigned long CFluidFlamelet::EvaluateDataSet(const vector<su2double>& input_sca
   su2double val_enth = input_scalar[I_ENTH];
   su2double val_prog = input_scalar[I_PROGVAR];
   su2double val_mixfrac = include_mixture_fraction ? input_scalar[I_MIXFRAC] : 0.0;
+
+  /*--- Clip all three controlling variables to their table bounds before the lookup so that
+   *    numerical overshoots cannot drive the query outside the manifold domain.
+   *    Mirrors the fmax(0,...) clamp on the PV source term in SetScalarSources. ---*/
+  if (Kind_DataDriven_Method == ENUM_DATADRIVEN_METHOD::LUT) {
+    const auto [pv_min, pv_max] = look_up_table->GetTableLimitsX_Global();
+    val_prog  = max(pv_min, min(pv_max, val_prog));
+    const auto [h_min, h_max]   = look_up_table->GetTableLimitsY_Global();
+    val_enth  = max(h_min,  min(h_max,  val_enth));
+    if (include_mixture_fraction) {
+      const auto z_limits = look_up_table->GetTableLimitsZ();
+      val_mixfrac = max(*z_limits.first, min(*z_limits.second, val_mixfrac));
+    }
+  }
   vector<su2double> val_vars;
   vector<su2double*> refs_vars;
   vector<unsigned long> LUT_idx;

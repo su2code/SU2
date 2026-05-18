@@ -52,6 +52,7 @@ CSpeciesFlameletVariable::CSpeciesFlameletVariable(const su2double* species_inf,
   const auto& flamelet_config_options = config->GetFlameletParsedOptions();
   source_scalar.resize(nPoint, flamelet_config_options.n_scalars) = su2double(0.0);
   lookup_scalar.resize(nPoint, flamelet_config_options.n_lookups) = su2double(0.0);
+  scalar_dissipation.resize(nPoint, flamelet_config_options.n_control_vars) = su2double(0.0);
   table_misses.resize(nPoint) = 0;
 
   if (flamelet_config_options.preferential_diffusion) {

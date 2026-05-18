@@ -73,6 +73,21 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
                                            unsigned short RunTime_EqSystem, bool Output) {
   SU2_ZONE_SCOPED
   unsigned long n_not_in_domain_local = 0, n_not_in_domain_global = 0;
+
+  const bool verbose_misses = flamelet_config_options.verbose_misses;
+
+  /*--- Per-variable miss counters (only allocated/used when verbose output is enabled). ---*/
+  unsigned long n_PV_out_local = 0, n_H_out_local = 0, n_Z_out_local = 0, n_hull_out_local = 0;
+
+  /*--- Retrieve manifold bounds once (table constants, same on every thread/rank).
+   *    Only needed for the per-CV breakdown when verbose_misses is enabled. ---*/
+  su2double pv_min = 0.0, pv_max = 0.0, h_min = 0.0, h_max = 0.0, z_min = 0.0, z_max = 0.0;
+  if (verbose_misses) {
+    std::tie(pv_min, pv_max) = solver_container[FLOW_SOL]->GetFluidModel()->GetProgressVariableBounds();
+    std::tie(h_min,  h_max)  = solver_container[FLOW_SOL]->GetFluidModel()->GetEnthalpyBounds();
+    std::tie(z_min,  z_max)  = solver_container[FLOW_SOL]->GetFluidModel()->GetMixtureFractionBounds();
+  }
+
   vector<su2double> scalars_vector(nVar);
   unsigned long spark_iter_start, spark_duration;
   bool ignition = false;
@@ -115,6 +130,22 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
 
     nodes->SetTableMisses(i_point, misses);
     n_not_in_domain_local += misses;
+
+    /*--- Per-CV breakdown: only when verbose_misses is enabled to avoid hot-loop overhead.
+     *    A point is a "hull miss" when all CVs are individually in-range but the combination
+     *    still lies outside the triangulated manifold.  Checked against the original
+     *    (pre-clamp) scalars_vector so the root cause in the solution is visible. ---*/
+    if (verbose_misses && misses > 0) {
+      const bool pv_out = scalars_vector[I_PROGVAR] < pv_min || scalars_vector[I_PROGVAR] > pv_max;
+      const bool h_out  = scalars_vector[I_ENTH]    < h_min  || scalars_vector[I_ENTH]    > h_max;
+      const bool z_out  = include_mixture_fraction &&
+                          (scalars_vector[I_MIXFRAC] < z_min || scalars_vector[I_MIXFRAC] > z_max);
+      if (pv_out) n_PV_out_local++;
+      if (h_out)  n_H_out_local++;
+      if (z_out)  n_Z_out_local++;
+      if (!pv_out && !h_out && !z_out) n_hull_out_local++;
+    }
+
     /*--- Obtain passive look-up scalars. ---*/
     SetScalarLookUps(fluid_model_local, i_point, scalars_vector);
 
@@ -126,6 +157,20 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
       nodes->SetDiffusivity(i_point, fluid_model_local->GetMassDiffusivity(i_scalar), i_scalar);
     }
 
+    /*--- Pre-compute scalar dissipation χ = 2·D·|∇CV|² for each controlling variable.
+     *    Stored here so LoadVolumeDataScalar can read a cached value instead of re-accessing
+     *    the gradient matrix every output step (hot path for unsteady time-averaging). ---*/
+    auto* flamelet_nodes = su2staticcast_p<CSpeciesFlameletVariable*>(nodes);
+    for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; ++iCV) {
+      const su2double D = nodes->GetDiffusivity(i_point, iCV);
+      su2double grad_sq = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+        const su2double g = nodes->GetGradient(i_point, iCV, iDim);
+        grad_sq += g * g;
+      }
+      flamelet_nodes->SetScalarDissipation(i_point, iCV, 2.0 * D * grad_sq);
+    }
+
     /*--- Obtain preferential diffusion scalar values. ---*/
     if (flamelet_config_options.preferential_diffusion)
       SetPreferentialDiffusionScalars(fluid_model_local, i_point, scalars_vector);
@@ -133,11 +178,31 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     if (!Output) LinSysRes.SetBlock_Zero(i_point);
   }
   END_SU2_OMP_FOR
-  /* --- Sum up some global counters over processes. --- */
-  SU2_MPI::Reduce(&n_not_in_domain_local, &n_not_in_domain_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE,
-                  SU2_MPI::GetComm());
-  if ((rank == MASTER_NODE) && (n_not_in_domain_global > 0))
-    cout << "Number of points outside manifold domain: " << n_not_in_domain_global << endl;
+
+  if (verbose_misses) {
+    /* --- Verbose path: reduce all five counters in a single MPI call, print breakdown. --- */
+    const unsigned long out_local[5]  = {n_not_in_domain_local, n_PV_out_local,
+                                         n_H_out_local,         n_Z_out_local, n_hull_out_local};
+    unsigned long       out_global[5] = {0, 0, 0, 0, 0};
+    SU2_MPI::Reduce(out_local, out_global, 5, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+    n_not_in_domain_global = out_global[0];
+
+    if ((rank == MASTER_NODE) && (n_not_in_domain_global > 0)) {
+      const auto& cv_names = flamelet_config_options.controlling_variable_names;
+      cout << "Number of points outside manifold domain: " << n_not_in_domain_global
+           << " [" << cv_names[I_PROGVAR] << ": " << out_global[1]
+           << " | " << cv_names[I_ENTH]    << ": " << out_global[2];
+      if (include_mixture_fraction)
+        cout << " | " << cv_names[I_MIXFRAC] << ": " << out_global[3];
+      cout << " | hull: " << out_global[4] << "]" << endl;
+    }
+  } else {
+    /* --- Default (fast) path: single-value reduce, simple warning. --- */
+    SU2_MPI::Reduce(&n_not_in_domain_local, &n_not_in_domain_global, 1, MPI_UNSIGNED_LONG, MPI_SUM,
+                    MASTER_NODE, SU2_MPI::GetComm());
+    if ((rank == MASTER_NODE) && (n_not_in_domain_global > 0))
+      cout << "Number of points outside manifold domain: " << n_not_in_domain_global << endl;
+  }
 
   /*--- Compute preferential diffusion scalar gradients. ---*/
   if (flamelet_config_options.preferential_diffusion) {
@@ -786,6 +851,11 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
   su2double val_scalars[MAXNVAR];
   for (auto iVar = 0u; iVar < nVar; iVar++) val_scalars[iVar] = scalar_solution[iVar];
 
+  /*--- Retrieve table enthalpy bounds once so the Newton step cannot walk outside
+   *    the manifold domain near isothermal walls.  Mirrors the clamp applied to
+   *    the mixture fraction in EvaluateDataSet. ---*/
+  const auto [enth_min, enth_max] = fluid_model->GetEnthalpyBounds();
+
   while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
     /*--- Add all quantities and their names to the look up vectors. ---*/
     val_scalars[I_ENTH] = enth_iter;
@@ -799,7 +869,7 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
     delta_enth = RelaxAlpha * Cp * delta_temp_iter;
 
     enth_iter += delta_enth;
-
+    enth_iter  = max(enth_min, min(enth_max, enth_iter));
   }
 
   *val_enth = enth_iter;

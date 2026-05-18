@@ -69,6 +69,16 @@ class CLookUpTable {
   std::pair<su2double*, su2double*> limits_table_z;
   su2vector<std::pair<su2double*, su2double*>> limits_table_y, limits_table_x;
 
+  /*! \brief Global minimum and maximum of the first controlling variable (progress variable) across all table levels.
+   * Stored by value so it remains valid regardless of level-local pointer lifetimes.
+   */
+  std::pair<su2double, su2double> limits_table_x_global{0.0, 0.0};
+
+  /*! \brief Global minimum and maximum of the second controlling variable (enthalpy) across all table levels.
+   * Stored by value so it remains valid regardless of level-local pointer lifetimes.
+   */
+  std::pair<su2double, su2double> limits_table_y_global{0.0, 0.0};
+
   /*! \brief Holds the variable names stored in the table file.
    * Order is in sync with data.
    */
@@ -402,12 +412,33 @@ class CLookUpTable {
   }
 
   /*!
+   * \brief Get the global minimum and maximum of the first controlling variable (progress variable) across all table levels.
+   * Valid for both 2D (single-level) and 3D (multi-level) tables.
+   * \returns Pair of {global minimum, global maximum} of controlling variable 1.
+   */
+  inline std::pair<su2double, su2double> GetTableLimitsX_Global() const { return limits_table_x_global; }
+
+  /*!
+   * \brief Get the global minimum and maximum of the second controlling variable (enthalpy) across all table levels.
+   * Valid for both 2D (single-level) and 3D (multi-level) tables.
+   * \returns Pair of {global minimum, global maximum} of controlling variable 2.
+   */
+  inline std::pair<su2double, su2double> GetTableLimitsY_Global() const { return limits_table_y_global; }
+
+  /*!
    * \brief Determine the minimum and maximum value of the first controlling variable.
    * \returns Pair of minimum and maximum value of controlling variable 1.
    */
   inline std::pair<su2double*, su2double*> GetTableLimitsX(const unsigned long i_level = 0) const {
     return limits_table_x[i_level];
   }
+
+  /*!
+   * \brief Determine the minimum and maximum value of the third controlling variable (mixture fraction).
+   * Only valid when the table has more than one level (3D tables).
+   * \returns Pair of pointers to minimum and maximum value of controlling variable 3.
+   */
+  inline std::pair<su2double*, su2double*> GetTableLimitsZ() const { return limits_table_z; }
 
   /*!
    * \brief Check whether requested set of variables are included in the table.

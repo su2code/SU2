@@ -1,0 +1,538 @@
+ninja: Entering directory `build'
+[1/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/drivers_CMultizoneDriver.cpp.o
+FAILED: [code=1] SU2_CFD/src/libSU2core.a.p/drivers_CMultizoneDriver.cpp.o 
+c++ -ISU2_CFD/src/libSU2core.a.p -ISU2_CFD/src -I../SU2_CFD/src -I../externals/CLI11 -I../externals/eigen -I../externals/cgns/adf -I../externals/cgns/adfh -Iexternals/cgns -I../externals/cgns -Iexternals/cgns/hdf5 -I../externals/cgns/hdf5 -I../externals/metis/include -I../externals/metis/GKlib -I../externals/metis/libmetis -I../externals/parmetis/include -I../externals/parmetis/libparmetis -Iexternals/tecio -I../externals/tecio -Iexternals/tecio/teciompisrc -I../externals/tecio/teciompisrc -I../externals/mel -ICommon/src -I../Common/src -I/opt/homebrew/Cellar/open-mpi/5.0.8/include -fdiagnostics-color=always -DNDEBUG -Wall -Winvalid-pch -Wextra -Wpedantic -std=c++17 -O3 -Wno-empty-body -Wno-ignored-qualifiers -Wno-unused-parameter -Wno-deprecated-declarations -Wno-error=cast-function-type -Wno-cast-function-type -Wno-error=missing-field-initializers -Wno-missing-field-initializers -Wno-overloaded-virtual -Wno-array-bounds -Wno-non-virtual-dtor -march=native -ffast-math -fno-finite-math-only -DHAVE_CGNS -DHAVE_MPI -DHAVE_METIS -DHAVE_PARMETIS -DHAVE_TECIO -DTECIOMPI -MD -MQ SU2_CFD/src/libSU2core.a.p/drivers_CMultizoneDriver.cpp.o -MF SU2_CFD/src/libSU2core.a.p/drivers_CMultizoneDriver.cpp.o.d -o SU2_CFD/src/libSU2core.a.p/drivers_CMultizoneDriver.cpp.o -c ../SU2_CFD/src/drivers/CMultizoneDriver.cpp
+In file included from ../SU2_CFD/src/drivers/CMultizoneDriver.cpp:28:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/CMultizoneDriver.hpp:31:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/CDriver.hpp:31:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/CGeometry.hpp:57:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/dual_grid/CDualGrid.hpp:36:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/dual_grid/../../CConfig.hpp:47:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/dual_grid/../../containers/container_decorators.hpp:31:
+../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/dual_grid/../../containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/../parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/../parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:166:25: note: expanded from here
+  166 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/drivers/CMultizoneDriver.cpp:28:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/CMultizoneDriver.hpp:31:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/CDriver.hpp:33:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/../integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/../integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/drivers/../../include/drivers/../integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/../parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/../parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:135:25: note: expanded from here
+  135 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+../SU2_CFD/src/drivers/CMultizoneDriver.cpp:627:15: error: use of undeclared identifier 'interface_types'
+  627 |   auto type = interface_types[donorZone][targetZone];
+      |               ^
+2 warnings and 1 error generated.
+[2/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/iteration_CIterationFactory.cpp.o
+In file included from ../SU2_CFD/src/iteration/CIterationFactory.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIterationFactory.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/CConfig.hpp:47:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/container_decorators.hpp:31:
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:159:25: note: expanded from here
+  159 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/iteration/CIterationFactory.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIterationFactory.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:37:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:135:25: note: expanded from here
+  135 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+2 warnings generated.
+[3/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/iteration_CFEMFluidIteration.cpp.o
+In file included from ../SU2_CFD/src/iteration/CFEMFluidIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFEMFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/CConfig.hpp:47:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/container_decorators.hpp:31:
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:159:25: note: expanded from here
+  159 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/iteration/CFEMFluidIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFEMFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:37:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:135:25: note: expanded from here
+  135 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+2 warnings generated.
+[4/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/iteration_CTurboIteration.cpp.o
+In file included from ../SU2_CFD/src/iteration/CTurboIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CTurboIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/CConfig.hpp:47:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/container_decorators.hpp:31:
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:159:25: note: expanded from here
+  159 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/iteration/CTurboIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CTurboIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:37:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:135:25: note: expanded from here
+  135 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+2 warnings generated.
+[5/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/iteration_CAdjFluidIteration.cpp.o
+In file included from ../SU2_CFD/src/iteration/CAdjFluidIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CAdjFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/CConfig.hpp:47:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/container_decorators.hpp:31:
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:159:25: note: expanded from here
+  159 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/iteration/CAdjFluidIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CAdjFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:37:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:135:25: note: expanded from here
+  135 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+2 warnings generated.
+[6/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/iteration_CHeatIteration.cpp.o
+In file included from ../SU2_CFD/src/iteration/CHeatIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CHeatIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/CConfig.hpp:47:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/container_decorators.hpp:31:
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:159:25: note: expanded from here
+  159 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/iteration/CHeatIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CHeatIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:37:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:135:25: note: expanded from here
+  135 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+2 warnings generated.
+[7/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/drivers_CDriver.cpp.o
+FAILED: [code=1] SU2_CFD/src/libSU2core.a.p/drivers_CDriver.cpp.o 
+c++ -ISU2_CFD/src/libSU2core.a.p -ISU2_CFD/src -I../SU2_CFD/src -I../externals/CLI11 -I../externals/eigen -I../externals/cgns/adf -I../externals/cgns/adfh -Iexternals/cgns -I../externals/cgns -Iexternals/cgns/hdf5 -I../externals/cgns/hdf5 -I../externals/metis/include -I../externals/metis/GKlib -I../externals/metis/libmetis -I../externals/parmetis/include -I../externals/parmetis/libparmetis -Iexternals/tecio -I../externals/tecio -Iexternals/tecio/teciompisrc -I../externals/tecio/teciompisrc -I../externals/mel -ICommon/src -I../Common/src -I/opt/homebrew/Cellar/open-mpi/5.0.8/include -fdiagnostics-color=always -DNDEBUG -Wall -Winvalid-pch -Wextra -Wpedantic -std=c++17 -O3 -Wno-empty-body -Wno-ignored-qualifiers -Wno-unused-parameter -Wno-deprecated-declarations -Wno-error=cast-function-type -Wno-cast-function-type -Wno-error=missing-field-initializers -Wno-missing-field-initializers -Wno-overloaded-virtual -Wno-array-bounds -Wno-non-virtual-dtor -march=native -ffast-math -fno-finite-math-only -DHAVE_CGNS -DHAVE_MPI -DHAVE_METIS -DHAVE_PARMETIS -DHAVE_TECIO -DTECIOMPI -MD -MQ SU2_CFD/src/libSU2core.a.p/drivers_CDriver.cpp.o -MF SU2_CFD/src/libSU2core.a.p/drivers_CDriver.cpp.o.d -o SU2_CFD/src/libSU2core.a.p/drivers_CDriver.cpp.o -c ../SU2_CFD/src/drivers/CDriver.cpp
+In file included from ../SU2_CFD/src/drivers/CDriver.cpp:28:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/CDriver.hpp:31:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/CGeometry.hpp:57:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/dual_grid/CDualGrid.hpp:36:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/dual_grid/../../CConfig.hpp:47:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/dual_grid/../../containers/container_decorators.hpp:31:
+../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/dual_grid/../../containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/../parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/../parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:166:25: note: expanded from here
+  166 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/drivers/CDriver.cpp:28:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/CDriver.hpp:33:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/../integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/drivers/../../include/drivers/../integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/drivers/../../include/drivers/../integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/../parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/drivers/../../include/drivers/../../../Common/include/geometry/../parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:135:25: note: expanded from here
+  135 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+../SU2_CFD/src/drivers/CDriver.cpp:2489:11: error: use of undeclared identifier 'interface_type'
+ 2489 |           interface_type = BOUNDARY_DISPLACEMENTS;
+      |           ^
+../SU2_CFD/src/drivers/CDriver.cpp:2532:11: error: use of undeclared identifier 'interface_type'
+ 2532 |           interface_type = GetChtInterfaceType(heat_donor, heat_target);
+      |           ^
+../SU2_CFD/src/drivers/CDriver.cpp:2533:55: error: use of undeclared identifier 'interface_type'
+ 2533 |           interface[donor][target] = MakeChtInterface(interface_type);
+      |                                                       ^
+../SU2_CFD/src/drivers/CDriver.cpp:3192:13: warning: variable 'period' set but not used [-Wunused-but-set-variable]
+ 3192 |   su2double period = config_container[ZONE_0]->GetHarmonicBalance_Period();
+      |             ^
+3 warnings and 3 errors generated.
+[8/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/iteration_CDiscAdjFEAIteration.cpp.o
+In file included from ../SU2_CFD/src/iteration/CDiscAdjFEAIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CDiscAdjFEAIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/CConfig.hpp:47:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/container_decorators.hpp:31:
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:159:25: note: expanded from here
+  159 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/iteration/CDiscAdjFEAIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CDiscAdjFEAIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:37:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:135:25: note: expanded from here
+  135 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+In file included from ../SU2_CFD/src/iteration/CDiscAdjFEAIteration.cpp:28:
+../SU2_CFD/src/iteration/../../include/iteration/CDiscAdjFEAIteration.hpp:43:18: warning: private field 'CurrentRecording' is not used [-Wunused-private-field]
+   43 |   unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
+      |                  ^
+3 warnings generated.
+[9/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/integration_CFEM_DG_Integration.cpp.o
+In file included from ../SU2_CFD/src/integration/CFEM_DG_Integration.cpp:28:
+In file included from ../SU2_CFD/src/integration/../../include/integration/CFEM_DG_Integration.hpp:28:
+In file included from ../SU2_CFD/src/integration/../../include/integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/integration/../../include/integration/../solvers/CSolver.hpp:43:
+In file included from ../SU2_CFD/src/integration/../../include/integration/../solvers/../fluid/CFluidModel.hpp:33:
+In file included from ../SU2_CFD/src/integration/../../include/integration/../solvers/../fluid/../../../Common/include/CConfig.hpp:47:
+In file included from ../SU2_CFD/src/integration/../../include/integration/../solvers/../fluid/../../../Common/include/containers/container_decorators.hpp:31:
+../SU2_CFD/src/integration/../../include/integration/../solvers/../fluid/../../../Common/include/containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/integration/../../include/integration/../solvers/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/integration/../../include/integration/../solvers/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:37:25: note: expanded from here
+   37 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/integration/CFEM_DG_Integration.cpp:28:
+In file included from ../SU2_CFD/src/integration/../../include/integration/CFEM_DG_Integration.hpp:28:
+In file included from ../SU2_CFD/src/integration/../../include/integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/integration/../../include/integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/integration/../../include/integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/integration/../../include/integration/../solvers/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/integration/../../include/integration/../solvers/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:138:25: note: expanded from here
+  138 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+2 warnings generated.
+[10/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/iteration_CFEAIteration.cpp.o
+In file included from ../SU2_CFD/src/iteration/CFEAIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFEAIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/CConfig.hpp:47:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/container_decorators.hpp:31:
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:159:25: note: expanded from here
+  159 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/iteration/CFEAIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFEAIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:37:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:135:25: note: expanded from here
+  135 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+2 warnings generated.
+[11/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/iteration_CIteration.cpp.o
+In file included from ../SU2_CFD/src/iteration/CIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/CConfig.hpp:47:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/container_decorators.hpp:31:
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:159:25: note: expanded from here
+  159 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/iteration/CIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:37:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:135:25: note: expanded from here
+  135 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+2 warnings generated.
+[12/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/iteration_CDiscAdjFluidIteration.cpp.o
+In file included from ../SU2_CFD/src/iteration/CDiscAdjFluidIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CDiscAdjFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/CConfig.hpp:47:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/container_decorators.hpp:31:
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:159:25: note: expanded from here
+  159 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/iteration/CDiscAdjFluidIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CDiscAdjFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:37:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:135:25: note: expanded from here
+  135 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+2 warnings generated.
+[13/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/iteration_CDiscAdjHeatIteration.cpp.o
+In file included from ../SU2_CFD/src/iteration/CDiscAdjHeatIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CDiscAdjHeatIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/CConfig.hpp:47:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/container_decorators.hpp:31:
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:159:25: note: expanded from here
+  159 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/iteration/CDiscAdjHeatIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CDiscAdjHeatIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:37:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:135:25: note: expanded from here
+  135 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+2 warnings generated.
+[14/207] Compiling C++ object SU2_CFD/src/libSU2core.a.p/iteration_CFluidIteration.cpp.o
+In file included from ../SU2_CFD/src/iteration/CFluidIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/CConfig.hpp:47:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/container_decorators.hpp:31:
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/containers/C2DContainer.hpp:549:5: warning: unknown warning group '-Wstringop-overflow', ignored [-Wunknown-warning-option]
+  549 |     SU2_IGNORE_WARNING("-Wstringop-overflow")
+      |     ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:159:25: note: expanded from here
+  159 |  GCC diagnostic ignored "-Wstringop-overflow"
+      |                         ^
+In file included from ../SU2_CFD/src/iteration/CFluidIteration.cpp:28:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CFluidIteration.hpp:31:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/CIteration.hpp:37:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/CIntegration.hpp:34:
+In file included from ../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/CSolver.hpp:52:
+../SU2_CFD/src/iteration/../../include/iteration/../integration/../solvers/../../../Common/include/linear_algebra/CSysSolve.hpp:44:1: warning: unknown warning group '-Wmaybe-uninitialized', ignored [-Wunknown-warning-option]
+   44 | SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
+      | ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:173:3: note: expanded from macro 'SU2_IGNORE_WARNING'
+  173 |   PRAGMIZE(GCC diagnostic ignored WARNING)
+      |   ^
+../SU2_CFD/src/iteration/../../include/iteration/../../../Common/include/parallelization/../basic_types/../code_config.hpp:34:21: note: expanded from macro 'PRAGMIZE'
+   34 | #define PRAGMIZE(X) _Pragma(#X)
+      |                     ^
+<scratch space>:135:25: note: expanded from here
+  135 |  GCC diagnostic ignored "-Wmaybe-uninitialized"
+      |                         ^
+2 warnings generated.
+ninja: build stopped: subcommand failed.
