@@ -109,6 +109,16 @@ struct CSysMatrixComms {
 };
 
 /*!
+ * \brief Opaque storage for CUDA/cuSPARSE resources used by the GPU SpMV path.
+ */
+struct CudaSpMVResources;
+
+/*!
+ * \brief Release cached CUDA/cuSPARSE resources used by the GPU SpMV path.
+ */
+void ReleaseCudaSpMVResources(CudaSpMVResources*& resources);
+
+/*!
  * \class CSysMatrix
  * \ingroup SpLinSys
  * \brief Main class for defining block-compressed-row-storage sparse matrices.
@@ -150,6 +160,7 @@ class CSysMatrix {
   const unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
   bool useCuda = false;           /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
                                      Mainly used to conditionally free GPU memory in the class destructor. */
+  mutable CudaSpMVResources* spmv_resources = nullptr; /*!< \brief Cached cuSPARSE resources for GPU SpMV. */
 
   ScalarType* ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */

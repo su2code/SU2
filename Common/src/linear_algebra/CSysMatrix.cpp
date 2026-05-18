@@ -67,6 +67,8 @@ template <class ScalarType>
 CSysMatrix<ScalarType>::~CSysMatrix() {
   SU2_ZONE_SCOPED
 
+  ReleaseCudaSpMVResources(spmv_resources);
+
   delete[] omp_partitions;
   MemoryAllocation::aligned_free(ILU_matrix);
   MemoryAllocation::aligned_free(matrix);
@@ -85,6 +87,10 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   mkl_jit_destroy(MatrixVectorProductJitterAlphaMinusOne);
 #endif
 }
+
+#ifndef HAVE_CUDA
+void ReleaseCudaSpMVResources(CudaSpMVResources*& resources) { resources = nullptr; }
+#endif
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar,

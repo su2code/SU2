@@ -55,6 +55,38 @@ inline cusparseIndexType_t GetCusparseIndexType() {
   }
 }
 
+struct CudaSpMVResources {
+  cusparseHandle_t handle = nullptr;
+  cusparseConstSpMatDescr_t mat = nullptr;
+  size_t buffer_size = 0;
+  void* buffer = nullptr;
+};
+
+void ReleaseCudaSpMVResources(CudaSpMVResources*& resources) {
+  if (resources == nullptr) {
+    return;
+  }
+
+  if (resources->buffer != nullptr) {
+    gpuErrChk(cudaFree(resources->buffer));
+    resources->buffer = nullptr;
+    resources->buffer_size = 0;
+  }
+
+  if (resources->mat != nullptr) {
+    cusparseErrChk(cusparseDestroySpMat(resources->mat));
+    resources->mat = nullptr;
+  }
+
+  if (resources->handle != nullptr) {
+    cusparseErrChk(cusparseDestroy(resources->handle));
+    resources->handle = nullptr;
+  }
+
+  delete resources;
+  resources = nullptr;
+}
+
 template <class ScalarType>
 constexpr cudaDataType GetCudaDataType() {
   if constexpr (std::is_same<ScalarType, float>::value) {
@@ -100,40 +132,47 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
   const ScalarType alpha = 1.0;
   const ScalarType beta = 0.0;
 
-  cusparseHandle_t handle = nullptr;
-  cusparseConstSpMatDescr_t matA = nullptr;
+  if (spmv_resources == nullptr) {
+    spmv_resources = new CudaSpMVResources;
+
+    cusparseErrChk(cusparseCreate(&spmv_resources->handle));
+
+    cusparseErrChk(cusparseCreateConstBsr(&spmv_resources->mat, brows, bcols, bnnz, blockSize, blockSize, d_row_ptr,
+                                          d_col_ind, d_matrix, indexType, indexType, CUSPARSE_INDEX_BASE_ZERO,
+                                          valueType, CUSPARSE_ORDER_ROW));
+  }
+
   cusparseDnVecDescr_t vecX = nullptr;
   cusparseDnVecDescr_t vecY = nullptr;
-
-  cusparseErrChk(cusparseCreate(&handle));
-
-  cusparseErrChk(cusparseCreateConstBsr(&matA, brows, bcols, bnnz, blockSize, blockSize, d_row_ptr, d_col_ind, d_matrix,
-                                        indexType, indexType, CUSPARSE_INDEX_BASE_ZERO, valueType, CUSPARSE_ORDER_ROW));
 
   cusparseErrChk(cusparseCreateDnVec(&vecX, xSize, d_vec, valueType));
   cusparseErrChk(cusparseCreateDnVec(&vecY, ySize, d_prod, valueType));
 
-  size_t bufferSize = 0;
-  void* dBuffer = nullptr;
+  size_t required_buffer_size = 0;
 
-  cusparseErrChk(cusparseSpMV_bufferSize(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, vecX, &beta, vecY,
-                                         valueType, CUSPARSE_SPMV_BSR_ALG1, &bufferSize));
+  cusparseErrChk(cusparseSpMV_bufferSize(spmv_resources->handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha,
+                                         spmv_resources->mat, vecX, &beta, vecY, valueType, CUSPARSE_SPMV_BSR_ALG1,
+                                         &required_buffer_size));
 
-  if (bufferSize > 0) {
-    gpuErrChk(cudaMalloc(&dBuffer, bufferSize));
+  if (required_buffer_size > spmv_resources->buffer_size) {
+    if (spmv_resources->buffer != nullptr) {
+      gpuErrChk(cudaFree(spmv_resources->buffer));
+    }
+
+    if (required_buffer_size > 0) {
+      gpuErrChk(cudaMalloc(&spmv_resources->buffer, required_buffer_size));
+    } else {
+      spmv_resources->buffer = nullptr;
+    }
+
+    spmv_resources->buffer_size = required_buffer_size;
   }
 
-  cusparseErrChk(cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, vecX, &beta, vecY, valueType,
-                              CUSPARSE_SPMV_BSR_ALG1, dBuffer));
-
-  if (dBuffer != nullptr) {
-    gpuErrChk(cudaFree(dBuffer));
-  }
+  cusparseErrChk(cusparseSpMV(spmv_resources->handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, spmv_resources->mat,
+                              vecX, &beta, vecY, valueType, CUSPARSE_SPMV_BSR_ALG1, spmv_resources->buffer));
 
   cusparseErrChk(cusparseDestroyDnVec(vecY));
   cusparseErrChk(cusparseDestroyDnVec(vecX));
-  cusparseErrChk(cusparseDestroySpMat(matA));
-  cusparseErrChk(cusparseDestroy(handle));
 
   prod.DtHTransfer();
 }
