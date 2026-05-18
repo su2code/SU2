@@ -9568,8 +9568,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
   unsigned short iMarker, iMarkerTP;
   unsigned short iSpan;
   int markerTP;
-  su2double     densityIn, pressureIn, normalVelocityIn, tangVelocityIn, radialVelocityIn;
-  su2double     densityOut, pressureOut, normalVelocityOut, tangVelocityOut, radialVelocityOut;
+  su2double     densityIn, pressureIn, normalVelocityIn, tangVelocityIn, radialVelocityIn, relTangVelocityIn;
+  su2double     densityOut, pressureOut, normalVelocityOut, tangVelocityOut, radialVelocityOut, relTangVelocityOut;
   su2double     kineIn, omegaIn, nuIn, kineOut, omegaOut, nuOut;
   //TODO (turbo) implement interpolation so that Inflow and Outflow spanwise section can be different
 
@@ -9583,8 +9583,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     su2double *TotTurbPerfIn = nullptr,*TotTurbPerfOut = nullptr;
     int *TotMarkerTP = nullptr;
 
-    n1          = 8;
-    n2          = 8;
+    n1          = 9;
+    n2          = 9;
     n1t         = n1*size;
     n2t         = n2*size;
     TurbPerfIn  = new su2double[n1];
@@ -9601,11 +9601,13 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     normalVelocityIn     = -1.0;
     tangVelocityIn       = -1.0;
     radialVelocityIn     = -1.0;
+    relTangVelocityIn    = -1.0;
     densityOut           = -1.0;
     pressureOut          = -1.0;
     normalVelocityOut    = -1.0;
     tangVelocityOut      = -1.0;
     radialVelocityOut    = -1.0;
+    relTangVelocityOut   = -1.0;
     kineIn               = -1.0;
     omegaIn              = -1.0;
     nuIn                 = -1.0;
@@ -9630,6 +9632,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             kineIn              = KineIn[iMarkerTP -1][iSpan];
             omegaIn             = OmegaIn[iMarkerTP -1][iSpan];
             nuIn                = NuIn[iMarkerTP -1][iSpan];
+            relTangVelocityIn   = RelTangVelocityIn[iMarkerTP -1][iSpan];
 
 #ifdef HAVE_MPI
             TurbPerfIn[0]  = densityIn;
@@ -9640,6 +9643,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             TurbPerfIn[5]  = kineIn;
             TurbPerfIn[6]  = omegaIn;
             TurbPerfIn[7]  = nuIn;
+            TurbPerfIn[8]  = relTangVelocityIn;
 #endif
           }
 
@@ -9655,6 +9659,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             kineOut              = KineOut[iMarkerTP -1][iSpan];
             omegaOut             = OmegaOut[iMarkerTP -1][iSpan];
             nuOut                = NuOut[iMarkerTP -1][iSpan];
+            relTangVelocityOut   = RelTangVelocityOut[iMarkerTP -1][iSpan];
 
 #ifdef HAVE_MPI
             TurbPerfOut[0]  = densityOut;
@@ -9665,6 +9670,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             TurbPerfOut[5]  = kineOut;
             TurbPerfOut[6]  = omegaOut;
             TurbPerfOut[7]  = nuOut;
+            TurbPerfOut[8]  = relTangVelocityOut;
 #endif
           }
         }
@@ -9694,26 +9700,28 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     if (rank == MASTER_NODE){
       for (int i=0;i<size;i++){
         if(TotTurbPerfIn[n1*i] > 0.0){
-          densityIn        = TotTurbPerfIn[n1*i];
-          pressureIn       = TotTurbPerfIn[n1*i+1];
-          normalVelocityIn = TotTurbPerfIn[n1*i+2];
-          tangVelocityIn   = TotTurbPerfIn[n1*i+3];
-          radialVelocityIn = TotTurbPerfIn[n1*i+4];
-          kineIn           = TotTurbPerfIn[n1*i+5];
-          omegaIn          = TotTurbPerfIn[n1*i+6];
-          nuIn             = TotTurbPerfIn[n1*i+7];
-          markerTP         = TotMarkerTP[i];
+          densityIn           = TotTurbPerfIn[n1*i];
+          pressureIn          = TotTurbPerfIn[n1*i+1];
+          normalVelocityIn    = TotTurbPerfIn[n1*i+2];
+          tangVelocityIn      = TotTurbPerfIn[n1*i+3];
+          radialVelocityIn    = TotTurbPerfIn[n1*i+4];
+          kineIn              = TotTurbPerfIn[n1*i+5];
+          omegaIn             = TotTurbPerfIn[n1*i+6];
+          nuIn                = TotTurbPerfIn[n1*i+7];
+          relTangVelocityIn   = TotTurbPerfIn[n1*i+8];
+          markerTP            = TotMarkerTP[i];
         }
 
         if(TotTurbPerfOut[n2*i] > 0.0){
-          densityOut        = TotTurbPerfOut[n1*i];
-          pressureOut       = TotTurbPerfOut[n1*i+1];
-          normalVelocityOut = TotTurbPerfOut[n1*i+2];
-          tangVelocityOut   = TotTurbPerfOut[n1*i+3];
-          radialVelocityOut = TotTurbPerfOut[n1*i+4];
-          kineOut           = TotTurbPerfOut[n1*i+5];
-          omegaOut          = TotTurbPerfOut[n1*i+6];
-          nuOut             = TotTurbPerfOut[n1*i+7];
+          densityOut           = TotTurbPerfOut[n2*i];
+          pressureOut          = TotTurbPerfOut[n2*i+1];
+          normalVelocityOut    = TotTurbPerfOut[n2*i+2];
+          tangVelocityOut      = TotTurbPerfOut[n2*i+3];
+          radialVelocityOut    = TotTurbPerfOut[n2*i+4];
+          kineOut              = TotTurbPerfOut[n2*i+5];
+          omegaOut             = TotTurbPerfOut[n2*i+6];
+          nuOut                = TotTurbPerfOut[n2*i+7];
+          relTangVelocityOut   = TotTurbPerfOut[n2*i+8];
         }
       }
 
@@ -9733,6 +9741,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       KineIn[markerTP -1][iSpan]                 = kineIn;
       OmegaIn[markerTP -1][iSpan]                = omegaIn;
       NuIn[markerTP -1][iSpan]                   = nuIn;
+      RelTangVelocityIn[markerTP -1][iSpan]      = relTangVelocityIn;
 
       DensityOut[markerTP -1][iSpan]             = densityOut;
       PressureOut[markerTP -1][iSpan]            = pressureOut;
@@ -9743,6 +9752,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       KineOut[markerTP -1][iSpan]                = kineOut;
       OmegaOut[markerTP -1][iSpan]               = omegaOut;
       NuOut[markerTP -1][iSpan]                  = nuOut;
+      RelTangVelocityOut[markerTP -1][iSpan]     = relTangVelocityOut;
     }
   }
 }
