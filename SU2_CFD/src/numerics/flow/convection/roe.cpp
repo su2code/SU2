@@ -151,6 +151,7 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
   /*--- Negative RoeSoundSpeed^2, the jump variables is too large, clear fluxes and exit. ---*/
 
   if (RoeSoundSpeed2 <= 0.0) {
+    assert(false);
     for (iVar = 0; iVar < nVar; iVar++) {
       Flux[iVar] = 0.0;
       if (implicit){
@@ -245,6 +246,13 @@ CNumerics::ResidualType<> CUpwRoeBase_Flow::ComputeResidual(const CConfig* confi
 
   AD::SetPreaccOut(Flux, nVar);
   AD::EndPreacc();
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      assert(Jacobian_i[iVar][jVar] == Jacobian_i[iVar][jVar]);
+      assert(Jacobian_j[iVar][jVar] == Jacobian_j[iVar][jVar]);
+    }
+  }
 
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 

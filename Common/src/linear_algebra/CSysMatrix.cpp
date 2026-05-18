@@ -525,8 +525,14 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
 #ifdef USE_MKL_LAPACK
   // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
   lapack_int ipiv[MAXNVAR];
-  LAPACKE_dgetrf(LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv);
-  LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', nVar, 1, matrix, nVar, ipiv, vec, 1);
+  if constexpr (std::is_same_v<ScalarType, double>) {
+    LAPACKE_dgetrf(LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv);
+    LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', nVar, 1, matrix, nVar, ipiv, vec, 1);
+  } else {
+    static_assert(std::is_same_v<ScalarType, float>, "ScalarType not handled");
+    LAPACKE_sgetrf(LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv);
+    LAPACKE_sgetrs(LAPACK_ROW_MAJOR, 'N', nVar, 1, matrix, nVar, ipiv, vec, 1);
+  }
 #else
 #define A(I, J) matrix[(I)*nVar + (J)]
 
@@ -577,8 +583,14 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 #ifdef USE_MKL_LAPACK
   // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
   lapack_int ipiv[MAXNVAR];
-  LAPACKE_dgetrf(LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv);
-  LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', nVar, nVar, matrix, nVar, ipiv, inverse, nVar);
+  if constexpr (std::is_same_v<ScalarType, double>) {
+    LAPACKE_dgetrf(LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv);
+    LAPACKE_dgetrs(LAPACK_ROW_MAJOR, 'N', nVar, nVar, matrix, nVar, ipiv, inverse, nVar);
+  } else {
+    static_assert(std::is_same_v<ScalarType, float>, "ScalarType not handled");
+    LAPACKE_sgetrf(LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv);
+    LAPACKE_sgetrs(LAPACK_ROW_MAJOR, 'N', nVar, nVar, matrix, nVar, ipiv, inverse, nVar);
+  }
 #else
 #define A(I, J) matrix[(I)*nVar + (J)]
 
