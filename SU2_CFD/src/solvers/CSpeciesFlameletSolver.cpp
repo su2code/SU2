@@ -395,11 +395,28 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const auto n_CV = flamelet_config_options.n_control_vars;
+  const auto n_aux = flamelet_config_options.n_user_scalars;
+  const auto* fn = static_cast<const CSpeciesFlameletVariable*>(nodes);
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+    const su2double volume = geometry->nodes->GetVolume(i_point);
+
     /*--- Add source terms from the lookup table directly to the residual. ---*/
     for (auto i_var = 0; i_var < nVar; i_var++) {
-      LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
+      LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * volume;
+    }
+
+    /*--- Implicit: analytic Jacobian for auxiliary species from the split source form.
+     *   S_aux_i = source_prod_i + source_cons_i * Y_aux_i
+     *   dS_aux_i/dY_aux_i = source_cons_i
+     *   J_ii += -source_cons_i * V ---*/
+    if (implicit) {
+      for (auto i_aux = 0u; i_aux < n_aux; i_aux++) {
+        Jacobian.AddVal2Diag(i_point, n_CV + i_aux, -fn->GetAuxSourceCons(i_point, i_aux) * volume);
+      }
     }
   }
   END_SU2_OMP_FOR
@@ -593,6 +610,8 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
     su2double source_prod = table_sources[flamelet_config_options.n_control_vars + 2 * i_aux];
     su2double source_cons = table_sources[flamelet_config_options.n_control_vars + 2 * i_aux + 1];
     source_scalar[flamelet_config_options.n_control_vars + i_aux] = source_prod + source_cons * y_aux;
+    /*--- Store the analytic Jacobian dS_aux/dY_aux = source_cons for implicit treatment. ---*/
+    static_cast<CSpeciesFlameletVariable*>(nodes)->SetAuxSourceCons(iPoint, i_aux, source_cons);
   }
   for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
     nodes->SetScalarSource(iPoint, i_scalar, source_scalar[i_scalar]);
