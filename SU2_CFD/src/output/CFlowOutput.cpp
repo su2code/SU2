@@ -1821,8 +1821,8 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
         const su2double h_rng  = flamelet_nodes->GetTableHMax()  - h_min;
         const su2double pv_val = Node_Species->GetSolution(iPoint, 0); // I_PROGVAR = 0
         const su2double h_val  = Node_Species->GetSolution(iPoint, 1); // I_ENTH    = 1
-        SetVolumeOutputValue("PV_NORM", iPoint, (pv_rng > 0) ? (pv_val - pv_min) / pv_rng : 0.0);
-        SetVolumeOutputValue("H_NORM",  iPoint, (h_rng  > 0) ? (h_val  - h_min)  / h_rng  : 0.0);
+        SetVolumeOutputValue("PV_NORM", iPoint, (pv_rng > 0) ? (pv_val - pv_min) / pv_rng : su2double(0.0));
+        SetVolumeOutputValue("H_NORM",  iPoint, (h_rng  > 0) ? (h_val  - h_min)  / h_rng  : su2double(0.0));
       }
 
       /*--- Raw PV source before clipping and T_LUT vs T_flow mismatch. ---*/
