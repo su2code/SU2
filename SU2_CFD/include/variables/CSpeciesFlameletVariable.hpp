@@ -38,7 +38,13 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
   MatrixType source_scalar;      /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
   MatrixType lookup_scalar;      /*!< \brief Vector of the source terms from the lookup table for each scalar equation */
   MatrixType scalar_dissipation; /*!< \brief Per-CV scalar dissipation rate χ = 2·D·|∇CV|², pre-computed in Preprocessing. */
+  su2vector<su2double> lut_temperature;  /*!< \brief LUT-derived temperature T(PV,H,Z), may differ from flow solver T. */
+  su2vector<su2double> raw_pv_source;    /*!< \brief PV source term before fmax(0,·) clipping — negative = over-reacted. */
   su2vector<unsigned short> table_misses; /*!< \brief Vector of lookup table misses. */
+
+  /*--- Table-level constants (same for all points, set once from Preprocessing). ---*/
+  su2double table_pv_min{0}, table_pv_max{1}; /*!< \brief Global PV bounds from the LUT. */
+  su2double table_h_min{0},  table_h_max{1};  /*!< \brief Global H  bounds from the LUT. */
 
  public:
   /*!
@@ -108,4 +114,22 @@ class CSpeciesFlameletVariable final : public CSpeciesVariable {
   inline su2double GetScalarDissipation(unsigned long iPoint, unsigned short iCV) const {
     return scalar_dissipation(iPoint, iCV);
   }
+
+  /*--- LUT temperature (T derived from (PV,H,Z) via table). ---*/
+  inline void SetLUTTemperature(unsigned long iPoint, su2double val) { lut_temperature[iPoint] = val; }
+  inline su2double GetLUTTemperature(unsigned long iPoint) const { return lut_temperature[iPoint]; }
+
+  /*--- Raw PV source before fmax(0,·) clipping. ---*/
+  inline void SetRawPVSource(unsigned long iPoint, su2double val) { raw_pv_source[iPoint] = val; }
+  inline su2double GetRawPVSource(unsigned long iPoint) const { return raw_pv_source[iPoint]; }
+
+  /*--- Table bounds (set once, shared by all points). ---*/
+  inline void SetTableBounds(su2double pv_min, su2double pv_max, su2double h_min, su2double h_max) {
+    table_pv_min = pv_min;  table_pv_max = pv_max;
+    table_h_min  = h_min;   table_h_max  = h_max;
+  }
+  inline su2double GetTablePVMin() const { return table_pv_min; }
+  inline su2double GetTablePVMax() const { return table_pv_max; }
+  inline su2double GetTableHMin()  const { return table_h_min;  }
+  inline su2double GetTableHMax()  const { return table_h_max;  }
 };

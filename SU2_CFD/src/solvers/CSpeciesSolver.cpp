@@ -393,6 +393,8 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
       /*--- Set the species variable state at the inlet. ---*/
 
+      // cout << "Setting inlet species value = " << Inlet_SpeciesVars[val_marker][iVertex] << endl;
+
       conv_numerics->SetScalarVar(nodes->GetSolution(iPoint), Inlet_SpeciesVars[val_marker][iVertex]);
 
       /*--- Set various other quantities in the solver class ---*/

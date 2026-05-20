@@ -1584,14 +1584,29 @@ void CFlowOutput::SetVolumeOutputFieldsScalarLookup(const CConfig* config) {
     }
     AddVolumeOutput("TABLE_MISSES", "Table_misses", "LOOKUP", "Lookup table misses");
 
-    /*--- Scalar dissipation χ = 2D|∇Z|² for each controlling variable (shows high-strain regions). ---*/
+    /*--- Scalar dissipation χ = 2D|∇CV|² for each controlling variable. ---*/
     for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; ++iCV) {
       const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
       AddVolumeOutput("SCALAR_DISSIPATION_" + cv_name,
-                      "Scalar_Dissipation_" + cv_name,
-                      "LOOKUP",
+                      "Scalar_Dissipation_" + cv_name, "LOOKUP",
                       "Scalar dissipation rate of " + cv_name + " (2*D*|grad(" + cv_name + ")|^2)");
     }
+
+    /*--- Normalised CV proximity: 0=at table minimum, 1=at table maximum.
+     *    Values near 0 or 1 are approaching the 1D table boundary. ---*/
+    AddVolumeOutput("PV_NORM", "PV_Normalised", "LOOKUP",
+                    "Progress variable normalised to [0,1] across table bounds");
+    AddVolumeOutput("H_NORM",  "H_Normalised",  "LOOKUP",
+                    "Enthalpy normalised to [0,1] across table bounds");
+
+    /*--- Raw PV source before fmax(0,·) clipping. Negative = over-reacted region. ---*/
+    AddVolumeOutput("SOURCE_PV_UNCLIPPED", "Source_PV_Unclipped", "LOOKUP",
+                    "PV source term before non-negativity clip (negative values = over-reacted)");
+
+    /*--- LUT vs flow temperature mismatch: T_LUT(PV,H,Z) - T_flow.
+     *    Non-zero at hull-miss points or where the energy equation is decoupled. ---*/
+    AddVolumeOutput("TEMPERATURE_MISMATCH", "T_LUT_minus_T_flow", "LOOKUP",
+                    "Difference between LUT-predicted temperature and flow solver temperature");
   }
 }
 
@@ -1789,14 +1804,31 @@ void CFlowOutput::LoadVolumeDataScalar(const CConfig* config, const CSolver* con
 
       SetVolumeOutputValue("TABLE_MISSES", iPoint, Node_Species->GetTableMisses(iPoint));
 
-      /*--- Scalar dissipation rate χ = 2·D·|∇CV|²: read pre-computed value stored in Preprocessing.
-       *    Avoids re-accessing the gradient matrix (cold cache) in the output/time-averaging hot path. ---*/
       const auto* flamelet_nodes = su2staticcast_p<const CSpeciesFlameletVariable*>(Node_Species);
+
+      /*--- Scalar dissipation rate χ = 2·D·|∇CV|²: pre-computed in Preprocessing. ---*/
       for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; ++iCV) {
         const auto& cv_name = flamelet_config_options.controlling_variable_names[iCV];
         SetVolumeOutputValue("SCALAR_DISSIPATION_" + cv_name, iPoint,
                              flamelet_nodes->GetScalarDissipation(iPoint, iCV));
       }
+
+      /*--- Normalised CV proximity (0 = at table min, 1 = at table max). ---*/
+      {
+        const su2double pv_min = flamelet_nodes->GetTablePVMin();
+        const su2double pv_rng = flamelet_nodes->GetTablePVMax() - pv_min;
+        const su2double h_min  = flamelet_nodes->GetTableHMin();
+        const su2double h_rng  = flamelet_nodes->GetTableHMax()  - h_min;
+        const su2double pv_val = Node_Species->GetSolution(iPoint, 0); // I_PROGVAR = 0
+        const su2double h_val  = Node_Species->GetSolution(iPoint, 1); // I_ENTH    = 1
+        SetVolumeOutputValue("PV_NORM", iPoint, (pv_rng > 0) ? (pv_val - pv_min) / pv_rng : 0.0);
+        SetVolumeOutputValue("H_NORM",  iPoint, (h_rng  > 0) ? (h_val  - h_min)  / h_rng  : 0.0);
+      }
+
+      /*--- Raw PV source before clipping and T_LUT vs T_flow mismatch. ---*/
+      SetVolumeOutputValue("SOURCE_PV_UNCLIPPED",   iPoint, flamelet_nodes->GetRawPVSource(iPoint));
+      SetVolumeOutputValue("TEMPERATURE_MISMATCH",  iPoint,
+                           flamelet_nodes->GetLUTTemperature(iPoint) - Node_Flow->GetTemperature(iPoint));
 
     }
     break;

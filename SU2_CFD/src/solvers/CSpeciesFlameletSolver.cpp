@@ -93,6 +93,17 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   bool ignition = false;
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
+  /*--- Set table bounds on the variable nodes once per Preprocessing call (table constants).
+   *    Used in LoadVolumeDataScalar to compute normalised CV proximity fields. ---*/
+  {
+    auto* fm = solver_container[FLOW_SOL]->GetFluidModel();
+    const auto [pv_lo, pv_hi] = fm->GetProgressVariableBounds();
+    const auto [h_lo,  h_hi]  = fm->GetEnthalpyBounds();
+    SU2_OMP_SAFE_GLOBAL_ACCESS(
+      su2staticcast_p<CSpeciesFlameletVariable*>(nodes)->SetTableBounds(pv_lo, pv_hi, h_lo, h_hi);
+    )
+  }
+
   /*--- Retrieve spark ignition parameters for spark-type ignition. ---*/
   if ((flamelet_config_options.ignition_method == FLAMELET_INIT_TYPE::SPARK)) {
     auto spark_init = flamelet_config_options.spark_init;
@@ -149,9 +160,16 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     /*--- Obtain passive look-up scalars. ---*/
     SetScalarLookUps(fluid_model_local, i_point, scalars_vector);
 
+    auto* flamelet_nodes = su2staticcast_p<CSpeciesFlameletVariable*>(nodes);
+
     /*--- Set mass diffusivity based on thermodynamic state. ---*/
     auto T = flowNodes->GetTemperature(i_point);
     fluid_model_local->SetTDState_T(T, scalars);
+    /*--- Store T_LUT: the temperature the table predicts for the current (PV,H,Z) state.
+     *    SetTDState_T ignores its val_temperature input and derives Temperature from the LUT,
+     *    so GetTemperature() here gives T_LUT. A large |T_LUT - T_flow| indicates the
+     *    flamelet state is decoupled from the flow energy equation (hull miss, divergence). ---*/
+    flamelet_nodes->SetLUTTemperature(i_point, fluid_model_local->GetTemperature());
     /*--- set the diffusivity in the fluid model to the diffusivity obtained from the lookup table ---*/
     for (auto i_scalar = 0u; i_scalar < nVar; ++i_scalar) {
       nodes->SetDiffusivity(i_point, fluid_model_local->GetMassDiffusivity(i_scalar), i_scalar);
@@ -160,7 +178,6 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
     /*--- Pre-compute scalar dissipation χ = 2·D·|∇CV|² for each controlling variable.
      *    Stored here so LoadVolumeDataScalar can read a cached value instead of re-accessing
      *    the gradient matrix every output step (hot path for unsteady time-averaging). ---*/
-    auto* flamelet_nodes = su2staticcast_p<CSpeciesFlameletVariable*>(nodes);
     for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; ++iCV) {
       const su2double D = nodes->GetDiffusivity(i_point, iCV);
       su2double grad_sq = 0.0;
@@ -483,8 +500,9 @@ void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_cont
 
   /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
   su2double enth_inlet;
-  GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet, config->GetInlet_SpeciesVal(Marker_Tag),
+  auto exit_code = GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet, config->GetInlet_SpeciesVal(Marker_Tag),
                   &enth_inlet);
+  if (exit_code > 0) cout << "Reverse lookup failed!" << endl;
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
@@ -601,6 +619,10 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
 
   vector<su2double> table_sources(flamelet_config_options.n_control_vars + 2 * flamelet_config_options.n_user_scalars);
   unsigned long misses = fluid_model_local->EvaluateDataSet(scalars, FLAMELET_LOOKUP_OPS::SOURCES, table_sources);
+
+  /*--- Store raw PV source before the non-negativity clip for diagnostics.
+   *    Negative values indicate the table is in an over-reacted region (PV past equilibrium). ---*/
+  su2staticcast_p<CSpeciesFlameletVariable*>(nodes)->SetRawPVSource(iPoint, table_sources[I_PROGVAR]);
   table_sources[I_PROGVAR] = fmax(0, table_sources[I_PROGVAR]);
   nodes->SetTableMisses(iPoint, misses);
 
@@ -856,6 +878,11 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
    *    the mixture fraction in EvaluateDataSet. ---*/
   const auto [enth_min, enth_max] = fluid_model->GetEnthalpyBounds();
 
+  auto init_val = *val_enth;
+  cout << "val_temp = " << val_temp << endl;
+  cout << "cp = " << fluid_model->GetCp() << endl;
+  cout << "temp = " << fluid_model->GetTemperature() << endl;
+
   while ((abs(delta_temp_iter) > delta_temp_final) && (counter++ < counter_limit)) {
     /*--- Add all quantities and their names to the look up vectors. ---*/
     val_scalars[I_ENTH] = enth_iter;
@@ -866,16 +893,24 @@ unsigned long CSpeciesFlameletSolver::GetEnthFromTemp(CFluidModel* fluid_model, 
 
     delta_temp_iter = val_temp - Temperature;
 
-    delta_enth = RelaxAlpha * Cp * delta_temp_iter;
+    delta_enth = RelaxAlpha * delta_temp_iter * Cp;
 
     enth_iter += delta_enth;
     enth_iter  = max(enth_min, min(enth_max, enth_iter));
+    cout << counter << " , enth_iter = " << enth_iter << " , delta_temp_iter = " << delta_temp_iter << endl;
   }
 
   *val_enth = enth_iter;
 
+  cout << "Initial val = " << init_val << endl;
+  cout << "Final val = " << *val_enth << endl;
+  cout << "Min = " << enth_min << " Max = " << enth_max << endl;
+
   if (counter >= counter_limit) {
+    cout << "Number of iterations = " << counter << endl;
     exit_code = 1;
+  } else {
+    cout << "Newton converged in " << counter << " iterations." << endl;
   }
 
   return exit_code;
