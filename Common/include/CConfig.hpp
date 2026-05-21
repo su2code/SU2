@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>CConfig.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -647,6 +647,7 @@ private:
   unsigned long Linear_Solver_Restart_Deflation; /*!< \brief Number of vectors used for deflated restarts. */
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
+  bool Linear_Solver_ILU_levels;                 /*!< \brief Use level scheduling for OMP parallelization of ILU. */
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
   su2double MSW_Alpha;                  /*!< \brief Coefficient for blending states in the MSW scheme. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
@@ -1098,6 +1099,21 @@ private:
   WINDOW_FUNCTION Kind_WindowFct;      /*!< \brief Type of window (weight) function for objective functional. */
   unsigned short Kind_HybridRANSLES;   /*!< \brief Kind of Hybrid RANS/LES. */
   unsigned short Kind_RoeLowDiss;      /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
+  struct CStochBackScatParam {
+    bool StochasticBackscatter;             /*!< \brief Option to include Stochastic Backscatter Model. */
+    su2double SBS_Cdelta;                   /*!< \brief Stochastic Backscatter Model lengthscale coefficient. */
+    unsigned short SBS_maxIterSmooth;       /*!< \brief Maximum number of smoothing iterations for the SBS model. */
+    su2double SBS_Ctau;                     /*!< \brief Stochastic Backscatter Model timescale coefficient. */
+    su2double SBS_Cmag;                     /*!< \brief Stochastic Backscatter Model intensity coefficient. */
+    bool stochSourceNu;                     /*!< \brief Option for including stochastic source term in turbulence model equation (Stochastic Backscatter Model). */
+    bool stochSourceDiagnostics;            /*!< \brief Option for writing diagnostics related to stochastic source terms in Langevin equations (Stochastic Backscatter Model). */
+    bool StochBackscatterInBox;             /*!< \brief Option for activating the Stochastic Backscatter Model only in a bounded box. */
+    su2double StochBackscatterBoxBounds[6]; /*!< \brief Bounds of the box where the Stochastic Backscatter Model is active. */
+    su2double stochFdThreshold;             /*!< \brief Shielding function lower threshold for application of Stochastic Backscatter Model. */
+    su2double stochSourceRelax;             /*!< \brief Relaxation factor for stochastic source term generation (Stochastic Backscatter Model). */
+  } SBSParam;
+  bool enforceLES;                          /*!< \brief Option to enforce LES mode in hybrid RANS-LES simulations. */
+  su2double LES_FilterWidth;                /*!< \brief LES filter width for hybrid RANS-LES simulations. */
 
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones;  /*!< \brief number of maximum span-wise sections for all zones */
@@ -4363,6 +4379,11 @@ public:
    * \return Fill in level of the ILU preconditioner for the linear solver.
    */
   unsigned short GetLinear_Solver_ILU_n(void) const { return Linear_Solver_ILU_n; }
+
+  /*!
+   * \brief Get whether to use level scheduling for OMP parallelization of ILU.
+   */
+  bool GetLinear_Solver_ILU_levels(void) const { return Linear_Solver_ILU_levels; }
 
   /*!
    * \brief Get restart frequency of the linear solver for the implicit formulation.
@@ -9614,10 +9635,28 @@ public:
   unsigned short GetKind_HybridRANSLES(void) const { return Kind_HybridRANSLES; }
 
   /*!
+   * \brief Get if the LES mode must be enforced.
+   * \return TRUE if LES is enforced.
+   */
+  bool GetEnforceLES(void) const { return enforceLES; }
+
+  /*!
+   * \brief Get the LES Filter Width.
+   * \return Value of LES Filter Width.
+   */
+  su2double GetLES_FilterWidth(void) const { return LES_FilterWidth; }
+
+  /*!
    * \brief Get the Kind of Roe Low Dissipation Scheme for Unsteady flows.
    * \return Value of Low dissipation approach.
    */
   unsigned short GetKind_RoeLowDiss(void) const { return Kind_RoeLowDiss; }
+
+  /*!
+   * \brief Get the Stochastic BackScatter (SBS) model parameters.
+   * \return SBS model parameters.
+   */
+  const CStochBackScatParam& GetSBSParam(void) const { return SBSParam; }
 
   /*!
    * \brief Get the DES Constant.
