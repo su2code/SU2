@@ -577,6 +577,17 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
                                                 CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
                                                 unsigned short val_marker) {
   SU2_ZONE_SCOPED
+
+  /*--- In FLOW_MARKERS mode: temperature comes from MARKER_ISOTHERMAL and is
+   converted to enthalpy via GetEnthFromTemp (thermodynamically consistent).
+   In SPECIES_MARKERS mode: enthalpy is taken directly from MARKER_WALL_SPECIES,
+   handled by the base class BC_Wall_Generic. ---*/
+
+  if (config->GetFlamelet_Enthalpy_BC() != FLAMELET_ENTHALPY_BC::FLOW_MARKERS) {
+    CSpeciesSolver::BC_Isothermal_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    return;
+  }
+
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
