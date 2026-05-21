@@ -440,8 +440,12 @@ void CSpeciesFlameletSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** sol
   }
 
   const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  const bool py_custom = config->GetMarker_All_PyCustom(val_marker);
+
   su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
-  if (config->GetIntegrated_HeatFlux())
+  /*--- Integrated heat flux requires area normalization only when using the config value.
+   When py_custom is active the per-vertex flux density is set directly by the Python wrapper. ---*/
+  if (config->GetIntegrated_HeatFlux() && !py_custom)
     Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
@@ -451,6 +455,10 @@ void CSpeciesFlameletSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** sol
 
     const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
     const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+    /*--- Override with the per-vertex value set by driver.SetMarkerCustomNormalHeatFlux(). ---*/
+    if (py_custom)
+      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex);
 
     /*--- Neumann condition: q_wall is the prescribed heat flux (W/m^2, positive into domain).
      This adds a source term dH/dn * lambda = q_wall to the enthalpy residual. ---*/
