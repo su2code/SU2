@@ -440,8 +440,8 @@ void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_con
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  passivedouble nBackflow_loc = 0.0;
-  passivedouble Vn_min_loc    = 0.0;  /*--- Most negative Vn seen this call. ---*/
+  int nBackflow_loc    = 0;  /*--- Number of faces with backflow seen this call. ---*/
+  su2double Vn_min_loc = 0.0;  /*--- Most negative Vn seen this call. ---*/
 
   // Compute a manifold-consistent enthalpy state for backflow faces.
   // V_ref is the inlet bulk velocity; used to normalise the blending weight so that
@@ -486,11 +486,7 @@ void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_con
 
     if (Vn < 0.0) {
       SU2_OMP_ATOMIC
-      nBackflow_loc += 1.0;
-      const passivedouble Vn_passive = SU2_TYPE::GetValue(Vn);
-      /*--- Bug fix: SU2_OMP_ATOMIC (#pragma omp atomic) only supports simple op= expressions,
-       *   not min(). Use atomicMin which falls back to a critical section when needed. ---*/
-      atomicMin(Vn_passive, Vn_min_loc);
+      nBackflow_loc += 1;
     }
 
     /*--- Strong BC path: prescribe inlet scalars on backflow faces; otherwise copy
@@ -554,9 +550,9 @@ void CSpeciesFlameletSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_con
 
   /*--- Print backflow diagnostics once per BC call (no MPI reduction — safe). ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    if (nBackflow_loc > 0.5 && rank == MASTER_NODE) {
+    if (nBackflow_loc > 0 && rank == MASTER_NODE) {
       cout << "  Flamelet BC_Outlet [" << Marker_Tag << "]: "
-           << static_cast<unsigned long>(nBackflow_loc)
+           << nBackflow_loc
            << " backflow face(s), Vn_min = " << Vn_min_loc << " m/s"
            << "  --> applying inlet scalars (PV=0, H=H_inlet) on backflow faces." << endl;
     }

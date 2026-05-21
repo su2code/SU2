@@ -2620,7 +2620,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
   su2double Normal[MAXNDIM] = {0.0};
-  passivedouble nBackflow_loc = 0.0;
+  int nBackflow_loc = 0;
 
   const bool backflow_prevention = config->GetInc_Outlet_BackflowPrevention() &&
                                    (config->GetOuterIter() < config->GetInc_Outlet_BackflowPrevention_Iter());
@@ -2665,7 +2665,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     if (Vn < 0.0) {
       SU2_OMP_ATOMIC
-      nBackflow_loc += 1.0;
+      nBackflow_loc += 1;
     }
 
     /*--- Compute a boundary value for the pressure depending on whether
@@ -2740,20 +2740,18 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 
     /*--- Backflow prevention via velocity reflection.
      *
-     * When Vn < 0 (reversed flow entering through the outlet), the ghost velocity
-     * is reflected about the face: Vn_ghost = -Vn > 0.  In vector form:
+     * When reverse flow is detected at the outlet (Vn < 0),
+     * we reflect the normal velocity component to prevent 
+     * backflow and stabilize the solution.
+     * 
+     * Factor of 2 is used to ensure that the reflected velocity
+     * is sufficient to counteract the backflow, by applying a
+     * restorative force that is proportional to the detected backflow velocity.
      *
-     *   V_ghost = V_domain - 2 * Vn * n_hat
-     *
-     * The factor of 2 (vs. the factor-1 zero-flux projection) gives the upwind
-     * Riemann solver a genuine outflow state on the ghost side, creating an active
-     * restoring force proportional to the backflow magnitude.
-     *
-     * A pressure penalty (0.5*rho*Vn^2) is intentionally NOT applied here.  For
-     * variable-density / FGM cases the penalty is O(0.01-0.1 Pa) — too small to
-     * overcome expansion-driven backflow — yet it creates a thermodynamically
-     * inconsistent ghost state (modified pressure with Neumann enthalpy) that
-     * pushes FGM controlling variables outside the manifold. ---*/
+     * Dynamic pressure is intentionally NOT applied here.  For
+     * variable-density / FGM cases the penalty is too small to
+     * overcome expansion-driven backflow and creates a thermodynamically
+     * inconsistent ghost state that pushes FGM controlling variables outside the manifold. ---*/
 
     if (Vn < 0.0 && backflow_prevention) {
       for (iDim = 0; iDim < nDim; iDim++)
@@ -2846,11 +2844,9 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   }
   END_SU2_OMP_FOR
 
-  /*--- Print a warning if backflow was detected on this outlet marker.
-   * Note: no MPI_Allreduce here — BC_Outlet is not called symmetrically
-   * across all ranks, so collective calls would corrupt the message queue. ---*/
+  /*--- Print a warning if backflow was detected on this outlet marker. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    if (nBackflow_loc > 0.5) {
+    if (nBackflow_loc > 0) {
       cout << "WARNING [Rank " << rank << "]: Backflow detected at outlet marker \""
            << Marker_Tag << "\": " << static_cast<unsigned long>(nBackflow_loc)
            << " face(s) have reversed normal velocity." << endl;
