@@ -75,7 +75,7 @@ def main():
   CHTMarker = 'plate'       # Specified by the user
 
   # Get all the tags with the CHT option
-  CHTMarkerList =  SU2Driver.GetCHTMarkerTags()
+  CHTMarkerList = SU2Driver.GetCHTMarkerTags()
 
   # Get all the markers defined on this rank and their associated indices.
   allMarkerIDs = SU2Driver.GetMarkerIndices()

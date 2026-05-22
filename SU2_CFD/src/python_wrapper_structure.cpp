@@ -53,7 +53,186 @@ void CDriver::PreprocessPythonInterface(CConfig** config, CGeometry**** geometry
 }
 
 //////////////////////////////////////////////////////////////////////////////////
-/* Functions to obtain global parameters from SU2 (time steps, delta t, etc.)   */
+/* Functions related to farfield flow variables.                                */
+//////////////////////////////////////////////////////////////////////////////////
+passivedouble CDriver::GetAngleOfAttack() const { return SU2_TYPE::GetValue(main_config->GetAoA()); }
+
+void CDriver::SetFarFieldAoA(const passivedouble AoA) {
+  config_container[selected_zone]->SetAoA(AoA);
+  solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[selected_zone]);
+}
+
+passivedouble CDriver::GetAngleOfSideslip() const { return SU2_TYPE::GetValue(main_config->GetAoS()); }
+
+void CDriver::SetFarFieldAoS(const passivedouble AoS) {
+  config_container[selected_zone]->SetAoS(AoS);
+  solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[selected_zone]);
+}
+
+passivedouble CDriver::GetMachNumber() const { return SU2_TYPE::GetValue(main_config->GetMach()); }
+
+void CDriver::SetMachNumber(passivedouble value) {
+  main_config->SetMach(value);
+  UpdateFarfield();
+}
+
+passivedouble CDriver::GetReynoldsNumber() const { return SU2_TYPE::GetValue(main_config->GetReynolds()); }
+
+void CDriver::SetReynoldsNumber(passivedouble value) {
+  main_config->SetReynolds(value);
+  UpdateFarfield();
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+/* Functions related to the adjoint flow solver solution.                       */
+//////////////////////////////////////////////////////////////////////////////////
+
+CPyWrapperMatrixView CDriver::MarkerAdjointForces(unsigned short iMarker) const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  auto& mat = const_cast<su2activematrix&>(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->GetVertexTractionAdjoint(iMarker));
+  return CPyWrapperMatrixView(mat, "MarkerAdjointForces", true);
+}
+
+CPyWrapperMatrixView CDriver::VolumeCoordinatesSurfaceCoordinatesSensitivities() const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dCoordinates_dCoordinates());
+  return CPyWrapperMatrixView(mat, "VolumeCoordinatesSurfaceCoordinatesSensitivities", true);
+}
+
+CPyWrapperMatrixView CDriver::MarkerVolumeCoordinatesDisplacementsSensitivities(unsigned short iMarker) const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dCoordinates_dDisplacements(iMarker));
+  return CPyWrapperMatrixView(mat, "MarkerVolumeCoordinatesDisplacementsSensitivities", true);
+}
+
+vector<passivedouble> CDriver::GetObjectiveFarfieldVariablesSensitivities() const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  if (main_config->GetKind_DiscreteAdjoint() != DISC_ADJ_TYPE::RESIDUALS) {
+    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+  }
+
+  const int nTrim = 2;
+  vector<passivedouble> values(nTrim, 0.0);
+
+  su2double mach = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetSens_dObjective_dVariables(0);
+  values[0] = SU2_TYPE::GetValue(mach);
+
+  su2double alpha = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetSens_dObjective_dVariables(1);
+  values[1] = SU2_TYPE::GetValue(alpha);
+
+  return values;
+}
+
+vector<passivedouble> CDriver::GetResidualsFarfieldVariablesSensitivities() const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  if (main_config->GetKind_DiscreteAdjoint() != DISC_ADJ_TYPE::RESIDUALS) {
+    SU2_MPI::Error("Discrete adjoint flow solver does not use residual-based formulation!", CURRENT_FUNCTION);
+  }
+
+  const int nTrim = 2;
+  vector<passivedouble> values(nTrim, 0.0);
+
+  su2double mach = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dResiduals_dVariables(0);
+  values[0] = SU2_TYPE::GetValue(mach);
+
+  su2double alpha = solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetProd_dResiduals_dVariables(1);
+  values[1] = SU2_TYPE::GetValue(alpha);
+
+  return values;
+}
+
+CPyWrapperMatrixView CDriver::ObjectiveSolutionSensitivities() const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dObjective_dStates());
+  return CPyWrapperMatrixView(mat, "ObjectiveSolutionSensitivities", true);
+}
+
+CPyWrapperMatrixView CDriver::ResidualsSolutionSensitivities() const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dResiduals_dStates());
+  return CPyWrapperMatrixView(mat, "ResidualsSolutionSensitivities", true);
+}
+
+CPyWrapperMatrixView CDriver::ForcesSolutionSensitivities() const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dTractions_dStates());
+  return CPyWrapperMatrixView(mat, "ForcesSolutionSensitivities", true);
+}
+
+CPyWrapperMatrixView CDriver::ObjectiveCoordinatesSensitivities() const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dObjective_dCoordinates());
+  return CPyWrapperMatrixView(mat, "ObjectiveCoordinatesSensitivities", true);
+}
+
+CPyWrapperMatrixView CDriver::ResidualsCoordinatesSensitivities() const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dResiduals_dCoordinates());
+  return CPyWrapperMatrixView(mat, "ResidualsCoordinatesSensitivities", true);
+}
+
+CPyWrapperMatrixView CDriver::ForcesCoordinatesSensitivities() const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dTractions_dCoordinates());
+  return CPyWrapperMatrixView(mat, "ForcesCoordinatesSensitivities", true);
+}
+
+CPyWrapperMatrixView CDriver::MarkerObjectiveDisplacementsSensitivities(unsigned short iMarker) const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dObjective_dDisplacements(iMarker));
+  return CPyWrapperMatrixView(mat, "MarkerObjectiveDisplacementsSensitivities", true);
+}
+
+CPyWrapperMatrixView CDriver::MarkerResidualsDisplacementsSensitivities(unsigned short iMarker) const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dResiduals_dDisplacements(iMarker));
+  return CPyWrapperMatrixView(mat, "MarkerResidualsDisplacementsSensitivities", true);
+}
+
+CPyWrapperMatrixView CDriver::MarkerForcesDisplacementsSensitivities(unsigned short iMarker) const {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dTractions_dDisplacements(iMarker));
+  return CPyWrapperMatrixView(mat, "MarkerForcesDisplacementsSensitivities", true);
+}
+
+CPyWrapperMatrixView CDriver::AdjointSourceTerm() {
+  if (!main_config->GetFluidProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint flow solver is not defined!", CURRENT_FUNCTION);
+  }
+  auto& mat = const_cast<su2matrix<su2double>&>(solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->GetPartialMatrix_dObjective_dStates());
+  return CPyWrapperMatrixView(mat, "AdjointSourceTerm", false);
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+/* Functions to obtain global parameters from SU2 (time steps, delta t, etc.).  */
 //////////////////////////////////////////////////////////////////////////////////
 
 unsigned long CDriver::GetNumberTimeIter() const { return config_container[selected_zone]->GetnTime_Iter(); }
@@ -74,9 +253,22 @@ passivedouble CDriver::GetUnsteadyTimeStep() const {
 
 string CDriver::GetSurfaceFileName() const { return config_container[selected_zone]->GetSurfCoeff_FileName(); }
 
-////////////////////////////////////////////////////////////////////////////////
-/* Functions related to the management of markers                             */
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+/* Functions related to the management of markers.                              */
+//////////////////////////////////////////////////////////////////////////////////
+
+vector<string> CDriver::GetFluidLoadMarkerTags() const {
+  const auto nMarker = main_config->GetnMarker_Fluid_Load();
+  vector<string> tags;
+
+  tags.resize(nMarker);
+
+  for (auto iMarker = 0u; iMarker < nMarker; iMarker++) {
+    tags[iMarker] = main_config->GetMarker_Fluid_Load_TagBound(iMarker);
+  }
+
+  return tags;
+}
 
 void CDriver::SetHeatSourcePosition(passivedouble alpha, passivedouble pos_x, passivedouble pos_y,
                                     passivedouble pos_z) {
@@ -101,19 +293,9 @@ void CDriver::SetInletAngle(unsigned short iMarker, passivedouble alpha) {
   }
 }
 
-void CDriver::SetFarFieldAoA(const passivedouble AoA) {
-  config_container[selected_zone]->SetAoA(AoA);
-  solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[selected_zone]);
-}
-
-void CDriver::SetFarFieldAoS(const passivedouble AoS) {
-  config_container[selected_zone]->SetAoS(AoS);
-  solver_container[selected_zone][INST_0][MESH_0][FLOW_SOL]->UpdateFarfieldVelocity(config_container[selected_zone]);
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/* Functions related to simulation control, high level functions (reset convergence, set initial mesh, etc.)   */
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/* Functions related to simulation control, high level functions (reset convergence, set initial mesh, etc.). */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void CSinglezoneDriver::SetInitialMesh() {
   DynamicMeshUpdate(0);
@@ -151,9 +333,66 @@ void CDriver::BoundaryConditionsUpdate() {
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-/* Functions related to dynamic mesh */
-////////////////////////////////////////////////////////////////////////////////
+void CDriver::UpdateGeometry() {
+  geometry_container[ZONE_0][INST_0][MESH_0]->InitiateComms(main_geometry, main_config, MPI_QUANTITIES::COORDINATES);
+  geometry_container[ZONE_0][INST_0][MESH_0]->CompleteComms(main_geometry, main_config, MPI_QUANTITIES::COORDINATES);
+
+  geometry_container[ZONE_0][INST_0][MESH_0]->SetControlVolume(main_config, UPDATE);
+  geometry_container[ZONE_0][INST_0][MESH_0]->SetBoundControlVolume(main_config, UPDATE);
+  geometry_container[ZONE_0][INST_0][MESH_0]->SetMaxLength(main_config);
+}
+
+void CDriver::UpdateFarfield() {
+  su2double Velocity_Ref = main_config->GetVelocity_Ref();
+  su2double Alpha = main_config->GetAoA() * PI_NUMBER / 180.0;
+  su2double Beta = main_config->GetAoS() * PI_NUMBER / 180.0;
+  su2double Mach = main_config->GetMach();
+  su2double Temperature = main_config->GetTemperature_FreeStream();
+  su2double Gas_Constant = main_config->GetGas_Constant();
+  su2double Gamma = main_config->GetGamma();
+  su2double SoundSpeed = sqrt(Gamma * Gas_Constant * Temperature);
+
+  if (nDim == 2) {
+    main_config->GetVelocity_FreeStreamND()[0] = cos(Alpha) * Mach * SoundSpeed / Velocity_Ref;
+    main_config->GetVelocity_FreeStreamND()[1] = sin(Alpha) * Mach * SoundSpeed / Velocity_Ref;
+  }
+  if (nDim == 3) {
+    main_config->GetVelocity_FreeStreamND()[0] = cos(Alpha) * cos(Beta) * Mach * SoundSpeed / Velocity_Ref;
+    main_config->GetVelocity_FreeStreamND()[1] = sin(Beta) * Mach * SoundSpeed / Velocity_Ref;
+    main_config->GetVelocity_FreeStreamND()[2] = sin(Alpha) * Mach * SoundSpeed / Velocity_Ref;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+/* Functions related to adjoint finite element simulations.                     */
+//////////////////////////////////////////////////////////////////////////////////
+
+vector<passivedouble> CDriver::GetMarkerForceSensitivities(unsigned short iMarker) const {
+  if (!main_config->GetStructuralProblem() || !main_config->GetDiscrete_Adjoint()) {
+    SU2_MPI::Error("Discrete adjoint structural solver is not defined!", CURRENT_FUNCTION);
+  }
+  if (main_config->GetKind_DiscreteAdjoint() != DISC_ADJ_TYPE::FIXED_POINT) {
+    SU2_MPI::Error("Discrete adjoint structural solver does not use fixed-point formulation!", CURRENT_FUNCTION);
+  }
+
+  const auto nVertex = GetNumberMarkerNodes(iMarker);
+  vector<passivedouble> values(nVertex * nDim, 0.0);
+
+  for (auto iVertex = 0ul; iVertex < nVertex; iVertex++) {
+    auto iPoint = main_geometry->vertex[iMarker][iVertex]->GetNode();
+
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      values[iVertex * nDim + iDim] = SU2_TYPE::GetValue(
+          solver_container[ZONE_0][INST_0][MESH_0][ADJFEA_SOL]->GetNodes()->GetFlowTractionSensitivity(iPoint, iDim));
+    }
+  }
+
+  return values;
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+/* Functions related to dynamic mesh.                                           */
+//////////////////////////////////////////////////////////////////////////////////
 
 void CDriver::SetTranslationRate(passivedouble xDot, passivedouble yDot, passivedouble zDot) {
   main_config->SetTranslation_Rate(0, xDot);
@@ -178,4 +417,3 @@ void CDriver::SetMarkerTranslationRate(unsigned short iMarker, passivedouble vel
   config_container[selected_zone]->SetMarkerTranslationRate(iMarker, 1, vel_y);
   config_container[selected_zone]->SetMarkerTranslationRate(iMarker, 2, vel_z);
 }
-

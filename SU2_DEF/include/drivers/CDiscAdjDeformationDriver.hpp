@@ -59,6 +59,34 @@ class CDiscAdjDeformationDriver : public CDriverBase {
    */
   void Finalize() override;
 
+  /*!
+   * \brief Get total sensitivity of the objective function w.r.t. surface coordinates or displacements
+   * at mesh vertices.
+   * \return A CPyWrapperMatrixView of shape (nPoint, nDim) with the coordinate sensitivities.
+   */
+  CPyWrapperMatrixView GetObjectiveCoordinatesTotalSensitivities() const;
+
+  /*!
+   * \brief Get total sensitivity of the objective function w.r.t. surface coordinates or displacements
+   * at marker vertices.
+   * \param[in] iMarker - Marker identifier.
+   * \return A CPyWrapperMarkerMatrixView of shape (nVertex, nDim) with the coordinate sensitivities.
+   */
+  CPyWrapperMarkerMatrixView GetMarkerObjectiveCoordinatesTotalSensitivities(unsigned short iMarker) const;
+
+  /*!
+   * \brief Get total sensitivity of the objective function w.r.t. the design variables.
+   * \return Total sensitivity of the objective function w.r.t. the design variables.
+   */
+  vector<vector<passivedouble>> GetObjectiveDesignVariablesTotalSensitivities() const;
+
+  /*!
+   * \brief Get total sensitivity of the objective function w.r.t. a design variable.
+   * \param[in] iDV - Design Variable index.
+   * \return Total sensitivity of the objective function w.r.t. a design variable.
+   */
+  vector<passivedouble> GetObjectiveDesignVariablesTotalSensitivities(unsigned short iDV) const;
+
  protected:
   /*!
    * \brief Read in the config and mesh files.

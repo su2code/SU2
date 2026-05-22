@@ -438,6 +438,43 @@ class CSysSolve {
     return iter;
   }
 
+  template <class VectorView>
+  unsigned long Solve_b(MatrixType& Jacobian, const VectorView& LinSysRes, VectorView& LinSysSol, CGeometry* geometry,
+                        const CConfig* config, bool directCall = true) {
+    const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
+
+    auto Copy = [nestedParallel](const auto& src, auto& dst) {
+      auto Impl = [&]() {
+        SU2_OMP_FOR_(schedule(static))
+        for (auto i = 0ul; i < dst.GetNBlk(); ++i) {
+          for (auto j = 0ul; j < dst.GetNVar(); ++j) {
+            dst(i, j) = SU2_TYPE::GetValue(src(i, j));
+          }
+        }
+        END_SU2_OMP_FOR
+      };
+      if (nestedParallel) {
+        SU2_OMP_PARALLEL
+        Impl();
+        END_SU2_OMP_PARALLEL
+      } else {
+        Impl();
+      }
+    };
+    auto SetTempFromView = [Copy](const VectorView& view, VectorType& temp) {
+      if (temp.GetNBlk() == 0) {
+        SU2_OMP_SAFE_GLOBAL_ACCESS(temp.Initialize(view.GetNBlk(), view.GetNBlkDomain(), view.GetNVar(), nullptr);)
+      }
+      Copy(view, temp);
+    };
+    SetTempFromView(LinSysRes, LinSysRes_tmp);
+    SetTempFromView(LinSysSol, LinSysSol_tmp);
+    auto iter = Solve_b(Jacobian, LinSysRes_tmp, LinSysSol_tmp, geometry, config, directCall);
+    SU2_OMP_BARRIER
+    Copy(LinSysSol_tmp, LinSysSol);
+    return iter;
+  }
+
   /*!
    * \brief Get the number of iterations.
    * \return The number of iterations done by Solve or Solve_b

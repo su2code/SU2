@@ -470,6 +470,16 @@ class CDriver : public CDriverBase {
   void BoundaryConditionsUpdate();
 
   /*!
+   * \brief Update the geometry (i.e. dual grid).
+   */
+  void UpdateGeometry();
+
+  /*!
+   * \brief Update the primal far-field variables.
+   */
+  void UpdateFarfield();
+
+  /*!
    * \brief Get the number of time iterations.
    * \return Number of time iterations.
    */
@@ -510,6 +520,49 @@ class CDriver : public CDriverBase {
   void SetInletAngle(unsigned short iMarker, passivedouble alpha);
 
   /*!
+   * \brief Preprocess the inlets via file input for all solvers.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+
+  /*!
+   * \brief Get the free-stream Reynolds number.
+   * \return Free-stream Reynolds number.
+   */
+  passivedouble GetReynoldsNumber() const;
+
+  /*!
+   * \brief Get the free-stream Mach number.
+   * \return Free-stream Mach number.
+   */
+  passivedouble GetMachNumber() const;
+
+  /*!
+   * \brief Get the free-stream angle of attack (in degrees).
+   * \return Free-stream angle of attack.
+   */
+  passivedouble GetAngleOfAttack() const;
+
+  /*!
+   * \brief Get the free-stream angle of side-slip (in degrees).
+   * \return Free-stream angle of side-slip.
+   */
+  passivedouble GetAngleOfSideslip() const;
+
+  /*!
+   * \brief Set the free-stream Reynolds number.
+   * \param[in] value - User-defined Reynolds number.
+   */
+  void SetReynoldsNumber(passivedouble value);
+
+  /*!
+   * \brief Set the free-stream Mach number.
+   * \param[in] value - User-defined Mach number.
+   */
+  void SetMachNumber(passivedouble value);
+
+  /*!
    * \brief Set the angle of attack of the farfield.
    * \param[in] alpha - Angle (degree).
    */
@@ -520,6 +573,115 @@ class CDriver : public CDriverBase {
    * \param[in] beta - Angle (degree).
    */
   void SetFarFieldAoS(passivedouble beta);
+
+  /*!
+   * \brief Get the adjoint flow forces at a marker vertex.
+   * \param[in] iMarker - Marker index.
+   * \return CPyWrapperMatrixView of shape (nVertex, nDim).
+   */
+  CPyWrapperMatrixView MarkerAdjointForces(unsigned short iMarker) const;
+
+  /*!
+   * \brief Get sensitivity of volume coordinates with respect to deformed surface coordinates (dxv/dxa^T * psi).
+   * \return CPyWrapperMatrixView of shape (nPoint, nDim).
+   */
+  CPyWrapperMatrixView VolumeCoordinatesSurfaceCoordinatesSensitivities() const;
+
+  /*!
+   * \brief Get sensitivity of volume coordinates with respect to surface displacements (dxv/dua^T * psi).
+   * \param[in] iMarker - Marker index.
+   * \return CPyWrapperMatrixView of shape (nVertex, nDim).
+   */
+  CPyWrapperMatrixView MarkerVolumeCoordinatesDisplacementsSensitivities(unsigned short iMarker) const;
+
+  /*!
+   * \brief Get sensitivity of objective function with respect to farfield design variables as a partial derivative.
+   * \return Partial derivative of aerodynamic function with respect to farfield design variable.
+   */
+  vector<passivedouble> GetObjectiveFarfieldVariablesSensitivities() const;
+
+  /*!
+   * \brief Get sensitivity of flow residuals with respect to farfield design variables as a matrix-vector product with
+   *        the adjoint variable.
+   * \return Partial derivative of aerodynamic residuals with respect to farfield design variable.
+   */
+  vector<passivedouble> GetResidualsFarfieldVariablesSensitivities() const;
+
+  /*!
+   * \brief Get sensitivity of objective function with respect to conservative variables (dI/dq) for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nVar).
+   */
+  CPyWrapperMatrixView ObjectiveSolutionSensitivities() const;
+
+  /*!
+   * \brief Get sensitivity of residuals with respect to conservative variables (dA/dq^T * psi) for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nVar).
+   */
+  CPyWrapperMatrixView ResidualsSolutionSensitivities() const;
+
+  /*!
+   * \brief Get sensitivity of tractions with respect to conservative variables (dfa/dq) for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nVar).
+   */
+  CPyWrapperMatrixView ForcesSolutionSensitivities() const;
+
+  /*!
+   * \brief Get a read-only view of dObjective/dCoordinates for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nDim).
+   */
+  CPyWrapperMatrixView ObjectiveCoordinatesSensitivities() const;
+
+  /*!
+   * \brief Get a read-only view of dResiduals/dCoordinates^T * psi for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nDim).
+   */
+  CPyWrapperMatrixView ResidualsCoordinatesSensitivities() const;
+
+  /*!
+   * \brief Get a read-only view of dTractions/dCoordinates^T * psi for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nDim).
+   */
+  CPyWrapperMatrixView ForcesCoordinatesSensitivities() const;
+
+  /*!
+   * \brief Get a read-only view of dObjective/dDisplacements for a marker.
+   * \param[in] iMarker - Marker index.
+   * \return CPyWrapperMatrixView of shape (nVertex, nDim).
+   */
+  CPyWrapperMatrixView MarkerObjectiveDisplacementsSensitivities(unsigned short iMarker) const;
+
+  /*!
+   * \brief Get a read-only view of dResiduals/dDisplacements^T * psi for a marker.
+   * \param[in] iMarker - Marker index.
+   * \return CPyWrapperMatrixView of shape (nVertex, nDim).
+   */
+  CPyWrapperMatrixView MarkerResidualsDisplacementsSensitivities(unsigned short iMarker) const;
+
+  /*!
+   * \brief Get a read-only view of dTractions/dDisplacements^T * psi for a marker.
+   * \param[in] iMarker - Marker index.
+   * \return CPyWrapperMatrixView of shape (nVertex, nDim).
+   */
+  CPyWrapperMatrixView MarkerForcesDisplacementsSensitivities(unsigned short iMarker) const;
+
+  /*!
+   * \brief Get sensitivities of the flow forces for the structural solver.
+   * \param[in] iMarker - Marker index.
+   * \return Sensitivity of flow forces (nVertex, nDim).
+   */
+  vector<passivedouble> GetMarkerForceSensitivities(unsigned short iMarker) const;
+
+  /*!
+   * \brief Get a read/write view of the adjoint source term for all mesh nodes.
+   * \return CPyWrapperMatrixView of shape (nPoint, nVar).
+   */
+  CPyWrapperMatrixView AdjointSourceTerm();
+
+  /*!
+   * \brief Get all the flow load boundary marker tags.
+   * \return List of flow load boundary markers tags.
+   */
+  vector<string> GetFluidLoadMarkerTags() const;
 
   /*!
    * \brief Set the dynamic mesh translation rates.

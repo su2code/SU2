@@ -2,7 +2,7 @@
  * \file CDiscAdjSinglezoneDriver.hpp
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
- * \author T. Economon, H. Kline, R. Sanchez
+ * \author T. Economon, H. Kline, R. Sanchez, H. Patel, A. Gastaldi
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -25,9 +25,13 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+
 #include "CSinglezoneDriver.hpp"
+#include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
+#include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
+#include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
+#include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 
 /*!
  * \class CDiscAdjSinglezoneDriver
@@ -37,8 +41,14 @@
  * \version 8.5.0 "Harrier"
  */
 class CDiscAdjSinglezoneDriver : public CSinglezoneDriver {
-protected:
+ public:
+  #ifdef CODI_FORWARD_TYPE
+    using LinSolScalar = su2double;
+  #else
+    using LinSolScalar = passivedouble;
+  #endif
 
+ protected:
   unsigned long nAdjoint_Iter;                  /*!< \brief The number of adjoint iterations that are run on the fixed-point solver.*/
   RECORDING RecordingState;                     /*!< \brief The kind of recording the tape currently holds.*/
   RECORDING MainVariables;                      /*!< \brief The kind of recording linked to the main variables of the problem.*/
@@ -55,6 +65,19 @@ protected:
   COutput *direct_output;
   CNumerics ***numerics;                        /*!< \brief Container vector with all the numerics. */
 
+  /*!< \brief Fixed-Point corrector that can be applied to inner iterations of the residual-based formulation. */
+  CQuasiNewtonInvLeastSquares<passivedouble> Corrector;
+
+  /*!< \brief Members to use GMRES to drive inner iterations (alternative to quasi-Newton) of the residual-based formulation. */
+  static constexpr unsigned long KrylovMinIters = 3;
+  const LinSolScalar KrylovSysTol = 1E-8;
+  bool KrylovSet = false;
+  bool PreconditionerSet = false;
+
+  CSysSolve<LinSolScalar> AdjSolver;
+  CSysVector<LinSolScalar> AdjRHS;
+  CSysVector<LinSolScalar> AdjSol;
+
   /*!
    * \brief Record one iteration of a flow iteration in within multiple zones.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
@@ -65,27 +88,58 @@ protected:
    * \brief Run one iteration of the solver.
    * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-  void DirectRun(RECORDING kind_recording);
+  void DirectRunFixedPoint(RECORDING kind_recording);
 
   /*!
-   * \brief Set the objective function.
+   * \brief Run one iteration of the solver.
+   * \param[in] kind_recording - Type of recording (full list in ENUM_RECORDING, option_structure.hpp)
    */
-  void SetObjFunction(void);
+  void DirectRunResidual(RECORDING kind_recording);
+
+  /*!
+   * \brief Run a single iteration of the main fixed-point discrete adjoint solver with a single zone.
+   */
+  void RunFixedPoint();
+
+  /*!
+   * \brief Run the computation of the main residual-based discrete adjoint sensitivities with a single zone.
+   */
+  void RunResidual();
+
+  /*!
+   * \brief Run a single iteration of the secondary fixed-point discrete adjoint solver with a single zone.
+   */
+  void SecondaryRunFixedPoint();
+
+  /*!
+   * \brief Run the computation of the secondary residual-based discrete adjoint sensitivities with a single zone.
+   */
+  void SecondaryRunResidual();
+
+  /*!
+   * \brief Update the fixed-point discrete adjoint solver with a single zone.
+   */
+  void UpdateAdjointsFixedPoint();
+
+  /*!
+   * \brief Update the residual-based discrete adjoint solver with a single zone.
+   */
+  void UpdateAdjointsResidual();
 
   /*!
    * \brief Initialize the adjoint value of the objective function.
    */
-  void SetAdjObjFunction(void);
+  void SetAdjointObjective();
 
   /*!
    * \brief Record the main computational path.
    */
-  void MainRecording(void);
+  void MainRecording();
 
   /*!
    * \brief Record the secondary computational path.
    */
-  void SecondaryRecording(void);
+  void SecondaryRecording();
 
   /*!
    * \brief gets Convergence on physical time scale, (deactivated in adjoint case)
@@ -99,7 +153,6 @@ public:
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
-   * \param[in] val_nDim - Total number of dimensions.
    * \param[in] MPICommunicator - MPI communicator for SU2.
    */
   CDiscAdjSinglezoneDriver(char* confFile,
@@ -109,7 +162,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CDiscAdjSinglezoneDriver(void) override;
+  ~CDiscAdjSinglezoneDriver() override;
 
   /*!
    * \brief Preprocess the single-zone iteration
@@ -120,10 +173,119 @@ public:
   /*!
    * \brief Run a single iteration of the discrete adjoint solver with a single zone.
    */
-  void Run(void) override;
+  void Run() override;
+
+  /*!
+   * \brief Update the discrete adjoint solution.
+   */
+  void UpdateAdjoints();
+
+  /*!
+   * \brief Update the primal far-field variables.
+   */
+  void UpdateFarfield();
+
+  /*!
+   * \brief Update the primal geometry (does not include mesh deformation).
+   */
+  void UpdateGeometry();
+
+  /*!
+   * \brief Deform the primal mesh.
+   */
+  void DeformGeometry();
+
+  /*!
+   * \brief Update the primal states.
+   */
+  void UpdateStates();
+
+  /*!
+   * \brief Update the primal residuals.
+   */
+  void UpdateResiduals();
+
+  /*!
+   * \brief Set wall-normal constraint R_n = (rho*v).n so that (dR/dq)^T is non-singular.
+   */
+  void SetWallNormalConstraint();
+
+  /*!
+   * \brief Update the primal tractions.
+   */
+  void UpdateTractions();
+
+  /*!
+   * \brief Update the primal objective.
+   */
+  void UpdateObjective();
 
   /*!
    * \brief Postprocess the adjoint iteration for ZONE_0.
    */
-  void Postprocess(void) override;
+  void Postprocess() override;
+
+  /*!
+   * \brief Get the partial objective sensitivities from all solvers.
+   * \param[out] values - Values object with interface (iPoint, iVar).
+   */
+  template <class Container>
+  void GetAllObjectiveSolutionSensitivities(Container& values) const {
+    const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+
+    /*--- Get all the partial sensitivities (dObjective/dStates) ---*/
+    unsigned short offset = 0;
+
+    for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+
+      if (!solver || !solver->GetAdjoint()) continue;
+
+      const auto& mat = solver->GetPartialMatrix_dObjective_dStates();
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
+          values(iPoint, offset + iVar) = -SU2_TYPE::GetValue(mat(iPoint, iVar));
+        }
+      }
+
+      offset += solver->GetnVar();
+    }
+  }
+
+  /*!
+   * \brief Get the partial jacobian-adjoint products from all solvers.
+   * \param[out] values - Values object with interface (iPoint, iVar).
+   */
+  template <class Container>
+  void GetAllResidualsSolutionSensitivities(Container& values) const {
+    const auto nPoint = geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint();
+
+    /*--- Get all the partial jacobian-adjoint products (dResiduals/dStates) ---*/
+    unsigned short offset = 0;
+
+    for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
+      auto solver = solver_container[ZONE_0][INST_0][MESH_0][iSol];
+
+      if (!solver || !solver->GetAdjoint()) continue;
+
+      const auto& mat = solver->GetPartialMatrix_dResiduals_dStates();
+      for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+        for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar) {
+          values(iPoint, offset + iVar) = SU2_TYPE::GetValue(mat(iPoint, iVar));
+        }
+      }
+
+      offset += solver->GetnVar();
+    }
+  }
+
+  /*!
+   * \brief Adjoint problem Jacobian-vector product.
+   */
+  void ApplyOperator(const CSysVector<LinSolScalar>& u, CSysVector<LinSolScalar>& v);
+
+  /*!
+   * \brief Adjoint problem preconditioner (based on the transpose approximate Jacobian of the primal problem).
+   */
+  void ApplyPreconditioner(const CSysVector<LinSolScalar>& u, CSysVector<LinSolScalar>& v);
 };

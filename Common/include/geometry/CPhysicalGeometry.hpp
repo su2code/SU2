@@ -773,6 +773,12 @@ class CPhysicalGeometry final : public CGeometry {
   }
 
   /*!
+   * \brief Get a reference to the sensitivity matrix.
+   * \return Reference to the sensitivity matrix.
+   */
+  inline const su2activematrix& GetSensitivityMatrix() const override { return Sensitivity; }
+
+  /*!
    * \brief Compute an ADT including the coordinates of all viscous markers
    * \param[in] config - Definition of the particular problem.
    * \return pointer to the ADT

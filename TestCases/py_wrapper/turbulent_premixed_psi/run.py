@@ -3,7 +3,7 @@
 ## \file run.py
 #  \brief turbulent premixed dump combustor simulation (PSI flame)
 # phi=0.5, methane-air, U=40 m/s
-#  \version 8.1.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -95,7 +95,7 @@ def update_temperature(SU2Driver, iPoint):
 
     iFLOWSOLVER = SU2Driver.GetSolverIndices()['INC.FLOW']
     iENTH = 3
-    #h = 
+    #h =
     SU2Driver.Solution(iFLOWSOLVER).Set(iPoint,iENTH, cp_u*(T-Tref))
 
 

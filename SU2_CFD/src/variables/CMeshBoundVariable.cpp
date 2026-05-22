@@ -31,6 +31,12 @@ CMeshBoundVariable::CMeshBoundVariable(unsigned long npoint, unsigned long ndim,
   CMeshVariable(npoint, ndim, config) {
 
   VertexMap.Reset(nPoint);
+
+  /*--- Allocate the AD indices ---*/
+  if (config->GetDiscrete_Adjoint()) {
+    AD_InputIndex.resize(nPoint,nDim) = AD::GetPassiveIndex();
+    AD_OutputIndex.resize(nPoint,nDim) = AD::GetPassiveIndex();
+  }
 }
 
 void CMeshBoundVariable::AllocateBoundaryVariables(CConfig *config) {
