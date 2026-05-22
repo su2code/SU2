@@ -1183,7 +1183,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
     if (LD2_Scheme) {
       numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(jPoint));
-      if (!geometry->nodes->GetPeriodicBoundary(iPoint) || (geometry->nodes->GetPeriodicBoundary(iPoint) 
+      if (!geometry->nodes->GetPeriodicBoundary(iPoint) || (geometry->nodes->GetPeriodicBoundary(iPoint)
           && !geometry->nodes->GetPeriodicBoundary(jPoint))) {
         numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
       } else {
@@ -2535,11 +2535,19 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     if (species_model) scalar_inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
     CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
     auxFluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], scalar_inlet);
-    V_inlet[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
+
+    /*--- For the flamelet model with FLOW_MARKERS enthalpy BC, we obtain the inlet enthalpy
+     from the flamelet species solver  With SPECIES_MARKERS, the enthalpy in MARKER_INLET_SPECIES
+     is used directly. ---*/
+    if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET &&
+        config->GetFlamelet_Enthalpy_BC() == FLAMELET_ENTHALPY_BC::FLOW_MARKERS)
+      V_inlet[prim_idx.Enthalpy()] = nodes->GetEnthalpy(iPoint);
+    else
+      V_inlet[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
 
     /*--- Access density at the node. This is either constant by
-      construction, or will be set fixed implicitly by the temperature
-      and equation of state. ---*/
+     construction, or will be set fixed implicitly by the temperature
+     and equation of state. ---*/
 
     V_inlet[prim_idx.Density()] = nodes->GetDensity(iPoint);
 
