@@ -10265,4 +10265,12 @@ public:
    */
   const FluidFlamelet_ParsedOptions& GetFlameletParsedOptions() const { return flamelet_ParsedOptions; }
 
+  /*!
+   * \brief Get the enthalpy BC mode for the flamelet solver.
+   * FLOW_MARKERS: derive enthalpy BCs from MARKER_ISOTHERMAL/MARKER_HEATFLUX/MARKER_INLET (temperature-based).
+   * SPECIES_MARKERS: take enthalpy BCs directly from MARKER_WALL_SPECIES/MARKER_INLET_SPECIES.
+   * \return FLAMELET_ENTHALPY_BC enum value.
+   */
+  FLAMELET_ENTHALPY_BC GetFlamelet_Enthalpy_BC() const { return flamelet_ParsedOptions.enthalpy_bc; }
+
 };
