@@ -97,13 +97,8 @@ constexpr passivedouble BOLTZMANN_CONSTANT = 1.3806503E-23;   /*!< \brief Boltzm
 constexpr passivedouble AVOGAD_CONSTANT = 6.0221415E26;       /*!< \brief Avogadro's constant, number of particles in one kmole. */
 constexpr passivedouble FUND_ELEC_CHARGE_CGS = 4.8032047E-10; /*!< \brief Fundamental electric charge in CGS units, cm^(3/2) g^(1/2) s^(-1). */
 constexpr passivedouble STD_REF_TEMP = 298.15;  /*!< \brief Standard reference temperature for enthalpy in Kelvin. */
-// #ifdef USE_SINGLE_PRECISION
-// constexpr passivedouble EPS = 1.0E-7;        /*!< \brief Error scale. */
-// constexpr passivedouble TURB_EPS = 1.0E-7;   /*!< \brief Turbulent Error scale. */
-// #else
 constexpr passivedouble EPS = 1.0E-16;        /*!< \brief Error scale. */
 constexpr passivedouble TURB_EPS = 1.0E-16;   /*!< \brief Turbulent Error scale. */
-// #endif
 
 constexpr passivedouble ONE2 = 0.5;         /*!< \brief One divided by two. */
 constexpr passivedouble ONE3 = 1.0 / 3.0;   /*!< \brief One divided by three. */
