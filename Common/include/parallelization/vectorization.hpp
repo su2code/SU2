@@ -481,6 +481,7 @@ FORCEINLINE __m512 sign_p(__m512 x) { return _mm512_or_ps(ones_16s, _mm512_and_p
 static const uint64x2_t abs_mask_2d_u = vdupq_n_u64(abs_mask_d);
 static const uint64x2_t sign_mask_2d_u = vdupq_n_u64(sign_mask_d);
 static const uint64x2_t ones_2d_u = vreinterpretq_u64_f64(vdupq_n_f64(1.0));
+static const uint64x2_t ones_2u = vdupq_n_u64(~0ULL);
 
 FORCEINLINE float64x2_t set1_p(SizeTag::TWO, double p) { return vdupq_n_f64(p); }
 FORCEINLINE float64x2_t load_p(SizeTag::TWO, const double* p) { return vld1q_f64(p); }
@@ -503,7 +504,7 @@ FORCEINLINE float64x2_t cmp2float(uint64x2_t cmp) { return int2float(vandq_u64(o
 FORCEINLINE float64x2_t eq_p(float64x2_t a, float64x2_t b) { return cmp2float(vceqq_f64(a, b)); }
 FORCEINLINE float64x2_t lt_p(float64x2_t a, float64x2_t b) { return cmp2float(vcltq_f64(a, b)); }
 FORCEINLINE float64x2_t le_p(float64x2_t a, float64x2_t b) { return cmp2float(vcleq_f64(a, b)); }
-FORCEINLINE float64x2_t ne_p(float64x2_t a, float64x2_t b) { return cmp2float(vmvnq_u64(vceqq_f64(a, b))); }
+FORCEINLINE float64x2_t ne_p(float64x2_t a, float64x2_t b) { return cmp2float(veorq_u64(ones_2u, vceqq_f64(a, b))); }
 FORCEINLINE float64x2_t ge_p(float64x2_t a, float64x2_t b) { return cmp2float(vcgeq_f64(a, b)); }
 FORCEINLINE float64x2_t gt_p(float64x2_t a, float64x2_t b) { return cmp2float(vcgtq_f64(a, b)); }
 
