@@ -469,6 +469,98 @@ FORCEINLINE __m512 sign_p(__m512 x) { return _mm512_or_ps(ones_16s, _mm512_and_p
 
 #endif  // __AVX512F__
 
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
+/*!
+ * Create specialization for array of 2 doubles.
+ */
+#define ARRAY_T Array<double, 2>
+#define SCALAR_T double
+#define REGISTER_T float64x2_t
+#define SIZE_TAG SizeTag::TWO()
+
+static const uint64x2_t abs_mask_2d_u = vdupq_n_u64(abs_mask_d);
+static const uint64x2_t sign_mask_2d_u = vdupq_n_u64(sign_mask_d);
+static const uint64x2_t ones_2d_u = vreinterpretq_u64_f64(vdupq_n_f64(1.0));
+
+FORCEINLINE float64x2_t set1_p(SizeTag::TWO, double p) { return vdupq_n_f64(p); }
+FORCEINLINE float64x2_t load_p(SizeTag::TWO, const double* p) { return vld1q_f64(p); }
+FORCEINLINE float64x2_t loadu_p(SizeTag::TWO, const double* p) { return vld1q_f64(p); }
+FORCEINLINE void store_p(double* p, float64x2_t x) { vst1q_f64(p, x); }
+FORCEINLINE void storeu_p(double* p, float64x2_t x) { vst1q_f64(p, x); }
+/*--- No direct NEON equivalent to streaming stores. ---*/
+FORCEINLINE void stream_p(double* p, float64x2_t x) { vst1q_f64(p, x); }
+
+FORCEINLINE float64x2_t add_p(float64x2_t a, float64x2_t b) { return vaddq_f64(a, b); }
+FORCEINLINE float64x2_t sub_p(float64x2_t a, float64x2_t b) { return vsubq_f64(a, b); }
+FORCEINLINE float64x2_t mul_p(float64x2_t a, float64x2_t b) { return vmulq_f64(a, b); }
+FORCEINLINE float64x2_t div_p(float64x2_t a, float64x2_t b) { return vdivq_f64(a, b); }
+FORCEINLINE float64x2_t max_p(float64x2_t a, float64x2_t b) { return vmaxq_f64(a, b); }
+FORCEINLINE float64x2_t min_p(float64x2_t a, float64x2_t b) { return vminq_f64(a, b); }
+
+/*--- Comparisons return uint64x2_t masks. Convert to 0.0 / 1.0. ---*/
+FORCEINLINE float64x2_t int2float(uint64x2_t a) { return vreinterpretq_f64_u64(a); }
+FORCEINLINE float64x2_t cmp2float(uint64x2_t cmp) { return int2float(vandq_u64(ones_2d_u, cmp)); }
+FORCEINLINE float64x2_t eq_p(float64x2_t a, float64x2_t b) { return cmp2float(vceqq_f64(a, b)); }
+FORCEINLINE float64x2_t lt_p(float64x2_t a, float64x2_t b) { return cmp2float(vcltq_f64(a, b)); }
+FORCEINLINE float64x2_t le_p(float64x2_t a, float64x2_t b) { return cmp2float(vcleq_f64(a, b)); }
+FORCEINLINE float64x2_t ne_p(float64x2_t a, float64x2_t b) { return cmp2float(vmvnq_u64(vceqq_f64(a, b))); }
+FORCEINLINE float64x2_t ge_p(float64x2_t a, float64x2_t b) { return cmp2float(vcgeq_f64(a, b)); }
+FORCEINLINE float64x2_t gt_p(float64x2_t a, float64x2_t b) { return cmp2float(vcgtq_f64(a, b)); }
+
+FORCEINLINE float64x2_t sqrt_p(float64x2_t x) { return vsqrtq_f64(x); }
+FORCEINLINE float64x2_t abs_p(float64x2_t x) { return int2float(vandq_u64(vreinterpretq_u64_f64(x), abs_mask_2d_u)); }
+FORCEINLINE float64x2_t neg_p(float64x2_t x) { return int2float(veorq_u64(vreinterpretq_u64_f64(x), sign_mask_2d_u)); }
+FORCEINLINE float64x2_t sign_p(float64x2_t x) {
+  return int2float(vorrq_u64(ones_2d_u, vandq_u64(vreinterpretq_u64_f64(x), sign_mask_2d_u)));
+}
+
+#include "special_vectorization.hpp"
+
+/*!
+ * Create specialization for array of 4 floats.
+ */
+#define ARRAY_T Array<float, 4>
+#define SCALAR_T float
+#define REGISTER_T float32x4_t
+#define SIZE_TAG SizeTag::FOUR()
+
+static const uint32x4_t abs_mask_4s_u = vdupq_n_u32(abs_mask_s);
+static const uint32x4_t sign_mask_4s_u = vdupq_n_u32(sign_mask_s);
+static const uint32x4_t ones_4s_u = vreinterpretq_u32_f32(vdupq_n_f32(1.0f));
+
+FORCEINLINE float32x4_t set1_p(SizeTag::FOUR, float p) { return vdupq_n_f32(p); }
+FORCEINLINE float32x4_t load_p(SizeTag::FOUR, const float* p) { return vld1q_f32(p); }
+FORCEINLINE float32x4_t loadu_p(SizeTag::FOUR, const float* p) { return vld1q_f32(p); }
+FORCEINLINE void store_p(float* p, float32x4_t x) { vst1q_f32(p, x); }
+FORCEINLINE void storeu_p(float* p, float32x4_t x) { vst1q_f32(p, x); }
+FORCEINLINE void stream_p(float* p, float32x4_t x) { vst1q_f32(p, x); }
+FORCEINLINE float32x4_t add_p(float32x4_t a, float32x4_t b) { return vaddq_f32(a, b); }
+FORCEINLINE float32x4_t sub_p(float32x4_t a, float32x4_t b) { return vsubq_f32(a, b); }
+FORCEINLINE float32x4_t mul_p(float32x4_t a, float32x4_t b) { return vmulq_f32(a, b); }
+FORCEINLINE float32x4_t div_p(float32x4_t a, float32x4_t b) { return vdivq_f32(a, b); }
+FORCEINLINE float32x4_t max_p(float32x4_t a, float32x4_t b) { return vmaxq_f32(a, b); }
+FORCEINLINE float32x4_t min_p(float32x4_t a, float32x4_t b) { return vminq_f32(a, b); }
+
+FORCEINLINE float32x4_t int2float(uint32x4_t a) { return vreinterpretq_f32_u32(a); }
+FORCEINLINE float32x4_t cmp2float(uint32x4_t cmp) { return int2float(vandq_u32(ones_4s_u, cmp)); }
+FORCEINLINE float32x4_t eq_p(float32x4_t a, float32x4_t b) { return cmp2float(vceqq_f32(a, b)); }
+FORCEINLINE float32x4_t lt_p(float32x4_t a, float32x4_t b) { return cmp2float(vcltq_f32(a, b)); }
+FORCEINLINE float32x4_t le_p(float32x4_t a, float32x4_t b) { return cmp2float(vcleq_f32(a, b)); }
+FORCEINLINE float32x4_t ne_p(float32x4_t a, float32x4_t b) { return cmp2float(vmvnq_u32(vceqq_f32(a, b))); }
+FORCEINLINE float32x4_t ge_p(float32x4_t a, float32x4_t b) { return cmp2float(vcgeq_f32(a, b)); }
+FORCEINLINE float32x4_t gt_p(float32x4_t a, float32x4_t b) { return cmp2float(vcgtq_f32(a, b)); }
+
+FORCEINLINE float32x4_t sqrt_p(float32x4_t x) { return vsqrtq_f32(x); }
+FORCEINLINE float32x4_t abs_p(float32x4_t x) { return int2float(vandq_u32(vreinterpretq_u32_f32(x), abs_mask_4s_u)); }
+FORCEINLINE float32x4_t neg_p(float32x4_t x) { return int2float(veorq_u32(vreinterpretq_u32_f32(x), sign_mask_4s_u)); }
+FORCEINLINE float32x4_t sign_p(float32x4_t x) {
+  return int2float(vorrq_u32(ones_4s_u, vandq_u32(vreinterpretq_u32_f32(x), sign_mask_4s_u)));
+}
+
+#include "special_vectorization.hpp"
+
+#endif  // __ARM_NEON__
+
 #undef ARRAY_BOILERPLATE
 
 /// @}
