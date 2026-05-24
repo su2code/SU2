@@ -30,7 +30,7 @@ jobs:
       - id: compute
         run: |
           if [[ "${{ inputs.runner || 'ubuntu-latest' }}" == *arm* ]]; then
-            echo "flags=" >> $GITHUB_OUTPUT
+            echo "flags=-Dcpu-arch=armv9-a+simd" >> $GITHUB_OUTPUT
             echo "werror=" >> $GITHUB_OUTPUT
           else
             echo "flags=-Dcpu-arch=skylake" >> $GITHUB_OUTPUT

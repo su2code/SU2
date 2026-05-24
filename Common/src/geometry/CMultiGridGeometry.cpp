@@ -1005,7 +1005,7 @@ void CMultiGridGeometry::SetControlVolume(const CGeometry* fine_grid, unsigned s
         auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
         Coarse_Volume += fine_grid->nodes->GetVolume(iFinePoint);
       }
-      nodes->SetVolume(iCoarsePoint, Coarse_Volume);
+      nodes->SetVolume(iCoarsePoint, max(Coarse_Volume, EPS));
     }
 
     /*--- Update or not the values of faces at the edge ---*/

@@ -70,7 +70,6 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
    ScalarType* d_vec = vec.GetDevicePointer();
    ScalarType* d_prod = prod.GetDevicePointer();
 
-   HtDTransfer();
    vec.HtDTransfer();
    prod.GPUSetVal(0.0);
 

@@ -34,11 +34,19 @@
 #if (defined(HAVE_MKL) || defined(HAVE_BLAS)) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
 
 /* Function prototypes for the BLAS routines used. */
-extern "C" void dgemm_(char*, char*, const int*, const int*, const int*, const passivedouble*, const passivedouble*,
-                       const int*, const passivedouble*, const int*, const passivedouble*, passivedouble*, const int*);
+#ifdef USE_SINGLE_PRECISION
+#define GEMM_IMPL sgemm_
+#define GEMV_IMPL sgemv_
+#else
+#define GEMM_IMPL dgemm_
+#define GEMV_IMPL dgemv_
+#endif
+extern "C" void GEMM_IMPL(char*, char*, const int*, const int*, const int*, const passivedouble*, const passivedouble*,
+                          const int*, const passivedouble*, const int*, const passivedouble*, passivedouble*,
+                          const int*);
 
-extern "C" void dgemv_(char*, const int*, const int*, const passivedouble*, const passivedouble*, const int*,
-                       const passivedouble*, const int*, const passivedouble*, passivedouble*, const int*);
+extern "C" void GEMV_IMPL(char*, const int*, const int*, const passivedouble*, const passivedouble*, const int*,
+                          const passivedouble*, const int*, const passivedouble*, passivedouble*, const int*);
 #endif
 
 /* Constructor. Initialize the const member variables, if needed. */
@@ -77,7 +85,7 @@ void CBlasStructure::gemm(const int M, const int N, const int K, const su2double
   su2double beta = 0.0;
   char trans = 'N';
 
-  dgemm_(&trans, &trans, &N, &M, &K, &alpha, B, &N, A, &K, &beta, C, &N);
+  GEMM_IMPL(&trans, &trans, &N, &M, &K, &alpha, B, &N, A, &K, &beta, C, &N);
 
 #endif
 
@@ -100,7 +108,7 @@ void CBlasStructure::gemv(const int M, const int N, const su2double* A, const su
   int inc = 1;
   char trans = 'T';
 
-  dgemv_(&trans, &N, &M, &alpha, A, &N, x, &inc, &beta, y, &inc);
+  GEMV_IMPL(&trans, &N, &M, &alpha, A, &N, x, &inc, &beta, y, &inc);
 
 #else
 
