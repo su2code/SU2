@@ -303,7 +303,7 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
 template class CPastixWrapper<su2double>;
 #else
 template class CPastixWrapper<su2mixedfloat>;
-#ifdef USE_MIXED_PRECISION
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
 template class CPastixWrapper<passivedouble>;
 #endif
 #endif

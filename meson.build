@@ -153,8 +153,11 @@ if get_option('enable-cgns')
 endif
 
 # check for mixed precision floating point arithmetic
-if get_option('enable-mixedprec')
+if get_option('enable-mixedprec') or get_option('enable-singleprec')
   su2_cpp_args += '-DUSE_MIXED_PRECISION'
+endif
+if get_option('enable-singleprec')
+  su2_cpp_args += '-DUSE_SINGLE_PRECISION'
 endif
 
 # check if MPI dependencies are found and add them

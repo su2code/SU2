@@ -39,9 +39,9 @@
  * \param[in] kappa - Blending parameter.
  * \return Blended difference for reconstruction from point i.
  */
-FORCEINLINE Double umusclProjection(Double gradProj,
-                                    Double delta,
-                                    Double kappa) {
+FORCEINLINE Double umusclProjection(const Double& gradProj,
+                                    const Double& delta,
+                                    const Double& kappa) {
   /*-------------------------------------------------------------------*/
   /*--- The MUSCL kappa-scheme reconstruction is typically written: ---*/
   /*---     V_L = V_i + 0.25 * dV_ij^kap, where                     ---*/
@@ -68,10 +68,10 @@ FORCEINLINE Double umusclProjection(Double gradProj,
 template<class GradType, size_t nDim>
 FORCEINLINE Double musclReconstruction(const GradType& grad,
                                        const VectorDbl<nDim>& vector_ij,
-                                       const Double delta,
-                                       size_t iVar,
-                                       Double kappa,
-                                       Double umusclRamp) {
+                                       const Double& delta,
+                                       const size_t iVar,
+                                       const Double& kappa,
+                                       const Double& umusclRamp) {
   const Double proj = dot(grad[iVar], vector_ij);
   return umusclRamp * umusclProjection(proj, delta, kappa);
 }
@@ -80,13 +80,13 @@ FORCEINLINE Double musclReconstruction(const GradType& grad,
  * \brief Unlimited reconstruction.
  */
 template<size_t nVarGrad_ = 0, size_t nDim, class VarType, class Gradient_t>
-FORCEINLINE void musclUnlimited(Int iPoint,
-                                Int jPoint,
+FORCEINLINE void musclUnlimited(const Int& iPoint,
+                                const Int& jPoint,
                                 const VectorDbl<nDim>& vector_ij,
                                 const Gradient_t& gradient,
                                 CPair<VarType>& V,
-                                Double kappa,
-                                Double umusclRamp) {
+                                const Double& kappa,
+                                const Double& umusclRamp) {
   constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
   auto grad_i = gatherVariables<nVarGrad,nDim>(iPoint, gradient);
@@ -110,14 +110,14 @@ FORCEINLINE void musclUnlimited(Int iPoint,
  * \brief Limited reconstruction with point-based limiter.
  */
 template<size_t nVarGrad_ = 0, size_t nDim, class VarType, class Limiter_t, class Gradient_t>
-FORCEINLINE void musclPointLimited(Int iPoint,
-                                   Int jPoint,
+FORCEINLINE void musclPointLimited(const Int& iPoint,
+                                   const Int& jPoint,
                                    const VectorDbl<nDim>& vector_ij,
                                    const Limiter_t& limiter,
                                    const Gradient_t& gradient,
                                    CPair<VarType>& V,
-                                   Double kappa,
-                                   Double umusclRamp) {
+                                   const Double& kappa,
+                                   const Double& umusclRamp) {
   constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
   auto lim_i = gatherVariables<nVarGrad>(iPoint, limiter);
@@ -144,13 +144,13 @@ FORCEINLINE void musclPointLimited(Int iPoint,
  * \brief Limited reconstruction with edge-based limiter.
  */
 template<size_t nVarGrad_ = 0, size_t nDim, class VarType, class Gradient_t>
-FORCEINLINE void musclEdgeLimited(Int iPoint,
-                                  Int jPoint,
+FORCEINLINE void musclEdgeLimited(const Int& iPoint,
+                                  const Int& jPoint,
                                   const VectorDbl<nDim>& vector_ij,
                                   const Gradient_t& gradient,
                                   CPair<VarType>& V,
-                                  Double kappa,
-                                  Double umusclRamp) {
+                                  const Double& kappa,
+                                  const Double& umusclRamp) {
   constexpr auto nVarGrad = nVarGrad_ > 0 ? nVarGrad_ : VarType::nVar;
 
   auto grad_i = gatherVariables<nVarGrad,nDim>(iPoint, gradient);
@@ -191,13 +191,14 @@ FORCEINLINE void musclEdgeLimited(Int iPoint,
  * \return Pair of primitive variables.
  */
 template<class ReconVarType, class PrimVarType, size_t nDim, class VariableType>
-FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int jPoint,
+FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
+                                                      const Int& iPoint, const Int& jPoint,
                                                       const su2double& gamma,
                                                       const su2double& gasConst,
-                                                      bool muscl,
+                                                      const bool muscl,
                                                       const su2double& kappa,
                                                       const su2double& umusclRamp,
-                                                      LIMITER limiterType,
+                                                      const LIMITER limiterType,
                                                       const CPair<PrimVarType>& V1st,
                                                       const VectorDbl<nDim>& vector_ij,
                                                       const VariableType& solution) {
@@ -278,8 +279,8 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(Int iEdge, Int iPoint, Int
  * \brief Compute and return the P tensor (compressible flow, ideal gas).
  */
 template<size_t nDim, class RandomAccessIterator>
-FORCEINLINE MatrixDbl<nDim+2> pMatrix(Double gamma, Double density, const RandomAccessIterator& velocity,
-                                      Double projVel, Double speedSound, const VectorDbl<nDim>& normal) {
+FORCEINLINE MatrixDbl<nDim+2> pMatrix(const Double& gamma, const Double& density, const RandomAccessIterator& velocity,
+                                      const Double& projVel, const Double& speedSound, const VectorDbl<nDim>& normal) {
   MatrixDbl<nDim+2> pMat;
   const Double vel2 = 0.5*squaredNorm<nDim>(velocity);
 
@@ -340,8 +341,9 @@ FORCEINLINE MatrixDbl<nDim+2> pMatrix(Double gamma, Double density, const Random
  * \brief Compute and return the inverse P tensor (compressible flow, ideal gas).
  */
 template<size_t nDim, class RandomAccessIterator>
-FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(Double gamma, Double density, const RandomAccessIterator& velocity,
-                                         Double projVel, Double speedSound, const VectorDbl<nDim>& normal) {
+FORCEINLINE MatrixDbl<nDim+2> pMatrixInv(const Double& gamma, const Double& density,
+                                         const RandomAccessIterator& velocity, const Double& projVel,
+                                         const Double& speedSound, const VectorDbl<nDim>& normal) {
   MatrixDbl<nDim+2> pMatInv;
 
   const Double c2 = pow(speedSound,2);
@@ -421,9 +423,9 @@ FORCEINLINE VectorDbl<nDim+2> inviscidProjFlux(const PrimVarType& V,
  * \brief Jacobian of the convective flux (compressible flow, ideal gas).
  */
 template<size_t nDim, class RandomAccessIterator>
-FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(Double gamma, RandomAccessIterator velocity,
-                                              Double energy, const VectorDbl<nDim>& normal,
-                                              Double scale) {
+FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(const Double& gamma, RandomAccessIterator velocity,
+                                              const Double& energy, const VectorDbl<nDim>& normal,
+                                              const Double& scale) {
   MatrixDbl<nDim+2> jac;
 
   Double projVel = dot(velocity, normal);
@@ -459,9 +461,9 @@ FORCEINLINE MatrixDbl<nDim+2> inviscidProjJac(Double gamma, RandomAccessIterator
  * \brief (Low) Dissipation coefficient for Roe schemes.
  */
 template<class VariableType>
-FORCEINLINE Double roeDissipation(Int iPoint,
-                                  Int jPoint,
-                                  ENUM_ROELOWDISS type,
+FORCEINLINE Double roeDissipation(const Int& iPoint,
+                                  const Int& jPoint,
+                                  const ENUM_ROELOWDISS type,
                                   const VariableType& solution) {
   if (type == NO_ROELOWDISS) {
     return 1.0;
@@ -511,10 +513,10 @@ FORCEINLINE Double roeDissipation(Int iPoint,
  * \brief Correct spectral radius (avgLambda) for stretching.
  */
 template<class VariableType, class T>
-FORCEINLINE Double correctedSpectralRadius(Int iPoint,
-                                           Int jPoint,
-                                           Double avgLambda,
-                                           T stretchParam,
+FORCEINLINE Double correctedSpectralRadius(const Int& iPoint,
+                                           const Int& jPoint,
+                                           const Double& avgLambda,
+                                           const T& stretchParam,
                                            const VariableType& solution) {
 
   const auto lambda_i = gatherVariables(iPoint, solution.GetLambda());
@@ -531,7 +533,7 @@ FORCEINLINE Double correctedSpectralRadius(Int iPoint,
  */
 template<class VariableType, size_t nVar>
 FORCEINLINE void scalarDissipationJacobian(const VariableType& V,
-                                           Double gamma,
+                                           const Double& gamma,
                                            Double dissipConst,
                                            MatrixDbl<nVar>& jac) {
   /*--- Diagonal entries. ---*/
