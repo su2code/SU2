@@ -57,6 +57,8 @@ CInterface::~CInterface() {
 
   delete[] SpanValueCoeffTarget;
   delete[] SpanLevelDonor;
+
+  delete NextInterface;
 }
 
 void CInterface::BroadcastData(const CInterpolator& interpolator,

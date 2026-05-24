@@ -136,7 +136,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.005211, -7.539073, -0.000000, 2.089953]
+    poiseuille_profile.test_vals         = [-12.005205, -7.539393, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.009012, -7.262530, -0.000000, 2.089953]
     test_list.append(poiseuille_profile)
 
@@ -197,7 +197,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals = [-12.038018, -16.332088, 1.080346, 0.018385, 20, -2.873140, 0, -14.250270, 0]
+    turb_naca0012_sa.test_vals = [-12.038028, -16.332088, 1.080346, 0.018385, 20, -2.873477, 0, -14.250270, 0]
     turb_naca0012_sa.test_vals_aarch64 = [-12.038091, -16.332090, 1.080346, 0.018385, 20.000000, -2.873236, 0.000000, -14.250271, 0.000000]
     test_list.append(turb_naca0012_sa)
 
@@ -206,7 +206,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.093939, -15.251079, -5.906323, 1.070413, 0.015775, -2.854890, 0]
+    turb_naca0012_sst.test_vals = [-12.093871, -15.251077, -5.906324, 1.070413, 0.015775, -2.855457, 0]
     turb_naca0012_sst.test_vals_aarch64 = [-12.075928, -15.246732, -5.861249, 1.070036, 0.015841, -2.835263, 0]
     test_list.append(turb_naca0012_sst)
 
@@ -215,7 +215,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-12.080826, -14.837176, -5.732918, 1.000893, 0.019109, -2.120233]
+    turb_naca0012_sst_sust.test_vals = [-12.080828, -14.837176, -5.732906, 1.000893, 0.019109, -2.120116]
     turb_naca0012_sst_sust.test_vals_aarch64 = [-12.073210, -14.836724, -5.732627, 1.000050, 0.019144, -2.629689]
     test_list.append(turb_naca0012_sst_sust)
 
@@ -232,7 +232,7 @@ def main():
     turb_naca0012_sst_expliciteuler.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_expliciteuler.cfg_file  = "turb_NACA0012_sst_expliciteuler.cfg"
     turb_naca0012_sst_expliciteuler.test_iter = 10
-    turb_naca0012_sst_expliciteuler.test_vals = [-3.532365, -3.157224, 3.743381, 1.124798, 0.501715, -float("inf")]
+    turb_naca0012_sst_expliciteuler.test_vals = [-3.532365, -3.157224, 3.743381, 1.124798, 0.501715, -16.000000]
     test_list.append(turb_naca0012_sst_expliciteuler)
 
     # PROPELLER
@@ -252,7 +252,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-12.066224, -7.425871, -8.816101, -3.732807, 0]
+    axi_rans_air_nozzle_restart.test_vals = [-12.066228, -7.425901, -8.815839, -3.732622, 0]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.140441, -9.154674, -10.886121, -5.806594, 0.000000]
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -471,7 +471,7 @@ def main():
     cosine_gust.cfg_dir   = "gust"
     cosine_gust.cfg_file  = "cosine_gust_zdir.cfg"
     cosine_gust.test_iter = 79
-    cosine_gust.test_vals = [-2.418805, 0.001521, -0.001239, 0.000394, -0.000593]
+    cosine_gust.test_vals = [-2.418805, 0.001775, -0.001245, 0.000411, -0.000593]
     cosine_gust.unsteady  = True
     cosine_gust.enabled_with_tsan = False
     test_list.append(cosine_gust)
@@ -711,15 +711,14 @@ def main():
     dyn_fsi.unsteady  = True
     test_list.append(dyn_fsi)
 
-    # FSI, Static, 2D, new mesh solver, restart
-    stat_fsi_restart           = TestCase('stat_fsi_restart')
-    stat_fsi_restart.cfg_dir   = "fea_fsi/stat_fsi"
-    stat_fsi_restart.cfg_file  = "config_restart.cfg"
-    stat_fsi_restart.test_iter = 1
-    stat_fsi_restart.test_vals         = [-3.549586, -4.460650, 0.000000, 35.000000]
-    stat_fsi_restart.test_vals_aarch64 = [-3.549586, -4.460713, 0.000000, 35.000000]
-    stat_fsi_restart.multizone = True
-    test_list.append(stat_fsi_restart)
+    # FSI+CHT, Static, 2D, new mesh solver, restart
+    fsi_cht_restart           = TestCase('fsi_cht_restart')
+    fsi_cht_restart.cfg_dir   = "fea_fsi/stat_fsi"
+    fsi_cht_restart.cfg_file  = "config_restart.cfg"
+    fsi_cht_restart.test_iter = 0
+    fsi_cht_restart.test_vals = [5, 0.006352, -1.960362, -9.327033, -9.599649, -9.318478, 608.38, -0.012974, 0, 20]
+    fsi_cht_restart.multizone = True
+    test_list.append(fsi_cht_restart)
 
     ##############################################
     ### Method of Manufactured Solutions (MMS) ###

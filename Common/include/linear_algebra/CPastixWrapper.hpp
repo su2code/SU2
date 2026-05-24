@@ -62,8 +62,8 @@ class CPastixWrapper {
   vector<pastix_int_t> perm;     /*!< \brief Ordering computed by PaStiX. */
   vector<su2mixedfloat> workvec; /*!< \brief RHS vector which then becomes the solution. */
 
-  pastix_int_t iparm[IPARM_SIZE];  /*!< \brief Integer parameters for PaStiX. */
-  passivedouble dparm[DPARM_SIZE]; /*!< \brief Floating point parameters for PaStiX. */
+  pastix_int_t iparm[IPARM_SIZE]; /*!< \brief Integer parameters for PaStiX. */
+  double dparm[DPARM_SIZE];       /*!< \brief Floating point parameters for PaStiX. */
 
   struct {
     unsigned long nVar = 0;

@@ -36,7 +36,7 @@
  * \brief Average gradients at i/j points.
  */
 template<size_t nVar, size_t nDim, class GradientType>
-FORCEINLINE MatrixDbl<nVar,nDim> averageGradient(Int iPoint, Int jPoint,
+FORCEINLINE MatrixDbl<nVar,nDim> averageGradient(const Int& iPoint, const Int& jPoint,
                                                  const GradientType& gradient) {
   auto avgGrad = gatherVariables<nVar,nDim>(iPoint, gradient);
   auto grad_j = gatherVariables<nVar,nDim>(jPoint, gradient);
@@ -55,7 +55,7 @@ FORCEINLINE MatrixDbl<nVar,nDim> averageGradient(Int iPoint, Int jPoint,
 template<size_t nVar, size_t nDim, class PrimitiveType>
 FORCEINLINE void correctGradient(const PrimitiveType& V,
                                  const VectorDbl<nDim>& vector_ij,
-                                 Double dist2_ij,
+                                 const Double& dist2_ij,
                                  MatrixDbl<nVar,nDim>& avgGrad) {
   for (size_t iVar = 0; iVar < nVar; ++iVar) {
     Double corr = (dot(avgGrad[iVar],vector_ij) - V.j.all(iVar) + V.i.all(iVar)) / dist2_ij;
@@ -70,7 +70,7 @@ FORCEINLINE void correctGradient(const PrimitiveType& V,
  * \note Second viscosity term ignored.
  */
 template<size_t nVar, size_t nDim>
-FORCEINLINE MatrixDbl<nDim> stressTensor(Double viscosity,
+FORCEINLINE MatrixDbl<nDim> stressTensor(const Double& viscosity,
                                          const MatrixDbl<nVar,nDim>& grad) {
   /*--- Hydrostatic term. ---*/
   Double velDiv = 0.0;
@@ -154,7 +154,7 @@ FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau) {
  *        wall function) magnitude in the tangential direction.
  */
 template<class Container, size_t nDim>
-FORCEINLINE void addTauWall(Int iPoint, Int jPoint,
+FORCEINLINE void addTauWall(const Int& iPoint, const Int& jPoint,
                             const Container& tauWall,
                             const VectorDbl<nDim>& unitNormal,
                             MatrixDbl<nDim>& tau) {
@@ -185,7 +185,7 @@ FORCEINLINE void addTauWall(Int iPoint, Int jPoint,
 template<size_t nVar, size_t nDim, class PrimitiveType>
 FORCEINLINE MatrixDbl<nDim,nVar> stressTensorJacobian(const PrimitiveType& V,
                                                       const VectorDbl<nDim>& normal,
-                                                      Double dist_ij) {
+                                                      const Double& dist_ij) {
   Double viscosity = V.laminarVisc() + V.eddyVisc();
   Double xi = viscosity / (V.density() * dist_ij);
   MatrixDbl<nDim,nVar> jac;

@@ -549,19 +549,19 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
 
   /*--- Select the transfer method according to the magnitudes being transferred ---*/
 
-  auto BroadcastData = [&](int donorSol, int targetSol) {
-    interface_container[donorZone][targetZone]->BroadcastData(
-      *interpolator_container[donorZone][targetZone].get(),
-      solver_container[donorZone][INST_0][MESH_0][donorSol],
-      solver_container[targetZone][INST_0][MESH_0][targetSol],
-      geometry_container[donorZone][INST_0][MESH_0],
-      geometry_container[targetZone][INST_0][MESH_0],
-      config_container[donorZone],
-      config_container[targetZone]);
-  };
+  auto HandleInterfaceType = [&] (const auto interface_type, auto* interface) {
+    auto BroadcastData = [&](int donorSol, int targetSol) {
+      interface->BroadcastData(
+        *interpolator_container[donorZone][targetZone],
+        solver_container[donorZone][INST_0][MESH_0][donorSol],
+        solver_container[targetZone][INST_0][MESH_0][targetSol],
+        geometry_container[donorZone][INST_0][MESH_0],
+        geometry_container[targetZone][INST_0][MESH_0],
+        config_container[donorZone],
+        config_container[targetZone]);
+    };
 
-  switch (interface_types[donorZone][targetZone]) {
-
+    switch (interface_type) {
     case SLIDING_INTERFACE:
       BroadcastData(FLOW_SOL, FLOW_SOL);
 
@@ -598,35 +598,49 @@ bool CMultizoneDriver::TransferData(unsigned short donorZone, unsigned short tar
     case FLOW_TRACTION:
       BroadcastData(FLOW_SOL, FEA_SOL);
       break;
-    case MIXING_PLANE:
-    {
+    case MIXING_PLANE: {
       const auto nMarkerInt = config_container[donorZone]->GetnMarker_MixingPlaneInterface() / 2;
 
-      /*--- Transfer the average value from the donorZone to the targetZone ---*/
-      /*--- Loops over the mixing planes defined in the config file to find the correct mixing plane for the donor-target combination ---*/
+      /*--- Transfer the average value from the donorZone to the targetZone
+       * Loops over the mixing planes defined in the config file to find the
+       * correct mixing plane for the donor-target combination ---*/
       for (auto iMarkerInt = 1; iMarkerInt <= nMarkerInt; iMarkerInt++) {
-            interface_container[donorZone][targetZone]->AllgatherAverage(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                config_container[donorZone], config_container[targetZone], iMarkerInt );
+        interface->AllgatherAverage(
+          solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
+          solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+          geometry_container[donorZone][INST_0][MESH_0],
+          geometry_container[targetZone][INST_0][MESH_0],
+          config_container[donorZone], config_container[targetZone], iMarkerInt);
       }
 
       /*--- Set average value donorZone->targetZone ---*/
-      interface_container[donorZone][targetZone]->SetAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
+      interface->SetAverageValues(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],
+                                  solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], donorZone);
 
       /*--- Set average geometrical properties FROM donorZone IN targetZone ---*/
-      geometry_container[targetZone][INST_0][MESH_0]->SetAvgTurboGeoValues(config_container[iZone],geometry_container[iZone][INST_0][MESH_0], iZone);
-
-      break;
-    }
+      geometry_container[targetZone][INST_0][MESH_0]->SetAvgTurboGeoValues(
+          config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+     } break;
     case NO_TRANSFER:
     case ZONES_ARE_EQUAL:
     case NO_COMMON_INTERFACE:
       break;
     default:
-      if(rank == MASTER_NODE)
+      if (rank == MASTER_NODE) {
         cout << "WARNING: One of the intended interface transfer routines is not "
              << "known to the chosen driver and has not been executed." << endl;
+      }
       break;
+    }
+  };
+
+  auto type = interface_types[donorZone][targetZone];
+  auto* interface = interface_container[donorZone][targetZone];
+
+  while (interface != nullptr) {
+    HandleInterfaceType(type, interface);
+    type = interface->NextInterfaceType;
+    interface = interface->NextInterface;
   }
 
   return UpdateMesh;
