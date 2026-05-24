@@ -204,8 +204,7 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
     SU2_MPI::Error("Error analyzing matrix: " + std::to_string(rc), CURRENT_FUNCTION);
   }
 
-  if (mpi_rank == MASTER_NODE && verb > 0)
-    cout << " +--------------------------------------------------------------------+" << endl;
+  if (mpi_rank == MASTER_NODE && verb > 0) cout << "+-------------------------------------------------+" << endl;
 
   isinitialized = true;
 }
@@ -250,10 +249,8 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
   /*--- Yes ---*/
 
   if (mpi_rank == MASTER_NODE && verb > 0) {
-    cout << endl;
-    cout << " +--------------------------------------------------------------------+" << endl;
-    cout << " +              PaStiX : Parallel Sparse matriX package               +" << endl;
-    cout << " +--------------------------------------------------------------------+" << endl;
+    cout << "\n+-------------------------------------------------+";
+    cout << "\n+     PaStiX : Parallel Sparse matriX package     +" << endl;
   }
 
   const unsigned long szBlk = matrix.nVar * matrix.nVar, nNonZero = values.size();
@@ -297,8 +294,7 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
     SU2_MPI::Error("Error factorizing matrix: " + std::to_string(rc), CURRENT_FUNCTION);
   }
 
-  if (mpi_rank == MASTER_NODE && verb > 0)
-    cout << " +--------------------------------------------------------------------+" << endl << endl;
+  if (mpi_rank == MASTER_NODE && verb > 0) cout << "+-------------------------------------------------+\n" << endl;
 
   isfactorized = true;
 }
