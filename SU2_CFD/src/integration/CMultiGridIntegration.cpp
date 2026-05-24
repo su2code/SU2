@@ -45,11 +45,12 @@ static void adaptMGDampingFactor(const unsigned short* performed,
                                   GetCfg getConfigured,
                                   unsigned short levelStart, unsigned short levelEnd,
                                   GetCur getCurrent, SetPersist setPersist,
-                                  passivedouble crossCycleRatio) {
+                                  passivedouble crossCycleRatio,
+                                  const passivedouble* worstStepRatio = nullptr) {
 
-  bool any_diverge = false; /*--- smoother made the defect grow by >5% ---*/
+  bool any_diverge = false; /*--- smoother made the defect grow by >5%, or amplifying early exit ---*/
   bool any_stagnant = false; /*--- hit max iters without reducing defect ---*/
-  bool all_early = true; /*--- every level exited before hitting max ---*/
+  bool all_early = true; /*--- every level exited before hitting max (and without amplification) ---*/
   bool all_improving = true; /*--- all max-hit levels reduced defect ---*/
   int local_inspected = 0;
 
@@ -64,11 +65,26 @@ static void adaptMGDampingFactor(const unsigned short* performed,
      *    tau/F >> 1, giving a reliable signal of whether the smoother is helping. ---*/
     const bool diverging = (d0 > 0.0) && (d1 > d0 * 1.05);
     const bool improving = (d0 > 0.0) && (d1 < d0);
+    /*--- An early exit caused by amplification on the first inter-sweep step is not a
+     *    "converged quickly" signal — it means the smoother is actively harming the
+     *    solution.  Treat it the same as divergence so the controller reduces the
+     *    damping factor rather than increasing it. ---*/
+    /*--- Two-tier amplification response:
+     *    Mild amplification (1 < rw <= MILD_THRESHOLD): treat as stagnation.
+     *      Avoids treating floating-point-noise (rw=1.001) as a blow-up event,
+     *      which would otherwise pin damping at the floor indefinitely.
+     *    Strong amplification (rw > MILD_THRESHOLD): treat as divergence. ---*/
+    constexpr passivedouble MILD_AMP_THRESHOLD = 1.05;
+    const bool mildly_amplifying = !hit_max && worstStepRatio
+        && (worstStepRatio[lvl] > 1.0) && (worstStepRatio[lvl] <= MILD_AMP_THRESHOLD);
+    const bool strongly_amplifying = !hit_max && worstStepRatio
+        && (worstStepRatio[lvl] > MILD_AMP_THRESHOLD);
 
-    if (hit_max) all_early = false;
+    if (hit_max || mildly_amplifying || strongly_amplifying) all_early = false;
     if (!improving) all_improving = false;
     if (hit_max && !improving) any_stagnant = true;
-    if (diverging) any_diverge = true;
+    if (mildly_amplifying) any_stagnant = true;
+    if (diverging || strongly_amplifying) any_diverge = true;
   }
   if (local_inspected == 0) return;
 
@@ -113,7 +129,8 @@ void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config, passivedoub
     /*levelStart=*/1, nMGLevels,
     [config](){ return config->GetDamp_Res_Restric(); },
     [config](su2double v){ config->SetDamp_Res_Restric(v); },
-    crossCycleRatio);
+    crossCycleRatio,
+    lastPreSmoothWorstStepRatio);
 }
 
 void CMultiGridIntegration::adaptProlongationDamping(CConfig* config, passivedouble crossCycleRatio) {
@@ -128,7 +145,8 @@ void CMultiGridIntegration::adaptProlongationDamping(CConfig* config, passivedou
     /*levelStart=*/0, static_cast<unsigned short>(nMGLevels - 1),
     [config](){ return config->GetDamp_Correc_Prolong(); },
     [config](su2double v){ config->SetDamp_Correc_Prolong(v); },
-    crossCycleRatio);
+    crossCycleRatio,
+    lastPostSmoothWorstStepRatio);
 }
 
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
@@ -248,12 +266,17 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     if (cfl_base < EPS)
       cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh));
 
-    constexpr passivedouble MG_CFL_CAP_RATIO = 1.0 / 4.0;
+    const auto& cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
 
     passivedouble CFL_local = cfl_base;
     for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
       const unsigned short lvl = iMesh + 1;
-      CFL_local *= MG_CFL_CAP_RATIO;
+      /*--- Use per-level scaling factor; clamp to (0,1] to prevent coarse CFL from
+       *    exceeding the fine CFL.  Index into cflScaling is iMesh (0-based transition). ---*/
+      const passivedouble scale = (iMesh < cflScaling.size())
+          ? max(passivedouble{1e-6}, min(passivedouble{1.0}, SU2_TYPE::GetValue(cflScaling[iMesh])))
+          : passivedouble{0.25};
+      CFL_local *= scale;
       config[iZone]->SetCFL(lvl, CFL_local);
     }
   }
@@ -316,8 +339,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
             unsigned short worstStep) -> std::string {
         /*--- Show: steps taken / max + exit reason + initial defect scale + d1/d0 ratio.
          *    r=d1/d0 < 1 means smoother reduced the defect (good).
-         *    r > 1 means smoother grew the defect (drives SCALE_DIVERGE damping cut).
-         *    Exit reason: T=threshold, S=stagnation, ' '=ran to completion. ---*/
+         *    r > 1 means smoother grew the defect.
+         *    Exit reason: T=threshold, S=clean stagnation, A=amplifying stagnation,
+         *                 ' '=ran to completion. ---*/
         std::ostringstream ss;
         ss << act << "/" << mx;
         if (act < mx) ss << reason;  /*--- only tag early exits ---*/
@@ -572,7 +596,9 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
                 lastPreSmoothExitReason[iMesh] = 'T';
                 mg_early_exit_flag = true;
               } else if (defect >= mg_prev_smooth_rms * stag_tol) {
-                lastPreSmoothExitReason[iMesh] = 'S';
+                /*--- 'A' = amplifying-stagnation (defect grew vs previous step).
+                 *    'S' = clean stagnation (defect is not improving but also not growing). ---*/
+                lastPreSmoothExitReason[iMesh] = (defect > mg_prev_smooth_rms) ? 'A' : 'S';
                 mg_early_exit_flag = true;
               }
             }
@@ -667,7 +693,9 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
                 lastPostSmoothExitReason[iMesh] = 'T';
                 mg_early_exit_flag = true;
               } else if (defect >= mg_prev_smooth_rms * stag_tol) {
-                lastPostSmoothExitReason[iMesh] = 'S';
+                /*--- 'A' = amplifying-stagnation (defect grew vs previous step).
+                 *    'S' = clean stagnation (defect is not improving but also not growing). ---*/
+                lastPostSmoothExitReason[iMesh] = (defect > mg_prev_smooth_rms) ? 'A' : 'S';
                 mg_early_exit_flag = true;
               }
             }

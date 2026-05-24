@@ -1993,6 +1993,10 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
+  /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Maximum number of nodes on a wall-normal implicit agglomeration line (including the wall seed node). DEFAULT: 20 \ingroup Config*/
+  addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
+  /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i). If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
+  addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
 
   /*!\par CONFIG_CATEGORY: Spatial Discretization \ingroup Config*/
   /*--- Options related to the spatial discretization ---*/
@@ -4787,6 +4791,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                [](unsigned short  ) { return (unsigned short)0; });
     fillSmooth(nMG_CorrecSmooth_p, MG_CorrecSmooth_p, MGOptions.MG_CorrecSmooth,
                [](unsigned short  ) { return (unsigned short)0; });
+
+    /*--- Fill MG_CflScaling to size nMGLevels (one entry per coarse level transition). ---*/
+    MGOptions.MG_CflScaling.resize(nMGLevels);
+    if (nMG_CflScaling_p != 0) {
+      for (unsigned short i = 0; i < nMGLevels; ++i)
+        MGOptions.MG_CflScaling[i] = (i < nMG_CflScaling_p) ? MG_CflScaling_p[i] : MG_CflScaling_p[nMG_CflScaling_p - 1];
+    } else {
+      for (unsigned short i = 0; i < nMGLevels; ++i)
+        MGOptions.MG_CflScaling[i] = 0.25;
+    }
   }
 
   /*--- Override MG Smooth parameters ---*/
@@ -7532,10 +7546,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         MGTable.AddColumn("Presmooth",     10);
         MGTable.AddColumn("PostSmooth",    10);
         MGTable.AddColumn("CorrectSmooth", 10);
+        MGTable.AddColumn("CFL Scaling",   12);
         MGTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
         MGTable.PrintHeader();
         for (unsigned short iLevel = 0; iLevel < nMGLevels+1; iLevel++) {
-          MGTable << iLevel << MGOptions.MG_PreSmooth[iLevel] << MGOptions.MG_PostSmooth[iLevel] << MGOptions.MG_CorrecSmooth[iLevel];
+          const string cflStr = (iLevel == 0) ? "-" : std::to_string(MGOptions.MG_CflScaling[iLevel-1]).substr(0,6);
+          MGTable << iLevel << MGOptions.MG_PreSmooth[iLevel] << MGOptions.MG_PostSmooth[iLevel] << MGOptions.MG_CorrecSmooth[iLevel] << cflStr;
         }
         MGTable.PrintFooter();
       }
