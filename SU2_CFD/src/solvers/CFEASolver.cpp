@@ -1833,14 +1833,13 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
     /*--- RTOL = norm(Residual(k): ABSOLUTE, norm of the residual (T-F) ---*/
     /*--- ETOL = Delta_U(k) * Residual(k): ABSOLUTE, energy norm ---*/
 
-    SU2_OMP_PARALLEL
-    {
+    SU2_OMP_PARALLEL {
+
     su2double utol = LinSysSol.norm();
     su2double rtol = LinSysRes.norm();
     su2double etol = fabs(LinSysSol.dot(LinSysRes));
 
-    SU2_OMP_MASTER
-    {
+    SU2_OMP_MASTER {
       Conv_Check[0] = utol;
       Conv_Check[1] = rtol;
       Conv_Check[2] = etol;
@@ -1872,8 +1871,14 @@ void CFEASolver::Postprocessing(CGeometry *geometry, CConfig *config, CNumerics 
     END_SU2_OMP_FOR
 
     /*--- "Add" residuals from all threads to global residual variables. ---*/
-    ResidualReductions_FromAllThreads(geometry, config, resRMS,resMax,idxMax);
+    ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
 
+    SU2_OMP_MASTER {
+      Conv_Check[0] = Residual_RMS[0];
+      Conv_Check[1] = Residual_RMS[1];
+      Conv_Check[2] = nDim == 3 ? Residual_RMS[2] : 0;
+    }
+    END_SU2_OMP_MASTER
     }
     END_SU2_OMP_PARALLEL
 
