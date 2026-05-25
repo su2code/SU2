@@ -30,70 +30,43 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 
 namespace {
-/*!\cond PRIVATE Helper: adapts a single MG damping factor from the worst
- *  per-sweep amplification ratio observed across the inspected coarse levels.
+
+/*!\cond PRIVATE
+ *  Core three-state damping update used by both restriction and prolongation controllers.
  *
- *  Two tuning parameters: THRESHOLD and SCALE_DOWN.
- *  SCALE_UP is derived as 1 + (1-SCALE_DOWN)/4 so recovery is 4x slower than decay.
+ *  signal < lo   → SCALE_UP   (improving)
+ *  signal >= hi  → SCALE_DOWN (amplifying; suppressed after FREEZE_AFTER cycles at CLAMP_MIN)
+ *  [lo, hi)      → no change  (neutral dead zone)
  *
- *  Three states (checked in order):
- *    amplifying  worst_rw > 1.0  (physics boundary, not tuned) → SCALE_DOWN
- *                  suppressed once the factor has been pinned at CLAMP_MIN for
- *                  FREEZE_AFTER consecutive cycles.
- *    improving   worst_rw < THRESHOLD                          → SCALE_UP
- *    neutral     THRESHOLD <= worst_rw <= 1.0                  → no change
- *
- *  floorCount must be a persistent member variable passed by reference; it
- *  counts consecutive cycles spent at CLAMP_MIN while amplifying and resets
- *  to zero whenever the smoother leaves the amplifying state.
+ *  SCALE_UP = 1 + (1-SCALE_DOWN)/4, so recovery is 4x slower than decay.
+ *  floorCount: persistent member passed by reference; counts consecutive amplifying
+ *  cycles spent at CLAMP_MIN; resets whenever the amplifying state is left.
  \endcond */
-template <typename GetCfg, typename GetCur, typename SetPersist>
-static void adaptMGDampingFactor(GetCfg getConfigured,
-                                  unsigned short levelStart, unsigned short levelEnd,
-                                  GetCur getCurrent, SetPersist setPersist,
-                                  const passivedouble* worstStepRatio,
-                                  int& floorCount) {
-
-  /*--- Worst per-sweep amplification ratio across all active levels.
-   *    A T-exit has rw < threshold < 1; an A-exit has rw > 1; a Full exit
-   *    has rw equal to the worst sweep-to-sweep ratio seen across all sweeps.
-   *    Taking the max gives the single most pessimistic signal for this cycle. ---*/
-  passivedouble worst_rw = 0.0;
-  int n_active = 0;
-  for (auto lvl = levelStart; lvl <= levelEnd; ++lvl) {
-    if (getConfigured(lvl) == 0) continue;
-    ++n_active;
-    worst_rw = max(worst_rw, worstStepRatio[lvl]);
-  }
-  if (n_active == 0) return;
-
-  constexpr passivedouble THRESHOLD  = 0.85;  ///< improving if worst_rw < THRESHOLD; dead zone [THRESHOLD, 1.0]
-  constexpr passivedouble SCALE_DOWN = 0.75;  ///< decay factor when amplifying
-  constexpr passivedouble SCALE_UP   = 1.0 + (1.0 - SCALE_DOWN) / 4.0;  ///< 1.0625; recovery 4x slower than decay
-  constexpr passivedouble CLAMP_MIN  = 0.25;
-  constexpr passivedouble CLAMP_MAX  = 0.95;
+static su2double applyDampingUpdate(su2double factor, passivedouble signal,
+                                     passivedouble lo, passivedouble hi,
+                                     int& floorCount) {
+  constexpr passivedouble SCALE_DOWN   = 0.75;
+  constexpr passivedouble SCALE_UP     = 1.0 + (1.0 - SCALE_DOWN) / 4.0;  ///< 1.0625; recovery 4x slower than decay
+  constexpr passivedouble CLAMP_MIN    = 0.45;
+  constexpr passivedouble CLAMP_MAX    = 0.95;
   constexpr int           FREEZE_AFTER = 5;
 
-  su2double factor = getCurrent();
   const bool at_floor   = (factor <= CLAMP_MIN + 1e-6);
-  const bool amplifying = (worst_rw > 1.0);   ///< physics boundary: step ratio > 1 is amplification
-  const bool improving  = (worst_rw > 0.0) && (worst_rw < THRESHOLD);
+  const bool amplifying = (signal >= hi);
+  const bool improving  = (signal > 0.0) && (signal < lo);
 
   if (amplifying) {
     /*--- Stop re-applying SCALE_DOWN once pinned for FREEZE_AFTER cycles:
      *    at that point the amplification is structural and the controller
      *    has already done everything it can. ---*/
-    if (!(at_floor && floorCount >= FREEZE_AFTER))
-      factor *= SCALE_DOWN;
+    if (!(at_floor && floorCount >= FREEZE_AFTER)) factor *= SCALE_DOWN;
     if (at_floor) ++floorCount;
   } else {
     floorCount = 0;
     if (improving) factor *= SCALE_UP;
     /*--- else neutral: no change ---*/
   }
-
-  factor = max(su2double{CLAMP_MIN}, min(su2double{CLAMP_MAX}, factor));
-  setPersist(factor);
+  return max(su2double{CLAMP_MIN}, min(su2double{CLAMP_MAX}, factor));
 }
 
 inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
@@ -110,51 +83,37 @@ void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
   SU2_ZONE_SCOPED
   const auto& mgOpts = config->GetMGOptions();
   const unsigned short nMGLevels = config->GetnMGLevels();
-  adaptMGDampingFactor(
-    [&mgOpts](unsigned short lvl){ return mgOpts.MG_PreSmooth[lvl]; },
-    /*levelStart=*/1, nMGLevels,
-    [config](){ return config->GetDamp_Res_Restric(); },
-    [config](su2double v){ config->SetDamp_Res_Restric(v); },
-    lastPreSmoothWorstStepRatio,
-    mg_restrict_floor_count);
+
+  /*--- Worst per-sweep step ratio across all active coarse levels.
+   *    A-exit: rw > 1; T-exit: rw < 0.85; full run: worst sweep-to-sweep ratio.
+   *    Taking the max is the most pessimistic (conservative) signal. ---*/
+  passivedouble worst_rw = 0.0;
+  int n_active = 0;
+  for (unsigned short lvl = 1; lvl <= nMGLevels; ++lvl) {
+    if (mgOpts.MG_PreSmooth[lvl] == 0) continue;
+    ++n_active;
+    worst_rw = max(worst_rw, lastPreSmoothWorstStepRatio[lvl]);
+  }
+  if (n_active == 0) return;
+
+  /*--- hi=1.0: any per-step growth in the coarse smoother is a signal to restrict. ---*/
+  config->SetDamp_Res_Restric(
+    applyDampingUpdate(config->GetDamp_Res_Restric(),
+                       worst_rw, /*lo=*/0.85, /*hi=*/1.0,
+                       mg_restrict_floor_count));
 }
 
 void CMultiGridIntegration::adaptProlongationDamping(CConfig* config, passivedouble rho) {
   SU2_ZONE_SCOPED
   if (config->GetnMGLevels() == 0) return;
 
-  /*--- rho-based controller for prolongation damping.
-   *    rho = d0_k / d1_{k-1}: inter-cycle fine-grid convergence factor.
-   *      rho < 1  -> MG cycle is reducing the fine-grid residual.
-   *      rho >= 1 -> fine residual stagnating or growing; reduce prolongation to inject less correction.
-   *
-   *    Three states:
-   *      amplifying  rho >= 1.0              -> SCALE_DOWN (suppressed after FREEZE_AFTER floor cycles)
-   *      improving   rho < GOOD_THRESHOLD    -> SCALE_UP
-   *      neutral     otherwise               -> no change ---*/
-  constexpr passivedouble THRESHOLD  = 0.85;  ///< improving if rho < THRESHOLD; dead zone [THRESHOLD, 1.0)
-  constexpr passivedouble SCALE_DOWN = 0.75;  ///< decay factor when amplifying (rho >= 1.0)
-  constexpr passivedouble SCALE_UP   = 1.0 + (1.0 - SCALE_DOWN) / 4.0;  ///< 1.0625; recovery 4x slower than decay
-  constexpr passivedouble CLAMP_MIN  = 0.25;
-  constexpr passivedouble CLAMP_MAX  = 0.95;
-  constexpr int           FREEZE_AFTER = 5;
-
-  su2double factor = config->GetDamp_Correc_Prolong();
-  const bool at_floor   = (factor <= CLAMP_MIN + 1e-6);
-  const bool amplifying = (rho >= 1.0);
-  const bool improving  = (rho > 0.0) && (rho < THRESHOLD);
-
-  if (amplifying) {
-    if (!(at_floor && mg_prolong_floor_count >= FREEZE_AFTER))
-      factor *= SCALE_DOWN;
-    if (at_floor) ++mg_prolong_floor_count;
-  } else {
-    mg_prolong_floor_count = 0;
-    if (improving) factor *= SCALE_UP;
-  }
-
-  factor = max(su2double{CLAMP_MIN}, min(su2double{CLAMP_MAX}, factor));
-  config->SetDamp_Correc_Prolong(factor);
+  /*--- rho = d0_k / d1_{k-1}: inter-cycle fine-grid convergence factor.
+   *    hi=1.05 (not 1.0) gives a dead zone [0.85, 1.05) that prevents reacting
+   *    to the natural ±1% rho oscillation around 1.0 during RANS convergence. ---*/
+  config->SetDamp_Correc_Prolong(
+    applyDampingUpdate(config->GetDamp_Correc_Prolong(),
+                       rho, /*lo=*/0.85, /*hi=*/1.05,
+                       mg_prolong_floor_count));
 }
 
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
@@ -334,9 +293,15 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
       adaptRestrictionDamping(config[iZone]);
 
-      /*--- Compute rho signal and pass to prolongation controller. ---*/
-      mg_rho_signal = (mg_prev_d1_fine > EPS) ? fine_d0 / mg_prev_d1_fine : 1.0;
-      adaptProlongationDamping(config[iZone], mg_rho_signal);
+      /*--- Compute rho signal and pass to prolongation controller.
+       *    Skip on the first cycle (mg_prev_d1_fine not yet populated) to avoid
+       *    a spurious rho=1.0 triggering the amplifying branch. ---*/
+      if (mg_prev_d1_fine > EPS) {
+        mg_rho_signal = fine_d0 / mg_prev_d1_fine;
+        adaptProlongationDamping(config[iZone], mg_rho_signal);
+      } else {
+        mg_rho_signal = 1.0;  /*--- display only; no adaptation this cycle ---*/
+      }
       last_crossCycleRatio = crossCycleRatio;
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
