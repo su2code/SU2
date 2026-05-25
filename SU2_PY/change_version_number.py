@@ -31,6 +31,8 @@ import argparse
 
 # Run the script from the base directory (ie $SU2HOME). Grep will search directories recursively for matches in version number
 import os, sys
+import re
+from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -79,12 +81,42 @@ if os.path.exists("version.txt"):
 # -r : search directory recursively
 # -v : Omit search string (.svn omitted, line containing ISC is CGNS related)
 
-# TODO: replace with portable instructions. This works only on unix systems
-os.system("grep -IFwr '%s' *|grep -vF '.svn' |grep -v ISC > version.txt" % oldvers)
-os.system(
-    "grep -IFwr '%s' --exclude='version.txt' *|grep -vF '.svn' |grep -v ISC >> version.txt"
-    % oldvers_q
-)
+# Cross-platform replacement for shell grep commands
+allowed_suffixes = {
+    ".py", ".cpp", ".c", ".hpp", ".h",
+    ".inl", ".txt", ".md", ".cfg",
+    ".json", ".i", ".cu"
+}
+
+matches = []
+
+for path in Path(".").rglob("*"):
+    if not path.is_file():
+        continue
+
+    if path.suffix.lower() not in allowed_suffixes:
+        continue
+
+    if any(part in {".svn", ".git", "build"} for part in path.parts):
+        continue
+
+    if path.name == "version.txt":
+        continue
+
+    try:
+        text = path.read_text(errors="ignore")
+
+        if oldvers in text or oldvers_q in text:
+            matches.append(str(path))
+
+    except Exception:
+        pass
+
+with open("version.txt", "w") as version_file:
+    for match in matches:
+        version_file.write(match + "\n")
+
+
 
 # Create a list of files to adjust
 filelist = []
