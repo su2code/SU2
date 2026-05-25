@@ -30,80 +30,68 @@
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 
 namespace {
-/*!\cond PRIVATE Helper: shared logic for adapting a single MG damping factor.
- *  Inputs:
- *    performed[]  - actual iteration counts per level from this cycle
- *    progress[]   - whether residuals decreased per level
- *    getConfigured - returns the per-level configured maximum
- *    levelStart/End - level range to inspect
- *    getCurrent    - returns the current damping factor from config
- *    setPersist    - persists the updated factor back to config
+/*!\cond PRIVATE Helper: adapts a single MG damping factor from the worst
+ *  per-sweep amplification ratio observed across the inspected coarse levels.
+ *
+ *  Two tuning parameters: THRESHOLD and SCALE_DOWN.
+ *  SCALE_UP is derived as 1 + (1-SCALE_DOWN)/4 so recovery is 4x slower than decay.
+ *
+ *  Three states (checked in order):
+ *    amplifying  worst_rw > 1.0  (physics boundary, not tuned) → SCALE_DOWN
+ *                  suppressed once the factor has been pinned at CLAMP_MIN for
+ *                  FREEZE_AFTER consecutive cycles.
+ *    improving   worst_rw < THRESHOLD                          → SCALE_UP
+ *    neutral     THRESHOLD <= worst_rw <= 1.0                  → no change
+ *
+ *  floorCount must be a persistent member variable passed by reference; it
+ *  counts consecutive cycles spent at CLAMP_MIN while amplifying and resets
+ *  to zero whenever the smoother leaves the amplifying state.
  \endcond */
 template <typename GetCfg, typename GetCur, typename SetPersist>
-static void adaptMGDampingFactor(const unsigned short* performed,
-                                  const passivedouble defectData[][2],
-                                  GetCfg getConfigured,
+static void adaptMGDampingFactor(GetCfg getConfigured,
                                   unsigned short levelStart, unsigned short levelEnd,
                                   GetCur getCurrent, SetPersist setPersist,
-                                  passivedouble crossCycleRatio,
-                                  const passivedouble* worstStepRatio = nullptr) {
+                                  const passivedouble* worstStepRatio,
+                                  int& floorCount) {
 
-  bool any_diverge = false; /*--- smoother made the defect grow by >5%, or amplifying early exit ---*/
-  bool any_stagnant = false; /*--- hit max iters without reducing defect ---*/
-  bool all_early = true; /*--- every level exited before hitting max (and without amplification) ---*/
-  bool all_improving = true; /*--- all max-hit levels reduced defect ---*/
-  int local_inspected = 0;
-
-  for (unsigned short lvl = levelStart; lvl <= levelEnd; ++lvl) {
-    const unsigned short configured = getConfigured(lvl);
-    if (configured == 0) continue;
-    ++local_inspected;
-    const bool hit_max = (performed[lvl] >= configured);
-    const passivedouble d0 = defectData[lvl][0];
-    const passivedouble d1 = defectData[lvl][1];
-    /*--- Use defect ||R+tau||: defect changes with smoothing even when
-     *    tau/F >> 1, giving a reliable signal of whether the smoother is helping. ---*/
-    const bool diverging = (d0 > 0.0) && (d1 > d0 * 1.05);
-    const bool improving = (d0 > 0.0) && (d1 < d0);
-    /*--- An early exit caused by amplification on the first inter-sweep step is not a
-     *    "converged quickly" signal — it means the smoother is actively harming the
-     *    solution.  Treat it the same as divergence so the controller reduces the
-     *    damping factor rather than increasing it. ---*/
-    /*--- Two-tier amplification response:
-     *    Mild amplification (1 < rw <= MILD_THRESHOLD): treat as stagnation.
-     *      Avoids treating floating-point-noise (rw=1.001) as a blow-up event,
-     *      which would otherwise pin damping at the floor indefinitely.
-     *    Strong amplification (rw > MILD_THRESHOLD): treat as divergence. ---*/
-    constexpr passivedouble MILD_AMP_THRESHOLD = 1.05;
-    const bool mildly_amplifying = !hit_max && worstStepRatio
-        && (worstStepRatio[lvl] > 1.0) && (worstStepRatio[lvl] <= MILD_AMP_THRESHOLD);
-    const bool strongly_amplifying = !hit_max && worstStepRatio
-        && (worstStepRatio[lvl] > MILD_AMP_THRESHOLD);
-
-    if (hit_max || mildly_amplifying || strongly_amplifying) all_early = false;
-    if (!improving) all_improving = false;
-    if (hit_max && !improving) any_stagnant = true;
-    if (mildly_amplifying) any_stagnant = true;
-    if (diverging || strongly_amplifying) any_diverge = true;
+  /*--- Worst per-sweep amplification ratio across all active levels.
+   *    A T-exit has rw < threshold < 1; an A-exit has rw > 1; a Full exit
+   *    has rw equal to the worst sweep-to-sweep ratio seen across all sweeps.
+   *    Taking the max gives the single most pessimistic signal for this cycle. ---*/
+  passivedouble worst_rw = 0.0;
+  int n_active = 0;
+  for (auto lvl = levelStart; lvl <= levelEnd; ++lvl) {
+    if (getConfigured(lvl) == 0) continue;
+    ++n_active;
+    worst_rw = max(worst_rw, worstStepRatio[lvl]);
   }
-  if (local_inspected == 0) return;
+  if (n_active == 0) return;
 
-  /*--- Cross-cycle blowup: the fine-grid residual has grown significantly compared
-   *    to its recent EMA. This fires even when the per-cycle smoother appears healthy
-   *    (r1 < r0) because the smoother may reduce a residual that is already 10x larger
-   *    than last cycle's baseline.  Treat as divergence. ---*/
-  constexpr passivedouble CROSS_CYCLE_THRESHOLD = 2.0;
-  if (crossCycleRatio > CROSS_CYCLE_THRESHOLD) any_diverge = true;
-  constexpr passivedouble SCALE_DOWN    = 0.75;
-  constexpr passivedouble SCALE_UP      = 1.02;
-  constexpr passivedouble SCALE_STAGNANT = 0.93;
-  constexpr passivedouble CLAMP_MIN     = 0.10;
-  constexpr passivedouble CLAMP_MAX     = 0.95;
+  constexpr passivedouble THRESHOLD  = 0.85;  ///< improving if worst_rw < THRESHOLD; dead zone [THRESHOLD, 1.0]
+  constexpr passivedouble SCALE_DOWN = 0.75;  ///< decay factor when amplifying
+  constexpr passivedouble SCALE_UP   = 1.0 + (1.0 - SCALE_DOWN) / 4.0;  ///< 1.0625; recovery 4x slower than decay
+  constexpr passivedouble CLAMP_MIN  = 0.25;
+  constexpr passivedouble CLAMP_MAX  = 0.95;
+  constexpr int           FREEZE_AFTER = 5;
 
   su2double factor = getCurrent();
-  if (any_diverge) factor *= SCALE_DOWN;
-  else if (any_stagnant) factor *= SCALE_STAGNANT;
-  else if (all_early || all_improving) factor *= SCALE_UP;
+  const bool at_floor   = (factor <= CLAMP_MIN + 1e-6);
+  const bool amplifying = (worst_rw > 1.0);   ///< physics boundary: step ratio > 1 is amplification
+  const bool improving  = (worst_rw > 0.0) && (worst_rw < THRESHOLD);
+
+  if (amplifying) {
+    /*--- Stop re-applying SCALE_DOWN once pinned for FREEZE_AFTER cycles:
+     *    at that point the amplification is structural and the controller
+     *    has already done everything it can. ---*/
+    if (!(at_floor && floorCount >= FREEZE_AFTER))
+      factor *= SCALE_DOWN;
+    if (at_floor) ++floorCount;
+  } else {
+    floorCount = 0;
+    if (improving) factor *= SCALE_UP;
+    /*--- else neutral: no change ---*/
+  }
+
   factor = max(su2double{CLAMP_MIN}, min(su2double{CLAMP_MAX}, factor));
   setPersist(factor);
 }
@@ -118,35 +106,55 @@ inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
 
 }  // anonymous namespace
 
-void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config, passivedouble crossCycleRatio) {
+void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
   SU2_ZONE_SCOPED
   const auto& mgOpts = config->GetMGOptions();
   const unsigned short nMGLevels = config->GetnMGLevels();
   adaptMGDampingFactor(
-    lastPreSmoothIters,
-    lastPreSmoothRMS,
     [&mgOpts](unsigned short lvl){ return mgOpts.MG_PreSmooth[lvl]; },
     /*levelStart=*/1, nMGLevels,
     [config](){ return config->GetDamp_Res_Restric(); },
     [config](su2double v){ config->SetDamp_Res_Restric(v); },
-    crossCycleRatio,
-    lastPreSmoothWorstStepRatio);
+    lastPreSmoothWorstStepRatio,
+    mg_restrict_floor_count);
 }
 
-void CMultiGridIntegration::adaptProlongationDamping(CConfig* config, passivedouble crossCycleRatio) {
+void CMultiGridIntegration::adaptProlongationDamping(CConfig* config, passivedouble rho) {
   SU2_ZONE_SCOPED
-  const auto& mgOpts = config->GetMGOptions();
-  const unsigned short nMGLevels = config->GetnMGLevels();
-  if (nMGLevels == 0) return;
-  adaptMGDampingFactor(
-    lastPostSmoothIters,
-    lastPostSmoothRMS,
-    [&mgOpts](unsigned short lvl){ return mgOpts.MG_PostSmooth[lvl]; },
-    /*levelStart=*/0, static_cast<unsigned short>(nMGLevels - 1),
-    [config](){ return config->GetDamp_Correc_Prolong(); },
-    [config](su2double v){ config->SetDamp_Correc_Prolong(v); },
-    crossCycleRatio,
-    lastPostSmoothWorstStepRatio);
+  if (config->GetnMGLevels() == 0) return;
+
+  /*--- rho-based controller for prolongation damping.
+   *    rho = d0_k / d1_{k-1}: inter-cycle fine-grid convergence factor.
+   *      rho < 1  -> MG cycle is reducing the fine-grid residual.
+   *      rho >= 1 -> fine residual stagnating or growing; reduce prolongation to inject less correction.
+   *
+   *    Three states:
+   *      amplifying  rho >= 1.0              -> SCALE_DOWN (suppressed after FREEZE_AFTER floor cycles)
+   *      improving   rho < GOOD_THRESHOLD    -> SCALE_UP
+   *      neutral     otherwise               -> no change ---*/
+  constexpr passivedouble THRESHOLD  = 0.85;  ///< improving if rho < THRESHOLD; dead zone [THRESHOLD, 1.0)
+  constexpr passivedouble SCALE_DOWN = 0.75;  ///< decay factor when amplifying (rho >= 1.0)
+  constexpr passivedouble SCALE_UP   = 1.0 + (1.0 - SCALE_DOWN) / 4.0;  ///< 1.0625; recovery 4x slower than decay
+  constexpr passivedouble CLAMP_MIN  = 0.25;
+  constexpr passivedouble CLAMP_MAX  = 0.95;
+  constexpr int           FREEZE_AFTER = 5;
+
+  su2double factor = config->GetDamp_Correc_Prolong();
+  const bool at_floor   = (factor <= CLAMP_MIN + 1e-6);
+  const bool amplifying = (rho >= 1.0);
+  const bool improving  = (rho > 0.0) && (rho < THRESHOLD);
+
+  if (amplifying) {
+    if (!(at_floor && mg_prolong_floor_count >= FREEZE_AFTER))
+      factor *= SCALE_DOWN;
+    if (at_floor) ++mg_prolong_floor_count;
+  } else {
+    mg_prolong_floor_count = 0;
+    if (improving) factor *= SCALE_UP;
+  }
+
+  factor = max(su2double{CLAMP_MIN}, min(su2double{CLAMP_MAX}, factor));
+  config->SetDamp_Correc_Prolong(factor);
 }
 
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
@@ -207,6 +215,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   /*--- Initialize per-level smoothing diagnostics for the current cycle. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
+    /*--- Save Level-0 end-of-pre-smooth defect from the previous cycle before it is zeroed.
+     *    This is the denominator of the rho signal: rho = d0_k / mg_prev_d1_fine_{k-1}. ---*/
+    mg_prev_d1_fine = lastPreSmoothRMS[MESH_0][1];
+
     const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
     const auto& mgOpts = config[iZone]->GetMGOptions();
     for (unsigned short i = 0; i <= nMGLevels; ++i) {
@@ -320,8 +332,11 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
         mg_fine_rms_ema = (1.0 - EMA_ALPHA) * mg_fine_rms_ema + EMA_ALPHA * fine_d0;
       const passivedouble crossCycleRatio = (mg_fine_rms_ema > EPS) ? fine_d0 / mg_fine_rms_ema : 1.0;
 
-      adaptRestrictionDamping(config[iZone], crossCycleRatio);
-      adaptProlongationDamping(config[iZone], crossCycleRatio);
+      adaptRestrictionDamping(config[iZone]);
+
+      /*--- Compute rho signal and pass to prolongation controller. ---*/
+      mg_rho_signal = (mg_prev_d1_fine > EPS) ? fine_d0 / mg_prev_d1_fine : 1.0;
+      adaptProlongationDamping(config[iZone], mg_rho_signal);
       last_crossCycleRatio = crossCycleRatio;
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -403,7 +418,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       cout << std::fixed << std::setprecision(4)
             << "Damping [restrict | prolong] : " << config[iZone]->GetDamp_Res_Restric()
             << " | " << config[iZone]->GetDamp_Correc_Prolong()
-            << "  cross-cycle: " << std::setprecision(3) << last_crossCycleRatio << "\n"
+            << "  cross-cycle: " << std::setprecision(3) << last_crossCycleRatio
+            << "  rho: " << std::setprecision(3) << mg_rho_signal << "\n"
             << std::defaultfloat << std::setprecision(6);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -546,6 +562,11 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   const unsigned long timeIter = config->GetTimeIter();
   const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPreSmooth > 1);
   const bool need_per_step_rms = early_exit || mgOpts.MG_Smooth_Output;
+  /*--- Proposal C: at Level 0, nPreSmooth is hardcoded to 1 so early_exit is always false there,
+   *    causing need_per_step_rms to reduce to MG_Smooth_Output.  need_initial_rms extends
+   *    the iPreSmooth==0 capture to MESH_0 whenever EarlyExit is active, ensuring
+   *    lastPreSmoothRMS[MESH_0][0] is available for the rho signal regardless of output setting. ---*/
+  const bool need_initial_rms = need_per_step_rms || (iMesh == MESH_0 && mgOpts.MG_Smooth_EarlyExit);
   const passivedouble stag_tol = (mgOpts.MG_Smooth_StagnationTol > 0.0)
                                  ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
 
@@ -576,7 +597,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
 
       /*--- At iRKStep==0 LinSysRes = R(u_k). ---*/
-      if (iRKStep == 0 && need_per_step_rms) {
+      if (iRKStep == 0 && need_initial_rms) {
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
           const passivedouble defect = ComputeLinSysResRMS(solver_fine);
           if (iPreSmooth == 0) {
@@ -886,14 +907,12 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
 
   const unsigned short nVar = sol_fine->GetnVar();
 
-  /*--- Level-dependent damping: coarser prolongations produce noisier corrections
-   *    due to larger cell-size jumps, so we reduce the factor progressively.
-   *    iMesh=0: factor = base_damp * 1.0  (finest grid, full correction)
-   *    iMesh=1: factor = base_damp * 0.75
-   *    iMesh=2: factor = base_damp * 0.5625, etc. ---*/
-  const su2double base_damp = config->GetDamp_Correc_Prolong();
-  const su2double level_factor = pow(0.75, static_cast<su2double>(iMesh));
-  const su2double factor = base_damp * level_factor;
+  /*--- Use the adaptive damping factor uniformly across all prolongation levels.
+   *    A separate level-dependent attenuation (pow(0.75,iMesh)) was removed:
+   *    when the controller has already driven base_damp to its minimum floor,
+   *    stacking an additional level factor makes the correction negligibly small
+   *    and prevents useful work from deeper coarse levels from reaching L0. ---*/
+  const su2double factor = config->GetDamp_Correc_Prolong();
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Fine = 0ul; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {

@@ -219,18 +219,16 @@ private:
   /*!
    * \brief Adapt the residual restriction damping factor.
    *
-   * Uses \c lastPreSmoothIters[] (filled by the previous multigrid cycle) to assess
-   * whether the pre-smoother is converging fast or slow on coarse levels, then adjusts
-   * \c Damp_Res_Restric in \p config accordingly.
+   * Uses \c lastPreSmoothWorstStepRatio[] (filled by the previous multigrid cycle) to
+   * assess whether the pre-smoother is amplifying or converging on coarse levels, then
+   * adjusts \c Damp_Res_Restric in \p config accordingly.
    *
-   * Signal logic:
-   *  - any coarse level ran its full configured iterations: reduce damping
-   *  - all coarse levels exited early: increase damping
-   *  - mixed (some full, some partial): no change
+   * Two tuning parameters: THRESHOLD (improving boundary, default 0.85) and
+   * SCALE_DOWN (default 0.75); SCALE_UP is derived as 1 + (1-SCALE_DOWN)/4 = 1.0625.
    *
    * \param[in,out] config - Problem configuration.
    */
-  void adaptRestrictionDamping(CConfig* config, passivedouble crossCycleRatio);
+  void adaptRestrictionDamping(CConfig* config);
 
   /*!
    * \brief Adapt the correction prolongation damping factor.
@@ -244,9 +242,18 @@ private:
    *  - all levels exited early: increase damping
    *  - mixed: no change
    *
+   * Uses the inter-cycle rho signal to detect Phase-2 stagnation and adjusts
+   * \c Damp_Correc_Prolong in \p config accordingly.
+   *
+   * Signal logic (rho = d0_k / d1_{k-1}, the fine-grid cycle convergence factor):
+   *  - rho >= 1.0  (fine residual not decreasing) -> SCALE_DOWN
+   *  - rho < GOOD_THRESHOLD                       -> SCALE_UP
+   *  - otherwise                                  -> no change
+   *
    * \param[in,out] config - Problem configuration; \c SetDamp_Correc_Prolong is called to persist the result.
+   * \param[in]     rho    - Inter-cycle fine-grid convergence factor from \c mg_rho_signal.
    */
-  void adaptProlongationDamping(CConfig* config, passivedouble crossCycleRatio);
+  void adaptProlongationDamping(CConfig* config, passivedouble rho);
 
   static constexpr int MAX_MG_LEVELS = 10;
 
@@ -256,6 +263,10 @@ private:
   passivedouble mg_prev_smooth_rms = 0.0;    /*!< \brief RMS residual from previous smoothing step; used for stagnation detection. */
   passivedouble mg_fine_rms_ema = 0.0;          /*!< \brief EMA of fine-grid pre-smooth RMS residual across outer iterations; cross-cycle blowup detection. */
   passivedouble last_crossCycleRatio = 1.0;     /*!< \brief crossCycleRatio from the most recent cycle; stored for display only. */
+  passivedouble mg_prev_d1_fine = 0.0;          /*!< \brief Level-0 end-of-pre-smooth defect saved from the previous MG cycle; denominator of the rho signal (Proposal A). */
+  passivedouble mg_rho_signal = 1.0;            /*!< \brief rho_k = d0_k / d1_{k-1}: inter-cycle fine-grid convergence factor; drives adaptProlongationDamping. */
+  int mg_restrict_floor_count = 0;              /*!< \brief Consecutive cycles spent at restrict-damp CLAMP_MIN while still amplifying; freezes SCALE_DOWN once structural. */
+  int mg_prolong_floor_count  = 0;              /*!< \brief Consecutive cycles spent at prolong-damp CLAMP_MIN while still amplifying; freezes SCALE_DOWN once structural. */
 
   /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
   unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
