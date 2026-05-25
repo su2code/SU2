@@ -1280,7 +1280,7 @@ su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, 
 void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
                                                   const CConfig* config, CMultiGridQueue& MGQueue_InnerCV) {
   /*--- Parameters ---*/
-  const su2double ANGLE_THRESHOLD_DEG = 20.0;   /*!< Stop line if direction deviates more than this. */
+  const su2double ANGLE_THRESHOLD_DEG = 20.0; /*!< Stop line if direction deviates more than this. */
   const unsigned long MAX_LINE_LENGTH = config->GetMGOptions().MG_Implicit_Lines_MaxLength;
   const su2double cos_threshold = cos(ANGLE_THRESHOLD_DEG * PI_NUMBER / 180.0);
 
@@ -1301,8 +1301,7 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
      *    Non-wall boundaries (farfield, inlet, outlet, symmetry) must NOT seed
      *    lines because they would prematurely claim boundary-layer interior nodes. ---*/
     const auto bc = config->GetMarker_All_KindBC(iMarker);
-    if (bc != HEAT_FLUX && bc != ISOTHERMAL && bc != CHT_WALL_INTERFACE && bc != SMOLUCHOWSKI_MAXWELL)
-      continue;
+    if (bc != HEAT_FLUX && bc != ISOTHERMAL && bc != CHT_WALL_INTERFACE && bc != SMOLUCHOWSKI_MAXWELL) continue;
 
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
