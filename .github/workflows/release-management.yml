@@ -8,8 +8,12 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-management-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build_and_upload:
+  build:
     name: Build SU2 (${{ matrix.os_bin }})
     runs-on: ubuntu-latest
 
@@ -38,12 +42,16 @@ jobs:
             flags: '-Dcpu-arch=haswell -Dcustom-mpi=true --cross-file=/hostfiles/hostfile_linux_mpi'
 
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Cache Object Files
         uses: actions/cache@v4
         with:
           path: ccache
           key: ${{ matrix.os_bin }}-${{ github.sha }}
-          restore-keys: ${{ matrix.os_bin }}
+          restore-keys: |
+            ${{ matrix.os_bin }}-
 
       - name: Build
         uses: docker://ghcr.io/su2code/su2/build-su2-cross:260405-0054
@@ -55,7 +63,7 @@ jobs:
           cd install
           zip -r ../${{ matrix.os_bin }}.zip bin/*
 
-      - name: Upload Workflow Artifact
+      - name: Upload Build Artifact
         uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.os_bin }}
@@ -67,12 +75,45 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+  release:
+    name: Update Draft Release
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Build Artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: release-assets
+
+      - name: Flatten Artifact Directory
+        run: |
+          find release-assets -name "*.zip" -exec mv {} . \;
+
+      - name: Update Release Draft
+        id: release_drafter
+        uses: release-drafter/release-drafter@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.release_drafter.outputs.upload_url }}
-          asset_path: ${{ matrix.os_bin }}.zip
-          asset_name: SU2-${{ steps.release_drafter.outputs.tag_name }}-${{ matrix.os_bin }}.zip
-          asset_content_type: application/zip
+
+      - name: Upload Release Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ steps.release_drafter.outputs.tag_name }}
+        run: |
+          set -e
+
+          for file in *.zip; do
+
+            asset_name="SU2-${TAG_NAME}-${file}"
+
+            echo "Uploading $asset_name"
+
+            gh release upload "$TAG_NAME" \
+              "$file#$asset_name" \
+              --clobber
+
+          done

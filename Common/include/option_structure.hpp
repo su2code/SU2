@@ -1442,11 +1442,29 @@ static const MapType<std::string, FLAMELET_INIT_TYPE> Flamelet_Init_Map = {
 };
 
 /*!
+ * \brief Selects the source of wall/inlet enthalpy boundary conditions for the flamelet solver.
+ * SPECIES_MARKERS (default): inlet H is taken directly from MARKER_INLET_SPECIES; wall enthalpy BC
+ * is obtained from MARKER_WALL_SPECIES.
+ * FLOW_MARKERS: inlet H is derived from the MARKER_INLET temperature via a Newton iteration on the
+ * LUT (reverse lookup using Z,T) from MARKER_ISOTHERMAL or MARKER_HEATFLUX.
+ */
+enum class FLAMELET_ENTHALPY_BC {
+  FLOW_MARKERS,    /*!< \brief Derive inlet H from MARKER_INLET T (LUT Newton); walls from MARKER_ISOTHERMAL/MARKER_HEATFLUX. */
+  SPECIES_MARKERS, /*!< \brief Take inlet H directly from MARKER_INLET_SPECIES; walls from MARKER_WALL_SPECIES (default). */
+};
+
+static const MapType<std::string, FLAMELET_ENTHALPY_BC> Flamelet_Enthalpy_BC_Map = {
+  MakePair("FLOW_MARKERS",    FLAMELET_ENTHALPY_BC::FLOW_MARKERS)
+  MakePair("SPECIES_MARKERS", FLAMELET_ENTHALPY_BC::SPECIES_MARKERS)
+};
+
+/*!
  * \brief Structure containing parsed options for flamelet fluid model.
  */
 struct FluidFlamelet_ParsedOptions {
   ///TODO: Add python wrapper initialization option
   FLAMELET_INIT_TYPE ignition_method = FLAMELET_INIT_TYPE::NONE; /*!< \brief Method for solution ignition for flamelet problems. */
+  FLAMELET_ENTHALPY_BC enthalpy_bc = FLAMELET_ENTHALPY_BC::SPECIES_MARKERS; /*!< \brief Source of enthalpy BCs: species markers (default, backward-compatible) or flow markers. */
   unsigned short n_scalars = 0;       /*!< \brief Number of transported scalars for flamelet LUT approach. */
   unsigned short n_lookups = 0;       /*!< \brief Number of lookup variables, for visualization only. */
   unsigned short n_table_sources = 0; /*!< \brief Number of transported scalar source terms for LUT. */

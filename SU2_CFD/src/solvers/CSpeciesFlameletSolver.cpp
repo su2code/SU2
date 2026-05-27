@@ -395,11 +395,28 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
                                              CNumerics** numerics_container, CConfig* config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const auto n_CV = flamelet_config_options.n_control_vars;
+  const auto n_aux = flamelet_config_options.n_user_scalars;
+  const auto* fn = static_cast<const CSpeciesFlameletVariable*>(nodes);
+
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (auto i_point = 0u; i_point < nPointDomain; i_point++) {
+    const su2double volume = geometry->nodes->GetVolume(i_point);
+
     /*--- Add source terms from the lookup table directly to the residual. ---*/
     for (auto i_var = 0; i_var < nVar; i_var++) {
-      LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * geometry->nodes->GetVolume(i_point);
+      LinSysRes(i_point, i_var) -= nodes->GetScalarSources(i_point)[i_var] * volume;
+    }
+
+    /*--- Implicit: analytic Jacobian for auxiliary species from the split source form.
+     *   S_aux_i = source_prod_i + source_cons_i * Y_aux_i
+     *   dS_aux_i/dY_aux_i = source_cons_i
+     *   J_ii += -source_cons_i * V ---*/
+    if (implicit) {
+      for (auto i_aux = 0u; i_aux < n_aux; i_aux++) {
+        Jacobian.AddVal2Diag(i_point, n_CV + i_aux, -fn->GetAuxSourceCons(i_point, i_aux) * volume);
+      }
     }
   }
   END_SU2_OMP_FOR
@@ -409,17 +426,66 @@ void CSpeciesFlameletSolver::Source_Residual(CGeometry* geometry, CSolver** solv
 
 }
 
+void CSpeciesFlameletSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container,
+                                               CNumerics* conv_numerics, CNumerics* visc_numerics,
+                                               CConfig* config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
+
+  /*--- In FLOW_MARKERS mode: read MARKER_HEATFLUX.
+   In SPECIES_MARKERS mode: read flux/value from MARKER_WALL_SPECIES. ---*/
+
+  if (config->GetFlamelet_Enthalpy_BC() != FLAMELET_ENTHALPY_BC::FLOW_MARKERS) {
+    CSpeciesSolver::BC_HeatFlux_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    return;
+  }
+
+  const string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  const bool py_custom = config->GetMarker_All_PyCustom(val_marker);
+
+  su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  /*--- Integrated heat flux requires area normalization only when using the config value.
+   When py_custom is active the per-vertex flux density is set directly by the Python wrapper. ---*/
+  if (config->GetIntegrated_HeatFlux() && !py_custom)
+    Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
+
+  SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+    const auto Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+    const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+    /*--- Override with the per-vertex value set by driver.SetMarkerCustomNormalHeatFlux(). ---*/
+    if (py_custom)
+      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex);
+
+    /*--- Neumann condition: q_wall is the prescribed heat flux (W/m^2, positive into domain).
+     This adds a source term dH/dn * lambda = q_wall to the enthalpy residual. ---*/
+    LinSysRes(iPoint, I_ENTH) -= Wall_HeatFlux * Area;
+  }
+  END_SU2_OMP_FOR
+}
+
 void CSpeciesFlameletSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                       CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double temp_inlet = config->GetInletTtotal(Marker_Tag);
-
-  /*--- We compute inlet enthalpy from the temperature and progress variable. ---*/
   su2double enth_inlet;
-  GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet, config->GetInlet_SpeciesVal(Marker_Tag),
-                  &enth_inlet);
+  if (config->GetFlamelet_Enthalpy_BC() == FLAMELET_ENTHALPY_BC::FLOW_MARKERS) {
+    /*--- Derive inlet enthalpy from MARKER_INLET temperature via Newton iteration on the LUT.
+     This ensures the enthalpy is thermodynamically consistent with the prescribed temperature,
+     regardless of the value given in MARKER_INLET_SPECIES. ---*/
+    su2double temp_inlet = config->GetInletTtotal(Marker_Tag);
+    GetEnthFromTemp(solver_container[FLOW_SOL]->GetFluidModel(), temp_inlet,
+                    config->GetInlet_SpeciesVal(Marker_Tag), &enth_inlet);
+  } else {
+    /*--- Use the enthalpy value directly from MARKER_INLET_SPECIES (default).
+     The user is responsible for providing a thermodynamically consistent value. ---*/
+    enth_inlet = config->GetInlet_SpeciesVal(Marker_Tag)[I_ENTH];
+  }
+
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
   for (auto iVertex = 0u; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     Inlet_SpeciesVars[val_marker][iVertex][I_ENTH] = enth_inlet;
@@ -519,6 +585,17 @@ void CSpeciesFlameletSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** s
                                                 CNumerics* conv_numerics, CNumerics* visc_numerics, CConfig* config,
                                                 unsigned short val_marker) {
   SU2_ZONE_SCOPED
+
+  /*--- In FLOW_MARKERS mode: temperature comes from MARKER_ISOTHERMAL and is
+   converted to enthalpy via GetEnthFromTemp (thermodynamically consistent).
+   In SPECIES_MARKERS mode: enthalpy is taken directly from MARKER_WALL_SPECIES,
+   handled by the base class BC_Wall_Generic. ---*/
+
+  if (config->GetFlamelet_Enthalpy_BC() != FLAMELET_ENTHALPY_BC::FLOW_MARKERS) {
+    CSpeciesSolver::BC_Isothermal_Wall(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    return;
+  }
+
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
@@ -539,7 +616,7 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
   table_sources[I_PROGVAR] = fmax(0, table_sources[I_PROGVAR]);
   nodes->SetTableMisses(iPoint, misses);
 
-  /*--- The source term for progress variable is always positive, we clip from below to makes sure. --- */
+  /*--- The source term for progress variable is always positive, we clip from below to make sure. --- */
 
   vector<su2double> source_scalar(flamelet_config_options.n_scalars);
   for (auto iCV = 0u; iCV < flamelet_config_options.n_control_vars; iCV++) source_scalar[iCV] = table_sources[iCV];
@@ -552,6 +629,8 @@ unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CF
     su2double source_prod = table_sources[flamelet_config_options.n_control_vars + 2 * i_aux];
     su2double source_cons = table_sources[flamelet_config_options.n_control_vars + 2 * i_aux + 1];
     source_scalar[flamelet_config_options.n_control_vars + i_aux] = source_prod + source_cons * y_aux;
+    /*--- Store the analytic Jacobian dS_aux/dY_aux = source_cons for implicit treatment. ---*/
+    static_cast<CSpeciesFlameletVariable*>(nodes)->SetAuxSourceCons(iPoint, i_aux, source_cons);
   }
   for (auto i_scalar = 0u; i_scalar < nVar; i_scalar++)
     nodes->SetScalarSource(iPoint, i_scalar, source_scalar[i_scalar]);

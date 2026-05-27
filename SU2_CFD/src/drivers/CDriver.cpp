@@ -2877,8 +2877,6 @@ void CDriver::PrintDirectResidual(RECORDING kind_recording) {
     ResidualTable.PrintFooter();
   }
 
-  std::cout << "\n-------------------------------------------------------------------------\n" << std::endl;
-
 }
 
 

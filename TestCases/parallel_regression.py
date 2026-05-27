@@ -47,7 +47,7 @@ def main():
     cfd_flamelet_ch4.cfg_dir = "flamelet/01_laminar_premixed_ch4_flame_cfd"
     cfd_flamelet_ch4.cfg_file = "lam_prem_ch4_cfd.cfg"
     cfd_flamelet_ch4.test_iter = 10
-    cfd_flamelet_ch4.test_vals = [-14.429718, -15.860038, -8.226686, -16.506667, -19.493283, 87.326000]
+    cfd_flamelet_ch4.test_vals = [-10.539588, -12.650786, -5.649832, -13.470491, -17.249262, 94.854000]
     cfd_flamelet_ch4.new_output = True
     test_list.append(cfd_flamelet_ch4)
 
@@ -56,7 +56,7 @@ def main():
     cfd_flamelet_ch4_axi.cfg_dir = "flamelet/05_laminar_premixed_ch4_flame_cfd_axi"
     cfd_flamelet_ch4_axi.cfg_file = "lam_prem_ch4_cfd_axi.cfg"
     cfd_flamelet_ch4_axi.test_iter = 10
-    cfd_flamelet_ch4_axi.test_vals = [-11.259626, -10.020810, -11.852795, -4.909152, 95.000000]
+    cfd_flamelet_ch4_axi.test_vals = [-11.255837, -10.017962, -11.850828, -4.916261, 72.669000]
     cfd_flamelet_ch4_axi.new_output = True
     test_list.append(cfd_flamelet_ch4_axi)
 
@@ -65,7 +65,7 @@ def main():
     cfd_flamelet_ch4_partial_premix.cfg_dir = "flamelet/06_laminar_partial_premixed_ch4_flame_cfd"
     cfd_flamelet_ch4_partial_premix.cfg_file = "lam_partial_prem_ch4_cfd.cfg"
     cfd_flamelet_ch4_partial_premix.test_iter = 10
-    cfd_flamelet_ch4_partial_premix.test_vals = [-10.482722, -3.621055, -12.938151, -10.154391, 10.000000]
+    cfd_flamelet_ch4_partial_premix.test_vals = [-10.482722, -3.621055, -12.932224, -10.154391, 10.000000]
     cfd_flamelet_ch4_partial_premix.new_output = True
     test_list.append(cfd_flamelet_ch4_partial_premix)
 
@@ -74,7 +74,7 @@ def main():
     cfd_flamelet_h2.cfg_dir = "flamelet/07_laminar_premixed_h2_flame_cfd"
     cfd_flamelet_h2.cfg_file = "laminar_premixed_h2_flame_cfd.cfg"
     cfd_flamelet_h2.test_iter = 5
-    cfd_flamelet_h2.test_vals = [-8.036958, -8.372668, -1.842800, -9.388446]
+    cfd_flamelet_h2.test_vals = [-8.036794, -8.372668, -1.842800, -9.388446]
     test_list.append(cfd_flamelet_h2)
 
     # Flame ignition methods
@@ -491,7 +491,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals = [-12.037518, -16.376951, 1.080346, 0.018385, 20, -1.564108, 20, -4.180957, 0]
+    turb_naca0012_sa.test_vals = [-12.037537, -16.376951, 1.080346, 0.018385, 20, -1.564109, 20, -4.180956, 0]
     turb_naca0012_sa.test_vals_aarch64 = [-12.037489, -16.376949, 1.080346, 0.018385, 20.000000, -1.564143, 20.000000, -4.180945, 0.000000]
     turb_naca0012_sa.timeout   = 3200
     test_list.append(turb_naca0012_sa)
@@ -501,7 +501,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.094708, -15.251093, -5.906365, 1.070413, 0.015775, -2.376072, 0]
+    turb_naca0012_sst.test_vals = [-12.094646, -15.251093, -5.906365, 1.070413, 0.015775, -2.376189, 0]
     turb_naca0012_sst.test_vals_aarch64 = [-12.075620, -15.246688, -5.861276, 1.070036, 0.015841, -1.991001, 0.000000]
     turb_naca0012_sst.timeout   = 3200
     test_list.append(turb_naca0012_sst)
@@ -511,7 +511,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-12.082012, -14.837177, -5.733436, 1.000893, 0.019109, -2.241076]
+    turb_naca0012_sst_sust.test_vals = [-12.082080, -14.837177, -5.733436, 1.000893, 0.019109, -2.241006]
     turb_naca0012_sst_sust.test_vals_aarch64 = [-12.073964, -14.836726, -5.732390, 1.000050, 0.019144, -2.229074]
     turb_naca0012_sst_sust.timeout   = 3200
     test_list.append(turb_naca0012_sst_sust)
@@ -548,7 +548,7 @@ def main():
     turb_naca0012_sst_expliciteuler.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_expliciteuler.cfg_file  = "turb_NACA0012_sst_expliciteuler.cfg"
     turb_naca0012_sst_expliciteuler.test_iter = 10
-    turb_naca0012_sst_expliciteuler.test_vals = [-3.532365, -3.157224, 3.743381, 1.124798, 0.501715, -float("inf")]
+    turb_naca0012_sst_expliciteuler.test_vals = [-3.532365, -3.157224, 3.743381, 1.124798, 0.501715, -16.000000]
     turb_naca0012_sst_expliciteuler.timeout   = 3200
     test_list.append(turb_naca0012_sst_expliciteuler)
 
@@ -580,7 +580,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-12.069351, -7.507867, -8.813423, -3.732860, 0]
+    axi_rans_air_nozzle_restart.test_vals = [-12.069346, -7.508216, -8.813393, -3.732843, 0]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.143310, -9.163287, -10.858232, -5.787715, 0.000000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
@@ -1452,7 +1452,7 @@ def main():
     pywrapper_turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     pywrapper_turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     pywrapper_turb_naca0012_sst.test_iter = 10
-    pywrapper_turb_naca0012_sst.test_vals = [-12.094708, -15.251093, -5.906365, 1.070413, 0.015775, -2.376072, 0]
+    pywrapper_turb_naca0012_sst.test_vals = [-12.094646, -15.251093, -5.906365, 1.070413, 0.015775, -2.376189, 0]
     pywrapper_turb_naca0012_sst.test_vals_aarch64 = [-12.075620, -15.246688, -5.861276, 1.070036, 0.015841, -1.991001, 0.000000]
     pywrapper_turb_naca0012_sst.command   = TestCase.Command("mpirun -np 2", "SU2_CFD.py", "--parallel -f")
     pywrapper_turb_naca0012_sst.timeout   = 3200
@@ -1786,7 +1786,7 @@ def main():
     cfd_flamelet_ch4_cht.cfg_dir = "flamelet/03_laminar_premixed_ch4_flame_cht_cfd"
     cfd_flamelet_ch4_cht.cfg_file = "lam_prem_ch4_cht_cfd_master.cfg"
     cfd_flamelet_ch4_cht.test_iter = 5
-    cfd_flamelet_ch4_cht.test_vals = [-9.824525, -8.913124, -9.862973, -11.271228, -3.238372, -10.916614, -12.615134, -6.614396]
+    cfd_flamelet_ch4_cht.test_vals = [-7.223149, -6.338839, -8.334392, -10.410156, -3.171365, -10.884464, -12.615132, -6.614396]
     cfd_flamelet_ch4_cht.timeout = 1600
     cfd_flamelet_ch4_cht.multizone = True
     test_list.append(cfd_flamelet_ch4_cht)
