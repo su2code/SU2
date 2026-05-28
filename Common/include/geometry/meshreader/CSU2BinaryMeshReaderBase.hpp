@@ -38,7 +38,7 @@
  */
 class CSU2BinaryMeshReaderBase : public CSU2MeshReaderBase {
  protected:
-  constexpr static int SU2_STRING_SIZE = 33; /*!< \brief Size of the strings in the SU2 binary mesh file. */
+  constexpr static int SU2_STRING_SIZE = 65; /*!< \brief Size of the strings in the SU2 binary mesh file. */
 
   FILE* mesh_file;    /*!< \brief File object for the SU2 binary mesh file. */
   bool swap_bytes;    /*!< \brief Whether or not byte swapping must be used. */
