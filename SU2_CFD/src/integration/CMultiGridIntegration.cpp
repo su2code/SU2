@@ -32,40 +32,24 @@
 namespace {
 
 /*!\cond PRIVATE
- *  Core three-state damping update used by both restriction and prolongation controllers.
+ *  Global-trend damping update.  Uses the cross-cycle EMA ratio to detect
+ *  long-term divergence or convergence and adjusts both damping factors
+ *  from a single, smooth signal.
  *
- *  signal < lo   → SCALE_UP   (improving)
- *  signal >= hi  → SCALE_DOWN (amplifying; suppressed after FREEZE_AFTER cycles at CLAMP_MIN)
- *  [lo, hi)      → no change  (neutral dead zone)
- *
- *  SCALE_UP = 1 + (1-SCALE_DOWN)/4, so recovery is 4x slower than decay.
- *  floorCount: persistent member passed by reference; counts consecutive amplifying
- *  cycles spent at CLAMP_MIN; resets whenever the amplifying state is left.
+ *  crossCycleRatio < LO  : SCALE_UP   (residual below EMA trend)
+ *  crossCycleRatio >= HI : SCALE_DOWN (residual above EMA trend)
+ *  [LO, HI)              : no change  (neutral dead zone)
  \endcond */
-static su2double applyDampingUpdate(su2double factor, passivedouble signal,
-                                     passivedouble lo, passivedouble hi,
-                                     int& floorCount) {
-  constexpr passivedouble SCALE_DOWN   = 0.75;
-  constexpr passivedouble SCALE_UP     = 1.0 + (1.0 - SCALE_DOWN) / 4.0;  ///< 1.0625; recovery 4x slower than decay
-  constexpr passivedouble CLAMP_MIN    = 0.45;
-  constexpr passivedouble CLAMP_MAX    = 0.95;
-  constexpr int           FREEZE_AFTER = 5;
+static su2double applyGlobalTrend(su2double factor, passivedouble crossCycleRatio) {
+  constexpr passivedouble SCALE_DOWN = 0.92;
+  constexpr passivedouble SCALE_UP   = 1.02;
+  constexpr passivedouble CLAMP_MIN  = 0.10;
+  constexpr passivedouble CLAMP_MAX  = 0.90;
+  constexpr passivedouble LO         = 0.95;  ///< ratio below this: converging, increase damping
+  constexpr passivedouble HI         = 1.05;  ///< ratio above this: diverging, decrease damping
 
-  const bool at_floor   = (factor <= CLAMP_MIN + 1e-6);
-  const bool amplifying = (signal >= hi);
-  const bool improving  = (signal > 0.0) && (signal < lo);
-
-  if (amplifying) {
-    /*--- Stop re-applying SCALE_DOWN once pinned for FREEZE_AFTER cycles:
-     *    at that point the amplification is structural and the controller
-     *    has already done everything it can. ---*/
-    if (!(at_floor && floorCount >= FREEZE_AFTER)) factor *= SCALE_DOWN;
-    if (at_floor) ++floorCount;
-  } else {
-    floorCount = 0;
-    if (improving) factor *= SCALE_UP;
-    /*--- else neutral: no change ---*/
-  }
+  if      (crossCycleRatio >= HI) factor *= SCALE_DOWN;
+  else if (crossCycleRatio <  LO) factor *= SCALE_UP;
   return max(su2double{CLAMP_MIN}, min(su2double{CLAMP_MAX}, factor));
 }
 
@@ -79,41 +63,16 @@ inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
 
 }  // anonymous namespace
 
-void CMultiGridIntegration::adaptRestrictionDamping(CConfig* config) {
-  SU2_ZONE_SCOPED
-  const auto& mgOpts = config->GetMGOptions();
-  const unsigned short nMGLevels = config->GetnMGLevels();
-
-  /*--- Worst per-sweep step ratio across all active coarse levels.
-   *    A-exit: rw > 1; T-exit: rw < 0.85; full run: worst sweep-to-sweep ratio.
-   *    Taking the max is the most pessimistic (conservative) signal. ---*/
-  passivedouble worst_rw = 0.0;
-  int n_active = 0;
-  for (unsigned short lvl = 1; lvl <= nMGLevels; ++lvl) {
-    if (mgOpts.MG_PreSmooth[lvl] == 0) continue;
-    ++n_active;
-    worst_rw = max(worst_rw, lastPreSmoothWorstStepRatio[lvl]);
-  }
-  if (n_active == 0) return;
-
-  /*--- hi=1.0: any per-step growth in the coarse smoother is a signal to restrict. ---*/
-  config->SetDamp_Res_Restric(
-    applyDampingUpdate(config->GetDamp_Res_Restric(),
-                       worst_rw, /*lo=*/0.85, /*hi=*/1.0,
-                       mg_restrict_floor_count));
-}
-
-void CMultiGridIntegration::adaptProlongationDamping(CConfig* config, passivedouble rho) {
+void CMultiGridIntegration::adaptDampingFactors(CConfig* config, passivedouble crossCycleRatio) {
   SU2_ZONE_SCOPED
   if (config->GetnMGLevels() == 0) return;
 
-  /*--- rho = d0_k / d1_{k-1}: inter-cycle fine-grid convergence factor.
-   *    hi=1.05 (not 1.0) gives a dead zone [0.85, 1.05) that prevents reacting
-   *    to the natural ±1% rho oscillation around 1.0 during RANS convergence. ---*/
+  /*--- Both factors share the same global-trend signal.  The EMA already filters
+   *    per-cycle noise; no per-level aggregation or floor counter needed. ---*/
+  config->SetDamp_Res_Restric(
+    applyGlobalTrend(config->GetDamp_Res_Restric(), crossCycleRatio));
   config->SetDamp_Correc_Prolong(
-    applyDampingUpdate(config->GetDamp_Correc_Prolong(),
-                       rho, /*lo=*/0.85, /*hi=*/1.05,
-                       mg_prolong_floor_count));
+    applyGlobalTrend(config->GetDamp_Correc_Prolong(), crossCycleRatio));
 }
 
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
@@ -174,10 +133,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   /*--- Initialize per-level smoothing diagnostics for the current cycle. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
-    /*--- Save Level-0 end-of-pre-smooth defect from the previous cycle before it is zeroed.
-     *    This is the denominator of the rho signal: rho = d0_k / mg_prev_d1_fine_{k-1}. ---*/
-    mg_prev_d1_fine = lastPreSmoothRMS[MESH_0][1];
-
     const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
     const auto& mgOpts = config[iZone]->GetMGOptions();
     for (unsigned short i = 0; i <= nMGLevels; ++i) {
@@ -283,25 +238,18 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   const auto& mgOptsZone = config[iZone]->GetMGOptions();
   if (mgOptsZone.MG_Smooth_EarlyExit) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      constexpr passivedouble EMA_ALPHA = 0.15;
+      constexpr passivedouble EMA_ALPHA = 0.02;
       const passivedouble fine_d0 = lastPreSmoothRMS[FinestMesh][0];
-      if (mg_fine_rms_ema < EPS)
+      const bool ema_ready = (mg_fine_rms_ema >= EPS);
+      if (!ema_ready)
         mg_fine_rms_ema = fine_d0;
       else
         mg_fine_rms_ema = (1.0 - EMA_ALPHA) * mg_fine_rms_ema + EMA_ALPHA * fine_d0;
       const passivedouble crossCycleRatio = (mg_fine_rms_ema > EPS) ? fine_d0 / mg_fine_rms_ema : 1.0;
 
-      adaptRestrictionDamping(config[iZone]);
-
-      /*--- Compute rho signal and pass to prolongation controller.
-       *    Skip on the first cycle (mg_prev_d1_fine not yet populated) to avoid
-       *    a spurious rho=1.0 triggering the amplifying branch. ---*/
-      if (mg_prev_d1_fine > EPS) {
-        mg_rho_signal = fine_d0 / mg_prev_d1_fine;
-        adaptProlongationDamping(config[iZone], mg_rho_signal);
-      } else {
-        mg_rho_signal = 1.0;  /*--- display only; no adaptation this cycle ---*/
-      }
+      /*--- Adapt both damping factors from the same global-trend signal.
+       *    Skip on the first cycle while the EMA is still being seeded. ---*/
+      if (ema_ready) adaptDampingFactors(config[iZone], crossCycleRatio);
       last_crossCycleRatio = crossCycleRatio;
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
@@ -383,8 +331,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       cout << std::fixed << std::setprecision(4)
             << "Damping [restrict | prolong] : " << config[iZone]->GetDamp_Res_Restric()
             << " | " << config[iZone]->GetDamp_Correc_Prolong()
-            << "  cross-cycle: " << std::setprecision(3) << last_crossCycleRatio
-            << "  rho: " << std::setprecision(3) << mg_rho_signal << "\n"
+            << "  cross-cycle: " << std::setprecision(3) << last_crossCycleRatio << "\n"
             << std::defaultfloat << std::setprecision(6);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
