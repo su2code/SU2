@@ -38,15 +38,15 @@ namespace {
  *
  *  crossCycleRatio < LO  : SCALE_UP   (residual below EMA trend)
  *  crossCycleRatio >= HI : SCALE_DOWN (residual above EMA trend)
- *  [LO, HI)              : no change  (neutral dead zone)
+ *  [LO, HI)              : no change  (neutral zone)
  \endcond */
 static su2double applyGlobalTrend(su2double factor, passivedouble crossCycleRatio) {
   constexpr passivedouble SCALE_DOWN = 0.92;
   constexpr passivedouble SCALE_UP   = 1.02;
   constexpr passivedouble CLAMP_MIN  = 0.10;
   constexpr passivedouble CLAMP_MAX  = 0.90;
-  constexpr passivedouble LO         = 0.95;  ///< ratio below this: converging, increase damping
-  constexpr passivedouble HI         = 1.05;  ///< ratio above this: diverging, decrease damping
+  constexpr passivedouble LO         = 0.95;  // ratio below this: converging, increase damping
+  constexpr passivedouble HI         = 1.05;  // ratio above this: diverging, decrease damping
 
   if      (crossCycleRatio >= HI) factor *= SCALE_DOWN;
   else if (crossCycleRatio <  LO) factor *= SCALE_UP;
@@ -474,10 +474,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   const unsigned long timeIter = config->GetTimeIter();
   const bool early_exit = mgOpts.MG_Smooth_EarlyExit && (nPreSmooth > 1);
   const bool need_per_step_rms = early_exit || mgOpts.MG_Smooth_Output;
-  /*--- Proposal C: at Level 0, nPreSmooth is hardcoded to 1 so early_exit is always false there,
-   *    causing need_per_step_rms to reduce to MG_Smooth_Output.  need_initial_rms extends
-   *    the iPreSmooth==0 capture to MESH_0 whenever EarlyExit is active, ensuring
-   *    lastPreSmoothRMS[MESH_0][0] is available for the rho signal regardless of output setting. ---*/
+  /*--- Also capture initial RMS at MESH_0 for the cross-cycle EMA controller, even with nPreSmooth==1. ---*/
   const bool need_initial_rms = need_per_step_rms || (iMesh == MESH_0 && mgOpts.MG_Smooth_EarlyExit);
   const passivedouble stag_tol = (mgOpts.MG_Smooth_StagnationTol > 0.0)
                                  ? SU2_TYPE::GetValue(mgOpts.MG_Smooth_StagnationTol) : passivedouble(1.0);
