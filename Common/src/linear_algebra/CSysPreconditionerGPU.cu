@@ -25,34 +25,73 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../include/linear_algebra/CSysMatrix.hpp"
+#include "../../include/linear_algebra/CSysMatrix.inl"
 #include "../../include/linear_algebra/GPUComms.cuh"
+
+namespace {
+
+template <class ScalarType>
+__global__ void ApplyJacobiPreconditionerKernel(const ScalarType* invM, const ScalarType* vec, ScalarType* prod,
+                                                unsigned long nPointDomain, unsigned long nVar) {
+  const auto iPoint = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x;
+  if (iPoint >= nPointDomain) return;
+
+  const auto block = &invM[iPoint * nVar * nVar];
+  const auto rhs = &vec[iPoint * nVar];
+  auto out = &prod[iPoint * nVar];
+
+  for (auto iVar = 0ul; iVar < nVar; ++iVar) {
+    ScalarType sum = ScalarType(0);
+    for (auto jVar = 0ul; jVar < nVar; ++jVar) {
+      sum += block[iVar * nVar + jVar] * rhs[jVar];
+    }
+    out[iVar] = sum;
+  }
+}
+
+}  // namespace
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditionerGPU() {
-  /*--- Implementation area for building the GPU/device Jacobi preconditioner.
-   * This skeleton intentionally leaves the algorithm unimplemented so the
-   * surrounding dispatch and file structure can be reviewed independently of
-   * the CUDA preconditioner details. ---*/
-  SU2_MPI::Error("CSysMatrix::BuildJacobiPreconditionerGPU skeleton reached without an implementation.",
-                 CURRENT_FUNCTION);
+  SU2_ZONE_SCOPED
+
+  if (nVar != nEqn) {
+    SU2_MPI::Error("CUDA Jacobi preconditioner requires square blocks.", CURRENT_FUNCTION);
+  }
+
+  if (invM == nullptr) {
+    SU2_MPI::Error("CUDA Jacobi preconditioner was requested without host inverse block storage.", CURRENT_FUNCTION);
+  }
+
+  if (d_invM == nullptr) {
+    d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
+  }
+
+  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+    InverseDiagonalBlock(iPoint, &(invM[iPoint * nVar * nVar]));
+  }
+
+  gpuErrChk(cudaMemcpy(d_invM, invM, nPointDomain * nVar * nVar * sizeof(ScalarType), cudaMemcpyHostToDevice));
 }
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeJacobiPreconditionerGPU(const CSysVector<ScalarType>& vec,
                                                             CSysVector<ScalarType>& prod, CGeometry* geometry,
                                                             const CConfig* config) const {
-  (void)vec;
-  (void)prod;
   (void)geometry;
   (void)config;
 
-  /*--- Implementation area for applying the GPU/device Jacobi preconditioner.
-   * This skeleton intentionally leaves the algorithm unimplemented so the
-   * surrounding dispatch and file structure can be reviewed independently of
-   * the CUDA preconditioner details. ---*/
-  SU2_MPI::Error("CSysMatrix::ComputeJacobiPreconditionerGPU skeleton reached without an implementation.",
-                 CURRENT_FUNCTION);
+  SU2_ZONE_SCOPED
+
+  if (d_invM == nullptr) {
+    SU2_MPI::Error("CUDA Jacobi preconditioner used before BuildJacobiPreconditionerGPU.", CURRENT_FUNCTION);
+  }
+
+  constexpr unsigned threadsPerBlock = 128;
+  const auto blocks = static_cast<unsigned>((nPointDomain + threadsPerBlock - 1) / threadsPerBlock);
+  ApplyJacobiPreconditionerKernel<<<blocks, threadsPerBlock>>>(d_invM, vec.GetDevicePointer(), prod.GetDevicePointer(),
+                                                               nPointDomain, nVar);
+  gpuErrChk(cudaPeekAtLastError());
 }
 
 template void CSysMatrix<su2mixedfloat>::BuildJacobiPreconditionerGPU();
