@@ -158,6 +158,7 @@ class CSysMatrix {
   ScalarType* d_matrix;           /*!< \brief Device Pointer to store the matrix values on the GPU. */
   const unsigned long* d_row_ptr; /*!< \brief Device Pointers to the first element in each row. */
   const unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
+  ScalarType* d_invM = nullptr;   /*!< \brief Device inverse diagonal blocks for the Jacobi preconditioner. */
   bool useCuda = false;           /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
                                      Mainly used to conditionally free GPU memory in the class destructor. */
   mutable CudaSpMVResources* spmv_resources = nullptr; /*!< \brief Cached cuSPARSE resources for GPU SpMV. */
@@ -936,6 +937,13 @@ class CSysMatrix {
   void BuildJacobiPreconditioner();
 
   /*!
+   * \brief Build the Jacobi preconditioner on the GPU/device side.
+   * \note This helper is intended as the implementation hook for GPU-resident Krylov solvers.
+   *       The actual implementation belongs in CSysMatrixGPU.cu.
+   */
+  void BuildJacobiPreconditionerGPU();
+
+  /*!
    * \brief Multiply CSysVector by the preconditioner
    * \param[in] vec - CSysVector to be multiplied by the preconditioner.
    * \param[out] prod - Result of the product A*vec.
@@ -944,6 +952,14 @@ class CSysMatrix {
    */
   void ComputeJacobiPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                                    const CConfig* config) const;
+
+  /*!
+   * \brief Apply the Jacobi preconditioner on the GPU/device side.
+   * \note This helper is intended as the implementation hook for GPU-resident Krylov solvers.
+   *       The actual implementation belongs in CSysMatrixGPU.cu.
+   */
+  void ComputeJacobiPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
+                                      CGeometry* geometry, const CConfig* config) const;
 
   /*!
    * \brief Build the ILU preconditioner.

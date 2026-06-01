@@ -241,6 +241,45 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   void GPUSetVal(ScalarType val, bool trigger = true) const;
 
   /*!
+   * \brief Copy another vector into this vector on the device.
+   * \note This is an explicit GPU helper for Krylov solver implementations that keep the
+   *       iteration state resident on the device. The implementation belongs in
+   *       CSysVectorGPU.cu.
+   * \param[in] src - Source vector.
+   */
+  void GPUCopy(const CSysVector& src) const;
+
+  /*!
+   * \brief Scale this vector on the device.
+   * \note Explicit GPU helper for solver-side vector operations.
+   * \param[in] alpha - Scalar multiplier.
+   */
+  void GPUScale(ScalarType alpha) const;
+
+  /*!
+   * \brief Perform the AXPY operation on the device: this := this + alpha * x.
+   * \note Explicit GPU helper for solver-side vector operations.
+   * \param[in] alpha - Scalar multiplier.
+   * \param[in] x - Input vector.
+   */
+  void GPUAxpy(ScalarType alpha, const CSysVector& x) const;
+
+  /*!
+   * \brief Dot product between this vector and another vector on the device.
+   * \note Explicit GPU helper for solver-side reductions.
+   * \param[in] other - Input vector.
+   * \return Dot product result.
+   */
+  ScalarType GPUDot(const CSysVector& other) const;
+
+  /*!
+   * \brief L2 norm of this vector on the device.
+   * \note Explicit GPU helper for solver-side reductions.
+   * \return L2 norm result.
+   */
+  ScalarType GPUNorm() const;
+
+  /*!
    * \brief return device pointer that points to the CSysVector values in GPU memory
    */
   inline ScalarType* GetDevicePointer() const { return d_vec_val; }

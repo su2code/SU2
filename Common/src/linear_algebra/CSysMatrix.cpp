@@ -54,6 +54,7 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
   col_ind_ilu = nullptr;
 
   invM = nullptr;
+  d_invM = nullptr;
 
 #ifdef USE_MKL
   MatrixMatrixProductJitter = nullptr;
@@ -78,6 +79,7 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
     GPUMemoryAllocation::gpu_free(d_matrix);
     GPUMemoryAllocation::gpu_free(d_row_ptr);
     GPUMemoryAllocation::gpu_free(d_col_ind);
+    GPUMemoryAllocation::gpu_free(d_invM);
   }
 
 #ifdef USE_MKL
@@ -201,6 +203,10 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   if (ilu_needed) allocAndInit(ILU_matrix, nnz_ilu * nVar * nEqn);
 
   if (diag_needed) allocAndInit(invM, nPointDomain * nVar * nEqn);
+
+  if (useCuda && diag_needed) {
+    d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
+  }
 
   /*--- Thread parallel initialization. ---*/
 
@@ -678,6 +684,19 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>& v
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
   SU2_ZONE_SCOPED
+
+  if (useCuda) {
+#ifdef HAVE_CUDA
+    BuildJacobiPreconditionerGPU();
+    return;
+#else
+    SU2_MPI::Error(
+        "\nError in building Jacobi preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
+        "enabled in Meson to access GPU Functions",
+        CURRENT_FUNCTION);
+#endif
+  }
+
   /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -690,6 +709,19 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
                                                          CSysVector<ScalarType>& prod, CGeometry* geometry,
                                                          const CConfig* config) const {
   SU2_ZONE_SCOPED
+
+  if (config->GetCUDA()) {
+#ifdef HAVE_CUDA
+    ComputeJacobiPreconditionerGPU(vec, prod, geometry, config);
+    return;
+#else
+    SU2_MPI::Error(
+        "\nError in applying Jacobi preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
+        "enabled in Meson to access GPU Functions",
+        CURRENT_FUNCTION);
+#endif
+  }
+
   /*--- Apply Jacobi preconditioner, y = D^{-1} * x, the inverse of the diagonal is already known. ---*/
   SU2_OMP_BARRIER
   SU2_OMP_FOR_DYN(omp_heavy_size)

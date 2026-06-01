@@ -305,6 +305,16 @@ class CSysSolve {
                                       unsigned long custom_m) const;
 
   /*!
+   * \brief CUDA/GPU implementation of the Flexible GMRES solver.
+   * \note This helper exists so the public solver interface can remain unchanged while the
+   *       implementation is dispatched internally based on the runtime CUDA setting.
+   *       The actual implementation lives in CSysSolveGPU.cu.
+   */
+  unsigned long FGMRES_LinSolver_GPU(const VectorType& b, VectorType& x, const ProductType& mat_vec,
+                                     const PrecondType& precond, ScalarType tol, unsigned long m, ScalarType& residual,
+                                     bool monitoring, const CConfig* config) const;
+
+  /*!
    * \brief Creates the inner solver for nested preconditioning if the settings allow it.
    * \returns True if the inner solver can be used.
    */

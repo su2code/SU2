@@ -2517,6 +2517,7 @@ enum ENUM_LINEAR_SOLVER_PREC {
   PASTIX_ILU=10,  /*!< \brief PaStiX ILU(k) preconditioner. */
   PASTIX_LU_P,    /*!< \brief PaStiX LU as preconditioner. */
   PASTIX_LDLT_P,  /*!< \brief PaStiX LDLT as preconditioner. */
+  NO_PRECONDITIONER=20, /*!< \brief No preconditioner. */
 };
 static const MapType<std::string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = {
   MakePair("JACOBI", JACOBI)
@@ -2526,6 +2527,7 @@ static const MapType<std::string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Ma
   MakePair("PASTIX_ILU", PASTIX_ILU)
   MakePair("PASTIX_LU", PASTIX_LU_P)
   MakePair("PASTIX_LDLT", PASTIX_LDLT_P)
+  MakePair("NONE", NO_PRECONDITIONER)
 };
 
 /*!

@@ -78,6 +78,18 @@ template <class ScalarType>
 CPreconditioner<ScalarType>::~CPreconditioner() {}
 
 /*!
+ * \class CIdentityPreconditioner
+ * \brief No-op preconditioner used when Krylov solvers run without preconditioning.
+ */
+template <class ScalarType>
+class CIdentityPreconditioner final : public CPreconditioner<ScalarType> {
+ public:
+  inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override { v = u; }
+
+  inline bool IsIdentity() const override { return true; }
+};
+
+/*!
  * \class CJacobiPreconditioner
  * \brief Specialization of preconditioner that uses CSysMatrix class.
  */
@@ -332,6 +344,9 @@ CPreconditioner<ScalarType>* CPreconditioner<ScalarType>::Create(ENUM_LINEAR_SOL
   CPreconditioner<ScalarType>* prec = nullptr;
 
   switch (kind) {
+    case NO_PRECONDITIONER:
+      prec = new CIdentityPreconditioner<ScalarType>();
+      break;
     case JACOBI:
       prec = new CJacobiPreconditioner<ScalarType>(jacobian, geometry, config);
       break;

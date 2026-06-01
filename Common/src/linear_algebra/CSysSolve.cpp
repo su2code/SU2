@@ -421,6 +421,17 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
                                                       const CConfig* config) const {
   SU2_ZONE_SCOPED
 
+  if (config->GetCUDA()) {
+#ifdef HAVE_CUDA
+    return FGMRES_LinSolver_GPU(b, x, mat_vec, precond, tol, m, residual, monitoring, config);
+#else
+    SU2_MPI::Error(
+        "\nError in launching FGMRES solver\nENABLE_CUDA is set to YES\nPlease compile with CUDA options enabled "
+        "in Meson to access GPU Functions",
+        CURRENT_FUNCTION);
+#endif
+  }
+
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   const bool flexible = !precond.IsIdentity();
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,

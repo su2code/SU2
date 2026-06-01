@@ -20,13 +20,18 @@ python = pymod.find_installation()
 if get_option('enable-cuda')
   add_languages('cuda')
   add_global_arguments('-arch=sm_86', language : 'cuda')
-  cuda_deps = [meson.get_compiler('cuda').find_library('cusparse', required : true)]
+  cuda_deps = [
+    meson.get_compiler('cuda').find_library('cusparse', required : true),
+    meson.get_compiler('cuda').find_library('cublas', required : true),
+  ]
 else
   cuda_deps = []
 endif
 
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')] + cuda_deps
+codi_rev_args = []
+codi_for_args = []
 
 default_warning_flags = []
 if build_machine.system() != 'windows'
