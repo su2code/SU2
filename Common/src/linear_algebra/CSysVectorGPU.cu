@@ -27,6 +27,87 @@
 
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
+#include <cublas_v2.h>
+#include <type_traits>
+
+namespace {
+
+constexpr unsigned GPU_VEC_OP_BLOCK_SIZE = 256;
+
+template <class ScalarType>
+__global__ void GPUCopyKernel(const ScalarType* src, ScalarType* dst, unsigned long nElm) {
+  const unsigned long idx = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x;
+  if (idx < nElm) dst[idx] = src[idx];
+}
+
+template <class ScalarType>
+__global__ void GPUScaleKernel(ScalarType alpha, ScalarType* vec, unsigned long nElm) {
+  const unsigned long idx = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x;
+  if (idx < nElm) vec[idx] *= alpha;
+}
+
+template <class ScalarType>
+__global__ void GPUAxpyKernel(ScalarType alpha, const ScalarType* x, ScalarType* y, unsigned long nElm) {
+  const unsigned long idx = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x;
+  if (idx < nElm) y[idx] += alpha * x[idx];
+}
+
+inline dim3 MakeVectorGrid(unsigned long nElm) {
+  const auto grid = (nElm + GPU_VEC_OP_BLOCK_SIZE - 1) / GPU_VEC_OP_BLOCK_SIZE;
+  return dim3(static_cast<unsigned>(grid), 1, 1);
+}
+
+thread_local cublasHandle_t active_solver_blas_handle = nullptr;
+thread_local unsigned active_solver_blas_depth = 0;
+
+cublasHandle_t GetBlasHandle(const char* creation_error, bool& owns_handle) {
+  if (active_solver_blas_handle != nullptr) {
+    owns_handle = false;
+    return active_solver_blas_handle;
+  }
+
+  cublasHandle_t handle = nullptr;
+  owns_handle = true;
+  if (cublasCreate(&handle) != CUBLAS_STATUS_SUCCESS) {
+    SU2_MPI::Error(creation_error, CURRENT_FUNCTION);
+  }
+  return handle;
+}
+
+void ReleaseBlasHandle(cublasHandle_t handle, bool owns_handle, const char* destruction_error) {
+  if (owns_handle && handle != nullptr && cublasDestroy(handle) != CUBLAS_STATUS_SUCCESS) {
+    SU2_MPI::Error(destruction_error, CURRENT_FUNCTION);
+  }
+}
+
+}  // namespace
+
+void SU2_GPU_BeginSolverBLASContext() {
+  if (active_solver_blas_depth == 0) {
+    cublasHandle_t handle = nullptr;
+    if (cublasCreate(&handle) != CUBLAS_STATUS_SUCCESS) {
+      SU2_MPI::Error("cuBLAS handle creation failed for the GPU linear solver context.", CURRENT_FUNCTION);
+    }
+    active_solver_blas_handle = handle;
+  }
+  ++active_solver_blas_depth;
+}
+
+void SU2_GPU_EndSolverBLASContext() {
+  if (active_solver_blas_depth == 0) {
+    SU2_MPI::Error("GPU linear solver BLAS context ended without a matching begin.", CURRENT_FUNCTION);
+  }
+
+  --active_solver_blas_depth;
+  if (active_solver_blas_depth == 0) {
+    auto status = cublasDestroy(active_solver_blas_handle);
+    active_solver_blas_handle = nullptr;
+    if (status != CUBLAS_STATUS_SUCCESS) {
+      SU2_MPI::Error("cuBLAS handle destruction failed for the GPU linear solver context.", CURRENT_FUNCTION);
+    }
+  }
+}
+
 template<class ScalarType>
 void CSysVector<ScalarType>::HtDTransfer(bool trigger) const
 {
@@ -47,43 +128,67 @@ void CSysVector<ScalarType>::GPUSetVal(ScalarType val, bool trigger) const
 
 template <class ScalarType>
 void CSysVector<ScalarType>::GPUCopy(const CSysVector& src) const {
-  (void)src;
+  if (nElm == 0) return;
 
-  /*--- Implementation area for GPU-to-GPU vector copy used by device-resident Krylov solvers. ---*/
-  SU2_MPI::Error("CSysVector::GPUCopy skeleton reached without an implementation.", CURRENT_FUNCTION);
+  GPUCopyKernel<<<MakeVectorGrid(nElm), GPU_VEC_OP_BLOCK_SIZE>>>(src.GetDevicePointer(), GetDevicePointer(), nElm);
+  gpuErrChk(cudaPeekAtLastError());
 }
 
 template <class ScalarType>
 void CSysVector<ScalarType>::GPUScale(ScalarType alpha) const {
-  (void)alpha;
+  if (nElm == 0) return;
 
-  /*--- Implementation area for GPU vector scaling used by device-resident Krylov solvers. ---*/
-  SU2_MPI::Error("CSysVector::GPUScale skeleton reached without an implementation.", CURRENT_FUNCTION);
+  GPUScaleKernel<<<MakeVectorGrid(nElm), GPU_VEC_OP_BLOCK_SIZE>>>(alpha, GetDevicePointer(), nElm);
+  gpuErrChk(cudaPeekAtLastError());
 }
 
 template <class ScalarType>
 void CSysVector<ScalarType>::GPUAxpy(ScalarType alpha, const CSysVector& x) const {
-  (void)alpha;
-  (void)x;
+  if (nElm == 0) return;
 
-  /*--- Implementation area for GPU AXPY used by device-resident Krylov solvers. ---*/
-  SU2_MPI::Error("CSysVector::GPUAxpy skeleton reached without an implementation.", CURRENT_FUNCTION);
+  GPUAxpyKernel<<<MakeVectorGrid(nElm), GPU_VEC_OP_BLOCK_SIZE>>>(alpha, x.GetDevicePointer(), GetDevicePointer(),
+                                                                 nElm);
+  gpuErrChk(cudaPeekAtLastError());
 }
 
 template <class ScalarType>
 ScalarType CSysVector<ScalarType>::GPUDot(const CSysVector& other) const {
-  (void)other;
+  bool owns_handle = false;
+  cublasHandle_t handle = GetBlasHandle("cuBLAS handle creation failed in CSysVector::GPUDot.", owns_handle);
+  cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
 
-  /*--- Implementation area for GPU dot products used by device-resident Krylov solvers. ---*/
-  SU2_MPI::Error("CSysVector::GPUDot skeleton reached without an implementation.", CURRENT_FUNCTION);
-  return ScalarType(0);
+  ScalarType local_dot = ScalarType(0);
+
+  if constexpr (std::is_same_v<ScalarType, float>) {
+    status = cublasSdot(handle, static_cast<int>(nElmDomain), GetDevicePointer(), 1, other.GetDevicePointer(), 1,
+                        &local_dot);
+  } else if constexpr (std::is_same_v<ScalarType, double>) {
+    status = cublasDdot(handle, static_cast<int>(nElmDomain), GetDevicePointer(), 1, other.GetDevicePointer(), 1,
+                        &local_dot);
+  } else {
+    ReleaseBlasHandle(handle, owns_handle, "cuBLAS handle destruction failed in CSysVector::GPUDot.");
+    SU2_MPI::Error("Unsupported ScalarType in CSysVector::GPUDot.", CURRENT_FUNCTION);
+    return ScalarType(0);
+  }
+
+  if (status != CUBLAS_STATUS_SUCCESS) {
+    ReleaseBlasHandle(handle, owns_handle, "cuBLAS handle destruction failed in CSysVector::GPUDot.");
+    SU2_MPI::Error("cuBLAS dot failed in CSysVector::GPUDot.", CURRENT_FUNCTION);
+    return ScalarType(0);
+  }
+
+  ReleaseBlasHandle(handle, owns_handle, "cuBLAS handle destruction failed in CSysVector::GPUDot.");
+
+  ScalarType global_dot = ScalarType(0);
+  const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
+  SelectMPIWrapper<ScalarType>::W::Allreduce(&local_dot, &global_dot, 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
+
+  return global_dot;
 }
 
 template <class ScalarType>
 ScalarType CSysVector<ScalarType>::GPUNorm() const {
-  /*--- Implementation area for GPU norms used by device-resident Krylov solvers. ---*/
-  SU2_MPI::Error("CSysVector::GPUNorm skeleton reached without an implementation.", CURRENT_FUNCTION);
-  return ScalarType(0);
+  return sqrt(GPUDot(*this));
 }
 
 template void CSysVector<su2mixedfloat>::HtDTransfer(bool trigger) const;
