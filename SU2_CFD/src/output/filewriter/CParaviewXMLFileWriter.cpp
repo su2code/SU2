@@ -27,6 +27,7 @@
 
 #include "../../../include/output/filewriter/CParaviewXMLFileWriter.hpp"
 #include "../../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include <cstdint>
 
 const string CParaviewXMLFileWriter::fileExt = ".vtu";
 

@@ -33,6 +33,7 @@
 #include <iostream>
 #include <vector>
 #include <cstdlib>
+#include <limits>
 
 #include "../../CConfig.hpp"
 
