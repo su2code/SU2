@@ -38,7 +38,9 @@
  */
 class CPBIncNSVariable final : public CPBIncEulerVariable {
 private:
-  const bool Energy;          /*!< \brief Flag for Energy equation in incompressible flows. */
+  VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
+  VectorType DES_LengthScale; /*!< \brief DES Length Scale. */
+  VectorType lesMode;        /*!< \brief Sensor for local simulation mode (0=RANS, 1=LES).*/
 
 public:
 
@@ -52,8 +54,97 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CPBIncNSVariable(su2double pressure, const su2double *velocity, su2double temperature,
+  CPBIncNSVariable(su2double dneisty, su2double pressure, const su2double *velocity,
                  unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
+  /*!
+   * \brief Set the laminar viscosity.
+   */
+  inline void SetLaminarViscosity(unsigned long iPoint, su2double laminarViscosity) override {
+    Primitive(iPoint, indices.LaminarViscosity()) = laminarViscosity;
+  }
+
+  /*!
+   * \overload
+   * \param[in] eddy_visc - Value of the eddy viscosity.
+   */
+  inline void SetEddyViscosity(unsigned long iPoint, su2double eddy_visc) override {
+    Primitive(iPoint, indices.EddyViscosity()) = eddy_visc;
+  }
+
+  /*!
+   * \brief Get the laminar viscosity of the flow.
+   * \return Value of the laminar viscosity of the flow.
+   */
+  inline su2double GetLaminarViscosity(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.LaminarViscosity());
+  }
+
+  /*!
+   * \brief Get the eddy viscosity of the flow.
+   * \return The eddy viscosity of the flow.
+   */
+  inline su2double GetEddyViscosity(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.EddyViscosity());
+  }
+
+  /*!
+   * \brief Set the thermal conductivity.
+   */
+  inline void SetThermalConductivity(unsigned long iPoint, su2double thermalConductivity) override {
+    Primitive(iPoint, indices.ThermalConductivity()) = thermalConductivity;
+  }
+
+  /*!
+   * \brief Get the thermal conductivity of the flow.
+   * \return Value of the laminar viscosity of the flow.
+   */
+  inline su2double GetThermalConductivity(unsigned long iPoint) const override {
+    return Primitive(iPoint, indices.ThermalConductivity());
+  }
+
+  /*!
+   * \brief Set all the primitive variables for incompressible flows
+   */
+  bool SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar = nullptr);
+  using CVariable::SetPrimVar;
+
+  /*!
+   * \brief Set the value of the wall shear stress computed by a wall function.
+   */
+  inline void SetTau_Wall(unsigned long iPoint, su2double tau_wall) override { Tau_Wall(iPoint) = tau_wall; }
+
+  /*!
+   * \brief Get the value of the wall shear stress computed by a wall function.
+   * \return Value of the wall shear stress computed by a wall function.
+   */
+  inline su2double GetTau_Wall(unsigned long iPoint) const override { return Tau_Wall(iPoint); }
+  inline const VectorType& GetTau_Wall() const { return Tau_Wall; }
+
+  /*!
+   * \brief Set the DES Length Scale.
+   */
+  inline void SetDES_LengthScale(unsigned long iPoint, su2double val_des_lengthscale) override {
+    DES_LengthScale(iPoint) = val_des_lengthscale;
+  }
+
+  /*!
+   * \brief Get the DES length scale
+   * \return Value of the DES length Scale.
+   */
+  inline su2double GetDES_LengthScale(unsigned long iPoint) const override { return DES_LengthScale(iPoint); }
+
+  /*!
+   * \brief Set the LES sensor.
+   */
+  inline void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) override {
+    lesMode(iPoint) = val_les_mode;
+  }
+
+  /*!
+   * \brief Get the LES sensor.
+   * \return Value of the LES sensor.
+   */
+  inline su2double GetLES_Mode(unsigned long iPoint) const override { return lesMode(iPoint); }
 
 };
