@@ -242,6 +242,22 @@ void CAvgGrad_Base::SetIncTauJacobian(const su2double val_laminar_viscosity,
   }
 }
 
+void CAvgGrad_Base::SetPBIncTauJacobian(const su2double val_laminar_viscosity,
+                                      const su2double val_eddy_viscosity,
+                                      const su2double val_dist_ij,
+                                      const su2double *val_normal) {
+
+  const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
+  const su2double xi = total_viscosity/val_dist_ij;
+
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short jDim = 0; jDim < nDim; jDim++) {
+      // Jacobian w.r.t. momentum
+      tau_jacobian_i[iDim][jDim] = -xi*(delta[iDim][jDim] + val_normal[iDim]*val_normal[jDim]/3.0);
+    }
+  }
+}
+
 void CAvgGrad_Base::GetViscousProjFlux(const su2double *val_primvar,
                                        const su2double *val_normal) {
 
@@ -825,6 +841,171 @@ void CAvgGradInc_Flow::GetViscousIncProjJacs(su2double val_dS,
     val_Proj_Jac_Tensor_i[4][2] = 0.0;
     val_Proj_Jac_Tensor_i[4][3] = 0.0;
     val_Proj_Jac_Tensor_i[4][4] = 0.0;
+
+  }
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    for (unsigned short jVar = 0; jVar < nVar; jVar++)
+      val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
+
+}
+
+CAvgGradPBInc_Flow::CAvgGradPBInc_Flow(unsigned short val_nDim,
+                                   unsigned short val_nVar,
+                                   bool val_correct_grad, const CConfig* config)
+    : CAvgGrad_Base(val_nDim, val_nVar, val_nDim+3, val_correct_grad, config) {
+
+}
+
+CNumerics::ResidualType<> CAvgGradPBInc_Flow::ComputeResidual(const CConfig* config) {
+
+  unsigned short iVar, jVar, iDim;
+
+  /*--- Normalized normal vector ---*/
+
+  Area = GeometryToolbox::Norm(nDim, Normal);
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = Normal[iDim]/Area;
+
+  PrimVar_i = V_i;
+  PrimVar_j = V_j;
+
+  for (iVar = 0; iVar < nPrimVar; iVar++) {
+    Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
+  }
+  
+  /*--- Density and transport properties ---*/
+
+  Laminar_Viscosity_i    = V_i[nDim+5];  Laminar_Viscosity_j    = V_j[nDim+5];
+  Eddy_Viscosity_i       = V_i[nDim+6];  Eddy_Viscosity_j       = V_j[nDim+6];
+  Thermal_Conductivity_i = V_i[nDim+7];  Thermal_Conductivity_j = V_j[nDim+7];
+  
+  /*--- Mean transport properties ---*/
+  
+  Mean_Laminar_Viscosity    = 0.5*(Laminar_Viscosity_i + Laminar_Viscosity_j);
+  Mean_Eddy_Viscosity       = 0.5*(Eddy_Viscosity_i + Eddy_Viscosity_j);
+  Mean_turb_ke              = 0.5*(turb_ke_i + turb_ke_j);
+ 
+  /*--- Compute vector going from iPoint to jPoint ---*/
+  
+  dist_ij_2 = 0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+  }
+
+  /*--- Mean gradient approximation ---*/
+
+  /*--- use index iVar+1 as the primitive velocities only start at 1 and the regular nVar only includes momentum ---*/
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (iDim = 0; iDim < nDim; iDim++)
+      Mean_GradPrimVar[iVar+1][iDim] = 0.5*(PrimVar_Grad_i[iVar+1][iDim] + PrimVar_Grad_j[iVar+1][iDim]);
+
+  /*--- Projection of the mean gradient in the direction of the edge ---*/
+
+  if (correct_gradient && dist_ij_2 != 0.0) {
+    CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, Edge_Vector,
+                    dist_ij_2, nVar+1);
+  }
+
+   /*--- Get projected flux tensor (viscous residual) ---*/
+
+  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
+  
+  /*--- Get projected flux tensor ---*/
+
+  GetViscousPBIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
+
+  /*--- Implicit part ---*/
+
+  if (implicit) {
+
+    if (dist_ij_2 == 0.0) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          Jacobian_i[iVar][jVar] = 0.0;
+          Jacobian_j[iVar][jVar] = 0.0;
+        }
+      }
+    } else {
+
+      const su2double dist_ij = sqrt(dist_ij_2);
+      SetPBIncTauJacobian(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, dist_ij, UnitNormal);
+
+      GetViscousPBIncProjJacs(Area, Jacobian_i, Jacobian_j);
+    }
+
+  }
+
+  return ResidualType<>(Proj_Flux_Tensor, Jacobian_i, Jacobian_j);
+}
+
+void CAvgGradPBInc_Flow::GetViscousPBIncProjFlux(const su2double* const *val_gradprimvar,
+                                             const su2double *val_normal,
+                                             su2double val_thermal_conductivity) {
+
+  /*--- Gradient of primitive variables -> [mom_x mom_y mom_z] ---*/
+
+  su2double Flux_Tensor[3][3];
+
+  if (nDim == 2) {
+
+    Flux_Tensor[0][0] = tau[0][0];
+    Flux_Tensor[1][0] = tau[0][1];
+
+    Flux_Tensor[0][1] = tau[1][0];
+    Flux_Tensor[1][1] = tau[1][1];
+
+  } else {
+
+    Flux_Tensor[0][0] = tau[0][0];
+    Flux_Tensor[1][0] = tau[0][1];
+    Flux_Tensor[2][0] = tau[0][2];
+
+    Flux_Tensor[0][1] = tau[1][0];
+    Flux_Tensor[1][1] = tau[1][1];
+    Flux_Tensor[2][1] = tau[1][2];
+
+    Flux_Tensor[0][2] = tau[2][0];
+    Flux_Tensor[1][2] = tau[2][1];
+    Flux_Tensor[2][2] = tau[2][2];
+  }
+
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    Proj_Flux_Tensor[iVar] = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
+  }
+
+}
+
+void CAvgGradPBInc_Flow::GetViscousPBIncProjJacs(su2double val_dS,
+                                             su2double **val_Proj_Jac_Tensor_i,
+                                             su2double **val_Proj_Jac_Tensor_j) {
+
+  if (nDim == 2) {
+
+    val_Proj_Jac_Tensor_i[0][0] = val_dS*tau_jacobian_i[0][0];
+    val_Proj_Jac_Tensor_i[0][1] = val_dS*tau_jacobian_i[0][1];
+
+    val_Proj_Jac_Tensor_i[1][0] = val_dS*tau_jacobian_i[1][0];
+    val_Proj_Jac_Tensor_i[1][1] = val_dS*tau_jacobian_i[1][1];
+
+  } else {
+
+    val_Proj_Jac_Tensor_i[0][0] = val_dS*tau_jacobian_i[0][0];
+    val_Proj_Jac_Tensor_i[0][1] = val_dS*tau_jacobian_i[0][1];
+    val_Proj_Jac_Tensor_i[0][2] = val_dS*tau_jacobian_i[0][2];
+
+    val_Proj_Jac_Tensor_i[1][0] = val_dS*tau_jacobian_i[1][0];
+    val_Proj_Jac_Tensor_i[1][1] = val_dS*tau_jacobian_i[1][1];
+    val_Proj_Jac_Tensor_i[1][2] = val_dS*tau_jacobian_i[1][2];
+
+    val_Proj_Jac_Tensor_i[2][0] = val_dS*tau_jacobian_i[2][0];
+    val_Proj_Jac_Tensor_i[2][1] = val_dS*tau_jacobian_i[2][1];
+    val_Proj_Jac_Tensor_i[2][2] = val_dS*tau_jacobian_i[2][2];
 
   }
 

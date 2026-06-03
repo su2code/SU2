@@ -1678,18 +1678,18 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
           } else {
             /*--- Incompressible flow, use pressure-based method ---*/
+            //TODO: central scheme has not yet been added
             switch (config->GetKind_Centered_Flow()) {
-              case CENTERED::CDS : /* numerics[MESH_0][FLOW_SOL][conv_term] = new CCentPB_Flow(nDim, nVar_Flow, config); */ break;
+              case CENTERED::CDS : /* numerics[MESH_0][FLOW_SOL][conv_term] = new CCentPB_Flow(nDim, nVar_Flow, config); */ break; 
               default:
                 SU2_MPI::Error("Invalid centered scheme or not implemented.\n Currently, only CDS is available for pressure based incompressible flows.", CURRENT_FUNCTION);
 
             }
-            // for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-              // numerics[iMGlevel][FLOW_SOL][conv_term] = new CCentPB_Flow(nDim, nVar_Flow, config);
+            /* for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+              numerics[iMGlevel][FLOW_SOL][conv_term] = new CCentPB_Flow(nDim, nVar_Flow, config);*/
             /*--- Definition of the boundary condition method ---*/
-            // for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-              // numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwPB_Flow(nDim, nVar_Flow, config);
-
+            for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+              numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwPB_Flow(nDim, nVar_Flow, config);
           }
         }
         break;
@@ -1815,8 +1815,8 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
             switch (config->GetKind_Upwind_Flow()) {
               case UPWIND::UDS:
                 for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                  // numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwPB_Flow(nDim, nVar_Flow, config);
-                  // numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwPB_Flow(nDim, nVar_Flow, config);
+                  numerics[iMGlevel][FLOW_SOL][conv_term] = new CUpwPB_Flow(nDim, nVar_Flow, config);
+                  numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwPB_Flow(nDim, nVar_Flow, config);
                 }
                 break;
               default:
@@ -1870,13 +1870,14 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
           numerics[iMGlevel][FLOW_SOL][visc_bound_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, false, config);
       } else {
         /*--- Incompressible flow, use pressure based method ---*/
-        // numerics[MESH_0][FLOW_SOL][visc_term] = new CAvgGradCorrectedPBInc_Flow(nDim, nVar_Flow, config);
-        // for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          // numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGradPBInc_Flow(nDim, nVar_Flow, config);
+        numerics[MESH_0][FLOW_SOL][visc_term] = new CAvgGradPBInc_Flow(nDim, nVar_Flow, true, config);
+        for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+          numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGradPBInc_Flow(nDim, nVar_Flow, false, config);
 
         /*--- Definition of the boundary condition method ---*/
-        // for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          // numerics[iMGlevel][FLOW_SOL][visc_bound_term] = new CAvgGradPBInc_Flow(nDim, nVar_Flow, config);
+        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+          numerics[iMGlevel][FLOW_SOL][visc_bound_term] = new CAvgGradPBInc_Flow(nDim, nVar_Flow, false, config);
+
       }
     }
 
