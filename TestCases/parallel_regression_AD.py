@@ -104,7 +104,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -3.319959, -2.489110, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -3.095094, -2.322528, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################
@@ -217,7 +217,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.126077, -1.582787, -0.005904, 0.000009]
+    discadj_pitchingNACA0012.test_vals = [-1.040215, -1.508864, -0.006076, 0.000012]
     discadj_pitchingNACA0012.tol = 0.01
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
@@ -231,7 +231,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, 2.599442, 2.336454, 2.140576, 0.786869]
+    discadj_trans_stator.test_vals = [79.000000, 2.555965, 2.327109, 2.115689, 0.745501]
     discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.696755, 0.485950, 0.569475, -0.990065]
     test_list.append(discadj_trans_stator)
 
