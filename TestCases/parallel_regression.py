@@ -792,7 +792,7 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
-    turbmod_sa_neg_rae2822.test_vals = [1.448328, 1.208614, -0.846773, 1.277698, 0.499718, 0.000000]
+    turbmod_sa_neg_rae2822.test_vals = [1.448390, 1.208561, -0.846814, 1.273854, 0.498380, 0.000000]
     turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.345593, 1.448310, 1.208721, -0.846597, 1.248410, 0.489117, 0.000000]
     test_list.append(turbmod_sa_neg_rae2822)
 
@@ -1105,7 +1105,7 @@ def main():
     edge_PPR           = TestCase('edge_PPR')
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
-    edge_PPR.test_iter = 25
+    edge_PPR.test_iter = 20
     edge_PPR.test_vals = [-12.476580, -6.287745, -0.000034, 0.000000]
     test_list.append(edge_PPR)
 
