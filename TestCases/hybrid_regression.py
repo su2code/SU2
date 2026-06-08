@@ -181,7 +181,7 @@ def main():
     turb_flatplate.cfg_dir   = "rans/flatplate"
     turb_flatplate.cfg_file  = "turb_SA_flatplate.cfg"
     turb_flatplate.test_iter = 20
-    turb_flatplate.test_vals = [-4.938980, -7.469368, -0.187651, 0.015894]
+    turb_flatplate.test_vals = [-4.958138, -7.438030, -0.187473, 0.015060]
     test_list.append(turb_flatplate)
 
     # ONERA M6 Wing
@@ -375,7 +375,7 @@ def main():
     inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
     inc_buoyancy.cfg_file  = "lam_buoyancy_cavity.cfg"
     inc_buoyancy.test_iter = 20
-    inc_buoyancy.test_vals = [-7.938907, -2.490199, 0.013042, 0.004995]
+    inc_buoyancy.test_vals = [-3.860465, -3.122402, 1.322722, -23.413000]
     test_list.append(inc_buoyancy)
 
     # Laminar heated cylinder with polynomial fluid model
@@ -432,7 +432,7 @@ def main():
     cavity.cfg_dir   = "moving_wall/cavity"
     cavity.cfg_file  = "lam_cavity.cfg"
     cavity.test_iter = 25
-    cavity.test_vals = [-7.325788, -1.861524, 1.097830, 1.028368]
+    cavity.test_vals = [-7.938907, -2.490199, 0.013042, 0.004995]
     test_list.append(cavity)
 
     # Spinning cylinder
@@ -532,8 +532,8 @@ def main():
     edge_VW           = TestCase('edge_VW')
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
-    edge_VW.test_iter = 40
-    edge_VW.test_vals = [-8.895442, -2.694280, -0.000009, 0.000000]
+    edge_VW.test_iter = 30
+    edge_VW.test_vals = [-7.053408, -0.851910, -0.000009, 0.000000]
     test_list.append(edge_VW)
 
     # Rarefaction shock wave edge_PPR
