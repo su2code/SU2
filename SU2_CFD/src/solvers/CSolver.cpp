@@ -278,6 +278,11 @@ void CSolver::GetPeriodicCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       ICOUNT           = nVar;
       break;
+    case PERIODIC_PRESSURE:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
+      ICOUNT           = 1;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for periodic communication.",
                      CURRENT_FUNCTION);
@@ -974,6 +979,14 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             }
 
             break;
+          
+          case PERIODIC_PRESSURE:
+
+            /*--- Load the pressure. ---*/
+
+            bufDSend[buf_offset] = base_nodes->GetPressure(iPoint);
+
+            break;
 
           default:
             SU2_MPI::Error("Unrecognized quantity for periodic communication.",
@@ -1303,6 +1316,15 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
               break;
 
+            case PERIODIC_PRESSURE:
+
+               if (iPeriodic == val_periodic_index + nPeriodic/2) {
+                 base_nodes->SetPrimitive(iPoint, 0, bufDRecv[buf_offset]);
+               }
+
+              break;
+
+
             default:
 
               SU2_MPI::Error("Unrecognized quantity for periodic communication.",
@@ -1398,6 +1420,14 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       break;
     case MPI_QUANTITIES::SOLUTION_TIME_N1:
       COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
+      break;
+    case MPI_QUANTITIES::MOM_COEFF:
+      COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
+      break;
+    case MPI_QUANTITIES::PRESSURE_VAR:
+      COUNT_PER_POINT  = 1;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     default:
@@ -1557,6 +1587,13 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_time_n1(iPoint, iVar);
             break;
+          case MPI_QUANTITIES::MOM_COEFF:
+            for (iDim = 0; iDim < nDim; iDim++)
+              bufDSend[buf_offset+iDim] = base_nodes->GetMomCoeff(iPoint, iDim);
+            break;
+          case MPI_QUANTITIES::PRESSURE_VAR:
+            bufDSend[buf_offset] = base_nodes->GetPrimitive(iPoint, 0);
+            break; 
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                            CURRENT_FUNCTION);
@@ -1712,6 +1749,13 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case MPI_QUANTITIES::SOLUTION_TIME_N1:
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->Set_Solution_time_n1(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case MPI_QUANTITIES::MOM_COEFF:
+            for (iDim = 0; iDim < nDim; iDim++)
+              base_nodes->SetMomCoeff(iPoint, iDim, bufDRecv[buf_offset+iDim]);
+            break;
+          case MPI_QUANTITIES::PRESSURE_VAR:
+            base_nodes->SetPrimitive(iPoint, 0, bufDRecv[buf_offset]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
