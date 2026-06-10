@@ -36,6 +36,24 @@
  * \author F. Palacios, T. Economon, T. Albring
  */
 class CPBIncNSSolver final : public CPBIncEulerSolver {
+
+  /*!
+   * \brief Generic implementation of the isothermal, heatflux and heat-transfer/convection walls adopted from IncNSSolver 
+   */
+  void BC_Wall_Generic(const CGeometry *geometry,
+                       const CConfig *config,
+                       unsigned short val_marker,
+                       unsigned short kind_boundary);
+
+  /*!
+   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container,
+                                       const CConfig *config) override;
+                       
 public:
 
   /*!
@@ -43,5 +61,56 @@ public:
    */
   CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
+  /*!
+   * \brief Impose a no-slip condition. (no energy equation for pressure based solve)
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatFlux_Wall(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) override;
 
+  /*!
+   * \brief Impose a no-slip condition. (no energy equation for pressure based solve)
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Isothermal_Wall(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) override;
+
+  /*!
+   * \brief Impose a no slip condition. (no energy equation for pressure based solve)
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatTransfer_Wall(const CGeometry *geometry,
+                            const CConfig *config,
+                            const unsigned short val_marker) override;
+
+  /*!
+   * \brief Compute the viscous contribution for a particular edge.
+   * \param[in] iEdge - Edge for which the flux and Jacobians are to be computed.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
+                        CNumerics *numerics, CConfig *config) override;
 };

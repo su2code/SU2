@@ -2416,4 +2416,8 @@ public:
 
   inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
   inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
+
+  inline virtual su2double GetMomCoeff(unsigned long iPoint, unsigned short val_Var) { return 0.0; }
+
+  inline virtual void SetMomCoeff(unsigned long iPoint, unsigned short val_Var, su2double val_Mom_Coeff) { }
 };

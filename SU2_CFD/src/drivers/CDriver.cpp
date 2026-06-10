@@ -2149,19 +2149,17 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
   /*--- Solver definition for the poisson/pressure correction problem ---*/
   if (poisson) {
+    //TODO: currently heat is reused which is wrong as the actual laplacian operator is anisotropic for the poisson problem
     /*--- Pressure correction (Poisson) equation ---*/
-    // numerics[MESH_0][POISSON_SOL][visc_term] = new CAvgGradCorrected_Poisson(nDim, nVar_Poisson, config);
+    numerics[MESH_0][POISSON_SOL][visc_term] = new CAvgGrad_Heat(nDim, config, true);
        
     for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++) 
-      // numerics[iMGlevel][POISSON_SOL][visc_term] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
+      numerics[iMGlevel][POISSON_SOL][visc_term] = new CAvgGrad_Heat(nDim, config, false);
     
     /*--- Assign the convective boundary term as well to account for flow BCs as well --*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      // numerics[iMGlevel][POISSON_SOL][visc_bound_term] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
+      numerics[iMGlevel][POISSON_SOL][visc_bound_term] = new CAvgGrad_Heat(nDim, config, false);
 
-      /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-      // numerics[iMGlevel][POISSON_SOL][source_first_term] = new CSource_PoissonFVM(nDim, nVar_Poisson, config);
-      // numerics[iMGlevel][POISSON_SOL][source_second_term] = new CSourceNothing(nDim, nVar_Poisson, config);
     }
   }
 

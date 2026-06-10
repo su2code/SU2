@@ -33,13 +33,11 @@
 
 class CPBIncEulerSolver : public CFVMFlowSolverBase<CPBIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE> {
 protected:
+  vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
+  StreamwisePeriodicValues SPvals, SPvalsUpdated;
 
 public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  //CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) {};
-  
+    
   CPBIncEulerSolver() = delete;
 
   /*!
@@ -54,12 +52,115 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CPBIncEulerSolver(void) override {}
+  ~CPBIncEulerSolver(void) override;
+
+  /*!
+   * \brief Get the fluid model.
+   * \return Pointer to the fluid model.
+   */
+  inline CFluidModel* GetFluidModel(void) const final { return FluidModel[omp_get_thread_num()]; }
+
+  /*!
+   * \brief Compute the spatial integration using a centered scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void Centered_Residual(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics **numerics_container,
+                        CConfig *config,
+                        unsigned short iMesh,
+                        unsigned short iRKStep) final;
+
+  /*!
+   * \brief Compute the spatial integration using a upwind scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Upwind_Residual(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CNumerics **numerics_container,
+                      CConfig *config,
+                      unsigned short iMesh) final;
+
+  /*!
+   * \brief Source term integration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Source_Residual(CGeometry *geometry,
+                       CSolver **solver_container,
+                       CNumerics **numerics_container,
+                       CConfig *config,
+                       unsigned short iMesh) final;
+
+
+  /*!
+   * \brief Compute primitive variables and their gradients.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void Preprocessing(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned short iRKStep,
+                    unsigned short RunTime_EqSystem,
+                    bool Output) override;
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Postprocessing(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CConfig *config,
+                      unsigned short iMesh) override;
+
+  /*!
+   * \brief Compute the velocity^2, SoundSpeed, Pressure, Enthalpy, Viscosity.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \return - The number of non-physical points.
+   */
+   virtual unsigned long SetPrimitive_Variables(CSolver **solver_container, const CConfig *config);
+
+
+  /*!
+   * \brief Set the solver nondimensionalization.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void SetNondimensionalization(CConfig *config, unsigned short iMesh);
+
+  // /*!
+  //  * \brief Generic implementation of explicit iterations with preconditioner.
+  //  */
+  // template<ENUM_TIME_INT IntegrationType>
+  // void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
+
 
   /*!
    * \brief Set reference values for pressure, forces, etc.
    */
-  void SetReferenceValues(const CConfig& config) final {}
+  void SetReferenceValues(const CConfig& config) final;
 
   /*!
    * \brief Print verification error to screen.
@@ -67,6 +168,66 @@ public:
    */
   void PrintVerificationError(const CConfig* config) const final {}
 
+  /*!
+   * \brief Update the solution using a Runge-Kutta scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void ExplicitRK_Iteration(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CConfig *config,
+                            unsigned short iRKStep) final;
 
+  /*!
+   * \brief Update the solution using the classical Runge-Kutta 4 scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void ClassicalRK4_Iteration(CGeometry *geometry,
+                              CSolver **solver_container,
+                              CConfig *config,
+                              unsigned short iRKStep) final;
+
+  /*!
+   * \brief Update the solution using the explicit Euler scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ExplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config) final;
+
+  /*!
+   * \brief Prepare an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
+
+  /*!
+   * \brief Complete an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
+
+  /*!
+   * \brief Compute the time step for solving the Euler equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Value of the current iteration.
+   */
+  void SetTime_Step(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned long Iteration) final;
 
 };
