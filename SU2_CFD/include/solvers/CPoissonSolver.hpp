@@ -38,13 +38,44 @@
  */
 class CPoissonSolver final : public CScalarSolver<CPoissonVariable> {
 protected:
+  static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
+  static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
+
+  /*!
+   * \brief Compute the viscous flux for the scalar equation at a particular edge.
+   * \param[in] iEdge - Edge for which we want to compute the flux
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \note Calls a generic implementation after defining a SolverSpecificNumerics object.
+   */
+  inline void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
+                                       CNumerics* numerics, const CConfig* config) override {
+    const CVariable* flow_nodes = /*flow ?*/ solver_container[FLOW_SOL]->GetNodes() /*: nullptr*/;
+
+    // just for testing a regular poisson equation with no variable coefficients
+    const su2double one = 1.0;
+
+    su2double mom_coeff_i{}, mom_coeff_j{};
+
+    /*--- Computes the thermal diffusivity to use in the viscous numerics. ---*/
+    auto compute_momentum_coeff = [&](unsigned long iPoint, unsigned long jPoint) {
+        mom_coeff_i = nodes->GetMomCoeff(iPoint, 0); // temporary just the x coefficient, TODO: make the setdiffusioncoeff take tensors as argument? or vectors? idk?
+        mom_coeff_j = nodes->GetMomCoeff(jPoint, 0);
+        numerics->SetDiffusionCoeff(&mom_coeff_i, &mom_coeff_j);
+
+        // numerics->SetDiffusionCoeff(&const_diffusivity, &const_diffusivity);
+      // }
+    };
+    /*--- Compute residual and Jacobians. ---*/
+    Viscous_Residual_impl(compute_momentum_coeff, iEdge, geometry, solver_container, numerics, config);
+  }
+
+  su2activematrix PseudoTimeCorr;
 
 public:
 
-  /*!
-   * \brief Constructor of the class.
-   */
-  // CPoissonSolver(void);
   /*
    * \overload
    * \param[in] geometry - Geometrical definition of the problem
@@ -52,13 +83,38 @@ public:
    */
   CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh);
 
-  /*
-   * \brief Destructor of the class.
+  /*!
+   * \brief Restart residual and compute gradients.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Output - boolean to determine whether to print output.
    */
-  // ~CPoissonSolver(void);
+  void Preprocessing(CGeometry *geometry,
+                    CSolver **solver_container,
+                    CConfig *config,
+                    unsigned short iMesh,
+                    unsigned short iRKStep,
+                    unsigned short RunTime_EqSystem,
+                    bool Output) override;
+
+  /*!
+   * \brief Correct the pressure and velocities for the flow solution
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Postprocessing(CGeometry *geometry,
+                                     CSolver **solver_container,
+                                     CConfig *config,
+                                     unsigned short iMesh) final;
   
   /*!
-   * \brief Load a solution from a restart file.
+   * \brief Load a solution from a restart file (not applicable as poisson solver is only used as auxiliary solver)
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
@@ -72,7 +128,42 @@ public:
                    bool val_update_geo) override {}
 
   /*!
-   * \brief A virtual member.
+   * \brief Compute the viscous residuals for the turbulent equation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   */
+  void Viscous_Residual(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics **numerics_container,
+                        CConfig *config,
+                        unsigned short iMesh,
+                        unsigned short iRKStep) override;
+
+ /*!
+   * \brief Source term computation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Source_Residual(CGeometry *geometry, CSolver **solver_container,  CNumerics **numerics_container,
+                       CConfig *config, unsigned short iMesh) override;
+
+  /*!
+   * \brief Update the solution using an implicit solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) override;
+
+  /*!
+   * \brief No time step as it is a stationary problem
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
@@ -98,22 +189,25 @@ public:
                            unsigned long TimeIter) override {}
 
   /*!
-   * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
-   * \param[in] geometry - Geometric definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \brief Compute the coefficients for the pressure correction equation based
+   *        on the residuals from the solution of momentum equation.
    */
-  void SetResidual_DualTime(CGeometry *geometry,
-                            CSolver **solver_container,
-                            CConfig *config,
-                            unsigned short iRKStep,
-                            unsigned short iMesh,
-                            unsigned short RunTime_EqSystem) override {}
+  void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh);
 
-
-
+  /*!
+   * \brief Impose a constant heat-flux condition at the wall.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_HeatFlux_Wall(CGeometry *geometry,
+                        CSolver **solver_container,
+                        CNumerics *conv_numerics,
+                        CNumerics *visc_numerics,
+                        CConfig *config,
+                        unsigned short val_marker) override;
 
 };

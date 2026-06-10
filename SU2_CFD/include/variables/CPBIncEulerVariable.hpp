@@ -79,8 +79,9 @@ public:
   /*!
    * \brief Set the value of the pressure.
    * \param[in] iPoint - Point index.
+   * \param[in] val_pressure - Pressure at point.
    */
-  // inline void SetPressure(unsigned long iPoint) final { Primitive(iPoint, indices.Pressure()) = Solution(iPoint,0); }
+  // inline void SetPressure(unsigned long iPoint, su2double val_pressure) final { Primitive(iPoint, indices.Pressure()) = val_pressure; }
 
   /*!
    * \brief Set the value of the density for the incompressible flows.
