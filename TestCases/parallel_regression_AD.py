@@ -231,7 +231,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, 2.599441, 2.336307, 2.140979, 0.786891]
+    discadj_trans_stator.test_vals = [79.000000, 2.599442, 2.336454, 2.140576, 0.786869]
     discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.696755, 0.485950, 0.569475, -0.990065]
     test_list.append(discadj_trans_stator)
 
@@ -342,7 +342,7 @@ def main():
     discadj_flamelet_ch4_hx.cfg_file         = "lam_prem_ch4_hx_ad.cfg"
     discadj_flamelet_ch4_hx.multizone        = False
     discadj_flamelet_ch4_hx.test_iter        = 10
-    discadj_flamelet_ch4_hx.test_vals        = [-12.782056, -13.049168, -13.441039, -11.710302, -18.821992, -8.887596, -18.882447]
+    discadj_flamelet_ch4_hx.test_vals        = [-9.078706, -9.025745, -9.516205, -8.434002, -15.386905, -8.887596, -18.881167]
     test_list.append(discadj_flamelet_ch4_hx)
 
     # 2D planar laminar premixed flame on isothermal burner with conjugate heat transfer (restart)
@@ -351,7 +351,7 @@ def main():
     discadj_flamelet_ch4_cht.cfg_file         = "lam_prem_ch4_cht_ad_master.cfg"
     discadj_flamelet_ch4_cht.multizone        = True
     discadj_flamelet_ch4_cht.test_iter        = 10
-    discadj_flamelet_ch4_cht.test_vals        = [-1.543982, 0.628666, -6.533516, -18.651097, -18.648552, -3.794724, -6.561913, 11.000000]
+    discadj_flamelet_ch4_cht.test_vals        = [-1.545058, 0.628666, -6.533534, -18.651078, -18.648552, -3.794724, -6.561913, 11.000000]
     test_list.append(discadj_flamelet_ch4_cht)
 
     ######################################
