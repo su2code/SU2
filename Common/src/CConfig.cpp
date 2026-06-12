@@ -1887,6 +1887,8 @@ void CConfig::SetConfig_Options() {
   addEnumOption("TIMESTEP_HEAT", Kind_TimeStep_Heat, Heat_TimeStep_Map, MINIMUM);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, EULER_IMPLICIT);
+  /* DESCRIPTION: Number of corrections in the PISO algorithm (pressure based). */
+  addUnsignedShortOption("PISO_CORRECTIONS", nCorrections_PISO, 1);
 
   /*!\par CONFIG_CATEGORY: Linear solver definition \ingroup Config*/
   /*--- Options related to the linear solvers ---*/
@@ -1901,7 +1903,15 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("LINEAR_SOLVER_ERROR", Linear_Solver_Error, 1E-6);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
-  /* DESCRIPTION: Maximum number of iterations of the poisson linear solver for the implicit formulation */
+  /*!\brief LINEAR_SOLVER
+   *  \n DESCRIPTION: Linear solver for the poisson system \n OPTIONS: see \link Linear_Solver_Map \endlink \n DEFAULT: FGMRES \ingroup Config*/
+  addEnumOption("POISSON_LINEAR_SOLVER", Kind_Poisson_Linear_Solver, Linear_Solver_Map, FGMRES);
+  /*!\brief LINEAR_SOLVER_PREC
+   *  \n DESCRIPTION: Preconditioner for the Krylov linear solvers \n OPTIONS: see \link Linear_Solver_Prec_Map \endlink \n DEFAULT: LU_SGS \ingroup Config*/
+  addEnumOption("POISSON_LINEAR_SOLVER_PREC", Kind_Poisson_Linear_Solver_Prec, Linear_Solver_Prec_Map, ILU);
+  /* DESCRIPTION: Minimum error threshold for the poisson linear solver */
+  addDoubleOption("POISSON_LINEAR_SOLVER_ERROR", Poisson_Linear_Solver_Error, 1E-6);
+  /* DESCRIPTION: Maximum number of iterations of the poisson linear solver */
   addUnsignedLongOption("POISSON_LINEAR_SOLVER_ITER", Poisson_Linear_Solver_Iter, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);

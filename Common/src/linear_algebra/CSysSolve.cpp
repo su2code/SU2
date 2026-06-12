@@ -1419,6 +1419,16 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
       break;
     }
 
+    /*--- Poisson solver mode ---*/
+    case LINEAR_SOLVER_MODE::POISSON: {
+      KindSolver = config->GetKind_Poisson_Linear_Solver();
+      KindPrecond = config->GetKind_Poisson_Linear_Solver_Prec();
+      MaxIter = config->GetPoisson_Linear_Solver_Iter();
+      SolverTol = SU2_TYPE::GetValue(config->GetPoisson_Linear_Solver_Error());
+      ScreenOutput = false;
+      break;
+    }
+
     /*--- Normal mode assumes that 'lin_sol_mode==LINEAR_SOLVER_MODE::STANDARD',
      * but does not enforce it to avoid compiler warning.  ---*/
     default: {
@@ -1624,6 +1634,16 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
       MaxIter = config->GetGrad_Linear_Solver_Iter();
       SolverTol = SU2_TYPE::GetValue(config->GetGrad_Linear_Solver_Error());
       ScreenOutput = true;
+      break;
+    }
+
+    /*--- Poisson solver mode ---*/
+    case LINEAR_SOLVER_MODE::POISSON: {
+      KindSolver = config->GetKind_Poisson_Linear_Solver();
+      KindPrecond = config->GetKind_Poisson_Linear_Solver_Prec();
+      MaxIter = config->GetPoisson_Linear_Solver_Iter();
+      SolverTol = SU2_TYPE::GetValue(config->GetPoisson_Linear_Solver_Error());
+      ScreenOutput = false;
       break;
     }
 

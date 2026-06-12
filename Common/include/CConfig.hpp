@@ -433,6 +433,7 @@ private:
   su2double *WeightsIntegrationADER_DG;     /*!< \brief The weights of the ADER-DG time integration points on the interval [-1,1]. */
   unsigned short nRKStep;                   /*!< \brief Number of steps of the explicit Runge-Kutta method. */
   su2double *RK_Alpha_Step;                 /*!< \brief Runge-Kutta beta coefficients. */
+  unsigned short nCorrections_PISO;         /*!< \brief Number of corrections used in PISO algorithm. */
 
   unsigned short nQuasiNewtonSamples;  /*!< \brief Number of samples used in quasi-Newton solution methods. */
   bool UseVectorization;       /*!< \brief Whether to use vectorized numerics schemes. */
@@ -526,6 +527,8 @@ private:
   Kind_Gradient_Method_Recon,      /*!< \brief Numerical method for computation of spatial gradients used for upwind reconstruction. */
   Kind_Deform_Linear_Solver,             /*!< Numerical method to deform the grid */
   Kind_Deform_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver. */
+  Kind_Poisson_Linear_Solver,             /*!< \brief Numerical solver for the poisson equation. */
+  Kind_Poisson_Linear_Solver_Prec,        /*!< \brief Preconditioner of the linear solver of the poisson equation. */
   Kind_Linear_Solver,                    /*!< \brief Numerical solver for the implicit scheme. */
   Kind_Linear_Solver_Prec,               /*!< \brief Preconditioner of the linear solver. */
   Kind_DiscAdj_Linear_Solver,            /*!< \brief Linear solver for the discrete adjoint system. */
@@ -645,6 +648,7 @@ private:
   bool InletUseNormal;             /*!< \brief Flag for whether to use the local normal as the flow direction for a pressure inlet. */
   su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
+  su2double Poisson_Linear_Solver_Error;         /*!< \brief Min error of the linear solver for the poisson equation. */
   su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
   unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Poisson_Linear_Solver_Iter;      /*!< \brief Max iterations of the linear solver for the poisson solver*/
@@ -4013,6 +4017,12 @@ public:
    * \return Kind of iteration used for pressure based iterations.
    */
   ENUM_PBITER GetKind_PBIter(void) const { return Kind_PBIter; }
+
+  /*!
+   * \brief Number of (pressure) corrections used by PISO algorithm.
+   * \return Number of corrections used by PISO algorithm.
+   */
+  unsigned short GetPISO_corrections(void) const { return nCorrections_PISO; }
   
   /*!
    * \brief Set the kind of incompressible solver formulation that is used.
@@ -4377,10 +4387,22 @@ public:
   unsigned short GetKind_Linear_Solver_Prec(void) const { return Kind_Linear_Solver_Prec; }
 
   /*!
+   * \brief Get the kind of preconditioner for the implicit solver.
+   * \return Numerical preconditioner for implicit formulation (solving the linear system).
+   */
+  unsigned short GetKind_Poisson_Linear_Solver_Prec(void) const { return Kind_Poisson_Linear_Solver_Prec; }
+
+  /*!
    * \brief Get the kind of solver for the implicit solver.
    * \return Numerical solver for implicit formulation (solving the linear system).
    */
   unsigned short GetKind_Deform_Linear_Solver(void) const { return Kind_Deform_Linear_Solver; }
+
+  /*!
+   * \brief Get the kind of solver for the implicit solver.
+   * \return Numerical solver for implicit formulation (solving the linear system).
+   */
+  unsigned short GetKind_Poisson_Linear_Solver(void) const { return Kind_Poisson_Linear_Solver; }
 
   /*!
    * \brief Get min error of the linear solver for the implicit formulation.
@@ -4393,6 +4415,12 @@ public:
    * \return Min error of the linear solver for the implicit formulation.
    */
   su2double GetDeform_Linear_Solver_Error(void) const { return Deform_Linear_Solver_Error; }
+
+  /*!
+   * \brief Get min error of the linear solver for the implicit formulation.
+   * \return Min error of the linear solver for the implicit formulation.
+   */
+  su2double GetPoisson_Linear_Solver_Error(void) const { return Poisson_Linear_Solver_Error; }
 
   /*!
    * \brief Get max number of iterations of the linear solver for the implicit formulation.

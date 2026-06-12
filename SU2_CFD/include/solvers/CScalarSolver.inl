@@ -30,8 +30,8 @@
 #include "../../include/variables/CFlowVariable.hpp"
 
 template <class VariableType>
-CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative)
-    : CSolver(), Conservative(conservative),
+CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative, LINEAR_SOLVER_MODE linear_solver_mode)
+    : CSolver(linear_solver_mode), Conservative(conservative),
       prim_idx(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
                config->GetNEMOProblem(), geometry->GetnDim(), config->GetnSpecies()) {
   SU2_ZONE_SCOPED

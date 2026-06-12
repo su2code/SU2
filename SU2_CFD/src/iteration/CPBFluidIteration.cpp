@@ -45,6 +45,8 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
                            (config[val_iZone]->GetDiscrete_Adjoint() && config[val_iZone]->GetFrozen_Visc_Disc());
   const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
 
+  const unsigned short nCorrections = config[val_iZone]->GetPISO_corrections();
+
   /*--- Setting up iteration values depending on if this is a
    steady or an unsteady simulation */
 
@@ -62,12 +64,13 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
                                                                    val_iZone, val_iInst);
 
   /*--- Solve the pressure correction (poisson) equation ---*/
-  /* Note that the pressure and velocity corrections resulting from the poisson equation 
+  /* The poisson correction is repeated nCorrections number of times to account for the PISO algorithm.
+  Note that the pressure- and velocity corrections resulting from the poisson equation 
   are handled in the postprocessing step of the poissonsolver. */
 
   config[val_iZone]->SetGlobalParam(MAIN_SOLVER::POISSON_EQUATION, RUNTIME_POISSON_SYS);
 
-  integration[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, RUNTIME_POISSON_SYS,
+  for (int i = 0; i < nCorrections; ++i) integration[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, RUNTIME_POISSON_SYS,
                                                                    val_iZone, val_iInst);
 
   /*--- Pressure-based algorithm finished, now run auxiliary solvers ---*/

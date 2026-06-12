@@ -34,7 +34,7 @@
 template class CScalarSolver<CPoissonVariable>;
 
 CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
-  : CScalarSolver<CPoissonVariable>(geometry, config, false) {
+  : CScalarSolver<CPoissonVariable>(geometry, config, false, LINEAR_SOLVER_MODE::POISSON) {
   SU2_ZONE_SCOPED
 
   /*--- Dimension of the problem --> temperature is the only conservative variable ---*/
@@ -553,7 +553,7 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
   
   /*--- Set max linear solver iter which can be different from flow iterations ---*/
-//   config->SetLinear_Solver_Iter(config->GetLinear_Solver_Iter_Poisson()); //TODO:PBFlow
+  // config->SetLinear_Solver_Iter(config->GetLinear_Solver_Iter_Poisson()); //TODO:PBFlow
 //    SetLinear_Solver_Iter(config->GetLinear_Solver_Iter());
 
   /*--- Set maximum residual to zero ---*/ //TODO:Already done before PBFlow
@@ -614,7 +614,12 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   /*--- Store the value of the residual. ---*/
-  SetResLinSolver(System.GetResidual());
+  // SetResLinSolver(System.GetResidual());
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    SetIterLinSolver(IterLinSol);
+    SetResLinSolver(System.GetResidual());
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {

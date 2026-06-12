@@ -172,7 +172,8 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
-  AddHistoryOutput("POISSON_RESIDUAL", "PoissonSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the poisson solver.");
+  AddHistoryOutput("LINSOL_POISSON_ITER", "PoissonSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the poisson solver.");
+  AddHistoryOutput("LINSOL_POISSON_RESIDUAL", "PoissonSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the poisson solver.");
   AddHistoryOutputFieldsScalarLinsol(config);
 
   AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
@@ -270,7 +271,10 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
 
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(flow_solver->GetResLinSolver()));
-  if (pressure_based) SetHistoryOutputValue("POISSON_RESIDUAL",log10(poisson_solver->GetResLinSolver()));
+  if (pressure_based) {
+    SetHistoryOutputValue("LINSOL_POISSON_ITER",poisson_solver->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_POISSON_RESIDUAL",log10(poisson_solver->GetResLinSolver()));
+  }
 
   if (config->GetDeform_Mesh()){
     SetHistoryOutputValue("DEFORM_MIN_VOLUME", mesh_solver->GetMinimum_Volume());
@@ -491,7 +495,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
     SetVolumeOutputValue("RES_VELOCITY-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
     if (nDim == 3)
       SetVolumeOutputValue("RES_VELOCITY-Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
-    // SetVolumeOutputValue("RES_MASSFLUX", iPoint, solver[POISSON_SOL]->LinSysRes(iPoint, 0)); // TODO: add this output field once poisson solver is added
+    SetVolumeOutputValue("RES_MASSFLUX", iPoint, solver[POISSON_SOL]->LinSysRes(iPoint, 0)); 
   }  else {
 	  SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
     SetVolumeOutputValue("RES_VELOCITY-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));

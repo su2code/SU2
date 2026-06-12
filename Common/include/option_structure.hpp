@@ -354,8 +354,7 @@ static const MapType<std::string, ENUM_INCOMP_SYSTEM> Incomp_Map = {
  */
 enum class ENUM_PBITER {
   SIMPLE,       /*!< \brief SIMPLE algorithm. */
-  SIMPLEC,      /*!< \brief SIMPLE algorithm. */
-  PISO,         /*!< \brief PISO algorithm. */
+  SIMPLEC,      /*!< \brief SIMPLEC algorithm. */
 };
 
 static const MapType<std::string, ENUM_PBITER> PBIter_Map = {
@@ -2891,6 +2890,7 @@ enum class LINEAR_SOLVER_MODE {
   STANDARD,        /*!< \brief Operate in standard mode. */
   MESH_DEFORM,     /*!< \brief Operate in mesh deformation mode. */
   GRADIENT_MODE,   /*!< \brief Operate in gradient smoothing mode. */
+  POISSON,         /*!< \brief Operate in poisson solver mode. */
 };
 
 /*!

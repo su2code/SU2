@@ -440,7 +440,7 @@ class CScalarSolver : public CSolver {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative);
+  CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative, LINEAR_SOLVER_MODE linear_solver_mode = LINEAR_SOLVER_MODE::STANDARD);
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
