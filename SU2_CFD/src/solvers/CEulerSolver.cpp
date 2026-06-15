@@ -1916,11 +1916,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         if (van_albada) {
           lim_i = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_i, V_ij, EPS);
           lim_j = LimiterHelpers<>::vanAlbadaFunction(Project_Grad_j, V_ij, EPS);
-        }
-        else if (limiter) {
+        } else if (limiter) {
           lim_i = nodes->GetLimiter_Primitive(iPoint, iVar);
           lim_j = nodes->GetLimiter_Primitive(jPoint, iVar);
         }
+        lim_i *= (1 - static_cast<passivedouble>(nodes->OutlierMitigation(iPoint)) / CEulerVariable::MAX_OUTLIER_MITIGATION);
+        lim_j *= (1 - static_cast<passivedouble>(nodes->OutlierMitigation(jPoint)) / CEulerVariable::MAX_OUTLIER_MITIGATION);
 
         Primitive_i[iVar] = V_i[iVar] + 0.5 * lim_i * Project_Grad_i;
         Primitive_j[iVar] = V_j[iVar] - 0.5 * lim_j * Project_Grad_j;
