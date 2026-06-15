@@ -2520,10 +2520,162 @@ void CEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CCon
   PrepareImplicitIteration_impl(precond, geometry, config);
 }
 
-void CEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+void CEulerSolver::ComputeUnderRelaxationFactor(const CConfig* config) {
   SU2_ZONE_SCOPED
 
-  CompleteImplicitIteration_impl<true>(geometry, config);
+  /*--- Loop over the solution update given by relaxing the linear system for this
+   * nonlinear iteration and impose a limit on the maximum percentage that the
+   * density and static energy can change. */
+
+  const su2double allowableRatio = config->GetMaxUpdateFractionFlow();
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    su2double ratio = fabs(LinSysSol(iPoint, 0)) / max(nodes->GetSolution(iPoint, 0), EPS);
+    su2double e_old = nodes->GetSolution(iPoint, nVar - 1);
+    su2double e_new = e_old + LinSysSol(iPoint, nVar - 1);
+    for (unsigned short jVar = 1; jVar <= nDim; jVar++) {
+      e_old -= 0.5 * pow(nodes->GetSolution(iPoint, jVar), 2);
+      e_new -= 0.5 * pow(nodes->GetSolution(iPoint, jVar) + LinSysSol(iPoint, jVar), 2);
+    }
+    ratio = fmax(ratio, fabs(e_new - e_old) / max(e_old, EPS));
+
+    su2double localUnderRelaxation = fmin(allowableRatio / fmax(ratio, EPS), 1);
+
+    /* Threshold the relaxation factor in the event that there is
+     a very small value. This helps avoid catastrophic crashes due
+     to non-realizable states by canceling the update. */
+
+    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
+
+    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+  }
+  END_SU2_OMP_FOR
+}
+
+void CEulerSolver::IdentifySolutionOutliers(const CConfig *config, unsigned long iter) {
+  SU2_ZONE_SCOPED
+
+  const unsigned long startIteration = config->GetOutlierMitigationParam()[0];
+  const unsigned long updateFrequency = config->GetOutlierMitigationParam()[1];
+  const unsigned long printFrequency = config->GetOutlierMitigationParam()[2];
+  const int nSigma = config->GetOutlierMitigationParam()[3];
+
+  if (iter < startIteration) return;
+
+  auto DetermineBinAndUpdatePoint = [&](const unsigned long iPoint) {
+    const su2double t = nodes->GetTemperature(iPoint);
+    const auto i = nSigma + min(max(-nSigma, SU2_TYPE::Int((t - MeanTemperature) / max(StdDevTemperature, EPS))), nSigma);
+    if (i == 0 || i == 2 * nSigma) {
+      if (nodes->OutlierMitigation(iPoint) == 0) {
+        /*--- Start mitigating with maximum strength if the point was just identified as outlier. ---*/
+        nodes->OutlierMitigation(iPoint) = CEulerVariable::MAX_OUTLIER_MITIGATION;
+      } else if (nodes->OutlierMitigation(iPoint) < CEulerVariable::MAX_OUTLIER_MITIGATION) {
+        /*--- The point became an outlier again after reducing mitigations (below), increase them slowly. ---*/
+        ++nodes->OutlierMitigation(iPoint);
+      }
+    } else if (nodes->OutlierMitigation(iPoint) > 0) {
+      /*--- Not an outlier anymore, try to slowly reduce the mitigations. ---*/
+      --nodes->OutlierMitigation(iPoint);
+    }
+    return i;
+  };
+
+  /*--- Recompute mean and std deviation of temperature or use the stored values. ---*/
+  if (iter == startIteration || iter % updateFrequency == 0) {
+    su2double localSum = 0;
+    static su2double nPointGlobal;
+    SU2_OMP_MASTER
+    MeanTemperature = 0;
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+      localSum += nodes->GetTemperature(iPoint);
+    }
+    END_SU2_OMP_FOR
+
+    atomicAdd(localSum, MeanTemperature);
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      su2double tmp[2] = {MeanTemperature, static_cast<su2double>(nPointDomain)}, global[2];
+      SU2_MPI::Allreduce(tmp, global, 2, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      nPointGlobal = global[1];
+      MeanTemperature = global[0] / nPointGlobal;
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+    localSum = 0;
+    SU2_OMP_MASTER
+    StdDevTemperature = 0;
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint ++) {
+      localSum += pow(MeanTemperature - nodes->GetTemperature(iPoint), 2);
+    }
+    END_SU2_OMP_FOR
+
+    atomicAdd(localSum, StdDevTemperature);
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      SU2_MPI::Allreduce(&StdDevTemperature, &localSum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      StdDevTemperature = sqrt(localSum / nPointGlobal);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+    const auto nBins = 2 * nSigma + 2;
+    std::vector<unsigned long> bins(nBins, 0);
+    unsigned long nPointLocal = 0;
+    SU2_OMP_MASTER
+    nPointGlobal = 0;
+
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      const auto i = DetermineBinAndUpdatePoint(iPoint);
+      if (iPoint < nPointDomain) {
+        nPointLocal += static_cast<unsigned long>(nodes->OutlierMitigation(iPoint) > 0);
+
+        SU2_OMP_ATOMIC
+        ++bins[i];
+      }
+    }
+    END_SU2_OMP_FOR
+
+    SU2_OMP_ATOMIC
+    nPointGlobal += nPointLocal;
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    if (iter == 0 || iter % (updateFrequency * printFrequency) == 0) {
+      bins.back() = nPointGlobal;
+      std::vector<unsigned long> global(nBins);
+      SU2_MPI::Reduce(bins.data(), global.data(), nBins, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, SU2_MPI::GetComm());
+      if (rank == MASTER_NODE) {
+        PrintingToolbox::CTablePrinter outlierTable(&std::cout);
+        outlierTable.AddColumn("Mean T", 12);
+        outlierTable.AddColumn("StdDev", 12);
+        outlierTable.AddColumn("< -" + std::to_string(nSigma), 12);
+        for (int i = -nSigma; i < nSigma; ++i) {
+          const int jump = (i == -1);
+          outlierTable.AddColumn(std::to_string(i) + " to " + std::to_string(i + 1 + jump), 12);
+          i += jump;
+        }
+        outlierTable.AddColumn("> " + std::to_string(nSigma), 12);
+        outlierTable.AddColumn("#Mitig.", 12);
+        outlierTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+        outlierTable.PrintHeader();
+        outlierTable << MeanTemperature << StdDevTemperature;
+        for (const auto n : global) outlierTable << n;
+        outlierTable.PrintFooter();
+      }
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  } else {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      (void)DetermineBinAndUpdatePoint(iPoint);
+    }
+    END_SU2_OMP_FOR
+  }
 }
 
 void CEulerSolver::SetPreconditioner(const CConfig *config, unsigned long iPoint,

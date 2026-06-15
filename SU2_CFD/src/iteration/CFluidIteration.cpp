@@ -132,12 +132,13 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
   /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
 
-  if ((config[val_iZone]->GetCFL_Adapt() == YES) && (!disc_adj)) {
-    SU2_OMP_PARALLEL
+  SU2_OMP_PARALLEL
+  if (!disc_adj) {
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
                                                                    solver[val_iZone][val_iInst], config[val_iZone]);
-    END_SU2_OMP_PARALLEL
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->IdentifySolutionOutliers(config[val_iZone], InnerIter);
   }
+  END_SU2_OMP_PARALLEL
 
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
 

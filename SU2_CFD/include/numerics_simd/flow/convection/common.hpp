@@ -188,6 +188,7 @@ FORCEINLINE void musclEdgeLimited(const Int& iPoint,
  * \param[in] V1st - Pair of compressible flow primitives for nodes i,j.
  * \param[in] vector_ij - Distance vector from i to j.
  * \param[in] solution - Entire solution container (a derived CVariable).
+ * \param[out] nonPhysical - Signals that the edge is treated as non-physical.
  * \return Pair of primitive variables.
  */
 template<class ReconVarType, class PrimVarType, size_t nDim, class VariableType>
@@ -201,7 +202,8 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
                                                       const LIMITER limiterType,
                                                       const CPair<PrimVarType>& V1st,
                                                       const VectorDbl<nDim>& vector_ij,
-                                                      const VariableType& solution) {
+                                                      const VariableType& solution,
+                                                      Double& nonPhysical) {
   static_assert(ReconVarType::nVar <= PrimVarType::nVar);
 
   const auto& gradients = solution.GetGradient_Reconstruction();
@@ -262,15 +264,20 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
     const Double neg_sound_speed = enthalpy * (R+1) < 0.5 * v_squared;
 
     /*--- Revert to first order if the state is non-physical. ---*/
-    Double bad_recon = fmax(neg_p_or_rho, neg_sound_speed);
+    Double nonPhysical = fmax(neg_p_or_rho, neg_sound_speed);
     /*--- Handle SIMD dimensions 1 by 1. ---*/
     for (size_t k = 0; k < Double::Size; ++k) {
-      bad_recon[k] = solution.UpdateNonPhysicalEdgeCounter(iEdge[k], bad_recon[k]);
+      nonPhysical[k] = solution.UpdateNonPhysicalEdgeCounter(iEdge[k], nonPhysical[k]);
+      nonPhysical[k] = fmax(nonPhysical[k],
+          fmax(solution.OutlierMitigation(iPoint[k]),
+               solution.OutlierMitigation(jPoint[k])) / VariableType::MAX_OUTLIER_MITIGATION);
     }
     for (size_t iVar = 0; iVar < ReconVarType::nVar; ++iVar) {
-      V.i.all(iVar) = bad_recon * V1st.i.all(iVar) + (1-bad_recon) * V.i.all(iVar);
-      V.j.all(iVar) = bad_recon * V1st.j.all(iVar) + (1-bad_recon) * V.j.all(iVar);
+      V.i.all(iVar) = nonPhysical * V1st.i.all(iVar) + (1-nonPhysical) * V.i.all(iVar);
+      V.j.all(iVar) = nonPhysical * V1st.j.all(iVar) + (1-nonPhysical) * V.j.all(iVar);
     }
+  } else {
+    nonPhysical = 0;
   }
   return V;
 }

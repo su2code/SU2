@@ -345,7 +345,9 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over a nonlinear
    * iteration for stability.
    */
-  virtual void ComputeUnderRelaxationFactor(const CConfig* config);
+  virtual void ComputeUnderRelaxationFactor(const CConfig* config) {
+    SU2_MPI::Error("Not implemented for this solver.", CURRENT_FUNCTION);
+  }
 
   /*!
    * \brief General implementation to load a flow solution from a restart file.
@@ -977,39 +979,6 @@ class CFVMFlowSolverBase : public CSolver {
   }
 
   /*!
-   * \brief Generic implementation to complete an implicit iteration, i.e. update the solution.
-   * \tparam compute_ur - Whether to use automatic under-relaxation for the update.
-   */
-  template<bool compute_ur>
-  void CompleteImplicitIteration_impl(CGeometry *geometry, CConfig *config) {
-
-    if (compute_ur) ComputeUnderRelaxationFactor(config);
-
-    /*--- Update solution with under-relaxation and communicate it. ---*/
-
-    if (!config->GetContinuous_Adjoint()) {
-      SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-        for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-          nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint)*LinSysSol[iPoint*nVar+iVar]);
-        }
-      }
-      END_SU2_OMP_FOR
-    }
-
-    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    }
-
-    InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
-    CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
-
-    /*--- For verification cases, compute the global error metrics. ---*/
-    ComputeVerificationError(geometry, config);
-  }
-
-  /*!
    * \brief Evaluate the vorticity and strain rate magnitude.
    */
   void ComputeVorticityAndStrainMag(const CConfig& config, const CGeometry *geometry, unsigned short iMesh);
@@ -1074,6 +1043,13 @@ class CFVMFlowSolverBase : public CSolver {
    * \brief Implementation of implicit Euler iteration.
    */
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+
+  /*!
+   * \brief Complete an implicit iteration.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.

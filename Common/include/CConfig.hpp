@@ -815,6 +815,7 @@ private:
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
+  unsigned long outlierMitigationParam[4]; /*!< \brief Parameters of outlier mitigation strategy. */
   bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
@@ -1711,6 +1712,11 @@ public:
    * \return <code>TRUE</code> if CFL adaption is active; otherwise <code>FALSE</code>.
    */
   bool GetCFL_Adapt(void) const { return CFL_Adapt; }
+
+  /*!
+   * \brief Get the outlier mitigation parameters.
+   */
+  const unsigned long* GetOutlierMitigationParam() const { return outlierMitigationParam; }
 
   /*!
    * \brief Get the value of the limits for the sections.
