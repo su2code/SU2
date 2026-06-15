@@ -330,6 +330,14 @@ def main():
     flatplate.test_vals = [-6.397042, -0.919335, 0.001321, 0.025064, 2.361500, -2.336500, 0.000000, 0.000000]
     test_list.append(flatplate)
 
+    # Supersonic laminar flat plate
+    flatplate_supersonic           = TestCase('flatplate_supersonic')
+    flatplate_supersonic.cfg_dir   = "navierstokes/flatplate"
+    flatplate_supersonic.cfg_file  = "flatplate_supersonic.cfg"
+    flatplate_supersonic.test_iter = 100
+    flatplate_supersonic.test_vals = [-6.397042, -0.919335, 0.001321, 0.025064, 2.361500, -2.336500, 0.000000, 0.000000]
+    test_list.append(flatplate_supersonic)
+
     # Custom objective function
     flatplate_udobj           = TestCase('flatplate_udobj')
     flatplate_udobj.cfg_dir   = "user_defined_functions"
