@@ -2585,7 +2585,7 @@ void CEulerSolver::IdentifySolutionOutliers(const CConfig *config, unsigned long
   /*--- Recompute mean and std deviation of temperature or use the stored values. ---*/
   if (iter == startIteration || iter % updateFrequency == 0) {
     su2double localSum = 0;
-    static su2double nPointGlobal;
+    static unsigned long nPointGlobal;
     SU2_OMP_MASTER
     MeanTemperature = 0;
 
@@ -2600,8 +2600,8 @@ void CEulerSolver::IdentifySolutionOutliers(const CConfig *config, unsigned long
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       su2double tmp[2] = {MeanTemperature, static_cast<su2double>(nPointDomain)}, global[2];
       SU2_MPI::Allreduce(tmp, global, 2, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      nPointGlobal = global[1];
-      MeanTemperature = global[0] / nPointGlobal;
+      nPointGlobal = static_cast<unsigned long>(SU2_TYPE::GetValue(global[1]));
+      MeanTemperature = global[0] / global[1];
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -2641,8 +2641,7 @@ void CEulerSolver::IdentifySolutionOutliers(const CConfig *config, unsigned long
     }
     END_SU2_OMP_FOR
 
-    SU2_OMP_ATOMIC
-    nPointGlobal += nPointLocal;
+    atomicAdd(nPointLocal, nPointGlobal);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     if (iter == 0 || iter % (updateFrequency * printFrequency) == 0) {
