@@ -37,6 +37,10 @@
 #include "vector_expressions.hpp"
 #include "../../include/CConfig.hpp"
 
+#ifdef __CUDACC__
+#include "GPUComms.cuh"
+#endif
+
 /*!
  * \brief OpenMP worksharing construct used in CSysVector for loops.
  * \note The loop will only run in parallel if methods are called from a
@@ -58,6 +62,116 @@
 #define CSYSVEC_PARFOR SU2_OMP_SIMD
 #define END_CSYSVEC_PARFOR
 #endif
+
+namespace VecExpr {
+
+enum class DeviceAssignOp { Assign, Add, Subtract, Multiply, Divide };
+
+template <class Scalar>
+class CDeviceVectorView : public CVecExpr<CDeviceVectorView<Scalar>, Scalar> {
+ private:
+  Scalar* data = nullptr;
+  unsigned long size = 0;
+
+ public:
+  static constexpr bool StoreAsRef = false;
+
+  CDeviceVectorView(Scalar* data_, unsigned long size_) : data(data_), size(size_) {}
+
+#ifdef __CUDACC__
+  __device__ const Scalar& operator[](size_t i) const { return data[i]; }
+
+  template <class T>
+  CDeviceVectorView& operator=(const CVecExpr<T, Scalar>& expr);
+
+  CDeviceVectorView& operator=(Scalar val);
+
+#define MAKE_DEVICE_COMPOUND(OP) \
+  template <class T>             \
+  CDeviceVectorView& operator OP(const CVecExpr<T, Scalar>& expr);
+  MAKE_DEVICE_COMPOUND(+=)
+  MAKE_DEVICE_COMPOUND(-=)
+  MAKE_DEVICE_COMPOUND(*=)
+  MAKE_DEVICE_COMPOUND(/=)
+#undef MAKE_DEVICE_COMPOUND
+
+#define MAKE_DEVICE_SCALAR_COMPOUND(OP) CDeviceVectorView& operator OP(Scalar val);
+  MAKE_DEVICE_SCALAR_COMPOUND(+=)
+  MAKE_DEVICE_SCALAR_COMPOUND(-=)
+  MAKE_DEVICE_SCALAR_COMPOUND(*=)
+  MAKE_DEVICE_SCALAR_COMPOUND(/=)
+#undef MAKE_DEVICE_SCALAR_COMPOUND
+#endif
+};
+
+#ifdef __CUDACC__
+template <DeviceAssignOp Op, class Scalar, class T>
+__global__ void DeviceAssignKernel(Scalar* data, unsigned long size, T expr) {
+  const unsigned long i = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x;
+  if (i >= size) return;
+
+  if constexpr (Op == DeviceAssignOp::Assign) {
+    data[i] = expr[i];
+  } else if constexpr (Op == DeviceAssignOp::Add) {
+    data[i] += expr[i];
+  } else if constexpr (Op == DeviceAssignOp::Subtract) {
+    data[i] -= expr[i];
+  } else if constexpr (Op == DeviceAssignOp::Multiply) {
+    data[i] *= expr[i];
+  } else {
+    data[i] /= expr[i];
+  }
+}
+
+template <DeviceAssignOp Op, class Scalar, class T>
+inline void AssignDeviceExpression(Scalar* data, unsigned long size, const CVecExpr<T, Scalar>& expr) {
+  if (size == 0) return;
+  constexpr unsigned block_size = 256;
+  const auto grid_size = static_cast<unsigned>((size + block_size - 1) / block_size);
+  DeviceAssignKernel<Op><<<grid_size, block_size>>>(data, size, expr.derived());
+  gpuErrChk(cudaPeekAtLastError());
+}
+
+template <class Scalar>
+template <class T>
+CDeviceVectorView<Scalar>& CDeviceVectorView<Scalar>::operator=(const CVecExpr<T, Scalar>& expr) {
+  AssignDeviceExpression<DeviceAssignOp::Assign>(data, size, expr);
+  return *this;
+}
+
+template <class Scalar>
+CDeviceVectorView<Scalar>& CDeviceVectorView<Scalar>::operator=(Scalar val) {
+  AssignDeviceExpression<DeviceAssignOp::Assign>(data, size, Bcast<Scalar>(val));
+  return *this;
+}
+
+#define MAKE_DEVICE_COMPOUND(OP, ASSIGN_OP)                                                            \
+  template <class Scalar>                                                                              \
+  template <class T>                                                                                   \
+  CDeviceVectorView<Scalar>& CDeviceVectorView<Scalar>::operator OP(const CVecExpr<T, Scalar>& expr) { \
+    AssignDeviceExpression<ASSIGN_OP>(data, size, expr);                                               \
+    return *this;                                                                                      \
+  }
+MAKE_DEVICE_COMPOUND(+=, DeviceAssignOp::Add)
+MAKE_DEVICE_COMPOUND(-=, DeviceAssignOp::Subtract)
+MAKE_DEVICE_COMPOUND(*=, DeviceAssignOp::Multiply)
+MAKE_DEVICE_COMPOUND(/=, DeviceAssignOp::Divide)
+#undef MAKE_DEVICE_COMPOUND
+
+#define MAKE_DEVICE_SCALAR_COMPOUND(OP, ASSIGN_OP)                                \
+  template <class Scalar>                                                         \
+  CDeviceVectorView<Scalar>& CDeviceVectorView<Scalar>::operator OP(Scalar val) { \
+    AssignDeviceExpression<ASSIGN_OP>(data, size, Bcast<Scalar>(val));            \
+    return *this;                                                                 \
+  }
+MAKE_DEVICE_SCALAR_COMPOUND(+=, DeviceAssignOp::Add)
+MAKE_DEVICE_SCALAR_COMPOUND(-=, DeviceAssignOp::Subtract)
+MAKE_DEVICE_SCALAR_COMPOUND(*=, DeviceAssignOp::Multiply)
+MAKE_DEVICE_SCALAR_COMPOUND(/=, DeviceAssignOp::Divide)
+#undef MAKE_DEVICE_SCALAR_COMPOUND
+#endif
+
+}  // namespace VecExpr
 
 /*!
  * \class CSysVector
@@ -235,36 +349,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   void DtHTransfer(bool trigger = true) const;
 
   /*!
-   * \brief Sets all the elements of the GPU vector to a certain value
-   * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
-   */
-  void GPUSetVal(ScalarType val, bool trigger = true) const;
-
-  /*!
-   * \brief Copy another vector into this vector on the device.
-   * \note This is an explicit GPU helper for Krylov solver implementations that keep the
-   *       iteration state resident on the device. The implementation belongs in
-   *       CSysVectorGPU.cu.
-   * \param[in] src - Source vector.
-   */
-  void GPUCopy(const CSysVector& src) const;
-
-  /*!
-   * \brief Scale this vector on the device.
-   * \note Explicit GPU helper for solver-side vector operations.
-   * \param[in] alpha - Scalar multiplier.
-   */
-  void GPUScale(ScalarType alpha) const;
-
-  /*!
-   * \brief Perform the AXPY operation on the device: this := this + alpha * x.
-   * \note Explicit GPU helper for solver-side vector operations.
-   * \param[in] alpha - Scalar multiplier.
-   * \param[in] x - Input vector.
-   */
-  void GPUAxpy(ScalarType alpha, const CSysVector& x) const;
-
-  /*!
    * \brief Dot product between this vector and another vector on the device.
    * \note Explicit GPU helper for solver-side reductions.
    * \param[in] other - Input vector.
@@ -283,6 +367,13 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \brief return device pointer that points to the CSysVector values in GPU memory
    */
   inline ScalarType* GetDevicePointer() const { return d_vec_val; }
+
+  /*!
+   * \brief Return an expression-template view of the device values.
+   */
+  inline VecExpr::CDeviceVectorView<ScalarType> device() const {
+    return VecExpr::CDeviceVectorView<ScalarType>(d_vec_val, nElm);
+  }
 
   /*!
    * \brief return the number of local elements in the CSysVector
