@@ -229,6 +229,25 @@ private:
    */
   void adaptDampingFactors(CConfig* config, passivedouble crossCycleRatio);
 
+  /*!
+   * \brief Helper function for early-exit logic during pre/post-smoothing.
+   * \param[in] iSmooth - Current smoothing iteration index.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] defect - Current RMS defect value.
+   * \param[in] mgOpts - Reference to multigrid options.
+   * \param[in] stag_tol - Stagnation tolerance value.
+   * \param[in] early_exit - Whether early exit is enabled.
+   * \param[out] lastRMS - Array to store RMS values [start, end].
+   * \param[out] exitReason - Character for early exit reason ('T', 'S', 'A', or ' ').
+   * \param[out] worstStepRatio - Worst step-to-step ratio seen.
+   * \param[out] worstStep - Iteration number of worst step.
+   */
+  void prePostEarlyExit(unsigned short iSmooth, unsigned short iMesh,
+                        passivedouble defect, const CMGOptions& mgOpts,
+                        passivedouble stag_tol, bool early_exit,
+                        passivedouble lastRMS[2], char& exitReason,
+                        passivedouble& worstStepRatio, unsigned short& worstStep);
+
   static constexpr int MAX_MG_LEVELS = 10;
 
   /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/

@@ -454,6 +454,38 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
 }
 
+void CMultiGridIntegration::prePostEarlyExit(unsigned short iSmooth, unsigned short iMesh,
+                                             passivedouble defect, const CMGOptions& mgOpts,
+                                             passivedouble stag_tol, bool early_exit,
+                                             passivedouble lastRMS[2], char& exitReason,
+                                             passivedouble& worstStepRatio, unsigned short& worstStep) {
+  if (iSmooth == 0) {
+    mg_initial_smooth_rms = defect;
+    lastRMS[0] = defect;
+  } else {
+    if (mg_prev_smooth_rms > EPS) {
+      const passivedouble step_ratio = defect / mg_prev_smooth_rms;
+      if (step_ratio > worstStepRatio) {
+        worstStepRatio = step_ratio;
+        worstStep = iSmooth + 1;
+      }
+    }
+
+    if (early_exit) {
+      if (defect < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
+        exitReason = 'T';
+        mg_early_exit_flag = true;
+      } else if (defect >= mg_prev_smooth_rms * stag_tol) {
+        /*--- 'A' = amplifying-stagnation (defect grew vs previous step).
+         *    'S' = clean stagnation (defect is not improving but also not growing). ---*/
+        exitReason = (defect > mg_prev_smooth_rms) ? 'A' : 'S';
+        mg_early_exit_flag = true;
+      }
+    }
+  }
+  mg_prev_smooth_rms = defect;
+}
+
 void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
                                          CGeometry**** geometry,
                                          CSolver***** solver_container,
@@ -509,31 +541,9 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       if (iRKStep == 0 && need_initial_rms) {
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
           const passivedouble defect = ComputeLinSysResRMS(solver_fine);
-          if (iPreSmooth == 0) {
-            mg_initial_smooth_rms = defect;
-            lastPreSmoothRMS[iMesh][0] = defect;
-          } else {
-            if (mg_prev_smooth_rms > EPS) {
-              const passivedouble step_ratio = defect / mg_prev_smooth_rms;
-              if (step_ratio > lastPreSmoothWorstStepRatio[iMesh]) {
-                lastPreSmoothWorstStepRatio[iMesh] = step_ratio;
-                lastPreSmoothWorstStep[iMesh] = iPreSmooth + 1;
-              }
-            }
-
-            if (early_exit) {
-              if (defect < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
-                lastPreSmoothExitReason[iMesh] = 'T';
-                mg_early_exit_flag = true;
-              } else if (defect >= mg_prev_smooth_rms * stag_tol) {
-                /*--- 'A' = amplifying-stagnation (defect grew vs previous step).
-                 *    'S' = clean stagnation (defect is not improving but also not growing). ---*/
-                lastPreSmoothExitReason[iMesh] = (defect > mg_prev_smooth_rms) ? 'A' : 'S';
-                mg_early_exit_flag = true;
-              }
-            }
-          }
-          mg_prev_smooth_rms = defect;
+          prePostEarlyExit(iPreSmooth, iMesh, defect, mgOpts, stag_tol, early_exit,
+                           lastPreSmoothRMS[iMesh], lastPreSmoothExitReason[iMesh],
+                           lastPreSmoothWorstStepRatio[iMesh], lastPreSmoothWorstStep[iMesh]);
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
         if (mg_early_exit_flag) break;
@@ -606,31 +616,9 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       if (iRKStep == 0 && need_per_step_rms) {
         BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
           const passivedouble defect = ComputeLinSysResRMS(solver_fine);
-          if (iPostSmooth == 0) {
-            mg_initial_smooth_rms = defect;
-            lastPostSmoothRMS[iMesh][0] = defect;
-          } else {
-            if (mg_prev_smooth_rms > EPS) {
-              const passivedouble step_ratio = defect / mg_prev_smooth_rms;
-              if (step_ratio > lastPostSmoothWorstStepRatio[iMesh]) {
-                lastPostSmoothWorstStepRatio[iMesh] = step_ratio;
-                lastPostSmoothWorstStep[iMesh] = iPostSmooth + 1;
-              }
-            }
-
-            if (early_exit) {
-              if (defect < mgOpts.MG_Smooth_Res_Threshold * mg_initial_smooth_rms) {
-                lastPostSmoothExitReason[iMesh] = 'T';
-                mg_early_exit_flag = true;
-              } else if (defect >= mg_prev_smooth_rms * stag_tol) {
-                /*--- 'A' = amplifying-stagnation (defect grew vs previous step).
-                 *    'S' = clean stagnation (defect is not improving but also not growing). ---*/
-                lastPostSmoothExitReason[iMesh] = (defect > mg_prev_smooth_rms) ? 'A' : 'S';
-                mg_early_exit_flag = true;
-              }
-            }
-          }
-          mg_prev_smooth_rms = defect;
+          prePostEarlyExit(iPostSmooth, iMesh, defect, mgOpts, stag_tol, early_exit,
+                           lastPostSmoothRMS[iMesh], lastPostSmoothExitReason[iMesh],
+                           lastPostSmoothWorstStepRatio[iMesh], lastPostSmoothWorstStep[iMesh]);
         }
         END_SU2_OMP_SAFE_GLOBAL_ACCESS
         if (mg_early_exit_flag) break;
