@@ -231,9 +231,6 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       if (flame_front_ignition) prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init, flamelet_config_options.Flame_T_ignition);
 
       prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
-      /*--- Use the point count of the current mesh level, not the fine-grid nPoint.
-       *    On coarser levels geometry[i_mesh]->GetnPoint() < nPoint; looping to
-       *    nPoint would write past the end of the coarse-grid arrays (heap corruption). ---*/
       const auto nPoint_iMesh = geometry[i_mesh]->GetnPoint();
       SU2_OMP_FOR_STAT(omp_chunk_size)
       for (unsigned long i_point = 0; i_point < nPoint_iMesh; i_point++) {
