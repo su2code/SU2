@@ -264,7 +264,7 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
     const Double neg_sound_speed = enthalpy * (R+1) < 0.5 * v_squared;
 
     /*--- Revert to first order if the state is non-physical. ---*/
-    Double nonPhysical = fmax(neg_p_or_rho, neg_sound_speed);
+    nonPhysical = fmax(neg_p_or_rho, neg_sound_speed);
     /*--- Handle SIMD dimensions 1 by 1. ---*/
     for (size_t k = 0; k < Double::Size; ++k) {
       nonPhysical[k] = solution.UpdateNonPhysicalEdgeCounter(iEdge[k], nonPhysical[k]);

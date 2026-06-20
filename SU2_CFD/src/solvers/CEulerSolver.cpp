@@ -2588,6 +2588,7 @@ void CEulerSolver::IdentifySolutionOutliers(const CConfig *config, unsigned long
     static unsigned long nPointGlobal;
     SU2_OMP_MASTER
     MeanTemperature = 0;
+    END_SU2_OMP_MASTER
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
@@ -2608,6 +2609,7 @@ void CEulerSolver::IdentifySolutionOutliers(const CConfig *config, unsigned long
     localSum = 0;
     SU2_OMP_MASTER
     StdDevTemperature = 0;
+    END_SU2_OMP_MASTER
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint ++) {
@@ -2628,6 +2630,7 @@ void CEulerSolver::IdentifySolutionOutliers(const CConfig *config, unsigned long
     unsigned long nPointLocal = 0;
     SU2_OMP_MASTER
     nPointGlobal = 0;
+    END_SU2_OMP_MASTER
 
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
