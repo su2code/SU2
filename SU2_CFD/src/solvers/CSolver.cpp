@@ -1986,7 +1986,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) {
   SU2_ZONE_SCOPED
 
-  if (geometry->GetMGLevel() != MESH_0) return;
+  if (geometry->GetMGLevel() != MESH_0 && !config->GetMGOptions().MG_Smooth_EarlyExit) return;
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 
