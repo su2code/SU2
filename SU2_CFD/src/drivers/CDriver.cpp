@@ -813,6 +813,16 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
 
     geometry[iMGlevel] = new CMultiGridGeometry(geometry[iMGlevel-1], config, iMGlevel);
 
+    /*--- Protect against the situation that we were not able to complete
+       the agglomeration for this level, i.e., there weren't enough points.
+       Check immediately so the expensive post-construction steps are skipped. ---*/
+
+    if (config->GetnMGLevels() != requestedMGlevels) {
+      delete geometry[iMGlevel];
+      geometry[iMGlevel] = nullptr;
+      break;
+    }
+
     /*--- Compute points surrounding points. ---*/
 
     geometry[iMGlevel]->SetPoint_Connectivity(geometry[iMGlevel-1]);
@@ -835,17 +845,6 @@ void CDriver::InitializeGeometryFVM(CConfig *config, CGeometry **&geometry) {
     /*--- Store our multigrid index. ---*/
 
     geometry[iMGlevel]->SetMGLevel(iMGlevel);
-
-    /*--- Protect against the situation that we were not able to complete
-       the agglomeration for this level, i.e., there weren't enough points.
-       We need to check if we changed the total number of levels and delete
-       the incomplete CMultiGridGeometry object. ---*/
-
-    if (config->GetnMGLevels() != requestedMGlevels) {
-      delete geometry[iMGlevel];
-      geometry[iMGlevel] = nullptr;
-      break;
-    }
 
   }
 

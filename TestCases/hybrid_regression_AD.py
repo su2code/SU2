@@ -99,7 +99,7 @@ def main():
     discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [20.000000, -3.338267, -2.490046, 0.000000]
+    discadj_incomp_NACA0012.test_vals = [20.000000, -3.122291, -2.287328, 0.000000]
     test_list.append(discadj_incomp_NACA0012)
 
     #####################################
@@ -187,7 +187,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.124927, -1.586220, -0.006032, 0.000009]
+    discadj_pitchingNACA0012.test_vals = [-1.041883, -1.512874, -0.006211, 0.000012]
     discadj_pitchingNACA0012.tol = 0.01
     discadj_pitchingNACA0012.unsteady  = True
     discadj_pitchingNACA0012.enabled_with_tsan = False

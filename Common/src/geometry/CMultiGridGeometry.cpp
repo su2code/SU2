@@ -1280,24 +1280,28 @@ su2double CMultiGridGeometry::ComputeLocalCurvature(const CGeometry* fine_grid, 
 void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV, const CGeometry* fine_grid,
                                                   const CConfig* config, CMultiGridQueue& MGQueue_InnerCV) {
   /*--- Parameters ---*/
-  const su2double ANGLE_THRESHOLD_DEG = 20.0;   /*!< Stop line if direction deviates more than this. */
-  constexpr unsigned long MAX_LINE_LENGTH = 20; /*!< Max nodes on implicit line (including wall). */
+  const su2double ANGLE_THRESHOLD_DEG = 20.0; /*!< Stop line if direction deviates more than this. */
+  const unsigned long MAX_LINE_LENGTH = config->GetMGOptions().MG_Implicit_Lines_MaxLength;
   const su2double cos_threshold = cos(ANGLE_THRESHOLD_DEG * PI_NUMBER / 180.0);
 
   const unsigned long nPointFine = fine_grid->GetnPoint();
 
-  /*--- Collect implicit lines starting at wall vertices.
+  /*--- Collect implicit lines starting at viscous (no-slip) wall vertices only.
+   *    Seeding from non-wall boundaries (farfield, inlet, outlet, symmetry) would
+   *    claim interior BL cells before the wall lines can reach them, leaving
+   *    wall-seeded lines with length < 3 (discarded).  Restricting to viscous walls
+   *    ensures the boundary-layer cells are agglomerated wall-first.
    *    Each line: [wall_node, interior_1, interior_2, ...].
    *    The wall node (index 0) is already agglomerated by boundary agglomeration;
    *    only interior nodes (index >= 1) are paired into coarse CVs. ---*/
   vector<vector<unsigned long>> lines;
 
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
-    /*--- Skip non-physical markers ---*/
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE ||
-        config->GetMarker_All_KindBC(iMarker) == INTERNAL_BOUNDARY ||
-        config->GetMarker_All_KindBC(iMarker) == NEARFIELD_BOUNDARY)
-      continue;
+    /*--- Only seed lines from viscous (no-slip) wall markers.
+     *    Non-wall boundaries (farfield, inlet, outlet, symmetry) must NOT seed
+     *    lines because they would prematurely claim boundary-layer interior nodes. ---*/
+    const auto bc = config->GetMarker_All_KindBC(iMarker);
+    if (bc != HEAT_FLUX && bc != ISOTHERMAL && bc != CHT_WALL_INTERFACE && bc != SMOLUCHOWSKI_MAXWELL) continue;
 
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
