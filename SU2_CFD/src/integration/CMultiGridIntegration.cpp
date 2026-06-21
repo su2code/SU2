@@ -804,11 +804,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
 
   const unsigned short nVar = sol_fine->GetnVar();
 
-  /*--- Use the adaptive damping factor uniformly across all prolongation levels.
-   *    A separate level-dependent attenuation (pow(0.75,iMesh)) was removed:
-   *    when the controller has already driven base_damp to its minimum floor,
-   *    stacking an additional level factor makes the correction negligibly small
-   *    and prevents useful work from deeper coarse levels from reaching L0. ---*/
+  /*--- Use the adaptive damping factor uniformly across all prolongation levels. ---*/
   const su2double factor = config->GetDamp_Correc_Prolong();
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
