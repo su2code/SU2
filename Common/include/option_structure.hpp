@@ -360,7 +360,6 @@ enum class ENUM_PBITER {
 static const MapType<std::string, ENUM_PBITER> PBIter_Map = {
  MakePair("SIMPLE", ENUM_PBITER::SIMPLE)
  MakePair("SIMPLEC", ENUM_PBITER::SIMPLEC)
- MakePair("PISO", ENUM_PBITER::PISO)
 };
 
 /*!

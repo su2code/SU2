@@ -542,7 +542,6 @@ private:
   Kind_TimeIntScheme_AdjTurb,   /*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Species,   /*!< \brief Time integration for the species model. */
   Kind_TimeIntScheme_Heat,      /*!< \brief Time integration for the wave equations. */
-  Kind_TimeIntScheme_Poisson,   /*!< \brief Time integration for the poisson (pressure correction) equation/ */
   Kind_TimeStep_Heat,           /*!< \brief Time stepping method for the (fvm) heat equation. */
   n_Datadriven_files;
 
@@ -4734,15 +4733,6 @@ public:
    * \return Kind of time integration method.
    */
   unsigned short GetKind_TimeIntScheme(void) const { return Kind_TimeNumScheme; }
-
-  /*!
-   * \brief Get the kind of integration scheme (explicit or implicit)
-   *        for the poisson/pressure correction equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of integration scheme for the poisson/pressure correction equations.
-   */
-  unsigned short GetKind_TimeIntScheme_Poisson(void) const { return Kind_TimeIntScheme_Poisson; }
 
   /*!
    * \brief Get the kind of convective numerical scheme.

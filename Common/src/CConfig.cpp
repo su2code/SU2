@@ -1885,8 +1885,6 @@ void CConfig::SetConfig_Options() {
   addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIMESTEP_HEAT", Kind_TimeStep_Heat, Heat_TimeStep_Map, MINIMUM);
-  /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Number of corrections in the PISO algorithm (pressure based). */
   addUnsignedShortOption("PISO_CORRECTIONS", nCorrections_PISO, 1);
 
@@ -1928,7 +1926,7 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Use an inner linear solver. */
   addEnumOption("LINEAR_SOLVER_INNER", Kind_Linear_Solver_Inner, Inner_Linear_Solver_Map, LINEAR_SOLVER_INNER::NONE);
   /* DESCRIPTION: Relaxation of the pressure based flow corrections */
-  addDoubleOption("RELAXATION_FACTOR_PBFLOW", Relaxation_Factor_PBFlow, 0.5);
+  addDoubleOption("RELAXATION_FACTOR_PBFLOW", Relaxation_Factor_PBFlow, 1.0);
   /* DESCRIPTION: Relaxation of the Rhie Chow interpolation contribution in pressure based flow. */
   addDoubleOption("RELAXATION_FACTOR_RHIECHOW", RCFactor, 0.0);
   /* DESCRIPTION: Relaxation factor for updates of adjoint variables. */
@@ -8970,7 +8968,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     case MAIN_SOLVER::POISSON_EQUATION:
     if (val_system == RUNTIME_POISSON_SYS) {
       SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, 0.0, NONE);
-      SetKind_TimeIntScheme(Kind_TimeIntScheme_Poisson); 
+      SetKind_TimeIntScheme(EULER_IMPLICIT); 
     }
     break;
 
