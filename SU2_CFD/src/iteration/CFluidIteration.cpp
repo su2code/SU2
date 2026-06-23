@@ -83,6 +83,37 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                                                                    val_iZone, val_iInst);
 
   /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
+  CommonSingleGridIterations(output, integration, geometry, solver, numerics, config, surface_movement, 
+                             grid_movement, FFDBox, val_iZone, val_iInst, main_solver, frozen_visc);
+
+  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
+
+  if ((config[val_iZone]->GetCFL_Adapt() == YES) && (!disc_adj)) {
+    SU2_OMP_PARALLEL
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
+                                                                   solver[val_iZone][val_iInst], config[val_iZone]);
+    END_SU2_OMP_PARALLEL
+  }
+
+  /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
+
+  if ((config[val_iZone]->GetGrid_Movement()) && (config[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
+    SetGrid_Movement(geometry[val_iZone][val_iInst], surface_movement[val_iZone], grid_movement[val_iZone][val_iInst],
+                     solver[val_iZone][val_iInst], config[val_iZone], InnerIter, TimeIter);
+
+    /*--- Apply a Wind Gust ---*/
+
+    if (config[val_iZone]->GetWind_Gust()) {
+      if (InnerIter % config[val_iZone]->GetAeroelasticIter() == 0 && InnerIter != 0)
+        SetWind_GustField(config[val_iZone], geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst]);
+    }
+  }
+}
+
+void CFluidIteration::CommonSingleGridIterations(COutput* output, CIntegration**** integration, CGeometry**** geometry,
+                              CSolver***** solver, CNumerics****** numerics, CConfig** config,
+                              CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
+                              CFreeFormDefBox*** FFDBox, unsigned short val_iZone, unsigned short val_iInst, MAIN_SOLVER main_solver, bool frozen_visc) {
 
   if (config[val_iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE && !frozen_visc) {
 
@@ -130,28 +161,6 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                                                                      RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
   }
 
-  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach. ---*/
-
-  if ((config[val_iZone]->GetCFL_Adapt() == YES) && (!disc_adj)) {
-    SU2_OMP_PARALLEL
-    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
-                                                                   solver[val_iZone][val_iInst], config[val_iZone]);
-    END_SU2_OMP_PARALLEL
-  }
-
-  /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
-
-  if ((config[val_iZone]->GetGrid_Movement()) && (config[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
-    SetGrid_Movement(geometry[val_iZone][val_iInst], surface_movement[val_iZone], grid_movement[val_iZone][val_iInst],
-                     solver[val_iZone][val_iInst], config[val_iZone], InnerIter, TimeIter);
-
-    /*--- Apply a Wind Gust ---*/
-
-    if (config[val_iZone]->GetWind_Gust()) {
-      if (InnerIter % config[val_iZone]->GetAeroelasticIter() == 0 && InnerIter != 0)
-        SetWind_GustField(config[val_iZone], geometry[val_iZone][val_iInst], solver[val_iZone][val_iInst]);
-    }
-  }
 }
 
 void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeometry**** geometry, CSolver***** solver,
