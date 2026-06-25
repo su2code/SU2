@@ -919,8 +919,13 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
       const su2double VorticityMag = GeometryToolbox::Norm(3, Vorticity_i);
       su2double P_Base = 0;
+
+      /*--- Compressibility Corrections related variables ---*/
       su2double zetaFMt = 0.0;
       const su2double Mt = sqrt(2.0 * ScalarVar_i[0]) / V_i[idx.SoundSpeed()];
+      const su2double alpha2 = 0.4;
+      const su2double alpha3 = 0.2;
+      su2double PDTerm = 0.0;
 
       /*--- Apply production term modifications ---*/
       switch (sstParsedOptions.production) {
@@ -947,9 +952,7 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
 
         case SST_OPTIONS::COMP_Sarkar:
           P_Base = StrainMag_i;
-          if (Mt >= 0.25) {
-            zetaFMt = 0.5 * (Mt * Mt);
-          }
+          zetaFMt=Mt * Mt;
           break;
 
         default:
@@ -988,9 +991,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         pw = max(pw, sust_w);
       }
 
-      if (sstParsedOptions.production == SST_OPTIONS::COMP_Sarkar) {
-        const su2double Dilatation_Sarkar = -0.15 * pk * Mt + 0.2 * beta_star * (1.0 +zetaFMt) * Density_i * ScalarVar_i[1] * ScalarVar_i[0] * Mt * Mt;
-        pk += Dilatation_Sarkar;
+      if (sstParsedOptions.compPressDil) {
+        /*--- Taken from "Modeling the Pressure-Dilatation Correlation", Sarkar, S. ---*/
+        const su2double epsilon = beta_star * ScalarVar_i[1] * ScalarVar_i[0];
+        PDTerm = (-alpha2*pk + alpha3*Density_i*epsilon)*Mt*Mt;
       }
 
       /*--- Dissipation ---*/
@@ -1003,6 +1007,10 @@ class CSourcePieceWise_TurbSST final : public CNumerics {
         pk = pk * eff_intermittency;
         dk = min(max(eff_intermittency, 0.1), 1.0) * dk;
       }
+      
+      /*--- Include Pressure-Dilatation term if present ---*/
+      pk += PDTerm;
+      pw += (- PDTerm / Eddy_Viscosity_i);
 
       /*--- Add the production terms to the residuals. ---*/
 

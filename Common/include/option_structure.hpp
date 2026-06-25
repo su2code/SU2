@@ -989,18 +989,19 @@ inline TURB_FAMILY TurbModelFamily(TURB_MODEL model) {
  * \brief SST Options
  */
 enum class SST_OPTIONS {
-  NONE,        /*!< \brief No SST Turb model. */
-  V1994,       /*!< \brief 1994 Menter k-w SST model. */
-  V2003,       /*!< \brief 2003 Menter k-w SST model. */
-  V1994m,      /*!< \brief 1994m Menter k-w SST model. */
-  V2003m,      /*!< \brief 2003m Menter k-w SST model. */
-  SUST,        /*!< \brief Menter k-w SST model with sustaining terms. */
-  V,           /*!< \brief Menter k-w SST model with vorticity production terms. */
-  KL,          /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
-  UQ,          /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
-  COMP_Wilcox, /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
-  COMP_Sarkar, /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
-  DLL,         /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
+  NONE,           /*!< \brief No SST Turb model. */
+  V1994,          /*!< \brief 1994 Menter k-w SST model. */
+  V2003,          /*!< \brief 2003 Menter k-w SST model. */
+  V1994m,         /*!< \brief 1994m Menter k-w SST model. */
+  V2003m,         /*!< \brief 2003m Menter k-w SST model. */
+  SUST,           /*!< \brief Menter k-w SST model with sustaining terms. */
+  V,              /*!< \brief Menter k-w SST model with vorticity production terms. */
+  KL,             /*!< \brief Menter k-w SST model with Kato-Launder production terms. */
+  UQ,             /*!< \brief Menter k-w SST model with uncertainty quantification modifications. */
+  COMP_Wilcox,    /*!< \brief Menter k-w SST model with Compressibility correction of Wilcox. */
+  COMP_Sarkar,    /*!< \brief Menter k-w SST model with Compressibility correction of Sarkar. */
+  COMP_Press_Dil, /*!< \brief Menter k-w SST model with Compressibility correction of pressure-dilatation. */
+  DLL,            /*!< \brief Menter k-w SST model with dimensionless lower limit clipping of turbulence variables. */
 };
 static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("NONE", SST_OPTIONS::NONE)
@@ -1015,6 +1016,7 @@ static const MapType<std::string, SST_OPTIONS> SST_Options_Map = {
   MakePair("UQ", SST_OPTIONS::UQ)
   MakePair("COMPRESSIBILITY-WILCOX", SST_OPTIONS::COMP_Wilcox)
   MakePair("COMPRESSIBILITY-SARKAR", SST_OPTIONS::COMP_Sarkar)
+  MakePair("COMPRESSIBILITY-PRESS-DIL", SST_OPTIONS::COMP_Press_Dil)
   MakePair("DIMENSIONLESS_LIMIT", SST_OPTIONS::DLL)
 };
 
@@ -1029,6 +1031,7 @@ struct SST_ParsedOptions {
   bool modified = false;                      /*!< \brief Bool for modified (m) SST model. */
   bool compWilcox = false;                    /*!< \brief Bool for compressibility correction of Wilcox. */
   bool compSarkar = false;                    /*!< \brief Bool for compressibility correction of Sarkar. */
+  bool compPressDil = false;                  /*!< \brief Bool for compressibility correction of pressure-dilatation. */
   bool dll = false;                           /*!< \brief Bool dimensionless lower limit. */
 };
 
@@ -1067,6 +1070,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   const bool sst_uq = IsPresent(SST_OPTIONS::UQ);
   const bool sst_compWilcox = IsPresent(SST_OPTIONS::COMP_Wilcox);
   const bool sst_compSarkar = IsPresent(SST_OPTIONS::COMP_Sarkar);
+  const bool sst_compPressDil = IsPresent(SST_OPTIONS::COMP_Press_Dil);
   const bool sst_dll = IsPresent(SST_OPTIONS::DLL);
 
   if (sst_1994 && sst_2003) {
@@ -1102,6 +1106,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
   SSTParsedOptions.uq = sst_uq;
   SSTParsedOptions.compWilcox = sst_compWilcox;
   SSTParsedOptions.compSarkar = sst_compSarkar;
+  SSTParsedOptions.compPressDil = sst_compPressDil;
   SSTParsedOptions.dll = sst_dll;
 
   return SSTParsedOptions;

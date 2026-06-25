@@ -6468,6 +6468,9 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 cout << " with no production modification";
                 break;
             }
+            if (sstParsedOptions.production == SST_OPTIONS::COMP_Sarkar || sstParsedOptions.production == SST_OPTIONS::COMP_Wilcox) {
+              if (sstParsedOptions.compPressDil) cout << " and with pressure dilatation correction (Sarkar Coefficients)";
+            }
 
             if (sstParsedOptions.dll){
               cout << "\nusing non dimensional lower limits relative to infinity values clipping by Coefficients:" ;
