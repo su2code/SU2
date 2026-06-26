@@ -1669,7 +1669,7 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
 
   if (!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
-    if (implicit) Jacobian.SetValZero();
+    if (implicit) Jacobian.SetValDiagonalZero();
     else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
   }
 
@@ -2005,7 +2005,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Set implicit computation ---*/
       if (implicit)
-        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+        Jacobian.UpdateBlocks<true>(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
     }
 
     /*--- Viscous contribution. ---*/
