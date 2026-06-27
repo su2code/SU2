@@ -39,7 +39,13 @@
 
 #ifdef __CUDACC__
 #include "GPUComms.cuh"
+#define SU2_CUDA_HOST_DEVICE __host__ __device__
+#else
+#define SU2_CUDA_HOST_DEVICE
 #endif
+
+template <class ScalarType>
+class CSysVector;
 
 /*!
  * \brief OpenMP worksharing construct used in CSysVector for loops.
@@ -67,41 +73,35 @@ namespace VecExpr {
 
 enum class DeviceAssignOp { Assign, Add, Subtract, Multiply, Divide };
 
+#ifdef __CUDACC__
+bool DeviceExpressionsEnabled();
+void SetDeviceExpressionsEnabled(bool enabled);
+#else
+inline bool DeviceExpressionsEnabled() { return false; }
+#endif
+
 template <class Scalar>
-class CDeviceVectorView : public CVecExpr<CDeviceVectorView<Scalar>, Scalar> {
+class CVectorView : public CVecExpr<CVectorView<Scalar>, Scalar> {
  private:
-  Scalar* data = nullptr;
-  unsigned long size = 0;
+  const Scalar* data = nullptr;
 
  public:
   static constexpr bool StoreAsRef = false;
 
-  CDeviceVectorView(Scalar* data_, unsigned long size_) : data(data_), size(size_) {}
+  CVectorView(const Scalar* data_) : data(data_) {}
+  CVectorView(const CSysVector<Scalar>& vector);
 
-#ifdef __CUDACC__
-  __device__ const Scalar& operator[](size_t i) const { return data[i]; }
+  SU2_CUDA_HOST_DEVICE FORCEINLINE const Scalar& operator[](size_t i) const { return data[i]; }
+};
 
-  template <class T>
-  CDeviceVectorView& operator=(const CVecExpr<T, Scalar>& expr);
+template <class Scalar>
+struct store_type<CSysVector<Scalar>> {
+  using type = CVectorView<Scalar>;
+};
 
-  CDeviceVectorView& operator=(Scalar val);
-
-#define MAKE_DEVICE_COMPOUND(OP) \
-  template <class T>             \
-  CDeviceVectorView& operator OP(const CVecExpr<T, Scalar>& expr);
-  MAKE_DEVICE_COMPOUND(+=)
-  MAKE_DEVICE_COMPOUND(-=)
-  MAKE_DEVICE_COMPOUND(*=)
-  MAKE_DEVICE_COMPOUND(/=)
-#undef MAKE_DEVICE_COMPOUND
-
-#define MAKE_DEVICE_SCALAR_COMPOUND(OP) CDeviceVectorView& operator OP(Scalar val);
-  MAKE_DEVICE_SCALAR_COMPOUND(+=)
-  MAKE_DEVICE_SCALAR_COMPOUND(-=)
-  MAKE_DEVICE_SCALAR_COMPOUND(*=)
-  MAKE_DEVICE_SCALAR_COMPOUND(/=)
-#undef MAKE_DEVICE_SCALAR_COMPOUND
-#endif
+template <class Scalar>
+struct store_type<const CSysVector<Scalar>> {
+  using type = CVectorView<Scalar>;
 };
 
 #ifdef __CUDACC__
@@ -131,44 +131,6 @@ inline void AssignDeviceExpression(Scalar* data, unsigned long size, const CVecE
   DeviceAssignKernel<Op><<<grid_size, block_size>>>(data, size, expr.derived());
   gpuErrChk(cudaPeekAtLastError());
 }
-
-template <class Scalar>
-template <class T>
-CDeviceVectorView<Scalar>& CDeviceVectorView<Scalar>::operator=(const CVecExpr<T, Scalar>& expr) {
-  AssignDeviceExpression<DeviceAssignOp::Assign>(data, size, expr);
-  return *this;
-}
-
-template <class Scalar>
-CDeviceVectorView<Scalar>& CDeviceVectorView<Scalar>::operator=(Scalar val) {
-  AssignDeviceExpression<DeviceAssignOp::Assign>(data, size, Bcast<Scalar>(val));
-  return *this;
-}
-
-#define MAKE_DEVICE_COMPOUND(OP, ASSIGN_OP)                                                            \
-  template <class Scalar>                                                                              \
-  template <class T>                                                                                   \
-  CDeviceVectorView<Scalar>& CDeviceVectorView<Scalar>::operator OP(const CVecExpr<T, Scalar>& expr) { \
-    AssignDeviceExpression<ASSIGN_OP>(data, size, expr);                                               \
-    return *this;                                                                                      \
-  }
-MAKE_DEVICE_COMPOUND(+=, DeviceAssignOp::Add)
-MAKE_DEVICE_COMPOUND(-=, DeviceAssignOp::Subtract)
-MAKE_DEVICE_COMPOUND(*=, DeviceAssignOp::Multiply)
-MAKE_DEVICE_COMPOUND(/=, DeviceAssignOp::Divide)
-#undef MAKE_DEVICE_COMPOUND
-
-#define MAKE_DEVICE_SCALAR_COMPOUND(OP, ASSIGN_OP)                                \
-  template <class Scalar>                                                         \
-  CDeviceVectorView<Scalar>& CDeviceVectorView<Scalar>::operator OP(Scalar val) { \
-    AssignDeviceExpression<ASSIGN_OP>(data, size, Bcast<Scalar>(val));            \
-    return *this;                                                                 \
-  }
-MAKE_DEVICE_SCALAR_COMPOUND(+=, DeviceAssignOp::Add)
-MAKE_DEVICE_SCALAR_COMPOUND(-=, DeviceAssignOp::Subtract)
-MAKE_DEVICE_SCALAR_COMPOUND(*=, DeviceAssignOp::Multiply)
-MAKE_DEVICE_SCALAR_COMPOUND(/=, DeviceAssignOp::Divide)
-#undef MAKE_DEVICE_SCALAR_COMPOUND
 #endif
 
 }  // namespace VecExpr
@@ -222,6 +184,23 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
       SU2_OMP_SIMD_IF_NOT_AD
       for (size_t k = 0; k < N; ++k) out[k][i] = mask[k] * in[i][k];
     }
+  }
+
+  template <VecExpr::DeviceAssignOp Op, class T>
+  CSysVector& AssignDevice(const VecExpr::CVecExpr<T, ScalarType>& expr) {
+#ifdef __CUDACC__
+    VecExpr::store_t<const T> stored_expr(expr.derived());
+    VecExpr::AssignDeviceExpression<Op>(d_vec_val, nElm, stored_expr);
+#endif
+    return *this;
+  }
+
+  template <VecExpr::DeviceAssignOp Op>
+  CSysVector& AssignDevice(ScalarType val) {
+#ifdef __CUDACC__
+    VecExpr::AssignDeviceExpression<Op>(d_vec_val, nElm, VecExpr::Bcast<ScalarType>(val));
+#endif
+    return *this;
   }
 
  public:
@@ -369,10 +348,10 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   inline ScalarType* GetDevicePointer() const { return d_vec_val; }
 
   /*!
-   * \brief Return an expression-template view of the device values.
+   * \brief Return the pointer used by expression-template views.
    */
-  inline VecExpr::CDeviceVectorView<ScalarType> device() const {
-    return VecExpr::CDeviceVectorView<ScalarType>(d_vec_val, nElm);
+  inline const ScalarType* GetExpressionPointer() const {
+    return VecExpr::DeviceExpressionsEnabled() ? d_vec_val : vec_val;
   }
 
   /*!
@@ -431,6 +410,13 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] other - Another vector.
    */
   CSysVector& operator=(const CSysVector& other) {
+#ifdef __CUDACC__
+    if (VecExpr::DeviceExpressionsEnabled()) {
+      VecExpr::CVectorView<ScalarType> view(other);
+      VecExpr::AssignDeviceExpression<VecExpr::DeviceAssignOp::Assign>(d_vec_val, nElm, view);
+      return *this;
+    }
+#endif
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] = other.vec_val[i];
     END_CSYSVEC_PARFOR
@@ -441,25 +427,27 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \brief Compound assignement operations with scalars and expressions.
    * \param[in] val/expr - Scalar value or expression.
    */
-#define MAKE_COMPOUND(OP)                                                 \
-  CSysVector& operator OP(ScalarType val) {                               \
-    CSYSVEC_PARFOR                                                        \
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;                  \
-    END_CSYSVEC_PARFOR                                                    \
-    return *this;                                                         \
-  }                                                                       \
-  template <class T>                                                      \
-  CSysVector& operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) { \
-    CSYSVEC_PARFOR                                                        \
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr.derived()[i];    \
-    END_CSYSVEC_PARFOR                                                    \
-    return *this;                                                         \
+#define MAKE_COMPOUND(OP, ASSIGN_OP)                                               \
+  CSysVector& operator OP(ScalarType val) {                                        \
+    if (VecExpr::DeviceExpressionsEnabled()) return AssignDevice<ASSIGN_OP>(val);  \
+    CSYSVEC_PARFOR                                                                 \
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;                           \
+    END_CSYSVEC_PARFOR                                                             \
+    return *this;                                                                  \
+  }                                                                                \
+  template <class T>                                                               \
+  CSysVector& operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) {          \
+    if (VecExpr::DeviceExpressionsEnabled()) return AssignDevice<ASSIGN_OP>(expr); \
+    CSYSVEC_PARFOR                                                                 \
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr.derived()[i];             \
+    END_CSYSVEC_PARFOR                                                             \
+    return *this;                                                                  \
   }
-  MAKE_COMPOUND(=)
-  MAKE_COMPOUND(+=)
-  MAKE_COMPOUND(-=)
-  MAKE_COMPOUND(*=)
-  MAKE_COMPOUND(/=)
+  MAKE_COMPOUND(=, VecExpr::DeviceAssignOp::Assign)
+  MAKE_COMPOUND(+=, VecExpr::DeviceAssignOp::Add)
+  MAKE_COMPOUND(-=, VecExpr::DeviceAssignOp::Subtract)
+  MAKE_COMPOUND(*=, VecExpr::DeviceAssignOp::Multiply)
+  MAKE_COMPOUND(/=, VecExpr::DeviceAssignOp::Divide)
 #undef MAKE_COMPOUND
 
   /*!
@@ -632,5 +620,13 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   }
 };
 
+namespace VecExpr {
+
+template <class Scalar>
+CVectorView<Scalar>::CVectorView(const CSysVector<Scalar>& vector) : data(vector.GetExpressionPointer()) {}
+
+}  // namespace VecExpr
+
 #undef CSYSVEC_PARFOR
 #undef END_CSYSVEC_PARFOR
+#undef SU2_CUDA_HOST_DEVICE

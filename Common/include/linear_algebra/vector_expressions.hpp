@@ -107,7 +107,11 @@ struct add_lref_if<T, true> {
   using type = remove_reference_t<T>&;
 };
 template <class T>
-using store_t = typename add_lref_if<T, T::StoreAsRef>::type;
+struct store_type {
+  using type = typename add_lref_if<T, T::StoreAsRef>::type;
+};
+template <class T>
+using store_t = typename store_type<T>::type;
 
 /*--- Namespace from which the math function implementations come. ---*/
 

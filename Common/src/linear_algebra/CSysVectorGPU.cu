@@ -57,6 +57,18 @@ void ReleaseBlasHandle(cublasHandle_t handle, bool owns_handle, const char* dest
 
 }  // namespace
 
+namespace VecExpr {
+
+namespace {
+thread_local bool device_expressions_enabled = false;
+}  // namespace
+
+bool DeviceExpressionsEnabled() { return device_expressions_enabled; }
+
+void SetDeviceExpressionsEnabled(bool enabled) { device_expressions_enabled = enabled; }
+
+}  // namespace VecExpr
+
 void SU2_GPU_BeginSolverBLASContext() {
   if (active_solver_blas_depth == 0) {
     cublasHandle_t handle = nullptr;

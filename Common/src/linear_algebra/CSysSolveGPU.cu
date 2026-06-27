@@ -45,6 +45,21 @@ class CGPUSolverBLASContextGuard {
   CGPUSolverBLASContextGuard& operator=(const CGPUSolverBLASContextGuard&) = delete;
 };
 
+class CDeviceExpressionContextGuard {
+ private:
+  bool previous = false;
+
+ public:
+  CDeviceExpressionContextGuard() : previous(VecExpr::DeviceExpressionsEnabled()) {
+    VecExpr::SetDeviceExpressionsEnabled(true);
+  }
+
+  ~CDeviceExpressionContextGuard() { VecExpr::SetDeviceExpressionsEnabled(previous); }
+
+  CDeviceExpressionContextGuard(const CDeviceExpressionContextGuard&) = delete;
+  CDeviceExpressionContextGuard& operator=(const CDeviceExpressionContextGuard&) = delete;
+};
+
 template <class ScalarType>
 class CDeviceFGMRESOps {
  public:
@@ -55,7 +70,7 @@ class CDeviceFGMRESOps {
   void PrepareInput(const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x, bool x_is_zero) const {
     b.HtDTransfer();
     if (x_is_zero) {
-      x.device() = ScalarType(0);
+      x = ScalarType(0);
     } else {
       x.HtDTransfer();
     }
@@ -65,22 +80,18 @@ class CDeviceFGMRESOps {
 
   ScalarType Norm(const CSysVector<ScalarType>& v) const { return v.GPUNorm(); }
 
-  void AssignNegative(CSysVector<ScalarType>& dst, const CSysVector<ScalarType>& src) const {
-    dst.device() = -src.device();
-  }
+  void AssignNegative(CSysVector<ScalarType>& dst, const CSysVector<ScalarType>& src) const { dst = -src; }
 
-  void Subtract(CSysVector<ScalarType>& dst, const CSysVector<ScalarType>& src) const {
-    dst.device() -= src.device();
-  }
+  void Subtract(CSysVector<ScalarType>& dst, const CSysVector<ScalarType>& src) const { dst -= src; }
 
-  void Divide(CSysVector<ScalarType>& dst, ScalarType val) const { dst.device() /= val; }
+  void Divide(CSysVector<ScalarType>& dst, ScalarType val) const { dst /= val; }
 
   ScalarType Dot(const CSysVector<ScalarType>& lhs, const CSysVector<ScalarType>& rhs) const {
     return lhs.GPUDot(rhs);
   }
 
   void AddScaled(CSysVector<ScalarType>& dst, ScalarType alpha, const CSysVector<ScalarType>& src) const {
-    dst.device() += alpha * src.device();
+    dst += alpha * src;
   }
 
   void UpdateSolution(unsigned long n, const std::vector<CSysVector<ScalarType>>& basis,
@@ -101,6 +112,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver_GPU(const VectorType& b, V
                                                           ScalarType tol, unsigned long m, ScalarType& residual,
                                                           bool monitoring, const CConfig* config) const {
   CGPUSolverBLASContextGuard blas_context;
+  CDeviceExpressionContextGuard device_expression_context;
   return FGMRES_LinSolverImpl(b, x, mat_vec, precond, tol, m, residual, monitoring, config,
                               CDeviceFGMRESOps<ScalarType>());
 }
