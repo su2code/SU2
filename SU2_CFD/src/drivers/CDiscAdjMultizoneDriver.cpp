@@ -30,6 +30,39 @@
 #include "../../include/output/COutputFactory.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
+#include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
+#include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
+
+namespace {
+#ifdef CODI_FORWARD_TYPE
+  using Scalar = su2double;
+#else
+  using Scalar = passivedouble;
+#endif
+
+class AdjointProduct : public CMatrixVectorProduct<Scalar> {
+public:
+  CDiscAdjMultizoneDriver* const driver;
+  const unsigned short iZone = 0;
+  mutable unsigned long iInnerIter = 0;
+
+  AdjointProduct(CDiscAdjMultizoneDriver* d, unsigned short i) : driver(d), iZone(i) {}
+
+  inline void operator()(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const override {
+    driver->SetAllSolutions(iZone, true, u);
+    driver->Iterate(iZone, iInnerIter, true);
+    driver->GetAllSolutions(iZone, true, v);
+    v -= u;
+    ++iInnerIter;
+  }
+};
+
+class Identity : public CPreconditioner<Scalar> {
+public:
+  inline bool IsIdentity() const override { return true; }
+  inline void operator()(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const override { v = u; }
+};
+} // namespace
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  unsigned short val_nZone,
@@ -376,7 +409,7 @@ void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
   GetAllSolutions(iZone, true, AdjSol[iZone]);
 
   const bool monitor = config_container[iZone]->GetWrt_ZoneConv();
-  const auto product = AdjointProduct<Scalar>(this, iZone);
+  const auto product = AdjointProduct(this, iZone);
 
   /*--- Manipulate the screen output frequency to avoid printing garbage. ---*/
   const auto wrtFreq = config_container[iZone]->GetScreen_Wrt_Freq(2);
@@ -388,7 +421,7 @@ void CDiscAdjMultizoneDriver::KrylovInnerIters(unsigned short iZone) {
     Scalar eps_l = 0.0;
     Scalar tol_l = KrylovTol / eps;
     auto iter = min(totalIter-2ul, config_container[iZone]->GetnQuasiNewtonSamples()-2ul);
-    iter = LinSolver[iZone].FGCRODR_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity<Scalar>(),
+    iter = LinSolver[iZone].FGCRODR_LinSolver(AdjRHS[iZone], AdjSol[iZone], product, Identity(),
                                               tol_l, iter, eps_l, monitor, config_container[iZone],
                                               FgcrodrMode::SAME_MAT, iter);
     totalIter -= iter+1;
