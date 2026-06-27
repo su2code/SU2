@@ -33,6 +33,7 @@
 #include "CPastixWrapper.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
 
+#include <cstdint>
 #include <cstdlib>
 #include <vector>
 #include <cassert>
@@ -124,6 +125,16 @@ class CSysMatrix {
   /*!< \brief Maximum number of variables the matrix can handle. The static
    * size is needed for fast, per-thread, static memory allocation. */
   enum : size_t { MAXNVAR = 20 };
+
+  /*--- Quantized off-diagonal storage. ---*/
+  using QuantType = int8_t;
+  /*! \brief When true, off-diagonal blocks are read from the quantized representation
+   *         during matrix-vector products and LU-SGS; the diagonal block always uses
+   *         the original full-precision storage. Call QuantizeOffDiagonalBlocks() first. */
+  static constexpr bool USE_QUANTIZATION = true;
+
+  ScalarType* q_scale;  /*!< \brief Scale of each block row (full precision), [nnz * nVar]. */
+  QuantType* q_offdiag; /*!< \brief Quantized off-diagonal entries per block, [nnz * nVar * nVar]. */
 
   enum { OMP_MAX_SIZE_L = 8192 }; /*!< \brief Max. chunk size used in light parallel for loops. */
   enum { OMP_MAX_SIZE_H = 512 };  /*!< \brief Max. chunk size used in heavy parallel for loops. */
@@ -372,6 +383,15 @@ class CSysMatrix {
    */
   void RowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
 
+  /*!
+   * \brief Computes product += A_k * vec using the quantized representation of block k.
+   * \note Only valid after QuantizeOffDiagonalBlocks() has been called.
+   * \param[in] k - Block index in the CSR flat storage.
+   * \param[in] vec - Input vector (nEqn entries).
+   * \param[in,out] prod - Accumulation output (nVar entries).
+   */
+  inline void QuantizedMatVecAdd(unsigned long k, const ScalarType* vec, ScalarType* prod) const;
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -397,6 +417,11 @@ class CSysMatrix {
   void Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry* geometry, const CConfig* config, bool needTranspPtr = false,
                   bool grad_mode = false);
+
+  /*!
+   * \brief Compresses off-diagonal blocks into quantized form for use with USE_QUANTIZATION.
+   */
+  void QuantizeOffDiagonalBlocks();
 
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.

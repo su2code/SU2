@@ -31,6 +31,7 @@
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
 #include <cmath>
+#include <limits>
 
 template <class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::GetSize()) {
@@ -47,6 +48,9 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
   dia_ptr = nullptr;
   col_ind = nullptr;
   col_ptr = nullptr;
+
+  q_offdiag = nullptr;
+  q_scale = nullptr;
 
   ILU_matrix = nullptr;
   row_ptr_ilu = nullptr;
@@ -71,6 +75,8 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   MemoryAllocation::aligned_free(ILU_matrix);
   MemoryAllocation::aligned_free(matrix);
   MemoryAllocation::aligned_free(invM);
+  MemoryAllocation::aligned_free(q_offdiag);
+  MemoryAllocation::aligned_free(q_scale);
 
   if (useCuda) {
     GPUMemoryAllocation::gpu_free(d_matrix);
@@ -489,6 +495,40 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
 }
 
 template <class ScalarType>
+void CSysMatrix<ScalarType>::QuantizeOffDiagonalBlocks() {
+  SU2_ZONE_SCOPED
+
+  if (nVar == 1) return;
+
+  if (q_scale == nullptr) {
+    q_offdiag = MemoryAllocation::aligned_alloc<QuantType, true>(64, nnz * nVar * nVar * sizeof(QuantType));
+    q_scale = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nnz * nVar * sizeof(ScalarType));
+  }
+
+  SU2_OMP_FOR_DYN(omp_heavy_size)
+  for (auto k = 0ul; k < nnz; ++k) {
+    for (auto r = 0ul; r < nVar; ++r) {
+      const ScalarType* __restrict row = &matrix[(k * nVar + r) * nVar];
+      ScalarType& __restrict scale = q_scale[k * nVar + r];
+      QuantType* __restrict q_row = &q_offdiag[(k * nVar + r) * nVar];
+
+      /*--- Max absolute entry in each row as the scale. ---*/
+      scale = EPS;
+      for (auto c = 0ul; c < nVar; ++c) {
+        scale = fmax(scale, fabs(row[c]));
+      }
+      scale /= std::numeric_limits<QuantType>::max();
+
+      const ScalarType inv_s = 1 / scale;
+      for (auto c = 0ul; c < nVar; ++c) {
+        q_row[c] = static_cast<QuantType>(std::round(SU2_TYPE::GetValue(row[c] * inv_s)));
+      }
+    }
+  }
+  END_SU2_OMP_FOR
+}
+
+template <class ScalarType>
 void CSysMatrix<ScalarType>::SetValZero() {
   SU2_ZONE_SCOPED
   const auto size = nnz * nVar * nEqn;
@@ -628,7 +668,6 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long block_i, unsigned long row) {
-  SU2_ZONE_SCOPED
   for (auto index = row_ptr[block_i]; index < row_ptr[block_i + 1]; index++) {
     for (auto iVar = 0u; iVar < nVar; iVar++)
       matrix[index * nVar * nVar + row * nVar + iVar] = 0.0;  // Delete row values in the block
