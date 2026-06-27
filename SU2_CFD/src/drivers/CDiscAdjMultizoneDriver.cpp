@@ -752,7 +752,9 @@ void CDiscAdjMultizoneDriver::SetRecording(RECORDING kind_recording, Kind_Tape t
     switch(kind_recording) {
     case RECORDING::CLEAR_INDICES:      cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:        cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
-    case RECORDING::SOLUTION_VARIABLES: cout << "Storing computational graph wrt CONSERVATIVE VARIABLES." << endl; break;
+    case RECORDING::SOLUTION_VARIABLES:
+      cout << "Storing computational graph wrt CONSERVATIVE VARIABLES.\n";
+      cout << "Computing residuals to check the convergence of the direct problem." << endl; break;
     case RECORDING::TAG_INIT_SOLVER_VARIABLES:    cout << "Simulating recording with tag 1 on conservative variables." << endl; AD::SetTag(1); break;
     case RECORDING::TAG_CHECK_SOLVER_VARIABLES:   cout << "Checking first recording with tag 2 on conservative variables." << endl; AD::SetTag(2); break;
     case RECORDING::TAG_INIT_SOLVER_AND_MESH:     cout << "Simulating recording with tag 1 on conservative variables and mesh coordinates." << endl; AD::SetTag(1); break;
@@ -883,7 +885,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         solvers[FLOW_SOL]->Momentum_Forces(geometry, config);
         solvers[FLOW_SOL]->Friction_Forces(geometry, config);
 
-        if(config->GetWeakly_Coupled_Heat()) {
+        if (config->GetWeakly_Coupled_Heat()) {
           solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
         }
 
@@ -898,6 +900,9 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         break;
 
       case MAIN_SOLVER::DISC_ADJ_FEM:
+        if (config->GetWeakly_Coupled_Heat()) {
+          solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
+        }
         solvers[FEA_SOL]->Postprocessing(geometry, config, numerics_container[iZone][INST_0][MESH_0][FEA_SOL], true);
         direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
         ObjFunc += solvers[FEA_SOL]->GetTotal_ComboObj();
@@ -916,7 +921,7 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
         kind_recording == RECORDING::TAG_CHECK_SOLVER_VARIABLES ||
         kind_recording == RECORDING::TAG_INIT_SOLVER_AND_MESH ||
         kind_recording == RECORDING::TAG_CHECK_SOLVER_AND_MESH) {
-      cout << " Objective function                   : " << ObjFunc << endl;
+      cout << "Objective function value: " << std::setprecision(driver_config->GetOutput_Precision()) << ObjFunc << endl;
     }
   }
 }
