@@ -268,7 +268,6 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
 void CTransLMSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
-  SU2_ZONE_SCOPED
 
   /*--- Define an object to set solver specific numerics contribution. ---*/
 
