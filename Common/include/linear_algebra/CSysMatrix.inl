@@ -82,6 +82,24 @@ FORCEINLINE void gemm_impl(unsigned long n, const T* a, const T* b, T* c) {
     }
   }
 }
+/*--- Custom 8-bit float for per-row scales: layout [eeeee|sss], value = (1 + s/8) * 2^(-e).
+ *    Exponent is always non-negative so all values are in (0, ~1.875].
+ *    No sign, no zero — used to encode ratios in (0, 1] relative to the block peak. ---*/
+inline uint8_t float8_encode(double v) {
+  if (v <= 0.0) return static_cast<uint8_t>(31 << 3);  // clamp to minimum
+  int fe;
+  const double m = std::frexp(v, &fe);
+  int e = 1 - fe;
+  int s = static_cast<int>(std::round((2.0 * m - 1.0) * 8.0));
+  if (s >= 8) {
+    --e;
+    s = 0;
+  }  // carry: move to next higher power-of-two band (larger value → smaller e)
+  return static_cast<uint8_t>((std::max(0, std::min(31, e)) << 3) | std::max(0, std::min(7, s)));
+}
+
+inline double float8_decode(uint8_t b) { return std::ldexp(1.0 + (b & 7) * 0.125, -(b >> 3)); }
+
 }  // namespace
 
 #define __MATVECPROD_SIGNATURE__(TYPE, NAME) \
@@ -147,12 +165,12 @@ FORCEINLINE void CSysMatrix<ScalarType>::Gauss_Elimination(unsigned long block_i
   ScalarType block[MAXNVAR * MAXNVAR];
   if (USE_QUANTIZATION && nVar > 1) {
     const auto k = dia_ptr[block_i];
+    const ScalarType bscale = q_bscale[k];
+    const uint8_t* qscale = &q_scale[k * nVar];
     const QuantType* q = &q_offdiag[k * nVar * nVar];
-    const ScalarType* scale = &q_scale[k * nVar];
     for (auto r = 0ul; r < nVar; ++r) {
-      for (auto c = 0ul; c < nVar; ++c) {
-        block[r * nVar + c] = scale[r] * q[r * nVar + c];
-      }
+      const ScalarType row_scale = bscale * ScalarType(float8_decode(qscale[r]));
+      for (auto c = 0ul; c < nVar; ++c) block[r * nVar + c] = row_scale * static_cast<ScalarType>(q[r * nVar + c]);
     }
   } else {
     MatrixCopy(&matrix[dia_ptr[block_i] * nVar * nVar], block);
@@ -182,12 +200,14 @@ FORCEINLINE const ScalarType* CSysMatrix<ScalarType>::InvertDiagonalBlockILUMatr
 template <class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::QuantizedMatVecAdd(unsigned long k, const ScalarType* vec,
                                                             ScalarType* prod) const {
-  const ScalarType* scale = &q_scale[k * nVar];
+  const ScalarType bscale = q_bscale[k];
+  const uint8_t* qscale = &q_scale[k * nVar];
   const QuantType* q = &q_offdiag[k * nVar * nVar];
   for (auto r = 0ul; r < nVar; ++r) {
+    const ScalarType row_scale = bscale * ScalarType(float8_decode(qscale[r]));
     auto sum = ScalarType(0);
-    for (auto c = 0ul; c < nVar; ++c) sum += q[r * nVar + c] * vec[c];
-    prod[r] += scale[r] * sum;
+    for (auto c = 0ul; c < nVar; ++c) sum += static_cast<ScalarType>(q[r * nVar + c]) * vec[c];
+    prod[r] += row_scale * sum;
   }
 }
 

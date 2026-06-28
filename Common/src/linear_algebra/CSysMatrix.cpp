@@ -49,6 +49,7 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
   col_ind = nullptr;
   col_ptr = nullptr;
 
+  q_bscale = nullptr;
   q_offdiag = nullptr;
   q_scale = nullptr;
 
@@ -75,6 +76,7 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   MemoryAllocation::aligned_free(ILU_matrix);
   MemoryAllocation::aligned_free(matrix);
   MemoryAllocation::aligned_free(invM);
+  MemoryAllocation::aligned_free(q_bscale);
   MemoryAllocation::aligned_free(q_offdiag);
   MemoryAllocation::aligned_free(q_scale);
 
@@ -500,28 +502,39 @@ void CSysMatrix<ScalarType>::QuantizeOffDiagonalBlocks() {
 
   if (nVar == 1) return;
 
-  if (q_scale == nullptr) {
+  if (q_bscale == nullptr) {
+    q_bscale = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nnz * sizeof(ScalarType));
+    q_scale = MemoryAllocation::aligned_alloc<uint8_t, true>(64, nnz * nVar * sizeof(uint8_t));
     q_offdiag = MemoryAllocation::aligned_alloc<QuantType, true>(64, nnz * nVar * nVar * sizeof(QuantType));
-    q_scale = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nnz * nVar * sizeof(ScalarType));
   }
+  constexpr double q_max = std::numeric_limits<QuantType>::max();
 
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (auto k = 0ul; k < nnz; ++k) {
+    const ScalarType* __restrict blk = &matrix[k * nVar * nVar];
+
+    /*--- Per-block max absolute value → block scale: q_bscale * INT8_MAX ≈ max_blk. ---*/
+    double max_blk = EPS;
+    for (auto idx = 0ul; idx < nVar * nVar; ++idx) max_blk = std::max(max_blk, std::abs(SU2_TYPE::GetValue(blk[idx])));
+    q_bscale[k] = ScalarType(max_blk / q_max);
+
     for (auto r = 0ul; r < nVar; ++r) {
-      const ScalarType* __restrict row = &matrix[(k * nVar + r) * nVar];
-      ScalarType& __restrict scale = q_scale[k * nVar + r];
+      const ScalarType* __restrict row = &blk[r * nVar];
       QuantType* __restrict q_row = &q_offdiag[(k * nVar + r) * nVar];
 
-      /*--- Max absolute entry in each row as the scale. ---*/
-      scale = EPS;
-      for (auto c = 0ul; c < nVar; ++c) {
-        scale = fmax(scale, fabs(row[c]));
-      }
-      scale /= std::numeric_limits<QuantType>::max();
+      /*--- Per-row max → encode ratio to block max as float8. ---*/
+      double max_row = 0.0;
+      for (auto c = 0ul; c < nVar; ++c) max_row = std::max(max_row, std::abs(SU2_TYPE::GetValue(row[c])));
+      q_scale[k * nVar + r] = float8_encode(max_row / max_blk);
 
-      const ScalarType inv_s = 1 / scale;
+      /*--- Effective row scale = q_bscale * float8(ratio) ≈ max_row / INT8_MAX. ---*/
+      const double eff = max_blk / q_max * float8_decode(q_scale[k * nVar + r]);
+      const ScalarType inv_rscale = (eff > 0.0) ? ScalarType(1.0 / eff) : ScalarType(0);
+
       for (auto c = 0ul; c < nVar; ++c) {
-        q_row[c] = static_cast<QuantType>(std::round(SU2_TYPE::GetValue(row[c] * inv_s)));
+        const double qval = std::round(SU2_TYPE::GetValue(row[c]) * SU2_TYPE::GetValue(inv_rscale));
+        q_row[c] = static_cast<QuantType>(std::max(double(std::numeric_limits<QuantType>::min()),
+                                                   std::min(double(std::numeric_limits<QuantType>::max()), qval)));
       }
     }
   }
