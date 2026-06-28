@@ -85,20 +85,31 @@ FORCEINLINE void gemm_impl(unsigned long n, const T* a, const T* b, T* c) {
 /*--- Custom 8-bit float for per-row scales: layout [eeeee|sss], value = (1 + s/8) * 2^(-e).
  *    Exponent is always non-negative so all values are in (0, ~1.875].
  *    No sign, no zero — used to encode ratios in (0, 1] relative to the block peak. ---*/
-inline uint8_t float8_encode(double v) {
-  if (v <= 0.0) return static_cast<uint8_t>(31 << 3);  // clamp to minimum
-  int fe;
-  const double m = std::frexp(v, &fe);
-  int e = 1 - fe;
-  int s = static_cast<int>(std::round((2.0 * m - 1.0) * 8.0));
+inline uint8_t float8_encode(float v) {
+  uint32_t bits;
+  memcpy(&bits, &v, sizeof(bits));
+  int e = 127 - static_cast<int>((bits >> 23) & 0xFFu);
+  int s = static_cast<int>((bits >> 20) & 7u) + static_cast<int>((bits >> 19) & 1u);
   if (s >= 8) {
     --e;
     s = 0;
-  }  // carry: move to next higher power-of-two band (larger value → smaller e)
-  return static_cast<uint8_t>((std::max(0, std::min(31, e)) << 3) | std::max(0, std::min(7, s)));
+  }
+  return static_cast<uint8_t>((std::max(0, std::min(31, e)) << 3) | s);
 }
 
-inline double float8_decode(uint8_t b) { return std::ldexp(1.0 + (b & 7) * 0.125, -(b >> 3)); }
+inline uint8_t float8_encode(double v) {
+  uint64_t bits;
+  memcpy(&bits, &v, sizeof(bits));
+  int e = 1023 - static_cast<int>((bits >> 52) & 0x7FFu);
+  int s = static_cast<int>((bits >> 49) & 7u) + static_cast<int>((bits >> 48) & 1u);
+  if (s >= 8) {
+    --e;
+    s = 0;
+  }
+  return static_cast<uint8_t>((std::max(0, std::min(31, e)) << 3) | s);
+}
+
+inline float float8_decode(uint8_t b) { return std::ldexp(1.0f + (b & 7) * 0.125f, -(b >> 3)); }
 
 }  // namespace
 

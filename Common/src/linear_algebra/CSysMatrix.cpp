@@ -507,29 +507,30 @@ void CSysMatrix<ScalarType>::QuantizeOffDiagonalBlocks() {
     q_scale = MemoryAllocation::aligned_alloc<uint8_t, true>(64, nnz * nVar * sizeof(uint8_t));
     q_offdiag = MemoryAllocation::aligned_alloc<QuantType, true>(64, nnz * nVar * nVar * sizeof(QuantType));
   }
-  constexpr double q_max = std::numeric_limits<QuantType>::max();
+  const ScalarType q_max = std::numeric_limits<QuantType>::max();
 
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (auto k = 0ul; k < nnz; ++k) {
     const ScalarType* __restrict blk = &matrix[k * nVar * nVar];
 
     /*--- Per-block max absolute value → block scale: q_bscale * INT8_MAX ≈ max_blk. ---*/
-    double max_blk = EPS;
-    for (auto idx = 0ul; idx < nVar * nVar; ++idx) max_blk = std::max(max_blk, std::abs(SU2_TYPE::GetValue(blk[idx])));
-    q_bscale[k] = ScalarType(max_blk / q_max);
+    ScalarType max_blk = EPS;
+    for (auto idx = 0ul; idx < nVar * nVar; ++idx)
+      max_blk = std::max(max_blk, ScalarType(std::abs(SU2_TYPE::GetValue(blk[idx]))));
+    q_bscale[k] = max_blk / q_max;
 
     for (auto r = 0ul; r < nVar; ++r) {
       const ScalarType* __restrict row = &blk[r * nVar];
       QuantType* __restrict q_row = &q_offdiag[(k * nVar + r) * nVar];
 
       /*--- Per-row max → encode ratio to block max as float8. ---*/
-      double max_row = 0.0;
-      for (auto c = 0ul; c < nVar; ++c) max_row = std::max(max_row, std::abs(SU2_TYPE::GetValue(row[c])));
+      auto max_row = ScalarType(0);
+      for (auto c = 0ul; c < nVar; ++c) max_row = std::max(max_row, ScalarType(std::abs(SU2_TYPE::GetValue(row[c]))));
       q_scale[k * nVar + r] = float8_encode(max_row / max_blk);
 
       /*--- Effective row scale = q_bscale * float8(ratio) ≈ max_row / INT8_MAX. ---*/
-      const double eff = max_blk / q_max * float8_decode(q_scale[k * nVar + r]);
-      const ScalarType inv_rscale = (eff > 0.0) ? ScalarType(1.0 / eff) : ScalarType(0);
+      const ScalarType eff = max_blk / q_max * float8_decode(q_scale[k * nVar + r]);
+      const ScalarType inv_rscale = (eff > ScalarType(0)) ? ScalarType(1) / eff : ScalarType(0);
 
       for (auto c = 0ul; c < nVar; ++c) {
         const double qval = std::round(SU2_TYPE::GetValue(row[c]) * SU2_TYPE::GetValue(inv_rscale));
