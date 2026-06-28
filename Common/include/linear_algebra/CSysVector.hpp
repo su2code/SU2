@@ -271,8 +271,10 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   }
 
   void MarkHostDataModified() const {
+#ifdef HAVE_CUDA
     host_data_valid = true;
     device_data_valid = false;
+#endif
   }
 
  public:
