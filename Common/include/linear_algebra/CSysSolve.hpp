@@ -304,20 +304,6 @@ class CSysSolve {
                                       ScalarType& residual, bool monitoring, const CConfig* config, FgcrodrMode mode,
                                       unsigned long custom_m) const;
 
-  template <class FGMRESOps>
-  unsigned long FGMRES_LinSolverImpl(const VectorType& b, VectorType& x, const ProductType& mat_vec,
-                                     const PrecondType& precond, ScalarType tol, unsigned long m, ScalarType& residual,
-                                     bool monitoring, const CConfig* config, const FGMRESOps& ops) const;
-
-  /*!
-   * \brief CUDA/GPU backend wrapper for the Flexible GMRES solver.
-   * \note The algorithmic implementation is shared with the host solver. This helper
-   *       only provides GPU vector-operation dispatch and synchronization.
-   */
-  unsigned long FGMRES_LinSolver_GPU(const VectorType& b, VectorType& x, const ProductType& mat_vec,
-                                     const PrecondType& precond, ScalarType tol, unsigned long m, ScalarType& residual,
-                                     bool monitoring, const CConfig* config) const;
-
   /*!
    * \brief Creates the inner solver for nested preconditioning if the settings allow it.
    * \returns True if the inner solver can be used.

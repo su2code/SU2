@@ -6,5 +6,5 @@ common_src += files(['CSysSolve_b.cpp',
                      'blas_structure.cpp'])
 
   if get_option('enable-cuda')
-    common_src += files(['CSysMatrixGPU.cu', 'CSysVectorGPU.cu', 'CSysSolveGPU.cu', 'CSysPreconditionerGPU.cu',])
+    common_src += files(['CSysMatrixGPU.cu', 'CSysVectorGPU.cu', 'CSysPreconditionerGPU.cu',])
 endif

@@ -147,6 +147,61 @@ ScalarType CSysVector<ScalarType>::GPUNorm() const {
   return sqrt(GPUDot(*this));
 }
 
+namespace {
+
+template <class Scalar>
+using DeviceView = VecExpr::CVectorView<Scalar>;
+
+template <class Scalar>
+using DeviceBcast = VecExpr::Bcast<Scalar>;
+
+template <class Scalar>
+using DeviceNeg = VecExpr::minus_<CSysVector<Scalar>, Scalar>;
+
+template <class Scalar>
+using DeviceScale = VecExpr::mul_<CSysVector<Scalar>, DeviceBcast<Scalar>, Scalar>;
+
+template <class Scalar>
+using DeviceScale2 = VecExpr::add_<DeviceScale<Scalar>, DeviceScale<Scalar>, Scalar>;
+
+template <class Scalar>
+using DeviceScale3 = VecExpr::add_<DeviceScale2<Scalar>, DeviceScale<Scalar>, Scalar>;
+
+template <class Scalar>
+using DeviceScale4 = VecExpr::add_<DeviceScale3<Scalar>, DeviceScale<Scalar>, Scalar>;
+
+}  // namespace
+
+#define INSTANTIATE_DEVICE_ASSIGN(SCALAR, OP, EXPR)                                                           \
+  template void VecExpr::AssignDeviceExpression<VecExpr::DeviceAssignOp::OP, SCALAR, EXPR<SCALAR>>(          \
+      SCALAR*, unsigned long, const VecExpr::CVecExpr<EXPR<SCALAR>, SCALAR>&)
+
+#define INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, EXPR)      \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Assign, EXPR);        \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Add, EXPR);           \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Subtract, EXPR);      \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Multiply, EXPR);      \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Divide, EXPR)
+
+#define INSTANTIATE_DEVICE_ASSIGN_SCALAR(SCALAR)          \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceBcast);    \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceView);     \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceNeg);      \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceScale);    \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceScale2);   \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceScale3);   \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceScale4)
+
+INSTANTIATE_DEVICE_ASSIGN_SCALAR(su2mixedfloat);
+
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
+INSTANTIATE_DEVICE_ASSIGN_SCALAR(passivedouble);
+#endif
+
+#undef INSTANTIATE_DEVICE_ASSIGN_SCALAR
+#undef INSTANTIATE_DEVICE_ASSIGN_EXPR
+#undef INSTANTIATE_DEVICE_ASSIGN
+
 template void CSysVector<su2mixedfloat>::HtDTransfer(bool trigger) const;
 template void CSysVector<su2mixedfloat>::DtHTransfer(bool trigger) const;
 template su2mixedfloat CSysVector<su2mixedfloat>::GPUDot(const CSysVector<su2mixedfloat>& other) const;
