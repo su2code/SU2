@@ -269,7 +269,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
   // Flow-Pre computes/sets mixture properties
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
-                                          RUNTIME_FLOW_SYS, false);
+                                          RUNTIME_FLOW_SYS, true);
   // Update eddy-visc which needs correct mixture density and mixture lam-visc. Note that after this, another Flow-Pre
   // at the start of the Iteration sets the updated eddy-visc into the Flow-Solvers Primitives.
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
@@ -287,7 +287,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
     solver[iMesh][SPECIES_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
 
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
-                                           false);
+                                           true);
 
     if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
       solver[iMesh][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);

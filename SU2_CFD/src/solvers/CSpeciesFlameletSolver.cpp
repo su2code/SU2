@@ -291,7 +291,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       solver_container[i_mesh][FLOW_SOL]->CompleteComms(geometry[i_mesh], config, MPI_QUANTITIES::SOLUTION);
 
       solver_container[i_mesh][FLOW_SOL]->Preprocessing(geometry[i_mesh], solver_container[i_mesh], config, i_mesh,
-                                                        NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+                                                        NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     }
 
     /* --- Sum up some global counters over processes. --- */
