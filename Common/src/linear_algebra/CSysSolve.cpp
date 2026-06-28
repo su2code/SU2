@@ -41,13 +41,7 @@ SU2_RESTORE_WARNING
 #include <complex>
 #include <iostream>
 #include <limits>
-#include <type_traits>
 #include <memory>
-
-#ifdef HAVE_CUDA
-void SU2_GPU_BeginSolverBLASContext();
-void SU2_GPU_EndSolverBLASContext();
-#endif
 
 namespace {
 /*!
@@ -135,55 +129,6 @@ void LinearCombination(bool parallel, Ts&&... args) {
     LinearCombinationImpl(std::forward<Ts>(args)...);
   }
 }
-
-template <class ScalarType>
-class CDeviceSolveContextGuard {
- private:
-  bool enabled = false;
-#ifdef HAVE_CUDA
-  bool previous = false;
-  CSysVector<ScalarType>* solution = nullptr;
-#endif
-
- public:
-  CDeviceSolveContextGuard(bool enabled_, const CSysVector<ScalarType>& b, CSysVector<ScalarType>& x, bool x_is_zero)
-      : enabled(enabled_) {
-#ifdef HAVE_CUDA
-    if (enabled) {
-      solution = &x;
-      SU2_GPU_BeginSolverBLASContext();
-      previous = VecExpr::DeviceExpressionsEnabled();
-      VecExpr::SetDeviceExpressionsEnabled(true);
-      b.HtDTransfer();
-      if (x_is_zero) {
-        x = ScalarType(0);
-      } else {
-        x.HtDTransfer();
-      }
-    }
-#else
-    if (enabled) {
-      SU2_MPI::Error(
-          "\nError in launching FGMRES solver\nENABLE_CUDA is set to YES\nPlease compile with CUDA options enabled "
-          "in Meson to access GPU Functions",
-          CURRENT_FUNCTION);
-    }
-#endif
-  }
-
-  ~CDeviceSolveContextGuard() {
-#ifdef HAVE_CUDA
-    if (enabled) {
-      solution->DtHTransfer();
-      VecExpr::SetDeviceExpressionsEnabled(previous);
-      SU2_GPU_EndSolverBLASContext();
-    }
-#endif
-  }
-
-  CDeviceSolveContextGuard(const CDeviceSolveContextGuard&) = delete;
-  CDeviceSolveContextGuard& operator=(const CDeviceSolveContextGuard&) = delete;
-};
 
 }  // namespace
 
@@ -478,7 +423,6 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   const bool masterRank = (SU2_MPI::GetRank() == MASTER_NODE);
   const bool flexible = !precond.IsIdentity();
   const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
-  CDeviceSolveContextGuard<ScalarType> device_context(config->GetCUDA(), b, x, xIsZero);
 
   /*--- Check the subspace size. ---*/
 
@@ -1517,83 +1461,85 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
 
     HandleTemporariesIn(LinSysRes, LinSysSol);
 
-    auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
+    {
+      auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
-    /*--- Build preconditioner. ---*/
+      /*--- Build preconditioner. ---*/
 
-    const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
-    auto* normal_prec = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
-    normal_prec->Build();
+      const auto kindPrec = static_cast<ENUM_LINEAR_SOLVER_PREC>(KindPrecond);
+      auto* normal_prec = CPreconditioner<ScalarType>::Create(kindPrec, Jacobian, geometry, config);
+      normal_prec->Build();
 
-    CPreconditioner<ScalarType>* nested_prec = nullptr;
-    if (nested) {
-      auto f = [&](const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) {
-        /*--- Initialize to 0 to be safe. ---*/
-        v = ScalarType{};
-        ScalarType res{};
-        /*--- Handle other types here if desired but do not call Solve because
-         * that will create issues with the AD external function. ---*/
-        if (config->GetKind_Linear_Solver_Inner() == LINEAR_SOLVER_INNER::BCGSTAB) {
-          inner_solver->BCGSTAB_LinSolver(u, v, mat_vec, *normal_prec, sqrt(SolverTol), MaxIter, res, false, config);
-        } else {
-          const auto smooth_iter = static_cast<unsigned long>(std::round(fmax(2, sqrt(MaxIter))));
-          inner_solver->Smoother_LinSolver(u, v, mat_vec, *normal_prec, 0, smooth_iter, res, false, config);
-        }
-      };
-      nested_prec = new CAbstractPreconditioner<ScalarType>(f);
-    }
-    const auto* precond = nested ? nested_prec : normal_prec;
+      CPreconditioner<ScalarType>* nested_prec = nullptr;
+      if (nested) {
+        auto f = [&](const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) {
+          /*--- Initialize to 0 to be safe. ---*/
+          v = ScalarType{};
+          ScalarType res{};
+          /*--- Handle other types here if desired but do not call Solve because
+           * that will create issues with the AD external function. ---*/
+          if (config->GetKind_Linear_Solver_Inner() == LINEAR_SOLVER_INNER::BCGSTAB) {
+            inner_solver->BCGSTAB_LinSolver(u, v, mat_vec, *normal_prec, sqrt(SolverTol), MaxIter, res, false, config);
+          } else {
+            const auto smooth_iter = static_cast<unsigned long>(std::round(fmax(2, sqrt(MaxIter))));
+            inner_solver->Smoother_LinSolver(u, v, mat_vec, *normal_prec, 0, smooth_iter, res, false, config);
+          }
+        };
+        nested_prec = new CAbstractPreconditioner<ScalarType>(f);
+      }
+      const auto* precond = nested ? nested_prec : normal_prec;
 
-    /*--- Solve system. ---*/
+      /*--- Solve system. ---*/
 
-    ScalarType residual = 0.0;
+      ScalarType residual = 0.0;
 
-    switch (KindSolver) {
-      case BCGSTAB:
-        IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
-                                       ScreenOutput, config);
-        break;
-      case FGMRES:
-        IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
-                                      ScreenOutput, config);
-        break;
-      case FGCRODR:
-        IterLinSol = FGCRODR_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
-                                       ScreenOutput, config);
-        break;
-      case RESTARTED_FGMRES:
-        IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
-                                       ScreenOutput, config);
-        break;
-      case CONJUGATE_GRADIENT:
-        IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
-                                  ScreenOutput, config);
-        break;
-      case SMOOTHER:
-        IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+      switch (KindSolver) {
+        case BCGSTAB:
+          IterLinSol = BCGSTAB_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter,
+                                         residual, ScreenOutput, config);
+          break;
+        case FGMRES:
+          IterLinSol = FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
                                         ScreenOutput, config);
-        break;
-      case PASTIX_LDLT:
-      case PASTIX_LU:
-        Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
-        Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
-        IterLinSol = 1;
-        residual = 1e-20;
-        break;
-      default:
-        SU2_MPI::Error("Unknown type of linear solver.", CURRENT_FUNCTION);
-    }
+          break;
+        case FGCRODR:
+          IterLinSol = FGCRODR_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter,
+                                         residual, ScreenOutput, config);
+          break;
+        case RESTARTED_FGMRES:
+          IterLinSol = RFGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter,
+                                         residual, ScreenOutput, config);
+          break;
+        case CONJUGATE_GRADIENT:
+          IterLinSol = CG_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter, residual,
+                                    ScreenOutput, config);
+          break;
+        case SMOOTHER:
+          IterLinSol = Smoother_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, mat_vec, *precond, SolverTol, MaxIter,
+                                          residual, ScreenOutput, config);
+          break;
+        case PASTIX_LDLT:
+        case PASTIX_LU:
+          Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
+          Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
+          IterLinSol = 1;
+          residual = 1e-20;
+          break;
+        default:
+          SU2_MPI::Error("Unknown type of linear solver.", CURRENT_FUNCTION);
+      }
 
-    SU2_OMP_MASTER {
-      Residual = residual;
-      Iterations = IterLinSol;
+      SU2_OMP_MASTER {
+        Residual = residual;
+        Iterations = IterLinSol;
+      }
+      END_SU2_OMP_MASTER
+
+      delete normal_prec;
+      delete nested_prec;
     }
-    END_SU2_OMP_MASTER
 
     HandleTemporariesOut(LinSysSol);
-
-    delete normal_prec;
-    delete nested_prec;
 
     if (TapeActive) {
       /*--- To keep the behavior of SU2_DOT, but not strictly required since jacobian is symmetric(?). ---*/

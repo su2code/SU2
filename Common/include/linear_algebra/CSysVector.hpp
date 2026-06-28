@@ -75,10 +75,33 @@ enum class DeviceAssignOp { Assign, Add, Subtract, Multiply, Divide };
 
 #ifdef HAVE_CUDA
 bool DeviceExpressionsEnabled();
-void SetDeviceExpressionsEnabled(bool enabled);
+void BeginDeviceExpressionContext(bool enabled);
+void EndDeviceExpressionContext();
+void FlushDeviceExpressionContext();
+unsigned long CurrentDeviceExpressionContextId();
+void RegisterDeviceModifiedVector(const void* vector, void (*sync)(const void*));
+void UnregisterDeviceModifiedVector(const void* vector);
 #else
 inline bool DeviceExpressionsEnabled() { return false; }
+inline void BeginDeviceExpressionContext(bool) {}
+inline void EndDeviceExpressionContext() {}
+inline void FlushDeviceExpressionContext() {}
+inline unsigned long CurrentDeviceExpressionContextId() { return 0; }
+inline void RegisterDeviceModifiedVector(const void*, void (*)(const void*)) {}
+inline void UnregisterDeviceModifiedVector(const void*) {}
 #endif
+
+class CDeviceExpressionContext {
+ private:
+  bool enabled = false;
+
+ public:
+  explicit CDeviceExpressionContext(bool enabled_) : enabled(enabled_) { BeginDeviceExpressionContext(enabled); }
+  ~CDeviceExpressionContext() { EndDeviceExpressionContext(); }
+
+  CDeviceExpressionContext(const CDeviceExpressionContext&) = delete;
+  CDeviceExpressionContext& operator=(const CDeviceExpressionContext&) = delete;
+};
 
 template <class Scalar>
 class CVectorView : public CVecExpr<CVectorView<Scalar>, Scalar> {
@@ -190,6 +213,9 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   unsigned long nVar = 1;       /*!< \brief Number of elements in a block. */
 
   ScalarType* d_vec_val = nullptr; /*!< \brief Device Pointer to store the vector values on the GPU. */
+  mutable bool device_data_valid = false;
+  mutable bool host_data_valid = true;
+  mutable unsigned long device_context_id = 0;
 
 #ifdef HAVE_OMP
   mutable std::unique_ptr<ScalarType[]>
@@ -226,8 +252,10 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   template <VecExpr::DeviceAssignOp Op, class T>
   CSysVector& AssignDevice(const VecExpr::CVecExpr<T, ScalarType>& expr) {
 #ifdef HAVE_CUDA
+    if constexpr (Op != VecExpr::DeviceAssignOp::Assign) EnsureDeviceData();
     VecExpr::store_t<const T> stored_expr(expr.derived());
     VecExpr::AssignDeviceExpression<Op>(d_vec_val, nElm, stored_expr);
+    MarkDeviceDataModified();
 #endif
     return *this;
   }
@@ -235,9 +263,16 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   template <VecExpr::DeviceAssignOp Op>
   CSysVector& AssignDevice(ScalarType val) {
 #ifdef HAVE_CUDA
+    if constexpr (Op != VecExpr::DeviceAssignOp::Assign) EnsureDeviceData();
     VecExpr::AssignDeviceExpression<Op>(d_vec_val, nElm, VecExpr::Bcast<ScalarType>(val));
+    MarkDeviceDataModified();
 #endif
     return *this;
+  }
+
+  void MarkHostDataModified() const {
+    host_data_valid = true;
+    device_data_valid = false;
   }
 
  public:
@@ -303,6 +338,9 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     std::swap(omp_chunk_size, other.omp_chunk_size);
     std::swap(vec_val, other.vec_val);
     std::swap(d_vec_val, other.d_vec_val);
+    std::swap(device_data_valid, other.device_data_valid);
+    std::swap(host_data_valid, other.host_data_valid);
+    std::swap(device_context_id, other.device_context_id);
     std::swap(nElm, other.nElm);
     std::swap(nElmDomain, other.nElmDomain);
     std::swap(nVar, other.nVar);
@@ -350,6 +388,8 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; i++) vec_val[i] = SU2_TYPE::GetValue(other[i]);
     END_CSYSVEC_PARFOR
+
+    MarkHostDataModified();
   }
 
   /*!
@@ -363,6 +403,39 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
    */
   void DtHTransfer(bool trigger = true) const;
+
+  void EnsureDeviceData() const {
+#ifdef HAVE_CUDA
+    const auto context_id = VecExpr::CurrentDeviceExpressionContextId();
+    if (VecExpr::DeviceExpressionsEnabled() && (!device_data_valid || device_context_id != context_id)) {
+      HtDTransfer();
+      device_data_valid = true;
+      host_data_valid = true;
+      device_context_id = context_id;
+    }
+#endif
+  }
+
+  void MarkDeviceDataModified() const {
+#ifdef HAVE_CUDA
+    if (VecExpr::DeviceExpressionsEnabled()) {
+      device_data_valid = true;
+      host_data_valid = false;
+      device_context_id = VecExpr::CurrentDeviceExpressionContextId();
+      VecExpr::RegisterDeviceModifiedVector(
+          this, [](const void* vector) { static_cast<const CSysVector*>(vector)->SyncHostFromDevice(); });
+    }
+#endif
+  }
+
+  void SyncHostFromDevice() const {
+#ifdef HAVE_CUDA
+    if (device_data_valid && !host_data_valid) {
+      DtHTransfer();
+      host_data_valid = true;
+    }
+#endif
+  }
 
   /*!
    * \brief Dot product between this vector and another vector on the device.
@@ -449,14 +522,17 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   CSysVector& operator=(const CSysVector& other) {
 #ifdef HAVE_CUDA
     if (VecExpr::DeviceExpressionsEnabled()) {
+      other.EnsureDeviceData();
       VecExpr::CVectorView<ScalarType> view(other);
       VecExpr::AssignDeviceExpression<VecExpr::DeviceAssignOp::Assign>(d_vec_val, nElm, view);
+      MarkDeviceDataModified();
       return *this;
     }
 #endif
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] = other.vec_val[i];
     END_CSYSVEC_PARFOR
+    MarkHostDataModified();
     return *this;
   }
 
@@ -470,6 +546,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     CSYSVEC_PARFOR                                                                \
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;                          \
     END_CSYSVEC_PARFOR                                                            \
+    MarkHostDataModified();                                                       \
     return *this;                                                                 \
   }                                                                               \
   template <class T>                                                              \
@@ -479,10 +556,12 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
       if constexpr (VecExpr::is_device_assignable<DeviceExpr>::value) {           \
         return AssignDevice<ASSIGN_OP>(expr);                                     \
       }                                                                           \
+      VecExpr::FlushDeviceExpressionContext();                                    \
     }                                                                             \
     CSYSVEC_PARFOR                                                                \
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr.derived()[i];            \
     END_CSYSVEC_PARFOR                                                            \
+    MarkHostDataModified();                                                       \
     return *this;                                                                 \
   }
   MAKE_COMPOUND(=, VecExpr::DeviceAssignOp::Assign)
@@ -508,8 +587,11 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     if (VecExpr::DeviceExpressionsEnabled()) {
       using DeviceExpr = std::remove_cv_t<VecExpr::remove_reference_t<T>>;
       if constexpr (std::is_same_v<DeviceExpr, CSysVector>) {
+        EnsureDeviceData();
+        expr.derived().EnsureDeviceData();
         return GPUDot(expr.derived());
       }
+      VecExpr::FlushDeviceExpressionContext();
     }
 #endif
 
@@ -674,7 +756,10 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
 namespace VecExpr {
 
 template <class Scalar>
-CVectorView<Scalar>::CVectorView(const CSysVector<Scalar>& vector) : data(vector.GetExpressionPointer()) {}
+CVectorView<Scalar>::CVectorView(const CSysVector<Scalar>& vector) {
+  vector.EnsureDeviceData();
+  data = vector.GetExpressionPointer();
+}
 
 }  // namespace VecExpr
 

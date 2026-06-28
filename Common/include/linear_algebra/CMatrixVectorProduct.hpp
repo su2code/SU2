@@ -72,6 +72,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
   const CSysMatrix<ScalarType>& matrix; /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                  /*!< \brief geometry associated with the matrix. */
   const CConfig* config;                /*!< \brief config of the problem. */
+  VecExpr::CDeviceExpressionContext device_context;
   mutable bool matrix_uploaded = false; /*!< \brief Upload the matrix lazily on the first actual GPU matvec. */
 
  public:
@@ -83,7 +84,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    */
   inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref,
                                  const CConfig* config_ref)
-      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {}
+      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref), device_context(config_ref->GetCUDA()) {}
 
   /*!
    * \note This class cannot be default constructed as that would leave us with invalid pointers.

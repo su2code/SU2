@@ -108,6 +108,8 @@ void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const
 template <class ScalarType>
 void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                     CGeometry* geometry, const CConfig* config) const {
+  vec.EnsureDeviceData();
+
   if (nVar != nEqn) {
     SU2_MPI::Error("CUDA CSysMatrix matvec with cuSPARSE BSR requires square blocks.", CURRENT_FUNCTION);
   }
@@ -171,6 +173,8 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
 
   cusparseErrChk(cusparseDestroyDnVec(vecY));
   cusparseErrChk(cusparseDestroyDnVec(vecX));
+
+  prod.MarkDeviceDataModified();
 }
 template void CSysMatrix<su2mixedfloat>::HtDTransfer(bool trigger) const;
 template void CSysMatrix<su2mixedfloat>::GPUMatrixVectorProduct(const CSysVector<su2mixedfloat>& vec,

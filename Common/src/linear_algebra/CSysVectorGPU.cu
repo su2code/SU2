@@ -28,7 +28,9 @@
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
 #include <cublas_v2.h>
+#include <algorithm>
 #include <type_traits>
+#include <vector>
 
 namespace {
 
@@ -55,34 +57,20 @@ void ReleaseBlasHandle(cublasHandle_t handle, bool owns_handle, const char* dest
   }
 }
 
-}  // namespace
-
-namespace VecExpr {
-
-namespace {
-thread_local bool device_expressions_enabled = false;
-}  // namespace
-
-bool DeviceExpressionsEnabled() { return device_expressions_enabled; }
-
-void SetDeviceExpressionsEnabled(bool enabled) { device_expressions_enabled = enabled; }
-
-}  // namespace VecExpr
-
-void SU2_GPU_BeginSolverBLASContext() {
+void BeginDeviceBlasContext() {
   if (active_solver_blas_depth == 0) {
     cublasHandle_t handle = nullptr;
     if (cublasCreate(&handle) != CUBLAS_STATUS_SUCCESS) {
-      SU2_MPI::Error("cuBLAS handle creation failed for the GPU linear solver context.", CURRENT_FUNCTION);
+      SU2_MPI::Error("cuBLAS handle creation failed for the GPU linear algebra context.", CURRENT_FUNCTION);
     }
     active_solver_blas_handle = handle;
   }
   ++active_solver_blas_depth;
 }
 
-void SU2_GPU_EndSolverBLASContext() {
+void EndDeviceBlasContext() {
   if (active_solver_blas_depth == 0) {
-    SU2_MPI::Error("GPU linear solver BLAS context ended without a matching begin.", CURRENT_FUNCTION);
+    SU2_MPI::Error("GPU linear algebra BLAS context ended without a matching begin.", CURRENT_FUNCTION);
   }
 
   --active_solver_blas_depth;
@@ -90,10 +78,80 @@ void SU2_GPU_EndSolverBLASContext() {
     auto status = cublasDestroy(active_solver_blas_handle);
     active_solver_blas_handle = nullptr;
     if (status != CUBLAS_STATUS_SUCCESS) {
-      SU2_MPI::Error("cuBLAS handle destruction failed for the GPU linear solver context.", CURRENT_FUNCTION);
+      SU2_MPI::Error("cuBLAS handle destruction failed for the GPU linear algebra context.", CURRENT_FUNCTION);
     }
   }
 }
+
+}  // namespace
+
+namespace VecExpr {
+
+namespace {
+thread_local bool device_expressions_enabled = false;
+struct DeviceExpressionContextState {
+  bool enabled = false;
+  bool previous = false;
+  unsigned long previous_context_id = 0;
+};
+struct ModifiedVector {
+  const void* vector = nullptr;
+  void (*sync)(const void*) = nullptr;
+};
+thread_local std::vector<DeviceExpressionContextState> device_context_stack;
+thread_local std::vector<ModifiedVector> modified_vectors;
+thread_local unsigned long next_device_context_id = 0;
+thread_local unsigned long current_device_context_id = 0;
+}  // namespace
+
+bool DeviceExpressionsEnabled() { return device_expressions_enabled; }
+
+void BeginDeviceExpressionContext(bool enabled) {
+  device_context_stack.push_back({enabled, device_expressions_enabled, current_device_context_id});
+  if (!enabled) return;
+
+  BeginDeviceBlasContext();
+  device_expressions_enabled = true;
+  current_device_context_id = ++next_device_context_id;
+}
+
+void FlushDeviceExpressionContext() {
+  for (const auto& entry : modified_vectors) entry.sync(entry.vector);
+  modified_vectors.clear();
+}
+
+void EndDeviceExpressionContext() {
+  if (device_context_stack.empty()) {
+    SU2_MPI::Error("Device expression context ended without a matching begin.", CURRENT_FUNCTION);
+  }
+
+  const auto state = device_context_stack.back();
+  device_context_stack.pop_back();
+
+  if (state.enabled) {
+    FlushDeviceExpressionContext();
+    device_expressions_enabled = state.previous;
+    current_device_context_id = state.previous_context_id;
+    EndDeviceBlasContext();
+  }
+}
+
+unsigned long CurrentDeviceExpressionContextId() { return current_device_context_id; }
+
+void RegisterDeviceModifiedVector(const void* vector, void (*sync)(const void*)) {
+  if (!DeviceExpressionsEnabled()) return;
+  const auto exists = std::any_of(modified_vectors.begin(), modified_vectors.end(),
+                                  [vector](const auto& entry) { return entry.vector == vector; });
+  if (!exists) modified_vectors.push_back({vector, sync});
+}
+
+void UnregisterDeviceModifiedVector(const void* vector) {
+  modified_vectors.erase(std::remove_if(modified_vectors.begin(), modified_vectors.end(),
+                                        [vector](const auto& entry) { return entry.vector == vector; }),
+                         modified_vectors.end());
+}
+
+}  // namespace VecExpr
 
 template <class ScalarType>
 void CSysVector<ScalarType>::HtDTransfer(bool trigger) const {
@@ -109,6 +167,9 @@ void CSysVector<ScalarType>::DtHTransfer(bool trigger) const {
 
 template <class ScalarType>
 ScalarType CSysVector<ScalarType>::GPUDot(const CSysVector& other) const {
+  EnsureDeviceData();
+  other.EnsureDeviceData();
+
   bool owns_handle = false;
   cublasHandle_t handle = GetBlasHandle("cuBLAS handle creation failed in CSysVector::GPUDot.", owns_handle);
   cublasStatus_t status = CUBLAS_STATUS_SUCCESS;

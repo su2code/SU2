@@ -65,6 +65,10 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
       for (auto i = 0ul; i < nElm; i++) vec_val[i] = val[i];
     }
   }
+
+  host_data_valid = true;
+  device_data_valid = false;
+  device_context_id = 0;
 }
 
 template <class ScalarType>
@@ -151,6 +155,7 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
 
 template <class ScalarType>
 CSysVector<ScalarType>::~CSysVector() {
+  VecExpr::UnregisterDeviceModifiedVector(this);
   if constexpr (!std::is_trivial_v<ScalarType>) {
     for (auto i = 0ul; i < nElm; i++) vec_val[i].~ScalarType();
   }
