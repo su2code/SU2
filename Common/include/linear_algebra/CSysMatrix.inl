@@ -82,35 +82,6 @@ FORCEINLINE void gemm_impl(unsigned long n, const T* a, const T* b, T* c) {
     }
   }
 }
-/*--- Custom 8-bit float for per-row scales: layout [eeeee|sss], value = (1 + s/8) * 2^(-e).
- *    Exponent is always non-negative so all values are in (0, ~1.875].
- *    No sign, no zero — used to encode ratios in (0, 1] relative to the block peak. ---*/
-inline uint8_t float8_encode(float v) {
-  uint32_t bits;
-  memcpy(&bits, &v, sizeof(bits));
-  int e = 127 - static_cast<int>((bits >> 23) & 0xFFu);
-  int s = static_cast<int>((bits >> 20) & 7u) + static_cast<int>((bits >> 19) & 1u);
-  if (s >= 8) {
-    --e;
-    s = 0;
-  }
-  return static_cast<uint8_t>((std::max(0, std::min(31, e)) << 3) | s);
-}
-
-inline uint8_t float8_encode(double v) {
-  uint64_t bits;
-  memcpy(&bits, &v, sizeof(bits));
-  int e = 1023 - static_cast<int>((bits >> 52) & 0x7FFu);
-  int s = static_cast<int>((bits >> 49) & 7u) + static_cast<int>((bits >> 48) & 1u);
-  if (s >= 8) {
-    --e;
-    s = 0;
-  }
-  return static_cast<uint8_t>((std::max(0, std::min(31, e)) << 3) | s);
-}
-
-inline float float8_decode(uint8_t b) { return std::ldexp(1.0f + (b & 7) * 0.125f, -(b >> 3)); }
-
 }  // namespace
 
 #define __MATVECPROD_SIGNATURE__(TYPE, NAME) \
@@ -176,12 +147,13 @@ FORCEINLINE void CSysMatrix<ScalarType>::Gauss_Elimination(unsigned long block_i
   ScalarType block[MAXNVAR * MAXNVAR];
   if (USE_QUANTIZATION && nVar > 1) {
     const auto k = dia_ptr[block_i];
-    const ScalarType bscale = q_bscale[k];
-    const uint8_t* qscale = &q_scale[k * nVar];
-    const QuantType* q = &q_offdiag[k * nVar * nVar];
+    const QuantType* __restrict qscale = &q_scale[k * nVar];
+    const QuantType* __restrict q = &q_offdiag[k * nVar * nVar];
     for (auto r = 0ul; r < nVar; ++r) {
-      const ScalarType row_scale = bscale * ScalarType(float8_decode(qscale[r]));
-      for (auto c = 0ul; c < nVar; ++c) block[r * nVar + c] = row_scale * static_cast<ScalarType>(q[r * nVar + c]);
+      const uint32_t rs_bits = static_cast<uint32_t>(std::max(0, static_cast<int>(qscale[r]) + 127)) << 23;
+      float row_scale;
+      memcpy(&row_scale, &rs_bits, sizeof(rs_bits));
+      for (auto c = 0ul; c < nVar; ++c) block[r * nVar + c] = row_scale * q[r * nVar + c];
     }
   } else {
     MatrixCopy(&matrix[dia_ptr[block_i] * nVar * nVar], block);
@@ -211,13 +183,12 @@ FORCEINLINE const ScalarType* CSysMatrix<ScalarType>::InvertDiagonalBlockILUMatr
 template <class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::QuantizedMatVecAdd(unsigned long k, const ScalarType* vec,
                                                             ScalarType* prod) const {
-  const ScalarType bscale = q_bscale[k];
-  const uint8_t* qscale = &q_scale[k * nVar];
-  const QuantType* q = &q_offdiag[k * nVar * nVar];
+  const QuantType* __restrict qscale = &q_scale[k * nVar];
+  const QuantType* __restrict q = &q_offdiag[k * nVar * nVar];
   for (auto r = 0ul; r < nVar; ++r) {
-    const ScalarType row_scale = bscale * ScalarType(float8_decode(qscale[r]));
+    const auto row_scale = ldexpf(1, static_cast<int>(qscale[r]));
     auto sum = ScalarType(0);
-    for (auto c = 0ul; c < nVar; ++c) sum += static_cast<ScalarType>(q[r * nVar + c]) * vec[c];
+    for (auto c = 0ul; c < nVar; ++c) sum += q[r * nVar + c] * vec[c];
     prod[r] += row_scale * sum;
   }
 }

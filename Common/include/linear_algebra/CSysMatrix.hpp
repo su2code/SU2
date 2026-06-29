@@ -133,8 +133,7 @@ class CSysMatrix {
    *         the original full-precision storage. Call QuantizeOffDiagonalBlocks() first. */
   static constexpr bool USE_QUANTIZATION = true;
 
-  ScalarType* q_bscale; /*!< \brief Per-block scale (full precision), [nnz]. */
-  uint8_t* q_scale;     /*!< \brief Per-row scale relative to q_bscale as custom float8 (5e|3s), [nnz * nVar]. */
+  QuantType* q_scale;   /*!< \brief Per-row signed binary exponent e; scale = 2^e, [nnz * nVar]. */
   QuantType* q_offdiag; /*!< \brief Quantized entries per block, [nnz * nVar * nVar]. */
 
   enum { OMP_MAX_SIZE_L = 8192 }; /*!< \brief Max. chunk size used in light parallel for loops. */
