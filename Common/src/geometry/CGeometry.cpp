@@ -4151,6 +4151,51 @@ const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap() {
   return edgeToCSRMap;
 }
 
+const CCompressedSparsePatternUL& CGeometry::GetLSparsePattern(ConnectivityType type) {
+  bool fvm = (type == ConnectivityType::FiniteVolume);
+  auto& patternL = fvm ? finiteVolumeLSparse : finiteElementLSparse;
+  if (patternL.empty()) patternL = buildLowerPattern(GetSparsePattern(type, 0));
+  return patternL;
+}
+
+const CCompressedSparsePatternUL& CGeometry::GetUSparsePattern(ConnectivityType type) {
+  bool fvm = (type == ConnectivityType::FiniteVolume);
+  auto& patternU = fvm ? finiteVolumeUSparse : finiteElementUSparse;
+  if (patternU.empty()) patternU = buildUpperPattern(GetSparsePattern(type, 0));
+  return patternU;
+}
+
+const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToLUSparsePatternMap() {
+  if (edgeToLUMap.empty()) {
+    edgeToLUMap = mapEdgesToLUSparsePattern(*this, GetLSparsePattern(ConnectivityType::FiniteVolume),
+                                            GetUSparsePattern(ConnectivityType::FiniteVolume));
+    edgeLUOrient.resize(GetnEdge());
+    for (unsigned long iEdge = 0; iEdge < GetnEdge(); ++iEdge)
+      edgeLUOrient[iEdge] = (edges->GetNode(iEdge, 0) < edges->GetNode(iEdge, 1)) ? 1u : 0u;
+  }
+  return edgeToLUMap;
+}
+
+const su2vector<unsigned long>& CGeometry::GetLToUTransposeSparsePatternMap(ConnectivityType type) {
+  bool fvm = (type == ConnectivityType::FiniteVolume);
+  auto& l_to_u = fvm ? finiteVolumeLToUTranspMap : finiteElementLToUTranspMap;
+  if (l_to_u.empty()) {
+    auto& u_to_l = fvm ? finiteVolumeUToLTranspMap : finiteElementUToLTranspMap;
+    buildLUTransposeMaps(GetLSparsePattern(type), GetUSparsePattern(type), l_to_u, u_to_l);
+  }
+  return l_to_u;
+}
+
+const su2vector<unsigned long>& CGeometry::GetUToLTransposeSparsePatternMap(ConnectivityType type) {
+  bool fvm = (type == ConnectivityType::FiniteVolume);
+  auto& u_to_l = fvm ? finiteVolumeUToLTranspMap : finiteElementUToLTranspMap;
+  if (u_to_l.empty()) {
+    auto& l_to_u = fvm ? finiteVolumeLToUTranspMap : finiteElementLToUTranspMap;
+    buildLUTransposeMaps(GetLSparsePattern(type), GetUSparsePattern(type), l_to_u, u_to_l);
+  }
+  return u_to_l;
+}
+
 const su2vector<unsigned long>& CGeometry::GetTransposeSparsePatternMap(ConnectivityType type) {
   /*--- Yes the const cast is weird but it is still better than repeating code. ---*/
   auto& pattern = const_cast<CCompressedSparsePatternUL&>(GetSparsePattern(type));

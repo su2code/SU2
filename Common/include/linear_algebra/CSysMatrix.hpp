@@ -138,18 +138,47 @@ class CSysMatrix {
   unsigned long nVar;         /*!< \brief Number of variables (and rows of the blocks). */
   unsigned long nEqn;         /*!< \brief Number of equations (and columns of the blocks). */
 
-  ScalarType* matrix;           /*!< \brief Entries of the sparse matrix. */
-  unsigned long nnz;            /*!< \brief Number of possible nonzero entries in the matrix. */
-  const unsigned long* row_ptr; /*!< \brief Pointers to the first element in each row. */
-  const unsigned long* dia_ptr; /*!< \brief Pointers to the diagonal element in each row. */
-  const unsigned long* col_ind; /*!< \brief Column index for each of the elements in val(). */
-  const unsigned long* col_ptr; /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
+  const unsigned long*
+      row_ptr; /*!< \brief Row pointers for the full unified CSR (geometry-owned; used by PaStiX and ILU-n). */
+  const unsigned long* col_ind; /*!< \brief Column indices for the full unified CSR (geometry-owned). */
 
-  ScalarType* d_matrix;           /*!< \brief Device Pointer to store the matrix values on the GPU. */
-  const unsigned long* d_row_ptr; /*!< \brief Device Pointers to the first element in each row. */
-  const unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
-  bool useCuda = false;           /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
-                                     Mainly used to conditionally free GPU memory in the class destructor. */
+  ScalarType* matrix_d; /*!< \brief Diagonal blocks of the LDU split (nPoint * nVar * nEqn). */
+  ScalarType* matrix_l; /*!< \brief Strictly-lower off-diagonal blocks (nnz_l * nVar * nEqn). */
+  ScalarType* matrix_u; /*!< \brief Strictly-upper off-diagonal blocks (nnz_u * nVar * nEqn). */
+
+  ScalarType* d_matrix_d;           /*!< \brief Device diagonal blocks. */
+  ScalarType* d_matrix_l;           /*!< \brief Device strictly-lower blocks. */
+  ScalarType* d_matrix_u;           /*!< \brief Device strictly-upper blocks. */
+  const unsigned long* d_row_ptr_l; /*!< \brief Device row pointers for the L pattern. */
+  const unsigned long* d_col_ind_l; /*!< \brief Device column indices for the L pattern. */
+  const unsigned long* d_row_ptr_u; /*!< \brief Device row pointers for the U pattern. */
+  const unsigned long* d_col_ind_u; /*!< \brief Device column indices for the U pattern. */
+  bool useCuda = false;             /*!< \brief Whether CUDA is enabled. */
+
+  const unsigned long* row_ptr_l;     /*!< \brief Row pointers for the strictly-lower CSR pattern. */
+  const unsigned long* col_ind_l;     /*!< \brief Column indices for the strictly-lower CSR pattern. */
+  unsigned long nnz_l;                /*!< \brief Number of non-zeros in the strictly-lower part. */
+  const unsigned long* row_ptr_u;     /*!< \brief Row pointers for the strictly-upper CSR pattern. */
+  const unsigned long* col_ind_u;     /*!< \brief Column indices for the strictly-upper CSR pattern. */
+  unsigned long nnz_u;                /*!< \brief Number of non-zeros in the strictly-upper part. */
+  const unsigned long* l_to_u_transp; /*!< \brief L-entry index -> U-entry index of its transpose. */
+  const unsigned long* u_to_l_transp; /*!< \brief U-entry index -> L-entry index of its transpose. */
+
+  /*!
+   * \brief Lookup table from edges to the (U-index, L-index) pair in the LDU split.
+   *        edge_ptr_lu.u(iEdge) = U-index for (min(a,b), max(a,b));
+   *        edge_ptr_lu.l(iEdge) = L-index for (max(a,b), min(a,b)).
+   *        edge_ptr_lu.ij_is_upper(iEdge) = true when GetNode(0)<GetNode(1) (ij direction → U).
+   */
+  struct {
+    const unsigned long* ptr = nullptr;
+    const unsigned char* orient = nullptr;
+    unsigned long nEdge = 0;
+    operator bool() const { return nEdge != 0; }
+    inline unsigned long u(unsigned long edge) const { return ptr[2 * edge]; }
+    inline unsigned long l(unsigned long edge) const { return ptr[2 * edge + 1]; }
+    inline bool ij_is_upper(unsigned long edge) const { return orient[edge]; }
+  } edge_ptr_lu;
 
   ScalarType* ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
   unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
@@ -286,6 +315,13 @@ class CSysMatrix {
   }
 
   /*!
+   * \brief Writes the LDU blocks into a flat buffer in unified CSR row order (L blocks, diagonal, U blocks per row).
+   *        Used to feed PaStiX which expects a standard CSR layout.
+   * \param[out] out - Buffer of size (nnz_l + nnz_u + nPoint) * nVar * nEqn.
+   */
+  void GatherCSR(ScalarType* out) const;
+
+  /*!
    * \brief Solve a small (nVar x nVar) linear system using Gaussian elimination.
    * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
    * \param[in,out] vec - On entry the rhs, on exit the solution.
@@ -372,6 +408,9 @@ class CSysMatrix {
    */
   void RowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
 
+  FORCEINLINE ScalarType* GetDiagBlock(unsigned long i) { return &matrix_d[i * nVar * nEqn]; }
+  FORCEINLINE const ScalarType* GetDiagBlock(unsigned long i) const { return &matrix_d[i * nVar * nEqn]; }
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -392,7 +431,7 @@ class CSysMatrix {
    * \param[in] neqn - Number of equations (and columns of the blocks).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] needTranspPtr - If "col_ptr" should be created, used for "SetDiagonalAsColumnSum".
+   * \param[in] needTranspPtr - If the L/U transpose maps should be built, used for "SetDiagonalAsColumnSum".
    */
   void Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry* geometry, const CConfig* config, bool needTranspPtr = false,
@@ -421,10 +460,14 @@ class CSysMatrix {
    * \return Pointer to location in memory where the block starts.
    */
   FORCEINLINE const ScalarType* GetBlock(unsigned long block_i, unsigned long block_j) const {
-    /*--- The position of the diagonal block is known which allows halving the search space. ---*/
-    const auto end = (block_j < block_i) ? dia_ptr[block_i] : row_ptr[block_i + 1];
-    for (auto index = (block_j < block_i) ? row_ptr[block_i] : dia_ptr[block_i]; index < end; ++index)
-      if (col_ind[index] == block_j) return &matrix[index * nVar * nEqn];
+    if (block_i == block_j) return &matrix_d[block_i * nVar * nEqn];
+    if (block_j < block_i) {
+      for (auto index = row_ptr_l[block_i]; index < row_ptr_l[block_i + 1]; ++index)
+        if (col_ind_l[index] == block_j) return &matrix_l[index * nVar * nEqn];
+      return nullptr;
+    }
+    for (auto index = row_ptr_u[block_i]; index < row_ptr_u[block_i + 1]; ++index)
+      if (col_ind_u[index] == block_j) return &matrix_u[index * nVar * nEqn];
     return nullptr;
   }
 
@@ -574,10 +617,16 @@ class CSysMatrix {
    */
   inline void GetBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, ScalarType*& bii,
                         ScalarType*& bij, ScalarType*& bji, ScalarType*& bjj) {
-    bii = &matrix[dia_ptr[iPoint] * nVar * nEqn];
-    bjj = &matrix[dia_ptr[jPoint] * nVar * nEqn];
-    bij = &matrix[edge_ptr(iEdge, 0) * nVar * nEqn];
-    bji = &matrix[edge_ptr(iEdge, 1) * nVar * nEqn];
+    bii = GetDiagBlock(iPoint);
+    bjj = GetDiagBlock(jPoint);
+    const auto blkSz = nVar * nEqn;
+    if (edge_ptr_lu.ij_is_upper(iEdge)) {
+      bij = &matrix_u[edge_ptr_lu.u(iEdge) * blkSz];
+      bji = &matrix_l[edge_ptr_lu.l(iEdge) * blkSz];
+    } else {
+      bij = &matrix_l[edge_ptr_lu.l(iEdge) * blkSz];
+      bji = &matrix_u[edge_ptr_lu.u(iEdge) * blkSz];
+    }
   }
 
   /*!
@@ -647,10 +696,16 @@ class CSysMatrix {
       if (mask[k] == 0) continue;
 
       /*--- Fetch the blocks. ---*/
-      auto bii = &matrix[dia_ptr[iPoint[k]] * blkSz];
-      auto bjj = &matrix[dia_ptr[jPoint[k]] * blkSz];
-      auto bij = &matrix[edge_ptr(iEdge[k], 0) * blkSz];
-      auto bji = &matrix[edge_ptr(iEdge[k], 1) * blkSz];
+      auto bii = GetDiagBlock(iPoint[k]);
+      auto bjj = GetDiagBlock(jPoint[k]);
+      ScalarType *bij, *bji;
+      if (edge_ptr_lu.ij_is_upper(iEdge[k])) {
+        bij = &matrix_u[edge_ptr_lu.u(iEdge[k]) * blkSz];
+        bji = &matrix_l[edge_ptr_lu.l(iEdge[k]) * blkSz];
+      } else {
+        bij = &matrix_l[edge_ptr_lu.l(iEdge[k]) * blkSz];
+        bji = &matrix_u[edge_ptr_lu.u(iEdge[k]) * blkSz];
+      }
 
       /*--- Update, block i was negated during transpose in the
        * hope the assignments below become non-temporal stores. ---*/
@@ -677,8 +732,15 @@ class CSysMatrix {
   template <class MatrixType, class OtherType = ScalarType, bool Overwrite = true>
   inline void SetBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j,
                         OtherType scale = 1) {
-    ScalarType* bij = &matrix[edge_ptr(iEdge, 0) * nVar * nEqn];
-    ScalarType* bji = &matrix[edge_ptr(iEdge, 1) * nVar * nEqn];
+    const auto blkSz = nVar * nEqn;
+    ScalarType *bij, *bji;
+    if (edge_ptr_lu.ij_is_upper(iEdge)) {
+      bij = &matrix_u[edge_ptr_lu.u(iEdge) * blkSz];
+      bji = &matrix_l[edge_ptr_lu.l(iEdge) * blkSz];
+    } else {
+      bij = &matrix_l[edge_ptr_lu.l(iEdge) * blkSz];
+      bji = &matrix_u[edge_ptr_lu.u(iEdge) * blkSz];
+    }
 
     unsigned long iVar, jVar, offset = 0;
 
@@ -737,8 +799,14 @@ class CSysMatrix {
       if (mask[k] == 0) continue;
 
       /*--- Fetch the blocks. ---*/
-      auto bij = &matrix[edge_ptr(iEdge[k], 0) * blkSz];
-      auto bji = &matrix[edge_ptr(iEdge[k], 1) * blkSz];
+      ScalarType *bij, *bji;
+      if (edge_ptr_lu.ij_is_upper(iEdge[k])) {
+        bij = &matrix_u[edge_ptr_lu.u(iEdge[k]) * blkSz];
+        bji = &matrix_l[edge_ptr_lu.l(iEdge[k]) * blkSz];
+      } else {
+        bij = &matrix_l[edge_ptr_lu.l(iEdge[k]) * blkSz];
+        bji = &matrix_u[edge_ptr_lu.u(iEdge[k]) * blkSz];
+      }
 
       /*--- Update, block i was negated during transpose in the
        * hope the assignments below become non-temporal stores. ---*/
@@ -760,7 +828,7 @@ class CSysMatrix {
    */
   template <class OtherType, bool Overwrite = true, class T = ScalarType>
   inline void SetBlock2Diag(unsigned long block_i, const OtherType& val_block, T alpha = 1.0) {
-    auto mat_ii = &matrix[dia_ptr[block_i] * nVar * nEqn];
+    auto mat_ii = GetDiagBlock(block_i);
 
     for (auto iVar = 0ul; iVar < nVar; iVar++)
       for (auto jVar = 0ul; jVar < nEqn; jVar++) {
@@ -793,8 +861,8 @@ class CSysMatrix {
    */
   template <class OtherType>
   inline void AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      matrix[dia_ptr[block_i] * nVar * nVar + iVar * (nVar + 1)] += PassiveAssign(val_matrix);
+    auto* d = GetDiagBlock(block_i);
+    for (auto iVar = 0ul; iVar < nVar; iVar++) d[iVar * (nVar + 1)] += PassiveAssign(val_matrix);
   }
 
   /*!
@@ -806,7 +874,7 @@ class CSysMatrix {
    */
   template <class OtherType>
   inline void AddVal2Diag(unsigned long block_i, unsigned long iVar, OtherType val) {
-    matrix[dia_ptr[block_i] * nVar * nVar + iVar * (nVar + 1)] += PassiveAssign(val);
+    GetDiagBlock(block_i)[iVar * (nVar + 1)] += PassiveAssign(val);
   }
 
   /*!
@@ -817,13 +885,14 @@ class CSysMatrix {
    */
   template <class OtherType>
   inline void SetVal2Diag(unsigned long block_i, OtherType val_matrix) {
-    unsigned long iVar, index = dia_ptr[block_i] * nVar * nVar;
+    auto* d = GetDiagBlock(block_i);
+    unsigned long iVar;
 
     /*--- Clear entire block before setting its diagonal. ---*/
     SU2_OMP_SIMD
-    for (iVar = 0; iVar < nVar * nVar; iVar++) matrix[index + iVar] = 0.0;
+    for (iVar = 0; iVar < nVar * nVar; iVar++) d[iVar] = 0.0;
 
-    for (iVar = 0; iVar < nVar; iVar++) matrix[index + iVar * (nVar + 1)] = PassiveAssign(val_matrix);
+    for (iVar = 0; iVar < nVar; iVar++) d[iVar * (nVar + 1)] = PassiveAssign(val_matrix);
   }
 
   /*!

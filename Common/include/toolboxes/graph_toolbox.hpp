@@ -444,6 +444,117 @@ CEdgeToNonZeroMap<Index_t> mapEdgesToSparsePattern(Geometry_t& geometry,
 }
 
 /*!
+ * \brief Extract the strictly-lower part of a symmetric compressed sparse pattern.
+ *        For each row i, the lower entries are those at positions [outerPtr[i], diagPtr[i]).
+ * \param[in] csr - Full symmetric pattern with diagonal pointer already built.
+ * \return Strictly-lower CSR pattern.
+ */
+template <typename Index_t>
+CCompressedSparsePattern<Index_t> buildLowerPattern(const CCompressedSparsePattern<Index_t>& csr) {
+  assert(!csr.empty());
+  const auto nPoint = csr.getOuterSize();
+  const auto* outerPtr = csr.outerPtr();
+  const auto* innerIdx = csr.innerIdx();
+  const auto* diagPtr = csr.diagPtr();
+
+  su2vector<Index_t> outerPtrL(nPoint + 1);
+  outerPtrL(0) = 0;
+  for (auto i = 0ul; i < nPoint; ++i) outerPtrL(i + 1) = outerPtrL(i) + static_cast<Index_t>(diagPtr[i] - outerPtr[i]);
+
+  su2vector<Index_t> innerIdxL(outerPtrL(nPoint));
+  Index_t k = 0;
+  for (auto i = 0ul; i < nPoint; ++i)
+    for (auto p = outerPtr[i]; p < diagPtr[i]; ++p) innerIdxL(k++) = innerIdx[p];
+
+  return CCompressedSparsePattern<Index_t>(std::move(outerPtrL), std::move(innerIdxL));
+}
+
+/*!
+ * \brief Extract the strictly-upper part of a symmetric compressed sparse pattern.
+ *        For each row i, the upper entries are those at positions (diagPtr[i], outerPtr[i+1]).
+ * \param[in] csr - Full symmetric pattern with diagonal pointer already built.
+ * \return Strictly-upper CSR pattern.
+ */
+template <typename Index_t>
+CCompressedSparsePattern<Index_t> buildUpperPattern(const CCompressedSparsePattern<Index_t>& csr) {
+  assert(!csr.empty());
+  const auto nPoint = csr.getOuterSize();
+  const auto* outerPtr = csr.outerPtr();
+  const auto* innerIdx = csr.innerIdx();
+  const auto* diagPtr = csr.diagPtr();
+
+  su2vector<Index_t> outerPtrU(nPoint + 1);
+  outerPtrU(0) = 0;
+  for (auto i = 0ul; i < nPoint; ++i)
+    outerPtrU(i + 1) = outerPtrU(i) + static_cast<Index_t>(outerPtr[i + 1] - diagPtr[i] - 1);
+
+  su2vector<Index_t> innerIdxU(outerPtrU(nPoint));
+  Index_t k = 0;
+  for (auto i = 0ul; i < nPoint; ++i)
+    for (auto p = diagPtr[i] + 1; p < outerPtr[i + 1]; ++p) innerIdxU(k++) = innerIdx[p];
+
+  return CCompressedSparsePattern<Index_t>(std::move(outerPtrU), std::move(innerIdxU));
+}
+
+/*!
+ * \brief Build the edge→(U-index, L-index) map for an LDU-split of a symmetric sparse pattern.
+ *        Entry 0 of the map is the U-index of the above-diagonal block (row=min(a,b), col=max(a,b)).
+ *        Entry 1 of the map is the L-index of the below-diagonal block (row=max(a,b), col=min(a,b)).
+ * \warning A bug here silently transposes contributions; include an explicit test after building.
+ * \param[in] geometry - Grid geometry providing edge connectivity.
+ * \param[in] pattern_l - Strictly-lower CSR pattern produced by buildLowerPattern.
+ * \param[in] pattern_u - Strictly-upper CSR pattern produced by buildUpperPattern.
+ * \return nEdge by 2 map: column 0 = U-index, column 1 = L-index.
+ */
+template <class Geometry_t, typename Index_t>
+CEdgeToNonZeroMap<Index_t> mapEdgesToLUSparsePattern(Geometry_t& geometry,
+                                                     const CCompressedSparsePattern<Index_t>& pattern_l,
+                                                     const CCompressedSparsePattern<Index_t>& pattern_u) {
+  assert(!pattern_l.empty() && !pattern_u.empty());
+  CEdgeToNonZeroMap<Index_t> edgeMap(geometry.GetnEdge(), 2);
+
+  for (Index_t iEdge = 0; iEdge < static_cast<Index_t>(geometry.GetnEdge()); ++iEdge) {
+    const Index_t a = geometry.edges->GetNode(iEdge, 0);
+    const Index_t b = geometry.edges->GetNode(iEdge, 1);
+    const auto lo = std::min(a, b);
+    const auto hi = std::max(a, b);
+    edgeMap(iEdge, 0) = pattern_u.quickFindInnerIdx(lo, hi);  // U: (lo,hi) with lo<hi
+    edgeMap(iEdge, 1) = pattern_l.quickFindInnerIdx(hi, lo);  // L: (hi,lo) with hi>lo
+  }
+  return edgeMap;
+}
+
+/*!
+ * \brief Build bijective maps between strictly-lower (L) and strictly-upper (U) non-zero entries
+ *        that are each other's transposes. Requires a symmetric pattern.
+ *        l_to_u[k_l] = k_u such that U-entry k_u is the transpose of L-entry k_l, and vice-versa.
+ * \param[in] pattern_l - Strictly-lower CSR pattern.
+ * \param[in] pattern_u - Strictly-upper CSR pattern.
+ * \param[out] l_to_u - For each L-entry index, the U-entry index of its transpose.
+ * \param[out] u_to_l - For each U-entry index, the L-entry index of its transpose.
+ */
+template <typename Index_t>
+void buildLUTransposeMaps(const CCompressedSparsePattern<Index_t>& pattern_l,
+                          const CCompressedSparsePattern<Index_t>& pattern_u, su2vector<Index_t>& l_to_u,
+                          su2vector<Index_t>& u_to_l) {
+  const auto nnz_l = pattern_l.getNumNonZeros();
+  const auto nnz_u = pattern_u.getNumNonZeros();
+  assert(nnz_l == nnz_u && "L and U must have the same NNZ (symmetric pattern).");
+
+  l_to_u.resize(nnz_l);
+  u_to_l.resize(nnz_u);
+
+  for (Index_t i = 0; i < pattern_l.getOuterSize(); ++i) {
+    for (Index_t k_l = pattern_l.outerPtr()[i]; k_l < pattern_l.outerPtr()[i + 1]; ++k_l) {
+      const Index_t j = pattern_l.innerIdx()[k_l];            // j < i (strictly lower)
+      const Index_t k_u = pattern_u.quickFindInnerIdx(j, i);  // (j,i) is in U since j<i
+      l_to_u(k_l) = k_u;
+      u_to_l(k_u) = k_l;
+    }
+  }
+}
+
+/*!
  * \brief Create the natural coloring (equivalent to the normal sequential loop
  *        order) for a given number of inner indexes.
  * \note This is to reduce overhead in "OpenMP-ready" code when only 1 thread is used.

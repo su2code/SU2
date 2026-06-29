@@ -28,112 +28,70 @@
 #include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
 
-#include <cusparse.h>
-#include <cstdint>
-#include <type_traits>
+/*!
+ * \brief Block-LDU SpMV kernel: y[iRow] = (L + D + U) * x per block-row.
+ *        One CUDA block per block-row; threadIdx.x indexes output variable (0..nVar-1).
+ */
+template <class ScalarType>
+__global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
+                                     const unsigned long* __restrict__ row_ptr_l,
+                                     const unsigned long* __restrict__ col_ind_l,
+                                     const ScalarType* __restrict__ mat_l,
+                                     const ScalarType* __restrict__ mat_d,
+                                     const unsigned long* __restrict__ row_ptr_u,
+                                     const unsigned long* __restrict__ col_ind_u,
+                                     const ScalarType* __restrict__ mat_u,
+                                     const ScalarType* __restrict__ x, ScalarType* __restrict__ y) {
+  const unsigned long iRow = blockIdx.x;
+  const unsigned long iVar = threadIdx.x;
+  if (iRow >= nRows || iVar >= nVar) return;
 
-inline void cusparseAssert(cusparseStatus_t code, const char* file, int line, bool abort = true) {
-  if (code != CUSPARSE_STATUS_SUCCESS) {
-    fprintf(stderr, "cuSPARSEassert: %s %s %d\n", cusparseGetErrorString(code), file, line);
-    if (abort) exit(static_cast<int>(code));
+  ScalarType sum = 0;
+  /* Lower */
+  for (auto k = row_ptr_l[iRow]; k < row_ptr_l[iRow + 1]; ++k) {
+    const auto col = col_ind_l[k];
+    const ScalarType* blk = mat_l + k * nVar * nVar + iVar * nVar;
+    for (unsigned long jVar = 0; jVar < nVar; ++jVar) sum += blk[jVar] * x[col * nVar + jVar];
   }
-}
-
-#define cusparseErrChk(ans)                    \
-  {                                            \
-    cusparseAssert((ans), __FILE__, __LINE__); \
+  /* Diagonal */
+  {
+    const ScalarType* blk = mat_d + iRow * nVar * nVar + iVar * nVar;
+    for (unsigned long jVar = 0; jVar < nVar; ++jVar) sum += blk[jVar] * x[iRow * nVar + jVar];
   }
-
-inline cusparseIndexType_t GetCusparseIndexType() {
-  if constexpr (sizeof(unsigned long) == 4) {
-    return CUSPARSE_INDEX_32I;
-  } else if constexpr (sizeof(unsigned long) == 8) {
-    return CUSPARSE_INDEX_64I;
-  } else {
-    static_assert(sizeof(unsigned long) == 4 || sizeof(unsigned long) == 8,
-                  "cuSPARSE BSR SpMV only supports 32-bit or 64-bit index arrays in this path.");
+  /* Upper */
+  for (auto k = row_ptr_u[iRow]; k < row_ptr_u[iRow + 1]; ++k) {
+    const auto col = col_ind_u[k];
+    const ScalarType* blk = mat_u + k * nVar * nVar + iVar * nVar;
+    for (unsigned long jVar = 0; jVar < nVar; ++jVar) sum += blk[jVar] * x[col * nVar + jVar];
   }
+  y[iRow * nVar + iVar] = sum;
 }
 
 template <class ScalarType>
-constexpr cudaDataType GetCudaDataType() {
-  if constexpr (std::is_same<ScalarType, float>::value) {
-    return CUDA_R_32F;
-  } else if constexpr (std::is_same<ScalarType, double>::value) {
-    return CUDA_R_64F;
-  } else {
-    static_assert(std::is_same<ScalarType, float>::value || std::is_same<ScalarType, double>::value,
-                  "cuSPARSE BSR SpMV only supports float and double in this path.");
-  }
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const
-{
-   if(trigger) gpuErrChk(cudaMemcpy((void*)(d_matrix), (void*)&matrix[0], (sizeof(ScalarType)*nnz*nVar*nEqn), cudaMemcpyHostToDevice));
+void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
+  if (!trigger) return;
+  gpuErrChk(cudaMemcpy(d_matrix_d, matrix_d, sizeof(ScalarType) * nPoint * nVar * nEqn, cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(d_matrix_l, matrix_l, sizeof(ScalarType) * nnz_l * nVar * nEqn, cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(d_matrix_u, matrix_u, sizeof(ScalarType) * nnz_u * nVar * nEqn, cudaMemcpyHostToDevice));
 }
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                     CGeometry* geometry, const CConfig* config) const {
   if (nVar != nEqn) {
-    SU2_MPI::Error("CUDA CSysMatrix matvec with cuSPARSE BSR requires square blocks.", CURRENT_FUNCTION);
+    SU2_MPI::Error("CUDA CSysMatrix block-LDU SpMV requires square blocks.", CURRENT_FUNCTION);
   }
 
   ScalarType* d_vec = vec.GetDevicePointer();
   ScalarType* d_prod = prod.GetDevicePointer();
-
   vec.HtDTransfer();
 
-  const auto indexType = GetCusparseIndexType();
-  const auto valueType = GetCudaDataType<ScalarType>();
-
-  const std::int64_t blockSize = static_cast<std::int64_t>(nVar);
-
-  const std::int64_t brows = static_cast<std::int64_t>(nPointDomain);
-  const std::int64_t bcols = static_cast<std::int64_t>(nPoint);
-  const std::int64_t bnnz = static_cast<std::int64_t>(nnz);
-
-  const std::int64_t xSize = static_cast<std::int64_t>(nPoint) * blockSize;
-  const std::int64_t ySize = static_cast<std::int64_t>(nPointDomain) * blockSize;
-
-  const ScalarType alpha = 1.0;
-  const ScalarType beta = 0.0;
-
-  cusparseHandle_t handle = nullptr;
-  cusparseConstSpMatDescr_t matA = nullptr;
-  cusparseDnVecDescr_t vecX = nullptr;
-  cusparseDnVecDescr_t vecY = nullptr;
-
-  cusparseErrChk(cusparseCreate(&handle));
-
-  cusparseErrChk(cusparseCreateConstBsr(&matA, brows, bcols, bnnz, blockSize, blockSize, d_row_ptr, d_col_ind, d_matrix,
-                                        indexType, indexType, CUSPARSE_INDEX_BASE_ZERO, valueType, CUSPARSE_ORDER_ROW));
-
-  cusparseErrChk(cusparseCreateDnVec(&vecX, xSize, d_vec, valueType));
-  cusparseErrChk(cusparseCreateDnVec(&vecY, ySize, d_prod, valueType));
-
-  size_t bufferSize = 0;
-  void* dBuffer = nullptr;
-
-  cusparseErrChk(cusparseSpMV_bufferSize(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, vecX, &beta, vecY,
-                                         valueType, CUSPARSE_SPMV_BSR_ALG1, &bufferSize));
-
-  if (bufferSize > 0) {
-    gpuErrChk(cudaMalloc(&dBuffer, bufferSize));
-  }
-
-  cusparseErrChk(cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA, vecX, &beta, vecY, valueType,
-                              CUSPARSE_SPMV_BSR_ALG1, dBuffer));
-
-  if (dBuffer != nullptr) {
-    gpuErrChk(cudaFree(dBuffer));
-  }
-
-  cusparseErrChk(cusparseDestroyDnVec(vecY));
-  cusparseErrChk(cusparseDestroyDnVec(vecX));
-  cusparseErrChk(cusparseDestroySpMat(matA));
-  cusparseErrChk(cusparseDestroy(handle));
+  dim3 blockDim(static_cast<unsigned>(nVar), 1, 1);
+  dim3 gridDim(static_cast<unsigned>(nPointDomain), 1, 1);
+  BlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
+      nPointDomain, nVar, d_row_ptr_l, d_col_ind_l, d_matrix_l, d_matrix_d,
+      d_row_ptr_u, d_col_ind_u, d_matrix_u, d_vec, d_prod);
+  gpuErrChk(cudaGetLastError());
 
   prod.DtHTransfer();
 }

@@ -194,6 +194,17 @@ class CGeometry {
 
   CEdgeToNonZeroMapUL edgeToCSRMap; /*!< \brief Map edges to CSR entries referenced by them (i,j) and (j,i). */
 
+  CCompressedSparsePatternUL finiteVolumeLSparse;     /*!< \brief Strictly-lower 0-fill FVM sparsity (L of LDU). */
+  CCompressedSparsePatternUL finiteVolumeUSparse;     /*!< \brief Strictly-upper 0-fill FVM sparsity (U of LDU). */
+  CCompressedSparsePatternUL finiteElementLSparse;    /*!< \brief Strictly-lower 0-fill FEM sparsity (L of LDU). */
+  CCompressedSparsePatternUL finiteElementUSparse;    /*!< \brief Strictly-upper 0-fill FEM sparsity (U of LDU). */
+  CEdgeToNonZeroMapUL edgeToLUMap;                    /*!< \brief Map edges to (U-index, L-index) in the LDU split. */
+  su2vector<unsigned char> edgeLUOrient;              /*!< \brief 1 if edge's GetNode(0) < GetNode(1) (ij maps to U). */
+  su2vector<unsigned long> finiteVolumeLToUTranspMap; /*!< \brief FVM L-entry -> U-entry of its transpose. */
+  su2vector<unsigned long> finiteVolumeUToLTranspMap; /*!< \brief FVM U-entry -> L-entry of its transpose. */
+  su2vector<unsigned long> finiteElementLToUTranspMap; /*!< \brief FEM L-entry -> U-entry of its transpose. */
+  su2vector<unsigned long> finiteElementUToLTranspMap; /*!< \brief FEM U-entry -> L-entry of its transpose. */
+
   /*--- Edge and element colorings. ---*/
 
   CCompressedSparsePatternUL edgeColoring, /*!< \brief Edge coloring structure for thread-based parallelization. */
@@ -1876,6 +1887,51 @@ class CGeometry {
    * \return Reference to the map.
    */
   const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap();
+
+  /*!
+   * \brief Get the strictly-lower CSR pattern (L of LDU split) for the 0-fill pattern.
+   * \note Builds the pattern (and the full 0-fill pattern with diagonal pointer) if needed.
+   * \param[in] type - Finite volume or finite element.
+   * \return Reference to the strictly-lower pattern.
+   */
+  const CCompressedSparsePatternUL& GetLSparsePattern(ConnectivityType type);
+
+  /*!
+   * \brief Get the strictly-upper CSR pattern (U of LDU split) for the 0-fill pattern.
+   * \note Builds the pattern (and the full 0-fill pattern with diagonal pointer) if needed.
+   * \param[in] type - Finite volume or finite element.
+   * \return Reference to the strictly-upper pattern.
+   */
+  const CCompressedSparsePatternUL& GetUSparsePattern(ConnectivityType type);
+
+  /*!
+   * \brief Get the edge→(U-index, L-index) map for the FVM LDU-split pattern.
+   * \note Column 0 = U-index (row=min(a,b), col=max(a,b)), column 1 = L-index (row=max(a,b), col=min(a,b)).
+   * \return Reference to the edge map.
+   */
+  const CEdgeToNonZeroMapUL& GetEdgeToLUSparsePatternMap();
+
+  /*!
+   * \brief Per-edge orientation flag: 1 if GetNode(0) < GetNode(1) (ij direction maps to U), 0 otherwise.
+   * \note Built alongside GetEdgeToLUSparsePatternMap.
+   */
+  const unsigned char* GetEdgeLUOrientation() const { return edgeLUOrient.data(); }
+
+  /*!
+   * \brief Get the bijective map from L-entry indices to U-entry indices of their transposes.
+   * \note Requires symmetric pattern. Builds both LU transpose maps if not already built.
+   * \param[in] type - Finite volume or finite element.
+   * \return Reference to the l_to_u map.
+   */
+  const su2vector<unsigned long>& GetLToUTransposeSparsePatternMap(ConnectivityType type);
+
+  /*!
+   * \brief Get the bijective map from U-entry indices to L-entry indices of their transposes.
+   * \note Requires symmetric pattern. Builds both LU transpose maps if not already built.
+   * \param[in] type - Finite volume or finite element.
+   * \return Reference to the u_to_l map.
+   */
+  const su2vector<unsigned long>& GetUToLTransposeSparsePatternMap(ConnectivityType type);
 
   /*!
    * \brief Get the transpose of the (main, i.e 0 fill) sparse pattern (e.g. CSR becomes CSC).
