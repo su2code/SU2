@@ -1023,7 +1023,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
    *    species solver does all the Pre-/Postprocessing. ---*/
   if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
       config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
-    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
   }
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -1036,7 +1036,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
     if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
         config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
-      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     }
   }
 
