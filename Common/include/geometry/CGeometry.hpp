@@ -194,11 +194,12 @@ class CGeometry {
 
   CEdgeToNonZeroMapUL edgeToCSRMap; /*!< \brief Map edges to CSR entries referenced by them (i,j) and (j,i). */
 
-  CCompressedSparsePatternUL finiteVolumeLSparse;      /*!< \brief Strictly-lower 0-fill FVM sparsity (L of LDU). */
-  CCompressedSparsePatternUL finiteVolumeUSparse;      /*!< \brief Strictly-upper 0-fill FVM sparsity (U of LDU). */
-  CCompressedSparsePatternUL finiteElementLSparse;     /*!< \brief Strictly-lower 0-fill FEM sparsity (L of LDU). */
-  CCompressedSparsePatternUL finiteElementUSparse;     /*!< \brief Strictly-upper 0-fill FEM sparsity (U of LDU). */
-  CEdgeToNonZeroMapUL edgeToLUMap;                     /*!< \brief Map edges to (U-index, L-index) in the LDU split. */
+  CCompressedSparsePatternUL finiteVolumeLSparse;  /*!< \brief Strictly-lower 0-fill FVM sparsity (L of LDU). */
+  CCompressedSparsePatternUL finiteVolumeUSparse;  /*!< \brief Strictly-upper 0-fill FVM sparsity (U of LDU). */
+  CCompressedSparsePatternUL finiteElementLSparse; /*!< \brief Strictly-lower 0-fill FEM sparsity (L of LDU). */
+  CCompressedSparsePatternUL finiteElementUSparse; /*!< \brief Strictly-upper 0-fill FEM sparsity (U of LDU). */
+  su2vector<unsigned long>
+      edgeToLMap; /*!< \brief Map from edge index to L-pattern index (U-index == edge index by construction). */
   su2vector<unsigned long> finiteVolumeLToUTranspMap;  /*!< \brief FVM L-entry -> U-entry of its transpose. */
   su2vector<unsigned long> finiteVolumeUToLTranspMap;  /*!< \brief FVM U-entry -> L-entry of its transpose. */
   su2vector<unsigned long> finiteElementLToUTranspMap; /*!< \brief FEM L-entry -> U-entry of its transpose. */
@@ -1904,11 +1905,12 @@ class CGeometry {
   const CCompressedSparsePatternUL& GetUSparsePattern(ConnectivityType type);
 
   /*!
-   * \brief Get the edge→(U-index, L-index) map for the FVM LDU-split pattern.
-   * \note Column 0 = U-index (row=min(a,b), col=max(a,b)), column 1 = L-index (row=max(a,b), col=min(a,b)).
-   * \return Reference to the edge map.
+   * \brief Get the edge→L-index map for the FVM LDU-split pattern.
+   * \note The U-index equals the edge index by construction (edges are ordered to match the U pattern 1:1).
+   *       This is verified with a debug check the first time this map is built.
+   * \return Reference to the per-edge L-index array.
    */
-  const CEdgeToNonZeroMapUL& GetEdgeToLUSparsePatternMap();
+  const su2vector<unsigned long>& GetEdgeToLSparsePatternMap();
 
   /*!
    * \brief Get the bijective map from L-entry indices to U-entry indices of their transposes.
@@ -1925,13 +1927,6 @@ class CGeometry {
    * \return Reference to the u_to_l map.
    */
   const su2vector<unsigned long>& GetUToLTransposeSparsePatternMap(ConnectivityType type);
-
-  /*!
-   * \brief Get the transpose of the (main, i.e 0 fill) sparse pattern (e.g. CSR becomes CSC).
-   * \param[in] type - Finite volume or finite element.
-   * \return Reference to the map.
-   */
-  const su2vector<unsigned long>& GetTransposeSparsePatternMap(ConnectivityType type);
 
   /*!
    * \brief Get the edge coloring.
