@@ -463,7 +463,7 @@ class CScalarSolver : public CSolver {
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
-                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) final;
+                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) override;
 
   /*!
    * \brief Impose the Symmetry Plane boundary condition.

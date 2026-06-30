@@ -1588,8 +1588,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution_time_n1(iPoint, iVar);
             break;
           case MPI_QUANTITIES::MOM_COEFF:
-            for (iDim = 0; iDim < nDim; iDim++)
-              bufDSend[buf_offset+iDim] = base_nodes->GetMomCoeff(iPoint, iDim);
+            bufDSend[buf_offset] = base_nodes->GetMomCoeff(iPoint);
             break;
           case MPI_QUANTITIES::PRESSURE_VAR:
             bufDSend[buf_offset] = base_nodes->GetPrimitive(iPoint, 0);
@@ -1751,8 +1750,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
               base_nodes->Set_Solution_time_n1(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             break;
           case MPI_QUANTITIES::MOM_COEFF:
-            for (iDim = 0; iDim < nDim; iDim++)
-              base_nodes->SetMomCoeff(iPoint, iDim, bufDRecv[buf_offset+iDim]);
+            base_nodes->SetMomCoeff(iPoint, bufDRecv[buf_offset]);
             break;
           case MPI_QUANTITIES::PRESSURE_VAR:
             base_nodes->SetPrimitive(iPoint, 0, bufDRecv[buf_offset]);

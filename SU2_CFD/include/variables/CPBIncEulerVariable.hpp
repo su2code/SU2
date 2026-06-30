@@ -72,7 +72,7 @@ protected:
 
 public:
 
-  CPBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity,
+  CPBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double temperature,
                                      unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
 

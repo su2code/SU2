@@ -40,7 +40,7 @@ class CPoissonSolver final : public CScalarSolver<CPoissonVariable> {
 protected:
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
-
+  bool testREMOVETHIS;
   /*!
    * \brief Compute the viscous flux for the scalar equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
@@ -52,21 +52,16 @@ protected:
    */
   inline void Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                        CNumerics* numerics, const CConfig* config) override {
-    const CVariable* flow_nodes = /*flow ?*/ solver_container[FLOW_SOL]->GetNodes() /*: nullptr*/;
-
-    // just for testing a regular poisson equation with no variable coefficients
-    const su2double one = 1.0;
+    const CVariable* flow_nodes = solver_container[FLOW_SOL]->GetNodes();
 
     su2double mom_coeff_i{}, mom_coeff_j{};
 
-    /*--- Computes the thermal diffusivity to use in the viscous numerics. ---*/
+    /*--- Sets the momentum coefficients to use in the viscous numerics. ---*/
     auto compute_momentum_coeff = [&](unsigned long iPoint, unsigned long jPoint) {
-        mom_coeff_i = nodes->GetMomCoeff(iPoint, 0); // temporary just the x coefficient, TODO: make the setdiffusioncoeff take tensors as argument? or vectors? idk?
-        mom_coeff_j = nodes->GetMomCoeff(jPoint, 0);
-        numerics->SetDiffusionCoeff(&mom_coeff_i, &mom_coeff_j);
+        mom_coeff_i = nodes->GetMomCoeff(iPoint);// / geometry->nodes->GetVolume(iPoint); 
 
-        // numerics->SetDiffusionCoeff(&const_diffusivity, &const_diffusivity);
-      // }
+        mom_coeff_j = nodes->GetMomCoeff(jPoint);// / geometry->nodes->GetVolume(jPoint);
+        numerics->SetDiffusionCoeff(&mom_coeff_i, &mom_coeff_j);
     };
     /*--- Compute residual and Jacobians. ---*/
     Viscous_Residual_impl(compute_momentum_coeff, iEdge, geometry, solver_container, numerics, config);
@@ -114,7 +109,7 @@ public:
                                      unsigned short iMesh) final;
   
   /*!
-   * \brief Load a solution from a restart file (not applicable as poisson solver is only used as auxiliary solver)
+   * \brief Load a solution from a restart file (not applicable as poisson solver is only used as auxiliary solver to CPBInc...)
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
    * \param[in] config - Definition of the particular problem.
@@ -190,9 +185,9 @@ public:
 
   /*!
    * \brief Compute the coefficients for the pressure correction equation based
-   *        on the residuals from the solution of momentum equation.
+   *        on the residuals from the solution of the momentum equation.
    */
-  void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh);
+  void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh) final;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -208,6 +203,65 @@ public:
                         CNumerics *conv_numerics,
                         CNumerics *visc_numerics,
                         CConfig *config,
-                        unsigned short val_marker) override;
+                        unsigned short val_marker) final;
+
+  /*!
+  //  * \brief Impose a constant heat-flux condition at the wall.
+  //  * \param[in] geometry - Geometrical definition of the problem.
+  //  * \param[in] solver_container - Container vector with all the solutions.
+  //  * \param[in] conv_numerics - Description of the numerical method.
+  //  * \param[in] visc_numerics - Description of the numerical method.
+  //  * \param[in] config - Definition of the particular problem.
+  //  * \param[in] val_marker - Surface marker where the boundary condition is applied.
+  //  */
+  // void BC_Euler_Wall(CGeometry *geometry,
+  //                       CSolver **solver_container,
+  //                       CNumerics *conv_numerics,
+  //                       CNumerics *visc_numerics,
+  //                       CConfig *config,
+  //                       unsigned short val_marker) final;
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                            unsigned short val_marker) final;
+
+  /*!
+   * \brief Impose the inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Inlet(CGeometry *geometry,
+                CSolver **solver_container,
+                CNumerics *conv_numerics,
+                CNumerics *visc_numerics,
+                CConfig *config,
+                unsigned short val_marker) override;
+  /*!
+   * \brief Impose the outlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Outlet(CGeometry *geometry,
+                 CSolver **solver_container,
+                 CNumerics *conv_numerics,
+                 CNumerics *visc_numerics,
+                 CConfig *config,
+                 unsigned short val_marker) override;
 
 };

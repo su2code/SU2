@@ -37,7 +37,9 @@
  */
 class CPoissonVariable final : public CScalarVariable {
 protected:
-  MatrixType MomCoeff; /*!< \brief Eddy viscosity. */
+  VectorType MomCoeff; /*!< \brief Momentum coefficients vol/a_p used as the diffusion coefficients in the poisson solver.  */
+  using BoolVectorType = C2DContainer<unsigned long, bool, StorageType::ColumnMajor, 64, DynamicSize, 1>;
+  BoolVectorType strongBC; /*!< \brief Flag for boundary conditions to indicate if a strong BC has been applied, currently only used to keep track of farfield.  */
 public:
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
 
@@ -52,39 +54,35 @@ public:
   CPoissonVariable(su2double value, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config);
 
   /*!
-   * \brief Get the temperature of the point.
-   * \return Value of the temperature of the point.
+   * \brief Get the momentum coefficient of the point.
+   * \return Value of the momentum coefficient of the point.
    */
-  // inline su2double GetTemperature(unsigned long iPoint) const final { return Solution(iPoint, 0); }
-
-  //TODO: place comments
-  inline su2double GetMomCoeff(unsigned long iPoint, unsigned short val_Var) final { return MomCoeff(iPoint,val_Var);}
-
-  inline void SetMomCoeff(unsigned long iPoint, const su2double *val_Mom_Coeff) { 
-	  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-	        MomCoeff(iPoint,iDim) = val_Mom_Coeff[iDim]; 
-  }
+  inline su2double GetMomCoeff(unsigned long iPoint) final { return MomCoeff(iPoint);}
     
-  inline void SetMomCoeff(unsigned long iPoint, unsigned short val_Var, su2double val_Mom_Coeff) final { MomCoeff(iPoint,val_Var) = val_Mom_Coeff; }
+  /*!
+   * \brief Set the momentum coefficient of the point.
+   */
+  inline void SetMomCoeff(unsigned long iPoint, su2double val_Mom_Coeff) final { MomCoeff(iPoint) = val_Mom_Coeff; }
 
-  inline void AddMomCoeff(unsigned long iPoint, su2double val_coeff, unsigned short val_Var) { MomCoeff(iPoint,val_Var) += val_coeff;}
-    
-  // inline su2double Get_Mom_Coeff_nb(unsigned long iPoint, unsigned short val_Var) { return Mom_Coeff_nb(iPoint,val_Var);}
-
-  // inline void Set_Mom_Coeff_nb(unsigned long iPoint, su2double *val_Mom_Coeff) { 
-	//   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-	//         Mom_Coeff_nb(iPoint,iDim) = val_Mom_Coeff[iDim]; 
-  // }
+  /*!
+   * \brief Add something to the momentum coefficient of the point.
+   */
+  inline void AddMomCoeff(unsigned long iPoint, su2double val_coeff) { MomCoeff(iPoint) += val_coeff;}
   
-  // inline void Set_Mom_Coeff_nb(unsigned long iPoint, unsigned short val_Var, su2double val_Mom_Coeff) { Mom_Coeff_nb(iPoint,val_Var) = val_Mom_Coeff; }
+  /*!
+   * \brief Set the BC flag to true of the point.
+   */
+  inline void SetStrongBC(unsigned long iPoint) { strongBC(iPoint) = true; }
   
-  // inline void Set_Mom_Coeff_nbZero(unsigned long iPoint) {
-	//   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-	//         Mom_Coeff_nb(iPoint,iDim) = 0.0;
-  // }
+  /*!
+   * \brief Get the BC flag of the point
+   * \return The boolean flag of the strong boundary condition.
+   */
+  inline bool GetStrongBC(unsigned long iPoint) { return strongBC(iPoint); }
   
-  // inline void Add_Mom_Coeff_nb(unsigned long iPoint, su2double val_coeff_nb, unsigned short val_Var) { Mom_Coeff_nb(iPoint,val_Var) += val_coeff_nb;}
-
-  
+  /*!
+   * \brief Set the BC flag to false of the point.
+   */
+  inline void ResetStrongBC(unsigned long iPoint) { strongBC(iPoint) = false; }
 
 };

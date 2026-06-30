@@ -4324,6 +4324,12 @@ public:
   virtual StreamwisePeriodicValues GetStreamwisePeriodicValues() const { return StreamwisePeriodicValues(); }
 
   /*!
+   * \brief A virtual member
+   * Set coefficients for pressure correction equation.
+   */
+  inline virtual void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh) { }
+  
+  /*!
    * \brief Save snapshot or POD data using libROM
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

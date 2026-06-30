@@ -28,7 +28,7 @@
 #include "../../include/variables/CPBIncEulerVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
-CPBIncEulerVariable::CPBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity,
+CPBIncEulerVariable::CPBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double temperature,
                                      unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
   : CFlowVariable(npoint, ndim, nvar, ndim + 10,
                   ndim + (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ? 2 : 4), config),
@@ -37,6 +37,8 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double density, su2double pressure, 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+  TemperatureLimits[0]= config->GetTemperatureLimits(0);
+  TemperatureLimits[1]= config->GetTemperatureLimits(1);
   
   /*--- Solution initialization ---*/
   for(unsigned long iPoint=0; iPoint < nPoint; ++iPoint)
@@ -62,13 +64,8 @@ bool CPBIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMod
 
   /*--- Set the value of the pressure ---*/
 
-  // SetPressure(iPoint);
 
-  // su2double Enthalpy = Solution(iPoint, nDim +1);
-  // FluidModel->SetTDState_h(Enthalpy);
-  su2double Temperature = FluidModel->GetTemperature();
-
-  const auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
+  // const auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
@@ -91,7 +88,7 @@ bool CPBIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMod
 
     // Enthalpy = Solution(iPoint, nDim+1);
     // FluidModel->SetTDState_h(Enthalpy);
-    // SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
+    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
     SetDensity(iPoint, FluidModel->GetDensity());
 
     /*--- Flag this point as non-physical. ---*/

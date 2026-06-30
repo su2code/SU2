@@ -28,9 +28,9 @@
 #include "../../include/variables/CPBIncNSVariable.hpp"
 #include "../../include/fluid/CFluidModel.hpp"
 
-CPBIncNSVariable::CPBIncNSVariable(su2double density, su2double pressure, const su2double *velocity,
+CPBIncNSVariable::CPBIncNSVariable(su2double density, su2double pressure, const su2double *velocity, su2double temperature,
                                unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) :
-                               CPBIncEulerVariable(density, pressure, velocity, npoint, ndim, nvar, config) {
+                               CPBIncEulerVariable(density, pressure, velocity, temperature, npoint, ndim, nvar, config) {
 
   Vorticity.resize(nPoint,3);
   StrainMag.resize(nPoint);
@@ -84,7 +84,6 @@ bool CPBIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2
 
     /*--- Recompute the primitive variables ---*/
 
-    // Enthalpy = Solution(iPoint, nDim + 1);
     // FluidModel->SetTDState_h(Enthalpy, scalar);
     SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
     SetDensity(iPoint, FluidModel->GetDensity());
@@ -112,6 +111,7 @@ bool CPBIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2
   /*--- Set thermal conductivity (effective value if RANS). ---*/
 
   SetThermalConductivity(iPoint, FluidModel->GetThermalConductivity());
+  // cout << FluidModel->GetThermalConductivity() << endl;
 
   /*--- Set specific heats ---*/
 

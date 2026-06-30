@@ -63,6 +63,7 @@
 #include "../../include/numerics/flow/convection/hllc.hpp"
 #include "../../include/numerics/flow/convection/ausm_slau.hpp"
 #include "../../include/numerics/flow/convection/centered.hpp"
+#include "../../include/numerics/flow/convection/pressure_based.hpp"
 #include "../../include/numerics/flow/flow_diffusion.hpp"
 #include "../../include/numerics/flow/flow_sources.hpp"
 #include "../../include/numerics/NEMO/convection/roe.hpp"
@@ -1678,15 +1679,14 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
           } else {
             /*--- Incompressible flow, use pressure-based method ---*/
-            //TODO: central scheme has not yet been added
             switch (config->GetKind_Centered_Flow()) {
-              case CENTERED::CDS : /* numerics[MESH_0][FLOW_SOL][conv_term] = new CCentPB_Flow(nDim, nVar_Flow, config); */ break; 
+              case CENTERED::CDS :  numerics[MESH_0][FLOW_SOL][conv_term] = new CCentLinearPB_Flow(nDim, nVar_Flow, config);  break; 
               default:
                 SU2_MPI::Error("Invalid centered scheme or not implemented.\n Currently, only CDS is available for pressure based incompressible flows.", CURRENT_FUNCTION);
 
             }
-            /* for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-              numerics[iMGlevel][FLOW_SOL][conv_term] = new CCentPB_Flow(nDim, nVar_Flow, config);*/
+             for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+              numerics[iMGlevel][FLOW_SOL][conv_term] = new CCentLinearPB_Flow(nDim, nVar_Flow, config);
             /*--- Definition of the boundary condition method ---*/
             for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
               numerics[iMGlevel][FLOW_SOL][conv_bound_term] = new CUpwPB_Flow(nDim, nVar_Flow, config);

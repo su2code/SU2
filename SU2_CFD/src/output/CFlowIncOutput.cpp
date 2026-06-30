@@ -172,8 +172,10 @@ void CFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Linear solver iterations
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
-  AddHistoryOutput("LINSOL_POISSON_ITER", "PoissonSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the poisson solver.");
-  AddHistoryOutput("LINSOL_POISSON_RESIDUAL", "PoissonSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the poisson solver.");
+  if (pressure_based) {
+    AddHistoryOutput("LINSOL_POISSON_ITER", "PoissonSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the poisson solver.");
+    AddHistoryOutput("LINSOL_POISSON_RESIDUAL", "PoissonSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the poisson solver.");
+  }
   AddHistoryOutputFieldsScalarLinsol(config);
 
   AddHistoryOutput("MIN_DELTA_TIME", "Min DT", ScreenOutputFormat::SCIENTIFIC, "CFL_NUMBER", "Current minimum local time step");
@@ -218,7 +220,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   CSolver* poisson_solver = solver[POISSON_SOL];
 
   if (pressure_based) {
-    // SetHistoryOutputValue("RMS_MASSFLUX", log10(flow_solver->GetResMassFlux())); // TODO: FIXED
+    SetHistoryOutputValue("RMS_MASSFLUX", log10(poisson_solver->GetRes_RMS(0))); 
 	  SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(0)));
 	  SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(1)));
 	  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(2)));	
@@ -235,7 +237,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   if (pressure_based) {
 	  SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(0)));
 	  SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(1)));
-	  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_Max(2)));
+	  if (nDim == 3) SetHistoryOutputValue("MAX_VELOCITY-Z", log10(flow_solver->GetRes_Max(2)));
   } else {
 	  SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
 	  SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
@@ -331,7 +333,6 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
   if (weakly_coupled_heat) AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
   if (heat) AddVolumeOutput("ENTHALPY", "Enthalpy", "SOLUTION", "Enthalpy");
-  if (pressure_based) AddVolumeOutput("MASS_FLUX", "Mass_flux","SOLUTION", "Mass flux at a point");
 
   SetVolumeOutputFieldsScalarSolution(config);
 
@@ -451,7 +452,6 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 	  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetVelocity(iPoint, 0));
 	  SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetVelocity(iPoint, 1));
 	  if (nDim == 3) SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetVelocity(iPoint, 2));
-	  // SetVolumeOutputValue("MASS_FLUX", iPoint, Node_Flow->GetMassFlux(iPoint)); // TODO: add this output field once poisson solver is added
   }  else {
 	  SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
 	  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
