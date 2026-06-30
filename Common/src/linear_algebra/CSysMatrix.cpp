@@ -209,7 +209,6 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   if (type == ConnectivityType::FiniteVolume) {
     edge_ptr_lu.ptr = geometry->GetEdgeToLUSparsePatternMap().data();
-    edge_ptr_lu.orient = geometry->GetEdgeLUOrientation();
     edge_ptr_lu.nEdge = geometry->GetnEdge();
   }
   if (needTranspPtr) {

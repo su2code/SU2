@@ -194,14 +194,13 @@ class CGeometry {
 
   CEdgeToNonZeroMapUL edgeToCSRMap; /*!< \brief Map edges to CSR entries referenced by them (i,j) and (j,i). */
 
-  CCompressedSparsePatternUL finiteVolumeLSparse;     /*!< \brief Strictly-lower 0-fill FVM sparsity (L of LDU). */
-  CCompressedSparsePatternUL finiteVolumeUSparse;     /*!< \brief Strictly-upper 0-fill FVM sparsity (U of LDU). */
-  CCompressedSparsePatternUL finiteElementLSparse;    /*!< \brief Strictly-lower 0-fill FEM sparsity (L of LDU). */
-  CCompressedSparsePatternUL finiteElementUSparse;    /*!< \brief Strictly-upper 0-fill FEM sparsity (U of LDU). */
-  CEdgeToNonZeroMapUL edgeToLUMap;                    /*!< \brief Map edges to (U-index, L-index) in the LDU split. */
-  su2vector<unsigned char> edgeLUOrient;              /*!< \brief 1 if edge's GetNode(0) < GetNode(1) (ij maps to U). */
-  su2vector<unsigned long> finiteVolumeLToUTranspMap; /*!< \brief FVM L-entry -> U-entry of its transpose. */
-  su2vector<unsigned long> finiteVolumeUToLTranspMap; /*!< \brief FVM U-entry -> L-entry of its transpose. */
+  CCompressedSparsePatternUL finiteVolumeLSparse;      /*!< \brief Strictly-lower 0-fill FVM sparsity (L of LDU). */
+  CCompressedSparsePatternUL finiteVolumeUSparse;      /*!< \brief Strictly-upper 0-fill FVM sparsity (U of LDU). */
+  CCompressedSparsePatternUL finiteElementLSparse;     /*!< \brief Strictly-lower 0-fill FEM sparsity (L of LDU). */
+  CCompressedSparsePatternUL finiteElementUSparse;     /*!< \brief Strictly-upper 0-fill FEM sparsity (U of LDU). */
+  CEdgeToNonZeroMapUL edgeToLUMap;                     /*!< \brief Map edges to (U-index, L-index) in the LDU split. */
+  su2vector<unsigned long> finiteVolumeLToUTranspMap;  /*!< \brief FVM L-entry -> U-entry of its transpose. */
+  su2vector<unsigned long> finiteVolumeUToLTranspMap;  /*!< \brief FVM U-entry -> L-entry of its transpose. */
   su2vector<unsigned long> finiteElementLToUTranspMap; /*!< \brief FEM L-entry -> U-entry of its transpose. */
   su2vector<unsigned long> finiteElementUToLTranspMap; /*!< \brief FEM U-entry -> L-entry of its transpose. */
 
@@ -1910,12 +1909,6 @@ class CGeometry {
    * \return Reference to the edge map.
    */
   const CEdgeToNonZeroMapUL& GetEdgeToLUSparsePatternMap();
-
-  /*!
-   * \brief Per-edge orientation flag: 1 if GetNode(0) < GetNode(1) (ij direction maps to U), 0 otherwise.
-   * \note Built alongside GetEdgeToLUSparsePatternMap.
-   */
-  const unsigned char* GetEdgeLUOrientation() const { return edgeLUOrient.data(); }
 
   /*!
    * \brief Get the bijective map from L-entry indices to U-entry indices of their transposes.

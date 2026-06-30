@@ -4169,9 +4169,6 @@ const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToLUSparsePatternMap() {
   if (edgeToLUMap.empty()) {
     edgeToLUMap = mapEdgesToLUSparsePattern(*this, GetLSparsePattern(ConnectivityType::FiniteVolume),
                                             GetUSparsePattern(ConnectivityType::FiniteVolume));
-    edgeLUOrient.resize(GetnEdge());
-    for (unsigned long iEdge = 0; iEdge < GetnEdge(); ++iEdge)
-      edgeLUOrient[iEdge] = (edges->GetNode(iEdge, 0) < edges->GetNode(iEdge, 1)) ? 1u : 0u;
   }
   return edgeToLUMap;
 }
