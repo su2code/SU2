@@ -1174,7 +1174,11 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                          (config->GetKind_FluidModel() == IDEAL_GAS);
-  const auto iVel = prim_idx.Velocity();
+  // TODO: this is a small workaround as the primitive index is used here for the solution indices. The
+  // prim and solution indices happen to coincide for the non pressure based solvers but this does not work for PB.
+  // in the future a separate solution_idx struct would make this much cleaner.                     
+  bool pressure_based = (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED);
+  const auto iVel = (pressure_based) ? 0 : prim_idx.Velocity();
 
   /*--- Blazek chapter 8.:
    * The components of the momentum residual normal to the symmetry plane are zeroed out.
