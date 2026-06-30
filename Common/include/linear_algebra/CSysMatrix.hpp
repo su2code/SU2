@@ -393,10 +393,12 @@ class CSysMatrix {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] needTranspPtr - If "col_ptr" should be created, used for "SetDiagonalAsColumnSum".
+   * \param[in] grad_mode - ....
+   * \param[in] poisson - If preconditioner should use settings defined for the poisson solver.
    */
   void Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry* geometry, const CConfig* config, bool needTranspPtr = false,
-                  bool grad_mode = false);
+                  bool grad_mode = false, bool poisson = false);
 
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.

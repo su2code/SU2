@@ -89,7 +89,7 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
 template <class ScalarType>
 void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar,
                                         unsigned short neqn, bool EdgeConnect, CGeometry* geometry,
-                                        const CConfig* config, bool needTranspPtr, bool grad_mode) {
+                                        const CConfig* config, bool needTranspPtr, bool grad_mode, bool poisson) {
   SU2_ZONE_SCOPED
   assert(omp_get_thread_num() == 0 && "Only the master thread is allowed to initialize the matrix.");
 
@@ -116,11 +116,17 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   } else if (config->GetDiscrete_Adjoint() && (prec != ILU)) {
     /*--- Else "upgrade" primal solver settings. ---*/
     prec = config->GetKind_DiscAdj_Linear_Prec();
-  }
+  } 
 
   /*--- No else if, but separate if case! ---*/
   if (config->GetSmoothGradient() && grad_mode) {
     prec = config->GetKind_Grad_Linear_Solver_Prec();
+  }
+
+  // TODO: This is a temporary workaround as it is important for the pressure-based solver to use a different linear solver.
+  // This should be revisited to let the code be able to handle different linear solvers for e.g. turbulence solvers as well.
+  if (poisson) {
+    prec = config->GetKind_Poisson_Linear_Solver_Prec();
   }
 
   const bool ilu_needed = (prec == ILU);
