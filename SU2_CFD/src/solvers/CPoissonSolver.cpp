@@ -410,7 +410,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   su2double ProjGridVelFlux, *MeshVel_i, *MeshVel_j;
   unsigned short Kind_Outlet;
   Normal = new su2double [MAXNDIM];
-  bool unsteady = false;//(config->GetTime_Marching() != NO);
+  bool unsteady = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
 
   const CSolver* flow_solution = solver_container[FLOW_SOL];
   const CVariable* flow_nodes = flow_solution->GetNodes();
@@ -537,7 +537,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
             num_n1_j = geometry->nodes->GetVolume(jPoint)/(2.0*TimeStep);
             beta_n1 = 0.5*(num_n1_i/den_i + num_n1_j/den_j);
 
-            // PsCorrFace += (beta*PseudoTimeCorr[iEdge][iDim] + beta_n*TimeMarchingCorr_n[iEdge][iDim] + beta_n1*TimeMarchingCorr_n1[iEdge][iDim])*Normal[iDim]*MeanDensity;
+            PsCorrFace += Normal[iDim]*MeanDensity*(beta*PseudoTimeCorr[iEdge][iDim]);//+ beta_n*TimeMarchingCorr_n[iEdge][iDim] + beta_n1*TimeMarchingCorr_n1[iEdge][iDim]);
           }
         }
       }
@@ -558,9 +558,8 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       if (geometry->nodes->GetDomain(jPoint)) LinSysRes.SubtractBlock(jPoint, residual);
 
       /*--- Update correction of face velocity for the next iteration. ---*/
-      // if (!testREMOVETHIS)
-        for (iDim = 0; iDim < nDim; iDim++) 
-          PseudoTimeCorr[iEdge][iDim] = PsCorr[iDim] + PseudoTimeCorr[iEdge][iDim];
+      for (iDim = 0; iDim < nDim; iDim++) 
+        PseudoTimeCorr[iEdge][iDim] = PsCorr[iDim];// + PseudoTimeCorr[iEdge][iDim];
     }
     END_SU2_OMP_FOR
   }
