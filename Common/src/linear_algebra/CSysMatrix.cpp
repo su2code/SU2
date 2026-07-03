@@ -740,6 +740,7 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
+  SU2_ZONE_SCOPED
   const auto blockSize = nVar * nVar;
   ScalarType Lij[MAXNVAR * MAXNVAR], Lij_Ujk[MAXNVAR * MAXNVAR];
 
@@ -870,6 +871,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
 template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                       CGeometry* geometry, const CConfig* config) const {
+  SU2_ZONE_SCOPED
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
