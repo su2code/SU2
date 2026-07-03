@@ -64,7 +64,6 @@ class CPastixWrapper {
 
   vector<unsigned long> csr_row_ptr; /*!< \brief Owned CSR row pointers (built from LDU). */
   vector<unsigned long> csr_col_ind; /*!< \brief Owned CSR column indices (built from LDU). */
-  vector<ScalarType> csr_values;     /*!< \brief Owned assembled CSR values (flat, LDU merged). */
 
   pastix_int_t iparm[IPARM_SIZE]; /*!< \brief Integer parameters for PaStiX. */
   double dparm[DPARM_SIZE];       /*!< \brief Floating point parameters for PaStiX. */
@@ -119,7 +118,7 @@ class CPastixWrapper {
   void Initialize(CGeometry* geometry, const CConfig* config);
 
   /*!
-   * \brief Assemble CSR values from the stored LDU pointers into csr_values.
+   * \brief Assemble CSR values from the stored LDU pointers directly into the values buffer.
    */
   void AssembleValues();
 
@@ -175,7 +174,6 @@ class CPastixWrapper {
       for (auto k = row_ptr_u[i]; k < row_ptr_u[i + 1]; ++k) csr_col_ind.push_back(col_ind_u[k]);
     }
     csr_row_ptr[nPointDomain] = static_cast<unsigned long>(csr_col_ind.size());
-    csr_values.resize(nnz_domain * matrix.blkSz);
     issetup = true;
   }
 

@@ -215,13 +215,13 @@ void CPastixWrapper<ScalarType>::AssembleValues() {
   const auto blkSz = matrix.blkSz;
   const auto *d = matrix.d, *l = matrix.l, *u = matrix.u;
   for (auto iPoint = 0ul; iPoint < nDomain; ++iPoint) {
-    auto* dst = csr_values.data() + csr_row_ptr[iPoint] * blkSz;
+    auto* dst = values.data() + csr_row_ptr[iPoint] * blkSz;
     for (auto k = matrix.row_ptr_l[iPoint]; k < matrix.row_ptr_l[iPoint + 1]; ++k, dst += blkSz)
-      for (auto b = 0ul; b < blkSz; ++b) dst[b] = l[k * blkSz + b];
-    for (auto b = 0ul; b < blkSz; ++b) dst[b] = d[iPoint * blkSz + b];
+      for (auto b = 0ul; b < blkSz; ++b) dst[b] = SU2_TYPE::GetValue(l[k * blkSz + b]);
+    for (auto b = 0ul; b < blkSz; ++b) dst[b] = SU2_TYPE::GetValue(d[iPoint * blkSz + b]);
     dst += blkSz;
     for (auto k = matrix.row_ptr_u[iPoint]; k < matrix.row_ptr_u[iPoint + 1]; ++k, dst += blkSz)
-      for (auto b = 0ul; b < blkSz; ++b) dst[b] = u[k * blkSz + b];
+      for (auto b = 0ul; b < blkSz; ++b) dst[b] = SU2_TYPE::GetValue(u[k * blkSz + b]);
   }
 }
 
@@ -270,22 +270,22 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
     cout << "\n+     PaStiX : Parallel Sparse matriX package     +" << endl;
   }
 
-  const unsigned long szBlk = matrix.nVar * matrix.nVar, nNonZero = values.size();
+  const auto blkSz = matrix.blkSz;
 
-  /*--- Copy matrix values and swap blocks as required ---*/
+  /*--- Permute blocks for rows with halo columns into global sorted order.
+        AssembleValues wrote them in LDU order; copy to tmp then write back sorted. ---*/
 
-  for (auto i = 0ul; i < nNonZero; ++i) values[i] = SU2_TYPE::GetValue(csr_values[i]);
-
+  vector<su2mixedfloat> tmp;
   for (auto i = 0ul; i < sort_rows.size(); ++i) {
     const auto iRow = sort_rows[i];
     /*--- colptr is 1-based Fortran numbering: row start = colptr[iRow] - 1. ---*/
     const auto begin = static_cast<unsigned long>(colptr[iRow] - 1);
+    const auto nnz_row = sort_order[i].size();
 
-    for (auto j = 0ul; j < sort_order[i].size(); ++j) {
-      const auto target = (begin + j) * szBlk;
-      const auto source = sort_order[i][j] * szBlk;
-
-      for (auto k = 0ul; k < szBlk; ++k) values[target + k] = SU2_TYPE::GetValue(csr_values[source + k]);
+    tmp.assign(values.begin() + begin * blkSz, values.begin() + (begin + nnz_row) * blkSz);
+    for (auto j = 0ul; j < nnz_row; ++j) {
+      const auto src_pos = sort_order[i][j] - begin;
+      for (auto k = 0ul; k < blkSz; ++k) values[(begin + j) * blkSz + k] = tmp[src_pos * blkSz + k];
     }
   }
 
