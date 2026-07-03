@@ -379,9 +379,6 @@ class CSysMatrix {
    */
   void RowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
 
-  FORCEINLINE ScalarType* GetDiagBlock(unsigned long i) { return &mat.d[i * nVar * nEqn]; }
-  FORCEINLINE const ScalarType* GetDiagBlock(unsigned long i) const { return &mat.d[i * nVar * nEqn]; }
-
  public:
   /*!
    * \brief Constructor of the class.
@@ -588,9 +585,9 @@ class CSysMatrix {
    */
   inline void GetBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, ScalarType*& bii,
                         ScalarType*& bij, ScalarType*& bji, ScalarType*& bjj) {
-    bii = GetDiagBlock(iPoint);
-    bjj = GetDiagBlock(jPoint);
     const auto blkSz = nVar * nEqn;
+    bii = &mat.d[iPoint * blkSz];
+    bjj = &mat.d[jPoint * blkSz];
     bij = &mat.u[iEdge * blkSz];
     bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
   }
@@ -662,10 +659,10 @@ class CSysMatrix {
       if (mask[k] == 0) continue;
 
       /*--- Fetch the blocks. ---*/
-      auto bii = GetDiagBlock(iPoint[k]);
-      auto bjj = GetDiagBlock(jPoint[k]);
-      ScalarType* bij = &mat.u[iEdge[k] * blkSz];
-      ScalarType* bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
+      auto bii = &mat.d[iPoint[k] * blkSz];
+      auto bjj = &mat.d[jPoint[k] * blkSz];
+      auto bij = &mat.u[iEdge[k] * blkSz];
+      auto bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
 
       /*--- Update, block i was negated during transpose in the
        * hope the assignments below become non-temporal stores. ---*/
@@ -776,7 +773,7 @@ class CSysMatrix {
    */
   template <class OtherType, bool Overwrite = true, class T = ScalarType>
   inline void SetBlock2Diag(unsigned long block_i, const OtherType& val_block, T alpha = 1.0) {
-    auto mat_ii = GetDiagBlock(block_i);
+    auto mat_ii = &mat.d[block_i * nVar * nEqn];
 
     for (auto iVar = 0ul; iVar < nVar; iVar++)
       for (auto jVar = 0ul; jVar < nEqn; jVar++) {
@@ -809,7 +806,7 @@ class CSysMatrix {
    */
   template <class OtherType>
   inline void AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
-    auto* d = GetDiagBlock(block_i);
+    auto d = &mat.d[block_i * nVar * nVar];
     for (auto iVar = 0ul; iVar < nVar; iVar++) d[iVar * (nVar + 1)] += PassiveAssign(val_matrix);
   }
 
@@ -822,7 +819,7 @@ class CSysMatrix {
    */
   template <class OtherType>
   inline void AddVal2Diag(unsigned long block_i, unsigned long iVar, OtherType val) {
-    GetDiagBlock(block_i)[iVar * (nVar + 1)] += PassiveAssign(val);
+    mat.d[block_i * nVar * nVar + iVar * (nVar + 1)] += PassiveAssign(val);
   }
 
   /*!
@@ -833,14 +830,11 @@ class CSysMatrix {
    */
   template <class OtherType>
   inline void SetVal2Diag(unsigned long block_i, OtherType val_matrix) {
-    auto* d = GetDiagBlock(block_i);
-    unsigned long iVar;
-
     /*--- Clear entire block before setting its diagonal. ---*/
     SU2_OMP_SIMD
-    for (iVar = 0; iVar < nVar * nVar; iVar++) d[iVar] = 0.0;
+    for (auto iVar = 0ul; iVar < nVar * nVar; iVar++) mat.d[block_i * nVar * nVar + iVar] = 0.0;
 
-    for (iVar = 0; iVar < nVar; iVar++) d[iVar * (nVar + 1)] = PassiveAssign(val_matrix);
+    AddVal2Diag(block_i, val_matrix);
   }
 
   /*!

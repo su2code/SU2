@@ -38,9 +38,9 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
   SU2_ZONE_SCOPED
 
   nPoint = nPointDomain = nVar = nEqn = 0;
-  ilu.nnz_l = 0;
-  ilu.nnz_u = 0;
   mat.nnz_l = mat.nnz_u = 0;
+  gpu.nnz_l = gpu.nnz_u = 0;
+  ilu.nnz_l = ilu.nnz_u = 0;
   ilu_fill_in = 0;
 
   omp_partitions = nullptr;
@@ -526,8 +526,8 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
 template <class ScalarType>
 void CSysMatrix<ScalarType>::SetValZero() {
   SU2_ZONE_SCOPED
-  const auto nThreads = (unsigned long)omp_get_num_threads();
-  const auto iThread = (unsigned long)omp_get_thread_num();
+  const auto nThreads = static_cast<unsigned long>(omp_get_num_threads());
+  const auto iThread = static_cast<unsigned long>(omp_get_thread_num());
   auto zeroChunk = [&](ScalarType* arr, unsigned long n) {
     if (n == 0) return;
     const auto chunk = roundUpDiv(n, nThreads);
@@ -545,10 +545,7 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::SetValDiagonalZero() {
   SU2_ZONE_SCOPED
   SU2_OMP_FOR_STAT(omp_heavy_size)
-  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-    auto* d = GetDiagBlock(iPoint);
-    for (auto index = 0ul; index < nVar * nEqn; ++index) d[index] = 0.0;
-  }
+  for (auto iVar = 0ul; iVar < nPointDomain * nVar * nEqn; ++iVar) mat.d[iVar] = 0;
   END_SU2_OMP_FOR
 }
 
@@ -675,7 +672,7 @@ void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long block_i, unsigned long
   SU2_ZONE_SCOPED
   for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k)
     for (auto iVar = 0u; iVar < nVar; iVar++) mat.l[k * nVar * nEqn + row * nEqn + iVar] = 0.0;
-  auto* d = GetDiagBlock(block_i);
+  auto* d = &mat.d[block_i * nVar * nEqn];
   for (auto iVar = 0u; iVar < nVar; iVar++) d[row * nEqn + iVar] = 0.0;
   d[row * nEqn + row] = 1.0;
   for (auto k = mat.row_ptr_u[block_i]; k < mat.row_ptr_u[block_i + 1]; ++k)
@@ -748,58 +745,37 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
 
   /*--- Helper to copy block matrix to compute factorization in-place. ---*/
   auto InitIluRow = [&](const auto iPoint) {
+    MatrixCopy(&mat.d[iPoint * blockSize], &ilu.d[iPoint * blockSize]);
+
     if (ilu_fill_in == 0) {
-      /*--- ILU0: pattern == CSR. Copy L, diagonal, U blocks directly from L/D/U arrays. ---*/
-      const auto nL = ilu.row_ptr_l[iPoint + 1] - ilu.row_ptr_l[iPoint];
-      for (auto i = 0ul; i < nL; ++i)
-        MatrixCopy(&mat.l[(mat.row_ptr_l[iPoint] + i) * blockSize], &ilu.l[(ilu.row_ptr_l[iPoint] + i) * blockSize]);
-      MatrixCopy(&mat.d[iPoint * blockSize], &ilu.d[iPoint * blockSize]);
-      const auto nU = ilu.row_ptr_u[iPoint + 1] - ilu.row_ptr_u[iPoint];
-      for (auto i = 0ul; i < nU; ++i)
-        MatrixCopy(&mat.u[(mat.row_ptr_u[iPoint] + i) * blockSize], &ilu.u[(ilu.row_ptr_u[iPoint] + i) * blockSize]);
+      /*--- ILU0: Same sparse pattern, copy L and U blocks directly. ---*/
+      auto copy = [&](const unsigned long* row_ptr, const ScalarType* mat, ScalarType* ilu) {
+        const unsigned long begin = row_ptr[iPoint] * blockSize;
+        const unsigned long end = row_ptr[iPoint + 1] * blockSize;
+        SU2_OMP_SIMD
+        for (auto k = begin; k < end; ++k) ilu[k] = mat[k];
+      };
+      copy(ilu.row_ptr_l, mat.l, ilu.l);
+      copy(ilu.row_ptr_u, mat.u, ilu.u);
       return;
     }
-    /*--- ILUn: scatter from matrix L/D/U into ILU L/D/U via merge-scan. ---*/
-    auto kl = mat.row_ptr_l[iPoint], kl_end = mat.row_ptr_l[iPoint + 1];
-    auto ku = mat.row_ptr_u[iPoint], ku_end = mat.row_ptr_u[iPoint + 1];
-    bool diag_used = false;
-    auto matCol = [&]() -> unsigned long {
-      if (kl < kl_end) return mat.col_ind_l[kl];
-      if (!diag_used) return iPoint;
-      if (ku < ku_end) return mat.col_ind_u[ku];
-      return ~0ul;
-    };
-    auto advanceMat = [&]() {
-      if (kl < kl_end) {
-        ++kl;
-        return;
+    /*--- ILUn: Merge-scan L and U via shared lambda. ---*/
+    auto scatterPart = [&](const unsigned long* mat_row_ptr, const unsigned long* mat_col_ind,
+                           const ScalarType* mat_vals, const unsigned long* ilu_row_ptr,
+                           const unsigned long* ilu_col_ind, ScalarType* ilu_vals) {
+      auto km = mat_row_ptr[iPoint], km_end = mat_row_ptr[iPoint + 1];
+      for (auto k = ilu_row_ptr[iPoint]; k < ilu_row_ptr[iPoint + 1]; ++k) {
+        const auto jPoint = ilu_col_ind[k];
+        while (km < km_end && mat_col_ind[km] < jPoint) ++km;
+        if (km < km_end && mat_col_ind[km] == jPoint) {
+          MatrixCopy(&mat_vals[km * blockSize], &ilu_vals[k * blockSize]);
+        } else {
+          ZeroMatrix(&ilu_vals[k * blockSize]);
+        }
       }
-      if (!diag_used) {
-        diag_used = true;
-        return;
-      }
-      ++ku;
     };
-    /*--- Fill one ILU entry: advance mat cursor to jPoint, then copy or zero. ---*/
-    auto fillEntry = [&](ScalarType* dst, unsigned long jPoint) {
-      while (matCol() < jPoint) advanceMat();
-      if (matCol() != jPoint) {
-        ZeroMatrix(dst);
-        return;
-      }
-      if (kl < kl_end)
-        MatrixCopy(&mat.l[kl * blockSize], dst);
-      else if (!diag_used)
-        MatrixCopy(&mat.d[iPoint * blockSize], dst);
-      else
-        MatrixCopy(&mat.u[ku * blockSize], dst);
-      advanceMat();
-    };
-    for (auto k = ilu.row_ptr_l[iPoint]; k < ilu.row_ptr_l[iPoint + 1]; ++k)
-      fillEntry(&ilu.l[k * blockSize], ilu.col_ind_l[k]);
-    fillEntry(&ilu.d[iPoint * blockSize], iPoint);
-    for (auto k = ilu.row_ptr_u[iPoint]; k < ilu.row_ptr_u[iPoint + 1]; ++k)
-      fillEntry(&ilu.u[k * blockSize], ilu.col_ind_u[k]);
+    scatterPart(mat.row_ptr_l, mat.col_ind_l, mat.l, ilu.row_ptr_l, ilu.col_ind_l, ilu.l);
+    scatterPart(mat.row_ptr_u, mat.col_ind_u, mat.u, ilu.row_ptr_u, ilu.col_ind_u, ilu.u);
   };
 
   /*--- Update one row of the LU matrix. ---*/
@@ -1111,14 +1087,14 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
     ScalarType aux_block[MAXNVAR * MAXNVAR], aux_vector[MAXNVAR];
 
     /*--- Copy diagonal block for first point in this linelet. ---*/
-    MatrixCopy(GetDiagBlock(li.linelets[iLinelet][0]), lineletInvDiag.data());
+    MatrixCopy(&mat.d[li.linelets[iLinelet][0] * nVar * nEqn], lineletInvDiag.data());
 
     for (auto iElem = 1ul; iElem < nElem; iElem++) {
       /*--- Setup pointers to required matrices and vectors ---*/
       const auto im1Point = li.linelets[iLinelet][iElem - 1];
       const auto iPoint = li.linelets[iLinelet][iElem];
 
-      const auto* d = GetDiagBlock(iPoint);
+      const auto* d = GetBlock(iPoint, iPoint);
       const auto* l = GetBlock(iPoint, im1Point);
       const auto* u = GetBlock(im1Point, iPoint);
 
@@ -1266,7 +1242,7 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
 
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-    auto* d_i = GetDiagBlock(iPoint);
+    auto* d_i = &mat.d[iPoint * nVar * nEqn];
     for (auto k = 0ul; k < nVar * nEqn; ++k) d_i[k] = 0.0;
 
     /*--- For each L entry (iPoint, j): subtract its U-transpose (j, iPoint). ---*/
@@ -1339,7 +1315,7 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
 
   SU2_OMP_FOR_STAT(omp_heavy_size)
   for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-    auto bii = GetDiagBlock(iPoint);
+    auto bii = &mat.d[iPoint * nVar * nVar];
     for (auto i = 0ul; i < nVar; ++i)
       for (auto j = 0ul; j < i; ++j) std::swap(bii[i * nVar + j], bii[j * nVar + i]);
   }
@@ -1380,7 +1356,7 @@ void CSysMatrix<ScalarType>::GatherCSR(ScalarType* out) const {
     ScalarType* dst = out + (mat.row_ptr_l[iPoint] + iPoint + mat.row_ptr_u[iPoint]) * blkSz;
     for (auto k = mat.row_ptr_l[iPoint]; k < mat.row_ptr_l[iPoint + 1]; ++k, dst += blkSz)
       MatrixCopy(&mat.l[k * blkSz], dst);
-    MatrixCopy(GetDiagBlock(iPoint), dst);
+    MatrixCopy(&mat.d[iPoint * blkSz], dst);
     dst += blkSz;
     for (auto k = mat.row_ptr_u[iPoint]; k < mat.row_ptr_u[iPoint + 1]; ++k, dst += blkSz)
       MatrixCopy(&mat.u[k * blkSz], dst);
