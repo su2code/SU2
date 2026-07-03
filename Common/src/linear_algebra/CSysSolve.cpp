@@ -1748,6 +1748,6 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
 /*--- Explicit instantiations ---*/
 
 template class CSysSolve<su2mixedfloat>;
-#ifdef USE_MIXED_PRECISION
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
 template class CSysSolve<passivedouble>;
 #endif

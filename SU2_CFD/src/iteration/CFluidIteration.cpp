@@ -254,11 +254,17 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
   if (config[val_iZone]->GetMUSCLRamp())
     UpdateRamp(geometry, config, config[val_iZone]->GetInnerIter(), val_iZone, RAMP_TYPE::MUSCL);
 
-  output->SetHistoryOutput(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0],
+  /*--- During Full-MG startup FinestMesh > 0: read residuals from the active (coarse) level. ---*/
+  const unsigned short finestMesh = config[val_iZone]->GetFinestMesh();
+  output->SetHistoryOutput(geometry[val_iZone][val_iInst][finestMesh], solver[val_iZone][val_iInst][finestMesh],
                            config[val_iZone], config[val_iZone]->GetTimeIter(), config[val_iZone]->GetOuterIter(),
                            config[val_iZone]->GetInnerIter());
 
   auto StopCalc = output->GetConvergence();
+
+  /*--- During Full-MG warmup the convergence criterion is evaluated against coarse-mesh residuals.
+   *    Never stop before the fine mesh is active. ---*/
+  if (finestMesh != MESH_0) StopCalc = false;
 
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 

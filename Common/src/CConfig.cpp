@@ -1316,9 +1316,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Definition of the turbulent thermal conductivity model (CONSTANT_PRANDTL_TURB (default), NONE). */
   addEnumOption("TURBULENT_CONDUCTIVITY_MODEL", Kind_ConductivityModel_Turb, TurbConductivityModel_Map, CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL);
 
- /*--- Options related to Constant Thermal Conductivity Model ---*/
+  /*--- Options related to Constant Thermal Conductivity Model ---*/
 
- /* DESCRIPTION: default value for AIR */
+  /* DESCRIPTION: default value for AIR */
   addDoubleListOption("THERMAL_CONDUCTIVITY_CONSTANT", nThermal_Conductivity_Constant , Thermal_Conductivity_Constant);
 
   /*--- Options related to temperature polynomial coefficients for fluid models. ---*/
@@ -1415,6 +1415,10 @@ void CConfig::SetConfig_Options() {
 
   /*!\brief FLAME_INIT_METHOD \n DESCRIPTION: Ignition method for flamelet solver \n DEFAULT: no ignition; cold flow only. */
   addEnumOption("FLAME_INIT_METHOD", flamelet_ParsedOptions.ignition_method, Flamelet_Init_Map, FLAMELET_INIT_TYPE::NONE);
+  /*!\brief FLAME_ENTHALPY_BC \n DESCRIPTION: enthalpy BC for thermal walls. FLOW_MARKERS (default): enthalpy derived
+   from MARKER_ISOTHERMAL temperature or MARKER_HEATFLUX via GetEnthFromTemp. SPECIES_MARKERS: enthalpy and all other
+   scalars taken directly from MARKER_WALL_SPECIES or the Python wrapper (SetMarkerCustomScalar). \n DEFAULT: FLOW_MARKERS \ingroup Config */
+  addEnumOption("FLAME_ENTHALPY_BC", flamelet_ParsedOptions.enthalpy_bc, Flamelet_Enthalpy_BC_Map, FLAMELET_ENTHALPY_BC::FLOW_MARKERS);
   /*!\brief FLAME_INIT \n DESCRIPTION: flame front initialization using the flamelet model \ingroup Config*/
   addDoubleArrayOption("FLAME_INIT", flamelet_ParsedOptions.flame_init.size(), false, flamelet_ParsedOptions.flame_init.begin());
 
@@ -2002,16 +2006,22 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MG_DAMP_PROLONGATION", Damp_Correc_Prolong, 0.5);
   /*!\brief MG_SMOOTH_EARLY_EXIT\n DESCRIPTION: Enable early exit for MG smoothing when RMS drops below threshold. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_SMOOTH_EARLY_EXIT", MGOptions.MG_Smooth_EarlyExit, true);
-  /*!\brief MG_SMOOTH_RES_THRESHOLD\n DESCRIPTION: Smoothing stops when current_rms < threshold * initial_rms. DEFAULT: 0.1 \ingroup Config*/
-  addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MGOptions.MG_Smooth_Res_Threshold, 0.5);
+  /*!\brief MG_SMOOTH_RES_THRESHOLD\n DESCRIPTION: Early exit smoothing when current_rms drops below threshold * initial_rms. DEFAULT: 0.9 \ingroup Config*/
+  addDoubleOption("MG_SMOOTH_RES_THRESHOLD", MGOptions.MG_Smooth_Res_Threshold, 0.9);
   /*!\brief MG_SMOOTH_OUTPUT\n DESCRIPTION: Print compact per-cycle smoothing iteration summary. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_SMOOTH_OUTPUT", MGOptions.MG_Smooth_Output, false);
+  /*!\brief MG_SMOOTH_STAGNATION_TOL\n DESCRIPTION: Stop smoothing if current_rms >= previous_rms * this value. Values < 1.0 enable early exit on stagnation, 1.0 only exits on defect growth. DEFAULT: 0.99 \ingroup Config*/
+  addDoubleOption("MG_SMOOTH_STAGNATION_TOL", MGOptions.MG_Smooth_StagnationTol, 0.99);
   /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for the correction prolongation Jacobi smoother. DEFAULT: 1.25 \ingroup Config*/
   addDoubleOption("MG_SMOOTH_COEFF", MGOptions.MG_Smooth_Coeff, 1.25);
   /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level. Levels that would produce fewer CVs are not created. DEFAULT: 50 \ingroup Config*/
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
+  /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Maximum number of nodes on a wall-normal implicit agglomeration line (including the wall seed node). DEFAULT: 20 \ingroup Config*/
+  addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
+  /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i). If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
+  addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
 
   /*!\par CONFIG_CATEGORY: Spatial Discretization \ingroup Config*/
   /*--- Options related to the spatial discretization ---*/
@@ -4806,6 +4816,16 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                [](unsigned short  ) { return (unsigned short)0; });
     fillSmooth(nMG_CorrecSmooth_p, MG_CorrecSmooth_p, MGOptions.MG_CorrecSmooth,
                [](unsigned short  ) { return (unsigned short)0; });
+
+    /*--- Fill MG_CflScaling to size nMGLevels (one entry per coarse level transition). ---*/
+    MGOptions.MG_CflScaling.resize(nMGLevels);
+    if (nMG_CflScaling_p != 0) {
+      for (unsigned short i = 0; i < nMGLevels; ++i)
+        MGOptions.MG_CflScaling[i] = (i < nMG_CflScaling_p) ? MG_CflScaling_p[i] : MG_CflScaling_p[nMG_CflScaling_p - 1];
+    } else {
+      for (unsigned short i = 0; i < nMGLevels; ++i)
+        MGOptions.MG_CflScaling[i] = 0.25;
+    }
   }
 
   /*--- Override MG Smooth parameters ---*/
@@ -7551,10 +7571,12 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
         MGTable.AddColumn("Presmooth",     10);
         MGTable.AddColumn("PostSmooth",    10);
         MGTable.AddColumn("CorrectSmooth", 10);
+        MGTable.AddColumn("CFL Scaling",   12);
         MGTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
         MGTable.PrintHeader();
         for (unsigned short iLevel = 0; iLevel < nMGLevels+1; iLevel++) {
-          MGTable << iLevel << MGOptions.MG_PreSmooth[iLevel] << MGOptions.MG_PostSmooth[iLevel] << MGOptions.MG_CorrecSmooth[iLevel];
+          const string cflStr = (iLevel == 0) ? "-" : std::to_string(MGOptions.MG_CflScaling[iLevel-1]).substr(0,6);
+          MGTable << iLevel << MGOptions.MG_PreSmooth[iLevel] << MGOptions.MG_PostSmooth[iLevel] << MGOptions.MG_CorrecSmooth[iLevel] << cflStr;
         }
         MGTable.PrintFooter();
       }

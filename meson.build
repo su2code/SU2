@@ -20,10 +20,13 @@ python = pymod.find_installation()
 if get_option('enable-cuda')
   add_languages('cuda')
   add_global_arguments('-arch=sm_86', language : 'cuda')
+  cuda_deps = [meson.get_compiler('cuda').find_library('cusparse', required : true)]
+else
+  cuda_deps = []
 endif
 
 su2_cpp_args = []
-su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
+su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')] + cuda_deps
 
 default_warning_flags = []
 if build_machine.system() != 'windows'
@@ -153,8 +156,11 @@ if get_option('enable-cgns')
 endif
 
 # check for mixed precision floating point arithmetic
-if get_option('enable-mixedprec')
+if get_option('enable-mixedprec') or get_option('enable-singleprec')
   su2_cpp_args += '-DUSE_MIXED_PRECISION'
+endif
+if get_option('enable-singleprec')
+  su2_cpp_args += '-DUSE_SINGLE_PRECISION'
 endif
 
 # check if MPI dependencies are found and add them

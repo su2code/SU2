@@ -190,7 +190,7 @@ template class CBaseMPIWrapper<su2double>;
 #if defined CODI_REVERSE_TYPE
 template class CBaseMPIWrapper<passivedouble>;
 #endif
-#if defined USE_MIXED_PRECISION
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
 template class CBaseMPIWrapper<su2mixedfloat>;
 #endif
 

@@ -80,12 +80,12 @@ public:
   /*!
    * \brief Implementation of the base Roe flux.
    */
-  void ComputeFlux(Int iEdge,
+  void ComputeFlux(const Int iEdge,
                    const CConfig& config,
                    const CGeometry& geometry,
                    const CVariable& solution_,
-                   UpdateType updateType,
-                   Double updateMask,
+                   const UpdateType updateType,
+                   const Double updateMask,
                    CSysVector<su2double>& vector,
                    SparseMatrixType& matrix) const final {
 
@@ -191,14 +191,14 @@ public:
   FORCEINLINE void finalizeFlux(VectorDbl<nVar>& flux,
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
-                                bool implicit,
-                                Double area,
+                                const bool implicit,
+                                const Double& area,
                                 const VectorDbl<nDim>& unitNormal,
                                 const VectorDbl<nDim>& normal,
                                 const CPair<PrimVarType>& V,
                                 const CPair<ConsVarType>& U,
-                                Int iPoint,
-                                Int jPoint,
+                                const Int& iPoint,
+                                const Int& jPoint,
                                 const CEulerVariable& solution,
                                 const CGeometry& geometry,
                                 Ts&...) const {
@@ -340,14 +340,14 @@ public:
   FORCEINLINE void finalizeFlux(VectorDbl<nVar>& flux,
                                 MatrixDbl<nVar>& jac_i,
                                 MatrixDbl<nVar>& jac_j,
-                                bool implicit,
-                                Double area,
+                                const bool implicit,
+                                const Double& area,
                                 const VectorDbl<nDim>& unitNormal,
                                 const VectorDbl<nDim>& normal,
                                 const CPair<PrimVarType>& V,
                                 const CPair<ConsVarType>& U,
-                                Int iPoint,
-                                Int jPoint,
+                                const Int& iPoint,
+                                const Int& jPoint,
                                 const CEulerVariable& solution,
                                 const CGeometry& geometry,
                                 Ts&...) const {
