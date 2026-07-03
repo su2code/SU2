@@ -165,16 +165,11 @@ class CSysMatrix {
   const unsigned long* u_to_l_transp; /*!< \brief U-entry index -> L-entry index of its transpose. */
 
   /*!
-   * \brief Lookup table from edges to the (U-index, L-index) pair in the LDU split.
-   *        U-index == edge index (edges are ordered 1:1 with the U pattern by construction).
-   *        edge_ptr_lu.l(iEdge) = L-index for (GetNode(1), GetNode(0)).
+   * \brief Lookup table from edges to the L-index in the LDU split.
+   * U-index == edge index by construction (edges are ordered 1:1 with the U pattern).
+   * Therefore, edge_ptr_l == u_to_l_transp, but we keep a separate member for clarity.
    */
-  struct {
-    const unsigned long* ptr = nullptr; /*!< ptr[iEdge] = L-index; U-index is iEdge itself. */
-    unsigned long nEdge = 0;
-    operator bool() const { return nEdge != 0; }
-    inline unsigned long l(unsigned long edge) const { return ptr[edge]; }
-  } edge_ptr_lu;
+  const unsigned long* edge_ptr_l;
 
   unsigned short ilu_fill_in; /*!< \brief Fill level for the ILU preconditioner. */
 
@@ -597,7 +592,7 @@ class CSysMatrix {
     bjj = GetDiagBlock(jPoint);
     const auto blkSz = nVar * nEqn;
     bij = &mat.u[iEdge * blkSz];
-    bji = &mat.l[edge_ptr_lu.l(iEdge) * blkSz];
+    bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
   }
 
   /*!
@@ -670,7 +665,7 @@ class CSysMatrix {
       auto bii = GetDiagBlock(iPoint[k]);
       auto bjj = GetDiagBlock(jPoint[k]);
       ScalarType* bij = &mat.u[iEdge[k] * blkSz];
-      ScalarType* bji = &mat.l[edge_ptr_lu.l(iEdge[k]) * blkSz];
+      ScalarType* bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
 
       /*--- Update, block i was negated during transpose in the
        * hope the assignments below become non-temporal stores. ---*/
@@ -699,7 +694,7 @@ class CSysMatrix {
                         OtherType scale = 1) {
     const auto blkSz = nVar * nEqn;
     ScalarType* bij = &mat.u[iEdge * blkSz];
-    ScalarType* bji = &mat.l[edge_ptr_lu.l(iEdge) * blkSz];
+    ScalarType* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
 
     unsigned long iVar, jVar, offset = 0;
 
@@ -759,7 +754,7 @@ class CSysMatrix {
 
       /*--- Fetch the blocks. ---*/
       ScalarType* bij = &mat.u[iEdge[k] * blkSz];
-      ScalarType* bji = &mat.l[edge_ptr_lu.l(iEdge[k]) * blkSz];
+      ScalarType* bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
 
       /*--- Update, block i was negated during transpose in the
        * hope the assignments below become non-temporal stores. ---*/

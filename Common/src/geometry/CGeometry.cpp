@@ -4136,30 +4136,6 @@ const CGeometry::LDUSparsePattern& CGeometry::GetSparsePattern(ConnectivityType 
   return grp;
 }
 
-const su2vector<unsigned long>& CGeometry::GetEdgeToLSparsePatternMap() {
-  if (edgeToLMap.empty()) {
-    const auto& pat = GetSparsePattern(ConnectivityType::FiniteVolume);
-    const auto nEdge = GetnEdge();
-
-    edgeToLMap.resize(nEdge);
-
-    for (unsigned long iEdge = 0; iEdge < nEdge; ++iEdge) {
-      const auto a = edges->GetNode(iEdge, 0);  // a < b guaranteed by SetEdges()
-      const auto b = edges->GetNode(iEdge, 1);
-
-      /*--- Debug: verify that edges are ordered 1:1 with the U pattern. ---*/
-      const auto u_idx = pat.u.quickFindInnerIdx(a, b);
-      if (u_idx != iEdge)
-        SU2_MPI::Error("Edge " + std::to_string(iEdge) + " maps to U-index " + std::to_string(u_idx) +
-                           " — edge ordering no longer matches the U sparse pattern 1:1.",
-                       CURRENT_FUNCTION);
-
-      edgeToLMap[iEdge] = pat.l.quickFindInnerIdx(b, a);
-    }
-  }
-  return edgeToLMap;
-}
-
 const su2vector<unsigned long>& CGeometry::GetLToUTransposeSparsePatternMap(ConnectivityType type) {
   bool fvm = (type == ConnectivityType::FiniteVolume);
   auto& l_to_u = fvm ? finiteVolumeLToUTranspMap : finiteElementLToUTranspMap;

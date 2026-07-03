@@ -204,8 +204,7 @@ class CGeometry {
   LDUSparsePattern finiteVolumePatternFillN;  /*!< \brief FVM sparsity with N-fill (e.g. for ILU-N). */
   LDUSparsePattern finiteElementPatternFill0; /*!< \brief FEM sparsity with 0-fill (structural pattern). */
   LDUSparsePattern finiteElementPatternFillN; /*!< \brief FEM sparsity with N-fill (e.g. for ILU-N). */
-  su2vector<unsigned long>
-      edgeToLMap; /*!< \brief Map from edge index to L-pattern index (U-index == edge index by construction). */
+
   su2vector<unsigned long> finiteVolumeLToUTranspMap;  /*!< \brief FVM L-entry -> U-entry of its transpose. */
   su2vector<unsigned long> finiteVolumeUToLTranspMap;  /*!< \brief FVM U-entry -> L-entry of its transpose. */
   su2vector<unsigned long> finiteElementLToUTranspMap; /*!< \brief FEM L-entry -> U-entry of its transpose. */
@@ -1885,22 +1884,7 @@ class CGeometry {
    * \param[in] fillLvl - Level of fill of the pattern.
    * \return Reference to the sparse pattern.
    */
-  /*!
-   * \brief Get the LDU sparse pattern group (full CSR + strictly-lower L + strictly-upper U).
-   * \note Builds all three lazily on first access. Subsequent calls return the cached result.
-   * \param[in] type - Finite volume or finite element.
-   * \param[in] fillLvl - Level of fill (0 = structural pattern, N > 0 = ILU-N fill).
-   * \return Reference to the pattern group (pat.csr, pat.l, pat.u).
-   */
   const LDUSparsePattern& GetSparsePattern(ConnectivityType type, unsigned long fillLvl = 0);
-
-  /*!
-   * \brief Get the edge→L-index map for the FVM LDU-split pattern.
-   * \note The U-index equals the edge index by construction (edges are ordered to match the U pattern 1:1).
-   *       This is verified with a debug check the first time this map is built.
-   * \return Reference to the per-edge L-index array.
-   */
-  const su2vector<unsigned long>& GetEdgeToLSparsePatternMap();
 
   /*!
    * \brief Get the bijective map from L-entry indices to U-entry indices of their transposes.

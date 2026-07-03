@@ -193,16 +193,11 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   }
 
   if (type == ConnectivityType::FiniteVolume) {
-    edge_ptr_lu.ptr = geometry->GetEdgeToLSparsePatternMap().data();
-    edge_ptr_lu.nEdge = geometry->GetnEdge();
+    edge_ptr_l = geometry->GetUToLTransposeSparsePatternMap(type).data();
   }
   if (needTranspPtr) {
     l_to_u_transp = geometry->GetLToUTransposeSparsePatternMap(type).data();
-    /*--- For FV the U->L transpose map is identical to edge_ptr_lu: after the
-     *    point-adjacency sort the U-entry index equals the edge index, so
-     *    edge_ptr_lu.l(k_u) already gives the L-transpose. Only the FEM path
-     *    (no edges) needs the explicit map. ---*/
-    if (!edge_ptr_lu) u_to_l_transp = geometry->GetUToLTransposeSparsePatternMap(type).data();
+    u_to_l_transp = geometry->GetUToLTransposeSparsePatternMap(type).data();
   }
 
   /*--- Get ILU sparse pattern, if fill is 0 no new data is allocated. --*/
@@ -1278,11 +1273,9 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
     for (auto k_l = mat.row_ptr_l[iPoint]; k_l < mat.row_ptr_l[iPoint + 1]; ++k_l)
       MatrixSubtraction(d_i, &mat.u[l_to_u_transp[k_l] * nVar * nEqn], d_i);
 
-    /*--- For each U entry (iPoint, j): subtract its L-transpose (j, iPoint).
-     *    For FV the edge map provides this directly (U-entry index == edge index). ---*/
-    const auto* u2l = edge_ptr_lu ? edge_ptr_lu.ptr : u_to_l_transp;
+    /*--- For each U entry (iPoint, j): subtract its L-transpose (j, iPoint). ---*/
     for (auto k_u = mat.row_ptr_u[iPoint]; k_u < mat.row_ptr_u[iPoint + 1]; ++k_u)
-      MatrixSubtraction(d_i, &mat.l[u2l[k_u] * nVar * nEqn], d_i);
+      MatrixSubtraction(d_i, &mat.l[u_to_l_transp[k_u] * nVar * nEqn], d_i);
   }
   END_SU2_OMP_FOR
 }
@@ -1308,12 +1301,12 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
 
   /*--- Swap ij with ji and transpose them. ---*/
 
-  if (edge_ptr_lu) {
+  if (edge_ptr_l) {
     /*--- FV path: each edge maps to one U and one L block. ---*/
     SU2_OMP_FOR_DYN(omp_heavy_size * 2)
-    for (auto iEdge = 0ul; iEdge < edge_ptr_lu.nEdge; ++iEdge) {
+    for (auto iEdge = 0ul; iEdge < mat.nnz_l; ++iEdge) {
       auto* bij_u = &mat.u[iEdge * nVar * nVar];
-      auto* bji_l = &mat.l[edge_ptr_lu.l(iEdge) * nVar * nVar];
+      auto* bji_l = &mat.l[edge_ptr_l[iEdge] * nVar * nVar];
       swapAndTransp(nVar, bij_u, bji_l);
     }
     END_SU2_OMP_FOR
