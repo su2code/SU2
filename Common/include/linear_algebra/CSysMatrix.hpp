@@ -286,13 +286,6 @@ class CSysMatrix {
   }
 
   /*!
-   * \brief Writes the LDU blocks into a flat buffer in unified CSR row order (L blocks, diagonal, U blocks per row).
-   *        Used to feed PaStiX which expects a standard CSR layout.
-   * \param[out] out - Buffer of size (mat.nnz_l + mat.nnz_u + nPoint) * nVar * nEqn.
-   */
-  void GatherCSR(ScalarType* out) const;
-
-  /*!
    * \brief Solve a small (nVar x nVar) linear system using Gaussian elimination.
    * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
    * \param[in,out] vec - On entry the rhs, on exit the solution.

@@ -1349,48 +1349,13 @@ void CSysMatrix<ScalarType>::MatrixMatrixAddition(ScalarType alpha, const CSysMa
 }
 
 template <class ScalarType>
-void CSysMatrix<ScalarType>::GatherCSR(ScalarType* out) const {
-  const auto blkSz = nVar * nEqn;
-  SU2_OMP_FOR_STAT(omp_light_size)
-  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-    ScalarType* dst = out + (mat.row_ptr_l[iPoint] + iPoint + mat.row_ptr_u[iPoint]) * blkSz;
-    for (auto k = mat.row_ptr_l[iPoint]; k < mat.row_ptr_l[iPoint + 1]; ++k, dst += blkSz)
-      MatrixCopy(&mat.l[k * blkSz], dst);
-    MatrixCopy(&mat.d[iPoint * blkSz], dst);
-    dst += blkSz;
-    for (auto k = mat.row_ptr_u[iPoint]; k < mat.row_ptr_u[iPoint + 1]; ++k, dst += blkSz)
-      MatrixCopy(&mat.u[k * blkSz], dst);
-  }
-  END_SU2_OMP_FOR
-}
-
-template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry* geometry, const CConfig* config,
                                                        unsigned short kind_fact) {
   SU2_ZONE_SCOPED
 #ifdef HAVE_PASTIX
-  /*--- Gather L/D/U blocks into a temporary unified CSR buffer (PaStiX expects standard CSR). ---*/
-  const auto nnz = mat.nnz_l + mat.nnz_u + nPoint;
-  std::vector<ScalarType> csr_buf(nnz * nVar * nEqn);
-  GatherCSR(csr_buf.data());
-
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    if (!pastix_wrapper.IsSetup()) {
-      /*--- Build unified CSR row_ptr / col_ind from LDU for the domain rows only. ---*/
-      const auto nnz_domain = mat.row_ptr_l[nPointDomain] + nPointDomain + mat.row_ptr_u[nPointDomain];
-      std::vector<unsigned long> csr_row_ptr(nPointDomain + 1);
-      std::vector<unsigned long> csr_col_ind;
-      csr_col_ind.reserve(nnz_domain);
-      for (auto i = 0ul; i < nPointDomain; ++i) {
-        csr_row_ptr[i] = static_cast<unsigned long>(csr_col_ind.size());
-        for (auto k = mat.row_ptr_l[i]; k < mat.row_ptr_l[i + 1]; ++k) csr_col_ind.push_back(mat.col_ind_l[k]);
-        csr_col_ind.push_back(i);
-        for (auto k = mat.row_ptr_u[i]; k < mat.row_ptr_u[i + 1]; ++k) csr_col_ind.push_back(mat.col_ind_u[k]);
-      }
-      csr_row_ptr[nPointDomain] = static_cast<unsigned long>(csr_col_ind.size());
-      pastix_wrapper.SetStructure(nVar, nPoint, nPointDomain, csr_row_ptr.data(), csr_col_ind.data());
-    }
-    pastix_wrapper.UpdateValues(csr_buf.data());
+    pastix_wrapper.SetLDU(nVar, nPoint, nPointDomain, mat.row_ptr_l, mat.col_ind_l, mat.row_ptr_u, mat.col_ind_u, mat.d,
+                          mat.l, mat.u);
     pastix_wrapper.Factorize(geometry, config, kind_fact);
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS

@@ -41,7 +41,7 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
   if (isinitialized) return;  // only need to do this once
 
   const unsigned long nVar = matrix.nVar, nPoint = matrix.nPoint, nPointDomain = matrix.nPointDomain;
-  const unsigned long *row_ptr = matrix.rowptr, *col_ind = matrix.colidx;
+  const unsigned long *row_ptr = csr_row_ptr.data(), *col_ind = csr_col_ind.data();
   const unsigned long nNonZero = row_ptr[nPointDomain];
 
   /*--- Allocate ---*/
@@ -210,6 +210,22 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
 }
 
 template <class ScalarType>
+void CPastixWrapper<ScalarType>::AssembleValues() {
+  const auto nDomain = matrix.nPointDomain;
+  const auto blkSz = matrix.blkSz;
+  const auto *d = matrix.d, *l = matrix.l, *u = matrix.u;
+  for (auto iPoint = 0ul; iPoint < nDomain; ++iPoint) {
+    auto* dst = csr_values.data() + csr_row_ptr[iPoint] * blkSz;
+    for (auto k = matrix.row_ptr_l[iPoint]; k < matrix.row_ptr_l[iPoint + 1]; ++k, dst += blkSz)
+      for (auto b = 0ul; b < blkSz; ++b) dst[b] = l[k * blkSz + b];
+    for (auto b = 0ul; b < blkSz; ++b) dst[b] = d[iPoint * blkSz + b];
+    dst += blkSz;
+    for (auto k = matrix.row_ptr_u[iPoint]; k < matrix.row_ptr_u[iPoint + 1]; ++k, dst += blkSz)
+      for (auto b = 0ul; b < blkSz; ++b) dst[b] = u[k * blkSz + b];
+  }
+}
+
+template <class ScalarType>
 void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* config, unsigned short kind_fact) {
   /*--- Detect a possible change of settings between direct and adjoint that requires a reset ---*/
   if (isinitialized) {
@@ -246,7 +262,8 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
 
   if (isfactorized && !factorize) return;  // No
 
-  /*--- Yes ---*/
+  /*--- Yes: assemble LDU blocks into the flat CSR buffer ---*/
+  AssembleValues();
 
   if (mpi_rank == MASTER_NODE && verb > 0) {
     cout << "\n+-------------------------------------------------+";
@@ -257,7 +274,7 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
 
   /*--- Copy matrix values and swap blocks as required ---*/
 
-  for (auto i = 0ul; i < nNonZero; ++i) values[i] = SU2_TYPE::GetValue(raw_csr[i]);
+  for (auto i = 0ul; i < nNonZero; ++i) values[i] = SU2_TYPE::GetValue(csr_values[i]);
 
   for (auto i = 0ul; i < sort_rows.size(); ++i) {
     const auto iRow = sort_rows[i];
@@ -268,7 +285,7 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
       const auto target = (begin + j) * szBlk;
       const auto source = sort_order[i][j] * szBlk;
 
-      for (auto k = 0ul; k < szBlk; ++k) values[target + k] = SU2_TYPE::GetValue(raw_csr[source + k]);
+      for (auto k = 0ul; k < szBlk; ++k) values[target + k] = SU2_TYPE::GetValue(csr_values[source + k]);
     }
   }
 
