@@ -34,10 +34,14 @@
 
 template <class ScalarType>
 FORCEINLINE ScalarType* CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
-  /*--- The position of the diagonal block is known which allows halving the search space. ---*/
-  const auto end = (block_j < block_i) ? dia_ptr_ilu[block_i] : row_ptr_ilu[block_i + 1];
-  for (auto index = (block_j < block_i) ? row_ptr_ilu[block_i] : dia_ptr_ilu[block_i]; index < end; ++index)
-    if (col_ind_ilu[index] == block_j) return &ILU_matrix[index * nVar * nVar];
+  if (block_i == block_j) return &ilu.d[block_i * nVar * nVar];
+  if (block_j < block_i) {
+    for (auto k = ilu.row_ptr_l[block_i]; k < ilu.row_ptr_l[block_i + 1]; ++k)
+      if (ilu.col_ind_l[k] == block_j) return &ilu.l[k * nVar * nVar];
+    return nullptr;
+  }
+  for (auto k = ilu.row_ptr_u[block_i]; k < ilu.row_ptr_u[block_i + 1]; ++k)
+    if (ilu.col_ind_u[k] == block_j) return &ilu.u[k * nVar * nVar];
   return nullptr;
 }
 
@@ -162,7 +166,7 @@ FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long bloc
 template <class ScalarType>
 FORCEINLINE const ScalarType* CSysMatrix<ScalarType>::InvertDiagonalBlockILUMatrix(unsigned long block_i) {
   /*--- Copy block, as the algorithm modifies the matrix ---*/
-  auto* Uii = &ILU_matrix[dia_ptr_ilu[block_i] * nVar * nVar];
+  auto* Uii = &ilu.d[block_i * nVar * nVar];
   ScalarType block[MAXNVAR * MAXNVAR];
   MatrixCopy(Uii, block);
   MatrixInverse(block, Uii);
@@ -174,13 +178,13 @@ FORCEINLINE void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType>
                                                     ScalarType* prod) const {
   for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
 
-  for (auto index = row_ptr_l[row_i]; index < row_ptr_l[row_i + 1]; index++)
-    MatrixVectorProductAdd(&matrix_l[index * nVar * nEqn], &vec[col_ind_l[index] * nEqn], prod);
+  for (auto index = mat.row_ptr_l[row_i]; index < mat.row_ptr_l[row_i + 1]; index++)
+    MatrixVectorProductAdd(&mat.l[index * nVar * nEqn], &vec[mat.col_ind_l[index] * nEqn], prod);
 
   MatrixVectorProductAdd(GetDiagBlock(row_i), &vec[row_i * nEqn], prod);
 
-  for (auto index = row_ptr_u[row_i]; index < row_ptr_u[row_i + 1]; index++)
-    MatrixVectorProductAdd(&matrix_u[index * nVar * nEqn], &vec[col_ind_u[index] * nEqn], prod);
+  for (auto index = mat.row_ptr_u[row_i]; index < mat.row_ptr_u[row_i + 1]; index++)
+    MatrixVectorProductAdd(&mat.u[index * nVar * nEqn], &vec[mat.col_ind_u[index] * nEqn], prod);
 }
 
 template <class ScalarType>
@@ -188,11 +192,11 @@ FORCEINLINE void CSysMatrix<ScalarType>::UpperProduct(const CSysVector<ScalarTyp
                                                       unsigned long col_ub, ScalarType* prod) const {
   for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
 
-  for (auto index = row_ptr_u[row_i]; index < row_ptr_u[row_i + 1]; index++) {
-    auto col_j = col_ind_u[index];
+  for (auto index = mat.row_ptr_u[row_i]; index < mat.row_ptr_u[row_i + 1]; index++) {
+    auto col_j = mat.col_ind_u[index];
     /*--- Always include halos. ---*/
     if (col_j < col_ub || col_j >= nPointDomain)
-      MatrixVectorProductAdd(&matrix_u[index * nVar * nEqn], &vec[col_j * nEqn], prod);
+      MatrixVectorProductAdd(&mat.u[index * nVar * nEqn], &vec[col_j * nEqn], prod);
   }
 }
 
@@ -201,9 +205,9 @@ FORCEINLINE void CSysMatrix<ScalarType>::LowerProduct(const CSysVector<ScalarTyp
                                                       unsigned long col_lb, ScalarType* prod) const {
   for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
 
-  for (auto index = row_ptr_l[row_i]; index < row_ptr_l[row_i + 1]; index++) {
-    auto col_j = col_ind_l[index];
-    if (col_j >= col_lb) MatrixVectorProductAdd(&matrix_l[index * nVar * nEqn], &vec[col_j * nEqn], prod);
+  for (auto index = mat.row_ptr_l[row_i]; index < mat.row_ptr_l[row_i + 1]; index++) {
+    auto col_j = mat.col_ind_l[index];
+    if (col_j >= col_lb) MatrixVectorProductAdd(&mat.l[index * nVar * nEqn], &vec[col_j * nEqn], prod);
   }
 }
 

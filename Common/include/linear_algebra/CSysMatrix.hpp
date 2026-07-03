@@ -138,29 +138,29 @@ class CSysMatrix {
   unsigned long nVar;         /*!< \brief Number of variables (and rows of the blocks). */
   unsigned long nEqn;         /*!< \brief Number of equations (and columns of the blocks). */
 
-  const unsigned long*
-      row_ptr; /*!< \brief Row pointers for the full unified CSR (geometry-owned; used by PaStiX and ILU-n). */
-  const unsigned long* col_ind; /*!< \brief Column indices for the full unified CSR (geometry-owned). */
+  /*!
+   * \brief Aggregates value arrays and sparse-structure pointers for an LDU-partitioned matrix.
+   *        Each CSysMatrix holds three LDU instances: the host matrix (mat), its device copy (gpu),
+   *        and the ILU factorization (ilu). Ownership of the value arrays (d/l/u) and whether
+   *        the pointers address host or device memory is managed by CSysMatrix.
+   */
+  struct LDU {
+    ScalarType* d = nullptr;                  /*!< \brief Diagonal block values. */
+    ScalarType* l = nullptr;                  /*!< \brief Strictly-lower block values. */
+    ScalarType* u = nullptr;                  /*!< \brief Strictly-upper block values. */
+    const unsigned long* row_ptr_l = nullptr; /*!< \brief Row pointers for L (geometry-owned or GPU copy). */
+    const unsigned long* col_ind_l = nullptr; /*!< \brief Column indices for L. */
+    const unsigned long* row_ptr_u = nullptr; /*!< \brief Row pointers for U. */
+    const unsigned long* col_ind_u = nullptr; /*!< \brief Column indices for U. */
+    unsigned long nnz_l = 0;                  /*!< \brief Number of L nonzeros. */
+    unsigned long nnz_u = 0;                  /*!< \brief Number of U nonzeros. */
+  };
 
-  ScalarType* matrix_d; /*!< \brief Diagonal blocks of the LDU split (nPoint * nVar * nEqn). */
-  ScalarType* matrix_l; /*!< \brief Strictly-lower off-diagonal blocks (nnz_l * nVar * nEqn). */
-  ScalarType* matrix_u; /*!< \brief Strictly-upper off-diagonal blocks (nnz_u * nVar * nEqn). */
+  LDU mat; /*!< \brief Host matrix (values owned via aligned_alloc; pattern from geometry). */
+  LDU gpu; /*!< \brief Device matrix (all pointers to GPU memory). */
+  LDU ilu; /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
 
-  ScalarType* d_matrix_d;           /*!< \brief Device diagonal blocks. */
-  ScalarType* d_matrix_l;           /*!< \brief Device strictly-lower blocks. */
-  ScalarType* d_matrix_u;           /*!< \brief Device strictly-upper blocks. */
-  const unsigned long* d_row_ptr_l; /*!< \brief Device row pointers for the L pattern. */
-  const unsigned long* d_col_ind_l; /*!< \brief Device column indices for the L pattern. */
-  const unsigned long* d_row_ptr_u; /*!< \brief Device row pointers for the U pattern. */
-  const unsigned long* d_col_ind_u; /*!< \brief Device column indices for the U pattern. */
-  bool useCuda = false;             /*!< \brief Whether CUDA is enabled. */
-
-  const unsigned long* row_ptr_l;     /*!< \brief Row pointers for the strictly-lower CSR pattern. */
-  const unsigned long* col_ind_l;     /*!< \brief Column indices for the strictly-lower CSR pattern. */
-  unsigned long nnz_l;                /*!< \brief Number of non-zeros in the strictly-lower part. */
-  const unsigned long* row_ptr_u;     /*!< \brief Row pointers for the strictly-upper CSR pattern. */
-  const unsigned long* col_ind_u;     /*!< \brief Column indices for the strictly-upper CSR pattern. */
-  unsigned long nnz_u;                /*!< \brief Number of non-zeros in the strictly-upper part. */
+  bool useCuda = false;               /*!< \brief Whether CUDA is enabled. */
   const unsigned long* l_to_u_transp; /*!< \brief L-entry index -> U-entry index of its transpose. */
   const unsigned long* u_to_l_transp; /*!< \brief U-entry index -> L-entry index of its transpose. */
 
@@ -176,12 +176,7 @@ class CSysMatrix {
     inline unsigned long l(unsigned long edge) const { return ptr[edge]; }
   } edge_ptr_lu;
 
-  ScalarType* ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
-  unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
-  const unsigned long* row_ptr_ilu; /*!< \brief Pointers to the first element in each row (ILU). */
-  const unsigned long* dia_ptr_ilu; /*!< \brief Pointers to the diagonal element in each row (ILU). */
-  const unsigned long* col_ind_ilu; /*!< \brief Column index for each of the elements in val() (ILU). */
-  unsigned short ilu_fill_in;       /*!< \brief Fill in level for the ILU preconditioner. */
+  unsigned short ilu_fill_in; /*!< \brief Fill level for the ILU preconditioner. */
 
   /*!< \brief Level structure for alternative shared memory parallelization of ILU. */
   CCompressedSparsePatternUL levels_ilu;
@@ -212,21 +207,6 @@ class CSysMatrix {
 #ifdef HAVE_PASTIX
   mutable CPastixWrapper<ScalarType> pastix_wrapper;
 #endif
-
-  /*!
-   * \brief Auxilary object to wrap the edge map pointer used in fast block updates, i.e. without linear searches.
-   */
-  struct {
-    const unsigned long* ptr = nullptr;
-    unsigned long nEdge = 0;
-
-    operator bool() { return nEdge != 0; }
-
-    inline unsigned long operator()(unsigned long edge, unsigned long node) const { return ptr[2 * edge + node]; }
-    inline unsigned long ij(unsigned long edge) const { return ptr[2 * edge]; }
-    inline unsigned long ji(unsigned long edge) const { return ptr[2 * edge + 1]; }
-
-  } edge_ptr;
 
   /*!
    * \brief Handle type conversion for when we Set, Add, etc. blocks, preserving derivative information (if supported by
@@ -313,7 +293,7 @@ class CSysMatrix {
   /*!
    * \brief Writes the LDU blocks into a flat buffer in unified CSR row order (L blocks, diagonal, U blocks per row).
    *        Used to feed PaStiX which expects a standard CSR layout.
-   * \param[out] out - Buffer of size (nnz_l + nnz_u + nPoint) * nVar * nEqn.
+   * \param[out] out - Buffer of size (mat.nnz_l + mat.nnz_u + nPoint) * nVar * nEqn.
    */
   void GatherCSR(ScalarType* out) const;
 
@@ -404,8 +384,8 @@ class CSysMatrix {
    */
   void RowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
 
-  FORCEINLINE ScalarType* GetDiagBlock(unsigned long i) { return &matrix_d[i * nVar * nEqn]; }
-  FORCEINLINE const ScalarType* GetDiagBlock(unsigned long i) const { return &matrix_d[i * nVar * nEqn]; }
+  FORCEINLINE ScalarType* GetDiagBlock(unsigned long i) { return &mat.d[i * nVar * nEqn]; }
+  FORCEINLINE const ScalarType* GetDiagBlock(unsigned long i) const { return &mat.d[i * nVar * nEqn]; }
 
  public:
   /*!
@@ -456,14 +436,14 @@ class CSysMatrix {
    * \return Pointer to location in memory where the block starts.
    */
   FORCEINLINE const ScalarType* GetBlock(unsigned long block_i, unsigned long block_j) const {
-    if (block_i == block_j) return &matrix_d[block_i * nVar * nEqn];
+    if (block_i == block_j) return &mat.d[block_i * nVar * nEqn];
     if (block_j < block_i) {
-      for (auto index = row_ptr_l[block_i]; index < row_ptr_l[block_i + 1]; ++index)
-        if (col_ind_l[index] == block_j) return &matrix_l[index * nVar * nEqn];
+      for (auto index = mat.row_ptr_l[block_i]; index < mat.row_ptr_l[block_i + 1]; ++index)
+        if (mat.col_ind_l[index] == block_j) return &mat.l[index * nVar * nEqn];
       return nullptr;
     }
-    for (auto index = row_ptr_u[block_i]; index < row_ptr_u[block_i + 1]; ++index)
-      if (col_ind_u[index] == block_j) return &matrix_u[index * nVar * nEqn];
+    for (auto index = mat.row_ptr_u[block_i]; index < mat.row_ptr_u[block_i + 1]; ++index)
+      if (mat.col_ind_u[index] == block_j) return &mat.u[index * nVar * nEqn];
     return nullptr;
   }
 
@@ -616,8 +596,8 @@ class CSysMatrix {
     bii = GetDiagBlock(iPoint);
     bjj = GetDiagBlock(jPoint);
     const auto blkSz = nVar * nEqn;
-    bij = &matrix_u[iEdge * blkSz];
-    bji = &matrix_l[edge_ptr_lu.l(iEdge) * blkSz];
+    bij = &mat.u[iEdge * blkSz];
+    bji = &mat.l[edge_ptr_lu.l(iEdge) * blkSz];
   }
 
   /*!
@@ -689,8 +669,8 @@ class CSysMatrix {
       /*--- Fetch the blocks. ---*/
       auto bii = GetDiagBlock(iPoint[k]);
       auto bjj = GetDiagBlock(jPoint[k]);
-      ScalarType* bij = &matrix_u[iEdge[k] * blkSz];
-      ScalarType* bji = &matrix_l[edge_ptr_lu.l(iEdge[k]) * blkSz];
+      ScalarType* bij = &mat.u[iEdge[k] * blkSz];
+      ScalarType* bji = &mat.l[edge_ptr_lu.l(iEdge[k]) * blkSz];
 
       /*--- Update, block i was negated during transpose in the
        * hope the assignments below become non-temporal stores. ---*/
@@ -718,8 +698,8 @@ class CSysMatrix {
   inline void SetBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j,
                         OtherType scale = 1) {
     const auto blkSz = nVar * nEqn;
-    ScalarType* bij = &matrix_u[iEdge * blkSz];
-    ScalarType* bji = &matrix_l[edge_ptr_lu.l(iEdge) * blkSz];
+    ScalarType* bij = &mat.u[iEdge * blkSz];
+    ScalarType* bji = &mat.l[edge_ptr_lu.l(iEdge) * blkSz];
 
     unsigned long iVar, jVar, offset = 0;
 
@@ -778,8 +758,8 @@ class CSysMatrix {
       if (mask[k] == 0) continue;
 
       /*--- Fetch the blocks. ---*/
-      ScalarType* bij = &matrix_u[iEdge[k] * blkSz];
-      ScalarType* bji = &matrix_l[edge_ptr_lu.l(iEdge[k]) * blkSz];
+      ScalarType* bij = &mat.u[iEdge[k] * blkSz];
+      ScalarType* bji = &mat.l[edge_ptr_lu.l(iEdge[k]) * blkSz];
 
       /*--- Update, block i was negated during transpose in the
        * hope the assignments below become non-temporal stores. ---*/

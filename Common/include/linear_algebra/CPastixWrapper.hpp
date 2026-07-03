@@ -61,6 +61,7 @@ class CPastixWrapper {
   vector<pastix_int_t> loc2glb;  /*!< \brief Global index of the columns held by this rank. */
   vector<pastix_int_t> perm;     /*!< \brief Ordering computed by PaStiX. */
   vector<su2mixedfloat> workvec; /*!< \brief RHS vector which then becomes the solution. */
+  vector<ScalarType> raw_csr;    /*!< \brief Owned copy of the input matrix values (flat CSR). */
 
   pastix_int_t iparm[IPARM_SIZE]; /*!< \brief Integer parameters for PaStiX. */
   double dparm[DPARM_SIZE];       /*!< \brief Floating point parameters for PaStiX. */
@@ -69,14 +70,13 @@ class CPastixWrapper {
     unsigned long nVar = 0;
     unsigned long nPoint = 0;
     unsigned long nPointDomain = 0;
-    const unsigned long* rowptr = nullptr;
-    const unsigned long* colidx = nullptr;
-    const ScalarType* values = nullptr;
+    const unsigned long* rowptr = nullptr; /*!< Stored for use by Initialize only. */
+    const unsigned long* colidx = nullptr; /*!< Stored for use by Initialize only. */
 
     unsigned long size_rhs() const { return nPointDomain * nVar; }
-  } matrix; /*!< \brief Pointers and sizes of the input matrix. */
+  } matrix; /*!< \brief Dimensions and temporary structure pointers. */
 
-  bool issetup{};        /*!< \brief Signals that the matrix data has been provided. */
+  bool issetup{};        /*!< \brief Signals that the structure has been provided. */
   bool isinitialized{};  /*!< \brief Signals that the sparsity pattern has been set. */
   bool isfactorized{};   /*!< \brief Signals that a factorization has been computed. */
   bool transpose{};      /*!< \brief Solve A^T x = b instead of A x = b. */
@@ -125,24 +125,38 @@ class CPastixWrapper {
   ~CPastixWrapper() { Clean(); }
 
   /*!
-   * \brief Set matrix data, only once.
+   * \brief Returns true once SetStructure has been called.
+   */
+  bool IsSetup() const { return issetup; }
+
+  /*!
+   * \brief Set matrix sparsity structure (called once; subsequent calls are no-ops).
    * \param[in] nVar - DOF per point.
    * \param[in] nPoint - Total number of points including halos.
-   * \param[in] nPointDomain - Number of internal points.
-   * \param[in] rowptr - Array, where column index data starts for each matrix row.
-   * \param[in] colidx - Non zeros column indices.
-   * \param[in] values - Matrix coefficients.
+   * \param[in] nPointDomain - Number of internal points (domain rows).
+   * \param[in] rowptr - Row pointers for domain rows (size nPointDomain+1).
+   * \param[in] colidx - Column indices (size rowptr[nPointDomain]).
    */
-  void SetMatrix(unsigned long nVar, unsigned long nPoint, unsigned long nPointDomain, const unsigned long* rowptr,
-                 const unsigned long* colidx, const ScalarType* values) {
+  void SetStructure(unsigned long nVar, unsigned long nPoint, unsigned long nPointDomain, const unsigned long* rowptr,
+                    const unsigned long* colidx) {
     if (issetup) return;
     matrix.nVar = nVar;
     matrix.nPoint = nPoint;
     matrix.nPointDomain = nPointDomain;
     matrix.rowptr = rowptr;
     matrix.colidx = colidx;
-    matrix.values = values;
+    const unsigned long nnz = rowptr[nPointDomain];
+    raw_csr.resize(nnz * nVar * nVar);
     issetup = true;
+  }
+
+  /*!
+   * \brief Copy new matrix values into the wrapper's owned buffer.
+   *        Only the domain-row portion (raw_csr.size() elements) is read from values.
+   * \param[in] values - Flat CSR values starting at the first domain row.
+   */
+  void UpdateValues(const ScalarType* values) {
+    for (unsigned long i = 0; i < raw_csr.size(); ++i) raw_csr[i] = values[i];
   }
 
   /*!

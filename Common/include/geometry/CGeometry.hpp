@@ -73,6 +73,19 @@ using namespace std;
  * \author F. Palacios
  */
 class CGeometry {
+ public:
+  /*!
+   * \brief Aggregates the full symmetric CSR and its LDU split (L strictly-lower, U strictly-upper).
+   *        Built together lazily via GetSparsePattern; all three are always valid once non-empty.
+   */
+  struct LDUSparsePattern {
+    CCompressedSparsePatternUL csr; /*!< Full symmetric pattern (with diagonal pointer). */
+    CCompressedSparsePatternUL l;   /*!< Strictly-lower part. */
+    CCompressedSparsePatternUL u;   /*!< Strictly-upper part. */
+
+    bool empty() const { return csr.empty(); }
+  };
+
  protected:
   enum : size_t { OMP_MIN_SIZE = 32 }; /*!< \brief Chunk size for small loops. */
   enum : size_t { MAXNDIM = 3 };
@@ -187,17 +200,10 @@ class CGeometry {
 
   /*--- Sparsity patterns associated with the geometry. ---*/
 
-  CCompressedSparsePatternUL finiteVolumeCSRFill0, /*!< \brief 0-fill FVM sparsity. */
-      finiteVolumeCSRFillN,                        /*!< \brief N-fill FVM sparsity (e.g. for ILUn preconditioner). */
-      finiteElementCSRFill0,                       /*!< \brief 0-fill FEM sparsity. */
-      finiteElementCSRFillN;                       /*!< \brief N-fill FEM sparsity (e.g. for ILUn preconditioner). */
-
-  CEdgeToNonZeroMapUL edgeToCSRMap; /*!< \brief Map edges to CSR entries referenced by them (i,j) and (j,i). */
-
-  CCompressedSparsePatternUL finiteVolumeLSparse;  /*!< \brief Strictly-lower 0-fill FVM sparsity (L of LDU). */
-  CCompressedSparsePatternUL finiteVolumeUSparse;  /*!< \brief Strictly-upper 0-fill FVM sparsity (U of LDU). */
-  CCompressedSparsePatternUL finiteElementLSparse; /*!< \brief Strictly-lower 0-fill FEM sparsity (L of LDU). */
-  CCompressedSparsePatternUL finiteElementUSparse; /*!< \brief Strictly-upper 0-fill FEM sparsity (U of LDU). */
+  LDUSparsePattern finiteVolumePatternFill0;  /*!< \brief FVM sparsity with 0-fill (structural pattern). */
+  LDUSparsePattern finiteVolumePatternFillN;  /*!< \brief FVM sparsity with N-fill (e.g. for ILU-N). */
+  LDUSparsePattern finiteElementPatternFill0; /*!< \brief FEM sparsity with 0-fill (structural pattern). */
+  LDUSparsePattern finiteElementPatternFillN; /*!< \brief FEM sparsity with N-fill (e.g. for ILU-N). */
   su2vector<unsigned long>
       edgeToLMap; /*!< \brief Map from edge index to L-pattern index (U-index == edge index by construction). */
   su2vector<unsigned long> finiteVolumeLToUTranspMap;  /*!< \brief FVM L-entry -> U-entry of its transpose. */
@@ -1879,30 +1885,14 @@ class CGeometry {
    * \param[in] fillLvl - Level of fill of the pattern.
    * \return Reference to the sparse pattern.
    */
-  const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl = 0);
-
   /*!
-   * \brief Get the edge to sparse pattern map.
-   * \note This method builds the map and required pattern (0-fill FVM) if that has not been done yet.
-   * \return Reference to the map.
-   */
-  const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap();
-
-  /*!
-   * \brief Get the strictly-lower CSR pattern (L of LDU split) for the 0-fill pattern.
-   * \note Builds the pattern (and the full 0-fill pattern with diagonal pointer) if needed.
+   * \brief Get the LDU sparse pattern group (full CSR + strictly-lower L + strictly-upper U).
+   * \note Builds all three lazily on first access. Subsequent calls return the cached result.
    * \param[in] type - Finite volume or finite element.
-   * \return Reference to the strictly-lower pattern.
+   * \param[in] fillLvl - Level of fill (0 = structural pattern, N > 0 = ILU-N fill).
+   * \return Reference to the pattern group (pat.csr, pat.l, pat.u).
    */
-  const CCompressedSparsePatternUL& GetLSparsePattern(ConnectivityType type);
-
-  /*!
-   * \brief Get the strictly-upper CSR pattern (U of LDU split) for the 0-fill pattern.
-   * \note Builds the pattern (and the full 0-fill pattern with diagonal pointer) if needed.
-   * \param[in] type - Finite volume or finite element.
-   * \return Reference to the strictly-upper pattern.
-   */
-  const CCompressedSparsePatternUL& GetUSparsePattern(ConnectivityType type);
+  const LDUSparsePattern& GetSparsePattern(ConnectivityType type, unsigned long fillLvl = 0);
 
   /*!
    * \brief Get the edge→L-index map for the FVM LDU-split pattern.

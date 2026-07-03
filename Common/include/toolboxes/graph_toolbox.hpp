@@ -417,33 +417,6 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry, Connecti
 }
 
 /*!
- * \brief Build a lookup table of the absolute positions of the non zero entries
- *        of a compressed sparse pattern, accessed when visiting the FVM edges
- *        of a grid. The table can then be used for fast access (avoids searches)
- *        to the non zero entries of a sparse matrix associated with the pattern.
- * \param[in] geometry - Definition of the grid.
- * \param[in] pattern - Sparse pattern.
- * \return nEdge by 2 matrix.
- */
-template <class Geometry_t, typename Index_t>
-CEdgeToNonZeroMap<Index_t> mapEdgesToSparsePattern(Geometry_t& geometry,
-                                                   const CCompressedSparsePattern<Index_t>& pattern) {
-  assert(!pattern.empty());
-
-  CEdgeToNonZeroMap<Index_t> edgeMap(geometry.GetnEdge(), 2);
-
-  for (Index_t iEdge = 0; iEdge < geometry.GetnEdge(); ++iEdge) {
-    Index_t iPoint = geometry.edges->GetNode(iEdge, 0);
-    Index_t jPoint = geometry.edges->GetNode(iEdge, 1);
-
-    edgeMap(iEdge, 0) = pattern.quickFindInnerIdx(iPoint, jPoint);
-    edgeMap(iEdge, 1) = pattern.quickFindInnerIdx(jPoint, iPoint);
-  }
-
-  return edgeMap;
-}
-
-/*!
  * \brief Extract the strictly-lower part of a symmetric compressed sparse pattern.
  *        For each row i, the lower entries are those at positions [outerPtr[i], diagPtr[i]).
  * \param[in] csr - Full symmetric pattern with diagonal pointer already built.
@@ -494,34 +467,6 @@ CCompressedSparsePattern<Index_t> buildUpperPattern(const CCompressedSparsePatte
     for (auto p = diagPtr[i] + 1; p < outerPtr[i + 1]; ++p) innerIdxU(k++) = innerIdx[p];
 
   return CCompressedSparsePattern<Index_t>(std::move(outerPtrU), std::move(innerIdxU));
-}
-
-/*!
- * \brief Build the edge→(U-index, L-index) map for an LDU-split of a symmetric sparse pattern.
- *        Entry 0 of the map is the U-index of the above-diagonal block (row=min(a,b), col=max(a,b)).
- *        Entry 1 of the map is the L-index of the below-diagonal block (row=max(a,b), col=min(a,b)).
- * \warning A bug here silently transposes contributions; include an explicit test after building.
- * \param[in] geometry - Grid geometry providing edge connectivity.
- * \param[in] pattern_l - Strictly-lower CSR pattern produced by buildLowerPattern.
- * \param[in] pattern_u - Strictly-upper CSR pattern produced by buildUpperPattern.
- * \return nEdge by 2 map: column 0 = U-index, column 1 = L-index.
- */
-template <class Geometry_t, typename Index_t>
-CEdgeToNonZeroMap<Index_t> mapEdgesToLUSparsePattern(Geometry_t& geometry,
-                                                     const CCompressedSparsePattern<Index_t>& pattern_l,
-                                                     const CCompressedSparsePattern<Index_t>& pattern_u) {
-  assert(!pattern_l.empty() && !pattern_u.empty());
-  CEdgeToNonZeroMap<Index_t> edgeMap(geometry.GetnEdge(), 2);
-
-  for (Index_t iEdge = 0; iEdge < static_cast<Index_t>(geometry.GetnEdge()); ++iEdge) {
-    const Index_t a = geometry.edges->GetNode(iEdge, 0);
-    const Index_t b = geometry.edges->GetNode(iEdge, 1);
-    const auto lo = std::min(a, b);
-    const auto hi = std::max(a, b);
-    edgeMap(iEdge, 0) = pattern_u.quickFindInnerIdx(lo, hi);  // U: (lo,hi) with lo<hi
-    edgeMap(iEdge, 1) = pattern_l.quickFindInnerIdx(hi, lo);  // L: (hi,lo) with hi>lo
-  }
-  return edgeMap;
 }
 
 /*!

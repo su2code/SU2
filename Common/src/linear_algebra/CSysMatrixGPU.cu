@@ -70,9 +70,9 @@ __global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
 template <class ScalarType>
 void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
   if (!trigger) return;
-  gpuErrChk(cudaMemcpy(d_matrix_d, matrix_d, sizeof(ScalarType) * nPoint * nVar * nEqn, cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemcpy(d_matrix_l, matrix_l, sizeof(ScalarType) * nnz_l * nVar * nEqn, cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemcpy(d_matrix_u, matrix_u, sizeof(ScalarType) * nnz_u * nVar * nEqn, cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(gpu.d, mat.d, sizeof(ScalarType) * nPoint * nVar * nEqn, cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(gpu.l, mat.l, sizeof(ScalarType) * mat.nnz_l * nVar * nEqn, cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(gpu.u, mat.u, sizeof(ScalarType) * mat.nnz_u * nVar * nEqn, cudaMemcpyHostToDevice));
 }
 
 template <class ScalarType>
@@ -89,8 +89,8 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
   dim3 blockDim(static_cast<unsigned>(nVar), 1, 1);
   dim3 gridDim(static_cast<unsigned>(nPointDomain), 1, 1);
   BlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
-      nPointDomain, nVar, d_row_ptr_l, d_col_ind_l, d_matrix_l, d_matrix_d,
-      d_row_ptr_u, d_col_ind_u, d_matrix_u, d_vec, d_prod);
+      nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, gpu.l, gpu.d,
+      gpu.row_ptr_u, gpu.col_ind_u, gpu.u, d_vec, d_prod);
   gpuErrChk(cudaGetLastError());
 
   prod.DtHTransfer();

@@ -4123,52 +4123,22 @@ void CGeometry::SetGridVelocity(const CConfig* config) {
   }
 }
 
-const CCompressedSparsePatternUL& CGeometry::GetSparsePattern(ConnectivityType type, unsigned long fillLvl) {
+const CGeometry::LDUSparsePattern& CGeometry::GetSparsePattern(ConnectivityType type, unsigned long fillLvl) {
   bool fvm = (type == ConnectivityType::FiniteVolume);
-
-  CCompressedSparsePatternUL* pattern = nullptr;
-
-  if (fillLvl == 0)
-    pattern = fvm ? &finiteVolumeCSRFill0 : &finiteElementCSRFill0;
-  else
-    pattern = fvm ? &finiteVolumeCSRFillN : &finiteElementCSRFillN;
-
-  if (pattern->empty()) {
-    *pattern = buildCSRPattern(*this, type, fillLvl);
-    pattern->buildDiagPtr();
+  auto& grp = fillLvl == 0 ? (fvm ? finiteVolumePatternFill0 : finiteElementPatternFill0)
+                           : (fvm ? finiteVolumePatternFillN : finiteElementPatternFillN);
+  if (grp.empty()) {
+    grp.csr = buildCSRPattern(*this, type, fillLvl);
+    grp.csr.buildDiagPtr();
+    grp.l = buildLowerPattern(grp.csr);
+    grp.u = buildUpperPattern(grp.csr);
   }
-
-  return *pattern;
-}
-
-const CEdgeToNonZeroMapUL& CGeometry::GetEdgeToSparsePatternMap() {
-  if (edgeToCSRMap.empty()) {
-    if (finiteVolumeCSRFill0.empty()) {
-      finiteVolumeCSRFill0 = buildCSRPattern(*this, ConnectivityType::FiniteVolume, 0ul);
-    }
-    edgeToCSRMap = mapEdgesToSparsePattern(*this, finiteVolumeCSRFill0);
-  }
-  return edgeToCSRMap;
-}
-
-const CCompressedSparsePatternUL& CGeometry::GetLSparsePattern(ConnectivityType type) {
-  bool fvm = (type == ConnectivityType::FiniteVolume);
-  auto& patternL = fvm ? finiteVolumeLSparse : finiteElementLSparse;
-  if (patternL.empty()) patternL = buildLowerPattern(GetSparsePattern(type, 0));
-  return patternL;
-}
-
-const CCompressedSparsePatternUL& CGeometry::GetUSparsePattern(ConnectivityType type) {
-  bool fvm = (type == ConnectivityType::FiniteVolume);
-  auto& patternU = fvm ? finiteVolumeUSparse : finiteElementUSparse;
-  if (patternU.empty()) patternU = buildUpperPattern(GetSparsePattern(type, 0));
-  return patternU;
+  return grp;
 }
 
 const su2vector<unsigned long>& CGeometry::GetEdgeToLSparsePatternMap() {
   if (edgeToLMap.empty()) {
-    const auto& pattern_l = GetLSparsePattern(ConnectivityType::FiniteVolume);
-    const auto& pattern_u = GetUSparsePattern(ConnectivityType::FiniteVolume);
+    const auto& pat = GetSparsePattern(ConnectivityType::FiniteVolume);
     const auto nEdge = GetnEdge();
 
     edgeToLMap.resize(nEdge);
@@ -4178,13 +4148,13 @@ const su2vector<unsigned long>& CGeometry::GetEdgeToLSparsePatternMap() {
       const auto b = edges->GetNode(iEdge, 1);
 
       /*--- Debug: verify that edges are ordered 1:1 with the U pattern. ---*/
-      const auto u_idx = pattern_u.quickFindInnerIdx(a, b);
+      const auto u_idx = pat.u.quickFindInnerIdx(a, b);
       if (u_idx != iEdge)
         SU2_MPI::Error("Edge " + std::to_string(iEdge) + " maps to U-index " + std::to_string(u_idx) +
                            " — edge ordering no longer matches the U sparse pattern 1:1.",
                        CURRENT_FUNCTION);
 
-      edgeToLMap[iEdge] = pattern_l.quickFindInnerIdx(b, a);
+      edgeToLMap[iEdge] = pat.l.quickFindInnerIdx(b, a);
     }
   }
   return edgeToLMap;
@@ -4195,7 +4165,8 @@ const su2vector<unsigned long>& CGeometry::GetLToUTransposeSparsePatternMap(Conn
   auto& l_to_u = fvm ? finiteVolumeLToUTranspMap : finiteElementLToUTranspMap;
   if (l_to_u.empty()) {
     auto& u_to_l = fvm ? finiteVolumeUToLTranspMap : finiteElementUToLTranspMap;
-    buildLUTransposeMaps(GetLSparsePattern(type), GetUSparsePattern(type), l_to_u, u_to_l);
+    const auto& pat = GetSparsePattern(type);
+    buildLUTransposeMaps(pat.l, pat.u, l_to_u, u_to_l);
   }
   return l_to_u;
 }
@@ -4205,7 +4176,8 @@ const su2vector<unsigned long>& CGeometry::GetUToLTransposeSparsePatternMap(Conn
   auto& u_to_l = fvm ? finiteVolumeUToLTranspMap : finiteElementUToLTranspMap;
   if (u_to_l.empty()) {
     auto& l_to_u = fvm ? finiteVolumeLToUTranspMap : finiteElementLToUTranspMap;
-    buildLUTransposeMaps(GetLSparsePattern(type), GetUSparsePattern(type), l_to_u, u_to_l);
+    const auto& pat = GetSparsePattern(type);
+    buildLUTransposeMaps(pat.l, pat.u, l_to_u, u_to_l);
   }
   return u_to_l;
 }

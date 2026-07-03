@@ -257,17 +257,18 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
 
   /*--- Copy matrix values and swap blocks as required ---*/
 
-  for (auto i = 0ul; i < nNonZero; ++i) values[i] = SU2_TYPE::GetValue(matrix.values[i]);
+  for (auto i = 0ul; i < nNonZero; ++i) values[i] = SU2_TYPE::GetValue(raw_csr[i]);
 
   for (auto i = 0ul; i < sort_rows.size(); ++i) {
     const auto iRow = sort_rows[i];
-    const auto begin = matrix.rowptr[iRow];
+    /*--- colptr is 1-based Fortran numbering: row start = colptr[iRow] - 1. ---*/
+    const auto begin = static_cast<unsigned long>(colptr[iRow] - 1);
 
     for (auto j = 0ul; j < sort_order[i].size(); ++j) {
       const auto target = (begin + j) * szBlk;
       const auto source = sort_order[i][j] * szBlk;
 
-      for (auto k = 0ul; k < szBlk; ++k) values[target + k] = SU2_TYPE::GetValue(matrix.values[source + k]);
+      for (auto k = 0ul; k < szBlk; ++k) values[target + k] = SU2_TYPE::GetValue(raw_csr[source + k]);
     }
   }
 
