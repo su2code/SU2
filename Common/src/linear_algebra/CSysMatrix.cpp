@@ -65,6 +65,7 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
   mat.col_ind_u = nullptr;
   l_to_u_transp = nullptr;
   u_to_l_transp = nullptr;
+  edge_ptr_l = nullptr;
 
   mat.d = nullptr;
   mat.l = nullptr;

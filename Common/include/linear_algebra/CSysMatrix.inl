@@ -35,22 +35,13 @@
 template <class ScalarType>
 FORCEINLINE ScalarType* CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
   if (block_i == block_j) return &ilu.d[block_i * nVar * nVar];
-  if (block_j < block_i) {
-    for (auto k = ilu.row_ptr_l[block_i]; k < ilu.row_ptr_l[block_i + 1]; ++k)
-      if (ilu.col_ind_l[k] == block_j) return &ilu.l[k * nVar * nVar];
-    return nullptr;
+  const auto* __restrict row_ptr = block_j < block_i ? ilu.row_ptr_l : ilu.row_ptr_u;
+  const auto* __restrict col_ind = block_j < block_i ? ilu.col_ind_l : ilu.col_ind_u;
+  auto* __restrict vals = block_j < block_i ? ilu.l : ilu.u;
+  for (auto k = row_ptr[block_i]; k < row_ptr[block_i + 1]; ++k) {
+    if (col_ind[k] == block_j) return vals + k * nVar * nVar;
   }
-  for (auto k = ilu.row_ptr_u[block_i]; k < ilu.row_ptr_u[block_i + 1]; ++k)
-    if (ilu.col_ind_u[k] == block_j) return &ilu.u[k * nVar * nVar];
   return nullptr;
-}
-
-template <class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j,
-                                                            ScalarType* val_block) {
-  auto ilu_ij = GetBlock_ILUMatrix(block_i, block_j);
-  if (!ilu_ij) return;
-  MatrixCopy(val_block, ilu_ij);
 }
 
 namespace {

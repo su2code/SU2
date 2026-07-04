@@ -322,19 +322,10 @@ class CSysMatrix {
   inline const ScalarType* InvertDiagonalBlockILUMatrix(unsigned long block_i);
 
   /*!
-   * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \brief Returns the start of the ILU block or nullptr if (i,j) is not a nonzero.
+   * \param[in] block_i/j - Indexes of the block in the matrix-by-blocks structure.
    */
   inline ScalarType* GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j);
-
-  /*!
-   * \brief Set the value of a block in the sparse matrix.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] **val_block - Block to set to A(i, j).
-   */
-  inline void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType* val_block);
 
   /*!
    * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
