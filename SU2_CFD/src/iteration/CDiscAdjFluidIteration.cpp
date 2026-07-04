@@ -307,7 +307,7 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
     for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
       solvers[iMesh][FLOW_SOL]->SetFreeStream_Solution(config[iZone]);
       solvers[iMesh][FLOW_SOL]->Preprocessing(geometries[iMesh], solvers[iMesh], config[iZone], iMesh,
-                                              DirectIter, RUNTIME_FLOW_SYS, false);
+                                              DirectIter, RUNTIME_FLOW_SYS, true);
       if (turbulent) {
         solvers[iMesh][TURB_SOL]->SetFreeStream_Solution(config[iZone]);
         solvers[iMesh][TURB_SOL]->Postprocessing(geometries[iMesh], solvers[iMesh], config[iZone], iMesh);
