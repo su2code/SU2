@@ -33,6 +33,20 @@
 #include <cmath>
 #include <vector>
 
+namespace {
+/*--- Helper function to regularize small pivots ---*/
+template <class ScalarType>
+FORCEINLINE void RegularizePivot(ScalarType& pivot, unsigned long row, unsigned long col, const char* context) {
+  const float eps = 1e-12;
+  if (std::abs(pivot) < eps) {
+    pivot = std::copysign(eps, SU2_TYPE::GetValue(pivot));
+#ifndef NDEBUG
+    std::cout << context << ": Regularized small pivot A(" << row << "," << col << ") to " << pivot << std::endl;
+#endif
+  }
+}
+}  // namespace
+
 template <class ScalarType>
 CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::GetSize()) {
   SU2_ZONE_SCOPED
@@ -547,18 +561,6 @@ void CSysMatrix<ScalarType>::SetValDiagonalZero() {
   SU2_OMP_FOR_STAT(omp_heavy_size)
   for (auto iVar = 0ul; iVar < nPointDomain * nVar * nEqn; ++iVar) mat.d[iVar] = 0;
   END_SU2_OMP_FOR
-}
-
-/*--- Helper function to regularize small pivots ---*/
-template <class ScalarType>
-inline void RegularizePivot(ScalarType& pivot, unsigned long row, unsigned long col, const char* context) {
-  const float eps = 1e-12;
-  if (std::abs(pivot) < eps) {
-    pivot = std::copysign(eps, SU2_TYPE::GetValue(pivot));
-#ifndef NDEBUG
-    std::cout << context << ": Regularized small pivot A(" << row << "," << col << ") to " << pivot << std::endl;
-#endif
-  }
 }
 
 template <class ScalarType>

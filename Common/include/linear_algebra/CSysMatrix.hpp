@@ -595,7 +595,7 @@ class CSysMatrix {
    * \param[in] block_j - Adds to ij, subs from jj.
    * \param[in] scale - Scale blocks during update (axpy type op).
    */
-  template <class MatrixType, class OtherType = ScalarType>
+  template <bool OverwriteOffDiag = false, class MatrixType, class OtherType = ScalarType>
   inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, const MatrixType& block_i,
                            const MatrixType& block_j, OtherType scale = 1) {
     ScalarType *bii, *bij, *bji, *bjj;
@@ -606,9 +606,14 @@ class CSysMatrix {
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nEqn; jVar++) {
         bii[offset] += PassiveAssign(block_i[iVar][jVar] * scale);
-        bij[offset] += PassiveAssign(block_j[iVar][jVar] * scale);
-        bji[offset] -= PassiveAssign(block_i[iVar][jVar] * scale);
         bjj[offset] -= PassiveAssign(block_j[iVar][jVar] * scale);
+        if constexpr (OverwriteOffDiag) {
+          bij[offset] = PassiveAssign(block_j[iVar][jVar] * scale);
+          bji[offset] = -PassiveAssign(block_i[iVar][jVar] * scale);
+        } else {
+          bij[offset] += PassiveAssign(block_j[iVar][jVar] * scale);
+          bji[offset] -= PassiveAssign(block_i[iVar][jVar] * scale);
+        }
         ++offset;
       }
     }
@@ -620,14 +625,14 @@ class CSysMatrix {
   template <class MatrixType>
   inline void UpdateBlocksSub(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
                               const MatrixType& block_i, const MatrixType& block_j) {
-    UpdateBlocks<MatrixType, ScalarType>(iEdge, iPoint, jPoint, block_i, block_j, -1);
+    UpdateBlocks<false, MatrixType, ScalarType>(iEdge, iPoint, jPoint, block_i, block_j, -1);
   }
 
   /*!
    * \brief SIMD version, does the update for multiple edges and points.
    * \note Nothing is updated if the mask is 0.
    */
-  template <class MatTypeSIMD, size_t N, class I, class F = ScalarType>
+  template <bool OverwriteOffDiag = false, class MatTypeSIMD, size_t N, class I, class F = ScalarType>
   FORCEINLINE void UpdateBlocks(simd::Array<I, N> iEdge, simd::Array<I, N> iPoint, simd::Array<I, N> jPoint,
                                 const MatTypeSIMD& block_i, const MatTypeSIMD& block_j, simd::Array<F, N> mask = 1) {
     static_assert(MatTypeSIMD::StaticSize, "This method requires static size blocks.");

@@ -936,12 +936,6 @@ void CNEMOEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, 
   PrepareImplicitIteration_impl(precond, geometry, config);
 }
 
-void CNEMOEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
-  SU2_ZONE_SCOPED
-
-  CompleteImplicitIteration_impl<true>(geometry, config);
-}
-
 void CNEMOEulerSolver::ComputeUnderRelaxationFactor(const CConfig *config) {
   SU2_ZONE_SCOPED
 
