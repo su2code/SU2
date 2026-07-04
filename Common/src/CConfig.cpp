@@ -1819,6 +1819,11 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("CFL_NUMBER", CFLFineGrid, 1.25);
   /* DESCRIPTION:  Max time step in local time stepping simulations */
   addDoubleOption("MAX_DELTA_TIME", Max_DeltaTime, 1000000);
+  /* !\brief OUTLIER_MITIGATION_PARAM
+   * DESCRIPTION: Parameters of the outlier mitigation strategy: start iteration, update frequency, print frequency,
+   * and number of standard deviations (N * sigma) to identify outliers statistically. \ingroup Config*/
+  outlierMitigationParam[0] = 999999; outlierMitigationParam[1] = 5; outlierMitigationParam[2] = 2; outlierMitigationParam[3] = 5;
+  addULongArrayOption("OUTLIER_MITIGATION_PARAM", 4, true, outlierMitigationParam);
   /* DESCRIPTION: Activate The adaptive CFL number. */
   addBoolOption("CFL_ADAPT", CFL_Adapt, false);
   /* !\brief CFL_ADAPT_PARAM
@@ -2035,7 +2040,7 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MUSCL_KAPPA_FLOW", MUSCL_Kappa_Flow, 0.0);
   /*!\brief RAMP_MUSCL \n DESCRIPTION: Enable ramping of the MUSCL scheme from 1st to 2nd order using specified method*/
   addBoolOption("RAMP_MUSCL", RampMUSCL, false);
-  /*! brief RAMP_OUTLET_COEFF \n DESCRIPTION: the 1st coeff is the ramp start iteration,
+  /*! brief RAMP_MUSCL_COEFF \n DESCRIPTION: the 1st coeff is the ramp start iteration,
    * the 2nd coeff is the iteration update frequenct, 3rd coeff is the total number of iterations */
   RampMUSCLParam.rampMUSCLCoeff[0] = 0.0; RampMUSCLParam.rampMUSCLCoeff[1] = 1.0; RampMUSCLParam.rampMUSCLCoeff[2] = 500.0;
   addULongArrayOption("RAMP_MUSCL_COEFF", 3, false, RampMUSCLParam.rampMUSCLCoeff);

@@ -118,8 +118,10 @@ public:
     V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
 
     /*--- Recompute density and enthalpy instead of reconstructing. ---*/
+    Double nonPhysical;
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umusclKappa, umusclRamp, typeLimiter, V1st, vector_ij, solution);
+        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umusclKappa, umusclRamp,
+        typeLimiter, V1st, vector_ij, solution, nonPhysical);
 
     /*--- Compute conservative variables. ---*/
 
@@ -132,8 +134,8 @@ public:
     const auto derived = static_cast<const Derived*>(this);
     VectorDbl<nVar> flux;
     MatrixDbl<nVar> jac_i, jac_j;
-    derived->finalizeFlux(flux, jac_i, jac_j, implicit, area, unitNormal,
-                          normal, V, U, iPoint, jPoint, solution, geometry);
+    derived->finalizeFlux(flux, jac_i, jac_j, implicit, area, unitNormal, normal,
+                          V, U, iPoint, jPoint, nonPhysical, solution, geometry);
 
     /*--- Add the contributions from the base class (static decorator). ---*/
 
@@ -199,6 +201,7 @@ public:
                                 const CPair<ConsVarType>& U,
                                 const Int& iPoint,
                                 const Int& jPoint,
+                                const Double& nonPhysical,
                                 const CEulerVariable& solution,
                                 const CGeometry& geometry,
                                 Ts&...) const {
@@ -227,10 +230,9 @@ public:
 
     /*--- Apply Mavriplis' entropy correction to eigenvalues. ---*/
 
-    Double maxLambda = abs(projVel) + roeAvg.speedSound;
-
+    Double lambdaMin = fmax(entropyFix, nonPhysical) * (abs(projVel) + roeAvg.speedSound);
     for (size_t iVar = 0; iVar < nVar; ++iVar) {
-      lambda(iVar) = fmax(abs(lambda(iVar)), entropyFix*maxLambda);
+      lambda(iVar) = fmax(abs(lambda(iVar)), lambdaMin);
     }
 
     /*--- Inviscid fluxes and Jacobians. ---*/
@@ -348,6 +350,7 @@ public:
                                 const CPair<ConsVarType>& U,
                                 const Int& iPoint,
                                 const Int& jPoint,
+                                const Double& nonPhysical,
                                 const CEulerVariable& solution,
                                 const CGeometry& geometry,
                                 Ts&...) const {
@@ -358,7 +361,7 @@ public:
     const auto sj = gatherVariables(jPoint, solution.GetSensor());
 
     const Double dp = fmax(si, sj) - alpha * 0.06;
-    const Double w = 0.25 * (1 - sign(dp)) * (1 - exp(-100 * abs(dp)));
+    const Double w = 0.25 * (1 - sign(dp) * (1 - exp(-100 * abs(dp)))) * (1 - nonPhysical);
     const Double onemw = 1 - w;
 
     CPair<CCompressiblePrimitives<nDim, nPrimVarGrad>> Vweighted;
