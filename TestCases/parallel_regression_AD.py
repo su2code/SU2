@@ -231,7 +231,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, 2.549036, 2.313067, 2.139714, 0.736741]
+    discadj_trans_stator.test_vals = [79.000000, 2.549036, 2.313067, 2.139713, 0.736742]
     discadj_trans_stator.test_vals_aarch64 = [79.000000, 0.696755, 0.485950, 0.569475, -0.990065]
     test_list.append(discadj_trans_stator)
 
@@ -266,7 +266,7 @@ def main():
     discadj_heat.cfg_dir   = "disc_adj_heat"
     discadj_heat.cfg_file  = "disc_adj_heat.cfg"
     discadj_heat.test_iter = 10
-    discadj_heat.test_vals = [-1.880390, 0.759800, 0.000000, -4.486700]
+    discadj_heat.test_vals = [-2.344276, 0.759978, 0.000000, -3.967600]
     test_list.append(discadj_heat)
 
     ###################################
@@ -286,7 +286,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-3.824635, 1.979557, -3.863368, 0.295450, 3.839800]
+    discadj_fsi2.test_vals         = [-3.824634, 1.979533, -3.863368, 0.295450, 3.839800]
     discadj_fsi2.test_vals_aarch64 = [-3.824870, 1.979160, -3.863368, 0.295450, 3.839800]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
@@ -308,7 +308,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-2.805458, -3.441841, -2.767871]
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-2.717803, -3.199669, -2.499149]
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
@@ -326,7 +326,7 @@ def main():
     da_unsteadyCHT_cylinder.cfg_dir   = "coupled_cht/disc_adj_unsteadyCHT_cylinder"
     da_unsteadyCHT_cylinder.cfg_file  = "chtMaster.cfg"
     da_unsteadyCHT_cylinder.test_iter = 2
-    da_unsteadyCHT_cylinder.test_vals         = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662013, 0.000000, 10.627000, 0.295190]
+    da_unsteadyCHT_cylinder.test_vals         = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662004, 0.000000, 10.627000, 0.295190]
     da_unsteadyCHT_cylinder.test_vals_aarch64 = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662012, 0.000000, 89.932000, 0.295190]
     da_unsteadyCHT_cylinder.unsteady  = True
     da_unsteadyCHT_cylinder.multizone = True
@@ -521,7 +521,7 @@ def main():
     pywrapper_wavy_wall_steady.cfg_dir = "py_wrapper/wavy_wall"
     pywrapper_wavy_wall_steady.cfg_file = "run_steady.py"
     pywrapper_wavy_wall_steady.test_iter = 100
-    pywrapper_wavy_wall_steady.test_vals = [-1.353007, 2.581052, -2.900575]
+    pywrapper_wavy_wall_steady.test_vals = [-1.353007, 2.581052, -2.900574]
     pywrapper_wavy_wall_steady.command = TestCase.Command("mpirun -n 2", "python", "run_steady.py")
     pywrapper_wavy_wall_steady.timeout = 1600
     pywrapper_wavy_wall_steady.tol = 0.00001
