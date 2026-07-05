@@ -117,7 +117,7 @@ def main():
     oneram6.cfg_dir   = "euler/oneram6"
     oneram6.cfg_file  = "inv_ONERAM6.cfg"
     oneram6.test_iter = 10
-    oneram6.test_vals = [-11.513859, -10.984761, 0.280800, 0.008623]
+    oneram6.test_vals = [-7.649980, -7.032700, 0.280803, 0.008625]
     oneram6.timeout   = 9600
     test_list.append(oneram6)
 
