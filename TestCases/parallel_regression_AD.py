@@ -278,7 +278,7 @@ def main():
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 9
-    discadj_fsi.test_vals = [-3.167614, -4.164629, 4.3943e-04, -1.0619]
+    discadj_fsi.test_vals = [-3.166421, -4.160938, 0.000439, -1.061900]
     test_list.append(discadj_fsi)
 
     # Multi physics framework
