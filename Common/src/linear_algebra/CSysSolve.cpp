@@ -211,14 +211,12 @@ bool CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<Sc
   const auto h_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
   LinearCombination(
       shared_hsbg, i + 1, w, [&h_i](int k) { return -h_i(0, k); }, w[i + 1], true);
-
   if (i < 5) {
     for (int k = 0; k < i + 1; k++) SetHsbg(k, i, h_i(0, k));
   } else {
     const auto& dh_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
     LinearCombination(
         shared_hsbg, i + 1, w, [&dh_i](int k) { return -dh_i(0, k); }, w[i + 1], true);
-
     for (int k = 0; k < i + 1; k++) SetHsbg(k, i, h_i(0, k) + dh_i(0, k));
   }
 

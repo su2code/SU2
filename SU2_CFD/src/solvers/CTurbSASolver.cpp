@@ -143,6 +143,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   fv1 = Ji_3/(Ji_3+cv1_3);
   muT_Inf = Density_Inf*fv1*nu_tilde_Inf;
 
+  if (config->GetSAParsedOptions().version != SA_OPTIONS::NEG) {
+    lowerlimit[0] = EPS;
+  }
+
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   nodes = new CTurbSAVariable(nu_tilde_Inf, muT_Inf, nPoint, nDim, nVar, config);

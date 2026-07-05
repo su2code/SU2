@@ -4463,6 +4463,11 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
         }
       }
 
+      /*--- Sort the neighbors in ascending order so that the edge numbering done in
+       *    SetEdges matches the upper-CSR ordering of the sparse pattern. This makes
+       *    the edge->upper-block map the identity for the CSysMatrix LDU storage. ---*/
+      sort(points[iPoint].begin(), points[iPoint].end());
+
       /*--- Set the number of neighbors variable, this is important for JST and multigrid in parallel. ---*/
       nodes->SetnNeighbor(iPoint, points[iPoint].size());
     }
