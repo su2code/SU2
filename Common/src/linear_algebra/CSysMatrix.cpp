@@ -84,8 +84,10 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
   ilu.d = nullptr;
   ilu.u = nullptr;
 
-  q_offdiag = nullptr;
-  q_scale = nullptr;
+  q_scale_l = nullptr;
+  q_offdiag_l = nullptr;
+  q_scale_u = nullptr;
+  q_offdiag_u = nullptr;
 
   invM = nullptr;
 
@@ -109,8 +111,10 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   MemoryAllocation::aligned_free(mat.l);
   MemoryAllocation::aligned_free(mat.u);
   MemoryAllocation::aligned_free(invM);
-  MemoryAllocation::aligned_free(q_offdiag);
-  MemoryAllocation::aligned_free(q_scale);
+  MemoryAllocation::aligned_free(q_scale_l);
+  MemoryAllocation::aligned_free(q_offdiag_l);
+  MemoryAllocation::aligned_free(q_scale_u);
+  MemoryAllocation::aligned_free(q_offdiag_u);
 
   if (useCuda) {
     GPUMemoryAllocation::gpu_free(gpu.d);
@@ -550,16 +554,17 @@ void CSysMatrix<ScalarType>::QuantizeOffDiagonalBlocks() {
 
   if (nVar == 1) return;
 
-  const auto nnz_lu = mat.nnz_l + mat.nnz_u;
-  if (q_scale == nullptr) {
-    q_scale = MemoryAllocation::aligned_alloc<QuantType, true>(64, nnz_lu * nVar * sizeof(QuantType));
-    q_offdiag = MemoryAllocation::aligned_alloc<QuantType, true>(64, nnz_lu * nVar * nVar * sizeof(QuantType));
+  if (q_scale_l == nullptr) {
+    q_scale_l = MemoryAllocation::aligned_alloc<QuantType, true>(64, mat.nnz_l * nVar * sizeof(QuantType));
+    q_offdiag_l = MemoryAllocation::aligned_alloc<QuantType, true>(64, mat.nnz_l * nVar * nVar * sizeof(QuantType));
+    q_scale_u = MemoryAllocation::aligned_alloc<QuantType, true>(64, mat.nnz_u * nVar * sizeof(QuantType));
+    q_offdiag_u = MemoryAllocation::aligned_alloc<QuantType, true>(64, mat.nnz_u * nVar * nVar * sizeof(QuantType));
   }
 
-  auto quantize_block = [&](unsigned long k, const ScalarType* blk) {
+  auto quantize_block = [&](QuantType* qs, QuantType* qv, const ScalarType* blk) {
     for (auto r = 0ul; r < nVar; ++r) {
       const ScalarType* __restrict row = &blk[r * nVar];
-      QuantType* __restrict q_row = &q_offdiag[(k * nVar + r) * nVar];
+      QuantType* __restrict q_row = &qv[r * nVar];
 
       constexpr uint32_t eps_bits = 0x34000000u;
       uint32_t max_abs_bits = eps_bits;
@@ -571,7 +576,7 @@ void CSysMatrix<ScalarType>::QuantizeOffDiagonalBlocks() {
       }
 
       const int e_clamped = std::min(127, std::max(-128, static_cast<int>(max_abs_bits >> 23) - 133));
-      q_scale[k * nVar + r] = static_cast<QuantType>(e_clamped);
+      qs[r] = static_cast<QuantType>(e_clamped);
 
       const uint32_t inv_bits = static_cast<uint32_t>(127 - e_clamped) << 23;
       float inv_rscale;
@@ -583,13 +588,14 @@ void CSysMatrix<ScalarType>::QuantizeOffDiagonalBlocks() {
     }
   };
 
-  /*--- L blocks: combined index k = k_l. U blocks: combined index k = nnz_l + k_u. ---*/
   SU2_OMP_FOR_DYN(omp_heavy_size)
-  for (auto k = 0ul; k < mat.nnz_l; ++k) quantize_block(k, &mat.l[k * nVar * nVar]);
+  for (auto k = 0ul; k < mat.nnz_l; ++k)
+    quantize_block(&q_scale_l[k * nVar], &q_offdiag_l[k * nVar * nVar], &mat.l[k * nVar * nVar]);
   END_SU2_OMP_FOR
 
   SU2_OMP_FOR_DYN(omp_heavy_size)
-  for (auto k = 0ul; k < mat.nnz_u; ++k) quantize_block(mat.nnz_l + k, &mat.u[k * nVar * nVar]);
+  for (auto k = 0ul; k < mat.nnz_u; ++k)
+    quantize_block(&q_scale_u[k * nVar], &q_offdiag_u[k * nVar * nVar], &mat.u[k * nVar * nVar]);
   END_SU2_OMP_FOR
 }
 

@@ -133,8 +133,10 @@ class CSysMatrix {
    *         the original full-precision storage. Call QuantizeOffDiagonalBlocks() first. */
   static constexpr bool USE_QUANTIZATION = true;
 
-  QuantType* q_scale;   /*!< \brief Per-row signed binary exponent e; scale = 2^e, [nnz * nVar]. */
-  QuantType* q_offdiag; /*!< \brief Quantized entries per block, [nnz * nVar * nVar]. */
+  QuantType* q_scale_l;   /*!< \brief Per-row exponent for L blocks, [nnz_l * nVar]. */
+  QuantType* q_offdiag_l; /*!< \brief Quantized L block entries, [nnz_l * nVar * nVar]. */
+  QuantType* q_scale_u;   /*!< \brief Per-row exponent for U blocks, [nnz_u * nVar]. */
+  QuantType* q_offdiag_u; /*!< \brief Quantized U block entries, [nnz_u * nVar * nVar]. */
 
   enum { OMP_MAX_SIZE_L = 8192 }; /*!< \brief Max. chunk size used in light parallel for loops. */
   enum { OMP_MAX_SIZE_H = 512 };  /*!< \brief Max. chunk size used in heavy parallel for loops. */
@@ -381,7 +383,8 @@ class CSysMatrix {
    * \param[in] vec - Input vector (nEqn entries).
    * \param[in,out] prod - Accumulation output (nVar entries).
    */
-  inline void QuantizedMatVecAdd(unsigned long k, const ScalarType* vec, ScalarType* prod) const;
+  inline void QuantizedMatVecAdd(const QuantType* qs, const QuantType* qv, const ScalarType* vec,
+                                 ScalarType* prod) const;
 
  public:
   /*!
