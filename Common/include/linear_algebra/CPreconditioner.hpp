@@ -114,13 +114,37 @@ class CJacobiPreconditioner final : public CPreconditioner<ScalarType> {
    * \param[out] v - CSysVector that is the result of the preconditioning
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-    sparse_matrix.ComputeJacobiPreconditioner(u, v, geometry, config);
+    if (config->GetCUDA()) {
+#ifdef HAVE_CUDA
+      sparse_matrix.GPUComputeJacobiPreconditioner(u, v, geometry, config);
+#else
+      SU2_MPI::Error(
+          "\nError in launching sparse matrix Preconditioner Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
+          "options enabled in Meson to access GPU Functions",
+          CURRENT_FUNCTION);
+#endif
+    } else {
+      sparse_matrix.ComputeJacobiPreconditioner(u, v, geometry, config);
+    }
   }
 
   /*!
    * \note Request the associated matrix to build the preconditioner.
    */
-  inline void Build() override { sparse_matrix.BuildJacobiPreconditioner(); }
+  inline void Build() override {
+    if (config->GetCUDA()) {
+#ifdef HAVE_CUDA
+      sparse_matrix.GPUBuildJacobiPreconditioner();
+#else
+      SU2_MPI::Error(
+          "\nError in building sparse matrix Preconditioner Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
+          "options enabled in Meson to access GPU Functions",
+          CURRENT_FUNCTION);
+#endif
+    } else {
+      sparse_matrix.BuildJacobiPreconditioner();
+    }
+  }
 };
 
 /*!

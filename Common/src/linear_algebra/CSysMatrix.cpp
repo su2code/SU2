@@ -104,7 +104,6 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   MemoryAllocation::aligned_free(mat.d);
   MemoryAllocation::aligned_free(mat.l);
   MemoryAllocation::aligned_free(mat.u);
-  MemoryAllocation::aligned_free(invM);
 
   if (useCuda) {
     GPUMemoryAllocation::gpu_free(gpu.d);
@@ -114,6 +113,15 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
     GPUMemoryAllocation::gpu_free(gpu.col_ind_l);
     GPUMemoryAllocation::gpu_free(gpu.row_ptr_u);
     GPUMemoryAllocation::gpu_free(gpu.col_ind_u);
+  }
+
+  if (invM_is_managed) {
+    GPUMemoryAllocation::gpu_free(invM);
+  } else {
+    MemoryAllocation::aligned_free(invM);
+    if (useCuda) {
+      GPUMemoryAllocation::gpu_free(d_invM);
+    }
   }
 
 #ifdef USE_MKL
@@ -241,7 +249,18 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     allocAndInit(ilu.u, ilu.nnz_u * nVar * nEqn);
   }
 
-  if (diag_needed) allocAndInit(invM, nPointDomain * nVar * nEqn);
+  if (diag_needed) {
+    if (useCuda && GPUMemoryAllocation::UMSupported()) {
+      invM = GPUMemoryAllocation::gpu_um_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
+      d_invM = invM;          // temporary alias for testing
+      invM_is_managed = true;
+    } else {
+      allocAndInit(invM, nPointDomain * nVar * nEqn);
+      if (useCuda) {
+        d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
+      }
+    }
+  }
 
   /*--- Thread parallel initialization. ---*/
 

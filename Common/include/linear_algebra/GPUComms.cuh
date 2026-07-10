@@ -51,3 +51,16 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 }
 
 #define gpuErrChk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+
+/*!
+ * \brief Prefetch a CUDA Unified Memory array to a device asynchronously
+ * \param[in] ptr, pointer to the memory we want to prefetch.
+ * \param[in] size in bytes.
+ * \tparam ZeroInit, initialize memory to 0.
+ */
+template <class T>
+inline void gpu_um_prefetch(T* ptr, size_t size, int device) noexcept {
+#ifdef HAVE_CUDA
+  gpuErrChk(cudaMemPrefetchAsync((void*)ptr, size, device));
+#endif
+}

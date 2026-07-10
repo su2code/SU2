@@ -99,6 +99,51 @@ inline void aligned_free(T* ptr) noexcept {
 
 namespace GPUMemoryAllocation {
 /*!
+ * \brief Unified Memory support verification
+ * \return 1 if UM is supported, false otherwise
+ */
+inline bool UMSupported() noexcept {
+#if defined(HAVE_CUDA)
+  static int managed = -1;
+  if (managed == -1) {
+    int device = 0; //one device per process supposed
+    gpuErrChk(cudaGetDevice(&device));
+    gpuErrChk(cudaDeviceGetAttribute(&managed, cudaDevAttrManagedMemory, device));
+  }
+  return managed == 1;
+#else
+  return false;
+#endif
+}
+inline int GetCurrentDevice() noexcept {
+#ifdef HAVE_CUDA
+  static int device = -1;
+  if (device == -1) gpuErrChk(cudaGetDevice(&device));
+  return device;
+#else
+  return -1;
+#endif
+}
+
+/*!
+ * \brief Memory allocation for variables through CUDA Unified Memory: one pointer valid on host and device
+ * \param[in] size in bytes.
+ * \tparam ZeroInit, initialize memory to 0.
+ * \return Pointer to memory, always use gpu_free to deallocate.
+ */
+template <class T, bool ZeroInit = false>
+inline T* gpu_um_alloc(size_t size) noexcept {
+  void* ptr = nullptr;
+
+#if defined(HAVE_CUDA)
+  gpuErrChk(cudaMallocManaged((void**)(&ptr), size));
+  if (ZeroInit) std::memset(ptr, 0, size);
+#else
+  return 0;
+#endif
+  return static_cast<T*>(ptr);
+}
+/*!
  * \brief Memory allocation for variables on the GPU.
  * \param[in] size in bytes.
  * \tparam ZeroInit, initialize memory to 0.

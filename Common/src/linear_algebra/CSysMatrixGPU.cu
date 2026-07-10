@@ -1,7 +1,7 @@
 /*!
  * \file CSysMatrixGPU.cu
  * \brief Implementations of Kernels and Functions for Matrix Operations on the GPU
- * \author A. Raj
+ * \author A. Raj, Jesse Li, D. Di Giusto
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -26,7 +26,31 @@
  */
 
 #include "../../include/linear_algebra/CSysMatrix.hpp"
+#include "../../include/linear_algebra/CSysMatrix.inl"
 #include "../../include/linear_algebra/GPUComms.cuh"
+
+/*!
+ * \brief Matrix-vector product kernel.
+ */
+template<typename matrixType, typename vectorType>
+__global__ void GPUMatrixVectorProductKernel(matrixType *invM, vectorType* vec, vectorType* prod, unsigned long nPointDomain, unsigned long nVar)
+{
+  
+  const unsigned long iPoint = blockIdx.x * blockDim.x + threadIdx.x;
+  if (iPoint >= nPointDomain) return;
+
+  const auto block = &invM[iPoint * nVar * nVar];
+  const auto rhs = &vec[iPoint * nVar];
+  auto out = &prod[iPoint * nVar];
+
+  for (auto iVar = 0; iVar < nVar; ++iVar) {
+    vectorType sum = vectorType(0);
+    for (auto jVar = 0; jVar < nVar; ++jVar) {
+      sum += block[iVar * nVar + jVar] * rhs[jVar];
+    }
+    out[iVar] = sum;
+  }
+}
 
 /*!
  * \brief Block-LDU SpMV kernel: y[iRow] = (L + D + U) * x per block-row.
@@ -94,6 +118,52 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
   gpuErrChk(cudaGetLastError());
 
   prod.DtHTransfer();
+}
+
+template <class ScalarType>
+void CSysMatrix<ScalarType>::GPUComputeJacobiPreconditioner(const CSysVector<ScalarType>& vec,
+                                                            CSysVector<ScalarType>& prod, CGeometry* geometry,
+                                                            const CConfig* config) const {
+  SU2_ZONE_SCOPED
+  /*--- Apply Jacobi preconditioner, y = D^{-1} * x, the inverse of the diagonal is already known and synced to device ---*/
+
+  ScalarType* d_vec = vec.GetDevicePointer();
+  ScalarType* d_prod = prod.GetDevicePointer();
+
+  vec.HtDTransfer(); // this is now the entry point of the cuda section so we always want to copy
+  prod.GPUSetVal(0.0);
+
+  dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE,1,1);
+  int gridx = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, nPointDomain);
+  dim3 gridDim(gridx, 1, 1);
+
+  GPUMatrixVectorProductKernel<<<gridDim, blockDim>>>(d_invM, d_vec, d_prod, nPointDomain, nVar);
+  gpuErrChk( cudaPeekAtLastError() );
+
+  prod.DtHTransfer();//forcely copy back prod to host for MPI synch
+
+  /*--- MPI Parallelization ---*/
+  CSysMatrixComms::Initiate(prod, geometry, config);
+  CSysMatrixComms::Complete(prod, geometry, config);
+  prod.HtDTransfer();//forcely copy back prod to device to continue calculations
+
+}
+
+template <class ScalarType>
+void CSysMatrix<ScalarType>::GPUBuildJacobiPreconditioner() {
+  SU2_ZONE_SCOPED
+  /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
+  SU2_OMP_FOR_DYN(omp_heavy_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+    InverseDiagonalBlock(iPoint, &(invM[iPoint * nVar * nVar]));
+  END_SU2_OMP_FOR
+
+  //copy to device or prefetch
+  if (invM_is_managed) {
+    gpu_um_prefetch(d_invM, nPointDomain * nVar * nVar * sizeof(ScalarType), GPUMemoryAllocation::GetCurrentDevice());
+  } else {
+    gpuErrChk(cudaMemcpy(d_invM, invM, nPointDomain * nVar * nVar * sizeof(ScalarType), cudaMemcpyHostToDevice));
+  }
 }
 
 template class CSysMatrix<su2mixedfloat>; //This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.
