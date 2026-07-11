@@ -622,20 +622,46 @@ class CSysMatrix {
   }
 
   /*!
-   * \brief Set the value of a block (in flat format) in the sparse matrix with scaling.
-   * \note If the template param Overwrite is false we add to the block (bij += alpha*b).
+   * \brief Set the value of a scaled block in the sparse matrix.
+   * \note This is an templated overload for C2Dcontainer specialization su2matrix.
+   *       It assumes that MatrixType supports a member type Scalar and access operator(i, j).
+   *       If the template param Overwrite is false we add to the block (bij += alpha*b).
    * \param[in] block_i - Row index.
    * \param[in] block_j - Column index.
    * \param[in] val_block - Block to set to A(i, j).
    * \param[in] alpha - Scale factor.
    */
-  template <class OtherType, bool Overwrite = true, su2enable_if<!is_pointer<OtherType>::value> = 0>
+  template <bool Overwrite = true, class MatrixType>
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, MatrixType& val_block,
+                       std::decay_t<typename MatrixType::Scalar> alpha = 1.0) {
+    auto view = GetBlockView(block_i, block_j);
+    if (!view) return;
+    view.template apply<Overwrite>(
+        [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block(i, j)); });
+  }
+
+  /*!
+   * \overload val_block is a pointer instead of a matrix type.
+   */
+  template <bool Overwrite = true, class OtherType, su2enable_if<!is_pointer<OtherType>::value> = 0>
   inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* val_block,
-                       OtherType alpha = 1.0) {
+                       std::decay_t<OtherType> alpha = 1.0) {
     auto view = GetBlockView(block_i, block_j);
     if (!view) return;
     view.template apply<Overwrite>(
         [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block[i * nEqn + j]); });
+  }
+
+  /*!
+   * \overload val_block is a double pointer instead of matrix type.
+   */
+  template <bool Overwrite = true, class OtherType>
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block,
+                       std::decay_t<OtherType> alpha = 1.0) {
+    auto view = GetBlockView(block_i, block_j);
+    if (!view) return;
+    view.template apply<Overwrite>(
+        [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block[i][j]); });
   }
 
   /*!
@@ -645,40 +671,9 @@ class CSysMatrix {
    * \param[in] val_block - Block to set to A(i, j).
    * \param[in] alpha - Scale factor.
    */
-  template <class OtherType, su2enable_if<!is_pointer<OtherType>::value> = 0>
-  inline void AddBlock(unsigned long block_i, unsigned long block_j, const OtherType* val_block,
-                       OtherType alpha = 1.0) {
-    SetBlock<OtherType, false>(block_i, block_j, val_block, alpha);
-  }
-
-  /*!
-   * \brief Set the value of a scaled block in the sparse matrix.
-   * \note If the template param Overwrite is false we add to the block (bij += alpha*b).
-   * \param[in] block_i - Row index.
-   * \param[in] block_j - Column index.
-   * \param[in] val_block - Block to set to A(i, j).
-   * \param[in] alpha - Scale factor.
-   */
-  template <class OtherType, bool Overwrite = true>
-  inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block,
-                       OtherType alpha = 1.0) {
-    auto view = GetBlockView(block_i, block_j);
-    if (!view) return;
-    view.template apply<Overwrite>(
-        [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block[i][j]); });
-  }
-
-  /*!
-   * \brief Adds a scaled block to the sparse matrix (see SetBlock).
-   * \param[in] block_i - Row index.
-   * \param[in] block_j - Column index.
-   * \param[in] val_block - Block to add to A(i, j).
-   * \param[in] alpha - Scale factor.
-   */
-  template <class OtherType>
-  inline void AddBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block,
-                       OtherType alpha = 1.0) {
-    SetBlock<OtherType, false>(block_i, block_j, val_block, alpha);
+  template <class T, class OtherType = ScalarType>
+  inline void AddBlock(unsigned long block_i, unsigned long block_j, const T& val_block, OtherType alpha = 1.0) {
+    SetBlock<false>(block_i, block_j, val_block, alpha);
   }
 
   /*!
@@ -687,41 +682,9 @@ class CSysMatrix {
    * \param[in] block_j - Column index.
    * \param[in] val_block - Block to subtract to A(i, j).
    */
-  template <class OtherType>
-  inline void SubtractBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block) {
-    AddBlock(block_i, block_j, val_block, OtherType(-1));
-  }
-
-  /*!
-   * \brief Set the value of a scaled block in the sparse matrix.
-   * \note This is an templated overload for C2Dcontainer specialization su2matrix.
-   *       It assumes that MatrixType supports a member type Scalar and access operator[][].
-   *       If the template param Overwrite is false we add to the block (bij += alpha*b).
-   * \param[in] block_i - Row index.
-   * \param[in] block_j - Column index.
-   * \param[in] val_block - Block to set to A(i, j).
-   * \param[in] alpha - Scale factor.
-   */
-  template <class MatrixType, bool Overwrite = true>
-  inline void SetBlock(unsigned long block_i, unsigned long block_j, MatrixType& val_block,
-                       typename MatrixType::Scalar alpha = 1.0) {
-    auto view = GetBlockView(block_i, block_j);
-    if (!view) return;
-    view.template apply<Overwrite>(
-        [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block(i, j)); });
-  }
-
-  /*!
-   * \brief Adds a scaled block to the sparse matrix (see SetBlock).
-   * \param[in] block_i - Row index.
-   * \param[in] block_j - Column index.
-   * \param[in] val_block - Block to add to A(i, j).
-   * \param[in] alpha - Scale factor.
-   */
-  template <class MatrixType>
-  inline void AddBlock(unsigned long block_i, unsigned long block_j, MatrixType& val_block,
-                       typename MatrixType::Scalar alpha = 1.0) {
-    SetBlock<MatrixType, false>(block_i, block_j, val_block, alpha);
+  template <class T>
+  inline void SubtractBlock(unsigned long block_i, unsigned long block_j, const T& val_block) {
+    AddBlock(block_i, block_j, val_block, -1);
   }
 
   /*!
