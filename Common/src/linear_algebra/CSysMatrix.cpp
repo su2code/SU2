@@ -573,30 +573,7 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::QuantizeBlock(const ScalarType* blk, QuantType* qs, QuantType* qv) const {
-  for (auto r = 0ul; r < nVar; ++r) {
-    const ScalarType* __restrict row = &blk[r * nVar];
-    QuantType* __restrict q_row = &qv[r * nVar];
-
-    constexpr uint32_t eps_bits = 0x34000000u;
-    uint32_t max_abs_bits = eps_bits;
-    for (auto c = 0ul; c < nVar; ++c) {
-      uint32_t fb;
-      const float fv = SU2_TYPE::PassiveValue(row[c]);
-      memcpy(&fb, &fv, sizeof(fb));
-      max_abs_bits = std::max(max_abs_bits, fb & 0x7FFFFFFFu);
-    }
-
-    const int e_clamped = std::min(127, std::max(-128, static_cast<int>(max_abs_bits >> 23) - 133));
-    qs[r] = static_cast<QuantType>(e_clamped);
-
-    const uint32_t inv_bits = static_cast<uint32_t>(127 - e_clamped) << 23;
-    float inv_rscale;
-    memcpy(&inv_rscale, &inv_bits, sizeof(inv_rscale));
-    for (auto c = 0ul; c < nVar; ++c) {
-      q_row[c] = static_cast<QuantType>(
-          std::max(-128.f, std::min(127.f, roundf(SU2_TYPE::PassiveValue(row[c]) * inv_rscale))));
-    }
-  }
+  EncodeQuantBlock([&](unsigned long r, unsigned long c) { return blk[r * nVar + c]; }, qs, qv, nVar);
 }
 
 template <class ScalarType>

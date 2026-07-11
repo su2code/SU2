@@ -113,7 +113,7 @@ struct CSysMatrixComms {
  * \brief Reconstruct the float row-scale from a stored int8 binary exponent.
  *        The exponent \p e was packed as (e + 127) into the IEEE 754 biased-exponent field
  *        with a zero mantissa, giving an exact power of two: 2^e.
- *        This is the inverse of the encoding in QuantizeBlock.
+ *        This is the inverse of the encoding in EncodeQuantBlock.
  */
 FORCEINLINE float DecodeQuantScale(int8_t e) noexcept {
   const uint32_t bits = static_cast<uint32_t>(std::max(0, static_cast<int>(e) + 127)) << 23;
@@ -123,26 +123,79 @@ FORCEINLINE float DecodeQuantScale(int8_t e) noexcept {
 }
 
 /*!
- * \brief Read-only view of one matrix block.
- *        Provides uniform \c operator()(i,j) access regardless of storage format:
- *        if the block was written in quantized (Q_LU_SGS) format, values are decoded
- *        on-the-fly; otherwise the underlying ScalarType pointer is indexed directly.
+ * \brief Encode one nVar×nVar block into per-row int8 quantized storage.
+ *        \p f(r,c) is called twice per entry (max-abs scan then encoding); it should be cheap.
+ *        Stores a per-row scale exponent in \p qs and clamped int8 values in \p qv.
+ */
+template <class F>
+FORCEINLINE void EncodeQuantBlock(const F& f, int8_t* __restrict qs, int8_t* __restrict qv,
+                                  unsigned long nVar) noexcept {
+  for (auto r = 0ul; r < nVar; ++r) {
+    constexpr uint32_t eps_bits = 0x34000000u;
+    uint32_t max_abs_bits = eps_bits;
+    for (auto c = 0ul; c < nVar; ++c) {
+      const float fv = SU2_TYPE::PassiveValue(f(r, c));
+      uint32_t fb;
+      memcpy(&fb, &fv, sizeof(fb));
+      max_abs_bits = std::max(max_abs_bits, fb & 0x7FFFFFFFu);
+    }
+    const int e = std::min(127, std::max(-128, static_cast<int>(max_abs_bits >> 23) - 133));
+    qs[r] = static_cast<int8_t>(e);
+    const uint32_t inv_bits = static_cast<uint32_t>(127 - e) << 23;
+    float inv_rscale;
+    memcpy(&inv_rscale, &inv_bits, sizeof(inv_rscale));
+    for (auto c = 0ul; c < nVar; ++c) {
+      qv[r * nVar + c] =
+          static_cast<int8_t>(std::max(-128.f, std::min(127.f, roundf(SU2_TYPE::PassiveValue(f(r, c)) * inv_rscale))));
+    }
+  }
+}
+
+/*!
+ * \brief View of one matrix block, const-correct via the ScalarType template parameter.
+ *        \c CBlockView<const ScalarType> is read-only; \c CBlockView<ScalarType> is mutable
+ *        and exposes \c apply<Overwrite>(f) for writing with on-the-fly quantized encoding.
  *        Evaluates to \c false if the block is absent from the sparsity pattern.
  */
 template <class ScalarType>
 struct CBlockView {
-  const ScalarType* ptr = nullptr;  ///< Full-precision block; non-null iff not quantized.
-  const int8_t* qs = nullptr;       ///< Per-row binary exponent; non-null iff quantized.
-  const int8_t* qv = nullptr;       ///< Quantized values (row-major); non-null iff quantized.
-  unsigned short nEqn = 0;
+  using QuantType = std::conditional_t<std::is_const_v<ScalarType>, const int8_t, int8_t>;
+
+  ScalarType* ptr = nullptr;  ///< Full-precision block; non-null iff not quantized.
+  QuantType* qs = nullptr;    ///< Per-row binary exponent; non-null iff quantized.
+  QuantType* qv = nullptr;    ///< Quantized values (row-major); non-null iff quantized.
+  unsigned long nVar = 0;
 
   /*! \brief False when the block is not present in the sparsity pattern. */
   explicit operator bool() const { return ptr || qs; }
 
   /*! \brief Return entry (row \p i, col \p j), decoding quantization if necessary. */
-  ScalarType operator()(unsigned long i, unsigned long j) const {
-    if (ptr) return ptr[i * nEqn + j];
-    return static_cast<ScalarType>(qv[i * nEqn + j] * DecodeQuantScale(qs[i]));
+  std::remove_const_t<ScalarType> operator()(unsigned long i, unsigned long j) const {
+    using T = std::remove_const_t<ScalarType>;
+    if (ptr) return ptr[i * nVar + j];
+    return static_cast<T>(qv[i * nVar + j] * DecodeQuantScale(qs[i]));
+  }
+
+  /*!
+   * \brief Write the block from callable \p f(i,j).
+   *        \p Overwrite=true overwrites (or quantizes for Q_LU_SGS off-diagonal blocks);
+   *        \p Overwrite=false accumulates into non-quantized storage only — accumulating into
+   *        quantized storage would require decode-accumulate-encode and is a silent no-op.
+   *        Only enabled for mutable (non-const ScalarType) views.
+   */
+  template <bool Overwrite, class F, class S = ScalarType, su2enable_if<!std::is_const_v<S>> = 0>
+  void apply(const F& f) const {
+    if (ptr) {
+      for (auto i = 0ul; i < nVar; ++i)
+        for (auto j = 0ul; j < nVar; ++j) {
+          if constexpr (Overwrite)
+            ptr[i * nVar + j] = f(i, j);
+          else
+            ptr[i * nVar + j] += f(i, j);
+        }
+    } else if constexpr (Overwrite) {
+      if (qs) EncodeQuantBlock(f, qs, qv, nVar);
+    }
   }
 };
 
@@ -233,11 +286,11 @@ class CSysMatrix {
   ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */
 
   /*--- Temporary (hence mutable) working memory used in the Linelet preconditioner, outer vector is for threads ---*/
-  mutable vector<vector<const ScalarType*> >
+  mutable vector<vector<const ScalarType*>>
       LineletUpper; /*!< \brief Pointers to the upper blocks of the tri-diag system (working memory). */
-  mutable vector<vector<ScalarType> >
+  mutable vector<vector<ScalarType>>
       LineletInvDiag; /*!< \brief Inverse of the diagonal blocks of the tri-diag system (working memory). */
-  mutable vector<vector<ScalarType> >
+  mutable vector<vector<ScalarType>>
       LineletVector; /*!< \brief Solution and RHS of the tri-diag system (working memory). */
 
 #ifdef USE_MKL
@@ -534,35 +587,38 @@ class CSysMatrix {
    */
   FORCEINLINE ScalarType GetBlock(unsigned long block_i, unsigned long block_j, unsigned short iVar,
                                   unsigned short jVar) const {
-    auto mat_ij = GetBlock(block_i, block_j);
+    const auto mat_ij = GetBlockView(block_i, block_j);
     if (!mat_ij) return 0.0;
-    return mat_ij[iVar * nEqn + jVar];
+    return mat_ij(iVar, jVar);
   }
 
   /*!
-   * \brief Read-only view of block (block_i, block_j) that works in both standard and
-   *        Q_LU_SGS quantized storage.  In quantized mode off-diagonal values are decoded
-   *        on-the-fly inside \c CBlockView::operator()(i,j); no temporary copy is made.
-   * \return A \c CBlockView that evaluates to false if the block is absent.
+   * \brief Read-only view of block (block_i, block_j). In Q_LU_SGS mode values are decoded
+   *        on access inside CBlockView::operator()(i,j); no temporary copy is made.
+   * \return A CBlockView<const ScalarType> that evaluates to false if the block is absent.
    */
-  FORCEINLINE CBlockView<ScalarType> GetBlockView(unsigned long block_i, unsigned long block_j) const {
-    if (block_i == block_j) return {&mat.d[block_i * nVar * nVar], nullptr, nullptr, nVar};
-    if (block_j < block_i) {
-      for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k) {
-        if (mat.col_ind_l[k] == block_j) {
-          if (quantized_mode) return {nullptr, &q_scale_l[k * nVar], &q_blocks_l[k * nVar * nVar], nVar};
-          return {&mat.l[k * nVar * nVar], nullptr, nullptr, nVar};
-        }
-      }
-    } else {
-      for (auto k = mat.row_ptr_u[block_i]; k < mat.row_ptr_u[block_i + 1]; ++k) {
-        if (mat.col_ind_u[k] == block_j) {
-          if (quantized_mode) return {nullptr, &q_scale_u[k * nVar], &q_blocks_u[k * nVar * nVar], nVar};
-          return {&mat.u[k * nVar * nVar], nullptr, nullptr, nVar};
-        }
-      }
-    }
-    return {};  // block absent from sparsity pattern
+  FORCEINLINE CBlockView<const ScalarType> GetBlockView(unsigned long block_i, unsigned long block_j) const {
+#define GET_BLOCK_VIEW_IMPL                                                                                        \
+  if (!quantized_mode || block_i == block_j) {                                                                     \
+    return {GetBlock(block_i, block_j), nullptr, nullptr, nVar};                                                   \
+  }                                                                                                                \
+  if (block_j < block_i) {                                                                                         \
+    for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k)                                     \
+      if (mat.col_ind_l[k] == block_j) return {nullptr, &q_scale_l[k * nVar], &q_blocks_l[k * nVar * nVar], nVar}; \
+  } else {                                                                                                         \
+    for (auto k = mat.row_ptr_u[block_i]; k < mat.row_ptr_u[block_i + 1]; ++k)                                     \
+      if (mat.col_ind_u[k] == block_j) return {nullptr, &q_scale_u[k * nVar], &q_blocks_u[k * nVar * nVar], nVar}; \
+  }                                                                                                                \
+  return {}
+    GET_BLOCK_VIEW_IMPL;
+  }
+
+  /*!
+   * \overload Non const version of GetBlockView.
+   */
+  FORCEINLINE CBlockView<ScalarType> GetBlockView(unsigned long block_i, unsigned long block_j) {
+    GET_BLOCK_VIEW_IMPL;
+#undef GET_BLOCK_VIEW_IMPL
   }
 
   /*!
@@ -576,34 +632,10 @@ class CSysMatrix {
   template <class OtherType, bool Overwrite = true, su2enable_if<!is_pointer<OtherType>::value> = 0>
   inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* val_block,
                        OtherType alpha = 1.0) {
-    /*--- Quantized overwrite path: encode val_block directly into int8 L/U storage. ---*/
-    if (quantized_mode && block_i != block_j && Overwrite) {
-      ScalarType tmp[MAXNVAR * MAXNVAR];
-      SU2_OMP_SIMD
-      for (auto i = 0ul; i < nVar * nVar; ++i) tmp[i] = PassiveAssign(alpha * val_block[i]);
-      if (block_j < block_i) {
-        for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k)
-          if (mat.col_ind_l[k] == block_j) {
-            QuantizeBlock(tmp, &q_scale_l[k * nVar], &q_blocks_l[k * nVar * nVar]);
-            return;
-          }
-      } else {
-        for (auto k = mat.row_ptr_u[block_i]; k < mat.row_ptr_u[block_i + 1]; ++k)
-          if (mat.col_ind_u[k] == block_j) {
-            QuantizeBlock(tmp, &q_scale_u[k * nVar], &q_blocks_u[k * nVar * nVar]);
-            return;
-          }
-      }
-      return;
-    }
-    /*! \note TODO(quantization): Additive (Overwrite=false) writes to off-diagonal Q_LU_SGS
-     *         blocks are a no-op (GetBlock returns nullptr); triage callers if needed. */
-    auto mat_ij = GetBlock(block_i, block_j);
-    if (!mat_ij) return;
-    SU2_OMP_SIMD
-    for (auto iVar = 0ul; iVar < nVar * nEqn; ++iVar) {
-      mat_ij[iVar] = (Overwrite ? ScalarType(0) : mat_ij[iVar]) + PassiveAssign(alpha * val_block[iVar]);
-    }
+    auto view = GetBlockView(block_i, block_j);
+    if (!view) return;
+    view.template apply<Overwrite>(
+        [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block[i * nEqn + j]); });
   }
 
   /*!
@@ -630,14 +662,10 @@ class CSysMatrix {
   template <class OtherType, bool Overwrite = true>
   inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block,
                        OtherType alpha = 1.0) {
-    auto mat_ij = GetBlock(block_i, block_j);
-    if (!mat_ij) return;
-    for (auto iVar = 0ul; iVar < nVar; ++iVar) {
-      for (auto jVar = 0ul; jVar < nEqn; ++jVar) {
-        *mat_ij = (Overwrite ? ScalarType(0) : *mat_ij) + PassiveAssign(alpha * val_block[iVar][jVar]);
-        ++mat_ij;
-      }
-    }
+    auto view = GetBlockView(block_i, block_j);
+    if (!view) return;
+    view.template apply<Overwrite>(
+        [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block[i][j]); });
   }
 
   /*!
@@ -677,14 +705,10 @@ class CSysMatrix {
   template <class MatrixType, bool Overwrite = true>
   inline void SetBlock(unsigned long block_i, unsigned long block_j, MatrixType& val_block,
                        typename MatrixType::Scalar alpha = 1.0) {
-    auto mat_ij = GetBlock(block_i, block_j);
-    if (!mat_ij) return;
-    for (auto iVar = 0ul; iVar < nVar; ++iVar) {
-      for (auto jVar = 0ul; jVar < nEqn; ++jVar) {
-        *mat_ij = (Overwrite ? ScalarType(0) : *mat_ij) + PassiveAssign(alpha * val_block(iVar, jVar));
-        ++mat_ij;
-      }
-    }
+    auto view = GetBlockView(block_i, block_j);
+    if (!view) return;
+    view.template apply<Overwrite>(
+        [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block(i, j)); });
   }
 
   /*!
