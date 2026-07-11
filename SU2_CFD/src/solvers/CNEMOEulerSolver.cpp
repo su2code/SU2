@@ -1894,7 +1894,7 @@ void CNEMOEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
 //        /*--- Jacobian contribution for implicit integration ---*/
 //        if (implicit)
-//          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//          Jacobian.SubtractBlock2Diag(iPoint, Jacobian_i);
 //      }
     }
   }

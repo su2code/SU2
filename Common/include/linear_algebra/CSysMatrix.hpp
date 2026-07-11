@@ -578,21 +578,6 @@ class CSysMatrix {
   }
 
   /*!
-   * \brief Gets the value of a particular entry in block "ij".
-   * \param[in] block_i - Row index.
-   * \param[in] block_j - Column index.
-   * \param[in] iVar - Row of the block.
-   * \param[in] jVar - Column of the block.
-   * \return Value of the block entry.
-   */
-  FORCEINLINE ScalarType GetBlock(unsigned long block_i, unsigned long block_j, unsigned short iVar,
-                                  unsigned short jVar) const {
-    const auto mat_ij = GetBlockView(block_i, block_j);
-    if (!mat_ij) return 0.0;
-    return mat_ij(iVar, jVar);
-  }
-
-  /*!
    * \brief Read-only view of block (block_i, block_j). In Q_LU_SGS mode values are decoded
    *        on access inside CBlockView::operator()(i,j); no temporary copy is made.
    * \return A CBlockView<const ScalarType> that evaluates to false if the block is absent.

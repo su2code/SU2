@@ -542,9 +542,11 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
 
             if (implicit_periodic) {
 
+              const auto block = Jacobian.GetBlockView(iPoint, iPoint);
+
               for (iVar = 0; iVar < nVar; iVar++) {
                 for (jVar = 0; jVar < nVar; jVar++) {
-                  jacBlock[iVar][jVar] = Jacobian.GetBlock(iPoint, iPoint, iVar, jVar);
+                  jacBlock[iVar][jVar] = block(iVar, jVar);
                 }
               }
 
@@ -553,21 +555,16 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               if (rotate_periodic) {
                 for (iVar = 0; iVar < nVar; iVar++) {
                   if (nDim == 2) {
-                    jacBlock[1][iVar] = (rotMatrix2D[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix2D[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
-                    jacBlock[2][iVar] = (rotMatrix2D[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix2D[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar));
+                    jacBlock[1][iVar] = rotMatrix2D[0][0]*block(1, iVar) + rotMatrix2D[0][1]*block(2, iVar);
+                    jacBlock[2][iVar] = rotMatrix2D[1][0]*block(1, iVar) + rotMatrix2D[1][1]*block(2, iVar);
                   } else {
 
-                    jacBlock[1][iVar] = (rotMatrix3D[0][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix3D[0][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix3D[0][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacBlock[2][iVar] = (rotMatrix3D[1][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix3D[1][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix3D[1][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
-                    jacBlock[3][iVar] = (rotMatrix3D[2][0]*Jacobian.GetBlock(iPoint, iPoint, 1, iVar) +
-                                         rotMatrix3D[2][1]*Jacobian.GetBlock(iPoint, iPoint, 2, iVar) +
-                                         rotMatrix3D[2][2]*Jacobian.GetBlock(iPoint, iPoint, 3, iVar));
+                    jacBlock[1][iVar] = rotMatrix3D[0][0]*block(1, iVar) + rotMatrix3D[0][1]*block(2, iVar) +
+                                        rotMatrix3D[0][2]*block(3, iVar);
+                    jacBlock[2][iVar] = rotMatrix3D[1][0]*block(1, iVar) + rotMatrix3D[1][1]*block(2, iVar) +
+                                        rotMatrix3D[1][2]*block(3, iVar);
+                    jacBlock[3][iVar] = rotMatrix3D[2][0]*block(1, iVar) + rotMatrix3D[2][1]*block(2, iVar) +
+                                        rotMatrix3D[2][2]*block(3, iVar);
                   }
                 }
               }
