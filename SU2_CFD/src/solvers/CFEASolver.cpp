@@ -258,7 +258,7 @@ void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {
 
   if (!coloring.empty()) {
     /*--- We are not constrained by the color group size when using locks. ---*/
-    auto groupSize = LockStrategy? 1ul : geometry->GetElementColorGroupSize();
+    auto groupSize = static_cast<su2uint>(LockStrategy ? 1ul : geometry->GetElementColorGroupSize());
     auto nColor = coloring.getOuterSize();
     ElemColoring.reserve(nColor);
 

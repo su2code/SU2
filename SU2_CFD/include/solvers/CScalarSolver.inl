@@ -63,7 +63,7 @@ CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config,
   if (ReducerStrategy && (coloring.getOuterSize() > 1)) geometry->SetNaturalEdgeColoring();
 
   if (!coloring.empty()) {
-    auto groupSize = ReducerStrategy ? 1ul : geometry->GetEdgeColorGroupSize();
+    auto groupSize = static_cast<su2uint>(ReducerStrategy ? 1ul : geometry->GetEdgeColorGroupSize());
     auto nColor = coloring.getOuterSize();
     EdgeColoring.reserve(nColor);
 

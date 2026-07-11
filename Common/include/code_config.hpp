@@ -26,6 +26,7 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <type_traits>
 #include <cmath>
 
@@ -99,6 +100,10 @@ FORCEINLINE Out su2staticcast_p(In ptr) {
 #if (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)) && defined(USE_SINGLE_PRECISION)
 #undef USE_SINGLE_PRECISION
 #endif
+
+/*--- Default integer types  ---*/
+using su2uint = uint32_t;
+using su2int = int32_t;
 
 /*--- This type can be used for (rare) compatibility cases or for
  * computations that are intended to be (always) passive. ---*/

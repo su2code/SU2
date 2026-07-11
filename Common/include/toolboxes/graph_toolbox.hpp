@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "../code_config.hpp"
 #include "../containers/C2DContainer.hpp"
 #include "../parallelization/omp_structure.hpp"
 
@@ -333,9 +334,9 @@ class CCompressedSparsePattern {
 template <typename Index_t>
 using CEdgeToNonZeroMap = C2DContainer<unsigned long, Index_t, StorageType::RowMajor, 64, DynamicSize, 2>;
 
-using CCompressedSparsePatternUL = CCompressedSparsePattern<unsigned long>;
+using CCompressedSparsePatternUL = CCompressedSparsePattern<su2uint>;
 using CCompressedSparsePatternL = CCompressedSparsePattern<long>;
-using CEdgeToNonZeroMapUL = CEdgeToNonZeroMap<unsigned long>;
+using CEdgeToNonZeroMapUL = CEdgeToNonZeroMap<su2uint>;
 
 /*!
  * \brief Build a sparse pattern from geometry information, of type FVM or FEM,
@@ -661,7 +662,7 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool includeOuterId
 /*!
  * \brief A way to represent one grid color that allows range-for syntax.
  */
-template <typename T = unsigned long>
+template <typename T = su2uint>
 struct GridColor {
   static_assert(std::is_integral<T>::value);
 
@@ -679,7 +680,7 @@ struct GridColor {
  * \brief A way to represent natural coloring {0,1,2,...,size-1} with zero
  * overhead (behaves like looping with an integer index, after optimization...).
  */
-template <typename T = unsigned long>
+template <typename T = su2uint>
 struct DummyGridColor {
   static_assert(std::is_integral<T>::value);
 

@@ -181,7 +181,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   const bool ilu_needed = (prec == ILU);
   const bool diag_needed = (prec == JACOBI) || (prec == LINELET);
-  const bool q_lus_needed = !useCuda && (prec == Q_LU_SGS);
+  const bool q_lus_needed = !useCuda && (nvar > 1) && (prec == Q_LU_SGS);
 
   /*--- Basic dimensions. ---*/
   nVar = nvar;
@@ -228,8 +228,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     auto GPUAllocAndInit = [](ScalarType*& ptr, unsigned long num) {
       ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
     };
-    auto GPUAllocAndCopy = [](const unsigned long*& ptr, const unsigned long* src_ptr, unsigned long num) {
-      ptr = GPUMemoryAllocation::gpu_alloc_cpy<unsigned long>(src_ptr, num * sizeof(unsigned long));
+    auto GPUAllocAndCopy = [](const su2uint*& ptr, const su2uint* src_ptr, unsigned long num) {
+      ptr = GPUMemoryAllocation::gpu_alloc_cpy<su2uint>(src_ptr, num * sizeof(su2uint));
     };
     GPUAllocAndInit(gpu.d, nPoint * nVar * nEqn);
     GPUAllocAndInit(gpu.l, mat.nnz_l * nVar * nEqn);
@@ -834,7 +834,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
 
     if (ilu_fill_in == 0) {
       /*--- ILU0: Same sparse pattern, copy L and U blocks directly. ---*/
-      auto copy = [&](const unsigned long* row_ptr, const ScalarType* mat, ScalarType* ilu) {
+      auto copy = [&](const su2uint* row_ptr, const ScalarType* mat, ScalarType* ilu) {
         const unsigned long begin = row_ptr[iPoint] * blockSize;
         const unsigned long end = row_ptr[iPoint + 1] * blockSize;
         SU2_OMP_SIMD
@@ -845,9 +845,8 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
       return;
     }
     /*--- ILUn: Merge-scan L and U via shared lambda. ---*/
-    auto scatterPart = [&](const unsigned long* mat_row_ptr, const unsigned long* mat_col_ind,
-                           const ScalarType* mat_vals, const unsigned long* ilu_row_ptr,
-                           const unsigned long* ilu_col_ind, ScalarType* ilu_vals) {
+    auto scatterPart = [&](const su2uint* mat_row_ptr, const su2uint* mat_col_ind, const ScalarType* mat_vals,
+                           const su2uint* ilu_row_ptr, const su2uint* ilu_col_ind, ScalarType* ilu_vals) {
       auto km = mat_row_ptr[iPoint], km_end = mat_row_ptr[iPoint + 1];
       for (auto k = ilu_row_ptr[iPoint]; k < ilu_row_ptr[iPoint + 1]; ++k) {
         const auto jPoint = ilu_col_ind[k];

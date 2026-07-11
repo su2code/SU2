@@ -317,7 +317,7 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
   if (!coloring.empty()) {
     /*--- If the reducer strategy is used we are not constrained by group
      *    size as we have no other edge loops in the Euler/NS solvers. ---*/
-    auto groupSize = ReducerStrategy ? 1ul : geometry.GetEdgeColorGroupSize();
+    auto groupSize = static_cast<su2uint>(ReducerStrategy ? 1ul : geometry.GetEdgeColorGroupSize());
     auto nColor = coloring.getOuterSize();
     EdgeColoring.reserve(nColor);
 

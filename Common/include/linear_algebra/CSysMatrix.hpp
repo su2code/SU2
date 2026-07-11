@@ -236,15 +236,15 @@ class CSysMatrix {
    *        the pointers address host or device memory is managed by CSysMatrix.
    */
   struct LDU {
-    ScalarType* d = nullptr;                  /*!< \brief Diagonal block values. */
-    ScalarType* l = nullptr;                  /*!< \brief Strictly-lower block values. */
-    ScalarType* u = nullptr;                  /*!< \brief Strictly-upper block values. */
-    const unsigned long* row_ptr_l = nullptr; /*!< \brief Row pointers for L (geometry-owned or GPU copy). */
-    const unsigned long* col_ind_l = nullptr; /*!< \brief Column indices for L. */
-    const unsigned long* row_ptr_u = nullptr; /*!< \brief Row pointers for U. */
-    const unsigned long* col_ind_u = nullptr; /*!< \brief Column indices for U. */
-    unsigned long nnz_l = 0;                  /*!< \brief Number of L nonzeros. */
-    unsigned long nnz_u = 0;                  /*!< \brief Number of U nonzeros. */
+    ScalarType* d = nullptr;            /*!< \brief Diagonal block values. */
+    ScalarType* l = nullptr;            /*!< \brief Strictly-lower block values. */
+    ScalarType* u = nullptr;            /*!< \brief Strictly-upper block values. */
+    const su2uint* row_ptr_l = nullptr; /*!< \brief Row pointers for L (geometry-owned or GPU copy). */
+    const su2uint* col_ind_l = nullptr; /*!< \brief Column indices for L. */
+    const su2uint* row_ptr_u = nullptr; /*!< \brief Row pointers for U. */
+    const su2uint* col_ind_u = nullptr; /*!< \brief Column indices for U. */
+    unsigned long nnz_l = 0;            /*!< \brief Number of L nonzeros. */
+    unsigned long nnz_u = 0;            /*!< \brief Number of U nonzeros. */
   };
 
   LDU mat; /*!< \brief Host matrix (values owned via aligned_alloc; pattern from geometry). */
@@ -267,16 +267,16 @@ class CSysMatrix {
                           *          Populated by QuantizeDiagonalBlocks(). */
   QuantType* q_blocks_d; /*!< \brief Same as q_blocks_l for the diagonal entries. */
 
-  bool useCuda = false;               /*!< \brief Whether CUDA is enabled. */
-  const unsigned long* l_to_u_transp; /*!< \brief L-entry index -> U-entry index of its transpose. */
-  const unsigned long* u_to_l_transp; /*!< \brief U-entry index -> L-entry index of its transpose. */
+  bool useCuda = false;         /*!< \brief Whether CUDA is enabled. */
+  const su2uint* l_to_u_transp; /*!< \brief L-entry index -> U-entry index of its transpose. */
+  const su2uint* u_to_l_transp; /*!< \brief U-entry index -> L-entry index of its transpose. */
 
   /*!
    * \brief Lookup table from edges to the L-index in the LDU split.
    * U-index == edge index by construction (edges are ordered 1:1 with the U pattern).
    * Therefore, edge_ptr_l == u_to_l_transp, but we keep a separate member for clarity.
    */
-  const unsigned long* edge_ptr_l;
+  const su2uint* edge_ptr_l;
 
   unsigned short ilu_fill_in; /*!< \brief Fill level for the ILU preconditioner. */
 

@@ -2517,7 +2517,7 @@ enum ENUM_LINEAR_SOLVER_PREC {
   LU_SGS,         /*!< \brief LU SGS preconditioner. */
   LINELET,        /*!< \brief Line implicit preconditioner. */
   ILU,            /*!< \brief ILU(k) preconditioner. */
-  Q_LU_SGS = 4,  /*!< \brief LU-SGS with quantized (int8) off-diagonal storage; L/U are never allocated as ScalarType. */
+  Q_LU_SGS,       /*!< \brief LU-SGS with quantized (int8) off-diagonal storage; L/U are never allocated as ScalarType. */
   PASTIX_ILU=10,  /*!< \brief PaStiX ILU(k) preconditioner. */
   PASTIX_LU_P,    /*!< \brief PaStiX LU as preconditioner. */
   PASTIX_LDLT_P,  /*!< \brief PaStiX LDLT as preconditioner. */

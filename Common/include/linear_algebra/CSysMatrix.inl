@@ -147,8 +147,8 @@ FORCEINLINE void CSysMatrix<ScalarType>::GaussElimination(unsigned long block_i,
 template <class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::QuantizedGaussElimination(unsigned long block_i, ScalarType* rhs) const {
   ScalarType block[MAXNVAR * MAXNVAR];
-  const QuantType* qs = &q_scale_d[block_i * nVar];
-  const QuantType* qv = &q_blocks_d[block_i * nVar * nVar];
+  const QuantType* __restrict qs = &q_scale_d[block_i * nVar];
+  const QuantType* __restrict qv = &q_blocks_d[block_i * nVar * nVar];
   for (auto r = 0ul; r < nVar; ++r) {
     const float row_scale = DecodeQuantScale(qs[r]);
     for (auto c = 0ul; c < nVar; ++c) block[r * nVar + c] = static_cast<ScalarType>(qv[r * nVar + c] * row_scale);
@@ -176,8 +176,10 @@ FORCEINLINE const ScalarType* CSysMatrix<ScalarType>::InvertDiagonalBlockILUMatr
 }
 
 template <class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::QuantizedMatVecAdd(const QuantType* qs, const QuantType* qv,
-                                                            const ScalarType* vec, ScalarType* prod) const {
+FORCEINLINE void CSysMatrix<ScalarType>::QuantizedMatVecAdd(const QuantType* __restrict qs,
+                                                            const QuantType* __restrict qv,
+                                                            const ScalarType* __restrict vec,
+                                                            ScalarType* __restrict prod) const {
   for (auto r = 0ul; r < nVar; ++r) {
     const float row_scale = DecodeQuantScale(qs[r]);
     auto sum = ScalarType(0);
