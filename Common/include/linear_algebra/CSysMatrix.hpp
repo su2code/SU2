@@ -257,8 +257,11 @@ class CSysMatrix {
   /*! \brief Set by Initialize() when preconditioner == Q_LU_SGS.
    *         mat.l and mat.u are NOT allocated; off-diagonal blocks live in the
    *         q_* arrays below. */
-  bool quantized_mode;
-
+#ifndef CODI_REVERSE_TYPE
+  bool quantized_mode = false;
+#else
+  static constexpr bool quantized_mode = false;
+#endif
   QuantType* q_scale_l;  /*!< \brief Per-row exponent for L blocks, [nnz_l * nVar]. */
   QuantType* q_blocks_l; /*!< \brief Quantized L block entries, [nnz_l * nVar * nEqn]. */
   QuantType* q_scale_u;  /*!< \brief Same as q_scale_l for the upper entries. */

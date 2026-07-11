@@ -85,7 +85,6 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
   ilu.d = nullptr;
   ilu.u = nullptr;
 
-  quantized_mode = false;
   q_scale_l = nullptr;
   q_blocks_l = nullptr;
   q_scale_u = nullptr;
@@ -214,7 +213,9 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   if (q_lus_needed) {
     /*--- Q_LU_SGS: no full-precision L/U; off-diagonal blocks live in quantized storage.
      *    L/U are quantized on-the-fly during assembly; diagonal is quantized in Build step. ---*/
+#ifndef CODI_REVERSE_TYPE
     quantized_mode = true;
+#endif
     auto allocQ = [](QuantType*& ptr, unsigned long n) {
       ptr = MemoryAllocation::aligned_alloc<QuantType, true>(64, n * sizeof(QuantType));
     };

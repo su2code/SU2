@@ -445,11 +445,11 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const C
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                                     CNumerics *numerics, CConfig *config) {
+CNumerics::ResidualType<> CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry,
+                                                                          CSolver **solver_container,
+                                                                          CNumerics *numerics, CConfig *config) {
   SU2_ZONE_SCOPED
 
-  const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
   const bool backscatter = config->GetSBSParam().StochasticBackscatter;
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
@@ -518,17 +518,14 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
-    if (implicit)
-      Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
   }
   else {
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
-
-    if (implicit)
-      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
   }
 
+  /*--- The Jacobians are applied by the caller, fused with the convective contribution. ---*/
+  return residual;
 }
 
 template <class V, ENUM_REGIME R>

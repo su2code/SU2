@@ -178,9 +178,10 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
   return nonPhysicalPoints;
 }
 
-void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config) {
-  Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
+CNumerics::ResidualType<> CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry,
+                                                      CSolver **solver_container, CNumerics *numerics,
+                                                      CConfig *config) {
+  return Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
 }
 
 void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) {
