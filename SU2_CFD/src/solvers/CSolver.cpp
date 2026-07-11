@@ -27,6 +27,9 @@
 
 
 #include "../../include/solvers/CSolver.hpp"
+
+#include <limits>
+
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
@@ -558,7 +561,6 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                     jacBlock[1][iVar] = rotMatrix2D[0][0]*block(1, iVar) + rotMatrix2D[0][1]*block(2, iVar);
                     jacBlock[2][iVar] = rotMatrix2D[1][0]*block(1, iVar) + rotMatrix2D[1][1]*block(2, iVar);
                   } else {
-
                     jacBlock[1][iVar] = rotMatrix3D[0][0]*block(1, iVar) + rotMatrix3D[0][1]*block(2, iVar) +
                                         rotMatrix3D[0][2]*block(3, iVar);
                     jacBlock[2][iVar] = rotMatrix3D[1][0]*block(1, iVar) + rotMatrix3D[1][1]*block(2, iVar) +
@@ -1994,7 +1996,7 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
 
   /*--- Set the L2 Norm residual in all the processors. ---*/
 
-  vector<su2double> rbuf_res(nVar);
+  vector<su2double> rbuf_res(nVar * nDim);
   unsigned long Global_nPointDomain = 0;
 
   if (config->GetComm_Level() == COMM_FULL) {
@@ -2025,21 +2027,22 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
   /*--- Set the Maximum residual in all the processors. ---*/
 
   if (config->GetComm_Level() == COMM_FULL) {
-
-    const unsigned long nProcessor = size;
-
-    su2activematrix rbuf_residual(nProcessor,nVar);
-    su2matrix<unsigned long> rbuf_point(nProcessor,nVar);
-    su2activematrix rbuf_coord(nProcessor*nVar, nDim);
-
-    SU2_MPI::Allgather(Residual_Max.data(), nVar, MPI_DOUBLE, rbuf_residual.data(), nVar, MPI_DOUBLE, SU2_MPI::GetComm());
-    SU2_MPI::Allgather(Point_Max.data(), nVar, MPI_UNSIGNED_LONG, rbuf_point.data(), nVar, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-    SU2_MPI::Allgather(Point_Max_Coord.data(), nVar*nDim, MPI_DOUBLE, rbuf_coord.data(), nVar*nDim, MPI_DOUBLE, SU2_MPI::GetComm());
-
+    SU2_MPI::Allreduce(Residual_Max.data(), rbuf_res.data(), nVar, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      for (auto iProcessor = 0ul; iProcessor < nProcessor; iProcessor++) {
-        AddRes_Max(iVar, rbuf_residual(iProcessor,iVar), rbuf_point(iProcessor,iVar), rbuf_coord[iProcessor*nVar+iVar]);
+      if (Residual_Max[iVar] < rbuf_res[iVar]) {
+        Point_Max[iVar] = 0;
+        for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+          Point_Max_Coord(iVar, iDim) = std::numeric_limits<su2double>::lowest();
+        }
       }
+      Residual_Max[iVar] = rbuf_res[iVar];
+    }
+    vector<unsigned long> rbuf_point(nVar);
+    SU2_MPI::Allreduce(Point_Max.data(), rbuf_point.data(), nVar, MPI_UNSIGNED_LONG, MPI_MAX, SU2_MPI::GetComm());
+    SU2_MPI::Allreduce(Point_Max_Coord.data(), rbuf_res.data(), nVar*nDim, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+    Point_Max = std::move(rbuf_point);
+    for (unsigned short iVar = 0; iVar < nVar * nDim; iVar++) {
+      Point_Max_Coord.data()[iVar] = rbuf_res[iVar];
     }
   }
 

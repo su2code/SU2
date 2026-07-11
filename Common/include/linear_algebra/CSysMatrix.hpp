@@ -523,10 +523,15 @@ class CSysMatrix {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    * \param[in] needTranspPtr - If the L/U transpose maps should be built, used for "SetDiagonalAsColumnSum".
+   * \param[in] grad_mode - Gradient smoothing mode, only used to detect the right preconditioner type.
+   * \param[in] allow_quant - Quantization is only possible with solvers that "set and forget" the off-diagonal
+   *            blocks of the matrix. Solvers that perform multiple updates would lose too much information, so
+   *            that pattern is not supported with quantization (the code will hit null pointers). It is up to
+   *            the solver to declare whether it will "set and forget".
    */
   void Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry* geometry, const CConfig* config, bool needTranspPtr = false,
-                  bool grad_mode = false);
+                  bool grad_mode = false, bool allow_quant = false);
 
   /*!
    * \brief Compresses off-diagonal blocks into quantized form for use with USE_QUANTIZATION.
@@ -568,9 +573,7 @@ class CSysMatrix {
   }
 
   /*!
-   * \brief Get a pointer to the start of block "ij", non-const version
-   * \note TODO(quantization): In Q_LU_SGS mode mat.l/mat.u are nullptr; callers that
-   *       modify an off-diagonal block via this pointer must be triaged or validated.
+   * \brief Get a pointer to the start of block "ij", non-const version.
    */
   FORCEINLINE ScalarType* GetBlock(unsigned long block_i, unsigned long block_j) {
     const CSysMatrix& const_this = *this;
@@ -680,9 +683,6 @@ class CSysMatrix {
    * \param[in] jPoint - Row from which we subtract the blocks.
    * \param[out] bii, bij, bji, bjj - Blocks of the matrix.
    */
-  /*! \brief TODO(quantization): In Q_LU_SGS mode mat.l/mat.u are nullptr; bij/bji will be
-   *         invalid. Callers using GetBlocks to directly write off-diagonal blocks must be
-   *         triaged and replaced with UpdateBlocks or flagged as incompatible. */
   inline void GetBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, ScalarType*& bii,
                         ScalarType*& bij, ScalarType*& bji, ScalarType*& bjj) {
     const auto blkSz = nVar * nEqn;
@@ -712,6 +712,7 @@ class CSysMatrix {
     unsigned long iVar, jVar, offset = 0;
 
     if (quantized_mode) {
+      assert(OverwriteOffDiag);
       /*--- Diagonal: full-precision accumulation. Off-diagonal: quantize on the fly. ---*/
       ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
       for (iVar = 0; iVar < nVar; iVar++)
@@ -758,9 +759,9 @@ class CSysMatrix {
    * \brief SIMD version, does the update for multiple edges and points.
    * \note Nothing is updated if the mask is 0.
    */
-  template <bool OverwriteOffDiag = false, class MatTypeSIMD, size_t N, class I, class F = ScalarType>
-  FORCEINLINE void UpdateBlocks(simd::Array<I, N> iEdge, simd::Array<I, N> iPoint, simd::Array<I, N> jPoint,
-                                const MatTypeSIMD& block_i, const MatTypeSIMD& block_j, simd::Array<F, N> mask = 1) {
+  template <class MatTypeSIMD, size_t N, class I, class F = ScalarType>
+  FORCEINLINE void SetBlocks(simd::Array<I, N> iEdge, simd::Array<I, N> iPoint, simd::Array<I, N> jPoint,
+                             const MatTypeSIMD& block_i, const MatTypeSIMD& block_j, simd::Array<F, N> mask = 1) {
     static_assert(MatTypeSIMD::StaticSize, "This method requires static size blocks.");
     static_assert(MatTypeSIMD::IsRowMajor, "Block storage is not compatible with matrix.");
     constexpr size_t blkSz = MatTypeSIMD::StaticSize;
@@ -827,8 +828,7 @@ class CSysMatrix {
     unsigned long iVar, jVar, offset = 0;
 
     if (quantized_mode) {
-      /*--- TODO(quantization): Overwrite=false (additive) path is not supported for Q_LU_SGS;
-       *    in FVM assembly each edge block has a single writer so this is safe for now. ---*/
+      assert(Overwrite);
       ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
       for (iVar = 0; iVar < nVar; iVar++)
         for (jVar = 0; jVar < nEqn; jVar++, ++offset) {

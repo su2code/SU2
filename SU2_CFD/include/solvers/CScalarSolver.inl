@@ -105,7 +105,7 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
   if (!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
     if (implicit) {
-      Jacobian.SetValZero();
+      Jacobian.SetValDiagonalZero();
     } else {
       SU2_OMP_BARRIER
     }
@@ -291,7 +291,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       } else {
         LinSysRes.AddBlock(iPoint, residual);
         LinSysRes.SubtractBlock(jPoint, residual);
-        if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+        if (implicit) Jacobian.UpdateBlocks<true>(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
 
       /*--- Apply convective flux correction to negate the effects of flow divergence in case of incompressible flow.

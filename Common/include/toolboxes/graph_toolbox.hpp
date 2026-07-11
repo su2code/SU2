@@ -335,7 +335,7 @@ template <typename Index_t>
 using CEdgeToNonZeroMap = C2DContainer<unsigned long, Index_t, StorageType::RowMajor, 64, DynamicSize, 2>;
 
 using CCompressedSparsePatternUL = CCompressedSparsePattern<su2uint>;
-using CCompressedSparsePatternL = CCompressedSparsePattern<long>;
+using CCompressedSparsePatternL = CCompressedSparsePattern<su2int>;
 using CEdgeToNonZeroMapUL = CEdgeToNonZeroMap<su2uint>;
 
 /*!

@@ -101,7 +101,7 @@ FORCEINLINE Out su2staticcast_p(In ptr) {
 #undef USE_SINGLE_PRECISION
 #endif
 
-/*--- Default integer types  ---*/
+/*--- Default integer types. Currently used for rank-local sparse patterns. ---*/
 using su2uint = uint32_t;
 using su2int = int32_t;
 

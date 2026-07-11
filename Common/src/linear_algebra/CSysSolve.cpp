@@ -1570,7 +1570,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
           break;
         case LU_SGS:
         case Q_LU_SGS:
-          /*--- Nothing to build (transpose path not supported for Q_LU_SGS; validate this is never reached). ---*/
+          /*--- Nothing to build (transpose path not supported for Q_LU_SGS, see CSysMatrix::Initialize). ---*/
           break;
         case PASTIX_ILU:
         case PASTIX_LU_P:

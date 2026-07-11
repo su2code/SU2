@@ -143,7 +143,7 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
 template <class ScalarType>
 void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar,
                                         unsigned short neqn, bool EdgeConnect, CGeometry* geometry,
-                                        const CConfig* config, bool needTranspPtr, bool grad_mode) {
+                                        const CConfig* config, bool needTranspPtr, bool grad_mode, bool allow_quant) {
   SU2_ZONE_SCOPED
   assert(omp_get_thread_num() == 0 && "Only the master thread is allowed to initialize the matrix.");
 
@@ -181,7 +181,12 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   const bool ilu_needed = (prec == ILU);
   const bool diag_needed = (prec == JACOBI) || (prec == LINELET);
-  const bool q_lus_needed = !useCuda && (nvar > 1) && (prec == Q_LU_SGS);
+#ifndef CODI_REVERSE_TYPE
+  const bool q_lus_needed = allow_quant && !useCuda && (prec == Q_LU_SGS);
+#else
+  /*--- No quantization in adjoint mode for now because TransposeInPlace would get complicated. ---*/
+  const bool q_lus_needed = false;
+#endif
 
   /*--- Basic dimensions. ---*/
   nVar = nvar;
@@ -282,7 +287,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   /*--- Set suitable chunk sizes for light static for loops, and heavy
    dynamic ones, such that threads are approximately evenly loaded. ---*/
-  omp_light_size = computeStaticChunkSize((mat.nnz_l + mat.nnz_u + nPoint) * nVar * nEqn, num_threads, OMP_MAX_SIZE_L);
+  omp_light_size = computeStaticChunkSize(nPoint * nVar * nEqn, num_threads, OMP_MAX_SIZE_L);
   omp_heavy_size = computeStaticChunkSize(nPointDomain, num_threads, OMP_MAX_SIZE_H);
 
   omp_num_parts = config->GetLinear_Solver_Prec_Threads();
@@ -1344,19 +1349,32 @@ void CSysMatrix<ScalarType>::EnforceZeroProjection(unsigned long node_i, const O
 template <class ScalarType>
 void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
   SU2_ZONE_SCOPED
+  const auto blkSz = nVar * nEqn;
 
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-    auto* d_i = &mat.d[iPoint * nVar * nEqn];
-    for (auto k = 0ul; k < nVar * nEqn; ++k) d_i[k] = 0.0;
+    auto* d_i = &mat.d[iPoint * blkSz];
+    for (auto k = 0ul; k < blkSz; ++k) d_i[k] = 0.0;
 
-    /*--- For each L entry (iPoint, j): subtract its U-transpose (j, iPoint). ---*/
-    for (auto k_l = mat.row_ptr_l[iPoint]; k_l < mat.row_ptr_l[iPoint + 1]; ++k_l)
-      MatrixSubtraction(d_i, &mat.u[l_to_u_transp[k_l] * nVar * nEqn], d_i);
+    if (!quantized_mode) {
+      /*--- For each L entry (iPoint, j): subtract its U-transpose (j, iPoint). ---*/
+      for (auto k_l = mat.row_ptr_l[iPoint]; k_l < mat.row_ptr_l[iPoint + 1]; ++k_l)
+        MatrixSubtraction(d_i, &mat.u[l_to_u_transp[k_l] * blkSz], d_i);
 
-    /*--- For each U entry (iPoint, j): subtract its L-transpose (j, iPoint). ---*/
-    for (auto k_u = mat.row_ptr_u[iPoint]; k_u < mat.row_ptr_u[iPoint + 1]; ++k_u)
-      MatrixSubtraction(d_i, &mat.l[u_to_l_transp[k_u] * nVar * nEqn], d_i);
+      /*--- For each U entry (iPoint, j): subtract its L-transpose (j, iPoint). ---*/
+      for (auto k_u = mat.row_ptr_u[iPoint]; k_u < mat.row_ptr_u[iPoint + 1]; ++k_u)
+        MatrixSubtraction(d_i, &mat.l[u_to_l_transp[k_u] * blkSz], d_i);
+    } else {
+      auto subtractTransp = [&](su2uint k_transp, const QuantType* qs, const QuantType* qv) {
+        const CBlockView<const ScalarType> view{nullptr, &qs[k_transp * nVar], &qv[k_transp * blkSz], nVar};
+        for (auto i = 0ul; i < nVar; ++i)
+          for (auto j = 0ul; j < nEqn; ++j) d_i[i * nEqn + j] -= view(i, j);
+      };
+      for (auto k_l = mat.row_ptr_l[iPoint]; k_l < mat.row_ptr_l[iPoint + 1]; ++k_l)
+        subtractTransp(l_to_u_transp[k_l], q_scale_u, q_blocks_u);
+      for (auto k_u = mat.row_ptr_u[iPoint]; k_u < mat.row_ptr_u[iPoint + 1]; ++k_u)
+        subtractTransp(u_to_l_transp[k_u], q_scale_l, q_blocks_l);
+    }
   }
   END_SU2_OMP_FOR
 }
