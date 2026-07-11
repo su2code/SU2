@@ -2331,7 +2331,7 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, const CConfig *config) {
                   *geometry, *config, 0, nVar, umusclKappa, solution, gradient, solMin, solMax, limiter);
 }
 
-void CSolver::Gauss_Elimination(su2double** A, su2double* rhs, unsigned short nVar) {
+void CSolver::GaussElimination(su2double** A, su2double* rhs, unsigned short nVar) {
   SU2_ZONE_SCOPED
 
   short iVar, jVar, kVar;

@@ -1569,7 +1569,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
           if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
           break;
         case LU_SGS:
-          /*--- Nothing to build. ---*/
+        case Q_LU_SGS:
+          /*--- Nothing to build (transpose path not supported for Q_LU_SGS; validate this is never reached). ---*/
           break;
         case PASTIX_ILU:
         case PASTIX_LU_P:

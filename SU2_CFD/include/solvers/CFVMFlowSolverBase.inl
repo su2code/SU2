@@ -640,7 +640,6 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
   }
   END_SU2_OMP_FOR
 
-  Jacobian.QuantizeOffDiagonalBlocks();
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -1297,13 +1296,14 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
       auto ModifyJacobian = [&](const unsigned long jPoint) {
         su2double jac[MAXNVAR * MAXNVAR], newJac[MAXNVAR * MAXNVAR];
-        auto* block = Jacobian.GetBlock(iPoint, jPoint);
-        for (auto iVar = 0u; iVar < nVar * nVar; iVar++) jac[iVar] = block[iVar];
+        const auto view = Jacobian.GetBlockView(iPoint, jPoint);
+        if (!view) return;
+        for (auto iVar = 0u; iVar < nVar; iVar++)
+          for (auto jVar = 0u; jVar < nVar; jVar++) jac[iVar * nVar + jVar] = view(iVar, jVar);
 
         CBlasStructure().gemm(nVar, nVar, nVar, mat, jac, newJac, config);
 
-        for (auto iVar = 0u; iVar < nVar * nVar; iVar++)
-          block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
+        Jacobian.SetBlock(iPoint, jPoint, newJac);
       };
       ModifyJacobian(iPoint);
       for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {

@@ -110,6 +110,43 @@ struct CSysMatrixComms {
 };
 
 /*!
+ * \brief Reconstruct the float row-scale from a stored int8 binary exponent.
+ *        The exponent \p e was packed as (e + 127) into the IEEE 754 biased-exponent field
+ *        with a zero mantissa, giving an exact power of two: 2^e.
+ *        This is the inverse of the encoding in QuantizeBlock.
+ */
+FORCEINLINE float DecodeQuantScale(int8_t e) noexcept {
+  const uint32_t bits = static_cast<uint32_t>(std::max(0, static_cast<int>(e) + 127)) << 23;
+  float scale;
+  memcpy(&scale, &bits, sizeof(bits));
+  return scale;
+}
+
+/*!
+ * \brief Read-only view of one matrix block.
+ *        Provides uniform \c operator()(i,j) access regardless of storage format:
+ *        if the block was written in quantized (Q_LU_SGS) format, values are decoded
+ *        on-the-fly; otherwise the underlying ScalarType pointer is indexed directly.
+ *        Evaluates to \c false if the block is absent from the sparsity pattern.
+ */
+template <class ScalarType>
+struct CBlockView {
+  const ScalarType* ptr = nullptr;  ///< Full-precision block; non-null iff not quantized.
+  const int8_t* qs = nullptr;       ///< Per-row binary exponent; non-null iff quantized.
+  const int8_t* qv = nullptr;       ///< Quantized values (row-major); non-null iff quantized.
+  unsigned short nEqn = 0;
+
+  /*! \brief False when the block is not present in the sparsity pattern. */
+  explicit operator bool() const { return ptr || qs; }
+
+  /*! \brief Return entry (row \p i, col \p j), decoding quantization if necessary. */
+  ScalarType operator()(unsigned long i, unsigned long j) const {
+    if (ptr) return ptr[i * nEqn + j];
+    return static_cast<ScalarType>(qv[i * nEqn + j] * DecodeQuantScale(qs[i]));
+  }
+};
+
+/*!
  * \class CSysMatrix
  * \ingroup SpLinSys
  * \brief Main class for defining block-compressed-row-storage sparse matrices.
@@ -125,18 +162,6 @@ class CSysMatrix {
   /*!< \brief Maximum number of variables the matrix can handle. The static
    * size is needed for fast, per-thread, static memory allocation. */
   enum : size_t { MAXNVAR = 20 };
-
-  /*--- Quantized off-diagonal storage. ---*/
-  using QuantType = int8_t;
-  /*! \brief When true, off-diagonal blocks are read from the quantized representation
-   *         during matrix-vector products and LU-SGS; the diagonal block always uses
-   *         the original full-precision storage. Call QuantizeOffDiagonalBlocks() first. */
-  static constexpr bool USE_QUANTIZATION = true;
-
-  QuantType* q_scale_l;   /*!< \brief Per-row exponent for L blocks, [nnz_l * nVar]. */
-  QuantType* q_offdiag_l; /*!< \brief Quantized L block entries, [nnz_l * nVar * nVar]. */
-  QuantType* q_scale_u;   /*!< \brief Per-row exponent for U blocks, [nnz_u * nVar]. */
-  QuantType* q_offdiag_u; /*!< \brief Quantized U block entries, [nnz_u * nVar * nVar]. */
 
   enum { OMP_MAX_SIZE_L = 8192 }; /*!< \brief Max. chunk size used in light parallel for loops. */
   enum { OMP_MAX_SIZE_H = 512 };  /*!< \brief Max. chunk size used in heavy parallel for loops. */
@@ -172,6 +197,22 @@ class CSysMatrix {
   LDU mat; /*!< \brief Host matrix (values owned via aligned_alloc; pattern from geometry). */
   LDU gpu; /*!< \brief Device matrix (all pointers to GPU memory). */
   LDU ilu; /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
+
+  /*--- Quantized off-diagonal storage (used when quantized_mode == true). ---*/
+  using QuantType = int8_t;
+
+  /*! \brief Set by Initialize() when preconditioner == Q_LU_SGS.
+   *         mat.l and mat.u are NOT allocated; off-diagonal blocks live in the
+   *         q_* arrays below. */
+  bool quantized_mode;
+
+  QuantType* q_scale_l;  /*!< \brief Per-row exponent for L blocks, [nnz_l * nVar]. */
+  QuantType* q_blocks_l; /*!< \brief Quantized L block entries, [nnz_l * nVar * nEqn]. */
+  QuantType* q_scale_u;  /*!< \brief Same as q_scale_l for the upper entries. */
+  QuantType* q_blocks_u; /*!< \brief Same as q_blocks_l for the upper entries. */
+  QuantType* q_scale_d;  /*!< \brief Same as q_scale_l for the diagonal entries, [nPoint * nVar].
+                          *          Populated by QuantizeDiagonalBlocks(). */
+  QuantType* q_blocks_d; /*!< \brief Same as q_blocks_l for the diagonal entries. */
 
   bool useCuda = false;               /*!< \brief Whether CUDA is enabled. */
   const unsigned long* l_to_u_transp; /*!< \brief L-entry index -> U-entry index of its transpose. */
@@ -303,7 +344,7 @@ class CSysMatrix {
    * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
    * \param[in,out] vec - On entry the rhs, on exit the solution.
    */
-  void Gauss_Elimination(ScalarType* matrix, ScalarType* vec) const;
+  void GaussElimination(ScalarType* matrix, ScalarType* vec) const;
 
   /*!
    * \brief Invert a small dense matrix.
@@ -318,7 +359,7 @@ class CSysMatrix {
    * \param[in] rhs - Right-hand-side of the linear system.
    * \return Solution of the linear system (overwritten on rhs).
    */
-  inline void Gauss_Elimination(unsigned long block_i, ScalarType* rhs) const;
+  inline void GaussElimination(unsigned long block_i, ScalarType* rhs) const;
 
   /*!
    * \brief Inverse diagonal block.
@@ -378,13 +419,35 @@ class CSysMatrix {
 
   /*!
    * \brief Computes product += A_k * vec using the quantized representation of block k.
-   * \note Only valid after QuantizeOffDiagonalBlocks() has been called.
+   * \note Only valid after QuantizeDiagonalBlocks() has been called.
    * \param[in] k - Block index in the CSR flat storage.
    * \param[in] vec - Input vector (nEqn entries).
    * \param[in,out] prod - Accumulation output (nVar entries).
    */
   inline void QuantizedMatVecAdd(const QuantType* qs, const QuantType* qv, const ScalarType* vec,
                                  ScalarType* prod) const;
+
+  /*! \brief Quantize one nVar×nVar block (row-major) into the int8 scale+value arrays.
+   *         Called on the hot assembly path (SetBlocks/UpdateBlocks in Q_LU_SGS mode). */
+  void QuantizeBlock(const ScalarType* blk, QuantType* qs, QuantType* qv) const;
+
+  /*! \brief Full-row product using quantized L/D/U (Q_LU_SGS SpMV path). */
+  inline void QuantizedRowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
+
+  /*! \brief Upper-triangle product using quantized U (Q_LU_SGS backward sweep). */
+  inline void QuantizedUpperProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, unsigned long col_ub,
+                                    ScalarType* prod) const;
+
+  /*! \brief Lower-triangle product using quantized L (Q_LU_SGS forward sweep). */
+  inline void QuantizedLowerProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, unsigned long col_lb,
+                                    ScalarType* prod) const;
+
+  /*! \brief Diagonal product using quantized D (Q_LU_SGS backward sweep). */
+  inline void QuantizedDiagonalProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
+
+  /*! \brief Gauss elimination on the quantized diagonal block: decodes q_blocks_d into a local
+   *         ScalarType buffer and delegates to the scalar GaussElimination overload. */
+  inline void QuantizedGaussElimination(unsigned long block_i, ScalarType* rhs) const;
 
  public:
   /*!
@@ -415,7 +478,7 @@ class CSysMatrix {
   /*!
    * \brief Compresses off-diagonal blocks into quantized form for use with USE_QUANTIZATION.
    */
-  void QuantizeOffDiagonalBlocks();
+  void QuantizeDiagonalBlocks();
 
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
@@ -453,6 +516,8 @@ class CSysMatrix {
 
   /*!
    * \brief Get a pointer to the start of block "ij", non-const version
+   * \note TODO(quantization): In Q_LU_SGS mode mat.l/mat.u are nullptr; callers that
+   *       modify an off-diagonal block via this pointer must be triaged or validated.
    */
   FORCEINLINE ScalarType* GetBlock(unsigned long block_i, unsigned long block_j) {
     const CSysMatrix& const_this = *this;
@@ -475,6 +540,32 @@ class CSysMatrix {
   }
 
   /*!
+   * \brief Read-only view of block (block_i, block_j) that works in both standard and
+   *        Q_LU_SGS quantized storage.  In quantized mode off-diagonal values are decoded
+   *        on-the-fly inside \c CBlockView::operator()(i,j); no temporary copy is made.
+   * \return A \c CBlockView that evaluates to false if the block is absent.
+   */
+  FORCEINLINE CBlockView<ScalarType> GetBlockView(unsigned long block_i, unsigned long block_j) const {
+    if (block_i == block_j) return {&mat.d[block_i * nVar * nVar], nullptr, nullptr, nVar};
+    if (block_j < block_i) {
+      for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k) {
+        if (mat.col_ind_l[k] == block_j) {
+          if (quantized_mode) return {nullptr, &q_scale_l[k * nVar], &q_blocks_l[k * nVar * nVar], nVar};
+          return {&mat.l[k * nVar * nVar], nullptr, nullptr, nVar};
+        }
+      }
+    } else {
+      for (auto k = mat.row_ptr_u[block_i]; k < mat.row_ptr_u[block_i + 1]; ++k) {
+        if (mat.col_ind_u[k] == block_j) {
+          if (quantized_mode) return {nullptr, &q_scale_u[k * nVar], &q_blocks_u[k * nVar * nVar], nVar};
+          return {&mat.u[k * nVar * nVar], nullptr, nullptr, nVar};
+        }
+      }
+    }
+    return {};  // block absent from sparsity pattern
+  }
+
+  /*!
    * \brief Set the value of a block (in flat format) in the sparse matrix with scaling.
    * \note If the template param Overwrite is false we add to the block (bij += alpha*b).
    * \param[in] block_i - Row index.
@@ -485,6 +576,28 @@ class CSysMatrix {
   template <class OtherType, bool Overwrite = true, su2enable_if<!is_pointer<OtherType>::value> = 0>
   inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* val_block,
                        OtherType alpha = 1.0) {
+    /*--- Quantized overwrite path: encode val_block directly into int8 L/U storage. ---*/
+    if (quantized_mode && block_i != block_j && Overwrite) {
+      ScalarType tmp[MAXNVAR * MAXNVAR];
+      SU2_OMP_SIMD
+      for (auto i = 0ul; i < nVar * nVar; ++i) tmp[i] = PassiveAssign(alpha * val_block[i]);
+      if (block_j < block_i) {
+        for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k)
+          if (mat.col_ind_l[k] == block_j) {
+            QuantizeBlock(tmp, &q_scale_l[k * nVar], &q_blocks_l[k * nVar * nVar]);
+            return;
+          }
+      } else {
+        for (auto k = mat.row_ptr_u[block_i]; k < mat.row_ptr_u[block_i + 1]; ++k)
+          if (mat.col_ind_u[k] == block_j) {
+            QuantizeBlock(tmp, &q_scale_u[k * nVar], &q_blocks_u[k * nVar * nVar]);
+            return;
+          }
+      }
+      return;
+    }
+    /*! \note TODO(quantization): Additive (Overwrite=false) writes to off-diagonal Q_LU_SGS
+     *         blocks are a no-op (GetBlock returns nullptr); triage callers if needed. */
     auto mat_ij = GetBlock(block_i, block_j);
     if (!mat_ij) return;
     SU2_OMP_SIMD
@@ -595,6 +708,9 @@ class CSysMatrix {
    * \param[in] jPoint - Row from which we subtract the blocks.
    * \param[out] bii, bij, bji, bjj - Blocks of the matrix.
    */
+  /*! \brief TODO(quantization): In Q_LU_SGS mode mat.l/mat.u are nullptr; bij/bji will be
+   *         invalid. Callers using GetBlocks to directly write off-diagonal blocks must be
+   *         triaged and replaced with UpdateBlocks or flagged as incompatible. */
   inline void GetBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, ScalarType*& bii,
                         ScalarType*& bij, ScalarType*& bji, ScalarType*& bjj) {
     const auto blkSz = nVar * nEqn;
@@ -617,11 +733,30 @@ class CSysMatrix {
   template <bool OverwriteOffDiag = false, class MatrixType, class OtherType = ScalarType>
   inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, const MatrixType& block_i,
                            const MatrixType& block_j, OtherType scale = 1) {
-    ScalarType *bii, *bij, *bji, *bjj;
-    GetBlocks(iEdge, iPoint, jPoint, bii, bij, bji, bjj);
+    const auto blkSz = nVar * nEqn;
+    auto* bii = &mat.d[iPoint * blkSz];
+    auto* bjj = &mat.d[jPoint * blkSz];
 
     unsigned long iVar, jVar, offset = 0;
 
+    if (quantized_mode) {
+      /*--- Diagonal: full-precision accumulation. Off-diagonal: quantize on the fly. ---*/
+      ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
+          bii[offset] += PassiveAssign(block_i[iVar][jVar] * scale);
+          bjj[offset] -= PassiveAssign(block_j[iVar][jVar] * scale);
+          bij_buf[offset] = PassiveAssign(block_j[iVar][jVar] * scale);
+          bji_buf[offset] = -PassiveAssign(block_i[iVar][jVar] * scale);
+        }
+      QuantizeBlock(bij_buf, &q_scale_u[iEdge * nVar], &q_blocks_u[iEdge * blkSz]);
+      const auto k_l = edge_ptr_l[iEdge];
+      QuantizeBlock(bji_buf, &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
+      return;
+    }
+
+    auto* bij = &mat.u[iEdge * blkSz];
+    auto* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nEqn; jVar++) {
         bii[offset] += PassiveAssign(block_i[iVar][jVar] * scale);
@@ -675,20 +810,30 @@ class CSysMatrix {
     for (size_t k = 0; k < N; ++k) {
       if (mask[k] == 0) continue;
 
-      /*--- Fetch the blocks. ---*/
       auto bii = &mat.d[iPoint[k] * blkSz];
       auto bjj = &mat.d[jPoint[k] * blkSz];
-      auto bij = &mat.u[iEdge[k] * blkSz];
-      auto bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
 
-      /*--- Update, block i was negated during transpose in the
-       * hope the assignments below become non-temporal stores. ---*/
-      SU2_OMP_SIMD
-      for (size_t i = 0; i < blkSz; ++i) {
-        bii[i] -= blk_i[k][i];
-        bjj[i] -= blk_j[k][i];
-        bij[i] = blk_j[k][i];
-        bji[i] = blk_i[k][i];
+      if (quantized_mode) {
+        SU2_OMP_SIMD
+        for (size_t i = 0; i < blkSz; ++i) {
+          bii[i] -= blk_i[k][i];
+          bjj[i] -= blk_j[k][i];
+        }
+        QuantizeBlock(blk_j[k], &q_scale_u[iEdge[k] * nVar], &q_blocks_u[iEdge[k] * blkSz]);
+        const auto k_l = edge_ptr_l[iEdge[k]];
+        QuantizeBlock(blk_i[k], &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
+      } else {
+        auto bij = &mat.u[iEdge[k] * blkSz];
+        auto bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
+        /*--- Update, block i was negated during transpose in the
+         * hope the assignments below become non-temporal stores. ---*/
+        SU2_OMP_SIMD
+        for (size_t i = 0; i < blkSz; ++i) {
+          bii[i] -= blk_i[k][i];
+          bjj[i] -= blk_j[k][i];
+          bij[i] = blk_j[k][i];
+          bji[i] = blk_i[k][i];
+        }
       }
     }
   }
@@ -707,11 +852,25 @@ class CSysMatrix {
   inline void SetBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j,
                         OtherType scale = 1) {
     const auto blkSz = nVar * nEqn;
-    ScalarType* bij = &mat.u[iEdge * blkSz];
-    ScalarType* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
-
     unsigned long iVar, jVar, offset = 0;
 
+    if (quantized_mode) {
+      /*--- TODO(quantization): Overwrite=false (additive) path is not supported for Q_LU_SGS;
+       *    in FVM assembly each edge block has a single writer so this is safe for now. ---*/
+      ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
+          bij_buf[offset] = PassiveAssign(block_j[iVar][jVar] * scale);
+          bji_buf[offset] = -PassiveAssign(block_i[iVar][jVar] * scale);
+        }
+      QuantizeBlock(bij_buf, &q_scale_u[iEdge * nVar], &q_blocks_u[iEdge * blkSz]);
+      const auto k_l = edge_ptr_l[iEdge];
+      QuantizeBlock(bji_buf, &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
+      return;
+    }
+
+    ScalarType* bij = &mat.u[iEdge * blkSz];
+    ScalarType* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nEqn; jVar++) {
         bij[offset] = (Overwrite ? ScalarType(0) : bij[offset]) + PassiveAssign(block_j[iVar][jVar] * scale);
@@ -766,16 +925,20 @@ class CSysMatrix {
     for (size_t k = 0; k < N; ++k) {
       if (mask[k] == 0) continue;
 
-      /*--- Fetch the blocks. ---*/
-      ScalarType* bij = &mat.u[iEdge[k] * blkSz];
-      ScalarType* bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
-
-      /*--- Update, block i was negated during transpose in the
-       * hope the assignments below become non-temporal stores. ---*/
-      SU2_OMP_SIMD
-      for (size_t i = 0; i < blkSz; ++i) {
-        bij[i] = blk_j[k][i];
-        bji[i] = blk_i[k][i];
+      if (quantized_mode) {
+        QuantizeBlock(blk_j[k], &q_scale_u[iEdge[k] * nVar], &q_blocks_u[iEdge[k] * blkSz]);
+        const auto k_l = edge_ptr_l[iEdge[k]];
+        QuantizeBlock(blk_i[k], &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
+      } else {
+        ScalarType* bij = &mat.u[iEdge[k] * blkSz];
+        ScalarType* bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
+        /*--- Update, block i was negated during transpose in the
+         * hope the assignments below become non-temporal stores. ---*/
+        SU2_OMP_SIMD
+        for (size_t i = 0; i < blkSz; ++i) {
+          bij[i] = blk_j[k][i];
+          bji[i] = blk_i[k][i];
+        }
       }
     }
   }

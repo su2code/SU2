@@ -2517,6 +2517,7 @@ enum ENUM_LINEAR_SOLVER_PREC {
   LU_SGS,         /*!< \brief LU SGS preconditioner. */
   LINELET,        /*!< \brief Line implicit preconditioner. */
   ILU,            /*!< \brief ILU(k) preconditioner. */
+  Q_LU_SGS = 4,  /*!< \brief LU-SGS with quantized (int8) off-diagonal storage; L/U are never allocated as ScalarType. */
   PASTIX_ILU=10,  /*!< \brief PaStiX ILU(k) preconditioner. */
   PASTIX_LU_P,    /*!< \brief PaStiX LU as preconditioner. */
   PASTIX_LDLT_P,  /*!< \brief PaStiX LDLT as preconditioner. */
@@ -2526,6 +2527,7 @@ static const MapType<std::string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Ma
   MakePair("LU_SGS", LU_SGS)
   MakePair("LINELET", LINELET)
   MakePair("ILU", ILU)
+  MakePair("Q_LU_SGS", Q_LU_SGS)
   MakePair("PASTIX_ILU", PASTIX_ILU)
   MakePair("PASTIX_LU", PASTIX_LU_P)
   MakePair("PASTIX_LDLT", PASTIX_LDLT_P)
