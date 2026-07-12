@@ -233,7 +233,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}}
+          args: -b ${{github.ref}} -t develop -c pedro/quantization -s ${{matrix.testscript}}
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
@@ -282,7 +282,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--tapetests"
+          args: -b ${{github.ref}} -t develop -c pedro/quantization -s ${{matrix.testscript}} -a "--tapetests"
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2:260405-0054
         with:
@@ -330,7 +330,7 @@ jobs:
           PMIX_MCA_gds: hash
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--tsan"
+          args: -b ${{github.ref}} -t develop -c pedro/quantization -s ${{matrix.testscript}} -a "--tsan"
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2-tsan:260405-0054
         with:
@@ -375,7 +375,7 @@ jobs:
         uses: docker://ghcr.io/su2code/su2/test-su2-asan:260405-0054
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
-          args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--asan"
+          args: -b ${{github.ref}} -t develop -c pedro/quantization -s ${{matrix.testscript}} -a "--asan"
       - name: Cleanup
         uses: docker://ghcr.io/su2code/su2/test-su2-asan:260405-0054
         with:
