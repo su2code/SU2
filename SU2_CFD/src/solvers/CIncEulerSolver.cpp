@@ -463,10 +463,10 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
-  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream());
+  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   config->SetOmega_FreeStream(Omega_FreeStream);
 
-  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
+  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   const su2double MassDiffusivityND = config->GetDiffusivity_Constant() / (Velocity_Ref * Length_Ref);
@@ -1183,7 +1183,7 @@ void CIncEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
     if (LD2_Scheme) {
       numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), nodes->GetGradient_Primitive(jPoint));
-      if (!geometry->nodes->GetPeriodicBoundary(iPoint) || (geometry->nodes->GetPeriodicBoundary(iPoint) 
+      if (!geometry->nodes->GetPeriodicBoundary(iPoint) || (geometry->nodes->GetPeriodicBoundary(iPoint)
           && !geometry->nodes->GetPeriodicBoundary(jPoint))) {
         numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(jPoint));
       } else {
@@ -2014,12 +2014,6 @@ void CIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, C
   PrepareImplicitIteration_impl(precond, geometry, config);
 }
 
-void CIncEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
-  SU2_ZONE_SCOPED
-
-  CompleteImplicitIteration_impl<false>(geometry, config);
-}
-
 void CIncEulerSolver::SetBeta_Parameter(CGeometry *geometry, CSolver **solver_container,
                                         CConfig *config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
@@ -2535,11 +2529,19 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
     if (species_model) scalar_inlet = config->GetInlet_SpeciesVal(config->GetMarker_All_TagBound(val_marker));
     CFluidModel* auxFluidModel = solver_container[FLOW_SOL]->GetFluidModel();
     auxFluidModel->SetTDState_T(V_inlet[prim_idx.Temperature()], scalar_inlet);
-    V_inlet[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
+
+    /*--- For the flamelet model with FLOW_MARKERS enthalpy BC, we obtain the inlet enthalpy
+     from the flamelet species solver  With SPECIES_MARKERS, the enthalpy in MARKER_INLET_SPECIES
+     is used directly. ---*/
+    if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET &&
+        config->GetFlamelet_Enthalpy_BC() == FLAMELET_ENTHALPY_BC::FLOW_MARKERS)
+      V_inlet[prim_idx.Enthalpy()] = nodes->GetEnthalpy(iPoint);
+    else
+      V_inlet[prim_idx.Enthalpy()] = auxFluidModel->GetEnthalpy();
 
     /*--- Access density at the node. This is either constant by
-      construction, or will be set fixed implicitly by the temperature
-      and equation of state. ---*/
+     construction, or will be set fixed implicitly by the temperature
+     and equation of state. ---*/
 
     V_inlet[prim_idx.Density()] = nodes->GetDensity(iPoint);
 

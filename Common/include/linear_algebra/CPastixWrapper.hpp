@@ -62,21 +62,28 @@ class CPastixWrapper {
   vector<pastix_int_t> perm;     /*!< \brief Ordering computed by PaStiX. */
   vector<su2mixedfloat> workvec; /*!< \brief RHS vector which then becomes the solution. */
 
-  pastix_int_t iparm[IPARM_SIZE];  /*!< \brief Integer parameters for PaStiX. */
-  passivedouble dparm[DPARM_SIZE]; /*!< \brief Floating point parameters for PaStiX. */
+  vector<unsigned long> csr_row_ptr; /*!< \brief Owned CSR row pointers (built from LDU). */
+  vector<unsigned long> csr_col_ind; /*!< \brief Owned CSR column indices (built from LDU). */
+
+  pastix_int_t iparm[IPARM_SIZE]; /*!< \brief Integer parameters for PaStiX. */
+  double dparm[DPARM_SIZE];       /*!< \brief Floating point parameters for PaStiX. */
 
   struct {
     unsigned long nVar = 0;
     unsigned long nPoint = 0;
     unsigned long nPointDomain = 0;
-    const unsigned long* rowptr = nullptr;
-    const unsigned long* colidx = nullptr;
-    const ScalarType* values = nullptr;
+    unsigned long blkSz = 0; /*!< \brief Block size (nVar * nVar) for value assembly. */
+
+    const unsigned long* row_ptr_l = nullptr; /*!< \brief LDU lower row pointers (geometry-owned). */
+    const unsigned long* row_ptr_u = nullptr; /*!< \brief LDU upper row pointers (geometry-owned). */
+    const ScalarType* d = nullptr;            /*!< \brief Diagonal blocks (matrix-owned). */
+    const ScalarType* l = nullptr;            /*!< \brief Lower blocks (matrix-owned). */
+    const ScalarType* u = nullptr;            /*!< \brief Upper blocks (matrix-owned). */
 
     unsigned long size_rhs() const { return nPointDomain * nVar; }
-  } matrix; /*!< \brief Pointers and sizes of the input matrix. */
+  } matrix; /*!< \brief Dimensions and LDU pointers captured from the owning CSysMatrix. */
 
-  bool issetup{};        /*!< \brief Signals that the matrix data has been provided. */
+  bool issetup{};        /*!< \brief Signals that the structure has been provided. */
   bool isinitialized{};  /*!< \brief Signals that the sparsity pattern has been set. */
   bool isfactorized{};   /*!< \brief Signals that a factorization has been computed. */
   bool transpose{};      /*!< \brief Solve A^T x = b instead of A x = b. */
@@ -110,6 +117,11 @@ class CPastixWrapper {
    */
   void Initialize(CGeometry* geometry, const CConfig* config);
 
+  /*!
+   * \brief Assemble CSR values from the stored LDU pointers directly into the values buffer.
+   */
+  void AssembleValues();
+
  public:
   CPastixWrapper() = default;
 
@@ -125,23 +137,43 @@ class CPastixWrapper {
   ~CPastixWrapper() { Clean(); }
 
   /*!
-   * \brief Set matrix data, only once.
-   * \param[in] nVar - DOF per point.
-   * \param[in] nPoint - Total number of points including halos.
-   * \param[in] nPointDomain - Number of internal points.
-   * \param[in] rowptr - Array, where column index data starts for each matrix row.
-   * \param[in] colidx - Non zeros column indices.
-   * \param[in] values - Matrix coefficients.
+   * \brief Returns true once SetLDU has been called.
    */
-  void SetMatrix(unsigned long nVar, unsigned long nPoint, unsigned long nPointDomain, const unsigned long* rowptr,
-                 const unsigned long* colidx, const ScalarType* values) {
+  bool IsSetup() const { return issetup; }
+
+  /*!
+   * \brief Set LDU structure and value pointers; builds and owns assembled CSR (called once).
+   * \param[in] nVar - DOF per point (square blocks: nVar x nVar).
+   * \param[in] nPoint - Total number of points including halos.
+   * \param[in] nPointDomain - Number of internal points (domain rows).
+   * \param[in] row_ptr_l/u - LDU lower/upper row pointers (geometry-owned, must outlive wrapper).
+   * \param[in] col_ind_l/u - LDU lower/upper column indices (geometry-owned).
+   * \param[in] d/l/u - LDU value blocks (matrix-owned, must outlive wrapper).
+   */
+  void SetLDU(unsigned long nVar, unsigned long nPoint, unsigned long nPointDomain, const unsigned long* row_ptr_l,
+              const unsigned long* col_ind_l, const unsigned long* row_ptr_u, const unsigned long* col_ind_u,
+              const ScalarType* d, const ScalarType* l, const ScalarType* u) {
     if (issetup) return;
     matrix.nVar = nVar;
     matrix.nPoint = nPoint;
     matrix.nPointDomain = nPointDomain;
-    matrix.rowptr = rowptr;
-    matrix.colidx = colidx;
-    matrix.values = values;
+    matrix.row_ptr_l = row_ptr_l;
+    matrix.row_ptr_u = row_ptr_u;
+    matrix.d = d;
+    matrix.l = l;
+    matrix.u = u;
+    matrix.blkSz = nVar * nVar;
+
+    const unsigned long nnz_domain = row_ptr_l[nPointDomain] + nPointDomain + row_ptr_u[nPointDomain];
+    csr_row_ptr.resize(nPointDomain + 1);
+    csr_col_ind.reserve(nnz_domain);
+    for (auto i = 0ul; i < nPointDomain; ++i) {
+      csr_row_ptr[i] = static_cast<unsigned long>(csr_col_ind.size());
+      for (auto k = row_ptr_l[i]; k < row_ptr_l[i + 1]; ++k) csr_col_ind.push_back(col_ind_l[k]);
+      csr_col_ind.push_back(i);
+      for (auto k = row_ptr_u[i]; k < row_ptr_u[i + 1]; ++k) csr_col_ind.push_back(col_ind_u[k]);
+    }
+    csr_row_ptr[nPointDomain] = static_cast<unsigned long>(csr_col_ind.size());
     issetup = true;
   }
 
