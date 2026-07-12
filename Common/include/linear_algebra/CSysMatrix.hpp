@@ -138,25 +138,40 @@ class CSysMatrix {
   unsigned long nVar;         /*!< \brief Number of variables (and rows of the blocks). */
   unsigned long nEqn;         /*!< \brief Number of equations (and columns of the blocks). */
 
-  ScalarType* matrix;           /*!< \brief Entries of the sparse matrix. */
-  unsigned long nnz;            /*!< \brief Number of possible nonzero entries in the matrix. */
-  const unsigned long* row_ptr; /*!< \brief Pointers to the first element in each row. */
-  const unsigned long* dia_ptr; /*!< \brief Pointers to the diagonal element in each row. */
-  const unsigned long* col_ind; /*!< \brief Column index for each of the elements in val(). */
-  const unsigned long* col_ptr; /*!< \brief The transpose of col_ind, pointer to blocks with the same column index. */
+  /*!
+   * \brief Aggregates value arrays and sparse-structure pointers for an LDU-partitioned matrix.
+   *        Each CSysMatrix holds three LDU instances: the host matrix (mat), its device copy (gpu),
+   *        and the ILU factorization (ilu). Ownership of the value arrays (d/l/u) and whether
+   *        the pointers address host or device memory is managed by CSysMatrix.
+   */
+  struct LDU {
+    ScalarType* d = nullptr;                  /*!< \brief Diagonal block values. */
+    ScalarType* l = nullptr;                  /*!< \brief Strictly-lower block values. */
+    ScalarType* u = nullptr;                  /*!< \brief Strictly-upper block values. */
+    const unsigned long* row_ptr_l = nullptr; /*!< \brief Row pointers for L (geometry-owned or GPU copy). */
+    const unsigned long* col_ind_l = nullptr; /*!< \brief Column indices for L. */
+    const unsigned long* row_ptr_u = nullptr; /*!< \brief Row pointers for U. */
+    const unsigned long* col_ind_u = nullptr; /*!< \brief Column indices for U. */
+    unsigned long nnz_l = 0;                  /*!< \brief Number of L nonzeros. */
+    unsigned long nnz_u = 0;                  /*!< \brief Number of U nonzeros. */
+  };
 
-  ScalarType* d_matrix;           /*!< \brief Device Pointer to store the matrix values on the GPU. */
-  const unsigned long* d_row_ptr; /*!< \brief Device Pointers to the first element in each row. */
-  const unsigned long* d_col_ind; /*!< \brief Device Column index for each of the elements in val(). */
-  bool useCuda = false;           /*!< \brief Boolean that indicates whether user has enabled CUDA or not.
-                                     Mainly used to conditionally free GPU memory in the class destructor. */
+  LDU mat; /*!< \brief Host matrix (values owned via aligned_alloc; pattern from geometry). */
+  LDU gpu; /*!< \brief Device matrix (all pointers to GPU memory). */
+  LDU ilu; /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
 
-  ScalarType* ILU_matrix;           /*!< \brief Entries of the ILU sparse matrix. */
-  unsigned long nnz_ilu;            /*!< \brief Number of possible nonzero entries in the matrix (ILU). */
-  const unsigned long* row_ptr_ilu; /*!< \brief Pointers to the first element in each row (ILU). */
-  const unsigned long* dia_ptr_ilu; /*!< \brief Pointers to the diagonal element in each row (ILU). */
-  const unsigned long* col_ind_ilu; /*!< \brief Column index for each of the elements in val() (ILU). */
-  unsigned short ilu_fill_in;       /*!< \brief Fill in level for the ILU preconditioner. */
+  bool useCuda = false;               /*!< \brief Whether CUDA is enabled. */
+  const unsigned long* l_to_u_transp; /*!< \brief L-entry index -> U-entry index of its transpose. */
+  const unsigned long* u_to_l_transp; /*!< \brief U-entry index -> L-entry index of its transpose. */
+
+  /*!
+   * \brief Lookup table from edges to the L-index in the LDU split.
+   * U-index == edge index by construction (edges are ordered 1:1 with the U pattern).
+   * Therefore, edge_ptr_l == u_to_l_transp, but we keep a separate member for clarity.
+   */
+  const unsigned long* edge_ptr_l;
+
+  unsigned short ilu_fill_in; /*!< \brief Fill level for the ILU preconditioner. */
 
   /*!< \brief Level structure for alternative shared memory parallelization of ILU. */
   CCompressedSparsePatternUL levels_ilu;
@@ -187,21 +202,6 @@ class CSysMatrix {
 #ifdef HAVE_PASTIX
   mutable CPastixWrapper<ScalarType> pastix_wrapper;
 #endif
-
-  /*!
-   * \brief Auxilary object to wrap the edge map pointer used in fast block updates, i.e. without linear searches.
-   */
-  struct {
-    const unsigned long* ptr = nullptr;
-    unsigned long nEdge = 0;
-
-    operator bool() { return nEdge != 0; }
-
-    inline unsigned long operator()(unsigned long edge, unsigned long node) const { return ptr[2 * edge + node]; }
-    inline unsigned long ij(unsigned long edge) const { return ptr[2 * edge]; }
-    inline unsigned long ji(unsigned long edge) const { return ptr[2 * edge + 1]; }
-
-  } edge_ptr;
 
   /*!
    * \brief Handle type conversion for when we Set, Add, etc. blocks, preserving derivative information (if supported by
@@ -322,19 +322,10 @@ class CSysMatrix {
   inline const ScalarType* InvertDiagonalBlockILUMatrix(unsigned long block_i);
 
   /*!
-   * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
+   * \brief Returns the start of the ILU block or nullptr if (i,j) is not a nonzero.
+   * \param[in] block_i/j - Indexes of the block in the matrix-by-blocks structure.
    */
   inline ScalarType* GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j);
-
-  /*!
-   * \brief Set the value of a block in the sparse matrix.
-   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
-   * \param[in] **val_block - Block to set to A(i, j).
-   */
-  inline void SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j, ScalarType* val_block);
 
   /*!
    * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
@@ -392,7 +383,7 @@ class CSysMatrix {
    * \param[in] neqn - Number of equations (and columns of the blocks).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] needTranspPtr - If "col_ptr" should be created, used for "SetDiagonalAsColumnSum".
+   * \param[in] needTranspPtr - If the L/U transpose maps should be built, used for "SetDiagonalAsColumnSum".
    */
   void Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar, unsigned short neqn,
                   bool EdgeConnect, CGeometry* geometry, const CConfig* config, bool needTranspPtr = false,
@@ -421,10 +412,14 @@ class CSysMatrix {
    * \return Pointer to location in memory where the block starts.
    */
   FORCEINLINE const ScalarType* GetBlock(unsigned long block_i, unsigned long block_j) const {
-    /*--- The position of the diagonal block is known which allows halving the search space. ---*/
-    const auto end = (block_j < block_i) ? dia_ptr[block_i] : row_ptr[block_i + 1];
-    for (auto index = (block_j < block_i) ? row_ptr[block_i] : dia_ptr[block_i]; index < end; ++index)
-      if (col_ind[index] == block_j) return &matrix[index * nVar * nEqn];
+    if (block_i == block_j) return &mat.d[block_i * nVar * nEqn];
+    if (block_j < block_i) {
+      for (auto index = mat.row_ptr_l[block_i]; index < mat.row_ptr_l[block_i + 1]; ++index)
+        if (mat.col_ind_l[index] == block_j) return &mat.l[index * nVar * nEqn];
+      return nullptr;
+    }
+    for (auto index = mat.row_ptr_u[block_i]; index < mat.row_ptr_u[block_i + 1]; ++index)
+      if (mat.col_ind_u[index] == block_j) return &mat.u[index * nVar * nEqn];
     return nullptr;
   }
 
@@ -574,10 +569,11 @@ class CSysMatrix {
    */
   inline void GetBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, ScalarType*& bii,
                         ScalarType*& bij, ScalarType*& bji, ScalarType*& bjj) {
-    bii = &matrix[dia_ptr[iPoint] * nVar * nEqn];
-    bjj = &matrix[dia_ptr[jPoint] * nVar * nEqn];
-    bij = &matrix[edge_ptr(iEdge, 0) * nVar * nEqn];
-    bji = &matrix[edge_ptr(iEdge, 1) * nVar * nEqn];
+    const auto blkSz = nVar * nEqn;
+    bii = &mat.d[iPoint * blkSz];
+    bjj = &mat.d[jPoint * blkSz];
+    bij = &mat.u[iEdge * blkSz];
+    bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
   }
 
   /*!
@@ -590,7 +586,7 @@ class CSysMatrix {
    * \param[in] block_j - Adds to ij, subs from jj.
    * \param[in] scale - Scale blocks during update (axpy type op).
    */
-  template <class MatrixType, class OtherType = ScalarType>
+  template <bool OverwriteOffDiag = false, class MatrixType, class OtherType = ScalarType>
   inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, const MatrixType& block_i,
                            const MatrixType& block_j, OtherType scale = 1) {
     ScalarType *bii, *bij, *bji, *bjj;
@@ -601,9 +597,14 @@ class CSysMatrix {
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nEqn; jVar++) {
         bii[offset] += PassiveAssign(block_i[iVar][jVar] * scale);
-        bij[offset] += PassiveAssign(block_j[iVar][jVar] * scale);
-        bji[offset] -= PassiveAssign(block_i[iVar][jVar] * scale);
         bjj[offset] -= PassiveAssign(block_j[iVar][jVar] * scale);
+        if constexpr (OverwriteOffDiag) {
+          bij[offset] = PassiveAssign(block_j[iVar][jVar] * scale);
+          bji[offset] = -PassiveAssign(block_i[iVar][jVar] * scale);
+        } else {
+          bij[offset] += PassiveAssign(block_j[iVar][jVar] * scale);
+          bji[offset] -= PassiveAssign(block_i[iVar][jVar] * scale);
+        }
         ++offset;
       }
     }
@@ -615,14 +616,14 @@ class CSysMatrix {
   template <class MatrixType>
   inline void UpdateBlocksSub(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
                               const MatrixType& block_i, const MatrixType& block_j) {
-    UpdateBlocks<MatrixType, ScalarType>(iEdge, iPoint, jPoint, block_i, block_j, -1);
+    UpdateBlocks<false, MatrixType, ScalarType>(iEdge, iPoint, jPoint, block_i, block_j, -1);
   }
 
   /*!
    * \brief SIMD version, does the update for multiple edges and points.
    * \note Nothing is updated if the mask is 0.
    */
-  template <class MatTypeSIMD, size_t N, class I, class F = ScalarType>
+  template <bool OverwriteOffDiag = false, class MatTypeSIMD, size_t N, class I, class F = ScalarType>
   FORCEINLINE void UpdateBlocks(simd::Array<I, N> iEdge, simd::Array<I, N> iPoint, simd::Array<I, N> jPoint,
                                 const MatTypeSIMD& block_i, const MatTypeSIMD& block_j, simd::Array<F, N> mask = 1) {
     static_assert(MatTypeSIMD::StaticSize, "This method requires static size blocks.");
@@ -647,10 +648,10 @@ class CSysMatrix {
       if (mask[k] == 0) continue;
 
       /*--- Fetch the blocks. ---*/
-      auto bii = &matrix[dia_ptr[iPoint[k]] * blkSz];
-      auto bjj = &matrix[dia_ptr[jPoint[k]] * blkSz];
-      auto bij = &matrix[edge_ptr(iEdge[k], 0) * blkSz];
-      auto bji = &matrix[edge_ptr(iEdge[k], 1) * blkSz];
+      auto bii = &mat.d[iPoint[k] * blkSz];
+      auto bjj = &mat.d[jPoint[k] * blkSz];
+      auto bij = &mat.u[iEdge[k] * blkSz];
+      auto bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
 
       /*--- Update, block i was negated during transpose in the
        * hope the assignments below become non-temporal stores. ---*/
@@ -677,8 +678,9 @@ class CSysMatrix {
   template <class MatrixType, class OtherType = ScalarType, bool Overwrite = true>
   inline void SetBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j,
                         OtherType scale = 1) {
-    ScalarType* bij = &matrix[edge_ptr(iEdge, 0) * nVar * nEqn];
-    ScalarType* bji = &matrix[edge_ptr(iEdge, 1) * nVar * nEqn];
+    const auto blkSz = nVar * nEqn;
+    ScalarType* bij = &mat.u[iEdge * blkSz];
+    ScalarType* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
 
     unsigned long iVar, jVar, offset = 0;
 
@@ -737,8 +739,8 @@ class CSysMatrix {
       if (mask[k] == 0) continue;
 
       /*--- Fetch the blocks. ---*/
-      auto bij = &matrix[edge_ptr(iEdge[k], 0) * blkSz];
-      auto bji = &matrix[edge_ptr(iEdge[k], 1) * blkSz];
+      ScalarType* bij = &mat.u[iEdge[k] * blkSz];
+      ScalarType* bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
 
       /*--- Update, block i was negated during transpose in the
        * hope the assignments below become non-temporal stores. ---*/
@@ -760,7 +762,7 @@ class CSysMatrix {
    */
   template <class OtherType, bool Overwrite = true, class T = ScalarType>
   inline void SetBlock2Diag(unsigned long block_i, const OtherType& val_block, T alpha = 1.0) {
-    auto mat_ii = &matrix[dia_ptr[block_i] * nVar * nEqn];
+    auto mat_ii = &mat.d[block_i * nVar * nEqn];
 
     for (auto iVar = 0ul; iVar < nVar; iVar++)
       for (auto jVar = 0ul; jVar < nEqn; jVar++) {
@@ -793,8 +795,8 @@ class CSysMatrix {
    */
   template <class OtherType>
   inline void AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      matrix[dia_ptr[block_i] * nVar * nVar + iVar * (nVar + 1)] += PassiveAssign(val_matrix);
+    auto d = &mat.d[block_i * nVar * nVar];
+    for (auto iVar = 0ul; iVar < nVar; iVar++) d[iVar * (nVar + 1)] += PassiveAssign(val_matrix);
   }
 
   /*!
@@ -806,7 +808,7 @@ class CSysMatrix {
    */
   template <class OtherType>
   inline void AddVal2Diag(unsigned long block_i, unsigned long iVar, OtherType val) {
-    matrix[dia_ptr[block_i] * nVar * nVar + iVar * (nVar + 1)] += PassiveAssign(val);
+    mat.d[block_i * nVar * nVar + iVar * (nVar + 1)] += PassiveAssign(val);
   }
 
   /*!
@@ -817,13 +819,11 @@ class CSysMatrix {
    */
   template <class OtherType>
   inline void SetVal2Diag(unsigned long block_i, OtherType val_matrix) {
-    unsigned long iVar, index = dia_ptr[block_i] * nVar * nVar;
-
     /*--- Clear entire block before setting its diagonal. ---*/
     SU2_OMP_SIMD
-    for (iVar = 0; iVar < nVar * nVar; iVar++) matrix[index + iVar] = 0.0;
+    for (auto iVar = 0ul; iVar < nVar * nVar; iVar++) mat.d[block_i * nVar * nVar + iVar] = 0.0;
 
-    for (iVar = 0; iVar < nVar; iVar++) matrix[index + iVar * (nVar + 1)] = PassiveAssign(val_matrix);
+    AddVal2Diag(block_i, val_matrix);
   }
 
   /*!

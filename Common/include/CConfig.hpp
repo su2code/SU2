@@ -816,6 +816,7 @@ private:
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
+  unsigned long outlierMitigationParam[4]; /*!< \brief Parameters of outlier mitigation strategy. */
   bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
@@ -1148,6 +1149,8 @@ private:
   /*--- Multigrid options  ---*/
   unsigned short nMG_PreSmooth_p{0}, nMG_PostSmooth_p{0}, nMG_CorrecSmooth_p{0};
   unsigned short *MG_PreSmooth_p{nullptr}, *MG_PostSmooth_p{nullptr}, *MG_CorrecSmooth_p{nullptr};
+  unsigned short nMG_CflScaling_p{0};
+  su2double *MG_CflScaling_p{nullptr};
 
   ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
   bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
@@ -1720,6 +1723,11 @@ public:
    * \return <code>TRUE</code> if CFL adaption is active; otherwise <code>FALSE</code>.
    */
   bool GetCFL_Adapt(void) const { return CFL_Adapt; }
+
+  /*!
+   * \brief Get the outlier mitigation parameters.
+   */
+  const unsigned long* GetOutlierMitigationParam() const { return outlierMitigationParam; }
 
   /*!
    * \brief Get the value of the limits for the sections.
@@ -10296,5 +10304,13 @@ public:
    * \return option data structure for the flamelet fluid model.
    */
   const FluidFlamelet_ParsedOptions& GetFlameletParsedOptions() const { return flamelet_ParsedOptions; }
+
+  /*!
+   * \brief Get the enthalpy BC mode for the flamelet solver.
+   * FLOW_MARKERS: derive enthalpy BCs from MARKER_ISOTHERMAL/MARKER_HEATFLUX/MARKER_INLET (temperature-based).
+   * SPECIES_MARKERS: take enthalpy BCs directly from MARKER_WALL_SPECIES/MARKER_INLET_SPECIES.
+   * \return FLAMELET_ENTHALPY_BC enum value.
+   */
+  FLAMELET_ENTHALPY_BC GetFlamelet_Enthalpy_BC() const { return flamelet_ParsedOptions.enthalpy_bc; }
 
 };

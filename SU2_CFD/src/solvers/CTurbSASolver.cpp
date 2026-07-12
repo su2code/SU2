@@ -143,6 +143,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   fv1 = Ji_3/(Ji_3+cv1_3);
   muT_Inf = Density_Inf*fv1*nu_tilde_Inf;
 
+  if (config->GetSAParsedOptions().version != SA_OPTIONS::NEG) {
+    lowerlimit[0] = EPS;
+  }
+
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   nodes = new CTurbSAVariable(nu_tilde_Inf, muT_Inf, nPoint, nDim, nVar, config);
@@ -336,7 +340,6 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
 void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
-  SU2_ZONE_SCOPED
 
   /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
@@ -506,12 +509,11 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   }
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool rough_wall = false;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   WALL_TYPE WallType;
   su2double Roughness_Height;
   tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-  if (WallType == WALL_TYPE::ROUGH) rough_wall = true;
+  Roughness_Height = max(Roughness_Height, EPS);
 
   /*--- The dirichlet condition is used only without wall function, otherwise the
    convergence is compromised as we are providing nu tilde values for the
@@ -524,47 +526,46 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->nodes->GetDomain(iPoint)) {
-      if (!rough_wall) {
-        for (auto iVar = 0u; iVar < nVar; iVar++)
-          nodes->SetSolution_Old(iPoint,iVar,0.0);
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-        LinSysRes.SetBlock_Zero(iPoint);
+    if (WallType == WALL_TYPE::SMOOTH) {
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        nodes->SetSolution_Old(iPoint,iVar,0.0);
 
-        /*--- Includes 1 in the diagonal ---*/
+      LinSysRes.SetBlock_Zero(iPoint);
 
-        if (implicit) Jacobian.DeleteValsRowi(iPoint, 0);
-       } else {
-         /*--- For rough walls, the boundary condition is given by
-          * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
-          * where \nu is the solution variable, $n$ is the wall normal direction
-          * and k_s is the equivalent sand grain roughness specified. ---*/
+      /*--- Includes 1 in the diagonal ---*/
 
-         /*--- Compute dual-grid area and boundary normal ---*/
-         su2double Normal[MAXNDIM] = {0.0};
-         for (auto iDim = 0u; iDim < nDim; iDim++)
-           Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-
-         su2double Area = GeometryToolbox::Norm(nDim, Normal);
-
-         /*--- Get laminar_viscosity and density ---*/
-         su2double sigma = 2.0/3.0;
-         su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-
-         su2double nu_total = (laminar_viscosity/density + nodes->GetSolution(iPoint,0));
-
-         su2double coeff = (nu_total/sigma);
-         su2double RoughWallBC = nodes->GetSolution(iPoint,0)/(0.03*Roughness_Height);
-
-         su2double Res_Wall = coeff*RoughWallBC*Area;
-         LinSysRes(iPoint, 0) -= Res_Wall;
-
-         Jacobian_i[0][0] = (laminar_viscosity /density *Area)/(0.03*Roughness_Height*sigma);
-         Jacobian_i[0][0] += 2.0*RoughWallBC*Area/sigma;
-         if (implicit) Jacobian.AddVal2Diag(iPoint, 0, -Jacobian_i[0][0]);
-      }
+      if (implicit) Jacobian.DeleteValsRowi(iPoint, 0);
+      continue;
     }
+
+    /*--- For rough walls, the boundary condition is given by
+    * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
+    * where \nu is the solution variable, $n$ is the wall normal direction
+    * and k_s is the equivalent sand grain roughness specified. ---*/
+
+    /*--- Compute dual-grid area and boundary normal ---*/
+    su2double Normal[MAXNDIM] = {0.0};
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+
+    su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+    /*--- Get laminar_viscosity and density ---*/
+    su2double sigma = 2.0/3.0;
+    su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    su2double nu_lam = laminar_viscosity / density;
+
+    su2double denom = sigma * 0.03 * Roughness_Height;
+    su2double coeff = (nu_lam + nodes->GetSolution(iPoint,0)) / denom;
+
+    su2double Res_Wall = Area * coeff * nodes->GetSolution(iPoint,0);
+    LinSysRes(iPoint, 0) -= Res_Wall;
+
+    su2double Jac_Wall = Area * (coeff + nodes->GetSolution(iPoint,0) / denom);
+    if (implicit) Jacobian.AddVal2Diag(iPoint, 0, -Jac_Wall);
   }
   END_SU2_OMP_FOR
 }

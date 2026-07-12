@@ -41,7 +41,7 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
   if (isinitialized) return;  // only need to do this once
 
   const unsigned long nVar = matrix.nVar, nPoint = matrix.nPoint, nPointDomain = matrix.nPointDomain;
-  const unsigned long *row_ptr = matrix.rowptr, *col_ind = matrix.colidx;
+  const unsigned long *row_ptr = csr_row_ptr.data(), *col_ind = csr_col_ind.data();
   const unsigned long nNonZero = row_ptr[nPointDomain];
 
   /*--- Allocate ---*/
@@ -204,10 +204,25 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
     SU2_MPI::Error("Error analyzing matrix: " + std::to_string(rc), CURRENT_FUNCTION);
   }
 
-  if (mpi_rank == MASTER_NODE && verb > 0)
-    cout << " +--------------------------------------------------------------------+" << endl;
+  if (mpi_rank == MASTER_NODE && verb > 0) cout << "+-------------------------------------------------+" << endl;
 
   isinitialized = true;
+}
+
+template <class ScalarType>
+void CPastixWrapper<ScalarType>::AssembleValues() {
+  const auto nDomain = matrix.nPointDomain;
+  const auto blkSz = matrix.blkSz;
+  const auto *d = matrix.d, *l = matrix.l, *u = matrix.u;
+  for (auto iPoint = 0ul; iPoint < nDomain; ++iPoint) {
+    auto* dst = values.data() + csr_row_ptr[iPoint] * blkSz;
+    for (auto k = matrix.row_ptr_l[iPoint]; k < matrix.row_ptr_l[iPoint + 1]; ++k, dst += blkSz)
+      for (auto b = 0ul; b < blkSz; ++b) dst[b] = SU2_TYPE::GetValue(l[k * blkSz + b]);
+    for (auto b = 0ul; b < blkSz; ++b) dst[b] = SU2_TYPE::GetValue(d[iPoint * blkSz + b]);
+    dst += blkSz;
+    for (auto k = matrix.row_ptr_u[iPoint]; k < matrix.row_ptr_u[iPoint + 1]; ++k, dst += blkSz)
+      for (auto b = 0ul; b < blkSz; ++b) dst[b] = SU2_TYPE::GetValue(u[k * blkSz + b]);
+  }
 }
 
 template <class ScalarType>
@@ -247,30 +262,30 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
 
   if (isfactorized && !factorize) return;  // No
 
-  /*--- Yes ---*/
+  /*--- Yes: assemble LDU blocks into the flat CSR buffer ---*/
+  AssembleValues();
 
   if (mpi_rank == MASTER_NODE && verb > 0) {
-    cout << endl;
-    cout << " +--------------------------------------------------------------------+" << endl;
-    cout << " +              PaStiX : Parallel Sparse matriX package               +" << endl;
-    cout << " +--------------------------------------------------------------------+" << endl;
+    cout << "\n+-------------------------------------------------+";
+    cout << "\n+     PaStiX : Parallel Sparse matriX package     +" << endl;
   }
 
-  const unsigned long szBlk = matrix.nVar * matrix.nVar, nNonZero = values.size();
+  const auto blkSz = matrix.blkSz;
 
-  /*--- Copy matrix values and swap blocks as required ---*/
+  /*--- Permute blocks for rows with halo columns into global sorted order.
+        AssembleValues wrote them in LDU order; copy to tmp then write back sorted. ---*/
 
-  for (auto i = 0ul; i < nNonZero; ++i) values[i] = SU2_TYPE::GetValue(matrix.values[i]);
-
+  vector<su2mixedfloat> tmp;
   for (auto i = 0ul; i < sort_rows.size(); ++i) {
     const auto iRow = sort_rows[i];
-    const auto begin = matrix.rowptr[iRow];
+    /*--- colptr is 1-based Fortran numbering: row start = colptr[iRow] - 1. ---*/
+    const auto begin = static_cast<unsigned long>(colptr[iRow] - 1);
+    const auto nnz_row = sort_order[i].size();
 
-    for (auto j = 0ul; j < sort_order[i].size(); ++j) {
-      const auto target = (begin + j) * szBlk;
-      const auto source = sort_order[i][j] * szBlk;
-
-      for (auto k = 0ul; k < szBlk; ++k) values[target + k] = SU2_TYPE::GetValue(matrix.values[source + k]);
+    tmp.assign(values.begin() + begin * blkSz, values.begin() + (begin + nnz_row) * blkSz);
+    for (auto j = 0ul; j < nnz_row; ++j) {
+      const auto src_pos = sort_order[i][j] - begin;
+      for (auto k = 0ul; k < blkSz; ++k) values[(begin + j) * blkSz + k] = tmp[src_pos * blkSz + k];
     }
   }
 
@@ -297,8 +312,7 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
     SU2_MPI::Error("Error factorizing matrix: " + std::to_string(rc), CURRENT_FUNCTION);
   }
 
-  if (mpi_rank == MASTER_NODE && verb > 0)
-    cout << " +--------------------------------------------------------------------+" << endl << endl;
+  if (mpi_rank == MASTER_NODE && verb > 0) cout << "+-------------------------------------------------+\n" << endl;
 
   isfactorized = true;
 }
@@ -307,7 +321,7 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
 template class CPastixWrapper<su2double>;
 #else
 template class CPastixWrapper<su2mixedfloat>;
-#ifdef USE_MIXED_PRECISION
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
 template class CPastixWrapper<passivedouble>;
 #endif
 #endif

@@ -89,7 +89,7 @@ CSolver::CSolver(LINEAR_SOLVER_MODE linear_solver_mode) : System(linear_solver_m
   Jacobian_jj        = nullptr;
   base_nodes         = nullptr;
   nOutputVariables   = 0;
-  ResLinSolver       = 0.0;
+  ResLinSolver       = EPS;
 
   /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
 
@@ -1747,6 +1747,8 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
                              CConfig   *config) {
   SU2_ZONE_SCOPED
 
+  if (config->GetCFL_Adapt() != YES) return;
+
   /* Adapt the CFL number on all multigrid levels using an
    exponential progression with under-relaxation approach. */
 
@@ -1811,7 +1813,10 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 
     canIncrease = (linRes < linTol) && (iter >= startingIter);
 
-    if ((iMesh == MESH_0) && (Res_Count > 0)) {
+    /* Do not use the residual flip-flop criteria when we are mitigating outliers
+     * because the former was never very reliable for large cases where monotonic
+     * residual reduction is impossible to achieve. */
+    if (!config->OptionIsSet("OUTLIER_MITIGATION_PARAM") && iMesh == MESH_0 && Res_Count > 0) {
       Old_Func = New_Func;
       if (NonLinRes_Series.empty()) NonLinRes_Series.resize(Res_Count,0.0);
 
@@ -1986,7 +1991,7 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
 void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) {
   SU2_ZONE_SCOPED
 
-  if (geometry->GetMGLevel() != MESH_0) return;
+  if (geometry->GetMGLevel() != MESH_0 && !config->GetMGOptions().MG_Smooth_EarlyExit) return;
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
 

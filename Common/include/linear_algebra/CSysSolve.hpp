@@ -442,13 +442,13 @@ class CSysSolve {
    * \brief Get the number of iterations.
    * \return The number of iterations done by Solve or Solve_b
    */
-  inline unsigned long GetIterations(void) const { return Iterations; }
+  inline unsigned long GetIterations() const { return Iterations; }
 
   /*!
    * \brief Get the final residual.
    * \return The residual at the end of Solve or Solve_b
    */
-  inline ScalarType GetResidual(void) const { return Residual; }
+  inline ScalarType GetResidual() const { return Residual; }
 
   /*!
    * \brief Set the type of the tolerance for stoping the linear solvers (RELATIVE or ABSOLUTE).

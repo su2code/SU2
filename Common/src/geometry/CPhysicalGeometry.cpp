@@ -4472,6 +4472,11 @@ void CPhysicalGeometry::SetPoint_Connectivity() {
         }
       }
 
+      /*--- Sort the neighbors in ascending order so that the edge numbering done in
+       *    SetEdges matches the upper-CSR ordering of the sparse pattern. This makes
+       *    the edge->upper-block map the identity for the CSysMatrix LDU storage. ---*/
+      sort(points[iPoint].begin(), points[iPoint].end());
+
       /*--- Set the number of neighbors variable, this is important for JST and multigrid in parallel. ---*/
       nodes->SetnNeighbor(iPoint, points[iPoint].size());
     }
@@ -7465,10 +7470,8 @@ void CPhysicalGeometry::ComputeMeshQualityStatistics(const CConfig* config) {
     /*--- Compute the angle between the unit normal associated
      with the edge and the unit vector pointing from iPoint to jPoint. ---*/
 
-    su2double dotProduct = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-      dotProduct += (Normal[iDim] / area) * (edgeVector[iDim] / distance);
-    }
+    su2double dotProduct = GeometryToolbox::DotProduct(nDim, Normal, edgeVector.data());
+    dotProduct = min(max(-1.0, dotProduct / (area * distance)), 1.0);
 
     /*--- The definition of orthogonality is an area-weighted average of
      90 degrees minus the angle between the face area unit normal and
