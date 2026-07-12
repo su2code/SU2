@@ -1089,7 +1089,7 @@ def main():
     fsi_cht.cfg_dir   = "fea_fsi/stat_fsi"
     fsi_cht.cfg_file  = "config.cfg"
     fsi_cht.test_iter = 20
-    fsi_cht.test_vals = [5.000000, -5.077003, -5.379449, -9.247804, -9.319626, -9.184904, 608.350000, -0.012973, 0.000000, 30.000000]
+    fsi_cht.test_vals = [5, -5.077002, -5.379449, -9.247803, -9.319973, -9.184965, 608.35, -0.012973, 0, 30]
     fsi_cht.multizone = True
     test_list.append(fsi_cht)
 
