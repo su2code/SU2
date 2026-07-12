@@ -1,5 +1,5 @@
 /*!
- * \file Quantization_tests.cpp
+ * \file quantization_tests.cpp
  * \brief Unit tests for the int8 row-scaled block quantization used by Q_LU_SGS.
  * \author P. Gomes
  * \version 8.5.0 "Harrier"

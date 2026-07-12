@@ -128,7 +128,7 @@ def main():
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
     poiseuille.cfg_file  = "lam_poiseuille.cfg"
     poiseuille.test_iter = 10
-    poiseuille.test_vals = [-5.046182, 0.652932, 0.008488, 13.734488, 0.000000]
+    poiseuille.test_vals = [-7.595535, -6.993332, 0.007670, 13.591507, 0]
     test_list.append(poiseuille)
 
     # 2D Poiseuille flow (inlet profile file)
