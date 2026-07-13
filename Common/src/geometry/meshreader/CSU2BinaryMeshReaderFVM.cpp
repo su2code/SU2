@@ -3,7 +3,7 @@
  * \brief Reads a native SU2 binary grid into linear partitions for the
  *        finite volume solver (FVM).
  * \author T. Economon
- * \version 8.2.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -48,6 +48,10 @@ CSU2BinaryMeshReaderFVM::CSU2BinaryMeshReaderFVM(CConfig* val_config, unsigned s
    We store only the points and interior elements on our rank's linear
    partition, but the master stores the entire set of surface connectivity. */
   mesh_file = fopen(meshFilename.c_str(), "rb");
+  if (!mesh_file)
+    SU2_MPI::Error(
+        string("Error opening SU2 binary grid file ") + meshFilename + string(". Check that the file exists"),
+        CURRENT_FUNCTION);
 
   FastForwardToMyZone();
   ReadVolumeElementConnectivity();
@@ -59,6 +63,4 @@ CSU2BinaryMeshReaderFVM::CSU2BinaryMeshReaderFVM(CConfig* val_config, unsigned s
 
 CSU2BinaryMeshReaderFVM::~CSU2BinaryMeshReaderFVM() = default;
 
-void CSU2BinaryMeshReaderFVM::SplitActuatorDiskSurface() {
-  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
-}
+void CSU2BinaryMeshReaderFVM::SplitActuatorDiskSurface() { SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION); }

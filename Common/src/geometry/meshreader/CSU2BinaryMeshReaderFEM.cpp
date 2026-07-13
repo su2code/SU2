@@ -3,7 +3,7 @@
  * \brief Reads a native SU2 binary grid into linear partitions for the
  *        finite element solver (FEM).
  * \author T. Economon, E. van der Weide
- * \version 8.2.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -39,6 +39,10 @@ CSU2BinaryMeshReaderFEM::CSU2BinaryMeshReaderFEM(CConfig* val_config, unsigned s
   /*--- Open the file with the mesh and go to the place where the data
         of the current zone is stored. ---*/
   mesh_file = fopen(meshFilename.c_str(), "rb");
+  if (!mesh_file)
+    SU2_MPI::Error(
+        string("Error opening SU2 binary grid file ") + meshFilename + string(". Check that the file exists"),
+        CURRENT_FUNCTION);
   FastForwardToMyZone();
 
   /*--- Read the volume connectivity and distribute it

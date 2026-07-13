@@ -2,7 +2,7 @@
  * \file CSU2BinaryMeshReaderBase.cpp
  * \brief Helper class for the reading of a native SU2 binary grid file.
  * \author T. Economon, E. van der Weide
- * \version 8.2.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -28,6 +28,7 @@
 #include "../../../include/toolboxes/CLinearPartitioner.hpp"
 #include "../../../include/geometry/meshreader/CSU2BinaryMeshReaderBase.hpp"
 
+#include <cstdio>
 #include <set>
 
 CSU2BinaryMeshReaderBase::CSU2BinaryMeshReaderBase(CConfig* val_config, unsigned short val_iZone,
@@ -35,6 +36,22 @@ CSU2BinaryMeshReaderBase::CSU2BinaryMeshReaderBase(CConfig* val_config, unsigned
     : CSU2MeshReaderBase(val_config, val_iZone, val_nZone) {}
 
 CSU2BinaryMeshReaderBase::~CSU2BinaryMeshReaderBase(void) = default;
+
+int CSU2BinaryMeshReaderBase::FileSeek64(FILE* file, int64_t offset, int whence) {
+#if defined(_WIN32)
+  return _fseeki64(file, offset, whence);
+#else
+  return fseeko(file, static_cast<off_t>(offset), whence);
+#endif
+}
+
+int64_t CSU2BinaryMeshReaderBase::FileTell64(FILE* file) {
+#if defined(_WIN32)
+  return _ftelli64(file);
+#else
+  return static_cast<int64_t>(ftello(file));
+#endif
+}
 
 void CSU2BinaryMeshReaderBase::ReadConnectivityType() {
   /*--- Initialize the byte swapping to false and
@@ -73,7 +90,7 @@ void CSU2BinaryMeshReaderBase::ReadMetadata(CConfig* config) {
         current zone. ---*/
   if (harmonic_balance) {
     if (rank == MASTER_NODE) cout << "Reading time instance " << config->GetiInst() + 1 << "." << endl;
-    fseek(mesh_file, 2 * sizeof(int), SEEK_SET);
+    FileSeek64(mesh_file, 2 * sizeof(int), SEEK_SET);
   } else {
     FastForwardToMyZone();
     if (nZones > 1 && multizone_file) {
@@ -94,8 +111,8 @@ void CSU2BinaryMeshReaderBase::ReadPointCoordinates() {
 
   /* Jump over the number of points, because it is already known, and
      determine the position in the file where the point section ends. */
-  fseek(mesh_file, size_conn_type, SEEK_CUR);
-  auto pos_end_point = ftell(mesh_file) + numberOfGlobalPoints * (dimension * sizeof(double) + size_conn_type);
+  FileSeek64(mesh_file, size_conn_type, SEEK_CUR);
+  auto pos_end_point = FileTell64(mesh_file) + numberOfGlobalPoints * (dimension * sizeof(double) + size_conn_type);
 
   /* Define a linear partitioner for the points. */
   CLinearPartitioner pointPartitioner(numberOfGlobalPoints, 0);
@@ -103,7 +120,7 @@ void CSU2BinaryMeshReaderBase::ReadPointCoordinates() {
   /* Jump to the position in the file where the points are stored
      that this rank must read. */
   const auto firstIndex = pointPartitioner.GetFirstIndexOnRank(rank);
-  fseek(mesh_file, firstIndex * (dimension * sizeof(double) + size_conn_type), SEEK_CUR);
+  FileSeek64(mesh_file, firstIndex * (dimension * sizeof(double) + size_conn_type), SEEK_CUR);
 
   /* Determine the number of local points and prepare the local
      data structure to store the point coordinates. */
@@ -115,7 +132,7 @@ void CSU2BinaryMeshReaderBase::ReadPointCoordinates() {
   for (unsigned long i = 0; i < numberOfLocalPoints; ++i) {
     double Coords[3];
     ReadBinaryData<double>(Coords, dimension);
-    fseek(mesh_file, size_conn_type, SEEK_CUR);
+    FileSeek64(mesh_file, size_conn_type, SEEK_CUR);
 
     for (unsigned short iDim = 0; iDim < dimension; iDim++) {
       localPointCoordinates[iDim][i] = Coords[iDim];
@@ -123,13 +140,13 @@ void CSU2BinaryMeshReaderBase::ReadPointCoordinates() {
   }
 
   /* Jump to the end of the coordinate section. */
-  fseek(mesh_file, pos_end_point, SEEK_SET);
+  FileSeek64(mesh_file, pos_end_point, SEEK_SET);
 }
 
 void CSU2BinaryMeshReaderBase::ReadVolumeElementConnectivity() {
   /* Jump over the zone ID, number of dimensions and number of elements,
      because this information is already known. */
-  fseek(mesh_file, size_conn_type + 2 * sizeof(int), SEEK_CUR);
+  FileSeek64(mesh_file, size_conn_type + 2 * sizeof(int), SEEK_CUR);
 
   /* Get a linear partitioner of the elements. */
   CLinearPartitioner elemPartitioner(numberOfGlobalElements, 0);
@@ -137,12 +154,12 @@ void CSU2BinaryMeshReaderBase::ReadVolumeElementConnectivity() {
   /* Determine the position at the end of the offset array, where
      the total size of the connectivity is stored. */
   const auto first_index = elemPartitioner.GetFirstIndexOnRank(rank);
-  const auto pos_size_global_conn = ftell(mesh_file) + numberOfGlobalElements * size_conn_type;
+  const auto pos_size_global_conn = FileTell64(mesh_file) + numberOfGlobalElements * size_conn_type;
 
   /* Jump to position in the file where the offset data is stored for
-     the element ragne this rank will read. Allocate the memory for
+     the element range this rank will read. Allocate the memory for
      this offset array. */
-  fseek(mesh_file, first_index * size_conn_type, SEEK_CUR);
+  FileSeek64(mesh_file, first_index * size_conn_type, SEEK_CUR);
   numberOfLocalElements = elemPartitioner.GetSizeOnRank(rank);
   vector<uint64_t> offset(numberOfLocalElements + 1);
 
@@ -159,15 +176,15 @@ void CSU2BinaryMeshReaderBase::ReadVolumeElementConnectivity() {
   /* Jump to the location where the total size of the connectivity array
      is stored and read the size. Determine the location of the end of
      the connectivity array. */
-  fseek(mesh_file, pos_size_global_conn, SEEK_SET);
-  const auto size__global_conn = ReadBinaryNEntities();
-  const auto pos_end_conn = ftell(mesh_file) + size__global_conn * size_conn_type;
+  FileSeek64(mesh_file, pos_size_global_conn, SEEK_SET);
+  const auto size_global_conn = ReadBinaryNEntities();
+  const auto pos_end_conn = FileTell64(mesh_file) + size_global_conn * size_conn_type;
 
   /* Read the connectivity data of the elements this rank should read.
      Store the data in uint64_t. */
   const auto size_conn = offset.back() - offset[0];
   vector<uint64_t> conn_buff(size_conn);
-  fseek(mesh_file, offset[0] * size_conn_type, SEEK_CUR);
+  FileSeek64(mesh_file, offset[0] * size_conn_type, SEEK_CUR);
 
   if (size_conn_type == 4) {
     vector<uint32_t> tmp(conn_buff.size());
@@ -178,7 +195,7 @@ void CSU2BinaryMeshReaderBase::ReadVolumeElementConnectivity() {
   }
 
   /* Jump to the end of the connectivity data. */
-  fseek(mesh_file, pos_end_conn, SEEK_SET);
+  FileSeek64(mesh_file, pos_end_conn, SEEK_SET);
 
 #ifdef HAVE_MPI
 
@@ -310,7 +327,8 @@ void CSU2BinaryMeshReaderBase::ReadVolumeElementConnectivity() {
     auto size_this_elem = static_cast<unsigned short>(offset[i + 1] - offset[i]);
     auto VTK_Type = conn_buff[ind++];
     const auto nPointsElem = nPointsOfElementType(static_cast<unsigned short>(VTK_Type));
-    if (size_this_elem < (nPointsElem + 2)) SU2_MPI::Error("Not enough items in volume connectivity", CURRENT_FUNCTION);
+    if (size_this_elem != (nPointsElem + 2))
+      SU2_MPI::Error("Wrong number of items in volume connectivity", CURRENT_FUNCTION);
 
     for (unsigned short j = 0; j < nPointsElem; ++j, ++ind) connectivity[j] = conn_buff[ind];
     auto GlobalIndex = conn_buff[ind];
@@ -326,9 +344,9 @@ void CSU2BinaryMeshReaderBase::ReadVolumeElementConnectivity() {
 
 void CSU2BinaryMeshReaderBase::ReadSurfaceElementConnectivity() {
   /* The number of surface markers is already known, so jump over it. */
-  fseek(mesh_file, sizeof(int), SEEK_CUR);
+  FileSeek64(mesh_file, sizeof(int), SEEK_CUR);
 
-  /* Allocate the memory for the first index of the connectivty of the
+  /* Allocate the memory for the first index of the connectivity of the
      surface elements and the marker names. Note that all ranks store
      the entire surface connectivity. */
   surfaceElementConnectivity.resize(numberOfMarkers);
@@ -341,6 +359,7 @@ void CSU2BinaryMeshReaderBase::ReadSurfaceElementConnectivity() {
     /* Read the name of the surface marker. */
     char charStr[SU2_STRING_SIZE];
     ReadBinaryData<char>(charStr, SU2_STRING_SIZE);
+    charStr[SU2_STRING_SIZE - 1] = '\0';
     markerNames[iMarker] = string(charStr);
 
     /*--- Throw an error if we find deprecated references to SEND_RECEIVE
@@ -377,14 +396,14 @@ void CSU2BinaryMeshReaderBase::ReadSurfaceElementConnectivity() {
     }
 
     /*--- Loop over the surface elements to store the connectivity
-          in the reequired data structures. ---*/
+          in the required data structures. ---*/
     for (unsigned long i = 0; i < nElem_Bound; ++i) {
       auto ind = offset[i];
       auto size_this_elem = static_cast<unsigned short>(offset[i + 1] - offset[i]);
       auto VTK_Type = conn_buff[ind++];
       const auto nPointsElem = nPointsOfElementType(static_cast<unsigned short>(VTK_Type));
-      if (size_this_elem < (nPointsElem + 1))
-        SU2_MPI::Error("Not enough items in surface connectivity", CURRENT_FUNCTION);
+      if (size_this_elem != (nPointsElem + 1))
+        SU2_MPI::Error("Wrong number of items in surface connectivity", CURRENT_FUNCTION);
 
       if (dimension == 3 && VTK_Type == LINE) {
         SU2_MPI::Error(
@@ -406,7 +425,13 @@ void CSU2BinaryMeshReaderBase::ReadSurfaceElementConnectivity() {
 
 void CSU2BinaryMeshReaderBase::FastForwardToMyZone() {
   /*--- Jump to the position where the data starts for the first zone. ---*/
-  fseek(mesh_file, 2 * sizeof(int), SEEK_SET);
+  FileSeek64(mesh_file, 2 * sizeof(int), SEEK_SET);
+
+  /*--- If there is only a single zone, or if this file holds a mesh that is
+        shared by all problem zones (MULTIZONE_MESH= NO), there is nothing to
+        skip: every zone reads the same (first) block of data, exactly as the
+        ASCII reader does. ---*/
+  if (nZones == 1 || !config->GetMultizone_Mesh()) return;
 
   /*--- Loop over the lower numbered zones and read their meta data. ---*/
   for (int zone = 0; zone < myZone; ++zone) ReadMetadataZone();
@@ -431,7 +456,7 @@ uint64_t CSU2BinaryMeshReaderBase::ReadBinaryNEntities() {
 void CSU2BinaryMeshReaderBase::ReadMetadataZone() {
   /*--- Skip the zone ID and read the number of dimensions. ---*/
   int nDim;
-  fseek(mesh_file, sizeof(int), SEEK_CUR);
+  FileSeek64(mesh_file, sizeof(int), SEEK_CUR);
   ReadBinaryData<int>(&nDim, 1);
   dimension = static_cast<unsigned short>(nDim);
 
@@ -441,14 +466,14 @@ void CSU2BinaryMeshReaderBase::ReadMetadataZone() {
 
   /*--- Jump to the end of the offset section, read the size of
         the connectivity and jump over it. ---*/
-  fseek(mesh_file, nElem * size_conn_type, SEEK_CUR);
+  FileSeek64(mesh_file, nElem * size_conn_type, SEEK_CUR);
   const auto size_conn = ReadBinaryNEntities();
-  fseek(mesh_file, size_conn * size_conn_type, SEEK_CUR);
+  FileSeek64(mesh_file, size_conn * size_conn_type, SEEK_CUR);
 
   /*--- Read the number of points and jump over the coordinate section. ---*/
   const auto nPoints = ReadBinaryNEntities();
   numberOfGlobalPoints = static_cast<unsigned long>(nPoints);
-  fseek(mesh_file, nPoints * (nDim * sizeof(double) + size_conn_type), SEEK_CUR);
+  FileSeek64(mesh_file, nPoints * (nDim * sizeof(double) + size_conn_type), SEEK_CUR);
 
   /*--- Read the number of markers and loop over them. ---*/
   int nMark;
@@ -458,13 +483,13 @@ void CSU2BinaryMeshReaderBase::ReadMetadataZone() {
   for (int mark = 0; mark < nMark; ++mark) {
     /*--- Jump over the name of the marker and read
           the number of surface elements. ---*/
-    fseek(mesh_file, SU2_STRING_SIZE * sizeof(char), SEEK_CUR);
+    FileSeek64(mesh_file, SU2_STRING_SIZE * sizeof(char), SEEK_CUR);
     const auto nElemMark = ReadBinaryNEntities();
 
     /*--- Jump to the end of the offset section of this marker, read
           the size of the connectivity and jump over it. ---*/
-    fseek(mesh_file, nElemMark * size_conn_type, SEEK_CUR);
+    FileSeek64(mesh_file, nElemMark * size_conn_type, SEEK_CUR);
     const auto size_conn_mark = ReadBinaryNEntities();
-    fseek(mesh_file, size_conn_mark * size_conn_type, SEEK_CUR);
+    FileSeek64(mesh_file, size_conn_mark * size_conn_type, SEEK_CUR);
   }
 }
