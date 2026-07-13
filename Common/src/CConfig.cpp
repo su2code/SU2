@@ -7749,7 +7749,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_COMPONENT::SU2_DEF) {
-    cout << "Output mesh file name: " << GetMesh_Out_FileName() << ". " << endl;
+    cout << "Output mesh file name: " << GetMesh_Out_FileName() << GetMesh_Out_FileExtension() << ". " << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
         cout << "Cell stiffness scaled by inverse of the cell volume." << endl;

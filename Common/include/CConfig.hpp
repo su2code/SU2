@@ -5748,6 +5748,9 @@ public:
   /*!
    * \brief Get name of the output grid, this parameter is important for grid
    *        adaptation and deformation.
+   * \note The returned name does not include the extension, it is the
+   *       responsibility of the caller (usually a CFileWriter) to append it,
+   *       consistent with GetMesh_Out_FileExtension().
    * \return File name of the output grid.
    */
   string GetMesh_Out_FileName(void) const {
@@ -5760,19 +5763,24 @@ public:
     PrintingToolbox::TrimExtension(".su2b",meshFilename);
     PrintingToolbox::TrimExtension(".cgns",meshFilename);
 
+    return meshFilename;
+  }
+
+  /*!
+   * \brief Get the extension (including the leading dot) associated with the
+   *        current mesh output format.
+   * \return Extension of the output grid file.
+   */
+  string GetMesh_Out_FileExtension(void) const {
     switch (GetMesh_Out_FileFormat()) {
       case ENUM_GRID::SU2:
-        meshFilename += ".su2";
-        break;
+        return ".su2";
       case ENUM_GRID::SU2_BIN:
-        meshFilename += ".su2b";
-        break;
+        return ".su2b";
       default:
         SU2_MPI::Error("Unrecognized mesh_out format specified!", CURRENT_FUNCTION);
-      break;
+        return "";
     }
-
-    return meshFilename;
   }
 
   /*!

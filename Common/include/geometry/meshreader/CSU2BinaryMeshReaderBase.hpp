@@ -3,7 +3,7 @@
  * \brief Header file for the class CSU2BinaryMeshReaderBase.
  *        The implementations are in the <i>CSU2BinaryMeshReaderBase.cpp</i> file.
  * \author T. Economon, E. van der Weide
- * \version 8.2.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,7 +52,7 @@ class CSU2BinaryMeshReaderBase : public CSU2MeshReaderBase {
 
   /*!
    * \brief Reads all SU2 binary mesh metadata and checks for errors.
-   * \param[in,out] config - Problem configuration where some metadata is updated (e.g. AoA).
+   * \param[in] config - Problem configuration for the current zone.
    */
   void ReadMetadata(CConfig* config);
 
@@ -75,6 +75,18 @@ class CSU2BinaryMeshReaderBase : public CSU2MeshReaderBase {
    * \brief Helper function to find the current zone in an SU2 binary mesh object.
    */
   void FastForwardToMyZone();
+
+  /*!
+   * \brief Portable, 64-bit safe replacement for fseek. Needed because binary
+   *        SU2 grid files can exceed 2 GiB even on platforms where "long" is
+   *        only 32 bits wide (e.g. Windows).
+   */
+  static int FileSeek64(FILE* file, int64_t offset, int whence);
+
+  /*!
+   * \brief Portable, 64-bit safe replacement for ftell.
+   */
+  static int64_t FileTell64(FILE* file);
 
   /*!
    * \brief Function to read one entity of the connectivity type from the binary file.

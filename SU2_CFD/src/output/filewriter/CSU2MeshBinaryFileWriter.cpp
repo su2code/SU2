@@ -2,7 +2,7 @@
  * \file CSU2MeshBinaryFileWriter.cpp
  * \brief Filewriter class SU2 binary mesh format.
  * \author E. van der Weide
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -34,5 +34,5 @@ CSU2MeshBinaryFileWriter::CSU2MeshBinaryFileWriter(CParallelDataSorter *valDataS
    CFileWriter(valDataSorter, fileExt), iZone(valiZone), nZone(valnZone) {}
 
 void CSU2MeshBinaryFileWriter::WriteData(string val_filename) {
-  SU2_MPI::Error("Function not implemented yet.",CURRENT_FUNCTION);
+  SU2_MPI::Error("Function not implemented yet.", CURRENT_FUNCTION);
 }

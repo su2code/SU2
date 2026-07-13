@@ -2,8 +2,8 @@
  * \file CSU2BinaryMeshReaderFVM.hpp
  * \brief Header file for the class CSU2BinaryMeshReaderFVM.
  *        The implementations are in the <i>CSU2BinaryMeshReaderFVM.cpp</i> file.
- * \author T. Econonmon, E. van der Weide
- * \version 8.2.0 "Harrier"
+ * \author T. Economon, E. van der Weide
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,7 +33,7 @@
 /*!
  * \class CSU2BinaryMeshReaderFVM
  * \brief Reads a native SU2 binary grid into linear partitions for the finite volume solver (FVM).
- * \author T. Econonmon, E. van der Weide
+ * \author T. Economon, E. van der Weide
  */
 class CSU2BinaryMeshReaderFVM : public CSU2BinaryMeshReaderBase {
  private:
