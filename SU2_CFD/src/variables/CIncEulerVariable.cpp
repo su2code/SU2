@@ -160,20 +160,12 @@ void CIncEulerVariable::Set_Solution_time_n1() {
   }
 }
 
-void CIncEulerVariable::RegisterDensity_time_n() {
-  RegisterContainer(true, Density_time_n);
-}
-
-void CIncEulerVariable::RegisterDensity_time_n1() {
-  RegisterContainer(true, Density_time_n1);
-}
-
 void CIncEulerVariable::RegisterSolution_time_n() {
   CVariable::RegisterSolution_time_n();
-  RegisterDensity_time_n();
+  RegisterContainer(true, Density_time_n);
 }
 
 void CIncEulerVariable::RegisterSolution_time_n1() {
   CVariable::RegisterSolution_time_n1();
-  RegisterDensity_time_n1();
+  RegisterContainer(true, Density_time_n1);
 }

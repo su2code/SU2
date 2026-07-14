@@ -332,16 +332,6 @@ public:
   inline void SetDensity_time_n1(unsigned long iPoint, su2double val_density) { Density_time_n1(iPoint) = val_density; }
 
   /*!
-   * \brief Register the density at time n as an AD input variable (for discrete adjoint unsteady).
-   */
-  void RegisterDensity_time_n() override;
-
-  /*!
-   * \brief Register the density at time n-1 as an AD input variable (for discrete adjoint unsteady).
-   */
-  void RegisterDensity_time_n1() override;
-
-  /*!
    * \brief Register solution at time n, including the density container for incompressible flows.
    */
   void RegisterSolution_time_n() override;

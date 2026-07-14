@@ -2244,16 +2244,6 @@ public:
   inline virtual su2double GetDensity_time_n1(unsigned long /*iPoint*/) const { return 0.0; }
 
   /*!
-   * \brief Register the density at time n as an AD input (no-op for non-incompressible nodes).
-   */
-  inline virtual void RegisterDensity_time_n() {}
-
-  /*!
-   * \brief Register the density at time n-1 as an AD input (no-op for non-incompressible nodes).
-   */
-  inline virtual void RegisterDensity_time_n1() {}
-
-  /*!
    * \brief Get the adjoint values of the density at time n.
    *        Implemented analogously to GetAdjointSolution_time_n but for a scalar
    *        (Density_time_n is a VectorType, not a MatrixType).

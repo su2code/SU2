@@ -327,14 +327,6 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE", "Pressure coefficient");
   AddVolumeOutput("DENSITY",        "Density",              "PRIMITIVE", "Density");
 
-  // Density at previous timesteps for restart (unsteady with non-constant density)
-  if (config->GetTime_Domain() && config->GetKind_FluidModel() != CONSTANT_DENSITY) {
-    AddVolumeOutput("DENSITY_TIME_N", "Density_time_n", "SOLUTION", "Density at previous time step n");
-    if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
-      AddVolumeOutput("DENSITY_TIME_N1", "Density_time_n1", "SOLUTION", "Density at previous time step n-1");
-    }
-  }
-
   if (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES){
     AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE", "Laminar viscosity");
     AddVolumeOutput("HEAT_CAPACITY", "Heat_Capacity", "PRIMITIVE", "Heat capacity");
@@ -448,14 +440,6 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   const su2double factor = solver[FLOW_SOL]->GetReferenceDynamicPressure();
   SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure(iPoint) - solver[FLOW_SOL]->GetPressure_Inf())/factor);
   SetVolumeOutputValue("DENSITY", iPoint, Node_Flow->GetDensity(iPoint));
-
-  // Load density at previous timesteps for restart (unsteady with non-constant density)
-  if (config->GetTime_Domain() && config->GetKind_FluidModel() != CONSTANT_DENSITY) {
-    SetVolumeOutputValue("DENSITY_TIME_N", iPoint, Node_Flow_Inc->GetDensity_time_n(iPoint));
-    if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
-      SetVolumeOutputValue("DENSITY_TIME_N1", iPoint, Node_Flow_Inc->GetDensity_time_n1(iPoint));
-    }
-  }
 
   if (config->GetKind_Solver() == MAIN_SOLVER::INC_RANS || config->GetKind_Solver() == MAIN_SOLVER::INC_NAVIER_STOKES){
     SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity(iPoint));
