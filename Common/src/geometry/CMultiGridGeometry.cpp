@@ -896,6 +896,9 @@ void CMultiGridGeometry::SetPoint_Connectivity(const CGeometry* fine_grid) {
       }
     }
 
+    /*--- See CPhysicalGeometry::SetPoint_Connectivity for why we sort. ---*/
+    sort(points[iCoarsePoint].begin(), points[iCoarsePoint].end());
+
     /*--- Set the number of neighbors variable, this is
      important for JST and multigrid in parallel ---*/
     nodes->SetnNeighbor(iCoarsePoint, points[iCoarsePoint].size());

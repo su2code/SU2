@@ -417,30 +417,86 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry, Connecti
 }
 
 /*!
- * \brief Build a lookup table of the absolute positions of the non zero entries
- *        of a compressed sparse pattern, accessed when visiting the FVM edges
- *        of a grid. The table can then be used for fast access (avoids searches)
- *        to the non zero entries of a sparse matrix associated with the pattern.
- * \param[in] geometry - Definition of the grid.
- * \param[in] pattern - Sparse pattern.
- * \return nEdge by 2 matrix.
+ * \brief Extract the strictly-lower part of a symmetric compressed sparse pattern.
+ *        For each row i, the lower entries are those at positions [outerPtr[i], diagPtr[i]).
+ * \param[in] csr - Full symmetric pattern with diagonal pointer already built.
+ * \return Strictly-lower CSR pattern.
  */
-template <class Geometry_t, typename Index_t>
-CEdgeToNonZeroMap<Index_t> mapEdgesToSparsePattern(Geometry_t& geometry,
-                                                   const CCompressedSparsePattern<Index_t>& pattern) {
-  assert(!pattern.empty());
+template <typename Index_t>
+CCompressedSparsePattern<Index_t> buildLowerPattern(const CCompressedSparsePattern<Index_t>& csr) {
+  assert(!csr.empty());
+  const auto nPoint = csr.getOuterSize();
+  const auto* outerPtr = csr.outerPtr();
+  const auto* innerIdx = csr.innerIdx();
+  const auto* diagPtr = csr.diagPtr();
 
-  CEdgeToNonZeroMap<Index_t> edgeMap(geometry.GetnEdge(), 2);
+  su2vector<Index_t> outerPtrL(nPoint + 1);
+  outerPtrL(0) = 0;
+  for (auto i = 0ul; i < nPoint; ++i) outerPtrL(i + 1) = outerPtrL(i) + static_cast<Index_t>(diagPtr[i] - outerPtr[i]);
 
-  for (Index_t iEdge = 0; iEdge < geometry.GetnEdge(); ++iEdge) {
-    Index_t iPoint = geometry.edges->GetNode(iEdge, 0);
-    Index_t jPoint = geometry.edges->GetNode(iEdge, 1);
+  su2vector<Index_t> innerIdxL(outerPtrL(nPoint));
+  Index_t k = 0;
+  for (auto i = 0ul; i < nPoint; ++i)
+    for (auto p = outerPtr[i]; p < diagPtr[i]; ++p) innerIdxL(k++) = innerIdx[p];
 
-    edgeMap(iEdge, 0) = pattern.quickFindInnerIdx(iPoint, jPoint);
-    edgeMap(iEdge, 1) = pattern.quickFindInnerIdx(jPoint, iPoint);
+  return CCompressedSparsePattern<Index_t>(std::move(outerPtrL), std::move(innerIdxL));
+}
+
+/*!
+ * \brief Extract the strictly-upper part of a symmetric compressed sparse pattern.
+ *        For each row i, the upper entries are those at positions (diagPtr[i], outerPtr[i+1]).
+ * \param[in] csr - Full symmetric pattern with diagonal pointer already built.
+ * \return Strictly-upper CSR pattern.
+ */
+template <typename Index_t>
+CCompressedSparsePattern<Index_t> buildUpperPattern(const CCompressedSparsePattern<Index_t>& csr) {
+  assert(!csr.empty());
+  const auto nPoint = csr.getOuterSize();
+  const auto* outerPtr = csr.outerPtr();
+  const auto* innerIdx = csr.innerIdx();
+  const auto* diagPtr = csr.diagPtr();
+
+  su2vector<Index_t> outerPtrU(nPoint + 1);
+  outerPtrU(0) = 0;
+  for (auto i = 0ul; i < nPoint; ++i)
+    outerPtrU(i + 1) = outerPtrU(i) + static_cast<Index_t>(outerPtr[i + 1] - diagPtr[i] - 1);
+
+  su2vector<Index_t> innerIdxU(outerPtrU(nPoint));
+  Index_t k = 0;
+  for (auto i = 0ul; i < nPoint; ++i)
+    for (auto p = diagPtr[i] + 1; p < outerPtr[i + 1]; ++p) innerIdxU(k++) = innerIdx[p];
+
+  return CCompressedSparsePattern<Index_t>(std::move(outerPtrU), std::move(innerIdxU));
+}
+
+/*!
+ * \brief Build bijective maps between strictly-lower (L) and strictly-upper (U) non-zero entries
+ *        that are each other's transposes. Requires a symmetric pattern.
+ *        l_to_u[k_l] = k_u such that U-entry k_u is the transpose of L-entry k_l, and vice-versa.
+ * \param[in] pattern_l - Strictly-lower CSR pattern.
+ * \param[in] pattern_u - Strictly-upper CSR pattern.
+ * \param[out] l_to_u - For each L-entry index, the U-entry index of its transpose.
+ * \param[out] u_to_l - For each U-entry index, the L-entry index of its transpose.
+ */
+template <typename Index_t>
+void buildLUTransposeMaps(const CCompressedSparsePattern<Index_t>& pattern_l,
+                          const CCompressedSparsePattern<Index_t>& pattern_u, su2vector<Index_t>& l_to_u,
+                          su2vector<Index_t>& u_to_l) {
+  const auto nnz_l = pattern_l.getNumNonZeros();
+  const auto nnz_u = pattern_u.getNumNonZeros();
+  assert(nnz_l == nnz_u && "L and U must have the same NNZ (symmetric pattern).");
+
+  l_to_u.resize(nnz_l);
+  u_to_l.resize(nnz_u);
+
+  for (Index_t i = 0; i < pattern_l.getOuterSize(); ++i) {
+    for (Index_t k_l = pattern_l.outerPtr()[i]; k_l < pattern_l.outerPtr()[i + 1]; ++k_l) {
+      const Index_t j = pattern_l.innerIdx()[k_l];            // j < i (strictly lower)
+      const Index_t k_u = pattern_u.quickFindInnerIdx(j, i);  // (j,i) is in U since j<i
+      l_to_u(k_l) = k_u;
+      u_to_l(k_u) = k_l;
+    }
   }
-
-  return edgeMap;
 }
 
 /*!
