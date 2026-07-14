@@ -176,9 +176,9 @@ class CSysMatrix {
   /*!< \brief Level structure for alternative shared memory parallelization of ILU. */
   CCompressedSparsePatternUL levels_ilu;
 
-  ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */
-  ScalarType* d_invM; /*!< \brief Inverse of (Jacobi) preconditioner on device. */
-  bool invM_is_managed = false;   /*!< \brief Boolean that indicates whether GPU supports Unified Memory or not */ 
+  ScalarType* invM;             /*!< \brief Inverse of (Jacobi) preconditioner. */
+  ScalarType* d_invM;           /*!< \brief Inverse of (Jacobi) preconditioner on device. */
+  bool invM_is_managed = false; /*!< \brief Boolean that indicates whether GPU supports Unified Memory or not */
 
   /*--- Temporary (hence mutable) working memory used in the Linelet preconditioner, outer vector is for threads ---*/
   mutable vector<vector<const ScalarType*> >
@@ -948,9 +948,9 @@ class CSysMatrix {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void GPUComputeJacobiPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
-                                      const CConfig* config) const;
-                                                                         
+  void GPUComputeJacobiPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
+                                      CGeometry* geometry, const CConfig* config) const;
+
   /*!
    * \brief Build the ILU preconditioner.
    */

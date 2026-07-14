@@ -106,7 +106,7 @@ inline bool UMSupported() noexcept {
 #if defined(HAVE_CUDA)
   static int managed = -1;
   if (managed == -1) {
-    int device = 0; //one device per process supposed
+    int device = 0;  // one device per process supposed
     gpuErrChk(cudaGetDevice(&device));
     gpuErrChk(cudaDeviceGetAttribute(&managed, cudaDevAttrManagedMemory, device));
   }

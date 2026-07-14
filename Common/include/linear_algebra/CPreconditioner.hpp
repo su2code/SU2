@@ -119,7 +119,8 @@ class CJacobiPreconditioner final : public CPreconditioner<ScalarType> {
       sparse_matrix.GPUComputeJacobiPreconditioner(u, v, geometry, config);
 #else
       SU2_MPI::Error(
-          "\nError in launching sparse matrix Preconditioner Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
+          "\nError in launching sparse matrix Preconditioner Function\nENABLE_CUDA is set to YES\nPlease compile with "
+          "CUDA "
           "options enabled in Meson to access GPU Functions",
           CURRENT_FUNCTION);
 #endif
@@ -137,7 +138,8 @@ class CJacobiPreconditioner final : public CPreconditioner<ScalarType> {
       sparse_matrix.GPUBuildJacobiPreconditioner();
 #else
       SU2_MPI::Error(
-          "\nError in building sparse matrix Preconditioner Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
+          "\nError in building sparse matrix Preconditioner Function\nENABLE_CUDA is set to YES\nPlease compile with "
+          "CUDA "
           "options enabled in Meson to access GPU Functions",
           CURRENT_FUNCTION);
 #endif

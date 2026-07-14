@@ -252,7 +252,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   if (diag_needed) {
     if (useCuda && GPUMemoryAllocation::UMSupported()) {
       invM = GPUMemoryAllocation::gpu_um_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
-      d_invM = invM;          // temporary alias for testing
+      d_invM = invM;  // temporary alias for testing
       invM_is_managed = true;
     } else {
       allocAndInit(invM, nPointDomain * nVar * nEqn);

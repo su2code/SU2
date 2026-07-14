@@ -35,7 +35,7 @@
 template<typename matrixType, typename vectorType>
 __global__ void GPUMatrixVectorProductKernel(matrixType *invM, vectorType* vec, vectorType* prod, unsigned long nPointDomain, unsigned long nVar)
 {
-  
+
   const unsigned long iPoint = blockIdx.x * blockDim.x + threadIdx.x;
   if (iPoint >= nPointDomain) return;
 
