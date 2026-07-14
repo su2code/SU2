@@ -54,9 +54,21 @@ constexpr int32_t SU2B_CONN_TYPE_SIZE = static_cast<int32_t>(sizeof(conn_t));
 constexpr std::array<GEO_TYPE, 6> ElemTypes = {TRIANGLE, QUADRILATERAL, TETRAHEDRON,
                                                 HEXAHEDRON, PRISM, PYRAMID};
 
+/*--- fopen() creates new files with permissive default permissions (typically
+      0666 before umask, i.e. potentially world-writable). Explicitly restrict
+      to owner read/write, group/other read-only, matching the permissions of
+      the ASCII mesh files written elsewhere via ofstream. A no-op on Windows,
+      which does not use POSIX permission bits. ---*/
+void RestrictPermissions(const string& filename) {
+#if !defined(_WIN32)
+  chmod(filename.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+#endif
+}
+
 FILE* OpenAppend(const string& filename) {
   FILE* f = fopen(filename.c_str(), "ab");
   if (!f) SU2_MPI::Error(string("Unable to open file ") + filename, CURRENT_FUNCTION);
+  RestrictPermissions(filename);
   return f;
 }
 
@@ -75,6 +87,7 @@ void CSU2MeshBinaryFileWriter::WriteData(string val_filename) {
   if (rank == 0) {
     FILE* f = fopen(val_filename.c_str(), (iZone == 0) ? "wb" : "ab");
     if (!f) SU2_MPI::Error(string("Unable to open file ") + val_filename, CURRENT_FUNCTION);
+    RestrictPermissions(val_filename);
 
     if (iZone == 0) {
       int32_t size_conn_type = SU2B_CONN_TYPE_SIZE;
@@ -229,10 +242,13 @@ void CSU2MeshBinaryFileWriter::WriteData(string val_filename) {
         }
         string Marker_Tag = text_line;
 
-        /*--- Write the null-padded marker name. ---*/
-        char name_buf[CGNS_STRING_SIZE] = {};
-        strncpy(name_buf, Marker_Tag.c_str(), CGNS_STRING_SIZE - 1);
-        fwrite(name_buf, sizeof(char), CGNS_STRING_SIZE, f);
+        /*--- Write the null-padded marker name. Uses SU2_BINARY_STRING_SIZE
+              (shared with CSU2BinaryMeshReaderBase::SU2_STRING_SIZE) rather
+              than CGNS_STRING_SIZE, since the two formats' name field widths
+              are independent and must not silently drift apart. ---*/
+        char name_buf[SU2_BINARY_STRING_SIZE] = {};
+        strncpy(name_buf, Marker_Tag.c_str(), SU2_BINARY_STRING_SIZE - 1);
+        fwrite(name_buf, sizeof(char), SU2_BINARY_STRING_SIZE, f);
 
         getline(input_file, text_line);
         text_line.erase(0, 13);

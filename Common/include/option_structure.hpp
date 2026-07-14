@@ -195,6 +195,9 @@ inline unsigned short nPointsOfElementType(unsigned short elementType) {
 }
 
 const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
+const int SU2_BINARY_STRING_SIZE = 65; /*!< \brief Length of strings (e.g. marker names) used in the native
+                                                    SU2 binary mesh format. Shared by CSU2BinaryMeshReaderBase
+                                                    and CSU2MeshBinaryFileWriter so they cannot drift apart. */
 const int SU2_CONN_SIZE   = 10;  /*!< \brief Size of the connectivity array that is allocated for each element
                                              that we read from a mesh file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
 const int SU2_CONN_SKIP   = 2;   /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
