@@ -624,9 +624,9 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool incompressible = (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE);
 
-  /*--- The bounded-scalar correction is currently only used by the incompressible solvers. ---*/
-  const bool bounded_scalar = incompressible && ((IsSpeciesSolver() && config->GetBounded_Species()) ||
-                                                 (IsTurbSolver()    && config->GetBounded_Turb()));
+  /*--- The bounded-scalar correction. ---*/
+  const bool bounded_scalar = (IsSpeciesSolver() && config->GetBounded_Species()) ||
+                              (IsTurbSolver()    && config->GetBounded_Turb());
 
   /*--- Flow solution, needed to get density. ---*/
 
