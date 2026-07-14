@@ -195,6 +195,9 @@ inline unsigned short nPointsOfElementType(unsigned short elementType) {
 }
 
 const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
+const int SU2_BINARY_STRING_SIZE = 65; /*!< \brief Length of strings (e.g. marker names) used in the native
+                                                    SU2 binary mesh format. Shared by CSU2BinaryMeshReaderBase
+                                                    and CSU2MeshBinaryFileWriter so they cannot drift apart. */
 const int SU2_CONN_SIZE   = 10;  /*!< \brief Size of the connectivity array that is allocated for each element
                                              that we read from a mesh file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
 const int SU2_CONN_SKIP   = 2;   /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
@@ -1117,9 +1120,12 @@ struct CMGOptions {
   std::vector<unsigned short> MG_PreSmooth;    /*!< \brief Multigrid pre-smoothing iterations per level. */
   std::vector<unsigned short> MG_PostSmooth;   /*!< \brief Multigrid post-smoothing iterations per level. */
   std::vector<unsigned short> MG_CorrecSmooth; /*!< \brief Multigrid Jacobi correction-smoothing per level. */
+  std::vector<su2double> MG_CflScaling;        /*!< \brief Per-level CFL scaling factors relative to the previous (finer) level. Entry [i] scales level i+1 from level i. Size = nMGLevels. */
   bool MG_Smooth_EarlyExit{false};        /*!< \brief Enable early exit for MG smoothing iterations. */
   bool MG_Smooth_Output{false};           /*!< \brief Output compact per-cycle smoothing summary. */
+  su2double MG_Smooth_StagnationTol{0.0}; /*!< \brief Stagnation early exit: stop if current_rms >= prev_rms * tol. 0 = disabled. */
   bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
+  unsigned long MG_Implicit_Lines_MaxLength{20}; /*!< \brief Maximum nodes on a wall-normal implicit line (including wall seed). */
 };
 
 /*!
@@ -2186,21 +2192,26 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
 };
 
 /*!
- * \brief Types of input file formats
+ * \brief Types of grid file formats
  */
-enum ENUM_INPUT {
-  SU2       = 1,  /*!< \brief SU2 input format. */
-  CGNS_GRID = 2,  /*!< \brief CGNS input format for the computational grid. */
-  RECTANGLE = 3,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
-  BOX       = 4   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
+enum ENUM_GRID {
+  SU2       = 1,  /*!< \brief SU2 ascii format. */
+  SU2_BIN   = 2,  /*!< \brief SU2 binary format. */
+  CGNS_GRID = 3,  /*!< \brief CGNS format for the computational grid. */
+  RECTANGLE = 4,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
+  BOX       = 5   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
 };
-static const MapType<std::string, ENUM_INPUT> Input_Map = {
-  MakePair("SU2", SU2)
-  MakePair("CGNS", CGNS_GRID)
-  MakePair("RECTANGLE", RECTANGLE)
-  MakePair("BOX", BOX)
+static const MapType<std::string, ENUM_GRID> Input_Map = {
+  MakePair("SU2", ENUM_GRID::SU2)
+  MakePair("SU2B", ENUM_GRID::SU2_BIN)
+  MakePair("CGNS", ENUM_GRID::CGNS_GRID)
+  MakePair("RECTANGLE", ENUM_GRID::RECTANGLE)
+  MakePair("BOX", ENUM_GRID::BOX)
 };
-
+static const MapType<std::string, ENUM_GRID> OutputMesh_Map = {
+  MakePair("SU2", ENUM_GRID::SU2)
+  MakePair("SU2B", ENUM_GRID::SU2_BIN)
+};
 
 /*!
  * \brief Type of solution output file formats
@@ -2216,7 +2227,8 @@ enum class OUTPUT_TYPE {
   PARAVIEW_LEGACY_BINARY,  /*!< \brief Paraview binary format for the solution output. */
   SURFACE_PARAVIEW_ASCII,  /*!< \brief Paraview ASCII format for the solution output. */
   SURFACE_PARAVIEW_LEGACY_BINARY, /*!< \brief Paraview binary format for the solution output. */
-  MESH,                    /*!< \brief SU2 mesh format. */
+  MESH,                    /*!< \brief SU2 ASCII mesh format. */
+  MESH_BINARY,             /*!< \brief SU2 binary mesh format. */
   RESTART_BINARY,          /*!< \brief SU2 binary restart format. */
   RESTART_ASCII,           /*!< \brief SU2 ASCII restart format. */
   PARAVIEW_XML,            /*!< \brief Paraview XML with binary data format */
@@ -2242,6 +2254,7 @@ static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
   MakePair("SURFACE_PARAVIEW", OUTPUT_TYPE::SURFACE_PARAVIEW_XML)
   MakePair("PARAVIEW_MULTIBLOCK", OUTPUT_TYPE::PARAVIEW_MULTIBLOCK)
   MakePair("MESH", OUTPUT_TYPE::MESH)
+  MakePair("MESH_BINARY", OUTPUT_TYPE::MESH_BINARY)
   MakePair("RESTART_ASCII", OUTPUT_TYPE::RESTART_ASCII)
   MakePair("RESTART", OUTPUT_TYPE::RESTART_BINARY)
   MakePair("CGNS", OUTPUT_TYPE::CGNS)

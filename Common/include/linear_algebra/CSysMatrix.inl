@@ -34,19 +34,14 @@
 
 template <class ScalarType>
 FORCEINLINE ScalarType* CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
-  /*--- The position of the diagonal block is known which allows halving the search space. ---*/
-  const auto end = (block_j < block_i) ? dia_ptr_ilu[block_i] : row_ptr_ilu[block_i + 1];
-  for (auto index = (block_j < block_i) ? row_ptr_ilu[block_i] : dia_ptr_ilu[block_i]; index < end; ++index)
-    if (col_ind_ilu[index] == block_j) return &ILU_matrix[index * nVar * nVar];
+  if (block_i == block_j) return &ilu.d[block_i * nVar * nVar];
+  const auto* __restrict row_ptr = block_j < block_i ? ilu.row_ptr_l : ilu.row_ptr_u;
+  const auto* __restrict col_ind = block_j < block_i ? ilu.col_ind_l : ilu.col_ind_u;
+  auto* __restrict vals = block_j < block_i ? ilu.l : ilu.u;
+  for (auto k = row_ptr[block_i]; k < row_ptr[block_i + 1]; ++k) {
+    if (col_ind[k] == block_j) return vals + k * nVar * nVar;
+  }
   return nullptr;
-}
-
-template <class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j,
-                                                            ScalarType* val_block) {
-  auto ilu_ij = GetBlock_ILUMatrix(block_i, block_j);
-  if (!ilu_ij) return;
-  MatrixCopy(val_block, ilu_ij);
 }
 
 namespace {
@@ -145,7 +140,7 @@ template <class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::Gauss_Elimination(unsigned long block_i, ScalarType* rhs) const {
   /*--- Copy block, as the algorithm modifies the matrix ---*/
   ScalarType block[MAXNVAR * MAXNVAR];
-  MatrixCopy(&matrix[dia_ptr[block_i] * nVar * nVar], block);
+  MatrixCopy(&mat.d[block_i * nVar * nVar], block);
 
   Gauss_Elimination(block, rhs);
 }
@@ -154,7 +149,7 @@ template <class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long block_i, ScalarType* invBlock) const {
   /*--- Copy block, as the algorithm modifies the matrix ---*/
   ScalarType block[MAXNVAR * MAXNVAR];
-  MatrixCopy(&matrix[dia_ptr[block_i] * nVar * nVar], block);
+  MatrixCopy(&mat.d[block_i * nVar * nVar], block);
 
   MatrixInverse(block, invBlock);
 }
@@ -162,7 +157,7 @@ FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long bloc
 template <class ScalarType>
 FORCEINLINE const ScalarType* CSysMatrix<ScalarType>::InvertDiagonalBlockILUMatrix(unsigned long block_i) {
   /*--- Copy block, as the algorithm modifies the matrix ---*/
-  auto* Uii = &ILU_matrix[dia_ptr_ilu[block_i] * nVar * nVar];
+  auto* Uii = &ilu.d[block_i * nVar * nVar];
   ScalarType block[MAXNVAR * MAXNVAR];
   MatrixCopy(Uii, block);
   MatrixInverse(block, Uii);
@@ -174,10 +169,13 @@ FORCEINLINE void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType>
                                                     ScalarType* prod) const {
   for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
 
-  for (auto index = row_ptr[row_i]; index < row_ptr[row_i + 1]; index++) {
-    auto col_j = col_ind[index];
-    MatrixVectorProductAdd(&matrix[index * nVar * nEqn], &vec[col_j * nEqn], prod);
-  }
+  for (auto index = mat.row_ptr_l[row_i]; index < mat.row_ptr_l[row_i + 1]; index++)
+    MatrixVectorProductAdd(&mat.l[index * nVar * nEqn], &vec[mat.col_ind_l[index] * nEqn], prod);
+
+  MatrixVectorProductAdd(&mat.d[row_i * nVar * nEqn], &vec[row_i * nEqn], prod);
+
+  for (auto index = mat.row_ptr_u[row_i]; index < mat.row_ptr_u[row_i + 1]; index++)
+    MatrixVectorProductAdd(&mat.u[index * nVar * nEqn], &vec[mat.col_ind_u[index] * nEqn], prod);
 }
 
 template <class ScalarType>
@@ -185,11 +183,11 @@ FORCEINLINE void CSysMatrix<ScalarType>::UpperProduct(const CSysVector<ScalarTyp
                                                       unsigned long col_ub, ScalarType* prod) const {
   for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
 
-  for (auto index = dia_ptr[row_i] + 1; index < row_ptr[row_i + 1]; index++) {
-    auto col_j = col_ind[index];
+  for (auto index = mat.row_ptr_u[row_i]; index < mat.row_ptr_u[row_i + 1]; index++) {
+    auto col_j = mat.col_ind_u[index];
     /*--- Always include halos. ---*/
     if (col_j < col_ub || col_j >= nPointDomain)
-      MatrixVectorProductAdd(&matrix[index * nVar * nEqn], &vec[col_j * nEqn], prod);
+      MatrixVectorProductAdd(&mat.u[index * nVar * nEqn], &vec[col_j * nEqn], prod);
   }
 }
 
@@ -198,14 +196,14 @@ FORCEINLINE void CSysMatrix<ScalarType>::LowerProduct(const CSysVector<ScalarTyp
                                                       unsigned long col_lb, ScalarType* prod) const {
   for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
 
-  for (auto index = row_ptr[row_i]; index < dia_ptr[row_i]; index++) {
-    auto col_j = col_ind[index];
-    if (col_j >= col_lb) MatrixVectorProductAdd(&matrix[index * nVar * nEqn], &vec[col_j * nEqn], prod);
+  for (auto index = mat.row_ptr_l[row_i]; index < mat.row_ptr_l[row_i + 1]; index++) {
+    auto col_j = mat.col_ind_l[index];
+    if (col_j >= col_lb) MatrixVectorProductAdd(&mat.l[index * nVar * nEqn], &vec[col_j * nEqn], prod);
   }
 }
 
 template <class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::DiagonalProduct(const CSysVector<ScalarType>& vec, unsigned long row_i,
                                                          ScalarType* prod) const {
-  MatrixVectorProduct(&matrix[dia_ptr[row_i] * nVar * nEqn], &vec[row_i * nEqn], prod);
+  MatrixVectorProduct(&mat.d[row_i * nVar * nEqn], &vec[row_i * nEqn], prod);
 }
