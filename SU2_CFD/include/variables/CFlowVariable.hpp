@@ -274,7 +274,7 @@ class CFlowVariable : public CVariable {
   /*!
    * \brief Get the density at time level n for dual-time stepping (compressible flows).
    * For compressible flows, density is extracted from the solution container.
-   * For incompressible flows, this is overridden to use dedicated storage.
+   * For incompressible flows, this is overridden.
    * \param[in] iPoint - Point index.
    * \return Density at time level n.
    */
