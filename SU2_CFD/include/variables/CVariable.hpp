@@ -2214,13 +2214,15 @@ public:
 
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
+   * Virtual to allow derived classes to register additional containers.
    */
-  void RegisterSolution_time_n();
+  virtual void RegisterSolution_time_n();
 
   /*!
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
+   * Virtual to allow derived classes to register additional containers.
    */
-  void RegisterSolution_time_n1();
+  virtual void RegisterSolution_time_n1();
 
   /*!
    * \brief Register the variables in the user defined source array as input/output variable.

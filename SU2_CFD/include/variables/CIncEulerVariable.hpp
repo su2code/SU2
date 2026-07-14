@@ -342,6 +342,16 @@ public:
   void RegisterDensity_time_n1() override;
 
   /*!
+   * \brief Register solution at time n, including the density container for incompressible flows.
+   */
+  void RegisterSolution_time_n() override;
+
+  /*!
+   * \brief Register solution at time n-1, including the density container for incompressible flows.
+   */
+  void RegisterSolution_time_n1() override;
+
+  /*!
    * \brief Get the adjoint of density at time n.
    *        Simplified version: directly extracts the AD derivative of Density_time_n,
    *        analogous to GetAdjointSolution_time_n for the solution vector.

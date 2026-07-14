@@ -170,15 +170,10 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
   if (time_n_needed) {
     direct_solver->GetNodes()->RegisterSolution_time_n();
-    /*--- Density is stored separately from the solution vector for incompressible flows. ---*/
-    if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE)
-      direct_solver->GetNodes()->RegisterDensity_time_n();
   }
 
   if (time_n1_needed) {
     direct_solver->GetNodes()->RegisterSolution_time_n1();
-    if (config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE)
-      direct_solver->GetNodes()->RegisterDensity_time_n1();
   }
 }
 
