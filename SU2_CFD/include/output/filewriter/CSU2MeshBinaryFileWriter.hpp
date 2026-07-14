@@ -1,7 +1,7 @@
 /*!
- * \file CParaviewBinaryFileWriter.hpp
- * \brief Headers fo paraview binary file writer class.
- * \author T. Albring
+ * \file CSU2MeshBinaryFileWriter.hpp
+ * \brief Headers for the SU2 binary mesh file writer class.
+ * \author E. van der Weide
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -24,18 +24,14 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-
 #include "CFileWriter.hpp"
 
-class CParaviewBinaryFileWriter final: public CFileWriter{
-  private:
+class CSU2MeshBinaryFileWriter final: public CFileWriter{
 
-  /*!
-   * \brief Boolean storing whether we are on a big or little endian machine
-   */
-  bool bigEndian;
+private:
+  unsigned short iZone, //!< Index of the current zone
+  nZone;                //!< Number of zones
 
 public:
 
@@ -45,20 +41,19 @@ public:
   const static string fileExt;
 
   /*!
-   * \brief Construct a file writer using field names and the data sorter.
+   * \brief Construct a file writer using field names, dimension.
    * \param[in] valDataSorter - The parallel sorted data to write
+   * \param[in] valiZone - The index of the current zone
+   * \param[in] valnZone - The total number of zones
    */
-  CParaviewBinaryFileWriter(CParallelDataSorter* valDataSorter);
+  CSU2MeshBinaryFileWriter(CParallelDataSorter* valDataSorter,
+                           unsigned short valiZone, unsigned short valnZone);
 
   /*!
-   * \brief Destructor
-   */
-  ~CParaviewBinaryFileWriter() override;
-
-  /*!
-   * \brief Write sorted data to file in paraview binary file format
+   * \brief Write sorted data to file in SU2 mesh file format
    * \param[in] val_filename - The name of the file
    */
   void WriteData(string val_filename) override ;
+
 };
 
