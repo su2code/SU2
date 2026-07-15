@@ -43,6 +43,116 @@ private:
   su2double nu_tilde_Engine[4] = {0.0};
   su2double nu_tilde_ActDisk[4] = {0.0};
 
+  /*--- FIML Neural Network Components ---*/
+  su2double*** weights = nullptr;              /*!< \brief NN weights [layer][neuron_from][neuron_to] */
+  su2double*** weight_gradients = nullptr;     /*!< \brief Weight gradients [layer][neuron_from][neuron_to] */
+  unsigned short n_neurons = 0;                /*!< \brief Number of neurons per hidden layer */
+  unsigned short n_hidden_layers = 0;          /*!< \brief Number of hidden layers */
+  unsigned short n_inputs = 4;                 /*!< \brief Number of NN inputs (features) */
+
+  su2double box_cox_lambda[4] = {1.0, 1.0, 1.0, 1.0};  /*!< \brief Box-Cox transform parameters */
+  su2double feature_mean[4] = {0.0, 0.0, 0.0, 0.0};    /*!< \brief Feature means for scaling */
+  su2double feature_std[4] = {1.0, 1.0, 1.0, 1.0};     /*!< \brief Feature std devs for scaling */
+
+  bool filter_shield = false;                  /*!< \brief Apply spatial filtering */
+  su2double Total_CpDiff_FIML = 0.0;          /*!< \brief FIML pressure coefficient objective */
+  su2double Total_ClDiff_FIML = 0.0;          /*!< \brief FIML lift coefficient objective */
+  su2double Total_CdDiff_FIML = 0.0;          /*!< \brief FIML drag coefficient objective */
+
+  /*!
+   * \brief Initialize neural network weights and structure.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void InitializeNeuralNetwork(const CConfig* config);
+
+  /*!
+   * \brief Forward propagate through neural network to compute beta_fiml at all points.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver_container - Container with all solvers.
+   * \param[in] geometry - Geometrical definition.
+   */
+  void ForwardPropagate(const CConfig* config, CSolver** solver_container, CGeometry* geometry);
+
+  /*!
+   * \brief Compute neural network input features at a point.
+   * \param[in] iPoint - Grid point index.
+   * \param[in] solver_container - Container with all solvers.
+   * \param[in] geometry - Geometrical definition.
+   * \param[out] features - Array of 4 feature values.
+   */
+  void ComputeNNInputFeatures(unsigned long iPoint, CSolver** solver_container,
+                               CGeometry* geometry, su2double* features) const;
+
+  /*!
+   * \brief Apply Box-Cox scaling to input features.
+   * \param[in,out] features - Feature array to scale (in place).
+   */
+  void ScaleNNInputs(su2double* features) const;
+
+  /*!
+   * \brief Check if point should be filtered based on flow physics.
+   * \param[in] iPoint - Grid point index.
+   * \return True if point should be filtered out.
+   */
+  bool ApplyFilterShield(unsigned long iPoint) const;
+
+  /*!
+   * \brief Compute Box-Cox lambda parameters for input scaling.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver_container - Container with all solvers.
+   * \param[in] geometry - Geometrical definition.
+   */
+  void ComputeBoxCoxLambda(const CConfig* config, CSolver** solver_container, CGeometry* geometry);
+
+  /*!
+   * \brief Helper to perform MPI reduction on feature statistics.
+   * \param[in,out] local_vals - Local values to reduce.
+   * \param[out] global_vals - Global reduced values.
+   * \param[in] count - Number of values to reduce.
+   */
+  void MPIReduceFeatures(const su2double* local_vals, su2double* global_vals, int count) const;
+
+  /*!
+   * \brief Backward propagate to compute weight gradients from beta targets.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver_container - Container with all solvers.
+   * \param[in] geometry - Geometrical definition.
+   */
+  void BackwardPropagate(const CConfig* config, CSolver** solver_container, CGeometry* geometry);
+
+  /*!
+   * \brief Update neural network weights using gradient descent.
+   * \param[in] learning_rate - Learning rate for weight update.
+   */
+  void UpdateWeights(su2double learning_rate);
+
+  /*!
+   * \brief Load beta target values for training.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition.
+   */
+  void LoadBetaTargets(const CConfig* config, CGeometry* geometry);
+
+  /*!
+   * \brief Compute training loss (MSE between predicted and target beta).
+   * \param[in] geometry - Geometrical definition.
+   * \return Total training loss.
+   */
+  su2double ComputeTrainingLoss(CGeometry* geometry) const;
+
+  /*!
+   * \brief Save neural network weights to file.
+   * \param[in] filename - Output filename for weights.
+   */
+  void SaveNeuralNetworkWeights(const string& filename = "nn_weights.dat") const;
+
+  /*!
+   * \brief Load neural network weights from file.
+   * \param[in] filename - Input filename containing weights.
+   * \return True if weights were successfully loaded, false otherwise.
+   */
+  bool LoadNeuralNetworkWeights(const string& filename = "nn_weights.dat");
+
   /*!
    * \brief A virtual member.
    * \param[in] solver - Solver container
@@ -108,7 +218,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  ~CTurbSASolver() = default;
+  ~CTurbSASolver() override;
 
   /*!
    * \brief Restart residual and compute gradients.

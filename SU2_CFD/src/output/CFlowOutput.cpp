@@ -2812,6 +2812,9 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           /// TODO: add the submodels here
           file << "Spalart Allmaras\n";
           break;
+        case TURB_MODEL::SA_FIML:
+          file << "Spalart Allmaras with FIML correction\n";
+          break;
         case TURB_MODEL::SST:
           /// TODO: add the submodels here
           if (config->GetSSTParsedOptions().sust)
@@ -2819,6 +2822,9 @@ void CFlowOutput::WriteForcesBreakdown(const CConfig* config, const CSolver* flo
           else
             file << "Menter's SST\n";
          break;
+        case TURB_MODEL::SST_FIML:
+          file << "Menter's SST with FIML correction\n";
+          break;
       }
       if (transition) {
         file << "Transition model: ";

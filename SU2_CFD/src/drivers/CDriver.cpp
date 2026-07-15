@@ -1209,6 +1209,7 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
       SU2_MPI::Error("No turbulence model selected.", CURRENT_FUNCTION);
       break;
     case TURB_MODEL::SA:
+    case TURB_MODEL::SA_FIML:
       spalart_allmaras = true;
       break;
     case TURB_MODEL::SST:

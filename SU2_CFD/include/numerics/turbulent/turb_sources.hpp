@@ -73,7 +73,7 @@ class CSourceBase_TurbSA : public CNumerics {
 
   /*--- Residual and Jacobian ---*/
   su2double Residual[4], *Jacobian_i[4]; /*!< \brief Increase the size of residual and Jacobian for Langevin equations (Stochastic Backscatter Model).*/
-  su2double Jacobian_Buffer[16]; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */ 
+  su2double Jacobian_Buffer[16]; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
@@ -113,9 +113,9 @@ class CSourceBase_TurbSA : public CNumerics {
   }
 
   /*!
-   * \brief Include source-term residuals for Langevin equations (Stochastic Backscatter Model) 
+   * \brief Include source-term residuals for Langevin equations (Stochastic Backscatter Model)
    */
-  inline void ResidualStochEquations(su2double timeStep, const su2double ct, 
+  inline void ResidualStochEquations(su2double timeStep, const su2double ct,
                                      su2double lengthScale, su2double DES_const,
                                      const CSAVariables& var, TIME_MARCHING time_marching,
                                      su2double threshold) {
@@ -128,14 +128,14 @@ class CSourceBase_TurbSA : public CNumerics {
 
       su2double tTurb = ct*pow(delta, 2)/nut;
       su2double tRat = timeStep / tTurb;
-    
+
       su2double corrFac = 1.0;
       if (time_marching == TIME_MARCHING::DT_STEPPING_2ND) {
         corrFac = sqrt(0.5*(1.0+tRat)*(4.0+tRat)/(2.0+tRat));
       } else if (time_marching == TIME_MARCHING::DT_STEPPING_1ST) {
         corrFac = sqrt(1.0+0.5*tRat);
       }
-    
+
       su2double scaleFactor = 0.0;
       if (lesMode_i > threshold)
         scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * corrFac;
@@ -342,6 +342,11 @@ class CSourceBase_TurbSA : public CNumerics {
 
       if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().stochSourceNu)
         AddStochSource(config, var, Production);
+
+      /*--- FIML: Apply beta_fiml correction to production term ---*/
+      if (config->GetKind_Turb_Model() == TURB_MODEL::SA_FIML) {
+        Production *= beta_fiml;
+      }
 
       Residual[0] = (Production - Destruction) * Volume;
 

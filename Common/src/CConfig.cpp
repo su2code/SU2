@@ -1146,6 +1146,44 @@ void CConfig::SetConfig_Options() {
   /*!\brief HROUGHNESS \n DESCRIPTION: Value of RMS roughness for transition model \n DEFAULT: 1E-6 \ingroup Config*/
   addDoubleOption("HROUGHNESS", hRoughness, 1e-6);
 
+  /* --- FIML Options --- */
+  /*!\brief SA_FIML_CORRECTION \n DESCRIPTION: Type of SA FIML correction \n Options: see \link SA_Fiml_Correction_Map \endlink \n DEFAULT: PRODUCTION \ingroup Config*/
+  addEnumOption("SA_FIML_CORRECTION", SA_Fiml_Correction, SA_Fiml_Correction_Map, SA_FIML_CORRECTION::PRODUCTION);
+  /*!\brief TRAIN_NN \n DESCRIPTION: Enable neural network training for FIML \n Options: NO, YES \n DEFAULT: NO \ingroup Config*/
+  addBoolOption("TRAIN_NN", Train_NN, false);
+  /*!\brief KIND_TRAIN_NN \n DESCRIPTION: Neural network training method \n Options: see \link NN_Train_Method_Map \endlink \n DEFAULT: WEIGHTS \ingroup Config*/
+  addEnumOption("KIND_TRAIN_NN", Kind_Train_NN, NN_Train_Method_Map, NN_TRAIN_METHOD::WEIGHTS);
+  /*!\brief KIND_NN_SCALING \n DESCRIPTION: Neural network input scaling method \n Options: see \link NN_Input_Scaling_Map \endlink \n DEFAULT: BOX_COX \ingroup Config*/
+  addEnumOption("KIND_NN_SCALING", Kind_NN_Scaling, NN_Input_Scaling_Map, NN_INPUT_SCALING::BOX_COX);
+  /*!\brief N_NEURONS \n DESCRIPTION: Number of neurons per hidden layer \n DEFAULT: 20 \ingroup Config*/
+  addUnsignedShortOption("N_NEURONS", N_Neurons, 20);
+  /*!\brief N_HIDDEN_LAYERS \n DESCRIPTION: Number of hidden layers in neural network \n DEFAULT: 3 \ingroup Config*/
+  addUnsignedShortOption("N_HIDDEN_LAYERS", N_Hidden_Layers, 3);
+  /*!\brief N_BINS \n DESCRIPTION: Number of bins for quantile transform \n DEFAULT: 10 \ingroup Config*/
+  addUnsignedShortOption("N_BINS", N_Bins, 10);
+  /*!\brief ITER_START_NN \n DESCRIPTION: Iteration to start using neural network \n DEFAULT: 1000 \ingroup Config*/
+  addUnsignedLongOption("ITER_START_NN", Iter_Start_NN, 1000);
+  /*!\brief NUM_EPOCH \n DESCRIPTION: Number of epochs for backpropagation training \n DEFAULT: 1 \ingroup Config*/
+  addUnsignedShortOption("NUM_EPOCH", Num_Epoch, 1);
+  /*!\brief LEARNING_RATE \n DESCRIPTION: Learning rate for backpropagation \n DEFAULT: 0.01 \ingroup Config*/
+  addDoubleOption("LEARNING_RATE", Learning_Rate, 0.01);
+  /*!\brief LAMBDA_FIML \n DESCRIPTION: Regularization parameter for FIML objective functions \n DEFAULT: 1.0E-4 \ingroup Config*/
+  addDoubleOption("LAMBDA_FIML", Lambda_FIML, 1.0E-4);
+  /*!\brief TARGET_INVERSE_CL \n DESCRIPTION: Target lift coefficient for inverse design \n DEFAULT: 0.0 \ingroup Config*/
+  addDoubleOption("TARGET_INVERSE_CL", Target_Inverse_CL, 0.0);
+  /*!\brief TARGET_INVERSE_CD \n DESCRIPTION: Target drag coefficient for inverse design \n DEFAULT: 0.0 \ingroup Config*/
+  addDoubleOption("TARGET_INVERSE_CD", Target_Inverse_CD, 0.0);
+  /*!\brief TARGET_INVERSE_CP \n DESCRIPTION: Target pressure coefficient for inverse design \n DEFAULT: 0.0 \ingroup Config*/
+  addDoubleOption("TARGET_INVERSE_CP", Target_Inverse_CP, 0.0);
+  /*!\brief BETA_TARGET_FILE \n DESCRIPTION: File containing beta target values for NN training \n DEFAULT: beta_target.dat \ingroup Config*/
+  addStringOption("BETA_TARGET_FILE", Beta_Target_FileName, string("beta_target.dat"));
+  /*!\brief FILTER_SHIELD \n DESCRIPTION: Enable shield filtering for FIML correction \n Options: NO, YES \n DEFAULT: NO \ingroup Config*/
+  addBoolOption("FILTER_SHIELD", Filter_Shield, false);
+  /*!\brief MULTI_MESH \n DESCRIPTION: Enable multi-mesh FIML-Direct mode \n Options: NO, YES \n DEFAULT: NO \ingroup Config*/
+  addBoolOption("MULTI_MESH", Multi_Mesh, false);
+  /*!\brief NPOIN \n DESCRIPTION: Number of grid points (for FIML design variable vector sizing) \n DEFAULT: 0 \ingroup Config*/
+  addUnsignedLongOption("NPOIN", NPOIN_FIML, 0);
+
   /*!\brief KIND_SCALAR_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NONE \ingroup Config*/
   addEnumOption("KIND_SCALAR_MODEL", Kind_Species_Model, Species_Model_Map, SPECIES_MODEL::NONE);
 
@@ -6445,6 +6483,42 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             if (saParsedOptions.bc) cout << "-BCM";
             cout << endl;
             break;
+          case TURB_MODEL::SA_FIML:
+            cout << "Spalart-Allmaras with FIML correction (";
+            switch (SA_Fiml_Correction) {
+              case SA_FIML_CORRECTION::PRODUCTION:
+                cout << "production";
+                break;
+              case SA_FIML_CORRECTION::KAPPA:
+                cout << "kappa";
+                break;
+              case SA_FIML_CORRECTION::APG:
+                cout << "APG";
+                break;
+              case SA_FIML_CORRECTION::APGR:
+                cout << "APGR";
+                break;
+            }
+            cout << ")";
+            if (Train_NN) {
+              cout << ", neural network (";
+              switch (Kind_Train_NN) {
+                case NN_TRAIN_METHOD::BACKPROP:
+                  cout << "backprop";
+                  break;
+                case NN_TRAIN_METHOD::WEIGHTS:
+                  cout << "direct weights";
+                  break;
+                default:
+                  break;
+              }
+              cout << ", " << N_Hidden_Layers << " layers, " << N_Neurons << " neurons)";
+            }
+            cout << endl;
+            break;
+          case TURB_MODEL::SST_FIML:
+            cout << "Menter's k-omega SST with FIML correction (not yet implemented)" << endl;
+            break;
           case TURB_MODEL::SST:
             cout << "Menter's k-omega SST";
             if (sstParsedOptions.version == SST_OPTIONS::V1994) cout << "-1994";
@@ -6508,9 +6582,17 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
             case TURB_TRANS_CORRELATION::MENTER_LANGTRY: cout << "Menter and Langtry (2009)" << endl;  break;
             case TURB_TRANS_CORRELATION::DEFAULT:
               switch (Kind_Turb_Model) {
-                case TURB_MODEL::SA: cout << "Malan et al. (2009)" << endl;  break;
-                case TURB_MODEL::SST: cout << "Menter and Langtry (2009)" << endl;  break;
-                case TURB_MODEL::NONE: SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION); break;
+                case TURB_MODEL::SA:
+                case TURB_MODEL::SA_FIML:
+                  cout << "Malan et al. (2009)" << endl;
+                  break;
+                case TURB_MODEL::SST:
+                case TURB_MODEL::SST_FIML:
+                  cout << "Menter and Langtry (2009)" << endl;
+                  break;
+                case TURB_MODEL::NONE:
+                  SU2_MPI::Error("No turbulence model has been selected but LM transition model is active.", CURRENT_FUNCTION);
+                  break;
               }
               break;
           }

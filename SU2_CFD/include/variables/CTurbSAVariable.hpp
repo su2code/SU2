@@ -47,6 +47,11 @@ private:
   VectorType Vortex_Tilting;
   VectorType besselIntegral;
 
+  /* FIML variables */
+  VectorType beta_fiml;          /*!< \brief FIML correction factor at each point. */
+  VectorType beta_fiml_grad;     /*!< \brief Gradient of FIML correction (for adjoint). */
+  VectorType beta_fiml_train;    /*!< \brief Target beta for neural network training (FIML-Embedded). */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -161,5 +166,47 @@ public:
    * \return Value of the integral.
    */
   inline su2double GetBesselIntegral(unsigned long iPoint) const override { return besselIntegral(iPoint); }
+
+  /*!
+   * \brief Get the FIML correction factor beta_fiml.
+   * \param[in] iPoint - Point index.
+   * \return Value of beta_fiml.
+   */
+  inline su2double GetBetaFiml(unsigned long iPoint) const { return beta_fiml(iPoint); }
+
+  /*!
+   * \brief Set the FIML correction factor beta_fiml.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_beta_fiml - Value of beta_fiml.
+   */
+  inline void SetBetaFiml(unsigned long iPoint, su2double val_beta_fiml) { beta_fiml(iPoint) = val_beta_fiml; }
+
+  /*!
+   * \brief Get the FIML correction gradient.
+   * \param[in] iPoint - Point index.
+   * \return Value of beta_fiml gradient.
+   */
+  inline su2double GetBetaFimlGrad(unsigned long iPoint) const { return beta_fiml_grad(iPoint); }
+
+  /*!
+   * \brief Set the FIML correction gradient.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_beta_fiml_grad - Value of beta_fiml gradient.
+   */
+  inline void SetBetaFimlGrad(unsigned long iPoint, su2double val_beta_fiml_grad) { beta_fiml_grad(iPoint) = val_beta_fiml_grad; }
+
+  /*!
+   * \brief Get the FIML training target.
+   * \param[in] iPoint - Point index.
+   * \return Value of beta_fiml training target.
+   */
+  inline su2double GetBetaFimlTrain(unsigned long iPoint) const { return beta_fiml_train(iPoint); }
+
+  /*!
+   * \brief Set the FIML training target.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_beta_fiml_train - Value of beta_fiml training target.
+   */
+  inline void SetBetaFimlTrain(unsigned long iPoint, su2double val_beta_fiml_train) { beta_fiml_train(iPoint) = val_beta_fiml_train; }
 
 };

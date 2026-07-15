@@ -83,6 +83,8 @@ protected:
   intermittency_eff_i, /*!< \brief effective intermittency at point i. */
   intermittency_i; /*!< \brief intermittency at point i. */
   su2double
+  beta_fiml = 1.0; /*!< \brief FIML correction factor for turbulence production term. */
+  su2double
   Pressure_i,  /*!< \brief Pressure at point i. */
   Pressure_j;  /*!< \brief Pressure at point j. */
   su2double
@@ -799,6 +801,14 @@ public:
    * \param[in] intermittency_eff_i - Value of the effective intermittency at point i.
    */
   su2double GetIntermittencyEff() const { return intermittency_eff_i; }
+
+  /*!
+   * \brief Set the FIML correction factor beta.
+   * \param[in] val_beta_fiml - Value of beta_fiml at the point.
+   */
+  void SetBetaFiml(su2double val_beta_fiml) {
+    beta_fiml = val_beta_fiml;
+  }
 
   /*!
    * \brief Set the gradient of the auxiliary variables.
