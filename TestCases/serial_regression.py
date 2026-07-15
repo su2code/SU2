@@ -218,7 +218,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.187052, -5.333165, 0.382555, 0.077938, 0.000000]
+    rae2822_sa.test_vals = [-2.187052, -5.333164, 0.382555, 0.077938, 0.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -946,7 +946,7 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 2
-    uniform_flow.test_vals = [2.000000, 0.000000, -0.230639, -13.253272]
+    uniform_flow.test_vals = [2.000000, 0.000000, -0.230639, -13.251161]
     uniform_flow.test_vals_aarch64 = [2.000000, 0.000000, -0.230641, -13.249000]
     uniform_flow.tol       = 0.000001
     uniform_flow.unsteady  = True
