@@ -261,3 +261,15 @@ FORCEINLINE void updateLinearSystem(Int iEdge,
     }
   }
 }
+
+/*!
+ * \brief Store the (scalar) mass flux of an edge, e.g. for "bounded scalar" transport equations.
+ * \note No-op if "target" is null. As with CEdge's Nodes/Normal, edges within a SIMD group are
+ * contiguous (coloring groups are multiples of the SIMD size), so this is a plain vectorized store
+ * starting at iEdge[0], relying on "target" being padded to a multiple of the SIMD size.
+ */
+FORCEINLINE void updateEdgeMassFlux(Int iEdge,
+                                    const Double& massFlux,
+                                    su2activevector* target) {
+  if (target) massFlux.store(&(*target)[iEdge[0]]);
+}

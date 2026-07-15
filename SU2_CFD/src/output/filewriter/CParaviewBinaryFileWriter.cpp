@@ -26,6 +26,7 @@
  */
 
 #include "../../../include/output/filewriter/CParaviewBinaryFileWriter.hpp"
+#include "../../../../Common/include/toolboxes/SwapBytes.hpp"
 
 const string CParaviewBinaryFileWriter::fileExt = ".vtk";
 
@@ -305,38 +306,4 @@ void CParaviewBinaryFileWriter::WriteData(string val_filename){
 
   CloseMPIFile();
 
-}
-
-
-/*--- Subroutine to swap bytes, in case we need to convert to
- big endian, which is expected for ParaView binary legacy format. ---*/
-
-void CParaviewBinaryFileWriter::SwapBytes(char *buffer, size_t nBytes, unsigned long nVar) {
-
-  /*--- Store half the number of bytes in kk. ---*/
-
-  const int kk = (int)nBytes/2;
-
-  /*--- Loop over the number of variables in the buffer. ---*/
-
-  for (int j = 0; j < (int)nVar; j++) {
-
-    /*--- Initialize ii and jj, which are used to store the
-     indices of the bytes to be swapped. ---*/
-
-    int ii = j*(int)nBytes;
-    int jj = ii + (int)nBytes - 1;
-
-    /*--- Swap the bytes. ---*/
-
-    for (int i = 0; i < kk; i++) {
-      char tmp   = buffer[jj];
-      buffer[jj] = buffer[ii];
-      buffer[ii] = tmp;
-
-      ii++;
-      jj--;
-
-    }
-  }
 }

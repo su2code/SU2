@@ -1595,6 +1595,8 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
   ErrorCounter = 0;
   END_SU2_OMP_MASTER
 
+  su2activevector* massFluxes = config->GetBounded_Scalar() ? &EdgeMassFluxes : nullptr;
+
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
   bool pausePreacc = false;
@@ -1615,9 +1617,9 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
       }
 
       if (ReducerStrategy) {
-        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::REDUCTION, mask, EdgeFluxes, Jacobian);
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::REDUCTION, mask, EdgeFluxes, Jacobian, massFluxes);
       } else {
-        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian, massFluxes);
       }
       if (MGLevel == MESH_0) {
         for (auto j = 0ul; j < Double::Size; ++j)

@@ -546,8 +546,8 @@ void CSysMatrix<ScalarType>::SetValZero() {
   auto zeroChunk = [&](ScalarType* arr, unsigned long n) {
     if (n == 0) return;
     const auto chunk = roundUpDiv(n, nThreads);
-    const auto begin = min(chunk * iThread, n);
-    const auto mySize = min(chunk, n - begin) * sizeof(ScalarType);
+    const auto begin = min<size_t>(chunk * iThread, n);
+    const auto mySize = min<size_t>(chunk, n - begin) * sizeof(ScalarType);
     if (mySize) memset(&arr[begin], 0, mySize);
   };
   zeroChunk(mat.d, nPoint * nVar * nEqn);

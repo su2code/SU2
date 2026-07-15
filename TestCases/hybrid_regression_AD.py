@@ -159,7 +159,7 @@ def main():
     discadj_cylinder.cfg_dir   = "disc_adj_rans/cylinder"
     discadj_cylinder.cfg_file  = "cylinder_Windowing_AD.cfg"
     discadj_cylinder.test_iter = 9
-    discadj_cylinder.test_vals = [2.183380]
+    discadj_cylinder.test_vals = [2.183381]
     discadj_cylinder.unsteady  = True
     discadj_cylinder.enabled_with_tsan = False
     test_list.append(discadj_cylinder)
