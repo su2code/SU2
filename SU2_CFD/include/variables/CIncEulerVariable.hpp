@@ -308,14 +308,18 @@ public:
    * \param[in] iPoint - Point index.
    * \return Density at time level n.
    */
-  inline su2double GetDensity_time_n(unsigned long iPoint) const override { return Density_time_n(iPoint); }
+  inline su2double GetDensity_time_n(unsigned long iPoint) const override {
+    return Density_time_n.size() > 0 ? Density_time_n(iPoint) : GetDensity(iPoint);
+  }
 
   /*!
    * \brief Get the density at time level n-1 for dual-time stepping.
    * \param[in] iPoint - Point index.
    * \return Density at time level n-1.
    */
-  inline su2double GetDensity_time_n1(unsigned long iPoint) const override { return Density_time_n1(iPoint); }
+  inline su2double GetDensity_time_n1(unsigned long iPoint) const override {
+    return Density_time_n1.size() > 0 ? Density_time_n1(iPoint) : GetDensity(iPoint);
+  }
 
   /*!
    * \brief Set the density at time level n for dual-time stepping.
@@ -350,6 +354,7 @@ public:
    * \return Adjoint of the density at time n.
    */
   inline su2double GetAdjointDensity_time_n(unsigned long iPoint) const override {
+    if (Density_time_n.size() == 0) return 0.0;  // Constant density - no adjoint contribution
     AD::Identifier index = AD::GetPassiveIndex();
     AD::SetIndex(index, Density_time_n(iPoint));
     return AD::GetDerivative(index);
@@ -362,6 +367,7 @@ public:
    * \return Adjoint of the density at time n-1.
    */
   inline su2double GetAdjointDensity_time_n1(unsigned long iPoint) const override {
+    if (Density_time_n1.size() == 0) return 0.0;  // Constant density - no adjoint contribution
     AD::Identifier index = AD::GetPassiveIndex();
     AD::SetIndex(index, Density_time_n1(iPoint));
     return AD::GetDerivative(index);
