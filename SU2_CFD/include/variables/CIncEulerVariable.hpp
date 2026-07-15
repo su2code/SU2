@@ -308,14 +308,14 @@ public:
    * \param[in] iPoint - Point index.
    * \return Density at time level n.
    */
-  inline su2double GetDensity_time_n(unsigned long iPoint) const { return Density_time_n(iPoint); }
+  inline su2double GetDensity_time_n(unsigned long iPoint) const override { return Density_time_n(iPoint); }
 
   /*!
    * \brief Get the density at time level n-1 for dual-time stepping.
    * \param[in] iPoint - Point index.
    * \return Density at time level n-1.
    */
-  inline su2double GetDensity_time_n1(unsigned long iPoint) const { return Density_time_n1(iPoint); }
+  inline su2double GetDensity_time_n1(unsigned long iPoint) const override { return Density_time_n1(iPoint); }
 
   /*!
    * \brief Set the density at time level n for dual-time stepping.
