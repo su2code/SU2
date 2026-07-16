@@ -3666,6 +3666,14 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
   /* Write the actual matrix elements. */
   fwrite(Jacobian.data(), Jacobian.size(), sizeof(passivedouble), fJac);
 
+  /* Write the number of elements. */
+  fwrite(&nVolElemOwned, 1, sizeof(unsigned long), fJac);
+
+  /* Write the number of DOFs per element. */
+  std::vector<unsigned short> nDOFsElem(nVolElemOwned);
+  for(unsigned long i=0; i<nVolElemOwned; ++i) nDOFsElem[i] += volElem[i].nDOFsSol;
+  fwrite(nDOFsElem.data(), nDOFsElem.size(), sizeof(unsigned short), fJac);
+
   /* Close the file again. */
   fclose(fJac);
 

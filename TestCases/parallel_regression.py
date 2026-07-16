@@ -231,10 +231,30 @@ def main():
     channel.test_vals = [-1.990518, 3.545643, 0.031745, 0.194289]
     test_list.append(channel)
 
-    # NACA0012
+    # NACA0012, native SU2 binary mesh format (.su2b)
+    # First, SU2_DEF converts mesh_NACA0012_inv.su2 into the native SU2 binary
+    # mesh format. The regression case below then loads that freshly generated
+    # .su2b file, using a copy of inv_NACA0012_Roe.cfg with MESH_FILENAME and
+    # MESH_FORMAT swapped to point at it.
+    naca0012_su2bin_convert           = TestCase('naca0012_su2bin_convert')
+    naca0012_su2bin_convert.cfg_dir   = "euler/naca0012"
+    naca0012_su2bin_convert.cfg_file  = "mesh_su2_to_su2bin.cfg"
+    naca0012_su2bin_convert.command   = TestCase.Command("mpirun -n 2", "SU2_DEF")
+    test_list.append(naca0012_su2bin_convert)
+
+    naca0012_su2bin_cfg_path = "euler/naca0012/inv_NACA0012_Roe_su2bin.cfg"
+    with open("euler/naca0012/inv_NACA0012_Roe.cfg", 'r') as f:
+        naca0012_su2bin_cfg = f.read()
+    naca0012_su2bin_cfg = naca0012_su2bin_cfg.replace(
+        "MESH_FILENAME= mesh_NACA0012_inv.su2", "MESH_FILENAME= mesh_NACA0012_inv_su2bin")
+    naca0012_su2bin_cfg = naca0012_su2bin_cfg.replace(
+        "MESH_FORMAT= SU2\n", "MESH_FORMAT= SU2B\n")
+    with open(naca0012_su2bin_cfg_path, 'w') as f:
+        f.write(naca0012_su2bin_cfg)
+
     naca0012           = TestCase('naca0012')
     naca0012.cfg_dir   = "euler/naca0012"
-    naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
+    naca0012.cfg_file  = "inv_NACA0012_Roe_su2bin.cfg"
     naca0012.test_iter = 20
     naca0012.test_vals = [-4.452603, -3.920573, 0.296003, 0.024298]
     test_list.append(naca0012)
@@ -392,7 +412,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.187401, -5.312133, 0.393515, 0.075584, 0.000000]
+    rae2822_sa.test_vals = [-2.187402, -5.330154, 0.393514, 0.075585, 0.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST

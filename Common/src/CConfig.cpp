@@ -37,6 +37,7 @@
 
 #include "../include/basic_types/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
+#include "../include/toolboxes/SwapBytes.hpp"
 
 using namespace PrintingToolbox;
 
@@ -598,12 +599,60 @@ void CConfig::addPythonOption(const string& name) {
   option_map.insert(pair<string, COptionBase *>(name, val));
 }
 
+unsigned short CConfig::CheckOpenSU2BinFile(const string& val_mesh_filename, bool readnDim) {
+  /*--- Check if the mesh file can be opened for binary reading. ---*/
+  FILE *mesh_file = fopen(val_mesh_filename.c_str(), "rb");
+  if ( !mesh_file )
+    SU2_MPI::Error("There is no geometry file called " + val_mesh_filename,
+                   CURRENT_FUNCTION);
+
+  /*--- Read the size of the connectivity type and determine whether
+        or not byte swapping must be applied. The size of the connectivity
+        type must be either 4 or 8. ---*/
+  int size_conn_type;
+  auto ret = fread(&size_conn_type, sizeof(int), 1, mesh_file);
+  if (ret != 1)
+    SU2_MPI::Error("Error while reading the file " + val_mesh_filename,
+                   CURRENT_FUNCTION);
+
+  bool swap_bytes = false;
+  if ((size_conn_type != 4) && (size_conn_type != 8)) {
+    SwapBytes((char *) &size_conn_type, sizeof(int), 1);
+    swap_bytes = true;
+  }
+
+  if ((size_conn_type != 4) && (size_conn_type != 8))
+    SU2_MPI::Error("The file " + val_mesh_filename +
+                   " is not a valid SU2 binary file", CURRENT_FUNCTION);
+
+  /*--- Skip the number of zones and the zone ID,
+        if the number of dimensions must be read. ---*/
+  if( readnDim ) {
+    if( fseek(mesh_file, 2*sizeof(int), SEEK_CUR) )
+      SU2_MPI::Error("Failed to jump forward in the file" + val_mesh_filename,
+                     CURRENT_FUNCTION);
+  }
+
+  /*--- Read the information to be returned. ---*/
+  int info;
+  ret = fread(&info, sizeof(int), 1, mesh_file);
+  if (ret != 1)
+    SU2_MPI::Error("Error while reading the file " + val_mesh_filename,
+                   CURRENT_FUNCTION);
+  if ( swap_bytes)
+    SwapBytes((char *) &info, sizeof(int), 1);
+
+  fclose(mesh_file);
+
+  return (unsigned short) info;
+}
+
 unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short val_format) {
 
   int nZone = 1; /* Default value if nothing is specified. */
 
   switch (val_format) {
-    case SU2: {
+    case ENUM_GRID::SU2: {
 
       /*--- Local variables for reading the SU2 file. ---*/
       string text_line;
@@ -612,8 +661,8 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
       /*--- Check if the mesh file can be opened for reading. ---*/
       mesh_file.open(val_mesh_filename.c_str(), ios::in);
       if (mesh_file.fail())
-        SU2_MPI::Error(string("There is no geometry file called ") + val_mesh_filename,
-                              CURRENT_FUNCTION);
+        SU2_MPI::Error("There is no geometry file called " + val_mesh_filename,
+                       CURRENT_FUNCTION);
 
       /*--- Read the SU2 mesh file until the zone data is reached or
             when it can be decided that it is not present. ---*/
@@ -639,7 +688,15 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
 
     }
 
-    case CGNS_GRID: {
+    case ENUM_GRID::SU2_BIN: {
+
+      /*--- Open and check the grid file and read the number of zones
+            at the correct location. */
+      nZone = CheckOpenSU2BinFile(val_mesh_filename, false);
+      break;
+    }
+
+    case ENUM_GRID::CGNS_GRID: {
 
 #ifdef HAVE_CGNS
 
@@ -706,11 +763,11 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
 
       break;
     }
-    case RECTANGLE: {
+    case ENUM_GRID::RECTANGLE: {
       nZone = 1;
       break;
     }
-    case BOX: {
+    case ENUM_GRID::BOX: {
       nZone = 1;
       break;
     }
@@ -722,10 +779,10 @@ unsigned short CConfig::GetnZone(const string& val_mesh_filename, unsigned short
 
 unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short val_format) {
 
-  short nDim = -1;
+  int nDim = -1;
 
   switch (val_format) {
-    case SU2: {
+    case ENUM_GRID::SU2: {
 
       /*--- Local variables for reading the SU2 file. ---*/
       string text_line;
@@ -734,7 +791,7 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
       /*--- Open grid file ---*/
       mesh_file.open(val_mesh_filename.c_str(), ios::in);
       if (mesh_file.fail()) {
-        SU2_MPI::Error(string("The SU2 mesh file named ") + val_mesh_filename + string(" was not found."), CURRENT_FUNCTION);
+        SU2_MPI::Error("The SU2 mesh file named " + val_mesh_filename + " was not found.", CURRENT_FUNCTION);
       }
 
       /*--- Read the SU2 mesh file until the dimension data is reached
@@ -760,14 +817,22 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
 
       /*--- Throw an error if the dimension was not found. ---*/
       if (nDim == -1) {
-        SU2_MPI::Error(val_mesh_filename + string(" is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found). Please check."),
+        SU2_MPI::Error(val_mesh_filename + " is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found). Please check.",
                        CURRENT_FUNCTION);
       }
 
       break;
     }
 
-    case CGNS_GRID: {
+    case ENUM_GRID::SU2_BIN: {
+
+      /*--- Open and check the grid file and read the number of dimensions
+            at the correct location. */
+      nDim = CheckOpenSU2BinFile(val_mesh_filename, true);
+      break;
+    }
+
+    case ENUM_GRID::CGNS_GRID: {
 
 #ifdef HAVE_CGNS
 
@@ -816,11 +881,11 @@ unsigned short CConfig::GetnDim(const string& val_mesh_filename, unsigned short 
 
       break;
     }
-    case RECTANGLE: {
+    case ENUM_GRID::RECTANGLE: {
       nDim = 2;
       break;
     }
-    case BOX: {
+    case ENUM_GRID::BOX: {
       nDim = 3;
       break;
     }
@@ -2227,9 +2292,11 @@ void CConfig::SetConfig_Options() {
   /*!\brief ACTDISK_JUMP \n DESCRIPTION: The jump is given by the difference in values or a ratio */
   addEnumOption("ACTDISK_JUMP", ActDisk_Jump, Jump_Map, DIFFERENCE);
   /*!\brief MESH_FORMAT \n DESCRIPTION: Mesh input file format \n OPTIONS: see \link Input_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
-  addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, SU2);
+  addEnumOption("MESH_FORMAT", Mesh_FileFormat, Input_Map, ENUM_GRID::SU2);
   /* DESCRIPTION:  Mesh input file */
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh"));
+  /*!\brief MESH_OUT_FORMAT \n DESCRIPTION: Mesh output file format \n OPTIONS: see \link OutputMesh_Map \endlink \n DEFAULT: SU2 \ingroup Config*/
+  addEnumOption("MESH_OUT_FORMAT", Mesh_Out_FileFormat, OutputMesh_Map, ENUM_GRID::SU2);
   /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out"));
 
@@ -5797,10 +5864,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
-  if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
-    SU2_MPI::Error("BOUNDED_SCALAR discretization can only be used for incompressible problems.", CURRENT_FUNCTION);
-  }
-
 }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {
@@ -7684,7 +7747,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
   }
 
   if (val_software == SU2_COMPONENT::SU2_DEF) {
-    cout << "Output mesh file name: " << GetMesh_Out_FileName() << ".su2. " << endl;
+    cout << "Output mesh file name: " << GetMesh_Out_FileName() << GetMesh_Out_FileExtension() << ". " << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
         cout << "Cell stiffness scaled by inverse of the cell volume." << endl;

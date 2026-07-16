@@ -348,6 +348,12 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 
   CommunicateInitialState(geometry, config);
 
+  /*--- Sizing edge mass flux array, padded to a multiple of the SIMD size since the vectorized
+   *    numerics write to it with contiguous (unmasked) SIMD stores, same as CEdge's Normal. ---*/
+  if (config->GetBounded_Scalar()) {
+    EdgeMassFluxes.resize(nextMultiple(geometry->GetnEdge(), simd::preferredLen<su2double>())) = su2double(0.0);
+  }
+
   /*--- Add the solver name.. ---*/
   SolverName = "C.FLOW";
 
@@ -1817,6 +1823,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   }
 
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool bounded_scalar   = config->GetBounded_Scalar();
 
   const bool msw              = (config->GetKind_Upwind_Flow() == UPWIND::MSW);
   const bool roe_turkel       = (config->GetKind_Upwind_Flow() == UPWIND::TURKEL);
@@ -1984,6 +1991,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Compute the residual ---*/
 
     auto conv_residual = numerics->ComputeResidual(config);
+
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = conv_residual[0];
 
     /*--- Set the final value of the Roe dissipation coefficient ---*/
 

@@ -87,7 +87,8 @@ public:
                    const UpdateType updateType,
                    const Double updateMask,
                    CSysVector<su2double>& vector,
-                   SparseMatrixType& matrix) const final {
+                   SparseMatrixType& matrix,
+                   su2activevector* edgeMassFluxes) const final {
 
     /*--- Start preaccumulation, inputs are registered
      *    automatically in "gatherVariables". ---*/
@@ -150,6 +151,10 @@ public:
 
     updateLinearSystem(iEdge, iPoint, jPoint, implicit, updateType,
                        updateMask, flux, jac_i, jac_j, vector, matrix);
+
+    /*--- Store the mass flux (density-equation flux) for bounded-scalar transport. ---*/
+
+    updateEdgeMassFlux(iEdge, flux(0), edgeMassFluxes);
   }
 };
 

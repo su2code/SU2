@@ -604,8 +604,8 @@ void CSysMatrix<ScalarType>::SetValZero() {
   auto zeroChunk = [&](auto* arr, unsigned long n) {
     if (n == 0) return;
     const auto chunk = roundUpDiv(n, nThreads);
-    const auto begin = min(chunk * iThread, n);
-    const auto mySize = min(chunk, n - begin) * sizeof(std::remove_pointer_t<decltype(arr)>);
+    const auto begin = min<size_t>(chunk * iThread, n);
+    const auto mySize = min<size_t>(chunk, n - begin) * sizeof(std::remove_pointer_t<decltype(arr)>);
     if (mySize) memset(&arr[begin], 0, mySize);
   };
   zeroChunk(mat.d, nPoint * nVar * nEqn);
