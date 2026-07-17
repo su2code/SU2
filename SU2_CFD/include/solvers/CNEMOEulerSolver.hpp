@@ -330,13 +330,6 @@ public:
   void PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
 
   /*!
-   * \brief Complete an implicit iteration.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
-
-  /*!
    * \brief Print verification error to screen.
    * \param[in] config - Definition of the particular problem.
    */
