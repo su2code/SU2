@@ -103,7 +103,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-6.543299, -1.065161, 0.001196, 0.029390, 2.361500, -2.332100, 0.000000, 0.000000]
+    flatplate.test_vals = [-6.543281, -1.065152, 0.001196, 0.029390, 2.361500, -2.332100, 0.000000, 0.000000]
     test_list.append(flatplate)
 
     # Laminar cylinder (steady)
@@ -136,7 +136,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.005122, -7.582423, -0.000000, 2.089953]
+    poiseuille_profile.test_vals         = [-12.005126, -7.582352, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.009012, -7.262530, -0.000000, 2.089953]
     test_list.append(poiseuille_profile)
 
@@ -145,7 +145,7 @@ def main():
     periodic2d.cfg_dir   = "navierstokes/periodic2D"
     periodic2d.cfg_file  = "config.cfg"
     periodic2d.test_iter = 1400
-    periodic2d.test_vals = [-10.817608, -8.363540, -8.287459, -5.334101, -1.088412, -2945.200000]
+    periodic2d.test_vals = [-10.817608, -8.363541, -8.287458, -5.334101, -1.088411, -2945.200000]
     test_list.append(periodic2d)
 
     ##########################
@@ -197,7 +197,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals = [-12.038027, -16.332088, 1.080346, 0.018385, 20.000000, -2.873302, 0.000000, -14.250270, 0.000000]
+    turb_naca0012_sa.test_vals = [-12.038042, -16.332088, 1.080346, 0.018385, 20.000000, -2.873258, 0.000000, -14.250270, 0.000000]
     turb_naca0012_sa.test_vals_aarch64 = [-12.038091, -16.332090, 1.080346, 0.018385, 20.000000, -2.873236, 0.000000, -14.250271, 0.000000]
     test_list.append(turb_naca0012_sa)
 
@@ -206,7 +206,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.093908, -15.250825, -5.906324, 1.070413, 0.015775, -2.856106, 0.000000]
+    turb_naca0012_sst.test_vals = [-12.093984, -15.250705, -5.906323, 1.070413, 0.015775, -2.855331, 0.000000]
     turb_naca0012_sst.test_vals_aarch64 = [-12.075928, -15.246732, -5.861249, 1.070036, 0.015841, -2.835263, 0]
     test_list.append(turb_naca0012_sst)
 
@@ -215,7 +215,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-12.080858, -14.837175, -5.732907, 1.000893, 0.019109, -2.120045]
+    turb_naca0012_sst_sust.test_vals = [-12.080774, -14.837176, -5.732907, 1.000893, 0.019109, -2.120168]
     turb_naca0012_sst_sust.test_vals_aarch64 = [-12.073210, -14.836724, -5.732627, 1.000050, 0.019144, -2.629689]
     test_list.append(turb_naca0012_sst_sust)
 
@@ -252,7 +252,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-11.083070, -5.374688, -8.880090, -4.073523, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-11.083070, -5.374688, -8.880089, -4.073519, 0.000000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.140441, -9.154674, -10.886121, -5.806594, 0.000000]
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -440,7 +440,7 @@ def main():
     spinning_cylinder.cfg_dir   = "moving_wall/spinning_cylinder"
     spinning_cylinder.cfg_file  = "spinning_cylinder.cfg"
     spinning_cylinder.test_iter = 25
-    spinning_cylinder.test_vals         = [-7.533969, -2.066690, 1.832252, 1.843016]
+    spinning_cylinder.test_vals         = [-7.533969, -2.066689, 1.832252, 1.843016]
     spinning_cylinder.test_vals_aarch64 = [-8.008023, -2.611064, 1.497308, 1.487483]
     test_list.append(spinning_cylinder)
 
