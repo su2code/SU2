@@ -41,6 +41,8 @@ def main():
 
     test_list = []
     file_diff_list = []
+    extra_test_list = []
+    extra_pass_list = []
 
     ##########################
     ### Compressible Euler ###
@@ -597,7 +599,18 @@ def main():
     uniform_flow.multizone = True
     test_list.append(uniform_flow)
 
-    # Channel_2D
+    # Channel_2D, native SU2 binary mesh format (.su2b)
+    # channel_2D_WA.cfg loads channel_2D_su2bin.su2b directly, so SU2_DEF must
+    # first convert channel_2D.su2 (3 zones) into that binary mesh. This has
+    # to run outside test_list, since the "RUN TESTS" block below forces every
+    # test in test_list to use the SU2_CFD command.
+    channel_2D_su2bin_convert           = TestCase('channel_2D_su2bin_convert')
+    channel_2D_su2bin_convert.cfg_dir   = "sliding_interface/channel_2D"
+    channel_2D_su2bin_convert.cfg_file  = "mesh_su2_to_su2bin.cfg"
+    channel_2D_su2bin_convert.command   = TestCase.Command(exec = "SU2_DEF")
+    extra_test_list.append(channel_2D_su2bin_convert)
+    extra_pass_list.append(channel_2D_su2bin_convert.run_test(args.tsan))
+
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
@@ -793,12 +806,13 @@ def main():
 
     pass_list = [ test.run_test(args.tsan) for test in test_list ]
     pass_list += [ test.run_filediff(args.tsan) for test in file_diff_list ]
+    pass_list += extra_pass_list
 
     # Tests summary
     print('==================================================================')
     print('Summary of the hybrid parallel tests')
     print('python version:', sys.version)
-    for i, test in enumerate(test_list+file_diff_list):
+    for i, test in enumerate(test_list+file_diff_list+extra_test_list):
         if (pass_list[i]):
             print('  passed - %s'%test.tag)
         else:
