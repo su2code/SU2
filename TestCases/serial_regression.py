@@ -349,6 +349,15 @@ def main():
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
 
+    # Axisymmetric air nozzle species
+    axi_rans_air_nozzle_species           = TestCase('axi_rans_air_nozzle_species')
+    axi_rans_air_nozzle_species.cfg_dir   = "axisymmetric_rans/air_nozzle"
+    axi_rans_air_nozzle_species.cfg_file  = "air_nozzle_species.cfg"
+    axi_rans_air_nozzle_species.test_iter = 10
+    axi_rans_air_nozzle_species.test_vals =  [-1.840714, 3.726195, -2.009323, 5.649002, -2.494388, 0.0000]
+    axi_rans_air_nozzle_species.tol       = 0.0001
+    test_list.append(axi_rans_air_nozzle_species)
+
     #################################
     ## Compressible RANS Restart  ###
     #################################

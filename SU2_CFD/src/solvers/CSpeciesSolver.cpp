@@ -517,9 +517,18 @@ su2double CSpeciesSolver::GetInletAtVertex(unsigned short iMarker, unsigned long
 
 void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
   SU2_ZONE_SCOPED
+  bool riemann_inlet = false;
+
+  const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+  if (config->GetMarker_All_KindBC(iMarker) == RIEMANN_BOUNDARY) {
+    switch (config->GetKind_Data_Riemann(Marker_Tag)) {
+      case TOTAL_CONDITIONS_PT: case STATIC_SUPERSONIC_INFLOW_PT: case STATIC_SUPERSONIC_INFLOW_PD: case DENSITY_VELOCITY:
+      riemann_inlet = true;
+      break;
+    }
+  }
   /*--- Find BC string to the numeric-identifier. ---*/
-  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) {
-    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET || riemann_inlet) {
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         Inlet_SpeciesVars[iMarker][iVertex][iVar] = config->GetInlet_SpeciesVal(Marker_Tag)[iVar];
