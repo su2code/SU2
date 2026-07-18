@@ -41,8 +41,6 @@ def main():
 
     test_list = []
     file_diff_list = []
-    extra_test_list = []
-    extra_pass_list = []
 
     ##########################
     ### Compressible Euler ###
@@ -608,8 +606,7 @@ def main():
     channel_2D_su2bin_convert.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D_su2bin_convert.cfg_file  = "mesh_su2_to_su2bin.cfg"
     channel_2D_su2bin_convert.command   = TestCase.Command(exec = "SU2_DEF")
-    extra_test_list.append(channel_2D_su2bin_convert)
-    extra_pass_list.append(channel_2D_su2bin_convert.run_test(args.tsan))
+    test_list.append(channel_2D_su2bin_convert)
 
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
@@ -812,7 +809,7 @@ def main():
     print('==================================================================')
     print('Summary of the hybrid parallel tests')
     print('python version:', sys.version)
-    for i, test in enumerate(test_list+file_diff_list+extra_test_list):
+    for i, test in enumerate(test_list+file_diff_list):
         if (pass_list[i]):
             print('  passed - %s'%test.tag)
         else:
