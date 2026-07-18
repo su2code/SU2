@@ -46,4 +46,127 @@ void CSysVector<ScalarType>::GPUSetVal(ScalarType val, bool trigger) const
    if(trigger) gpuErrChk(cudaMemset((void*)(d_vec_val), val, (sizeof(ScalarType)*nElm)));
 }
 
+/*!
+ * \brief multi vector product CUDA kernel one line of blocks per pair V[i0+i],W[j];
+ *        Configurable multiple blocks reducing over the size of the vectors
+ */
+template <class ScalarType>
+__global__ void GPUmultiDot(const ScalarType* const* __restrict__ d_V, const size_t n,
+                            const ScalarType* const* __restrict__ d_W, const size_t m, const size_t size,
+                            ScalarType* __restrict__ d_local)
+{
+    // Map each x,y block to the specific (i,j) dot product
+    const size_t pair_idx = blockIdx.y;
+    if (pair_idx >= n * m) return;
+
+    const size_t i = pair_idx / m;
+    const size_t j = pair_idx % m;
+
+    //get the corresponding vectors
+    const ScalarType* __restrict__ vi = d_V[i];
+    const ScalarType* __restrict__ wj = d_W[j];
+
+    // grid strided loop over the vector elements
+    ScalarType local_sum = 0.0;
+    const size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
+    const size_t stride = gridDim.x * blockDim.x;
+
+    for (size_t k = tid; k < size; k += stride)
+    {
+       local_sum += vi[k] * wj[k];
+    }
+
+    // shared memory reduction within the block
+    extern __shared__ char shared_mem[];
+    ScalarType* sdata = reinterpret_cast<ScalarType*>(shared_mem);
+
+    sdata[threadIdx.x] = local_sum;
+    __syncthreads();
+
+    // parallel reduction on the block
+    for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1)
+    {
+       if (threadIdx.x < s)
+       {
+          sdata[threadIdx.x] += sdata[threadIdx.x + s];
+       }
+       __syncthreads();
+    }
+
+    // atomic add of each block partial sum to the output matrix, operated by thread 0 of each block
+    if (threadIdx.x == 0)
+    {
+       atomicAdd(&d_local[i * m + j], sdata[0]);
+    }
+}
+
+template <class ScalarType>
+const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vector<CSysVector<ScalarType>>& V,
+                                                                 const size_t i0, const size_t n,
+                                                                 const std::vector<CSysVector<ScalarType>>& W,
+                                                                 const size_t m) {
+  SU2_ZONE_SCOPED
+
+  static su2matrix<ScalarType> shared;
+  if (n == 0 || m == 0) return shared;
+
+  const size_t size = V[0].nElmDomain;
+
+  // ensure all vectors are synced on device and get the pointers
+  std::vector<const ScalarType*> h_V_ptrs(n), h_W_ptrs(m);
+  for (size_t i = 0; i < n; ++i){
+    V[i0 + i].HtDTransfer();
+    h_V_ptrs[i] = V[i0 + i].GetDevicePointer();
+  }
+  for (size_t j = 0; j < m; ++j){
+    W[j].HtDTransfer();
+    h_W_ptrs[j] = W[j].GetDevicePointer();
+  }
+
+  //copy the pointers to the device arrays of pointers
+  const ScalarType** d_V_ptrs;
+  const ScalarType** d_W_ptrs;
+  gpuErrChk(cudaMalloc(&d_V_ptrs, n * sizeof(ScalarType*)));
+  gpuErrChk(cudaMalloc(&d_W_ptrs, m * sizeof(ScalarType*)));
+  gpuErrChk(cudaMemcpy(d_V_ptrs, h_V_ptrs.data(), n * sizeof(ScalarType*), cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(d_W_ptrs, h_W_ptrs.data(), m * sizeof(ScalarType*), cudaMemcpyHostToDevice));
+
+  // allocate result buffer, zero it
+  ScalarType* d_local;
+  gpuErrChk(cudaMalloc(&d_local, n * m * sizeof(ScalarType)));
+  gpuErrChk(cudaMemset(d_local, 0, n * m * sizeof(ScalarType)));
+
+  // launch
+  int threads = 256;
+  int numBlocksPerPair = std::min((size + threads - 1) / threads, size_t(1024));
+  dim3 grid(numBlocksPerPair, n * m);
+  GPUmultiDot<<<grid, threads, threads * sizeof(ScalarType)>>>(d_V_ptrs, n, d_W_ptrs, m, size, d_local);
+  gpuErrChk(cudaGetLastError());
+
+  // copy result to host, MPI reduce
+  su2matrix<ScalarType> local(n,m);
+  gpuErrChk(cudaMemcpy(local.data(), d_local, n * m * sizeof(ScalarType), cudaMemcpyDeviceToHost));
+
+  /*--- Single AllReduce of the result, only the master thread communicates. ---*/
+  SU2_OMP_MASTER {
+    shared.resize(n, m);
+
+    const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
+    SelectMPIWrapper<ScalarType>::W::Allreduce(local.data(), shared.data(), n * m, mpi_type, MPI_SUM,
+                                               SU2_MPI::GetComm());
+  }
+  END_SU2_OMP_MASTER
+
+  /*--- All threads have the same view of the result. ---*/
+  SU2_OMP_BARRIER
+
+
+  // cleanup (or cache these allocations)
+  gpuErrChk(cudaFree(d_local));
+  gpuErrChk(cudaFree(d_V_ptrs));
+  gpuErrChk(cudaFree(d_W_ptrs));
+
+  return shared;
+}
+
 template class CSysVector<su2double>; //This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.

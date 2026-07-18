@@ -73,6 +73,13 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
                                                               const std::vector<CSysVector<ScalarType>>& W,
                                                               const size_t m) {
   SU2_ZONE_SCOPED
+
+#ifdef HAVE_CUDA
+  if (V[i0].GetDevicePointer() != nullptr) {
+    return multiDotGPU(V, i0, n, W, m);
+  }
+#endif
+
   static constexpr size_t BLOCK_SIZE = 1024;
   static su2matrix<ScalarType> shared;
 

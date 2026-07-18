@@ -385,6 +385,19 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
                                                const std::vector<CSysVector>& W, size_t m);
 
   /*!
+   * \brief Computes the product of V^T W on the GPU, where V and W are tall matrices stored as vectors of CSysVector.
+   * \param[in] V - Tall matrix.
+   * \param[in] i0 - First column of V to consider.
+   * \param[in] n - Number of columns to consider from V starting at i0.
+   * \param[in] W - Tall matrix.
+   * \param[in] m - Number of columns to consider from W.
+   * \return n by m matrix with the result of the product.
+   */
+  static const su2matrix<ScalarType>& multiDotGPU(const std::vector<CSysVector<ScalarType>>& V, const size_t i0,
+                                                  const size_t n, const std::vector<CSysVector<ScalarType>>& W,
+                                                  const size_t m);
+
+  /*!
    * \brief Squared L2 norm of the vector (via dot with self).
    * \return Squared L2 norm.
    */
