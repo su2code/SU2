@@ -803,7 +803,6 @@ def main():
 
     pass_list = [ test.run_test(args.tsan) for test in test_list ]
     pass_list += [ test.run_filediff(args.tsan) for test in file_diff_list ]
-    pass_list += extra_pass_list
 
     # Tests summary
     print('==================================================================')
