@@ -275,8 +275,9 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
   SU2_OMP_SAFE_GLOBAL_ACCESS(GetStreamwise_Periodic_Properties(geometry, config, iMesh);)
 }
 
-void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                    CNumerics *numerics, CConfig *config) {
+CNumerics::ResidualType<> CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry,
+                                                         CSolver **solver_container, CNumerics *numerics,
+                                                         CConfig *config) {
   const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
 
   /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
@@ -286,7 +287,7 @@ void CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CS
     Compute_Enthalpy_Diffusion(iEdge, geometry, solver_container, numerics, n_species, implicit);
   }
 
-  Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
+  return Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
 }
 
 void CIncNSSolver::Compute_Enthalpy_Diffusion(unsigned long iEdge, CGeometry* geometry, CSolver** solver_container,

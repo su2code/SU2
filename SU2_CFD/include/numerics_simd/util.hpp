@@ -248,7 +248,7 @@ FORCEINLINE void updateLinearSystem(Int iEdge,
     vector.UpdateBlocks(iPoint, jPoint, flux, updateMask);
     if(implicit) {
       auto wasActive = AD::BeginPassive();
-      matrix.UpdateBlocks(iEdge, iPoint, jPoint, jac_i, jac_j, updateMask);
+      matrix.SetBlocks(iEdge, iPoint, jPoint, jac_i, jac_j, updateMask);
       AD::EndPassive(wasActive);
     }
   }

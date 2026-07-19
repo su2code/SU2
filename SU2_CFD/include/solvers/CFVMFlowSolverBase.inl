@@ -317,7 +317,7 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
   if (!coloring.empty()) {
     /*--- If the reducer strategy is used we are not constrained by group
      *    size as we have no other edge loops in the Euler/NS solvers. ---*/
-    auto groupSize = ReducerStrategy ? 1ul : geometry.GetEdgeColorGroupSize();
+    auto groupSize = static_cast<su2uint>(ReducerStrategy ? 1ul : geometry.GetEdgeColorGroupSize());
     auto nColor = coloring.getOuterSize();
     EdgeColoring.reserve(nColor);
 
@@ -445,11 +445,11 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const C
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                                     CNumerics *numerics, CConfig *config) {
+CNumerics::ResidualType<> CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry,
+                                                                          CSolver **solver_container,
+                                                                          CNumerics *numerics, CConfig *config) {
   SU2_ZONE_SCOPED
 
-  const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
   const bool backscatter = config->GetSBSParam().StochasticBackscatter;
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
@@ -518,17 +518,14 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
-    if (implicit)
-      Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
   }
   else {
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
-
-    if (implicit)
-      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
   }
 
+  /*--- The Jacobians are applied by the caller, fused with the convective contribution. ---*/
+  return residual;
 }
 
 template <class V, ENUM_REGIME R>
@@ -1296,13 +1293,14 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
       auto ModifyJacobian = [&](const unsigned long jPoint) {
         su2double jac[MAXNVAR * MAXNVAR], newJac[MAXNVAR * MAXNVAR];
-        auto* block = Jacobian.GetBlock(iPoint, jPoint);
-        for (auto iVar = 0u; iVar < nVar * nVar; iVar++) jac[iVar] = block[iVar];
+        const auto view = Jacobian.GetBlockView(iPoint, jPoint);
+        if (!view) return;
+        for (auto iVar = 0u; iVar < nVar; iVar++)
+          for (auto jVar = 0u; jVar < nVar; jVar++) jac[iVar * nVar + jVar] = view(iVar, jVar);
 
         CBlasStructure().gemm(nVar, nVar, nVar, mat, jac, newJac, config);
 
-        for (auto iVar = 0u; iVar < nVar * nVar; iVar++)
-          block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
+        Jacobian.SetBlock(iPoint, jPoint, newJac);
       };
       ModifyJacobian(iPoint);
       for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {

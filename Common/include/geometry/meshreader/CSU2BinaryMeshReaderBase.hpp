@@ -110,9 +110,15 @@ class CSU2BinaryMeshReaderBase : public CSU2MeshReaderBase {
 
  private:
   /*!
-   * \brief Read the meta data for a zone.
+   * \brief Read the meta data for a zone, advancing the file position past it.
+   * \param[in] storeMetadata - Whether to store the read values in the
+   *            dimension, numberOfGlobalElements, numberOfGlobalPoints and
+   *            numberOfMarkers members. Must be false when only skipping
+   *            past a lower-numbered zone (from
+   *            FastForwardToMyZone), so that doing so does not clobber the
+   *            metadata already read for the current (target) zone.
    */
-  void ReadMetadataZone();
+  void ReadMetadataZone(bool storeMetadata);
 
  public:
   /*!
