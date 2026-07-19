@@ -599,13 +599,12 @@ def main():
 
     # Channel_2D, native SU2 binary mesh format (.su2b)
     # channel_2D_WA.cfg loads channel_2D_su2bin.su2b directly, so SU2_DEF must
-    # first convert channel_2D.su2 (3 zones) into that binary mesh. This has
-    # to run outside test_list, since the "RUN TESTS" block below forces every
-    # test in test_list to use the SU2_CFD command.
+    # first convert channel_2D.su2 (3 zones) into that binary mesh.
     channel_2D_su2bin_convert           = TestCase('channel_2D_su2bin_convert')
     channel_2D_su2bin_convert.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D_su2bin_convert.cfg_file  = "mesh_su2_to_su2bin.cfg"
     channel_2D_su2bin_convert.command   = TestCase.Command(exec = "SU2_DEF")
+    channel_2D_su2bin_convert.timeout   = 600
     test_list.append(channel_2D_su2bin_convert)
 
     channel_2D           = TestCase('channel_2D')
@@ -796,8 +795,10 @@ def main():
     ######################################
 
     for test in test_list:
-        test.command = TestCase.Command(exec = "SU2_CFD", param = "-t 2")
-        test.timeout = 600
+        if test.command.empty():
+            test.command = TestCase.Command(exec = "SU2_CFD", param = "-t 2")
+        if test.timeout == 0:
+            test.timeout = 600
         test.tol = 1e-4
     #end
 
