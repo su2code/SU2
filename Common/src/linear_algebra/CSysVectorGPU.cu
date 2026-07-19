@@ -169,4 +169,56 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vect
   return shared;
 }
 
+template<class ScalarType, int N>
+struct WeightedVecs {
+  const ScalarType* ptrs[N];
+  ScalarType weights[N];
+};
+
+template<class ScalarType, int N>
+__global__ void LinearCombinationKernel(ScalarType* __restrict__ v, WeightedVecs<ScalarType, N> wv, 
+                                        int n, unsigned long nElm, bool inc)
+{
+  const unsigned long k = blockIdx.x * blockDim.x + threadIdx.x;
+  if (k >= nElm) return;
+
+  //handle overwriting or combination with existing
+  ScalarType result = inc ? v[k] : ScalarType(0);
+
+  #pragma unroll
+  for (int i = 0; i < N; ++i) // N is known at compile time (4), this unrolls to if (i < n) result += weight[i] * vector[i][k]; i<4
+    if (i < n) result += wv.weights[i] * wv.ptrs[i][k];
+  v[k] = result;
+}
+
+template<class ScalarType>
+void CSysVector<ScalarType>::LinearCombinationGPU(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs, const ScalarType* ws,
+                                                  CSysVector<ScalarType>& v, bool inc)
+{
+
+  const unsigned long nElm = v.nElmDomain;
+  constexpr unsigned threads = 256;
+  const unsigned blocks = (nElm + threads - 1) / threads;
+
+  // ensure v is on device before first kernel
+  v.HtDTransfer();
+  ScalarType* d_v = v.GetDevicePointer();
+
+  for (unsigned long i = 0; i < n; i += 4) {
+    const int rem = static_cast<int>(std::min(n - i, 4ul));
+    //prepare vectors pointers and corresponding weights, passing them by value
+    WeightedVecs<ScalarType, 4> vs_ws = {};
+    for (int j = 0; j < rem; ++j) {
+      vs_ws.ptrs[j] = vs[i + j].GetDevicePointer();  // already on device from multiDot
+      vs_ws.weights[j] = ws[i + j];                       // plain array indexing, not ws(k)
+    }
+    //calculate the linear combination on GPU, handle more than 4 vectors through inc || i > 0
+    LinearCombinationKernel<ScalarType, 4><<<blocks, threads>>>(d_v, vs_ws, rem, nElm, inc || i > 0); 
+    gpuErrChk(cudaPeekAtLastError());
+  }
+
+  // bring result back to host
+  v.DtHTransfer();
+}
+
 template class CSysVector<su2double>; //This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.

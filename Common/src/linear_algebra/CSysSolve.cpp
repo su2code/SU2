@@ -33,6 +33,7 @@
 #include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../include/linear_algebra/CPreconditioner.hpp"
+#include "../../include/linear_algebra/CSysVector.hpp"
 
 SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
 #include "Eigen/Eigenvalues"
@@ -107,6 +108,17 @@ void LinearCombinationImpl(const unsigned long n, const Vectors& vs, const Weigh
 template <class ScalarType, class Weights>
 void LinearCombinationImpl(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs, const Weights& ws,
                            CSysVector<ScalarType>& v, bool inc = false) {
+#ifdef HAVE_CUDA
+  if (v.GetDevicePointer() != nullptr) {
+    std::vector<ScalarType> ws_host(n); // collect weights into simple host array
+    for (unsigned long i = 0; i < n; ++i) {
+      ws_host[i] = static_cast<ScalarType>(ws(i));
+    }
+    CSysVector<ScalarType>::LinearCombinationGPU(n, vs, ws_host.data(), v, inc);
+    return;
+  }
+#endif
+
   LinearCombinationImpl(
       n, [&vs](auto i) -> auto& { return vs[i]; }, ws, v, inc);
 }
