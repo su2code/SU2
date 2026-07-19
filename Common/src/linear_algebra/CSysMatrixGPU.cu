@@ -28,6 +28,7 @@
 #include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/linear_algebra/CSysMatrix.inl"
 #include "../../include/linear_algebra/GPUComms.cuh"
+#include "../../include/linear_algebra/CSysVector.hpp"
 
 /*!
  * \brief Matrix-vector product kernel.
@@ -108,7 +109,7 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
 
   ScalarType* d_vec = vec.GetDevicePointer();
   ScalarType* d_prod = prod.GetDevicePointer();
-  vec.HtDTransfer();
+  //vec.HtDTransfer();
 
   dim3 blockDim(static_cast<unsigned>(nVar), 1, 1);
   dim3 gridDim(static_cast<unsigned>(nPointDomain), 1, 1);
@@ -117,7 +118,7 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
       gpu.row_ptr_u, gpu.col_ind_u, gpu.u, d_vec, d_prod);
   gpuErrChk(cudaGetLastError());
 
-  prod.DtHTransfer();
+  //prod.DtHTransfer();
 }
 
 template <class ScalarType>
@@ -127,25 +128,21 @@ void CSysMatrix<ScalarType>::GPUComputeJacobiPreconditioner(const CSysVector<Sca
   SU2_ZONE_SCOPED
   /*--- Apply Jacobi preconditioner, y = D^{-1} * x, the inverse of the diagonal is already known and synced to device ---*/
 
-  ScalarType* d_vec = vec.GetDevicePointer();
-  ScalarType* d_prod = prod.GetDevicePointer();
-
-  vec.HtDTransfer(); // this is now the entry point of the cuda section so we always want to copy
   prod.GPUSetVal(0.0);
 
   dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE,1,1);
   int gridx = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, nPointDomain);
   dim3 gridDim(gridx, 1, 1);
 
-  GPUMatrixVectorProductKernel<<<gridDim, blockDim>>>(d_invM, d_vec, d_prod, nPointDomain, nVar);
+  GPUMatrixVectorProductKernel<<<gridDim, blockDim>>>(d_invM, vec.data(), prod.data(), nPointDomain, nVar);
   gpuErrChk( cudaPeekAtLastError() );
-
-  prod.DtHTransfer();//forcely copy back prod to host for MPI synch
+  gpuErrChk(cudaDeviceSynchronize());
 
   /*--- MPI Parallelization ---*/
   CSysMatrixComms::Initiate(prod, geometry, config);
   CSysMatrixComms::Complete(prod, geometry, config);
-  prod.HtDTransfer();//forcely copy back prod to device to continue calculations
+
+  gpuErrChk(cudaDeviceSynchronize());
 
 }
 

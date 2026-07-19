@@ -109,14 +109,12 @@ template <class ScalarType, class Weights>
 void LinearCombinationImpl(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs, const Weights& ws,
                            CSysVector<ScalarType>& v, bool inc = false) {
 #ifdef HAVE_CUDA
-  if (v.GetDevicePointer() != nullptr) {
-    std::vector<ScalarType> ws_host(n); // collect weights into simple host array
-    for (unsigned long i = 0; i < n; ++i) {
-      ws_host[i] = static_cast<ScalarType>(ws(i));
-    }
-    CSysVector<ScalarType>::LinearCombinationGPU(n, vs, ws_host.data(), v, inc);
-    return;
+  std::vector<ScalarType> ws_host(n);  // collect weights into simple host array
+  for (unsigned long i = 0; i < n; ++i) {
+    ws_host[i] = static_cast<ScalarType>(ws(i));
   }
+  CSysVector<ScalarType>::LinearCombinationGPU(n, vs, ws_host.data(), v, inc);
+  return;
 #endif
 
   LinearCombinationImpl(

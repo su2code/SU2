@@ -77,6 +77,8 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   unsigned long nVar = 1;       /*!< \brief Number of elements in a block. */
 
   ScalarType* d_vec_val = nullptr; /*!< \brief Device Pointer to store the vector values on the GPU. */
+  bool vec_is_managed = false;     /*!< \brief Boolean that indicates whether GPU supports Unified Memory or not */
+  bool useCuda = false;            /*!< \brief Whether CUDA is enabled. */
 
 #ifdef HAVE_OMP
   mutable std::unique_ptr<ScalarType[]>
@@ -246,6 +248,11 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   inline ScalarType* GetDevicePointer() const { return d_vec_val; }
 
   /*!
+   * \brief return pointer that points to the CSysVector values in CPU memory
+   */
+  ScalarType* data() const { return vec_val; }
+
+  /*!
    * \brief return the number of local elements in the CSysVector
    */
   inline unsigned long GetLocSize() const { return nElm; }
@@ -403,10 +410,10 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] ws - array of scalar weights corresponding to the device pointers to vectors
    * \param[in] vs_ptrs - array of device pointers
    * \param[in] v - target vector
-   * \param[in] inc - If true, adds results to target vector. If false, overwrites 
+   * \param[in] inc - If true, adds results to target vector. If false, overwrites
    */
-  static void LinearCombinationGPU(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs, const ScalarType* ws,
-                                   CSysVector<ScalarType>& v, bool inc=false);
+  static void LinearCombinationGPU(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs,
+                                   const ScalarType* ws, CSysVector<ScalarType>& v, bool inc = false);
 
   /*!
    * \brief Squared L2 norm of the vector (via dot with self).

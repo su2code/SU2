@@ -112,18 +112,17 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vect
 
   const size_t size = V[0].nElmDomain;
 
-  // ensure all vectors are synced on device and get the pointers
+  // get all the device pointers
   std::vector<const ScalarType*> h_V_ptrs(n), h_W_ptrs(m);
   for (size_t i = 0; i < n; ++i){
-    V[i0 + i].HtDTransfer();
-    h_V_ptrs[i] = V[i0 + i].GetDevicePointer();
+    h_V_ptrs[i] = V[i0 + i].data();
   }
   for (size_t j = 0; j < m; ++j){
-    W[j].HtDTransfer();
-    h_W_ptrs[j] = W[j].GetDevicePointer();
+    //gpuErrChk(cudaMemAdvise(vec_val, nElm * sizeof(ScalarType), cudaMemAdviseSetReadMostly, device_id)); //if read only, could be good
+    h_W_ptrs[j] = W[j].data();
   }
 
-  //copy the pointers to the device arrays of pointers
+  // copy the pointers to the device arrays of pointers
   const ScalarType** d_V_ptrs;
   const ScalarType** d_W_ptrs;
   gpuErrChk(cudaMalloc(&d_V_ptrs, n * sizeof(ScalarType*)));
@@ -136,14 +135,14 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vect
   gpuErrChk(cudaMalloc(&d_local, n * m * sizeof(ScalarType)));
   gpuErrChk(cudaMemset(d_local, 0, n * m * sizeof(ScalarType)));
 
-  // launch
-  int threads = 256;
-  int numBlocksPerPair = std::min((size + threads - 1) / threads, size_t(1024));
-  dim3 grid(numBlocksPerPair, n * m);
-  GPUmultiDot<<<grid, threads, threads * sizeof(ScalarType)>>>(d_V_ptrs, n, d_W_ptrs, m, size, d_local);
+  dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE,1,1);
+  int numBlocksPerPair = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, size);
+  dim3 gridDim(numBlocksPerPair, n * m, 1);
+
+  GPUmultiDot<<<gridDim, blockDim, KernelParameters::MVP_BLOCK_SIZE * sizeof(ScalarType)>>>(d_V_ptrs, n, d_W_ptrs, m, size, d_local);
   gpuErrChk(cudaGetLastError());
 
-  // copy result to host, MPI reduce
+  // copy result to host for MPI reduce
   su2matrix<ScalarType> local(n,m);
   gpuErrChk(cudaMemcpy(local.data(), d_local, n * m * sizeof(ScalarType), cudaMemcpyDeviceToHost));
 
@@ -161,7 +160,7 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vect
   SU2_OMP_BARRIER
 
 
-  // cleanup (or cache these allocations)
+  // clean allocations
   gpuErrChk(cudaFree(d_local));
   gpuErrChk(cudaFree(d_V_ptrs));
   gpuErrChk(cudaFree(d_W_ptrs));
@@ -176,7 +175,7 @@ struct WeightedVecs {
 };
 
 template<class ScalarType, int N>
-__global__ void LinearCombinationKernel(ScalarType* __restrict__ v, WeightedVecs<ScalarType, N> wv, 
+__global__ void LinearCombinationKernel(ScalarType* __restrict__ v, WeightedVecs<ScalarType, N> wv,
                                         int n, unsigned long nElm, bool inc)
 {
   const unsigned long k = blockIdx.x * blockDim.x + threadIdx.x;
@@ -186,7 +185,7 @@ __global__ void LinearCombinationKernel(ScalarType* __restrict__ v, WeightedVecs
   ScalarType result = inc ? v[k] : ScalarType(0);
 
   #pragma unroll
-  for (int i = 0; i < N; ++i) // N is known at compile time (4), this unrolls to if (i < n) result += weight[i] * vector[i][k]; i<4
+  for (int i = 0; i < N; ++i) // N is known at compile time (4), this unrolls to: if (i < n) result += weight[i] * vector[i][k]; i<4
     if (i < n) result += wv.weights[i] * wv.ptrs[i][k];
   v[k] = result;
 }
@@ -197,28 +196,25 @@ void CSysVector<ScalarType>::LinearCombinationGPU(const unsigned long n, const s
 {
 
   const unsigned long nElm = v.nElmDomain;
-  constexpr unsigned threads = 256;
-  const unsigned blocks = (nElm + threads - 1) / threads;
-
-  // ensure v is on device before first kernel
-  v.HtDTransfer();
-  ScalarType* d_v = v.GetDevicePointer();
+  dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE,1,1);
+  int numBlocks = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, nElm);
+  dim3 gridDim(numBlocks, 1, 1);
 
   for (unsigned long i = 0; i < n; i += 4) {
     const int rem = static_cast<int>(std::min(n - i, 4ul));
     //prepare vectors pointers and corresponding weights, passing them by value
     WeightedVecs<ScalarType, 4> vs_ws = {};
     for (int j = 0; j < rem; ++j) {
-      vs_ws.ptrs[j] = vs[i + j].GetDevicePointer();  // already on device from multiDot
-      vs_ws.weights[j] = ws[i + j];                       // plain array indexing, not ws(k)
+      vs_ws.ptrs[j] = vs[i + j].data();  // already on device from multiDot
+      vs_ws.weights[j] = ws[i + j];      // plain array indexing, not ws(k)
     }
     //calculate the linear combination on GPU, handle more than 4 vectors through inc || i > 0
-    LinearCombinationKernel<ScalarType, 4><<<blocks, threads>>>(d_v, vs_ws, rem, nElm, inc || i > 0); 
+    LinearCombinationKernel<ScalarType, 4><<<gridDim, blockDim>>>(v.data(), vs_ws, rem, nElm, inc || i > 0);
     gpuErrChk(cudaPeekAtLastError());
   }
 
-  // bring result back to host
-  v.DtHTransfer();
+  gpuErrChk(cudaDeviceSynchronize()); // this is now the exit point of the cuda section so we want to synchronize
+
 }
 
 template class CSysVector<su2double>; //This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.

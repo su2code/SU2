@@ -50,9 +50,21 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
   omp_chunk_size = computeStaticChunkSize(nElm, omp_get_max_threads(), OMP_MAX_SIZE);
 
-  if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
+  // if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
+#ifdef HAVE_CUDA
+  useCuda = true;
+#endif
 
-  d_vec_val = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
+  if (useCuda && GPUMemoryAllocation::UMSupported()) {
+    vec_val = GPUMemoryAllocation::gpu_um_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
+    d_vec_val = vec_val;  // temporary alias for testing
+    vec_is_managed = true;
+  } else {
+    vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
+    if (useCuda) {
+      d_vec_val = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
+    }
+  }
 
 #ifdef HAVE_OMP
   dot_scratch.reset(new ScalarType[omp_get_max_threads()]);
@@ -75,9 +87,7 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
   SU2_ZONE_SCOPED
 
 #ifdef HAVE_CUDA
-  if (V[i0].GetDevicePointer() != nullptr) {
-    return multiDotGPU(V, i0, n, W, m);
-  }
+  return multiDotGPU(V, i0, n, W, m);
 #endif
 
   static constexpr size_t BLOCK_SIZE = 1024;
@@ -144,9 +154,19 @@ CSysVector<ScalarType>::~CSysVector() {
   if constexpr (!std::is_trivial_v<ScalarType>) {
     for (auto i = 0ul; i < nElm; i++) vec_val[i].~ScalarType();
   }
-  MemoryAllocation::aligned_free(vec_val);
+  // MemoryAllocation::aligned_free(vec_val);
 
-  GPUMemoryAllocation::gpu_free(d_vec_val);
+  // GPUMemoryAllocation::gpu_free(d_vec_val);
+
+  if (useCuda && GPUMemoryAllocation::UMSupported()) {
+    GPUMemoryAllocation::gpu_free(vec_val);
+    d_vec_val = nullptr;
+  } else {
+    MemoryAllocation::aligned_free(vec_val);
+    if (useCuda) {
+      GPUMemoryAllocation::gpu_free(d_vec_val);
+    }
+  }
 }
 
 /*--- Explicit instantiations ---*/
