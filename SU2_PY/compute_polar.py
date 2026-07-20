@@ -152,7 +152,7 @@ def main():
             + "; polarVar = "
             + polarVar
         )
-        print(">>>  Velocity definiton: " + velDirOptionLegend[velDirOption - 1])
+        print(">>>  Velocity definition: " + velDirOptionLegend[velDirOption - 1])
         print(
             ">>>  nAalpha = "
             + str(nAlpha)
