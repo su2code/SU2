@@ -269,10 +269,8 @@ void CPBIncNSSolver::BC_HeatTransfer_Wall(const CGeometry *geometry, const CConf
   BC_Wall_Generic(geometry, config, val_marker, HEAT_TRANSFER);
 }
 
-void CPBIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                    CNumerics *numerics, CConfig *config) {
-  SU2_ZONE_SCOPED
-                                      
-  Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
-
+CNumerics::ResidualType<> CPBIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry,
+                                                         CSolver **solver_container, CNumerics *numerics,
+                                                         CConfig *config) {
+  return Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
 }

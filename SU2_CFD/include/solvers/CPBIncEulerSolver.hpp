@@ -258,13 +258,6 @@ public:
   void PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
 
   /*!
-   * \brief Complete an implicit iteration.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
-
-  /*!
    * \brief Compute the time step for solving the Euler equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

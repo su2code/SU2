@@ -157,7 +157,7 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
     if (rank == MASTER_NODE)
       cout << "Initialize Jacobian structure (" << description << "). MG level: " << iMesh <<"." << endl;
 
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy, false, true);
   }
   else {
     if (rank == MASTER_NODE)
@@ -837,7 +837,7 @@ void CPBIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 
   if(!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
-    if (implicit) Jacobian.SetValZero();
+    if (implicit) Jacobian.SetValDiagonalZero();
     else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
   }
 
@@ -972,12 +972,6 @@ void CPBIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**,
   PrepareImplicitIteration_impl(precond, geometry, config);
 }
 
-void CPBIncEulerSolver::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
-  SU2_ZONE_SCOPED
-
-  CompleteImplicitIteration_impl<false>(geometry, config);
-}
-
 void CPBIncEulerSolver::Centered_Residual(CGeometry *geometry,
                         CSolver **solver_container,
                         CNumerics **numerics_container,
@@ -1016,21 +1010,24 @@ void CPBIncEulerSolver::Centered_Residual(CGeometry *geometry,
       numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(jPoint));
 
     /*--- Compute residuals, and Jacobians ---*/
-    auto residual = numerics->ComputeResidual(config);
+
+    auto conv_residual = numerics->ComputeResidual(config);
 
     /*--- Update residual value ---*/
-    LinSysRes.AddBlock(iPoint, residual);
-    LinSysRes.SubtractBlock(jPoint, residual);
 
-    /*--- Set implicit Jacobians ---*/
-    if (implicit)
-      Jacobian.UpdateBlocks(iEdge,iPoint,jPoint,residual.jacobian_i, residual.jacobian_j);
+    if (ReducerStrategy) {
+      EdgeFluxes.SetBlock(iEdge, conv_residual);
+    } else {
+      LinSysRes.AddBlock(iPoint, conv_residual);
+      LinSysRes.SubtractBlock(jPoint, conv_residual);
+    }
 
-    /*--- Viscous contribution. ---*/
+    /*--- Viscous contribution, returns its Jacobians so that the matrix is updated once. ---*/
 
-    Viscous_Residual(iEdge, geometry, solver_container,
-                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+    const auto visc_residual = Viscous_Residual(
+        iEdge, geometry, solver_container, numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
 
+    if (implicit) UpdateJacobian(iEdge, iPoint, jPoint, conv_residual, visc_residual);
   }
   END_SU2_OMP_FOR
   } // end color loop
@@ -1139,33 +1136,28 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
       numerics->SetPrimitive(V_i, V_j);
 
     }
-
-    /*--- Compute the residual ---*/
     
-    auto residual = numerics->ComputeResidual(config);
+    /*--- Compute residuals, and Jacobians ---*/
 
-    if (bounded_scalar) EdgeMassFluxes[iEdge] = residual[0];
+    auto conv_residual = numerics->ComputeResidual(config);
+
+    if (bounded_scalar) EdgeMassFluxes[iEdge] = conv_residual[0];
 
     /*--- Update residual value ---*/
 
     if (ReducerStrategy) {
-      EdgeFluxes.SetBlock(iEdge, residual);
-      if (implicit)
-        Jacobian.SetBlocks(iEdge, residual.jacobian_i, residual.jacobian_j);
-    }
-    else {
-      LinSysRes.AddBlock(iPoint, residual);
-      LinSysRes.SubtractBlock(jPoint, residual);
-
-      /*--- Set implicit computation ---*/
-      if (implicit)
-        Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+      EdgeFluxes.SetBlock(iEdge, conv_residual);
+    } else {
+      LinSysRes.AddBlock(iPoint, conv_residual);
+      LinSysRes.SubtractBlock(jPoint, conv_residual);
     }
 
-    /*--- Viscous contribution. ---*/
+    /*--- Viscous contribution, returns its Jacobians so that the matrix is updated once. ---*/
 
-    Viscous_Residual(iEdge, geometry, solver_container,
-                     numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+    const auto visc_residual = Viscous_Residual(
+        iEdge, geometry, solver_container, numerics_container[VISC_TERM + omp_get_thread_num()*MAX_TERMS], config);
+
+    if (implicit) UpdateJacobian(iEdge, iPoint, jPoint, conv_residual, visc_residual);
 
   }
   END_SU2_OMP_FOR

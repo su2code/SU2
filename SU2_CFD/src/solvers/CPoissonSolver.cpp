@@ -63,7 +63,7 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Initialization of the structure of the whole Jacobian ---*/
 
   if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (poisson equation) MG level: " << iMesh << "." << endl;
-  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy, false, true);
+  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config, ReducerStrategy, false, false, true);
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   if (ReducerStrategy) EdgeFluxes.Initialize(geometry->GetnEdge(), geometry->GetnEdge(), nVar, nullptr);
@@ -127,10 +127,11 @@ void CPoissonSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
     nodes->ResetStrongBC(iPoint);
 
   /*--- Need to clear EdgeFluxes and Jacobian. ---*/
-  if (!Output && ReducerStrategy) {
-    EdgeFluxes.SetValZero();
+  if (!Output) {
+    if (ReducerStrategy) EdgeFluxes.SetValZero();
     Jacobian.SetValZero();
   }
+
   
 }
 
@@ -187,9 +188,10 @@ void CPoissonSolver::Postprocessing(CGeometry *geometry,
     factor = 0.0;
     Vol = geometry->nodes->GetVolume(iPoint);
     delT = flow_nodes->GetDelta_Time(iPoint);
+    const auto view = flow_solution->Jacobian.GetBlockView(iPoint, iPoint);
     for (iDim = 0; iDim < nDim; iDim++) {
       vel_corr[iPoint][iDim] = nodes->GetMomCoeff(iPoint)*(nodes->GetGradient(iPoint,0,iDim));
-      if (implicit) factor += flow_solution->Jacobian.GetBlock(iPoint, iPoint, iDim, iDim);
+      if (implicit) factor += view(iDim, iDim);
     }
 
     /*--- The PISO algorithm should not underrelax pressure, for explicit iterations we simply do not have the necessary jacobian information to compute this ---*/
@@ -328,14 +330,14 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
       for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
         /*--- Self contribution of the coefficient a_p. Note that this coefficient should be the same for all variable directions. therefore just the x-momentum coefficient is taken. ---*/
-        Mom_Coeff = flow_solution->Jacobian.GetBlock(iPoint,iPoint,0,0);
+        Mom_Coeff = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(0,0);
       
         Mom_Coeff_nb = 0.0;
 
         if (simplec) {
           for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
             jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
-            Mom_Coeff_nb += flow_solution->Jacobian.GetBlock(iPoint,jPoint,0,0);
+            Mom_Coeff_nb += flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(0,0);
           }
         }
 
