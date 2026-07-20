@@ -40,7 +40,7 @@ class CPoissonSolver final : public CScalarSolver<CPoissonVariable> {
 protected:
   static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
-  bool testREMOVETHIS;
+
   /*!
    * \brief Compute the viscous flux for the scalar equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
@@ -58,17 +58,15 @@ protected:
 
     /*--- Sets the momentum coefficients to use in the viscous numerics. ---*/
     auto compute_momentum_coeff = [&](unsigned long iPoint, unsigned long jPoint) {
-        mom_coeff_i = nodes->GetMomCoeff(iPoint);// / geometry->nodes->GetVolume(iPoint); 
-
-        mom_coeff_j = nodes->GetMomCoeff(jPoint);// / geometry->nodes->GetVolume(jPoint);
-        numerics->SetDiffusionCoeff(&mom_coeff_i, &mom_coeff_j);
+      mom_coeff_i = nodes->GetMomCoeff(iPoint);
+      mom_coeff_j = nodes->GetMomCoeff(jPoint);
+      numerics->SetDiffusionCoeff(&mom_coeff_i, &mom_coeff_j);
     };
+    
     /*--- Compute residual and Jacobians. ---*/
     Viscous_Residual_impl(compute_momentum_coeff, iEdge, geometry, solver_container, numerics, config);
   }
-
-  su2activematrix PseudoTimeCorr;
-
+  
 public:
 
   /*
@@ -150,6 +148,17 @@ public:
                        CConfig *config, unsigned short iMesh) override;
 
   /*!
+   * \brief No upwind residual for poisson equation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Upwind_Residual(CGeometry* geometry, CSolver** solver_container, CNumerics** numerics_container,
+                       CConfig* config, unsigned short iMesh) override {}                   
+
+  /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -170,6 +179,18 @@ public:
                     CConfig *config,
                     unsigned short iMesh,
                     unsigned long Iteration) override {}
+
+  /*!
+   * \brief No dual time stepping as there is no time stepping at all.
+   * \param[in] geometry - Geometric definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   */
+  void SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config, unsigned short iRKStep,
+                            unsigned short iMesh, unsigned short RunTime_EqSystem) override {}
 
   /*!
    * \brief Set the initial condition for the FEM structural problem.

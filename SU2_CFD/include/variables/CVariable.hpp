@@ -1409,6 +1409,11 @@ public:
   /*!
    * \brief A virtual member.
    */
+  inline virtual void SetPressurePB(unsigned long iPoint, su2double val) {}
+
+  /*!
+   * \brief A virtual member.
+   */
   inline virtual void SetVelocity(unsigned long iPoint) {}
 
   /*!

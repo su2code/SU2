@@ -27,6 +27,7 @@
 
 #include "../../include/iteration/CPBFluidIteration.hpp"
 #include "../../include/output/COutput.hpp"
+#include "../../include/integration/CIntegration.hpp"
 
 void CPBFluidIteration::Preprocess(COutput* output, CIntegration**** integration, CGeometry**** geometry,
                                  CSolver***** solver, CNumerics****** numerics, CConfig** config,
@@ -75,12 +76,28 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   // TODO: still figure out how this can be done for MG
   solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->SetMomCoeff(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], periodic, MESH_0);
 
-  for (unsigned short i = 0; i < nCorrections; ++i) 
-    integration[val_iZone][val_iInst][POISSON_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_POISSON_SYS,
+  for (unsigned short i = 0; i < nCorrections; ++i) {
+    integration[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, RUNTIME_POISSON_SYS,
                                                                    val_iZone, val_iInst);
 
+    // WIP EXPERIMENTATION FOR PISO ALGORITHM: 
+    // config[val_iZone]->SetKind_TimeIntScheme(EULER_EXPLICIT);
+    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0, 0, RUNTIME_FLOW_SYS, 0);
+    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Upwind_Residual(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], numerics[val_iZone][val_iInst][MESH_0][FLOW_SOL], config[val_iZone], MESH_0);
+    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Viscous_Residual(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], numerics[val_iZone][val_iInst][MESH_0][FLOW_SOL], config[val_iZone], MESH_0, 0);
+    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Source_Residual(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], numerics[val_iZone][val_iInst][MESH_0][FLOW_SOL], config[val_iZone], MESH_0);
+    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0, 0, RUNTIME_POISSON_SYS, 0);
+    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Set_OldSolution();
+    // integration[val_iZone][val_iInst][FLOW_SOL]->Space_Integration(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], numerics[val_iZone][val_iInst][MESH_0][FLOW_SOL], config[val_iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS);
+    // integration[val_iZone][val_iInst][FLOW_SOL]->Time_Integration(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0, RUNTIME_FLOW_SYS);
+    // integration[val_iZone][val_iInst][FLOW_SOL]->Space_Integration(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], numerics[val_iZone][val_iInst][MESH_0][FLOW_SOL], config[val_iZone], MESH_0, NO_RK_ITER, RUNTIME_POISSON_SYS);
+    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
+    // config[val_iZone]->SetKind_TimeIntScheme(config[val_iZone]->GetKind_TimeIntScheme_Flow());
+    // solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->SetMomCoeff(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], periodic, MESH_0);
+
+  }
+
   /*--- Pressure-based algorithm finished, now run auxiliary solvers ---*/
-  // TODO: this list is the same as the list inside of CFluidIteration and should be made into a separate function 
 
   /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
   CommonSingleGridIterations(output, integration, geometry, solver, numerics, config, surface_movement, 

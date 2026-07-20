@@ -62,40 +62,15 @@ bool CPBIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMod
 
   bool physical = true;
 
-  /*--- Set the value of the pressure ---*/
+  /*--- Set the value of the temperature ---*/
 
-
-  // const auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
-
-  /*--- Use the fluid model to compute the new value of density.
-  Note that the thermodynamic pressure is constant and decoupled
-  from the dynamic pressure being iterated. ---*/
+  SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
 
   /*--- Set the value of the density ---*/
-
+  
   const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
 
-  /*--- Non-physical solution found. Revert to old values. ---*/
-
-  if (check_dens) {
-
-    /*--- Copy the old solution ---*/
-
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      Solution(iPoint, iVar) = Solution_Old(iPoint, iVar);
-
-    /*--- Recompute the primitive variables ---*/
-
-    // Enthalpy = Solution(iPoint, nDim+1);
-    // FluidModel->SetTDState_h(Enthalpy);
-    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
-    SetDensity(iPoint, FluidModel->GetDensity());
-
-    /*--- Flag this point as non-physical. ---*/
-
-    physical = false;
-
-  }
+  if (check_dens) physical = false;
 
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
 
@@ -108,7 +83,7 @@ bool CPBIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMod
 
   /*--- Set enthalpy ---*/
 
-  // SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
+  SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
 
   return physical;
 

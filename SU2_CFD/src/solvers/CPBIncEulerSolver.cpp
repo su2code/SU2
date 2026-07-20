@@ -48,7 +48,7 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
    *    being called by itself, or by its derived class CIncNSSolver. ---*/
   const string description = navier_stokes? "Navier-Stokes" : "Euler";
 
-  unsigned short iMarker;
+  unsigned long iMarker;
   ifstream restart_file;
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   int Unst_RestartIter = 0;
@@ -835,13 +835,6 @@ void CPBIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
     }
   }
 
-  /*--- Reset mass flux residual. ---*/
-  // SetResMassFluxZero();
-
-  /*--- Reset flag for strong BCs. ---*/
-  // for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
-  //    nodes->ResetStrongBC(iPoint);
-
   if(!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
     if (implicit) Jacobian.SetValZero();
@@ -864,23 +857,23 @@ void CPBIncEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_con
                                   unsigned short iMesh) {
   SU2_ZONE_SCOPED
   
-  bool RightSol = true;
   unsigned long iPoint, ErrorCounter = 0;
 
   /*--- Set the current estimate of velocity as a primitive variable, needed for momentum interpolation.
-   * -- This does not change the pressure, it remains the same as the old value .i.e. previous (pseudo)time step. ---*/
-  // if (iMesh == MESH_0) ErrorCounter = SetPrimitive_Variables(solver_container, config);
+   * -- This does not change the pressure, it remains the same as the old value i.e. previous (pseudo) time step. ---*/
+  if (iMesh == MESH_0) ErrorCounter = SetPrimitive_Variables(solver_container, config);
 
-  /*--- Compute gradients to be used in Rhie Chow interpolation ---*/
+  /*--- Compute gradients to be used in Rhie Chow interpolation by poisson solver ---*/
 
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-      SetPrimitive_Gradient_GG(geometry, config);
-    }
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      SetPrimitive_Gradient_LS(geometry, config);
-    }
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    SetPrimitive_Gradient_GG(geometry, config);
+  }
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    SetPrimitive_Gradient_LS(geometry, config);
+  }
 }
 
+//TODO: exact copy of CIncEulerSolver
 unsigned long CPBIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
 
   SU2_ZONE_SCOPED
@@ -909,7 +902,7 @@ unsigned long CPBIncEulerSolver::SetPrimitive_Variables(CSolver **solver_contain
 }
 
 
-// TODO: this is currently an exact duplicate of CIncEulerSolver
+// TODO: exact copy of CIncEulerSolver
 void CPBIncEulerSolver::SetReferenceValues(const CConfig &config) {
   SU2_ZONE_SCOPED
   
@@ -962,6 +955,7 @@ void CPBIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 void CPBIncEulerSolver::PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
   SU2_ZONE_SCOPED
 
+  /*--- There is no preconditioning required for the pressure-based momentum solve, thus active = false. */
   struct IncPrec {
     const CPBIncEulerSolver* solver;
     const bool active = false;
@@ -1203,19 +1197,23 @@ void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
   /*--- Add pressure source term ---*/
   unsigned short iPoint, iVar;
-  //TODO: residual should ideally NOT be allocated here, likely best option is to put the pressure source term
-  // in a separate source class object and compute it trough there
-  su2double *Residual = new su2double[nVar](); 
+  
+  // TODO: ideas on how this could be implemented nicer would be appreciated.
+  su2double *Vdpdx = new su2double[nVar](); 
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    /*--- Assign the pressure gradient to the residual. ---*/
+    /*--- Compute the residual based on the pressure gradient. ---*/
     for (iVar = 0; iVar < nVar; iVar++)
-      Residual[iVar] = geometry->nodes->GetVolume(iPoint)*nodes->GetGradient_Primitive(iPoint,0,iVar);
+      Vdpdx[iVar] = geometry->nodes->GetVolume(iPoint)*nodes->GetGradient_Primitive(iPoint,0,iVar);
 
-    /*--- Add Residual ---*/
-    LinSysRes.AddBlock(iPoint, Residual);
+    auto residual = CNumerics::ResidualType<>(Vdpdx, nullptr, nullptr);
+
+    /*--- Add Residual to the total ---*/
+    LinSysRes.AddBlock(iPoint, residual);
   }
-  delete [] Residual;
+  END_SU2_OMP_FOR
+  delete [] Vdpdx;
 
   // TODO: Write all other possible source terms e.g. body force, axisymmetry etc. etc.
 
@@ -1320,17 +1318,9 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
 
     V_infty[prim_idx.Pressure()] = GetPressure_Inf();
 
-    /*--- Dirichlet condition for temperature at far-field (if energy is active). ---*/
-
-    // V_infty[prim_idx.Temperature()] = GetTemperature_Inf();
-
     /*--- Store the density.  ---*/
 
     V_infty[prim_idx.Density()] = GetDensity_Inf();
-
-    /*--- Cp is needed for Temperature equation. ---*/
-
-    // V_infty[prim_idx.CpTotal()] = nodes->GetSpecificHeatCp(iPoint);
 
     /*--- Set various quantities in the numerics class ---*/
 

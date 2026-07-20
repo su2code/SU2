@@ -59,7 +59,7 @@ public:
     inline IndexType CvTotal() const { return nDim+9; }
 
     /*--- For compatible interface with NEMO. ---*/
-    // inline IndexType SpeciesDensities() const { return std::numeric_limits<IndexType>::max(); }
+    inline IndexType SpeciesDensities() const { return std::numeric_limits<IndexType>::max(); }
     inline IndexType Temperature_ve() const { return std::numeric_limits<IndexType>::max(); }
   };
 
@@ -81,7 +81,7 @@ public:
    * \param[in] iPoint - Point index.
    * \param[in] val_pressure - Pressure at point.
    */
-  // inline void SetPressure(unsigned long iPoint, su2double val_pressure) final { Primitive(iPoint, indices.Pressure()) = val_pressure; }
+  inline void SetPressurePB(unsigned long iPoint, su2double val_pressure) final { Primitive(iPoint, indices.Pressure()) = val_pressure; }
 
   /*!
    * \brief Set the value of the density for the incompressible flows.

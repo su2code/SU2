@@ -65,6 +65,63 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
 }
 
+void CPBIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
+                                 unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
+
+  const auto InnerIter = config->GetInnerIter();
+  const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
+  const bool center = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
+  const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
+  const bool van_albada = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
+  const bool wall_functions = config->GetWall_Functions();
+
+  /*--- Common preprocessing steps (implemented by CPBIncEulerSolver) ---*/
+
+  CPBIncEulerSolver::Preprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
+
+  /*--- Compute gradient for MUSCL reconstruction ---*/
+
+  if (config->GetReconstructionGradientRequired() && muscl && !center) {
+    switch (config->GetKind_Gradient_Method_Recon()) {
+      case GREEN_GAUSS:
+        SetPrimitive_Gradient_GG(geometry, config, true); break;
+      case LEAST_SQUARES:
+      case WEIGHTED_LEAST_SQUARES:
+        SetPrimitive_Gradient_LS(geometry, config, true); break;
+      default: break;
+    }
+  }
+
+  /*--- Compute gradient of the primitive variables ---*/
+
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    SetPrimitive_Gradient_GG(geometry, config);
+  }
+  else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    SetPrimitive_Gradient_LS(geometry, config);
+  }
+
+  /*--- Compute the limiters ---*/
+
+  if (muscl && !center && limiter && !van_albada && !Output) {
+    SetPrimitive_Limiter(geometry, config);
+  }
+
+  ComputeVorticityAndStrainMag(*config, geometry, iMesh);
+
+  // TODO: Currently I haven ot yet needed these functions, these are however similar if not exactly the same as the ones implemented by CIncNSSolver, therefore this has to be reused.
+  /*--- Compute the TauWall from the wall functions ---*/
+  // if (wall_functions) {
+  //   SU2_OMP_SAFE_GLOBAL_ACCESS(SetTau_Wall_WF(geometry, solver_container, config);)
+  // }
+
+  // /*--- Compute recovered pressure and temperature for streamwise periodic flow ---*/
+  // if (config->GetKind_Streamwise_Periodic() != ENUM_STREAMWISE_PERIODIC::NONE)
+  //   Compute_Streamwise_Periodic_Recovered_Values(config, geometry, iMesh);
+
+}
+
 unsigned long CPBIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
   SU2_ZONE_SCOPED
 
@@ -123,7 +180,7 @@ unsigned long CPBIncNSSolver::SetPrimitive_Variables(CSolver **solver_container,
 
 }
 
-/* TODO: The current function does the same for all types of walls as the current PB formulation does not yet consider 
+/* TODO: The current function does the same for all types of walls as the PB formulation is decoupled from
   the energy equation. This function is very close to the version used by CIncNSSolver and will likely benefit from 
   a base class to avoid code duplication. */
 void CPBIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *config,

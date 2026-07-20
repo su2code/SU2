@@ -591,10 +591,10 @@ private:
   Kind_Upwind_Heat,             /*!< \brief Upwind scheme for the heat transfer model. */
   Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
-  ENUM_PBITER             /*< \brief Pressure-based solver for incompressible flows. */
-  Kind_PBIter;
+  ENUM_PBITER             
+  Kind_PBIter;             /*< \brief Kind of pressure-based algorithm that is used. */
   ENUM_INCOMP_SYSTEM
-  Kind_Incomp_System;
+  Kind_Incomp_System;      /*< \brief Kind of incompressible solver. */
 
   bool MUSCL,              /*!< \brief MUSCL scheme (for the runtime eq. system). */
   MUSCL_Flow,              /*!< \brief MUSCL scheme for the flow equations.*/
@@ -4024,18 +4024,6 @@ public:
    * \return Number of corrections used by PISO algorithm.
    */
   unsigned short GetPISO_corrections(void) const { return nCorrections_PISO; }
-  
-  /*!
-   * \brief Set the kind of incompressible solver formulation that is used.
-   * \param[in] val_system - the type of system to use.
-   */
-  void SetIncomp_System(unsigned short val_system);
-  
-  /*!
-   * \brief Set the pressure based iteration method.
-   * \param[in] val_PBIter - The iteration method for the pressure based solver.
-   */
-  void SetPBIter(unsigned short val_PBIter);
 
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
@@ -4388,8 +4376,8 @@ public:
   unsigned short GetKind_Linear_Solver_Prec(void) const { return Kind_Linear_Solver_Prec; }
 
   /*!
-   * \brief Get the kind of preconditioner for the implicit solver.
-   * \return Numerical preconditioner for implicit formulation (solving the linear system).
+   * \brief Get the kind of preconditioner for the linear solver of the poisson problem.
+   * \return Numerical preconditioner for poisson equation (solving the linear system).
    */
   unsigned short GetKind_Poisson_Linear_Solver_Prec(void) const { return Kind_Poisson_Linear_Solver_Prec; }
 
@@ -4400,8 +4388,8 @@ public:
   unsigned short GetKind_Deform_Linear_Solver(void) const { return Kind_Deform_Linear_Solver; }
 
   /*!
-   * \brief Get the kind of solver for the implicit solver.
-   * \return Numerical solver for implicit formulation (solving the linear system).
+   * \brief Get the kind of solver for the poisson equation.
+   * \return Numerical solver for poisson equation (solving the linear system).
    */
   unsigned short GetKind_Poisson_Linear_Solver(void) const { return Kind_Poisson_Linear_Solver; }
 
@@ -4418,8 +4406,8 @@ public:
   su2double GetDeform_Linear_Solver_Error(void) const { return Deform_Linear_Solver_Error; }
 
   /*!
-   * \brief Get min error of the linear solver for the implicit formulation.
-   * \return Min error of the linear solver for the implicit formulation.
+   * \brief Get min error of the linear solver for the poisson equation.
+   * \return Min error of the linear solver for the poisson equation.
    */
   su2double GetPoisson_Linear_Solver_Error(void) const { return Poisson_Linear_Solver_Error; }
 

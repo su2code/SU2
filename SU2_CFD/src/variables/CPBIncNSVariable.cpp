@@ -54,46 +54,15 @@ bool CPBIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2
 
   bool physical = true;
 
+  /*--- Set the value of the temperature ---*/
 
-  /*--- Set the value of the pressure ---*/
-
-  // SetPressure(iPoint);
-
-  // su2double Enthalpy = Solution(iPoint, nDim + 1);
-  // FluidModel->SetTDState_h(Enthalpy, scalar);
-  su2double Temperature = FluidModel->GetTemperature();
-
-  auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
-
-  /*--- Use the fluid model to compute the new value of density.
-  Note that the thermodynamic pressure is constant and decoupled
-  from the dynamic pressure being iterated. ---*/
+  SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
 
   /*--- Set the value of the density ---*/
-
+  
   const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
 
-  /*--- Non-physical solution found. Revert to old values. ---*/
-
-  if (check_dens) {
-
-    /*--- Copy the old solution ---*/
-    
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
-
-    /*--- Recompute the primitive variables ---*/
-
-    // FluidModel->SetTDState_h(Enthalpy, scalar);
-    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
-    SetDensity(iPoint, FluidModel->GetDensity());
-
-    /*--- Flag this point as non-physical. ---*/
-
-    physical = false;
-
-  }
-
+  if (check_dens) physical = false;
 
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
 
@@ -111,7 +80,6 @@ bool CPBIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2
   /*--- Set thermal conductivity (effective value if RANS). ---*/
 
   SetThermalConductivity(iPoint, FluidModel->GetThermalConductivity());
-  // cout << FluidModel->GetThermalConductivity() << endl;
 
   /*--- Set specific heats ---*/
 
@@ -120,7 +88,7 @@ bool CPBIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2
 
   /*--- Set enthalpy ---*/
 
-  // SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
+  SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
 
   return physical;
 
