@@ -128,6 +128,8 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 
     unsigned short skipVars = nDim + solver[MESH_0][FLOW_SOL]->GetnVar();
 
+    if (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED) skipVars+=2; // skip pressure
+
     /*--- Adjust the number of solution variables in the incompressible
      restart. We always carry a space in nVar for the energy equation in the
      mean flow solver, but we only write it to the restart if it is active.

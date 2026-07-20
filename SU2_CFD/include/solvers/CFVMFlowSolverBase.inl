@@ -880,6 +880,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
   string restart_filename = config->GetSolution_FileName();
   const bool static_fsi = ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && config->GetFSI_Simulation());
+  const bool pressure_based = (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED)
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -926,15 +927,29 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
         auto index = counter * Restart_Vars[1] + skipVars;
 
-        if (SolutionRestart == nullptr) {
-          for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
-            nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
-        }
-        else {
-          /*--- Used as buffer, allows defaults for nVar > nVar_Restart. ---*/
-          for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
-            SolutionRestart[iVar] = Restart_Data[index + iVar];
-          nodes->SetSolution(iPoint_Local, SolutionRestart);
+        if (pressure_based) {
+          nodes->SetPressurePB(iPoint_Local, Restart_Data[index]);
+          if (SolutionRestart == nullptr) {
+            for (auto iVar = 1u; iVar < nVar_Restart+1; iVar++)
+              nodes->SetSolution(iPoint_Local, iVar-1, Restart_Data[index+iVar]);
+          }
+          else {
+            /*--- Used as buffer, allows defaults for nVar > nVar_Restart. ---*/
+            for (auto iVar = 1u; iVar < nVar_Restart+1; iVar++)
+              SolutionRestart[iVar-1] = Restart_Data[index + iVar];
+            nodes->SetSolution(iPoint_Local, SolutionRestart);
+          }
+        } else {
+          if (SolutionRestart == nullptr) {
+            for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
+              nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
+          }
+          else {
+            /*--- Used as buffer, allows defaults for nVar > nVar_Restart. ---*/
+            for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
+              SolutionRestart[iVar] = Restart_Data[index + iVar];
+            nodes->SetSolution(iPoint_Local, SolutionRestart);
+          }
         }
 
         /*--- For dynamic meshes, read in and store the
@@ -1016,6 +1031,10 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
   solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
   solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+  if (pressure_based) {
+    solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::PRESSURE_VAR);
+    solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::PRESSURE_VAR);
+  }
 
   /*--- For turbulent/species simulations the flow preprocessing is done by the turbulence/species solver
    *    after it loads its variables (they are needed to compute flow primitives). In case turbulence and species, the
