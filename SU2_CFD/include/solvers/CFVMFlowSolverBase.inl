@@ -868,7 +868,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
   string restart_filename = config->GetSolution_FileName();
   const bool static_fsi = ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && config->GetFSI_Simulation());
-  const bool pressure_based = (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED)
+  const bool pressure_based = (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED);
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {

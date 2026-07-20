@@ -542,7 +542,6 @@ class CSysMatrix {
    */
   void QuantizeDiagonalBlocks();
 
-
   /*!
    * \brief Sets to zero all the entries of the sparse matrix.
    */

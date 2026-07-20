@@ -169,7 +169,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   } else if (config->GetDiscrete_Adjoint() && (prec != ILU)) {
     /*--- Else "upgrade" primal solver settings. ---*/
     prec = config->GetKind_DiscAdj_Linear_Prec();
-  } 
+  }
 
   /*--- No else if, but separate if case! ---*/
   if (config->GetSmoothGradient() && grad_mode) {
@@ -181,7 +181,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   if (poisson) {
     prec = config->GetKind_Poisson_Linear_Solver_Prec();
   }
-  
+
   useCuda = config->GetCUDA();
 
   const bool ilu_needed = (prec == ILU);
