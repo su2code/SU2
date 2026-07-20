@@ -195,6 +195,9 @@ inline unsigned short nPointsOfElementType(unsigned short elementType) {
 }
 
 const int CGNS_STRING_SIZE = 33; /*!< \brief Length of strings used in the CGNS format. */
+const int SU2_BINARY_STRING_SIZE = 65; /*!< \brief Length of strings (e.g. marker names) used in the native
+                                                    SU2 binary mesh format. Shared by CSU2BinaryMeshReaderBase
+                                                    and CSU2MeshBinaryFileWriter so they cannot drift apart. */
 const int SU2_CONN_SIZE   = 10;  /*!< \brief Size of the connectivity array that is allocated for each element
                                              that we read from a mesh file in the format [[globalID vtkType n0 n1 n2 n3 n4 n5 n6 n7 n8]. */
 const int SU2_CONN_SKIP   = 2;   /*!< \brief Offset to skip the globalID and VTK type at the start of the element connectivity list for each CGNS element. */
@@ -2221,21 +2224,26 @@ static const MapType<std::string, ENUM_OBJECTIVE> Objective_Map = {
 };
 
 /*!
- * \brief Types of input file formats
+ * \brief Types of grid file formats
  */
-enum ENUM_INPUT {
-  SU2       = 1,  /*!< \brief SU2 input format. */
-  CGNS_GRID = 2,  /*!< \brief CGNS input format for the computational grid. */
-  RECTANGLE = 3,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
-  BOX       = 4   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
+enum ENUM_GRID {
+  SU2       = 1,  /*!< \brief SU2 ascii format. */
+  SU2_BIN   = 2,  /*!< \brief SU2 binary format. */
+  CGNS_GRID = 3,  /*!< \brief CGNS format for the computational grid. */
+  RECTANGLE = 4,  /*!< \brief 2D rectangular mesh with N x M points of size Lx x Ly. */
+  BOX       = 5   /*!< \brief 3D box mesh with N x M x L points of size Lx x Ly x Lz. */
 };
-static const MapType<std::string, ENUM_INPUT> Input_Map = {
-  MakePair("SU2", SU2)
-  MakePair("CGNS", CGNS_GRID)
-  MakePair("RECTANGLE", RECTANGLE)
-  MakePair("BOX", BOX)
+static const MapType<std::string, ENUM_GRID> Input_Map = {
+  MakePair("SU2", ENUM_GRID::SU2)
+  MakePair("SU2B", ENUM_GRID::SU2_BIN)
+  MakePair("CGNS", ENUM_GRID::CGNS_GRID)
+  MakePair("RECTANGLE", ENUM_GRID::RECTANGLE)
+  MakePair("BOX", ENUM_GRID::BOX)
 };
-
+static const MapType<std::string, ENUM_GRID> OutputMesh_Map = {
+  MakePair("SU2", ENUM_GRID::SU2)
+  MakePair("SU2B", ENUM_GRID::SU2_BIN)
+};
 
 /*!
  * \brief Type of solution output file formats
@@ -2251,7 +2259,8 @@ enum class OUTPUT_TYPE {
   PARAVIEW_LEGACY_BINARY,  /*!< \brief Paraview binary format for the solution output. */
   SURFACE_PARAVIEW_ASCII,  /*!< \brief Paraview ASCII format for the solution output. */
   SURFACE_PARAVIEW_LEGACY_BINARY, /*!< \brief Paraview binary format for the solution output. */
-  MESH,                    /*!< \brief SU2 mesh format. */
+  MESH,                    /*!< \brief SU2 ASCII mesh format. */
+  MESH_BINARY,             /*!< \brief SU2 binary mesh format. */
   RESTART_BINARY,          /*!< \brief SU2 binary restart format. */
   RESTART_ASCII,           /*!< \brief SU2 ASCII restart format. */
   PARAVIEW_XML,            /*!< \brief Paraview XML with binary data format */
@@ -2277,6 +2286,7 @@ static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
   MakePair("SURFACE_PARAVIEW", OUTPUT_TYPE::SURFACE_PARAVIEW_XML)
   MakePair("PARAVIEW_MULTIBLOCK", OUTPUT_TYPE::PARAVIEW_MULTIBLOCK)
   MakePair("MESH", OUTPUT_TYPE::MESH)
+  MakePair("MESH_BINARY", OUTPUT_TYPE::MESH_BINARY)
   MakePair("RESTART_ASCII", OUTPUT_TYPE::RESTART_ASCII)
   MakePair("RESTART", OUTPUT_TYPE::RESTART_BINARY)
   MakePair("CGNS", OUTPUT_TYPE::CGNS)
@@ -2549,6 +2559,7 @@ enum ENUM_LINEAR_SOLVER_PREC {
   LU_SGS,         /*!< \brief LU SGS preconditioner. */
   LINELET,        /*!< \brief Line implicit preconditioner. */
   ILU,            /*!< \brief ILU(k) preconditioner. */
+  Q_LU_SGS,       /*!< \brief LU-SGS with quantized (int8) off-diagonal storage; L/U are never allocated as ScalarType. */
   PASTIX_ILU=10,  /*!< \brief PaStiX ILU(k) preconditioner. */
   PASTIX_LU_P,    /*!< \brief PaStiX LU as preconditioner. */
   PASTIX_LDLT_P,  /*!< \brief PaStiX LDLT as preconditioner. */
@@ -2558,6 +2569,7 @@ static const MapType<std::string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Ma
   MakePair("LU_SGS", LU_SGS)
   MakePair("LINELET", LINELET)
   MakePair("ILU", ILU)
+  MakePair("Q_LU_SGS", Q_LU_SGS)
   MakePair("PASTIX_ILU", PASTIX_ILU)
   MakePair("PASTIX_LU", PASTIX_LU_P)
   MakePair("PASTIX_LDLT", PASTIX_LDLT_P)
