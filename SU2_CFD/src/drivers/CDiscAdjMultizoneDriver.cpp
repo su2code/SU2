@@ -30,6 +30,39 @@
 #include "../../include/output/COutputFactory.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
+#include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
+#include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
+
+namespace {
+#ifdef CODI_FORWARD_TYPE
+  using Scalar = su2double;
+#else
+  using Scalar = passivedouble;
+#endif
+
+class AdjointProduct : public CMatrixVectorProduct<Scalar> {
+public:
+  CDiscAdjMultizoneDriver* const driver;
+  const unsigned short iZone = 0;
+  mutable unsigned long iInnerIter = 0;
+
+  AdjointProduct(CDiscAdjMultizoneDriver* d, unsigned short i) : driver(d), iZone(i) {}
+
+  inline void operator()(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const override {
+    driver->SetAllSolutions(iZone, true, u);
+    driver->Iterate(iZone, iInnerIter, true);
+    driver->GetAllSolutions(iZone, true, v);
+    v -= u;
+    ++iInnerIter;
+  }
+};
+
+class Identity : public CPreconditioner<Scalar> {
+public:
+  inline bool IsIdentity() const override { return true; }
+  inline void operator()(const CSysVector<Scalar>& u, CSysVector<Scalar>& v) const override { v = u; }
+};
+} // namespace
 
 CDiscAdjMultizoneDriver::CDiscAdjMultizoneDriver(char* confFile,
                                                  unsigned short val_nZone,

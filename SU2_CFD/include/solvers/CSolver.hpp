@@ -1488,6 +1488,14 @@ public:
   void AdaptCFLNumber(CGeometry **geometry, CSolver ***solver_container, CConfig *config);
 
   /*!
+   * \brief Identify points where the solution is an outlier (physics-specific concept)
+   *        so that solvers can try to restore them to a stable condition.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iter - Current iteration (time, outer, or inner, as appropriate).
+   */
+  inline virtual void IdentifySolutionOutliers(const CConfig *config, unsigned long iter) { }
+
+  /*!
    * \brief Reset the local CFL adaption variables
    */
   void ResetCFLAdapt();
@@ -3539,7 +3547,7 @@ public:
    * \param[in] rhs - Right hand side.
    * \param[in] nVar - Number of variables.
    */
-  void Gauss_Elimination(su2double** A,
+  void GaussElimination(su2double** A,
                          su2double* rhs,
                          unsigned short nVar);
 

@@ -217,90 +217,64 @@ private:
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
   /*!
-   * \brief Compute adaptive CFL for multigrid coarse levels.
-   * \param[in] config - Problem configuration.
-   * \param[in] solver_coarse - Coarse grid solver.
-   * \param[in] geometry_coarse - Coarse grid geometry.
-   * \param[in] iMesh - Current multigrid level.
-   * \param[in] CFL_fine - Fine grid CFL value (passive).
-   * \param[in] CFL_coarse_current - Current coarse grid CFL value (passive).
-   * \param[in] rms_res_coarse - Coarse-grid RMS residual (already MPI-reduced, from lastPreSmoothRMS).
-   * \return New CFL value for the coarse grid.
+   * \brief Adapt both restriction and prolongation damping factors from the global-trend signal.
+   *
+   * Uses the cross-cycle EMA ratio (crossCycleRatio = fine_d0 / EMA(fine_d0)) to detect
+   * long-term convergence or divergence, then adjusts both \c Damp_Res_Restric and
+   * \c Damp_Correc_Prolong with a single shared signal.  The EMA filters per-cycle noise;
+   * no per-level aggregation or floor counter is needed.
+   *
+   * \param[in,out] config          - Problem configuration.
+   * \param[in]     crossCycleRatio - Current fine_d0 divided by the EMA of fine_d0.
    */
-  passivedouble computeMultigridCFL(CConfig* config, unsigned short iMesh,
-                                     passivedouble CFL_fine, passivedouble CFL_coarse_current,
-                                     passivedouble rms_res_coarse);
+  void adaptDampingFactors(CConfig* config, passivedouble crossCycleRatio);
 
   /*!
-   * \brief Adapt the residual restriction damping factor.
-   *
-   * Uses \c lastPreSmoothIters[] (filled by the previous multigrid cycle) to assess
-   * whether the pre-smoother is converging fast or slow on coarse levels, then adjusts
-   * \c Damp_Res_Restric in \p config accordingly.
-   *
-   * Signal logic:
-   *  - any coarse level ran its full configured iterations: reduce damping
-   *  - all coarse levels exited early: increase damping
-   *  - mixed (some full, some partial): no change
-   *
-   * \param[in,out] config - Problem configuration.
+   * \brief Helper function for early-exit logic during pre/post-smoothing.
+   * \param[in] iSmooth - Current smoothing iteration index.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] defect - Current RMS defect value.
+   * \param[in] mgOpts - Reference to multigrid options.
+   * \param[in] stag_tol - Stagnation tolerance value.
+   * \param[in] early_exit - Whether early exit is enabled.
+   * \param[out] lastRMS - Array to store RMS values [start, end].
+   * \param[out] exitReason - Character for early exit reason ('T', 'S', 'A', or ' ').
+   * \param[out] worstStepRatio - Worst step-to-step ratio seen.
+   * \param[out] worstStep - Iteration number of worst step.
    */
-  void adaptRestrictionDamping(CConfig* config);
+  void prePostEarlyExit(unsigned short iSmooth, unsigned short iMesh,
+                        passivedouble defect, const CMGOptions& mgOpts,
+                        passivedouble stag_tol, bool early_exit,
+                        passivedouble lastRMS[2], char& exitReason,
+                        passivedouble& worstStepRatio, unsigned short& worstStep);
 
-  /*!
-   * \brief Adapt the correction prolongation damping factor.
-   *
-   * Uses \c lastCorrecSmoothIters[] (filled by the previous multigrid cycle) to assess
-   * whether the correction smoother is struggling or converging fast,
-   * then adjusts \c Damp_Correc_Prolong in \p config accordingly.
-   *
-   * Signal logic:
-   *  - any level ran its full correction-smooth iterations: reduce damping
-   *  - all levels exited early: increase damping
-   *  - mixed: no change
-   *
-   * \param[in,out] config - Problem configuration; \c SetDamp_Correc_Prolong is called to persist the result.
-   */
-  void adaptProlongationDamping(CConfig* config);
-
-  /*--- CFL adaptation state variables.
-   *    These must be passivedouble: AD::Reset() clears the tape between adjoint recordings,
-   *    but class members survive. If these were su2double their stale AD indices would
-   *    reference the cleared tape, causing invalid memory access during the backward pass. ---*/
   static constexpr int MAX_MG_LEVELS = 10;
-  passivedouble current_avg[MAX_MG_LEVELS] = {};
-  passivedouble prev_avg[MAX_MG_LEVELS] = {};
-  passivedouble last_res[MAX_MG_LEVELS] = {};
-  bool last_was_increase[MAX_MG_LEVELS] = {};
-  int oscillation_count[MAX_MG_LEVELS] = {};
-  unsigned long last_check_iter[MAX_MG_LEVELS] = {};
-  unsigned long last_update_iter[MAX_MG_LEVELS] = {};
-  unsigned long last_reset_iter = std::numeric_limits<unsigned long>::max();
 
   /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
-  bool mg_early_exit_flag = false;             /*!< \brief Shared flag for early exit across OMP threads. */
-  passivedouble mg_initial_smooth_rms = 0.0;  /*!< \brief Initial RMS before current smoothing phase. */
-  passivedouble mg_last_smooth_rms = 0.0;     /*!< \brief Last computed RMS; cached to avoid redundant Allreduce. */
+  bool mg_early_exit_flag = false;              /*!< \brief Shared flag for early exit across OMP threads. */
+  passivedouble mg_initial_smooth_rms = 0.0; /*!< \brief Initial RMS residual before current smoothing phase (FAS). */
+  passivedouble mg_prev_smooth_rms = 0.0;    /*!< \brief RMS residual from previous smoothing step; used for stagnation detection. */
+  passivedouble mg_fine_rms_ema = 0.0;      /*!< \brief EMA of fine-grid pre-smooth RMS across cycles; cross-cycle trend signal. */
+  passivedouble last_crossCycleRatio = 1.0; /*!< \brief crossCycleRatio from the most recent cycle; stored for display only. */
 
   /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
   unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
   unsigned short lastPostSmoothIters[MAX_MG_LEVELS+1] = {};
   unsigned short lastCorrecSmoothIters[MAX_MG_LEVELS+1] = {};
+  /*--- Early-exit reason per level: 'T'=threshold, 'S'=stagnation, ' '=ran to completion. ---*/
+  char lastPreSmoothExitReason[MAX_MG_LEVELS+1]  = {};
+  char lastPostSmoothExitReason[MAX_MG_LEVELS+1] = {};
 
-  /*--- Per-level residual progress flags: true if the final RMS after that phase was lower
-   *    than the initial RMS.  Used by the adaptive damping routines to distinguish
-   *    "hit max iters but still converging" from "hit max iters and stagnated". ---*/
-  bool lastPreSmoothProgress[MAX_MG_LEVELS+1] = {};
-  bool lastPostSmoothProgress[MAX_MG_LEVELS+1] = {};
-  bool lastCorrecSmoothProgress[MAX_MG_LEVELS+1] = {};
-
-  /*--- Per-level start/end RMS for the compact output summary.
-   *    [0] = initial RMS before smoothing, [1] = final RMS after smoothing.
-   *    Filled unconditionally (early-exit path and exhaustion path).
-   *    Must be passivedouble: class members survive tape resets; su2double would
-   *    carry stale AD indices referencing a cleared tape. ---*/
+  /*--- Per-level start/end RMS residual for adaptive damping. ---*/
   passivedouble lastPreSmoothRMS[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
   passivedouble lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+
+  /*--- Per-level worst step-to-step amplification seen inside a smoothing phase.
+   *    step==0 means no intra-smoother ratio was available (fewer than 2 sweeps). ---*/
+  passivedouble lastPreSmoothWorstStepRatio[MAX_MG_LEVELS+1] = {};
+  passivedouble lastPostSmoothWorstStepRatio[MAX_MG_LEVELS+1] = {};
+  unsigned short lastPreSmoothWorstStep[MAX_MG_LEVELS+1] = {};
+  unsigned short lastPostSmoothWorstStep[MAX_MG_LEVELS+1] = {};
 
 };

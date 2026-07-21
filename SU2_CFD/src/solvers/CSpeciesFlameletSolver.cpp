@@ -231,8 +231,9 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       if (flame_front_ignition) prog_burnt = GetBurntProgressVariable(fluid_model_local, scalar_init, flamelet_config_options.Flame_T_ignition);
 
       prog_unburnt = config->GetSpecies_Init()[I_PROGVAR];
+      const auto nPoint_iMesh = geometry[i_mesh]->GetnPoint();
       SU2_OMP_FOR_STAT(omp_chunk_size)
-      for (unsigned long i_point = 0; i_point < nPoint; i_point++) {
+      for (unsigned long i_point = 0; i_point < nPoint_iMesh; i_point++) {
         auto coords = geometry[i_mesh]->nodes->GetCoord(i_point);
 
         if (flame_front_ignition) {
@@ -290,7 +291,7 @@ void CSpeciesFlameletSolver::SetInitialCondition(CGeometry** geometry, CSolver**
       solver_container[i_mesh][FLOW_SOL]->CompleteComms(geometry[i_mesh], config, MPI_QUANTITIES::SOLUTION);
 
       solver_container[i_mesh][FLOW_SOL]->Preprocessing(geometry[i_mesh], solver_container[i_mesh], config, i_mesh,
-                                                        NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+                                                        NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     }
 
     /* --- Sum up some global counters over processes. --- */
@@ -672,7 +673,7 @@ unsigned long CSpeciesFlameletSolver::SetPreferentialDiffusionScalars(CFluidMode
 
 void CSpeciesFlameletSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                               CNumerics* numerics, const CConfig* config) {
-  SU2_ZONE_SCOPED
+
   /*--- Overloaded viscous residual method which accounts for preferential diffusion.  ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT),
              PreferentialDiffusion = flamelet_config_options.preferential_diffusion;
