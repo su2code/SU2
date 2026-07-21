@@ -1188,12 +1188,14 @@ void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
   const bool multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
 
   /*--- Add pressure source term ---*/
-  unsigned short iPoint, iVar;
+  unsigned long iPoint;
+  unsigned short iVar;
   
   // TODO: ideas on how this could be implemented nicer would be appreciated.
-  su2double *Vdpdx = new su2double[nVar](); 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    su2double Vdpdx[MAXNDIM];
 
     /*--- Compute the residual based on the pressure gradient. ---*/
     for (iVar = 0; iVar < nVar; iVar++)
@@ -1205,7 +1207,6 @@ void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
     LinSysRes.AddBlock(iPoint, residual);
   }
   END_SU2_OMP_FOR
-  delete [] Vdpdx;
 
   // TODO: Write all other possible source terms e.g. body force, axisymmetry etc. etc.
 
