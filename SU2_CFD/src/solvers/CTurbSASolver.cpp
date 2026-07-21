@@ -143,6 +143,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   fv1 = Ji_3/(Ji_3+cv1_3);
   muT_Inf = Density_Inf*fv1*nu_tilde_Inf;
 
+  if (config->GetSAParsedOptions().version != SA_OPTIONS::NEG) {
+    lowerlimit[0] = EPS;
+  }
+
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   nodes = new CTurbSAVariable(nu_tilde_Inf, muT_Inf, nPoint, nDim, nVar, config);
@@ -336,7 +340,6 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
 void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
-  SU2_ZONE_SCOPED
 
   /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {

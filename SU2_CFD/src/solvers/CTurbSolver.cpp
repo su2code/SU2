@@ -47,21 +47,6 @@ CTurbSolver::~CTurbSolver() {
   }
 }
 
-void CTurbSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  SU2_ZONE_SCOPED
-
-  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
-
-  switch(config->GetKind_Data_Riemann(Marker_Tag))
-  {
-  case TOTAL_CONDITIONS_PT: case STATIC_SUPERSONIC_INFLOW_PT: case STATIC_SUPERSONIC_INFLOW_PD: case DENSITY_VELOCITY:
-    BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-    break;
-  case STATIC_PRESSURE:
-    BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-    break;
-  }
-}
 
 void CTurbSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   SU2_ZONE_SCOPED
@@ -186,7 +171,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
   /*--- For turbulent+species simulations the solver Pre-/Postprocessing is done by the species solver. ---*/
   if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE && config->GetKind_Trans_Model() == TURB_TRANS_MODEL::NONE) {
     solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
-                                            RUNTIME_FLOW_SYS, false);
+                                            RUNTIME_FLOW_SYS, true);
     solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
   }
 
@@ -200,7 +185,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 
     if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
-                                            false);
+                                             true);
       solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
     }
 
