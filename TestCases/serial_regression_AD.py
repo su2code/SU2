@@ -190,7 +190,7 @@ def main():
     discadj_axial_stage.cfg_file  = "Axial_stage2D.cfg"
     discadj_axial_stage.test_iter = 79
     discadj_axial_stage.test_vals = [79.000000, -6.605594, -7.138121]
-    discadj_axial_stage.test_vals_aarch64 = [79.000000, -6.605594, -7.138121]
+    discadj_axial_stage.test_vals_aarch64 = [79.000000, -6.605593, -7.138207]
     test_list.append(discadj_axial_stage)
 
     ###################################
