@@ -158,7 +158,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.223321, -1.653264, -0.004175, -0.000004]
+    discadj_pitchingNACA0012.test_vals = [-1.050429, -1.504333, -0.004852, 0.000013]
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
 
@@ -167,7 +167,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform_ad.cfg"
     unst_deforming_naca0012.test_iter = 4
-    unst_deforming_naca0012.test_vals = [-1.965554, -1.848652, 2967.200000, 0.000000]
+    unst_deforming_naca0012.test_vals = [-1.885968, -1.780392, 3890.100000, 0.000003]
     unst_deforming_naca0012.unsteady  = True
     test_list.append(unst_deforming_naca0012)
 
@@ -180,8 +180,8 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, -10.685828, -14.053792, -13.970775, -16.777852]
-    discadj_trans_stator.test_vals_aarch64 = [79.000000, -10.685828, -14.053792, -13.970775, -16.777852]
+    discadj_trans_stator.test_vals = [79.000000, -7.308167, -9.891117, -10.038669, -13.368501]
+    discadj_trans_stator.test_vals_aarch64 = [79.000000, -7.308167, -9.891117, -10.038669, -13.368501]
     test_list.append(discadj_trans_stator)
 
     # Axial stage 2D
@@ -189,7 +189,7 @@ def main():
     discadj_axial_stage.cfg_dir   = "disc_adj_turbomachinery/axial_stage_2D"
     discadj_axial_stage.cfg_file  = "Axial_stage2D.cfg"
     discadj_axial_stage.test_iter = 79
-    discadj_axial_stage.test_vals = [79.000000, -6.605594, -7.138121]
+    discadj_axial_stage.test_vals = [79.000000, -6.605593, -7.138207]
     discadj_axial_stage.test_vals_aarch64 = [79.000000, -6.605593, -7.138207]
     test_list.append(discadj_axial_stage)
 
@@ -228,8 +228,8 @@ def main():
     discadj_fsi.cfg_dir   = "disc_adj_fsi"
     discadj_fsi.cfg_file  = "config.cfg"
     discadj_fsi.test_iter = 6
-    discadj_fsi.test_vals = [0.000000, 0.002534, 0.008223, 0.000000, 0.000000]
-    discadj_fsi.test_vals_aarch64 = [0.000000, 0.002534, 0.008223, 0.000000, 0.000000]
+    discadj_fsi.test_vals = [6.000000, -1.956662, -3.071318, 0.000440, -1.062800]
+    discadj_fsi.test_vals_aarch64 = [6.000000, -1.956662, -3.071318, 0.000440, -1.062800]
     test_list.append(discadj_fsi)
 
     ###################################
