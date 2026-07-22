@@ -172,6 +172,26 @@ def main():
     test_list.append(unst_deforming_naca0012)
 
     #######################################################
+    ### Disc. adj. multizone interfaces                 ###
+    #######################################################
+
+    # Mixing plane interface
+    discadj_mixing_plane           = TestCase('discadj_mixing_plane')
+    discadj_mixing_plane.cfg_dir   = "disc_adj_ffi/mixing_plane"
+    discadj_mixing_plane.cfg_file  = "circles.cfg"
+    discadj_mixing_plane.test_iter = 10
+    discadj_mixing_plane.test_vals = [-2.000000, -1.000000, 0.000000, 0.000000]
+    test_list.append(discadj_mixing_plane)
+
+    # Sliding interface
+    discadj_sliding_interface           = TestCase('discadj_sliding_interface')
+    discadj_sliding_interface.cfg_dir   = "disc_adj_ffi/sliding_interface"
+    discadj_sliding_interface.cfg_file  = "circles.cfg"
+    discadj_sliding_interface.test_iter = 10
+    discadj_sliding_interface.test_vals = [-2.000000, -1.000000, 0.000000, 0.000000]
+    test_list.append(discadj_sliding_interface)
+
+    #######################################################
     ### Disc. adj. turbomachinery                       ###
     #######################################################
 

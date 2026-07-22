@@ -2,7 +2,7 @@
  * \file CMixingPlane.cpp
  * \brief Implementation of mixing plane interpolation methods.
  * \author J. Kelly
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
