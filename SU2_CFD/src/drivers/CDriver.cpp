@@ -2148,7 +2148,6 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
   /*--- Solver definition for the poisson/pressure correction problem ---*/
   if (poisson) {
-    //TODO: currently heat is reused which is wrong as the actual laplacian operator is anisotropic for the poisson problem
     /*--- Pressure correction (Poisson) equation ---*/
     numerics[MESH_0][POISSON_SOL][visc_term] = new CAvgGrad_Heat(nDim, config, true);
        

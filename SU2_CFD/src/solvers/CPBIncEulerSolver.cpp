@@ -1212,7 +1212,6 @@ void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
 }
 
-// TODO: The given time step works although it gives different values then the old version from PBFlowV8
 void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
   SU2_ZONE_SCOPED

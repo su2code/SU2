@@ -591,7 +591,7 @@ private:
   Kind_Upwind_Heat,             /*!< \brief Upwind scheme for the heat transfer model. */
   Kind_Upwind_Template;         /*!< \brief Upwind scheme for the template model. */
 
-  ENUM_PBITER             
+  ENUM_PBITER
   Kind_PBIter;             /*< \brief Kind of pressure-based algorithm that is used. */
   ENUM_INCOMP_SYSTEM
   Kind_Incomp_System;      /*< \brief Kind of incompressible solver. */
@@ -4027,7 +4027,7 @@ public:
    * \return Kind of incompressible solver.
    */
   ENUM_INCOMP_SYSTEM GetKind_Incomp_System(void) const { return Kind_Incomp_System; }
-  
+
   /*!
    * \brief Kind of iteration used for pressure based iterations.
    * \return Kind of iteration used for pressure based iterations.
@@ -4471,7 +4471,7 @@ public:
    * \return Relaxation factor.
    */
   su2double GetLinear_Solver_Smoother_Relaxation(void) const { return Linear_Solver_Smoother_Relaxation; }
-  
+
   /*!
    * \brief Get the relaxation coefficient of the flow correction for PB solver.
    * \return relaxation coefficient of the flow correction for PB solver

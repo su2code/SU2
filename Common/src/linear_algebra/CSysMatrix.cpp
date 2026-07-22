@@ -142,7 +142,8 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
 template <class ScalarType>
 void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar,
                                         unsigned short neqn, bool EdgeConnect, CGeometry* geometry,
-                                        const CConfig* config, bool needTranspPtr, bool grad_mode, bool allow_quant, bool poisson) {
+                                        const CConfig* config, bool needTranspPtr, bool grad_mode, bool allow_quant,
+                                        bool poisson) {
   SU2_ZONE_SCOPED
   assert(omp_get_thread_num() == 0 && "Only the master thread is allowed to initialize the matrix.");
 
@@ -176,8 +177,9 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     prec = config->GetKind_Grad_Linear_Solver_Prec();
   }
 
-  // TODO: This is a temporary workaround as it is important for the pressure-based solver to use a different linear solver.
-  // This should be revisited to let the code be able to handle different linear solvers for e.g. turbulence solvers as well.
+  // TODO: This is a temporary workaround as it is important for the pressure-based solver to use a different linear
+  // solver. This should be revisited to let the code be able to handle different linear solvers for e.g. turbulence
+  // solvers as well.
   if (poisson) {
     prec = config->GetKind_Poisson_Linear_Solver_Prec();
   }

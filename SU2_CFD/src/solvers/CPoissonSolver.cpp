@@ -322,51 +322,47 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
   const CSolver* flow_solution = solver_container[FLOW_SOL];
   const CVariable* flow_nodes = flow_solution->GetNodes();
   
+  if (implicit) {
+    /* First sum up the momentum coefficient using the jacobian from given point and it's neighbors. ---*/
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-  if (!periodic)  {
+      /*--- Self contribution of the coefficient a_p. Note that this coefficient should be the same for all variable directions. therefore just the x-momentum coefficient is taken. ---*/
+      Mom_Coeff = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(0,0);
+    
+      Mom_Coeff_nb = 0.0;
 
-    if (implicit) {
-      /* First sum up the momentum coefficient using the jacobian from given point and it's neighbors. ---*/
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-        /*--- Self contribution of the coefficient a_p. Note that this coefficient should be the same for all variable directions. therefore just the x-momentum coefficient is taken. ---*/
-        Mom_Coeff = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(0,0);
-      
-        Mom_Coeff_nb = 0.0;
-
-        if (simplec) {
-          for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-            jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
-            Mom_Coeff_nb += flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(0,0);
-          }
+      if (simplec) {
+        for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+          jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+          Mom_Coeff_nb += flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(0,0);
         }
-
-        Vol = geometry->nodes->GetVolume(iPoint); delT = flow_nodes->GetDelta_Time(iPoint);
-
-        /*--- Add simplec neighbour contributions and optional time dependent term. ---*/
-        Mom_Coeff = Mom_Coeff - Mom_Coeff_nb - config->GetRCFactor()*(Vol/delT);
-
-        /*--- Invert the momentum coefficient to 1/a_p and scale by the volume so it can be used as diffusion coefficient in the poisson eq ---*/
-        Mom_Coeff = Vol/Mom_Coeff;
-
-        nodes->SetMomCoeff(iPoint, Mom_Coeff);
       }
+
+      Vol = geometry->nodes->GetVolume(iPoint); delT = flow_nodes->GetDelta_Time(iPoint);
+
+      /*--- Add simplec neighbour contributions and optional time dependent term. ---*/
+      Mom_Coeff = Mom_Coeff - Mom_Coeff_nb - config->GetRCFactor()*(Vol/delT);
+
+      /*--- Invert the momentum coefficient to 1/a_p and scale by the volume so it can be used as diffusion coefficient in the poisson eq ---*/
+      Mom_Coeff = Vol/Mom_Coeff;
+
+      nodes->SetMomCoeff(iPoint, Mom_Coeff);
     }
-    else {
-      for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-        Vol = geometry->nodes->GetVolume(iPoint); delT = flow_nodes->GetDelta_Time(iPoint);
-
-        Mom_Coeff = delT;
-
-        nodes->SetMomCoeff(iPoint, Mom_Coeff);
-      }
-    }
-
-    /*--- Insert MPI call here. ---*/
-    InitiateComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
-    CompleteComms(geometry, config, MPI_QUANTITIES::MOM_COEFF); 
   }
+  else {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+      Vol = geometry->nodes->GetVolume(iPoint); delT = flow_nodes->GetDelta_Time(iPoint);
+
+      Mom_Coeff = delT;
+
+      nodes->SetMomCoeff(iPoint, Mom_Coeff);
+    }
+  }
+
+  /*--- Insert MPI call here. ---*/
+  InitiateComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
+  CompleteComms(geometry, config, MPI_QUANTITIES::MOM_COEFF); 
 }
 
 
@@ -705,11 +701,6 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 void CPoissonSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   /*--- Zero flux (Neumann) BC on pressure ---*/
 }
-
-// void CPoissonSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-//   /*--- Zero flux (Neumann) BC on pressure ---*/
-// }
-
 
 void CPoissonSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {

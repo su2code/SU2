@@ -33,10 +33,10 @@ CCentLinearPB_Flow::CCentLinearPB_Flow(unsigned short val_nDim, unsigned short v
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   dynamic_grid = config->GetDynamic_Grid();
   
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
-  MeanMassFlux = new su2double [nDim];
-  Flux = new su2double [nDim];
+  Velocity_i = new su2double [nVar];
+  Velocity_j = new su2double [nVar];
+  MeanMassFlux = new su2double [nVar];
+  Flux = new su2double [nVar];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
   
@@ -119,11 +119,11 @@ CUpwPB_Flow::CUpwPB_Flow(unsigned short val_nDim, unsigned short val_nVar, CConf
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   dynamic_grid = config->GetDynamic_Grid();
   
-  Velocity_i = new su2double [nDim];
-  Velocity_j = new su2double [nDim];
-  Velocity_upw = new su2double [nDim];
-  MeanMassFlux = new su2double [nDim];
-  Flux = new su2double [nDim];
+  Velocity_i = new su2double [nVar];
+  Velocity_j = new su2double [nVar];
+  Velocity_upw = new su2double [nVar];
+  MeanMassFlux = new su2double [nVar];
+  Flux = new su2double [nVar];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
   Jacobian_upw = new su2double* [nVar];

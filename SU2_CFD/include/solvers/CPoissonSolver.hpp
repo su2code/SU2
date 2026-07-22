@@ -207,6 +207,11 @@ public:
   /*!
    * \brief Compute the coefficients for the pressure correction equation based
    *        on the residuals from the solution of the momentum equation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] periodic - Flag for periodic boundary conditions.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh) final;
 
@@ -225,22 +230,6 @@ public:
                         CNumerics *visc_numerics,
                         CConfig *config,
                         unsigned short val_marker) final;
-
-  /*!
-  //  * \brief Impose a constant heat-flux condition at the wall.
-  //  * \param[in] geometry - Geometrical definition of the problem.
-  //  * \param[in] solver_container - Container vector with all the solutions.
-  //  * \param[in] conv_numerics - Description of the numerical method.
-  //  * \param[in] visc_numerics - Description of the numerical method.
-  //  * \param[in] config - Definition of the particular problem.
-  //  * \param[in] val_marker - Surface marker where the boundary condition is applied.
-  //  */
-  // void BC_Euler_Wall(CGeometry *geometry,
-  //                       CSolver **solver_container,
-  //                       CNumerics *conv_numerics,
-  //                       CNumerics *visc_numerics,
-  //                       CConfig *config,
-  //                       unsigned short val_marker) final;
 
   /*!
    * \brief A virtual member.

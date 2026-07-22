@@ -9060,7 +9060,7 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
     case MAIN_SOLVER::POISSON_EQUATION:
     if (val_system == RUNTIME_POISSON_SYS) {
       SetKind_ConvNumScheme(NONE, CENTERED::NONE, UPWIND::NONE, LIMITER::NONE, NONE, 0.0, NONE);
-      SetKind_TimeIntScheme(EULER_IMPLICIT); 
+      SetKind_TimeIntScheme(EULER_IMPLICIT);
     }
     break;
 

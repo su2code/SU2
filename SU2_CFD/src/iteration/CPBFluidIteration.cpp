@@ -73,28 +73,16 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   config[val_iZone]->SetGlobalParam(MAIN_SOLVER::POISSON_EQUATION, RUNTIME_POISSON_SYS);
 
   /*--- The momentum coefficients (resulting from the flow solution) are set only once at the start of the corrections ---*/
-  // TODO: still figure out how this can be done for MG
   solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->SetMomCoeff(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], periodic, MESH_0);
 
+  /* TODO: The current piso style iteration works although it has no effect on the stable time step sizes as expected
+   * it is thus likely not yet optimal and should be looked at. Additionally, the Poisson solve is very difficult
+   * to solve at large Reynolds number cases and would therefore massively benefit from Multigrid. The current 
+   * limitation here is that SU2 as of today does not allow multigrid for different solvers and has multigrid 
+   * only as an option for the flow solver. */
   for (unsigned short i = 0; i < nCorrections; ++i) {
     integration[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, RUNTIME_POISSON_SYS,
                                                                    val_iZone, val_iInst);
-
-    // WIP EXPERIMENTATION FOR PISO ALGORITHM: 
-    // config[val_iZone]->SetKind_TimeIntScheme(EULER_EXPLICIT);
-    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0, 0, RUNTIME_FLOW_SYS, 0);
-    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Upwind_Residual(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], numerics[val_iZone][val_iInst][MESH_0][FLOW_SOL], config[val_iZone], MESH_0);
-    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Viscous_Residual(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], numerics[val_iZone][val_iInst][MESH_0][FLOW_SOL], config[val_iZone], MESH_0, 0);
-    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Source_Residual(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], numerics[val_iZone][val_iInst][MESH_0][FLOW_SOL], config[val_iZone], MESH_0);
-    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0, 0, RUNTIME_POISSON_SYS, 0);
-    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Set_OldSolution();
-    // integration[val_iZone][val_iInst][FLOW_SOL]->Space_Integration(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], numerics[val_iZone][val_iInst][MESH_0][FLOW_SOL], config[val_iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS);
-    // integration[val_iZone][val_iInst][FLOW_SOL]->Time_Integration(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0, RUNTIME_FLOW_SYS);
-    // integration[val_iZone][val_iInst][FLOW_SOL]->Space_Integration(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], numerics[val_iZone][val_iInst][MESH_0][FLOW_SOL], config[val_iZone], MESH_0, NO_RK_ITER, RUNTIME_POISSON_SYS);
-    // solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
-    // config[val_iZone]->SetKind_TimeIntScheme(config[val_iZone]->GetKind_TimeIntScheme_Flow());
-    // solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->SetMomCoeff(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], periodic, MESH_0);
-
   }
 
   /*--- Pressure-based algorithm finished, now run auxiliary solvers ---*/
