@@ -180,7 +180,7 @@ def main():
     discadj_mixing_plane.cfg_dir   = "disc_adj_ffi/mixing_plane"
     discadj_mixing_plane.cfg_file  = "circles.cfg"
     discadj_mixing_plane.test_iter = 10
-    discadj_mixing_plane.test_vals = [-2.000000, -1.000000, 0.000000, 0.000000]
+    discadj_mixing_plane.test_vals = [10.000000, -4.714573, -4.479609]
     test_list.append(discadj_mixing_plane)
 
     # Sliding interface
@@ -188,7 +188,7 @@ def main():
     discadj_sliding_interface.cfg_dir   = "disc_adj_ffi/sliding_interface"
     discadj_sliding_interface.cfg_file  = "circles.cfg"
     discadj_sliding_interface.test_iter = 10
-    discadj_sliding_interface.test_vals = [-2.000000, -1.000000, 0.000000, 0.000000]
+    discadj_sliding_interface.test_vals = [10.000000, -4.395143, -4.419431]
     test_list.append(discadj_sliding_interface)
 
     #######################################################
