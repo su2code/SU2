@@ -532,3 +532,94 @@ inline void CVremanModel::ComputeGradEddyViscosity_3D(const su2double rho,
                                                     su2double &dMuTdz) {
   SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
 }
+
+inline CDynamicSmagorinskyModel::CDynamicSmagorinskyModel(void) : CSGSModel() {
+  filter_ratio = 2.0;
+  Cs2_clip_max = 0.04;
+}
+
+inline CDynamicSmagorinskyModel::~CDynamicSmagorinskyModel(void){}
+
+inline su2double CDynamicSmagorinskyModel::ComputeEddyViscosity_2D(const su2double rho,
+                                                    const su2double dudx,
+                                                    const su2double dudy,
+                                                    const su2double dvdx,
+                                                    const su2double dvdy,
+                                                    const su2double lenScale,
+                                                    const su2double distToWall) {
+  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
+  return 0.0;
+}
+
+inline su2double CDynamicSmagorinskyModel::ComputeEddyViscosity_3D(const su2double rho,
+                                                    const su2double dudx,
+                                                    const su2double dudy,
+                                                    const su2double dudz,
+                                                    const su2double dvdx,
+                                                    const su2double dvdy,
+                                                    const su2double dvdz,
+                                                    const su2double dwdx,
+                                                    const su2double dwdy,
+                                                    const su2double dwdz,
+                                                    const su2double lenScale,
+                                                    const su2double distToWall) {
+  /* Germano lilly Dynamic Smagorinsky (Local approximation)
+  
+  Grid filter width is calculated as: Delta = lenScale
+  Test filter width is calculated as: L_t = filter_ratio * lenScale
+   * Step 1 — grid-filter strain rate tensor S_ij and its magnitude |S|
+   * Step 2 — test-filter strain rate hatS_ij = S_ij (local approx, no stencil)
+   * Step 3 — Germano identity residual tensor L_ij (Bardina approximation)
+   * Step 4 — M_ij = 2 Delta^2 |S| S_ij  -  2 hatDelta^2 |hatS| hatS_ij
+   * Step 5 — Lilly least-squares:  C_s^2 = <L_ij M_ij> / <M_ij M_ij>
+   * Step 6 — Clip C_s^2 >= 0 (no backscatter), return rho * C_s^2 * Delta^2 * |S|
+  
+  
+  
+  */
+  const su2double S11 = dudx, S22 = dvdy, S33 = dwdz;
+  const su2double S12 = 0.5*(dudy + dvdx);
+  const su2double S13 = 0.5*(dudz + dwdx);
+  const su2double S23 = 0.5*(dvdz + dwdy);
+  // const su2double S21 = S12, S31 = S13, S32 = S23;
+
+  const su2double S_mag = sqrt(2.0*(S11*S11 + S22*S22 + S33*S33
+                          + 2.0*(S12*S12 + S13*S13 + S23*S23)));
+  // Step 2 
+  const su2double hatS11 = S11, hatS22 = S22, hatS33 = S33;
+  const su2double hatS12 = S12, hatS13 = S13, hatS23 = S23;
+  // const su2double hatS21 = hatS12, hatS31 = hatS13, hatS32 = hatS23;
+
+  // Step 3 
+  // Lij = (hatDelta^2 - Delta^2) * 2 * S_ik S_kj 
+  const su2double Delta = lenScale; 
+  const su2double hatDelta = filter_ratio * lenScale;
+  const su2double Delta2 = Delta * Delta;
+  const su2double hatDelta2 = hatDelta * hatDelta;
+  const su2double scaleL = hatDelta2 - Delta2;
+
+   /* L_ij = scaleL * 2 * S_ik S_kj */
+   const su2double L11 = scaleL * 2.0 * (S11*S11 + S12*S12 + S13*S13);
+   const su2double L22 = scaleL * 2.0 * (S12*S12 + S22*S22 + S23*S23);
+   const su2double L33 = scaleL * 2.0 * (S13*S13 + S23*S23 + S33*S33);
+   const su2double L12 = scaleL * 2.0 * (S11*S12 + S12*S22 + S13*S23);
+   const su2double L13 = scaleL * 2.0 * (S11*S13 + S12*S23 + S13*S33);
+   const su2double L23 = scaleL * 2.0 * (S12*S13 + S22*S23 + S23*S33);
+
+   /* --- Step 4: M_ij = 2 Delta^2 |S| S_ij  -  2 hatDelta^2 |hatS| hatS_ij --- */
+   const su2double M11 = 2.0 * Delta2 * S_mag * S11 - 2.0 * hatDelta2 * S_mag * hatS11;
+   const su2double M22 = 2.0 * Delta2 * S_mag * S22 - 2.0 * hatDelta2 * S_mag * hatS22;
+   const su2double M33 = 2.0 * Delta2 * S_mag * S33 - 2.0 * hatDelta2 * S_mag * hatS33;
+   const su2double M12 = 2.0 * Delta2 * S_mag * S12 - 2.0 * hatDelta2 * S_mag * hatS12;
+   const su2double M13 = 2.0 * Delta2 * S_mag * S13 - 2.0 * hatDelta2 * S_mag * hatS13;
+   const su2double M23 = 2.0 * Delta2 * S_mag * S23 - 2.0 * hatDelta2 * S_mag * hatS23;
+
+   /* --- Step 5: Lilly least-squares:  C_s^2 = <L_ij M_ij> / <M_ij M_ij> --- */
+   const su2double LdotM = L11*M11 + L22*M22 + L33*M33 + 2.0*(L12*M12 + L13*M13 + L23*M23);
+   const su2double MdotM = M11*M11 + M22*M22 + M33*M33 + 2.0*(M12*M12 + M13*M13 + M23*M23);
+
+   const su2double Cs2 = LdotM / (MdotM + 1.0E-20);
+   return rho * max(Cs2, 0.0) * Delta2 * S_mag;
+
+
+}
