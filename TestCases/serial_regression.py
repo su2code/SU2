@@ -817,7 +817,7 @@ def main():
     dynsmag_sc20012.cfg_file = "sc20012_les.cfg"
     dynsmag_sc20012.test_iter = 10
     dynsmag_sc20012.test_vals = [-2.985351, -2.986340]
-    dynsmag_sc20012.unsteady  = True
+    dynsmag_sc20012.unsteady = True
     test_list.append(dynsmag_sc20012)
 
     # unsteady pitching NACA0015, SA
