@@ -2244,24 +2244,6 @@ public:
   inline virtual su2double GetDensity_time_n1(unsigned long /*iPoint*/) const { return 0.0; }
 
   /*!
-   * \brief Get the adjoint values of the density at time n.
-   *        Implemented analogously to GetAdjointSolution_time_n but for a scalar
-   *        (Density_time_n is a VectorType, not a MatrixType).
-   *        Currently ignores the chain-rule d(rho)/d(h) dependence (TODO).
-   * \param[in] iPoint - Point index.
-   * \return Adjoint value of the density at time n.
-   */
-  inline virtual su2double GetAdjointDensity_time_n(unsigned long /*iPoint*/) const { return 0.0; }
-
-  /*!
-   * \brief Get the adjoint values of the density at time n-1.
-   *        See GetAdjointDensity_time_n.
-   * \param[in] iPoint - Point index.
-   * \return Adjoint value of the density at time n-1.
-   */
-  inline virtual su2double GetAdjointDensity_time_n1(unsigned long /*iPoint*/) const { return 0.0; }
-
-  /*!
    * \brief Set the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */

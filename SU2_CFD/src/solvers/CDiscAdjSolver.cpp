@@ -111,6 +111,16 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     SolverName = "ADJ.SOL";
     break;
   }
+
+  /*--- The discrete adjoint chain rule through the time-history of the incompressible density
+        is not yet implemented. Bail out until it is, to avoid silently wrong gradients. ---*/
+  if (KindDirect_Solver == RUNTIME_FLOW_SYS &&
+      config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE &&
+      config->GetTime_Marching() != TIME_MARCHING::STEADY &&
+      config->GetKind_DensityModel() != INC_DENSITYMODEL::CONSTANT) {
+    SU2_MPI::Error("Unsteady discrete adjoint with non-constant INC_DENSITY_MODEL is not yet supported.",
+                   CURRENT_FUNCTION);
+  }
 }
 
 CDiscAdjSolver::~CDiscAdjSolver() { delete nodes; }
@@ -375,8 +385,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
       direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
-      /*--- TODO: For incompressible flow, accumulate GetAdjointDensity_time_n
-       *    into the enthalpy adjoint via d(rho)/d(h) chain rule. ---*/
       nodes->Set_Solution_time_n(iPoint,Solution);
     }
     END_SU2_OMP_FOR
@@ -392,8 +400,6 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
       direct_solver->GetNodes()->GetAdjointSolution_time_n1(iPoint,Solution);
-      /*--- TODO: For incompressible flow, accumulate GetAdjointDensity_time_n1
-       *    into the enthalpy adjoint via d(rho)/d(h) chain rule. ---*/
       nodes->Set_Solution_time_n1(iPoint,Solution);
     }
     END_SU2_OMP_FOR
