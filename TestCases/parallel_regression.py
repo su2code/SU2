@@ -992,11 +992,11 @@ def main():
     test_list.append(harmonic_balance)
 
     # Turbulent pitching NACA 64a010 airfoil
-    hb_rans_preconditioning = TestCase('hb_rans_preconditioning')
-    hb_rans_preconditioning.cfg_dir = "harmonic_balance/hb_rans_preconditioning"
-    hb_rans_preconditioning.cfg_file = "davis.cfg"
+    hb_rans_preconditioning           = TestCase('hb_rans_preconditioning')
+    hb_rans_preconditioning.cfg_dir   = "harmonic_balance/hb_rans_preconditioning"
+    hb_rans_preconditioning.cfg_file  = "davis.cfg"
     hb_rans_preconditioning.test_iter = 25
-    hb_rans_preconditioning.tol = 0.00001
+    hb_rans_preconditioning.tol       = 0.00001
     hb_rans_preconditioning.test_vals = [-1.902085, 0.484234, 0.601494, 3.609016, -5.943874]
     test_list.append(hb_rans_preconditioning)
 
