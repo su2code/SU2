@@ -30,7 +30,6 @@
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
-#include "../../include/variables/CIncEulerVariable.hpp"
 
 CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutput(config, nDim, false) {
 
