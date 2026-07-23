@@ -348,16 +348,6 @@ public:
   inline virtual CFluidModel* GetFluidModel(void) const { return nullptr;}
 
   /*!
-   * \brief Virtual function returning whether this is the species solver.
-   */
-  inline virtual bool IsSpeciesSolver() const { return false; }
-
-  /*!
-   * \brief Virtual function returning whether this is the turbulent solver.
-   */
-  inline virtual bool IsTurbSolver() const { return false; }
-
-  /*!
    * \brief Get number of linear solver iterations.
    * \return Number of linear solver iterations.
    */
