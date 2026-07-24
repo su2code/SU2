@@ -91,7 +91,7 @@ def main():
     cfd_flamelet_ch4_unsteady.cfg_dir = "flamelet/09_laminar_premixed_ch4_flame_unsteady"
     cfd_flamelet_ch4_unsteady.cfg_file = "lam_prem_ch4_unsteady.cfg"
     cfd_flamelet_ch4_unsteady.test_iter = 5
-    cfd_flamelet_ch4_unsteady.test_vals = [-8.856298, -8.095190, -9.153678, -9.321679]
+    cfd_flamelet_ch4_unsteady.test_vals = [-8.855500, -8.095195, -9.153704, -9.321686]
     test_list.append(cfd_flamelet_ch4_unsteady)
 
     #########################

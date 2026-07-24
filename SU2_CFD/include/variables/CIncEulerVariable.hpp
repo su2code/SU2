@@ -90,16 +90,6 @@ public:
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
-   * \brief Set all the solution at time level n to the current solution value (including density).
-   */
-  void Set_Solution_time_n() override;
-
-  /*!
-   * \brief Set all the solution at time level n-1 to the solution at time level n (including density).
-   */
-  void Set_Solution_time_n1() override;
-
-  /*!
    * \brief Set the value of the pressure.
    * \param[in] iPoint - Point index.
    */

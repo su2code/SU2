@@ -138,31 +138,4 @@ bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel
   return physical;
 
 }
-void CIncEulerVariable::Set_Solution_time_n() {
-  /*--- Set the solution at time n ---*/
-  CVariable::Set_Solution_time_n();
-
-  /*--- Store the current density at time n ---*/
-  if (Density_time_n.size() > 0) {
-    SU2_OMP_FOR_STAT(roundUpDiv(nPoint, omp_get_num_threads()))
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      Density_time_n(iPoint) = GetDensity(iPoint);
-    }
-    END_SU2_OMP_FOR
-  }
-}
-
-void CIncEulerVariable::Set_Solution_time_n1() {
-  /*--- Set the solution at time n-1 ---*/
-  CVariable::Set_Solution_time_n1();
-
-  /*--- Store the density at time n-1 by copying from time n ---*/
-  if (Density_time_n1.size() > 0 && Density_time_n.size() > 0) {
-    SU2_OMP_FOR_STAT(roundUpDiv(nPoint, omp_get_num_threads()))
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      Density_time_n1(iPoint) = Density_time_n(iPoint);
-    }
-    END_SU2_OMP_FOR
-  }
-}
 
