@@ -2230,20 +2230,6 @@ public:
   void RegisterUserDefinedSource();
 
   /*!
-   * \brief Get the stored density at time n (incompressible only).
-   * \param[in] iPoint - Point index.
-   * \return Density at time n; 0 for compressible nodes.
-   */
-  inline virtual su2double GetDensity_time_n(unsigned long /*iPoint*/) const { return 0.0; }
-
-  /*!
-   * \brief Get the stored density at time n-1 (incompressible only).
-   * \param[in] iPoint - Point index.
-   * \return Density at time n-1; 0 for compressible nodes.
-   */
-  inline virtual su2double GetDensity_time_n1(unsigned long /*iPoint*/) const { return 0.0; }
-
-  /*!
    * \brief Set the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */

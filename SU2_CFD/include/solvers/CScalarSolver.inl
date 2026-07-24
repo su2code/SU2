@@ -626,9 +626,12 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
   /*--- The bounded-scalar correction (set from the derived solver constructor). ---*/
   const bool bounded_scalar = BoundedScalar;
 
-  /*--- Flow solution, needed to get density. ---*/
+  /*--- Flow solution, needed to get density. The static cast to CFlowVariable*
+        exposes GetDensity_time_n[,1] (declared on CFlowVariable, overridden by
+        CIncEulerVariable) without a silent 0.0-returning base on CVariable.
+        Same idiom as Upwind_Residual above. ---*/
 
-  auto* flowNodes = solver_container[FLOW_SOL]->GetNodes();
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   /*--- Store the physical time step ---*/
 
