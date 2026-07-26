@@ -6576,6 +6576,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case TURB_SGS_MODEL::SMAGORINSKY:  cout << "Smagorinsky " << endl; break;
           case TURB_SGS_MODEL::WALE:         cout << "WALE"         << endl; break;
           case TURB_SGS_MODEL::VREMAN:       cout << "VREMAN"         << endl; break;
+          case TURB_SGS_MODEL::DYNAMIC_SMAGORINSKY: cout << "Dynamic Smagorinsky" << endl; break;
           default:
             SU2_MPI::Error("Subgrid Scale model not specified.", CURRENT_FUNCTION);
 
