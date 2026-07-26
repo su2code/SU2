@@ -1,7 +1,7 @@
 /*!
  * \file CSysVectorGPU.cu
  * \brief Implementations of Kernels and Functions for Vector Operations on the GPU
- * \author A. Raj
+ * \author A. Raj, D. Di giusto
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -27,6 +27,113 @@
 
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
+
+/*!
+ * \brief block-level reduction of elementwise products, accumulated into a single device scalar.
+ */
+template <class ScalarType>
+__global__ void GPUDotKernel(const ScalarType* __restrict__ a, const ScalarType* __restrict__ b,
+                             unsigned long n, ScalarType* __restrict__ result) {
+    //shared memory
+    extern __shared__ unsigned char smem_raw[];
+    ScalarType* sdata = reinterpret_cast<ScalarType*>(smem_raw);
+
+    //local and global thread indexes for access and block reduction
+    const unsigned long tid = threadIdx.x;
+    unsigned long idx = blockIdx.x * blockDim.x + tid;
+    const unsigned long stride = blockDim.x * gridDim.x;
+
+    //thread reduction
+    ScalarType local = ScalarType(0);
+    for (; idx < n; idx += stride) local += a[idx] * b[idx];
+
+    sdata[tid] = local;
+    __syncthreads();
+
+    //block reduction
+    for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (tid < s) sdata[tid] += sdata[tid + s];
+        __syncthreads();
+    }
+    
+    //final atomic add per block
+    if (tid == 0) atomicAdd(result, sdata[0]);
+}
+
+template <class ScalarType>
+ScalarType CSysVector<ScalarType>::GPUDot(const CSysVector& other) const {
+
+    dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE, 1, 1);
+    int numBlocks = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, this->nElmDomain);
+    dim3 gridDim(numBlocks, 1, 1);
+
+    // allocate and zero the result scalar
+    ScalarType* d_dot_result;
+    gpuErrChk(cudaMalloc(&d_dot_result, sizeof(ScalarType)));
+    gpuErrChk(cudaMemset(d_dot_result, 0, sizeof(ScalarType)));
+  
+    const size_t sharedBytes = KernelParameters::MVP_BLOCK_SIZE * sizeof(ScalarType);
+    GPUDotKernel<<<gridDim, blockDim, sharedBytes>>>(this->d_vec_val, other.d_vec_val, this->nElmDomain, d_dot_result);
+    gpuErrChk(cudaPeekAtLastError());
+
+    ScalarType result;
+    gpuErrChk(cudaMemcpy(&result, d_dot_result, sizeof(ScalarType), cudaMemcpyDeviceToHost));
+    gpuErrChk(cudaFree(d_dot_result));
+
+
+
+    return result;
+}
+
+/*!
+ * \brief namespace defining the scalar operators for GPU
+ */
+namespace {
+template <class T> struct OpSetScalar { T val; __device__ __forceinline__ T operator()(T x) const { return val; } };
+template <class T> struct OpAddScalar { T val; __device__ __forceinline__ T operator()(T x) const { return x + val; } };
+template <class T> struct OpSubScalar { T val; __device__ __forceinline__ T operator()(T x) const { return x - val; } };
+template <class T> struct OpMulScalar { T val; __device__ __forceinline__ T operator()(T x) const { return x * val; } };
+template <class T> struct OpDivScalar { T val; __device__ __forceinline__ T operator()(T x) const { return x / val; } };
+}  // namespace
+
+/*!
+ * \brief generic Unary Operation Kernel to apply given functors on GPU
+ */
+template <class ScalarType, class Operator>
+__global__ void GPUUnaryOperationKernel(ScalarType* __restrict__ vec, unsigned long n, Operator op) {
+    const unsigned long idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) vec[idx] = op(vec[idx]);
+}
+
+template <class ScalarType>
+void CSysVector<ScalarType>::GPUUnaryOperation(GPUScalarOp op, ScalarType val) {
+
+    dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE, 1, 1);
+    int numBlocks = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, this->nElmDomain);
+    dim3 gridDim(numBlocks, 1, 1);
+
+    switch (op) {
+      case GPUScalarOp::SET:
+        GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElmDomain, OpSetScalar<ScalarType>{val});
+        break;
+      case GPUScalarOp::ADD:
+        GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElmDomain, OpAddScalar<ScalarType>{val});
+        break;
+      case GPUScalarOp::SUB:
+        GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElmDomain, OpSubScalar<ScalarType>{val});
+        break;
+      case GPUScalarOp::MUL:
+        GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElmDomain, OpMulScalar<ScalarType>{val});
+        break;
+      case GPUScalarOp::DIV:
+        GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElmDomain, OpDivScalar<ScalarType>{val});
+        break;
+    }
+    gpuErrChk(cudaPeekAtLastError());  
+    gpuErrChk(cudaDeviceSynchronize());
+
+
+}
 
 template<class ScalarType>
 void CSysVector<ScalarType>::HtDTransfer(bool trigger) const
@@ -213,7 +320,7 @@ void CSysVector<ScalarType>::LinearCombinationGPU(const unsigned long n, const s
     gpuErrChk(cudaPeekAtLastError());
   }
 
-  gpuErrChk(cudaDeviceSynchronize()); // this is now the exit point of the cuda section so we want to synchronize
+  gpuErrChk(cudaDeviceSynchronize());
 
 }
 

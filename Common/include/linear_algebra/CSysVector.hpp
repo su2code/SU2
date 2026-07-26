@@ -225,6 +225,18 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   }
 
   /*!
+   * \brief enum listing the possible scalar operators on GPU
+   */
+  enum class GPUScalarOp { SET, ADD, SUB, MUL, DIV };
+
+  /*!
+   * \brief method to launch the generic Unary Operation Kernel and apply given functors on GPU
+   * \param[in] op - Unitary operation
+   * \param[in] val - scalar value
+   */
+  void GPUUnaryOperation(GPUScalarOp op, ScalarType val);
+
+  /*!
    * \brief Performs the memory copy from host to device.
    * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
    */
@@ -318,7 +330,21 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \brief Compound assignement operations with scalars and expressions.
    * \param[in] val/expr - Scalar value or expression.
    */
-#define MAKE_COMPOUND(OP)                                                 \
+#ifdef HAVE_CUDA
+#define MAKE_COMPOUND(OP, TAG)                                            \
+  CSysVector& operator OP(ScalarType val) {                               \
+    GPUUnaryOperation(GPUScalarOp::TAG, val);                             \
+    return *this;                                                         \
+  }                                                                       \
+  template <class T>                                                      \
+  CSysVector& operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) { \
+    CSYSVEC_PARFOR                                                        \
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr.derived()[i];    \
+    END_CSYSVEC_PARFOR                                                    \
+    return *this;                                                         \
+  }
+#else
+#define MAKE_COMPOUND(OP, TAG)                                                 \
   CSysVector& operator OP(ScalarType val) {                               \
     CSYSVEC_PARFOR                                                        \
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;                  \
@@ -332,11 +358,13 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     END_CSYSVEC_PARFOR                                                    \
     return *this;                                                         \
   }
-  MAKE_COMPOUND(=)
-  MAKE_COMPOUND(+=)
-  MAKE_COMPOUND(-=)
-  MAKE_COMPOUND(*=)
-  MAKE_COMPOUND(/=)
+#endif
+
+  MAKE_COMPOUND(=,  SET)
+  MAKE_COMPOUND(+=, ADD)
+  MAKE_COMPOUND(-=, SUB)
+  MAKE_COMPOUND(*=, MUL)
+  MAKE_COMPOUND(/=, DIV)
 #undef MAKE_COMPOUND
 
   /*!
@@ -353,9 +381,12 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   ScalarType dot(const VecExpr::CVecExpr<T, ScalarType>& expr) const {
     /*--- All threads get the same "view" of the vectors. ---*/
     SU2_OMP_BARRIER
-
-    /*--- Local dot product for each thread. ---*/
     ScalarType sum = 0.0;
+
+#ifdef HAVE_CUDA
+    sum = GPUDot(static_cast<const CSysVector&>(expr.derived())); //assuming expr is a vector
+#else
+    /*--- Local dot product for each thread. ---*/
 
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElmDomain; ++i) {
@@ -364,11 +395,13 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     END_CSYSVEC_PARFOR
 
     dot_scratch[omp_get_thread_num()] = sum;
+#endif
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+#ifndef HAVE_CUDA
       /*--- Reduce over all threads in an ordered way to ensure a deterministic result. ---*/
       for (int i = 1; i < omp_get_num_threads(); ++i) sum += dot_scratch[i];
-
+#endif
       /*--- Reduce across all mpi ranks, only the master thread communicates. ---*/
       const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
       SelectMPIWrapper<ScalarType>::W::Allreduce(&sum, &dot_scratch[0], 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
@@ -378,6 +411,13 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
 
     return dot_scratch[0];
   }
+
+  /*!
+   * \brief Dot product between "this" and another vector.
+   * \param[in] other - the other CSysVector.
+   * \return Result of dot product
+   */
+  ScalarType GPUDot(const CSysVector& other) const;
 
   /*!
    * \brief Computes the product of V^T W efficiencly, where V and W are tall matrices stored as vectors of CSysVector.
