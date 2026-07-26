@@ -811,6 +811,15 @@ def main():
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 
+    # Dynamic Smagorinsky SGS model - SC20012 airfoil
+    dynsmag_sc20012 = TestCase('dynsmag_sc20012')
+    dynsmag_sc20012.cfg_dir = "incomp_navierstokes/dynamic_smagorinsky_sc20012"
+    dynsmag_sc20012.cfg_file = "sc20012_les.cfg"
+    dynsmag_sc20012.test_iter = 10
+    dynsmag_sc20012.test_vals = [-2.985351, -2.986340]
+    dynsmag_sc20012.unsteady = True
+    test_list.append(dynsmag_sc20012)
+
     # unsteady pitching NACA0015, SA
     unst_inc_turb_naca0015_sa           = TestCase('unst_inc_turb_naca0015_sa')
     unst_inc_turb_naca0015_sa.cfg_dir   = "unsteady/pitching_naca0015_rans_inc"
