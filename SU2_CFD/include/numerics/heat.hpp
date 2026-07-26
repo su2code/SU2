@@ -29,7 +29,6 @@
 
 #include "scalar/scalar_diffusion.hpp"
 #include "scalar/scalar_convection.hpp"
-#include "../variables/CIncEulerVariable.hpp"
 
 /*!
  * \class CUpwSca_Heat
@@ -38,7 +37,18 @@
  * \author O. Burghardt.
  * \version 8.5.0 "Harrier"
  */
-class CUpwSca_Heat final : public CUpwScalar<typename CIncEulerVariable::template CIndices<unsigned short>> {
+template <class FlowIndices>
+class CUpwSca_Heat final : public CUpwScalar<FlowIndices> {
+ private:
+  using Base = CUpwScalar<FlowIndices>;
+  using Base::Flux;
+  using Base::Jacobian_i;
+  using Base::Jacobian_j;
+  using Base::ScalarVar_i;
+  using Base::ScalarVar_j;
+  using Base::a0;
+  using Base::a1;
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -46,7 +56,7 @@ class CUpwSca_Heat final : public CUpwScalar<typename CIncEulerVariable::templat
    * \param[in] config - Definition of the particular problem.
    */
   CUpwSca_Heat(unsigned short val_nDim, const CConfig *config)
-    : CUpwScalar<typename CIncEulerVariable::template CIndices<unsigned short>>(val_nDim, 1, config) {}
+    : CUpwScalar<FlowIndices>(val_nDim, 1, config) {}
 
  private:
   /*!

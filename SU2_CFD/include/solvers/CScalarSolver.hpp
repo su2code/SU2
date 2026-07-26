@@ -31,8 +31,8 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../variables/CScalarVariable.hpp"
-#include "../variables/CFlowVariable.hpp"
 #include "../variables/CPrimitiveIndices.hpp"
+#include "../numerics/scalar/scalar_diffusion.hpp"
 #include "CSolver.hpp"
 
 /*!
@@ -60,6 +60,12 @@ class CScalarSolver : public CSolver {
   const bool Conservative; /*!< \brief Transported Variable is conservative. Solution has to be multiplied with rho. */
 
   const CPrimitiveIndices<unsigned short> prim_idx; /*!< \brief Indices of the primitive flow variables. */
+
+  /*!< \brief Compact copy of the flow primitives actually read by the scalar convection/diffusion
+   *          numerics (velocity, density, laminar and eddy viscosity), refreshed once per call to
+   *          Upwind_Residual. Used instead of the full (wider) flow "primitives" matrix so the
+   *          per-edge accesses only touch the bytes that are actually needed. */
+  su2activematrix CompactFlowPrimitives;
 
   vector<su2matrix<su2double*> > SlidingState; // vector of matrix of pointers... inner dim alloc'd elsewhere (welcome, to the twilight zone)
   vector<vector<int> > SlidingStateNodes;
@@ -90,6 +96,14 @@ class CScalarSolver : public CSolver {
   inline CVariable* GetBaseClassPointerToNodes() final { return nodes; }
 
   /*!
+   * \brief (Re)build CompactFlowPrimitives from the flow solver's primitives, keeping only the
+   *        variables the scalar convection/diffusion numerics read (velocity, density, laminar
+   *        and eddy viscosity). Called once per Upwind_Residual call, before the edge loop.
+   * \param[in] solver_container - Container vector with all the solutions.
+   */
+  void UpdateCompactFlowPrimitives(CSolver** solver_container);
+
+  /*!
    * \brief Compute the viscous flux for the scalar equation at a particular edge.
    * \tparam SolverSpecificNumericsFunc - lambda-function, that implements solver specific contributions to numerics.
    * \note The functor has to implement (iPoint, jPoint)
@@ -104,8 +118,6 @@ class CScalarSolver : public CSolver {
                                          const CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
                                          const CConfig* config) {
     const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
-        su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
 
     /*--- Points in edge ---*/
 
@@ -119,8 +131,8 @@ class CScalarSolver : public CSolver {
 
     /*--- Conservative variables w/o reconstruction ---*/
 
-    if (flowNodes) {
-      numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+    if (solver_container[FLOW_SOL]) {
+      numerics->SetPrimitive(CompactFlowPrimitives[iPoint], CompactFlowPrimitives[jPoint]);
     }
 
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
@@ -160,8 +172,6 @@ class CScalarSolver : public CSolver {
   void Viscous_Residual_NonCons(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                         CNumerics* numerics, const CConfig* config, SolverSpecificNumericsFunc&& SolverSpecificNumerics) {
     const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-      CFlowVariable* flowNodes = solver_container[FLOW_SOL] ?
-          su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes()) : nullptr;
 
     const auto iPoint = geometry->edges->GetNode(iEdge, 0);
     const auto jPoint = geometry->edges->GetNode(iEdge, 1);
@@ -171,8 +181,8 @@ class CScalarSolver : public CSolver {
       numerics->SetCoord(geometry->nodes->GetCoord(iPoint),geometry->nodes->GetCoord(jPoint));
       numerics->SetNormal(normal);
 
-      if (flowNodes) {
-        numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+      if (solver_container[FLOW_SOL]) {
+        numerics->SetPrimitive(CompactFlowPrimitives[iPoint], CompactFlowPrimitives[jPoint]);
       }
 
     /*--- Solver specific numerics contribution. ---*/

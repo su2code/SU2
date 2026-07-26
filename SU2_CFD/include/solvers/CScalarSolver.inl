@@ -130,10 +130,34 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
 }
 
 template <class VariableType>
+void CScalarSolver<VariableType>::UpdateCompactFlowPrimitives(CSolver** solver_container) {
+  SU2_ZONE_SCOPED
+
+  if (!solver_container[FLOW_SOL]) return;
+
+  auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+  const auto& primitives = flowNodes->GetPrimitive();
+
+  CompactFlowPrimitives.resize(nPoint, nDim + 3);
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
+    for (auto iDim = 0u; iDim < nDim; ++iDim)
+      CompactFlowPrimitives(iPoint, iDim) = primitives(iPoint, prim_idx.Velocity() + iDim);
+    CompactFlowPrimitives(iPoint, nDim) = primitives(iPoint, prim_idx.Density());
+    CompactFlowPrimitives(iPoint, nDim + 1) = primitives(iPoint, prim_idx.LaminarViscosity());
+    CompactFlowPrimitives(iPoint, nDim + 2) = primitives(iPoint, prim_idx.EddyViscosity());
+  }
+  END_SU2_OMP_FOR
+}
+
+template <class VariableType>
 void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver** solver_container,
                                                   CNumerics** numerics_container, CConfig* config,
                                                   unsigned short iMesh) {
   SU2_ZONE_SCOPED
+
+  UpdateCompactFlowPrimitives(solver_container);
 
   /*--- Define booleans that are solver specific through CConfig's GlobalParams which have to be set in CFluidIteration
    * before calling these solver functions. ---*/
@@ -190,8 +214,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
       /*--- Primitive variables w/o reconstruction ---*/
 
-      const auto V_i = flowNodes->GetPrimitive(iPoint);
-      const auto V_j = flowNodes->GetPrimitive(jPoint);
+      const auto V_i = CompactFlowPrimitives[iPoint];
+      const auto V_j = CompactFlowPrimitives[jPoint];
       numerics->SetPrimitive(V_i, V_j);
 
       /*--- Scalar variables w/o reconstruction ---*/
@@ -216,30 +240,54 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
         if (musclFlow && !bounded_scalar) {
           /*--- Reconstruct mean flow primitive variables, note that in bounded scalar mode this is
            * not necessary because the edge mass flux is read directly from the flow solver, instead
-           * of being computed from the primitive flow variables. ---*/
+           * of being computed from the primitive flow variables.
+           * Gradients/limiters are only available over the flow solver's own (full-layout) gradient
+           * range [0, nPrimVarGrad); laminar/eddy viscosity are always outside that range so they are
+           * never reconstructed, they are read from the unreconstructed compact values below (density
+           * is reconstructed too, but only if it happens to fall inside the gradient range). ---*/
 
+          const auto Vfull_i = flowNodes->GetPrimitive(iPoint);
+          const auto Vfull_j = flowNodes->GetPrimitive(jPoint);
           auto Gradient_i = flowNodes->GetGradient_Reconstruction(iPoint);
           auto Gradient_j = flowNodes->GetGradient_Reconstruction(jPoint);
+          const auto nPrimVarGradFlow = solver_container[FLOW_SOL]->GetnPrimVarGrad();
+          const auto idxVel = prim_idx.Velocity();
+          const auto idxDensity = prim_idx.Density();
 
           if (limiterFlow) {
             Limiter_i = flowNodes->GetLimiter_Primitive(iPoint);
             Limiter_j = flowNodes->GetLimiter_Primitive(jPoint);
           }
 
-          for (auto iVar = 0u; iVar < solver_container[FLOW_SOL]->GetnPrimVarGrad(); iVar++) {
-            const su2double V_ij = V_j[iVar] - V_i[iVar];
+          auto ReconstructFullVar = [&](unsigned short iVarFull, unsigned short iVarCompact) {
+            const su2double V_ij = Vfull_j[iVarFull] - Vfull_i[iVarFull];
 
-            su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVar], Vector_ij, V_ij, kappaFlow, musclRamp);
-            su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVar], Vector_ij, V_ij, kappaFlow, musclRamp);
+            su2double Project_Grad_i = MUSCL_Reconstruction(Gradient_i[iVarFull], Vector_ij, V_ij, kappaFlow, musclRamp);
+            su2double Project_Grad_j = MUSCL_Reconstruction(Gradient_j[iVarFull], Vector_ij, V_ij, kappaFlow, musclRamp);
 
             if (limiterFlow) {
-              Project_Grad_i *= Limiter_i[iVar];
-              Project_Grad_j *= Limiter_j[iVar];
+              Project_Grad_i *= Limiter_i[iVarFull];
+              Project_Grad_j *= Limiter_j[iVarFull];
             }
 
-            flowPrimVar_i[iVar] = V_i[iVar] + 0.5 * Project_Grad_i;
-            flowPrimVar_j[iVar] = V_j[iVar] - 0.5 * Project_Grad_j;
+            flowPrimVar_i[iVarCompact] = Vfull_i[iVarFull] + 0.5 * Project_Grad_i;
+            flowPrimVar_j[iVarCompact] = Vfull_j[iVarFull] - 0.5 * Project_Grad_j;
+          };
+
+          for (auto iDim = 0u; iDim < nDim; iDim++) ReconstructFullVar(idxVel + iDim, iDim);
+
+          if (idxDensity < nPrimVarGradFlow) {
+            ReconstructFullVar(idxDensity, nDim);
+          } else {
+            flowPrimVar_i[nDim] = V_i[nDim];
+            flowPrimVar_j[nDim] = V_j[nDim];
           }
+
+          /*--- Laminar and eddy viscosity, never part of the gradient range. ---*/
+          flowPrimVar_i[nDim + 1] = V_i[nDim + 1];
+          flowPrimVar_j[nDim + 1] = V_j[nDim + 1];
+          flowPrimVar_i[nDim + 2] = V_i[nDim + 2];
+          flowPrimVar_j[nDim + 2] = V_j[nDim + 2];
 
           numerics->SetPrimitive(flowPrimVar_i, flowPrimVar_j);
         }

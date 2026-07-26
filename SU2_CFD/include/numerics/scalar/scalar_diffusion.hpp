@@ -43,6 +43,22 @@ struct CNoFlowIndices {
 };
 
 /*!
+ * \class CScalarFlowIndices
+ * \brief Flow indices for CScalarSolver's compact primitive container (see CompactFlowPrimitives),
+ *        which stores only the variables the scalar convection/diffusion numerics actually read
+ *        (velocity, density, laminar and eddy viscosity) instead of the full flow "primitives"
+ *        matrix, to reduce cache misses on the (mostly random) edge-neighbor accesses.
+ */
+struct CScalarFlowIndices {
+  const unsigned short nDim;
+  CScalarFlowIndices(unsigned short ndim, unsigned short) : nDim(ndim) {}
+  inline unsigned short Velocity() const { return 0; }
+  inline unsigned short Density() const { return nDim; }
+  inline unsigned short LaminarViscosity() const { return nDim + 1; }
+  inline unsigned short EddyViscosity() const { return nDim + 2; }
+};
+
+/*!
  * \class CAvgGrad_Scalar
  * \brief Template class for computing viscous residual of scalar values
  * \details This class serves as a template for the scalar viscous residual
