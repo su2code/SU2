@@ -225,9 +225,14 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   }
 
   /*!
-   * \brief enum listing the possible scalar operators on GPU
+   * \brief enum listing the possible vector-scalar operators on GPU
    */
   enum class GPUScalarOp { SET, ADD, SUB, MUL, DIV };
+
+  /*!
+   * \brief enum listing the possible vector-vector operators on GPU
+   */
+  enum class GPUVectorOp { SET, ADD, SUB, NEG };
 
   /*!
    * \brief method to launch the generic Unary Operation Kernel and apply given functors on GPU
@@ -235,6 +240,13 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] val - scalar value
    */
   void GPUUnaryOperation(GPUScalarOp op, ScalarType val);
+
+  /*!
+   * \brief method to launch a generic Binary Operation Kernel and apply given functors on GPU
+   * \param[in] op - Binary operation
+   * \param[in] other - other CsysVector
+   */
+  void GPUBinaryOperation(GPUVectorOp op, const CSysVector& other);
 
   /*!
    * \brief Performs the memory copy from host to device.
@@ -320,11 +332,29 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] other - Another vector.
    */
   CSysVector& operator=(const CSysVector& other) {
+#ifdef HAVE_CUDA
+    GPUBinaryOperation(GPUVectorOp::SET, other);
+#else
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] = other.vec_val[i];
     END_CSYSVEC_PARFOR
+#endif
     return *this;
   }
+
+#ifdef HAVE_CUDA
+  /*!
+   * \brief CSysVector-CSysVector overloaded operators on GPUs
+   */
+  CSysVector& operator+=(const CSysVector& other) {
+    GPUBinaryOperation(GPUVectorOp::ADD, other);
+    return *this;
+  }
+  CSysVector& operator-=(const CSysVector& other) {
+    GPUBinaryOperation(GPUVectorOp::SUB, other);
+    return *this;
+  }
+#endif
 
   /*!
    * \brief Compound assignement operations with scalars and expressions.
@@ -344,7 +374,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     return *this;                                                         \
   }
 #else
-#define MAKE_COMPOUND(OP, TAG)                                                 \
+#define MAKE_COMPOUND(OP, TAG)                                            \
   CSysVector& operator OP(ScalarType val) {                               \
     CSYSVEC_PARFOR                                                        \
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;                  \
@@ -360,7 +390,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   }
 #endif
 
-  MAKE_COMPOUND(=,  SET)
+  MAKE_COMPOUND(=, SET)
   MAKE_COMPOUND(+=, ADD)
   MAKE_COMPOUND(-=, SUB)
   MAKE_COMPOUND(*=, MUL)
@@ -384,7 +414,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     ScalarType sum = 0.0;
 
 #ifdef HAVE_CUDA
-    sum = GPUDot(static_cast<const CSysVector&>(expr.derived())); //assuming expr is a vector
+    sum = GPUDot(static_cast<const CSysVector&>(expr.derived()));  // assuming expr is a vector
 #else
     /*--- Local dot product for each thread. ---*/
 
