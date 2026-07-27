@@ -428,6 +428,11 @@ class CFVMFlowSolverBase : public CSolver {
                                (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
     const su2double K_v = 0.25;
 
+    /*--- Debug mode: base the interior-edge eigenvalue contribution only on iPoint's own data,
+     *    skipping all jPoint neighbor accesses, to isolate their cost from the rest of the loop.
+     *    Flip this constant and recompile to switch. ---*/
+    constexpr bool debugNoNeighbor = true;
+
     /*--- Init thread-shared variables to compute min/max values.
      *    Critical sections are used for this instead of reduction
      *    clauses for compatibility with OpenMP 2.0 (Windows...). ---*/
@@ -458,17 +463,29 @@ class CFVMFlowSolverBase : public CSolver {
 
         /*--- Mean Values ---*/
 
-        su2double Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
-        su2double Mean_SoundSpeed = soundSpeed(*nodes, iPoint, jPoint) * sqrt(Area2);
+        su2double Mean_ProjVel, Mean_SoundSpeed;
+        if (debugNoNeighbor) {
+          Mean_ProjVel = nodes->GetProjVel(iPoint,Normal);
+          Mean_SoundSpeed = soundSpeed(*nodes, iPoint) * sqrt(Area2);
+        } else {
+          Mean_ProjVel = 0.5 * (nodes->GetProjVel(iPoint,Normal) + nodes->GetProjVel(jPoint,Normal));
+          Mean_SoundSpeed = soundSpeed(*nodes, iPoint, jPoint) * sqrt(Area2);
+        }
 
         /*--- Adjustment for grid movement ---*/
 
         if (dynamic_grid) {
           const su2double *GridVel_i = geometry->nodes->GetGridVel(iPoint);
-          const su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
 
-          for (unsigned short iDim = 0; iDim < nDim; iDim++)
-            Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
+          if (debugNoNeighbor) {
+            for (unsigned short iDim = 0; iDim < nDim; iDim++)
+              Mean_ProjVel -= GridVel_i[iDim] * Normal[iDim];
+          } else {
+            const su2double *GridVel_j = geometry->nodes->GetGridVel(jPoint);
+
+            for (unsigned short iDim = 0; iDim < nDim; iDim++)
+              Mean_ProjVel -= 0.5 * (GridVel_i[iDim] + GridVel_j[iDim]) * Normal[iDim];
+          }
         }
 
         /*--- Inviscid contribution ---*/
@@ -480,7 +497,7 @@ class CFVMFlowSolverBase : public CSolver {
 
         if (!viscous) continue;
 
-        Lambda = lambdaVisc(*nodes, iPoint, jPoint) * Area2;
+        Lambda = (debugNoNeighbor ? lambdaVisc(*nodes, iPoint) : lambdaVisc(*nodes, iPoint, jPoint)) * Area2;
         nodes->AddMax_Lambda_Visc(iPoint, Lambda);
       }
 

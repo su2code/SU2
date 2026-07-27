@@ -31,6 +31,7 @@
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../variables/CScalarVariable.hpp"
+#include "../variables/CFlowVariable.hpp"
 #include "../variables/CPrimitiveIndices.hpp"
 #include "../numerics/scalar/scalar_diffusion.hpp"
 #include "CSolver.hpp"
@@ -97,11 +98,14 @@ class CScalarSolver : public CSolver {
 
   /*!
    * \brief (Re)build CompactFlowPrimitives from the flow solver's primitives, keeping only the
-   *        variables the scalar convection/diffusion numerics read (velocity, density, laminar
-   *        and eddy viscosity). Called once per Upwind_Residual call, before the edge loop.
+   *        variables the scalar convection/diffusion numerics read (density, laminar and eddy
+   *        viscosity, plus velocity unless the convective numerics use the bounded-scalar scheme,
+   *        which never reads velocity). Called once per Upwind_Residual call, before the edge loop.
    * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (used to query whether the
+   *            bounded-scalar scheme is active, which is fixed for the whole run).
    */
-  void UpdateCompactFlowPrimitives(CSolver** solver_container);
+  void UpdateCompactFlowPrimitives(CSolver** solver_container, CNumerics** numerics_container);
 
   /*!
    * \brief Compute the viscous flux for the scalar equation at a particular edge.
@@ -132,7 +136,12 @@ class CScalarSolver : public CSolver {
     /*--- Conservative variables w/o reconstruction ---*/
 
     if (solver_container[FLOW_SOL]) {
-      numerics->SetPrimitive(CompactFlowPrimitives[iPoint], CompactFlowPrimitives[jPoint]);
+      if (numerics->GetCompactPrimitives()) {
+        numerics->SetPrimitive(CompactFlowPrimitives[iPoint], CompactFlowPrimitives[jPoint]);
+      } else {
+        auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+        numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+      }
     }
 
     /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
@@ -182,7 +191,12 @@ class CScalarSolver : public CSolver {
       numerics->SetNormal(normal);
 
       if (solver_container[FLOW_SOL]) {
-        numerics->SetPrimitive(CompactFlowPrimitives[iPoint], CompactFlowPrimitives[jPoint]);
+        if (numerics->GetCompactPrimitives()) {
+          numerics->SetPrimitive(CompactFlowPrimitives[iPoint], CompactFlowPrimitives[jPoint]);
+        } else {
+          auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
+          numerics->SetPrimitive(flowNodes->GetPrimitive(iPoint), flowNodes->GetPrimitive(jPoint));
+        }
       }
 
     /*--- Solver specific numerics contribution. ---*/

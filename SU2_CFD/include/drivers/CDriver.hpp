@@ -220,7 +220,8 @@ class CDriver : public CDriverBase {
    */
   template <class FlowIndices>
   void InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset, const CConfig* config,
-                                    const CSolver* turb_solver, CNumerics****& numerics) const;
+                                    const CSolver* turb_solver, const CGeometry* geometry,
+                                    CNumerics****& numerics) const;
 
   /*!
    * \brief Helper to instantiate transition numerics specialized for different flow solvers.
@@ -233,7 +234,8 @@ class CDriver : public CDriverBase {
    */
   template <class FlowIndices>
   void InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset, const CConfig* config,
-                                  const CSolver* species_solver, CNumerics****& numerics) const;
+                                  const CSolver* species_solver, const CGeometry* geometry,
+                                  CNumerics****& numerics) const;
 
   /*!
    * \brief Definition and allocation of all solver classes.

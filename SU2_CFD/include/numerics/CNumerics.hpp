@@ -205,6 +205,7 @@ protected:
   bool energy_multicomponent = false; /*!< \brief Flag for multicomponent and reacting flow  */
 
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
+  bool compact_primitives = false; /*!< \brief Flag for reading flow primitives from CScalarSolver's compact container. */
 
 public:
   /*!
@@ -1854,6 +1855,18 @@ public:
    * \return is_bounded_scalar : scalar solver uses bounded scalar convective transport
    */
   inline bool GetBoundedScalar() const { return bounded_scalar;}
+
+  /*!
+   * \brief Set whether this instance reads flow primitives from CScalarSolver's compact
+   *        container (velocity-less, see CScalarFlowIndices) instead of the full "primitives"
+   *        matrix. Set once at construction by the driver, fixed for the whole run.
+   */
+  inline void SetCompactPrimitives(bool val) { compact_primitives = val; }
+
+  /*!
+   * \brief Whether this instance reads flow primitives from CScalarSolver's compact container.
+   */
+  inline bool GetCompactPrimitives() const { return compact_primitives; }
 };
 
 /*!

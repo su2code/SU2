@@ -1190,7 +1190,8 @@ void CDriver::FinalizeIntegration(CIntegration ***integration, CGeometry **geome
 
 template <class Indices>
 void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset, const CConfig *config,
-                                           const CSolver* turb_solver, CNumerics ****&numerics) const {
+                                           const CSolver* turb_solver, const CGeometry* geometry,
+                                           CNumerics ****&numerics) const {
   const int conv_term = CONV_TERM + offset;
   const int visc_term = VISC_TERM + offset;
 
@@ -1228,6 +1229,15 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
     omega_Inf = turb_solver->GetOmega_Inf();
   }
 
+  /*--- Interior terms can read flow primitives from CScalarSolver's compact container (velocity-less,
+   *    see CScalarFlowIndices) instead of the full "primitives" matrix, provided: convection never
+   *    reads velocity in the first place (bounded-scalar scheme, fixed for the whole run), the mesh
+   *    is 3D, and it's unstructured enough (edges-per-point ratio) that the narrower row plausibly
+   *    helps cache locality on the (mostly random) edge-neighbor accesses. Boundary terms are
+   *    unaffected, they keep reading the full primitives directly. ---*/
+  const su2double edgeToPointRatio = static_cast<su2double>(geometry->GetnEdge()) / geometry->GetnPointDomain();
+  const bool turbUseCompact = config->GetBounded_Turb() && (nDim == 3) && (edgeToPointRatio > 3.0);
+
   /*--- Definition of the convective scheme for each equation and mesh level ---*/
 
   switch (config->GetKind_ConvNumScheme_Turb()) {
@@ -1236,14 +1246,20 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
       break;
     case SPACE_UPWIND :
       for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        /*--- Interior convective term reads flow primitives from CScalarSolver's compact container
-         *    (velocity, density, laminar/eddy viscosity only), hence the CScalarFlowIndices here
-         *    instead of the regime's own Indices type used everywhere else (e.g. boundary terms). ---*/
         if (spalart_allmaras) {
-          numerics[iMGlevel][TURB_SOL][conv_term] = new CUpwSca_TurbSA<CScalarFlowIndices>(nDim, nVar_Turb, config);
+          auto* n = turbUseCompact
+              ? static_cast<CNumerics*>(new CUpwSca_TurbSA<CScalarFlowIndices>(nDim, nVar_Turb, config))
+              : static_cast<CNumerics*>(new CUpwSca_TurbSA<Indices>(nDim, nVar_Turb, config));
+          n->SetCompactPrimitives(turbUseCompact);
+          numerics[iMGlevel][TURB_SOL][conv_term] = n;
         }
-        else if (menter_sst)
-          numerics[iMGlevel][TURB_SOL][conv_term] = new CUpwSca_TurbSST<CScalarFlowIndices>(nDim, nVar_Turb, config);
+        else if (menter_sst) {
+          auto* n = turbUseCompact
+              ? static_cast<CNumerics*>(new CUpwSca_TurbSST<CScalarFlowIndices>(nDim, nVar_Turb, config))
+              : static_cast<CNumerics*>(new CUpwSca_TurbSST<Indices>(nDim, nVar_Turb, config));
+          n->SetCompactPrimitives(turbUseCompact);
+          numerics[iMGlevel][TURB_SOL][conv_term] = n;
+        }
       }
       break;
     default:
@@ -1254,16 +1270,28 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
   /*--- Definition of the viscous scheme for each equation and mesh level ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    /*--- Interior viscous term, see the note above about CScalarFlowIndices. ---*/
     if (spalart_allmaras) {
-      if (config->GetSAParsedOptions().version == SA_OPTIONS::NEG) {
-        numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSA_Neg<CScalarFlowIndices>(nDim, nVar_Turb, true, config);
+      const bool neg = config->GetSAParsedOptions().version == SA_OPTIONS::NEG;
+      CNumerics* n;
+      if (neg) {
+        n = turbUseCompact
+            ? static_cast<CNumerics*>(new CAvgGrad_TurbSA_Neg<CScalarFlowIndices>(nDim, nVar_Turb, true, config))
+            : static_cast<CNumerics*>(new CAvgGrad_TurbSA_Neg<Indices>(nDim, nVar_Turb, true, config));
       } else {
-        numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSA<CScalarFlowIndices>(nDim, nVar_Turb, true, config);
+        n = turbUseCompact
+            ? static_cast<CNumerics*>(new CAvgGrad_TurbSA<CScalarFlowIndices>(nDim, nVar_Turb, true, config))
+            : static_cast<CNumerics*>(new CAvgGrad_TurbSA<Indices>(nDim, nVar_Turb, true, config));
       }
+      n->SetCompactPrimitives(turbUseCompact);
+      numerics[iMGlevel][TURB_SOL][visc_term] = n;
     }
-    else if (menter_sst)
-      numerics[iMGlevel][TURB_SOL][visc_term] = new CAvgGrad_TurbSST<CScalarFlowIndices>(nDim, nVar_Turb, constants, true, config);
+    else if (menter_sst) {
+      auto* n = turbUseCompact
+          ? static_cast<CNumerics*>(new CAvgGrad_TurbSST<CScalarFlowIndices>(nDim, nVar_Turb, constants, true, config))
+          : static_cast<CNumerics*>(new CAvgGrad_TurbSST<Indices>(nDim, nVar_Turb, constants, true, config));
+      n->SetCompactPrimitives(turbUseCompact);
+      numerics[iMGlevel][TURB_SOL][visc_term] = n;
+    }
   }
 
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1301,13 +1329,13 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
 }
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
 template void CDriver::InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+    unsigned short, int, const CConfig*, const CSolver*, const CGeometry*, CNumerics****&) const;
 
 template void CDriver::InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+    unsigned short, int, const CConfig*, const CSolver*, const CGeometry*, CNumerics****&) const;
 
 template void CDriver::InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+    unsigned short, int, const CConfig*, const CSolver*, const CGeometry*, CNumerics****&) const;
 
 template <class Indices>
 void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offset, const CConfig *config,
@@ -1331,9 +1359,7 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
       break;
     case SPACE_UPWIND :
       for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        /*--- Interior term reads flow primitives from CScalarSolver's compact container, hence
-         *    CScalarFlowIndices instead of the regime's own Indices type used elsewhere. ---*/
-        if (LM) numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransLM<CScalarFlowIndices>(nDim, nVar_Trans, config);
+        if (LM) numerics[iMGlevel][TRANS_SOL][conv_term] = new CUpwSca_TransLM<Indices>(nDim, nVar_Trans, config);
       }
       break;
     default:
@@ -1344,7 +1370,7 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
   /*--- Definition of the viscous scheme for each equation and mesh level ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    if (LM) numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransLM<CScalarFlowIndices>(nDim, nVar_Trans, true, config);
+    if (LM) numerics[iMGlevel][TRANS_SOL][visc_term] = new CAvgGrad_TransLM<Indices>(nDim, nVar_Trans, true, config);
   }
 
   /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1378,7 +1404,8 @@ template void CDriver::InstantiateTransitionNumerics<CNEMOEulerVariable::CIndice
 
 template <class Indices>
 void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset, const CConfig *config,
-                                         const CSolver* species_solver, CNumerics ****&numerics) const {
+                                         const CSolver* species_solver, const CGeometry* geometry,
+                                         CNumerics ****&numerics) const {
   const int conv_term = CONV_TERM + offset;
   const int visc_term = VISC_TERM + offset;
 
@@ -1388,6 +1415,15 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
   const int conv_bound_term = CONV_BOUND_TERM + offset;
   const int visc_bound_term = VISC_BOUND_TERM + offset;
 
+  /*--- Interior terms can read flow primitives from CScalarSolver's compact container (velocity-less,
+   *    see CScalarFlowIndices) instead of the full "primitives" matrix, provided: convection never
+   *    reads velocity in the first place (bounded-scalar scheme, fixed for the whole run), the mesh
+   *    is 3D, and it's unstructured enough (edges-per-point ratio) that the narrower row plausibly
+   *    helps cache locality on the (mostly random) edge-neighbor accesses. Boundary terms are
+   *    unaffected, they keep reading the full primitives directly. ---*/
+  const su2double edgeToPointRatio = static_cast<su2double>(geometry->GetnEdge()) / geometry->GetnPointDomain();
+  const bool speciesUseCompact = config->GetBounded_Species() && (nDim == 3) && (edgeToPointRatio > 3.0);
+
   /*--- Definition of the convective scheme for each equation and mesh level. Also for boundary conditions. ---*/
 
   switch (config->GetKind_ConvNumScheme_Species()) {
@@ -1395,9 +1431,11 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
       break;
     case SPACE_UPWIND :
       for (auto iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-        /*--- Interior term reads flow primitives from CScalarSolver's compact container, hence
-         *    CScalarFlowIndices instead of the regime's own Indices type used for the boundary term. ---*/
-        numerics[iMGlevel][SPECIES_SOL][conv_term] = new CUpwSca_Species<CScalarFlowIndices>(nDim, nVar_Species, config);
+        auto* n = speciesUseCompact
+            ? static_cast<CNumerics*>(new CUpwSca_Species<CScalarFlowIndices>(nDim, nVar_Species, config))
+            : static_cast<CNumerics*>(new CUpwSca_Species<Indices>(nDim, nVar_Species, config));
+        n->SetCompactPrimitives(speciesUseCompact);
+        numerics[iMGlevel][SPECIES_SOL][conv_term] = n;
         numerics[iMGlevel][SPECIES_SOL][conv_bound_term] = new CUpwSca_Species<Indices>(nDim, nVar_Species, config);
       }
       break;
@@ -1409,7 +1447,11 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
   /*--- Definition of the viscous scheme for each equation and mesh level ---*/
 
   for (auto iMGlevel = 0u; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-    numerics[iMGlevel][SPECIES_SOL][visc_term] = new CAvgGrad_Species<CScalarFlowIndices>(nDim, nVar_Species, true, config);
+    auto* n = speciesUseCompact
+        ? static_cast<CNumerics*>(new CAvgGrad_Species<CScalarFlowIndices>(nDim, nVar_Species, true, config))
+        : static_cast<CNumerics*>(new CAvgGrad_Species<Indices>(nDim, nVar_Species, true, config));
+    n->SetCompactPrimitives(speciesUseCompact);
+    numerics[iMGlevel][SPECIES_SOL][visc_term] = n;
     numerics[iMGlevel][SPECIES_SOL][visc_bound_term] = new CAvgGrad_Species<Indices>(nDim, nVar_Species, false, config);
   }
 
@@ -1428,13 +1470,13 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
 
 /*--- Explicit instantiation of the template above, needed because it is defined in a cpp file, instead of hpp. ---*/
 template void CDriver::InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+    unsigned short, int, const CConfig*, const CSolver*, const CGeometry*, CNumerics****&) const;
 
 template void CDriver::InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+    unsigned short, int, const CConfig*, const CSolver*, const CGeometry*, CNumerics****&) const;
 
 template void CDriver::InstantiateSpeciesNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
-    unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
+    unsigned short, int, const CConfig*, const CSolver*, const CGeometry*, CNumerics****&) const;
 
 void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver ***solver, CNumerics ****&numerics) const {
   SU2_ZONE_SCOPED
@@ -2043,13 +2085,16 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   if (turbulent) {
     if (incompressible)
       InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
-                                                                                 solver[MESH_0][TURB_SOL], numerics);
+                                                                                 solver[MESH_0][TURB_SOL],
+                                                                                 geometry[MESH_0], numerics);
     else if (NEMO_ns)
       InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
-                                                                                  solver[MESH_0][TURB_SOL], numerics);
+                                                                                  solver[MESH_0][TURB_SOL],
+                                                                                  geometry[MESH_0], numerics);
     else
       InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
-                                                                              solver[MESH_0][TURB_SOL], numerics);
+                                                                              solver[MESH_0][TURB_SOL],
+                                                                              geometry[MESH_0], numerics);
   }
 
   /*--- Solver definition for the transition model problem ---*/
@@ -2070,10 +2115,12 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   if (species) {
     if (incompressible)
       InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Species, offset, config,
-                                                                               solver[MESH_0][SPECIES_SOL], numerics);
+                                                                               solver[MESH_0][SPECIES_SOL],
+                                                                               geometry[MESH_0], numerics);
     else if (compressible)
       InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Species, offset, config,
-                                                                            solver[MESH_0][SPECIES_SOL], numerics);
+                                                                            solver[MESH_0][SPECIES_SOL],
+                                                                            geometry[MESH_0], numerics);
     else
       SU2_MPI::Error("Species transport only available for standard compressible and incompressible flow.", CURRENT_FUNCTION);
   }
@@ -2090,11 +2137,8 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
       switch (config->GetKind_ConvNumScheme_Heat()) {
 
         case SPACE_UPWIND :
-          /*--- Interior term reads flow primitives from CScalarSolver's compact container, hence
-           *    CScalarFlowIndices instead of the incompressible Indices type used for the boundary term. ---*/
-          numerics[iMGlevel][HEAT_SOL][conv_term] = new CUpwSca_Heat<CScalarFlowIndices>(nDim, config);
-          numerics[iMGlevel][HEAT_SOL][conv_bound_term] =
-              new CUpwSca_Heat<CIncEulerVariable::CIndices<unsigned short>>(nDim, config);
+          numerics[iMGlevel][HEAT_SOL][conv_term] = new CUpwSca_Heat(nDim, config);
+          numerics[iMGlevel][HEAT_SOL][conv_bound_term] = new CUpwSca_Heat(nDim, config);
           break;
 
         default:

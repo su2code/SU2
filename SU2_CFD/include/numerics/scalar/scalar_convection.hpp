@@ -112,8 +112,10 @@ class CUpwScalar : public CNumerics {
       AD::SetPreaccIn(GridVel_i, nDim);
       AD::SetPreaccIn(GridVel_j, nDim);
     }
-    AD::SetPreaccIn(&V_i[idx.Velocity()], nDim);
-    AD::SetPreaccIn(&V_j[idx.Velocity()], nDim);
+    if (!bounded_scalar) {
+      AD::SetPreaccIn(&V_i[idx.Velocity()], nDim);
+      AD::SetPreaccIn(&V_j[idx.Velocity()], nDim);
+    }
     AD::SetPreaccIn(V_i[idx.Density()]);
     AD::SetPreaccIn(V_j[idx.Density()]);
     AD::SetPreaccIn(MassFlux);
