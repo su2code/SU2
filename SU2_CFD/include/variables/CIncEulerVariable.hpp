@@ -298,7 +298,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return Density at time level n.
    */
-  inline su2double GetDensity_time_n(unsigned long iPoint) const override {
+  inline su2double GetDensity_time_n(unsigned long iPoint) const final {
     return Density_time_n.size() > 0 ? Density_time_n(iPoint) : GetDensity(iPoint);
   }
 
