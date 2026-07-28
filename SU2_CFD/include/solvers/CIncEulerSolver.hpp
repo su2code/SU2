@@ -92,8 +92,7 @@ protected:
    *        flamelet/variable-density) via the fluid model.
    * \details Called once per physical time step (InnerIter == 0), after the solution
    *          push-back. This keeps the density history consistent with the primitive
-   *          state at time n (also after restart), on every MG level where the inputs
-   *          exist, without the fragile per-iteration sentinel that used to seed it.
+   *          state at time n (also after restart).
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
