@@ -99,7 +99,7 @@ void CSU2BinaryMeshReaderBase::ReadMetadata(CConfig* config) {
   }
 
   /*--- Read the meta data from the current position. ---*/
-  ReadMetadataZone();
+  ReadMetadataZone(true);
 
   /*--- Close the grid file again. ---*/
   fclose(mesh_file);
@@ -433,8 +433,10 @@ void CSU2BinaryMeshReaderBase::FastForwardToMyZone() {
         ASCII reader does. ---*/
   if (nZones == 1 || !config->GetMultizone_Mesh()) return;
 
-  /*--- Loop over the lower numbered zones and read their meta data. ---*/
-  for (int zone = 0; zone < myZone; ++zone) ReadMetadataZone();
+  /*--- Loop over the lower numbered zones, skipping their metadata (without
+        overwriting the current zone's, which is read separately afterwards
+        by ReadMetadata()). ---*/
+  for (int zone = 0; zone < myZone; ++zone) ReadMetadataZone(false);
 }
 
 uint64_t CSU2BinaryMeshReaderBase::ReadBinaryNEntities() {
@@ -453,16 +455,20 @@ uint64_t CSU2BinaryMeshReaderBase::ReadBinaryNEntities() {
   return nEntities;
 }
 
-void CSU2BinaryMeshReaderBase::ReadMetadataZone() {
-  /*--- Skip the zone ID and read the number of dimensions. ---*/
+void CSU2BinaryMeshReaderBase::ReadMetadataZone(bool storeMetadata) {
+  /*--- Skip the zone ID and read the number of dimensions. storeMetadata is
+        false when this call is only being used to skip over a lower-numbered
+        zone's data (from FastForwardToMyZone): the file-position arithmetic
+        below still has to run, but its results must not overwrite the
+        members already holding the current (target) zone's metadata. ---*/
   int nDim;
   FileSeek64(mesh_file, sizeof(int), SEEK_CUR);
   ReadBinaryData<int>(&nDim, 1);
-  dimension = static_cast<unsigned short>(nDim);
+  if (storeMetadata) dimension = static_cast<unsigned short>(nDim);
 
   /*--- Read the number of elements. ---*/
   const auto nElem = ReadBinaryNEntities();
-  numberOfGlobalElements = static_cast<unsigned long>(nElem);
+  if (storeMetadata) numberOfGlobalElements = static_cast<unsigned long>(nElem);
 
   /*--- Jump to the end of the offset section, read the size of
         the connectivity and jump over it. ---*/
@@ -472,13 +478,13 @@ void CSU2BinaryMeshReaderBase::ReadMetadataZone() {
 
   /*--- Read the number of points and jump over the coordinate section. ---*/
   const auto nPoints = ReadBinaryNEntities();
-  numberOfGlobalPoints = static_cast<unsigned long>(nPoints);
+  if (storeMetadata) numberOfGlobalPoints = static_cast<unsigned long>(nPoints);
   FileSeek64(mesh_file, nPoints * (nDim * sizeof(double) + size_conn_type), SEEK_CUR);
 
   /*--- Read the number of markers and loop over them. ---*/
   int nMark;
   ReadBinaryData<int>(&nMark, 1);
-  numberOfMarkers = static_cast<unsigned long>(nMark);
+  if (storeMetadata) numberOfMarkers = static_cast<unsigned long>(nMark);
 
   for (int mark = 0; mark < nMark; ++mark) {
     /*--- Jump over the name of the marker and read

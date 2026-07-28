@@ -96,7 +96,9 @@ void CSU2MeshBinaryFileWriter::WriteData(string val_filename) {
       fwrite(&n_zone, sizeof(n_zone), 1, f);
     }
 
-    int32_t zone_id = iZone;
+    /*--- Zone IDs are 1-based, matching the "IZONE=" convention of the ASCII
+          format (CSU2MeshFileWriter writes iZone+1 as well). ---*/
+    int32_t zone_id = iZone + 1;
     int32_t n_dim = dataSorter->GetnDim();
     conn_t n_elem = dataSorter->GetnElemGlobal();
     fwrite(&zone_id, sizeof(zone_id), 1, f);

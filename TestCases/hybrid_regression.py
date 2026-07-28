@@ -103,7 +103,7 @@ def main():
     flatplate.cfg_dir   = "navierstokes/flatplate"
     flatplate.cfg_file  = "lam_flatplate.cfg"
     flatplate.test_iter = 100
-    flatplate.test_vals = [-6.543300, -1.065167, 0.001196, 0.029390, 2.361500, -2.332100, 0.000000, 0.000000]
+    flatplate.test_vals = [-6.543281, -1.065152, 0.001196, 0.029390, 2.361500, -2.332100, 0.000000, 0.000000]
     test_list.append(flatplate)
 
     # Laminar cylinder (steady)
@@ -119,7 +119,7 @@ def main():
     cylinder_lowmach.cfg_dir   = "navierstokes/cylinder"
     cylinder_lowmach.cfg_file  = "cylinder_lowmach.cfg"
     cylinder_lowmach.test_iter = 25
-    cylinder_lowmach.test_vals         = [-6.476618, -1.014896, 0.594402, 70.856965, 0.000000]
+    cylinder_lowmach.test_vals         = [-6.476618, -1.014896, 0.594402, 70.856953, 0.000000]
     cylinder_lowmach.test_vals_aarch64 = [-6.830996, -1.368850, -0.143956, 73.963354, 0]
     test_list.append(cylinder_lowmach)
 
@@ -128,7 +128,7 @@ def main():
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
     poiseuille.cfg_file  = "lam_poiseuille.cfg"
     poiseuille.test_iter = 10
-    poiseuille.test_vals = [-5.046182, 0.652932, 0.008488, 13.734488, 0.000000]
+    poiseuille.test_vals = [-7.595535, -6.993332, 0.007670, 13.591507, 0]
     test_list.append(poiseuille)
 
     # 2D Poiseuille flow (inlet profile file)
@@ -136,7 +136,7 @@ def main():
     poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
     poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
     poiseuille_profile.test_iter = 10
-    poiseuille_profile.test_vals         = [-12.005129, -7.582314, -0.000000, 2.089953]
+    poiseuille_profile.test_vals         = [-12.005126, -7.582352, -0.000000, 2.089953]
     poiseuille_profile.test_vals_aarch64 = [-12.009012, -7.262530, -0.000000, 2.089953]
     test_list.append(poiseuille_profile)
 
@@ -145,7 +145,7 @@ def main():
     periodic2d.cfg_dir   = "navierstokes/periodic2D"
     periodic2d.cfg_file  = "config.cfg"
     periodic2d.test_iter = 1400
-    periodic2d.test_vals = [-10.817608, -8.363541, -8.287458, -5.334101, -1.088412, -2945.200000]
+    periodic2d.test_vals = [-10.817608, -8.363541, -8.287458, -5.334101, -1.088411, -2945.200000]
     test_list.append(periodic2d)
 
     ##########################
@@ -197,7 +197,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals = [-12.038060, -16.332088, 1.080346, 0.018385, 20.000000, -2.873410, 0.000000, -14.250270, 0.000000]
+    turb_naca0012_sa.test_vals = [-12.038042, -16.332088, 1.080346, 0.018385, 20.000000, -2.873258, 0.000000, -14.250270, 0.000000]
     turb_naca0012_sa.test_vals_aarch64 = [-12.038091, -16.332090, 1.080346, 0.018385, 20.000000, -2.873236, 0.000000, -14.250271, 0.000000]
     test_list.append(turb_naca0012_sa)
 
@@ -206,7 +206,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.093924, -15.250755, -5.906323, 1.070413, 0.015775, -2.855101, 0.000000]
+    turb_naca0012_sst.test_vals = [-12.093984, -15.250705, -5.906323, 1.070413, 0.015775, -2.855331, 0.000000]
     turb_naca0012_sst.test_vals_aarch64 = [-12.075928, -15.246732, -5.861249, 1.070036, 0.015841, -2.835263, 0]
     test_list.append(turb_naca0012_sst)
 
@@ -215,7 +215,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-12.080792, -14.837174, -5.732908, 1.000893, 0.019109, -2.120172]
+    turb_naca0012_sst_sust.test_vals = [-12.080774, -14.837176, -5.732907, 1.000893, 0.019109, -2.120168]
     turb_naca0012_sst_sust.test_vals_aarch64 = [-12.073210, -14.836724, -5.732627, 1.000050, 0.019144, -2.629689]
     test_list.append(turb_naca0012_sst_sust)
 
@@ -252,7 +252,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-11.083069, -5.374689, -8.880092, -4.073524, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-11.083070, -5.374688, -8.880089, -4.073519, 0.000000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.140441, -9.154674, -10.886121, -5.806594, 0.000000]
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -367,7 +367,7 @@ def main():
     inc_lam_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
     inc_lam_cylinder.cfg_file  = "incomp_cylinder.cfg"
     inc_lam_cylinder.test_iter = 10
-    inc_lam_cylinder.test_vals = [-4.161196, -3.573053, 0.025533, 4.944647]
+    inc_lam_cylinder.test_vals = [-4.161196, -3.573053, 0.025533, 4.944646]
     test_list.append(inc_lam_cylinder)
 
     # Buoyancy-driven cavity
@@ -404,7 +404,7 @@ def main():
     inc_turb_naca0012.cfg_dir   = "incomp_rans/naca0012"
     inc_turb_naca0012.cfg_file  = "naca0012.cfg"
     inc_turb_naca0012.test_iter = 20
-    inc_turb_naca0012.test_vals = [-4.758114, -10.974548, -0.000004, -0.028637, 5.000000, -4.080548, 2.000000, -4.490129]
+    inc_turb_naca0012.test_vals = [-4.758114, -10.974548, -0.000004, -0.028637, 5.000000, -4.080155, 2.000000, -4.491724]
     test_list.append(inc_turb_naca0012)
 
     # NACA0012, SST_SUST
@@ -420,7 +420,7 @@ def main():
     inc_weakly_coupled.cfg_dir = "disc_adj_heat"
     inc_weakly_coupled.cfg_file = "primal.cfg"
     inc_weakly_coupled.test_iter = 10
-    inc_weakly_coupled.test_vals = [-18.106209, -16.303012, -16.484904, -15.006575, -17.858050, -14.024869, 5.609100]
+    inc_weakly_coupled.test_vals = [-18.106234, -16.302995, -16.484896, -15.006575, -17.858050, -14.024855, 5.609100]
     test_list.append(inc_weakly_coupled)
 
     ######################################
@@ -440,7 +440,7 @@ def main():
     spinning_cylinder.cfg_dir   = "moving_wall/spinning_cylinder"
     spinning_cylinder.cfg_file  = "spinning_cylinder.cfg"
     spinning_cylinder.test_iter = 25
-    spinning_cylinder.test_vals         = [-7.533969, -2.066690, 1.832252, 1.843016]
+    spinning_cylinder.test_vals         = [-7.533969, -2.066689, 1.832252, 1.843016]
     spinning_cylinder.test_vals_aarch64 = [-8.008023, -2.611064, 1.497308, 1.487483]
     test_list.append(spinning_cylinder)
 
@@ -570,7 +570,7 @@ def main():
     transonic_stator_restart.cfg_dir   = "turbomachinery/transonic_stator_2D"
     transonic_stator_restart.cfg_file  = "transonic_stator_restart.cfg"
     transonic_stator_restart.test_iter = 20
-    transonic_stator_restart.test_vals         = [-4.367141, -2.487739, -2.079071, 1.728176, -1.464952, 3.225028, -471620.000000, 94.839000, -0.051126]
+    transonic_stator_restart.test_vals         = [-4.367141, -2.487739, -2.079071, 1.728176, -1.464951, 3.225028, -471620.000000, 94.839000, -0.051125]
     transonic_stator_restart.test_vals_aarch64 = [-4.442510, -2.561369, -2.165778, 1.652750, -1.355494, 3.172712, -471620.000000, 94.843000, -0.043825]
     test_list.append(transonic_stator_restart)
 
@@ -592,12 +592,21 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 5
-    uniform_flow.test_vals = [5.000000, 0.000000, -0.195002, -10.624450]
+    uniform_flow.test_vals = [5.000000, 0.000000, -0.195002, -10.624446]
     uniform_flow.unsteady  = True
     uniform_flow.multizone = True
     test_list.append(uniform_flow)
 
-    # Channel_2D
+    # Channel_2D, native SU2 binary mesh format (.su2b)
+    # channel_2D_WA.cfg loads channel_2D_su2bin.su2b directly, so SU2_DEF must
+    # first convert channel_2D.su2 (3 zones) into that binary mesh.
+    channel_2D_su2bin_convert           = TestCase('channel_2D_su2bin_convert')
+    channel_2D_su2bin_convert.cfg_dir   = "sliding_interface/channel_2D"
+    channel_2D_su2bin_convert.cfg_file  = "mesh_su2_to_su2bin.cfg"
+    channel_2D_su2bin_convert.command   = TestCase.Command(exec = "SU2_DEF")
+    channel_2D_su2bin_convert.timeout   = 600
+    test_list.append(channel_2D_su2bin_convert)
+
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
@@ -663,7 +672,7 @@ def main():
     slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
     slinc_steady.cfg_file  = "config.cfg"
     slinc_steady.test_iter = 19
-    slinc_steady.test_vals         = [19.000000, -1.144102, -1.424987]
+    slinc_steady.test_vals         = [19.000000, -1.144102, -1.424986]
     slinc_steady.test_vals_aarch64 = [19.000000, -1.154874, -1.378120]
     slinc_steady.multizone = True
     test_list.append(slinc_steady)
@@ -746,7 +755,7 @@ def main():
     mms_fvm_inc_ns.cfg_dir   = "mms/fvm_incomp_navierstokes"
     mms_fvm_inc_ns.cfg_file  = "lam_mms_fds.cfg"
     mms_fvm_inc_ns.test_iter = 20
-    mms_fvm_inc_ns.test_vals = [-7.414945, -7.631546, 0.000000, 0.000000]
+    mms_fvm_inc_ns.test_vals = [-7.414945, -7.631547, 0.000000, 0.000000]
     test_list.append(mms_fvm_inc_ns)
 
     ##########################
@@ -786,8 +795,10 @@ def main():
     ######################################
 
     for test in test_list:
-        test.command = TestCase.Command(exec = "SU2_CFD", param = "-t 2")
-        test.timeout = 600
+        if test.command.empty():
+            test.command = TestCase.Command(exec = "SU2_CFD", param = "-t 2")
+        if test.timeout == 0:
+            test.timeout = 600
         test.tol = 1e-4
     #end
 

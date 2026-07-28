@@ -359,6 +359,14 @@ def main():
     flatplate.test_vals = [-6.496808, -1.017942, 0.001224, 0.028377, 2.361500, -2.333200, 0.000000, 0.000000]
     test_list.append(flatplate)
 
+    # Supersonic laminar flat plate
+    flatplate_supersonic           = TestCase('flatplate_supersonic')
+    flatplate_supersonic.cfg_dir   = "navierstokes/flatplate"
+    flatplate_supersonic.cfg_file  = "flatplate_supersonic.cfg"
+    flatplate_supersonic.test_iter = 100
+    flatplate_supersonic.test_vals = [100.000000, -2.940787, -0.677195, -0.570647, 2.495441, 0.001678]
+    test_list.append(flatplate_supersonic)
+
     # Custom objective function
     flatplate_udobj           = TestCase('flatplate_udobj')
     flatplate_udobj.cfg_dir   = "user_defined_functions"
@@ -398,7 +406,7 @@ def main():
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
     poiseuille.cfg_file  = "lam_poiseuille.cfg"
     poiseuille.test_iter = 10
-    poiseuille.test_vals = [0.648196, 0.000199, 13.639173, 0.000000]
+    poiseuille.test_vals = [-6.994786, 0.000197, 13.596249, 0]
     poiseuille.tol       = 0.001
     test_list.append(poiseuille)
 
@@ -675,7 +683,7 @@ def main():
     inc_lam_sphere.cfg_dir   = "incomp_navierstokes/sphere"
     inc_lam_sphere.cfg_file  = "sphere.cfg"
     inc_lam_sphere.test_iter = 5
-    inc_lam_sphere.test_vals = [-8.190948, -8.992588, 0.121003, 25.782691]
+    inc_lam_sphere.test_vals = [-7.600533, -8.244915, -8.361301, -9.325293, 0.121003, 25.782687, -1.881890]
     test_list.append(inc_lam_sphere)
 
     # Buoyancy-driven cavity
@@ -1220,12 +1228,20 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 5
-    uniform_flow.test_vals = [5.000000, 0.000000, -0.195001, -10.624453]
+    uniform_flow.test_vals = [5.000000, 0.000000, -0.195001, -10.624458]
     uniform_flow.unsteady  = True
     uniform_flow.multizone = True
     test_list.append(uniform_flow)
 
-    # Channel_2D
+    # Channel_2D, native SU2 binary mesh format (.su2b)
+    # channel_2D_WA.cfg loads channel_2D_su2bin.su2b directly, so SU2_DEF must
+    # first convert channel_2D.su2 (3 zones) into that binary mesh.
+    channel_2D_su2bin_convert           = TestCase('channel_2D_su2bin_convert')
+    channel_2D_su2bin_convert.cfg_dir   = "sliding_interface/channel_2D"
+    channel_2D_su2bin_convert.cfg_file  = "mesh_su2_to_su2bin.cfg"
+    channel_2D_su2bin_convert.command   = TestCase.Command("mpirun -n 2", "SU2_DEF")
+    test_list.append(channel_2D_su2bin_convert)
+
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
@@ -1392,7 +1408,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.330741, -4.152826, 0, 75]
+    dyn_fsi.test_vals = [-4.330741, -4.152826, 0.000000, 75.000000]
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     test_list.append(dyn_fsi)

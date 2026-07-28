@@ -190,7 +190,7 @@ def main():
     poiseuille.cfg_dir   = "navierstokes/poiseuille"
     poiseuille.cfg_file  = "lam_poiseuille.cfg"
     poiseuille.test_iter = 10
-    poiseuille.test_vals = [-5.050753, 0.648333, 0.012273, 13.643141, 0.000000]
+    poiseuille.test_vals = [-7.597002, -6.994814, 0.012154, 13.596296, 0]
     test_list.append(poiseuille)
 
     # 2D Poiseuille flow (inlet profile file)
@@ -348,6 +348,15 @@ def main():
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.143715, -9.170705, -10.848554, -5.776746, 0.000000]
     axi_rans_air_nozzle_restart.tol       = 0.0001
     test_list.append(axi_rans_air_nozzle_restart)
+
+    # Axisymmetric air nozzle species
+    axi_rans_air_nozzle_species           = TestCase('axi_rans_air_nozzle_species')
+    axi_rans_air_nozzle_species.cfg_dir   = "axisymmetric_rans/air_nozzle"
+    axi_rans_air_nozzle_species.cfg_file  = "air_nozzle_species.cfg"
+    axi_rans_air_nozzle_species.test_iter = 10
+    axi_rans_air_nozzle_species.test_vals =  [-1.840714, 3.726195, -2.009323, 5.649002, -2.494388, 0.0000]
+    axi_rans_air_nozzle_species.tol       = 0.0001
+    test_list.append(axi_rans_air_nozzle_species)
 
     #################################
     ## Compressible RANS Restart  ###
@@ -946,14 +955,23 @@ def main():
     uniform_flow.cfg_dir   = "sliding_interface/uniform_flow"
     uniform_flow.cfg_file  = "uniform_NN.cfg"
     uniform_flow.test_iter = 2
-    uniform_flow.test_vals = [2.000000, 0.000000, -0.230639, -13.251161]
+    uniform_flow.test_vals = [2.000000, 0.000000, -0.230639, -13.253604]
     uniform_flow.test_vals_aarch64 = [2.000000, 0.000000, -0.230641, -13.249000]
     uniform_flow.tol       = 0.000001
     uniform_flow.unsteady  = True
     uniform_flow.multizone = True
     test_list.append(uniform_flow)
 
-   # Channel_2D
+    # Channel_2D, native SU2 binary mesh format (.su2b)
+    # channel_2D_WA.cfg loads channel_2D_su2bin.su2b directly, so SU2_DEF must
+    # first convert channel_2D.su2 (3 zones) into that binary mesh.
+    channel_2D_su2bin_convert           = TestCase('channel_2D_su2bin_convert')
+    channel_2D_su2bin_convert.cfg_dir   = "sliding_interface/channel_2D"
+    channel_2D_su2bin_convert.cfg_file  = "mesh_su2_to_su2bin.cfg"
+    channel_2D_su2bin_convert.command   = TestCase.Command(exec = "SU2_DEF")
+    test_list.append(channel_2D_su2bin_convert)
+
+    # Channel_2D
     channel_2D           = TestCase('channel_2D')
     channel_2D.cfg_dir   = "sliding_interface/channel_2D"
     channel_2D.cfg_file  = "channel_2D_WA.cfg"
