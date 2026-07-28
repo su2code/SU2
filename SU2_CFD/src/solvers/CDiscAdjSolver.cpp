@@ -111,16 +111,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     SolverName = "ADJ.SOL";
     break;
   }
-
-  /*--- The discrete adjoint chain rule through the time-history of the incompressible density
-        is not yet implemented. Bail out until it is, to avoid silently wrong gradients. ---*/
-  if (KindDirect_Solver == RUNTIME_FLOW_SYS &&
-      config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE &&
-      config->GetTime_Marching() != TIME_MARCHING::STEADY &&
-      config->GetKind_DensityModel() != INC_DENSITYMODEL::CONSTANT) {
-    SU2_MPI::Error("Unsteady discrete adjoint with non-constant INC_DENSITY_MODEL is not yet supported.",
-                   CURRENT_FUNCTION);
-  }
 }
 
 CDiscAdjSolver::~CDiscAdjSolver() { delete nodes; }

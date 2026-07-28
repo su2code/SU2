@@ -976,7 +976,8 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
 
-  if (dual_time && config->GetInnerIter() == 0) {
+  /*--- InnerIter is not reset while recording the discrete adjoint tape. ---*/
+  if (dual_time && (config->GetInnerIter() == 0 || AD::TapeActive())) {
     RecomputeDensity_time_n(solver_container, config);
   }
 
@@ -1091,16 +1092,10 @@ void CIncEulerSolver::RecomputeDensity_time_n(CSolver **solver_container, const 
 
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
-  /*--- For flamelet / multicomponent density the fluid-model lookup needs the
-        scalar state; those come from the species solver, which only exists on
-        the fine grid. Where it is absent (coarse MG levels, or non-species
-        variable-density cases) the density depends on the flow enthalpy alone. ---*/
   CVariable* speciesNodes = (solver_container[SPECIES_SOL] != nullptr)
                               ? solver_container[SPECIES_SOL]->GetNodes() : nullptr;
 
-  /*--- If the density model requires scalars but the species solver is not
-        available on this level, leave the history untouched (it is maintained
-        by MG restriction of the primitive field). ---*/
+  /*--- The species solver only exists on the fine grid; MG with scalar-dependent density is rejected in CConfig. ---*/
   const bool needs_scalars = (config->GetKind_Species_Model() != SPECIES_MODEL::NONE);
   if (needs_scalars && speciesNodes == nullptr) return;
 
