@@ -976,14 +976,6 @@ void CIncEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_
   SU2_OMP_ATOMIC
   ErrorCounter += SetPrimitive_Variables(solver_container, config);
 
-  /*--- Recompute the dual-time density history from the stored solution history
-        via the fluid model, once per physical time step after the push-back.
-        This is consistent with the primitive state at time n by construction
-        (also after restart, since Solution_time_n[,1] are the loaded histories)
-        and needs no sentinel. The InnerIter == 0 guard is a uniform, non
-        data-dependent condition, so the worksharing loop inside is entered by
-        every thread of the team -- OpenMP-safe, unlike the old probe of
-        GetDensity_time_n(0) == 0.0. ---*/
   if (dual_time && config->GetInnerIter() == 0) {
     RecomputeDensity_time_n(solver_container, config);
   }
