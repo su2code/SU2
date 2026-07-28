@@ -60,12 +60,7 @@ CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *veloci
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
 
-    /*--- For constant-density flows, save memory by using GetDensity() on demand. ---*/
-    const bool variable_density = (config->GetKind_DensityModel() != INC_DENSITYMODEL::CONSTANT);
-
-    if (variable_density) {
-      /*--- Allocate density storage for time levels.
-            Note: Actual density values will be set after SetPrimVar is called in Preprocessing. ---*/
+    if (config->GetKind_DensityModel() != INC_DENSITYMODEL::CONSTANT) {
       Density_time_n.resize(nPoint) = su2double(0.0);
       Density_time_n1.resize(nPoint) = su2double(0.0);
     }
