@@ -623,7 +623,6 @@ void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSol
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
 
-  /*--- The bounded-scalar correction (set from the derived solver constructor). ---*/
   const bool bounded_scalar = BoundedScalar;
 
   /*--- Flow solution, needed to get density. ---*/
