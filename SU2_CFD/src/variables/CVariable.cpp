@@ -55,6 +55,7 @@ CVariable::CVariable(unsigned long npoint, unsigned long ndim, unsigned long nva
   /*--- Allocate fields common to all problems. Do not allocate fields
    that are specific to one solver, i.e. not common, in this class. ---*/
   Solution.resize(nPoint,nVar) = su2double(0.0);
+
   Solution_Old.resize(nPoint,nVar) = su2double(0.0);
 
   if (config->GetTime_Domain())

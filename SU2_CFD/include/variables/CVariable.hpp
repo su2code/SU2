@@ -282,12 +282,12 @@ public:
   /*!
    * \brief Set the variable solution at time n.
    */
-  virtual void Set_Solution_time_n();
+  void Set_Solution_time_n();
 
   /*!
    * \brief Set the variable solution at time n-1.
    */
-  virtual void Set_Solution_time_n1();
+  void Set_Solution_time_n1();
 
   /*!
    * \brief Set the variable solution at time n.
@@ -2214,15 +2214,13 @@ public:
 
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
-   * Virtual to allow derived classes to register additional containers.
    */
-  virtual void RegisterSolution_time_n();
+  void RegisterSolution_time_n();
 
   /*!
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
-   * Virtual to allow derived classes to register additional containers.
    */
-  virtual void RegisterSolution_time_n1();
+  void RegisterSolution_time_n1();
 
   /*!
    * \brief Register the variables in the user defined source array as input/output variable.

@@ -272,24 +272,16 @@ class CFlowVariable : public CVariable {
   inline su2activevector& GetStrainMag() { return StrainMag; }
 
   /*!
-   * \brief Get the density at time level n for dual-time stepping (compressible flows).
-   * For compressible flows, density is extracted from the solution container.
-   * For incompressible flows, this is overridden.
+   * \brief Get the density at time level n for dual-time stepping.
    * \param[in] iPoint - Point index.
    * \return Density at time level n.
    */
-  inline virtual su2double GetDensity_time_n(unsigned long iPoint) const {
-    return GetSolution_time_n(iPoint, 0);  // Density is the first component of Solution
-  }
+  virtual su2double GetDensity_time_n(unsigned long iPoint) const = 0;
 
   /*!
-   * \brief Get the density at time level n-1 for dual-time stepping (compressible flows).
-   * For compressible flows, density is extracted from the solution container.
-   * For incompressible flows, this is overridden.
+   * \brief Get the density at time level n-1 for dual-time stepping.
    * \param[in] iPoint - Point index.
    * \return Density at time level n-1.
    */
-  inline virtual su2double GetDensity_time_n1(unsigned long iPoint) const {
-    return GetSolution_time_n1(iPoint, 0);  // Density is the first component of Solution
-  }
+  virtual su2double GetDensity_time_n1(unsigned long iPoint) const = 0;
 };
