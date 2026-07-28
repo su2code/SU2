@@ -599,14 +599,12 @@ MakePair("ONESPECIES", ONESPECIES)
 */
 enum class ENUM_DATADRIVEN_METHOD {
   LUT = 0,
-  MLP = 1,
-  LUT_FAST = 2   /* New LUT implementation based on Pedro's code */
+  MLP = 1
 };
 
 static const MapType<std::string, ENUM_DATADRIVEN_METHOD> DataDrivenMethod_Map = {
   MakePair("LUT", ENUM_DATADRIVEN_METHOD::LUT)
   MakePair("MLP", ENUM_DATADRIVEN_METHOD::MLP)
-  MakePair("LUT_FAST", ENUM_DATADRIVEN_METHOD::LUT_FAST)
 };
 
 /*!

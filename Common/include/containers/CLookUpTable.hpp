@@ -35,7 +35,6 @@
 #include "../../Common/include/option_structure.hpp"
 #include "CFileReaderLUT.hpp"
 #include "CTrapezoidalMap.hpp"
-#include "CTrapezoidalMapFAST.hpp"
 
 /*!
  * \brief Look up table.
@@ -101,15 +100,9 @@ class CLookUpTable {
   su2vector<su2vector<unsigned long>> hull;
 
   /*! \brief
-   * Trapezoidal map objects for the table levels (original SU2 implementation).
+   * Trapezoidal map objects for the table levels.
    */
   su2vector<CTrapezoidalMap> trap_map_x_y;
-
-  /*! \brief
-   * Memory-efficient trapezoidal map objects for LUT_FAST.
-   */
-  su2vector<CTrapezoidalMapFAST> trap_map_x_y_FAST;
-  bool use_fast_trap_map_{false};
 
   /*! \brief
    * Vector of all the weight factors for the interpolation.
@@ -268,29 +261,6 @@ class CLookUpTable {
                                      su2double* var_val, const unsigned long i_level = 0);
 
   /*!
-   * \brief Determine if a point P(val_CV1,val_CV2) is inside the triangle val_id_triangle.
-   * \param[in] val_CV1 - First coordinate of point P(val_CV1,val_CV2) to check.
-   * \param[in] val_CV2 - Second coordinate of point P(val_CV1,val_CV2) to check.
-   * \param[in] val_id_triangle - ID of the triangle to check.
-   * \returns True if the point is in the triangle, false if it is outside.
-   */
-  bool IsInTriangle(su2double val_CV1, su2double val_CV2, unsigned long val_id_triangle, unsigned long i_level = 0);
-
-  /*!
-   * \brief Compute the area of a triangle given the 3 points of the triangle.
-   * \param[in] x1 - The coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
-   * \param[in] y1 - The coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
-   * \param[in] x2 - The coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
-   * \param[in] y2 - The coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
-   * \param[in] x3 - The coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
-   * \param[in] y3 - The coordinates of the points P1(x1,y1), P2(x2,y2) and P3(x3,y3).
-   * \returns The absolute value of the area of the triangle.
-   */
-  inline su2double TriArea(su2double x1, su2double y1, su2double x2, su2double y2, su2double x3, su2double y3) {
-    return abs((x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) * 0.5);
-  }
-
-  /*!
    * \brief Compute the values of the first and second controlling variable based on normalized query coordinates
    * \param[in] inclusion_levels - Pair containing lower(first) and upper(second) table inclusion level indices.
    * \param[in] val_CV1 - First controlling variable value.
@@ -325,23 +295,6 @@ class CLookUpTable {
 
  public:
   CLookUpTable(const std::string& file_name_lut, std::string name_CV1_in, std::string name_CV2_in);
-
-  /*!
-   * \brief Build the original SU2 trapezoidal map (DAG-based).
-   * Use EnableFastTrapMap() for large tables instead.
-   */
-  void BuildOriginalTrapMap();
-
-  /*!
-   * \brief Enable Memory-efficient trapezoidal map (LUT_FAST mode).
-   * This builds band-based maps with O(n) memory instead of the original O(n log n) DAG.
-   */
-  void EnableFastTrapMap();
-
-  /*!
-   * \brief Check if fast trapezoidal map is enabled.
-   */
-  inline bool UsingFastTrapMap() const { return use_fast_trap_map_; }
 
   /*!
    * \brief Print information to screen.
