@@ -2069,6 +2069,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
   /*!\brief MG_IMPLICIT_LINES_MAX_LENGTH\n DESCRIPTION: Maximum number of nodes on a wall-normal implicit agglomeration line (including the wall seed node). DEFAULT: 20 \ingroup Config*/
   addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
+  /*!\brief MG_IMPLICIT_LINES_ISOTROPIC\n DESCRIPTION: Use isotropic agglomeration along implicit lines (4 cells per coarse CV) instead of anisotropic (2 cells per coarse CV). DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_IMPLICIT_LINES_ISOTROPIC", MGOptions.MG_Implicit_Lines_Isotropic, false);
   /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i). If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
   addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
 

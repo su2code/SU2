@@ -1126,6 +1126,7 @@ struct CMGOptions {
   su2double MG_Smooth_StagnationTol{0.0}; /*!< \brief Stagnation early exit: stop if current_rms >= prev_rms * tol. 0 = disabled. */
   bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
   unsigned long MG_Implicit_Lines_MaxLength{20}; /*!< \brief Maximum nodes on a wall-normal implicit line (including wall seed). */
+  bool MG_Implicit_Lines_Isotropic{false}; /*!< \brief Use isotropic (vs anisotropic) agglomeration along implicit lines. */
 };
 
 /*!

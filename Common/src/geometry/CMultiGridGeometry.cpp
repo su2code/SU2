@@ -1286,6 +1286,7 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
   const su2double ANGLE_THRESHOLD_DEG = 20.0; /*!< Stop line if direction deviates more than this. */
   const unsigned long MAX_LINE_LENGTH = config->GetMGOptions().MG_Implicit_Lines_MaxLength;
   const su2double cos_threshold = cos(ANGLE_THRESHOLD_DEG * PI_NUMBER / 180.0);
+  const bool ISOTROPIC = config->GetMGOptions().MG_Implicit_Lines_Isotropic;
 
   const unsigned long nPointFine = fine_grid->GetnPoint();
 
@@ -1381,14 +1382,20 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
 
   if (rank == MASTER_NODE) {
     cout << "Implicit line agglomeration: detected " << lines.size() << " lines." << endl;
+    cout << "  Mode: " << (ISOTROPIC ? "ISOTROPIC" : "ANISOTROPIC") << endl;
   }
 
-  /*--- Advancing-front greedy pairing with cross-line merging.
-   *    For each pair stage k, process interior positions (1+2k, 1+2k+1).
-   *    When two lines share the same wall-node parent CV, merge their pairs
-   *    into a single 4-child coarse CV.  Otherwise create 2-child coarse CVs. ---*/
+  /*--- Agglomeration strategy:
+   *    ANISOTROPIC (default): Pair nodes at the SAME distance from wall on DIFFERENT lines.
+   *      Each coarse CV has 2 fine children (from adjacent lines).
+   *      Reduces mesh by factor ~2 normal to wall, preserves resolution along wall.
+   *
+   *    ISOTROPIC: Group 4 nodes (2 positions × 2 lines) into one coarse CV.
+   *      Each coarse CV has 4 fine children.
+   *      Reduces mesh uniformly by factor ~4 in all directions.
+   ---*/
   vector<char> reserved(nPointFine, 0);
-  unsigned pair_idx = 0;
+  unsigned position_idx = 0;
 
   while (true) {
     bool any_work = false;
@@ -1399,111 +1406,140 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
     for (unsigned long li = 0; li < lines.size(); ++li) {
       const auto& L = lines[li];
       if (L.empty()) continue;
-      const auto idx2 = 1 + 2 * pair_idx + 1;
-      if (L.size() <= idx2) continue;  // no pair at this stage
+      if (ISOTROPIC) {
+        const auto idx2 = 1 + 2 * position_idx + 1;
+        if (L.size() <= idx2) continue;  // no pair at this stage
+      } else {
+        if (L.size() <= 1 + position_idx) continue;  // no position at this index
+      }
       const auto pW = fine_grid->nodes->GetParent_CV(L[0]);
       parent_to_lines[pW].push_back(li);
     }
 
     vector<char> line_processed(lines.size(), 0);
 
-    /*--- A) Cross-line merges: parents with multiple lines ---*/
-    for (auto& [parent, line_ids] : parent_to_lines) {
-      if (line_ids.size() < 2) continue;
+    if (ISOTROPIC) {
+      /*--- ISOTROPIC MODE: Group 4 children per coarse CV (2 positions × 2 lines) ---*/
+      for (auto& [parent, line_ids] : parent_to_lines) {
+        if (line_ids.size() < 2) continue;
 
-      for (size_t k = 0; k + 1 < line_ids.size(); k += 2) {
-        const auto li1 = line_ids[k];
-        const auto li2 = line_ids[k + 1];
-        if (line_processed[li1] || line_processed[li2]) continue;
+        for (size_t k = 0; k + 1 < line_ids.size(); k += 2) {
+          const auto li1 = line_ids[k];
+          const auto li2 = line_ids[k + 1];
+          if (line_processed[li1] || line_processed[li2]) continue;
 
-        const auto& L1 = lines[li1];
-        const auto& L2 = lines[li2];
-        const auto idx1 = 1 + 2 * pair_idx;
-        const auto idx2 = idx1 + 1;
-        if (L1.size() <= idx2 || L2.size() <= idx2) continue;
+          const auto& L1 = lines[li1];
+          const auto& L2 = lines[li2];
+          const auto idx1 = 1 + 2 * position_idx;
+          const auto idx2 = idx1 + 1;
+          if (L1.size() <= idx2 || L2.size() <= idx2) continue;
 
-        const auto a = L1[idx1], b = L1[idx2];
-        const auto c = L2[idx1], d = L2[idx2];
+          const auto a = L1[idx1], b = L1[idx2];
+          const auto c = L2[idx1], d = L2[idx2];
 
-        /*--- Skip if any node is already claimed ---*/
-        if (fine_grid->nodes->GetAgglomerate(a) || fine_grid->nodes->GetAgglomerate(b) ||
-            fine_grid->nodes->GetAgglomerate(c) || fine_grid->nodes->GetAgglomerate(d))
-          continue;
-        if (reserved[a] || reserved[b] || reserved[c] || reserved[d]) continue;
+          /*--- Skip if any node is already claimed ---*/
+          if (fine_grid->nodes->GetAgglomerate(a) || fine_grid->nodes->GetAgglomerate(b) ||
+              fine_grid->nodes->GetAgglomerate(c) || fine_grid->nodes->GetAgglomerate(d))
+            continue;
+          if (reserved[a] || reserved[b] || reserved[c] || reserved[d]) continue;
 
-        /*--- Geometrical quality check ---*/
-        if (!GeometricalCheck(a, fine_grid, config) || !GeometricalCheck(b, fine_grid, config) ||
-            !GeometricalCheck(c, fine_grid, config) || !GeometricalCheck(d, fine_grid, config))
-          continue;
+          /*--- Geometrical quality check ---*/
+          if (!GeometricalCheck(a, fine_grid, config) || !GeometricalCheck(b, fine_grid, config) ||
+              !GeometricalCheck(c, fine_grid, config) || !GeometricalCheck(d, fine_grid, config))
+            continue;
 
-        /*--- Guard against duplicate indices ---*/
-        if (a == b || a == c || a == d || b == c || b == d || c == d) {
-          for (auto other_li : line_ids) line_processed[other_li] = 1;
-          continue;
+          /*--- Guard against duplicate indices ---*/
+          if (a == b || a == c || a == d || b == c || b == d || c == d) {
+            for (auto other_li : line_ids) line_processed[other_li] = 1;
+            continue;
+          }
+
+          /*--- Create 4-child coarse CV (isotropic agglomeration) ---*/
+          fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
+          nodes->SetChildren_CV(Index_CoarseCV, 0, a);
+          fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
+          nodes->SetChildren_CV(Index_CoarseCV, 1, b);
+          fine_grid->nodes->SetParent_CV(c, Index_CoarseCV);
+          nodes->SetChildren_CV(Index_CoarseCV, 2, c);
+          fine_grid->nodes->SetParent_CV(d, Index_CoarseCV);
+          nodes->SetChildren_CV(Index_CoarseCV, 3, d);
+          nodes->SetnChildren_CV(Index_CoarseCV, 4);
+
+          reserved[a] = reserved[b] = reserved[c] = reserved[d] = 1;
+          MGQueue_InnerCV.RemoveCV(a);
+          MGQueue_InnerCV.RemoveCV(b);
+          MGQueue_InnerCV.RemoveCV(c);
+          MGQueue_InnerCV.RemoveCV(d);
+
+          Index_CoarseCV++;
+          line_processed[li1] = line_processed[li2] = 1;
+          for (auto other_li : line_ids)
+            if (other_li != li1 && other_li != li2) line_processed[other_li] = 1;
+          any_work = true;
         }
+      }
+    } else {
+      /*--- ANISOTROPIC MODE: Pair nodes at SAME position on DIFFERENT lines ---*/
+      for (auto& [parent, line_ids] : parent_to_lines) {
+        if (line_ids.size() < 2) continue;
 
-        /*--- Create 4-child coarse CV ---*/
-        fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
-        nodes->SetChildren_CV(Index_CoarseCV, 0, a);
-        fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
-        nodes->SetChildren_CV(Index_CoarseCV, 1, b);
-        fine_grid->nodes->SetParent_CV(c, Index_CoarseCV);
-        nodes->SetChildren_CV(Index_CoarseCV, 2, c);
-        fine_grid->nodes->SetParent_CV(d, Index_CoarseCV);
-        nodes->SetChildren_CV(Index_CoarseCV, 3, d);
-        nodes->SetnChildren_CV(Index_CoarseCV, 4);
+        /*--- Pair consecutive lines at the same position ---*/
+        for (size_t k = 0; k + 1 < line_ids.size(); k += 2) {
+          const auto li1 = line_ids[k];
+          const auto li2 = line_ids[k + 1];
+          if (line_processed[li1] || line_processed[li2]) continue;
 
-        reserved[a] = reserved[b] = reserved[c] = reserved[d] = 1;
-        MGQueue_InnerCV.RemoveCV(a);
-        MGQueue_InnerCV.RemoveCV(b);
-        MGQueue_InnerCV.RemoveCV(c);
-        MGQueue_InnerCV.RemoveCV(d);
+          const auto& L1 = lines[li1];
+          const auto& L2 = lines[li2];
+          const auto pos = 1 + position_idx;
+          if (L1.size() <= pos || L2.size() <= pos) continue;
 
-        Index_CoarseCV++;
-        line_processed[li1] = line_processed[li2] = 1;
-        for (auto other_li : line_ids)
-          if (other_li != li1 && other_li != li2) line_processed[other_li] = 1;
-        any_work = true;
+          const auto a = L1[pos];
+          const auto b = L2[pos];
+
+          /*--- Skip if any node is already claimed ---*/
+          if (fine_grid->nodes->GetAgglomerate(a) || fine_grid->nodes->GetAgglomerate(b)) continue;
+          if (reserved[a] || reserved[b]) continue;
+
+          /*--- Geometrical quality check ---*/
+          if (!GeometricalCheck(a, fine_grid, config) || !GeometricalCheck(b, fine_grid, config)) continue;
+
+          /*--- Create 2-child coarse CV (anisotropic: same position, different lines) ---*/
+          fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
+          nodes->SetChildren_CV(Index_CoarseCV, 0, a);
+          fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
+          nodes->SetChildren_CV(Index_CoarseCV, 1, b);
+          nodes->SetnChildren_CV(Index_CoarseCV, 2);
+
+          reserved[a] = reserved[b] = 1;
+          MGQueue_InnerCV.RemoveCV(a);
+          MGQueue_InnerCV.RemoveCV(b);
+
+          Index_CoarseCV++;
+          line_processed[li1] = line_processed[li2] = 1;
+          any_work = true;
+        }
       }
     }
 
-    /*--- B) Single-line 2-child merges for remaining lines ---*/
-    for (unsigned long li = 0; li < lines.size(); ++li) {
-      if (line_processed[li]) continue;
-      const auto& L = lines[li];
-      const auto idx1 = 1 + 2 * pair_idx;
-      const auto idx2 = idx1 + 1;
-      if (L.size() <= idx2) continue;
-
-      const auto a = L[idx1], b = L[idx2];
-      if (fine_grid->nodes->GetAgglomerate(a) || fine_grid->nodes->GetAgglomerate(b)) continue;
-      if (reserved[a] || reserved[b]) continue;
-      if (!GeometricalCheck(a, fine_grid, config) || !GeometricalCheck(b, fine_grid, config)) continue;
-
-      /*--- Create 2-child coarse CV ---*/
-      fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
-      nodes->SetChildren_CV(Index_CoarseCV, 0, a);
-      fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
-      nodes->SetChildren_CV(Index_CoarseCV, 1, b);
-      nodes->SetnChildren_CV(Index_CoarseCV, 2);
-
-      reserved[a] = reserved[b] = 1;
-      MGQueue_InnerCV.RemoveCV(a);
-      MGQueue_InnerCV.RemoveCV(b);
-
-      Index_CoarseCV++;
-      any_work = true;
-    }
-
-    pair_idx++;
+    position_idx++;
     if (!any_work) break;
 
-    /*--- Check if any line still has pairs at the next stage ---*/
+    /*--- Check if any line still has positions available ---*/
     bool any_more = false;
-    for (const auto& L : lines) {
-      if (L.size() > 1 + 2 * pair_idx + 1) {
-        any_more = true;
-        break;
+    if (ISOTROPIC) {
+      for (const auto& L : lines) {
+        if (L.size() > 1 + 2 * position_idx + 1) {
+          any_more = true;
+          break;
+        }
+      }
+    } else {
+      for (const auto& L : lines) {
+        if (L.size() > 1 + position_idx) {
+          any_more = true;
+          break;
+        }
       }
     }
     if (!any_more) break;
