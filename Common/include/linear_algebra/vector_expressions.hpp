@@ -94,7 +94,6 @@ class Bcast : public CVecExpr<Bcast<Scalar>, Scalar> {
     return idx;
   }
 #endif
-
 };
 
 /*!
@@ -134,18 +133,17 @@ namespace math = ::std;
 #define RETURNS(...) \
   ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
 
-/*--- Macro to inject GPU abstract syntax trees into unary functions 
+/*--- Macro to inject GPU abstract syntax trees into unary functions
  * The corresponding NONE macro is for operators not yet existing ---*/
 
-
 #ifdef HAVE_CUDA
-#define GPU_UNARY_AST(OPTYPE)                                  \
-  int BuildAST(GPUASTPayload<Scalar>& payload) const {         \
-    int child = u.BuildAST(payload);                           \
-    int idx = payload.NewNode();                               \
-    payload.nodes[idx].op = GPUOpType::OPTYPE;                  \
-    payload.nodes[idx].left = child;                            \
-    return idx;                                                \
+#define GPU_UNARY_AST(OPTYPE)                          \
+  int BuildAST(GPUASTPayload<Scalar>& payload) const { \
+    int child = u.BuildAST(payload);                   \
+    int idx = payload.NewNode();                       \
+    payload.nodes[idx].op = GPUOpType::OPTYPE;         \
+    payload.nodes[idx].left = child;                   \
+    return idx;                                        \
   }
 #define GPU_UNARY_AST_NONE()
 #else
@@ -156,48 +154,46 @@ namespace math = ::std;
 /*--- Macro to create expression classes (EXPR) and overloads (FUN) for unary
  * functions, based on their coefficient-wise implementation (IMPL). ---*/
 
-#define MAKE_UNARY_FUN(FUN, EXPR, IMPL, GPU_AST)                    \
-  /*!--- Expression class. ---*/                                    \
-  template <class U, class Scalar>                                  \
-  class EXPR : public CVecExpr<EXPR<U, Scalar>, Scalar> {           \
-    store_t<const U> u;                                             \
-                                                                    \
-   public:                                                          \
-    static constexpr bool StoreAsRef = false;                       \
-    FORCEINLINE EXPR(const U& u_) : u(u_) {}                        \
-    FORCEINLINE auto operator[](size_t i) const RETURNS(IMPL(u[i])) \
-    GPU_AST                                                         \
-  };                                                                \
-  /*!--- Function overload, returns an expression object. ---*/     \
-  template <class U, class S>                                       \
+#define MAKE_UNARY_FUN(FUN, EXPR, IMPL, GPU_AST)                            \
+  /*!--- Expression class. ---*/                                            \
+  template <class U, class Scalar>                                          \
+  class EXPR : public CVecExpr<EXPR<U, Scalar>, Scalar> {                   \
+    store_t<const U> u;                                                     \
+                                                                            \
+   public:                                                                  \
+    static constexpr bool StoreAsRef = false;                               \
+    FORCEINLINE EXPR(const U& u_) : u(u_) {}                                \
+    FORCEINLINE auto operator[](size_t i) const RETURNS(IMPL(u[i])) GPU_AST \
+  };                                                                        \
+  /*!--- Function overload, returns an expression object. ---*/             \
+  template <class U, class S>                                               \
   FORCEINLINE auto FUN(const CVecExpr<U, S>& u) RETURNS(EXPR<U, S>(u.derived()))
 
 #define sign_impl(x) Scalar(1 - 2 * (x < 0))
-MAKE_UNARY_FUN(operator-, minus_, -,        GPU_UNARY_AST(NEG))
-MAKE_UNARY_FUN(abs, abs_, math::abs,        GPU_UNARY_AST_NONE())
-MAKE_UNARY_FUN(exp, exp_, math::exp,        GPU_UNARY_AST_NONE())
-MAKE_UNARY_FUN(sqrt, sqrt_, math::sqrt,     GPU_UNARY_AST_NONE())
-MAKE_UNARY_FUN(sign, sign_, sign_impl,      GPU_UNARY_AST_NONE())
+MAKE_UNARY_FUN(operator-, minus_, -, GPU_UNARY_AST(NEG))
+MAKE_UNARY_FUN(abs, abs_, math::abs, GPU_UNARY_AST_NONE())
+MAKE_UNARY_FUN(exp, exp_, math::exp, GPU_UNARY_AST_NONE())
+MAKE_UNARY_FUN(sqrt, sqrt_, math::sqrt, GPU_UNARY_AST_NONE())
+MAKE_UNARY_FUN(sign, sign_, sign_impl, GPU_UNARY_AST_NONE())
 #undef sign_impl
 
 #undef MAKE_UNARY_FUN
 #undef GPU_UNARY_AST
 #undef GPU_UNARY_AST_NONE
 
-
-/*--- Macro to inject GPU abstract syntax trees into binary functions 
+/*--- Macro to inject GPU abstract syntax trees into binary functions
  * The corresponding NONE macro is for operators not yet existing ---*/
 
 #ifdef HAVE_CUDA
-#define GPU_BINARY_AST(OPTYPE)                                  \
-  int BuildAST(GPUASTPayload<Scalar>& payload) const {          \
-    int l = u.BuildAST(payload);                                \
-    int r = v.BuildAST(payload);                                \
-    int idx = payload.NewNode();                                \
-    payload.nodes[idx].op = GPUOpType::OPTYPE;                   \
-    payload.nodes[idx].left = l;                                \
-    payload.nodes[idx].right = r;                                \
-    return idx;                                                 \
+#define GPU_BINARY_AST(OPTYPE)                         \
+  int BuildAST(GPUASTPayload<Scalar>& payload) const { \
+    int l = u.BuildAST(payload);                       \
+    int r = v.BuildAST(payload);                       \
+    int idx = payload.NewNode();                       \
+    payload.nodes[idx].op = GPUOpType::OPTYPE;         \
+    payload.nodes[idx].left = l;                       \
+    payload.nodes[idx].right = r;                      \
+    return idx;                                        \
   }
 #define GPU_BINARY_AST_NONE()
 #else
@@ -252,9 +248,9 @@ using std::fmax;
 using std::fmin;
 #undef MAKE_FMINMAX_OVERLOADS
 
-MAKE_BINARY_FUN(fmax, max_, fmax,           GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(fmin, min_, fmin,           GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(pow, pow_, math::pow,       GPU_BINARY_AST_NONE())
+MAKE_BINARY_FUN(fmax, max_, fmax, GPU_BINARY_AST_NONE())
+MAKE_BINARY_FUN(fmin, min_, fmin, GPU_BINARY_AST_NONE())
+MAKE_BINARY_FUN(pow, pow_, math::pow, GPU_BINARY_AST_NONE())
 
 /*--- sts::plus and co. were tried, the code was horrendous (due to the forced
  * conversion between different types) and creating functions for these ops
@@ -285,12 +281,12 @@ MAKE_BINARY_FUN(operator/, div_, div_impl, GPU_BINARY_AST(DIV))
 #define ne_impl(a, b) TO_PASSIVE(a != b)
 #define lt_impl(a, b) TO_PASSIVE(a < b)
 #define gt_impl(a, b) TO_PASSIVE(a > b)
-MAKE_BINARY_FUN(operator<=, le_, le_impl,  GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(operator>=, ge_, ge_impl,  GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(operator==, eq_, eq_impl,  GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(operator!=, ne_, ne_impl,  GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(operator<, lt_, lt_impl,  GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(operator>, gt_, gt_impl,  GPU_BINARY_AST_NONE())
+MAKE_BINARY_FUN(operator<=, le_, le_impl, GPU_BINARY_AST_NONE())
+MAKE_BINARY_FUN(operator>=, ge_, ge_impl, GPU_BINARY_AST_NONE())
+MAKE_BINARY_FUN(operator==, eq_, eq_impl, GPU_BINARY_AST_NONE())
+MAKE_BINARY_FUN(operator!=, ne_, ne_impl, GPU_BINARY_AST_NONE())
+MAKE_BINARY_FUN(operator<, lt_, lt_impl, GPU_BINARY_AST_NONE())
+MAKE_BINARY_FUN(operator>, gt_, gt_impl, GPU_BINARY_AST_NONE())
 #undef TO_PASSIVE
 #undef le_impl
 #undef ge_impl

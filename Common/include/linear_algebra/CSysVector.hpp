@@ -80,6 +80,12 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   ScalarType* d_vec_val = nullptr; /*!< \brief Device Pointer to store the vector values on the GPU. */
   bool vec_is_managed = false;     /*!< \brief Boolean that indicates whether GPU supports Unified Memory or not */
   bool useCuda = false;            /*!< \brief Whether CUDA is enabled. */
+  enum class GPUMemState {
+    HOST,
+    DEVICE,
+    SYNCED
+  }; /*!< \brief enumerate the possible memory synchronization states for this */
+  mutable GPUMemState memState = GPUMemState::HOST; /*!< \brief mutable GPUMemState initialized to HOST */
 
 #ifdef HAVE_OMP
   mutable std::unique_ptr<ScalarType[]>
@@ -167,7 +173,12 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \note Not defined for expressions because we do not know their sizes.
    * \param[in] u - Vector being copied.
    */
-  CSysVector(const CSysVector& u) { Initialize(u.GetNBlk(), u.GetNBlkDomain(), u.nVar, u.vec_val, true); }
+  CSysVector(const CSysVector& u) {
+#ifdef HAVE_CUDA
+    u.SyncToHost();
+#endif
+    Initialize(u.GetNBlk(), u.GetNBlkDomain(), u.nVar, u.vec_val, true);
+  }
 
   /*!
    * \brief Swap contents with another vector.
@@ -180,6 +191,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     std::swap(nElmDomain, other.nElmDomain);
     std::swap(nVar, other.nVar);
     std::swap(dot_scratch, other.dot_scratch);
+    std::swap(memState, other.memState);
   }
 
   /*!
@@ -213,7 +225,9 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   void PassiveCopy(const CSysVector<T>& other) {
     /*--- This is a method and not the overload of an operator to make sure who
      * calls it knows the consequence to the derivative information (lost) ---*/
-
+#ifdef HAVE_CUDA
+    other.SyncToHost();
+#endif
     /*--- check if self-assignment, otherwise perform deep copy ---*/
     if ((const void*)this == (const void*)&other) return;
 
@@ -223,6 +237,9 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; i++) vec_val[i] = SU2_TYPE::GetValue(other[i]);
     END_CSYSVEC_PARFOR
+#ifdef HAVE_CUDA
+    MarkHostDirty();
+#endif
   }
 
   /*!
@@ -241,10 +258,14 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    */
   inline GPUOpType ToASTCombineOp(GPUScalarOp op) {
     switch (op) {
-      case GPUScalarOp::ADD: return GPUOpType::ADD;
-      case GPUScalarOp::SUB: return GPUOpType::SUB;
-      case GPUScalarOp::MUL: return GPUOpType::MUL;
-      case GPUScalarOp::DIV: return GPUOpType::DIV;
+      case GPUScalarOp::ADD:
+        return GPUOpType::ADD;
+      case GPUScalarOp::SUB:
+        return GPUOpType::SUB;
+      case GPUScalarOp::MUL:
+        return GPUOpType::MUL;
+      case GPUScalarOp::DIV:
+        return GPUOpType::DIV;
       default:
         SU2_MPI::Error("ToASTCombineOp called with GPUScalarOp::SET.", CURRENT_FUNCTION);
         return GPUOpType::ADD;
@@ -255,7 +276,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \brief appends a new vector node to the Abstract Syntax Tree for the given payload
    */
   int BuildAST(GPUASTPayload<ScalarType>& payload) const {
-    //SyncToDevice();
     int idx = payload.NewNode();
     payload.nodes[idx].op = GPUOpType::VEC;
     payload.nodes[idx].d_ptr = this->d_vec_val;
@@ -295,7 +315,12 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   /*!
    * \brief return pointer that points to the CSysVector values in CPU memory
    */
-  ScalarType* data() const { return vec_val; }
+  ScalarType* data() const {
+#ifdef HAVE_CUDA
+    SyncToHost();
+#endif
+    return vec_val;
+  }
 
   /*!
    * \brief return the number of local elements in the CSysVector
@@ -327,14 +352,35 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] i - Local index to access.
    * \return Value at position i.
    */
-  inline ScalarType& operator[](unsigned long i) { return vec_val[i]; }
-  inline const ScalarType& operator[](unsigned long i) const { return vec_val[i]; }
+  inline ScalarType& operator[](unsigned long i) {
+#ifdef HAVE_CUDA
+    SyncToHost();
+    MarkHostDirty();
+#endif
+    return vec_val[i];
+  }
+  inline const ScalarType& operator[](unsigned long i) const {
+#ifdef HAVE_CUDA
+    SyncToHost();
+#endif
+    return vec_val[i];
+  }
 
   /*!
    * \brief Iterators for range for loops.
    */
-  inline const ScalarType* begin() const { return vec_val; }
-  inline const ScalarType* end() const { return vec_val + nElm; }
+  inline const ScalarType* begin() const {
+#ifdef HAVE_CUDA
+    SyncToHost();
+#endif
+    return vec_val;
+  }
+  inline const ScalarType* end() const {
+#ifdef HAVE_CUDA
+    SyncToHost();
+#endif
+    return vec_val + nElm;
+  }
 
   /*!
    * \brief Access operator with assignment permitted block version.
@@ -342,8 +388,17 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] iVar - Index of variable.
    * \return Value at position (i,j).
    */
-  inline ScalarType& operator()(unsigned long iPoint, unsigned long iVar) { return vec_val[iPoint * nVar + iVar]; }
+  inline ScalarType& operator()(unsigned long iPoint, unsigned long iVar) {
+#ifdef HAVE_CUDA
+    SyncToHost();
+    MarkHostDirty();
+#endif
+    return vec_val[iPoint * nVar + iVar];
+  }
   inline const ScalarType& operator()(unsigned long iPoint, unsigned long iVar) const {
+#ifdef HAVE_CUDA
+    SyncToHost();
+#endif
     return vec_val[iPoint * nVar + iVar];
   }
 
@@ -353,9 +408,15 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] other - Another vector.
    */
   CSysVector& operator=(const CSysVector& other) {
+#ifdef HAVE_CUDA
+    other.SyncToHost();
+#endif
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] = other.vec_val[i];
     END_CSYSVEC_PARFOR
+#ifdef HAVE_CUDA
+    this->MarkHostDirty();
+#endif
     return *this;
   }
 
@@ -382,7 +443,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
       payload.nodes[root_idx].right = rhs_idx;                            \
     }                                                                     \
     payload.root_idx = root_idx;                                          \
-    LaunchGPUAST(payload, this->nElmDomain);                              \
+    LaunchGPUAST(payload, this->nElm);                                    \
     return *this;                                                         \
   }
 #else
@@ -505,6 +566,37 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
                                    const ScalarType* ws, CSysVector<ScalarType>& v, bool inc = false);
 
   /*!
+   * \brief method to mark the vector as lastly modified by device
+   */
+  void MarkDeviceDirty() const { memState = GPUMemState::DEVICE; }
+
+  /*!
+   * \brief method to mark the vector as lastly modified by host
+   */
+  void MarkHostDirty() const { memState = GPUMemState::HOST; }
+
+  /*!
+   * \brief wrapper around HtDTransfer to manage memory state
+   */
+  void SyncToDevice() const {
+    if (memState == GPUMemState::HOST) {
+      HtDTransfer();
+      memState = GPUMemState::SYNCED;
+    }
+  }
+  /*!
+   * \brief wrapper around DtHTransfer to manage memory state
+   */
+  void SyncToHost() const {
+    if (memState == GPUMemState::DEVICE) {
+      DtHTransfer();
+      memState = GPUMemState::SYNCED;
+    }
+  }
+
+  void print_memory_state() const { cout << "memory state: " << static_cast<int>(memState) << endl; }
+
+  /*!
    * \brief Squared L2 norm of the vector (via dot with self).
    * \return Squared L2 norm.
    */
@@ -521,15 +613,32 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] iPoint - Index of block.
    * \return Pointer to start of block.
    */
-  inline ScalarType* GetBlock(unsigned long iPoint) { return &vec_val[iPoint * nVar]; }
-  inline const ScalarType* GetBlock(unsigned long iPoint) const { return &vec_val[iPoint * nVar]; }
+  inline ScalarType* GetBlock(unsigned long iPoint) {
+#ifdef HAVE_CUDA
+    SyncToHost();
+    MarkHostDirty();
+#endif
+    return &vec_val[iPoint * nVar];
+  }
+  inline const ScalarType* GetBlock(unsigned long iPoint) const {
+#ifdef HAVE_CUDA
+    SyncToHost();
+#endif
+    return &vec_val[iPoint * nVar];
+  }
 
   /*!
    * \brief Set the values to zero for one block.
    * \param[in] iPoint - Index of the block being set to zero.
    */
   inline void SetBlock_Zero(unsigned long iPoint) {
+#ifdef HAVE_CUDA
+    SyncToHost();
+#endif
     for (auto iVar = 0ul; iVar < nVar; iVar++) vec_val[iPoint * nVar + iVar] = 0.0;
+#ifdef HAVE_CUDA
+    MarkHostDirty();
+#endif
   }
 
   /*!
@@ -541,11 +650,17 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    */
   template <class VectorType, bool Overwrite = true>
   FORCEINLINE void SetBlock(unsigned long iPoint, const VectorType& block, ScalarType alpha = 1) {
+#ifdef HAVE_CUDA
+    SyncToHost();
+#endif
     if (Overwrite) {
       for (auto i = 0ul; i < nVar; ++i) vec_val[iPoint * nVar + i] = alpha * block[i];
     } else {
       for (auto i = 0ul; i < nVar; ++i) vec_val[iPoint * nVar + i] += alpha * block[i];
     }
+#ifdef HAVE_CUDA
+    MarkHostDirty();
+#endif
   }
 
   /*!
@@ -588,13 +703,18 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     assert(nVar == this->nVar);
     ScalarType vec[N][nVar];
     UnpackBlock(vector, mask, vec);
-
+#ifdef HAVE_CUDA
+    SyncToHost();
+#endif
     /*--- Update one by one skipping if mask is 0. ---*/
     for (size_t k = 0; k < N; ++k) {
       if (mask[k] == 0) continue;
       SU2_OMP_SIMD
       for (size_t i = 0; i < nVar; ++i) vec_val[iPoint[k] * nVar + i] = vec[k][i];
     }
+#ifdef HAVE_CUDA
+    MarkHostDirty();
+#endif
   }
 
   /*!
@@ -609,7 +729,9 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     assert(nVar == this->nVar);
     ScalarType vec[N][nVar];
     UnpackBlock(vector, mask, vec);
-
+#ifdef HAVE_CUDA
+    SyncToHost();
+#endif
     /*--- Update one by one skipping if mask is 0. ---*/
     for (size_t k = 0; k < N; ++k) {
       if (mask[k] == 0) continue;
@@ -619,6 +741,9 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
         vec_val[jPoint[k] * nVar + i] -= vec[k][i];
       }
     }
+#ifdef HAVE_CUDA
+    MarkHostDirty();
+#endif
   }
 };
 

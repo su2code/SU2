@@ -1,8 +1,7 @@
 /*!
  * \file gpu_ast.hpp
- * \brief definition of the Abstract Syntax Tree for evaluating CVecExpr expression trees on GPU with a single generic interpreter kernel
- * \author D. Di giusto
- * \version 8.5.0 "Harrier"
+ * \brief definition of the Abstract Syntax Tree for evaluating CVecExpr expression trees on GPU with a single generic
+ * interpreter kernel \author D. Di giusto \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -40,11 +39,11 @@ enum class GPUOpType { VEC, SCALAR, ADD, SUB, MUL, DIV, NEG };
  */
 template <typename ScalarType>
 struct GPUASTNode {
-  GPUOpType op = GPUOpType::SCALAR;  // operation for this node
-  int left = -1;                     // index of left child node-operation, -1 for leaf
-  int right = -1;                    // index of right child node-operation, -1 for leaf
-  const ScalarType* d_ptr = nullptr; // device pointer for vector
-  ScalarType val = ScalarType(0);    // constant value for scalar
+  GPUOpType op = GPUOpType::SCALAR;   // operation for this node
+  int left = -1;                      // index of left child node-operation, -1 for leaf
+  int right = -1;                     // index of right child node-operation, -1 for leaf
+  const ScalarType* d_ptr = nullptr;  // device pointer for vector
+  ScalarType val = ScalarType(0);     // constant value for scalar
 };
 
 /*!
@@ -57,11 +56,11 @@ constexpr int MAX_AST_NODES = 16;
  */
 template <class ScalarType>
 struct GPUASTPayload {
-  GPUASTNode<ScalarType> nodes[MAX_AST_NODES]; // array hosting all nodes for a single expression-operator
+  GPUASTNode<ScalarType> nodes[MAX_AST_NODES];  // array hosting all nodes for a single expression-operator
   int root_idx = 0;
   int node_count = 0;
 
-  // allocation method 
+  // allocation method
   int NewNode() {
     if (node_count >= MAX_AST_NODES) {
       SU2_MPI::Error("GPU AST node budget exceeded, you should increase MAX_AST_NODES!", __FUNCTION__);

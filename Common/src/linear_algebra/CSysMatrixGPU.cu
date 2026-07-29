@@ -107,17 +107,18 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
     SU2_MPI::Error("CUDA CSysMatrix block-LDU SpMV requires square blocks.", CURRENT_FUNCTION);
   }
 
+  vec.SyncToDevice();
   ScalarType* d_vec = vec.GetDevicePointer();
   ScalarType* d_prod = prod.GetDevicePointer();
-  
+
   dim3 blockDim(static_cast<unsigned>(nVar), 1, 1);
   dim3 gridDim(static_cast<unsigned>(nPointDomain), 1, 1);
   BlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
       nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, gpu.l, gpu.d,
       gpu.row_ptr_u, gpu.col_ind_u, gpu.u, d_vec, d_prod);
   gpuErrChk(cudaGetLastError());
-  gpuErrChk(cudaDeviceSynchronize());
 
+  prod.MarkDeviceDirty();
 }
 
 template <class ScalarType>
@@ -127,21 +128,26 @@ void CSysMatrix<ScalarType>::GPUComputeJacobiPreconditioner(const CSysVector<Sca
   SU2_ZONE_SCOPED
   /*--- Apply Jacobi preconditioner, y = D^{-1} * x, the inverse of the diagonal is already known and synced to device ---*/
 
+  vec.SyncToDevice();
+  ScalarType* d_vec = vec.GetDevicePointer();
+  ScalarType* d_prod = prod.GetDevicePointer();
+
   prod.GPUSetVal(0.0);
 
   dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE,1,1);
   int gridx = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, nPointDomain);
   dim3 gridDim(gridx, 1, 1);
 
-  GPUMatrixVectorProductKernel<<<gridDim, blockDim>>>(d_invM, vec.data(), prod.data(), nPointDomain, nVar);
+  GPUMatrixVectorProductKernel<<<gridDim, blockDim>>>(d_invM, d_vec, d_prod, nPointDomain, nVar);
   gpuErrChk( cudaPeekAtLastError() );
-  gpuErrChk(cudaDeviceSynchronize());
+
+  prod.MarkDeviceDirty(); // this triggers () operators to sync data from device when preparing mpi buffers
 
   /*--- MPI Parallelization ---*/
   CSysMatrixComms::Initiate(prod, geometry, config);
   CSysMatrixComms::Complete(prod, geometry, config);
 
-  gpuErrChk(cudaDeviceSynchronize());
+  prod.SyncToDevice(); // this will trigger migration if mpi comms updated the host data
 
 }
 

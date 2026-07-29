@@ -28,10 +28,11 @@
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
 #include "../../include/linear_algebra/gpu_ast.hpp"
-
+#include <execinfo.h> // Needed for backtrace and backtrace_symbols
+#include <cstdlib>
 
 /*!
- * \brief evaluates the abstract syntax tree iteratively. 
+ * \brief evaluates the abstract syntax tree iteratively.
  * The tree is unrolled to prevent recursion and undefinite memory mapping.
  */
 template <typename ScalarType>
@@ -66,19 +67,22 @@ __global__ void GPUASTInterpreterKernel(ScalarType* __restrict__ d_out, GPUASTPa
   }
 }
 
-
+/*!
+ * \brief method to configure and launch the kernel executing the abstract syntax tree for a given vector operators
+ */
 template <class ScalarType>
 void CSysVector<ScalarType>::LaunchGPUAST(const GPUASTPayload<ScalarType>& payload, unsigned long nElm) {
-  
+
   dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE, 1, 1);
   int numBlocks = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, nElm);
   dim3 gridDim(numBlocks, 1, 1);
 
+  this->SyncToDevice();
+
   GPUASTInterpreterKernel<<<gridDim, blockDim>>>(this->d_vec_val, payload, nElm);
   gpuErrChk(cudaPeekAtLastError());
 
-  gpuErrChk(cudaDeviceSynchronize());
-
+  this->MarkDeviceDirty();
 }
 
 /*!
@@ -101,33 +105,38 @@ __global__ void GPUUnaryOperationKernel(ScalarType* __restrict__ vec, unsigned l
   if (idx < n) vec[idx] = op(vec[idx]);
 }
 
+/*!
+ * \brief dispatching method for the GPU unary operations
+ */
 template <class ScalarType>
 void CSysVector<ScalarType>::GPUUnaryOperation(GPUScalarOp op, ScalarType val) {
 
   dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE, 1, 1);
-  int numBlocks = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, this->nElmDomain);
+  int numBlocks = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, this->nElm);
   dim3 gridDim(numBlocks, 1, 1);
 
+  this->SyncToDevice();
 
   switch (op) {
     case GPUScalarOp::SET:
-      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElmDomain, OpSetScalar<ScalarType>{val});
+      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElm, OpSetScalar<ScalarType>{val});
       break;
     case GPUScalarOp::ADD:
-      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElmDomain, OpAddScalar<ScalarType>{val});
+      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElm, OpAddScalar<ScalarType>{val});
       break;
     case GPUScalarOp::SUB:
-      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElmDomain, OpSubScalar<ScalarType>{val});
+      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElm, OpSubScalar<ScalarType>{val});
       break;
     case GPUScalarOp::MUL:
-      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElmDomain, OpMulScalar<ScalarType>{val});
+      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElm, OpMulScalar<ScalarType>{val});
       break;
     case GPUScalarOp::DIV:
-      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElmDomain, OpDivScalar<ScalarType>{val});
+      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElm, OpDivScalar<ScalarType>{val});
       break;
   }
   gpuErrChk(cudaPeekAtLastError());
-  gpuErrChk(cudaDeviceSynchronize());
+
+  this->MarkDeviceDirty();
 }
 
 
@@ -166,7 +175,7 @@ __global__ void GPUDotKernel(const ScalarType* __restrict__ a, const ScalarType*
 
 /*!
  * \brief GPU dot product method between this and other CSysVector
- * \brief this is a vectors read-only kernel returning a scalar on host
+ * \note this is a vectors read-only kernel returning a scalar on host
  */
 template <class ScalarType>
 ScalarType CSysVector<ScalarType>::GPUDot(const CSysVector& other) const {
@@ -174,6 +183,9 @@ ScalarType CSysVector<ScalarType>::GPUDot(const CSysVector& other) const {
   dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE, 1, 1);
   int numBlocks = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, this->nElmDomain);
   dim3 gridDim(numBlocks, 1, 1);
+
+  SyncToDevice();
+  other.SyncToDevice();
 
   // allocate and zero the result scalar
   ScalarType* d_dot_result;
@@ -264,7 +276,8 @@ __global__ void GPUmultiDot(const ScalarType* const* __restrict__ d_V, const siz
 }
 
 /*!
- * \brief multi vector dot produt method for GPU, this is a vectors-read only method that returns an array of scalars
+ * \brief multi vector dot produt method for GPU
+ * \note this is a vectors-read only method that returns an array of scalars
  */
 template <class ScalarType>
 const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vector<CSysVector<ScalarType>>& V,
@@ -281,10 +294,12 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vect
   // get all the device pointers
   std::vector<const ScalarType*> h_V_ptrs(n), h_W_ptrs(m);
   for (size_t i = 0; i < n; ++i){
-    h_V_ptrs[i] = V[i0 + i].data();
+    V[i0 + i].SyncToDevice();
+    h_V_ptrs[i] = V[i0 + i].GetDevicePointer();
   }
   for (size_t j = 0; j < m; ++j){
-    h_W_ptrs[j] = W[j].data();
+    W[j].SyncToDevice();
+    h_W_ptrs[j] = W[j].GetDevicePointer();
   }
 
   // copy the pointers to the device arrays of pointers
@@ -339,6 +354,9 @@ struct WeightedVecs {
   ScalarType weights[N];
 };
 
+/*!
+ * \brief linear combination kernel to calculate the next vector v from weights and vectors
+ */
 template<class ScalarType, int N>
 __global__ void LinearCombinationKernel(ScalarType* __restrict__ v, WeightedVecs<ScalarType, N> wv,
                                         int n, unsigned long nElm, bool inc)
@@ -355,6 +373,9 @@ __global__ void LinearCombinationKernel(ScalarType* __restrict__ v, WeightedVecs
   v[k] = result;
 }
 
+/*!
+ * \brief dispatcher for the linear combination kernel on GPU
+ */
 template<class ScalarType>
 void CSysVector<ScalarType>::LinearCombinationGPU(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs, const ScalarType* ws,
                                                   CSysVector<ScalarType>& v, bool inc)
@@ -364,21 +385,25 @@ void CSysVector<ScalarType>::LinearCombinationGPU(const unsigned long n, const s
   int numBlocks = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, nElm);
   dim3 gridDim(numBlocks, 1, 1);
 
+  v.SyncToDevice();
+  ScalarType* d_v = v.GetDevicePointer();
+
   for (unsigned long i = 0; i < n; i += 4) {
     const int rem = static_cast<int>(std::min(n - i, 4ul));
     //prepare vectors pointers and corresponding weights, passing them by value
     WeightedVecs<ScalarType, 4> vs_ws = {};
     for (int j = 0; j < rem; ++j) {
-      //vs[i + j].HtDTransfer();                     //ensure is on GPU, was copied surely in multiDot
-      vs_ws.ptrs[j] = vs[i + j].data();              //.GetDevicePointer();  // get the pointer
+      vs[i + j].SyncToDevice();                       //ensure is on GPU, was copied in multiDot
+      vs_ws.ptrs[j] = vs[i + j].GetDevicePointer();  // get the pointer
       vs_ws.weights[j] = ws[i + j];                  // plain array indexing, not ws(k)
     }
     //calculate the linear combination on GPU, handle more than 4 vectors through inc || i > 0
-    LinearCombinationKernel<ScalarType, 4><<<gridDim, blockDim>>>(v.data(), vs_ws, rem, nElm, inc || i > 0);
+    LinearCombinationKernel<ScalarType, 4><<<gridDim, blockDim>>>(d_v, vs_ws, rem, nElm, inc || i > 0);
     gpuErrChk(cudaPeekAtLastError());
   }
-  gpuErrChk(cudaDeviceSynchronize());
-  
+
+  v.MarkDeviceDirty();
+
 }
 
 template class CSysVector<su2double>; //This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.

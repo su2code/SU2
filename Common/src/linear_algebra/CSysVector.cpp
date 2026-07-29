@@ -50,19 +50,16 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
   omp_chunk_size = computeStaticChunkSize(nElm, omp_get_max_threads(), OMP_MAX_SIZE);
 
+  if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
+
 #ifdef HAVE_CUDA
   useCuda = true;
 #endif
-
-  if (useCuda && GPUMemoryAllocation::UMSupported()) {
-    vec_val = GPUMemoryAllocation::gpu_um_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
-    d_vec_val = vec_val;  // temporary alias for testing
-    vec_is_managed = true;
-  } else {
-    vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
-    if (useCuda) {
+  if (useCuda) {
+    if (d_vec_val == nullptr) {
       d_vec_val = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
     }
+    MarkHostDirty();
   }
 
 #ifdef HAVE_OMP
@@ -153,18 +150,10 @@ CSysVector<ScalarType>::~CSysVector() {
   if constexpr (!std::is_trivial_v<ScalarType>) {
     for (auto i = 0ul; i < nElm; i++) vec_val[i].~ScalarType();
   }
-  // MemoryAllocation::aligned_free(vec_val);
+  MemoryAllocation::aligned_free(vec_val);
 
-  // GPUMemoryAllocation::gpu_free(d_vec_val);
-
-  if (useCuda && GPUMemoryAllocation::UMSupported()) {
-    GPUMemoryAllocation::gpu_free(vec_val);
-    d_vec_val = nullptr;
-  } else {
-    MemoryAllocation::aligned_free(vec_val);
-    if (useCuda) {
-      GPUMemoryAllocation::gpu_free(d_vec_val);
-    }
+  if (useCuda) {
+    GPUMemoryAllocation::gpu_free(d_vec_val);
   }
 }
 
