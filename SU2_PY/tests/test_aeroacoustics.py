@@ -23,8 +23,8 @@ class AeroacousticsTests(unittest.TestCase):
         frequency = 256.0
         rms_pressure = 1.0
         time = np.arange(4096) / sample_rate
-        pressure = math.sqrt(2.0) * rms_pressure * np.sin(
-            2.0 * np.pi * frequency * time
+        pressure = (
+            math.sqrt(2.0) * rms_pressure * np.sin(2.0 * np.pi * frequency * time)
         )
 
         frequencies, psd, segments = AEROACOUSTICS.welch_psd(
@@ -129,9 +129,7 @@ class AeroacousticsTests(unittest.TestCase):
             self.assertEqual(summary["samples"], 192)
             self.assertEqual(summary["frequency_resolution_hz"], 2.0)
             self.assertEqual(summary["nyquist_frequency_hz"], 64.0)
-            self.assertEqual(
-                summary["signals"]["mic"]["dominant_frequency_hz"], 16.0
-            )
+            self.assertEqual(summary["signals"]["mic"]["dominant_frequency_hz"], 16.0)
 
 
 if __name__ == "__main__":

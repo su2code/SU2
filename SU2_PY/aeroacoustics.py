@@ -112,12 +112,9 @@ def sampling_rate(time, relative_tolerance=1.0e-5):
     maximum_error = float(np.max(np.abs(intervals - mean_interval)))
     if maximum_error > relative_tolerance * mean_interval:
         message = (
-            "time samples are not uniform "
-            "(maximum relative interval error {:.3g})"
+            "time samples are not uniform " "(maximum relative interval error {:.3g})"
         )
-        raise ValueError(
-            message.format(maximum_error / mean_interval)
-        )
+        raise ValueError(message.format(maximum_error / mean_interval))
     return 1.0 / mean_interval
 
 
@@ -159,9 +156,7 @@ def welch_psd(
     if segment_length is None:
         segment_length = min(1024, pressure.size)
     if segment_length < 2 or segment_length > pressure.size:
-        raise ValueError(
-            "segment length must be between 2 and the number of samples"
-        )
+        raise ValueError("segment length must be between 2 and the number of samples")
 
     step = max(1, int(round(segment_length * (1.0 - overlap))))
     starts = range(0, pressure.size - segment_length + 1, step)
@@ -288,9 +283,7 @@ def analyze(args):
     }
     frequencies = None
     for name in pressure_names:
-        dimensional_pressure = (
-            columns[name][args.skip_samples :] * args.pressure_scale
-        )
+        dimensional_pressure = columns[name][args.skip_samples :] * args.pressure_scale
         frequencies, psd, segment_count = welch_psd(
             dimensional_pressure,
             sample_rate_hz,
