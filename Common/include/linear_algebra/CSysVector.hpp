@@ -34,6 +34,7 @@
 #include "../parallelization/mpi_structure.hpp"
 #include "../parallelization/omp_structure.hpp"
 #include "../parallelization/vectorization.hpp"
+#include "gpu_ast.hpp"
 #include "vector_expressions.hpp"
 #include "../../include/CConfig.hpp"
 
@@ -225,14 +226,41 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   }
 
   /*!
-   * \brief enum listing the possible vector-scalar operators on GPU
+   * \brief enumeratethe possible vector-scalar operators on GPU
    */
   enum class GPUScalarOp { SET, ADD, SUB, MUL, DIV };
 
   /*!
-   * \brief enum listing the possible vector-vector operators on GPU
+   * \brief enumerate the possible vector-vector operators on GPU
    */
   enum class GPUVectorOp { SET, ADD, SUB, NEG };
+
+  /*!
+   * \brief map GPU scalar Ops to the appropriate GPU Operation code in the tree
+   * \note prevents SET=assignement operations raising an error
+   */
+  inline GPUOpType ToASTCombineOp(GPUScalarOp op) {
+    switch (op) {
+      case GPUScalarOp::ADD: return GPUOpType::ADD;
+      case GPUScalarOp::SUB: return GPUOpType::SUB;
+      case GPUScalarOp::MUL: return GPUOpType::MUL;
+      case GPUScalarOp::DIV: return GPUOpType::DIV;
+      default:
+        SU2_MPI::Error("ToASTCombineOp called with GPUScalarOp::SET.", CURRENT_FUNCTION);
+        return GPUOpType::ADD;
+    }
+  }
+
+  /*!
+   * \brief appends a new vector node to the Abstract Syntax Tree for the given payload
+   */
+  int BuildAST(GPUASTPayload<ScalarType>& payload) const {
+    //SyncToDevice();
+    int idx = payload.NewNode();
+    payload.nodes[idx].op = GPUOpType::VEC;
+    payload.nodes[idx].d_ptr = this->d_vec_val;
+    return idx;
+  }
 
   /*!
    * \brief method to launch the generic Unary Operation Kernel and apply given functors on GPU
@@ -240,13 +268,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] val - scalar value
    */
   void GPUUnaryOperation(GPUScalarOp op, ScalarType val);
-
-  /*!
-   * \brief method to launch a generic Binary Operation Kernel and apply given functors on GPU
-   * \param[in] op - Binary operation
-   * \param[in] other - other CsysVector
-   */
-  void GPUBinaryOperation(GPUVectorOp op, const CSysVector& other);
 
   /*!
    * \brief Performs the memory copy from host to device.
@@ -332,32 +353,14 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] other - Another vector.
    */
   CSysVector& operator=(const CSysVector& other) {
-#ifdef HAVE_CUDA
-    GPUBinaryOperation(GPUVectorOp::SET, other);
-#else
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] = other.vec_val[i];
     END_CSYSVEC_PARFOR
-#endif
     return *this;
   }
 
-#ifdef HAVE_CUDA
   /*!
-   * \brief CSysVector-CSysVector overloaded operators on GPUs
-   */
-  CSysVector& operator+=(const CSysVector& other) {
-    GPUBinaryOperation(GPUVectorOp::ADD, other);
-    return *this;
-  }
-  CSysVector& operator-=(const CSysVector& other) {
-    GPUBinaryOperation(GPUVectorOp::SUB, other);
-    return *this;
-  }
-#endif
-
-  /*!
-   * \brief Compound assignement operations with scalars and expressions.
+   * \brief Compound assignement operations with scalars and expressions, GPU or CPU
    * \param[in] val/expr - Scalar value or expression.
    */
 #ifdef HAVE_CUDA
@@ -368,9 +371,18 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   }                                                                       \
   template <class T>                                                      \
   CSysVector& operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) { \
-    CSYSVEC_PARFOR                                                        \
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr.derived()[i];    \
-    END_CSYSVEC_PARFOR                                                    \
+    GPUASTPayload<ScalarType> payload;                                    \
+    int rhs_idx = expr.derived().BuildAST(payload);                       \
+    int root_idx = rhs_idx;                                               \
+    if (GPUScalarOp::TAG != GPUScalarOp::SET) {                           \
+      int self_idx = this->BuildAST(payload);                             \
+      root_idx = payload.NewNode();                                       \
+      payload.nodes[root_idx].op = ToASTCombineOp(GPUScalarOp::TAG);      \
+      payload.nodes[root_idx].left = self_idx;                            \
+      payload.nodes[root_idx].right = rhs_idx;                            \
+    }                                                                     \
+    payload.root_idx = root_idx;                                          \
+    LaunchGPUAST(payload, this->nElmDomain);                              \
     return *this;                                                         \
   }
 #else
@@ -448,6 +460,13 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \return Result of dot product
    */
   ScalarType GPUDot(const CSysVector& other) const;
+
+  /*!
+   * \brief launch method for the generic Abstract Syntax Tree GPU kernel
+   * \param[in] payload - payload is the abstract syntax tree
+   * \param[in] nElm - number of elements in the vector
+   */
+  void LaunchGPUAST(const GPUASTPayload<ScalarType>& payload, unsigned long nElm);
 
   /*!
    * \brief Computes the product of V^T W efficiencly, where V and W are tall matrices stored as vectors of CSysVector.

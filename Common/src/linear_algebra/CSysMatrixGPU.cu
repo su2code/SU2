@@ -109,16 +109,15 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
 
   ScalarType* d_vec = vec.GetDevicePointer();
   ScalarType* d_prod = prod.GetDevicePointer();
-  //vec.HtDTransfer();
-
+  
   dim3 blockDim(static_cast<unsigned>(nVar), 1, 1);
   dim3 gridDim(static_cast<unsigned>(nPointDomain), 1, 1);
   BlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
       nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, gpu.l, gpu.d,
       gpu.row_ptr_u, gpu.col_ind_u, gpu.u, d_vec, d_prod);
   gpuErrChk(cudaGetLastError());
+  gpuErrChk(cudaDeviceSynchronize());
 
-  //prod.DtHTransfer();
 }
 
 template <class ScalarType>
