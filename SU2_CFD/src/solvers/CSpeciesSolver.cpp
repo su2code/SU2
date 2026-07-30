@@ -269,7 +269,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
   // Flow-Pre computes/sets mixture properties
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
-                                          RUNTIME_FLOW_SYS, false);
+                                          RUNTIME_FLOW_SYS, true);
   // Update eddy-visc which needs correct mixture density and mixture lam-visc. Note that after this, another Flow-Pre
   // at the start of the Iteration sets the updated eddy-visc into the Flow-Solvers Primitives.
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
@@ -287,7 +287,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
     solver[iMesh][SPECIES_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
 
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
-                                           false);
+                                           true);
 
     if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
       solver[iMesh][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
@@ -334,7 +334,7 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
 
 void CSpeciesSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                       CNumerics* numerics, const CConfig* config) {
-  SU2_ZONE_SCOPED
+
   /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
     /*--- Mass diffusivity coefficients. ---*/
@@ -517,9 +517,18 @@ su2double CSpeciesSolver::GetInletAtVertex(unsigned short iMarker, unsigned long
 
 void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
   SU2_ZONE_SCOPED
+  bool riemann_inlet = false;
+
+  const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+  if (config->GetMarker_All_KindBC(iMarker) == RIEMANN_BOUNDARY) {
+    switch (config->GetKind_Data_Riemann(Marker_Tag)) {
+      case TOTAL_CONDITIONS_PT: case STATIC_SUPERSONIC_INFLOW_PT: case STATIC_SUPERSONIC_INFLOW_PD: case DENSITY_VELOCITY:
+      riemann_inlet = true;
+      break;
+    }
+  }
   /*--- Find BC string to the numeric-identifier. ---*/
-  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) {
-    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET || riemann_inlet) {
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         Inlet_SpeciesVars[iMarker][iVertex][iVar] = config->GetInlet_SpeciesVal(Marker_Tag)[iVar];

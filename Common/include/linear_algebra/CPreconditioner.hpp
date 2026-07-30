@@ -223,6 +223,37 @@ class CLU_SGSPreconditioner final : public CPreconditioner<ScalarType> {
 };
 
 /*!
+ * \class CQuantizedLUSGSPreconditioner
+ * \brief Specialization of preconditioner that uses CSysMatrix class.
+ */
+template <class ScalarType>
+class CQuantizedLUSGSPreconditioner final : public CPreconditioner<ScalarType> {
+ private:
+  CSysMatrix<ScalarType>& sparse_matrix;
+  CGeometry* geometry;
+  const CConfig* config;
+
+ public:
+  inline CQuantizedLUSGSPreconditioner(CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref,
+                                       const CConfig* config_ref)
+      : sparse_matrix(matrix_ref) {
+    if ((geometry_ref == nullptr) || (config_ref == nullptr))
+      SU2_MPI::Error("Preconditioner needs to be built with valid references.", CURRENT_FUNCTION);
+    geometry = geometry_ref;
+    config = config_ref;
+  }
+
+  CQuantizedLUSGSPreconditioner() = delete;
+
+  inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
+    sparse_matrix.ComputeLU_SGSPreconditioner(u, v, geometry, config);
+  }
+
+  /*! \brief Quantize the diagonal blocks (off diagonals are quantized on the fly). */
+  inline void Build() override { sparse_matrix.QuantizeDiagonalBlocks(); }
+};
+
+/*!
  * \class CLineletPreconditioner
  * \brief Specialization of preconditioner that uses CSysMatrix class.
  */
@@ -355,6 +386,9 @@ CPreconditioner<ScalarType>* CPreconditioner<ScalarType>::Create(ENUM_LINEAR_SOL
       break;
     case LU_SGS:
       prec = new CLU_SGSPreconditioner<ScalarType>(jacobian, geometry, config);
+      break;
+    case Q_LU_SGS:
+      prec = new CQuantizedLUSGSPreconditioner<ScalarType>(jacobian, geometry, config);
       break;
     case ILU:
       prec = new CILUPreconditioner<ScalarType>(jacobian, geometry, config);
