@@ -149,8 +149,9 @@ protected:
 
     /*--- Stress and heat flux tensors. ---*/
 
-    auto tau = stressTensor(avgV.laminarVisc() + (uq? Double(0.0) : avgV.eddyVisc()), avgGrad);
-    if(useSA_QCR) addQCR(avgGrad, tau);
+    const Double eddyVisc = uq? Double(0.0) : avgV.eddyVisc();
+    auto tau = stressTensor(avgV.laminarVisc() + eddyVisc, avgGrad);
+    if(useSA_QCR) addQCR(avgGrad, tau, eddyVisc / (avgV.laminarVisc() + eddyVisc));
     if(uq) {
       Double turb_ke = 0.5*(gatherVariables(iPoint, turbVars->GetSolution()) +
                             gatherVariables(jPoint, turbVars->GetSolution()));

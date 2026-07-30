@@ -478,7 +478,11 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
                   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
-  if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+  if (config->GetSAParsedOptions().qcr2000) {
+    const su2double total_viscosity = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
+    const su2double turb_fraction = total_viscosity > 0.0 ? Mean_Eddy_Viscosity / total_viscosity : 0.0;
+    AddQCR(nDim, &Mean_GradPrimVar[1], tau, turb_fraction);
+  }
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);
@@ -656,7 +660,11 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
                   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
-  if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+  if (config->GetSAParsedOptions().qcr2000) {
+    const su2double total_viscosity = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
+    const su2double turb_fraction = total_viscosity > 0.0 ? Mean_Eddy_Viscosity / total_viscosity : 0.0;
+    AddQCR(nDim, &Mean_GradPrimVar[1], tau, turb_fraction);
+  }
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
@@ -986,7 +994,11 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
                   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
-  if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+  if (config->GetSAParsedOptions().qcr2000) {
+    const su2double total_viscosity = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
+    const su2double turb_fraction = total_viscosity > 0.0 ? Mean_Eddy_Viscosity / total_viscosity : 0.0;
+    AddQCR(nDim, &Mean_GradPrimVar[1], tau, turb_fraction);
+  }
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);
