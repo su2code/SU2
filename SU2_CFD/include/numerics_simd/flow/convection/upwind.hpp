@@ -73,7 +73,9 @@ protected:
     dynamicGrid(config.GetDynamic_Grid()),
     muscl(finestGrid && config.GetMUSCL_Flow()),
     umusclKappa(config.GetMUSCL_Kappa_Flow()),
-    typeLimiter(config.GetKind_SlopeLimit_Flow()) {
+    /*--- No limiter is applied here if it is already baked into the reconstruction gradients. ---*/
+    typeLimiter(config.GetLimitedGradientRecon(config.GetKind_SlopeLimit_Flow()) ?
+                LIMITER::NONE : config.GetKind_SlopeLimit_Flow()) {
   }
 
 public:

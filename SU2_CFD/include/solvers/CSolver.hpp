@@ -540,6 +540,18 @@ public:
   void SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction = false);
 
   /*!
+   * \brief Compute the Green-Gauss gradient of the solution, limited on the fly.
+   * \note The result is stored already multiplied by the limiter, which is not stored, see
+   *       CConfig::GetLimitedGradient and CConfig::GetLimitedGradientRecon.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] idxVel - Index to velocity, -1 if no velocity is present in the solver.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetSolution_Gradient_GG_Limited(CGeometry *geometry, const CConfig *config, short idxVel,
+                                       bool reconstruction = false);
+
+  /*!
    * \brief Compute the Least Squares gradient of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.

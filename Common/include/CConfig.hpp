@@ -4331,6 +4331,62 @@ public:
   unsigned short GetKind_Gradient_Method_Recon(void) const { return Kind_Gradient_Method_Recon; }
 
   /*!
+   * \brief Conditions under which GREEN_GAUSS_LIMITED is applicable, otherwise it degrades
+   *        to plain Green-Gauss with the usual two-pass limiter procedure.
+   * \note Edge-based limiters are applied during reconstruction and thus cannot be baked into
+   *       the gradients, and there is nothing to bake in when no limiter is used.
+   * \note Periodic meshes are excluded because the extrema that the limiter needs are only
+   *       available for the neighbors on one side of the periodic interface (the point loop
+   *       and the limiter are fused, so they cannot be separated by the communications that
+   *       complete the control volume of periodic points). The resulting limiter is too weak
+   *       and can prevent convergence.
+   * \param[in] limiterKind - Slope limiter of the solver in question.
+   */
+  bool LimitedGradientPossible(LIMITER limiterKind) const {
+    return (limiterKind != LIMITER::NONE) && (limiterKind != LIMITER::VAN_ALBADA_EDGE) &&
+           (nMarker_PerBound == 0);
+  }
+
+  /*!
+   * \brief Whether the gradients used for viscous and source terms are computed already
+   *        limited (GREEN_GAUSS_LIMITED).
+   * \note The method falls back to plain Green-Gauss when no limiter, or an edge-based
+   *       limiter, is used.
+   * \param[in] limiterKind - Slope limiter of the solver in question.
+   */
+  bool GetLimitedGradient(LIMITER limiterKind) const {
+    return (Kind_Gradient_Method == GREEN_GAUSS_LIMITED) && LimitedGradientPossible(limiterKind);
+  }
+
+  /*!
+   * \brief Whether the reconstruction gradients of a solver are computed already limited
+   *        (GREEN_GAUSS_LIMITED), in which case the limiters are not allocated, not computed
+   *        as a separate step, and not applied during MUSCL reconstruction.
+   * \note This is also true when GREEN_GAUSS_LIMITED is set via NUM_METHOD_GRAD and no separate
+   *       reconstruction gradient is requested, i.e. when one limited gradient serves both the
+   *       viscous/source terms and the upwind reconstruction.
+   * \note The method falls back to plain Green-Gauss (and thus to the usual two-pass limiter
+   *       procedure) when no limiter, or an edge-based limiter, is used.
+   * \note Since there is nothing to freeze, LIMITER_ITER has no effect in this mode, the
+   *       limiter keeps being recomputed on every iteration.
+   * \param[in] limiterKind - Slope limiter of the solver in question.
+   */
+  bool GetLimitedGradientRecon(LIMITER limiterKind) const {
+    return (Kind_Gradient_Method_Recon == GREEN_GAUSS_LIMITED) && LimitedGradientPossible(limiterKind);
+  }
+
+  /*!
+   * \brief Whether the method for viscous and source term gradients is one of the Green-Gauss
+   *        variants (limited or not).
+   * \note For the quantities and solvers that do not implement GREEN_GAUSS_LIMITED (auxiliary
+   *       variables, continuous adjoint, radiation) this allows falling back to plain
+   *       Green-Gauss instead of computing no gradient at all.
+   */
+  bool GreenGaussGradientMethod() const {
+    return (Kind_Gradient_Method == GREEN_GAUSS) || (Kind_Gradient_Method == GREEN_GAUSS_LIMITED);
+  }
+
+  /*!
    * \brief Get flag for whether a second gradient calculation is required for upwind reconstruction alone.
    * \return <code>TRUE</code> means that a second gradient will be calculated for upwind reconstruction.
    */

@@ -347,14 +347,15 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Compute gradients adj for solution reconstruction and viscous term ---*/
 
   if (config->GetReconstructionGradientRequired()) {
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS ||
+        config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS_LIMITED)
       SetSolution_Gradient_GG(geometry, config, 1, true);
     if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
       SetSolution_Gradient_LS(geometry, config, 1, true);
     if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
       SetSolution_Gradient_LS(geometry, config, 1, true);
   }
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config, 1);
+  if (config->GreenGaussGradientMethod()) SetSolution_Gradient_GG(geometry, config, 1);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, 1);
 
   /*--- Limiter computation (upwind reconstruction) ---*/
@@ -364,7 +365,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Compute gradients adj for viscous term coupling ---*/
 
   if ((config->GetKind_Solver() == MAIN_SOLVER::ADJ_RANS) && (!config->GetFrozen_Visc_Cont())) {
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) solver_container[ADJTURB_SOL]->SetSolution_Gradient_GG(geometry, config, 1);
+    if (config->GreenGaussGradientMethod()) solver_container[ADJTURB_SOL]->SetSolution_Gradient_GG(geometry, config, 1);
     if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) solver_container[ADJTURB_SOL]->SetSolution_Gradient_LS(geometry, config, 1);
   }
 

@@ -296,6 +296,8 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
   const bool limiter     = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
   const bool center      = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
   const bool van_albada  = config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE;
+  /*--- The limiter is not a separate step if it is baked into the reconstruction gradients. ---*/
+  const bool limitedGradient = config->GetLimitedGradientRecon(config->GetKind_SlopeLimit_Flow());
 
   /*--- Common preprocessing steps ---*/
   CommonPreprocessing(geometry, solver_container, config, iMesh, iRKStep, RunTime_EqSystem, Output);
@@ -304,15 +306,10 @@ void CNEMOEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_conta
   if (muscl && !center && !Output) {
 
     /*--- Calculate the gradients ---*/
-    if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-      SetPrimitive_Gradient_GG(geometry, config, true);
-    }
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      SetPrimitive_Gradient_LS(geometry, config, true);
-    }
+    SetPrimitive_Gradient(geometry, config, true);
 
     /*--- Limiter computation ---*/
-    if (limiter && !van_albada) {
+    if (limiter && !van_albada && !limitedGradient) {
       SetPrimitive_Limiter(geometry, config);
     }
   }
@@ -473,7 +470,8 @@ void CNEMOEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_con
   /*--- Set booleans based on config settings ---*/
   const bool implicit         = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl            = (config->GetMUSCL_Flow() && (iMesh == MESH_0));
-  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
+  const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) &&
+                                !config->GetLimitedGradientRecon(config->GetKind_SlopeLimit_Flow());
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
   const su2double kappa       = config->GetMUSCL_Kappa_Flow();

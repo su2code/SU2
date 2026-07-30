@@ -99,7 +99,7 @@ void CAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integratio
     /*--- Compute gradients of the flow variables, this is necessary for sensitivity computation,
      note that in the direct Euler problem we are not computing the gradients of the primitive variables ---*/
 
-    if (config[val_iZone]->GetKind_Gradient_Method() == GREEN_GAUSS)
+    if (config[val_iZone]->GreenGaussGradientMethod())
       solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetPrimitive_Gradient_GG(geometry[val_iZone][val_iInst][MESH_0],
                                                                                config[val_iZone]);
     if (config[val_iZone]->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)

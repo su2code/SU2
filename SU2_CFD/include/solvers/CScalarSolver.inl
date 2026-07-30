@@ -90,6 +90,27 @@ CScalarSolver<VariableType>::~CScalarSolver() {
 }
 
 template <class VariableType>
+void CScalarSolver<VariableType>::SetSolution_Gradient(CGeometry* geometry, const CConfig* config,
+                                                       bool reconstruction) {
+  const auto kind = reconstruction ? config->GetKind_Gradient_Method_Recon() : config->GetKind_Gradient_Method();
+  const auto limiterKind = config->GetKind_SlopeLimit();
+  const bool limited = reconstruction ? config->GetLimitedGradientRecon(limiterKind)
+                                      : config->GetLimitedGradient(limiterKind);
+  switch (kind) {
+    case GREEN_GAUSS_LIMITED:
+      if (limited) { SetSolution_Gradient_GG_Limited(geometry, config, -1, reconstruction); break; }
+      /*--- Fall back to plain Green-Gauss, e.g. if no limiter is used. ---*/
+      SetSolution_Gradient_GG(geometry, config, -1, reconstruction); break;
+    case GREEN_GAUSS:
+      SetSolution_Gradient_GG(geometry, config, -1, reconstruction); break;
+    case LEAST_SQUARES:
+    case WEIGHTED_LEAST_SQUARES:
+      SetSolution_Gradient_LS(geometry, config, -1, reconstruction); break;
+    default: break;
+  }
+}
+
+template <class VariableType>
 void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output) {
   SU2_ZONE_SCOPED
 
@@ -99,6 +120,8 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
   const bool muscl = config->GetMUSCL();
   const bool limiter = (config->GetKind_SlopeLimit() != LIMITER::NONE) &&
                        (config->GetInnerIter() <= config->GetLimiterIter());
+  /*--- With limited reconstruction gradients the limiter is not a separate step. ---*/
+  const bool limitedGradient = config->GetLimitedGradientRecon(config->GetKind_SlopeLimit());
 
   /*--- Clear residual and system matrix, not needed for
    * reducer strategy as we write over the entire matrix. ---*/
@@ -114,19 +137,12 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
   /*--- Upwind second order reconstruction and gradients ---*/
 
   if (config->GetReconstructionGradientRequired()) {
-    switch(config->GetKind_Gradient_Method_Recon()) {
-      case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, -1, true); break;
-      case LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, -1, true); break;
-      case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, -1, true); break;
-    }
+    SetSolution_Gradient(geometry, config, true);
   }
 
-  switch(config->GetKind_Gradient_Method()) {
-    case GREEN_GAUSS: SetSolution_Gradient_GG(geometry, config, -1); break;
-    case WEIGHTED_LEAST_SQUARES: SetSolution_Gradient_LS(geometry, config, -1); break;
-  }
+  SetSolution_Gradient(geometry, config, false);
 
-  if (limiter && muscl) SetSolution_Limiter(geometry, config);
+  if (limiter && muscl && !limitedGradient) SetSolution_Limiter(geometry, config);
 }
 
 template <class VariableType>
@@ -168,14 +184,17 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
    * before calling these solver functions. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool muscl = config->GetMUSCL();
+  /*--- The limiter is not applied here if it was already baked into the reconstruction gradients. ---*/
   const bool limiter = (config->GetKind_SlopeLimit() != LIMITER::NONE) &&
-                       (config->GetInnerIter() <= config->GetLimiterIter());
+                       (config->GetInnerIter() <= config->GetLimiterIter()) &&
+                       !config->GetLimitedGradientRecon(config->GetKind_SlopeLimit());
 
   /*--- Only reconstruct flow variables if MUSCL is on for flow (requires upwind) and turbulence. ---*/
   const bool musclFlow = config->GetMUSCL_Flow() && muscl && (config->GetKind_ConvNumScheme_Flow() == SPACE_UPWIND);
   /*--- Only consider flow limiters for cell-based limiters, edge-based would need to be recomputed. ---*/
-  const bool limiterFlow =
-      (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE);
+  const bool limiterFlow = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) &&
+                           (config->GetKind_SlopeLimit_Flow() != LIMITER::VAN_ALBADA_EDGE) &&
+                           !config->GetLimitedGradientRecon(config->GetKind_SlopeLimit_Flow());
 
   /*--- U-MUSCL reconstruction ---*/
   const su2double kappa     = config->GetMUSCL_Kappa();

@@ -5681,6 +5681,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
                    CURRENT_FUNCTION);
   }
 
+  if (((Kind_Gradient_Method == GREEN_GAUSS_LIMITED) || (Kind_Gradient_Method_Recon == GREEN_GAUSS_LIMITED)) &&
+      DiscreteAdjoint && Frozen_Limiter_Disc) {
+    /*--- The limiter is fused with the gradient, it cannot be made passive on its own. ---*/
+    SU2_MPI::Error("GREEN_GAUSS_LIMITED is not compatible with FROZEN_LIMITER_DISC.", CURRENT_FUNCTION);
+  }
+
   /* Protect against using CFL adaption for non-flow or certain
    unsteady flow problems. */
 
@@ -7343,11 +7349,13 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
           case GREEN_GAUSS: cout << "Gradient for upwind reconstruction: Green-Gauss." << endl; break;
           case LEAST_SQUARES: cout << "Gradient for upwind reconstruction: unweighted Least-Squares." << endl; break;
           case WEIGHTED_LEAST_SQUARES: cout << "Gradient for upwind reconstruction: inverse-distance weighted Least-Squares." << endl; break;
+          case GREEN_GAUSS_LIMITED: cout << "Gradient for upwind reconstruction: Green-Gauss limited on the fly." << endl; break;
         }
         switch (Kind_Gradient_Method) {
           case GREEN_GAUSS: cout << "Gradient for viscous and source terms: Green-Gauss." << endl; break;
           case LEAST_SQUARES: cout << "Gradient for viscous and source terms: unweighted Least-Squares." << endl; break;
           case WEIGHTED_LEAST_SQUARES: cout << "Gradient for viscous and source terms: inverse-distance weighted Least-Squares." << endl; break;
+          case GREEN_GAUSS_LIMITED: cout << "Gradient for viscous and source terms: Green-Gauss limited on the fly." << endl; break;
         }
       }
       else{

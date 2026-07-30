@@ -42,12 +42,19 @@ CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsig
     Rmatrix.resize(nPoint, nDim, nDim, 0.0);
   }
 
-  /*--- Always allocate the slope limiter, and the auxiliary
-   variables (check the logic - JST with 2nd order Turb model) ---*/
+  /*--- Always allocate the slope limiter, and the auxiliary variables (check the logic - JST
+   with 2nd order Turb model), except when the reconstruction gradients are limited on the fly,
+   in which case the limiters are never used (nor computed) for any of the scalar solvers.
+   The slope limiter of each scalar solver is not known here, but of the cases in which
+   GREEN_GAUSS_LIMITED degrades to plain Green-Gauss (see CConfig::LimitedGradientPossible)
+   only periodic meshes need the limiters, no limiter means they are not used either way,
+   and edge limiters are not supported for scalars. ---*/
 
-  Limiter.resize(nPoint, nVar) = su2double(0.0);
-  Solution_Max.resize(nPoint, nVar) = su2double(0.0);
-  Solution_Min.resize(nPoint, nVar) = su2double(0.0);
+  if ((config->GetKind_Gradient_Method_Recon() != GREEN_GAUSS_LIMITED) || (config->GetnMarker_Periodic() > 0)) {
+    Limiter.resize(nPoint, nVar) = su2double(0.0);
+    Solution_Max.resize(nPoint, nVar) = su2double(0.0);
+    Solution_Min.resize(nPoint, nVar) = su2double(0.0);
+  }
 
   Delta_Time.resize(nPoint) = su2double(0.0);
 

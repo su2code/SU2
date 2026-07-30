@@ -1079,6 +1079,25 @@ class CFVMFlowSolverBase : public CSolver {
   void SetPrimitive_Gradient_GG(CGeometry* geometry, const CConfig* config, bool reconstruction = false) override;
 
   /*!
+   * \brief Compute the Green-Gauss gradient of the primitive variables, limited on the fly.
+   * \note The result is stored already multiplied by the limiter, which is not stored, see
+   *       CConfig::GetLimitedGradient and CConfig::GetLimitedGradientRecon.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetPrimitive_Gradient_GG_Limited(CGeometry* geometry, const CConfig* config, bool reconstruction = false);
+
+  /*!
+   * \brief Compute the gradient of the primitive variables with the method selected in the config,
+   *        falling back to plain Green-Gauss if GREEN_GAUSS_LIMITED is not applicable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetPrimitive_Gradient(CGeometry* geometry, const CConfig* config, bool reconstruction);
+
+  /*!
    * \brief Compute the gradient of the primitive variables using a Least-Squares method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.

@@ -62,6 +62,8 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   const auto InnerIter = config->GetInnerIter();
   const bool limiter = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE) && (InnerIter <= config->GetLimiterIter());
   const bool van_albada = config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE;
+  /*--- The limiter is not a separate step if it is baked into the reconstruction gradients. ---*/
+  const bool limitedGradient = config->GetLimitedGradientRecon(config->GetKind_SlopeLimit_Flow());
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
   const bool center = config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED;
   const bool wall_functions = config->GetWall_Functions();
@@ -73,28 +75,16 @@ void CNEMONSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   /*--- Compute gradient for MUSCL reconstruction. ---*/
 
   if (config->GetReconstructionGradientRequired() && muscl && !center) {
-    switch (config->GetKind_Gradient_Method_Recon()) {
-      case GREEN_GAUSS:
-        SetPrimitive_Gradient_GG(geometry, config, true); break;
-      case LEAST_SQUARES:
-      case WEIGHTED_LEAST_SQUARES:
-        SetPrimitive_Gradient_LS(geometry, config, true); break;
-      default: break;
-    }
+    SetPrimitive_Gradient(geometry, config, true);
   }
 
   /*--- Compute gradient of the primitive variables ---*/
 
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    SetPrimitive_Gradient_GG(geometry, config);
-  }
-  else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    SetPrimitive_Gradient_LS(geometry, config);
-  }
+  SetPrimitive_Gradient(geometry, config, false);
 
   /*--- Compute the limiters ---*/
 
-  if (muscl && !center && limiter && !van_albada && !Output) {
+  if (muscl && !center && limiter && !van_albada && !limitedGradient && !Output) {
     SetPrimitive_Limiter(geometry, config);
   }
 

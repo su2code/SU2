@@ -27,6 +27,68 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#pragma once
+
+#include "fieldMinMax.hpp"
+
+
+/*!
+ * \brief Compute, for one point, the min/max projection of its gradient onto the edge midpoints,
+ *        optionally also tracking the min/max of the field over its direct neighbors.
+ * \ingroup FvmAlgos
+ * \note The projections require the gradient of the point to be complete, which is why they
+ *       cannot be determined in the same neighbor loop that computes it. The extrema of the
+ *       field can, in which case CNoMinMax should be passed here.
+ * \param[in] geometry - Geometric grid properties.
+ * \param[in] iPoint - Point for which to compute the extrema.
+ * \param[in] varBegin - First variable index.
+ * \param[in] varEnd - End of computation range.
+ * \param[in] umusclKappa - Blending parameter for U-MUSCL reconstruction.
+ * \param[in] field - Variable field.
+ * \param[in] gradient - Gradient of the field (of iPoint only).
+ * \param[in,out] extrema - Min/max of the field, updated (not initialized) so that they can be
+ *                          seeded with values obtained via periodic communications.
+ * \param[in,out] projMin,projMax - Min/max projections, per variable, must be initialized to 0.
+ */
+template<size_t nDim, class FieldType, class GradientType, class MinMaxType>
+FORCEINLINE void limiterExtrema(const CGeometry& geometry, size_t iPoint, size_t varBegin, size_t varEnd,
+                                const su2double& umusclKappa, const FieldType& field, const GradientType& gradient,
+                                MinMaxType extrema, su2double* projMin, su2double* projMax)
+{
+  const auto coord_i = geometry.nodes->GetCoord(iPoint);
+
+  for (auto jPoint : geometry.nodes->GetPoints(iPoint)) {
+
+    const auto coord_j = geometry.nodes->GetCoord(jPoint);
+    AD::SetPreaccIn(coord_j, nDim);
+
+    /*--- Distance vector from iPoint to face (middle of the edge). ---*/
+
+    su2double dist_ij[nDim] = {0.0};
+
+    for(size_t iDim = 0; iDim < nDim; ++iDim)
+      dist_ij[iDim] = 0.5 * (coord_j[iDim] - coord_i[iDim]);
+
+    /*--- Project each variable, update min/max. ---*/
+
+    for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
+    {
+      su2double proj = 0.0;
+
+      for(size_t iDim = 0; iDim < nDim; ++iDim)
+        proj += dist_ij[iDim] * gradient(iPoint,iVar,iDim);
+
+      AD::SetPreaccIn(field(jPoint,iVar));
+      const su2double cent = 0.5 * (field(jPoint,iVar) - field(iPoint,iVar));
+      proj = LimiterHelpers<>::umusclProjection(proj, cent, umusclKappa);
+
+      projMax[iVar] = max(projMax[iVar], proj);
+      projMin[iVar] = min(projMin[iVar], proj);
+
+      extrema.update(iVar, field(jPoint,iVar));
+    }
+  }
+}
 
 /*!
  * \brief Generic limiter computation for methods based on one limiter
@@ -167,38 +229,8 @@ void computeLimiters_impl(CSolver* solver,
 
     /*--- Compute max/min projection and values over direct neighbors. ---*/
 
-    for (auto jPoint : geometry.nodes->GetPoints(iPoint)) {
-
-      const auto coord_j = geometry.nodes->GetCoord(jPoint);
-      AD::SetPreaccIn(coord_j, nDim);
-
-      /*--- Distance vector from iPoint to face (middle of the edge). ---*/
-
-      su2double dist_ij[nDim] = {0.0};
-
-      for(size_t iDim = 0; iDim < nDim; ++iDim)
-        dist_ij[iDim] = 0.5 * (coord_j[iDim] - coord_i[iDim]);
-
-      /*--- Project each variable, update min/max. ---*/
-
-      for(size_t iVar = varBegin; iVar < varEnd; ++iVar)
-      {
-        su2double proj = 0.0;
-
-        for(size_t iDim = 0; iDim < nDim; ++iDim)
-          proj += dist_ij[iDim] * gradient(iPoint,iVar,iDim);
-
-        AD::SetPreaccIn(field(jPoint,iVar));
-        const su2double cent = 0.5 * (field(jPoint,iVar) - field(iPoint,iVar));
-        proj = LimiterHelpers<>::umusclProjection(proj, cent, umusclKappa);
-
-        projMax[iVar] = max(projMax[iVar], proj);
-        projMin[iVar] = min(projMin[iVar], proj);
-
-        fieldMax(iPoint,iVar) = max(fieldMax(iPoint,iVar), field(jPoint,iVar));
-        fieldMin(iPoint,iVar) = min(fieldMin(iPoint,iVar), field(jPoint,iVar));
-      }
-    }
+    limiterExtrema<nDim>(geometry, iPoint, varBegin, varEnd, umusclKappa, field, gradient,
+                         CRowMinMax<FieldType>{fieldMin, fieldMax, iPoint}, projMin, projMax);
 
     /*--- Compute the geometric factor. ---*/
 

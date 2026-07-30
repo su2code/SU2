@@ -27,6 +27,7 @@
 #pragma once
 
 #include "../gradients/computeGradientsGreenGauss.hpp"
+#include "../gradients/computeGradientsGreenGaussLimited.hpp"
 #include "../gradients/computeGradientsLeastSquares.hpp"
 #include "../limiters/computeLimiters.hpp"
 #include "../numerics_simd/CNumericsSIMD.hpp"
@@ -399,6 +400,42 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_GG(CGeometry* geometry, con
   const auto commPer = reconstruction? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
 
   computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, prim_idx.Velocity(), gradient);
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_GG_Limited(CGeometry* geometry, const CConfig* config,
+                                                                bool reconstruction) {
+  SU2_ZONE_SCOPED
+
+  const auto& primitives = nodes->GetPrimitive();
+  auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
+  const auto comm = reconstruction? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
+  const auto commPer = reconstruction? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
+
+  computeGradientsGreenGaussLimited(config->GetKind_SlopeLimit_Flow(), this, comm, commPer, *geometry, *config,
+                                    config->GetMUSCL_Kappa_Flow(), primitives, 0, nPrimVarGrad, prim_idx.Velocity(),
+                                    gradient);
+}
+
+template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient(CGeometry* geometry, const CConfig* config,
+                                                     bool reconstruction) {
+  const auto kind = reconstruction ? config->GetKind_Gradient_Method_Recon() : config->GetKind_Gradient_Method();
+  const auto limiterKind = config->GetKind_SlopeLimit_Flow();
+  const bool limited = reconstruction ? config->GetLimitedGradientRecon(limiterKind)
+                                      : config->GetLimitedGradient(limiterKind);
+  switch (kind) {
+    case GREEN_GAUSS_LIMITED:
+      if (limited) { SetPrimitive_Gradient_GG_Limited(geometry, config, reconstruction); break; }
+      /*--- Fall back to plain Green-Gauss, e.g. if no limiter is used. ---*/
+      SetPrimitive_Gradient_GG(geometry, config, reconstruction); break;
+    case GREEN_GAUSS:
+      SetPrimitive_Gradient_GG(geometry, config, reconstruction); break;
+    case LEAST_SQUARES:
+    case WEIGHTED_LEAST_SQUARES:
+      SetPrimitive_Gradient_LS(geometry, config, reconstruction); break;
+    default: break;
+  }
 }
 
 template <class V, ENUM_REGIME R>
@@ -3055,7 +3092,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::ComputeAxisymmetricAuxGradients(CGeometr
   END_SU2_OMP_FOR
 
   /*--- Compute the auxiliary variable gradient with GG or WLS. ---*/
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+  if (config->GreenGaussGradientMethod()) {
     SetAuxVar_Gradient_GG(geometry, config);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {

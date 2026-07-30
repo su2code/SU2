@@ -418,6 +418,18 @@ class CScalarSolver : public CSolver {
    */
   void CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output);
 
+ public:
+  /*!
+   * \brief Compute the gradient of the solution with the method selected in the config, falling
+   *        back to plain Green-Gauss if GREEN_GAUSS_LIMITED is not applicable.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+  void SetSolution_Gradient(CGeometry *geometry, const CConfig *config, bool reconstruction);
+
+ protected:
+
   /*!
    * \brief Sum the edge fluxes for each cell to populate the residual vector, only used on coarse grids.
    * \param[in] geometry - Geometrical definition of the problem.

@@ -30,6 +30,7 @@
 #include "../../Common/include/containers/container_decorators.hpp"
 #include "../../SU2_CFD/include/solvers/CSolver.hpp"
 #include "../../SU2_CFD/include/gradients/computeGradientsGreenGauss.hpp"
+#include "../../SU2_CFD/include/gradients/computeGradientsGreenGaussLimited.hpp"
 #include "../../SU2_CFD/include/gradients/computeGradientsLeastSquares.hpp"
 
 /*!
@@ -138,6 +139,21 @@ void testGreenGauss() {
 }
 
 template <class TestField>
+void testGreenGaussLimited(LIMITER limiterKind) {
+  TestField field;
+  C3DDoubleMatrix gradient(field.geometry->GetnPoint(), field.nVar, field.geometry->GetnDim());
+
+  /*--- For a linear function the limiter is 1 everywhere, and so the limited gradient
+   *    must match the exact one. This also checks the (f_j-f_i)/2 formulation, which
+   *    relies on the boundary faces of the control volumes not being needed. ---*/
+
+  computeGradientsGreenGaussLimited(limiterKind, nullptr, MPI_QUANTITIES::SOLUTION, PERIODIC_NONE,
+                                    *field.geometry.get(), *field.config.get(), 0.0, field, 0, field.nVar, -1,
+                                    gradient);
+  check(field, gradient);
+}
+
+template <class TestField>
 void testLeastSquares(bool weighted) {
   TestField field;
   const auto nDim = field.geometry->GetnDim();
@@ -150,6 +166,12 @@ void testLeastSquares(bool weighted) {
 }
 
 TEST_CASE("GG", "[Gradients]") { testGreenGauss<LinearFunction>(); }
+
+TEST_CASE("GG limited (Barth)", "[Gradients]") { testGreenGaussLimited<LinearFunction>(LIMITER::BARTH_JESPERSEN); }
+
+TEST_CASE("GG limited (Venkatakrishnan)", "[Gradients]") {
+  testGreenGaussLimited<LinearFunction>(LIMITER::VENKATAKRISHNAN);
+}
 
 TEST_CASE("LS", "[Gradients]") { testLeastSquares<LinearFunction>(false); }
 

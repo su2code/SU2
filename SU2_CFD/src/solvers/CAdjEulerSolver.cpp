@@ -959,7 +959,8 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
     /*--- Gradient computation for MUSCL reconstruction. ---*/
 
-    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
+    if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS ||
+        config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS_LIMITED)
       SetSolution_Gradient_GG(geometry, config, 1, true);
     if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
       SetSolution_Gradient_LS(geometry, config, 1, true);
@@ -978,7 +979,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     if ((center_jst) && (iMesh == MESH_0)) {
       SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
-      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config, 1);
+      if (config->GreenGaussGradientMethod()) SetSolution_Gradient_GG(geometry, config, 1);
       if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, 1);
     }
   }

@@ -143,6 +143,7 @@ void CSpeciesFlameletSolver::Preprocessing(CGeometry* geometry, CSolver** solver
   if (flamelet_config_options.preferential_diffusion) {
     switch (config->GetKind_Gradient_Method()) {
       case GREEN_GAUSS:
+      case GREEN_GAUSS_LIMITED:
         SetAuxVar_Gradient_GG(geometry, config);
         break;
       case WEIGHTED_LEAST_SQUARES:
