@@ -312,8 +312,11 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
 
   /*--- Agglomerate high-aspect-ratio interior nodes along implicit lines from walls. ---*/
+  unsigned long Index_CoarseCV_before_implicit_lines = Index_CoarseCV;
+  unsigned long Index_CoarseCV_after_implicit_lines = Index_CoarseCV;
   if (config->GetMGOptions().MG_Implicit_Lines) {
     AgglomerateImplicitLines(Index_CoarseCV, fine_grid, config, MGQueue_InnerCV);
+    Index_CoarseCV_after_implicit_lines = Index_CoarseCV;
   }
 
   /*--- STEP 2: Agglomerate the domain points. ---*/
@@ -428,6 +431,42 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   nPointDomain = Index_CoarseCV;
   nPoint = nPointDomain;
 
+  /*--- DIAGNOSTIC: Check CV child counts after domain agglomeration ---*/
+  if (config->GetMGOptions().MG_Implicit_Lines && (rank == MASTER_NODE)) {
+    unsigned long nCVs_1child = 0, nCVs_2child = 0, nCVs_3child = 0, nCVs_4child = 0, nCVs_other = 0;
+    unsigned long n_corrupted_implicit_CVs = 0;
+    for (auto iCV = Index_CoarseCV_before_implicit_lines; iCV < Index_CoarseCV_after_implicit_lines; iCV++) {
+      const auto nChildren = nodes->GetnChildren_CV(iCV);
+      if (nChildren == 1) nCVs_1child++;
+      else if (nChildren == 2) nCVs_2child++;
+      else if (nChildren == 3) nCVs_3child++;
+      else if (nChildren == 4) nCVs_4child++;
+      else nCVs_other++;
+
+      if (nChildren != 2 && !config->GetMGOptions().MG_Implicit_Lines_Isotropic) {
+        n_corrupted_implicit_CVs++;
+        if (n_corrupted_implicit_CVs <= 5) {
+          cout << "  CORRUPTION DETECTED in CV " << iCV << ": has " << nChildren << " children (expected 2)" << endl;
+          cout << "    Children nodes: ";
+          for (unsigned short iChild = 0; iChild < nChildren; iChild++) {
+            cout << nodes->GetChildren_CV(iCV, iChild);
+            if (iChild < nChildren - 1) cout << ", ";
+          }
+          cout << endl;
+        }
+      }
+    }
+    if (n_corrupted_implicit_CVs > 0) {
+      cout << "  AFTER DOMAIN AGGLOMERATION: " << n_corrupted_implicit_CVs
+           << " implicit line CVs were corrupted (child count != 2)" << endl;
+      cout << "    Distribution in implicit line CVs: 1-child=" << nCVs_1child
+           << ", 2-child=" << nCVs_2child << ", 3-child=" << nCVs_3child
+           << ", 4-child=" << nCVs_4child;
+      if (nCVs_other > 0) cout << ", other=" << nCVs_other;
+      cout << endl;
+    }
+  }
+
   /*--- Check that there are no hanging nodes. Detect isolated points
    (only 1 neighbor), and merge their children CV's with the neighbor. ---*/
 
@@ -498,6 +537,58 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
       nodes->SetnChildren_CV(iCoarsePoint_Complete, nChildren);
       nodes->SetnChildren_CV(iCoarsePoint, 0);
+    }
+  }
+
+  /*--- Diagnostic: Check if implicit line CVs were corrupted by hanging node correction ---*/
+  if (config->GetMGOptions().MG_Implicit_Lines && (rank == MASTER_NODE)) {
+    unsigned long nCVs_1child = 0, nCVs_2child = 0, nCVs_3child = 0, nCVs_4child = 0, nCVs_other = 0;
+    unsigned long n_corrupted_after_hanging = 0;
+    for (auto iCV = Index_CoarseCV_before_implicit_lines; iCV < Index_CoarseCV_after_implicit_lines; iCV++) {
+      const auto nChildren = nodes->GetnChildren_CV(iCV);
+      if (nChildren == 1) nCVs_1child++;
+      else if (nChildren == 2) nCVs_2child++;
+      else if (nChildren == 3) nCVs_3child++;
+      else if (nChildren == 4) nCVs_4child++;
+      else nCVs_other++;
+
+      if (nChildren != 2 && !config->GetMGOptions().MG_Implicit_Lines_Isotropic) {
+        n_corrupted_after_hanging++;
+      }
+    }
+    if (n_corrupted_after_hanging > 0) {
+      cout << "  AFTER HANGING NODE CORRECTION: " << n_corrupted_after_hanging
+           << " implicit line CVs corrupted (child count != 2)" << endl;
+      cout << "    Distribution in implicit line CVs: 1-child=" << nCVs_1child
+           << ", 2-child=" << nCVs_2child << ", 3-child=" << nCVs_3child
+           << ", 4-child=" << nCVs_4child;
+      if (nCVs_other > 0) cout << ", other=" << nCVs_other;
+      cout << endl;
+    }
+  }
+
+  /*--- Final summary of all CVs ---*/
+  if (config->GetMGOptions().MG_Implicit_Lines && (rank == MASTER_NODE)) {
+    cout << "  Expected ratio: ~2 nodes per CV (actual: " << fixed << setprecision(2)
+         << (double)fine_grid->GetnPoint() / (double)nPointDomain << ")" << endl;
+
+    unsigned long nCVs_1child = 0, nCVs_2child = 0, nCVs_3child = 0, nCVs_4child = 0, nCVs_other = 0;
+    for (auto iCV = 0ul; iCV < nPointDomain; iCV++) {
+      const auto nChildren = nodes->GetnChildren_CV(iCV);
+      if (nChildren == 1) nCVs_1child++;
+      else if (nChildren == 2) nCVs_2child++;
+      else if (nChildren == 3) nCVs_3child++;
+      else if (nChildren == 4) nCVs_4child++;
+      else nCVs_other++;
+    }
+    cout << "  CV distribution: 1-child=" << nCVs_1child << ", 2-child=" << nCVs_2child
+         << ", 3-child=" << nCVs_3child << ", 4-child=" << nCVs_4child;
+    if (nCVs_other > 0) cout << ", other=" << nCVs_other;
+    cout << endl;
+
+    if (nCVs_3child > 0 || (!config->GetMGOptions().MG_Implicit_Lines_Isotropic && nCVs_4child > 0)) {
+      cout << "  WARNING: Detected unexpected CV child counts (3-child=" << nCVs_3child
+           << ", 4-child=" << nCVs_4child << " in ANISO mode)" << endl;
     }
   }
 
@@ -659,11 +750,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   SetGlobal_nPointDomain(Global_nPointCoarse);
 
   if (iMesh != MESH_0) {
-    /*--- Note: CFL at the coarse levels have a large impact on convergence,
-          this should be rewritten to use adaptive CFL. ---*/
-    const su2double Coeff = 1.5;
-    const su2double CFL = config->GetCFL(iMesh - 1) / Coeff;
-    config->SetCFL(iMesh, CFL);
+    /*--- Initialize coarse-level CFL from config. MG_CFL_SCALING will
+          apply per-level reductions during the multigrid cycle. ---*/
+    config->SetCFL(iMesh, config->GetCFL(MESH_0));
   }
 
   const su2double ratio = su2double(Global_nPointFine) / su2double(Global_nPointCoarse);
@@ -1289,6 +1378,9 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
   const bool ISOTROPIC = config->GetMGOptions().MG_Implicit_Lines_Isotropic;
 
   const unsigned long nPointFine = fine_grid->GetnPoint();
+  const unsigned long starting_Index_CoarseCV = Index_CoarseCV;  /*--- Track how many CVs we create ---*/
+  const bool DEBUG_OUTPUT = (rank == MASTER_NODE);  /*--- Enable detailed diagnostic output ---*/
+  const unsigned long DEBUG_CV_LIMIT = 20;  /*--- Show details for first N CVs ---*/
 
   /*--- Collect implicit lines starting at viscous (no-slip) wall vertices only.
    *    Seeding from non-wall boundaries (farfield, inlet, outlet, symmetry) would
@@ -1383,6 +1475,28 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
   if (rank == MASTER_NODE) {
     cout << "Implicit line agglomeration: detected " << lines.size() << " lines." << endl;
     cout << "  Mode: " << (ISOTROPIC ? "ISOTROPIC" : "ANISOTROPIC") << endl;
+    /*--- Show line length distribution ---*/
+    size_t min_len = ULONG_MAX, max_len = 0;
+    su2double avg_len = 0.0;
+    for (const auto& L : lines) {
+      min_len = min(min_len, L.size());
+      max_len = max(max_len, L.size());
+      avg_len += L.size();
+    }
+    if (!lines.empty()) avg_len /= lines.size();
+    cout << "  Line lengths: min=" << min_len << ", max=" << max_len << ", avg=" << std::setprecision(1) << std::fixed << avg_len << endl;
+
+    /*--- Show first few lines for debugging ---*/
+    cout << "  First 5 lines (showing first 4 nodes):" << endl;
+    for (size_t i = 0; i < min(size_t(5), lines.size()); ++i) {
+      cout << "    Line " << i << " (len=" << lines[i].size() << "): [";
+      for (size_t j = 0; j < min(size_t(4), lines[i].size()); ++j) {
+        if (j > 0) cout << ", ";
+        cout << lines[i][j];
+      }
+      if (lines[i].size() > 4) cout << ", ...";
+      cout << "]" << endl;
+    }
   }
 
   /*--- Agglomeration strategy:
@@ -1399,10 +1513,11 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
 
   while (true) {
     bool any_work = false;
+    vector<char> line_processed(lines.size(), 0);
 
-    /*--- Build map: wall parent CV -> list of line indices ---*/
-    unordered_map<unsigned long, vector<unsigned long>> parent_to_lines;
-    parent_to_lines.reserve(lines.size());
+    /*--- Build list of active lines (have nodes at current position) ---*/
+    vector<unsigned long> active_lines;
+    active_lines.reserve(lines.size());
     for (unsigned long li = 0; li < lines.size(); ++li) {
       const auto& L = lines[li];
       if (L.empty()) continue;
@@ -1412,113 +1527,192 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
       } else {
         if (L.size() <= 1 + position_idx) continue;  // no position at this index
       }
-      const auto pW = fine_grid->nodes->GetParent_CV(L[0]);
-      parent_to_lines[pW].push_back(li);
+      active_lines.push_back(li);
     }
 
-    vector<char> line_processed(lines.size(), 0);
-
     if (ISOTROPIC) {
-      /*--- ISOTROPIC MODE: Group 4 children per coarse CV (2 positions × 2 lines) ---*/
-      for (auto& [parent, line_ids] : parent_to_lines) {
-        if (line_ids.size() < 2) continue;
+      /*--- ISOTROPIC MODE: Group 4 children per coarse CV (2 positions × 2 lines)
+            Use spatial neighbor search to pair adjacent lines. ---*/
+      for (auto li1 : active_lines) {
+        if (line_processed[li1]) continue;
 
-        for (size_t k = 0; k + 1 < line_ids.size(); k += 2) {
-          const auto li1 = line_ids[k];
-          const auto li2 = line_ids[k + 1];
-          if (line_processed[li1] || line_processed[li2]) continue;
+        const auto& L1 = lines[li1];
+        const auto idx1 = 1 + 2 * position_idx;
+        const auto idx2 = idx1 + 1;
+        if (L1.size() <= idx2) continue;
 
-          const auto& L1 = lines[li1];
-          const auto& L2 = lines[li2];
-          const auto idx1 = 1 + 2 * position_idx;
-          const auto idx2 = idx1 + 1;
-          if (L1.size() <= idx2 || L2.size() <= idx2) continue;
+        const auto a = L1[idx1], b = L1[idx2];
+        if (fine_grid->nodes->GetAgglomerate(a) || fine_grid->nodes->GetAgglomerate(b)) continue;
+        if (reserved[a] || reserved[b]) continue;
 
-          const auto a = L1[idx1], b = L1[idx2];
-          const auto c = L2[idx1], d = L2[idx2];
-
-          /*--- Skip if any node is already claimed ---*/
-          if (fine_grid->nodes->GetAgglomerate(a) || fine_grid->nodes->GetAgglomerate(b) ||
-              fine_grid->nodes->GetAgglomerate(c) || fine_grid->nodes->GetAgglomerate(d))
-            continue;
-          if (reserved[a] || reserved[b] || reserved[c] || reserved[d]) continue;
-
-          /*--- Geometrical quality check ---*/
-          if (!GeometricalCheck(a, fine_grid, config) || !GeometricalCheck(b, fine_grid, config) ||
-              !GeometricalCheck(c, fine_grid, config) || !GeometricalCheck(d, fine_grid, config))
-            continue;
-
-          /*--- Guard against duplicate indices ---*/
-          if (a == b || a == c || a == d || b == c || b == d || c == d) {
-            for (auto other_li : line_ids) line_processed[other_li] = 1;
-            continue;
+        /*--- Find nearest neighbor line by checking mesh neighbors of node 'a' ---*/
+        unsigned long li2_best = std::numeric_limits<unsigned long>::max();
+        for (auto neighbor_point : fine_grid->nodes->GetPoints(a)) {
+          /*--- Check if this neighbor belongs to another unprocessed line at same position ---*/
+          for (auto li2 : active_lines) {
+            if (li2 == li1 || line_processed[li2]) continue;
+            const auto& L2 = lines[li2];
+            if (L2.size() <= idx2) continue;
+            const auto c = L2[idx1];
+            if (c == neighbor_point) {
+              li2_best = li2;
+              break;
+            }
           }
-
-          /*--- Create 4-child coarse CV (isotropic agglomeration) ---*/
-          fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
-          nodes->SetChildren_CV(Index_CoarseCV, 0, a);
-          fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
-          nodes->SetChildren_CV(Index_CoarseCV, 1, b);
-          fine_grid->nodes->SetParent_CV(c, Index_CoarseCV);
-          nodes->SetChildren_CV(Index_CoarseCV, 2, c);
-          fine_grid->nodes->SetParent_CV(d, Index_CoarseCV);
-          nodes->SetChildren_CV(Index_CoarseCV, 3, d);
-          nodes->SetnChildren_CV(Index_CoarseCV, 4);
-
-          reserved[a] = reserved[b] = reserved[c] = reserved[d] = 1;
-          MGQueue_InnerCV.RemoveCV(a);
-          MGQueue_InnerCV.RemoveCV(b);
-          MGQueue_InnerCV.RemoveCV(c);
-          MGQueue_InnerCV.RemoveCV(d);
-
-          Index_CoarseCV++;
-          line_processed[li1] = line_processed[li2] = 1;
-          for (auto other_li : line_ids)
-            if (other_li != li1 && other_li != li2) line_processed[other_li] = 1;
-          any_work = true;
+          if (li2_best != std::numeric_limits<unsigned long>::max()) break;
         }
+
+        if (li2_best == std::numeric_limits<unsigned long>::max()) continue;
+
+        const auto& L2 = lines[li2_best];
+        const auto c = L2[idx1], d = L2[idx2];
+
+        /*--- Skip if any node is already claimed ---*/
+        if (fine_grid->nodes->GetAgglomerate(c) || fine_grid->nodes->GetAgglomerate(d)) continue;
+        if (reserved[c] || reserved[d]) continue;
+
+        /*--- Geometrical quality check ---*/
+        if (!GeometricalCheck(a, fine_grid, config) || !GeometricalCheck(b, fine_grid, config) ||
+            !GeometricalCheck(c, fine_grid, config) || !GeometricalCheck(d, fine_grid, config))
+          continue;
+
+        /*--- Guard against duplicate indices ---*/
+        if (a == b || a == c || a == d || b == c || b == d || c == d) {
+          line_processed[li1] = line_processed[li2_best] = 1;
+          continue;
+        }
+
+        /*--- Create 4-child coarse CV (isotropic agglomeration) ---*/
+        fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 0, a);
+        fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 1, b);
+        fine_grid->nodes->SetParent_CV(c, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 2, c);
+        fine_grid->nodes->SetParent_CV(d, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 3, d);
+        nodes->SetnChildren_CV(Index_CoarseCV, 4);
+
+        /*--- Debug output: show CV creation details ---*/
+        if (DEBUG_OUTPUT && Index_CoarseCV < starting_Index_CoarseCV + DEBUG_CV_LIMIT) {
+          const auto* coord_a = fine_grid->nodes->GetCoord(a);
+          const auto* coord_b = fine_grid->nodes->GetCoord(b);
+          cout << "  CV " << Index_CoarseCV << " (ISO): nodes " << a << "+" << b << "+" << c << "+" << d
+               << " | lines[" << li1 << "][" << idx1 << "," << idx2 << "]+lines[" << li2_best << "][" << idx1 << "," << idx2 << "]"
+               << " | coord_a=(" << coord_a[0] << "," << coord_a[1] << ")"
+               << " coord_b=(" << coord_b[0] << "," << coord_b[1] << ")" << endl;
+        }
+
+        reserved[a] = reserved[b] = reserved[c] = reserved[d] = 1;
+        MGQueue_InnerCV.RemoveCV(a);
+        MGQueue_InnerCV.RemoveCV(b);
+        MGQueue_InnerCV.RemoveCV(c);
+        MGQueue_InnerCV.RemoveCV(d);
+
+        Index_CoarseCV++;
+        line_processed[li1] = line_processed[li2_best] = 1;
+        any_work = true;
       }
     } else {
-      /*--- ANISOTROPIC MODE: Pair nodes at SAME position on DIFFERENT lines ---*/
-      for (auto& [parent, line_ids] : parent_to_lines) {
-        if (line_ids.size() < 2) continue;
+      /*--- ANISOTROPIC MODE: Pair nodes at SAME position on DIFFERENT lines
+            Use spatial neighbor search to pair adjacent lines. ---*/
+      for (auto li1 : active_lines) {
+        if (line_processed[li1]) continue;
 
-        /*--- Pair consecutive lines at the same position ---*/
-        for (size_t k = 0; k + 1 < line_ids.size(); k += 2) {
-          const auto li1 = line_ids[k];
-          const auto li2 = line_ids[k + 1];
-          if (line_processed[li1] || line_processed[li2]) continue;
+        const auto& L1 = lines[li1];
+        const auto pos = 1 + position_idx;
+        if (L1.size() <= pos) continue;
 
-          const auto& L1 = lines[li1];
-          const auto& L2 = lines[li2];
-          const auto pos = 1 + position_idx;
-          if (L1.size() <= pos || L2.size() <= pos) continue;
+        const auto a = L1[pos];
+        if (fine_grid->nodes->GetAgglomerate(a)) continue;
+        if (reserved[a]) continue;
+        if (!GeometricalCheck(a, fine_grid, config)) continue;
 
-          const auto a = L1[pos];
-          const auto b = L2[pos];
-
-          /*--- Skip if any node is already claimed ---*/
-          if (fine_grid->nodes->GetAgglomerate(a) || fine_grid->nodes->GetAgglomerate(b)) continue;
-          if (reserved[a] || reserved[b]) continue;
-
-          /*--- Geometrical quality check ---*/
-          if (!GeometricalCheck(a, fine_grid, config) || !GeometricalCheck(b, fine_grid, config)) continue;
-
-          /*--- Create 2-child coarse CV (anisotropic: same position, different lines) ---*/
-          fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
-          nodes->SetChildren_CV(Index_CoarseCV, 0, a);
-          fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
-          nodes->SetChildren_CV(Index_CoarseCV, 1, b);
-          nodes->SetnChildren_CV(Index_CoarseCV, 2);
-
-          reserved[a] = reserved[b] = 1;
-          MGQueue_InnerCV.RemoveCV(a);
-          MGQueue_InnerCV.RemoveCV(b);
-
-          Index_CoarseCV++;
-          line_processed[li1] = line_processed[li2] = 1;
-          any_work = true;
+        /*--- Find nearest neighbor line by checking mesh neighbors of node 'a' ---*/
+        unsigned long li2_best = std::numeric_limits<unsigned long>::max();
+        for (auto neighbor_point : fine_grid->nodes->GetPoints(a)) {
+          /*--- Check if this neighbor belongs to another unprocessed line at same position ---*/
+          for (auto li2 : active_lines) {
+            if (li2 == li1 || line_processed[li2]) continue;
+            const auto& L2 = lines[li2];
+            if (L2.size() <= pos) continue;
+            const auto b = L2[pos];
+            if (b == neighbor_point) {
+              li2_best = li2;
+              break;
+            }
+          }
+          if (li2_best != std::numeric_limits<unsigned long>::max()) break;
         }
+
+        if (li2_best == std::numeric_limits<unsigned long>::max()) {
+          /*--- Debug: Line couldn't find a neighbor ---*/
+          if (DEBUG_OUTPUT && position_idx < 3) {
+            cout << "  Line " << li1 << " at pos=" << pos << " (node " << a << ") has NO neighbor line!" << endl;
+          }
+          continue;
+        }
+
+        const auto& L2 = lines[li2_best];
+        const auto b = L2[pos];
+
+        /*--- Skip if partner is already claimed ---*/
+        if (fine_grid->nodes->GetAgglomerate(b)) continue;
+        if (reserved[b]) continue;
+
+        /*--- Geometrical quality check ---*/
+        if (!GeometricalCheck(b, fine_grid, config)) continue;
+
+        /*--- Debug: Check line distance and neighbor relationships ---*/
+        if (DEBUG_OUTPUT && Index_CoarseCV < starting_Index_CoarseCV + DEBUG_CV_LIMIT) {
+          /*--- Measure distance between wall vertices of the two lines ---*/
+          const auto wall_a = lines[li1][0];
+          const auto wall_b = lines[li2_best][0];
+          const auto* coord_wall_a = fine_grid->nodes->GetCoord(wall_a);
+          const auto* coord_wall_b = fine_grid->nodes->GetCoord(wall_b);
+          su2double wall_dist = sqrt(pow(coord_wall_a[0] - coord_wall_b[0], 2) +
+                                      pow(coord_wall_a[1] - coord_wall_b[1], 2));
+
+          /*--- Check if wall vertices are neighbors ---*/
+          bool walls_are_neighbors = false;
+          for (auto neighbor : fine_grid->nodes->GetPoints(wall_a)) {
+            if (neighbor == wall_b) { walls_are_neighbors = true; break; }
+          }
+
+          cout << "  Pairing lines " << li1 << " + " << li2_best << " at pos=" << pos
+               << " | wall_dist=" << wall_dist << " | walls_neighbors=" << (walls_are_neighbors ? "YES" : "NO") << endl;
+        }
+
+        /*--- Create 2-child coarse CV (anisotropic: same position, different lines) ---*/
+        fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 0, a);
+        fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
+        nodes->SetChildren_CV(Index_CoarseCV, 1, b);
+        nodes->SetnChildren_CV(Index_CoarseCV, 2);
+
+        /*--- Debug output: show CV creation details ---*/
+        if (DEBUG_OUTPUT && Index_CoarseCV < starting_Index_CoarseCV + DEBUG_CV_LIMIT) {
+          const auto* coord_a = fine_grid->nodes->GetCoord(a);
+          const auto* coord_b = fine_grid->nodes->GetCoord(b);
+          su2double dist = sqrt(pow(coord_a[0] - coord_b[0], 2) + pow(coord_a[1] - coord_b[1], 2));
+          bool are_neighbors = false;
+          for (auto neighbor : fine_grid->nodes->GetPoints(a)) {
+            if (neighbor == b) { are_neighbors = true; break; }
+          }
+          cout << "  CV " << Index_CoarseCV << " (ANISO): nodes " << a << "+" << b
+               << " | lines[" << li1 << "][" << pos << "]+lines[" << li2_best << "][" << pos << "]"
+               << " | dist=" << dist << " | neighbors=" << (are_neighbors ? "YES" : "NO")
+               << " | coords A=(" << coord_a[0] << "," << coord_a[1] << ")"
+               << " B=(" << coord_b[0] << "," << coord_b[1] << ")" << endl;
+        }
+
+        reserved[a] = reserved[b] = 1;
+        MGQueue_InnerCV.RemoveCV(a);
+        MGQueue_InnerCV.RemoveCV(b);
+
+        Index_CoarseCV++;
+        line_processed[li1] = line_processed[li2_best] = 1;
+        any_work = true;
       }
     }
 
@@ -1543,5 +1737,63 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
       }
     }
     if (!any_more) break;
+  }
+
+  /*--- Count how many CVs and nodes were created ---*/
+  const auto nCVs_created = Index_CoarseCV - starting_Index_CoarseCV;
+  unsigned long nNodes_claimed = 0;
+  unsigned long nNodes_on_lines = 0;
+  unsigned long nNodes_unpaired = 0;
+
+  for (const auto& L : lines) {
+    for (size_t i = 1; i < L.size(); ++i) {  // Skip wall node at [0]
+      nNodes_on_lines++;
+      if (!reserved[L[i]]) nNodes_unpaired++;
+    }
+  }
+
+  for (unsigned long i = 0; i < nPointFine; ++i) {
+    if (reserved[i]) nNodes_claimed++;
+  }
+
+  if (rank == MASTER_NODE) {
+    cout << "  Created " << nCVs_created << " coarse CVs from " << nNodes_claimed << " fine nodes." << endl;
+    cout << "  Nodes on implicit lines: " << nNodes_on_lines << " (paired=" << (nNodes_on_lines - nNodes_unpaired)
+         << ", unpaired=" << nNodes_unpaired << ")" << endl;
+
+    if (nNodes_unpaired > 0) {
+      cout << "  WARNING: " << nNodes_unpaired << " nodes on implicit lines were left unpaired!" << endl;
+      cout << "           These will be processed by domain agglomeration (may create wrong orientation)." << endl;
+
+      /*--- Show first few unpaired nodes ---*/
+      unsigned long count = 0;
+      for (size_t li = 0; li < lines.size() && count < 10; ++li) {
+        const auto& L = lines[li];
+        for (size_t i = 1; i < L.size() && count < 10; ++i) {
+          if (!reserved[L[i]]) {
+            cout << "    Unpaired: line " << li << " node " << L[i] << " at position " << i << endl;
+            count++;
+          }
+        }
+      }
+    }
+    if (ISOTROPIC) {
+      cout << "  Expected ratio: ~4 nodes per CV (actual: " << std::setprecision(2) << std::fixed
+           << (nCVs_created > 0 ? su2double(nNodes_claimed) / su2double(nCVs_created) : 0.0) << ")" << endl;
+    } else {
+      cout << "  Expected ratio: ~2 nodes per CV (actual: " << std::setprecision(2) << std::fixed
+           << (nCVs_created > 0 ? su2double(nNodes_claimed) / su2double(nCVs_created) : 0.0) << ")" << endl;
+    }
+  }
+
+  /*--- Verify all claimed nodes are properly marked as agglomerated ---*/
+  unsigned long mismatches = 0;
+  for (unsigned long i = 0; i < nPointFine; ++i) {
+    if (reserved[i] && !fine_grid->nodes->GetAgglomerate(i)) {
+      mismatches++;
+    }
+  }
+  if (mismatches > 0 && rank == MASTER_NODE) {
+    cout << "  WARNING: " << mismatches << " nodes marked as reserved but not agglomerated!" << endl;
   }
 }

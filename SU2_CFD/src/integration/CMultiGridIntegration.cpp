@@ -154,10 +154,11 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   /*--- Full MG: advance to the next finer grid after a fixed number of
    *    outer iterations on the current coarsest active level.
-   *    We use 100 iterations per level (nMGLevels levels total) ---*/
+   *    The number of iterations per level is controlled by MG_STARTUP_ITER config option. ---*/
+  const unsigned long startup_iter = config[iZone]->GetMGOptions().MG_Startup_Iter;
   const bool Convergence_FullMG =
       FullMG && (FinestMesh != MESH_0) &&
-      (config[iZone]->GetInnerIter() % 100 == 99);
+      (config[iZone]->GetInnerIter() % startup_iter == startup_iter - 1);
 
   if (!config[iZone]->GetRestart() && FullMG && direct && ( Convergence_FullMG && (FinestMesh != MESH_0 ))) {
 
@@ -197,10 +198,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     passivedouble CFL_local = cfl_base;
     for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
       const unsigned short lvl = iMesh + 1;
-      /*--- Use per-level scaling factor; clamp to (0,1] to prevent coarse CFL from
-       *    exceeding the fine CFL.  Index into cflScaling is iMesh (0-based transition). ---*/
+      /*--- Use per-level scaling factor to increase coarse CFL (allows values > 1.0).
+       *    Index into cflScaling is iMesh (0-based transition). ---*/
       const passivedouble scale = (iMesh < cflScaling.size())
-          ? max(passivedouble{1e-6}, min(passivedouble{1.0}, SU2_TYPE::GetValue(cflScaling[iMesh])))
+          ? max(passivedouble{1e-6}, SU2_TYPE::GetValue(cflScaling[iMesh]))
           : passivedouble{0.25};
       CFL_local *= scale;
       config[iZone]->SetCFL(lvl, CFL_local);
