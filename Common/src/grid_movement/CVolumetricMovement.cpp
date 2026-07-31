@@ -507,7 +507,7 @@ void CVolumetricMovement::Rigid_Rotation(CGeometry* geometry, CConfig* config, u
       dt = -1.0 * dt;
   } else {
     /*--- No rotation at all for the first direct solution ---*/
-    if (iter == 0) dt = 0;
+    if (iter == 0 && config->GetPhysicalTime() == 0.0) dt = 0;
   }
 
   /*--- Center of rotation & angular velocity vector from config ---*/
@@ -674,13 +674,12 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry* geometry, CConfig* config, u
     if (iter != 0) time_old = (static_cast<su2double>(directIter) + 1.0) * deltaT;
   } else {
     /*--- Forward time for the direct problem ---*/
-    time_new = static_cast<su2double>(iter) * deltaT;
+    time_new = harmonic_balance ? static_cast<su2double>(iter) * deltaT : config->GetPhysicalTime();
     if (harmonic_balance) {
       /*--- For harmonic balance, begin movement from the zero position ---*/
       time_old = 0.0;
     } else {
-      time_old = time_new;
-      if (iter != 0) time_old = (static_cast<su2double>(iter) - 1.0) * deltaT;
+      time_old = time_new > deltaT ? time_new - deltaT : 0.0;
     }
   }
 
@@ -813,13 +812,12 @@ void CVolumetricMovement::Rigid_Plunging(CGeometry* geometry, CConfig* config, u
     if (iter != 0) time_old = (static_cast<su2double>(directIter) + 1.0) * deltaT;
   } else {
     /*--- Forward time for the direct problem ---*/
-    time_new = static_cast<su2double>(iter) * deltaT;
+    time_new = harmonic_balance ? static_cast<su2double>(iter) * deltaT : config->GetPhysicalTime();
     if (harmonic_balance) {
       /*--- For harmonic balance, begin movement from the zero position ---*/
       time_old = 0.0;
     } else {
-      time_old = time_new;
-      if (iter != 0) time_old = (static_cast<su2double>(iter) - 1.0) * deltaT;
+      time_old = time_new > deltaT ? time_new - deltaT : 0.0;
     }
   }
 
@@ -939,13 +937,12 @@ void CVolumetricMovement::Rigid_Translation(CGeometry* geometry, CConfig* config
     if (iter != 0) time_old = (static_cast<su2double>(directIter) + 1.0) * deltaT;
   } else {
     /*--- Forward time for the direct problem ---*/
-    time_new = static_cast<su2double>(iter) * deltaT;
+    time_new = harmonic_balance ? static_cast<su2double>(iter) * deltaT : config->GetPhysicalTime();
     if (harmonic_balance) {
       /*--- For harmonic balance, begin movement from the zero position ---*/
       time_old = 0.0;
     } else {
-      time_old = time_new;
-      if (iter != 0) time_old = (static_cast<su2double>(iter) - 1.0) * deltaT;
+      time_old = time_new > deltaT ? time_new - deltaT : 0.0;
     }
   }
 

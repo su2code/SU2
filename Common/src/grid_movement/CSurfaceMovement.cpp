@@ -3349,7 +3349,7 @@ void CSurfaceMovement::AeroelasticDeform(CGeometry* geometry, CConfig* config, u
     su2double Omega, dt, psi;
     dt = config->GetDelta_UnstTimeND();
     Omega = config->GetRotation_Rate(2) / config->GetOmega_Ref();
-    psi = Omega * (dt * TimeIter);
+    psi = Omega * config->GetPhysicalTime();
 
     /*--- Correct for the airfoil starting position (This is hardcoded in here) ---*/
     if (Monitoring_Tag == "Airfoil1") {
@@ -3437,9 +3437,8 @@ void CSurfaceMovement::SetBoundary_Flutter3D(CGeometry* geometry, CConfig* confi
   } else {
     /*--- Forward time for the direct problem ---*/
 
-    time_new = static_cast<su2double>(iter) * deltaT;
-    time_old = time_new;
-    if (iter != 0) time_old = (static_cast<su2double>(iter) - 1.0) * deltaT;
+    time_new = config->GetPhysicalTime();
+    time_old = time_new > deltaT ? time_new - deltaT : 0.0;
   }
 
   /*--- Update the pitching angle at this time step. Flip sign for
@@ -3614,8 +3613,8 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry* geometry, CConfig* con
       else
         dt = -1.0 * dt;
     } else {
-      /*--- No rotation at all for the first direct solution ---*/
-      if (iter == 0) dt = 0;
+      /*--- Rotate the direct solution to the physical target time. ---*/
+      dt = config->GetPhysicalTime();
     }
 
     /*--- Compute delta change in the angle about the x, y, & z axes. ---*/

@@ -993,9 +993,8 @@ void CMeshSolver::Surface_Pitching(CGeometry *geometry, CConfig *config, unsigne
 
   /*--- Compute delta time based on physical time step ---*/
 
-  time_new = iter*deltaT;
-  if (iter == 0) time_old = time_new;
-  else time_old = (iter-1)*deltaT;
+  time_new = config->GetPhysicalTime();
+  time_old = time_new > deltaT ? time_new - deltaT : 0.0;
 
   /*--- Store displacement of each node on the pitching surface ---*/
   /*--- Loop over markers and find the particular marker(s) (surface) to pitch ---*/
@@ -1126,9 +1125,8 @@ void CMeshSolver::Surface_Rotating(CGeometry *geometry, CConfig *config, unsigne
 
   /*--- Compute delta time based on physical time step ---*/
 
-  time_new = iter*deltaT;
-  if (iter == 0) time_old = time_new;
-  else time_old = (iter-1)*deltaT;
+  time_new = config->GetPhysicalTime();
+  time_old = time_new > deltaT ? time_new - deltaT : 0.0;
 
   /*--- Store displacement of each node on the rotating surface ---*/
   /*--- Loop over markers and find the particular marker(s) (surface) to rotate ---*/
@@ -1307,9 +1305,8 @@ void CMeshSolver::Surface_Plunging(CGeometry *geometry, CConfig *config, unsigne
 
   /*--- Compute delta time based on physical time step ---*/
 
-  time_new = iter*deltaT;
-  if (iter == 0) time_old = time_new;
-  else time_old = (iter-1)*deltaT;
+  time_new = config->GetPhysicalTime();
+  time_old = time_new > deltaT ? time_new - deltaT : 0.0;
 
   /*--- Store displacement of each node on the plunging surface ---*/
   /*--- Loop over markers and find the particular marker(s) (surface) to plunge ---*/
@@ -1434,9 +1431,8 @@ void CMeshSolver::Surface_Translating(CGeometry *geometry, CConfig *config, unsi
 
   /*--- Compute delta time based on physical time step ---*/
 
-  time_new = iter*deltaT;
-  if (iter == 0) time_old = time_new;
-  else time_old = (iter-1)*deltaT;
+  time_new = config->GetPhysicalTime();
+  time_old = time_new > deltaT ? time_new - deltaT : 0.0;
 
   /*--- Store displacement of each node on the translating surface ---*/
   /*--- Loop over markers and find the particular marker(s) (surface) to translate ---*/

@@ -2956,7 +2956,7 @@ void CFluidDriver::Preprocess(unsigned long Iter) {
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]->SetInnerIter(Iter);
     if (config_container[iZone]->GetTime_Marching() != TIME_MARCHING::STEADY)
-      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(Iter)*config_container[iZone]->GetDelta_UnstTimeND());
+      config_container[iZone]->SetPhysicalTime(config_container[iZone]->GetPhysicalTime(Iter));
     else
       config_container[iZone]->SetPhysicalTime(0.0);
   }

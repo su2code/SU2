@@ -117,7 +117,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
    general once the drivers are more stable. ---*/
 
   if (config_container[ZONE_0]->GetTime_Marching() != TIME_MARCHING::STEADY)
-    config_container[ZONE_0]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[ZONE_0]->GetDelta_UnstTimeND());
+    config_container[ZONE_0]->SetPhysicalTime(config_container[ZONE_0]->GetPhysicalTime(TimeIter));
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
 

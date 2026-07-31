@@ -226,7 +226,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
      general once the drivers are more stable. ---*/
 
     if (driver_config->GetTime_Domain()) {
-      config_container[iZone]->SetPhysicalTime(static_cast<su2double>(TimeIter)*config_container[iZone]->GetDelta_UnstTimeND());
+      config_container[iZone]->SetPhysicalTime(config_container[iZone]->GetPhysicalTime(TimeIter));
     }
     else {
       config_container[iZone]->SetPhysicalTime(0.0);

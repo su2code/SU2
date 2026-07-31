@@ -2303,11 +2303,10 @@ void COutput::LoadCommonHistoryData(const CConfig *config) {
 
   SetHistoryOutputValue("TIME_STEP", config->GetDelta_UnstTimeND()*config->GetTime_Ref());
 
-  /*--- Update the current time only if the time iteration has changed ---*/
+  /*--- Report the absolute physical time represented by the completed state.
+   * Time iteration labels remain zero-based for output and restart files. ---*/
 
-  if (SU2_TYPE::Int(GetHistoryFieldValue("TIME_ITER")) != static_cast<int>(curTimeIter)) {
-    SetHistoryOutputValue("CUR_TIME",  GetHistoryFieldValue("CUR_TIME") + GetHistoryFieldValue("TIME_STEP"));
-  }
+  SetHistoryOutputValue("CUR_TIME", config->GetPhysicalTimeAtEndOfTimeStep() * config->GetTime_Ref());
 
   SetHistoryOutputValue("TIME_ITER",  curTimeIter);
   SetHistoryOutputValue("INNER_ITER", curInnerIter);

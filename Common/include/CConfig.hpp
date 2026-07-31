@@ -3401,6 +3401,30 @@ public:
   su2double GetPhysicalTime(void) const { return PhysicalTime; }
 
   /*!
+   * \brief Get the physical time represented by the completed state of the current time iteration.
+   * \return Nondimensional physical time at the end of the current time step.
+   */
+  su2double GetPhysicalTimeAtEndOfTimeStep(void) const {
+    if (!ContinuousAdjoint && !DiscreteAdjoint && TimeMarching == TIME_MARCHING::TIME_STEPPING)
+      return PhysicalTime + Delta_UnstTimeND;
+    return PhysicalTime;
+  }
+
+  /*!
+   * \brief Project a zero-based time iteration label onto the physical time represented by the solver state.
+   * \param[in] val_iter - Zero-based time iteration label used for output and restart files.
+   * \return Nondimensional physical time represented by the solver state.
+   */
+  su2double GetPhysicalTime(unsigned long val_iter) const {
+    if (TimeMarching == TIME_MARCHING::STEADY) return 0.0;
+    if (!ContinuousAdjoint && !DiscreteAdjoint &&
+        (TimeMarching == TIME_MARCHING::DT_STEPPING_1ST ||
+         TimeMarching == TIME_MARCHING::DT_STEPPING_2ND))
+      ++val_iter;
+    return static_cast<su2double>(val_iter) * Delta_UnstTimeND;
+  }
+
+  /*!
    * \brief Get information about writing the performance summary at the end of a calculation.
    * \return <code>TRUE</code> means that the performance summary will be written at the end of a calculation.
    */
@@ -6145,6 +6169,12 @@ public:
    * \return Value of the physical time in an unsteady simulation.
    */
   su2double GetCurrent_UnstTime(void) const { return Current_UnstTime; }
+
+  /*!
+   * \brief Get the current nondimensional physical time in an unsteady simulation.
+   * \return Value of the nondimensional physical time in an unsteady simulation.
+   */
+  su2double GetCurrent_UnstTimeND(void) const { return Current_UnstTimeND; }
 
   /*!
    * \brief Divide the rectbles and hexahedron.

@@ -498,11 +498,13 @@ void CFluidIteration::SetWind_GustField(CConfig* config, CGeometry** geometry, C
   su2double x, y, x_gust, Gust[3] = {0.0}, NewGridVel[3] = {0.0};
   const su2double* GridVel = nullptr;
 
-  su2double Physical_dt = config->GetDelta_UnstTime();
-  unsigned long TimeIter = config->GetTimeIter();
-  if (config->GetDiscrete_Adjoint()) TimeIter = config->GetUnst_AdjointIter() - TimeIter - 1;
-
-  su2double Physical_t = TimeIter * Physical_dt;
+  su2double Physical_t;
+  if (config->GetDiscrete_Adjoint()) {
+    const auto TimeIter = config->GetUnst_AdjointIter() - config->GetTimeIter() - 1;
+    Physical_t = TimeIter * config->GetDelta_UnstTime();
+  } else {
+    Physical_t = config->GetPhysicalTime() * config->GetTime_Ref();
+  }
 
   su2double Uinf = solver[MESH_0][FLOW_SOL]->GetVelocity_Inf(0);  // Assumption gust moves at infinity velocity
 

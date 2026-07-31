@@ -1138,6 +1138,9 @@ void CConfig::SetPointersNull() {
   InnerIter  = 0;
   nIntCoeffs = 0;
   OuterIter  = 0;
+  PhysicalTime = 0.0;
+  Current_UnstTime = 0.0;
+  Current_UnstTimeND = 0.0;
 
   AoA_Offset = 0;
   AoS_Offset = 0;
@@ -8921,8 +8924,13 @@ void CConfig::SetGlobalParam(MAIN_SOLVER val_solver,
 
   /*--- Set the simulation global time ---*/
 
-  Current_UnstTime = static_cast<su2double>(TimeIter)*Delta_UnstTime;
-  Current_UnstTimeND = static_cast<su2double>(TimeIter)*Delta_UnstTimeND;
+  if (Time_Domain && !ContinuousAdjoint && !DiscreteAdjoint) {
+    Current_UnstTime = PhysicalTime * Time_Ref;
+    Current_UnstTimeND = PhysicalTime;
+  } else {
+    Current_UnstTime = static_cast<su2double>(TimeIter)*Delta_UnstTime;
+    Current_UnstTimeND = static_cast<su2double>(TimeIter)*Delta_UnstTimeND;
+  }
 
   /*--- Set the solver methods ---*/
 
