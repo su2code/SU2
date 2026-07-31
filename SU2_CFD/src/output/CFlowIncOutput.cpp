@@ -224,7 +224,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("RMS_PRESSURE", log10(poisson_solver->GetRes_RMS(0))); 
     SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(1)));
-    if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(2)));	
+    if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(2)));
   } else {
     SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
@@ -243,7 +243,7 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
     SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
     SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
-    if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
+    if (nDim == 3) SetHistoryOutputValue("MAX_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
   }
 
   if (multiZone){
@@ -498,7 +498,7 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("RES_VELOCITY-Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
     SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[POISSON_SOL]->LinSysRes(iPoint, 0)); 
   }  else {
-	  SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
+    SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
     SetVolumeOutputValue("RES_VELOCITY-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
     SetVolumeOutputValue("RES_VELOCITY-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
     if (nDim == 3)

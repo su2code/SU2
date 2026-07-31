@@ -729,7 +729,7 @@ void CPoissonSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 }
 
 void CPoissonSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-	/*--- Zero flux (Neumann) BC on pressure ---*/
+  /*--- Zero flux (Neumann) BC on pressure ---*/
 }
 
 void CPoissonSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
