@@ -28,6 +28,8 @@
 
 #pragma once
 
+#include "../code_config.hpp"
+
 #ifdef HAVE_PASTIX
 
 #ifdef CODI_FORWARD_TYPE
@@ -74,11 +76,11 @@ class CPastixWrapper {
     unsigned long nPointDomain = 0;
     unsigned long blkSz = 0; /*!< \brief Block size (nVar * nVar) for value assembly. */
 
-    const unsigned long* row_ptr_l = nullptr; /*!< \brief LDU lower row pointers (geometry-owned). */
-    const unsigned long* row_ptr_u = nullptr; /*!< \brief LDU upper row pointers (geometry-owned). */
-    const ScalarType* d = nullptr;            /*!< \brief Diagonal blocks (matrix-owned). */
-    const ScalarType* l = nullptr;            /*!< \brief Lower blocks (matrix-owned). */
-    const ScalarType* u = nullptr;            /*!< \brief Upper blocks (matrix-owned). */
+    const su2uint* row_ptr_l = nullptr; /*!< \brief LDU lower row pointers (geometry-owned). */
+    const su2uint* row_ptr_u = nullptr; /*!< \brief LDU upper row pointers (geometry-owned). */
+    const ScalarType* d = nullptr;      /*!< \brief Diagonal blocks (matrix-owned). */
+    const ScalarType* l = nullptr;      /*!< \brief Lower blocks (matrix-owned). */
+    const ScalarType* u = nullptr;      /*!< \brief Upper blocks (matrix-owned). */
 
     unsigned long size_rhs() const { return nPointDomain * nVar; }
   } matrix; /*!< \brief Dimensions and LDU pointers captured from the owning CSysMatrix. */
@@ -150,9 +152,9 @@ class CPastixWrapper {
    * \param[in] col_ind_l/u - LDU lower/upper column indices (geometry-owned).
    * \param[in] d/l/u - LDU value blocks (matrix-owned, must outlive wrapper).
    */
-  void SetLDU(unsigned long nVar, unsigned long nPoint, unsigned long nPointDomain, const unsigned long* row_ptr_l,
-              const unsigned long* col_ind_l, const unsigned long* row_ptr_u, const unsigned long* col_ind_u,
-              const ScalarType* d, const ScalarType* l, const ScalarType* u) {
+  void SetLDU(unsigned long nVar, unsigned long nPoint, unsigned long nPointDomain, const su2uint* row_ptr_l,
+              const su2uint* col_ind_l, const su2uint* row_ptr_u, const su2uint* col_ind_u, const ScalarType* d,
+              const ScalarType* l, const ScalarType* u) {
     if (issetup) return;
     matrix.nVar = nVar;
     matrix.nPoint = nPoint;

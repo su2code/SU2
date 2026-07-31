@@ -7462,10 +7462,11 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 }
               }
               switch (Kind_Linear_Solver_Prec) {
-                case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
-                case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
-                case LU_SGS:  cout << "Using a LU-SGS preconditioning."<< endl; break;
-                case JACOBI:  cout << "Using a Jacobi preconditioning."<< endl; break;
+                case ILU: cout << "Using ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
+                case LINELET: cout << "Using linelet preconditioning."<< endl; break;
+                case LU_SGS:  cout << "Using LU-SGS preconditioning."<< endl; break;
+                case Q_LU_SGS:  cout << "Using LU-SGS preconditioning with matrix quantization."<< endl; break;
+                case JACOBI:  cout << "Using Jacobi preconditioning."<< endl; break;
               }
               break;
             case SMOOTHER:
@@ -7473,6 +7474,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 case ILU:     cout << "A ILU(" << Linear_Solver_ILU_n << ")"; break;
                 case LINELET: cout << "A Linelet"; break;
                 case LU_SGS:  cout << "A LU-SGS"; break;
+                case Q_LU_SGS:  cout << "A quantized LU-SGS"; break;
                 case JACOBI:  cout << "A Jacobi"; break;
               }
               cout << " method is used for smoothing the linear system." << endl;
