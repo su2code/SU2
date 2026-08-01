@@ -2,14 +2,14 @@
  * \class CDiscAdjMultizoneDriver.hpp
  * \brief Class for driving adjoint multi-zone problems.
  * \author O. Burghardt, P. Gomes, T. Albring, R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,51 +28,27 @@
 #pragma once
 #include "CMultizoneDriver.hpp"
 #include "../../../Common/include/toolboxes/CQuasiNewtonInvLeastSquares.hpp"
-#include "../../../Common/include/linear_algebra/CPreconditioner.hpp"
-#include "../../../Common/include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../../Common/include/linear_algebra/CSysSolve.hpp"
 
 /*!
  * \brief Block Gauss-Seidel driver for multizone / multiphysics discrete adjoint problems.
  * \ingroup DiscAdj
  */
+
 class CDiscAdjMultizoneDriver : public CMultizoneDriver {
 
 protected:
-#ifdef CODI_FORWARD_TYPE
-  using Scalar = su2double;
-#else
-  using Scalar = passivedouble;
-#endif
-
-  class AdjointProduct : public CMatrixVectorProduct<Scalar> {
-  public:
-    CDiscAdjMultizoneDriver* const driver;
-    const unsigned short iZone = 0;
-    mutable unsigned long iInnerIter = 0;
-
-    AdjointProduct(CDiscAdjMultizoneDriver* d, unsigned short i) : driver(d), iZone(i) {}
-
-    inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override {
-      driver->SetAllSolutions(iZone, true, u);
-      driver->Iterate(iZone, iInnerIter, true);
-      driver->GetAllSolutions(iZone, true, v);
-      v -= u;
-      ++iInnerIter;
-    }
-  };
-
-  class Identity : public CPreconditioner<Scalar> {
-  public:
-    inline bool IsIdentity() const override { return true; }
-    inline void operator()(const CSysVector<Scalar> & u, CSysVector<Scalar> & v) const override { v = u; }
-  };
+  #ifdef CODI_FORWARD_TYPE
+    using Scalar = su2double;
+  #else
+    using Scalar = passivedouble;
+  #endif
 
   /*!
-   * \brief Kinds of recordings (three different ones).
+   * \brief Kinds of recordings.
    */
   enum class Kind_Tape {
-    FULL_TAPE,                /*!< \brief Entire derivative information for a coupled adjoint
+    FULL_SOLVER_TAPE,         /*!< \brief Entire derivative information for a coupled adjoint
                                           solution update. */
     OBJECTIVE_FUNCTION_TAPE,  /*!< \brief Record only the dependence of the objective function
                                           w.r.t. solver variables (from all zones). */
@@ -96,7 +72,7 @@ protected:
 
   bool eval_transfer = false;     /*!< \brief Evaluate the transfer section of the tape. */
   su2double ObjFunc;              /*!< \brief Value of the objective function. */
-  int ObjFunc_Index;              /*!< \brief Index of the value of the objective function. */
+  AD::Identifier ObjFunc_Index;   /*!< \brief Index of the value of the objective function. */
 
   CIteration*** direct_iteration;       /*!< \brief Array of pointers to the direct iterations. */
   COutput** direct_output;              /*!< \brief Array of pointers to the direct outputs. */
@@ -142,6 +118,16 @@ public:
   void StartSolver() override;
 
   /*!
+   * \brief [Overload] Launch the tape test mode for the discrete adjoint multizone solver.
+   */
+  void TapeTest ();
+
+  /*!
+   * \brief [Overload] Get error numbers after a tape test run of the discrete adjoint multizone solver.
+   */
+  int TapeTestGatherErrors(AD::ErrorReport& error_report) const;
+
+  /*!
    * \brief Preprocess the multizone iteration
    */
   void Preprocess(unsigned long TimeIter) override;
@@ -151,13 +137,13 @@ public:
    */
   void Run() override;
 
-protected:
-
   /*!
    * \brief Run one inner iteration for a given zone.
    * \return The result of "monitor".
    */
   bool Iterate(unsigned short iZone, unsigned long iInnerIter, bool KrylovMode = false);
+
+protected:
 
   /*!
    * \brief Run inner iterations using a Krylov method (GMRES atm).

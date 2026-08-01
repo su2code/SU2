@@ -4,14 +4,14 @@
 #  \brief Initializes necessary dependencies for SU2 either using git or it
 #         fetches zip files.
 #  \author T. Albring and F. Poli
-#  \version 7.5.1 "Blackbird"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -48,31 +48,44 @@ def init_submodules(
     own_mpp=True,
     own_cool=True,
     own_mel=True,
-    own_amg=True
+    own_fado=True,
+    own_mlpcpp=True,
+    own_eigen=True,
+    own_amg=True,
 ):
-
     cur_dir = sys.path[0]
 
     # This information of the modules is used if projects was not cloned using git
     # The sha tag must be maintained manually to point to the correct commit
-    sha_version_codi = "427c2dc754a628ad3c9310c766c988ac5ce21bc7"
+    sha_version_codi = "a0725b2bfd172e741a07f96b041a5ddf88d441d7"
     github_repo_codi = "https://github.com/scicompkl/CoDiPack"
-    sha_version_medi = "aafc2d1966ba1233640af737e71c77c1a86183fd"
+    sha_version_medi = "0cfaf96e7a31a5a8941b97f84198da03a8f8bd7a"
     github_repo_medi = "https://github.com/SciCompKL/MeDiPack"
-    sha_version_opdi = "f33b507c24f7448d4cf4df16ab5c53ea254b8774"
+    sha_version_opdi = "294807b0111ce241cda97db62f80cdd5012d9381"
     github_repo_opdi = "https://github.com/SciCompKL/OpDiLib"
-    sha_version_meson = "41c650a040d50e0912d268af7a903a9ce1456dfa"
+    sha_version_meson = "5a82ea0501736a666ca9cc003ea0774f8219fd65"
     github_repo_meson = "https://github.com/mesonbuild/meson"
-    sha_version_ninja = "52649de2c56b63f42bc59513d51286531c595b44"
+    sha_version_ninja = "b4d51f6ed5bed09dd2b70324df0d9cb4ecad2638"
     github_repo_ninja = "https://github.com/ninja-build/ninja"
     sha_version_mpp = "5ff579f43781cae07411e5ab46291c9971536be6"
     github_repo_mpp = "https://github.com/mutationpp/Mutationpp"
-    sha_version_coolprop = "0ce42fcf3bb2c373512bc825a4f0c1973a78f307"
+    sha_version_coolprop = "98b3523d5daa98454618d381d2ae53f7471d216b"
     github_repo_coolprop = "https://github.com/CoolProp/CoolProp"
-    sha_version_mel = "2484cd3258ef800a10e361016cb341834ee7930b"
+    sha_version_mel = "46205ab019e5224559091375a6d71aabae6bc5b9"
     github_repo_mel = "https://github.com/pcarruscag/MEL"
-    sha_version_amg = 'f35179788256949b874a75eb9b187b5ca68ed54d'
-    github_repo_amg = 'https://github.com/bmunguia/amgio'
+    sha_version_amg = "f35179788256949b874a75eb9b187b5ca68ed54d"
+    github_repo_amg = "https://github.com/bmunguia/amgio"
+    sha_version_fado = "ce7ee018e4e699af5028d69baa1939fea290e18a"
+    github_repo_fado = "https://github.com/pcarruscag/FADO"
+    sha_version_mlpcpp = "e23facf388902f262fbe7ba3bcc84d36c85350b9"
+    github_repo_mlpcpp = "https://github.com/EvertBunschoten/MLPCpp"
+    sha_version_eigen = "d71c30c47858effcbd39967097a2d99ee48db464"
+    github_repo_eigen = "https://gitlab.com/libeigen/eigen.git"
+    # The download paths for gitlab are different than github so we need this ad-hoc fix.
+    # NOTE: Update the Eigen version in download_module when changing this.
+    download_eigen = (
+        "https://gitlab.com/libeigen/eigen/-/archive/3.4/eigen-3.4.zip?ref_type=heads"
+    )
 
     medi_name = "MeDiPack"
     codi_name = "CoDiPack"
@@ -82,7 +95,11 @@ def init_submodules(
     mpp_name = "Mutationpp"
     coolprop_name = "CoolProp"
     mel_name = "MEL"
-    amg_name = 'amgio'
+    amg_name = "amgio"
+    fado_name = "FADO"
+    mlpcpp_name = "MLPCpp"
+    eigen_name = "Eigen"
+
     base_path = cur_dir + os.path.sep + "externals" + os.path.sep
     alt_name_medi = base_path + "medi"
     alt_name_codi = base_path + "codi"
@@ -90,9 +107,12 @@ def init_submodules(
     alt_name_meson = base_path + "meson"
     alt_name_ninja = base_path + "ninja"
     alt_name_mel = base_path + "mel"
+    alt_name_fado = base_path + "FADO"
+    alt_name_eigen = base_path + "eigen"
     alt_name_mpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "Mutationpp"
     alt_name_coolprop = cur_dir + os.path.sep + "subprojects" + os.path.sep + "CoolProp"
-    alt_name_amg  = base_path + 'amgio'
+    alt_name_amg = base_path + "amgio"
+    alt_name_mlpcpp = cur_dir + os.path.sep + "subprojects" + os.path.sep + "MLPCpp"
 
     if method == "auto":
         is_git = is_git_directory(cur_dir)
@@ -122,6 +142,12 @@ def init_submodules(
             submodule_status(alt_name_coolprop, sha_version_coolprop)
         if own_mel:
             submodule_status(alt_name_mel, sha_version_mel)
+        if own_fado:
+            submodule_status(alt_name_fado, sha_version_fado)
+        if own_mlpcpp:
+            submodule_status(alt_name_mlpcpp, sha_version_mlpcpp)
+        if own_eigen:
+            submodule_status(alt_name_eigen, sha_version_eigen)
         if own_amg:
             submodule_status(alt_name_amg, sha_version_amg)
     # Otherwise download the zip file from git
@@ -156,32 +182,52 @@ def init_submodules(
             )
         if own_mel:
             download_module(mel_name, alt_name_mel, github_repo_mel, sha_version_mel)
+        if own_fado:
+            download_module(
+                fado_name, alt_name_fado, github_repo_fado, sha_version_fado
+            )
+        if own_mlpcpp:
+            download_module(
+                mlpcpp_name, alt_name_mlpcpp, github_repo_mlpcpp, sha_version_mlpcpp
+            )
+        if own_eigen:
+            download_module(
+                eigen_name,
+                alt_name_eigen,
+                github_repo_eigen,
+                sha_version_eigen,
+                download_eigen,
+            )
         if own_amg:
             download_module(
                 amg_name, alt_name_amg, github_repo_amg, sha_version_amg
             )
 
-
     # Setup AMG interface
     # Require at least python 3.7 for pyamg
-    log = open( 'amgio.log', 'w' )
-    err = open( 'amgio.err', 'w' )
+    log = open("amgio.log", "w")
+    err = open("amgio.err", "w")
     if sys.version_info >= (3, 7):
         import pkg_resources
-        required = {'pyamg','su2gmf'}
+
+        required = {"pyamg", "su2gmf"}
         installed = {pkg.key for pkg in pkg_resources.working_set}
         missing = required - installed
 
-        if 'su2gmf' in missing:
-            print('Installing su2gmf.')
+        if "su2gmf" in missing:
+            print("Installing su2gmf.")
             cmd = sys.executable
-            ext_dir = alt_name_amg + '/su2gmf/'
-            subprocess.call(['swig', '-python', 'src/su2gmf.i'], cwd=ext_dir, stdout = log, stderr = err)
-            print('Installing su2gmf.')
-            subprocess.call([cmd, '-m', 'pip', 'install', '.'], cwd=ext_dir, stdout = log, stderr = err)
+            ext_dir = alt_name_amg + "/su2gmf/"
+            subprocess.call(
+                ["swig", "-python", "src/su2gmf.i"], cwd=ext_dir, stdout=log, stderr=err
+            )
+            print("Installing su2gmf.")
+            subprocess.call(
+                [cmd, "-m", "pip", "install", "."], cwd=ext_dir, stdout=log, stderr=err
+            )
 
         # Setup pyamg
-        if 'pyamg' in missing:
+        if "pyamg" in missing:
             install_pyamg(log, err)
 
 
@@ -206,7 +252,6 @@ def is_git_directory(path="."):
 
 def submodule_status(path, sha_commit):
     if not os.path.exists(path + os.path.sep + sha_commit):
-
         # Check the status of the submodule
         status = subprocess.run(
             ["git", "submodule", "status", path],
@@ -240,7 +285,7 @@ def submodule_status(path, sha_commit):
                 cwd=sys.path[0],
             )
             # to update CoolProp external libraries
-        if sha_commit == "0ce42fcf3bb2c373512bc825a4f0c1973a78f307":
+        if "CoolProp" in path:
             # update coolprop
             original_path = os.getcwd()
             print("update CoolProp")
@@ -262,8 +307,7 @@ def submodule_status(path, sha_commit):
             )
 
 
-def download_module(name, alt_name, git_repo, commit_sha):
-
+def download_module(name, alt_name, git_repo, commit_sha, download_url=None):
     # ZipFile does not preserve file permissions.
     # This is a workaround for that problem:
     # https://stackoverflow.com/questions/39296101/python-zipfile-removes-execute-permissions-from-binaries
@@ -286,7 +330,6 @@ def download_module(name, alt_name, git_repo, commit_sha):
     module_identifier = os.path.join(alt_name, commit_sha)
 
     if not os.path.exists(module_identifier):
-
         if os.path.exists(alt_name) and os.listdir(alt_name):
             print("Directory " + alt_name + " is not empty")
             print("Maybe submodules are already cloned with git?")
@@ -300,11 +343,11 @@ def download_module(name, alt_name, git_repo, commit_sha):
             alt_filename = name + "-" + filename
             alt_filepath = os.path.join(sys.path[0], alt_filename)
 
-            url = git_repo + "/archive/" + filename
+            url = download_url or (git_repo + "/archive/" + filename)
 
             if not os.path.exists(filepath) and not os.path.exists(alt_filepath):
                 try:
-                    urllib.request.urlretrieve(url, commit_sha + ".zip")
+                    urllib.request.urlretrieve(url, filename)
                 except Exception as e:
                     print(e)
                     print("Download of module " + name + " failed.")
@@ -318,14 +361,20 @@ def download_module(name, alt_name, git_repo, commit_sha):
                 filepath = alt_filepath
 
             # Unzip file
-            zipf = MyZipFile(filepath)
-            zipf.extractall(target_dir)
+            with MyZipFile(filepath) as zipf:
+                zipf.extractall(target_dir)
 
             # Remove directory if exists
             if os.path.exists(alt_name):
                 os.rmdir(alt_name)
 
-            os.rename(os.path.join(target_dir, name + "-" + commit_sha), alt_name)
+            try:
+                os.rename(os.path.join(target_dir, name + "-" + commit_sha), alt_name)
+            except FileNotFoundError:
+                if "eigen" in url:
+                    os.rename(os.path.join(target_dir, "eigen-3.4"), alt_name)
+                else:
+                    raise
 
             # Delete zip file
             remove_file(filepath)

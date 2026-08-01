@@ -1,14 +1,14 @@
 /*!
  * \file CFVMFlowSolverBase.inl
  * \brief Base class template for all FVM flow solvers.
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -84,6 +84,8 @@ void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::setZero(int i) {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
+  SU2_ZONE_SCOPED
+
   /*--- Define some auxiliar vector related with the residual ---*/
 
   Residual_RMS.resize(nVar,0.0);
@@ -93,7 +95,8 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
   /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
 
-  if ((config.GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) && (MGLevel == MESH_0)) {
+  if ((config.GetKind_ConvNumScheme_Flow() == SPACE_CENTERED && MGLevel == MESH_0) ||
+      config.GetKind_Upwind_Flow() == UPWIND::MSW) {
     iPoint_UndLapl.resize(nPointDomain);
     jPoint_UndLapl.resize(nPointDomain);
   }
@@ -215,6 +218,8 @@ void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::AllocateTerribleLegacyTemporaryVariables() {
+  SU2_ZONE_SCOPED
+
   /*--- Define some auxiliary vectors related to the residual ---*/
 
   Residual = new su2double[nVar]();
@@ -246,6 +251,8 @@ void CFVMFlowSolverBase<V, R>::AllocateTerribleLegacyTemporaryVariables() {
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
+
   /*--- Define solver parameters needed for execution of destructor ---*/
 
   space_centered = (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED);
@@ -266,8 +273,8 @@ void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry, cons
 
   /*--- Perform the MPI communication of the solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Store the initial CFL number for all grid points. ---*/
 
@@ -282,13 +289,24 @@ void CFVMFlowSolverBase<V, R>::CommunicateInitialState(CGeometry* geometry, cons
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& config, CGeometry& geometry) {
+  SU2_ZONE_SCOPED
+
 #ifdef HAVE_OMP
   /*--- Get the edge coloring. If the expected parallel efficiency becomes too low setup the
    *    reducer strategy. Where one loop is performed over edges followed by a point loop to
    *    sum the fluxes for each cell and set the diagonal of the system matrix. ---*/
 
   su2double parallelEff = 1.0;
+
+#ifdef CODI_REVERSE_TYPE
+  /*--- For the discrete adjoint, the reducer strategy is costly. Prefer coloring, possibly with reduced edge color
+   *    group size. Find the maximum edge color group size that yields an efficient coloring. Also, allow larger numbers
+   *    of colors. ---*/
+  const bool relax =  config.GetEdgeColoringRelaxDiscAdj();
+  const auto& coloring = geometry.GetEdgeColoring(&parallelEff, relax);
+#else
   const auto& coloring = geometry.GetEdgeColoring(&parallelEff);
+#endif
 
   /*--- The decision to use the strategy is local to each rank. ---*/
   ReducerStrategy = parallelEff < COLORING_EFF_THRESH;
@@ -299,7 +317,7 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
   if (!coloring.empty()) {
     /*--- If the reducer strategy is used we are not constrained by group
      *    size as we have no other edge loops in the Euler/NS solvers. ---*/
-    auto groupSize = ReducerStrategy ? 1ul : geometry.GetEdgeColorGroupSize();
+    auto groupSize = static_cast<su2uint>(ReducerStrategy ? 1ul : geometry.GetEdgeColorGroupSize());
     auto nColor = coloring.getOuterSize();
     EdgeColoring.reserve(nColor);
 
@@ -324,6 +342,29 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
            << "\n         The memory usage of the discrete adjoint solver is higher when using the fallback."
 #endif
            << endl;
+    } else {
+      if (SU2_MPI::GetRank() == MASTER_NODE) {
+        cout << "All ranks use edge coloring." << endl;
+      }
+    }
+
+    const su2double coloredParallelEff = ReducerStrategy ? 1.0 : parallelEff;
+    su2double minColoredParallelEff = 1.0;
+    SU2_MPI::Reduce(&coloredParallelEff, &minColoredParallelEff, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+
+    const unsigned long coloredNumColors = ReducerStrategy ? 0 : coloring.getOuterSize();
+    unsigned long maxColoredNumColors = 0;
+    SU2_MPI::Reduce(&coloredNumColors, &maxColoredNumColors, 1, MPI_UNSIGNED_LONG, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
+
+    const unsigned long coloredEdgeColorGroupSize = ReducerStrategy ? 1 << 30 : geometry.GetEdgeColorGroupSize();
+    unsigned long minColoredEdgeColorGroupSize = 1 << 30;
+    SU2_MPI::Reduce(&coloredEdgeColorGroupSize, &minColoredEdgeColorGroupSize, 1, MPI_UNSIGNED_LONG, MPI_MIN, MASTER_NODE, SU2_MPI::GetComm());
+
+    if (SU2_MPI::GetRank() == MASTER_NODE && numRanksUsingReducer != SU2_MPI::GetSize()) {
+      cout << "Among the ranks that use edge coloring,\n"
+           << "         the minimum efficiency is " << minColoredParallelEff << ",\n"
+           << "         the maximum number of colors is " << maxColoredNumColors << ",\n"
+           << "         the minimum edge color group size is " << minColoredEdgeColorGroupSize << "." << endl;
     }
   }
 
@@ -337,6 +378,7 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 
 template <class V, ENUM_REGIME R>
 CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
+  SU2_ZONE_SCOPED
 
   for (auto& mat : SlidingState) {
     for (auto ptr : mat) delete [] ptr;
@@ -349,17 +391,21 @@ CFVMFlowSolverBase<V, R>::~CFVMFlowSolverBase() {
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_GG(CGeometry* geometry, const CConfig* config,
                                                         bool reconstruction) {
+  SU2_ZONE_SCOPED
+
   const auto& primitives = nodes->GetPrimitive();
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-  const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
+  const auto comm = reconstruction? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
   const auto commPer = reconstruction? PERIODIC_PRIM_GG_R : PERIODIC_PRIM_GG;
 
-  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, gradient);
+  computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVarGrad, prim_idx.Velocity(), gradient);
 }
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config,
                                                         bool reconstruction) {
+  SU2_ZONE_SCOPED
+
   /*--- Set a flag for unweighted or weighted least-squares. ---*/
   bool weighted;
   PERIODIC_QUANTITIES commPer;
@@ -376,34 +422,41 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, con
   const auto& primitives = nodes->GetPrimitive();
   auto& rmatrix = nodes->GetRmatrix();
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
-  const auto comm = reconstruction? PRIMITIVE_GRAD_REC : PRIMITIVE_GRADIENT;
+  const auto comm = reconstruction? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
 
   computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
-                               primitives, 0, nPrimVarGrad, gradient, rmatrix);
+                               primitives, 0, nPrimVarGrad, prim_idx.Velocity(), gradient, rmatrix);
 }
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
+
   const auto kindLimiter = config->GetKind_SlopeLimit_Flow();
+  const auto umusclKappa = config->GetMUSCL_Kappa_Flow();
   const auto& primitives = nodes->GetPrimitive();
   const auto& gradient = nodes->GetGradient_Reconstruction();
   auto& primMin = nodes->GetSolution_Min();
   auto& primMax = nodes->GetSolution_Max();
   auto& limiter = nodes->GetLimiter_Primitive();
 
-  computeLimiters(kindLimiter, this, PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2, *geometry, *config, 0,
-                  nPrimVarGrad, primitives, gradient, primMin, primMax, limiter);
+  computeLimiters(kindLimiter, this, MPI_QUANTITIES::PRIMITIVE_LIMITER, PERIODIC_LIM_PRIM_1, PERIODIC_LIM_PRIM_2,
+                  *geometry, *config, 0, nPrimVarGrad, umusclKappa, primitives, gradient, primMin, primMax, limiter);
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                                     CNumerics *numerics, CConfig *config) {
+CNumerics::ResidualType<> CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry,
+                                                                          CSolver **solver_container,
+                                                                          CNumerics *numerics, CConfig *config) {
+  SU2_ZONE_SCOPED
 
-  const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
+  const bool backscatter = config->GetSBSParam().StochasticBackscatter;
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
 
   CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
+  if (tkeNeeded || backscatter) turbNodes = solver_container[TURB_SOL]->GetNodes();
 
   /*--- Points, coordinates and normal vector in edge ---*/
 
@@ -419,10 +472,10 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   numerics->SetPrimitive(nodes->GetPrimitive(iPoint),
                          nodes->GetPrimitive(jPoint));
-
-  numerics->SetSecondary(nodes->GetSecondary(iPoint),
-                         nodes->GetSecondary(jPoint));
-
+  if (!ideal_gas) {
+    numerics->SetSecondary(nodes->GetSecondary(iPoint),
+                           nodes->GetSecondary(jPoint));
+  }
   /*--- Gradients. ---*/
 
   numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
@@ -433,6 +486,26 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
   if (tkeNeeded)
     numerics->SetTurbKineticEnergy(turbNodes->GetSolution(iPoint,0),
                                    turbNodes->GetSolution(jPoint,0));
+
+  /*--- Stochastic variables from Langevin equations (Stochastic Backscatter Model). ---*/
+
+  if (backscatter) {
+    if (config->GetSBSParam().SBS_Ctau > 0.0) {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        numerics->SetStochVar(iDim, turbNodes->GetSolution(iPoint, iDim+1),
+                                    turbNodes->GetSolution(jPoint, iDim+1));
+    } else {
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        numerics->SetStochVar(iDim, turbNodes->GetLangevinSourceTerms(iPoint, iDim),
+                                    turbNodes->GetLangevinSourceTerms(jPoint, iDim));
+    }
+    su2double DES_length_i = max(turbNodes->GetDES_LengthScale(iPoint), 1e-10);
+    su2double DES_length_j = max(turbNodes->GetDES_LengthScale(jPoint), 1e-10);
+    su2double lesMode_i = turbNodes->GetLES_Mode(iPoint);
+    su2double lesMode_j = turbNodes->GetLES_Mode(jPoint);
+    numerics->SetDistance(DES_length_i, DES_length_j);
+    numerics->SetLES_Mode(lesMode_i, lesMode_j);
+  }
 
   /*--- Wall shear stress values (wall functions) ---*/
 
@@ -445,17 +518,14 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
-    if (implicit)
-      Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
   }
   else {
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
-
-    if (implicit)
-      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
   }
 
+  /*--- The Jacobians are applied by the caller, fused with the convective contribution. ---*/
+  return residual;
 }
 
 template <class V, ENUM_REGIME R>
@@ -587,6 +657,7 @@ void CFVMFlowSolverBase<V, R>::ComputeTruncationError(CGeometry *geometry, CConf
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CConfig* config) {
+  SU2_ZONE_SCOPED
 
   /*--- The errors only need to be computed on the finest grid. ---*/
   if (MGLevel != MESH_0) return;
@@ -688,44 +759,38 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* config) {
-  /* Loop over the solution update given by relaxing the linear
-   system for this nonlinear iteration. */
+void CFVMFlowSolverBase<V, R>::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
+  SU2_ZONE_SCOPED
 
-  const su2double allowableRatio = 0.2;
+  if constexpr (R == ENUM_REGIME::COMPRESSIBLE) ComputeUnderRelaxationFactor(config);
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    su2double localUnderRelaxation = 1.0;
+  /*--- Update solution with under-relaxation and communicate it. ---*/
 
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      /* We impose a limit on the maximum percentage that the
-       density and energy can change over a nonlinear iteration. */
-
-      if ((iVar == 0) || (iVar == nVar - 1)) {
-        const unsigned long index = iPoint * nVar + iVar;
-        su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
-        if (ratio > allowableRatio) {
-          localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-        }
+  if (!config->GetContinuous_Adjoint()) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint) * LinSysSol(iPoint, iVar));
       }
     }
-
-    /* Threshold the relaxation factor in the event that there is
-     a very small value. This helps avoid catastrophic crashes due
-     to non-realizable states by canceling the update. */
-
-    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
-
-    /* Store the under-relaxation factor for this point. */
-
-    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+    END_SU2_OMP_FOR
   }
-  END_SU2_OMP_FOR
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  }
+
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+
+  /*--- For verification cases, compute the global error metrics. ---*/
+  ComputeVerificationError(geometry, config);
 }
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSolver**, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   PrepareImplicitIteration(geometry, nullptr, config);
 
@@ -751,6 +816,7 @@ void CFVMFlowSolverBase<V, R>::ImplicitEuler_Iteration(CGeometry *geometry, CSol
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& config, const CGeometry *geometry, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   auto& StrainMag = nodes->GetStrainMag();
 
@@ -805,21 +871,19 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
 
     StrainMag(iPoint) = sqrt(2.0*StrainMag(iPoint));
     AD::SetPreaccOut(StrainMag(iPoint));
+    AD::EndPreacc();
 
-    /*--- Max is not differentiable, so we not register them for preacc. ---*/
+    /*--- The derivative with respect to strainMax and omegaMax is not required. ---*/
+    bool wa = AD::PauseRecording();
     strainMax = max(strainMax, StrainMag(iPoint));
     omegaMax = max(omegaMax, GeometryToolbox::Norm(3, Vorticity));
-
-    AD::EndPreacc();
+    AD::ResumeRecording(wa);
   }
   END_SU2_OMP_FOR
 
   if ((iMesh == MESH_0) && (config.GetComm_Level() == COMM_FULL)) {
-    SU2_OMP_CRITICAL {
-      StrainMag_Max = max(StrainMag_Max, strainMax);
-      Omega_Max = max(Omega_Max, omegaMax);
-    }
-    END_SU2_OMP_CRITICAL
+    atomicMax(strainMax, StrainMag_Max);
+    atomicMax(omegaMax, Omega_Max);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
@@ -837,6 +901,8 @@ void CFVMFlowSolverBase<V, R>::ComputeVorticityAndStrainMag(const CConfig& confi
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetInletAtVertex(const su2double* val_inlet, unsigned short iMarker,
                                                 unsigned long iVertex) {
+  SU2_ZONE_SCOPED
+
   /*--- Alias positions within inlet file for readability ---*/
 
   unsigned short T_position = nDim;
@@ -856,73 +922,52 @@ void CFVMFlowSolverBase<V, R>::SetInletAtVertex(const su2double* val_inlet, unsi
 }
 
 template <class V, ENUM_REGIME R>
-su2double CFVMFlowSolverBase<V, R>::GetInletAtVertex(su2double* val_inlet, unsigned long val_inlet_point,
-                                                     unsigned short val_kind_marker, string val_marker,
-                                                     const CGeometry* geometry, const CConfig* config) const {
-  /*--- Local variables ---*/
+su2double CFVMFlowSolverBase<V, R>::GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
+                                                     const CGeometry* geometry, su2double* val_inlet) const {
+  SU2_ZONE_SCOPED
 
-  unsigned short iMarker, iDim;
-  unsigned long iPoint, iVertex;
-  su2double Area = 0.0;
-  su2double Normal[3] = {0.0, 0.0, 0.0};
-
-  /*--- Alias positions within inlet file for readability ---*/
-
-  unsigned short T_position = nDim;
-  unsigned short P_position = nDim + 1;
-  unsigned short FlowDir_position = nDim + 2;
-
-  if (val_kind_marker == INLET_FLOW) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
-          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
-        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-
-          if (iPoint == val_inlet_point) {
-            /*-- Compute boundary face area for this vertex. ---*/
-
-            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-            Area = GeometryToolbox::Norm(nDim, Normal);
-
-            /*--- Access and store the inlet variables for this vertex. ---*/
-
-            val_inlet[T_position] = Inlet_Ttotal[iMarker][iVertex];
-            val_inlet[P_position] = Inlet_Ptotal[iMarker][iVertex];
-            for (iDim = 0; iDim < nDim; iDim++) {
-              val_inlet[FlowDir_position + iDim] = Inlet_FlowDir[iMarker][iVertex][iDim];
-            }
-
-            /*--- Exit once we find the point. ---*/
-
-            return Area;
-          }
-        }
-      }
-    }
+  const auto T_position = nDim;
+  const auto P_position = nDim + 1;
+  const auto FlowDir_position = nDim + 2;
+  val_inlet[T_position] = Inlet_Ttotal[iMarker][iVertex];
+  val_inlet[P_position] = Inlet_Ptotal[iMarker][iVertex];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    val_inlet[FlowDir_position + iDim] = Inlet_FlowDir[iMarker][iVertex][iDim];
   }
 
-  /*--- If we don't find a match, then the child point is not on the
-   current inlet boundary marker. Return zero area so this point does
-   not contribute to the restriction operator and continue. ---*/
+  /*--- Compute boundary face area for this vertex. ---*/
 
-  return Area;
+  su2double Normal[MAXNDIM] = {0.0};
+  geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+  return GeometryToolbox::Norm(nDim, Normal);
 }
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
+  SU2_ZONE_SCOPED
+
   if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
-    string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-    su2double p_total = config->GetInlet_Ptotal(Marker_Tag);
-    su2double t_total = config->GetInlet_Ttotal(Marker_Tag);
-    auto flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    const su2double p_total = config->GetInletPtotal(Marker_Tag);
+    const su2double t_total = config->GetInletTtotal(Marker_Tag);
+    const su2double* flow_dir = config->GetInletFlowDir(Marker_Tag);
 
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       Inlet_Ttotal[iMarker][iVertex] = t_total;
       Inlet_Ptotal[iMarker][iVertex] = p_total;
       for (unsigned short iDim = 0; iDim < nDim; iDim++) Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
     }
+  } else if (config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) {
+    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+    const su2double p = config->GetInlet_Pressure(Marker_Tag);
+    const su2double t = config->GetInlet_Temperature(Marker_Tag);
+    const su2double* vel = config->GetInlet_Velocity(Marker_Tag);
 
+    for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+      Inlet_Ttotal[iMarker][iVertex] = t;
+      Inlet_Ptotal[iMarker][iVertex] = p;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) Inlet_FlowDir[iMarker][iVertex][iDim] = vel[iDim];
+    }
   } else {
     /*--- For now, non-inlets just get set to zero. In the future, we
      can do more customization for other boundary types here. ---*/
@@ -935,12 +980,59 @@ void CFVMFlowSolverBase<V, R>::SetUniformInlet(const CConfig* config, unsigned s
 }
 
 template <class V, ENUM_REGIME R>
+void CFVMFlowSolverBase<V, R>::UpdateCustomBoundaryConditions(
+    CGeometry** geometry_container, CSolver*** solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
+
+  struct {
+    const CSolver* fine_solver{nullptr};
+    CSolver* coarse_solver{nullptr};
+    unsigned short marker{0};
+    unsigned short var{0};
+
+    su2double Get(unsigned long vertex) const {
+      if (var == 0) {
+        return fine_solver->GetInletTtotal(marker, vertex);
+      } else if (var == 1) {
+        return fine_solver->GetInletPtotal(marker, vertex);
+      }
+      return fine_solver->GetInletFlowDir(marker, vertex, var - 2);
+    }
+
+    void Set(unsigned long vertex, const su2double& val) const {
+      if (var == 0) {
+        coarse_solver->SetInletTtotal(marker, vertex, val);
+      } else if (var == 1) {
+        coarse_solver->SetInletPtotal(marker, vertex, val);
+      }
+      coarse_solver->SetInletFlowDir(marker, vertex, var - 2, val);
+    }
+  } inlet_values;
+
+  for (auto mg_coarse = 1u; mg_coarse <= config->GetnMGLevels(); ++mg_coarse) {
+    const auto mg_fine = mg_coarse - 1;
+    inlet_values.fine_solver = solver_container[mg_fine][FLOW_SOL];
+    inlet_values.coarse_solver = solver_container[mg_coarse][FLOW_SOL];
+
+    for (auto marker = 0u; marker < config->GetnMarker_All(); ++marker) {
+      if (config->GetMarker_All_KindBC(marker) != INLET_FLOW) continue;
+      inlet_values.marker = marker;
+      for (inlet_values.var = 0; inlet_values.var < 2 + nDim; ++inlet_values.var) {
+        geometry_container[mg_coarse]->SetMultiGridMarkerQuantity(geometry_container[mg_fine], marker, inlet_values);
+      }
+    }
+  }
+}
+
+template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver ***solver, CConfig *config, int iter,
                                                 bool update_geo, su2double* SolutionRestart,
                                                 unsigned short nVar_Restart) {
+  SU2_ZONE_SCOPED
+
   /*--- Restart the solution from file information ---*/
 
-  const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", iter);
+  string restart_filename = config->GetSolution_FileName();
   const bool static_fsi = ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && config->GetFSI_Simulation());
   const bool restart_cfl = config->GetRestart_CFL();
 
@@ -954,10 +1046,11 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
     unsigned short skipVars = nDim;
 
     /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
-
     if (config->GetRead_Binary_Restart()) {
+      restart_filename = config->GetFilename(restart_filename, ".dat", iter);
       Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
     } else {
+      restart_filename = config->GetFilename(restart_filename, ".csv", iter);
       Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
     }
 
@@ -1071,8 +1164,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
         /*--- Compute the grid velocities on the coarser levels. ---*/
         if (iMesh) geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMesh - 1]);
         else {
-          geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
-          geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
+          geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::GRID_VELOCITY);
+          geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::GRID_VELOCITY);
         }
       }
     }
@@ -1083,15 +1176,15 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
 
-  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
 
   /*--- For turbulent/species simulations the flow preprocessing is done by the turbulence/species solver
    *    after it loads its variables (they are needed to compute flow primitives). In case turbulence and species, the
    *    species solver does all the Pre-/Postprocessing. ---*/
   if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
       config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
-    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
   }
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -1099,12 +1192,12 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   for (auto iMesh = 1u; iMesh <= config->GetnMGLevels(); iMesh++) {
     MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][FLOW_SOL]->GetNodes()->GetSolution(),
                          *geometry[iMesh], solver[iMesh][FLOW_SOL]->GetNodes()->GetSolution());
-    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
+    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
 
     if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
         config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
-      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     }
   }
 
@@ -1121,10 +1214,8 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
   {
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-    delete [] Restart_Vars;
-    Restart_Vars = nullptr;
-    delete [] Restart_Data;
-    Restart_Data = nullptr;
+    Restart_Vars = decltype(Restart_Vars){};
+    Restart_Data = decltype(Restart_Data){};
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 }
@@ -1132,12 +1223,14 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::LoadRestart(CGeometry **geometry, CSolver ***solver,
                                            CConfig *config, int iter, bool update_geo) {
+  SU2_ZONE_SCOPED
   LoadRestart_impl(geometry, solver, config, iter, update_geo);
 }
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
                                                    CConfig *config, unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   const bool restart = (config->GetRestart() || config->GetRestart_Flow());
   const bool rans = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
@@ -1189,8 +1282,10 @@ template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bool restart, bool rans,
                                                       CSolver*** solver_container, CGeometry** geometry,
                                                       CConfig* config) {
+  SU2_ZONE_SCOPED
+
   /*--- Push back the initial condition to previous solution containers
-   for a 1st-order restart or when simply intitializing to freestream. ---*/
+   for a 1st-order restart or when simply initializing to freestream. ---*/
 
   for (unsigned short iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
     solver_container[iMesh][FLOW_SOL]->GetNodes()->Set_Solution_time_n();
@@ -1233,338 +1328,170 @@ void CFVMFlowSolverBase<V, R>::PushSolutionBackInTime(unsigned long TimeIter, bo
   }
 }
 
-template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
-                                            CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
-  unsigned short iDim, iVar;
-  unsigned long iVertex, iPoint;
+template <class V, ENUM_REGIME FlowRegime>
+void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
+                                                     CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
-  bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool viscous = config->GetViscous();
-  bool preprocessed = false;
+  const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+  const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
+                         (config->GetKind_FluidModel() == IDEAL_GAS);
+  const auto iVel = prim_idx.Velocity();
 
-  /*--- Allocation of variables necessary for convective fluxes. ---*/
-  su2double Area, ProjVelocity_i, *V_reflected, *V_domain, Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
-
-  /*--- Allocation of variables necessary for viscous fluxes. ---*/
-  su2double ProjGradient, ProjNormVelGrad, ProjTangVelGrad, TangentialNorm,
-      Tangential[MAXNDIM] = {0.0}, GradNormVel[MAXNDIM] = {0.0}, GradTangVel[MAXNDIM] = {0.0};
-
-  /*--- Allocation of primitive gradient arrays for viscous fluxes. ---*/
-  su2activematrix Grad_Reflected(nPrimVarGrad, nDim);
+  /*--- Blazek chapter 8.:
+   * The components of the momentum residual normal to the symmetry plane are zeroed out.
+   * The gradients have already been corrected acording to Eq. (8.40).
+   * Contrary to Blazek we keep some scalar fluxes computed on the boundary to improve stability (see below). ---*/
 
   /*--- Loop over all the vertices on this boundary marker. ---*/
 
   SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
-  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    if (!preprocessed || geometry->bound_is_straight[val_marker] != true) {
-      /*----------------------------------------------------------------------------------------------*/
-      /*--- Preprocessing:                                                                         ---*/
-      /*--- Compute the unit normal and (in case of viscous flow) a corresponding unit tangential  ---*/
-      /*--- to that normal. On a straight(2D)/plane(3D) boundary these two vectors are constant.   ---*/
-      /*--- This circumstance is checked in geometry->ComputeSurf_Straightness(...) and stored     ---*/
-      /*--- such that the recomputation does not occur for each node. On true symmetry planes, the ---*/
-      /*--- normal is constant but this routines is used for Symmetry, Euler-Wall in inviscid flow ---*/
-      /*--- and Euler Wall in viscous flow as well. In the latter curvy boundaries are likely to   ---*/
-      /*--- happen. In doubt, the conditional above which checks straightness can be thrown out    ---*/
-      /*--- such that the recomputation is done for each node (which comes with a tiny performance ---*/
-      /*--- penalty).                                                                              ---*/
-      /*----------------------------------------------------------------------------------------------*/
+  for (auto iVertex = 0ul; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    const auto iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-      preprocessed = true;
+    /*--- Halo points do not need to be considered. ---*/
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-      /*--- Normal vector for a random vertex (zero) on this marker (negate for outward convention). ---*/
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+    /*--- Get the normal of the current symmetry. This may be the original normal of the vertex
+     * or a modified normal if there are intersecting symmetries. ---*/
 
-      /*--- Compute unit normal, to be used for unit tangential, projected velocity and velocity
-            component gradients. ---*/
-      Area = GeometryToolbox::Norm(nDim, Normal);
+    su2double Normal[MAXNDIM] = {}, UnitNormal[MAXNDIM] = {};
+    geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+    const auto it = geometry->symmetryNormals[val_marker].find(iVertex);
 
-      for (iDim = 0; iDim < nDim; iDim++) UnitNormal[iDim] = -Normal[iDim] / Area;
+    if (it != geometry->symmetryNormals[val_marker].end()) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->second[iDim];
+    } else {
+      const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+    }
 
-      /*--- Preprocessing: Compute unit tangential, the direction is arbitrary as long as
-            t*n=0 && |t|_2 = 1 ---*/
-      if (viscous) {
-        switch (nDim) {
-          case 2: {
-            Tangential[0] = -UnitNormal[1];
-            Tangential[1] = UnitNormal[0];
-            break;
-          }
-          case 3: {
-            /*--- n = ai + bj + ck, if |b| > |c| ---*/
-            if (abs(UnitNormal[1]) > abs(UnitNormal[2])) {
-              /*--- t = bi + (c-a)j - bk  ---*/
-              Tangential[0] = UnitNormal[1];
-              Tangential[1] = UnitNormal[2] - UnitNormal[0];
-              Tangential[2] = -UnitNormal[1];
-            } else {
-              /*--- t = ci - cj + (b-a)k  ---*/
-              Tangential[0] = UnitNormal[2];
-              Tangential[1] = -UnitNormal[2];
-              Tangential[2] = UnitNormal[1] - UnitNormal[0];
-            }
-            /*--- Make it a unit vector. ---*/
-            TangentialNorm = sqrt(pow(Tangential[0], 2) + pow(Tangential[1], 2) + pow(Tangential[2], 2));
-            Tangential[0] = Tangential[0] / TangentialNorm;
-            Tangential[1] = Tangential[1] / TangentialNorm;
-            Tangential[2] = Tangential[2] / TangentialNorm;
-            break;
-          }
-        }  // switch
-      }    // if viscous
-    }      // if bound_is_straight
+    /*--- Energy terms due to grid movement (aka work of pressure forces). ---*/
+    if (dynamic_grid) {
+      su2double* V_reflected = GetCharacPrimVar(val_marker, iVertex);
 
-    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-
-    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-    if (geometry->nodes->GetDomain(iPoint)) {
-      /*-------------------------------------------------------------------------------*/
-      /*--- Step 1: For the convective fluxes, create a reflected state of the      ---*/
-      /*---         Primitive variables by copying all interior values to the       ---*/
-      /*---         reflected. Only the velocity is mirrored along the symmetry     ---*/
-      /*---         axis. Based on the Upwind_Residual routine.                     ---*/
-      /*-------------------------------------------------------------------------------*/
-
-      /*--- Allocate the reflected state at the symmetry boundary. ---*/
-      V_reflected = GetCharacPrimVar(val_marker, iVertex);
-
-      /*--- Grid movement ---*/
-      if (dynamic_grid)
-        conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint), geometry->nodes->GetGridVel(iPoint));
+      conv_numerics->SetGridVel(geometry->nodes->GetGridVel(iPoint),
+                                geometry->nodes->GetGridVel(iPoint));
 
       /*--- Normal vector for this vertex (negate for outward convention). ---*/
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      for (auto iDim = 0u; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
 
-      /*--- Get current solution at this boundary node ---*/
-      V_domain = nodes->GetPrimitive(iPoint);
+      for (auto iVar = 0u; iVar < nPrimVar; iVar++)
+        V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
 
-      /*--- Set the reflected state based on the boundary node. Scalars are copied and
-            the velocity is mirrored along the symmetry boundary, i.e. the velocity in
-            normal direction is substracted twice. ---*/
-      for (iVar = 0; iVar < nPrimVar; iVar++) V_reflected[iVar] = nodes->GetPrimitive(iPoint, iVar);
-
-      /*--- Compute velocity in normal direction (ProjVelcity_i=(v*n)) und substract twice from
-            velocity in normal direction: v_r = v - 2 (v*n)n ---*/
-      ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
-
+      su2double ProjVelocity_i = nodes->GetProjVel(iPoint, UnitNormal);
       /*--- Adjustment to v.n due to grid movement. ---*/
-      if (dynamic_grid) {
-        ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
-      }
+      ProjVelocity_i -= GeometryToolbox::DotProduct(nDim, geometry->nodes->GetGridVel(iPoint), UnitNormal);
 
-      for (iDim = 0; iDim < nDim; iDim++)
-        V_reflected[iDim + 1] = nodes->GetVelocity(iPoint, iDim) - 2.0 * ProjVelocity_i * UnitNormal[iDim];
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        V_reflected[iDim + iVel] = nodes->GetVelocity(iPoint, iDim) - ProjVelocity_i * UnitNormal[iDim];
+
+      /*--- Get current solution at this boundary node. ---*/
+      const su2double* V_domain = nodes->GetPrimitive(iPoint);
 
       /*--- Set Primitive and Secondary for numerics class. ---*/
       conv_numerics->SetPrimitive(V_domain, V_reflected);
-      conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
-
-      /*--- Compute the residual using an upwind scheme. ---*/
-
-      auto residual = conv_numerics->ComputeResidual(config);
-
-      /*--- Update residual value ---*/
-      LinSysRes.AddBlock(iPoint, residual);
-
-      /*--- Jacobian contribution for implicit integration. ---*/
-      if (implicit) {
-
-        const su2double Density = V_domain[nDim+2];
-        const su2double* Velocity = &V_domain[1];
-        const su2double* VelocityRef = &V_reflected[1];
-
-        su2double Velocity2 = GeometryToolbox::SquaredNorm(nDim,Velocity);
-
-        su2double Velocity2Ref = GeometryToolbox::SquaredNorm(nDim,VelocityRef);
-
-        su2double dUedVe[5][5];
-        dUedVe[0][0] = 1;
-        for (iVar = 1; iVar < nVar; ++iVar) dUedVe[0][iVar] = 0;
-
-        for (iDim = 0; iDim < nDim; ++iDim){
-          dUedVe[iDim+1][0] = VelocityRef[iDim];
-          for (int jDim = 0; jDim < nDim; ++jDim){
-            dUedVe[iDim+1][jDim+1] = 0;
-          }
-          dUedVe[iDim+1][iDim+1] = Density;
-          dUedVe[iDim+1][nDim+1] = 0;
-        }
-        dUedVe[nDim+1][0] = 0.5*Velocity2Ref;
-        dUedVe[nDim+1][nDim+1] = 1/Gamma_Minus_One;
-        for (iDim = 0; iDim < nDim; ++iDim)
-          dUedVe[nDim+1][iDim+1] = Density*VelocityRef[iDim];
-
-
-        su2double dVdU[5][5];
-
-        dVdU[0][0] = 1;
-        for (iVar = 1; iVar < nVar; ++iVar) dVdU[0][iVar] = 0;
-
-        for (iDim = 0; iDim < nDim; ++iDim){
-          dVdU[iDim+1][0] = -Velocity[iDim] / Density;
-          for (int jDim = 0; jDim < nDim; ++jDim){
-            dVdU[iDim+1][jDim+1] = 0;
-          }
-          dVdU[iDim+1][iDim+1] = 1.0 / Density;
-          dVdU[iDim+1][nDim+1] = 0;
-        }
-        dVdU[nDim+1][0] = 0.5*Gamma_Minus_One*Velocity2;
-        dVdU[nDim+1][nDim+1] = Gamma_Minus_One;
-        for (iDim = 0; iDim < nDim; ++iDim)
-          dVdU[nDim+1][iDim+1] = -Gamma_Minus_One*Velocity[iDim];
-
-
-        su2double dVedV[5][5];
-
-        dVedV[0][0] = 1;
-        for (iVar = 1; iVar < nVar; ++iVar) dVedV[0][iVar] = 0;
-
-        for (iDim = 0; iDim < nDim; ++iDim){
-          dVedV[iDim+1][0] = 0;
-          for (int jDim = 0; jDim < nDim; ++jDim){
-            dVedV[iDim+1][jDim+1] = -2*UnitNormal[iDim]*UnitNormal[jDim];
-          }
-          dVedV[iDim+1][iDim+1] += 1.0;
-          dVedV[iDim+1][nDim+1] = 0;
-        }
-
-        dVedV[nDim+1][0] = 0;
-        dVedV[nDim+1][nDim+1] = 1;
-        for (iDim = 0; iDim < nDim; ++iDim)
-          dVedV[nDim+1][iDim+1] = 0;
-
-
-        su2double tmp1[5][5], totJac[5][5], dUedU[5][5];
-
-
-        for (iVar = 0; iVar < nVar; ++iVar)
-          for (int jVar = 0; jVar < nVar; ++jVar) {
-            tmp1[iVar][jVar] = 0;
-            for (int kVar = 0; kVar < nVar; ++kVar)
-              tmp1[iVar][jVar] += dUedVe[iVar][kVar] * dVedV[kVar][jVar];
-          }
-
-        for (iVar = 0; iVar < nVar; ++iVar)
-          for (int jVar = 0; jVar < nVar; ++jVar) {
-            dUedU[iVar][jVar] = 0;
-            for (int kVar = 0; kVar < nVar; ++kVar)
-              dUedU[iVar][jVar] += tmp1[iVar][kVar] * dVdU[kVar][jVar];
-          }
-
-        for (iVar = 0; iVar < nVar; ++iVar)
-          for (int jVar = 0; jVar < nVar; ++jVar) {
-            totJac[iVar][jVar] = residual.jacobian_i[iVar][jVar];
-            for (int kVar = 0; kVar < nVar; ++kVar)
-              totJac[iVar][jVar] += residual.jacobian_j[iVar][kVar] * dUedU[kVar][jVar];
-          }
-
-        Jacobian.AddBlock2Diag(iPoint, totJac);
+      if (!ideal_gas) {
+        conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
       }
 
-      if (viscous) {
-        /*-------------------------------------------------------------------------------*/
-        /*--- Step 2: The viscous fluxes of the Navier-Stokes equations depend on the ---*/
-        /*---         Primitive variables and their gradients. The viscous numerics   ---*/
-        /*---         container is filled just as the convective numerics container,  ---*/
-        /*---         but the primitive gradients of the reflected state have to be   ---*/
-        /*---         determined additionally such that symmetry at the boundary is   ---*/
-        /*---         enforced. Based on the Viscous_Residual routine.                ---*/
-        /*-------------------------------------------------------------------------------*/
+      /*--- Compute the residual using an upwind scheme. ---*/
+      auto residual = conv_numerics->ComputeResidual(config);
 
-        /*--- Set the normal vector and the coordinates. ---*/
-        visc_numerics->SetCoord(geometry->nodes->GetCoord(iPoint), geometry->nodes->GetCoord(iPoint));
-        visc_numerics->SetNormal(Normal);
-
-        /*--- Set the primitive and Secondary variables. ---*/
-        visc_numerics->SetPrimitive(V_domain, V_reflected);
-        visc_numerics->SetSecondary(nodes->GetSecondary(iPoint), nodes->GetSecondary(iPoint));
-
-        /*--- For viscous Fluxes also the gradients of the primitives need to be determined.
-              1. The gradients of scalars are mirrored along the sym plane just as velocity for the primitives
-              2. The gradients of the velocity components need more attention, i.e. the gradient of the
-                 normal velocity in tangential direction is mirrored and the gradient of the tangential velocity in
-                 normal direction is mirrored. ---*/
-
-        /*--- Get gradients of primitives of boundary cell ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Grad_Reflected[iVar][iDim] = nodes->GetGradient_Primitive(iPoint, iVar, iDim);
-
-        /*--- Reflect the gradients for all scalars including the velocity components.
-              The gradients of the velocity components are set later with the
-              correct values: grad(V)_r = grad(V) - 2 [grad(V)*n]n, V beeing any primitive ---*/
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-          if (iVar == 0 || iVar > nDim) {  // Exclude velocity component gradients
-
-            /*--- Compute projected part of the gradient in a dot product ---*/
-            ProjGradient = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++) ProjGradient += Grad_Reflected[iVar][iDim] * UnitNormal[iDim];
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              Grad_Reflected[iVar][iDim] = Grad_Reflected[iVar][iDim] - 2.0 * ProjGradient * UnitNormal[iDim];
+      /*--- Use just the energy fluxes to update the residual, adding the others would
+       * increase numerical diffusion which we wish to avoid if possible. ---*/
+      for (auto iVar = iVel + nDim; iVar < nVar; iVar++) {
+        LinSysRes(iPoint, iVar) += residual.residual[iVar];
+      }
+      if (implicit) {
+        auto* block = Jacobian.GetBlock(iPoint, iPoint);
+        /*--- But in the Jacobian we also include the mass flux, this allows some cases with
+         * motion to use larger CFL, for example pywrapper_translating_naca0012. ---*/
+        for (auto iVar = 0u; iVar < nVar; iVar++) {
+          if (iVar < iVel || iVar >= iVel + nDim) {
+            for (auto jVar = 0u; jVar < nVar; jVar++) {
+              block[iVar * nVar + jVar] += SU2_TYPE::GetValue(residual.jacobian_i[iVar][jVar]);
+            }
           }
         }
+      }
+    }
 
-        /*--- Compute gradients of normal and tangential velocity:
-              grad(v*n) = grad(v_x) n_x + grad(v_y) n_y (+ grad(v_z) n_z)
-              grad(v*t) = grad(v_x) t_x + grad(v_y) t_y (+ grad(v_z) t_z) ---*/
-        for (iVar = 0; iVar < nDim; iVar++) {  // counts gradient components
-          GradNormVel[iVar] = 0.0;
-          GradTangVel[iVar] = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++) {  // counts sum with unit normal/tangential
-            GradNormVel[iVar] += Grad_Reflected[iDim + 1][iVar] * UnitNormal[iDim];
-            GradTangVel[iVar] += Grad_Reflected[iDim + 1][iVar] * Tangential[iDim];
-          }
+    /*--- Explicitly set the velocity components normal to the symmetry plane to zero.
+     * This is necessary because the modification of the residual leaves the problem
+     * underconstrained (the normal residual is zero regardless of the normal velocity). ---*/
+
+    su2double* solutionOld = nodes->GetSolution_Old(iPoint);
+
+    su2double gridVel[MAXNDIM] = {};
+    if (dynamic_grid) {
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
+      }
+      if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
+        for(auto iDim = 0u; iDim < nDim; iDim++) {
+          /*--- Multiply by density since we are correcting conservative variables. ---*/
+          gridVel[iDim] *= nodes->GetDensity(iPoint);
         }
+      }
+    }
+    su2double vp = 0.0;
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      vp += (solutionOld[iVel + iDim] - gridVel[iDim]) * UnitNormal[iDim];
+    }
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      solutionOld[iVel + iDim] -= vp * UnitNormal[iDim];
+    }
 
-        /*--- Refelect gradients in tangential and normal direction by substracting the normal/tangential
-              component twice, just as done with velocity above.
-              grad(v*n)_r = grad(v*n) - 2 {grad([v*n])*t}t
-              grad(v*t)_r = grad(v*t) - 2 {grad([v*t])*n}n ---*/
-        ProjNormVelGrad = 0.0;
-        ProjTangVelGrad = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          ProjNormVelGrad += GradNormVel[iDim] * Tangential[iDim];  // grad([v*n])*t
-          ProjTangVelGrad += GradTangVel[iDim] * UnitNormal[iDim];  // grad([v*t])*n
-        }
+    /*--- Keep only the tangential part of the momentum residuals. ---*/
+    su2double normalRes = 0.0;
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      normalRes += LinSysRes(iPoint, iVel + iDim) * UnitNormal[iDim];
+    }
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      LinSysRes(iPoint, iVel + iDim) -= normalRes * UnitNormal[iDim];
+    }
 
-        for (iDim = 0; iDim < nDim; iDim++) {
-          GradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
-          GradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
-        }
+    /*--- Jacobian contribution for implicit integration. ---*/
+    if (implicit) {
+      /*--- Modify the Jacobians according to the modification of the residual
+       * J_new = (I - n * n^T) * J where n = {0, nx, ny, nz, 0, ...} ---*/
+      su2double mat[MAXNVAR * MAXNVAR] = {};
 
-        /*--- Transfer reflected gradients back into the Cartesian Coordinate system:
-              grad(v_x)_r = grad(v*n)_r n_x + grad(v*t)_r t_x
-              grad(v_y)_r = grad(v*n)_r n_y + grad(v*t)_r t_y
-              ( grad(v_z)_r = grad(v*n)_r n_z + grad(v*t)_r t_z ) ---*/
-        for (iVar = 0; iVar < nDim; iVar++)    // loops over the velocity component gradients
-          for (iDim = 0; iDim < nDim; iDim++)  // loops over the entries of the above
-            Grad_Reflected[iVar + 1][iDim] =
-                GradNormVel[iDim] * UnitNormal[iVar] + GradTangVel[iDim] * Tangential[iVar];
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        mat[iVar * nVar + iVar] = 1;
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        for (auto jDim = 0u; jDim < nDim; jDim++)
+          mat[(iDim + iVel) * nVar + jDim + iVel] -= UnitNormal[iDim] * UnitNormal[jDim];
 
-        /*--- Set the primitive gradients of the boundary and reflected state. ---*/
-        visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint), CMatrixView<su2double>(Grad_Reflected));
+      auto ModifyJacobian = [&](const unsigned long jPoint) {
+        su2double jac[MAXNVAR * MAXNVAR], newJac[MAXNVAR * MAXNVAR];
+        const auto view = Jacobian.GetBlockView(iPoint, jPoint);
+        if (!view) return;
+        for (auto iVar = 0u; iVar < nVar; iVar++)
+          for (auto jVar = 0u; jVar < nVar; jVar++) jac[iVar * nVar + jVar] = view(iVar, jVar);
 
-        /*--- Turbulent kinetic energy. ---*/
-        if (config->GetKind_Turb_Model() == TURB_MODEL::SST)
-          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0),
-                                              solver_container[TURB_SOL]->GetNodes()->GetSolution(iPoint, 0));
+        CBlasStructure().gemm(nVar, nVar, nVar, mat, jac, newJac, config);
 
-        /*--- Compute and update residual. Note that the viscous shear stress tensor is computed in the
-              following routine based upon the velocity-component gradients. ---*/
-        auto residual = visc_numerics->ComputeResidual(config);
+        Jacobian.SetBlock(iPoint, jPoint, newJac);
+      };
+      ModifyJacobian(iPoint);
+      for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
+        ModifyJacobian(geometry->nodes->GetPoint(iPoint, iNeigh));
+      }
+    }
 
-        LinSysRes.SubtractBlock(iPoint, residual);
-
-        /*--- Jacobian contribution for implicit integration. ---*/
-        if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
-      }  // if viscous
-    }    // if GetDomain
-  }      // for iVertex
+    /*--- Correction for multigrid. ---*/
+    normalRes = 0.0;
+    su2double* Res_TruncError = nodes->GetResTruncError(iPoint);
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      normalRes += Res_TruncError[iVel + iDim] * UnitNormal[iDim];
+    }
+    for (auto iDim = 0u; iDim < nDim; iDim++) {
+      Res_TruncError[iVel + iDim] -= normalRes * UnitNormal[iDim];
+    }
+  }
   END_SU2_OMP_FOR
 
 }
@@ -1886,6 +1813,8 @@ void CFVMFlowSolverBase<V, R>::BC_Sym_Plane_Residual(CGeometry* geometry, CSolve
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
                                            CConfig* config) {
+  SU2_ZONE_SCOPED
+
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
    adjacent periodic markers, the repeated points will have their residuals
@@ -1902,6 +1831,10 @@ template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, CSolver** solver_container,
                                                            CNumerics* conv_numerics, CNumerics* visc_numerics,
                                                            CConfig* config) {
+  SU2_ZONE_SCOPED
+
+  const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS;
+
   unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
   unsigned short iDim, iVar, jVar, iMarker, nDonorVertex;
 
@@ -1953,19 +1886,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
 
             conv_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
 
-            if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-              if (!(config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS)) {
-                auto Secondary_i = nodes->GetSecondary(iPoint);
+            if (FlowRegime == ENUM_REGIME::COMPRESSIBLE && !ideal_gas) {
+              P_static = PrimVar_j[nDim + 1];
+              rho_static = PrimVar_j[nDim + 2];
+              GetFluidModel()->SetTDState_Prho(P_static, rho_static);
 
-                P_static = PrimVar_j[nDim + 1];
-                rho_static = PrimVar_j[nDim + 2];
-                GetFluidModel()->SetTDState_Prho(P_static, rho_static);
+              Secondary_j[0] = GetFluidModel()->GetdPdrho_e();
+              Secondary_j[1] = GetFluidModel()->GetdPde_rho();
 
-                Secondary_j[0] = GetFluidModel()->GetdPdrho_e();
-                Secondary_j[1] = GetFluidModel()->GetdPde_rho();
-
-                conv_numerics->SetSecondary(Secondary_i, Secondary_j);
-              }
+              conv_numerics->SetSecondary(nodes->GetSecondary(iPoint), Secondary_j);
             }
 
             /*--- Set the normal vector ---*/
@@ -2065,11 +1994,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Fluid_Interface(CGeometry* geometry, 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                          CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
+
   /* Check for a verification solution. */
 
   if (VerificationSolution) {
     unsigned short iVar;
-    unsigned long iVertex, iPoint, total_index;
+    unsigned long iVertex, iPoint;
 
     bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -2111,8 +2042,7 @@ void CFVMFlowSolverBase<V, R>::BC_Custom(CGeometry* geometry, CSolver** solver_c
 
         if (implicit) {
           for (iVar = 0; iVar < nVar; iVar++) {
-            total_index = iPoint * nVar + iVar;
-            Jacobian.DeleteValsRowi(total_index);
+            Jacobian.DeleteValsRowi(iPoint, iVar);
           }
         }
       }
@@ -2176,8 +2106,7 @@ void CFVMFlowSolverBase<V, R>::BC_Custom_Strong(const CGeometry* geometry, CSolv
 
         if (implicit) {
           for (iVar = 0; iVar < nVar; iVar++) {
-            total_index = iPoint * nVar + iVar;
-            Jacobian.DeleteValsRowi(total_index);
+            Jacobian.DeleteValsRowi(iPoint, iVar);
           }
         }
       }
@@ -2468,6 +2397,8 @@ template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
                                                 const CSolver* const* solvers,
                                                 CConfig *config) {
+  SU2_ZONE_SCOPED
+
   if (!edgeNumerics) {
     if (!ReducerStrategy && (omp_get_max_threads() > 1) &&
         (config->GetEdgeColoringGroupSize() % Double::Size != 0)) {
@@ -2475,6 +2406,11 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
                      "by the SIMD length (2, 4, or 8).", CURRENT_FUNCTION);
     }
     InstantiateEdgeNumerics(solvers, config);
+
+    /*--- The SIMD numerics do not use gradients of density and enthalpy. ---*/
+    if (!config->GetContinuous_Adjoint()) {
+      SU2_OMP_SAFE_GLOBAL_ACCESS(nPrimVarGrad = std::min<unsigned short>(nDim + 2, nPrimVarGrad);)
+    }
   }
 
   /*--- Non-physical counter. ---*/
@@ -2482,6 +2418,8 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
   SU2_OMP_MASTER
   ErrorCounter = 0;
   END_SU2_OMP_MASTER
+
+  su2activevector* massFluxes = config->GetBounded_Scalar() ? &EdgeMassFluxes : nullptr;
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -2503,9 +2441,9 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
       }
 
       if (ReducerStrategy) {
-        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::REDUCTION, mask, EdgeFluxes, Jacobian);
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::REDUCTION, mask, EdgeFluxes, Jacobian, massFluxes);
       } else {
-        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian, massFluxes);
       }
       if (MGLevel == MESH_0) {
         for (auto j = 0ul; j < Double::Size; ++j)
@@ -2520,6 +2458,7 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
 
 template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::SumEdgeFluxes(const CGeometry* geometry) {
+  SU2_ZONE_SCOPED
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -3335,23 +3274,20 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   unsigned long iVertex, iPoint, iPointNormal;
   unsigned short iMarker, iMarker_Monitoring, iDim, jDim;
-  su2double Viscosity = 0.0, Area, Density = 0.0, WallDistMod, FrictionVel,
-            UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}}, Cp,
+  su2double Viscosity = 0.0, Area, Density = 0.0, FrictionVel,
+            UnitNormal[3] = {0.0}, TauElem[3] = {0.0}, Tau[3][3] = {{0.0}},
             thermal_conductivity, MaxNorm = 8.0, Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0},
             Grad_Temp_ve[3] = {0.0}, AxiFactor;
   const su2double *Coord = nullptr, *Coord_Normal = nullptr, *Normal = nullptr;
   const su2double minYPlus = config->GetwallModel_MinYPlus();
 
-  string Marker_Tag, Monitoring_Tag;
-
   const su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
   const su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
   const su2double RefLength = config->GetRefLength();
   const su2double RefHeatFlux = config->GetHeat_Flux_Ref();
-  const su2double Gas_Constant = config->GetGas_ConstantND();
+  const su2double RefTemperature = config->GetTemperature_Ref();
   auto Origin = config->GetRefOriginMoment(0);
 
-  const su2double Prandtl_Lam = config->GetPrandtl_Lam();
   const bool energy = config->GetEnergy_Equation();
   const bool QCR = config->GetSAParsedOptions().qcr2000;
   const bool axisymmetric = config->GetAxisymmetric();
@@ -3378,15 +3314,17 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
-    Marker_Tag = config->GetMarker_All_TagBound(iMarker);
     if (!config->GetViscous_Wall(iMarker)) continue;
+    const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+    const bool py_custom = config->GetMarker_All_PyCustom(iMarker);
 
     /*--- Obtain the origin for the moment computation for a particular marker ---*/
 
     const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
     if (Monitoring == YES) {
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+        const auto Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         if (Marker_Tag == Monitoring_Tag) Origin = config->GetRefOriginMoment(iMarker_Monitoring);
       }
     }
@@ -3481,36 +3419,51 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       FrictionVel = sqrt(fabs(WallShearStress[iMarker][iVertex]) / Density);
 
-      if (!wallfunctions && (MGLevel == MESH_0 || geometry->nodes->GetDomain(iPoint))) {
-        // for CMultiGridGeometry, the normal neighbor of halo nodes in not set
-        iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-        Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
-        WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
+      if (!wallfunctions && MGLevel == MESH_0 && geometry->nodes->GetDomain(iPoint)) {
+        // for CMultiGridGeometry and halos, the nearest neighbor distance is not set
+        const su2double WallDistMod = geometry->vertex[iMarker][iVertex]->GetNearestNeighborDistance();
         YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
       }
 
       /*--- Compute total and maximum heat flux on the wall ---*/
 
-      su2double dTdn = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
-
-      if (!nemo){
-
-        if (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
-
-          Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-          thermal_conductivity = Cp * Viscosity / Prandtl_Lam;
-        }
-        if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE) {
-          if (!energy) dTdn = 0.0;
+      if (!nemo) {
+        if ((FlowRegime == ENUM_REGIME::COMPRESSIBLE) || (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE)) {
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
         }
-        HeatFlux[iMarker][iVertex] = -thermal_conductivity * dTdn * RefHeatFlux;
 
+        if (config->GetMarker_All_KindBC(iMarker) == BC_TYPE::HEAT_FLUX) {
+          if (py_custom) {
+            HeatFlux[iMarker][iVertex] = -geometry->GetCustomBoundaryHeatFlux(iMarker, iVertex);
+          } else {
+            HeatFlux[iMarker][iVertex] = -config->GetWall_HeatFlux(Marker_Tag);
+            if (config->GetIntegrated_HeatFlux()) {
+              HeatFlux[iMarker][iVertex] /= geometry->GetSurfaceArea(config, iMarker);
+            }
+          }
+        } else if (config->GetMarker_All_KindBC(iMarker) == BC_TYPE::ISOTHERMAL) {
+          su2double Twall = 0.0;
+          if (py_custom) {
+            Twall = geometry->GetCustomBoundaryTemperature(iMarker, iVertex) / RefTemperature;
+          } else {
+            Twall = config->GetIsothermal_Temperature(Marker_Tag) / RefTemperature;
+          }
+          iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+          Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
+          const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord, Coord_Normal);
+          const su2double There = nodes->GetTemperature(iPointNormal);
+          HeatFlux[iMarker][iVertex] = thermal_conductivity * (There - Twall) / dist_ij * RefHeatFlux;
+        } else {
+          su2double dTdn = GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
+          if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE && !energy) dTdn = 0.0;
+          HeatFlux[iMarker][iVertex] = thermal_conductivity * dTdn * RefHeatFlux;
+        }
       } else {
 
         const auto& thermal_conductivity_tr = nodes->GetThermalConductivity(iPoint);
         const auto& thermal_conductivity_ve = nodes->GetThermalConductivity_ve(iPoint);
 
+        const su2double dTdn = -GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
         const su2double dTvedn = -GeometryToolbox::DotProduct(nDim, Grad_Temp_ve, UnitNormal);
 
         /*--- Surface energy balance: trans-rot heat flux, vib-el heat flux ---*/
@@ -3638,8 +3591,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       /*--- Compute the coefficients per surface ---*/
 
       for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        const auto Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
         if (Marker_Tag == Monitoring_Tag) {
           SurfaceViscCoeff.CL[iMarker_Monitoring] += ViscCoeff.CL[iMarker];
           SurfaceViscCoeff.CD[iMarker_Monitoring] += ViscCoeff.CD[iMarker];
@@ -3934,5 +3886,60 @@ void CFVMFlowSolverBase<V, FlowRegime>::ComputeAxisymmetricAuxGradients(CGeometr
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     SetAuxVar_Gradient_LS(geometry, config);
+  }
+}
+
+template <class V, ENUM_REGIME FlowRegime>
+void CFVMFlowSolverBase<V, FlowRegime>::MultigridProjectEulerWall(CGeometry* geometry, const CConfig* config,
+                                                                   bool use_solution_old) {
+  const auto iVel = prim_idx.Velocity();
+  const auto nDim = geometry->GetnDim();
+
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != EULER_WALL) continue;
+
+    SU2_OMP_FOR_STAT(32)
+    for (auto iVertex = 0ul; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+      if (!geometry->nodes->GetDomain(iPoint)) continue;
+
+      /*--- Use the Gram-Schmidt corrected normal for nodes on intersecting walls,
+       *    consistent with BC_Sym_Plane.  Fall back to the raw marker normal otherwise. ---*/
+      su2double UnitNormal[MAXNDIM] = {0.0};
+      const auto it = geometry->symmetryNormals[iMarker].find(iVertex);
+      if (it != geometry->symmetryNormals[iMarker].end()) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->second[iDim];
+      } else {
+        su2double Normal[MAXNDIM] = {0.0};
+        geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+        if (Area < EPS) continue;
+        for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+      }
+
+      su2double* sol = use_solution_old ? nodes->GetSolution_Old(iPoint) : nodes->GetSolution(iPoint);
+
+      /*--- Compute normal component of the velocity / momentum vector.
+       *    For dynamic grids subtract the grid velocity to enforce (v - v_grid).n = 0,
+       *    multiplying by density for compressible flow (conservative variables). ---*/
+      su2double gridVel[MAXNDIM] = {};
+      if (dynamic_grid && !use_solution_old) {
+        for (auto iDim = 0u; iDim < nDim; iDim++)
+          gridVel[iDim] = geometry->nodes->GetGridVel(iPoint)[iDim];
+        if constexpr (FlowRegime == ENUM_REGIME::COMPRESSIBLE) {
+          for (auto iDim = 0u; iDim < nDim; iDim++)
+            gridVel[iDim] *= nodes->GetDensity(iPoint);
+        }
+      }
+
+      su2double momentum_n = 0.0;
+      for (auto iDim = 0u; iDim < nDim; iDim++)
+        momentum_n += (sol[iVel + iDim] - gridVel[iDim]) * UnitNormal[iDim];
+
+      /*--- Project to tangent plane. ---*/
+      for (auto iDim = 0u; iDim < nDim; iDim++) sol[iVel + iDim] -= momentum_n * UnitNormal[iDim];
+    }
+    END_SU2_OMP_FOR
   }
 }

@@ -4,14 +4,14 @@
           variables, function definitions in file <i>CVariable.cpp</i>.
           All variables are children of at least this class.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -54,6 +54,8 @@ protected:
 
   MatrixType Solution;       /*!< \brief Solution of the problem. */
   MatrixType Solution_Old;   /*!< \brief Old solution of the problem R-K. */
+
+  MatrixType UserDefinedSource; /*!< \brief User Defined Source of the problem. */
 
   MatrixType External;       /*!< \brief External (outer) contribution in discrete adjoint multizone problems. */
 
@@ -98,8 +100,8 @@ protected:
   CVectorOfMatrix Hessian;                /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
   su2matrix<double> Metric;               /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
 
-  su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
-  su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
+  su2matrix<AD::Identifier> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector before solver iteration. */
+  su2matrix<AD::Identifier> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after solver iteration. */
 
   VectorType SolutionExtra; /*!< \brief Stores adjoint solution for extra solution variables.
                                         Currently only streamwise periodic pressure-drop for massflow prescribed flows. */
@@ -107,14 +109,12 @@ protected:
 
   VectorType SolutionExtra_BGS_k; /*!< \brief Intermediate storage, enables cross term extraction as that is also pushed to Solution. */
 
- protected:
   unsigned long nPoint = 0;  /*!< \brief Number of points in the domain. */
   unsigned long nDim = 0;      /*!< \brief Number of dimension of the problem. */
   unsigned long nVar = 0;        /*!< \brief Number of variables of the problem. */
   unsigned long nPrimVar = 0;      /*!< \brief Number of primitive variables. */
   unsigned long nPrimVarGrad = 0;    /*!< \brief Number of primitives for which a gradient is computed. */
   unsigned long nSecondaryVar = 0;     /*!< \brief Number of secondary variables. */
-  unsigned long nSecondaryVarGrad = 0;   /*!< \brief Number of secondaries for which a gradient is computed. */
   unsigned long nAuxVar = 0; /*!< \brief Number of auxiliary variables. */
 
   /*--- Only allow default construction by derived classes. ---*/
@@ -124,7 +124,7 @@ protected:
     assert(false && "A base method of CVariable was used, but it should have been overridden by the derived class.");
   }
 
-  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>* ad_index = nullptr) {
+  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<AD::Identifier>* ad_index = nullptr) {
     const auto nPoint = variable.rows();
     SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
     for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
@@ -139,8 +139,22 @@ protected:
     END_SU2_OMP_FOR
   }
 
-  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<int>& ad_index) {
+  void RegisterContainer(bool input, su2activematrix& variable, su2matrix<AD::Identifier>& ad_index) {
     RegisterContainer(input, variable, &ad_index);
+  }
+
+  void RegisterContainer(bool input, su2activevector& variable, su2vector<AD::Identifier>* ad_index = nullptr) {
+    const auto nPoint = variable.rows();
+    SU2_OMP_FOR_STAT(roundUpDiv(nPoint,omp_get_num_threads()))
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+
+      if (input) AD::RegisterInput(variable(iPoint));
+      else AD::RegisterOutput(variable(iPoint));
+
+      if (ad_index) AD::SetIndex((*ad_index)(iPoint), variable(iPoint));
+
+    }
+    END_SU2_OMP_FOR
   }
 
 public:
@@ -399,6 +413,46 @@ public:
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
    */
+  inline virtual su2double GetLES_Mode(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_les_mode - Value of the LES sensor.
+   */
+  inline virtual void SetLES_Mode(unsigned long iPoint, su2double val_les_mode) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   */
+  inline virtual su2double GetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_stochSource - Source term in Langevin equations.
+   */
+  inline virtual void SetLangevinSourceTerms(unsigned long iPoint, unsigned short iDim, su2double val_stochSource) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_integral - Value of the integral.
+   */
+  inline virtual void SetBesselIntegral(unsigned long iPoint, su2double val_integral) {}
+
+  /*!
+   * \brief A virtual member.
+   */
+  inline virtual su2double GetBesselIntegral(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   */
   virtual void SetSolution_New() {}
 
   /*!
@@ -486,6 +540,13 @@ public:
   inline su2double *GetSolution(unsigned long iPoint) { return Solution[iPoint]; }
 
   /*!
+   * \brief Get the entire User Define Source of the problem.
+   * \return Reference to the solution matrix.
+   */
+  inline const MatrixType& GetUserDefinedSource() const { return UserDefinedSource; }
+  inline MatrixType& GetUserDefinedSource() { return UserDefinedSource; }
+
+  /*!
    * \brief Get the old solution of the problem (Runge-Kutta method)
    * \param[in] iPoint - Point index.
    * \return Pointer to the old solution vector.
@@ -514,6 +575,7 @@ public:
    * \return Pointer to the solution (at time n-1) vector.
    */
   inline su2double *GetSolution_time_n1(unsigned long iPoint) { return Solution_time_n1[iPoint]; }
+  inline MatrixType& GetSolution_time_n1() { return Solution_time_n1; }
 
   /*!
    * \brief Set the value of the old residual.
@@ -716,6 +778,16 @@ public:
   }
 
   /*!
+   * \brief Set the truncation error.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_trunc_error - Pointer to the truncation error.
+   */
+  inline void SetResTruncError(unsigned long iPoint, su2double *val_trunc_error) {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++)
+      Res_TruncError(iPoint, iVar) = val_trunc_error[iVar];
+  }
+
+  /*!
    * \brief Set the gradient of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] gradient - Gradient of the solution.
@@ -806,34 +878,6 @@ public:
    */
   inline MatrixType& GetSolution_Min() { return Solution_Min; }
   inline const MatrixType& GetSolution_Min() const { return Solution_Min; }
-
-  /*!
-   * \brief Get the value of the wind gust
-   * \param[in] iPoint - Point index.
-   * \return Value of the wind gust
-   */
-  inline virtual su2double* GetWindGust(unsigned long iPoint) { return nullptr; }
-
-  /*!
-   * \brief Set the value of the wind gust
-   * \param[in] iPoint - Point index.
-   * \param[in] val_WindGust - Value of the wind gust
-   */
-  inline virtual void SetWindGust(unsigned long iPoint, const su2double* val_WindGust) {}
-
-  /*!
-   * \brief Get the value of the derivatives of the wind gust
-   * \param[in] iPoint - Point index.
-   * \return Value of the derivatives of the wind gust
-   */
-  inline virtual su2double* GetWindGustDer(unsigned long iPoint) { return nullptr;}
-
-  /*!
-   * \brief Set the value of the derivatives of the wind gust
-   * \param[in] iPoint - Point index.
-   * \param[in] val_WindGust - Value of the derivatives of the wind gust
-   */
-  inline virtual void SetWindGustDer(unsigned long iPoint, const su2double* val_WindGust) {}
 
   /*!
    * \brief Set the value of the time step.
@@ -1181,7 +1225,7 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] iPoint - Point index.
-   * \return Value of the rate of strain magnitude.
+   * \return Value of strain rate magnitude.
    */
   inline virtual su2double GetStrainMag(unsigned long iPoint) const { return 0.0; }
 
@@ -1548,11 +1592,6 @@ public:
    * \brief A virtual member.
    */
   inline virtual su2double Get_FlowTraction_n(unsigned long iPoint, unsigned long iVar) const { return 0.0; }
-
-  /*!
-   * \brief A virtual member.
-   */
-  inline virtual void Clear_FlowTraction() {}
 
   /*!
    * \brief A virtual member.
@@ -2180,12 +2219,12 @@ public:
   /*!
    * \brief A virtual member.
    */
-  inline virtual void RegisterFlowTraction() { }
+  inline virtual void RegisterFlowTraction(bool reset) { }
 
   /*!
    * \brief A virtual member.
    */
-  inline virtual su2double ExtractFlowTraction_Sensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  inline virtual su2double ExtractFlowTractionSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
   /*!
    * \brief Register the variables in the solution array as input/output variable.
@@ -2202,6 +2241,11 @@ public:
    * \brief Register the variables in the solution_time_n1 array as input/output variable.
    */
   void RegisterSolution_time_n1();
+
+  /*!
+   * \brief Register the variables in the user defined source array as input/output variable.
+   */
+  void RegisterUserDefinedSource();
 
   /*!
    * \brief Set the adjoint values of the solution.
@@ -2222,13 +2266,19 @@ public:
   }
 
   inline void GetAdjointSolution_time_n(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < Solution_time_n.cols(); iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n(iPoint,iVar));
+    AD::Identifier index = AD::GetPassiveIndex();
+    for (unsigned long iVar = 0; iVar < Solution_time_n.cols(); iVar++) {
+      AD::SetIndex(index, Solution_time_n(iPoint, iVar));
+      adj_sol[iVar] = AD::GetDerivative(index);
+    }
   }
 
   inline void GetAdjointSolution_time_n1(unsigned long iPoint, su2double *adj_sol) const {
-    for (unsigned long iVar = 0; iVar < Solution_time_n1.cols(); iVar++)
-      adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution_time_n1(iPoint,iVar));
+    AD::Identifier index = AD::GetPassiveIndex();
+    for (unsigned long iVar = 0; iVar < Solution_time_n1.cols(); iVar++) {
+      AD::SetIndex(index, Solution_time_n1(iPoint, iVar));
+      adj_sol[iVar] = AD::GetDerivative(index);
+    }
   }
 
   /*!
@@ -2244,6 +2294,7 @@ public:
    * \return value of the Sensitivity
    */
   inline virtual su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+  inline virtual const MatrixType& GetSensitivity() const { AssertOverride(); return Solution; }
 
     /*!
    * \brief A virtual member.
@@ -2589,4 +2640,59 @@ public:
     }
 
 
+  /*!
+   * \brief Set fluid entropy
+   * \param[in] iPoint - Node index
+   * \param[in] entropy - fluid entropy value.
+   */
+  inline virtual void SetEntropy(unsigned long iPoint, su2double entropy) { };
+
+  /*!
+   * \brief Get fluid entropy
+   * \param[in] iPoint - Node index
+   * \return Entropy - Fluid entropy value
+   */
+  inline virtual su2double GetEntropy(unsigned long iPoint) const { return 0; }
+
+  /*!
+   * \brief Set dataset extrapolation instance
+   * \param[in] iPoint - Node index
+   * \param[in] extrapolation - Extrapolation instance (0 = within dataset, 1 = outside dataset)
+   */
+  inline virtual void SetDataExtrapolation(unsigned long iPoint, unsigned short extrapolation) { };
+
+  /*!
+   * \brief Get dataset extrapolation instance
+   * \param[in] iPoint - Node index
+   * \return extrapolation - Extrapolation instance (0 = within dataset, 1 = outside dataset)
+   */
+  inline virtual unsigned short GetDataExtrapolation(unsigned long iPoint) const { return 0; }
+
+  /*!
+   * \brief Set the number of iterations required by a Newton solver used by the fluid model.
+   * \param[in] iPoint - Node index
+   * \param[in] nIter - Number of iterations evaluated by the Newton solver
+   */
+  inline virtual void SetNewtonSolverIterations(unsigned long iPoint, unsigned long nIter) { }
+
+  /*!
+   * \brief Get the number of iterations required by a Newton solver used by the fluid model.
+   * \param[in] iPoint - Node index
+   * \return Number of iterations evaluated by the Newton solver
+   */
+  inline virtual unsigned long GetNewtonSolverIterations(unsigned long iPoint) const { return 0; }
+
+  /*!
+   * \brief LUT premixed flamelet: virtual functions for the speciesflameletvariable LUT
+   */
+  inline virtual void SetLookupScalar(unsigned long iPoint, su2double val_lookup_scalar, unsigned short val_ivar) { }
+
+  inline virtual void SetScalarSource(unsigned long iPoint, unsigned short val_ivar, su2double val_source) { }
+
+  inline virtual void SetTableMisses(unsigned long iPoint, unsigned short misses) { }
+
+  inline virtual unsigned short GetTableMisses(unsigned long iPoint) const { return 0; }
+
+  inline virtual const su2double *GetScalarSources(unsigned long iPoint) const { return nullptr; }
+  inline virtual const su2double *GetScalarLookups(unsigned long iPoint) const { return nullptr; }
 };

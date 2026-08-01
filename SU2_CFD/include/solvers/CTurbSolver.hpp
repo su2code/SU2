@@ -2,14 +2,14 @@
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -55,20 +55,6 @@ public:
    */
   CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative);
 
-  /*!
-   * \brief Impose via the residual the Euler wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Riemann(CGeometry *geometry,
-                  CSolver **solver_container,
-                  CNumerics *conv_numerics,
-                  CNumerics *visc_numerics,
-                  CConfig *config,
-                  unsigned short val_marker) final;
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -140,4 +126,18 @@ public:
       Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
   }
 
+  /*!
+   * \brief Register additional In- or Outputs for RANS.
+   * \param[in] input - Boolean whether In- or Output should be registered.
+   * \param[in] config - The particular config.
+   * \returns The number of extra variables.
+   */
+  unsigned long RegisterSolutionExtra(bool input, const CConfig* config) final;
+  
+  /*!
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
+   * a nonlinear iteration for stability.
+   * \param[in] allowableRatio - Maximum percentage update in variable per iteration.
+   */
+  void ComputeUnderRelaxationFactorHelper(CSolver** solver_container, su2double allowableRatio);
 };

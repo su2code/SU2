@@ -13,14 +13,14 @@
  *       defined here with suitable fallback versions to limit the spread of
  *       compiler tricks in other areas of the code.
  * \author P. Gomes, J. Blühdorn
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,14 +39,9 @@
 #pragma once
 
 #include <cstddef>
+#include <algorithm>
 
 #include "../code_config.hpp"
-
-#if defined(_MSC_VER)
-#define PRAGMIZE(X) __pragma(X)
-#else
-#define PRAGMIZE(X) _Pragma(#X)
-#endif
 
 #if defined(HAVE_OMP)
 #include <omp.h>
@@ -188,13 +183,15 @@ void omp_finalize();
  * thread, with all threads and memory views synchronized both beforehand and afterwards.
  */
 
-#define BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS \
-  SU2_OMP_BARRIER                        \
+#define BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS             \
+  SU2_OMP_BARRIER;                                   \
+  if (omp_in_parallel()) AD::StartNoSharedReading(); \
   SU2_OMP_MASTER
 
-#define END_SU2_OMP_SAFE_GLOBAL_ACCESS \
-  END_SU2_OMP_MASTER                   \
-  SU2_OMP_BARRIER
+#define END_SU2_OMP_SAFE_GLOBAL_ACCESS             \
+  END_SU2_OMP_MASTER                               \
+  if (omp_in_parallel()) AD::EndNoSharedReading(); \
+  SU2_OMP_BARRIER;
 
 #define SU2_OMP_SAFE_GLOBAL_ACCESS(...) BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS{__VA_ARGS__} END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -272,3 +269,55 @@ inline void atomicAdd(T rhs, T& lhs) {
   SU2_OMP_ATOMIC
   lhs += rhs;
 }
+
+/*--- GCC supported atomic compare (for min/max) before it was fully 5.1 compliant. ---*/
+#define ATOMIC_COMPARE_SINCE 202011
+#ifdef __GNUC__
+#if __GNUC__ > 11
+#undef ATOMIC_COMPARE_SINCE
+#define ATOMIC_COMPARE_SINCE 201511
+#endif
+#endif
+
+/*--- By default the min/max fallback to critical is required for all types. ---*/
+#define ATOMIC_COMPARE_FALLBACK
+
+/*--- Atomic max, shared = max(shared, local). ---*/
+#ifdef _OPENMP
+#if _OPENMP >= ATOMIC_COMPARE_SINCE
+/*--- Atomic min/max are supported for arithmetic types. ---*/
+template <class T, su2enable_if<std::is_arithmetic<T>::value> = 0>
+inline void atomicMax(const T& local, T& shared) {
+#pragma omp atomic compare
+  shared = shared < local ? local : shared;
+}
+
+/*--- Redefine the fallback for non arithmetic types. ---*/
+#undef ATOMIC_COMPARE_FALLBACK
+#define ATOMIC_COMPARE_FALLBACK , su2enable_if<!std::is_arithmetic<T>::value> = 0
+#endif
+#endif
+template <class T ATOMIC_COMPARE_FALLBACK>
+inline void atomicMax(const T& local, T& shared) {
+  SU2_OMP_CRITICAL
+  shared = std::max(local, shared);
+  END_SU2_OMP_CRITICAL
+}
+
+/*--- Atomic min, shared = min(shared, local). ---*/
+#ifdef _OPENMP
+#if _OPENMP >= ATOMIC_COMPARE_SINCE
+template <class T, su2enable_if<std::is_arithmetic<T>::value> = 0>
+inline void atomicMin(const T& local, T& shared) {
+#pragma omp atomic compare
+  shared = shared > local ? local : shared;
+}
+#endif
+#endif
+template <class T ATOMIC_COMPARE_FALLBACK>
+inline void atomicMin(const T& local, T& shared) {
+  SU2_OMP_CRITICAL
+  shared = std::min(local, shared);
+  END_SU2_OMP_CRITICAL
+}
+#undef ATOMIC_COMPARE_FALLBACK

@@ -2,66 +2,118 @@ name: Release Management
 
 on:
   push:
-    # branches to consider in the event; optional, defaults to all
     branches:
       - develop
 
+permissions:
+  contents: write
+
+concurrency:
+  group: release-management-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build_and_upload:
-    name: Build SU2
+  build:
+    name: Build SU2 (${{ matrix.os_bin }})
+    runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
-        os_bin: [macos64, macos64-mpi, linux64, linux64-mpi, win64, win64-mpi]
+        os_bin:
+          - macos64
+          - macos64-mpi
+          - linux64-omp
+          - linux64-mpi
+          - win64-omp
+          - win64-mpi
         include:
-          - os_bin: win64
-            flags: '-Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_windows'
+          - os_bin: win64-omp
+            flags: '-Dcpu-arch=haswell -Dwith-omp=true -Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_windows'
           - os_bin: win64-mpi
-            flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_windows_mpi'
+            flags: '-Dcpu-arch=haswell -Dcustom-mpi=true --cross-file=/hostfiles/hostfile_windows_mpi'
           - os_bin: macos64
-            flags: '-Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_darwin'
+            flags: '-Dcpu-arch= -Dwith-mpi=disabled --cross-file=/hostfiles/hostfile_darwin'
           - os_bin: macos64-mpi
-            flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_darwin_mpi'
-          - os_bin: linux64
-            flags: '-Dwith-mpi=disabled -Dstatic-cgns-deps=true --cross-file=/hostfiles/hostfile_linux'
+            flags: '-Dcpu-arch= -Dcustom-mpi=true --cross-file=/hostfiles/hostfile_darwin_mpi'
+          - os_bin: linux64-omp
+            flags: '-Dcpu-arch=haswell -Dwith-omp=true -Dwith-mpi=disabled -Dstatic-cgns-deps=true --cross-file=/hostfiles/hostfile_linux'
           - os_bin: linux64-mpi
-            flags: '-Dcustom-mpi=true --cross-file=/hostfiles/hostfile_linux_mpi'
-    runs-on: ubuntu-latest
+            flags: '-Dcpu-arch=haswell -Dcustom-mpi=true --cross-file=/hostfiles/hostfile_linux_mpi'
+
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Cache Object Files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ccache
           key: ${{ matrix.os_bin }}-${{ github.sha }}
-          restore-keys: ${{ matrix.os_bin }}
+          restore-keys: |
+            ${{ matrix.os_bin }}-
+
       - name: Build
-        uses: docker://ghcr.io/su2code/su2/build-su2-cross:230225-2136
+        uses: docker://ghcr.io/su2code/su2/build-su2-cross:260405-0054
         with:
-          args: -b ${{ github.sha }} -f "${{matrix.flags}}"
+          args: -b ${{ github.sha }} -f "${{ matrix.flags }}"
+
       - name: Create Archive
         run: |
           cd install
-          zip -r ../${{matrix.os_bin}}.zip bin/*
-        # Uploads binaries as artifacts (just as a backup)
-      - name: Upload Binaries
-        uses: actions/upload-artifact@v3
+          zip -r ../${{ matrix.os_bin }}.zip bin/*
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v5
         with:
-          name: ${{matrix.os_bin}}
-          path: ${{matrix.os_bin}}.zip
-        # Update the release notes of latest draft release
-      - uses: talbring/jenkins-release-drafter@v5.2.0-jenkins-11
-        name: Update Release
-        id: update_release
+          name: ${{ matrix.os_bin }}
+          path: ${{ matrix.os_bin }}.zip
+
+      - name: Update Release Draft
+        id: release_drafter
+        uses: release-drafter/release-drafter@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        # Upload binaries as assets to draft release
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1.0.2
+
+  release:
+    name: Update Draft Release
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download All Build Artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: release-assets
+
+      - name: Flatten Artifact Directory
+        run: |
+          find release-assets -name "*.zip" -exec mv {} . \;
+
+      - name: Update Release Draft
+        id: release_drafter
+        uses: release-drafter/release-drafter@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.update_release.outputs.uploadurl }}
-          asset_path: ${{matrix.os_bin}}.zip
-          asset_name: SU2-${{ steps.update_release.outputs.tagname }}-${{matrix.os_bin}}.zip
-          asset_content_type: application/zip
+
+      - name: Upload Release Assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ steps.release_drafter.outputs.tag_name }}
+        run: |
+          set -e
+
+          for file in *.zip; do
+
+            asset_name="SU2-${TAG_NAME}-${file}"
+
+            echo "Uploading $asset_name"
+
+            gh release upload "$TAG_NAME" \
+              "$file#$asset_name" \
+              --clobber
+
+          done

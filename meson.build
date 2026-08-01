@@ -1,11 +1,13 @@
+
 project('SU2', 'c', 'cpp',
-        version: '7.5.1 "Blackbird"',
-        meson_version: '>=0.61.1',
+        version: '8.5.0 "Harrier"',
+        meson_version: '>=1.8.2',
         license: 'LGPL2',
         default_options: ['buildtype=release',
                           'warning_level=0',
+                          'b_ndebug=true',
                           'c_std=c99',
-                          'cpp_std=c++11'])
+                          'cpp_std=c++17'])
 
 fsmod = import('fs')
 if not fsmod.exists('su2preconfig.timestamp')
@@ -15,15 +17,18 @@ endif
 pymod = import('python')
 python = pymod.find_installation()
 
+if get_option('enable-cuda')
+  add_languages('cuda')
+  add_global_arguments('-arch=sm_86', language : 'cuda')
+endif
+
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
 default_warning_flags = []
 if build_machine.system() != 'windows'
-  if meson.get_compiler('cpp').get_id() != 'intel'
-    default_warning_flags += ['-Wno-empty-body']
-  endif
-  desired_warnings = ['-Wno-ignored-qualifiers',
+  desired_warnings = ['-Wno-empty-body',
+                      '-Wno-ignored-qualifiers',
                       '-Wno-unused-parameter',
                       '-Wno-deprecated-declarations',
                       '-Wno-error=cast-function-type',
@@ -33,7 +38,10 @@ if build_machine.system() != 'windows'
                       '-Wno-error=missing-field-initializers',
                       '-Wno-missing-field-initializers',
                       '-Wno-error=class-memaccess',
-                      '-Wno-class-memaccess']
+                      '-Wno-class-memaccess',
+                      '-Wno-overloaded-virtual',
+                      '-Wno-array-bounds',
+                      '-Wno-dangling-pointer']
   foreach flag : desired_warnings
     if meson.get_compiler('cpp').has_argument(flag)
       default_warning_flags += flag
@@ -45,8 +53,24 @@ if build_machine.system() != 'windows'
   endif
 endif
 
+if get_option('cpu-arch') != ''
+  su2_cpp_args += ['-march=' + get_option('cpu-arch')]
+endif
+
+# Fast math to allow pow(x, 2) -> x * x.
+if meson.get_compiler('cpp').has_argument('-fno-finite-math-only')
+  su2_cpp_args += ['-ffast-math', '-fno-finite-math-only']
+endif
+
+# Handle assertions: default is b_ndebug=true (assertions disabled)
+# but for debug builds, we want to enable assertions
+if get_option('buildtype') == 'debug'
+  # Undefine NDEBUG
+  su2_cpp_args += '-UNDEBUG'
+endif
+
 # meson script path
-script_path = meson.source_root() / 'meson_scripts'
+script_path = meson.project_source_root() / 'meson_scripts'
 
 # mpi flag
 mpi = false
@@ -71,19 +95,16 @@ if omp
   omp_dep = dependency('openmp', language:'cpp')
 endif
 
+su2_deps += declare_dependency(include_directories: 'externals/eigen')
+
 if get_option('enable-autodiff') or get_option('enable-directdiff')
   codi_dep = [declare_dependency(include_directories: 'externals/codi/include')]
   codi_rev_args = ['-DCODI_REVERSE_TYPE']
   codi_for_args = ['-DCODI_FORWARD_TYPE']
-endif
 
-if get_option('enable-autodiff')
-  if get_option('codi-tape') == 'JacobianIndex'
-    codi_rev_args += '-DCODI_INDEX_TAPE'
-  #elif get_option('codi-tape') == 'PrimalLinear'
-  #  codi_rev_args += '-DCODI_PRIMAL_TAPE'
-  #elif get_option('codi-tape') == 'PrimalIndex'
-  #  codi_rev_args += '-DCODI_PRIMAL_INDEX_TAPE'
+  if get_option('debug')
+    codi_rev_args += '-DCODI_EnableAssert'
+    codi_for_args += '-DCODI_EnableAssert'
   endif
 endif
 
@@ -94,6 +115,43 @@ if get_option('enable-amg')
     su2_cpp_args += '-DHAVE_AMG'
 endif
 
+if get_option('enable-autodiff') and not omp
+  if get_option('codi-tape') == 'JacobianLinear'
+    codi_rev_args += '-DCODI_JACOBIAN_LINEAR_TAPE'
+  elif get_option('codi-tape') == 'JacobianReuse'
+    codi_rev_args += '-DCODI_JACOBIAN_REUSE_TAPE'
+  elif get_option('codi-tape') == 'JacobianMultiUse'
+    codi_rev_args += '-DCODI_JACOBIAN_MULTIUSE_TAPE'
+  elif get_option('codi-tape') == 'PrimalLinear'
+    codi_rev_args += '-DCODI_PRIMAL_LINEAR_TAPE'
+  elif get_option('codi-tape') == 'PrimalReuse'
+    codi_rev_args += '-DCODI_PRIMAL_REUSE_TAPE'
+  elif get_option('codi-tape') == 'PrimalMultiUse'
+    codi_rev_args += '-DCODI_PRIMAL_MULTIUSE_TAPE'
+  elif get_option('codi-tape') == 'Tag'
+    codi_rev_args += '-DCODI_TAG_TAPE'
+  else
+    error('Invalid CoDiPack tape choice @0@'.format(get_option('codi-tape')))
+  endif
+
+  if get_option('codi-tape') != 'JacobianLinear'
+    warning('The tape choice @0@ is not tested regularly in SU2'.format(get_option('codi-tape')))
+  endif
+endif
+
+# Add Tracy dependency if enabled
+if get_option('tracy_enable')
+    tracy_dep = dependency('tracy', static: true)
+    su2_deps += tracy_dep
+    su2_cpp_args += '-DTRACY_ENABLE'
+
+    # Add build type check
+    if get_option('buildtype') != 'debugoptimized'
+        warning('For optimal Tracy profiling, use --buildtype=debugoptimized')
+    endif
+endif
+
+
 # add cgns library
 if get_option('enable-cgns')
   subdir('externals/cgns')
@@ -101,14 +159,12 @@ if get_option('enable-cgns')
   su2_cpp_args += '-DHAVE_CGNS'
 endif
 
-# check for non-debug build
-if get_option('buildtype')!='debug'
-  su2_cpp_args += '-DNDEBUG'
-endif
-
 # check for mixed precision floating point arithmetic
-if get_option('enable-mixedprec')
+if get_option('enable-mixedprec') or get_option('enable-singleprec')
   su2_cpp_args += '-DUSE_MIXED_PRECISION'
+endif
+if get_option('enable-singleprec')
+  su2_cpp_args += '-DUSE_SINGLE_PRECISION'
 endif
 
 # check if MPI dependencies are found and add them
@@ -141,6 +197,7 @@ endif
 if omp
   # add OpenMP dependency
   su2_deps += omp_dep
+  su2_cpp_args += '-DEIGEN_DONT_PARALLELIZE'
 
   # add opdi dependency
   if get_option('enable-autodiff')
@@ -172,18 +229,17 @@ if get_option('enable-pastix')
          'PaStiX support requires either mkl or openblas')
 
   su2_cpp_args += '-DHAVE_PASTIX'
+  su2_deps += dependency('pastix')
+  su2_deps += meson.get_compiler('cpp').find_library('scotch', required: true)
+  su2_deps += meson.get_compiler('cpp').find_library('scotcherr', required: true)
+  su2_deps += meson.get_compiler('cpp').find_library('ptscotch', required: true)
+endif
 
-  pastix_dep = dependency('pastix', required: false)
-
-  if not pastix_dep.found()
-    pastix_root = get_option('pastix_root')+'/install'
-    scotch_root = get_option('scotch_root')+'/lib'
-    pastix_dep  = declare_dependency(include_directories: pastix_root,
-                                    link_args: [ '-L../'+pastix_root, '-L../'+scotch_root,
-                                    '-lpastix', '-lscotch', '-lptscotch', '-lptscotcherr',
-                                    '-lm', '-lrt', '-lpthread'])
-  endif
-  su2_deps += pastix_dep
+# CUDA dependencies
+if get_option('enable-cuda')
+  su2_cpp_args += '-DHAVE_CUDA'
+  gpu_dep = dependency('cuda', version : '>=10', modules : ['cudart'])
+  su2_deps += gpu_dep
 endif
 
 # blas-type dependencies
@@ -207,9 +263,11 @@ elif get_option('enable-openblas')
 
   su2_cpp_args += '-DHAVE_BLAS'
   su2_cpp_args += '-DHAVE_LAPACK'
-  blas_dep = dependency(get_option('blas-name'))
-  su2_deps += blas_dep
-
+  su2_deps += dependency(get_option('blas-name'))
+  su2_deps += dependency('lapack')
+  if get_option('enable-pastix')
+    su2_deps += dependency('lapacke')
+  endif
 endif
 
 if get_option('enable-librom')
@@ -241,20 +299,40 @@ catch2_dep = declare_dependency(include_directories: 'externals/catch2/')
 
 if get_option('enable-mpp')
   cmake = import('cmake')
-  mpp_subproj = cmake.subproject('Mutationpp')
+  cmake_opts = cmake.subproject_options()
+  cmake_opts.set_override_option('warning_level', '0')
+  cmake_opts.add_cmake_defines({
+    'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
+    'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
+  })
+  cmake_opts.set_install(get_option('install-mpp'))
+  mpp_subproj = cmake.subproject('Mutationpp', options: cmake_opts)
   mpp_dep = mpp_subproj.dependency('mutation++')
   su2_deps     += mpp_dep
   su2_cpp_args += '-DHAVE_MPP'
+
+  if get_option('install-mpp')
+    py = find_program('python3', 'python')
+    p = run_command(py, 'SU2_PY/copy_directory.py', 'subprojects/Mutationpp/data', join_paths(get_option('prefix'), 'mpp-data'))
+    if p.returncode() != 0
+      error(p.stderr())
+    endif
+  endif
 endif
 
 if get_option('enable-coolprop')
   if build_machine.cpu_family() == 'x86' or build_machine.cpu_family() == 'x86_64'
     cmake = import('cmake')
     cmake_opts = cmake.subproject_options()
+    if get_option('cpu-arch') != ''
+      cmake_opts.add_cmake_defines({
+        'CMAKE_CXX_FLAGS': '-march=' + get_option('cpu-arch')
+      })
+    endif
     cmake_opts.set_override_option('warning_level', '0')
     cmake_opts.add_cmake_defines({
       'COOLPROP_STATIC_LIBRARY': true,
-      'CMAKE_MAKE_PROGRAM': meson.source_root() + '/ninja',
+      'CMAKE_MAKE_PROGRAM': join_paths(meson.project_source_root(), 'ninja'),
       'CMAKE_POSITION_INDEPENDENT_CODE': 'ON'
     })
     coolprop_subproj = cmake.subproject('CoolProp', options: cmake_opts)
@@ -266,6 +344,9 @@ if get_option('enable-coolprop')
   endif
 endif
 
+if get_option('enable-mlpcpp')
+  su2_cpp_args += '-DHAVE_MLPCPP'
+endif
 
 if omp and get_option('enable-autodiff')
   py = find_program('python3','python')
@@ -298,7 +379,7 @@ endif
 
 message('''-------------------------------------------------------------------------
          |    ___ _   _ ___                                                      |
-         |   / __| | | |_  )   Release 7.5.1 "Blackbird"                         |
+         |   / __| | | |_  )   Release 8.5.0 "Harrier"                           |
          |   \__ \ |_| |/ /                                                      |
          |   |___/\___//___|   Meson Configuration Summary                       |
          |                                                                       |
@@ -317,7 +398,9 @@ message('''---------------------------------------------------------------------
          Mixed Float:    @10@
          libROM:         @11@
          CoolProp:       @12@
-         GMF:            @13@
+         MLPCpp:         @13@
+         Tracy Profiler: @14@
+         GMF:            @15@
 
          Please be sure to add the $SU2_HOME and $SU2_RUN environment variables,
          and update your $PATH (and $PYTHONPATH if applicable) with $SU2_RUN
@@ -329,19 +412,28 @@ message('''---------------------------------------------------------------------
          export PATH=$PATH:$SU2_RUN
          export PYTHONPATH=$PYTHONPATH:$SU2_RUN
 
-         Use './ninja -C @14@ install' to compile and install SU2
-'''.format(get_option('prefix')+'/bin', meson.source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
+         Use './ninja -C @16@ install' to compile and install SU2
+'''.format(get_option('prefix')+'/bin', meson.project_source_root(), get_option('enable-tecio'), get_option('enable-cgns'),
            get_option('enable-autodiff'), get_option('enable-directdiff'), get_option('enable-pywrapper'), get_option('enable-mkl'),
-           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'), get_option('enable-amg'),
-           meson.build_root().startswith(meson.source_root()) ? meson.build_root().split('/')[-1] : meson.build_root()))
+           get_option('enable-openblas'), get_option('enable-pastix'), get_option('enable-mixedprec'), get_option('enable-librom'), get_option('enable-coolprop'),
+           get_option('enable-mlpcpp'), get_option('tracy_enable'), get_option('enable-amg'), meson.project_build_root().startswith(meson.project_source_root()) ? meson.project_build_root().split('/')[-1] : meson.project_build_root()))
 
 if get_option('enable-mpp')
-  message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+  if get_option('install-mpp')
+    message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
 
-          export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
-          export LD_LIBRARY_PATH=$SU2_HOME/<build_dir>/subprojects/Mutationpp
+            export MPP_DATA_DIRECTORY=$SU2_RUN/../mpp-data
+            export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SU2_RUN/../lib
 
-          ''')
+            ''')
+  else
+    message(''' To run SU2 with Mutation++ library, add these lines to your .bashrc file:
+
+            export MPP_DATA_DIRECTORY=$SU2_HOME/subprojects/Mutationpp/data
+            export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$SU2_HOME/<build_dir>/subprojects/Mutationpp
+
+            ''')
+  endif
 endif
 
 if get_option('enable-librom')

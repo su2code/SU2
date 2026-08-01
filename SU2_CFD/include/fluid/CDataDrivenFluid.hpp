@@ -1,0 +1,292 @@
+/*!
+ * \file CDataDrivenFluid.hpp
+ * \brief Defines a template fluid model class using multilayer perceptrons
+ *  for theromodynamic state definition
+ * \author E.C.Bunschoten
+ * \version 8.5.0 "Harrier"
+ *
+ * SU2 Project Website: https://su2code.github.io
+ *
+ * The SU2 Project is maintained by the SU2 Foundation
+ * (http://su2foundation.org)
+ *
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
+ *
+ * SU2 is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * SU2 is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
+
+#include <vector>
+#include "../../../Common/include/containers/CLookUpTable.hpp"
+#if defined(HAVE_MLPCPP)
+#define MLP_CUSTOM_TYPE su2double
+#include "../../../subprojects/MLPCpp/include/CLookUp_ANN.hpp"
+#define USE_MLPCPP
+#endif
+#include "CFluidModel.hpp"
+
+/*!
+ * \class MiniTable2D
+ * \brief Simple 2D thermodynamic table used to identify the starting point for the Newton solver.
+ * \author: E.C.Bunschoten.
+ */
+class MiniTable2D {
+    size_t nP{5},
+           n_vars;
+    su2activematrix TD_data;
+    su2vector<su2double> TD_data_min,TD_data_max;
+    public:
+    MiniTable2D()=default;
+    
+   /*!
+   * \brief Set the number of table nodes
+   * \param[in] nP_in - Number of table nodes.
+   */
+    void SetNPoints(const size_t nP_in) { nP=nP_in; }
+
+    /*!
+   * \brief Set the number of thermodynamic variables in the table.
+   * \param[in] n_vars_in - Number of thermodynamic variables.
+   */
+    void SetNVars(const size_t n_vars_in) { n_vars = n_vars_in; }
+
+    /*!
+   * \brief Specify the thermodynamic data at a table node.
+   * \param[in] iVar - Variable index.
+   * \param[in] iX - Table node index.
+   * \param[in] val_var - Thermodynamic state value.
+   */
+    void SetTableData(const size_t iVar, const size_t iX, const su2double val_var) {
+        TD_data[iVar][iX] = val_var;
+    }
+
+    /*!
+   * \brief Size table data arrays.
+   */
+    void SizeTable();
+
+    /*!
+   * \brief Normalize thermodynamic data for regularization.
+   */
+    void ScaleTableData();
+
+    /*!
+   * \brief Find the node in the table closest to the query.
+   * \param[in] iX - Index of the first thermodynamic variable.
+   * \param[in] val_x - Query of the first thermodynamic variable.
+   * \param[in] iY - Index of the second thermodynamic variable.
+   * \param[in] val_y - Query of the second thermodynamic variable.
+   * \returns Nearest neighbor index.
+   */
+    size_t FindNode(const size_t iX, const su2double val_x, const size_t iY, const su2double val_y) const;
+};
+
+/*!
+ * \class CDataDrivenFluid
+ * \brief Template class for fluid model definition using multi-layer perceptrons for
+ * fluid dynamic state definition.
+ * \author: E.C.Bunschoten.
+ */
+class CDataDrivenFluid final : public CFluidModel {
+ protected:
+  int rank{MASTER_NODE}; /*!< \brief MPI Rank. */
+  ENUM_DATADRIVEN_METHOD Kind_DataDriven_Method =
+      ENUM_DATADRIVEN_METHOD::LUT; /*!< \brief Interpolation method for data set evaluation. */
+
+  string varname_rho,  /*!< \brief Controlling variable name for density. */
+         varname_e;    /*!< \brief Controlling variable name for static energy. */
+
+  su2double Newton_Relaxation, /*!< \brief Relaxation factor for Newton solvers. */
+      rho_start,               /*!< \brief Starting value for the density in Newton solver processes. */
+      e_start,                 /*!< \brief Starting value for the energy in Newton solver processes. */
+      rho_query,
+      e_query,
+      Newton_Tolerance,        /*!< \brief Normalized tolerance for Newton solvers. */
+      rho_min, rho_max,        /*!< \brief Minimum and maximum density values in data set. */
+      e_min, e_max;            /*!< \brief Minimum and maximum energy values in data set. */
+            
+  unsigned long MaxIter_Newton; /*!< \brief Maximum number of iterations for Newton solvers. */
+
+  su2double dsde_rho, /*!< \brief Entropy derivative w.r.t. density. */
+      dsdrho_e,       /*!< \brief Entropy derivative w.r.t. static energy. */
+      d2sde2,         /*!< \brief Entropy second derivative w.r.t. static energy. */
+      d2sdedrho,      /*!< \brief Entropy second derivative w.r.t. density and static energy. */
+      d2sdrho2;       /*!< \brief Entropy second derivative w.r.t. static density. */
+
+  su2double Enthalpy, /*!< \brief Fluid enthalpy value [J kg^-1] */
+      dhdrho_e,       /*!< \brief Enthalpy derivative w.r.t. density. */
+      dhde_rho;       /*!< \brief Enthalpy derivative w.r.t. static energy. */
+
+  vector<string> output_names_rhoe; /*!< \brief Output variable names listed in the data-driven method input file name. */
+  vector<su2double*> outputs_rhoe; /*!< \brief Pointers to output variables. */
+
+  vector<vector<su2double*>> dsdrhoe;           /*!< \brief Entropy Jacobian terms. */
+  vector<vector<vector<su2double*>>> d2sdrhoe2; /*!< \brief Entropy Hessian terms. */
+
+  bool use_MLP_derivatives; /*!< \brief Use physics-informed model. */
+
+  bool display_Newton_process{false};
+  /*--- Class variables for the multi-layer perceptron method ---*/
+#ifdef USE_MLPCPP
+  MLPToolbox::CLookUp_ANN *lookup_mlp; /*!< \brief Multi-layer perceptron collection. */
+  MLPToolbox::CIOMap iomap_rhoe;      /*!< \brief Input-output map. */
+#endif
+  vector<su2double> MLP_inputs; /*!< \brief Inputs for the multi-layer perceptron look-up operation. */
+
+  MiniTable2D coarse_TD_table;                         /*!< \brief Small thermodynamic table used to identify the starting point of the Newton solver processes. */
+  const size_t iRho{0},iE{1},iP{2},iT{3};   /*!< Indices of thermodynamic variables in the table. */
+  su2vector<su2double> vals_rho_table, vals_e_table;    /*!< Density and static energy values of the table nodes. */
+
+  CLookUpTable* lookup_table; /*!< \brief Look-up table regression object. */
+  unsigned long LUT_idx_s,
+                LUT_idx_dsde_rho,
+                LUT_idx_dsdrho_e,
+                LUT_idx_d2sde2,
+                LUT_idx_d2sdedrho,
+                LUT_idx_d2sdrho2;
+  vector<unsigned long> LUT_lookup_indices;
+  
+  unsigned long outside_dataset, /*!< \brief Density-energy combination lies outside data set. */
+      nIter_Newton;              /*!< \brief Number of Newton solver iterations. */
+
+  /*!
+   * \brief Map dataset variables to specific look-up operations.
+   */
+  void MapInputs_to_Outputs();
+
+  /*!
+   * \brief Evaluate dataset through multi-layer perceptron.
+   * \param[in] rho - Density value.
+   * \param[in] e - Static energy value.
+   * \return Query point lies outside MLP normalization range (0 is inside, 1 is outside).
+   */
+  unsigned long Predict_MLP(su2double rho, su2double e);
+
+  /*!
+   * \brief Evaluate dataset through look-up table.
+   * \param[in] rho - Density value.
+   * \param[in] e - Static energy value.
+   * \return Query point lies outside table data range (0 is inside, 1 is outside).
+   */
+  unsigned long Predict_LUT(su2double rho, su2double e);
+
+  /*!
+   * \brief Evaluate the data set.
+   * \param[in] rho - Density value.
+   * \param[in] e - Static energy value.
+   */
+  void Evaluate_Dataset(su2double rho, su2double e);
+
+  /*!
+   * \brief 2D Newton solver for computing the density and energy corresponding to Y1_target and Y2_target.
+   * \param[in] Y1_target - Target value for output quantity 1.
+   * \param[in] Y2_target - Target value for output quantity 2.
+   * \param[in] Y1 - Pointer to output quantity 1.
+   * \param[in] Y2 - Pointer to output quantity 2.
+   * \param[in] dY1drho - Pointer to the partial derivative of quantity 1 w.r.t. density at constant energy.
+   * \param[in] dY1de - Pointer to the partial derivative of quantity 1 w.r.t. energy at constant density.
+   * \param[in] dY2drho - Pointer to the partial derivative of quantity 2 w.r.t. density at constant energy.
+   * \param[in] dY2de - Pointer to the partial derivative of quantity 2 w.r.t. energy at constant density.
+   */
+  void Run_Newton_Solver(const su2double Y1_target, const su2double Y2_target, const su2double & Y1, const su2double & Y2, const su2double & dY1drho,
+                         const su2double & dY1de, const  su2double & dY2drho, const su2double & dY2de);
+
+  /*!
+   * \brief 1D Newton solver for computing the density or energy corresponding to Y_target.
+   * \param[in] Y_target - Target quantity value.
+   * \param[in] Y - Pointer to output quantity.
+   * \param[in] X - Pointer to controlling variable (density or energy).
+   * \param[in] dYdX - Pointer to the partial derivative of target quantity w.r.t. controlling variable.
+   */
+  void Run_Newton_Solver(const su2double Y_target, const su2double & Y, su2double & X, const su2double & dYdX);
+
+  void ComputeIdealGasQuantities();
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CDataDrivenFluid(const CConfig* config, bool display = true);
+
+  ~CDataDrivenFluid();
+  /*!
+   * \brief Set the Dimensionless State using Density and Internal Energy.
+   * \param[in] rho - first thermodynamic variable (density).
+   * \param[in] e - second thermodynamic variable (static energy).
+   */
+  void SetTDState_rhoe(su2double rho, su2double e) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Pressure  and Temperature.
+   * \param[in] P - first thermodynamic variable (pressure).
+   * \param[in] T - second thermodynamic variable (temperature).
+   */
+  void SetTDState_PT(su2double P, su2double T) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Pressure and Density.
+   * \param[in] P - first thermodynamic variable (pressure).
+   * \param[in] rho - second thermodynamic variable (density).
+   */
+  void SetTDState_Prho(su2double P, su2double rho) override;
+
+  /*!
+   * \brief Set the Dimensionless Internal Energy using Pressure and Density.
+   * \param[in] P - first thermodynamic variable (pressure).
+   * \param[in] rho - second thermodynamic variable (density).
+   */
+  void SetEnergy_Prho(su2double P, su2double rho) override;
+
+  /*!
+   * \brief Set the Dimensionless Internal Energy using Pressure and Density.
+   * \param[in] rho - second thermodynamic variable (density).
+   */
+  void SetTDState_rhoT(su2double rho, su2double T) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Enthalpy and Entropy.
+   * \param[in] h - first thermodynamic variable (h).
+   * \param[in] s - second thermodynamic variable (s).
+   */
+  void SetTDState_hs(su2double h, su2double s) override;
+
+  /*!
+   * \brief Set the Dimensionless State using Pressure and Entropy.
+   * \param[in] P - first thermodynamic variable (P).
+   * \param[in] s - second thermodynamic variable (s).
+   */
+  void SetTDState_Ps(su2double P, su2double s) override;
+
+  /*!
+   * \brief compute some derivatives of enthalpy and entropy needed for subsonic inflow BC
+   * \param[in] InputSpec - Input pair for FLP calls ("Pv").
+   * \param[in] th1 - first thermodynamic variable (P).
+   * \param[in] th2 - second thermodynamic variable (v).
+   *
+   */
+  void ComputeDerivativeNRBC_Prho(su2double P, su2double rho) override;
+
+  /*!
+   * \brief Get fluid model extrapolation instance.
+   * \return Query point lies outside fluid model data range.
+   */
+  unsigned long GetExtrapolation() const override { return outside_dataset; }
+
+  /*!
+   * \brief Get number of Newton solver iterations.
+   * \return Newton solver iteration count at termination.
+   */
+  unsigned long GetnIter_Newton() override { return nIter_Newton; }
+};

@@ -2,14 +2,14 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,11 +26,8 @@
  */
 
 #include "../include/SU2_CFD.hpp"
-
-/* LIBXSMM include files, if supported. */
-#ifdef HAVE_LIBXSMM
-#include "libxsmm.h"
-#endif
+#include "../../Common/include/tracy_structure.hpp"
+#include "Eigen/src/Core/products/Parallelizer.h"
 
 /* Include file, needed for the runtime NaN catching. You also have to include feenableexcept(...) below. */
 //#include <cfenv>
@@ -47,7 +44,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Command line parsing ---*/
 
-  CLI::App app{"SU2 v7.5.1 \"Blackbird\", The Open-Source CFD Code"};
+  CLI::App app{"SU2 v8.5.0 \"Harrier\", The Open-Source CFD Code"};
   app.add_flag("-d,--dryrun", dry_run, "Enable dry run mode.\n"
                                        "Only execute preprocessing steps using a dummy geometry.");
   app.add_option("-t,--threads", num_threads, "Number of OpenMP threads per MPI rank.");
@@ -59,6 +56,7 @@ int main(int argc, char *argv[]) {
   /*--- OpenMP setup ---*/
 
   omp_set_num_threads(num_threads);
+  Eigen::setNbThreads(1);
 
   /*--- MPI initialization, and buffer setting ---*/
 
@@ -77,11 +75,6 @@ int main(int argc, char *argv[]) {
   /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
 //   feenableexcept(FE_INVALID | FE_OVERFLOW | FE_DIVBYZERO );
 
-  /*--- Initialize libxsmm, if supported. ---*/
-#ifdef HAVE_LIBXSMM
-  libxsmm_init();
-#endif
-
   /*--- Create a pointer to the main SU2 Driver ---*/
 
   CDriver* driver = nullptr;
@@ -96,7 +89,6 @@ int main(int argc, char *argv[]) {
 
   const CConfig config(config_file_name, SU2_COMPONENT::SU2_CFD);
   const unsigned short nZone = config.GetnZone();
-  const bool turbo = config.GetBoolTurbomachinery();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
@@ -106,13 +98,14 @@ int main(int argc, char *argv[]) {
   const bool multizone = config.GetMultizone_Problem();
   const bool harmonic_balance = (config.GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
 
+  BEGIN_SU2_ZONE_N("Preprocessing")
   if (dry_run) {
 
     /*--- Dry Run. ---*/
     driver = new CDummyDriver(config_file_name, nZone, MPICommunicator);
 
   }
-  else if ((!multizone && !harmonic_balance && !turbo) || (turbo && disc_adj)) {
+  else if (!multizone && !harmonic_balance) {
 
     /*--- Generic single zone problem: instantiate the single zone driver class. ---*/
     if (nZone != 1)
@@ -126,7 +119,7 @@ int main(int argc, char *argv[]) {
     }
 
   }
-  else if (multizone && !turbo) {
+  else if (multizone) {
 
     /*--- Generic multizone problems. ---*/
     if (disc_adj) {
@@ -137,18 +130,14 @@ int main(int argc, char *argv[]) {
     }
 
   }
-  else if (harmonic_balance) {
+  else {
+    assert(harmonic_balance);
 
     /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
     driver = new CHBDriver(config_file_name, nZone, MPICommunicator);
 
   }
-  else if (turbo) {
-
-    /*--- Turbomachinery problem. ---*/
-    driver = new CTurbomachineryDriver(config_file_name, nZone, MPICommunicator);
-
-  } /*--- These are all the possible cases ---*/
+  END_SU2_ZONE
 
   /*--- Launch the main external loop of the solver. ---*/
 
@@ -159,11 +148,6 @@ int main(int argc, char *argv[]) {
   driver->Finalize();
 
   delete driver;
-
-  /*---Finalize libxsmm, if supported. ---*/
-#ifdef HAVE_LIBXSMM
-  libxsmm_finalize();
-#endif
 
   /*--- Finalize AD. ---*/
   AD::Finalize();

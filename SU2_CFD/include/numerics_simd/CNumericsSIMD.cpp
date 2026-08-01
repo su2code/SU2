@@ -4,14 +4,14 @@
  * \note This should be the only cpp for this family of classes
  * (which are all templates). All compilation takes place here.
  * \author P. Gomes
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,7 @@
  */
 
 #include "CNumericsSIMD.hpp"
-#include "flow/convection/roe.hpp"
+#include "flow/convection/upwind.hpp"
 #include "flow/convection/centered.hpp"
 #include "flow/diffusion/viscous_fluxes.hpp"
 
@@ -46,6 +46,9 @@ CNumericsSIMD* createUpwindIdealNumerics(const CConfig& config, int iMesh, const
       break;
     case UPWIND::ROENEW:
       obj = new CRoeSchemeNew<ViscousDecorator>(config, iMesh, turbVars);
+      break;
+    case UPWIND::MSW:
+      obj = new CMSWScheme<ViscousDecorator>(config, iMesh, turbVars);
       break;
     default:
       break;
@@ -81,6 +84,9 @@ CNumericsSIMD* createCenteredNumerics(const CConfig& config, int iMesh, const CV
       break;
     case CENTERED::JST_MAT:
       obj = new CJSTmatScheme<ViscousDecorator>(config, iMesh, turbVars);
+      break;
+    case CENTERED::LD2:
+      /*--- LD2 implemented only in the incompressible solver. ---*/
       break;
   }
   return obj;

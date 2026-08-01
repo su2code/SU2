@@ -2,14 +2,14 @@
  * \file CGradientSmoothingSolver.hpp
  * \brief SOlver class for Sobolev smoothing of sensitivities.
  * \author T. Dick
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,28 +38,14 @@
  * \ingroup GradSmooth
  */
 class CGradientSmoothingSolver final : public CFEASolverBase {
-public:
-
-/** Introduction of a new alias for the data type to allow compilation with forward mode.
- *
- * This is done for compatibility to the treatment of Jacobian and System in CSolver.hpp.
- * Note that the computations done here are always 'passive', i.e. not intended to be differentiated.
- * We only need to define functions depending on this once.
- */
-#ifndef CODI_FORWARD_TYPE
-  typedef su2mixedfloat su2matvecscalar;
-#else
-  typedef su2double su2matvecscalar;
-#endif
-
  private:
   unsigned int curDim;                       /*!< \brief If we separate dimensions this tells us in what dimension we currently are. */
 
   CSysVector<su2double> activeCoord;         /*!< \brief Auxiliar vector to keep the indeces of geometry->vertex->Coord */
 
-  CSysVector<su2matvecscalar> helperVecIn;   /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
-  CSysVector<su2matvecscalar> helperVecOut;  /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
-  CSysVector<su2matvecscalar> helperVecAux;  /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
+  CSysVector<su2mixedfloat> helperVecIn;   /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
+  CSysVector<su2mixedfloat> helperVecOut;  /*!< \brief Helper vectors for projection and matrix vector product (must be su2mixedfloat) */
+  CSysVector<su2mixedfloat> helperVecAux;  /*!< \brief Helper vectors for matrix vector product if working on surface (smaller dim) */
 
   std::vector<su2double> deltaP;             /*!< \brief The smoothed gradient with respect to the design variables. */
 
@@ -201,7 +187,7 @@ public:
    */
   void ProjectDVtoMesh(CGeometry *geometry,
                        std::vector<su2double>& seeding,
-                       CSysVector<su2matvecscalar>& result,
+                       CSysVector<su2mixedfloat>& result,
                        CSysVector<su2double>& registeredCoord,
                        CConfig *config);
 
@@ -209,7 +195,7 @@ public:
    * \brief Reverse evaluate parameterization Jacobian.
    */
   void ProjectMeshToDV(CGeometry *geometry,
-                       CSysVector<su2matvecscalar>& sensitivity,
+                       CSysVector<su2mixedfloat>& sensitivity,
                        std::vector<su2double>& output,
                        CSysVector<su2double> &registeredCoord,
                        CConfig *config);
@@ -275,7 +261,7 @@ public:
   }
 
   /*!
-   * \brief Set the current working dimension, if the seperate dimension option is set.
+   * \brief Set the current working dimension, if the separate dimension option is set.
    * \param[in] iDim - the dimension we are currently working in.
    */
   inline void SetCurrentDim(unsigned int iDim) {

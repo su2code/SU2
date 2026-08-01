@@ -2,14 +2,14 @@
  * \file CPoint.cpp
  * \brief Main classes for defining the points of the dual grid
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <climits>
 #include "../../../include/geometry/dual_grid/CPoint.hpp"
 #include "../../../include/CConfig.hpp"
 #include "../../../include/parallelization/omp_structure.hpp"
@@ -67,13 +68,13 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig* config) {
   }
 
   if (config->GetDiscrete_Adjoint()) {
-    AD_InputIndex.resize(npoint, nDim) = 0;
-    AD_OutputIndex.resize(npoint, nDim) = 0;
+    AD_InputIndex.resize(npoint, nDim) = AD::GetPassiveIndex();
+    AD_OutputIndex.resize(npoint, nDim) = AD::GetPassiveIndex();
   }
 
   /*--- Multigrid structures. ---*/
   if (config->GetnMGLevels() > 0) {
-    Parent_CV.resize(npoint) = 0;
+    Parent_CV.resize(npoint) = numeric_limits<unsigned long>::max();
     Agglomerate.resize(npoint) = false;
     Agglomerate_Indirect.resize(npoint) = false;
     /*--- The finest grid does not have children CV's. ---*/
@@ -93,12 +94,6 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig* config) {
   PeriodicBoundary.resize(npoint) = false;
 
   Vertex.resize(npoint);
-
-  /*--- For smoothing the numerical grid coordinates ---*/
-  if (config->GetSmoothNumGrid()) {
-    Coord_Old.resize(npoint, nDim) = su2double(0.0);
-    Coord_Sum.resize(npoint, nDim) = su2double(0.0);
-  }
 
   /*--- Storage of grid velocities for dynamic meshes. ---*/
 
@@ -190,5 +185,3 @@ void CPoint::SetCoord_Old() {
   assert(Coord_Old.size() == Coord.size());
   parallelCopy(Coord.size(), Coord.data(), Coord_Old.data());
 }
-
-void CPoint::SetCoord_SumZero() { parallelSet(Coord_Sum.size(), 0.0, Coord_Sum.data()); }

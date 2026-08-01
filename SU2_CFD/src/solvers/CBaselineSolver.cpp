@@ -2,14 +2,14 @@
  * \file CBaselineSolver.cpp
  * \brief Main subroutines for CBaselineSolver class.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,7 @@
 CBaselineSolver::CBaselineSolver() : CSolver() { }
 
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   nPoint = geometry->GetnPoint();
 
@@ -57,6 +58,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config) {
 }
 
 CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned short val_nvar, vector<string> field_names) {
+  SU2_ZONE_SCOPED
 
   /*--- Define geometry constants in the solver structure ---*/
 
@@ -75,6 +77,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
 }
 
 void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Open the restart file and extract the nVar and field names. ---*/
 
@@ -97,7 +100,7 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 
   if (config->GetRead_Binary_Restart()) {
 
-    /*--- Multizone problems require the number of the zone to be appended. ---*/
+    /*--- Unsteady problems require the number of the iteration to be appended. ---*/
 
     filename = config->GetFilename(filename, ".dat", config->GetTimeIter());
 
@@ -350,10 +353,11 @@ void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
 }
 
 void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  SU2_ZONE_SCOPED
 
   /*--- Restart the solution from file information ---*/
 
-  string filename;
+  string restart_filename;
   unsigned long index;
   unsigned short iDim, iVar;
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() );
@@ -372,26 +376,26 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Retrieve filename from config ---*/
 
   if (adjoint) {
-    filename = config->GetSolution_AdjFileName();
-    filename = config->GetObjFunc_Extension(filename);
+    restart_filename = config->GetSolution_AdjFileName();
+    restart_filename = config->GetObjFunc_Extension(restart_filename);
   } else {
-    filename = config->GetSolution_FileName();
+    restart_filename = config->GetSolution_FileName();
   }
-
-  filename = config->GetFilename(filename, "", val_iter);
 
   /*--- Output the file name to the console. ---*/
 
   if (rank == MASTER_NODE)
-    cout << "Reading and storing the solution from " << filename
+    cout << "Reading and storing the solution from " << restart_filename
     << "." << endl;
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry[iInst], config, filename);
+    restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
+    Read_SU2_Restart_Binary(geometry[iInst], config, restart_filename);
   } else {
-    Read_SU2_Restart_ASCII(geometry[iInst], config, filename);
+    restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
+    Read_SU2_Restart_ASCII(geometry[iInst], config, restart_filename);
   }
 
   int counter = 0;
@@ -459,8 +463,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry[iInst], config, SOLUTION);
-  CompleteComms(geometry[iInst], config, SOLUTION);
+  InitiateComms(geometry[iInst], config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry[iInst], config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Update the geometry for flows on dynamic meshes ---*/
 
@@ -468,11 +472,11 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
 
-    geometry[iInst]->InitiateComms(geometry[iInst], config, COORDINATES);
-    geometry[iInst]->CompleteComms(geometry[iInst], config, COORDINATES);
+    geometry[iInst]->InitiateComms(geometry[iInst], config, MPI_QUANTITIES::COORDINATES);
+    geometry[iInst]->CompleteComms(geometry[iInst], config, MPI_QUANTITIES::COORDINATES);
 
-    geometry[iInst]->InitiateComms(geometry[iInst], config, GRID_VELOCITY);
-    geometry[iInst]->CompleteComms(geometry[iInst], config, GRID_VELOCITY);
+    geometry[iInst]->InitiateComms(geometry[iInst], config, MPI_QUANTITIES::GRID_VELOCITY);
+    geometry[iInst]->CompleteComms(geometry[iInst], config, MPI_QUANTITIES::GRID_VELOCITY);
 
   }
 
@@ -480,13 +484,12 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
-
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }
 
 void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter) {
+  SU2_ZONE_SCOPED
 
   /*--- Restart the solution from file information ---*/
   string filename;
@@ -502,10 +505,6 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
     filename = config->GetSolution_FileName();
   }
 
-  /*--- Multizone problems require the number of the zone to be appended. ---*/
-
-  filename = config->GetFilename(filename, "", val_iter);
-
   /*--- Output the file name to the console. ---*/
 
   if (rank == MASTER_NODE)
@@ -515,8 +514,10 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
+    filename = config->GetFilename(filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry, config, filename);
   } else {
+    filename = config->GetFilename(filename, ".csv", val_iter);
     Read_SU2_Restart_ASCII(geometry, config, filename);
   }
 
@@ -557,5 +558,6 @@ void CBaselineSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int 
 }
 
 CBaselineSolver::~CBaselineSolver() {
+  SU2_ZONE_SCOPED
   delete nodes;
 }

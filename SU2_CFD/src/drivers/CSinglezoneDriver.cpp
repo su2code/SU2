@@ -2,14 +2,14 @@
  * \file driver_direct_singlezone.cpp
  * \brief The main subroutines for driving single-zone problems.
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -44,6 +44,7 @@ CSinglezoneDriver::CSinglezoneDriver(char* confFile,
 CSinglezoneDriver::~CSinglezoneDriver() = default;
 
 void CSinglezoneDriver::StartSolver() {
+  SU2_ZONE_SCOPED
 
   StartTime = SU2_MPI::Wtime();
 
@@ -66,8 +67,8 @@ void CSinglezoneDriver::StartSolver() {
     TimeIter = config_container[ZONE_0]->GetRestart_Iter();
 
   /*--- Run the problem until the number of time iterations required is reached. ---*/
-  while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter() ) {
-
+  /*--- or until a SIGTERM signal stops the loop. We catch SIGTERM and exit gracefully ---*/
+  while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter()) {
     /*--- Perform some preprocessing before starting the time-step simulation. ---*/
 
     Preprocess(TimeIter);
@@ -92,12 +93,6 @@ void CSinglezoneDriver::StartSolver() {
 
     Output(TimeIter);
 
-    /*--- Save iteration solution for libROM ---*/
-    if (config_container[MESH_0]->GetSave_libROM()) {
-      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
-                                                                     config_container[ZONE_0], StopCalc);
-    }
-
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
     if (StopCalc) break;
@@ -109,9 +104,12 @@ void CSinglezoneDriver::StartSolver() {
 }
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
-  /*--- Set the current time iteration in the config ---*/
+  /*--- Set the current time iteration in the config and also in the driver
+   * because the python interface doesn't offer an explicit way of doing it. ---*/
 
+  this->TimeIter = TimeIter;
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
   /*--- Store the current physical time in the config container, as
@@ -123,11 +121,17 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
   else
     config_container[ZONE_0]->SetPhysicalTime(0.0);
 
+
   /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
   if (config_container[ZONE_0]->GetFluidProblem()) {
     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
                                                                             solver_container[ZONE_0][INST_0],
                                                                             config_container[ZONE_0], TimeIter);
+  }
+  if (config_container[ZONE_0]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
+    solver_container[ZONE_0][INST_0][MESH_0][SPECIES_SOL]->SetInitialCondition(geometry_container[ZONE_0][INST_0],
+                                                                                solver_container[ZONE_0][INST_0],
+                                                                                config_container[ZONE_0], TimeIter);
   }
   else if (config_container[ZONE_0]->GetHeatProblem()) {
     /*--- Set the initial condition for HEAT equation ---------------------------------------------*/
@@ -152,6 +156,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 }
 
 void CSinglezoneDriver::Run() {
+  SU2_ZONE_SCOPED
 
   unsigned long OuterIter = 0;
   config_container[ZONE_0]->SetOuterIter(OuterIter);
@@ -163,6 +168,7 @@ void CSinglezoneDriver::Run() {
 }
 
 void CSinglezoneDriver::Postprocess() {
+  SU2_ZONE_SCOPED
 
   iteration_container[ZONE_0][INST_0]->Postprocess(output_container[ZONE_0], integration_container, geometry_container, solver_container,
       numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
@@ -179,6 +185,7 @@ void CSinglezoneDriver::Postprocess() {
 }
 
 void CSinglezoneDriver::Update() {
+  SU2_ZONE_SCOPED
 
   iteration_container[ZONE_0][INST_0]->Update(output_container[ZONE_0], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
@@ -187,6 +194,7 @@ void CSinglezoneDriver::Update() {
 }
 
 void CSinglezoneDriver::Output(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Time the output for performance benchmarking. ---*/
 
@@ -201,7 +209,14 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
                                                                solver_container[ZONE_0][INST_0][MESH_0],
                                                                TimeIter, StopCalc);
 
-  if (wrote_files){
+  /*--- Save iteration solution for libROM ---*/
+  if (config_container[MESH_0]->GetSave_libROM()) {
+    solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->SavelibROM(geometry_container[ZONE_0][INST_0][MESH_0],
+                                                                   config_container[ZONE_0], StopCalc);
+    wrote_files = true;
+  }
+
+  if (wrote_files) {
 
     StopTime = SU2_MPI::Wtime();
 
@@ -216,6 +231,7 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 }
 
 void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   auto iteration = iteration_container[ZONE_0][INST_0];
 
@@ -241,6 +257,7 @@ void CSinglezoneDriver::DynamicMeshUpdate(unsigned long TimeIter) {
 }
 
 bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
+  SU2_ZONE_SCOPED
 
   unsigned long nInnerIter, InnerIter, nTimeIter;
   su2double MaxTime, CurTime;
@@ -304,6 +321,7 @@ bool CSinglezoneDriver::Monitor(unsigned long TimeIter){
 }
 
 bool CSinglezoneDriver::GetTimeConvergence() const{
+  SU2_ZONE_SCOPED
   return output_container[ZONE_0]->GetCauchyCorrectedTimeConvergence(config_container[ZONE_0]);
 }
 

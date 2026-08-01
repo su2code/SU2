@@ -3,14 +3,14 @@
 ## \file continuous_adjoint.py
 #  \brief Python script for continuous adjoint computation using the SU2 suite.
 #  \author F. Palacios, T. Economon, T. Lukaczyk
-#  \version 7.5.1 "Blackbird"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
 # The SU2 Project is maintained by the SU2 Foundation
 # (http://su2foundation.org)
 #
-# Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+# Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -26,7 +26,7 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 import os, sys
-from optparse import OptionParser
+import argparse
 
 sys.path.append(os.environ["SU2_RUN"])
 import SU2
@@ -39,11 +39,11 @@ import SU2
 def main():
 
     # Command Line Options
-    parser = OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "-f", "--file", dest="filename", help="read config from FILE", metavar="FILE"
     )
-    parser.add_option(
+    parser.add_argument(
         "-n",
         "--partitions",
         dest="partitions",
@@ -51,7 +51,7 @@ def main():
         help="number of PARTITIONS",
         metavar="PARTITIONS",
     )
-    parser.add_option(
+    parser.add_argument(
         "-c",
         "--compute",
         dest="compute",
@@ -59,7 +59,7 @@ def main():
         help="COMPUTE direct and adjoint problem",
         metavar="COMPUTE",
     )
-    parser.add_option(
+    parser.add_argument(
         "-s",
         "--step",
         dest="step",
@@ -67,7 +67,7 @@ def main():
         help="DOT finite difference STEP",
         metavar="STEP",
     )
-    parser.add_option(
+    parser.add_argument(
         "-z",
         "--zones",
         dest="nzones",
@@ -76,7 +76,7 @@ def main():
         metavar="ZONES",
     )
 
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     options.partitions = int(options.partitions)
     options.step = float(options.step)
     options.compute = options.compute.upper() == "TRUE"

@@ -3,14 +3,14 @@
  * \brief Headers for the classes related to sparse matrix-vector product wrappers.
  *        The actual operations are currently implemented mostly by CSysMatrix.
  * \author F. Palacios, J. Hicken, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +51,7 @@
  * passed to a single implementation of the Krylov solvers.
  * This abstraction may also be used to define matrix-free products.
  */
+
 template <class ScalarType>
 class CMatrixVectorProduct {
  public:
@@ -71,6 +72,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
   const CSysMatrix<ScalarType>& matrix; /*!< \brief pointer to matrix that defines the product. */
   CGeometry* geometry;                  /*!< \brief geometry associated with the matrix. */
   const CConfig* config;                /*!< \brief config of the problem. */
+  mutable bool matrix_uploaded = false; /*!< \brief Upload the matrix lazily on the first actual GPU matvec. */
 
  public:
   /*!
@@ -94,6 +96,21 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    * \param[out] v - CSysVector that is the result of the product
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-    matrix.MatrixVectorProduct(u, v, geometry, config);
+    if (config->GetCUDA()) {
+#ifdef HAVE_CUDA
+      if (!matrix_uploaded) {
+        matrix.HtDTransfer();
+        matrix_uploaded = true;
+      }
+      matrix.GPUMatrixVectorProduct(u, v, geometry, config);
+#else
+      SU2_MPI::Error(
+          "\nError in launching Matrix-Vector Product Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
+          "options enabled in Meson to access GPU Functions",
+          CURRENT_FUNCTION);
+#endif
+    } else {
+      matrix.MatrixVectorProduct(u, v, geometry, config);
+    }
   }
 };

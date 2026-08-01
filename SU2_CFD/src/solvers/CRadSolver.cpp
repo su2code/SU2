@@ -2,14 +2,14 @@
  * \file CRadP1Solver.cpp
  * \brief Main subroutines for solving generic radiation problems (P1, M1, discrete ordinates...)
  * \author Ruben Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,10 +29,12 @@
 #include "../../include/variables/CRadVariable.hpp"
 
 CRadSolver::CRadSolver() : CSolver() {
+  SU2_ZONE_SCOPED
 
 }
 
 CRadSolver::CRadSolver(CGeometry* geometry, CConfig *config) : CSolver() {
+  SU2_ZONE_SCOPED
 
   Absorption_Coeff = config->GetAbsorption_Coeff();
   Scattering_Coeff = config->GetScattering_Coeff();
@@ -42,6 +44,7 @@ CRadSolver::CRadSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 }
 
 void CRadSolver::SetVolumetricHeatSource(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint;
   unsigned short iDim;
@@ -72,6 +75,7 @@ void CRadSolver::SetVolumetricHeatSource(CGeometry *geometry, CConfig *config) {
 }
 
 void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  SU2_ZONE_SCOPED
 
   /*--- Restart the solution from file information ---*/
 
@@ -84,12 +88,14 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   string UnstExt, text_line;
   ifstream restart_file;
 
-  string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  string restart_filename = config->GetSolution_FileName();
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
+    restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
+    restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
@@ -149,19 +155,17 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   }
 
   /*--- MPI communication ---*/
-  solver[MESH_0][RAD_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][RAD_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][RAD_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][RAD_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Preprocess the fluid solver to compute the primitive variables ---*/
-  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
   /*--- Postprocess the radiation solver to compute the source term that goes into the fluid equations ---*/
   solver[MESH_0][RAD_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
-
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }

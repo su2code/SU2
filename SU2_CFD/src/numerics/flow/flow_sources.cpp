@@ -3,14 +3,14 @@
  * \brief Implementation of numerics classes for integration
  *        of source terms in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -72,7 +72,7 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Flow::ComputeResidual(const CConfi
       sq_vel += Velocity_i *Velocity_i;
     }
 
-    Pressure_i = (Gamma-1.0)*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
+    Pressure_i = Gamma_Minus_One*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
     Enthalpy_i = (U_i[nDim+1] + Pressure_i) / U_i[0];
 
     residual[0] = yinv*Volume*U_i[2];
@@ -244,7 +244,7 @@ CSourceIncAxisymmetric_Flow::CSourceIncAxisymmetric_Flow(unsigned short val_nDim
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   energy   = config->GetEnergy_Equation();
   viscous  = config->GetViscous();
-
+  multicomponent = (config->GetKind_FluidModel() == FLUID_MIXTURE);
 }
 
 CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CConfig* config) {
@@ -258,12 +258,11 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
 
     /*--- Set primitive variables at points iPoint. ---*/
 
-    const su2double Temp_i = V_i[nDim+1];
     Pressure_i    = V_i[0];
     DensityInc_i  = V_i[nDim+2];
-    BetaInc2_i    = V_i[nDim+3];
-    Cp_i          = V_i[nDim+7];
-    Enthalpy_i    = Cp_i*Temp_i;
+    BetaInc2_i    = V_i[nDim+4];
+    Cp_i          = V_i[nDim+8];
+    Enthalpy_i    = V_i[nDim+3];
 
     for (iDim = 0; iDim < nDim; iDim++)
       Velocity_i[iDim] = V_i[iDim+1];
@@ -295,7 +294,7 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       jacobian[3][0] = 0.0;
       jacobian[3][1] = 0.0;
       jacobian[3][2] = Enthalpy_i;
-      jacobian[3][3] = Cp_i*Velocity_i[1];
+      jacobian[3][3] = Velocity_i[1];
 
       for (iVar=0; iVar < nVar; iVar++)
         for (jVar=0; jVar < nVar; jVar++)
@@ -307,9 +306,9 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
 
     if (viscous) {
 
-      Laminar_Viscosity_i    = V_i[nDim+4];
-      Eddy_Viscosity_i       = V_i[nDim+5];
-      Thermal_Conductivity_i = V_i[nDim+6];
+      Laminar_Viscosity_i    = V_i[nDim+5];
+      Eddy_Viscosity_i       = V_i[nDim+6];
+      Thermal_Conductivity_i = V_i[nDim+7];
 
       su2double total_viscosity;
 
@@ -325,8 +324,11 @@ CNumerics::ResidualType<> CSourceIncAxisymmetric_Flow::ComputeResidual(const CCo
       residual[2] -= Volume*(yinv*2.0*total_viscosity*PrimVar_Grad_i[2][1] -
                              yinv* yinv*2.0*total_viscosity*Velocity_i[1] -
                              TWO3*AuxVar_Grad_i[0][1]);
-      residual[3] -= Volume*yinv*Thermal_Conductivity_i*PrimVar_Grad_i[nDim+1][1];
-
+      residual[3] -= Volume * yinv * Thermal_Conductivity_i * PrimVar_Grad_i[nDim + 1][1];
+      if (multicomponent && energy) {
+        residual[3] -= Volume * yinv * HeatFluxDiffusion;
+        if (implicit) jacobian[3][3] -= Volume * yinv * JacHeatFluxDiffusion / Cp_i;
+      }
     }
 
   } else {
@@ -404,7 +406,7 @@ CNumerics::ResidualType<> CSourceIncBodyForce::ComputeResidual(const CConfig* co
   unsigned short iDim;
   su2double DensityInc_0 = 0.0;
   su2double Force_Ref    = config->GetForce_Ref();
-  bool variable_density  = (config->GetKind_DensityModel() == INC_DENSITYMODEL::VARIABLE);
+  bool variable_density  = (config->GetVariable_Density_Model());
 
   /*--- Check for variable density. If we have a variable density
    problem, we should subtract out the hydrostatic pressure component. ---*/
@@ -486,13 +488,9 @@ CNumerics::ResidualType<> CSourceGravity::ComputeResidual(const CConfig* config)
   return ResidualType<>(residual, jacobian, nullptr);
 }
 
-CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                           CSourceBase_Flow(val_nDim, val_nVar, config) {
-
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
-}
+CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar,
+                                                     const CConfig* config)
+    : CSourceBase_Flow(val_nDim, val_nVar, config) {}
 
 CNumerics::ResidualType<> CSourceRotatingFrame_Flow::ComputeResidual(const CConfig* config) {
 
@@ -554,9 +552,6 @@ CSourceIncRotatingFrame_Flow::CSourceIncRotatingFrame_Flow(unsigned short val_nD
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-
   /*--- Retrieve the angular velocity vector from config. ---*/
   for (unsigned short iDim = 0; iDim < 3; iDim++)
     Omega[iDim] = config->GetRotation_Rate(iDim)/config->GetOmega_Ref();
@@ -617,10 +612,7 @@ CNumerics::ResidualType<> CSourceIncRotatingFrame_Flow::ComputeResidual(const CC
 
 CSourceVorticityConfinement::CSourceVorticityConfinement(unsigned short val_nDim, unsigned short val_nVar,
                                                          const CConfig* config)
-    : CSourceBase_Flow(val_nDim, val_nVar, config) {
-  Gamma = config->GetGamma();
-  Gamma_Minus_One = Gamma - 1.0;
-}
+    : CSourceBase_Flow(val_nDim, val_nVar, config) {}
 
 CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CConfig* config) {
   /*--- density, \rho ---*/
@@ -713,85 +705,6 @@ CNumerics::ResidualType<> CSourceVorticityConfinement::ComputeResidual(const CCo
 
   return ResidualType<>(residual, jacobian, nullptr);
 }
-
-CSourceWindGust::CSourceWindGust(unsigned short val_nDim, unsigned short val_nVar, const CConfig* config) :
-                 CSourceBase_Flow(val_nDim, val_nVar, config) { }
-
-CNumerics::ResidualType<> CSourceWindGust::ComputeResidual(const CConfig* config) {
-
-  su2double u_gust, v_gust, du_gust_dx, du_gust_dy, du_gust_dt, dv_gust_dx, dv_gust_dy, dv_gust_dt;
-  su2double smx, smy, se, rho, u, v, p;
-  unsigned short GustDir = config->GetGust_Dir(); //Gust direction
-
-  u_gust = WindGust_i[0];
-  v_gust = WindGust_i[1];
-// w_gust = WindGust_i[2];
-
-  if (GustDir == X_DIR) {
-    du_gust_dx = WindGustDer_i[0];
-    du_gust_dy = WindGustDer_i[1];
-    //du_gust_dz = WindGustDer_i[2];
-    du_gust_dt = WindGustDer_i[2];
-
-    dv_gust_dx = 0.0;
-    dv_gust_dy = 0.0;
-    //dv_gust_dz = 0.0;
-    dv_gust_dt = 0.0;
-
-    //dw_gust_dx = 0.0;
-    //dw_gust_dy = 0.0;
-    //dw_gust_dz = 0.0;
-    //dw_gust_dt = 0.0;
-  } else {
-    du_gust_dx = 0.0;
-    du_gust_dy = 0.0;
-    //du_gust_dz = 0.0;
-    du_gust_dt = 0.0;
-    dv_gust_dx = WindGustDer_i[0];
-    dv_gust_dy = WindGustDer_i[1];
-    //dv_gust_dz = WindGustDer_i[2]
-    dv_gust_dt = WindGustDer_i[2];
-
-    //dw_gust_dx = 0.0;
-    //dw_gust_dy = 0.0;
-    //dw_gust_dz = 0.0;
-    //dw_gust_dt = 0.0;
-    //
-
-  }
-
-  /*--- Primitive variables at point i ---*/
-  u = V_i[1];
-  v = V_i[2];
-  // w = V_i[3]
-
-  p = V_i[nDim+1];
-  rho = V_i[nDim+2];
-
-  /*--- Source terms ---*/
-  smx = rho*(du_gust_dt + (u+u_gust)*du_gust_dx + (v+v_gust)*du_gust_dy);
-  smy = rho*(dv_gust_dt + (u+u_gust)*dv_gust_dx + (v+v_gust)*dv_gust_dy);
-  //smz = rho*(dw_gust_dt + (u+u_gust)*dw_gust_dx + (v+v_gust)*dw_gust_dy) + (w+w_gust)*dw_gust_dz;
-
-  se = u*smx + v*smy + p*(du_gust_dx + dv_gust_dy);
-  //se = u*smx + v*smy + w*smz + p*(du_gust_dx + dv_gust_dy + dw_gust_dz);
-
-  if (nDim == 2) {
-    residual[0] = 0.0;
-    residual[1] = smx*Volume;
-    residual[2] = smy*Volume;
-    //residual[3] = smz*Volume;
-    residual[3] = se*Volume;
-  } else {
-    SU2_MPI::Error("You should only be in the gust source term in two dimensions", CURRENT_FUNCTION);
-  }
-
-  /*--- For now the source term Jacobian is just set to zero ---*/
-  //bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  return ResidualType<>(residual, jacobian, nullptr);
-}
-
 
 CSourceIncStreamwise_Periodic::CSourceIncStreamwise_Periodic(unsigned short val_nDim,
                                                              unsigned short val_nVar,
@@ -909,8 +822,7 @@ CNumerics::ResidualType<> CSourceRadiation::ComputeResidual(const CConfig *confi
 
     /*--- Jacobian is set to zero on initialization. ---*/
 
-    jacobian[nDim+1][nDim+1] = -RadVar_Source[1]*Volume;
-
+    jacobian[nDim + 1][nDim + 1] = -RadVar_Source[1] * Volume / Cp_i;
   }
 
   return ResidualType<>(residual, jacobian, nullptr);

@@ -2,14 +2,14 @@
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,6 @@
 #include "../../include/drivers/CDiscAdjSinglezoneDriver.hpp"
 #include "../../include/output/tools/CWindowingTools.hpp"
 #include "../../include/output/COutputFactory.hpp"
-#include "../../include/output/COutputLegacy.hpp"
 #include "../../include/output/COutput.hpp"
 #include "../../include/iteration/CIterationFactory.hpp"
 #include "../../include/iteration/CTurboIteration.hpp"
@@ -66,7 +65,6 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 
     if (config->GetBoolTurbomachinery()) {
       direct_iteration = new CTurboIteration(config);
-      output_legacy = COutputFactory::CreateLegacyOutput(config_container[ZONE_0]);
     }
     else { direct_iteration = CIterationFactory::CreateIteration(MAIN_SOLVER::EULER, config); }
 
@@ -123,6 +121,7 @@ CDiscAdjSinglezoneDriver::CDiscAdjSinglezoneDriver(char* confFile,
 }
 
 CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver() {
+  SU2_ZONE_SCOPED
 
   delete direct_iteration;
   delete direct_output;
@@ -130,7 +129,12 @@ CDiscAdjSinglezoneDriver::~CDiscAdjSinglezoneDriver() {
 }
 
 void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
+  /*--- Set the current time iteration in the config and also in the driver
+   * because the python interface doesn't offer an explicit way of doing it. ---*/
+
+  this->TimeIter = TimeIter;
   config_container[ZONE_0]->SetTimeIter(TimeIter);
 
   /*--- Preprocess the adjoint iteration ---*/
@@ -150,6 +154,13 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 }
 
 void CDiscAdjSinglezoneDriver::Run() {
+  SU2_ZONE_SCOPED
+
+  /*--- No need to solve anything, the tape for the main recording is empty. ---*/
+  if (TrivialFunction()) {
+    SetAllSolutions(ZONE_0, true, [](auto, auto) { return 0; });
+    return;
+  }
 
   CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
   if (config->GetnQuasiNewtonSamples() > 1) {
@@ -215,6 +226,7 @@ void CDiscAdjSinglezoneDriver::Run() {
 }
 
 void CDiscAdjSinglezoneDriver::Postprocess() {
+  SU2_ZONE_SCOPED
 
   switch(config->GetKind_Solver())
   {
@@ -278,6 +290,7 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 }
 
 void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
+  SU2_ZONE_SCOPED
 
   AD::Reset();
 
@@ -287,7 +300,9 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
     for (unsigned short iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
       auto solver = solver_container[ZONE_0][INST_0][iMesh][iSol];
       if (solver && solver->GetAdjoint()) {
+        SU2_OMP_PARALLEL_(if (solver->GetHasHybridParallel()))
         solver->SetRecording(geometry_container[ZONE_0][INST_0][iMesh], config_container[ZONE_0]);
+        END_SU2_OMP_PARALLEL
       }
     }
   }
@@ -298,7 +313,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
     case RECORDING::CLEAR_INDICES: cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:   cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
     case RECORDING::SOLUTION_VARIABLES:
-      cout << "Direct iteration to store the primal computational graph." << endl;
+      cout << "Direct iteration to store the primal computational graph.\n";
       cout << "Computing residuals to check the convergence of the direct problem." << endl; break;
     case RECORDING::OBJECTIVE:
       cout << "Computing direct dependence of objective on solution." << endl; break;
@@ -338,20 +353,14 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   SetObjFunction();
 
+  if (rank == MASTER_NODE &&
+      (kind_recording == RECORDING::SOLUTION_VARIABLES || (TrivialFunction() && kind_recording == RECORDING::MESH_COORDS))) {
+    cout << "\nObjective function value: " << std::setprecision(config_container[ZONE_0]->GetOutput_Precision()) << ObjFunc;
+    cout << "\n-------------------------------------------------------------------------\n" << endl;
+  }
+
   if (kind_recording != RECORDING::CLEAR_INDICES && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
-    if (rank == MASTER_NODE) AD::PrintStatistics();
-#ifdef CODI_REVERSE_TYPE
-    if (size > SINGLE_NODE) {
-      su2double myMem = AD::getTape().getTapeValues().getUsedMemorySize(), totMem = 0.0;
-      SU2_MPI::Allreduce(&myMem, &totMem, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      if (rank == MASTER_NODE) {
-        cout << "MPI\n";
-        cout << "-------------------------------------\n";
-        cout << "  Total memory used      :  " << totMem << " MB\n";
-        cout << "-------------------------------------\n" << endl;
-      }
-    }
-#endif
+    AD::PrintStatistics(SU2_MPI::GetComm(), rank == MASTER_NODE);
   }
 
   AD::StopRecording();
@@ -359,23 +368,22 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 }
 
 void CDiscAdjSinglezoneDriver::SetAdjObjFunction(){
-
-  const auto IterAvg_Obj = config->GetIter_Avg_Objective();
+  SU2_ZONE_SCOPED
   su2double seeding = 1.0;
 
-  CWindowingTools windowEvaluator = CWindowingTools();
-
-  if (config->GetTime_Marching() != TIME_MARCHING::STEADY){
-    if (TimeIter < IterAvg_Obj){
-      /*--- Default behavior (in case no specific window is chosen) is to use Square-Windowing, i.e. the numerator equals 1.0 ---*/
-      seeding = windowEvaluator.GetWndWeight(config->GetKindWindow(),TimeIter, IterAvg_Obj-1)/ (static_cast<su2double>(IterAvg_Obj));
+  if (config->GetTime_Domain()) {
+    const auto IterAvg_Obj = config->GetIter_Avg_Objective();
+    if (TimeIter < IterAvg_Obj) {
+      /*--- Default behavior when no window is chosen is to use Square-Windowing, i.e. the numerator equals 1.0 ---*/
+      auto windowEvaluator = CWindowingTools();
+      const su2double weight = windowEvaluator.GetWndWeight(config->GetKindWindow(), TimeIter, IterAvg_Obj - 1);
+      seeding = weight / IterAvg_Obj;
     }
     else {
       seeding = 0.0;
     }
   }
-
-  if (rank == MASTER_NODE){
+  if (rank == MASTER_NODE) {
     SU2_TYPE::SetDerivative(ObjFunc, SU2_TYPE::GetValue(seeding));
   } else {
     SU2_TYPE::SetDerivative(ObjFunc, 0.0);
@@ -383,6 +391,7 @@ void CDiscAdjSinglezoneDriver::SetAdjObjFunction(){
 }
 
 void CDiscAdjSinglezoneDriver::SetObjFunction(){
+  SU2_ZONE_SCOPED
 
   ObjFunc = 0.0;
 
@@ -398,29 +407,6 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
     direct_output->SetHistoryOutput(geometry, solver, config, config->GetTimeIter(),
                                      config->GetOuterIter(), config->GetInnerIter());
     ObjFunc += solver[FLOW_SOL]->GetTotal_ComboObj();
-
-    /*--- These calls to be moved to a generic framework at a next stage        ---*/
-    /*--- Some things that are currently hacked into output must be reorganized ---*/
-    if (config->GetBoolTurbomachinery()) {
-      output_legacy->ComputeTurboPerformance(solver[FLOW_SOL], geometry, config);
-
-      unsigned short nMarkerTurboPerf = config->GetnMarker_TurboPerformance();
-      unsigned short nSpanSections = config->GetnSpanWiseSections();
-
-      switch (config_container[ZONE_0]->GetKind_ObjFunc()){
-      case ENTROPY_GENERATION:
-        ObjFunc += output_legacy->GetEntropyGen(nMarkerTurboPerf-1, nSpanSections);
-        break;
-      case FLOW_ANGLE_OUT:
-        ObjFunc += output_legacy->GetFlowAngleOut(nMarkerTurboPerf-1, nSpanSections);
-        break;
-      case MASS_FLOW_IN:
-        ObjFunc += output_legacy->GetMassFlowIn(nMarkerTurboPerf-1, nSpanSections);
-        break;
-      default:
-        break;
-      }
-    }
     break;
 
   case MAIN_SOLVER::DISC_ADJ_HEAT:
@@ -448,6 +434,7 @@ void CDiscAdjSinglezoneDriver::SetObjFunction(){
 }
 
 void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
+  SU2_ZONE_SCOPED
 
   /*--- Mesh movement ---*/
 
@@ -472,6 +459,17 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 }
 
 void CDiscAdjSinglezoneDriver::MainRecording(){
+  SU2_ZONE_SCOPED
+
+  /*--- We know this function only depends on the secondary variables, hence skip the main recording. ---*/
+
+  if (TrivialFunction()) {
+    if (rank == MASTER_NODE) {
+      cout << "Trivial objective function, skipping the solution of the adjoint equations." << endl;
+    }
+    return;
+  }
+
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
    *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
 
@@ -484,6 +482,7 @@ void CDiscAdjSinglezoneDriver::MainRecording(){
 }
 
 void CDiscAdjSinglezoneDriver::SecondaryRecording(){
+  SU2_ZONE_SCOPED
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
    *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
 

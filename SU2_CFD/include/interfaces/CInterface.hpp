@@ -3,14 +3,14 @@
  * \brief Declarations and inlines of the transfer structure.
  *        The subroutines and functions are in the physics folders.
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../../Common/include/option_structure.hpp"
 
 #include <cmath>
 #include <string>
@@ -51,7 +52,7 @@ using namespace std;
  * \ingroup Interfaces
  * \brief Main class for defining the physical transfer of information.
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  */
 
 class CInterface {
@@ -77,7 +78,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CInterface(void);
+  CInterface();
 
   /*!
    * \overload
@@ -89,7 +90,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CInterface(void);
+  virtual ~CInterface();
 
   /*!
    * \brief Interpolate data and broadcast it into all processors, for nonmatching meshes.
@@ -161,15 +162,6 @@ protected:
 
   /*!
    * \brief A virtual member.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] donor_zone - Index of the donorZone.
-   */
-  inline virtual void SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
-                                       unsigned short donorZone) { }
-
-  /*!
-   * \brief A virtual member.
    * \param[in] donor_geometry - Geometry of the target mesh.
    * \param[in] target_geometry - Geometry of the target mesh.
    * \param[in] donor_zone - Index of the donorZone.
@@ -184,6 +176,15 @@ public:
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
   inline virtual void SetSpanWiseLevels(const CConfig *donor_config, const CConfig *target_config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] donor_zone - Index of the donorZone.
+   */
+  inline virtual void SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
+                                       unsigned short donorZone) { }
 
   /*!
    * \brief Transfer pre-processing for the mixing plane inteface.
@@ -220,12 +221,15 @@ public:
   void GatherAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone);
 
   /*!
-   * \brief Exchange Average geometrical value beteween zones .
-   * \param[in] donor_geometry - Geometry of the donor mesh.
-   * \param[in] target_geometry - Geometry of the target mesh.
-   * \param[in] donor_config - Definition of the problem at the donor mesh.
-   * \param[in] target_config - Definition of the problem at the target mesh.
+   * \brief Set the contact resistance value for the solid-to-solid heat transfer interface.
+   * \param[in] val_contact_resistance - Contact resistance value in m^2/W
    */
-  void GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry, unsigned short donorZone);
+  inline virtual void SetContactResistance(su2double val_contact_resistance) {};
 
+  /*!
+   * \brief These can be used to chain interfaces between the same zones but for other variables,
+   * without having to mix physics in the interface classes. Currently this is used for FSI+CHT.
+   */
+  ENUM_TRANSFER NextInterfaceType = ENUM_TRANSFER::NO_TRANSFER;
+  CInterface* NextInterface = nullptr;
 };

@@ -2,14 +2,14 @@
  * \file CElasticityOutput.cpp
  * \brief Main subroutines for FEA output
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,45 +24,41 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
-
-
 #include "../../include/output/CElasticityOutput.hpp"
+#include "../../include/output/CHeatOutput.hpp"
 
 #include "../../../Common/include/geometry/CGeometry.hpp"
 #include "../../include/solvers/CSolver.hpp"
 
 CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COutput(config, nDim, false) {
 
-  linear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL);
-  nonlinear_analysis = (config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE);
-  dynamic = (config->GetTime_Domain());
-
-  /*--- Initialize number of variables ---*/
-  if (linear_analysis) nVar_FEM = nDim;
-  if (nonlinear_analysis) nVar_FEM = 3;
+  linear_analysis = config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL;
+  nonlinear_analysis = config->GetGeometricConditions() == STRUCT_DEFORMATION::LARGE;
+  coupled_heat = config->GetWeakly_Coupled_Heat();
+  dynamic = config->GetTime_Domain();
 
   /*--- Default fields for screen output ---*/
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.emplace_back("ITER");
-    requestedHistoryFields.emplace_back("RMS_RES");
+    RequestCommonHistory(dynamic);
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
 
   /*--- Default fields for screen output ---*/
-  if (nRequestedScreenFields == 0){
+  if (nRequestedScreenFields == 0) {
     if (dynamic) requestedScreenFields.emplace_back("TIME_ITER");
     if (multiZone) requestedScreenFields.emplace_back("OUTER_ITER");
     requestedScreenFields.emplace_back("INNER_ITER");
-    if(linear_analysis){
+    if (linear_analysis) {
       requestedScreenFields.emplace_back("RMS_DISP_X");
       requestedScreenFields.emplace_back("RMS_DISP_Y");
       requestedScreenFields.emplace_back("RMS_DISP_Z");
     }
-    if(nonlinear_analysis){
+    if (nonlinear_analysis) {
       requestedScreenFields.emplace_back("RMS_UTOL");
       requestedScreenFields.emplace_back("RMS_RTOL");
       requestedScreenFields.emplace_back("RMS_ETOL");
     }
+    if (coupled_heat) requestedScreenFields.emplace_back("RMS_TEMPERATURE");
     requestedScreenFields.emplace_back("VMS");
     nRequestedScreenFields = requestedScreenFields.size();
   }
@@ -72,11 +68,8 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
     requestedVolumeFields.emplace_back("COORDINATES");
     requestedVolumeFields.emplace_back("SOLUTION");
     requestedVolumeFields.emplace_back("STRESS");
-    if (dynamic) {
-      requestedVolumeFields.emplace_back("VELOCITY");
-      requestedVolumeFields.emplace_back("ACCELERATION");
-    }
     if (config->GetTopology_Optimization()) requestedVolumeFields.emplace_back("TOPOLOGY");
+    if (coupled_heat) requestedVolumeFields.emplace_back("PRIMITIVE");
     nRequestedVolumeFields = requestedVolumeFields.size();
   }
 
@@ -98,24 +91,26 @@ CElasticityOutput::CElasticityOutput(CConfig *config, unsigned short nDim) : COu
 
   /*--- Set the default convergence field --- */
 
-  if (convFields.empty() ) convFields.emplace_back("RMS_DISP_X");
-
+  if (convFields.empty()) {
+    if (linear_analysis) convFields.emplace_back("RMS_DISP_X");
+    if (nonlinear_analysis) convFields.emplace_back("RMS_UTOL");
+  }
 }
 
 void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver)  {
 
   CSolver* fea_solver = solver[FEA_SOL];
+  CSolver* heat_solver = solver[HEAT_SOL];
 
   /*--- Residuals: ---*/
   /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
   /*--- Nonlinear analysis: UTOL, RTOL and DTOL (defined in the Postprocessing function) ---*/
 
-
   if (linear_analysis){
-    SetHistoryOutputValue("RMS_DISP_X", log10(fea_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("RMS_DISP_Y", log10(fea_solver->GetRes_RMS(1)));
+    SetHistoryOutputValue("RMS_DISP_X", log10(fea_solver->GetRes_FEM(0)));
+    SetHistoryOutputValue("RMS_DISP_Y", log10(fea_solver->GetRes_FEM(1)));
     if (nDim == 3){
-      SetHistoryOutputValue("RMS_DISP_Z", log10(fea_solver->GetRes_RMS(2)));
+      SetHistoryOutputValue("RMS_DISP_Z", log10(fea_solver->GetRes_FEM(2)));
     }
   } else if (nonlinear_analysis){
     SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->GetRes_FEM(0)));
@@ -146,6 +141,16 @@ void CElasticityOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CS
     SetHistoryOutputValue("VOLUME_FRACTION", fea_solver->GetTotal_OFVolFrac());
     SetHistoryOutputValue("TOPOL_DISCRETENESS", fea_solver->GetTotal_OFDiscreteness());
   }
+
+  /*--- Add heat solver data if available. ---*/
+  if (coupled_heat) {
+    CHeatOutput::LoadHistoryDataImpl(config, geometry, solver, this);
+    SetHistoryOutputValue("LINSOL_ITER_HEAT", heat_solver->GetIterLinSolver());
+    SetHistoryOutputValue("LINSOL_RESIDUAL_HEAT", log10(heat_solver->GetResLinSolver()));
+  }
+
+  ComputeSimpleCustomOutputs(config);
+
   /*--- Keep this as last, since it uses the history values that were set. ---*/
   SetCustomAndComboObjectives(FEA_SOL, config, solver);
 
@@ -186,6 +191,11 @@ void CElasticityOutput::SetHistoryOutputFields(CConfig *config) {
   }
   AddHistoryOutput("COMBO", "ComboObj", ScreenOutputFormat::SCIENTIFIC, "COMBO", "Combined obj. function value.", HistoryFieldType::COEFFICIENT);
 
+  if (coupled_heat) {
+    CHeatOutput::SetHistoryOutputFieldsImpl(config, this);
+    AddHistoryOutput("LINSOL_ITER_HEAT", "LinSolIterHeat", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
+    AddHistoryOutput("LINSOL_RESIDUAL_HEAT", "LinSolResHeat", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
+  }
 }
 
 void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
@@ -211,12 +221,16 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
     SetVolumeOutputValue("ACCELERATION-Y", iPoint, Node_Struc->GetSolution_Accel(iPoint, 1));
     if (nDim == 3) SetVolumeOutputValue("ACCELERATION-Z", iPoint, Node_Struc->GetSolution_Accel(iPoint, 2));
   }
+  if (coupled_heat) {
+    CVariable* Node_Heat = solver[HEAT_SOL]->GetNodes();
+    SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
+  }
 
   SetVolumeOutputValue("STRESS-XX", iPoint, Node_Struc->GetStress_FEM(iPoint)[0]);
   SetVolumeOutputValue("STRESS-YY", iPoint, Node_Struc->GetStress_FEM(iPoint)[1]);
+  SetVolumeOutputValue("STRESS-ZZ", iPoint, Node_Struc->GetStress_FEM(iPoint)[3]);
   SetVolumeOutputValue("STRESS-XY", iPoint, Node_Struc->GetStress_FEM(iPoint)[2]);
-  if (nDim == 3){
-    SetVolumeOutputValue("STRESS-ZZ", iPoint, Node_Struc->GetStress_FEM(iPoint)[3]);
+  if (nDim == 3) {
     SetVolumeOutputValue("STRESS-XZ", iPoint, Node_Struc->GetStress_FEM(iPoint)[4]);
     SetVolumeOutputValue("STRESS-YZ", iPoint, Node_Struc->GetStress_FEM(iPoint)[5]);
   }
@@ -225,6 +239,14 @@ void CElasticityOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSo
   if (config->GetTopology_Optimization()) {
     SetVolumeOutputValue("TOPOL_DENSITY", iPoint, Node_Struc->GetAuxVar(iPoint));
   }
+
+  CSolver* heat_solver = solver[HEAT_SOL];
+  if (heat_solver) {
+    const auto Node_Heat = heat_solver->GetNodes();
+    SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(iPoint, 0));
+    SetVolumeOutputValue("RES_TEMPERATURE", iPoint, heat_solver->LinSysRes(iPoint, 0));
+  }
+
 }
 
 void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
@@ -232,31 +254,33 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   // Grid coordinates
   AddVolumeOutput("COORD-X", "x", "COORDINATES", "x-component of the coordinate vector");
   AddVolumeOutput("COORD-Y", "y", "COORDINATES", "y-component of the coordinate vector");
-  if (nDim == 3)
-    AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
+  if (nDim == 3) AddVolumeOutput("COORD-Z", "z", "COORDINATES", "z-component of the coordinate vector");
 
-  AddVolumeOutput("DISPLACEMENT-X",    "Displacement_x", "SOLUTION", "x-component of the displacement vector");
-  AddVolumeOutput("DISPLACEMENT-Y",    "Displacement_y", "SOLUTION", "y-component of the displacement vector");
+  AddVolumeOutput("DISPLACEMENT-X", "Displacement_x", "SOLUTION", "x-component of the displacement vector");
+  AddVolumeOutput("DISPLACEMENT-Y", "Displacement_y", "SOLUTION", "y-component of the displacement vector");
   if (nDim == 3) AddVolumeOutput("DISPLACEMENT-Z", "Displacement_z", "SOLUTION", "z-component of the displacement vector");
 
-  if(dynamic){
-    AddVolumeOutput("VELOCITY-X",    "Velocity_x", "VELOCITY", "x-component of the velocity vector");
-    AddVolumeOutput("VELOCITY-Y",    "Velocity_y", "VELOCITY", "y-component of the velocity vector");
-    if (nDim == 3) AddVolumeOutput("VELOCITY-Z", "Velocity_z", "VELOCITY", "z-component of the velocity vector");
+  if (dynamic) {
+    AddVolumeOutput("VELOCITY-X", "Velocity_x", "SOLUTION", "x-component of the velocity vector");
+    AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION", "y-component of the velocity vector");
+    if (nDim == 3) AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION", "z-component of the velocity vector");
 
-    AddVolumeOutput("ACCELERATION-X",    "Acceleration_x", "ACCELERATION", "x-component of the acceleration vector");
-    AddVolumeOutput("ACCELERATION-Y",    "Acceleration_y", "ACCELERATION", "y-component of the acceleration vector");
-    if (nDim == 3) AddVolumeOutput("ACCELERATION-Z", "Acceleration_z", "ACCELERATION", "z-component of the acceleration vector");
+    AddVolumeOutput("ACCELERATION-X", "Acceleration_x", "SOLUTION", "x-component of the acceleration vector");
+    AddVolumeOutput("ACCELERATION-Y", "Acceleration_y", "SOLUTION", "y-component of the acceleration vector");
+    if (nDim == 3) AddVolumeOutput("ACCELERATION-Z", "Acceleration_z", "SOLUTION", "z-component of the acceleration vector");
   }
 
-  AddVolumeOutput("STRESS-XX",    "Sxx", "STRESS", "x-component of the normal stress vector");
-  AddVolumeOutput("STRESS-YY",    "Syy", "STRESS", "y-component of the normal stress vector");
-  AddVolumeOutput("STRESS-XY",    "Sxy", "STRESS", "xy shear stress component");
+  if (coupled_heat) {
+    AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION", "Temperature");
+  }
 
+  AddVolumeOutput("STRESS-XX", "Sxx", "STRESS", "x-component of the normal stress vector");
+  AddVolumeOutput("STRESS-YY", "Syy", "STRESS", "y-component of the normal stress vector");
+  AddVolumeOutput("STRESS-ZZ", "Szz", "STRESS", "z-component of the normal stress vector");
+  AddVolumeOutput("STRESS-XY", "Sxy", "STRESS", "xy shear stress component");
   if (nDim == 3) {
-    AddVolumeOutput("STRESS-ZZ",    "Szz", "STRESS", "z-component of the normal stress vector");
-    AddVolumeOutput("STRESS-XZ",    "Sxz", "STRESS", "xz shear stress component");
-    AddVolumeOutput("STRESS-YZ",    "Syz", "STRESS", "yz shear stress component");
+    AddVolumeOutput("STRESS-XZ", "Sxz", "STRESS", "xz shear stress component");
+    AddVolumeOutput("STRESS-YZ", "Syz", "STRESS", "yz shear stress component");
   }
 
   AddVolumeOutput("VON_MISES_STRESS", "Von_Mises_Stress", "STRESS", "von-Mises stress");
@@ -264,10 +288,25 @@ void CElasticityOutput::SetVolumeOutputFields(CConfig *config){
   if (config->GetTopology_Optimization()) {
     AddVolumeOutput("TOPOL_DENSITY", "Topology_Density", "TOPOLOGY", "filtered topology density");
   }
+
+  if (coupled_heat) {
+    AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE", "Heatflux");
+    AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
+  }
+
 }
 
 bool CElasticityOutput::SetInitResiduals(const CConfig *config){
 
   return (config->GetTime_Domain() == NO && (curInnerIter  == 0));
+
+}
+
+void CElasticityOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint,
+                                        unsigned short iMarker, unsigned long iVertex) {
+  if (!coupled_heat || !config->GetViscous_Wall(iMarker)) return;
+
+  /* Heat flux value at each surface grid node. */
+  SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[HEAT_SOL]->GetHeatFlux(iMarker, iVertex));
 
 }

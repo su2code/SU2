@@ -2,14 +2,14 @@
  * \file CFEM_DG_EulerSolver.cpp
  * \brief Main subroutines for solving finite element Euler flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,12 +32,14 @@
 #include "../../include/fluid/CVanDerWaalsGas.hpp"
 #include "../../include/fluid/CPengRobinson.hpp"
 #include "../../include/fluid/CCoolProp.hpp"
+#include "../../include/fluid/CDataDrivenFluid.hpp"
 
 enum {
 SIZE_ARR_NORM = 8
 };
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver() : CSolver() {
+  SU2_ZONE_SCOPED
 
   /*--- Basic array initialization ---*/
 
@@ -72,6 +74,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver() : CSolver() {
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDim, unsigned short iMesh) : CSolver() {
+  SU2_ZONE_SCOPED
 
   /*--- Basic array initialization ---*/
 
@@ -118,6 +121,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
+  SU2_ZONE_SCOPED
 
   /*--- Array initialization ---*/
   FluidModel = nullptr;
@@ -730,6 +734,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 }
 
 CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver() {
+  SU2_ZONE_SCOPED
 
   delete FluidModel;
   delete blasFunctions;
@@ -771,10 +776,12 @@ CFEM_DG_EulerSolver::~CFEM_DG_EulerSolver() {
 void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
                                                    unsigned short iMesh,
                                                    const bool     writeOutput) {
+  SU2_ZONE_SCOPED
 
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
   Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
+  Thermal_Conductivity_FreeStream = 0.0, SpecificHeat_Cp_FreeStream = 0.0,
   Density_FreeStream = 0.0, Pressure_FreeStream = 0.0, Tke_FreeStream = 0.0,
   Length_Ref = 0.0, Density_Ref = 0.0, Pressure_Ref = 0.0, Velocity_Ref = 0.0,
   Temperature_Ref = 0.0, Time_Ref = 0.0, Omega_Ref = 0.0, Force_Ref = 0.0,
@@ -782,6 +789,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   Froude = 0.0, Pressure_FreeStreamND = 0.0, Density_FreeStreamND = 0.0,
   Temperature_FreeStreamND = 0.0, Gas_ConstantND = 0.0,
   Velocity_FreeStreamND[3] = {0.0, 0.0, 0.0}, Viscosity_FreeStreamND = 0.0,
+  Thermal_Conductivity_FreeStreamND = 0.0, SpecificHeat_Cp_FreeStreamND = 0.0,
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
 
@@ -897,6 +905,20 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       }
       break;
 
+    case DATADRIVEN_FLUID:
+      FluidModel = new CDataDrivenFluid(config, false);
+      if (free_stream_temp) {
+        FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+        Density_FreeStream = FluidModel->GetDensity();
+        config->SetDensity_FreeStream(Density_FreeStream);
+      }
+      else {
+        FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+        Temperature_FreeStream = FluidModel->GetTemperature();
+        config->SetTemperature_FreeStream(Temperature_FreeStream);
+      }
+
+      break;
   }
 
   Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
@@ -940,9 +962,14 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
             viscosity, depending on the input option.---*/
 
       FluidModel->SetLaminarViscosityModel(config);
+      FluidModel->SetThermalConductivityModel(config);
 
       Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
+      Thermal_Conductivity_FreeStream = FluidModel->GetThermalConductivity();
+      config->SetThermalConductivity_FreeStream(Thermal_Conductivity_FreeStream);
+      SpecificHeat_Cp_FreeStream = FluidModel->GetCp();
+      config->SetSpecificHeatCp_FreeStream(SpecificHeat_Cp_FreeStream);
 
       Density_FreeStream = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds*config->GetLength_Reynolds());
       config->SetDensity_FreeStream(Density_FreeStream);
@@ -958,8 +985,13 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
     else {
 
       FluidModel->SetLaminarViscosityModel(config);
+      FluidModel->SetThermalConductivityModel(config);
       Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
+      Thermal_Conductivity_FreeStream = FluidModel->GetThermalConductivity();
+      config->SetThermalConductivity_FreeStream(Thermal_Conductivity_FreeStream);
+      SpecificHeat_Cp_FreeStream = FluidModel->GetCp();
+      config->SetSpecificHeatCp_FreeStream(SpecificHeat_Cp_FreeStream);
       Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
 
     }
@@ -1038,6 +1070,10 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   ModVel_FreeStreamND    = sqrt(ModVel_FreeStreamND); config->SetModVel_FreeStreamND(ModVel_FreeStreamND);
 
   Viscosity_FreeStreamND = Viscosity_FreeStream / Viscosity_Ref;   config->SetViscosity_FreeStreamND(Viscosity_FreeStreamND);
+  Thermal_Conductivity_FreeStreamND = Thermal_Conductivity_FreeStream / Conductivity_Ref;
+  config->SetThermalConductivity_FreeStreamND(Thermal_Conductivity_FreeStreamND);
+  SpecificHeat_Cp_FreeStreamND = SpecificHeat_Cp_FreeStream / Gas_Constant_Ref;
+  config->SetSpecificHeatCp_FreeStreamND(SpecificHeat_Cp_FreeStreamND);
 
   Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStream(Tke_FreeStream);
@@ -1045,10 +1081,10 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
-  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max((Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream()), 1.e-25);
+  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   config->SetOmega_FreeStream(Omega_FreeStream);
 
-  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max((Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream()), 1.e-25);
+  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
@@ -1085,6 +1121,11 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
       FluidModel = new CCoolProp(config->GetFluid_Name());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
+
+    case DATADRIVEN_FLUID:
+      FluidModel = new CDataDrivenFluid(config);
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      break;
   }
 
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -1092,6 +1133,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   if (viscous) {
     FluidModel->SetLaminarViscosityModel(config);
     FluidModel->SetThermalConductivityModel(config);
+    FluidModel->SetMassDiffusivityModel(config); // nijso: TODO, needs to be tested
   }
 
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
@@ -1354,6 +1396,7 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
 
 void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
                                              CConfig        *config) {
+  SU2_ZONE_SCOPED
 
   /*-------------------------------------------------------------------*/
   /* Step 1: Determine the number of owned DOFs per rank in cumulative */
@@ -1674,6 +1717,7 @@ void CFEM_DG_EulerSolver::DetermineGraphDOFs(const CMeshFEM *FEMGeometry,
 
 void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeometry,
                                                       const vector<int> &colorLocalDOFs) {
+  SU2_ZONE_SCOPED
 
   /*--------------------------------------------------------------------------*/
   /*--- Part 1: Convert the coloring information of the DOFs to the        ---*/
@@ -1879,6 +1923,7 @@ void CFEM_DG_EulerSolver::MetaDataJacobianComputation(const CMeshFEM    *FEMGeom
 }
 
 void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /* Check whether an ADER space-time step must be carried out.
      When only a spatial Jacobian is computed this is false per definition.  */
@@ -2516,6 +2561,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 
 void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
                                                     CConfig        *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Get the communication information from DG_Geometry. Note that for a
         FEM DG discretization the communication entities of FEMGeometry contain
@@ -2753,6 +2799,7 @@ void CFEM_DG_EulerSolver::Prepare_MPI_Communication(const CMeshFEM *FEMGeometry,
 
 void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
                                                      const unsigned short timeLevel) {
+  SU2_ZONE_SCOPED
 #ifdef HAVE_MPI
 
   /* Check if there is anything to communicate. */
@@ -2820,6 +2867,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_Communication(CConfig *config,
 bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
                                                      const unsigned short timeLevel,
                                                      const bool commMustBeCompleted) {
+  SU2_ZONE_SCOPED
 
   /* Set the pointer to the memory, whose data must be communicated.
      This depends on the time integration scheme used. For ADER the data of
@@ -2961,6 +3009,7 @@ bool CFEM_DG_EulerSolver::Complete_MPI_Communication(CConfig *config,
 
 void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
                                                             const unsigned short timeLevel) {
+  SU2_ZONE_SCOPED
 
   /* Set the pointer to the residual to be communicated. */
   su2double *resComm;
@@ -3067,6 +3116,7 @@ void CFEM_DG_EulerSolver::Initiate_MPI_ReverseCommunication(CConfig *config,
 bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
                                                             const unsigned short timeLevel,
                                                             const bool commMustBeCompleted) {
+  SU2_ZONE_SCOPED
   /* Set the pointer to the residual to be communicated. */
   su2double *resComm;
   if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) resComm = VecTotResDOFsADER.data();
@@ -3160,6 +3210,7 @@ bool CFEM_DG_EulerSolver::Complete_MPI_ReverseCommunication(CConfig *config,
 }
 
 void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   /*--- Check if a verification solution is to be computed. ---*/
   if ((VerificationSolution)  && (TimeIter == 0)) {
@@ -3184,6 +3235,7 @@ void CFEM_DG_EulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***s
 }
 
 void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   unsigned long ErrorCounter = 0;
 
@@ -3468,6 +3520,7 @@ void CFEM_DG_EulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_c
 void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver **solver_container,
                                                  CNumerics **numerics, CConfig *config,
                                                  unsigned short iMesh, unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
 
   /* Write a message that the Jacobian is being computed. */
   if(rank == MASTER_NODE) {
@@ -3613,6 +3666,14 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
   /* Write the actual matrix elements. */
   fwrite(Jacobian.data(), Jacobian.size(), sizeof(passivedouble), fJac);
 
+  /* Write the number of elements. */
+  fwrite(&nVolElemOwned, 1, sizeof(unsigned long), fJac);
+
+  /* Write the number of DOFs per element. */
+  std::vector<unsigned short> nDOFsElem(nVolElemOwned);
+  for(unsigned long i=0; i<nVolElemOwned; ++i) nDOFsElem[i] += volElem[i].nDOFsSol;
+  fwrite(nDOFsElem.data(), nDOFsElem.size(), sizeof(unsigned short), fJac);
+
   /* Close the file again. */
   fclose(fJac);
 
@@ -3626,12 +3687,14 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
 }
 
 void CFEM_DG_EulerSolver::Set_OldSolution() {
+  SU2_ZONE_SCOPED
 
   for(unsigned long i=0; i<VecSolDOFs.size(); ++i)
     VecWorkSolDOFs[0][i] = VecSolDOFs[i];
 }
 
 void CFEM_DG_EulerSolver::Set_NewSolution() {
+  SU2_ZONE_SCOPED
 
   for(unsigned long i=0; i<VecSolDOFs.size(); ++i)
     VecSolDOFsNew[i] = VecSolDOFs[i];
@@ -3639,6 +3702,7 @@ void CFEM_DG_EulerSolver::Set_NewSolution() {
 
 void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
+  SU2_ZONE_SCOPED
 
   /* Check whether or not a time stepping scheme is used. */
   const bool time_stepping = config->GetTime_Marching() == TIME_MARCHING::TIME_STEPPING;
@@ -3797,6 +3861,7 @@ void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
                                                    const su2double TimeSync,
                                                    su2double       &timeEvolved,
                                                    bool            &syncTimeReached) {
+  SU2_ZONE_SCOPED
 
   /* Check if this is the first time this check is carried out
      and determine the new time evolved. */
@@ -3833,6 +3898,7 @@ void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
 void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **solver_container,
                                              CNumerics **numerics, CConfig *config,
                                              unsigned short iMesh) {
+  SU2_ZONE_SCOPED
   /* Easier storage of the number of time levels.. */
   const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
 
@@ -4146,6 +4212,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                                     CNumerics **numerics, CConfig *config,
                                                     unsigned short iMesh, unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
   /* Preprocessing. */
   Preprocessing(geometry, solver_container, config, iMesh, 0, RunTime_EqSystem, false);
   TolerancesADERPredictorStep();
@@ -4158,6 +4225,7 @@ void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolve
 }
 
 void CFEM_DG_EulerSolver::TolerancesADERPredictorStep() {
+  SU2_ZONE_SCOPED
 
   /* Determine the maximum values of the conservative variables of the
      locally stored DOFs. Make a distinction between 2D and 3D for
@@ -4214,6 +4282,7 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
                                                 const unsigned long elemBeg,
                                                 const unsigned long elemEnd,
                                                 su2double           *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Get the data of the ADER time integration scheme. */
   const unsigned short nTimeDOFs              = config->GetnTimeDOFsADER_DG();
@@ -4741,6 +4810,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
                                                               const unsigned short NPad,
                                                               su2double            *res,
                                                               su2double            *work) {
+  SU2_ZONE_SCOPED
 
   /* Get the necessary information from the standard element. */
   const unsigned short ind                = elem->indStandardElement;
@@ -4986,6 +5056,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
                                                               const unsigned short NPad,
                                                               su2double            *res,
                                                               su2double            *work) {
+  SU2_ZONE_SCOPED
 
   /* Get the necessary information from the standard element. */
   const unsigned short ind                = elem->indStandardElement;
@@ -5267,6 +5338,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig        
                                                                  const unsigned short NPad,
                                                                  su2double            *res,
                                                                  su2double            *work) {
+  SU2_ZONE_SCOPED
 
   /* Set the pointers for solAndGradInt and divFlux to work. The same array
      can be used for both help arrays. */
@@ -5476,6 +5548,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig        
                                                                  const unsigned short NPad,
                                                                  su2double            *res,
                                                                  su2double            *work) {
+  SU2_ZONE_SCOPED
 
   /* Set the pointers for solAndGradInt and divFlux to work. The same array
      can be used for both help arrays. */
@@ -5713,6 +5786,7 @@ void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig           
                                                               const unsigned long  *adjElem,
                                                               const bool           secondPartTimeInt,
                                                               su2double            *solTimeLevel) {
+  SU2_ZONE_SCOPED
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Interpolate the solution to the given integration point    ---*/
@@ -5798,6 +5872,7 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
                                              const unsigned long elemBeg,
                                              const unsigned long elemEnd,
                                              su2double           *workArray) {
+  SU2_ZONE_SCOPED
 
   /*--- Run shock capturing algorithm ---*/
   switch( config->GetKind_FEM_DG_Shock() ) {
@@ -5814,6 +5889,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
                                           const unsigned long elemBeg,
                                           const unsigned long elemEnd,
                                           su2double           *workArray) {
+  SU2_ZONE_SCOPED
 
   /*--- Determine whether a body force term is present. ---*/
   bool body_force = config->GetBody_Force();
@@ -6194,6 +6270,7 @@ void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
                                               CNumerics            **numerics,
                                               const bool           haloInfoNeededForBC,
                                               su2double            *workArray){
+  SU2_ZONE_SCOPED
 
   /* Loop over all boundaries. */
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -6279,6 +6356,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
                                         unsigned long       &indResFaces,
                                         CNumerics           *numerics,
                                         su2double           *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
@@ -6402,6 +6480,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
                                               su2double            *solIntR,
                                               su2double            *fluxes,
                                               CNumerics            *numerics) {
+  SU2_ZONE_SCOPED
 
   /* Set the pointer solFace to fluxes. This is just for readability, as the
      same memory can be used for the storage of the solution of the DOFs of
@@ -6539,6 +6618,7 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADEROwnedElem(
                                                      CConfig             *config,
                                                      const unsigned short timeLevel,
                                                      const unsigned short intPoint) {
+  SU2_ZONE_SCOPED
 
   /* Compute half the integration weight. The reason for doing this is that the
      given integration weight is based on the normalized interval [-1..1], i.e.
@@ -6612,6 +6692,7 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADERHaloElem(
                                                      CConfig             *config,
                                                      const unsigned short timeLevel,
                                                      const unsigned short intPoint) {
+  SU2_ZONE_SCOPED
 
   /* Compute half the integration weight. The reason for doing this is that the
      given integration weight is based on the normalized interval [-1..1], i.e.
@@ -6673,6 +6754,7 @@ void CFEM_DG_EulerSolver::AccumulateSpaceTimeResidualADERHaloElem(
 
 void CFEM_DG_EulerSolver::CreateFinalResidual(const unsigned short timeLevel,
                                               const bool ownedElements) {
+  SU2_ZONE_SCOPED
 
   /* Determine the element range for which the final residual must
      be created. */
@@ -6720,6 +6802,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
                                               const unsigned long elemBeg,
                                               const unsigned long elemEnd,
                                               su2double           *workArray) {
+  SU2_ZONE_SCOPED
 
   /*--- Set the reference to the correct residual. This depends
         whether or not the ADER scheme is used. ---*/
@@ -6760,6 +6843,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
 }
 
 void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
 
   /* Allocate the memory for the work array and initialize it to zero to avoid
      warnings in debug mode  about uninitialized memory when padding is applied. */
@@ -7172,6 +7256,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(const CGeometry* geometry, const CConf
 
 void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   const su2double      RK_AlphaCoeff = config->Get_Alpha_RKStep(iRKStep);
   const unsigned short nRKStages     = config->GetnRKStep();
@@ -7220,6 +7305,7 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
 
 void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_container,
                                                  CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   /*--- Hard-coded classical RK4 coefficients. Will be added to config. ---*/
   su2double RK_FuncCoeff[4] = {1.0/6.0, 1.0/3.0, 1.0/3.0, 1.0/6.0};
@@ -7272,6 +7358,7 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
 
 void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
                                               CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /* Initialize the residuals to zero. */
   SetResToZero();
@@ -7356,6 +7443,7 @@ void CFEM_DG_EulerSolver::SetResidual_RMS_FEM(CGeometry *geometry,
 
 void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
                                                    CConfig   *config) {
+  SU2_ZONE_SCOPED
 
   /*--- The errors only need to be computed on the finest grid. ---*/
   if(MGLevel != MESH_0) return;
@@ -7460,6 +7548,7 @@ void CFEM_DG_EulerSolver::ComputeVerificationError(CGeometry *geometry,
 
 void CFEM_DG_EulerSolver::ADER_DG_Iteration(const unsigned long elemBeg,
                                             const unsigned long elemEnd) {
+  SU2_ZONE_SCOPED
 
   /*--- Update the solution by looping over the given range
         of volume elements. ---*/
@@ -7485,6 +7574,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Euler_Wall(CConfig                  *co
                                                     const CSurfaceElementFEM *surfElem,
                                                     const su2double          *solIntL,
                                                     su2double                *solIntR) {
+  SU2_ZONE_SCOPED
 
   /*--- Apply the inviscid wall boundary conditions to compute the right
         state in the integration points. There are two options. Either the
@@ -7553,13 +7643,14 @@ void CFEM_DG_EulerSolver::BoundaryStates_Inlet(CConfig                  *config,
                                                unsigned short           val_marker,
                                                const su2double          *solIntL,
                                                su2double                *solIntR) {
+  SU2_ZONE_SCOPED
 
   /*--- Retrieve the specified total conditions for this inlet. ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double P_Total   = config->GetInlet_Ptotal(Marker_Tag);
-  su2double T_Total   = config->GetInlet_Ttotal(Marker_Tag);
-  auto Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+  su2double P_Total   = config->GetInletPtotal(Marker_Tag);
+  su2double T_Total   = config->GetInletTtotal(Marker_Tag);
+  auto Flow_Dir = config->GetInletFlowDir(Marker_Tag);
 
   /*--- Non-dim. the inputs if necessary, and compute the total enthalpy. ---*/
   P_Total /= config->GetPressure_Ref();
@@ -7668,6 +7759,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Outlet(CConfig                  *config
                                                 unsigned short           val_marker,
                                                 const su2double          *solIntL,
                                                 su2double                *solIntR) {
+  SU2_ZONE_SCOPED
 
   /*--- Retrieve the specified back pressure for this outlet.
         Nondimensionalize, if necessary. ---*/
@@ -7745,6 +7837,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
                                                  unsigned short           val_marker,
                                                  const su2double          *solIntL,
                                                  su2double                *solIntR) {
+  SU2_ZONE_SCOPED
 
   /* Retrieve the corresponding string for this marker. */
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -7771,6 +7864,7 @@ void CFEM_DG_EulerSolver::BoundaryStates_Riemann(CConfig                  *confi
 
       /* Compute the total enthalpy and entropy from these values. */
       FluidModel->SetTDState_PT(P_Total, T_Total);
+
       const su2double Enthalpy_e = FluidModel->GetStaticEnergy()
                                  + FluidModel->GetPressure()/FluidModel->GetDensity();
       const su2double Entropy_e  = FluidModel->GetEntropy();
@@ -8178,6 +8272,7 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
                                         su2double                *resFaces,
                                         CNumerics                *conv_numerics,
                                         su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8242,6 +8337,7 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CConfig                  *config,
                                        su2double                *resFaces,
                                        CNumerics                *conv_numerics,
                                        su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8312,6 +8408,7 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig                  *config,
                                        su2double                *resFaces,
                                        CNumerics                *conv_numerics,
                                        su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8442,6 +8539,7 @@ void CFEM_DG_EulerSolver::BC_Supersonic_Outlet(CConfig                  *config,
                                                su2double                *resFaces,
                                                CNumerics                *conv_numerics,
                                                su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8508,6 +8606,7 @@ void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
                                    CNumerics                *conv_numerics,
                                    unsigned short           val_marker,
                                    su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8572,6 +8671,7 @@ void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
                                     CNumerics                *conv_numerics,
                                     unsigned short           val_marker,
                                     su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8636,6 +8736,7 @@ void CFEM_DG_EulerSolver::BC_Riemann(CConfig                  *config,
                                      CNumerics                *conv_numerics,
                                      unsigned short           val_marker,
                                      su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8699,6 +8800,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
                                     su2double                *resFaces,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray) {
+  SU2_ZONE_SCOPED
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8791,6 +8893,7 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
                                       su2double                *fluxes,
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
+  SU2_ZONE_SCOPED
 
   /*--- Get the required information from the standard face, which is the
         same for all faces considered. ---*/
@@ -8869,6 +8972,7 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
                                              const CSurfaceElementFEM *surfElem,
                                              su2double                *solFace,
                                              su2double                *solIntL) {
+  SU2_ZONE_SCOPED
 
   /* Get the required information from the corresponding standard face, which is the
      same for all simultaneously treated faces. */
@@ -8918,6 +9022,7 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config
                                                     const su2double      *solR,
                                                     su2double            *fluxes,
                                                     CNumerics            *numerics) {
+  SU2_ZONE_SCOPED
 
   /* Easier storage of the specific heat ratio. */
   const su2double gm1 = Gamma_Minus_One;
@@ -9419,6 +9524,8 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config
           numerics->ComputeResidual(flux, Jacobian_i, Jacobian_j, config);
         }
       }
+      /*--- Just to avoid compilers complaining about dangling pointers. ---*/
+      numerics->SetPrimitive(nullptr, nullptr);
 
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         delete [] Jacobian_i[iVar];
@@ -9434,6 +9541,7 @@ void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config
 }
 
 void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  SU2_ZONE_SCOPED
 
   /*--- Restart the solution from file information ---*/
   unsigned short iVar;
@@ -9452,13 +9560,14 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
-  restart_filename = config->GetFilename(restart_filename, "", val_iter);
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
+    restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
+    restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
@@ -9549,8 +9658,6 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
-
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }

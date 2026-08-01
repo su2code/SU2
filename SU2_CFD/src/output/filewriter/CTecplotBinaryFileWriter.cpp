@@ -2,14 +2,14 @@
  * \file CTecplotBinaryFileWriter.cpp
  * \brief Filewriter class for Tecplot binary format.
  * \author T. Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,12 @@
   #include "TECIO.h"
 #endif
 #include <set>
+
+#ifdef USE_SINGLE_PRECISION
+#define TEC_ZONE_WRITE_VALUES tecZoneVarWriteFloatValues
+#else
+#define TEC_ZONE_WRITE_VALUES tecZoneVarWriteDoubleValues
+#endif
 
 const string CTecplotBinaryFileWriter::fileExt = ".szplt";
 
@@ -279,12 +285,12 @@ void CTecplotBinaryFileWriter::WriteData(string val_filename){
     for (iVar = 0; err == 0 && iVar < fieldNames.size(); iVar++) {
       for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
         values_to_write[i] = dataSorter->GetData(iVar, i);
-      err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, rank + 1, dataSorter->GetnPoints(), values_to_write.data());
+      err = TEC_ZONE_WRITE_VALUES(file_handle, zone, iVar + 1, rank + 1, dataSorter->GetnPoints(), values_to_write.data());
       if (err) cout << rank << ": Error outputting Tecplot variable values." << endl;
       for (int iRank = 0; err == 0 && iRank < size; ++iRank) {
         if (num_nodes_to_receive[iRank] > 0) {
           int var_data_offset = values_to_receive_displacements[iRank] + num_nodes_to_receive[iRank] * iVar;
-          err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, rank + 1, static_cast<int64_t>(num_nodes_to_receive[iRank]), &halo_var_data[var_data_offset]);
+          err = TEC_ZONE_WRITE_VALUES(file_handle, zone, iVar + 1, rank + 1, static_cast<int64_t>(num_nodes_to_receive[iRank]), &halo_var_data[var_data_offset]);
           if (err) cout << rank << ": Error outputting Tecplot halo values." << endl;
         }
       }
@@ -306,7 +312,7 @@ void CTecplotBinaryFileWriter::WriteData(string val_filename){
               values_to_write.resize(rank_num_points);
               for(unsigned long i = 0; i < (unsigned long)rank_num_points; ++i)
                 values_to_write[i] = dataSorter->GetData(iVar,i);
-              err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, values_to_write.data());
+              err = TEC_ZONE_WRITE_VALUES(file_handle, zone, iVar + 1, 0, rank_num_points, values_to_write.data());
               if (err) cout << rank << ": Error outputting Tecplot variable values." << endl;
             }
           }
@@ -314,7 +320,7 @@ void CTecplotBinaryFileWriter::WriteData(string val_filename){
             var_data.resize(max((int64_t)1, (int64_t)fieldNames.size() * rank_num_points));
             CBaseMPIWrapper::Recv(var_data.data(), fieldNames.size() * rank_num_points, MPI_DOUBLE, iRank, iRank, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
             for (iVar = 0; err == 0 && iVar < fieldNames.size(); iVar++) {
-              err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, rank_num_points, &var_data[iVar * rank_num_points]);
+              err = TEC_ZONE_WRITE_VALUES(file_handle, zone, iVar + 1, 0, rank_num_points, &var_data[iVar * rank_num_points]);
               if (err) cout << rank << ": Error outputting Tecplot surface variable values." << endl;
             }
           }
@@ -350,7 +356,7 @@ void CTecplotBinaryFileWriter::WriteData(string val_filename){
   for (iVar = 0; err == 0 && iVar <  fieldNames.size(); iVar++) {
     for(unsigned long i = 0; i < dataSorter->GetnPoints(); ++i)
       var_data.push_back(dataSorter->GetData(iVar,i));
-    err = tecZoneVarWriteDoubleValues(file_handle, zone, iVar + 1, 0, dataSorter->GetnPoints(), &var_data[iVar * dataSorter->GetnPoints()]);
+    err = TEC_ZONE_WRITE_VALUES(file_handle, zone, iVar + 1, 0, dataSorter->GetnPoints(), &var_data[iVar * dataSorter->GetnPoints()]);
     if (err) cout << rank << ": Error outputting Tecplot variable value." << endl;
   }
 

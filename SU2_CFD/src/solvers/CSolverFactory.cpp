@@ -2,14 +2,14 @@
  * \file CSolverFactory.cpp
  * \brief Main subroutines for CSolverFactoryclass.
  * \author T. Albring
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,6 +52,7 @@
 #include "../../include/solvers/CBaselineSolver_FEM.hpp"
 #include "../../include/solvers/CRadP1Solver.hpp"
 #include "../../include/solvers/CSpeciesSolver.hpp"
+#include "../../include/solvers/CSpeciesFlameletSolver.hpp"
 
 map<const CSolver*, SolverMetaData> CSolverFactory::allocatedSolvers;
 
@@ -172,10 +173,17 @@ CSolver** CSolverFactory::CreateSolverContainer(MAIN_SOLVER kindMainSolver, CCon
       break;
     case MAIN_SOLVER::FEM_ELASTICITY:
       solver[FEA_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::FEA, solver, geometry, config, iMGLevel);
+      if (config->GetWeakly_Coupled_Heat()) {
+        solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
+      }
       break;
     case MAIN_SOLVER::DISC_ADJ_FEM:
-      solver[FEA_SOL]    = CreateSubSolver(SUB_SOLVER_TYPE::FEA, solver, geometry, config, iMGLevel);
+      solver[FEA_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::FEA, solver, geometry, config, iMGLevel);
       solver[ADJFEA_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_FEA, solver, geometry, config, iMGLevel);
+      if (config->GetWeakly_Coupled_Heat()) {
+        solver[HEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::HEAT, solver, geometry, config, iMGLevel);
+        solver[ADJHEAT_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DISC_ADJ_HEAT, solver, geometry, config, iMGLevel);
+      }
       break;
     case MAIN_SOLVER::FEM_EULER:
       solver[FLOW_SOL] = CreateSubSolver(SUB_SOLVER_TYPE::DG_EULER, solver, geometry, config, iMGLevel);
@@ -343,14 +351,14 @@ CSolver* CSolverFactory::CreateTurbSolver(TURB_MODEL kindTurbModel, CSolver **so
     switch (TurbModelFamily(kindTurbModel)) {
       case TURB_FAMILY::SA:
         turbSolver = new CTurbSASolver(geometry, config, iMGLevel, solver[FLOW_SOL]->GetFluidModel());
-        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
         break;
       case TURB_FAMILY::KW:
         turbSolver = new CTurbSSTSolver(geometry, config, iMGLevel);
-        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
         turbSolver->Postprocessing(geometry, solver, config, iMGLevel);
-        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
         break;
       case TURB_FAMILY::NONE:
         SU2_MPI::Error("Trying to create TurbSolver container but TURB_MODEL=NONE.", CURRENT_FUNCTION);
@@ -378,9 +386,9 @@ CSolver* CSolverFactory::CreateTransSolver(TURB_TRANS_MODEL kindTransModel, CSol
     switch (kindTransModel) {
       case TURB_TRANS_MODEL::LM :
         transSolver = new CTransLMSolver(geometry, config, iMGLevel);
-        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
         transSolver->Postprocessing(geometry, solver, config, iMGLevel);
-        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver[FLOW_SOL]->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
         break;
       case TURB_TRANS_MODEL::NONE:
         break;
@@ -398,7 +406,10 @@ CSolver* CSolverFactory::CreateSpeciesSolver(CSolver **solver, CGeometry *geomet
     if (adjoint){
       speciesSolver = new CDiscAdjSolver(geometry, config, solver[SPECIES_SOL], RUNTIME_SPECIES_SYS, iMGLevel);
     } else {
-      speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
+      if (config->GetKind_Species_Model() == SPECIES_MODEL::SPECIES_TRANSPORT)
+        speciesSolver = new CSpeciesSolver(geometry, config, iMGLevel);
+      else if (config->GetKind_Species_Model() == SPECIES_MODEL::FLAMELET)
+        speciesSolver = new CSpeciesFlameletSolver(geometry, config, iMGLevel);
     }
   }
   return speciesSolver;
@@ -411,9 +422,9 @@ CSolver* CSolverFactory::CreateHeatSolver(CSolver **solver, CGeometry *geometry,
   /*--- Only allocate a heat solver if it should run standalone
    * or if the weakly coupled heat solver is enabled and no energy equation is included ---*/
 
-  if ((config->GetWeakly_Coupled_Heat() && !config->GetEnergy_Equation()) || config->GetHeatProblem()){
-    if (adjoint){
-      if (config->GetDiscrete_Adjoint()){
+  if ((config->GetWeakly_Coupled_Heat() && !config->GetEnergy_Equation()) || config->GetHeatProblem()) {
+    if (adjoint) {
+      if (config->GetDiscrete_Adjoint()) {
         heatSolver = new CDiscAdjSolver(geometry, config, solver[HEAT_SOL], RUNTIME_HEAT_SYS, iMGLevel);
       }
       else {
@@ -424,24 +435,24 @@ CSolver* CSolverFactory::CreateHeatSolver(CSolver **solver, CGeometry *geometry,
       heatSolver = new CHeatSolver(geometry, config, iMGLevel);
     }
   }
-  return heatSolver;
 
+  return heatSolver;
 }
 
 CSolver* CSolverFactory::CreateMeshSolver(CSolver **solver, CGeometry *geometry, CConfig *config, int iMGLevel, bool adjoint){
 
   CSolver *meshSolver = nullptr;
 
-  if (config->GetDeform_Mesh() && iMGLevel == MESH_0){
-    if (!adjoint){
+  if (config->GetDeform_Mesh() && iMGLevel == MESH_0) {
+    if (!adjoint) {
       meshSolver = new CMeshSolver(geometry, config);
     }
-    if (adjoint && config->GetDiscrete_Adjoint()){
+    if (adjoint && config->GetDiscrete_Adjoint()) {
       meshSolver = new CDiscAdjMeshSolver(geometry, config, solver[MESH_SOL]);
     }
   }
-  return meshSolver;
 
+  return meshSolver;
 }
 
 CSolver* CSolverFactory::CreateDGSolver(SUB_SOLVER_TYPE kindDGSolver, CGeometry *geometry, CConfig *config, int iMGLevel){

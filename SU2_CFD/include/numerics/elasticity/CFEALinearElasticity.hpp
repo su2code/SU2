@@ -2,14 +2,14 @@
  * \file CFEALinearElasticity.hpp
  * \brief Declaration and inlines of the linear elasticity FE numerics class.
  * \author Ruben Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,7 +35,7 @@
  * \brief Class for computing the stiffness matrix of a linear, elastic problem.
  * \ingroup Elasticity_Equations
  * \author R.Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  */
 class CFEALinearElasticity : public CFEAElasticity {
 protected:
@@ -54,11 +54,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CFEALinearElasticity(unsigned short val_nDim, unsigned short val_nVar, const CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEALinearElasticity(void) override = default;
 
   /*!
    * \brief Build the tangent stiffness matrix of an element.
@@ -90,7 +85,7 @@ private:
  * \brief Particular case of linear elasticity used for mesh deformation.
  * \ingroup Elasticity_Equations
  * \author R.Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  */
 class CFEAMeshElasticity final : public CFEALinearElasticity {
 
@@ -109,11 +104,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CFEAMeshElasticity(unsigned short val_nDim, unsigned short val_nVar, unsigned long val_nElem, const CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CFEAMeshElasticity(void) override = default;
 
   /*!
    * \brief Set the element-based local Young's modulus in mesh problems

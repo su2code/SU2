@@ -2,14 +2,14 @@
  * \file CFlowOutput.hpp
  * \brief  Headers of the flow output.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -43,6 +43,12 @@ protected:
    * \param[in] config - Definition of the particular problem.
    */
   CFlowOutput(const CConfig *config, unsigned short nDim, bool femOutput);
+
+  /*
+   * \brief Add turboperformance outputs as history field
+   * \param[in] nZone - Number of zones in problem
+  */
+  void AddTurboOutput(unsigned short nZone);
 
   /*!
    * \brief Set the values of the volume output fields for a surface point.
@@ -125,7 +131,31 @@ protected:
   void SetVolumeOutputFieldsScalarResidual(const CConfig* config);
 
   /*!
-   * \brief Add scalar (turbulence/species) volume limiter fields (and more) for a point (FVMComp, FVMInc, FVMNEMO).
+   * \brief Add scalar (turbulence/species) volume primitive fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumeOutputFieldsScalarPrimitive(const CConfig* config);
+
+  /*!
+   * \brief Add scalar (turbulence/species) volume limiter fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumeOutputFieldsScalarLimiter(const CConfig* config);
+
+  /*!
+   * \brief Add flamelet volume source term fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumeOutputFieldsScalarSource(const CConfig* config);
+
+  /*!
+   * \brief Add flamelet volume lookup value fields for a point (FVMComp, FVMInc, FVMNEMO).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetVolumeOutputFieldsScalarLookup(const CConfig* config);
+
+  /*!
+   * \brief Add miscellaneous scalar volume fields for a point (FVMComp, FVMInc, FVMNEMO).
    * \param[in] config - Definition of the particular problem.
    */
   void SetVolumeOutputFieldsScalarMisc(const CConfig* config);
@@ -215,7 +245,8 @@ protected:
    * \brief Helper for custom outputs, converts variable names to indices and pointers which are then used
    * to evaluate the custom expressions.
    */
-  void ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsigned long>& idx, CustomOutput& output) const;
+  void ConvertVariableSymbolsToIndices(const CPrimitiveIndices<unsigned long>& idx, bool allowSkip,
+                                       CustomOutput& output) const;
 
   /*!
    * \brief Compute value of the Q criteration for vortex idenfitication
@@ -296,7 +327,7 @@ protected:
    * \param[in] force_writing - boolean that forces writing of volume output
    * \param[in] iFile - index to the file that we need to consider for volume output
    */
-  bool WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile) override; 
+  bool WriteVolumeOutput(CConfig *config, unsigned long Iter, bool force_writing, unsigned short iFile) override;
   /*!
    * \brief Write the forces breakdown file
    * \param[in] config - Definition of the particular problem per zone.
@@ -306,15 +337,18 @@ protected:
 
   /*!
    * \brief Set the time averaged output fields.
+   * \param[in] config - Definition of the particular problem per zone.
    */
-  void SetTimeAveragedFields();
+  void SetTimeAveragedFields(const CConfig *config);
 
   /*!
    * \brief Load the time averaged output fields.
    * \param iPoint
    * \param node_flow
+   * \param node_turb
+   * \param config - Definition of the particular problem per zone.
    */
-  void LoadTimeAveragedData(unsigned long iPoint, const CVariable *node_flow);
+  void LoadTimeAveragedData(unsigned long iPoint, const CVariable *node_flow, const CVariable *node_turb, const CConfig *config);
 
   /*!
    * \brief Write additional output for fixed CL mode.
@@ -322,4 +356,34 @@ protected:
    */
   void SetFixedCLScreenOutput(const CConfig *config);
 
+  /*!
+   * \brief Compute the ratio of the stochastic energy backscatter to the turbulent energy dissipation.
+   * \param iPoint - Index of the point.
+   * \param config - Definition of the particular problem.
+   * \param node_flow - Flow solver solution.
+   * \param node_turb - Turbulence-model solver solution.
+   * \return Stochastic energy backscatter ratio.
+   */
+  inline su2double GetEnergyBackscatterRatio(unsigned long iPoint, const CConfig *config, const CVariable *node_flow, const CVariable *node_turb) {
+    const su2double rho = node_flow->GetDensity(iPoint);
+    const su2double nu_t = node_flow->GetEddyViscosity(iPoint) / rho;
+    const su2double DES_lengthscale = max(node_flow->GetDES_LengthScale(iPoint), 1e-10);
+    const su2double lesSensor = node_flow->GetLES_Mode(iPoint);
+    const su2double mag = config->GetSBSParam().SBS_Cmag;
+    const su2double threshold = config->GetSBSParam().stochFdThreshold;
+    su2double strainMag = node_flow->GetStrainMag(iPoint);
+    su2double tke_estim = 0.0;
+    if (lesSensor > threshold) tke_estim = pow(nu_t/DES_lengthscale, 2);
+    const su2double csi_x = node_turb->GetSolution(iPoint, 1);
+    const su2double csi_y = node_turb->GetSolution(iPoint, 2);
+    const su2double csi_z = node_turb->GetSolution(iPoint, 3);
+    const su2double R_xy = - mag * tke_estim * csi_z;
+    const su2double R_xz = + mag * tke_estim * csi_y;
+    const su2double R_yz = - mag * tke_estim * csi_x;
+    const su2double energy_res_to_mod = nu_t * strainMag * strainMag;
+    const auto vorticity = node_flow->GetVorticity(iPoint);
+    const su2double energy_backscatter = R_xy*vorticity[2] - R_xz*vorticity[1] + R_yz*vorticity[0];
+    const su2double energy_backscatter_ratio = energy_backscatter / (energy_res_to_mod + 1e-10);
+    return energy_backscatter_ratio;
+  }
 };

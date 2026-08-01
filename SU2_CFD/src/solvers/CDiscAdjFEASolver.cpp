@@ -2,14 +2,14 @@
  * \file CDiscAdjFEASolver.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,7 @@
 
 CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolver *direct_solver,
                                      unsigned short Kind_Solver, unsigned short iMesh)  : CSolver() {
+  SU2_ZONE_SCOPED
 
   adjoint = true;
 
@@ -84,16 +85,7 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   /*--- Initialize vector structures for multiple material definition ---*/
 
-  nMPROP = config->GetnElasticityMod();
-
-  /*--- For a material to be fully defined, we need to have the same number for all three parameters ---*/
-  bool checkDef = ((config->GetnElasticityMod() == config->GetnPoissonRatio()) &&
-                   (config->GetnElasticityMod() == config->GetnMaterialDensity()) &&
-                   (config->GetnMaterialDensity() == config->GetnPoissonRatio()));
-
-  if (!checkDef){
-    SU2_MPI::Error("WARNING: For a material to be fully defined, E, Nu and Rho need to have the same dimensions.", CURRENT_FUNCTION);
-  }
+  nMPROP = config->GetnElasticityMat();
 
   E.resize(nMPROP);
   Nu.resize(nMPROP);
@@ -132,28 +124,37 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 CDiscAdjFEASolver::~CDiscAdjFEASolver() { delete nodes; }
 
 void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
-  unsigned long iPoint;
-  unsigned short iVar;
+  /*--- Under some conditions, linear elasticity problems converge in one iteration.
+   * This means that the "clear indices" step of the discrete adjoint solver produces a
+   * converged solution regardless of the primal solution given to the adjoint solver.
+   * We can take advantage of this for optimization to skip the primal solver. ---*/
 
-  /*--- Reset the solution to the initial (converged) solution ---*/
+  const bool linear = config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL;
+  const bool heat = config->GetWeakly_Coupled_Heat();
+  const bool time_domain = config->GetTime_Domain();
+  const bool keep_solution = linear && !heat && !time_domain && !std::is_same_v<su2mixedfloat, float>;
 
-  for (iPoint = 0; iPoint < nPoint; iPoint++)
-    for (iVar = 0; iVar < nVar; iVar++)
-      direct_solver->GetNodes()->SetSolution(iPoint, iVar, nodes->GetSolution_Direct(iPoint)[iVar]);
+  /*--- Restore the solution to the initial (converged) solution or reset AD indices. ---*/
+
+  for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
+    if (keep_solution) {
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        AD::ResetInput(direct_solver->GetNodes()->GetSolution(iPoint)[iVar]);
+    } else {
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        direct_solver->GetNodes()->SetSolution(iPoint, iVar, nodes->GetSolution_Direct(iPoint)[iVar]);
+    }
+  }
 
   /*--- Reset the input for time n ---*/
 
-  if (config->GetTime_Domain()) {
-    for (iPoint = 0; iPoint < nPoint; iPoint++)
-      for (iVar = 0; iVar < nVar; iVar++)
+  if (time_domain) {
+    for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
+      for (auto iVar = 0u; iVar < nVar; iVar++)
         AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n(iPoint)[iVar]);
   }
-
-  /*--- Set the Jacobian to zero since this is not done inside the meanflow iteration
-   * when running the discrete adjoint solver. ---*/
-
-  direct_solver->Jacobian.SetValZero();
 
   /*--- Set indices to zero ---*/
 
@@ -162,6 +163,7 @@ void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
 }
 
 void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   const bool input = true;
   const bool dynamic = config->GetTime_Domain();
@@ -180,6 +182,7 @@ void CDiscAdjFEASolver::RegisterSolution(CGeometry *geometry, CConfig *config){
 }
 
 void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset){
+  SU2_ZONE_SCOPED
 
   /*--- Register element-based values as input ---*/
 
@@ -214,10 +217,11 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
       Rho_DL.Register();
       if (de_effects) EField.Register();
       if (fea_dv) DV.Register();
+    }
 
-      /*--- Register the flow tractions ---*/
-      if (config->GetnMarker_Fluid_Load() > 0)
-        direct_solver->GetNodes()->RegisterFlowTraction();
+    /*--- Register or reset the flow tractions ---*/
+    if (config->GetnMarker_Fluid_Load() > 0) {
+      direct_solver->GetNodes()->RegisterFlowTraction(reset);
     }
 
   }
@@ -228,6 +232,7 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
 }
 
 void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   const bool input = false;
 
@@ -238,6 +243,7 @@ void CDiscAdjFEASolver::RegisterOutput(CGeometry *geometry, CConfig *config){
 }
 
 void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *config, bool CrossTerm) {
+  SU2_ZONE_SCOPED
 
   /*--- Set the old solution, for multi-zone problems this is done after computing the
    *    residuals, otherwise the per-zone-residuals do not make sense, as on entry Solution
@@ -247,22 +253,30 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
   /*--- Extract and store the adjoint solution ---*/
 
+  AD::BeginUseAdjoints();
+
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
     su2double Solution[MAXNVAR] = {0.0};
     direct_solver->GetNodes()->GetAdjointSolution(iPoint,Solution);
     nodes->SetSolution(iPoint,Solution);
   }
 
+  AD::EndUseAdjoints();
+
   if (CrossTerm) return;
 
   /*--- Extract and store the adjoint solution at time n (including accel. and velocity) ---*/
 
   if (config->GetTime_Domain()) {
+    AD::BeginUseAdjoints();
+
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
       su2double Solution[MAXNVAR] = {0.0};
       direct_solver->GetNodes()->GetAdjointSolution_time_n(iPoint,Solution);
       nodes->Set_Solution_time_n(iPoint,Solution);
     }
+
+    AD::EndUseAdjoints();
   }
 
   /*--- Set the residuals ---*/
@@ -286,6 +300,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 }
 
 void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   if (KindDirect_Solver != RUNTIME_FEA_SYS) return;
 
@@ -303,7 +318,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
   if (config->GetnMarker_Fluid_Load() > 0) {
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
       for (unsigned short iDim = 0; iDim < nDim; iDim++){
-        su2double val_sens = direct_solver->GetNodes()->ExtractFlowTraction_Sensitivity(iPoint,iDim);
+        su2double val_sens = direct_solver->GetNodes()->ExtractFlowTractionSensitivity(iPoint,iDim);
         nodes->SetFlowTractionSensitivity(iPoint, iDim, val_sens);
       }
     }
@@ -312,6 +327,7 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 }
 
 void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   const bool dynamic = config->GetTime_Domain();
   const bool deform_mesh = (config->GetnMarker_Deform_Mesh() > 0);
@@ -345,6 +361,7 @@ void CDiscAdjFEASolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config){
 }
 
 void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config_container, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output){
+  SU2_ZONE_SCOPED
 
   if (config_container->GetTime_Domain()) {
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
@@ -354,13 +371,19 @@ void CDiscAdjFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSolver*){
+  SU2_ZONE_SCOPED
 
-  E.UpdateTotal();
-  Nu.UpdateTotal();
-  Rho.UpdateTotal();
-  Rho_DL.UpdateTotal();
-  if (de_effects) EField.UpdateTotal();
-  if (fea_dv) DV.UpdateTotal();
+  const bool time_domain = config->GetTime_Domain();
+
+  /*--- Store the final material sensitivities for the time step to increment them on the next time step. ---*/
+  if (time_domain) {
+    E.Store();
+    Nu.Store();
+    Rho.Store();
+    Rho_DL.Store();
+    if (de_effects) EField.Store();
+    if (fea_dv) DV.Store();
+  }
 
   /*--- Extract the topology optimization density sensitivities. ---*/
 
@@ -368,7 +391,7 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
 
   /*--- Extract the geometric sensitivities ---*/
 
-  const bool time_domain = config->GetTime_Domain();
+  AD::BeginUseAdjoints();
 
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
 
@@ -387,9 +410,12 @@ void CDiscAdjFEASolver::SetSensitivity(CGeometry *geometry, CConfig *config, CSo
     }
   }
 
+  AD::EndUseAdjoints();
+
 }
 
 void CDiscAdjFEASolver::ReadDV(const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   string filename;
   ifstream properties_file;
@@ -458,12 +484,20 @@ void CDiscAdjFEASolver::ReadDV(const CConfig *config) {
 }
 
 void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  SU2_ZONE_SCOPED
 
   /*--- Restart the solution from file information ---*/
 
   auto filename = config->GetSolution_AdjFileName();
   auto restart_filename = config->GetObjFunc_Extension(filename);
-  restart_filename = config->GetFilename(restart_filename, "", val_iter);
+
+  if (config->GetRead_Binary_Restart()) {
+    restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, filename);
+  } else {
+    restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, filename);
+  }
 
   BasicLoadRestart(geometry[MESH_0], config, restart_filename, geometry[MESH_0]->GetnDim());
 

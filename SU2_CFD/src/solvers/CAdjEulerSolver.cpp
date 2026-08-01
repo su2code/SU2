@@ -2,14 +2,14 @@
  * \file CAdjEulerSolver.cpp
  * \brief Main subroutines for solving Euler adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,6 +30,7 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 
 CAdjEulerSolver::CAdjEulerSolver() : CSolver() {
+  SU2_ZONE_SCOPED
 
   /*--- Array initialization ---*/
   Phi_Inf = nullptr;
@@ -43,12 +44,11 @@ CAdjEulerSolver::CAdjEulerSolver() : CSolver() {
   CSensitivity = nullptr;
   FlowPrimVar_i = nullptr;
   FlowPrimVar_j = nullptr;
-  DonorAdjVar = nullptr;
-  DonorGlobalIndex = nullptr;
 
 }
 
 CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
+  SU2_ZONE_SCOPED
   unsigned long iPoint, iVertex, iMarker, jMarker;
   string text_line, mesh_filename;
   unsigned short iDim, iVar;
@@ -85,8 +85,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   CSensitivity = nullptr;
   FlowPrimVar_i = nullptr;
   FlowPrimVar_j = nullptr;
-  DonorAdjVar = nullptr;
-  DonorGlobalIndex = nullptr;
 
   /*--- Set the gamma value ---*/
   Gamma = config->GetGamma();
@@ -138,9 +136,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     jPoint_UndLapl.resize(nPoint);
   }
 
-  /*--- Define some auxiliary vectors related to the geometry ---*/
-  Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
-
   /*--- Point to point Jacobians. These are always defined because
    they are also used for sensitivity calculations. ---*/
   Jacobian_i = new su2double* [nVar];
@@ -188,25 +183,19 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
 
-  DonorAdjVar = new su2double** [nMarker];
+  DonorAdjVar.resize(nMarker);
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorAdjVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    DonorAdjVar[iMarker].resize(geometry->nVertex[iMarker]);
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      DonorAdjVar[iMarker][iVertex] = new su2double [nVar];
-      for (iVar = 0; iVar < nVar; iVar++) {
-        DonorAdjVar[iMarker][iVertex][iVar] = 0.0;
-      }
+      DonorAdjVar[iMarker][iVertex].resize(nVar, 0.0);
     }
   }
 
   /*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
 
-  DonorGlobalIndex = new unsigned long* [nMarker];
+  DonorGlobalIndex.resize(nMarker);
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorGlobalIndex[iMarker] = new unsigned long [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      DonorGlobalIndex[iMarker][iVertex] = 0;
-    }
+    DonorGlobalIndex[iMarker].resize(geometry->nVertex[iMarker],0);
   }
 
   Sens_Geo  = new su2double[nMarker];
@@ -341,13 +330,14 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
   SolverName = "ADJ.FLOW";
 }
 
 CAdjEulerSolver::~CAdjEulerSolver() {
+  SU2_ZONE_SCOPED
   unsigned short iVar, iMarker;
 
   delete [] Phi_Inf;
@@ -377,6 +367,7 @@ CAdjEulerSolver::~CAdjEulerSolver() {
 
 void CAdjEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iMesh, unsigned long Iteration) {
+  SU2_ZONE_SCOPED
 
   /*--- Use the flow solution to update the time step
    *    The time step depends on the characteristic velocity, which is the same
@@ -385,6 +376,7 @@ void CAdjEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iter,  iPoint, iVertex, jVertex, iPointTotal,
   Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
@@ -667,6 +659,7 @@ void CAdjEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geo
 }
 
 void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   su2double *ForceProj_Vector, x = 0.0, y = 0.0, z = 0.0, *Normal, CD, CL, Cp, CpTarget,
   CT, CQ, x_origin, y_origin, z_origin, WDrag, Area, invCD, CLCD2, invCQ, CTRCQ2;
@@ -890,6 +883,7 @@ void CAdjEulerSolver::SetForceProj_Vector(CGeometry *geometry, CSolver **solver_
 }
 
 void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   const bool restart = config->GetRestart();
   const bool dual_time = ((config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
@@ -901,8 +895,8 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
     for (auto iMesh = 1ul; iMesh <= config->GetnMGLevels(); iMesh++) {
       MultigridRestriction(*geometry[iMesh - 1], solver_container[iMesh - 1][ADJFLOW_SOL]->GetNodes()->GetSolution(),
                            *geometry[iMesh], solver_container[iMesh][ADJFLOW_SOL]->GetNodes()->GetSolution());
-      solver_container[iMesh][ADJFLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-      solver_container[iMesh][ADJFLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+      solver_container[iMesh][ADJFLOW_SOL]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
+      solver_container[iMesh][ADJFLOW_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
     }
   }
 
@@ -917,6 +911,7 @@ void CAdjEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
 }
 
 void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint, nonPhysicalPoints = 0;
   su2double SharpEdge_Distance;
@@ -965,11 +960,11 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     /*--- Gradient computation for MUSCL reconstruction. ---*/
 
     if (config->GetKind_Gradient_Method_Recon() == GREEN_GAUSS)
-      SetSolution_Gradient_GG(geometry, config, true);
+      SetSolution_Gradient_GG(geometry, config, 1, true);
     if (config->GetKind_Gradient_Method_Recon() == LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
+      SetSolution_Gradient_LS(geometry, config, 1, true);
     if (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES)
-      SetSolution_Gradient_LS(geometry, config, true);
+      SetSolution_Gradient_LS(geometry, config, 1, true);
 
     /*--- Limiter computation ---*/
 
@@ -983,8 +978,8 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
     if ((center_jst) && (iMesh == MESH_0)) {
       SetCentered_Dissipation_Sensor(geometry, config);
       SetUndivided_Laplacian(geometry, config);
-      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
-      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
+      if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config, 1);
+      if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config, 1);
     }
   }
 
@@ -1006,6 +1001,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 
 void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                         CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
@@ -1080,6 +1076,7 @@ void CAdjEulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_co
 
 void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_container,
                                       CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[CONV_TERM];
 
@@ -1220,6 +1217,7 @@ void CAdjEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
 
 void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                       CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
 
@@ -1325,9 +1323,11 @@ void CAdjEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
 void CAdjEulerSolver::Source_Template(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                       CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 }
 
 void CAdjEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint;
   su2double SharpEdge_Distance, eps, ds, scale, Sensor, Param_Kappa_2, Param_Kappa_4;
@@ -1356,13 +1356,14 @@ void CAdjEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfi
 
   /*--- MPI parallelization ---*/
 
-  InitiateComms(geometry, config, SENSOR);
-  CompleteComms(geometry, config, SENSOR);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SENSOR);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SENSOR);
 
 }
 
 void CAdjEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
                                            CConfig *config, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
   su2double *Residual, *Res_TruncError, Vol, Delta, Res;
   unsigned short iVar;
   unsigned long iPoint;
@@ -1390,8 +1391,8 @@ void CAdjEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
@@ -1399,6 +1400,7 @@ void CAdjEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
 }
 
 void CAdjEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
   su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
   unsigned short iVar;
   unsigned long iPoint;
@@ -1424,8 +1426,8 @@ void CAdjEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
   SetResidual_RMS(geometry, config);
@@ -1433,9 +1435,10 @@ void CAdjEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 }
 
 void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar;
-  unsigned long iPoint, total_index;
+  unsigned long iPoint;
   su2double Delta, *local_Res_TruncError, Vol;
 
   /*--- Set maximum residual to zero ---*/
@@ -1463,8 +1466,7 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
       for (iVar = 0; iVar < nVar; iVar++) {
-        total_index = iPoint*nVar + iVar;
-        LinSysRes[total_index] = 0.0;
+        LinSysRes(iPoint, iVar) = 0.0;
         local_Res_TruncError[iVar] = 0.0;
       }
     }
@@ -1472,11 +1474,10 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = -(LinSysRes[total_index] + local_Res_TruncError[iVar]);
-      LinSysSol[total_index] = 0.0;
-      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
+      LinSysRes(iPoint, iVar) = -(LinSysRes(iPoint, iVar) + local_Res_TruncError[iVar]);
+      LinSysSol(iPoint, iVar) = 0.0;
+      Residual_RMS[iVar] += LinSysRes(iPoint, iVar)*LinSysRes(iPoint, iVar);
+      AddRes_Max(iVar, fabs(LinSysRes(iPoint, iVar)), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
     }
 
   }
@@ -1485,9 +1486,8 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
   for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
+      LinSysRes(iPoint, iVar) = 0.0;
+      LinSysSol(iPoint, iVar) = 0.0;
     }
   }
 
@@ -1504,8 +1504,8 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 
   /*--- MPI solution ---*/
 
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
 
@@ -1514,6 +1514,7 @@ void CAdjEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
 }
 
 void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iVertex, iPoint, Neigh;
   unsigned short iPos, jPos;
@@ -1983,6 +1984,7 @@ void CAdjEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **solver
 }
 
 void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+  SU2_ZONE_SCOPED
   unsigned short iMarker;
   unsigned long iVertex, jVertex, nVertex, iPoint;
   su2double **A, *b, Sens, *ArchLength, *Coord_begin, *Coord_end, dist;
@@ -2092,7 +2094,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       A[iVertex][iVertex+1] = 0.0;
       A[iVertex][iVertex-1] = 0.0;
 
-      Gauss_Elimination(A, b, (unsigned short)nVertex);
+      GaussElimination(A, b, (unsigned short)nVertex);
 
       /*--- Set the new value of the sensitiviy ---*/
 
@@ -2115,6 +2117,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
 
 void CAdjEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
                                       CConfig *config, unsigned short iMesh, bool Output) {
+  SU2_ZONE_SCOPED
 
   unsigned long Iter_Fixed_CL = config->GetUpdate_AoA_Iter_Limit();
   unsigned long InnerIter       = config->GetInnerIter();
@@ -2225,6 +2228,7 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
                                     CNumerics      *visc_numerics,
                                     CConfig        *config,
                                     unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned long iVertex, iPoint;
   su2double *d = nullptr, *Normal, *U, *Psi_Aux, ProjVel = 0.0, bcn, vn = 0.0, Area, *UnitNormal;
@@ -2364,6 +2368,7 @@ void CAdjEulerSolver::BC_Euler_Wall(CGeometry      *geometry,
 
 void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                    CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned long iVertex, iPoint;
   su2double *Normal, ProjVel = 0.0, vn = 0.0, Area, *UnitNormal,
@@ -2521,6 +2526,7 @@ void CAdjEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned long iVertex, iPoint, Point_Normal;
   unsigned short iVar, iDim;
@@ -2629,6 +2635,7 @@ void CAdjEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
 void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_container,
     CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *V_inlet, *V_domain, *Normal, *Psi_domain, *Psi_inlet;
@@ -2747,6 +2754,7 @@ void CAdjEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_
 
 void CAdjEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
                                           CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *V_outlet, *V_domain, *Normal, *Psi_domain, *Psi_outlet;
@@ -2864,6 +2872,7 @@ void CAdjEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver
 }
 
 void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -3043,6 +3052,7 @@ void CAdjEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, 
 }
 
 void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint, Point_Normal;
@@ -3333,6 +3343,7 @@ void CAdjEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CAdjEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   su2double *Normal, *V_domain, *V_inflow, *Psi_domain, *Psi_inflow, P_Fan, Velocity[3],
   Velocity2, Density, Vn, UnitNormal[3], Area, a1;
@@ -3455,6 +3466,7 @@ void CAdjEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_con
 }
 
 void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned long iVertex, iPoint, Point_Normal;
   su2double *Normal, *V_domain, *V_exhaust, *Psi_domain, *Psi_exhaust;
@@ -3532,6 +3544,7 @@ void CAdjEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_co
 }
 
 void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   su2double *Normal, *V_domain, *V_inlet, *Psi_domain, *Psi_inlet;
   unsigned short iVar, iDim;
@@ -3662,6 +3675,7 @@ void CAdjEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_con
 }
 
 void CAdjEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned long iVertex, iPoint, GlobalIndex_inlet, GlobalIndex;
   su2double *Normal, *V_domain, *V_outlet, *Psi_domain, *Psi_outlet;
@@ -3752,11 +3766,13 @@ void CAdjEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_co
 
 void CAdjEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                  CNumerics *visc_numerics, CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
+  SU2_ZONE_SCOPED
 
 }
 
 void CAdjEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep,
                                            unsigned short iMesh, unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
   unsigned short iVar, jVar;
   unsigned long iPoint;
   su2double *U_time_nM1, *U_time_n, *U_time_nP1, Volume_nM1, Volume_n, Volume_nP1, TimeStep;
@@ -3816,6 +3832,7 @@ void CAdjEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
 }
 
 void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  SU2_ZONE_SCOPED
 
   /*--- Restart the solution from file information ---*/
   unsigned short iDim, iVar, iMesh;
@@ -3827,7 +3844,6 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   filename         = config->GetSolution_AdjFileName();
   restart_filename = config->GetObjFunc_Extension(filename);
-  restart_filename = config->GetFilename(restart_filename, "", val_iter);
 
   Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -3840,8 +3856,10 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
+    restart_filename = config->GetFilename(restart_filename, ".dat", val_iter);
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
   } else {
+    restart_filename = config->GetFilename(restart_filename, ".csv", val_iter);
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
@@ -3893,8 +3911,8 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
    it down to the coarse levels. We also call the preprocessing routine
    on the fine level in order to have all necessary quantities updated. ---*/
 
-  solver[MESH_0][ADJFLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
-  solver[MESH_0][ADJFLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][ADJFLOW_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
+  solver[MESH_0][ADJFLOW_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
   solver[MESH_0][ADJFLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -3902,8 +3920,8 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     MultigridRestriction(*geometry[iMesh - 1], solver[iMesh - 1][ADJFLOW_SOL]->GetNodes()->GetSolution(),
                          *geometry[iMesh], solver[iMesh][ADJFLOW_SOL]->GetNodes()->GetSolution());
-    solver[iMesh][ADJFLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
-    solver[iMesh][ADJFLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][ADJFLOW_SOL]->InitiateComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
+    solver[iMesh][ADJFLOW_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
     solver[iMesh][ADJFLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   }
 
@@ -3911,13 +3929,12 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 
-  delete [] Restart_Vars;
-  delete [] Restart_Data;
-  Restart_Vars = nullptr; Restart_Data = nullptr;
-
+  Restart_Vars = decltype(Restart_Vars){};
+  Restart_Data = decltype(Restart_Data){};
 }
 
 void CAdjEulerSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim, jDim, iNeigh, iMarker;
   unsigned short nDim = geometry->GetnDim();

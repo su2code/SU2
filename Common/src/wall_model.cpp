@@ -3,14 +3,14 @@
  * \brief File, which contains the implementation for the wall model functions
  *        for large eddy simulations.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,7 +31,12 @@
 
 /* Prototypes for Lapack functions, if MKL or LAPACK is used. */
 #if defined(HAVE_MKL) || defined(HAVE_LAPACK)
-extern "C" void dgtsv_(int*, int*, passivedouble*, passivedouble*, passivedouble*, passivedouble*, int*, int*);
+#ifdef USE_SINGLE_PRECISION
+#define GTSV_IMPL sgtsv_
+#else
+#define GTSV_IMPL dgtsv_
+#endif
+extern "C" void GTSV_IMPL(int*, int*, passivedouble*, passivedouble*, passivedouble*, passivedouble*, int*, int*);
 #endif
 
 CWallModel::CWallModel(CConfig* config) {
@@ -193,7 +198,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange, const
 #if (defined(HAVE_MKL) || defined(HAVE_LAPACK)) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
     int info, nrhs = 1;
 
-    dgtsv_(&numPoints, &nrhs, lower.data(), diagonal.data(), upper.data(), rhs.data(), &numPoints, &info);
+    GTSV_IMPL(&numPoints, &nrhs, lower.data(), diagonal.data(), upper.data(), rhs.data(), &numPoints, &info);
     if (info != 0) SU2_MPI::Error("Unsuccessful call to dgtsv_", CURRENT_FUNCTION);
 #else
     SU2_MPI::Error("Not compiled with MKL or LAPACK support", CURRENT_FUNCTION);
@@ -273,7 +278,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange, const
     /* Solve the matrix problem to get the Enthalpy field
      */
 #if (defined(HAVE_MKL) || defined(HAVE_LAPACK)) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
-    dgtsv_(&numPoints, &nrhs, lower.data(), diagonal.data(), upper.data(), rhs.data(), &numPoints, &info);
+    GTSV_IMPL(&numPoints, &nrhs, lower.data(), diagonal.data(), upper.data(), rhs.data(), &numPoints, &info);
     if (info != 0) SU2_MPI::Error("Unsuccessful call to dgtsv_", CURRENT_FUNCTION);
 #else
     SU2_MPI::Error("Not compiled with MKL or LAPACK support", CURRENT_FUNCTION);
@@ -306,9 +311,11 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange, const
     if (y_cv[0] * sqrt(tauWall / rho) / (mu_lam / rho) > 1.0)
       SU2_MPI::Error("Y+ greater than one: Increase the number of points or growth ratio.", CURRENT_FUNCTION);
 
-    /* Define a norm
-     */
-    if (abs(1.0 - tauWall / tauWall_prev) < tol && abs(1.0 - qWall / qWall_prev) < tol) {
+    /* Define a norm */
+    bool tau_converged = abs(tauWall - tauWall_prev) < fmax(tol * abs(tauWall), EPS);
+    bool q_converged = abs(qWall - qWall_prev) < fmax(tol * abs(qWall), EPS);
+
+    if (tau_converged && q_converged) {
       converged = true;
     }
   }
@@ -369,7 +376,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange, con
                                  (-(1.0 / 11.0) * h_wm * exp(-0.33 * y_plus) / nu_wall +
                                   (1.0 / 11.0) * h_wm * exp(-(1.0 / 11.0) * y_plus) / nu_wall +
                                   (1.0 / 33.0) * u_tau0 * pow(h_wm, 2.0) * exp(-0.33 * y_plus) / pow(nu_wall, 2.0)) -
-                             1.0 * h_wm / (nu_wall * (karman * y_plus + 1.0));
+                             h_wm / (nu_wall * (karman * y_plus + 1.0));
 
     /* Newton method
      */
@@ -392,7 +399,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange, con
     const su2double rhs_1 = Pr_lam * y_plus * exp(Gamma);
     const su2double rhs_2 =
         (2.12 * log(1.0 + y_plus) + pow((3.85 * pow(Pr_lam, (1.0 / 3.0)) - 1.3), 2.0) + 2.12 * log(Pr_lam)) *
-        exp(1. / Gamma);
+        exp(1.0 / fmin(Gamma, -EPS));
     qWall = lhs / (rhs_1 + rhs_2);
   } else {
     qWall = Wall_HeatFlux;

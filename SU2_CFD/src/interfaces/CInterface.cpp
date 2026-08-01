@@ -2,14 +2,14 @@
  * \file CInterface.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,13 +57,15 @@ CInterface::~CInterface() {
 
   delete[] SpanValueCoeffTarget;
   delete[] SpanLevelDonor;
+
+  delete NextInterface;
 }
 
 void CInterface::BroadcastData(const CInterpolator& interpolator,
                                CSolver *donor_solution, CSolver *target_solution,
                                CGeometry *donor_geometry, CGeometry *target_geometry,
                                const CConfig *donor_config, const CConfig *target_config) {
-  static_assert(su2activematrix::Storage == StorageType::RowMajor,"");
+  static_assert(su2activematrix::Storage == StorageType::RowMajor);
 
   GetPhysical_Constants(donor_solution, target_solution, donor_geometry, target_geometry,
                         donor_config, target_config);
@@ -108,6 +110,11 @@ void CInterface::BroadcastData(const CInterpolator& interpolator,
     su2activematrix sendDonorVar(nLocalVertexDonor, nVar);
 
     if (markDonor >= 0) {
+
+      /*--- Apply contact resistance if specified. ---*/
+
+      SetContactResistance(donor_config->GetContactResistance(iMarkerInt));
+
       for (auto iVertex = 0ul, iSend = 0ul; iVertex < donor_geometry->GetnVertex(markDonor); iVertex++) {
         const auto iPoint = donor_geometry->vertex[markDonor][iVertex]->GetNode();
 
@@ -230,7 +237,7 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
           /*--- If the tag hasn't matched any tag within the donor markers ---*/
       Marker_Donor = -1;
       Donor_Flag   = -1;
-   
+
   }
 
 #ifdef HAVE_MPI
@@ -248,7 +255,7 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
   Donor_Flag= -1;
 
   for (int iSize=0; iSize<size; iSize++){
-    if(BuffMarkerDonor[iSize] > 0.0){
+    if(BuffMarkerDonor[iSize] >= 0.0){
       Marker_Donor = BuffMarkerDonor[iSize];
       Donor_Flag = BuffDonorFlag[iSize];
       break;
@@ -273,8 +280,8 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
       break;
     }
           /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-      Marker_Target = -1;
-   
+    Marker_Target = -1;
+    Target_Flag = -1;
   }
 
   if (Marker_Target != -1 && Marker_Donor != -1){
@@ -286,7 +293,7 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
     for(iSpan = 1; iSpan <nSpanTarget-1; iSpan++){
       dist  = 10E+06;
       dist2 = 10E+06;
-      for(jSpan = 0; jSpan < nSpanDonor;jSpan++){
+      for (jSpan = 1; jSpan < nSpanDonor - 2; jSpan++) {
         test = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
         test2 = abs(SpanValuesTarget[iSpan] - SpanValuesDonor[jSpan]);
         if(test < dist && SpanValuesTarget[iSpan] > SpanValuesDonor[jSpan]){
@@ -295,7 +302,7 @@ void CInterface::PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_
         }
         if(test2 < dist2){
           dist2 = test2;
-          tSpan =jSpan;
+          tSpan = jSpan;
         }
 
       }
@@ -418,7 +425,7 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
     }
           /*--- If the tag hasn't matched any tag within the donor markers ---*/
       Marker_Donor = -1;
-   
+
   }
   /*--- Here we want to make available the quantities for all the processors and collect them in a buffer
    * for each span of the donor the span-wise height vector also so
@@ -533,7 +540,7 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
     }
           /*--- If the tag hasn't matched any tag within the Flow markers ---*/
       Marker_Target = -1;
-   
+
   }
 
 
@@ -633,25 +640,4 @@ void CInterface::AllgatherAverage(CSolver *donor_solution, CSolver *target_solut
   delete [] avgNuTarget;
   delete [] avgKineTarget;
   delete [] avgOmegaTarget;
-
-
-}
-
-void CInterface::GatherAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone){
-
-
-  /*--- here we made the strong assumption that the mesh zone order
-   * follows the same order of the turbomachinery markers ---*/
-  SetAverageValues(donor_solution, target_solution, donorZone);
-
-}
-
-void CInterface::GatherAverageTurboGeoValues(CGeometry *donor_geometry, CGeometry *target_geometry,
-                                             unsigned short donorZone){
-
-
-  /*--- here we made the strong assumption that the mesh zone order
-   * follows the same order of the turbomachinery markers ---*/
-  SetAverageTurboGeoValues(donor_geometry, target_geometry, donorZone);
-
 }

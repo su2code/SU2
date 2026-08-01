@@ -2,14 +2,14 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,7 +41,6 @@ protected:
   using BaseClass = CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>;
 
   su2double
-  Prandtl_Lam = 0.0,    /*!< \brief Laminar Prandtl number. */
   Prandtl_Turb = 0.0;   /*!< \brief Turbulent Prandtl number. */
 
   su2double AllBound_CEquivArea_Inv=0.0; /*!< \brief equivalent area coefficient (inviscid contribution) for all the boundaries. */
@@ -65,6 +64,9 @@ protected:
   vector<vector<unsigned long> > DonorGlobalIndex;  /*!< \brief Value of the donor global index. */
   vector<su2activematrix> DonorPrimVar;       /*!< \brief Value of the donor variables at each boundary. */
   vector<vector<su2double> > ActDisk_DeltaP;  /*!< \brief Value of the Delta P. */
+  vector<vector<su2double> > ActDisk_DeltaP_r; /*!< \brief Value of the DeltaP_r. */
+  vector<vector<su2double> > ActDisk_Thrust_r; /*!< \brief Value of the Thrust_r. */
+  vector<vector<su2double> > ActDisk_Torque_r; /*!< \brief Value of the Torque_r. */
   vector<vector<su2double> > ActDisk_DeltaT;  /*!< \brief Value of the Delta T. */
 
   su2activevector
@@ -76,6 +78,10 @@ protected:
   vector<vector<su2double> > ActDisk_Fx; /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
   vector<vector<su2double> > ActDisk_Fy; /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
   vector<vector<su2double> > ActDisk_Fz; /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fa_BEM; /*!< \brief Value of the actuator disk Axial Force per Unit Area. */
+  vector<vector<su2double> > ActDisk_Fx_BEM; /*!< \brief Value of the actuator disk X component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fy_BEM; /*!< \brief Value of the actuator disk Y component of the radial and tangential forces per Unit Area resultant. */
+  vector<vector<su2double> > ActDisk_Fz_BEM; /*!< \brief Value of the actuator disk Z component of the radial and tangential forces per Unit Area resultant. */
 
   su2double
   Total_CL_Prev = 0.0,        /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
@@ -110,6 +116,9 @@ protected:
 
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
 
+  /*!< \brief Variables for outlier detection. */
+  su2double MeanTemperature, StdDevTemperature;
+
   /*--- Turbomachinery Solver Variables ---*/
 
   vector<su2activematrix> AverageFlux;
@@ -131,6 +140,7 @@ protected:
   su2activematrix ExtAverageNu;
   su2activematrix ExtAverageKine;
   su2activematrix ExtAverageOmega;
+  su2activevector AverageMassFlowRate;
 
   su2activematrix DensityIn;
   su2activematrix PressureIn;
@@ -215,6 +225,18 @@ protected:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void ReadActDisk_InputFile(CGeometry *geometry, CSolver **solver_container,
+                           CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \author: Chandukrishna Y., T. N. Venkatesh and Josy P. Pullockara
+   * \brief Read and update the variable load actuator disk from input file for the BLADE_ELEMENT type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - current mesh level for the multigrid.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void SetActDisk_BEM_VLAD(CGeometry *geometry, CSolver **solver_container,
                            CConfig *config, unsigned short iMesh, bool Output);
 
   /*!
@@ -303,8 +325,8 @@ protected:
         }
 
         //--- communicate the solution values via MPI
-        InitiateComms(geometry, config, AUXVAR_ADAPT);
-        CompleteComms(geometry, config, AUXVAR_ADAPT);
+        InitiateComms(geometry, config, MPI_QUANTITIES::AUXVAR_ADAPT);
+        CompleteComms(geometry, config, MPI_QUANTITIES::AUXVAR_ADAPT);
     }
 
   /*!
@@ -836,11 +858,17 @@ void BC_Outlet_Residual(CGeometry* geometry, CSolver** solver_container, CNumeri
   void PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
 
   /*!
-   * \brief Complete an implicit iteration.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
+   * a nonlinear iteration for stability.
    * \param[in] config - Definition of the particular problem.
    */
-  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
+  void ComputeUnderRelaxationFactor(const CConfig *config) final;
+
+  /*!
+   * \brief Identify points where the static temperature is an outlier to treat them
+   *        as non-physical, e.g. force the reconstruction to be 1st order.
+   */
+  void IdentifySolutionOutliers(const CConfig *config, unsigned long iter) final;
 
   /*!
    * \brief Provide the mass flow rate.
@@ -1068,13 +1096,6 @@ void BC_Outlet_Residual(CGeometry* geometry, CSolver** solver_container, CNumeri
   }
 
   /*!
-   * \brief Update the multi-grid structure for the customized boundary conditions
-   * \param geometry_container - Geometrical definition.
-   * \param config - Definition of the particular problem.
-   */
-  void UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config) final;
-
-  /*!
    * \brief Set the initial condition for the Euler Equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container with all the solutions.
@@ -1100,11 +1121,36 @@ void BC_Outlet_Residual(CGeometry* geometry, CSolver** solver_container, CNumeri
   void InitTurboContainers(CGeometry *geometry, CConfig *config) final;
 
   /*!
+   * \brief Get Primal variables for turbo performance computation
+   *        iteration can be executed by multiple threads.
+   * \return returns Density, pressure and TurboVelocity (IN/OUTLET)
+   */
+  inline vector<su2double> GetTurboPrimitive(unsigned short iBlade, unsigned short iSpan, bool INLET) override {
+    vector<su2double> TurboPrimitive;
+    TurboPrimitive.reserve(5);
+    if (INLET) {
+      TurboPrimitive.push_back(DensityIn[iBlade][iSpan]);
+      TurboPrimitive.push_back(PressureIn[iBlade][iSpan]);
+      TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][0]);
+      TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][1]);
+      if (nDim==3)
+        TurboPrimitive.push_back(TurboVelocityIn[iBlade][iSpan][2]);
+    }
+    else {
+      TurboPrimitive.push_back(DensityOut[iBlade][iSpan]);
+      TurboPrimitive.push_back(PressureOut[iBlade][iSpan]);
+      TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][0]);
+      TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][1]);
+      if (nDim==3)
+        TurboPrimitive.push_back(TurboVelocityOut[iBlade][iSpan][2]);
+    }
+    return TurboPrimitive;
+  }
+  /*!
    * \brief Set the solution using the Freestream values.
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_TurboSolution(CConfig *config) final;
-
   /*!
    * \brief It computes average quantities along the span for turbomachinery analysis.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -1161,22 +1207,23 @@ void BC_Outlet_Residual(CGeometry* geometry, CSolver** solver_container, CNumeri
                                    const su2double *turboNormal,
                                    su2double *turboVelocity,
                                    unsigned short marker_flag,
-                                   unsigned short kind_turb){
+                                   TURBOMACHINERY_TYPE kind_turb){
 
-    if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
-      turboVelocity[2] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
-      turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
+    if ((kind_turb == TURBOMACHINERY_TYPE::AXIAL && nDim == 3) ||
+        (kind_turb == TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) ||
+        (kind_turb == TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL && marker_flag == INFLOW)) {
+      turboVelocity[2] = turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
+      turboVelocity[1] = turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
       turboVelocity[0] = cartesianVelocity[2];
-    }
-    else{
-      turboVelocity[0] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
-      turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
-      if (marker_flag == INFLOW){
+    } else {
+      turboVelocity[0] = turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
+      turboVelocity[1] = turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
+
+      if (marker_flag == INFLOW) {
         turboVelocity[0] *= -1.0;
         turboVelocity[1] *= -1.0;
       }
-      if(nDim == 3)
-        turboVelocity[2] = cartesianVelocity[2];
+      if (nDim == 3) turboVelocity[2] = cartesianVelocity[2];
     }
   }
 
@@ -1190,24 +1237,23 @@ void BC_Outlet_Residual(CGeometry* geometry, CSolver** solver_container, CNumeri
                                   const su2double *turboNormal,
                                   su2double *cartesianVelocity,
                                   unsigned short marker_flag,
-                                  unsigned short kind_turb){
+                                  TURBOMACHINERY_TYPE kind_turb){
 
-    if ((kind_turb == AXIAL && nDim == 3) || (kind_turb == CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
+    if ((kind_turb == TURBOMACHINERY_TYPE::AXIAL && nDim == 3) ||
+        (kind_turb == TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) ||
+        (kind_turb == TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL && marker_flag == INFLOW)) {
       cartesianVelocity[0] = turboVelocity[2]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
       cartesianVelocity[1] = turboVelocity[2]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
       cartesianVelocity[2] = turboVelocity[0];
-    }
-    else{
-      cartesianVelocity[0] =  turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
-      cartesianVelocity[1] =  turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
+    } else {
+      cartesianVelocity[0] = turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
+      cartesianVelocity[1] = turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
 
-      if (marker_flag == INFLOW){
+      if (marker_flag == INFLOW) {
         cartesianVelocity[0] *= -1.0;
         cartesianVelocity[1] *= -1.0;
       }
-
-      if(nDim == 3)
-        cartesianVelocity[2] = turboVelocity[2];
+      if (nDim == 3) cartesianVelocity[2] = turboVelocity[2];
     }
   }
 

@@ -2,14 +2,14 @@
  * \file flow_diffusion.hpp
  * \brief Declarations of numerics classes for viscous flux computation.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -57,12 +57,14 @@ protected:
   su2double **Mean_GradPrimVar = nullptr, /*!< \brief Mean value of the gradient. */
   Mean_Laminar_Viscosity,                 /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,                    /*!< \brief Mean value of the eddy viscosity. */
+  Mean_Thermal_Conductivity,              /*!< \brief Mean value of the thermal conductivity. */
+  Mean_Cp,                                /*!< \brief Mean value of the specific heat capacity at constant pressure. */
   Mean_turb_ke,                           /*!< \brief Mean value of the turbulent kinetic energy. */
   Mean_TauWall,                           /*!< \brief Mean wall shear stress (wall functions). */
+  Mean_StochVar[3] = {0.0},               /*!< \brief Mean stochastic variables (Stochastic Backscatter Model). */
   TauWall_i, TauWall_j,                   /*!< \brief Wall shear stress at point i and j (wall functions). */
   dist_ij_2,                              /*!< \brief Length of the edge and face, squared */
-  Edge_Vector[MAXNDIM] = {0.0},           /*!< \brief Vector from point i to point j. */
-  *Proj_Mean_GradPrimVar_Edge = nullptr;  /*!< \brief Inner product of the Mean gradient and the edge vector. */
+  Edge_Vector[MAXNDIM] = {0.0};           /*!< \brief Vector from point i to point j. */
 
   su2double** Jacobian_i = nullptr;       /*!< \brief The Jacobian w.r.t. point i after computation. */
   su2double** Jacobian_j = nullptr;       /*!< \brief The Jacobian w.r.t. point j after computation. */
@@ -207,12 +209,20 @@ public:
    * \param[in] val_turb_ke - Turbulent kinetic energy
    * \param[in] val_laminar_viscosity - Laminar viscosity.
    * \param[in] val_eddy_viscosity - Eddy viscosity.
+   * \param[in] config - Definition of the particular problem.
    */
   void SetStressTensor(const su2double *val_primvar,
                        const su2double* const *val_gradprimvar,
                        su2double val_turb_ke,
                        su2double val_laminar_viscosity,
-                       su2double val_eddy_viscosity);
+                       su2double val_eddy_viscosity,
+                       const CConfig* config);
+
+  /*!
+   * \brief Calculate the stochastic contribution to the subgrid stress tensor (Stochastic Backscatter Model)
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetStochReynStress(const CConfig* config);
 
   /*!
    * \brief Get a component of the viscous stress tensor.
@@ -222,6 +232,16 @@ public:
    * \return The component of the viscous stress tensor at iDim, jDim
    */
   inline su2double GetStressTensor(unsigned short iDim, unsigned short jDim) const { return tau[iDim][jDim];}
+
+  /*!
+   * \brief Compute the heat flux due to molecular and turbulent diffusivity
+   * \param[in] val_gradprimvar - Gradient of the primitive variables.
+   * \param[in] val_eddy_viscosity - Eddy viscosity.
+   * \param[in] val_thermal_conductivity - Thermal Conductivity.
+   * \param[in] val_heat_capacity_cp - Heat Capacity at constant pressure.
+   */
+  void SetHeatFluxVector(const su2double* const* val_gradprimvar, su2double val_eddy_viscosity,
+                         su2double val_thermal_conductivity, su2double val_heat_capacity_cp);
 
   /*!
    * \brief Get a component of the heat flux vector.
@@ -258,16 +278,6 @@ public:
   ResidualType<> ComputeResidual(const CConfig* config) override;
 
   /*!
-   * \brief Compute the heat flux due to molecular and turbulent diffusivity
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
-   */
-  void SetHeatFluxVector(const su2double* const *val_gradprimvar,
-                         su2double val_laminar_viscosity,
-                         su2double val_eddy_viscosity);
-
-  /*!
    * \brief Compute the Jacobian of the heat flux vector
    *
    * This Jacobian is projected onto the normal vector, so it is of
@@ -275,13 +285,14 @@ public:
    *
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
    * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
-   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
+   * \param[in] val_heat_capacity_cp - Value of the heat capacity at constant pressure.
    * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
    * \param[in] val_dist_ij - Distance between the points.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    */
   void SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
-                           su2double val_laminar_viscosity,
+                           su2double val_heat_capacity_cp,
+                           su2double val_thermal_conductivity,
                            su2double val_eddy_viscosity,
                            su2double val_dist_ij,
                            const su2double *val_normal);
@@ -356,23 +367,7 @@ public:
  */
 class CGeneralAvgGrad_Flow final : public CAvgGrad_Base {
 private:
-  su2double Mean_SecVar[2],  /*!< \brief Mean secondary variables. */
-  Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
-  Mean_Cp;                   /*!< \brief Mean value of the Cp. */
-
-  /*!
-   * \brief Compute the heat flux due to molecular and turbulent diffusivity
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
-   * \param[in] val_thermal_conductivity - Thermal Conductivity.
-   * \param[in] val_heat_capacity_cp - Heat Capacity at constant pressure.
-   */
-  void SetHeatFluxVector(const su2double* const *val_gradprimvar,
-                         su2double val_laminar_viscosity,
-                         su2double val_eddy_viscosity,
-                         su2double val_thermal_conductivity,
-                         su2double val_heat_capacity_cp);
+  su2double Mean_SecVar[2];  /*!< \brief Mean secondary variables. */
 
   /*!
    * \brief Compute the Jacobian of the heat flux vector

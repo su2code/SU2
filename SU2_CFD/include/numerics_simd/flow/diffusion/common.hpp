@@ -2,14 +2,14 @@
  * \file common.hpp
  * \brief Helper functions for viscous methods.
  * \author P. Gomes, C. Pederson, A. Bueno, F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,7 +36,7 @@
  * \brief Average gradients at i/j points.
  */
 template<size_t nVar, size_t nDim, class GradientType>
-FORCEINLINE MatrixDbl<nVar,nDim> averageGradient(Int iPoint, Int jPoint,
+FORCEINLINE MatrixDbl<nVar,nDim> averageGradient(const Int& iPoint, const Int& jPoint,
                                                  const GradientType& gradient) {
   auto avgGrad = gatherVariables<nVar,nDim>(iPoint, gradient);
   auto grad_j = gatherVariables<nVar,nDim>(jPoint, gradient);
@@ -84,7 +84,7 @@ FORCEINLINE void correctGradient(const PrimitiveType& V,
  * \note Second viscosity term ignored.
  */
 template<size_t nVar, size_t nDim>
-FORCEINLINE MatrixDbl<nDim> stressTensor(Double viscosity,
+FORCEINLINE MatrixDbl<nDim> stressTensor(const Double& viscosity,
                                          const MatrixDbl<nVar,nDim>& grad) {
   /*--- Hydrostatic term. ---*/
   Double velDiv = 0.0;
@@ -168,7 +168,7 @@ FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau) {
  *        wall function) magnitude in the tangential direction.
  */
 template<class Container, size_t nDim>
-FORCEINLINE void addTauWall(Int iPoint, Int jPoint,
+FORCEINLINE void addTauWall(const Int& iPoint, const Int& jPoint,
                             const Container& tauWall,
                             const VectorDbl<nDim>& unitNormal,
                             MatrixDbl<nDim>& tau) {
@@ -199,7 +199,7 @@ FORCEINLINE void addTauWall(Int iPoint, Int jPoint,
 template<size_t nVar, size_t nDim, class PrimitiveType>
 FORCEINLINE MatrixDbl<nDim,nVar> stressTensorJacobian(const PrimitiveType& V,
                                                       const VectorDbl<nDim>& normal,
-                                                      Double dist_ij) {
+                                                      const Double& dist_ij) {
   Double viscosity = V.laminarVisc() + V.eddyVisc();
   Double xi = viscosity / (V.density() * dist_ij);
   MatrixDbl<nDim,nVar> jac;

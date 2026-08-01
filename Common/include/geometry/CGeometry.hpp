@@ -1,16 +1,16 @@
-﻿/*!
+/*!
  * \file CGeometry.hpp
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +51,7 @@ extern "C" {
 #include <climits>
 #include <memory>
 #include <unordered_map>
+#include <cstdint>
 
 #include "primal_grid/CPrimalGrid.hpp"
 #include "dual_grid/CDualGrid.hpp"
@@ -60,7 +61,6 @@ extern "C" {
 #include "dual_grid/CTurboVertex.hpp"
 
 #include "../CConfig.hpp"
-#include "../fem/geometry_structure_fem_part.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
 #include "../adt/CADTElemClass.hpp"
 
@@ -73,6 +73,19 @@ using namespace std;
  * \author F. Palacios
  */
 class CGeometry {
+ public:
+  /*!
+   * \brief Aggregates the full symmetric CSR and its LDU split (L strictly-lower, U strictly-upper).
+   *        Built together lazily via GetSparsePattern; all three are always valid once non-empty.
+   */
+  struct LDUSparsePattern {
+    CCompressedSparsePatternUL csr; /*!< Full symmetric pattern (with diagonal pointer). */
+    CCompressedSparsePatternUL l;   /*!< Strictly-lower part. */
+    CCompressedSparsePatternUL u;   /*!< Strictly-upper part. */
+
+    bool empty() const { return csr.empty(); }
+  };
+
  protected:
   enum : size_t { OMP_MIN_SIZE = 32 }; /*!< \brief Chunk size for small loops. */
   enum : size_t { MAXNDIM = 3 };
@@ -187,12 +200,15 @@ class CGeometry {
 
   /*--- Sparsity patterns associated with the geometry. ---*/
 
-  CCompressedSparsePatternUL finiteVolumeCSRFill0, /*!< \brief 0-fill FVM sparsity. */
-      finiteVolumeCSRFillN,                        /*!< \brief N-fill FVM sparsity (e.g. for ILUn preconditioner). */
-      finiteElementCSRFill0,                       /*!< \brief 0-fill FEM sparsity. */
-      finiteElementCSRFillN;                       /*!< \brief N-fill FEM sparsity (e.g. for ILUn preconditioner). */
+  LDUSparsePattern finiteVolumePatternFill0;  /*!< \brief FVM sparsity with 0-fill (structural pattern). */
+  LDUSparsePattern finiteVolumePatternFillN;  /*!< \brief FVM sparsity with N-fill (e.g. for ILU-N). */
+  LDUSparsePattern finiteElementPatternFill0; /*!< \brief FEM sparsity with 0-fill (structural pattern). */
+  LDUSparsePattern finiteElementPatternFillN; /*!< \brief FEM sparsity with N-fill (e.g. for ILU-N). */
 
-  CEdgeToNonZeroMapUL edgeToCSRMap; /*!< \brief Map edges to CSR entries referenced by them (i,j) and (j,i). */
+  su2vector<su2uint> finiteVolumeLToUTranspMap;  /*!< \brief FVM L-entry -> U-entry of its transpose. */
+  su2vector<su2uint> finiteVolumeUToLTranspMap;  /*!< \brief FVM U-entry -> L-entry of its transpose. */
+  su2vector<su2uint> finiteElementLToUTranspMap; /*!< \brief FEM L-entry -> U-entry of its transpose. */
+  su2vector<su2uint> finiteElementUToLTranspMap; /*!< \brief FEM U-entry -> L-entry of its transpose. */
 
   /*--- Edge and element colorings. ---*/
 
@@ -240,8 +256,12 @@ class CGeometry {
   unsigned long* nVertex{nullptr};     /*!< \brief Number of vertex for each marker. */
   unsigned long* nElem_Bound{nullptr}; /*!< \brief Number of elements of the boundary. */
   string* Tag_to_Marker{nullptr};      /*!< \brief Names of boundary markers. */
-  vector<bool>
-      bound_is_straight; /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+
+  /*!< \brief Corrected normals on nodes with shared symmetry markers. */
+  vector<std::unordered_map<unsigned long, std::array<su2double, MAXNDIM>>> symmetryNormals;
+
+  /*!< \brief Bool if boundary-marker is straight(2D)/plane(3D) for each local marker. */
+  vector<bool> boundIsStraight;
   vector<su2double> SurfaceAreaCfgFile; /*!< \brief Total Surface area for all markers. */
 
   /*--- Partitioning-specific variables ---*/
@@ -280,10 +300,22 @@ class CGeometry {
                                         in point-to-point comms. */
   su2double* bufD_P2PRecv{nullptr};  /*!< \brief Data structure for su2double point-to-point receive. */
   su2double* bufD_P2PSend{nullptr};  /*!< \brief Data structure for su2double point-to-point send. */
+#ifdef CODI_REVERSE_TYPE
+  passivedouble* bufPD_P2PRecv{nullptr}; /*!< \brief Data structure for passivedouble point-to-point receive. */
+  passivedouble* bufPD_P2PSend{nullptr}; /*!< \brief Data structure for passivedouble point-to-point send. */
+#endif
+#ifdef USE_MIXED_PRECISION
+  su2mixedfloat* bufF_P2PRecv{nullptr}; /*!< \brief Data structure for su2mixedfloat point-to-point receive. */
+  su2mixedfloat* bufF_P2PSend{nullptr}; /*!< \brief Data structure for su2mixedfloat point-to-point send. */
+#endif
   unsigned short* bufS_P2PRecv{nullptr};  /*!< \brief Data structure for unsigned long point-to-point receive. */
   unsigned short* bufS_P2PSend{nullptr};  /*!< \brief Data structure for unsigned long point-to-point send. */
   SU2_MPI::Request* req_P2PSend{nullptr}; /*!< \brief Data structure for point-to-point send requests. */
   SU2_MPI::Request* req_P2PRecv{nullptr}; /*!< \brief Data structure for point-to-point recv requests. */
+
+  using PassiveRequest = typename SelectMPIWrapper<passivedouble>::W::Request;
+  PassiveRequest* reqP_P2PSend{nullptr}; /*!< \brief Data structure for point-to-point send requests. */
+  PassiveRequest* reqP_P2PRecv{nullptr}; /*!< \brief Data structure for point-to-point recv requests. */
 
   /*--- Data structures for periodic communications. ---*/
 
@@ -366,7 +398,7 @@ class CGeometry {
    * \param[in] countPerPoint - Number of variables per point.
    * \param[in] val_reverse - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PRecvs(CGeometry* geometry, const CConfig* config, unsigned short commType, unsigned short countPerPoint,
+  void PostP2PRecvs(CGeometry* geometry, const CConfig* config, COMM_TYPE commType, unsigned short countPerPoint,
                     bool val_reverse) const;
 
   /*!
@@ -379,8 +411,97 @@ class CGeometry {
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PSends(CGeometry* geometry, const CConfig* config, unsigned short commType, unsigned short countPerPoint,
+  void PostP2PSends(CGeometry* geometry, const CConfig* config, COMM_TYPE commType, unsigned short countPerPoint,
                     int val_iMessage, bool val_reverse) const;
+
+  /*!
+   * \brief Returns the COMM_TYPE enum for a given data type.
+   */
+  template <class T>
+  COMM_TYPE GetCommType() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return COMM_TYPE::DOUBLE;
+    } else if constexpr (std::is_same_v<T, passivedouble>) {
+      return COMM_TYPE::PASSIVE_DOUBLE;
+    } else if constexpr (std::is_same_v<T, su2mixedfloat>) {
+      return COMM_TYPE::FLOAT;
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return COMM_TYPE::UNSIGNED_SHORT;
+    }
+  }
+
+  /*!
+   * \brief Returns the send buffer for a given data type.
+   */
+  template <class T>
+  auto* GetP2PSendBuf() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return bufD_P2PSend;
+#ifdef CODI_REVERSE_TYPE
+    } else if constexpr (std::is_same_v<T, passivedouble>) {
+      return bufPD_P2PSend;
+#endif
+#ifdef USE_MIXED_PRECISION
+    } else if constexpr (std::is_same_v<T, su2mixedfloat>) {
+      return bufF_P2PSend;
+#endif
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return bufS_P2PSend;
+    }
+  }
+
+  /*!
+   * \brief Returns the receive buffer for a given data type.
+   */
+  template <class T>
+  auto* GetP2PRecvBuf() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return bufD_P2PRecv;
+#ifdef CODI_REVERSE_TYPE
+    } else if constexpr (std::is_same_v<T, passivedouble>) {
+      return bufPD_P2PRecv;
+#endif
+#ifdef USE_MIXED_PRECISION
+    } else if constexpr (std::is_same_v<T, su2mixedfloat>) {
+      return bufF_P2PRecv;
+#endif
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return bufS_P2PRecv;
+    }
+  }
+
+  /*!
+   * \brief Returns the send requests for a given data type.
+   */
+  template <class T>
+  auto* GetP2PSendReq() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return req_P2PSend;
+    } else if constexpr (std::is_same_v<T, passivedouble> || std::is_same_v<T, su2mixedfloat>) {
+      return reqP_P2PSend;
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return req_P2PSend;
+    }
+  }
+
+  /*!
+   * \brief Returns the receive requests for a given data type.
+   */
+  template <class T>
+  auto* GetP2PRecvReq() const {
+    if constexpr (std::is_same_v<T, su2double>) {
+      return req_P2PRecv;
+    } else if constexpr (std::is_same_v<T, passivedouble> || std::is_same_v<T, su2mixedfloat>) {
+      return reqP_P2PRecv;
+    } else {
+      static_assert(std::is_same_v<T, unsigned short>);
+      return req_P2PRecv;
+    }
+  }
 
   /*!
    * \brief Routine to set up persistent data structures for periodic communications.
@@ -404,7 +525,7 @@ class CGeometry {
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    * \param[in] countPerPeriodicPoint - Number of variables per point.
    */
-  void PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, unsigned short commType,
+  void PostPeriodicRecvs(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                          unsigned short countPerPeriodicPoint);
 
   /*!
@@ -416,7 +537,7 @@ class CGeometry {
    * \param[in] countPerPeriodicPoint - Number of variables per point.
    * \param[in] val_iMessage - Index of the message in the order they are stored.
    */
-  void PostPeriodicSends(CGeometry* geometry, const CConfig* config, unsigned short commType,
+  void PostPeriodicSends(CGeometry* geometry, const CConfig* config, COMM_TYPE commType,
                          unsigned short countPerPeriodicPoint, int val_iMessage) const;
 
   /*!
@@ -426,8 +547,8 @@ class CGeometry {
    * \param[out] COUNT_PER_POINT - Number of communicated variables per point.
    * \param[out] MPI_TYPE - Enumerated type for the datatype of the quantity to be communicated.
    */
-  void GetCommCountAndType(const CConfig* config, unsigned short commType, unsigned short& COUNT_PER_POINT,
-                           unsigned short& MPI_TYPE) const;
+  void GetCommCountAndType(const CConfig* config, MPI_QUANTITIES commType, unsigned short& COUNT_PER_POINT,
+                           COMM_TYPE& MPI_TYPE) const;
 
   /*!
    * \brief Routine to load a geometric quantity into the data structures for MPI point-to-point communication and to
@@ -436,14 +557,14 @@ class CGeometry {
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
-  void InitiateComms(CGeometry* geometry, const CConfig* config, unsigned short commType) const;
+  void InitiateComms(CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType) const;
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the
    * data into the geometry class. \param[in] geometry - Geometrical definition of the problem. \param[in] config   -
    * Definition of the particular problem. \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
-  void CompleteComms(CGeometry* geometry, const CConfig* config, unsigned short commType);
+  void CompleteComms(CGeometry* geometry, const CConfig* config, MPI_QUANTITIES commType);
 
   /*!
    * \brief Get number of coordinates.
@@ -594,17 +715,6 @@ class CGeometry {
   inline bool CheckEdge(unsigned long first_point, unsigned long second_point) const {
     return FindEdge(first_point, second_point, false) >= 0;
   }
-
-  /*!
-   * \brief Get the distance between a plane (defined by three point) and a point.
-   * \param[in] Coord - Coordinates of the point.
-   * \param[in] iCoord - Coordinates of the first point that defines the plane.
-   * \param[in] jCoord - Coordinates of the second point that defines the plane.
-   * \param[in] kCoord - Coordinates of the third point that defines the plane.
-   * \return Signed distance.
-   */
-  su2double Point2Plane_Distance(const su2double* Coord, const su2double* iCoord, const su2double* jCoord,
-                                 const su2double* kCoord);
 
   /*!
    * \brief Create a file for testing the geometry.
@@ -784,6 +894,15 @@ class CGeometry {
   inline virtual void GatherInOutAverageValues(CConfig* config, bool allocate) {}
 
   /*!
+   * \brief Store all the turboperformance in the solver in ZONE_0.
+   * \param[in] donor_geometry  - Solution from the donor mesh.
+   * \param[in] target_geometry - Solution from the target mesh.
+   * \param[in] donorZone       - counter of the donor solution
+   */
+  inline virtual void SetAvgTurboGeoValues(const CConfig* donor_config, CGeometry* donor_geometry,
+                                           unsigned short donorZone){};
+
+  /*!
    * \brief Set max length.
    * \param[in] config - Definition of the particular problem.
    */
@@ -809,10 +928,13 @@ class CGeometry {
   inline virtual void MatchActuator_Disk(const CConfig* config) {}
 
   /*!
-   * \brief A virtual member.
+   * \brief Match periodic boundary points using coordinate-based matching.
+   * \details Gathers coordinates from all ranks via MPI, applies the rotation/translation
+   * for the periodic pair, and finds the nearest neighbor. Works on both fine and coarse grids.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic - Index of the periodic marker pair.
    */
-  inline virtual void MatchPeriodic(const CConfig* config, unsigned short val_periodic) {}
+  virtual void MatchPeriodic(const CConfig* config, unsigned short val_periodic);
 
   /*!
    * \brief A virtual member.
@@ -821,6 +943,12 @@ class CGeometry {
    */
   inline virtual void SetBoundControlVolume(const CConfig* config, unsigned short action) {}
   inline virtual void SetBoundCVCoeffs(const CConfig* config, unsigned short action) {}
+
+  /*!
+   * \brief Computes modified normals at intersecting symmetry planes.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeModifiedSymmetryNormals(const CConfig* config);
 
   /*!
    * \brief A virtual member.
@@ -910,14 +1038,6 @@ class CGeometry {
 
   /*!
    * \brief A virtual member.
-   * \param[in] val_nSmooth - Number of smoothing iterations.
-   * \param[in] val_smooth_coeff - Relaxation factor.
-   * \param[in] config - Definition of the particular problem.
-   */
-  inline virtual void SetCoord_Smoothing(unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig* config) {}
-
-  /*!
-   * \brief A virtual member.
    * \param[in] fine_grid - Geometrical definition of the child grid (for multigrid).
    */
   inline virtual void SetPoint_Connectivity(const CGeometry* fine_grid) {}
@@ -939,9 +1059,10 @@ class CGeometry {
   /*!
    * \brief A virtual member.
    * \param[in] fine_grid - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
-  inline virtual void SetBoundControlVolume(const CGeometry* fine_grid, unsigned short action) {}
+  inline virtual void SetBoundControlVolume(const CGeometry* fine_grid, const CConfig* config, unsigned short action) {}
 
   /*!
    * \brief A virtual member.
@@ -954,6 +1075,19 @@ class CGeometry {
    * \param[in] config - Definition of the particular problem.
    */
   void SetCustomBoundary(CConfig* config);
+
+  /*!
+   * \brief General interface for setting the velocity in the geometry during motion ramps
+   * \param[in] config - config class
+   * \param[in] ramp_flag - flag for type of ramp
+   * \param[in] print - bool to print update to screen
+   */
+  void SetVelocity(CConfig* config, bool print) {
+    if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::ROTATING_FRAME)
+      SetRotationalVelocity(config, print);
+    else if (config->GetKind_GridMovement() == ENUM_GRIDMOVEMENT::STEADY_TRANSLATION)
+      SetTranslationalVelocity(config, print);
+  };
 
   /*!
    * \brief Set cartesian grid velocity based on rotational speed and axis.
@@ -1010,12 +1144,12 @@ class CGeometry {
 
   /*!
    * \brief Check if a boundary is straight(2D) / plane(3D) for EULER_WALL and SYMMETRY_PLANE
-   *        only and store the information in bound_is_straight. For all other boundary types
+   *        only and store the information in boundIsStraight. For all other boundary types
    *        this will return false and could therfore be wrong. Used ultimately for BC_Slip_Wall.
    * \param[in] config - Definition of the particular problem.
    * \param[in] print_on_screen - Boolean whether to print result on screen.
    */
-  void ComputeSurf_Straightness(CConfig* config, bool print_on_screen);
+  void ComputeSurfStraightness(const CConfig* config, bool print_on_screen);
 
   /*!
    * \brief Find and store all vertices on a sharp corner in the geometry.
@@ -1597,12 +1731,6 @@ class CGeometry {
   }
 
   /*!
-   * \brief A virtual member.
-   * \param config - Config
-   */
-  inline virtual void Check_Periodicity(CConfig* config) {}
-
-  /*!
    * \brief Get the value of the customized temperature at a specified vertex on a specified marker.
    * \param[in] val_marker - Marker value
    * \param[in] val_vertex - Boundary vertex value
@@ -1640,6 +1768,50 @@ class CGeometry {
   inline void SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex,
                                         su2double val_customBoundaryHeatFlux) {
     CustomBoundaryHeatFlux[val_marker][val_vertex] = val_customBoundaryHeatFlux;
+  }
+
+  /*!
+   * \brief Set a representative wall value of the agglomerated control volumes on a particular boundary marker.
+   * \param[in] fine_grid - Geometrical definition of the problem.
+   * \param[in] val_marker - Index of the boundary marker.
+   * \param[in] wall_quantity - Object with methods Get(iVertex_fine) and Set(iVertex_coarse, val).
+   */
+  template <class T>
+  void SetMultiGridMarkerQuantity(const CGeometry* fine_grid, unsigned short val_marker, T& wall_quantity) {
+    for (auto iVertex = 0ul; iVertex < nVertex[val_marker]; iVertex++) {
+      const auto Point_Coarse = vertex[val_marker][iVertex]->GetNode();
+
+      if (!nodes->GetDomain(Point_Coarse)) continue;
+
+      su2double Area_Parent = 0.0;
+
+      /*--- Compute area parent by taking into account only volumes that are on the marker. ---*/
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+        const auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
+        const auto isVertex =
+            fine_grid->nodes->GetDomain(Point_Fine) && (fine_grid->nodes->GetVertex(Point_Fine, val_marker) != -1);
+        if (isVertex) {
+          Area_Parent += fine_grid->nodes->GetVolume(Point_Fine);
+        }
+      }
+
+      su2double Quantity_Coarse = 0.0;
+
+      /*--- Loop again to average coarser value. ---*/
+      for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+        const auto Point_Fine = nodes->GetChildren_CV(Point_Coarse, iChildren);
+        const auto isVertex =
+            fine_grid->nodes->GetDomain(Point_Fine) && (fine_grid->nodes->GetVertex(Point_Fine, val_marker) != -1);
+        if (isVertex) {
+          const auto Vertex_Fine = fine_grid->nodes->GetVertex(Point_Fine, val_marker);
+          const auto Area_Children = fine_grid->nodes->GetVolume(Point_Fine);
+          Quantity_Coarse += wall_quantity.Get(Vertex_Fine) * Area_Children / Area_Parent;
+        }
+      }
+
+      /*--- Set the value at the coarse level. ---*/
+      wall_quantity.Set(iVertex, Quantity_Coarse);
+    }
   }
 
   /*!
@@ -1713,29 +1885,35 @@ class CGeometry {
    * \param[in] fillLvl - Level of fill of the pattern.
    * \return Reference to the sparse pattern.
    */
-  const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl = 0);
+  const LDUSparsePattern& GetSparsePattern(ConnectivityType type, unsigned long fillLvl = 0);
 
   /*!
-   * \brief Get the edge to sparse pattern map.
-   * \note This method builds the map and required pattern (0-fill FVM) if that has not been done yet.
-   * \return Reference to the map.
-   */
-  const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap();
-
-  /*!
-   * \brief Get the transpose of the (main, i.e 0 fill) sparse pattern (e.g. CSR becomes CSC).
+   * \brief Get the bijective map from L-entry indices to U-entry indices of their transposes.
+   * \note Requires symmetric pattern. Builds both LU transpose maps if not already built.
    * \param[in] type - Finite volume or finite element.
-   * \return Reference to the map.
+   * \return Reference to the l_to_u map.
    */
-  const su2vector<unsigned long>& GetTransposeSparsePatternMap(ConnectivityType type);
+  const su2vector<su2uint>& GetLToUTransposeSparsePatternMap(ConnectivityType type);
+
+  /*!
+   * \brief Get the bijective map from U-entry indices to L-entry indices of their transposes.
+   * \note Requires symmetric pattern. Builds both LU transpose maps if not already built.
+   * \param[in] type - Finite volume or finite element.
+   * \return Reference to the u_to_l map.
+   */
+  const su2vector<su2uint>& GetUToLTransposeSparsePatternMap(ConnectivityType type);
 
   /*!
    * \brief Get the edge coloring.
    * \note This method computes the coloring if that has not been done yet.
+   * \note Can be instructed to determine and use the maximum edge color group size between 1 and
+   * CGeometry::edgeColorGroupSize that yields a coloring that is at least as efficient as #COLORING_EFF_THRESH.
    * \param[out] efficiency - optional output of the coloring efficiency.
+   * \param[in] maximizeEdgeColorGroupSize - use the maximum edge color group size that gives an efficient coloring.
    * \return Reference to the coloring.
    */
-  const CCompressedSparsePatternUL& GetEdgeColoring(su2double* efficiency = nullptr);
+  const CCompressedSparsePatternUL& GetEdgeColoring(su2double* efficiency = nullptr,
+                                                    bool maximizeEdgeColorGroupSize = false);
 
   /*!
    * \brief Force the natural (sequential) edge coloring.

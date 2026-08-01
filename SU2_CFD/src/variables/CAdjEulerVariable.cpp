@@ -2,14 +2,14 @@
  * \file CAdjEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -40,7 +40,7 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
 
   /*--- Only for residual smoothing (multigrid) ---*/
   for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    if (config->GetMG_CorrecSmooth(iMesh) > 0) {
+    if (config->GetMGOptions().MG_CorrecSmooth[iMesh] > 0) {
       Residual_Sum.resize(nPoint,nVar);
       Residual_Old.resize(nPoint,nVar);
       break;
@@ -94,6 +94,9 @@ CAdjEulerVariable::CAdjEulerVariable(su2double psirho, const su2double *phi, su2
   /*--- Allocate space for the harmonic balance source terms ---*/
   if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE)
     HB_Source.resize(nPoint,nVar) = su2double(0.0);
+
+  /*--- Allocate LocalCFL for multigrid support ---*/
+  LocalCFL.resize(nPoint) = su2double(0.0);
 
   if (config->GetMultizone_Problem())
     Set_BGSSolution_k();

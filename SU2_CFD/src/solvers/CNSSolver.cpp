@@ -2,14 +2,14 @@
  * \file CNSSolver.cpp
  * \brief Main subroutines for solving Finite-Volume Navier-Stokes flow problems.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,6 +38,7 @@ template class CFVMFlowSolverBase<CEulerVariable, ENUM_REGIME::COMPRESSIBLE>;
 
 CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
            CEulerSolver(geometry, config, iMesh, true) {
+  SU2_ZONE_SCOPED
 
   /*--- This constructor only allocates/inits what is extra to CEulerSolver. ---*/
 
@@ -51,7 +52,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Read farfield conditions from config ---*/
 
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-  Prandtl_Lam     = config->GetPrandtl_Lam();
   Prandtl_Turb    = config->GetPrandtl_Turb();
   Tke_Inf         = config->GetTke_FreeStreamND();
 
@@ -70,6 +70,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
 void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
                               unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   const auto InnerIter = config->GetInnerIter();
   const bool muscl = config->GetMUSCL_Flow() && (iMesh == MESH_0);
@@ -116,7 +117,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     SetPrimitive_Limiter(geometry, config);
   }
 
-  ComputeVorticityAndStrainMag(*config, geometry, iMesh);
+  if (Output || config->GetVorticityConfinement()) {
+    ComputeVorticityAndStrainMag(*config, geometry, iMesh);
+  }
 
   /*--- Compute the TauWall from the wall functions ---*/
 
@@ -127,6 +130,7 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 }
 
 unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   /*--- Number of non-physical points, local to the thread, needs
    *    further reduction if function is called in parallel ---*/
@@ -151,13 +155,16 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
       if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
         su2double DES_LengthScale = solver_container[TURB_SOL]->GetNodes()->GetDES_LengthScale(iPoint);
         nodes->SetDES_LengthScale(iPoint, DES_LengthScale);
+        su2double LES_Mode = solver_container[TURB_SOL]->GetNodes()->GetLES_Mode(iPoint);
+        nodes->SetLES_Mode(iPoint, LES_Mode);
       }
     }
 
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
 
-    bool physical = static_cast<CNSVariable*>(nodes)->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel());
-    nodes->SetSecondaryVar(iPoint, GetFluidModel());
+    auto* ns_nodes = static_cast<CNSVariable*>(nodes);
+    bool physical = ns_nodes->SetPrimVar(iPoint, eddy_visc, turb_ke, GetFluidModel());
+    ns_nodes->SetSecondaryVar(iPoint, GetFluidModel());
 
     /*--- Check for non-realizable states for reporting. ---*/
 
@@ -171,13 +178,14 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, cons
   return nonPhysicalPoints;
 }
 
-void CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                 CNumerics *numerics, CConfig *config) {
-
-  Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
+CNumerics::ResidualType<> CNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry,
+                                                      CSolver **solver_container, CNumerics *numerics,
+                                                      CConfig *config) {
+  return Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
 }
 
 void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iVertex, iMarker;
   unsigned short iMarker_Monitoring;
@@ -266,6 +274,7 @@ void CNSSolver::Buffet_Monitoring(const CGeometry *geometry, const CConfig *conf
 }
 
 void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
+  SU2_ZONE_SCOPED
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;
   su2double Weight_ObjFunc;
@@ -293,6 +302,7 @@ void CNSSolver::Evaluate_ObjFunc(const CConfig *config, CSolver**) {
 }
 
 void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
+  SU2_ZONE_SCOPED
 
   const unsigned short kind_roe_dissipation = config->GetKind_RoeLowDiss();
 
@@ -321,6 +331,7 @@ void CNSSolver::AddDynamicGridResidualContribution(unsigned long iPoint, unsigne
                                                    su2double Area, const su2double* GridVel,
                                                    su2double** Jacobian_i, su2double& Res_Conv,
                                                    su2double& Res_Visc) const {
+  SU2_ZONE_SCOPED
 
   su2double ProjGridVel = Area * GeometryToolbox::DotProduct(nDim, GridVel, UnitNormal);
 
@@ -412,11 +423,13 @@ void CNSSolver::AddDynamicGridResidualContribution(unsigned long iPoint, unsigne
 
 void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver**, CNumerics*,
                                  CNumerics*, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   BC_HeatFlux_Wall_Generic(geometry, config, val_marker, HEAT_FLUX);
 }
 
 void CNSSolver::BC_HeatTransfer_Wall(const CGeometry *geometry, const CConfig *config, const unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   BC_HeatFlux_Wall_Generic(geometry, config, val_marker, HEAT_TRANSFER);
 }
@@ -439,6 +452,7 @@ void CNSSolver::BC_HeatTransfer_Wall_Residual(CGeometry* geometry, CSolver** sol
 
 void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfig* config, unsigned short val_marker,
                                          unsigned short kind_boundary) {
+  SU2_ZONE_SCOPED
   /*--- Identify the boundary by string name and get the specified wall
    heat flux from config as well as the wall function treatment. ---*/
 
@@ -488,7 +502,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
     /*--- If it is a customizable patch, retrieve the specified wall heat flux. ---*/
 
     if (config->GetMarker_All_PyCustom(val_marker))
-      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex);
+      Wall_HeatFlux = geometry->GetCustomBoundaryHeatFlux(val_marker, iVertex) / config->GetHeat_Flux_Ref();
     else if (kind_boundary == HEAT_TRANSFER) {
       const su2double Twall = nodes->GetTemperature(iPoint);
       Wall_HeatFlux = Transfer_Coefficient * (Tinfinity - Twall);
@@ -580,8 +594,7 @@ void CNSSolver::BC_HeatFlux_Wall_Generic(const CGeometry* geometry, const CConfi
       }
 
       for (auto iVar = 1u; iVar <= nDim; iVar++) {
-        auto total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     }
   }
@@ -663,8 +676,7 @@ void CNSSolver::BC_Viscous_Wall_Strong(const CGeometry* geometry,
 
     if (implicit) {
       for (auto iVar = 1u; iVar <= nDim; iVar++) {
-        auto total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     }
   }
@@ -807,6 +819,7 @@ su2double CNSSolver::GetCHTWallTemperature(const CConfig* config, unsigned short
                                            unsigned long iVertex, su2double thermal_conductivity,
                                            su2double dist_ij, su2double There,
                                            su2double Temperature_Ref) const {
+  SU2_ZONE_SCOPED
 
   /*--- Compute the normal gradient in temperature using Twall ---*/
 
@@ -841,13 +854,12 @@ su2double CNSSolver::GetCHTWallTemperature(const CConfig* config, unsigned short
 void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver_container,
                                            CNumerics *conv_numerics, CNumerics *visc_numerics,
                                            CConfig *config, unsigned short val_marker, bool cht_mode) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const su2double Temperature_Ref = config->GetTemperature_Ref();
-  const su2double Prandtl_Lam = config->GetPrandtl_Lam();
   const su2double Prandtl_Turb = config->GetPrandtl_Turb();
   const su2double Gas_Constant = config->GetGas_ConstantND();
-  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
 
   /*--- Identify the boundary and retrieve the specified wall temperature from
    the config (for non-CHT problems) as well as the wall function treatment. ---*/
@@ -897,29 +909,26 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
 
     const auto Coord_i = geometry->nodes->GetCoord(iPoint);
     const auto Coord_j = geometry->nodes->GetCoord(Point_Normal);
-
-    su2double dist_ij = GeometryToolbox::Distance(nDim, Coord_i, Coord_j);
+    const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord_i, Coord_j);
 
     /*--- Store the corrected velocity at the wall which will
      be zero (v = 0), unless there is grid motion (v = u_wall)---*/
 
     if (dynamic_grid) {
       nodes->SetVelocity_Old(iPoint, geometry->nodes->GetGridVel(iPoint));
-    }
-    else {
+    } else {
       su2double zero[MAXNDIM] = {0.0};
       nodes->SetVelocity_Old(iPoint, zero);
     }
 
-    for (auto iDim = 0u; iDim < nDim; iDim++)
-      LinSysRes(iPoint, iDim+1) = 0.0;
+    for (auto iDim = 0u; iDim < nDim; iDim++) LinSysRes(iPoint, iDim+1) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Get transport coefficients ---*/
 
-    su2double laminar_viscosity    = nodes->GetLaminarViscosity(iPoint);
+    su2double Cp = nodes->GetSpecificHeatCp(iPoint);
     su2double eddy_viscosity       = nodes->GetEddyViscosity(iPoint);
-    su2double thermal_conductivity = Cp * (laminar_viscosity/Prandtl_Lam + eddy_viscosity/Prandtl_Turb);
+    su2double thermal_conductivity = nodes->GetThermalConductivity(iPoint) + Cp * eddy_viscosity / Prandtl_Turb;
 
     // work in progress on real-gases...
     //thermal_conductivity = nodes->GetThermalConductivity(iPoint);
@@ -933,9 +942,8 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
     if (cht_mode) {
       Twall = GetCHTWallTemperature(config, val_marker, iVertex, dist_ij,
                                     thermal_conductivity, There, Temperature_Ref);
-    }
-    else if (config->GetMarker_All_PyCustom(val_marker)) {
-      Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex);
+    } else if (config->GetMarker_All_PyCustom(val_marker)) {
+      Twall = geometry->GetCustomBoundaryTemperature(val_marker, iVertex) / Temperature_Ref;
     }
 
     /*--- Compute the normal gradient in temperature using Twall ---*/
@@ -987,8 +995,7 @@ void CNSSolver::BC_Isothermal_Wall_Generic(CGeometry *geometry, CSolver **solver
       Jacobian.AddBlock2Diag(iPoint, Jacobian_i);
 
       for (auto iVar = 1u; iVar <= nDim; iVar++) {
-        auto total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     }
   }
@@ -1128,11 +1135,13 @@ void CNSSolver::BC_Isothermal_Wall_Generic_Residual(CGeometry* geometry, CSolver
 
 void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                    CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
 }
 
 void CNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                            CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   BC_Isothermal_Wall_Generic(geometry, solver_container, conv_numerics, nullptr, config, val_marker, true);
 }
 
@@ -1153,6 +1162,7 @@ void CNSSolver::BC_ConjugateHeat_Interface_Residual(CGeometry* geometry, CSolver
 }
 
 void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, const CConfig *config) {
+  SU2_ZONE_SCOPED
   /*---
    The wall function implemented herein is based on Nichols and Nelson, AIAA J. v32 n6 2004.
    ---*/
@@ -1196,10 +1206,8 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
       const auto iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       const auto Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
 
-      /*--- Check if the node belongs to the domain (i.e, not a halo node)
-       *    and the neighbor is not part of the physical boundary ---*/
-
-      if (!geometry->nodes->GetDomain(iPoint)) continue;
+      /*--- On the finest mesh compute also on halo nodes to avoid communication of tau wall. ---*/
+      if ((!geometry->nodes->GetDomain(iPoint)) && !(MGLevel==MESH_0)) continue;
 
       /*--- Get coordinates of the current vertex and nearest normal point ---*/
 
@@ -1234,11 +1242,7 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
       const su2double VelTangMod = GeometryToolbox::Norm(int(MAXNDIM), VelTang);
 
       /*--- Compute normal distance of the interior point from the wall ---*/
-
-      su2double WallDist[MAXNDIM] = {0.0};
-      GeometryToolbox::Distance(nDim, Coord, Coord_Normal, WallDist);
-
-      const su2double WallDistMod = GeometryToolbox::Norm(int(MAXNDIM), WallDist);
+      const su2double WallDistMod = GeometryToolbox::Distance(nDim, Coord, Coord_Normal);
 
       su2double T_Wall = nodes->GetTemperature(iPoint);
       const su2double Conductivity_Wall = nodes->GetThermalConductivity(iPoint);
@@ -1397,24 +1401,23 @@ void CNSSolver::SetTau_Wall_WF(CGeometry *geometry, CSolver **solver_container, 
 
     ompMasterAssignBarrier(globalCounter1,0, globalCounter2,0);
 
-    SU2_OMP_ATOMIC
-    globalCounter1 += notConvergedCounter;
-
-    SU2_OMP_ATOMIC
-    globalCounter2 += smallYPlusCounter;
+    atomicAdd(notConvergedCounter, globalCounter1);
+    atomicAdd(smallYPlusCounter, globalCounter2);
 
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       SU2_MPI::Allreduce(&globalCounter1, &notConvergedCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
       SU2_MPI::Allreduce(&globalCounter2, &smallYPlusCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
 
-      if (rank == MASTER_NODE) {
+      const bool write_iter = (config->GetInnerIter() % config->GetVolumeOutputFrequency(0) == 0);
+
+      if (rank == MASTER_NODE && write_iter) {
         if (notConvergedCounter)
           cout << "Warning: Computation of wall coefficients (y+) did not converge in "
                << notConvergedCounter << " points." << endl;
 
         if (smallYPlusCounter)
-          cout << "Warning: y+ < " << config->GetwallModel_MinYPlus() << " in " << smallYPlusCounter
-               << " points, for which the wall model is not active." << endl;
+          cout << "y+ < " << config->GetwallModel_MinYPlus() << " in " << smallYPlusCounter
+               << " points. No problem, but you can increase your near-wall mesh size." << endl;
       }
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS

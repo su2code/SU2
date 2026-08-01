@@ -2,14 +2,14 @@
  * \file CMultiGridIntegration.hpp
  * \brief Declaration of class for time integration using a multigrid method.
  * \author F. Palacios, T. Economon
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -133,6 +133,42 @@ private:
   void SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
+
+  /*!
+   * \brief Apply post-smoothing iterations on the fine grid after prolongation.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] solver_fine - Pointer to the solver on the fine grid.
+   * \param[in] numerics_fine - Description of the numerical method on the fine grid.
+   * \param[in] geometry_fine - Geometrical definition of the fine grid.
+   * \param[in] solver_container_fine - Container with all solvers on the fine grid.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKLimit - Number of Runge-Kutta steps.
+   */
+  void PostSmoothing(unsigned short RunTime_EqSystem, CSolver* solver_fine, CNumerics** numerics_fine,
+                     CGeometry* geometry_fine, CSolver** solver_container_fine, CConfig *config,
+                     unsigned short iMesh, unsigned short iRKLimit);
+
+  /*!
+   * \brief Apply pre-smoothing iterations on the fine grid before restriction.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] geometry - Geometrical definition of the problem (all levels).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config_container - Definition of the particular problems.
+   * \param[in] solver_fine - Pointer to the solver on the fine grid.
+   * \param[in] numerics_fine - Description of the numerical method on the fine grid.
+   * \param[in] geometry_fine - Geometrical definition of the fine grid.
+   * \param[in] solver_container_fine - Container with all solvers on the fine grid.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] iRKLimit - Number of Runge-Kutta steps.
+   */
+  void PreSmoothing(unsigned short RunTime_EqSystem, CGeometry**** geometry, CSolver***** solver_container,
+                    CConfig **config_container, CSolver* solver_fine, CNumerics** numerics_fine,
+                    CGeometry* geometry_fine, CSolver** solver_container_fine, CConfig *config,
+                    unsigned short iMesh, unsigned short iZone, unsigned short iRKLimit);
+
   /*!
    * \brief Compute the fine grid correction from the coarse solution.
    * \param[out] sol_fine - Pointer to the solution on the fine grid.
@@ -154,7 +190,8 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-                                    unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config);
+                                    unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config,
+                                    unsigned short iMesh);
 
   /*!
    * \brief Restrict solution from fine grid to a coarse grid.
@@ -164,8 +201,6 @@ private:
    * \param[in] geo_fine - Geometrical definition of the fine grid.
    * \param[in] geo_coarse - Geometrical definition of the coarse grid.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
    */
   void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                               CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
@@ -180,5 +215,66 @@ private:
    */
   void Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+
+  /*!
+   * \brief Adapt both restriction and prolongation damping factors from the global-trend signal.
+   *
+   * Uses the cross-cycle EMA ratio (crossCycleRatio = fine_d0 / EMA(fine_d0)) to detect
+   * long-term convergence or divergence, then adjusts both \c Damp_Res_Restric and
+   * \c Damp_Correc_Prolong with a single shared signal.  The EMA filters per-cycle noise;
+   * no per-level aggregation or floor counter is needed.
+   *
+   * \param[in,out] config          - Problem configuration.
+   * \param[in]     crossCycleRatio - Current fine_d0 divided by the EMA of fine_d0.
+   */
+  void adaptDampingFactors(CConfig* config, passivedouble crossCycleRatio);
+
+  /*!
+   * \brief Helper function for early-exit logic during pre/post-smoothing.
+   * \param[in] iSmooth - Current smoothing iteration index.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] defect - Current RMS defect value.
+   * \param[in] mgOpts - Reference to multigrid options.
+   * \param[in] stag_tol - Stagnation tolerance value.
+   * \param[in] early_exit - Whether early exit is enabled.
+   * \param[out] lastRMS - Array to store RMS values [start, end].
+   * \param[out] exitReason - Character for early exit reason ('T', 'S', 'A', or ' ').
+   * \param[out] worstStepRatio - Worst step-to-step ratio seen.
+   * \param[out] worstStep - Iteration number of worst step.
+   */
+  void prePostEarlyExit(unsigned short iSmooth, unsigned short iMesh,
+                        passivedouble defect, const CMGOptions& mgOpts,
+                        passivedouble stag_tol, bool early_exit,
+                        passivedouble lastRMS[2], char& exitReason,
+                        passivedouble& worstStepRatio, unsigned short& worstStep);
+
+  static constexpr int MAX_MG_LEVELS = 10;
+
+  /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
+  bool mg_early_exit_flag = false;              /*!< \brief Shared flag for early exit across OMP threads. */
+  passivedouble mg_initial_smooth_rms = 0.0; /*!< \brief Initial RMS residual before current smoothing phase (FAS). */
+  passivedouble mg_prev_smooth_rms = 0.0;    /*!< \brief RMS residual from previous smoothing step; used for stagnation detection. */
+  passivedouble mg_fine_rms_ema = 0.0;      /*!< \brief EMA of fine-grid pre-smooth RMS across cycles; cross-cycle trend signal. */
+  passivedouble last_crossCycleRatio = 1.0; /*!< \brief crossCycleRatio from the most recent cycle; stored for display only. */
+
+  /*--- Actual iteration counts per MG level, filled each cycle for the compact output summary. ---*/
+  unsigned short lastPreSmoothIters[MAX_MG_LEVELS+1] = {};
+  unsigned short lastPostSmoothIters[MAX_MG_LEVELS+1] = {};
+  unsigned short lastCorrecSmoothIters[MAX_MG_LEVELS+1] = {};
+  /*--- Early-exit reason per level: 'T'=threshold, 'S'=stagnation, ' '=ran to completion. ---*/
+  char lastPreSmoothExitReason[MAX_MG_LEVELS+1]  = {};
+  char lastPostSmoothExitReason[MAX_MG_LEVELS+1] = {};
+
+  /*--- Per-level start/end RMS residual for adaptive damping. ---*/
+  passivedouble lastPreSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+  passivedouble lastPostSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+  passivedouble lastCorrecSmoothRMS[MAX_MG_LEVELS+1][2] = {};
+
+  /*--- Per-level worst step-to-step amplification seen inside a smoothing phase.
+   *    step==0 means no intra-smoother ratio was available (fewer than 2 sweeps). ---*/
+  passivedouble lastPreSmoothWorstStepRatio[MAX_MG_LEVELS+1] = {};
+  passivedouble lastPostSmoothWorstStepRatio[MAX_MG_LEVELS+1] = {};
+  unsigned short lastPreSmoothWorstStep[MAX_MG_LEVELS+1] = {};
+  unsigned short lastPostSmoothWorstStep[MAX_MG_LEVELS+1] = {};
 
 };

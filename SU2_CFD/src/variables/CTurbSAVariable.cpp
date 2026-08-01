@@ -2,14 +2,14 @@
  * \file CTurbSAVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, A. Bueno
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,12 +28,22 @@
 
 #include "../../include/variables/CTurbSAVariable.hpp"
 
-
 CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsigned long npoint,
                                  unsigned long ndim, unsigned long nvar, CConfig *config) :
                  CTurbVariable(npoint, ndim, nvar, config) {
 
-  Solution_Old = Solution = val_nu_tilde;
+  /*--- Initialize solution (check if the Stochastic Backscatter Model is active) ---*/
+  bool backscatter = config->GetSBSParam().StochasticBackscatter;
+  if (!(backscatter && config->GetSBSParam().SBS_Ctau > 0.0)) {
+    Solution_Old = Solution = val_nu_tilde;
+  } else {
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      Solution_Old(iPoint, 0) = Solution(iPoint, 0) = val_nu_tilde;
+      for (unsigned long iVar = 1; iVar < nVar; iVar++) {
+        Solution_Old(iPoint, iVar) = Solution(iPoint, iVar) = 0.0;
+      }
+    }
+  }
 
   muT.resize(nPoint) = val_muT;
 
@@ -52,6 +62,16 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
   if (config->GetCompute_Metric()) {
       AuxVar_Adapt.resize(nPoint, 4) = su2double(0.0);
       Gradient_AuxVar_Adapt.resize(nPoint,4,nDim,0.0);
+  }
+
+  if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES) {
+    lesMode.resize(nPoint) = su2double(0.0);
+    if (backscatter) {
+      sbsInBox.resize(nPoint) = 1;
+      stochSource.resize(nPoint, nDim) = su2double(0.0);
+      stochSourceOld.resize(nPoint, nDim) = su2double(0.0);
+      besselIntegral.resize(nPoint) = su2double(0.0);
+    }
   }
 }
 

@@ -2,14 +2,14 @@
  * \file CDeformationDriver.cpp
  * \brief Main subroutines for driving the mesh deformation.
  * \author A. Gastaldi, H. Patel
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser/ General Public
@@ -31,6 +31,8 @@
 #include "../../../SU2_CFD/include/numerics/elasticity/CFEALinearElasticity.hpp"
 #include "../../../SU2_CFD/include/output/CMeshOutput.hpp"
 #include "../../../SU2_CFD/include/solvers/CMeshSolver.hpp"
+
+#include "../../../Common/include/grid_movement/CVolumetricMovementFactory.hpp"
 
 using namespace std;
 
@@ -315,8 +317,8 @@ void CDeformationDriver::DeformLegacy() {
       /*--- Definition of the Class for grid movement. ---*/
 
       grid_movement[iZone] = new CVolumetricMovement*[nInst_Zone]();
-      grid_movement[iZone][INST_0] =
-          new CVolumetricMovement(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+      grid_movement[iZone][INST_0] = CVolumetricMovementFactory::CreateCVolumetricMovement(
+          geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
 
       /*--- Save original coordinates to be reused in convexity checking procedure. ---*/
 
@@ -493,12 +495,27 @@ void CDeformationDriver::OutputFiles() {
       geometry_container[iZone][INST_0][MESH_0]->ComputeMeshQualityStatistics(config_container[iZone]);
     }
 
-    /*--- Load the data. --- */
+    /*--- Load the data and write the mesh. The format is either
+          ASCII or binary su2 format. --- */
 
     output_container[iZone]->LoadData(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], nullptr);
 
+    OUTPUT_TYPE output_type;
+    switch (config_container[iZone]->GetMesh_Out_FileFormat()) {
+      case ENUM_GRID::SU2:
+        output_type = OUTPUT_TYPE::MESH;
+        break;
+      case ENUM_GRID::SU2_BIN:
+        output_type = OUTPUT_TYPE::MESH_BINARY;
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized mesh_out format specified!", CURRENT_FUNCTION);
+        output_type = OUTPUT_TYPE::MESH;
+        break;
+    }
+
     output_container[iZone]->WriteToFile(config_container[iZone], geometry_container[iZone][INST_0][MESH_0],
-                                         OUTPUT_TYPE::MESH, driver_config->GetMesh_Out_FileName());
+                                         output_type, driver_config->GetMesh_Out_FileName());
 
     /*--- Set the file names for the visualization files. ---*/
 

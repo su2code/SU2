@@ -2,14 +2,14 @@
  * \file CAdjHeatOutput.cpp
  * \brief Main subroutines for flow discrete adjoint output
  * \author R. Sanchez
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,8 +36,7 @@ CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) : COutput(c
   /*--- Set the default history fields if nothing is set in the config file ---*/
 
   if (nRequestedHistoryFields == 0){
-    requestedHistoryFields.emplace_back("ITER");
-    requestedHistoryFields.emplace_back("RMS_RES");
+    RequestCommonHistory(config->GetTime_Domain());
     requestedHistoryFields.emplace_back("SENSITIVITY");
     nRequestedHistoryFields = requestedHistoryFields.size();
   }
@@ -59,7 +58,7 @@ CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) : COutput(c
 
   if (find(requestedVolumeFields.begin(), requestedVolumeFields.end(), string("SENSITIVITY")) == requestedVolumeFields.end()) {
     requestedVolumeFields.emplace_back("SENSITIVITY");
-    nRequestedVolumeFields ++;
+    nRequestedVolumeFields++;
   }
 
   stringstream ss;
@@ -90,25 +89,30 @@ CAdjHeatOutput::CAdjHeatOutput(CConfig *config, unsigned short nDim) : COutput(c
 
 CAdjHeatOutput::~CAdjHeatOutput() = default;
 
-void CAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
+void CAdjHeatOutput::SetHistoryOutputFieldsImpl(CConfig *config, COutput* output) {
 
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables.
   /// DESCRIPTION: Root-mean square residual of the adjoint temperature.
-  AddHistoryOutput("RMS_ADJ_TEMPERATURE",    "rms[A_T]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  output->AddHistoryOutput("RMS_ADJ_TEMPERATURE",    "rms[A_T]",  ScreenOutputFormat::FIXED, "RMS_RES", "Root-mean square residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
   /// END_GROUP
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables.
   /// DESCRIPTION: Maximum residual of the adjoint temperature.
-  AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  output->AddHistoryOutput("MAX_ADJ_TEMPERATURE",    "max[A_T]",  ScreenOutputFormat::FIXED, "MAX_RES", "Maximum residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
 
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables.
   /// DESCRIPTION: Root-mean-square residual of the adjoint temperature.
-  AddHistoryOutput("BGS_ADJ_TEMPERATURE",    "bgs[A_T]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
+  output->AddHistoryOutput("BGS_ADJ_TEMPERATURE",    "bgs[A_T]",  ScreenOutputFormat::FIXED, "BGS_RES", "BGS residual of the adjoint temperature.", HistoryFieldType::RESIDUAL);
 
   /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Sensitivities of different geometrical or boundary values.
   /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
-  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
+  output->AddHistoryOutput("SENS_GEO",   "Sens_Geo",   ScreenOutputFormat::SCIENTIFIC, "SENSITIVITY", "Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.", HistoryFieldType::COEFFICIENT);
   /// END_GROUP
+}
+
+void CAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
+
+  SetHistoryOutputFieldsImpl(config, this);
 
   AddHistoryOutput("LINSOL_ITER", "LinSolIter", ScreenOutputFormat::INTEGER, "LINSOL", "Number of iterations of the linear solver.");
   AddHistoryOutput("LINSOL_RESIDUAL", "LinSolRes", ScreenOutputFormat::FIXED, "LINSOL", "Residual of the linear solver.");
@@ -120,19 +124,23 @@ void CAdjHeatOutput::SetHistoryOutputFields(CConfig *config){
 
 }
 
+void CAdjHeatOutput::LoadHistoryDataImpl(CConfig *config, CGeometry *geometry, CSolver **solver, COutput* output) {
+
+  CSolver* adjheat_solver = solver[ADJHEAT_SOL];
+
+  output->SetHistoryOutputValue("RMS_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_RMS(0)));
+  output->SetHistoryOutputValue("MAX_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_Max(0)));
+  if (config->GetMultizone_Problem()) {
+    output->SetHistoryOutputValue("BGS_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_BGS(0)));
+  }
+  output->SetHistoryOutputValue("SENS_GEO", adjheat_solver->GetTotal_Sens_Geo());
+}
+
 void CAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolver **solver) {
 
   CSolver* adjheat_solver = solver[ADJHEAT_SOL];
 
-  SetHistoryOutputValue("RMS_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_RMS(0)));
-
-  SetHistoryOutputValue("MAX_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_Max(0)));
-
-  if (multiZone) {
-    SetHistoryOutputValue("BGS_ADJ_TEMPERATURE", log10(adjheat_solver->GetRes_BGS(0)));
-  }
-
-  SetHistoryOutputValue("SENS_GEO", adjheat_solver->GetTotal_Sens_Geo());
+  LoadHistoryDataImpl(config, geometry, solver, this);
 
   SetHistoryOutputValue("LINSOL_ITER", adjheat_solver->GetIterLinSolver());
   SetHistoryOutputValue("LINSOL_RESIDUAL", log10(adjheat_solver->GetResLinSolver()));
@@ -142,6 +150,7 @@ void CAdjHeatOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
     SetHistoryOutputValue("DEFORM_RESIDUAL", log10(solver[MESH_SOL]->System.GetResidual()));
   }
 
+  ComputeSimpleCustomOutputs(config);
 }
 
 void CAdjHeatOutput::SetVolumeOutputFields(CConfig *config){
@@ -176,6 +185,14 @@ void CAdjHeatOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY", "sensitivity in normal direction");
   /// END_GROUP
 
+  if (!config->GetTime_Domain()) return;
+
+  /*--- Sensitivities with respect to initial conditions. ---*/
+
+  AddVolumeOutput("SENS_TEMP_N", "SensitivityTempN", "SENSITIVITY_N", "sensitivity to the previous temperature");
+  if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
+    AddVolumeOutput("SENS_TEMP_N1", "SensitivityTempN1", "SENSITIVITY_N", "sensitivity to the previous-1 temperature");
+  }
 }
 
 void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
@@ -198,6 +215,13 @@ void CAdjHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   SetVolumeOutputValue("SENSITIVITY-Y", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 1));
   if (nDim == 3)
     SetVolumeOutputValue("SENSITIVITY-Z", iPoint, Node_AdjHeat->GetSensitivity(iPoint, 2));
+
+  if (!config->GetTime_Domain()) return;
+
+  SetVolumeOutputValue("SENS_TEMP_N", iPoint, Node_AdjHeat->GetSolution_time_n(iPoint, 0));
+  if (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND) {
+    SetVolumeOutputValue("SENS_TEMP_N1", iPoint, Node_AdjHeat->GetSolution_time_n1(iPoint, 0));
+  }
 
 }
 

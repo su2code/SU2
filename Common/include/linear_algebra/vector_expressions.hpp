@@ -2,14 +2,14 @@
  * \file vector_expressions.hpp
  * \brief Expression templates for vector types with coefficient-wise operations.
  * \author P. Gomes
- * \version 7.5.1 "Blackbird"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2023, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -138,6 +138,7 @@ namespace math = ::std;
 #define sign_impl(x) Scalar(1 - 2 * (x < 0))
 MAKE_UNARY_FUN(operator-, minus_, -)
 MAKE_UNARY_FUN(abs, abs_, math::abs)
+MAKE_UNARY_FUN(exp, exp_, math::exp)
 MAKE_UNARY_FUN(sqrt, sqrt_, math::sqrt)
 MAKE_UNARY_FUN(sign, sign_, sign_impl)
 #undef sign_impl
@@ -146,28 +147,30 @@ MAKE_UNARY_FUN(sign, sign_, sign_impl)
 
 /*--- Macro to create expressions and overloads for binary functions. ---*/
 
-#define MAKE_BINARY_FUN(FUN, EXPR, IMPL)                                                                             \
-  /*!--- Expression class. ---*/                                                                                     \
-  template <class U, class V, class Scalar>                                                                          \
-  class EXPR : public CVecExpr<EXPR<U, V, Scalar>, Scalar> {                                                         \
-    store_t<const U> u;                                                                                              \
-    store_t<const V> v;                                                                                              \
-                                                                                                                     \
-   public:                                                                                                           \
-    static constexpr bool StoreAsRef = false;                                                                        \
-    FORCEINLINE EXPR(const U& u_, const V& v_) : u(u_), v(v_) {}                                                     \
-    FORCEINLINE auto operator[](size_t i) const RETURNS(IMPL(u[i], v[i]))                                            \
-  };                                                                                                                 \
-  /*!--- Vector with vector function overload. ---*/                                                                 \
-  template <class U, class V, class S>                                                                               \
-  FORCEINLINE auto FUN(const CVecExpr<U, S>& u, const CVecExpr<V, S>& v)                                             \
-      RETURNS(EXPR<U, V, S>(u.derived(), v.derived())) /*!--- Vector with scalar function overload. ---*/            \
-      template <class U, class S>                                                                                    \
-      FORCEINLINE auto FUN(const CVecExpr<U, S>& u, decay_t<S> v)                                                    \
-          RETURNS(EXPR<U, Bcast<S>, S>(u.derived(), Bcast<S>(v))) /*!--- Scalar with vector function overload. ---*/ \
-      template <class S, class V>                                                                                    \
-      FORCEINLINE auto FUN(decay_t<S> u, const CVecExpr<V, S>& v)                                                    \
-          RETURNS(EXPR<Bcast<S>, V, S>(Bcast<S>(u), v.derived()))
+// clang-format off
+#define MAKE_BINARY_FUN(FUN, EXPR, IMPL)                                                                              \
+  /*!--- Expression class. ---*/                                                                                      \
+  template <class U, class V, class Scalar>                                                                           \
+  class EXPR : public CVecExpr<EXPR<U, V, Scalar>, Scalar> {                                                          \
+    store_t<const U> u;                                                                                               \
+    store_t<const V> v;                                                                                               \
+                                                                                                                      \
+   public:                                                                                                            \
+    static constexpr bool StoreAsRef = false;                                                                         \
+    FORCEINLINE EXPR(const U& u_, const V& v_) : u(u_), v(v_) {}                                                      \
+    FORCEINLINE auto operator[](size_t i) const RETURNS(IMPL(u[i], v[i]))                                             \
+  };                                                                                                                  \
+  /*!--- Vector with vector function overload. ---*/                                                                  \
+  template <class U, class V, class S>                                                                                \
+  FORCEINLINE auto FUN(const CVecExpr<U, S>& u, const CVecExpr<V, S>& v)                                              \
+      RETURNS(EXPR<U, V, S>(u.derived(), v.derived()))                                                                \
+  /*!--- Vector with scalar function overload. ---*/                                                                  \
+  template <class U, class S>                                                                                         \
+  FORCEINLINE auto FUN(const CVecExpr<U, S>& u, decay_t<S> v) RETURNS(EXPR<U, Bcast<S>, S>(u.derived(), Bcast<S>(v))) \
+  /*!--- Scalar with vector function overload. ---*/                                                                  \
+  template <class S, class V>                                                                                         \
+  FORCEINLINE auto FUN(decay_t<S> u, const CVecExpr<V, S>& v) RETURNS(EXPR<Bcast<S>, V, S>(Bcast<S>(u), v.derived()))
+// clang-format on
 
 /*--- std::max/min have issues (because they return by reference).
  * fmin and fmax return by value and thus are fine, but they would force
