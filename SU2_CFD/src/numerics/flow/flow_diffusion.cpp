@@ -480,7 +480,7 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
                   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
   if (config->GetSAParsedOptions().qcr2000) {
     const su2double total_viscosity = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
-    const su2double turb_fraction = total_viscosity > 0.0 ? Mean_Eddy_Viscosity / total_viscosity : 0.0;
+    const su2double turb_fraction = Mean_Eddy_Viscosity / fmax(total_viscosity, EPS);
     AddQCR(nDim, &Mean_GradPrimVar[1], tau, turb_fraction);
   }
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
@@ -662,7 +662,7 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
                   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
   if (config->GetSAParsedOptions().qcr2000) {
     const su2double total_viscosity = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
-    const su2double turb_fraction = total_viscosity > 0.0 ? Mean_Eddy_Viscosity / total_viscosity : 0.0;
+    const su2double turb_fraction = Mean_Eddy_Viscosity / fmax(total_viscosity, EPS);
     AddQCR(nDim, &Mean_GradPrimVar[1], tau, turb_fraction);
   }
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
@@ -996,7 +996,7 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
                   Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
   if (config->GetSAParsedOptions().qcr2000) {
     const su2double total_viscosity = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
-    const su2double turb_fraction = total_viscosity > 0.0 ? Mean_Eddy_Viscosity / total_viscosity : 0.0;
+    const su2double turb_fraction = Mean_Eddy_Viscosity / fmax(total_viscosity, EPS);
     AddQCR(nDim, &Mean_GradPrimVar[1], tau, turb_fraction);
   }
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
