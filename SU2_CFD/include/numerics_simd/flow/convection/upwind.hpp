@@ -61,6 +61,7 @@ protected:
   const bool muscl;
   const su2double umusclKappa;
   const bool correction;
+  const bool limitedCorrection;
   const LIMITER typeLimiter;
 
   /*!
@@ -75,6 +76,7 @@ protected:
     muscl(finestGrid && config.GetMUSCL_Flow()),
     umusclKappa(config.GetMUSCL_Kappa_Flow()),
     correction(muscl && config.GetFluxCorrection()),
+    limitedCorrection(correction && config.GetFluxCorrectionLimiter()),
     typeLimiter(config.GetKind_SlopeLimit_Flow()) {
   }
 
@@ -145,7 +147,7 @@ public:
       const auto corrX = gatherVariables<nDim>(iEdge, geometry.edges->GetCorrection_X());
       const auto corrY = gatherVariables<nDim>(iEdge, geometry.edges->GetCorrection_Y());
       const auto corrZ = gatherVariables<nDim>(iEdge, geometry.edges->GetCorrection_Z());
-      CorrectFlux(iPoint, jPoint, solution, V, flux, corrX, corrY, corrZ, gamma);
+      CorrectFlux(iPoint, jPoint, solution, V, flux, corrX, corrY, corrZ, gamma, limitedCorrection);
     }
 
     /*--- Add the contributions from the base class (static decorator). ---*/
@@ -463,6 +465,7 @@ class CRoeNewBase : public Base {
   const bool dynamicGrid;
   const bool muscl;
   const bool correction;
+  const bool limitedCorrection;
   const LIMITER typeLimiter;
 
   /*!
@@ -479,6 +482,7 @@ class CRoeNewBase : public Base {
                                                                     dynamicGrid(config.GetDynamic_Grid()),
                                                                     muscl(finestGrid && config.GetMUSCL_Flow()),
                                                                     correction(muscl && config.GetFluxCorrection()),
+                                                                    limitedCorrection(correction && config.GetFluxCorrectionLimiter()),
                                                                     typeLimiter(config.GetKind_SlopeLimit_Flow()) {
   }
 
@@ -1543,7 +1547,7 @@ class CRoeNewBase : public Base {
       const auto corrX = gatherVariables<nDim>(iEdge, geometry.edges->GetCorrection_X());
       const auto corrY = gatherVariables<nDim>(iEdge, geometry.edges->GetCorrection_Y());
       const auto corrZ = gatherVariables<nDim>(iEdge, geometry.edges->GetCorrection_Z());
-      CorrectFlux(iPoint, jPoint, solution, V, flux, corrX, corrY, corrZ, gamma);
+      CorrectFlux(iPoint, jPoint, solution, V, flux, corrX, corrY, corrZ, gamma, limitedCorrection);
       //      reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(iEdge, iPoint, jPoint, muscl, typeLimiter, V1st, vector_ij, solution);
     }
 

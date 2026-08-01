@@ -1783,6 +1783,8 @@ void CConfig::SetConfig_Options() {
   /*!\brief INTEGRATED_HEATFLUX \n DESCRIPTION: Prescribe Heatflux in [W] instead of [W/m^2] \ingroup Config \default false */
   addEnumOption("VISC_GRAD_CORR", Kind_Visc_Corr, Viscous_Grad_Corr_Map, VISCOUS_GRAD_CORR::EDGE_NORMAL);
   addBoolOption("FLUX_CORRECTION", FluxCorrection, false);
+  /*!\brief FLUX_CORRECTION_LIMITER \n DESCRIPTION: Apply the flow slope limiter to the gradients used in the flux correction terms \default false */
+  addBoolOption("FLUX_CORRECTION_LIMITER", FluxCorrectionLimiter, false);
   addBoolOption("MOD_CENTROIDS", ModCentroids, false);
   /*!\brief MARKER_HEATTRANSFER DESCRIPTION: Heat flux with specified heat transfer coefficient boundary marker(s)\n
    * Format: ( Heat transfer marker, heat transfer coefficient, wall temperature (static), ... ) \ingroup Config  */
@@ -3958,6 +3960,19 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Flux correction requires  MUSCL_FLOW= YES.", CURRENT_FUNCTION);
     } else {
       FluxCorrection = false;
+    }
+  }
+
+  if (FluxCorrectionLimiter) {
+    if (!FluxCorrection) {
+      if (OptionIsSet("FLUX_CORRECTION_LIMITER")) {
+        SU2_MPI::Error("FLUX_CORRECTION_LIMITER requires FLUX_CORRECTION= YES.", CURRENT_FUNCTION);
+      } else {
+        FluxCorrectionLimiter = false;
+      }
+    } else if (Kind_SlopeLimit_Flow == LIMITER::NONE || Kind_SlopeLimit_Flow == LIMITER::VAN_ALBADA_EDGE) {
+      SU2_MPI::Error("FLUX_CORRECTION_LIMITER requires a point-based flow limiter\n"
+                     "(SLOPE_LIMITER_FLOW other than NONE or VAN_ALBADA_EDGE).", CURRENT_FUNCTION);
     }
   }
 

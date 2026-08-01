@@ -1794,7 +1794,8 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
               break;
           }
 
-          if (config->GetFluxCorrection()) numerics[MESH_0][FLOW_SOL][conv_term]->SetCorrection();
+          if (config->GetFluxCorrection())
+            numerics[MESH_0][FLOW_SOL][conv_term]->SetCorrection(config->GetFluxCorrectionLimiter());
 
         }
         if (incompressible) {

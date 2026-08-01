@@ -1823,6 +1823,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                          (config->GetKind_FluidModel() == IDEAL_GAS);
   const bool low_mach_corr = config->Low_Mach_Correction();
   const bool fluxCorrection = config->GetFluxCorrection();
+  const bool fluxCorrectionLimiter = config->GetFluxCorrectionLimiter();
 
   /*--- Use vectorization if the scheme supports it. ---*/
   if (ideal_gas && !low_mach_corr) {
@@ -1988,6 +1989,8 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         numerics->SetCorrection(geometry->edges->GetCorrection_X(iEdge), geometry->edges->GetCorrection_Y(iEdge),
                                 geometry->edges->GetCorrection_Z(iEdge));
         numerics->SetPrimVarGradient(Gradient_i, Gradient_j);
+        if (fluxCorrectionLimiter)
+          numerics->SetCorrectionLimiter(nodes->GetLimiter_Primitive(iPoint), nodes->GetLimiter_Primitive(jPoint));
       }
 
     }

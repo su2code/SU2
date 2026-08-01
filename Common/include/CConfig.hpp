@@ -137,6 +137,7 @@ private:
   Enable_Cuda,              /*!< \brief Flag for switching GPU computing*/
   Integrated_HeatFlux,      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   FluxCorrection,
+  FluxCorrectionLimiter,    /*!< \brief Apply the slope limiter to the gradients used in the flux correction. */
   ModCentroids;
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
@@ -9851,6 +9852,8 @@ public:
   bool GetIntegrated_HeatFlux() const { return Integrated_HeatFlux; }
 
   bool GetFluxCorrection() const { return FluxCorrection; }
+
+  bool GetFluxCorrectionLimiter() const { return FluxCorrectionLimiter; }
 
   bool GetModifiedCentroids() const { return ModCentroids; }
 

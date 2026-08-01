@@ -1635,6 +1635,15 @@ void CNumerics::CorrectResidual(su2double* ProjFlux) {
   unsigned short index[] = {static_cast<unsigned short>(nDim+2), 1, 2, 3, static_cast<unsigned short>(nDim+1)};
   if (nDim == 2) index[3] = nDim+1;
 
+  /*--- Optionally limit the gradients with the nodal limiters used for the MUSCL reconstruction. ---*/
+  su2double lim_i[5] = {1.0, 1.0, 1.0, 1.0, 1.0}, lim_j[5] = {1.0, 1.0, 1.0, 1.0, 1.0};
+  if (fluxCorrectionLimiter) {
+    for (iVar = 0; iVar < nVar; ++iVar) {
+      lim_i[iVar] = CorrLim_i[index[iVar]];
+      lim_j[iVar] = CorrLim_j[index[iVar]];
+    }
+  }
+
   const su2double *dirs[3] = {CorrDirX, CorrDirY, CorrDirZ};
 
   for (iDim = 0; iDim < nDim; ++iDim) {
@@ -1644,7 +1653,8 @@ void CNumerics::CorrectResidual(su2double* ProjFlux) {
 
     for (iVar = 0; iVar < nVar; ++iVar) {
       for (int jVar = 0; jVar < nVar; ++jVar) {
-        ProjFlux[iVar] += JacPrim[iVar][jVar] * (PrimVar_Grad_i[index[jVar]][iDim] + PrimVar_Grad_j[index[jVar]][iDim]);
+        ProjFlux[iVar] += JacPrim[iVar][jVar] * (lim_i[jVar] * PrimVar_Grad_i[index[jVar]][iDim] +
+                                                 lim_j[jVar] * PrimVar_Grad_j[index[jVar]][iDim]);
       }
     }
 

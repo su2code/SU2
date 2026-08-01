@@ -167,6 +167,8 @@ protected:
   Neighbor_j;  /*!< \brief Number of neighbors of the point j. */
   const su2double *Normal = nullptr;      /*!< \brief Normal vector, its norm is the area of the face. */
   const su2double *CorrDirX, *CorrDirY, *CorrDirZ;
+  const su2double *CorrLim_i = nullptr,     /*!< \brief Nodal limiters applied to the flux correction gradients. */
+                  *CorrLim_j = nullptr;
   su2double **JacPrim;
   su2double UnitNormal[MAXNDIM] = {0.0};  /*!< \brief Unitary normal vector. */
   su2double
@@ -209,6 +211,8 @@ protected:
   bool bounded_scalar = false;    /*!< \brief Flag for bounded scalar problem */
 
   bool fluxCorrection = false;
+
+  bool fluxCorrectionLimiter = false;  /*!< \brief Apply the slope limiter to the flux correction gradients. */
 
 public:
   /*!
@@ -1113,6 +1117,11 @@ public:
     CorrDirZ = corrZ;
   }
 
+  inline void SetCorrectionLimiter(const su2double *lim_i, const su2double *lim_j) {
+    CorrLim_i = lim_i;
+    CorrLim_j = lim_j;
+  }
+
   /*!
    * \brief Set the value of the volume of the control volume.
    * \param[in] val_volume Volume of the control volume.
@@ -1907,7 +1916,10 @@ public:
 
   void CorrectResidual(su2double* ProjFlux);
 
-  inline void SetCorrection() {fluxCorrection = true;}
+  inline void SetCorrection(bool limited = false) {
+    fluxCorrection = true;
+    fluxCorrectionLimiter = limited;
+  }
 
 };
 
