@@ -105,6 +105,7 @@ CNEMOEulerSolver::CNEMOEulerSolver(CGeometry *geometry, CConfig *config,
   if (navier_stokes) { nPrimVar   = nSpecies + nDim + 10; }
   else {               nPrimVar   = nSpecies +nDim +8;    }
   nPrimVarGrad = nSpecies + nDim + 8;
+  nAuxGradAdap = (config->GetGoal_Oriented_Metric())? nDim+3 : config->GetnAdap_Sensor();
 
   /*--- Initialize nVarGrad for deallocation ---*/
   nVarGrad     = nPrimVarGrad;

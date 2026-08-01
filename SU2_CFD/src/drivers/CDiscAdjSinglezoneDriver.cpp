@@ -241,6 +241,40 @@ void CDiscAdjSinglezoneDriver::Postprocess() {
 
   }//switch
 
+    if (config->GetCompute_Metric()) {
+        /*--- Compute df/dU ---*/
+        ObjectiveRecording();
+
+        /*--- Reset solution and primitives ---*/
+        AD::Reset();
+        for (unsigned short iSol=0; iSol < MAX_SOLS; iSol++) {
+            for (unsigned short iMesh = 0; iMesh <= config_container[ZONE_0]->GetnMGLevels(); iMesh++) {
+                auto solver = solver_container[ZONE_0][INST_0][iMesh][iSol];
+                if (solver && solver->GetAdjoint()) {
+                    solver->SetRecording(geometry_container[ZONE_0][INST_0][iMesh], config_container[ZONE_0]);
+                }
+            }
+        }
+        iteration->SetDependencies(solver_container, geometry_container, numerics_container, config_container, ZONE_0, INST_0, RECORDING::CLEAR_INDICES);
+
+        /*--- Compute metric for anisotropic mesh adaptation ---*/
+        ComputeMetric();
+
+        direct_output->PreprocessVolumeOutput(config);
+
+        /*--- Load the data --- */
+        direct_output->LoadData(geometry, config, solver);
+
+        /*--- Set the filenames ---*/
+        direct_output->SetVolumeFilename(config->GetVolume_FileName());
+        direct_output->SetSurfaceFilename(config->GetSurfCoeff_FileName());
+
+        for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++){
+            auto FileFormat = config->GetVolumeOutputFiles();
+            direct_output->WriteToFile(config, geometry, FileFormat[iFile]);
+        }
+    }
+
 }
 
 void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
@@ -266,6 +300,8 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
     case RECORDING::SOLUTION_VARIABLES:
       cout << "Direct iteration to store the primal computational graph." << endl;
       cout << "Computing residuals to check the convergence of the direct problem." << endl; break;
+    case RECORDING::OBJECTIVE:
+      cout << "Computing direct dependence of objective on solution." << endl; break;
     default: break;
     }
   }
@@ -294,7 +330,9 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
 
   /*--- Register Output of the iteration ---*/
 
-  iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+  if (kind_recording != RECORDING::OBJECTIVE){
+      iteration->RegisterOutput(solver_container, geometry_container, config_container, ZONE_0, INST_0);
+  }
 
   /*--- Extract the objective function and store it --- */
 
@@ -481,4 +519,103 @@ void CDiscAdjSinglezoneDriver::SecondaryRecording(){
 
   AD::ClearAdjoints();
 
+}
+
+void CDiscAdjSinglezoneDriver::ObjectiveRecording(){
+    /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
+     *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
+
+    SetRecording(RECORDING::CLEAR_INDICES);
+
+    /*--- Store the computational graph of one direct iteration with the secondary variables as input. ---*/
+
+    SetRecording(RECORDING::OBJECTIVE);
+
+    /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+
+    SetAdjObjFunction();
+
+    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the computed adjoint values of the input variables. ---*/
+
+    if ( config_container[ZONE_0]->GetFluidProblem() ) {
+        solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_ObjectiveTerm(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
+
+        solver_container[ZONE_0][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
+    }
+    if ( (config->GetKind_Turb_Model() != TURB_MODEL::NONE) &&
+         (!config_container[ZONE_0]->GetFrozen_Visc_Disc()) ) {
+        solver_container[ZONE_0][INST_0][MESH_0][ADJTURB_SOL]->ExtractAdjoint_ObjectiveTerm(geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0]);
+    }
+
+    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+    AD::ClearAdjoints();
+
+}
+
+void CDiscAdjSinglezoneDriver::ComputeMetric() {
+
+    const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+
+    auto solver_flow    = solver[FLOW_SOL];
+    auto solver_turb    = solver[TURB_SOL];
+    auto solver_adjflow = solver[ADJFLOW_SOL];
+    auto solver_adjturb = solver[ADJTURB_SOL];
+
+    if (rank == MASTER_NODE){
+        cout << endl <<"----------------------------- Compute Metric ----------------------------" << endl;
+        cout << "Storing primitive variables needed for gradients in metric." << endl;
+    }
+    solver_flow->SetAuxVar_Adapt(geometry, config, solver_flow->GetNodes());
+    if (turb) solver_turb->SetAuxVar_Adapt(geometry, config, solver_flow->GetNodes());
+
+    if (config->GetKind_Hessian_Method() == GREEN_GAUSS) {
+        if(rank == MASTER_NODE) cout << "Computing Hessians using Green-Gauss." << endl;
+
+        if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
+        solver_flow->SetHessian_GG(geometry, config, RUNTIME_FLOW_SYS);
+
+        if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
+        solver_adjflow->SetHessian_GG(geometry, config, RUNTIME_ADJFLOW_SYS);
+
+        if ( turb ) {
+            if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
+            solver_turb->SetHessian_GG(geometry, config, RUNTIME_TURB_SYS);
+
+            if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
+            solver_adjturb->SetHessian_GG(geometry, config, RUNTIME_ADJTURB_SYS);
+
+        }
+        if(rank == MASTER_NODE) cout << "Computing gradients of aux variables." << endl;
+        solver_flow->SetGradient_AuxVar_Adapt_GG(geometry, config, RUNTIME_FLOW_SYS);
+        if (turb) solver_turb->SetGradient_AuxVar_Adapt_GG(geometry, config, RUNTIME_TURB_SYS);
+    }
+    else {
+        if(rank == MASTER_NODE) cout << "Computing Hessians using L2 projection." << endl;
+
+        if(rank == MASTER_NODE) cout << "Computing flow conservative variable Hessians." << endl;
+        solver_flow->SetHessian_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
+
+        if(rank == MASTER_NODE) cout << "Computing adjoint flow variable Hessians." << endl;
+        solver_adjflow->SetHessian_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
+
+        if ( turb ) {
+            if(rank == MASTER_NODE) cout << "Computing turbulent conservative variable Hessians." << endl;
+            solver_turb->SetHessian_L2_Proj(geometry, config, RUNTIME_TURB_SYS);
+
+            if(rank == MASTER_NODE) cout << "Computing adjoint turbulent variable Hessians." << endl;
+            solver_adjturb->SetHessian_L2_Proj(geometry, config, RUNTIME_TURB_SYS);
+        }
+        if(rank == MASTER_NODE) cout << "Computing gradients of aux variables." << endl;
+        solver_flow->SetGradient_AuxVar_Adapt_L2_Proj(geometry, config, RUNTIME_FLOW_SYS);
+        if (turb) solver_turb->SetGradient_AuxVar_Adapt_L2_Proj(geometry, config, RUNTIME_TURB_SYS);
+    }
+
+    //--- Metric
+    if(rank == MASTER_NODE) cout << "Computing goal-oriented metric tensor." << endl;
+    solver_flow->ComputeMetric(solver, geometry, config);
 }

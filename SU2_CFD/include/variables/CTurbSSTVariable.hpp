@@ -44,6 +44,7 @@ protected:
   VectorType F1;
   VectorType F2;    /*!< \brief Menter blending function for blending of k-w and k-eps. */
   VectorType CDkw;  /*!< \brief Cross-diffusion. */
+  su2vector<bool> CDkwLimited;
   SST_ParsedOptions sstParsedOptions;
 public:
   /*!
@@ -87,4 +88,9 @@ public:
    * \brief Get the value of the cross diffusion of tke and omega.
    */
   inline su2double GetCrossDiff(unsigned long iPoint) const override { return CDkw(iPoint); }
+
+    /*!
+  * \brief Get the value of the cross diffusion of tke and omega.
+  */
+    inline bool GetCrossDiffLimited(unsigned long iPoint) const final { return CDkwLimited(iPoint); }
 };

@@ -184,6 +184,7 @@ void CNewtonIntegration::MultiGrid_Iteration(CGeometry ****geometry_, CSolver **
             ComputeResiduals(ResEvalType::EXPLICIT);
         }
     }
+    END_SU2_OMP_PARALLEL
 
     if (TE) return;
 

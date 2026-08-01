@@ -28,6 +28,7 @@
 
 #include "../../include/solvers/CSolver.hpp"
 #include "../../include/gradients/computeGradientsGreenGauss.hpp"
+#include "../../include/gradients/computeGradientsL2Projection.hpp"
 #include "../../include/gradients/computeGradientsLeastSquares.hpp"
 #include "../../include/limiters/computeLimiters.hpp"
 #include "../../../Common/include/toolboxes/MMS/CIncTGVSolution.hpp"
@@ -1380,6 +1381,26 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
       break;
+    case GRADIENT_ADAPT:
+      COUNT_PER_POINT  = config->GetGoal_Oriented_Metric()? nVar*nDim : config->GetnAdap_Sensor()*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case AUXVAR_ADAPT:
+      COUNT_PER_POINT  = nAuxGradAdap;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case AUXVAR_GRADIENT_ADAPT:
+      COUNT_PER_POINT  = nAuxGradAdap*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case HESSIAN:
+      COUNT_PER_POINT  = config->GetGoal_Oriented_Metric()? 3*(nDim-1)*nVar : 3*(nDim-1)*config->GetnAdap_Sensor();
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case METRIC:
+      COUNT_PER_POINT  = 3*(nDim-1);
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                      CURRENT_FUNCTION);
@@ -1394,6 +1415,9 @@ namespace CommHelpers {
       case PRIMITIVE_GRADIENT: return nodes->GetGradient_Primitive();
       case PRIMITIVE_GRAD_REC: return nodes->GetGradient_Reconstruction();
       case AUXVAR_GRADIENT: return nodes->GetAuxVarGradient();
+      case GRADIENT_ADAPT: return nodes->GetGradient_Adapt();
+      case AUXVAR_GRADIENT_ADAPT: return nodes->GetGradient_AuxVar_Adapt();
+      case HESSIAN: return nodes->GetHessian();
       default: return nodes->GetGradient();
     }
   }
@@ -1410,7 +1434,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
 
   /*--- Local variables ---*/
 
-  unsigned short iVar, iDim;
+  unsigned short iVar, iDim, iHess;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
 
@@ -1436,6 +1460,8 @@ void CSolver::InitiateComms(CGeometry *geometry,
   /*--- Handle the different types of gradient and limiter. ---*/
 
   const auto nVarGrad = COUNT_PER_POINT / nDim;
+  const auto nHess = 3*(nDim-1);
+  const auto nVarHess = COUNT_PER_POINT / nHess;
   auto& gradient = CommHelpers::selectGradient(base_nodes, commType);
   auto& limiter = CommHelpers::selectLimiter(base_nodes, commType);
 
@@ -1504,9 +1530,28 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case SOLUTION_GRAD_REC:
           case PRIMITIVE_GRAD_REC:
           case AUXVAR_GRADIENT:
+          case GRADIENT_ADAPT:
             for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 bufDSend[buf_offset+iVar*nDim+iDim] = gradient(iPoint, iVar, iDim);
+            break;
+          case AUXVAR_ADAPT:
+            for (iVar = 0; iVar < nAuxGradAdap; iVar++)
+                bufDSend[buf_offset+iVar] = base_nodes->GetAuxVar_Adapt(iPoint, iVar);
+            break;
+          case AUXVAR_GRADIENT_ADAPT:
+            for (iVar = 0; iVar < nAuxGradAdap; iVar++)
+                for (iDim = 0; iDim < nDim; iDim++)
+                    bufDSend[buf_offset+iVar*nDim+iDim] = gradient(iPoint, iVar, iDim);
+            break;
+          case HESSIAN:
+            for (iVar = 0; iVar < nVarHess; iVar++)
+                for (iHess = 0; iHess < nHess; iHess++)
+                    bufDSend[buf_offset+iVar*nHess+iHess] = gradient(iPoint, iVar, iHess);
+            break;
+          case METRIC:
+            for (iHess = 0; iHess < 3*(nDim-1); iHess++)
+                bufDSend[buf_offset+iHess] = base_nodes->GetMetric(iPoint, iHess);
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
@@ -1552,7 +1597,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
 
   /*--- Local variables ---*/
 
-  unsigned short iDim, iVar;
+  unsigned short iDim, iVar, iHess;
   unsigned long iPoint, iRecv, nRecv, msg_offset, buf_offset;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE = 0;
@@ -1573,6 +1618,8 @@ void CSolver::CompleteComms(CGeometry *geometry,
   /*--- Handle the different types of gradient and limiter. ---*/
 
   const auto nVarGrad = COUNT_PER_POINT / nDim;
+  const auto nHess = 3*(nDim-1);
+  const auto nVarHess = COUNT_PER_POINT / nHess;
   auto& gradient = CommHelpers::selectGradient(base_nodes, commType);
   auto& limiter = CommHelpers::selectLimiter(base_nodes, commType);
 
@@ -1652,9 +1699,28 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case SOLUTION_GRAD_REC:
           case PRIMITIVE_GRAD_REC:
           case AUXVAR_GRADIENT:
+          case GRADIENT_ADAPT:
             for (iVar = 0; iVar < nVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
                 gradient(iPoint,iVar,iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
+            break;
+          case AUXVAR_ADAPT:
+            for (iVar = 0; iVar < nAuxGradAdap; iVar++)
+                base_nodes->SetAuxVar_Adapt(iPoint, iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case AUXVAR_GRADIENT_ADAPT:
+            for (iVar = 0; iVar < nAuxGradAdap; iVar++)
+                for (iDim = 0; iDim < nDim; iDim++)
+                    gradient(iPoint, iVar, iDim) = bufDRecv[buf_offset+iVar*nDim+iDim];
+            break;
+          case HESSIAN:
+            for (iVar = 0; iVar < nVarHess; iVar++)
+                for (iHess = 0; iHess < nHess; iHess++)
+                    gradient(iPoint, iVar, iHess) = bufDRecv[buf_offset+iVar*nHess+iHess];
+            break;
+          case METRIC:
+            for (iHess = 0; iHess < 3*(nDim-1); iHess++)
+                base_nodes->SetMetric(iPoint, iHess, SU2_TYPE::GetValue(bufDRecv[buf_offset+iHess]));
             break;
           case SOLUTION_FEA:
             for (iVar = 0; iVar < nVar; iVar++) {
@@ -1848,6 +1914,9 @@ void CSolver::AdaptCFLNumber(CGeometry **geometry,
       if ((iMesh == MESH_0) && solverTurb)
         underRelaxationTurb = solverTurb->GetNodes()->GetUnderRelaxation(iPoint);
       const su2double underRelaxation = min(underRelaxationFlow,underRelaxationTurb);
+
+      bool nonPhysical = solverFlow->GetNodes()->GetNon_Physical(iPoint);
+      if ((iMesh == MESH_0) && solverTurb) nonPhysical = nonPhysical || solverTurb->GetNodes()->GetNon_Physical(iPoint);
 
       /* If we apply a small under-relaxation parameter for stability,
        then we should reduce the CFL before the next iteration. If we
@@ -2142,6 +2211,83 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
   const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
 
   computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, gradient, rmatrix);
+}
+
+void CSolver::SetHessian_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+
+    //--- communicate the solution values via MPI
+    MPI_QUANTITIES commSol = config->GetGoal_Oriented_Metric()? SOLUTION : AUXVAR_ADAPT;
+    InitiateComms(geometry, config, commSol);
+    CompleteComms(geometry, config, commSol);
+
+    const auto& solution = config->GetGoal_Oriented_Metric()? base_nodes->GetSolution() : base_nodes->GetAuxVar_Adapt();
+    auto& gradient = base_nodes->GetGradient_Adapt();
+    auto nHess = config->GetGoal_Oriented_Metric()? nVar : config->GetnAdap_Sensor();
+
+    computeGradientsGreenGauss(this, GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
+                               *config, solution, 0, nHess, gradient);
+
+    // CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
+    // CorrectWallGradient(geometry, config, Kind_Solver);
+
+    auto& hessian = base_nodes->GetHessian();
+
+    computeHessiansGreenGauss(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
+                              *config, gradient, 0, nHess, hessian);
+
+    CorrectBoundHessian(geometry, config, Kind_Solver);
+
+}
+
+void CSolver::SetHessian_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+
+    //--- communicate the solution values via MPI
+    MPI_QUANTITIES commSol = config->GetGoal_Oriented_Metric()? SOLUTION : AUXVAR_ADAPT;
+    InitiateComms(geometry, config, commSol);
+    CompleteComms(geometry, config, commSol);
+
+    const auto& solution = config->GetGoal_Oriented_Metric()? base_nodes->GetSolution() : base_nodes->GetAuxVar_Adapt();
+    auto& gradient = base_nodes->GetGradient_Adapt();
+    auto nHess = config->GetGoal_Oriented_Metric()? nVar : config->GetnAdap_Sensor();
+
+    computeGradientsL2Projection(this, GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
+                                 *config, solution, 0, nHess, gradient);
+
+    CorrectSymmPlaneGradient(geometry, config, Kind_Solver);
+
+    auto& hessian = base_nodes->GetHessian();
+
+    computeHessiansL2Projection(this, HESSIAN, PERIODIC_SOL_GG, *geometry,
+                                *config, gradient, 0, nHess, hessian);
+
+}
+
+void CSolver::SetGradient_AuxVar_Adapt_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+
+    const auto& solution = base_nodes->GetAuxVar_Adapt();
+    auto& gradient = base_nodes->GetGradient_AuxVar_Adapt();
+
+    computeGradientsGreenGauss(this, AUXVAR_GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
+                               *config, solution, 0, nAuxGradAdap, gradient);
+
+}
+
+void CSolver::SetGradient_AuxVar_Adapt_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+
+    const auto& solution = base_nodes->GetAuxVar_Adapt();
+    auto& gradient = base_nodes->GetGradient_AuxVar_Adapt();
+
+    computeGradientsL2Projection(this, AUXVAR_GRADIENT_ADAPT, PERIODIC_SOL_GG, *geometry,
+                                 *config, solution, 0, nAuxGradAdap, gradient);
+
+}
+
+void CSolver::SetHessian_LS(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+
+    if (rank == MASTER_NODE)
+        cout << "Least squares Hessian computation not currently supported.\nUsing Green-Gauss instead.\n" <<endl;
+
+    SetHessian_GG(geometry, config, Kind_Solver);
 }
 
 void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {
@@ -4842,4 +4988,666 @@ void CSolver::Strong_BC(CGeometry* geometry, CSolver** solver_container, CConfig
 
   }
 
+}
+
+void CSolver::CorrectSymmPlaneGradient(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+
+    su2double Tangential[MAXNDIM] = {0.0}, GradNormVel[MAXNDIM] = {0.0}, GradTangVel[MAXNDIM] = {0.0};
+
+    su2double **GradSymm = new su2double*[nVar];
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+        GradSymm[iVar] = new su2double[nDim];
+
+    for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) {
+            for (auto iVertex = 0u; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+                const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                if (geometry->nodes->GetDomain(iPoint)) {
+
+                    const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+                    su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+                    su2double UnitNormal[MAXNDIM] = {0.0};
+                    for (auto iDim = 0u; iDim < nDim; iDim++)
+                        UnitNormal[iDim] = -Normal[iDim]/Area;
+
+                    //--- Compute unit tangent.
+                    switch( nDim ) {
+                        case 2: {
+                            Tangential[0] = -UnitNormal[1];
+                            Tangential[1] =  UnitNormal[0];
+                            break;
+                        }
+                        case 3: {
+                            /*--- n = ai + bj + ck, if |b| > |c| ---*/
+                            if( abs(UnitNormal[1]) > abs(UnitNormal[2])) {
+                                /*--- t = bi + (c-a)j - bk  ---*/
+                                Tangential[0] = UnitNormal[1];
+                                Tangential[1] = UnitNormal[2] - UnitNormal[0];
+                                Tangential[2] = -UnitNormal[1];
+                            } else {
+                                /*--- t = ci - cj + (b-a)k  ---*/
+                                Tangential[0] = UnitNormal[2];
+                                Tangential[1] = -UnitNormal[2];
+                                Tangential[2] = UnitNormal[1] - UnitNormal[0];
+                            }
+                            /*--- Make it a unit vector. ---*/
+                            const su2double TangentialNorm = sqrt(pow(Tangential[0],2) + pow(Tangential[1],2) + pow(Tangential[2],2));
+                            Tangential[0] = Tangential[0] / TangentialNorm;
+                            Tangential[1] = Tangential[1] / TangentialNorm;
+                            Tangential[2] = Tangential[2] / TangentialNorm;
+                            break;
+                        }
+                    }// switch
+
+                    //--- Get gradients of the solution of boundary cell.
+                    for (auto iVar = 0u; iVar < nVar; iVar++)
+                        for (auto iDim = 0u; iDim < nDim; iDim++)
+                            GradSymm[iVar][iDim] = base_nodes->GetGradient_Adapt(iPoint, iVar, iDim);
+
+                    //--- Reflect the gradients for all scalars including the momentum components.
+                    //--- The gradients of the primal and adjoint momentum components are set later with the
+                    //--- correct values: grad(V)_s = grad(V) - [grad(V)*n]n, V being any conservative.
+                    for (auto iVar = 0u; iVar < nVar; iVar++) {
+                        if ((iVar == 0) || (iVar > nDim) || (Kind_Solver == RUNTIME_TURB_SYS) || (Kind_Solver == RUNTIME_ADJTURB_SYS)) {
+                            //--- Compute projected part of the gradient in a dot product.
+                            su2double ProjGradient = 0.0;
+                            for (auto iDim = 0u; iDim < nDim; iDim++)
+                                ProjGradient += GradSymm[iVar][iDim]*UnitNormal[iDim];
+
+                            //--- Set normal part of the gradient to zero.
+                            for (auto iDim = 0u; iDim < nDim; iDim++)
+                                GradSymm[iVar][iDim] = GradSymm[iVar][iDim] - ProjGradient*UnitNormal[iDim];
+
+                        }// if density, energy, or turbulent
+                    }// iVar
+
+                    if ((Kind_Solver == RUNTIME_FLOW_SYS) || (Kind_Solver == RUNTIME_ADJFLOW_SYS)) {
+                        //--- Compute gradients of normal and tangential momentum:
+                        //--- grad(rv*n) = grad(rv_x) n_x + grad(rv_y) n_y (+ grad(rv_z) n_z)
+                        //--- grad(rv*t) = grad(rv_x) t_x + grad(rv_y) t_y (+ grad(rv_z) t_z)
+                        for (auto iVar = 0u; iVar < nDim; iVar++) { // counts gradient components
+                            GradNormVel[iVar] = 0.0;
+                            GradTangVel[iVar] = 0.0;
+                            for (auto iDim = 0u; iDim < nDim; iDim++) { // counts sum with unit normal/tangential
+                                GradNormVel[iVar] += GradSymm[iDim+1][iVar] * UnitNormal[iDim];
+                                GradTangVel[iVar] += GradSymm[iDim+1][iVar] * Tangential[iDim];
+                            }
+                        }
+
+                        //--- Reflect gradients in tangential and normal direction by substracting the normal/tangential
+                        //--- component, just as done with momentum above.
+                        //--- grad(rv*n)_s = grad(rv*n) - {grad([rv*n])*t}t
+                        //--- grad(rv*t)_s = grad(rv*t) - {grad([rv*t])*n}n
+                        su2double ProjNormMomGrad = 0.0;
+                        su2double ProjTangMomGrad = 0.0;
+                        for (auto iDim = 0u; iDim < nDim; iDim++) {
+                            ProjNormMomGrad += GradNormVel[iDim]*Tangential[iDim]; //grad([rv*n])*t
+                            ProjTangMomGrad += GradTangVel[iDim]*UnitNormal[iDim]; //grad([rv*t])*n
+                        }
+
+                        for (auto iDim = 0u; iDim < nDim; iDim++) {
+                            GradNormVel[iDim] = GradNormVel[iDim] - ProjNormMomGrad * Tangential[iDim];
+                            GradTangVel[iDim] = GradTangVel[iDim] - ProjTangMomGrad * UnitNormal[iDim];
+                        }
+
+                        //--- Transfer reflected gradients back into the Cartesian Coordinate system:
+                        //--- grad(rv_x)_s = grad(rv*n)_s n_x + grad(rv*t)_s t_x
+                        //--- grad(rv_y)_s = grad(rv*n)_s n_y + grad(rv*t)_s t_y
+                        //--- ( grad(rv_z)_s = grad(rv*n)_s n_z + grad(rv*t)_s t_z ) ---*/
+                        for (auto iVar = 0u; iVar < nDim; iVar++) // loops over the momentum component gradients
+                            for (auto iDim = 0u; iDim < nDim; iDim++) // loops over the entries of the above
+                                GradSymm[iVar+1][iDim] = GradNormVel[iDim]*UnitNormal[iVar] + GradTangVel[iDim]*Tangential[iVar];
+
+                    }// if flow
+
+                    //--- Set gradients of the solution of boundary cell.
+                    base_nodes->SetGradient_Adapt(iPoint, GradSymm);
+
+                }// if domain
+            }// iVertex
+        }// if KindBC
+    }// iMarker
+
+    //--- communicate the gradient values via MPI
+    InitiateComms(geometry, config, GRADIENT_ADAPT);
+    CompleteComms(geometry, config, GRADIENT_ADAPT);
+
+    //--- Free locally allocated memory
+
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+        delete [] GradSymm[iVar];
+    delete [] GradSymm;
+}
+
+void CSolver::CorrectWallGradient(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+
+    unsigned short nMarker_iPoint = 0;
+
+    su2double **GradDotn = new su2double*[nVar];
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+        GradDotn[iVar] = new su2double[nDim];
+
+    if ((Kind_Solver == RUNTIME_FLOW_SYS) || (Kind_Solver == RUNTIME_TURB_SYS)) {
+        for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
+            if (geometry->nodes->GetSolidBoundary(iPoint)) {
+                nMarker_iPoint = 0;
+
+                //--- Reset sum(grad_dot_n)
+                su2double SumNormal[MAXNDIM] = {0.0};
+                for (auto iDim = 0u; iDim < nDim; iDim++) {
+                    SumNormal[iDim] = 0.;
+                }
+                for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+                    if (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) {
+                        const auto iVertex = geometry->nodes->GetVertex(iPoint,iMarker);
+                        if (iVertex > -1) {
+                            nMarker_iPoint++;
+                            const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+                            for (auto iDim = 0u; iDim < nDim; iDim++) SumNormal[iDim] += Normal[iDim];
+                        }// if iVertex
+                    }// if Heat_Flux
+                }// iMarker
+
+                if (nMarker_iPoint == 1) {
+                    //--- Compute unit normal.
+                    su2double Area = GeometryToolbox::Norm(nDim, SumNormal);
+
+                    su2double UnitNormal[MAXNDIM] = {0.0};
+                    for (auto iDim = 0u; iDim < nDim; iDim++)
+                        UnitNormal[iDim] = SumNormal[iDim]/Area;
+
+                    //--- Dot gradient with normal.
+                    if (Kind_Solver == RUNTIME_FLOW_SYS) {
+                        for (auto iVar = 1; iVar < nDim+1; iVar++) {
+                            for (auto iDim = 0u; iDim < nDim; iDim++) {
+                                const su2double grad = base_nodes->GetGradient_Adapt(iPoint, iVar, iDim);
+                                GradDotn[iVar][iDim] = grad * UnitNormal[iDim];
+                            }
+                        }
+                    }// if flow
+                    else if (Kind_Solver == RUNTIME_TURB_SYS) {
+                        for (auto iDim = 0u; iDim < nDim; iDim++) {
+                            const su2double grad = base_nodes->GetGradient_Adapt(iPoint, 0, iDim);
+                            GradDotn[0][iDim] = grad * UnitNormal[iDim];
+                        }
+                    }// if turb
+                    base_nodes->SetGradient_Adapt(iPoint, GradDotn);
+                }// if correct
+            }// if SolidBoundary
+        }// iPoint
+    }// if primal
+
+    //--- communicate the gradient values via MPI
+    InitiateComms(geometry, config, GRADIENT_ADAPT);
+    CompleteComms(geometry, config, GRADIENT_ADAPT);
+
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+        delete [] GradDotn[iVar];
+    delete [] GradDotn;
+}
+
+void CSolver::CorrectBoundHessian(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver) {
+    constexpr size_t MAXNMET = 30;
+    const unsigned short nMet = 3*(nDim-1);
+    const unsigned short nSen = config->GetGoal_Oriented_Metric()? nVar : config->GetnAdap_Sensor();
+
+    const bool visc = (config->GetViscous());
+
+    su2double Basis[MAXNDIM][MAXNDIM] = {0.0};
+    su2double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
+
+    for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+        if (config->GetSolid_Wall(iMarker) ||
+            (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+             config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+             config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+             config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+
+            for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+                const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                auto nodes = geometry->nodes;
+
+                if (nodes->GetDomain(iPoint)) {
+                    //--- Correct if any of the neighbors belong to the volume
+                    unsigned short counter = 0;
+                    su2double hess[MAXNMET] = {0.0}, suminvdist = 0.0;
+                    for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
+                        const unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
+                        if(!nodes->GetSolidBoundary(jPoint) && !nodes->GetPhysicalBoundary(jPoint)) {
+                            const su2double dist = GeometryToolbox::Distance(nDim,nodes->GetCoord(iPoint),nodes->GetCoord(jPoint));
+                            suminvdist += 1./dist;
+                            for(auto iVar = 0; iVar < nSen; iVar++){
+                                const unsigned short i = iVar*nMet;
+                                for(auto iMet = 0; iMet < nMet; iMet++) {
+                                    hess[i+iMet] += base_nodes->GetHessian(jPoint, iVar, iMet)/dist;
+                                }// iMet
+                            }// iVar
+                            counter++;
+                        }// if boundary
+                    }// iNeigh
+
+                    if(counter > 0) {
+                        //--- Compute unit normal.
+                        const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+                        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+                        for (auto iDim = 0u; iDim < nDim; iDim++)
+                            Basis[iDim][0] = -Normal[iDim]/Area;
+
+                        //--- Compute unit tangent.
+                        switch( nDim ) {
+                            case 2: {
+                                Basis[0][1] = -Basis[1][0];
+                                Basis[1][1] =  Basis[0][0];
+                                Basis[2][2] = 1.0;
+                                break;
+                            }
+                            case 3: {
+                                /*--- n = ai + bj + ck, if |b| > |c| ---*/
+                                if( abs(Basis[0][1]) > abs(Basis[0][2])) {
+                                    /*--- t = bi + (c-a)j - bk  ---*/
+                                    Basis[0][1] =  Basis[1][0];
+                                    Basis[1][1] =  Basis[2][0] - Basis[0][0];
+                                    Basis[2][1] = -Basis[1][0];
+                                } else {
+                                    /*--- t = ci - cj + (b-a)k  ---*/
+                                    Basis[0][1] =  Basis[2][0];
+                                    Basis[1][1] = -Basis[2][0];
+                                    Basis[2][1] =  Basis[1][0] - Basis[0][0];
+                                }
+                                /*--- Make it a unit vector. ---*/
+                                const su2double TangentialNorm = sqrt(pow(Basis[0][1],2) + pow(Basis[1][1],2) + pow(Basis[2][1],2));
+                                Basis[0][1] = Basis[0][1] / TangentialNorm;
+                                Basis[1][1] = Basis[1][1] / TangentialNorm;
+                                Basis[2][1] = Basis[2][1] / TangentialNorm;
+
+                                /*--- Compute the other tangent vector ---*/
+                                Basis[0][2] = Basis[1][0]*Basis[2][1] - Basis[2][0]*Basis[1][1];
+                                Basis[1][2] = Basis[2][0]*Basis[0][1] - Basis[0][0]*Basis[2][1];
+                                Basis[2][2] = Basis[0][0]*Basis[1][1] - Basis[1][0]*Basis[0][1];
+                                break;
+                            }
+                        }// switch
+                        for(auto iVar = 0; iVar < nSen; iVar++){
+                            const auto i = iVar*nMet;
+                            //--- Get upper triangle
+                            switch ( nDim ) {
+                                case 2: {
+                                    A[0][0] = hess[i+0]; A[0][1] = hess[i+1];
+                                    A[1][0] = hess[i+1]; A[1][1] = hess[i+2];
+                                    break;
+                                }
+                                case 3: {
+                                    A[0][0] = hess[i+0]; A[0][1] = hess[i+1]; A[0][2] = hess[i+2];
+                                    A[1][0] = hess[i+1]; A[1][1] = hess[i+3]; A[1][2] = hess[i+4];
+                                    A[2][0] = hess[i+2]; A[2][1] = hess[i+4]; A[2][2] = hess[i+5];
+                                    break;
+                                }
+                            }
+
+                            if (visc && nodes->GetSolidBoundary(iPoint)) {
+                                //--- Compute eigenvalues and eigenvectors
+                                CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+
+                                //--- Store max eigenvalue in normal direction
+                                unsigned short ind = 0;
+                                if (fabs(EigVal[1]) > fabs(EigVal[ind])) ind = 1;
+                                if (nDim == 3 && fabs(EigVal[2]) > fabs(EigVal[ind])) ind = 2;
+                                if (ind != 0) {
+                                    const su2double tmp = EigVal[ind];
+                                    EigVal[ind] = EigVal[0];
+                                    EigVal[0] = tmp;
+                                }
+
+                                //--- Store new Hessian
+                                CBlasStructure::EigenRecomposition(A, Basis, EigVal, nDim);
+                            }
+
+                            base_nodes->SetHessianMat(iPoint, iVar, A, 1.0/suminvdist);
+                        }// iVar
+                    }// if counter
+                }// if domain
+            }// iVertex
+        }// if KindBC
+    }// iMarker
+}
+
+void CSolver::CorrectBoundMetric(CGeometry *geometry, const CConfig *config) {
+    constexpr size_t MAXNMET = 6;
+    const unsigned short nMet = 3*(nDim-1);
+
+    double Basis[MAXNDIM][MAXNDIM] = {0.0};
+    double A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
+
+    InitiateComms(geometry, config, METRIC);
+    CompleteComms(geometry, config, METRIC);
+
+    for (auto iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+        const bool solid_wall = config->GetSolid_Wall(iMarker);
+        const bool physical = config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
+                              config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+                              config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+                              config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY;
+
+        if (solid_wall || physical) {
+
+            for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+                const unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+                auto nodes = geometry->nodes;
+
+                if (nodes->GetDomain(iPoint)) {
+                    //--- Correct if any of the neighbors belong to the volume
+                    unsigned short counter = 0;
+                    double met[MAXNMET] = {0.0}, suminvdist = 0.0;
+                    for (auto iNeigh = 0u; iNeigh < nodes->GetnPoint(iPoint); iNeigh++) {
+                        const unsigned long jPoint = nodes->GetPoint(iPoint,iNeigh);
+                        if(!nodes->GetSolidBoundary(jPoint) && !nodes->GetPhysicalBoundary(jPoint)) {
+                            const auto dist = GeometryToolbox::Distance(nDim,nodes->GetCoord(iPoint),nodes->GetCoord(jPoint));
+                            suminvdist += 1./SU2_TYPE::GetValue(dist);
+                            for(auto iMet = 0; iMet < nMet; iMet++) {
+                                met[iMet] += base_nodes->GetMetric(jPoint, iMet)/SU2_TYPE::GetValue(dist);
+                            }// iMet
+                            counter++;
+                        }// if boundary
+                    }// iNeigh
+
+                    if(counter > 0) {
+                        //--- Compute unit normal.
+                        const auto Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+
+                        const auto Area = GeometryToolbox::Norm(nDim, Normal);
+
+                        for (auto iDim = 0u; iDim < nDim; iDim++)
+                            Basis[iDim][0] = SU2_TYPE::GetValue(-Normal[iDim]/Area);
+
+                        //--- Compute unit tangent.
+                        switch( nDim ) {
+                            case 2: {
+                                Basis[0][1] = -Basis[1][0];
+                                Basis[1][1] =  Basis[0][0];
+                                Basis[2][2] = 1.0;
+                                break;
+                            }
+                            case 3: {
+                                /*--- n = ai + bj + ck, if |b| > |c| ---*/
+                                if( abs(Basis[0][1]) > abs(Basis[0][2])) {
+                                    /*--- t = bi + (c-a)j - bk  ---*/
+                                    Basis[0][1] =  Basis[1][0];
+                                    Basis[1][1] =  Basis[2][0] - Basis[0][0];
+                                    Basis[2][1] = -Basis[1][0];
+                                } else {
+                                    /*--- t = ci - cj + (b-a)k  ---*/
+                                    Basis[0][1] =  Basis[2][0];
+                                    Basis[1][1] = -Basis[2][0];
+                                    Basis[2][1] =  Basis[1][0] - Basis[0][0];
+                                }
+                                /*--- Make it a unit vector. ---*/
+                                const double TangentialNorm = sqrt(pow(Basis[0][1],2) + pow(Basis[1][1],2) + pow(Basis[2][1],2));
+                                Basis[0][1] = Basis[0][1] / TangentialNorm;
+                                Basis[1][1] = Basis[1][1] / TangentialNorm;
+                                Basis[2][1] = Basis[2][1] / TangentialNorm;
+
+                                /*--- Compute the other tangent vector ---*/
+                                Basis[0][2] = Basis[1][0]*Basis[2][1] - Basis[2][0]*Basis[1][1];
+                                Basis[1][2] = Basis[2][0]*Basis[0][1] - Basis[0][0]*Basis[2][1];
+                                Basis[2][2] = Basis[0][0]*Basis[1][1] - Basis[1][0]*Basis[0][1];
+                                break;
+                            }
+                        }// switch
+
+                        //--- Get upper triangle
+                        switch ( nDim ) {
+                            case 2: {
+                                A[0][0] = met[0]; A[0][1] = met[1];
+                                A[1][0] = met[1]; A[1][1] = met[2];
+                                break;
+                            }
+                            case 3: {
+                                A[0][0] = met[0]; A[0][1] = met[1]; A[0][2] = met[2];
+                                A[1][0] = met[1]; A[1][1] = met[3]; A[1][2] = met[4];
+                                A[2][0] = met[2]; A[2][1] = met[4]; A[2][2] = met[5];
+                                break;
+                            }
+                        }
+
+                        //--- Compute eigenvalues and eigenvectors
+                        CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+
+                        //--- Store max eigenvalue in normal direction
+                        unsigned short ind = 0;
+                        if (fabs(EigVal[1]) > fabs(EigVal[ind])) ind = 1;
+                        if (nDim == 3 && fabs(EigVal[2]) > fabs(EigVal[ind])) ind = 2;
+                        if (ind != 0) {
+                            const double tmp = EigVal[ind];
+                            EigVal[ind] = EigVal[0];
+                            EigVal[0] = tmp;
+                        }
+
+                        //--- Store new Hessian
+                        CBlasStructure::EigenRecomposition(A, Basis, EigVal, nDim);
+                        base_nodes->SetMetricMat(iPoint, A, 1.0/suminvdist);
+                    }// if counter
+                }// if domain
+            }// iVertex
+        }// if KindBC
+    }// iMarker
+}
+
+void CSolver::ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config) {
+
+    const unsigned long nPointDomain = geometry->GetnPointDomain();
+
+    const bool visc = (config->GetViscous());
+    const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+
+    const bool goal = (config->GetGoal_Oriented_Metric());
+
+    //--- Vector to store weights from various error contributions
+    unsigned long nVarTot = solver[FLOW_SOL]->GetnVar();
+    if(goal && turb) nVarTot += solver[TURB_SOL]->GetnVar();
+
+    unsigned short nSensor = config->GetnAdap_Sensor();
+
+    //--- Compute hessian weights for goal-oriented metric
+    vector<vector<double> > weights(3, vector<double>(nVarTot));
+    for(auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+        for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
+            for (auto& w : weights) std::fill(w.begin(), w.end(), 0.0);
+            if (goal) {
+                //--- Objective function terms
+                // ObjectiveError(solver, geometry, config, iPoint, weights);
+
+                //--- Convective terms
+                solver[FLOW_SOL]->ConvectiveError(solver, geometry, config, iPoint, weights);
+
+                //--- Viscous terms
+                if (visc) solver[FLOW_SOL]->ViscousError(solver, geometry, config, iPoint, weights);
+
+                //--- Turbulent terms
+                if (turb) {
+                    solver[TURB_SOL]->ConvectiveError(solver, geometry, config, iPoint, weights);
+                    solver[TURB_SOL]->ViscousError(solver, geometry, config, iPoint, weights);
+                    solver[TURB_SOL]->TurbulentError(solver, geometry, config, iPoint, weights);
+                }
+            }
+
+            //--- Add Hessians
+            if (goal) SetMetric(solver, geometry, config, iPoint, weights);
+        }
+
+        //--- Apply correction to wall boundary
+        // CorrectBoundMetric(geometry, config);
+    }
+
+    //--- Compute Lp-normalization of the metric tensor field
+    for (auto iSensor = 0u; iSensor < nSensor; ++iSensor) {
+        SU2_OMP_MASTER
+        if (goal) {
+            SetPositiveDefiniteMetric<double, metric::goal>(geometry, config, iSensor);
+            NormalizeMetric<double, metric::goal>(geometry, config, iSensor);
+        }
+        else {
+            SetPositiveDefiniteMetric<su2double, metric::feature>(geometry, config, iSensor);
+            NormalizeMetric<su2double, metric::feature>(geometry, config, iSensor);
+        }
+        END_SU2_OMP_MASTER
+        SU2_OMP_BARRIER
+    }
+
+    /*--- Intersect and store feature-based metrics ---*/
+    if (!goal) {
+        auto varFlo = solver[FLOW_SOL]->GetNodes();
+        const unsigned short nMet = 3*(nDim-1);
+        if (nSensor > 1) {
+            for (auto jSensor = 1u; jSensor < nSensor; ++jSensor)
+                IntersectMetrics(geometry, config, jSensor);
+        }
+        for(auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+            SetMetric(solver, geometry, config, iPoint, weights);
+        }
+    }
+
+}
+
+void CSolver::ObjectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                             unsigned long iPoint, vector<vector<double> > &weights) {
+    auto varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
+
+    const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+
+    const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+
+    //--- Mean flow variables
+    for (auto iVar = 0; iVar < nVarFlo; ++iVar) {
+        const double ow = SU2_TYPE::GetValue(varAdjFlo->GetObjectiveTerm(iPoint, iVar));
+        weights[0][iVar] += ow;
+    }
+
+    //--- Turbulent variables
+    if(turb) {
+        auto varAdjTur = solver[ADJTURB_SOL]->GetNodes();
+        const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
+        for (auto iVar = 0; iVar < nVarTur; ++iVar) {
+            const double ow = SU2_TYPE::GetValue(varAdjTur->GetObjectiveTerm(iPoint, iVar));
+            weights[0][nVarFlo+iVar] += ow;
+        }
+    }
+}
+
+void CSolver::SetMetric(CSolver **solver, const CGeometry*geometry, const CConfig *config,
+                        unsigned long iPoint, vector<vector<double> > &weights) {
+
+    auto varFlo = solver[FLOW_SOL]->GetNodes();
+
+    const unsigned short nMet = 3*(nDim-1);
+    const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+    const unsigned short nSensor = config->GetnAdap_Sensor();
+
+    const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+    const bool goal = (config->GetGoal_Oriented_Metric());
+
+    if (goal) {
+        //--- Mean flow variables
+        for (auto iVar = 0; iVar < nVarFlo; ++iVar) {
+            const double weight = fabs( weights[0][iVar] + weights[1][iVar] + weights[2][iVar] );
+            for (auto iMet = 0; iMet < nMet; ++iMet) {
+                const double hess = SU2_TYPE::GetValue(varFlo->GetHessian(iPoint, iVar, iMet));
+                varFlo->AddMetric(iPoint, iMet, weight*hess);
+            }
+        }
+
+        //--- Turbulent variables
+        if(turb) {
+            auto varTur = solver[TURB_SOL]->GetNodes();
+            const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
+            for (auto iVar = 0; iVar < nVarTur; ++iVar) {
+                const double weight = fabs( weights[0][nVarFlo+iVar] + weights[1][nVarFlo+iVar] + weights[2][nVarFlo+iVar] );
+                for (auto iMet = 0; iMet < nMet; ++iMet) {
+                    const double hess = SU2_TYPE::GetValue(varTur->GetHessian(iPoint, iVar, iMet));
+                    varFlo->AddMetric(iPoint, iMet, weight*hess);
+                }
+            }
+        }
+    }
+    else {
+        for (auto iMet = 0; iMet < nMet; ++iMet) {
+            const double hess = SU2_TYPE::GetValue(varFlo->GetHessian(iPoint, 0, iMet));
+            varFlo->SetMetric(iPoint, iMet, hess);
+        }
+    }
+}
+
+void CSolver::IntersectMetrics(const CGeometry *geometry, const CConfig *config, unsigned short jSensor) {
+    su2double A[MAXNDIM][MAXNDIM], B[MAXNDIM][MAXNDIM], Ainv[MAXNDIM][MAXNDIM], N[MAXNDIM][MAXNDIM];
+    su2double EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
+    su2double d, dinv, l, m;
+    for(auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+        base_nodes->GetHessianMat(iPoint, 0, A);
+        base_nodes->GetHessianMat(iPoint, jSensor, B);
+
+        //--- N = (M1)^-1 * M2
+        switch( nDim ) {
+            case 2: {
+                d = A[0][0] * A[1][1] - A[0][1] * A[1][0];
+                dinv = 1.0 / d;
+
+                Ainv[0][0] = A[1][1] * dinv;
+                Ainv[0][1] =-A[0][1] * dinv;
+                Ainv[1][0] =-A[1][0] * dinv;
+                Ainv[1][1] = A[0][0] * dinv;
+                break;
+            }
+            case 3: {
+                d = A[0][0] * (A[1][1] * A[2][2] - A[2][1] * A[1][2]) -
+                    A[0][1] * (A[1][0] * A[2][2] - A[1][2] * A[2][0]) +
+                    A[0][2] * (A[1][0] * A[2][1] - A[1][1] * A[2][0]);
+                dinv = 1.0 / d;
+
+                Ainv[0][0] = (A[1][1] * A[2][2] - A[2][1] * A[1][2]) * dinv;
+                Ainv[0][1] = (A[0][2] * A[2][1] - A[0][1] * A[2][2]) * dinv;
+                Ainv[0][2] = (A[0][1] * A[1][2] - A[0][2] * A[1][1]) * dinv;
+                Ainv[1][0] = (A[1][2] * A[2][0] - A[1][0] * A[2][2]) * dinv;
+                Ainv[1][1] = (A[0][0] * A[2][2] - A[0][2] * A[2][0]) * dinv;
+                Ainv[1][2] = (A[1][0] * A[0][2] - A[0][0] * A[1][2]) * dinv;
+                Ainv[2][0] = (A[1][0] * A[2][1] - A[2][0] * A[1][1]) * dinv;
+                Ainv[2][1] = (A[2][0] * A[0][1] - A[0][0] * A[2][1]) * dinv;
+                Ainv[2][2] = (A[0][0] * A[1][1] - A[1][0] * A[0][1]) * dinv;
+                break;
+            }
+        }
+
+        for (auto i = 0; i < nDim; i++) {
+            for (auto j = 0; j < nDim; j++) {
+                N[i][j] = 0.0;
+                for (auto p = 0; p < nDim; p++) {
+                    N[i][j] += Ainv[i][p] * B[p][j];
+                }
+            }
+        }
+
+        //--- Lambda = R * M1 * R^T, Mu = R * M2 * R^T, R = (r1 | r2 | r3)
+        //--- intersect(M1, M2) = R^T * diag(max(l1,m1), max(l2,m2), max(l3,m3)) * R
+        //--- Compute diag(max(li, mi))
+        CBlasStructure::EigenDecomposition(N, EigVec, EigVal, nDim, work);
+        for (auto p = 0; p < nDim; p++) {
+            l = 0.0;
+            m = 0.0;
+            for (auto i = 0; i < nDim; i++) {
+                for (auto j = 0; j < nDim; j++) {
+                    l += EigVec[p][i] * A[i][j] * EigVec[p][j];
+                    m += EigVec[p][i] * B[i][j] * EigVec[p][j];
+                }
+            }
+            EigVal[p] = max(l, m);
+        }
+        CBlasStructure::EigenRecomposition(N, EigVec, EigVal, nDim);
+        base_nodes->SetHessianMat(iPoint, 0, N, 1.0);
+    }
 }

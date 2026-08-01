@@ -29,7 +29,8 @@
 
 CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig* config)
     : CVariable(npoint, ndim, nvar, config),
-      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient) {
+      Gradient_Reconstruction(config->GetReconstructionGradientRequired() ? Gradient_Aux : Gradient),
+      Primitive(config->GetBoolTurbModelSST() ? Primitive_Aux : Solution) {
   /*--- Gradient related fields ---*/
 
   Gradient.resize(nPoint, nVar, nDim, 0.0);
@@ -54,6 +55,10 @@ CScalarVariable::CScalarVariable(unsigned long npoint, unsigned long ndim, unsig
   /* Under-relaxation parameter. */
   UnderRelaxation.resize(nPoint) = su2double(1.0);
   LocalCFL.resize(nPoint) = su2double(0.0);
+
+  /* Non-physical point (first-order) initialization. */
+  Non_Physical.resize(nPoint) = false;
+  Non_Physical_Counter.resize(nPoint) = 0;
 
   /*--- Allocate space for the harmonic balance source terms ---*/
   if (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE) {

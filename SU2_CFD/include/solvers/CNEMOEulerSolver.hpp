@@ -90,6 +90,55 @@ protected:
    */
   void SetReferenceValues(const CConfig& config) final;
 
+    /*!
+     * \brief Store the primitive variables needed for adaptation.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+     */
+    void SetAuxVar_Adapt(CGeometry *geometry, const CConfig *config, const CVariable* var) final {
+        if (config->GetGoal_Oriented_Metric()) {
+            if (rank == MASTER_NODE){
+                cout << endl <<"Goal-oriented metric not implemented for NEMO yet" << endl;
+            }
+        }
+        else {
+            //--- store mach and/or pressure in aux vector
+            const auto nAdapSensor = config->GetnAdap_Sensor();
+            su2double aux = 0.0;
+            for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+                for (auto iSensor = 0; iSensor < nAdapSensor; iSensor++) {
+                    if (config->GetAdap_Sensor(iSensor) == "MACH") {
+                        aux = nodes->GetVelocity2(iPoint)/nodes->GetSoundSpeed(iPoint);
+                    }
+                    else if (config->GetAdap_Sensor(iSensor) == "PRESSURE") {
+                        aux = nodes->GetPressure(iPoint);
+                    }
+                    else if (config->GetAdap_Sensor(iSensor) == "TEMPERATURE") {
+                        if (rank == MASTER_NODE){
+                            cout << endl <<"TEMPERATURE metric not implemented for NEMO yet" << endl;
+                        }
+                    }
+                    else if (config->GetAdap_Sensor(iSensor) == "ENERGY") {
+                        if (rank == MASTER_NODE){
+                            cout << endl <<"ENERGY metric not implemented for NEMO yet" << endl;
+                        }
+                    }
+                    else if (config->GetAdap_Sensor(iSensor) == "DENSITY") {
+                        if (rank == MASTER_NODE){
+                            cout << endl <<"DENSITY metric not implemented for NEMO yet" << endl;
+                        }
+                    }
+                    nodes->SetAuxVar_Adapt(iPoint, iSensor, aux);
+                }
+            }
+        }
+
+        //--- communicate the solution values via MPI
+        InitiateComms(geometry, config, AUXVAR_ADAPT);
+        CompleteComms(geometry, config, AUXVAR_ADAPT);
+    }
+
 public:
   CNEMOEulerSolver() = delete;
 

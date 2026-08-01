@@ -24,6 +24,9 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "../gradients/computeGradientsGreenGauss.hpp"
+#include "../gradients/computeGradientsLeastSquares.hpp"
+#include "../limiters/computeLimiters.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "../../include/solvers/CScalarSolver.hpp"
@@ -115,6 +118,55 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
   }
 
   if (limiter && muscl) SetSolution_Limiter(geometry, config);
+}
+
+template <class V>
+void CScalarSolver<V>::SetPrimitive_Limiter(CGeometry* geometry, const CConfig* config) {
+    auto kindLimiter = config->GetKind_SlopeLimit_Flow();
+    const auto& primitives = nodes->GetPrimitive();
+    const auto& gradient = nodes->GetGradient_Reconstruction();
+    auto& primMin = nodes->GetSolution_Min();
+    auto& primMax = nodes->GetSolution_Max();
+    auto& limiter = nodes->GetLimiter();
+
+    computeLimiters(kindLimiter, this, SOLUTION_LIMITER, PERIODIC_LIM_SOL_1, PERIODIC_LIM_SOL_2, *geometry, *config, 0,
+                    nPrimVar, primitives, gradient, primMin, primMax, limiter);
+}
+
+template <class V>
+void CScalarSolver<V>::SetPrimitive_Gradient_LS(CGeometry* geometry, const CConfig* config,
+                                                bool reconstruction) {
+    /*--- Set a flag for unweighted or weighted least-squares. ---*/
+    bool weighted;
+    PERIODIC_QUANTITIES commPer;
+
+    if (reconstruction) {
+        weighted = (config->GetKind_Gradient_Method_Recon() == WEIGHTED_LEAST_SQUARES);
+        commPer = weighted? PERIODIC_PRIM_LS_R : PERIODIC_PRIM_ULS_R;
+    }
+    else {
+        weighted = (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES);
+        commPer = weighted? PERIODIC_PRIM_LS : PERIODIC_PRIM_ULS;
+    }
+
+    const auto& primitives = nodes->GetPrimitive();
+    auto& rmatrix = nodes->GetRmatrix();
+    auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
+    const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
+
+    computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
+                                 primitives, 0, nPrimVar, gradient, rmatrix);
+}
+
+template <class V>
+void CScalarSolver<V>::SetPrimitive_Gradient_GG(CGeometry* geometry, const CConfig* config,
+                                                bool reconstruction) {
+    const auto& primitives = nodes->GetPrimitive();
+    auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient();
+    const auto comm = reconstruction? SOLUTION_GRAD_REC : SOLUTION_GRADIENT;
+    const auto commPer = reconstruction? PERIODIC_SOL_GG_R : PERIODIC_SOL_GG;
+
+    computeGradientsGreenGauss(this, comm, commPer, *geometry, *config, primitives, 0, nPrimVar, gradient);
 }
 
 template <class VariableType>

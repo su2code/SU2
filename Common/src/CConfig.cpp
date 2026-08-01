@@ -2242,6 +2242,71 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Omega_HB = 2*PI*frequency - frequencies for Harmonic Balance method */
   addDoubleListOption("OMEGA_HB", nOmega_HB, Omega_HB);
 
+    /*!\brief RESTART_CFL \n DESCRIPTION: Restart CFL from value stored in native solution file \n Options: NO, YES \ingroup Config */
+    addBoolOption("RESTART_CFL", Restart_CFL, false);
+
+    /*--- Options used for mesh adaptation ---*/
+    /* DESCRIPTION: Compute an error estimate */
+    addBoolOption("COMPUTE_METRIC", Compute_Metric, false);
+
+    /*!\brief NUM_METHOD_HESS
+     *  \n DESCRIPTION: Numerical method for Hessian computation \n OPTIONS: See \link Gradient_Map \endlink. \n DEFAULT: GREEN_GAUSS. \ingroup Config*/
+    addEnumOption("NUM_METHOD_HESS", Kind_Hessian_Method, Gradient_Map, GREEN_GAUSS);
+
+    /* DESCRIPTION: Sensors for mesh adaptation */
+    addStringListOption("ADAP_SENSOR", nAdap_Sensor, Adap_Sensor);
+
+    /* DESCRIPTION: Lp-norm for mesh adaptation */
+    addDoubleOption("ADAP_NORM", Adap_Norm, 1.0);
+
+    /* DESCRIPTION: Constraint maximum cell size */
+    addDoubleOption("ADAP_HMAX", Adap_Hmax, 10.0);
+
+    /* DESCRIPTION: Constraint minimum cell size */
+    addDoubleOption("ADAP_HMIN", Adap_Hmin, 1.0E-8);
+
+    /* DESCRIPTION: Constraint maximum cell aspect ratio */
+    addDoubleOption("ADAP_ARMAX", Adap_ARmax, 1.0E6);
+
+    /* DESCRIPTION: Constraint mesh complexity */
+    addUnsignedLongOption("ADAP_COMPLEXITY", Adap_Complexity, 10000);
+
+    /* DESCRIPTION: A mesh adaptation option */
+    addPythonOption("ADAP_SIZES");
+
+    /* DESCRIPTION: A mesh adaptation option */
+    addPythonOption("ADAP_SUBITER");
+
+    /* DESCRIPTION: A mesh adaptation option */
+    addPythonOption("ADAP_FLOW_ITER");
+
+    /* DESCRIPTION: A mesh adaptation option */
+    addPythonOption("ADAP_ADJ_ITER");
+
+    /* DESCRIPTION: A mesh adaptation option */
+    addPythonOption("ADAP_FLOW_CFL");
+
+    /* DESCRIPTION: A mesh adaptation option */
+    addPythonOption("ADAP_ADJ_CFL");
+
+    /* DESCRIPTION: A mesh adaptation option */
+    addPythonOption("ADAP_BACK");
+
+    /* DESCRIPTION: A mesh adaptation option */
+    addPythonOption("ADAP_RESIDUAL_REDUCTION");
+
+    /* DESCRIPTION: A mesh adaptation option */
+    addPythonOption("ADAP_HGRAD");
+
+    /* DESCRIPTION: A mesh adaptation option */
+    addPythonOption("ADAP_INV_BACK");
+
+    /* DESCRIPTION: A mesh adaptation option */
+    addPythonOption("ADAP_ORTHO");
+
+    /* DESCRIPTION: A mesh adaptation option */
+    addPythonOption("ADAP_RDG");
+
   /*!\par CONFIG_CATEGORY: Equivalent Area \ingroup Config*/
   /*--- Options related to the equivalent area ---*/
 
@@ -5463,6 +5528,41 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (Kind_Regime == ENUM_REGIME::COMPRESSIBLE && GetBounded_Scalar()) {
     SU2_MPI::Error("BOUNDED_SCALAR discretization can only be used for incompressible problems.", CURRENT_FUNCTION);
   }
+
+    /*--- Checks for mesh adaptation ---*/
+    if (Compute_Metric) {
+        /*--- Check that sensor is valid ---*/
+        vector<string> Sensor_Avail{"GOAL", "MACH", "PRESSURE", "TEMPERATURE", "ENERGY", "DENSITY"};
+        for (auto iSensor = 0; iSensor < nAdap_Sensor; iSensor++) {
+            if (find(begin(Sensor_Avail), end(Sensor_Avail), Adap_Sensor[iSensor]) != end(Sensor_Avail)) {
+                /*--- If using GOAL, it must be the only sensor and the discrete adjoint must be used ---*/
+                if (Adap_Sensor[iSensor] == "GOAL") {
+                    if (nAdap_Sensor != 1)
+                        SU2_MPI::Error("Adaptation sensor GOAL cannot be used with other sensors.", CURRENT_FUNCTION);
+
+                    if (!DiscreteAdjoint)
+                        SU2_MPI::Error("Adaptation sensor GOAL can only be computed for MATH_PROBLEM = DISCRETE_ADJOINT.", CURRENT_FUNCTION);
+                }
+                if (nemo) {
+                    if (Adap_Sensor[iSensor] == "GOAL")
+                        SU2_MPI::Error("Adaptation sensor GOAL is not available for SOLVER = NEMO_EULER and SOLVER = NEMO_NAVIER_STOKES.", CURRENT_FUNCTION);
+
+                    if (Adap_Sensor[iSensor] == "TEMPERATURE")
+                        SU2_MPI::Error("Adaptation sensor TEMPERATURE is not available for SOLVER = NEMO_EULER and SOLVER = NEMO_NAVIER_STOKES.", CURRENT_FUNCTION);
+
+                    if (Adap_Sensor[iSensor] == "ENERGY")
+                        SU2_MPI::Error("Adaptation sensor ENERGY is not available for SOLVER = NEMO_EULER and SOLVER = NEMO_NAVIER_STOKES.", CURRENT_FUNCTION);
+
+                    if (Adap_Sensor[iSensor] == "DENSITY")
+                        SU2_MPI::Error("Adaptation sensor DENSITY is not available for SOLVER = NEMO_EULER and SOLVER = NEMO_NAVIER_STOKES.", CURRENT_FUNCTION);
+                }
+            }
+            else {
+                SU2_MPI::Error(string("Invalid adaptation sensor: ") + Adap_Sensor[iSensor] + string("; must be GOAL, MACH, or PRES."), CURRENT_FUNCTION);
+            }
+        }
+    }
+
 }
 
 void CConfig::SetMarkers(SU2_COMPONENT val_software) {

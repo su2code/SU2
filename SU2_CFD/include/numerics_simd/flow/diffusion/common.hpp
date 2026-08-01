@@ -381,7 +381,7 @@ FORCEINLINE void viscousFluxJacobian(const PrimitiveType& V,
   VectorDbl<nDim> sn;
   for (iDim = 0; iDim < nDim; ++iDim)
     for (jDim = 0; jDim < nDim; ++jDim)
-      sn(iDim) = sTens(iDim,jDim) * njk(jDim);
+      sn(iDim) += sTens(iDim,jDim) * njk(jDim);
   //
   //! Viscous work
   //!    taunv = mu*snv = mu* ( snx*u + sny*v + snz*w )

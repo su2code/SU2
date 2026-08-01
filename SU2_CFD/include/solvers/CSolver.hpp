@@ -66,6 +66,7 @@ using namespace std;
 class CSolver {
 protected:
   enum : size_t {OMP_MIN_SIZE = 32}; /*!< \brief Chunk size for small loops. */
+  static constexpr size_t MAXNDIM = 3; /*!< \brief Max number of space dimensions, used in some static arrays. */
 
   int rank,       /*!< \brief MPI Rank. */
   size;           /*!< \brief MPI Size. */
@@ -83,7 +84,8 @@ protected:
   nSecondaryVar,                 /*!< \brief Number of primitive variables of the problem. */
   nSecondaryVarGrad,             /*!< \brief Number of primitive variables of the problem in the gradient computation. */
   nVarGrad,                      /*!< \brief Number of variables for deallocating the LS Cvector. */
-  nDim;                          /*!< \brief Number of dimensions of the problem. */
+  nDim,                          /*!< \brief Number of dimensions of the problem. */
+  nAuxGradAdap;                  /*!< \brief Number of primitive variable gradients of the problem needed for adaptation. */
   unsigned long nPoint;          /*!< \brief Number of points of the computational grid. */
   unsigned long nPointDomain;    /*!< \brief Number of points of the computational grid. */
   su2double Max_Delta_Time, /*!< \brief Maximum value of the delta time for all the control volumes. */
@@ -576,7 +578,70 @@ public:
    */
   inline virtual void SetPrimitive_Limiter(CGeometry *geometry, const CConfig *config) { }
 
-  /*!
+    /*!
+     * \brief Compute the Green-Gauss Hessian of the solution.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+     */
+    void SetHessian_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+
+    /*!
+     * \brief Compute the L2 projection Hessian of the solution.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+     */
+    void SetHessian_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+
+    /*!
+     * \brief A virtual member.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+     */
+    virtual void SetAuxVar_Adapt(CGeometry *geometry, const CConfig *config, const CVariable* var) { }
+
+    /*!
+     * \brief Compute the Green-Gauss Hessian of the solution.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+     */
+    void SetGradient_AuxVar_Adapt_GG(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+
+    /*!
+     * \brief Compute the L2 projection Hessian of the solution.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+     */
+    void SetGradient_AuxVar_Adapt_L2_Proj(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+
+    /*!
+     * \brief Compute the Least Squares Hessian of the solution.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+     */
+    void SetHessian_LS(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+
+    /*!
+   * \brief Compute the primitive variables from the conservative variables.
+   * \param[in] solver_container - Container vector with all the solutions.
+   */
+    virtual void SetPrimitive_Variables(CSolver **solver_container) { }
+
+    /*!
+ * \brief A virtual member.
+ * \param[in] geometry - The geometrical definition of the problem.
+ * \param[in] config - The particular config.
+ * \param[in] CrossTerm - Boolean for CrossTerm.
+ */
+    inline virtual void ExtractAdjoint_ObjectiveTerm(CGeometry *geometry, CConfig *config) { }
+
+
+    /*!
    * \brief Set the old solution variables to the current solution value for Runge-Kutta iteration.
    *        It is a virtual function, because for the DG-FEM solver a different version is needed.
    */
@@ -4448,6 +4513,219 @@ public:
     END_SU2_OMP_FOR
   }
 
+    /*!
+ * \brief Correct the gradient at symmetry planes.
+ */
+    void CorrectSymmPlaneGradient(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+
+    /*!
+     * \brief Correct the gradient at symmetry planes.
+     */
+    void CorrectWallGradient(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+
+    /*!
+     * \brief Correct the Hessian at boundaries.
+     */
+    void CorrectBoundHessian(CGeometry *geometry, const CConfig *config, const unsigned short Kind_Solver);
+
+    /*!
+     * \brief Correct the Metric at boundaries.
+     */
+    void CorrectBoundMetric(CGeometry *geometry, const CConfig *config);
+
+    /*!
+     * \brief Compute the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    void ComputeMetric(CSolver **solver, CGeometry *geometry, const CConfig *config);
+
+    /*!
+     * \brief Extract the objective function terms of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    void ObjectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                        unsigned long iPoint, vector<vector<double> > &weights);
+
+    /*!
+     * \brief Compute the convective terms of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    virtual void ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                 unsigned long iPoint, vector<vector<double> > &weights) { }
+
+    /*!
+     * \brief Compute the viscous terms of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    virtual void ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                              unsigned long iPoint, vector<vector<double> > &weights) { }
+
+    /*!
+     * \brief Compute the turbulent terms of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    virtual void TurbulentError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                unsigned long iPoint, vector<vector<double> > &weights) { }
+
+    /*!
+     * \brief Sum up the weighted Hessians to obtain the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    void SetMetric(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                   unsigned long iPoint, vector<vector<double> > &weights);
+
+
+    /*!
+     * \brief Make the eigenvalues of the metrics positive.
+     */
+    template<class MetType, class Metric>
+    void SetPositiveDefiniteMetric(const CGeometry *geometry, const CConfig *config, unsigned short iSensor) {
+        const unsigned long nPointDomain = geometry->GetnPointDomain();
+
+        MetType A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
+
+        for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+            //--- Get full metric tensor
+            Metric::get(*base_nodes, iPoint, iSensor, A);
+
+            //--- Compute eigenvalues and eigenvectors
+            CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+
+            //--- If NaN detected, set values to zero.
+            //--- Otherwise, store recombined matrix.
+            bool check_hess = true;
+            for (auto iDim = 0; iDim < nDim; iDim++) {
+                if (EigVal[iDim] != EigVal[iDim] || fabs(EigVal[iDim]) < 1.0e-16) {
+                    EigVal[iDim] = 1.0e-16;
+                    check_hess = false;
+                }
+                EigVal[iDim] = fabs(EigVal[iDim]);
+            }
+
+            CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+            //--- Store upper half of metric tensor
+            Metric::set(*base_nodes, iPoint, iSensor, A, 1.0);
+        }
+    }
+
+    /*!
+     * \brief Perform an Lp-norm normalization of the metric.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     */
+    template<class MetType, class Metric>
+    void NormalizeMetric(const CGeometry *geometry, const CConfig *config, unsigned short iSensor) {
+        const unsigned long nPointDomain = geometry->GetnPointDomain();
+
+        const bool goal = (config->GetGoal_Oriented_Metric());
+
+        MetType localScale = 0.;
+        MetType globalScale = 0.;
+
+        MetType localMinDensity = 1.E16, localMaxDensity = 0., localMaxAspectR = 0., localTotComplex = 0.;
+        MetType globalMinDensity = 1.E16, globalMaxDensity = 0., globalMaxAspectR = 0., globalTotComplex = 0.;
+
+        const MetType p = SU2_TYPE::GetValue(config->GetAdap_Norm());
+        const MetType eigmax = 1./(pow(SU2_TYPE::GetValue(config->GetAdap_Hmin()),2.));
+        const MetType eigmin = 1./(pow(SU2_TYPE::GetValue(config->GetAdap_Hmax()),2.));
+        const MetType armax2 = pow(SU2_TYPE::GetValue(config->GetAdap_ARmax()), 2.);
+        const MetType outComplex = MetType(config->GetAdap_Complexity());  // Constraint mesh complexity
+
+        MetType A[MAXNDIM][MAXNDIM], EigVec[MAXNDIM][MAXNDIM], EigVal[MAXNDIM], work[MAXNDIM];
+
+        //--- set tolerance and obtain global scaling
+        for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+
+            Metric::get(*base_nodes, iPoint, iSensor, A);
+
+            CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+            if (nDim == 2) EigVal[2] = 1.;
+
+            const MetType Vol = SU2_TYPE::GetValue(geometry->nodes->GetVolume(iPoint));
+
+            localScale += pow(abs(EigVal[0]*EigVal[1]*EigVal[2]),p/(2.*p+nDim))*Vol;
+        }
+
+        CBaseMPIWrapper::Allreduce(&localScale, &globalScale, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+        //--- normalize to achieve Lp metric for constraint complexity, then truncate size
+        for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
+
+            Metric::get(*base_nodes, iPoint, iSensor, A);
+
+            CBlasStructure::EigenDecomposition(A, EigVec, EigVal, nDim, work);
+            if (nDim == 2) EigVal[2] = 1.;
+
+            const MetType factor = pow(outComplex/globalScale, 2./nDim) * pow(abs(EigVal[0]*EigVal[1]*EigVal[2]), -1./(2.*p+nDim));
+
+            for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = min(max(abs(factor*EigVal[iDim]),eigmin),eigmax);
+
+            unsigned short iMax = 0;
+            for (auto iDim = 1; iDim < nDim; ++iDim) iMax = (EigVal[iDim] > EigVal[iMax])? iDim : iMax;
+            for (auto iDim = 0u; iDim < nDim; ++iDim) EigVal[iDim] = max(EigVal[iDim], EigVal[iMax]/armax2);
+
+            CBlasStructure::EigenRecomposition(A, EigVec, EigVal, nDim);
+
+            Metric::set(*base_nodes, iPoint, iSensor, A, 1.0);
+
+            //--- compute min, max, total complexity
+            const MetType Vol = SU2_TYPE::GetValue(geometry->nodes->GetVolume(iPoint));
+            const MetType density = sqrt(abs(EigVal[0]*EigVal[1]*EigVal[2]));
+            MetType hmin= max(EigVal[0], EigVal[1]);
+            MetType hmax= min(EigVal[0], EigVal[1]);
+
+            if (nDim == 3) {
+                hmin = max(hmin, EigVal[2]);
+                hmax = min(hmax, EigVal[2]);
+            }
+            hmin = 1./sqrt(hmin);
+            hmax = 1./sqrt(hmax);
+
+            localMinDensity = min(localMinDensity, density);
+            localMaxDensity = max(localMaxDensity, density);
+            localMaxAspectR = max(hmax/hmin, localMaxAspectR);
+            localTotComplex += density*Vol;
+        }
+
+        CBaseMPIWrapper::Allreduce(&localMinDensity, &globalMinDensity, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
+        CBaseMPIWrapper::Allreduce(&localMaxDensity, &globalMaxDensity, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+        CBaseMPIWrapper::Allreduce(&localMaxAspectR, &globalMaxAspectR, 1, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
+        CBaseMPIWrapper::Allreduce(&localTotComplex, &globalTotComplex, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+
+        if(rank == MASTER_NODE) {
+            if (!goal) cout << "Metric field statistics for " << config->GetAdap_Sensor(iSensor) << ":" << endl;
+            cout << "Minimum density: " << globalMinDensity << "." << endl;
+            cout << "Maximum density: " << globalMaxDensity << "." << endl;
+            cout << "Maximum cell AR: " << globalMaxAspectR << "." << endl;
+            cout << "Mesh complexity: " << globalTotComplex << "." << endl;
+        }
+    }
+
+    void IntersectMetrics(const CGeometry *geometry, const CConfig *config, unsigned short jSensor);
+
 protected:
   /*!
    * \brief Allocate the memory for the verification solution, if necessary.
@@ -4546,5 +4824,29 @@ protected:
       Point_Max_Coord_BGS[val_var][iDim] = val_coord[iDim];
     }
   }
+};
 
+
+namespace metric {
+    struct goal {
+        template <class MetType>
+        static void get(CVariable& nodes, const unsigned long iPoint, const unsigned short iSensor, MetType& met) {
+            nodes.GetMetricMat(iPoint, met);
+        };
+        template <class MetType>
+        static void set(CVariable& nodes, const unsigned long iPoint, const unsigned short iSensor, MetType& met, double scale) {
+            nodes.SetMetricMat(iPoint, met, scale);
+        };
+    };
+
+    struct feature {
+        template <class MetType>
+        static void get(CVariable& nodes, const unsigned long iPoint, const unsigned short iSensor, MetType& met) {
+            nodes.GetHessianMat(iPoint, iSensor, met);
+        };
+        template <class MetType>
+        static void set(CVariable& nodes, const unsigned long iPoint, const unsigned short iSensor, MetType& met, su2double scale) {
+            nodes.SetHessianMat(iPoint, iSensor, met, scale);
+        };
+    };
 };

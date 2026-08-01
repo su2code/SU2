@@ -105,6 +105,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
   /*--- Restart the solution from file information ---*/
 
   const string restart_filename = config->GetFilename(config->GetSolution_FileName(), "", val_iter);
+  const bool restart_cfl = config->GetRestart_CFL();
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -145,8 +146,14 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
 
-        const auto index = counter * Restart_Vars[1] + skipVars;
+        auto index = counter * Restart_Vars[1] + skipVars;
         for (auto iVar = 0u; iVar < nVar; iVar++) nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index + iVar]);
+
+        if (restart_cfl) {
+            index += nVar + nDim*(dynamic_grid) + 1;
+            // nodes->SetLocalCFL(iPoint_Local, solver[MESH_0][FLOW_SOL]->GetNodes()->GetLocalCFL(iPoint_Local));
+            nodes->SetLocalCFL(iPoint_Local, Restart_Data[index]);
+        }
 
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
@@ -171,9 +178,9 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
 
   /*--- For turbulent+species simulations the solver Pre-/Postprocessing is done by the species solver. ---*/
   if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE && config->GetKind_Trans_Model() == TURB_TRANS_MODEL::NONE) {
+    solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
     solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
                                             RUNTIME_FLOW_SYS, false);
-    solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
   }
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -185,9 +192,9 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
 
     if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
+      solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
                                             false);
-      solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
     }
   }
 

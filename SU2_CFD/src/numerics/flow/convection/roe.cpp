@@ -1364,6 +1364,7 @@ CNumerics::ResidualType<> CUpwRoeBase_FlowNew::ComputeResidual(const CConfig* co
   //! d(|qn|)/ducL
 
   su2double mask = qn < 0;
+  const su2double m_one(-1);
   su2double sigQN = mask * -1 + (1-mask) * 1;
   dabs_qn_ducL[0] = -0.5*sigQN*(qnL+qn) / (rhoL+rho);
   for (iDim = 0; iDim < nDim; ++iDim)
@@ -1454,7 +1455,7 @@ CNumerics::ResidualType<> CUpwRoeBase_FlowNew::ComputeResidual(const CConfig* co
   //!  Absolute value
 
   mask = qn-a > 0;
-  auto s = (mask) * 1 + (1-mask) * -1;
+  su2double s = (mask) * 1 + (1-mask) * m_one;
   for (iVar = 0; iVar < nVar; ++iVar) {
     dws1_ducL[iVar] = s * (dqn_ducL[iVar] - da_ducL[iVar]);
   }
@@ -1916,7 +1917,7 @@ CNumerics::ResidualType<> CUpwRoeBase_FlowNew::ComputeResidual(const CConfig* co
   //!  Absolute value
 
   mask = qn+a > 0;
-  s = mask * 1 + (1-mask) * -1;
+  s = 2*mask + m_one;
   for (iVar = 0; iVar < nVar; ++iVar)
     dws3_ducR[iVar] =  s * (dqn_ducR[iVar] + da_ducR[iVar]);
 

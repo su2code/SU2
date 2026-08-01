@@ -117,6 +117,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
   nVar = nDim+2;
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   nSecondaryVar = nSecVar; nSecondaryVarGrad = 2;
+  nAuxGradAdap = (config->GetGoal_Oriented_Metric())? nDim+3 : config->GetnAdap_Sensor();
 
   /*--- Initialize nVarGrad for deallocation ---*/
 
@@ -1611,6 +1612,14 @@ void CEulerSolver::CommonPreprocessing(CGeometry *geometry, CSolver **solver_con
     else {SU2_OMP_BARRIER} // because of "nowait" in LinSysRes
   }
 
+    /*--- Set all points as physical before iteration. ---*/
+
+    if (!Output) {
+        for (auto iPoint = 0; iPoint < nPoint; iPoint++) {
+            nodes->ResetNon_Physical(iPoint);
+        }
+    }
+
 }
 
 void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh,
@@ -1752,7 +1761,14 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
-  /*--- Non-physical counter. ---*/
+  const bool tkeNeeded    = config->GetBoolTurbModelSST();
+  const bool musclTurb    = config->GetMUSCL_Turb() && muscl;
+
+  CVariable* turbNodes = nullptr;
+  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
+
+
+    /*--- Non-physical counter. ---*/
   unsigned long counter_local = 0;
   SU2_OMP_MASTER
   ErrorCounter = 0;
@@ -1764,6 +1780,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
+
+  su2double Turbulent_i = 0.0, Turbulent_j = 0.0;
+  su2double T_i = 0.0, T_j = 0.0;
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1810,12 +1829,17 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     auto V_i = nodes->GetPrimitive(iPoint); auto V_j = nodes->GetPrimitive(jPoint);
     auto S_i = nodes->GetSecondary(iPoint); auto S_j = nodes->GetSecondary(jPoint);
 
+    if (tkeNeeded) {
+        T_i = turbNodes->GetPrimitive(iPoint,0); T_j = turbNodes->GetPrimitive(jPoint,0);
+    }
+
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
     if (!muscl) {
 
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetSecondary(S_i, S_j);
+      numerics->SetTurbKineticEnergy(T_i, T_j);
 
     }
     else {
@@ -1884,83 +1908,35 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
                                  Primitive_i[iDim + prim_idx.Velocity()]) / (R+1);
         sq_vel += pow(RoeVelocity, 2);
       }
-      su2double RoeEnthalpy = (R * Primitive_j[prim_idx.Enthalpy()] + Primitive_i[prim_idx.Enthalpy()]) / (R+1);
 
-      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
+        const su2double Pressure_i = Primitive_i[prim_idx.Pressure()];
+        const su2double Pressure_j = Primitive_j[prim_idx.Pressure()];
+        const su2double Density_i  = Primitive_i[prim_idx.Density()];
+        const su2double Density_j  = Primitive_j[prim_idx.Density()];
+        const su2double Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+Turbulent_i+0.5*GeometryToolbox::SquaredNorm(nDim,Primitive_i+1);
+        const su2double Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+Turbulent_j+0.5*GeometryToolbox::SquaredNorm(nDim,Primitive_j+1);
+
+        const su2double Enthalpy_i = Energy_i + Pressure_i/Density_i;
+        const su2double Enthalpy_j = Energy_j + Pressure_j/Density_j;
+
+      su2double RoeEnthalpy = (R * Enthalpy_j + Enthalpy_i) / (R+1);
+      su2double RoeTke = (R*Turbulent_j+Turbulent_i)/(R+1);
+
+      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
       bool bad_recon = neg_sound_speed || neg_pres_or_rho_i || neg_pres_or_rho_j;
       bad_recon = nodes->UpdateNonPhysicalEdgeCounter(iEdge, bad_recon);
       counter_local += bad_recon;
 
       numerics->SetPrimitive(bad_recon? V_i : Primitive_i,  bad_recon? V_j : Primitive_j);
       numerics->SetSecondary(bad_recon? S_i : Secondary_i,  bad_recon? S_j : Secondary_j);
+      numerics->SetTurbKineticEnergy(bad_recon? T_i : Turbulent_i,  bad_recon? T_j : Turbulent_j);
 
-      if (fluxCorrection) {
+      if (fluxCorrection && !bad_recon) {
         numerics->SetCorrection(geometry->edges->GetCorrection_X(iEdge), geometry->edges->GetCorrection_Y(iEdge),
                                 geometry->edges->GetCorrection_Z(iEdge));
         numerics->SetPrimVarGradient(Gradient_i, Gradient_j);
       }
-//      /** average reconstructed prim state **/
-//      su2double *Prim_i = bad_recon ? V_i : Primitive_i;
-//      su2double *Prim_j = bad_recon ? V_j : Primitive_j;
-//
-//      su2double avgPrim[MAXNVAR] = {0.0};
-//
-//      auto** fa = new su2double* [nVar];
-//      auto** fb = new su2double* [nVar];
-//      auto** fc = new su2double* [nVar];
-//      for (iVar = 0; iVar < nVar; ++iVar) {
-//        fa[iVar] = new su2double [nVar];
-//        fb[iVar] = new su2double [nVar];
-//        fc[iVar] = new su2double [nVar];
-//      }
-//      for (iVar = 0; iVar < nPrimVar; ++iVar) {
-//        avgPrim[iVar] = 0.5 * (Prim_i[iVar] + Prim_j[iVar]);
-//      }
-//
-//      su2double a[MAXNDIM], b[MAXNDIM], c[MAXNDIM];
-//      geometry->edges->GetCoorrection_X(iEdge,a);
-//      geometry->edges->GetCoorrection_Y(iEdge,b);
-//      geometry->edges->GetCoorrection_Z(iEdge,c);
-//
-//      GetInviscidProjJacPrim(&avgPrim[prim_idx.Velocity()],&avgPrim[prim_idx.Density()],
-//                             &avgPrim[prim_idx.Enthalpy()],a,0.5, fa);
-//
-//      GetInviscidProjJacPrim(&avgPrim[prim_idx.Velocity()],&avgPrim[prim_idx.Density()],
-//                             &avgPrim[prim_idx.Enthalpy()],b,0.5, fb);
-//
-//      GetInviscidProjJacPrim(&avgPrim[prim_idx.Velocity()],&avgPrim[prim_idx.Density()],
-//                             &avgPrim[prim_idx.Enthalpy()],c,0.5, fc);
-//
-//
-//
-//      vector<unsigned short> index = {prim_idx.Density(), prim_idx.Velocity(), prim_idx.Pressure(), prim_idx.Pressure(), prim_idx.Pressure()};
-//      index[2] = prim_idx.Velocity() + 1;
-//      if (nDim == 3) index[3] = prim_idx.Velocity() + 2;
-//      for (iVar = 0; iVar < nVar; ++iVar) {
-//        fluxCorrection[iVar] = 0.0;
-//        for (int jVar = 0; jVar < nVar; ++jVar) {
-//          fluxCorrection[iVar] += fa[iVar][jVar] * (Gradient_i[index[jVar]][0] + Gradient_j[index[jVar]][0]) +
-//                                  fb[iVar][jVar] * (Gradient_i[index[jVar]][1] + Gradient_j[index[jVar]][1]) +
-//                                  (nDim == 3 ? fc[iVar][jVar] * (Gradient_i[index[jVar]][2] + Gradient_j[index[jVar]][2]) : 0.0);
-//        }
-//      }
-//
-////      if (ReducerStrategy) {
-////        EdgeFluxes.SetBlock(iEdge, fluxCorrection);
-////      }
-////      else {
-////        LinSysRes.AddBlock(iPoint, fluxCorrection);
-////        LinSysRes.SubtractBlock(jPoint, fluxCorrection);
-////      }
-//
-//      for (iVar = 0; iVar < nVar; ++iVar) {
-//        delete [] fa[iVar];
-//        delete [] fb[iVar];
-//        delete [] fc[iVar];
-//      }
-//      delete [] fa;
-//      delete [] fb;
-//      delete [] fc;
+
     }
 
     /*--- Roe Low Dissipation Scheme ---*/
@@ -4765,8 +4741,16 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
 
-        V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
-        V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+          if (Qn_Infty > 0.0)   {
+              /*--- Outflow conditions ---*/
+              V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
+              V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+          }
+          else {
+              /*--- Inflow conditions ---*/
+              V_infty[nDim+5] = config->GetViscosity_FreeStreamND();
+              V_infty[nDim+6] = config->GetEddyViscosity_FreeStreamND();
+          }
 
         /*--- Set the normal vector and the coordinates ---*/
 
@@ -10526,4 +10510,498 @@ void CEulerSolver::GetInviscidProjJacPrim(const su2double* val_velocity, const s
     val_Proj_Jac_Tensor[nDim+1][iDim+1] = val_scale*(*val_density) * (val_normal[iDim]*(*val_spec_total_enthalpy) + val_velocity[iDim]*proj_vel);
   val_Proj_Jac_Tensor[nDim+1][nDim+1] = val_scale*proj_vel*Gamma/Gamma_Minus_One;
   AD::EndPassive(wasActive);
+}
+
+void CEulerSolver::ConvectiveError(CSolver **solver, const CGeometry*geometry, const CConfig *config,
+                                   unsigned long iPoint, vector<vector<double> > &weights) {
+
+    auto varFlo    = solver[FLOW_SOL]->GetNodes();
+    auto varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
+
+    const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+    const bool sst  = config->GetBoolTurbModelSST();
+
+    CVariable *varTur = nullptr, *varAdjTur = nullptr;
+    if (turb) {
+        varTur    = solver[TURB_SOL]->GetNodes();
+        varAdjTur = solver[ADJTURB_SOL]->GetNodes();
+    }
+
+    const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+
+    double A[5][5] = {0.0}, B[5][5] = {0.0}, C[5][5] = {0.0};
+
+    //--- Inviscid terms
+    const double u  = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 0));
+    const double v  = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 1));
+    const double w  = (nDim == 3)? SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 2)): 0.;
+    const double v2 = SU2_TYPE::GetValue(varFlo->GetVelocity2(iPoint));
+    const double e  = SU2_TYPE::GetValue(varFlo->GetEnergy(iPoint));
+    const double g  = SU2_TYPE::GetValue(config->GetGamma());
+
+    //--- Store transposed Jacobians
+    if(nDim == 2) {
+        A[0][1] = -u*u + (g-1.)/2.*v2; A[0][2] = -u*v; A[0][3] = -u*(g*e-(g-1)*v2);
+        A[1][0] = 1.; A[1][1] = (3.-g)*u; A[1][2] = v; A[1][3] = g*e-(g-1.)/2.*(v2+2*u*u);
+        A[2][1] = -(g-1.)*v; A[2][2] = u; A[2][3] = -(g-1.)*u*v;
+        A[3][1] = g-1.; A[3][3] = g*u;
+
+        B[0][1] = -u*v; B[0][2] = -v*v + (g-1.)/2.*v2; B[0][3] = -v*(g*e-(g-1)*v2);
+        B[1][1] = v; B[1][2] = -(g-1.)*u; B[1][3] = -(g-1.)*u*v;
+        B[2][0] = 1.; B[2][1] = u; B[2][2] = (3.-g)*v; B[2][3] = g*e-(g-1.)/2.*(v2+2*v*v);
+        B[3][2] = g-1.; B[3][3] = g*v;
+
+    }
+    else{
+        A[0][1] = -u*u + (g-1.)/2.*v2; A[0][2] = -u*v; A[0][3] = -u*w; A[0][4] = -u*(g*e-(g-1)*v2);
+        A[1][0] = 1.; A[1][1] = (3.-g)*u; A[1][2] = v; A[1][3] = w;    A[1][4] = g*e-(g-1.)/2.*(v2+2*u*u);
+        A[2][1] = -(g-1.)*v; A[2][2] = u; A[2][4] = -(g-1.)*u*v;
+        A[3][1] = -(g-1.)*w; A[3][3] = u; A[3][4] = -(g-1.)*u*w;
+        A[4][1] = g-1.; A[4][4] = g*u;
+
+        B[0][1] = -u*v; B[0][2] = -v*v + (g-1.)/2.*v2; B[0][3] = -v*w; B[0][4] = -v*(g*e-(g-1)*v2);
+        B[1][1] = v; B[1][2] = -(g-1.)*u; B[1][4] = -(g-1.)*u*v;
+        B[2][0] = 1.; B[2][1] = u; B[2][2] = (3.-g)*v; B[2][3] = w; B[2][4] = g*e-(g-1.)/2.*(v2+2*v*v);
+        B[3][2] = -(g-1.)*w; B[3][3] = v; B[3][4] = -(g-1.)*v*w;
+        B[4][2] = g-1.; B[4][4] = g*v;
+
+        C[0][1] = -u*w; C[0][2] = -v*w; C[0][3] = -w*w + (g-1.)/2.*v2; C[0][4] = -w*(g*e-(g-1)*v2);
+        C[1][1] = w; C[1][3] = -(g-1.)*u; C[1][4] = -(g-1.)*u*w;
+        C[2][2] = w; C[2][3] = -(g-1.)*v; C[2][4] = -(g-1.)*v*w;
+        C[3][0] = 1.; C[3][1] = u; C[3][2] = v; C[3][3] = (3.-g)*w; C[3][4] = g*e-(g-1.)/2.*(v2+2*w*w);
+        C[4][3] = (g-1.); C[4][4] = g*w;
+    }
+
+    //--- Contribution of k to dp/dr and dp/d(re)
+    if (sst) {
+        const double k = SU2_TYPE::GetValue(varTur->GetPrimitive(iPoint,0));
+        if (nDim == 2) {
+            A[0][3] += (g-1.)*k*u;
+            A[1][3] += -(g-1.)*k;
+
+            B[0][3] += (g-1.)*k*v;
+            B[2][3] += -(g-1.)*k;
+        }
+        else {
+            A[0][4] += (g-1.)*k*u;
+            A[1][4] += -(g-1.)*k;
+
+            B[0][4] += (g-1.)*k*v;
+            B[2][4] += -(g-1.)*k;
+
+            C[0][4] += (g-1.)*k*w;
+            C[3][4] += -(g-1.)*k;
+        }
+    }
+
+    for (auto jVar = 0; jVar < nVarFlo; ++jVar) {
+        const double adjx = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, jVar, 0));
+        const double adjy = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, jVar, 1));
+        const double adjz = (nDim == 3)? SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, jVar, 2)): 0.0;
+        for (auto iVar = 0; iVar < nVarFlo; ++iVar) {
+            weights[1][iVar] += -A[iVar][jVar]*adjx - B[iVar][jVar]*adjy;
+            if(nDim == 3) weights[1][iVar] += -C[iVar][jVar]*adjz;
+        }
+    }
+
+    //--- Turbulent terms
+    if(turb) {
+        const unsigned short nVarTur = solver[TURB_SOL]->GetnVar();
+        if (sst) {
+            for (auto iVar = 0; iVar < nVarTur; ++iVar){
+                const double adjx = SU2_TYPE::GetValue(varAdjTur->GetGradient_Adapt(iPoint, iVar, 0));
+                const double adjy = SU2_TYPE::GetValue(varAdjTur->GetGradient_Adapt(iPoint, iVar, 1));
+                const double val  = SU2_TYPE::GetValue(varTur->GetPrimitive(iPoint, iVar));
+                weights[1][nVarFlo+iVar] += - u*adjx - v*adjy;
+                weights[1][0]            += val*u*adjx + val*v*adjy;
+                weights[1][1]            += - val*adjx;
+                weights[1][2]            += - val*adjy;
+                if (nDim == 3) {
+                    const double adjz = SU2_TYPE::GetValue(varAdjTur->GetGradient_Adapt(iPoint, iVar, 2));
+                    weights[1][nVarFlo+iVar] += - w*adjz;
+                    weights[1][0]            += val*w*adjz;
+                    weights[1][3]            += - val*adjz;
+                }
+            }
+
+            //--- Contribution of k to dp/d(rk)
+            //--- Momentum equation
+            for (auto iDim = 0; iDim < nDim; iDim++) {
+                const double adj = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, iDim));
+                weights[1][nVarFlo+0] += (g-1.)*adj;
+            }
+            //--- Energy equation
+            const double adjx = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, 0));
+            const double adjy = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, 1));
+            weights[1][nVarFlo+0] += (g-1.)*(u*adjx+v*adjy);
+            if (nDim == 3) {
+                const double adjz = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, 2));
+                weights[1][nVarFlo+0] += (g-1.)*w*adjz;
+            }
+        }
+    }
+
+}
+
+void CEulerSolver::ViscousError(CSolver **solver, const CGeometry*geometry, const CConfig *config,
+                                unsigned long iPoint, vector<vector<double> > &weights) {
+
+    CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
+            *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
+
+    const bool turb = (config->GetKind_Turb_Model() != TURB_MODEL::NONE);
+    const bool sst  = (config->GetBoolTurbModelSST());
+
+    CVariable *varTur = nullptr;
+    if (turb) varTur = solver[TURB_SOL]->GetNodes();
+
+    const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+
+    //--- Store primitive variables and coefficients
+    const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
+    double u[3] = {0.0};
+    u[0] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 0));
+    u[1] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 1));
+    if (nDim == 3) u[2] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 2));
+    const double u2 = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
+
+    double k = 0.;
+    if(sst) {
+        k = SU2_TYPE::GetValue(varTur->GetPrimitive(iPoint, 0));
+    }
+
+    const double T   = SU2_TYPE::GetValue(varFlo->GetTemperature(iPoint));
+    const double nu  = SU2_TYPE::GetValue(varFlo->GetLaminarViscosity(iPoint))/r;
+    const double nut = SU2_TYPE::GetValue(varFlo->GetEddyViscosity(iPoint))/r;
+
+    const double Pr  = SU2_TYPE::GetValue(config->GetPrandtl_Lam());
+    const double Prt = SU2_TYPE::GetValue(config->GetPrandtl_Turb());
+    const double g   = SU2_TYPE::GetValue(config->GetGamma());
+    const double R   = SU2_TYPE::GetValue(config->GetGas_ConstantND());
+    const double cp  = (g/(g-1.))*R;
+    const double cv  = cp/g;
+
+    const double ONE3 = 1.0/3.0;
+    const double TWO3 = 1.0/3.0;
+
+    //--- Store gradients and stress tensor
+    double gradu[3][3] = {0.0}, gradT[3] = {0.0}, gradnu[3] = {0.0}, gradnut[3] = {0.0};
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto jDim = 0 ; jDim < nDim; jDim++) {
+            gradu[iDim][jDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, iDim+1, jDim));
+        }
+        gradT[iDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, 0, iDim));
+        gradnu[iDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, nDim+1, iDim));
+        gradnut[iDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, nDim+2, iDim));
+    }
+
+    //--- Account for wall functions
+    // double wf = varFlo->GetTauWallFactor(iPoint);
+    double wf = 1.0;
+    double divu = 0.0; for (auto iDim = 0 ; iDim < nDim; ++iDim) divu += gradu[iDim][iDim];
+    double tau[3][3] = {0.0};
+    for (auto iDim = 0; iDim < nDim; ++iDim) {
+        for (auto jDim = 0; jDim < nDim; ++jDim) {
+            tau[iDim][jDim]  = wf*r*((nu+nut)*( gradu[jDim][iDim] + gradu[iDim][jDim] )
+                                     - TWO3*((nu+nut)*divu+k)*(iDim == jDim));
+
+        }
+    }
+
+    //-------------------------//
+    //--- Momentum equation ---//
+    //-------------------------//
+
+    //--- Errors wrt momentum
+    for (auto iDim = 0; iDim < nDim; ++iDim) {
+        const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
+        const size_t iVar = iDim+1;
+
+        for (auto jDim = 0; jDim < nDim; ++jDim) {
+            const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
+                                                 : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+            const size_t ind_jj = jDim*nDim - ((jDim - 1)*iDim)/2;
+            const size_t jVar = jDim+1;
+
+            const double hessadjui_jj = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, iVar, ind_jj));
+            const double hessadjuj_ij = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, jVar, ind_ij));
+
+            const double gradadjui_j = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, iVar, jDim));
+            const double gradadjuj_i = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, jVar, iDim));
+            const double gradadjuj_j = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, jVar, jDim));
+
+            weights[2][iVar] -= (nu + nut) * ( hessadjui_jj + ONE3 * hessadjuj_ij * (iDim != jDim) );
+            weights[1][iVar] -= (gradnu[jDim]+gradnut[jDim]) * gradadjui_j
+                                + ( (gradnu[jDim]+gradnut[jDim]) * gradadjuj_i
+                                    -   TWO3 * (gradnu[iDim]+gradnut[iDim]) * gradadjuj_j ) * (iDim != jDim);
+        }
+
+        const double hessadjui_ii = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, iVar, ind_ii));
+        const double gradadjui_i = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, iVar, iDim));
+
+        weights[2][iVar] -= ONE3 * (nu + nut) * hessadjui_ii;
+        weights[1][iVar] -= ONE3 * (gradnu[iDim]+gradnut[iDim]) * gradadjui_i;
+    }
+
+    //--- Errors wrt density
+    for (auto iDim = 0; iDim < nDim; ++iDim) {
+        const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
+        const size_t iVar = iDim+1;
+
+        const double gradnu_ui_i = (gradnu[iDim]+gradnut[iDim]) * u[iDim] + (nu+nut) * gradu[iDim][iDim];
+
+        for (auto jDim = 0; jDim < nDim; ++jDim) {
+            const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
+                                                 : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+            const size_t ind_jj = jDim*nDim - ((jDim - 1)*iDim)/2;
+            const size_t jVar = jDim+1;
+
+            const double hessadjui_jj = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, iVar, ind_jj));
+            const double hessadjuj_ij = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, jVar, ind_ij));
+
+            const double gradadjui_j = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, iVar, jDim));
+            const double gradadjuj_i = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, jVar, iDim));
+            const double gradadjuj_j = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, jVar, jDim));
+
+            const double gradnu_ui_j = (gradnu[jDim]+gradnut[jDim]) * u[iDim] + (nu+nut) * gradu[iDim][jDim];
+
+            weights[2][0] += (nu + nut) * u[iDim] * ( hessadjui_jj + ONE3 * hessadjuj_ij * (iDim != jDim) );
+            weights[1][0] += gradnu_ui_j * gradadjui_j
+                             + ( gradnu_ui_j * gradadjuj_i
+                                 -   TWO3 * gradnu_ui_i * gradadjuj_j ) * (iDim != jDim);
+        }
+
+        const double hessadjui_ii = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, iVar, ind_ii));
+        const double gradadjui_i = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, iVar, iDim));
+
+        weights[2][0] += ONE3 * (nu + nut) * u[iDim] * hessadjui_ii;
+        weights[1][0] += ONE3 * gradnu_ui_i * gradadjui_i;
+    }
+
+    //-----------------------//
+    //--- Energy equation ---//
+    //-----------------------//
+
+    //--- Errors in shear stress work wrt momentum
+    for (auto iDim = 0; iDim < nDim; ++iDim) {
+        const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
+        const size_t iVar = iDim+1;
+
+        const double gradnu_ui_i = (gradnu[iDim]+gradnut[iDim]) * u[iDim] + (nu+nut) * gradu[iDim][iDim];
+
+        for (auto jDim = 0; jDim < nDim; ++jDim) {
+            const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
+                                                 : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+            const size_t ind_jj = jDim*nDim - ((jDim - 1)*iDim)/2;
+
+            const double hessadje_ij = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ij));
+            const double hessadje_jj = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_jj));
+
+            const double gradadje_i = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim));
+            const double gradadje_j = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, jDim));
+
+            const double gradnu_ui_j = (gradnu[jDim]+gradnut[jDim]) * u[iDim] + (nu+nut) * gradu[iDim][jDim];
+            const double gradnu_uj_i = (gradnu[iDim]+gradnut[iDim]) * u[jDim] + (nu+nut) * gradu[jDim][iDim];
+            const double gradnu_uj_j = (gradnu[jDim]+gradnut[jDim]) * u[jDim] + (nu+nut) * gradu[jDim][jDim];
+
+            weights[2][iVar] -= (nu + nut) * ( u[jDim] * hessadje_ij
+                                               + ( u[iDim] * hessadje_jj
+                                                   -   TWO3* u[jDim] * hessadje_ij ) * (iDim != jDim) );
+            weights[1][iVar] -= gradnu_uj_j * gradadje_i
+                                + ( gradnu_ui_j * gradadje_j
+                                    -   TWO3 * gradnu_uj_i * gradadje_j ) * (iDim != jDim);
+            weights[1][iVar] += tau[iDim][jDim]/r * gradadje_j;
+        }
+
+        const double hessadje_ii = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ii));
+        const double gradadje_i = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim));
+
+        weights[2][iVar] -= ONE3 * (nu + nut) * hessadje_ii;
+        weights[1][iVar] -= ONE3 * gradnu_ui_i * gradadje_i;
+    }
+
+    //--- Errors in shear stress work wrt density
+    for (auto iDim = 0; iDim < nDim; ++iDim) {
+        const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
+
+        const double gradi_nu_uiui = (gradnu[iDim]+gradnut[iDim]) * u[iDim]*u[iDim] + 2.0 * (nu+nut) * gradu[iDim][iDim] * u[iDim];
+
+        for (auto jDim = 0; jDim < nDim; ++jDim) {
+            const size_t ind_ij = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
+                                                 : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+            const size_t ind_jj = jDim*nDim - ((jDim - 1)*iDim)/2;
+
+            const double hessadje_ij = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ij));
+            const double hessadje_jj = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_jj));
+
+            const double gradadje_i = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim));
+            const double gradadje_j = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, jDim));
+
+            const double gradj_nu_uiuj = (gradnu[jDim]+gradnut[jDim]) * u[iDim]*u[jDim] + (nu+nut) * (gradu[iDim][jDim]*u[jDim]+gradu[jDim][jDim]*u[iDim]);
+            const double gradj_nu_uiui = (gradnu[jDim]+gradnut[jDim]) * u[iDim]*u[iDim] + (nu+nut) * 2.0*(gradu[iDim][jDim]*u[iDim]);
+            const double gradi_nu_uiuj = (gradnu[iDim]+gradnut[iDim]) * u[iDim]*u[jDim] + (nu+nut) * (gradu[iDim][iDim]*u[jDim]+gradu[jDim][iDim]*u[iDim]);
+
+            weights[2][0] += (nu + nut) * u[iDim] * ( u[jDim] * hessadje_ij
+                                                      + ( u[iDim] * hessadje_jj
+                                                          -   TWO3 * u[jDim] * hessadje_ij ) * (iDim != jDim) );
+            weights[1][0] += gradj_nu_uiuj * gradadje_i
+                             + ( gradj_nu_uiui * gradadje_j
+                                 -   TWO3 * gradi_nu_uiuj * gradadje_j ) * (iDim != jDim);
+            weights[1][0] -= tau[iDim][jDim]*u[iDim]/r * gradadje_j;
+        }
+
+        const double hessadje_ii = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ii));
+        const double gradadje_i = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim));
+
+        weights[2][0] += ONE3 * (nu + nut) * u[iDim] * hessadje_ii;
+        weights[1][0] += ONE3 * gradi_nu_uiui * gradadje_i;
+    }
+
+    //--- Errors in heat flux wrt energy
+    for (auto iDim = 0; iDim < nDim; ++iDim) {
+        const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
+
+        const double hessadje_ii = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ii));
+        const double gradadje_i = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim));
+
+        weights[2][nVarFlo-1] -= g * (nu/Pr + nut/Prt) * hessadje_ii;
+        weights[1][nVarFlo-1] -= g * (gradnu[iDim]/Pr + gradnut[iDim]/Prt) * gradadje_i;
+    }
+
+    //--- Errors in heat flux wrt momentum
+    for (auto iDim = 0; iDim < nDim; ++iDim) {
+        const size_t iVar = iDim+1;
+        for (auto jDim = 0; jDim < nDim; ++jDim) {
+            const size_t ind_jj = jDim*nDim - ((jDim - 1)*jDim)/2;
+
+            const double hessadje_jj = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_jj));
+            const double gradadje_j = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, jDim));
+
+            weights[2][iVar] += g * (nu/Pr + nut/Prt) * u[iDim] * hessadje_jj;
+            weights[1][iVar] += g * ( (gradnu[jDim]/Pr + gradnut[jDim]/Prt) * u[iDim]
+                                      +   (nu + nut) * gradu[iDim][jDim] ) * gradadje_j;
+        }
+    }
+
+    //--- Errors in heat flux wrt density
+    for (auto iDim = 0; iDim < nDim; ++iDim) {
+        double ujduj = 0;
+        for (auto jDim = 0; jDim < nDim; ++jDim) {
+            ujduj += u[jDim]*gradu[jDim][iDim];
+
+        }
+        const size_t ind_ii = iDim*nDim - ((iDim - 1)*iDim)/2;
+
+        const double hessadje_ii = SU2_TYPE::GetValue(varAdjFlo->GetHessian(iPoint, nVarFlo-1, ind_ii));
+        const double gradadje_i = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim));
+
+        weights[2][0] -= g * (nu/Pr + nut/Prt) * (0.5*u2 - cv*T) * hessadje_ii;
+        weights[1][0] -= g * ( (gradnu[iDim]/Pr + gradnut[iDim]/Prt) * (0.5*u2 - cv*T)
+                               +   (nu/Pr + nut/Prt) * (ujduj - cv*gradT[iDim]) ) * gradadje_i;
+    }
+
+    //-----------------------//
+    //--- Viscosity terms ---//
+    //-----------------------//
+
+    LaminarViscosityError(solver, geometry, config, iPoint, weights);
+
+}
+
+void CEulerSolver::LaminarViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                                         unsigned long iPoint, vector<vector<double> > &weights) {
+
+    CVariable *varFlo    = solver[FLOW_SOL]->GetNodes(),
+            *varAdjFlo = solver[ADJFLOW_SOL]->GetNodes();
+
+    const unsigned short nVarFlo = solver[FLOW_SOL]->GetnVar();
+
+    //--- Store primitive variables and coefficients
+    const double r = SU2_TYPE::GetValue(varFlo->GetDensity(iPoint));
+    double u[3] = {0.0};
+    u[0] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 0));
+    u[1] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 1));
+    if (nDim == 3) u[2] = SU2_TYPE::GetValue(varFlo->GetVelocity(iPoint, 2));
+    const double u2 = u[0]*u[0]+u[1]*u[1]+u[2]*u[2];
+
+    const double T   = SU2_TYPE::GetValue(varFlo->GetTemperature(iPoint));
+    const double nu  = SU2_TYPE::GetValue(varFlo->GetLaminarViscosity(iPoint))/r;
+
+    const double S     = SU2_TYPE::GetValue(config->GetMu_SND());
+    const double dmudT = 0.5*r*nu*(T + 3*S)/(T*(T+S));
+
+    const double Pr  = SU2_TYPE::GetValue(config->GetPrandtl_Lam());
+    const double g   = SU2_TYPE::GetValue(config->GetGamma());
+    const double R   = SU2_TYPE::GetValue(config->GetGas_ConstantND());
+    const double cp  = (g/(g-1.))*R;
+    const double cv  = cp/g;
+
+    const double TWO3 = 2.0/3.0;
+
+    //--- Store gradients and stress tensor
+    double gradu[3][3] = {0.0}, gradT[3] = {0.0};
+    for (auto iDim = 0; iDim < nDim; iDim++) {
+        for (auto jDim = 0 ; jDim < nDim; jDim++) {
+            gradu[iDim][jDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, iDim+1, jDim));
+        }
+        gradT[iDim] = SU2_TYPE::GetValue(varFlo->GetGradient_AuxVar_Adapt(iPoint, 0, iDim));
+    }
+
+    //--- Account for wall functions
+    // double wf = varFlo->GetTauWallFactor(iPoint);
+    double wf = 1.0;
+    double divu = 0.0; for (auto iDim = 0 ; iDim < nDim; ++iDim) divu += gradu[iDim][iDim];
+    double tauomu[3][3] = {0.0};
+    for (auto iDim = 0; iDim < nDim; ++iDim) {
+        for (auto jDim = 0; jDim < nDim; ++jDim) {
+            tauomu[iDim][jDim] = wf * ( ( gradu[jDim][iDim] + gradu[iDim][jDim] )
+                                        -     TWO3*divu*(iDim == jDim) );
+
+        }
+    }
+
+    //-------------------------//
+    //--- Momentum equation ---//
+    //-------------------------//
+
+    for (auto iDim = 0; iDim < nDim; ++iDim) {
+        double taudUbar = 0.0;
+        for (auto jDim = 0; jDim < nDim; ++jDim) {
+            const double dUbar = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, iDim+1, jDim));
+            taudUbar += tauomu[iDim][jDim]*dUbar;
+        }
+        weights[1][nVarFlo-1] += dmudT/(r*cv)*taudUbar;
+        for (auto jDim = 0; jDim < nDim; ++jDim)
+            weights[1][jDim+1] -= dmudT/(r*cv)*u[jDim]*taudUbar;
+        weights[1][0] += dmudT/(r*cv)*(0.5*u2-cv*T)*taudUbar;
+    }
+
+    //-----------------------//
+    //--- Energy equation ---//
+    //-----------------------//
+
+    //--- Errors in shear stress work
+    for (auto iDim = 0; iDim < nDim; ++iDim) {
+        double work = 0;
+        for (auto jDim = 0; jDim < nDim; ++jDim) {
+            work += tauomu[iDim][jDim]*u[jDim];
+        }
+        const double dUbar = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim));
+
+        weights[1][nVarFlo-1] += dmudT/(r*cv) * work * dUbar;
+        for (auto jDim = 0; jDim < nDim; ++jDim)
+            weights[1][jDim+1] -= dmudT/(r*cv) * u[jDim] * work * dUbar;
+        weights[1][0] += dmudT/(r*cv) * (0.5*u2-cv*T) * work * dUbar;
+    }
+
+    //--- Errors in heat flux
+    for (auto iDim = 0; iDim < nDim; ++iDim) {
+        const double dUbar = SU2_TYPE::GetValue(varAdjFlo->GetGradient_Adapt(iPoint, nVarFlo-1, iDim));
+
+        weights[1][nVarFlo-1] += dmudT*g/(r*Pr) * gradT[iDim] * dUbar;
+        for (auto jDim = 0; jDim < nDim; ++jDim)
+            weights[1][jDim+1] -= dmudT*g/(r*Pr) * u[jDim] * gradT[iDim] * dUbar;
+        weights[1][0] += dmudT*g/(r*Pr) * (0.5*u2-cv*T) * gradT[iDim] * dUbar;
+    }
+
 }

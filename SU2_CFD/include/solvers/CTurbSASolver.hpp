@@ -396,4 +396,83 @@ public:
    */
   inline su2double GetNuTilde_Inf(void) const override { return Solution_Inf[0]; }
 
+    /*!
+     * \brief Store the aux variables needed for adaptation.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+     */
+    void SetAuxVar_Adapt(CGeometry *geometry, const CConfig *config, const CVariable* var) final {
+        //--- store upper triangle of Wij and vorticity magnitude in aux vector
+        for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+            auto Vorticity = var->GetVorticity(iPoint);
+            const su2double S = sqrt(Vorticity[0]*Vorticity[0] + Vorticity[1]*Vorticity[1] + Vorticity[2]*Vorticity[2]);
+            nodes->SetAuxVar_Adapt(iPoint, 0, -0.5*Vorticity[0]);
+            nodes->SetAuxVar_Adapt(iPoint, 1, 0.5*Vorticity[1]);
+            nodes->SetAuxVar_Adapt(iPoint, 2, -0.5*Vorticity[2]);
+            nodes->SetAuxVar_Adapt(iPoint, 3, S);
+        }
+
+        //--- communicate the solution values via MPI
+        InitiateComms(geometry, config, AUXVAR_ADAPT);
+        CompleteComms(geometry, config, AUXVAR_ADAPT);
+    }
+
+    /*!
+     * \brief Compute the convective terms of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    void ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                         unsigned long iPoint, vector<vector<double> > &weights) final;
+
+    /*!
+     * \brief Compute the viscous terms of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    void ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                      unsigned long iPoint, vector<vector<double> > &weights) final;
+
+    /*!
+     * \brief Compute the turbulent terms of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    void TurbulentError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                        unsigned long iPoint, vector<vector<double> > &weights) final;
+
+    /*!
+     * \brief Compute the viscous terms due to errors in
+     *        laminar viscosity of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    void LaminarViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                               unsigned long iPoint, vector<vector<double> > &weights);
+
+    /*!
+     * \brief Compute the viscous terms due to errors in
+     *        eddy viscosity of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    void EddyViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                            unsigned long iPoint, vector<vector<double> > &weights);
+
 };

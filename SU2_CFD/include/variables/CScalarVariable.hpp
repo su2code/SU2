@@ -42,6 +42,9 @@ class CScalarVariable : public CVariable {
   CVectorOfMatrix
       Gradient_Aux; /*!< \brief Auxiliary structure to store a second gradient for reconstruction, if required. */
 
+  MatrixType &Primitive;     /*!< \brief Primitive variables, equivalent to Solution for non-SST. */
+  MatrixType Primitive_Aux;  /*!< \brief Primitive variables, equivalent to Solution for non-SST. */
+
  public:
   /*!
    * \brief Constructor of the class.
@@ -95,4 +98,41 @@ class CScalarVariable : public CVariable {
    * \return Value of the mass diffusivity
    */
   inline virtual su2double GetDiffusivity(unsigned long iPoint, unsigned short val_ivar) const { return 0.0; }
+
+    /*!
+     * \brief Get the primitive variables for all points.
+     * \return Reference to primitives.
+     */
+    inline const MatrixType& GetPrimitive(void) const final { return Primitive; }
+
+    /*!
+     * \brief Get the primitive variables.
+     * \param[in] iVar - Index of the variable.
+     * \return Value of the primitive variable for the index <i>iVar</i>.
+     */
+    inline su2double GetPrimitive(unsigned long iPoint, unsigned long iVar) const final { return Primitive(iPoint,iVar); }
+
+    /*!
+     * \brief Set the value of the primitive variables.
+     * \param[in] iVar - Index of the variable.
+     * \param[in] iVar - Index of the variable.
+     * \return Set the value of the primitive variable for the index <i>iVar</i>.
+     */
+    inline void SetPrimitive(unsigned long iPoint, unsigned long iVar, su2double val_prim) final { Primitive(iPoint,iVar) = val_prim; }
+
+    /*!
+     * \brief Set the value of the primitive variables.
+     * \param[in] val_prim - Primitive variables.
+     * \return Set the value of the primitive variable for the index <i>iVar</i>.
+     */
+    inline void SetPrimitive(unsigned long iPoint, const su2double *val_prim) final {
+        for (unsigned long iVar = 0; iVar < nPrimVar; iVar++)
+            Primitive(iPoint,iVar) = val_prim[iVar];
+    }
+
+    /*!
+     * \brief Get the primitive variables of the problem.
+     * \return Pointer to the primitive variable vector.
+     */
+    inline su2double *GetPrimitive(unsigned long iPoint) final {return Primitive[iPoint]; }
 };

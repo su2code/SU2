@@ -38,7 +38,7 @@
  */
 class CUserDefinedSolution final : public CVerificationSolution {
  private:
-  su2double gamma, Pr, C1, S, R;
+  su2double gamma, Pr, C1, S, R, mu, k;
 
 //  su2double r0,r1,r2,r3,r4,
 //            u0,u1,u2,u3,u4,
@@ -108,4 +108,7 @@ class CUserDefinedSolution final : public CVerificationSolution {
    * \return  - True if this is a manufactured solution and false otherwise.
    */
   bool IsManufacturedSolution(void) const override;
+
+  void GetGradientPrim(const su2double *val_coords, const su2double val_t,
+                                             su2double val_grad[][3]) const override;
 };

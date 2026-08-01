@@ -1481,13 +1481,15 @@ enum ENUM_FLOW_GRADIENT {
   NO_GRADIENT            = 0,   /*!< \brief No gradient method. Only possible for reconstruction gradient, in which case, the option chosen for NUM_METHOD_GRAD is used. */
   GREEN_GAUSS            = 1,   /*!< \brief Gradient computation using Green-Gauss theorem. */
   LEAST_SQUARES          = 2,   /*!< \brief Gradient computation using unweighted least squares. */
-  WEIGHTED_LEAST_SQUARES = 3    /*!< \brief Gradients computation using inverse-distance weighted least squares. */
+  WEIGHTED_LEAST_SQUARES = 3,    /*!< \brief Gradients computation using inverse-distance weighted least squares. */
+  L2_PROJECTION          = 4
 };
 static const MapType<std::string, ENUM_FLOW_GRADIENT> Gradient_Map = {
   MakePair("NONE", NO_GRADIENT)
   MakePair("GREEN_GAUSS", GREEN_GAUSS)
   MakePair("LEAST_SQUARES", LEAST_SQUARES)
   MakePair("WEIGHTED_LEAST_SQUARES", WEIGHTED_LEAST_SQUARES)
+  MakePair("L2_PROJECTION", L2_PROJECTION)
 };
 
 /*!
@@ -1990,6 +1992,7 @@ enum class OUTPUT_TYPE {
   SURFACE_CGNS,            /*!< \brief CGNS format. */
   STL_ASCII,               /*!< \brief STL ASCII format for surface solution output. */
   STL_BINARY,              /*!< \brief STL binary format for surface solution output. Not implemented yet. */
+  GMF,                     /*!< \brief GMF for use with AMG mesh adaptation library. */
 };
 static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
   MakePair("TECPLOT_ASCII", OUTPUT_TYPE::TECPLOT_ASCII)
@@ -2012,6 +2015,7 @@ static const MapType<std::string, OUTPUT_TYPE> Output_Map = {
   MakePair("SURFACE_CGNS", OUTPUT_TYPE::SURFACE_CGNS)
   MakePair("STL_ASCII", OUTPUT_TYPE::STL_ASCII)
   MakePair("STL_BINARY", OUTPUT_TYPE::STL_BINARY)
+  MakePair("GMF", OUTPUT_TYPE::GMF)
 };
 
 /*!
@@ -2390,6 +2394,7 @@ enum class RECORDING {
   MESH_COORDS,
   MESH_DEFORM,
   SOLUTION_AND_MESH,
+  OBJECTIVE
 };
 
 /*!
@@ -2450,31 +2455,42 @@ enum PERIODIC_QUANTITIES {
  * \brief Vertex-based quantities exchanged in MPI point-to-point communications.
  */
 enum MPI_QUANTITIES {
-  SOLUTION             ,  /*!< \brief Conservative solution communication. */
-  SOLUTION_OLD         ,  /*!< \brief Conservative solution old communication. */
-  SOLUTION_GRADIENT    ,  /*!< \brief Conservative solution gradient communication. */
-  SOLUTION_GRAD_REC    ,  /*!< \brief Conservative solution reconstruction gradient communication. */
-  SOLUTION_LIMITER     ,  /*!< \brief Conservative solution limiter communication. */
-  SOLUTION_GEOMETRY    ,  /*!< \brief Geometry solution communication. */
-  PRIMITIVE_GRADIENT   ,  /*!< \brief Primitive gradient communication. */
-  PRIMITIVE_GRAD_REC   ,  /*!< \brief Primitive reconstruction gradient communication. */
-  PRIMITIVE_LIMITER    ,  /*!< \brief Primitive limiter communication. */
-  UNDIVIDED_LAPLACIAN  ,  /*!< \brief Undivided Laplacian communication. */
-  MAX_EIGENVALUE       ,  /*!< \brief Maximum eigenvalue communication. */
-  SENSOR               ,  /*!< \brief Dissipation sensor communication. */
-  AUXVAR_GRADIENT      ,  /*!< \brief Auxiliary variable gradient communication. */
-  COORDINATES          ,  /*!< \brief Vertex coordinates communication. */
-  COORDINATES_OLD      ,  /*!< \brief Old vertex coordinates communication. */
-  MAX_LENGTH           ,  /*!< \brief Maximum length communication. */
-  GRID_VELOCITY        ,  /*!< \brief Grid velocity communication. */
-  SOLUTION_EDDY        ,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
-  SOLUTION_MATRIX      ,  /*!< \brief Matrix solution communication. */
-  SOLUTION_MATRIXTRANS ,  /*!< \brief Matrix transposed solution communication. */
-  NEIGHBORS            ,  /*!< \brief Neighbor point count communication (for JST). */
-  SOLUTION_FEA         ,  /*!< \brief FEA solution communication. */
-  MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
-  SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
-  SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
+    SOLUTION,  /*!< \brief Conservative solution communication. */
+    SOLUTION_OLD,  /*!< \brief Conservative solution old communication. */
+    SOLUTION_GRADIENT,  /*!< \brief Conservative solution gradient communication. */
+    SOLUTION_GRAD_REC,  /*!< \brief Conservative solution reconstruction gradient communication. */
+    SOLUTION_LIMITER,  /*!< \brief Conservative solution limiter communication. */
+    SOLUTION_GEOMETRY,  /*!< \brief Geometry solution communication. */
+    PRIMITIVE_GRADIENT,  /*!< \brief Primitive gradient communication. */
+    PRIMITIVE_GRAD_REC,  /*!< \brief Primitive reconstruction gradient communication. */
+    PRIMITIVE_LIMITER,  /*!< \brief Primitive limiter communication. */
+    UNDIVIDED_LAPLACIAN,  /*!< \brief Undivided Laplacian communication. */
+    MAX_EIGENVALUE,  /*!< \brief Maximum eigenvalue communication. */
+    SENSOR,  /*!< \brief Dissipation sensor communication. */
+    AUXVAR_GRADIENT,  /*!< \brief Auxiliary variable gradient communication. */
+    COORDINATES,  /*!< \brief Vertex coordinates communication. */
+    COORDINATES_OLD,  /*!< \brief Old vertex coordinates communication. */
+    MAX_LENGTH,  /*!< \brief Maximum length communication. */
+    GRID_VELOCITY,  /*!< \brief Grid velocity communication. */
+    SOLUTION_EDDY,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
+    SOLUTION_MATRIX,  /*!< \brief Matrix solution communication. */
+    SOLUTION_MATRIXTRANS,  /*!< \brief Matrix transposed solution communication. */
+    NEIGHBORS,  /*!< \brief Neighbor point count communication (for JST). */
+    SOLUTION_FEA,  /*!< \brief FEA solution communication. */
+    MESH_DISPLACEMENTS,  /*!< \brief Mesh displacements at the interface. */
+    SOLUTION_TIME_N,  /*!< \brief Solution at time n. */
+    SOLUTION_TIME_N1,  /*!< \brief Solution at time n-1. */
+    WALL_FUNCTION,  /*!< \brief Wall function variables. */
+    GRADIENT_ADAPT,  /*!< \brief Gradient vectors for anisotropic mesh adaptation. */
+    AUXVAR_ADAPT,  /*!< \brief Auxiliary vectors for anisotropic mesh adaptation. */
+    AUXVAR_GRADIENT_ADAPT,  /*!< \brief Auxiliary gradient vectors for anisotropic mesh adaptation. */
+    HESSIAN,  /*!< \brief Hessian vectors for anisotropic mesh adaptation. */
+    PRIMITIVE,  /*!< \brief Primitive variables. */
+    METRIC,  /*!< \brief Metric vectors for anisotropic mesh adaptation. */
+    NON_PHYSICAL,  /*!< \brief Whether node is non-physical. */
+    SMATRIX,  /*!< \brief Conservative solution gradient basis communication. */
+    SMATRIX_RECON,  /*!< \brief Conservative solution gradient basis communication. */
+    VOLUME,   /*!< \brief Dual cell volume communication. */
 };
 
 /*!
@@ -2555,6 +2571,23 @@ static const MapType<std::string, VERIFICATION_SOLUTION> Verification_Solution_M
   MakePair("MMS_INC_EULER",            VERIFICATION_SOLUTION::MMS_INC_EULER)
   MakePair("MMS_INC_NS",               VERIFICATION_SOLUTION::MMS_INC_NS)
   MakePair("USER_DEFINED_SOLUTION",    VERIFICATION_SOLUTION::USER_DEFINED_SOLUTION)
+};
+
+/*!
+ * \brief types of grid adaptation/refinement
+ */
+enum ENUM_ANISO_SENSOR {
+    ANISO_MACH = 0,      /*!< \brief Use Mach field for anisotropy. */
+    ANISO_PRES = 1,      /*!< \brief Use pressure field for anisotropy. */
+    ANISO_MACH_PRES = 2, /*!< \brief Use Mach and pressure fields for anisotropy. */
+    ANISO_GOAL = 3       /*!< \brief Use adjoint-weighted Euler fluxes for anisotropy. */
+};
+
+static const MapType<std::string, ENUM_ANISO_SENSOR> Aniso_Sensor_Map = {
+        MakePair("MACH", ANISO_MACH)
+        MakePair("PRES", ANISO_PRES)
+        MakePair("MACH_PRES", ANISO_MACH_PRES)
+        MakePair("GOAL", ANISO_GOAL)
 };
 
 /*!

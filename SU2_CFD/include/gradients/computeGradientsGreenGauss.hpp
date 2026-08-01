@@ -186,6 +186,146 @@ void computeGradientsGreenGauss(CSolver* solver,
   solver->CompleteComms(&geometry, &config, kindMpiComm);
 
 }
+
+    template<size_t nDim, class GradientType>
+    void computeHessiansGreenGauss(CSolver* solver,
+                                   MPI_QUANTITIES kindMpiComm,
+                                   PERIODIC_QUANTITIES kindPeriodicComm,
+                                   CGeometry& geometry,
+                                   const CConfig& config,
+                                   const GradientType& gradient,
+                                   size_t varBegin,
+                                   size_t varEnd,
+                                   GradientType& hessian)
+    {
+        const size_t nPointDomain = geometry.GetnPointDomain();
+
+#ifdef HAVE_OMP
+        constexpr size_t OMP_MAX_CHUNK = 512;
+
+  const auto chunkSize = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_CHUNK);
+#endif
+
+        /*--- Start OpenMP parallel section. ---*/
+
+        SU2_OMP_PARALLEL
+        {
+            /*--- For each (non-halo) volume integrate over its faces (edges). ---*/
+
+            SU2_OMP_FOR_DYN(chunkSize)
+            for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint)
+            {
+                auto nodes = geometry.nodes;
+
+                /*--- Clear the Hessian. --*/
+
+                for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+                    for (size_t iDim = 0; iDim < 3*(nDim-1); ++iDim)
+                        hessian(iPoint, iVar, iDim) = 0.0;
+
+                /*--- Handle averaging and division by volume in one constant. ---*/
+
+                su2double halfOnVol = 0.5 / (nodes->GetVolume(iPoint)+nodes->GetPeriodicVolume(iPoint));
+
+                /*--- Add a contribution due to each neighbor. ---*/
+
+                for (size_t iNeigh = 0; iNeigh < nodes->GetnPoint(iPoint); ++iNeigh)
+                {
+                    size_t iEdge = nodes->GetEdge(iPoint,iNeigh);
+                    size_t jPoint = nodes->GetPoint(iPoint,iNeigh);
+
+                    /*--- Determine if edge points inwards or outwards of iPoint.
+                     *    If inwards we need to flip the area vector. ---*/
+
+                    su2double dir = (iPoint < jPoint)? 1.0 : -1.0;
+                    su2double weight = dir * halfOnVol;
+
+                    const auto area = geometry.edges->GetNormal(iEdge);
+
+                    for (size_t jDim = 0; jDim < nDim; ++jDim)
+                    {
+                        for (size_t iVar = varBegin; iVar < varEnd; ++iVar)
+                        {
+                            for (size_t iDim = 0; iDim < nDim; ++iDim)
+                            {
+                                size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
+                                                            : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+                                su2double flux = weight * (gradient(iPoint,iVar,jDim) + gradient(jPoint,iVar,jDim));
+                                if (iDim != jDim) flux *= 0.5;
+                                hessian(iPoint, iVar, ind) += flux * area[iDim];
+                            }
+                        }
+                    }
+
+                }
+            }
+            END_SU2_OMP_FOR
+
+            /*--- Add boundary fluxes. ---*/
+
+            for (size_t iMarker = 0; iMarker < geometry.GetnMarker(); ++iMarker)
+            {
+                if ((config.GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+                    (config.GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY))
+                {
+                    /*--- Work is shared in inner loop as two markers
+                     *    may try to update the same point. ---*/
+
+                    SU2_OMP_FOR_STAT(32)
+                    for (size_t iVertex = 0; iVertex < geometry.GetnVertex(iMarker); ++iVertex)
+                    {
+                        size_t iPoint = geometry.vertex[iMarker][iVertex]->GetNode();
+                        auto nodes = geometry.nodes;
+
+                        /*--- Halo points do not need to be considered. ---*/
+
+                        if (!nodes->GetDomain(iPoint)) continue;
+
+                        su2double volume = nodes->GetVolume(iPoint) + nodes->GetPeriodicVolume(iPoint);
+
+                        const auto area = geometry.vertex[iMarker][iVertex]->GetNormal();
+
+                        for (size_t jDim = 0; jDim < nDim; ++jDim)
+                        {
+                            for (size_t iVar = varBegin; iVar < varEnd; iVar++)
+                            {
+                                for (size_t iDim = 0; iDim < nDim; ++iDim)
+                                {
+                                    size_t ind = (iDim <= jDim) ? iDim*nDim - ((iDim - 1)*iDim)/2 + jDim - iDim
+                                                                : jDim*nDim - ((jDim - 1)*jDim)/2 + iDim - jDim;
+                                    su2double flux = gradient(iPoint,iVar,jDim) / volume;
+                                    if (iDim != jDim) flux *= 0.5;
+                                    hessian(iPoint, iVar, ind) -= flux * area[iDim];
+                                }
+                            }
+                        }
+                    }
+                    END_SU2_OMP_FOR
+                }
+            }
+
+        } // end SU2_OMP_PARALLEL
+        END_SU2_OMP_PARALLEL
+
+        /*--- If no solver was provided we do not communicate ---*/
+
+        if (solver == nullptr) return;
+
+        /*--- Account for periodic contributions. ---*/
+
+        for (size_t iPeriodic = 1; iPeriodic <= config.GetnMarker_Periodic()/2; ++iPeriodic)
+        {
+            solver->InitiatePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+            solver->CompletePeriodicComms(&geometry, &config, iPeriodic, kindPeriodicComm);
+        }
+
+        /*--- Obtain the gradients at halo points from the MPI ranks that own them. ---*/
+
+        solver->InitiateComms(&geometry, &config, kindMpiComm);
+        solver->CompleteComms(&geometry, &config, kindMpiComm);
+
+    }
+
 } // end namespace
 
 /*!
@@ -215,4 +355,29 @@ void computeGradientsGreenGauss(CSolver* solver,
     SU2_MPI::Error("Too many dimensions to compute gradients.", CURRENT_FUNCTION);
     break;
   }
+}
+
+template<class GradientType>
+void computeHessiansGreenGauss(CSolver* solver,
+                               MPI_QUANTITIES kindMpiComm,
+                               PERIODIC_QUANTITIES kindPeriodicComm,
+                               CGeometry& geometry,
+                               const CConfig& config,
+                               const GradientType& gradient,
+                               size_t varBegin,
+                               size_t varEnd,
+                               GradientType& hessian) {
+    switch (geometry.GetnDim()) {
+        case 2:
+            detail::computeHessiansGreenGauss<2>(solver, kindMpiComm, kindPeriodicComm, geometry,
+                                                 config, gradient, varBegin, varEnd, hessian);
+            break;
+        case 3:
+            detail::computeHessiansGreenGauss<3>(solver, kindMpiComm, kindPeriodicComm, geometry,
+                                                 config, gradient, varBegin, varEnd, hessian);
+            break;
+        default:
+            SU2_MPI::Error("Too many dimensions to compute gradients.", CURRENT_FUNCTION);
+            break;
+    }
 }

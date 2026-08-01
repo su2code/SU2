@@ -1176,6 +1176,21 @@ private:
   unsigned short pastix_verb_lvl;  /*!< \brief Verbosity level for PaStiX */
   unsigned short pastix_fill_lvl;  /*!< \brief Fill level for PaStiX ILU */
 
+    bool Compute_Metric;            /*!< \brief Determines if error estimation is taking place */
+    unsigned short Kind_Hessian_Method;  /*!< \brief Numerical method for computation of Hessians. */
+    unsigned short nAdap_Sensor;         /*!< \brief Number of sensors to use for adaptation. */
+    string *Adap_Sensor;                 /*!< \brief Sensors to use for adaptation. */
+    su2double Adap_Norm,                 /*!< \brief Lp-norm for mesh adaptation */
+    Adap_Hmax,                 /*!< \brief Maximum cell size */
+    Adap_Hmin,                 /*!< \brief Minimum cell size */
+    Adap_ARmax;                /*!< \brief Maximum cell aspect ratio */
+    unsigned long  Adap_Complexity;      /*!< \brief Constraint mesh complexity */
+
+  bool Restart_CFL;
+
+  su2double EddyViscosity_FreeStream,
+  EddyViscosity_FreeStreamND;
+
   string caseName;                 /*!< \brief Name of the current case */
 
   unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
@@ -3171,6 +3186,100 @@ public:
    * \brief Write coarse grids to the visualization files.
    */
   bool GetWrt_MultiGrid(void) const { return Wrt_MultiGrid; }
+
+    /*!
+     * \brief Get the value of the freestream viscosity.
+     * \return Freestream viscosity.
+     */
+    su2double GetEddyViscosity_FreeStream(void) const { return EddyViscosity_FreeStream; }
+
+    /*!
+ * \brief Get the value of the non-dimensionalized freestream viscosity.
+ * \return Freestream viscosity.
+ */
+    su2double GetEddyViscosity_FreeStreamND(void) const { return EddyViscosity_FreeStreamND; }
+
+    /*!
+ * \brief Set the freestream viscosity.
+ * \param[in] val_viscosity_freestream - Value of the freestream viscosity.
+ */
+    void SetEddyViscosity_FreeStream(su2double val_eddyviscosity_freestream) { EddyViscosity_FreeStream = val_eddyviscosity_freestream; }
+
+    /*!
+     * \brief Set the non-dimensional free-stream viscosity.
+     * \param[in] val_viscosity_freestreamnd - Value of the non-dimensional free-stream viscosity.
+     */
+    void SetEddyViscosity_FreeStreamND(su2double val_eddyviscosity_freestreamnd) { EddyViscosity_FreeStreamND = val_eddyviscosity_freestreamnd; }
+
+    /*!
+ * \brief Provides the restart information.
+ * \return Restart information, if <code>TRUE</code> then the code will use the local CFL from the restart file.
+ */
+    bool GetRestart_CFL(void) const { return Restart_CFL; }
+
+    /*!
+  * \brief Get the kind of the turbulence model.
+  * \return Kind of the turbulence model.
+  */
+    bool GetBoolTurbModelSST(void) const { return (Kind_Turb_Model == TURB_MODEL::SST); }
+
+    /*!
+   * \brief Check if error estimation is being carried out
+   * \return <code>TRUE<\code> if error estimation is taking place
+  */
+    bool GetCompute_Metric(void) const { return Compute_Metric; }
+
+    /*!
+     * \brief Check if goal-oriented error estimation is being carried out
+     * \return <code>TRUE<\code> if goal-oriented error estimation is taking place
+    */
+    bool GetGoal_Oriented_Metric(void) const { return Adap_Sensor != nullptr && (Adap_Sensor[0] == "GOAL"); }
+
+    /*!
+     * \brief Get the kind of method for computation of Hessians used for anisotropy.
+     * \return Numerical method for computation of Hessians used for anisotropy.
+     */
+    unsigned short GetKind_Hessian_Method(void) const { return Kind_Hessian_Method; }
+
+    /*!
+     * \brief Get adaptation sensor
+     */
+    string GetAdap_Sensor(unsigned short iSens) const { return Adap_Sensor[iSens]; }
+
+    /*!
+     * \brief Get number of adaptation sensors
+     */
+    unsigned short GetnAdap_Sensor(void) const { return nAdap_Sensor; }
+
+    /*!
+     * \brief Get adaptation norm value (Lp)
+     */
+    su2double GetAdap_Norm(void) const { return Adap_Norm; }
+
+    /*!
+     * \brief Get maximum cell size
+     * \return Maximum cell size
+     */
+    su2double GetAdap_Hmax(void) const { return Adap_Hmax; }
+
+    /*!
+     * \brief Get minimum cell size
+     * \return Minimum cell size
+     */
+    su2double GetAdap_Hmin(void) const { return Adap_Hmin; }
+
+    /*!
+     * \brief Get maximum cell aspect ratio
+     * \return Maximum cell aspect ratio
+     */
+    su2double GetAdap_ARmax(void) const { return Adap_ARmax; }
+
+    /*!
+     * \brief Get constraint complexity
+     * \return Mesh complexity
+     */
+    unsigned long GetAdap_Complexity(void) const { return Adap_Complexity; }
+
 
   /*!
    * \brief Get information about writing projected sensitivities on surfaces to an ASCII file with rows as x, y, z, dJ/dx, dJ/dy, dJ/dz for each vertex.

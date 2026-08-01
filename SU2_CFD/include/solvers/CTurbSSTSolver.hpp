@@ -98,6 +98,13 @@ public:
                       CConfig *config,
                       unsigned short iMesh) override;
 
+
+    /*!
+     * \brief Compute the primitive variables from the conservative variables.
+     * \param[in] solver_container - Container vector with all the solutions.
+     */
+    void SetPrimitive_Variables(CSolver **solver_container);
+
   /*!
    * \brief Compute the viscous flux for the turbulent equation at a particular edge.
    * \param[in] iEdge - Edge for which we want to compute the flux
@@ -306,6 +313,39 @@ public:
    * \return Value of the turbulent frequency.
    */
   inline su2double GetOmega_Inf(void) const override { return Solution_Inf[1]; }
+
+    /*!
+     * \brief Compute the convective terms of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    void ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                         unsigned long iPoint, vector<vector<double> > &weights) final;
+
+    /*!
+     * \brief Compute the viscous terms of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    void ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                      unsigned long iPoint, vector<vector<double> > &weights) final;
+
+    /*!
+     * \brief Compute the turbulent terms of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    void TurbulentError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                        unsigned long iPoint, vector<vector<double> > &weights) final;
 
 
 };

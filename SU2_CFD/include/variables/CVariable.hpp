@@ -92,6 +92,12 @@ protected:
 
   MatrixType Solution_BGS_k;     /*!< \brief Old solution container for BGS iterations. */
 
+  CVectorOfMatrix Gradient_Adapt;         /*!< \brief Gradient of sensor used for anisotropy in mesh adaptation. */
+  MatrixType AuxVar_Adapt;                /*!< \brief Variables for which we need gradients for anisotropy in mesh adaptation. */
+  CVectorOfMatrix Gradient_AuxVar_Adapt;  /*!< \brief Gradient of additional variables used for anisotropy in mesh adaptation. */
+  CVectorOfMatrix Hessian;                /*!< \brief Hessian of sensor used for anisotropy in mesh adaptation. */
+  su2matrix<double> Metric;               /*!< \brief Metric tensor used for anisotropy in mesh adaptation. */
+
   su2matrix<int> AD_InputIndex;    /*!< \brief Indices of Solution variables in the adjoint vector. */
   su2matrix<int> AD_OutputIndex;   /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
 
@@ -220,6 +226,14 @@ public:
    * \return Value of the Non-physical point.
    */
   inline bool GetNon_Physical(unsigned long iPoint) { return Non_Physical(iPoint); }
+
+    /*!
+   * \brief Reet the value of the non-physical point.
+   * \param[in] iPoint - Point index.
+   */
+    inline void ResetNon_Physical(unsigned long iPoint) {
+        Non_Physical(iPoint) = false;
+    }
 
   /*!
    * \brief Get the solution.
@@ -1679,7 +1693,13 @@ public:
    */
   inline virtual su2double GetCrossDiff(unsigned long iPoint) const { return 0.0; }
 
-  /*!
+    /*!
+   * \brief Get the value of the cross diffusion of tke and omega.
+   */
+    inline virtual bool GetCrossDiffLimited(unsigned long iPoint) const { return false; }
+
+
+    /*!
    * \brief Get the value of the eddy viscosity.
    * \return the value of the eddy viscosity.
    */
@@ -2225,6 +2245,20 @@ public:
    */
   inline virtual su2double GetSensitivity(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
 
+    /*!
+   * \brief A virtual member.
+   * \param[in] iPoint - Point index.
+   * \param[in] solution - Solution of the problem.
+   */
+    inline virtual void SetObjectiveTerm(unsigned long iPoint, unsigned long iVar, const su2double solution) { }
+
+    /*!
+     * \brief A virtual member.
+     * \param[in] iPoint - Point index.
+     * \param[in] solution - Solution of the problem.
+     */
+    inline virtual su2double GetObjectiveTerm(unsigned long iPoint, unsigned long iVar) { return 0.0; }
+
   inline virtual void SetTau_Wall(unsigned long iPoint, su2double tau_wall) {}
 
   inline virtual su2double GetTau_Wall(unsigned long iPoint) const { return 0.0; }
@@ -2309,5 +2343,250 @@ public:
    */
   virtual su2double GetSourceTerm_DispAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
   virtual su2double GetSourceTerm_VelAdjoint(unsigned long iPoint, unsigned long iDim) const { return 0.0; }
+
+    /*!
+   * \brief Set the gradient of the solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] gradient - Gradient of the solution.
+   */
+    inline void SetGradient_Adapt(unsigned long iPoint, su2double** gradient) {
+        for (unsigned long iVar = 0; iVar < nVar; iVar++)
+            for (unsigned long iDim = 0; iDim < nDim; iDim++)
+                Gradient_Adapt(iPoint,iVar,iDim) = gradient[iVar][iDim];
+    }
+
+    /*!
+     * \brief Get the gradient of the entire solution.
+     * \return Reference to gradient.
+     */
+    inline CVectorOfMatrix& GetGradient_Adapt(void) { return Gradient_Adapt; }
+
+    /*!
+     * \brief Get the value of the solution gradient.
+     * \param[in] iPoint - Point index.
+     * \return Value of the gradient solution.
+     */
+    inline CMatrixView<su2double> GetGradient_Adapt(unsigned long iPoint) { return Gradient_Adapt[iPoint]; }
+
+    /*!
+     * \brief Get the value of the solution gradient.
+     * \param[in] iPoint - Point index.
+     * \param[in] iVar - Index of the variable.
+     * \param[in] iDim - Index of the dimension.
+     * \return Value of the solution gradient.
+     */
+    inline su2double GetGradient_Adapt(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return Gradient_Adapt(iPoint,iVar,iDim); }
+
+    /*!
+     * \brief Set the gradient of the solution.
+     * \param[in] iPoint - Point index.
+     * \param[in] gradient - Gradient of the solution.
+     */
+    inline void SetAuxVar_Adapt(unsigned long iPoint, unsigned long iVar, su2double primitive) {
+        AuxVar_Adapt(iPoint,iVar) = primitive;
+    }
+
+    /*!
+     * \brief Get the gradient of the entire solution.
+     * \return Reference to gradient.
+     */
+    inline const MatrixType& GetAuxVar_Adapt(void) const { return AuxVar_Adapt; }
+
+    /*!
+     * \brief Get the value of the solution gradient.
+     * \param[in] iPoint - Point index.
+     * \return Value of the gradient solution.
+     */
+    inline su2double *GetAuxVar_Adapt(unsigned long iPoint) { return AuxVar_Adapt[iPoint]; }
+
+    /*!
+     * \brief Get the value of the solution gradient.
+     * \param[in] iPoint - Point index.
+     * \param[in] iVar - Index of the variable.
+     * \return Value of the solution gradient.
+     */
+    inline su2double GetAuxVar_Adapt(unsigned long iPoint, unsigned long iVar) const { return AuxVar_Adapt(iPoint,iVar); }
+
+    /*!
+     * \brief Set the gradient of the solution.
+     * \param[in] iPoint - Point index.
+     * \param[in] gradient - Gradient of the solution.
+     */
+    inline void SetGradient_AuxVar_Adapt(unsigned long iPoint, su2double** gradient) {
+        for (unsigned long iVar = 0; iVar < nVar; iVar++)
+            for (unsigned long iDim = 0; iDim < nDim; iDim++)
+                Gradient_AuxVar_Adapt(iPoint,iVar,iDim) = gradient[iVar][iDim];
+    }
+
+    /*!
+     * \brief Get the gradient of the entire solution.
+     * \return Reference to gradient.
+     */
+    inline CVectorOfMatrix& GetGradient_AuxVar_Adapt(void) { return Gradient_AuxVar_Adapt; }
+
+    /*!
+     * \brief Get the value of the solution gradient.
+     * \param[in] iPoint - Point index.
+     * \return Value of the gradient solution.
+     */
+    inline CMatrixView<su2double> GetGradient_AuxVar_Adapt(unsigned long iPoint) { return Gradient_AuxVar_Adapt[iPoint]; }
+
+    /*!
+     * \brief Get the value of the solution gradient.
+     * \param[in] iPoint - Point index.
+     * \param[in] iVar - Index of the variable.
+     * \param[in] iDim - Index of the dimension.
+     * \return Value of the solution gradient.
+     */
+    inline su2double GetGradient_AuxVar_Adapt(unsigned long iPoint, unsigned long iVar, unsigned long iDim) const { return Gradient_AuxVar_Adapt(iPoint,iVar,iDim); }
+
+    /*!
+     * \brief Set the hessian of the solution.
+     * \param[in] iPoint - Point index.
+     * \param[in] iVar - Variable index.
+     * \param[in] iHess - Hessian index.
+     * \param[in] hessian - Hessian of the solution.
+     */
+    inline void SetHessian(unsigned long iPoint, unsigned long iVar, unsigned long iHess, su2double hess) { Hessian(iPoint,iVar,iHess) = hess; }
+
+    /*!
+     * \brief Store the upper half matrix of the hessian.
+     * \param[in] iPoint - Point index.
+     * \param[in] iVar - Index of the variable.
+     * \param[in] hess - Matrix to store the hessian.
+     */
+    template <class Met>
+    inline void SetHessianMat(unsigned long iPoint, unsigned long iVar, Met& hess, const su2double scale) {
+        switch( nDim ) {
+            case 2: {
+                Hessian(iPoint,iVar,0) = hess[0][0]*scale;
+                Hessian(iPoint,iVar,1) = hess[0][1]*scale;
+                Hessian(iPoint,iVar,2) = hess[1][1]*scale;
+                break;
+            }
+            case 3: {
+                Hessian(iPoint,iVar,0) = hess[0][0]*scale;
+                Hessian(iPoint,iVar,1) = hess[0][1]*scale;
+                Hessian(iPoint,iVar,2) = hess[0][2]*scale;
+                Hessian(iPoint,iVar,3) = hess[1][1]*scale;
+                Hessian(iPoint,iVar,4) = hess[1][2]*scale;
+                Hessian(iPoint,iVar,5) = hess[2][2]*scale;
+                break;
+            }
+        }
+    }
+
+    /*!
+     * \brief Get the hesian of the entire solution.
+     * \return Reference to hessian.
+     */
+    inline CVectorOfMatrix& GetHessian(void) { return Hessian; }
+
+    /*!
+     * \brief Get the value of the hessian.
+     * \param[in] iPoint - Point index.
+     * \param[in] iVar - Index of the variable.
+     * \param[in] iHess - Index of the hessian.
+     * \return Value of the hessian.
+     */
+    inline su2double GetHessian(unsigned long iPoint, unsigned long iVar, unsigned long iHess) const { return Hessian(iPoint,iVar,iHess); }
+
+    /*!
+     * \brief Get the full matrix of the hessian.
+     * \param[in] iPoint - Point index.
+     * \param[in] iVar - Index of the variable.
+     * \param[in] hess - Matrix to store the hessian.
+     */
+    template <class Met>
+    inline void GetHessianMat(unsigned long iPoint, unsigned long iVar, Met& hess) {
+        switch( nDim ) {
+            case 2: {
+                hess[0][0] = Hessian(iPoint,iVar,0); hess[0][1] = Hessian(iPoint,iVar,1);
+                hess[1][0] = Hessian(iPoint,iVar,1); hess[1][1] = Hessian(iPoint,iVar,2);
+                break;
+            }
+            case 3: {
+                hess[0][0] = Hessian(iPoint,iVar,0); hess[0][1] = Hessian(iPoint,iVar,1); hess[0][2] = Hessian(iPoint,iVar,2);
+                hess[1][0] = Hessian(iPoint,iVar,1); hess[1][1] = Hessian(iPoint,iVar,3); hess[1][2] = Hessian(iPoint,iVar,4);
+                hess[2][0] = Hessian(iPoint,iVar,2); hess[2][1] = Hessian(iPoint,iVar,4); hess[2][2] = Hessian(iPoint,iVar,5);
+                break;
+            }
+        }
+    }
+
+    /*!
+     * \brief Set the value of the metric.
+     * \param[in] iMetr - Index value.
+     * \param[in] metric - Metric value.
+     */
+    inline void SetMetric(unsigned long iPoint, unsigned short iMetr, double metric) { Metric(iPoint,iMetr) = metric; }
+
+    /*!
+     * \brief Store the upper half matrix of the metric.
+     * \param[in] iPoint - Point index.
+     * \param[in] met - Matrix to store the metric.
+     */
+    template <class Met>
+    inline void SetMetricMat(unsigned long iPoint, Met& met, const double scale) {
+        switch( nDim ) {
+            case 2: {
+                Metric(iPoint,0) = met[0][0]*scale;
+                Metric(iPoint,1) = met[0][1]*scale;
+                Metric(iPoint,2) = met[1][1]*scale;
+                break;
+            }
+            case 3: {
+                Metric(iPoint,0) = met[0][0]*scale;
+                Metric(iPoint,1) = met[0][1]*scale;
+                Metric(iPoint,2) = met[0][2]*scale;
+                Metric(iPoint,3) = met[1][1]*scale;
+                Metric(iPoint,4) = met[1][2]*scale;
+                Metric(iPoint,5) = met[2][2]*scale;
+                break;
+            }
+        }
+    }
+
+    /*!
+     * \brief Get the metric of the entire solution.
+     * \return Reference to hessian.
+     */
+    inline su2matrix<double>& GetMetric(void) { return Metric; }
+
+    /*!
+     * \brief Add the value of the metric.
+     * \param[in] iMetr - Index value.
+     * \param[in] metric - Metric value.
+     */
+    inline void AddMetric(unsigned long iPoint, unsigned short iMetr, double metric) { Metric(iPoint,iMetr) += metric; }
+
+    /*!
+     * \brief Get the value of the metric.
+     * \param[in] iMetr  - Index value.
+     */
+    inline double GetMetric(unsigned long iPoint, unsigned short iMetr) const { return Metric(iPoint,iMetr); }
+
+    /*!
+     * \brief Get the full matrix of the metric.
+     * \param[in] iPoint - Point index.
+     * \param[in] met - Matrix to store the metric.
+     */
+    template <class Met>
+    inline void GetMetricMat(unsigned long iPoint, Met& met) {
+        switch( nDim ) {
+            case 2: {
+                met[0][0] = Metric(iPoint,0); met[0][1] = Metric(iPoint,1);
+                met[1][0] = Metric(iPoint,1); met[1][1] = Metric(iPoint,2);
+                break;
+            }
+            case 3: {
+                met[0][0] = Metric(iPoint,0); met[0][1] = Metric(iPoint,1); met[0][2] = Metric(iPoint,2);
+                met[1][0] = Metric(iPoint,1); met[1][1] = Metric(iPoint,3); met[1][2] = Metric(iPoint,4);
+                met[2][0] = Metric(iPoint,2); met[2][1] = Metric(iPoint,4); met[2][2] = Metric(iPoint,5);
+                break;
+            }
+        }
+    }
+
 
 };

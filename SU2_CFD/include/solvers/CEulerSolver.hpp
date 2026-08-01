@@ -254,6 +254,59 @@ protected:
   virtual unsigned long SetPrimitive_Variables(CSolver **solver_container,
                                                const CConfig *config);
 
+    /*!
+   * \brief Store the primitive variables needed for adaptation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reconstruction - indicator that the gradient being computed is for upwind reconstruction.
+   */
+    void SetAuxVar_Adapt(CGeometry *geometry, const CConfig *config, const CVariable* var) final {
+        if (config->GetGoal_Oriented_Metric()) {
+            //--- store temperature and viscosity in aux vector
+            for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+                const su2double density = nodes->GetDensity(iPoint);
+                const su2double temp = nodes->GetTemperature(iPoint);
+                const su2double* vel = nodes->GetPrimitive(iPoint)+1;
+                const su2double lam_visc = nodes->GetLaminarViscosity(iPoint);
+                const su2double eddy_visc = nodes->GetEddyViscosity(iPoint);
+                nodes->SetAuxVar_Adapt(iPoint, 0, temp);
+                for (auto iDim = 0; iDim < nDim; ++iDim)
+                    nodes->SetAuxVar_Adapt(iPoint, iDim+1, vel[iDim]);
+                nodes->SetAuxVar_Adapt(iPoint, nDim+1, lam_visc/density);
+                nodes->SetAuxVar_Adapt(iPoint, nDim+2, eddy_visc/density);
+            }
+        }
+        else {
+            //--- store mach and/or pressure in aux vector
+            const auto nAdapSensor = config->GetnAdap_Sensor();
+            su2double aux = 0.0;
+            for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
+                for (auto iSensor = 0; iSensor < nAdapSensor; iSensor++) {
+                    if (config->GetAdap_Sensor(iSensor) == "MACH") {
+                        aux = nodes->GetVelocity2(iPoint)/nodes->GetSoundSpeed(iPoint);
+                    }
+                    else if (config->GetAdap_Sensor(iSensor) == "PRESSURE") {
+                        aux = nodes->GetPressure(iPoint);
+                    }
+                    else if (config->GetAdap_Sensor(iSensor) == "TEMPERATURE") {
+                        aux = nodes->GetTemperature(iPoint);
+                    }
+                    else if (config->GetAdap_Sensor(iSensor) == "ENERGY") {
+                        aux = nodes->GetEnergy(iPoint);
+                    }
+                    else if (config->GetAdap_Sensor(iSensor) == "DENSITY") {
+                        aux = nodes->GetDensity(iPoint);
+                    }
+                    nodes->SetAuxVar_Adapt(iPoint, iSensor, aux);
+                }
+            }
+        }
+
+        //--- communicate the solution values via MPI
+        InitiateComms(geometry, config, AUXVAR_ADAPT);
+        CompleteComms(geometry, config, AUXVAR_ADAPT);
+    }
+
   /*!
    * \brief Set gradients of coefficients for fixed CL mode
    * \param[in] config - Definition of the particular problem.
@@ -1562,5 +1615,39 @@ void BC_Outlet_Residual(CGeometry* geometry, CSolver** solver_container, CNumeri
    * \brief The Euler and NS solvers support MPI+OpenMP.
    */
   inline bool GetHasHybridParallel() const final { return true; }
+
+    /*!
+   * \brief Compute the convective terms of the goal-oriented metric.
+   * \param[in] solver - Physical definition of the problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iPoint - Index of current node.
+   * \param[in] weights - Weights of each Hessian in the metric.
+   */
+    void ConvectiveError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                         unsigned long iPoint, vector<vector<double> > &weights) final;
+
+    /*!
+     * \brief Compute the viscous terms of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    void ViscousError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                      unsigned long iPoint, vector<vector<double> > &weights) final;
+
+    /*!
+     * \brief Compute the viscous terms due to errors in
+     *        laminar viscosity of the goal-oriented metric.
+     * \param[in] solver - Physical definition of the problem.
+     * \param[in] geometry - Geometrical definition of the problem.
+     * \param[in] config - Definition of the particular problem.
+     * \param[in] iPoint - Index of current node.
+     * \param[in] weights - Weights of each Hessian in the metric.
+     */
+    void LaminarViscosityError(CSolver **solver, const CGeometry *geometry, const CConfig *config,
+                               unsigned long iPoint, vector<vector<double> > &weights);
 
 };
