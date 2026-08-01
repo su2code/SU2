@@ -4835,12 +4835,6 @@ public:
   bool GetMUSCL_Flow(void) const { return MUSCL_Flow; }
 
   /*!
-   * \brief Get information about MUSCL scheme for turbulence.
-   * \return <code>TRUE</code> means that MUSCL scheme is used for the turbulence equations.
-   */
-  bool GetMUSCL_Turb(void) const { return MUSCL_Turb; }
-
-  /*!
    * \brief Get if the upwind scheme used MUSCL or not.
    * \return MUSCL scheme.
    */

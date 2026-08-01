@@ -1844,12 +1844,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   const bool limiter          = (config->GetKind_SlopeLimit_Flow() != LIMITER::NONE);
   const bool van_albada       = (config->GetKind_SlopeLimit_Flow() == LIMITER::VAN_ALBADA_EDGE);
 
-  const bool tkeNeeded    = config->GetBoolTurbModelSST();
-  const bool musclTurb    = config->GetMUSCL_Turb() && muscl;
-
-  CVariable* turbNodes = nullptr;
-  if (tkeNeeded) turbNodes = solver_container[TURB_SOL]->GetNodes();
-
   const su2double kappa       = config->GetMUSCL_Kappa_Flow();
   const su2double musclRamp   = config->GetMUSCLRampValue() * config->GetNewtonKrylovRelaxation();
 
@@ -1865,9 +1859,6 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   /*--- Static arrays of MUSCL-reconstructed primitives and secondaries (thread safety). ---*/
   su2double Primitive_i[MAXNVAR] = {0.0}, Primitive_j[MAXNVAR] = {0.0};
   su2double Secondary_i[MAXNVAR] = {0.0}, Secondary_j[MAXNVAR] = {0.0};
-
-  su2double Turbulent_i = 0.0, Turbulent_j = 0.0;
-  su2double T_i = 0.0, T_j = 0.0;
 
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
@@ -1915,17 +1906,12 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
     const su2double* S_i = ideal_gas? nullptr : nodes->GetSecondary(iPoint);
     const su2double* S_j = ideal_gas? nullptr : nodes->GetSecondary(jPoint);
 
-    if (tkeNeeded) {
-        T_i = turbNodes->GetPrimitive(iPoint,0); T_j = turbNodes->GetPrimitive(jPoint,0);
-    }
-
     /*--- Set them with or without high order reconstruction using MUSCL strategy. ---*/
 
     if (!muscl) {
 
       numerics->SetPrimitive(V_i, V_j);
       numerics->SetSecondary(S_i, S_j);
-      numerics->SetTurbKineticEnergy(T_i, T_j);
 
     }
     else {
@@ -1988,27 +1974,15 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
         sq_vel += pow(RoeVelocity, 2);
       }
 
-        const su2double Pressure_i = Primitive_i[prim_idx.Pressure()];
-        const su2double Pressure_j = Primitive_j[prim_idx.Pressure()];
-        const su2double Density_i  = Primitive_i[prim_idx.Density()];
-        const su2double Density_j  = Primitive_j[prim_idx.Density()];
-        const su2double Energy_i = Pressure_i/(Gamma_Minus_One*Density_i)+Turbulent_i+0.5*GeometryToolbox::SquaredNorm(nDim,Primitive_i+1);
-        const su2double Energy_j = Pressure_j/(Gamma_Minus_One*Density_j)+Turbulent_j+0.5*GeometryToolbox::SquaredNorm(nDim,Primitive_j+1);
+      su2double RoeEnthalpy = (R * Primitive_j[prim_idx.Enthalpy()] + Primitive_i[prim_idx.Enthalpy()]) / (R+1);
 
-        const su2double Enthalpy_i = Energy_i + Pressure_i/Density_i;
-        const su2double Enthalpy_j = Energy_j + Pressure_j/Density_j;
-
-      su2double RoeEnthalpy = (R * Enthalpy_j + Enthalpy_i) / (R+1);
-      su2double RoeTke = (R*Turbulent_j+Turbulent_i)/(R+1);
-
-      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel-RoeTke) < 0.0);
+      const bool neg_sound_speed = ((Gamma-1)*(RoeEnthalpy-0.5*sq_vel) < 0.0);
       bool bad_recon = neg_sound_speed || neg_pres_or_rho_i || neg_pres_or_rho_j;
       bad_recon = nodes->UpdateNonPhysicalEdgeCounter(iEdge, bad_recon);
       counter_local += bad_recon;
 
       numerics->SetPrimitive(bad_recon? V_i : Primitive_i,  bad_recon? V_j : Primitive_j);
       numerics->SetSecondary(bad_recon? S_i : Secondary_i,  bad_recon? S_j : Secondary_j);
-      numerics->SetTurbKineticEnergy(bad_recon? T_i : Turbulent_i,  bad_recon? T_j : Turbulent_j);
 
       if (fluxCorrection && !bad_recon) {
         numerics->SetCorrection(geometry->edges->GetCorrection_X(iEdge), geometry->edges->GetCorrection_Y(iEdge),
