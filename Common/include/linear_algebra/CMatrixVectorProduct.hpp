@@ -99,11 +99,15 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
     if (config->GetCUDA()) {
 #ifdef HAVE_CUDA
-      if (!matrix_uploaded) {
-        matrix.HtDTransfer();
-        matrix_uploaded = true;
+      if constexpr (su2_gpu_capable_v<ScalarType>) {
+        if (!matrix_uploaded) {
+          matrix.HtDTransfer();
+          matrix_uploaded = true;
+        }
+        matrix.GPUMatrixVectorProduct(u, v, geometry, config);
+      } else {
+        SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
       }
-      matrix.GPUMatrixVectorProduct(u, v, geometry, config);
 #else
       SU2_MPI::Error(
           "\nError in launching Matrix-Vector Product Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "

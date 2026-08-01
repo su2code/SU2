@@ -13,19 +13,12 @@ foreach arg : su2_cpp_args
   endif
 endforeach
 
+# The CUDA sources only ever instantiate plain (non-AD) scalar types, so they
+# are always compiled without the CODI_REVERSE_TYPE/CODI_FORWARD_TYPE defines,
+# even for the AD library variants below. Otherwise nvcc pulls CoDiPack's tape
+# machinery into device-code parsing, which it cannot handle.
 common_cuda_rev_args = common_cuda_cpp_args
-foreach arg : codi_rev_args
-  if arg.startswith('-D') or arg.startswith('-U')
-    common_cuda_rev_args += arg
-  endif
-endforeach
-
 common_cuda_for_args = common_cuda_cpp_args
-foreach arg : codi_for_args
-  if arg.startswith('-D') or arg.startswith('-U')
-    common_cuda_for_args += arg
-  endif
-endforeach
 
 subdir('linear_algebra')
 subdir('toolboxes')

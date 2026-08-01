@@ -83,19 +83,21 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
   if (n == 0 || m == 0) return shared;
 
 #ifdef HAVE_CUDA
-  if (VecExpr::DeviceExpressionsEnabled()) {
-    SU2_OMP_MASTER {
-      shared.resize(n, m);
-      for (size_t i = 0; i < n; ++i) {
-        for (size_t j = 0; j < m; ++j) {
-          shared(i, j) = V[i0 + i].GPUDot(W[j]);
+  if constexpr (su2_gpu_capable_v<ScalarType>) {
+    if (VecExpr::DeviceExpressionsEnabled()) {
+      SU2_OMP_MASTER {
+        shared.resize(n, m);
+        for (size_t i = 0; i < n; ++i) {
+          for (size_t j = 0; j < m; ++j) {
+            shared(i, j) = V[i0 + i].GPUDot(W[j]);
+          }
         }
       }
-    }
-    END_SU2_OMP_MASTER
+      END_SU2_OMP_MASTER
 
-    SU2_OMP_BARRIER
-    return shared;
+      SU2_OMP_BARRIER
+      return shared;
+    }
   }
 #endif
 

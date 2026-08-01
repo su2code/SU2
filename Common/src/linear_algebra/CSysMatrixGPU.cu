@@ -34,12 +34,12 @@
  */
 template <class ScalarType>
 __global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
-                                     const unsigned long* __restrict__ row_ptr_l,
-                                     const unsigned long* __restrict__ col_ind_l,
+                                     const su2uint* __restrict__ row_ptr_l,
+                                     const su2uint* __restrict__ col_ind_l,
                                      const ScalarType* __restrict__ mat_l,
                                      const ScalarType* __restrict__ mat_d,
-                                     const unsigned long* __restrict__ row_ptr_u,
-                                     const unsigned long* __restrict__ col_ind_u,
+                                     const su2uint* __restrict__ row_ptr_u,
+                                     const su2uint* __restrict__ col_ind_u,
                                      const ScalarType* __restrict__ mat_u,
                                      const ScalarType* __restrict__ x, ScalarType* __restrict__ y) {
   const unsigned long iRow = blockIdx.x;
