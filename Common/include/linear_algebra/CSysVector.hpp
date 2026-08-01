@@ -49,14 +49,22 @@ class CSysVector;
 
 /*!
  * \brief True for the plain floating-point scalar types the GPU vector kernels
- *        (CSysVectorGPU.cu) are instantiated for. AD active types (reverse or
- *        forward) are never dispatched to the device: the tape/expression
- *        machinery those types pull in is not compatible with nvcc's
- *        device-code compilation, and device-resident autodiff is not
+ *        (CSysVectorGPU.cu) are instantiated for, in builds where those kernels
+ *        exist at all. AD active types are never dispatched to the device: the
+ *        tape/expression machinery those types pull in is not compatible with
+ *        nvcc's device-code compilation, and device-resident autodiff is not
  *        supported by this GPU path.
+ * \note In an AD build this is false even for su2mixedfloat, because the .cu
+ *       translation units are not linked into the AD libraries (see
+ *       SU2_ENABLE_CUDA_KERNELS in code_config.hpp).
  */
+#ifdef SU2_ENABLE_CUDA_KERNELS
 template <class ScalarType>
 inline constexpr bool su2_gpu_capable_v = std::is_floating_point_v<ScalarType>;
+#else
+template <class ScalarType>
+inline constexpr bool su2_gpu_capable_v = false;
+#endif
 
 /*!
  * \brief OpenMP worksharing construct used in CSysVector for loops.
@@ -80,40 +88,48 @@ inline constexpr bool su2_gpu_capable_v = std::is_floating_point_v<ScalarType>;
 #define END_CSYSVEC_PARFOR
 #endif
 
+/*!
+ * \brief Brackets device work so that it is issued by a single thread with the whole team
+ * synchronized before and after.
+ * \note The GPU is one shared resource and the device path does not use OpenMP worksharing.
+ * Issuing from one thread keeps kernel launches ordered on the default stream and, above
+ * all, stops part of a team from entering a worksharing construct that the rest skipped.
+ * Correctness relies on all threads reaching the same vector operations in the same order,
+ * which is the assumption the "nowait" clause on CSYSVEC_PARFOR already makes. These
+ * regions must not be nested; they are used by the operations of this class and by the
+ * matrix-vector product and preconditioner wrappers, and by nothing above those.
+ */
+#define BEGIN_SU2_DEVICE_REGION BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+#define END_SU2_DEVICE_REGION END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
 namespace VecExpr {
 
 enum class DeviceAssignOp { Assign, Add, Subtract, Multiply, Divide };
 
-#ifdef HAVE_CUDA
-bool DeviceExpressionsEnabled();
-void BeginDeviceExpressionContext(bool enabled);
-void EndDeviceExpressionContext();
-void FlushDeviceExpressionContext();
-unsigned long CurrentDeviceExpressionContextId();
-void RegisterDeviceModifiedVector(const void* vector, void (*sync)(const void*));
-void UnregisterDeviceModifiedVector(const void* vector);
+/*!
+ * \brief Whether vector expressions are currently evaluated on the device.
+ * \note Defined in CSysVectorGPU.cu. This is a plain global, not per thread: every thread
+ * of a team has to agree on it or they would split over the worksharing constructs below.
+ * It is switched by CSysSolve at the same boundary that uploads and downloads the vectors
+ * (HandleTemporariesIn/Out), and nowhere else, so it does not change while a solve runs.
+ */
+#ifdef SU2_ENABLE_CUDA_KERNELS
+bool UseDeviceExpressions();
+void SetUseDeviceExpressions(bool use);
 #else
-inline bool DeviceExpressionsEnabled() { return false; }
-inline void BeginDeviceExpressionContext(bool) {}
-inline void EndDeviceExpressionContext() {}
-inline void FlushDeviceExpressionContext() {}
-inline unsigned long CurrentDeviceExpressionContextId() { return 0; }
-inline void RegisterDeviceModifiedVector(const void*, void (*)(const void*)) {}
-inline void UnregisterDeviceModifiedVector(const void*) {}
+inline bool UseDeviceExpressions() { return false; }
+inline void SetUseDeviceExpressions(bool) {}
 #endif
 
-class CDeviceExpressionContext {
- private:
-  bool enabled = false;
-
- public:
-  explicit CDeviceExpressionContext(bool enabled_) : enabled(enabled_) { BeginDeviceExpressionContext(enabled); }
-  ~CDeviceExpressionContext() { EndDeviceExpressionContext(); }
-
-  CDeviceExpressionContext(const CDeviceExpressionContext&) = delete;
-  CDeviceExpressionContext& operator=(const CDeviceExpressionContext&) = delete;
-};
-
+/*!
+ * \brief How a CSysVector is captured inside an expression: a bare pointer to whichever
+ * storage the expression is going to be evaluated from.
+ * \note Capturing by value (rather than a reference to the vector) is what makes an
+ * arbitrary expression tree trivially copyable, and therefore passable by value to the
+ * assignment kernel. The choice of storage is fixed when the expression is built, which is
+ * sound because there is no fallback: while UseDeviceExpressions() holds, every expression
+ * is evaluated by a kernel.
+ */
 template <class Scalar>
 class CVectorView : public CVecExpr<CVectorView<Scalar>, Scalar> {
  private:
@@ -122,7 +138,6 @@ class CVectorView : public CVecExpr<CVectorView<Scalar>, Scalar> {
  public:
   static constexpr bool StoreAsRef = false;
 
-  CVectorView(const Scalar* data_) : data(data_) {}
   CVectorView(const CSysVector<Scalar>& vector);
 
   SU2_CUDA_HOST_DEVICE FORCEINLINE const Scalar& operator[](size_t i) const { return data[i]; }
@@ -137,40 +152,6 @@ template <class Scalar>
 struct store_type<const CSysVector<Scalar>> {
   using type = CVectorView<Scalar>;
 };
-
-template <class Scalar>
-struct is_device_assignable<CSysVector<Scalar>> : std::true_type {};
-
-template <class Scalar>
-struct is_device_assignable<const CSysVector<Scalar>> : std::true_type {};
-
-template <class Scalar>
-struct is_device_assignable<CVectorView<Scalar>> : std::true_type {};
-
-template <class Scalar>
-struct is_device_assignable<Bcast<Scalar>> : std::true_type {};
-
-template <class Scalar>
-struct is_device_assignable<minus_<CSysVector<Scalar>, Scalar>> : std::true_type {};
-
-template <class Scalar>
-struct is_device_assignable<mul_<CSysVector<Scalar>, Bcast<Scalar>, Scalar>> : std::true_type {};
-
-template <class Scalar>
-struct is_device_assignable<
-    add_<mul_<CSysVector<Scalar>, Bcast<Scalar>, Scalar>, mul_<CSysVector<Scalar>, Bcast<Scalar>, Scalar>, Scalar>>
-    : std::true_type {};
-
-template <class Scalar>
-struct is_device_assignable<
-    add_<add_<mul_<CSysVector<Scalar>, Bcast<Scalar>, Scalar>, mul_<CSysVector<Scalar>, Bcast<Scalar>, Scalar>, Scalar>,
-         mul_<CSysVector<Scalar>, Bcast<Scalar>, Scalar>, Scalar>> : std::true_type {};
-
-template <class Scalar>
-struct is_device_assignable<add_<
-    add_<add_<mul_<CSysVector<Scalar>, Bcast<Scalar>, Scalar>, mul_<CSysVector<Scalar>, Bcast<Scalar>, Scalar>, Scalar>,
-         mul_<CSysVector<Scalar>, Bcast<Scalar>, Scalar>, Scalar>,
-    mul_<CSysVector<Scalar>, Bcast<Scalar>, Scalar>, Scalar>> : std::true_type {};
 
 template <DeviceAssignOp Op, class Scalar, class T>
 void AssignDeviceExpression(Scalar* data, unsigned long size, const CVecExpr<T, Scalar>& expr);
@@ -224,16 +205,12 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   unsigned long nVar = 1;       /*!< \brief Number of elements in a block. */
 
   ScalarType* d_vec_val = nullptr; /*!< \brief Device Pointer to store the vector values on the GPU. */
-  mutable bool device_data_valid = false;
-  mutable bool host_data_valid = true;
-  mutable unsigned long device_context_id = 0;
 
-#ifdef HAVE_OMP
-  mutable std::unique_ptr<ScalarType[]>
-      dot_scratch; /*!< \brief Stores partial sums for ordered reduction over OMP threads. */
-#else
-  mutable std::array<ScalarType, 1> dot_scratch;
-#endif
+  /*! \brief Stores partial sums for ordered reduction over OMP threads, and the result
+   * of a device dot product (one entry without OpenMP). The type deliberately does not
+   * depend on HAVE_OMP, so that the layout of this class cannot differ between
+   * translation units. */
+  mutable std::unique_ptr<ScalarType[]> dot_scratch;
 
   /*!
    * \brief Generic initialization from a scalar or array.
@@ -260,14 +237,20 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     }
   }
 
+  /*!
+   * \brief Evaluates an expression into the device storage of this vector.
+   * \note The kernel has to be instantiated for the expression type in CSysVectorGPU.cu,
+   * a shape that is not in that list is an undefined symbol at link time.
+   */
   template <VecExpr::DeviceAssignOp Op, class T>
   CSysVector& AssignDevice(const VecExpr::CVecExpr<T, ScalarType>& expr) {
-#ifdef HAVE_CUDA
+#ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
-      if constexpr (Op != VecExpr::DeviceAssignOp::Assign) EnsureDeviceData();
-      VecExpr::store_t<const T> stored_expr(expr.derived());
-      VecExpr::AssignDeviceExpression<Op>(d_vec_val, nElm, stored_expr);
-      MarkDeviceDataModified();
+      BEGIN_SU2_DEVICE_REGION {
+        VecExpr::store_t<const T> stored_expr(expr.derived());
+        VecExpr::AssignDeviceExpression<Op>(d_vec_val, nElm, stored_expr);
+      }
+      END_SU2_DEVICE_REGION
     }
 #endif
     return *this;
@@ -275,21 +258,13 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
 
   template <VecExpr::DeviceAssignOp Op>
   CSysVector& AssignDevice(ScalarType val) {
-#ifdef HAVE_CUDA
+#ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
-      if constexpr (Op != VecExpr::DeviceAssignOp::Assign) EnsureDeviceData();
-      VecExpr::AssignDeviceExpression<Op>(d_vec_val, nElm, VecExpr::Bcast<ScalarType>(val));
-      MarkDeviceDataModified();
+      BEGIN_SU2_DEVICE_REGION { VecExpr::AssignDeviceExpression<Op>(d_vec_val, nElm, VecExpr::Bcast<ScalarType>(val)); }
+      END_SU2_DEVICE_REGION
     }
 #endif
     return *this;
-  }
-
-  void MarkHostDataModified() const {
-#ifdef HAVE_CUDA
-    host_data_valid = true;
-    device_data_valid = false;
-#endif
   }
 
  public:
@@ -355,9 +330,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     std::swap(omp_chunk_size, other.omp_chunk_size);
     std::swap(vec_val, other.vec_val);
     std::swap(d_vec_val, other.d_vec_val);
-    std::swap(device_data_valid, other.device_data_valid);
-    std::swap(host_data_valid, other.host_data_valid);
-    std::swap(device_context_id, other.device_context_id);
     std::swap(nElm, other.nElm);
     std::swap(nElmDomain, other.nElmDomain);
     std::swap(nVar, other.nVar);
@@ -405,8 +377,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; i++) vec_val[i] = SU2_TYPE::GetValue(other[i]);
     END_CSYSVEC_PARFOR
-
-    MarkHostDataModified();
   }
 
   /*!
@@ -420,45 +390,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
    */
   void DtHTransfer(bool trigger = true) const;
-
-  void EnsureDeviceData() const {
-#ifdef HAVE_CUDA
-    if constexpr (su2_gpu_capable_v<ScalarType>) {
-      const auto context_id = VecExpr::CurrentDeviceExpressionContextId();
-      if (VecExpr::DeviceExpressionsEnabled() && (!device_data_valid || device_context_id != context_id)) {
-        HtDTransfer();
-        device_data_valid = true;
-        host_data_valid = true;
-        device_context_id = context_id;
-      }
-    }
-#endif
-  }
-
-  void MarkDeviceDataModified() const {
-#ifdef HAVE_CUDA
-    if constexpr (su2_gpu_capable_v<ScalarType>) {
-      if (VecExpr::DeviceExpressionsEnabled()) {
-        device_data_valid = true;
-        host_data_valid = false;
-        device_context_id = VecExpr::CurrentDeviceExpressionContextId();
-        VecExpr::RegisterDeviceModifiedVector(
-            this, [](const void* vector) { static_cast<const CSysVector*>(vector)->SyncHostFromDevice(); });
-      }
-    }
-#endif
-  }
-
-  void SyncHostFromDevice() const {
-#ifdef HAVE_CUDA
-    if constexpr (su2_gpu_capable_v<ScalarType>) {
-      if (device_data_valid && !host_data_valid) {
-        DtHTransfer();
-        host_data_valid = true;
-      }
-    }
-#endif
-  }
 
   /*!
    * \brief Dot product between this vector and another vector on the device.
@@ -481,11 +412,10 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   inline ScalarType* GetDevicePointer() const { return d_vec_val; }
 
   /*!
-   * \brief Return the pointer used by expression-template views.
+   * \brief return host pointer that points to the CSysVector values, counterpart of
+   * GetDevicePointer
    */
-  inline const ScalarType* GetExpressionPointer() const {
-    return VecExpr::DeviceExpressionsEnabled() ? d_vec_val : vec_val;
-  }
+  inline const ScalarType* GetHostPointer() const { return vec_val; }
 
   /*!
    * \brief return the number of local elements in the CSysVector
@@ -543,21 +473,14 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] other - Another vector.
    */
   CSysVector& operator=(const CSysVector& other) {
-#ifdef HAVE_CUDA
+#ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
-      if (VecExpr::DeviceExpressionsEnabled()) {
-        other.EnsureDeviceData();
-        VecExpr::CVectorView<ScalarType> view(other);
-        VecExpr::AssignDeviceExpression<VecExpr::DeviceAssignOp::Assign>(d_vec_val, nElm, view);
-        MarkDeviceDataModified();
-        return *this;
-      }
+      if (VecExpr::UseDeviceExpressions()) return AssignDevice<VecExpr::DeviceAssignOp::Assign>(other);
     }
 #endif
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] = other.vec_val[i];
     END_CSYSVEC_PARFOR
-    MarkHostDataModified();
     return *this;
   }
 
@@ -565,33 +488,25 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \brief Compound assignement operations with scalars and expressions.
    * \param[in] val/expr - Scalar value or expression.
    */
-#define MAKE_COMPOUND(OP, ASSIGN_OP)                                                \
-  CSysVector& operator OP(ScalarType val) {                                         \
-    if constexpr (su2_gpu_capable_v<ScalarType>) {                                  \
-      if (VecExpr::DeviceExpressionsEnabled()) return AssignDevice<ASSIGN_OP>(val); \
-    }                                                                               \
-    CSYSVEC_PARFOR                                                                  \
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;                            \
-    END_CSYSVEC_PARFOR                                                              \
-    MarkHostDataModified();                                                         \
-    return *this;                                                                   \
-  }                                                                                 \
-  template <class T>                                                                \
-  CSysVector& operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) {           \
-    if constexpr (su2_gpu_capable_v<ScalarType>) {                                  \
-      if (VecExpr::DeviceExpressionsEnabled()) {                                    \
-        using DeviceExpr = std::remove_cv_t<VecExpr::remove_reference_t<T>>;        \
-        if constexpr (VecExpr::is_device_assignable<DeviceExpr>::value) {           \
-          return AssignDevice<ASSIGN_OP>(expr);                                     \
-        }                                                                           \
-        VecExpr::FlushDeviceExpressionContext();                                    \
-      }                                                                             \
-    }                                                                               \
-    CSYSVEC_PARFOR                                                                  \
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr.derived()[i];              \
-    END_CSYSVEC_PARFOR                                                              \
-    MarkHostDataModified();                                                         \
-    return *this;                                                                   \
+#define MAKE_COMPOUND(OP, ASSIGN_OP)                                             \
+  CSysVector& operator OP(ScalarType val) {                                      \
+    if constexpr (su2_gpu_capable_v<ScalarType>) {                               \
+      if (VecExpr::UseDeviceExpressions()) return AssignDevice<ASSIGN_OP>(val);  \
+    }                                                                            \
+    CSYSVEC_PARFOR                                                               \
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;                         \
+    END_CSYSVEC_PARFOR                                                           \
+    return *this;                                                                \
+  }                                                                              \
+  template <class T>                                                             \
+  CSysVector& operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) {        \
+    if constexpr (su2_gpu_capable_v<ScalarType>) {                               \
+      if (VecExpr::UseDeviceExpressions()) return AssignDevice<ASSIGN_OP>(expr); \
+    }                                                                            \
+    CSYSVEC_PARFOR                                                               \
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr.derived()[i];           \
+    END_CSYSVEC_PARFOR                                                           \
+    return *this;                                                                \
   }
   MAKE_COMPOUND(=, VecExpr::DeviceAssignOp::Assign)
   MAKE_COMPOUND(+=, VecExpr::DeviceAssignOp::Add)
@@ -612,16 +527,18 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    */
   template <class T>
   ScalarType dot(const VecExpr::CVecExpr<T, ScalarType>& expr) const {
-#ifdef HAVE_CUDA
+#ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
-      if (VecExpr::DeviceExpressionsEnabled()) {
-        using DeviceExpr = std::remove_cv_t<VecExpr::remove_reference_t<T>>;
-        if constexpr (std::is_same_v<DeviceExpr, CSysVector>) {
-          EnsureDeviceData();
-          expr.derived().EnsureDeviceData();
-          return GPUDot(expr.derived());
-        }
-        VecExpr::FlushDeviceExpressionContext();
+      using DeviceExpr = std::remove_cv_t<VecExpr::remove_reference_t<T>>;
+      static_assert(std::is_same_v<DeviceExpr, CSysVector>,
+                    "On the device the dot product is a cuBLAS call, so it only takes vectors. "
+                    "Assign the expression to a vector first.");
+      if (VecExpr::UseDeviceExpressions()) {
+        /*--- GPUDot reduces over MPI, which has to happen once for the team, so the result
+         * is published through the same scratch slot the host reduction below uses. ---*/
+        BEGIN_SU2_DEVICE_REGION { dot_scratch[0] = GPUDot(expr.derived()); }
+        END_SU2_DEVICE_REGION
+        return dot_scratch[0];
       }
     }
 #endif
@@ -787,10 +704,8 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
 namespace VecExpr {
 
 template <class Scalar>
-CVectorView<Scalar>::CVectorView(const CSysVector<Scalar>& vector) {
-  vector.EnsureDeviceData();
-  data = vector.GetExpressionPointer();
-}
+CVectorView<Scalar>::CVectorView(const CSysVector<Scalar>& vector)
+    : data(UseDeviceExpressions() ? vector.GetDevicePointer() : vector.GetHostPointer()) {}
 
 }  // namespace VecExpr
 

@@ -83,8 +83,6 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditionerGPU(const CSysVector<Sca
 
   SU2_ZONE_SCOPED
 
-  vec.EnsureDeviceData();
-
   if (d_invM == nullptr) {
     SU2_MPI::Error("CUDA Jacobi preconditioner used before BuildJacobiPreconditionerGPU.", CURRENT_FUNCTION);
   }
@@ -94,8 +92,6 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditionerGPU(const CSysVector<Sca
   ApplyJacobiPreconditionerKernel<<<blocks, threadsPerBlock>>>(d_invM, vec.GetDevicePointer(), prod.GetDevicePointer(),
                                                                nPointDomain, nVar);
   gpuErrChk(cudaPeekAtLastError());
-
-  prod.MarkDeviceDataModified();
 }
 
 template void CSysMatrix<su2mixedfloat>::BuildJacobiPreconditionerGPU();

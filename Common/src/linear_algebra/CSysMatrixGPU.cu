@@ -78,15 +78,12 @@ void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
 template <class ScalarType>
 void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                     CGeometry* geometry, const CConfig* config) const {
-  vec.EnsureDeviceData();
-
   if (nVar != nEqn) {
     SU2_MPI::Error("CUDA CSysMatrix block-LDU SpMV requires square blocks.", CURRENT_FUNCTION);
   }
 
   ScalarType* d_vec = vec.GetDevicePointer();
   ScalarType* d_prod = prod.GetDevicePointer();
-  vec.HtDTransfer();
 
   dim3 blockDim(static_cast<unsigned>(nVar), 1, 1);
   dim3 gridDim(static_cast<unsigned>(nPointDomain), 1, 1);
@@ -94,8 +91,6 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
       nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, gpu.l, gpu.d,
       gpu.row_ptr_u, gpu.col_ind_u, gpu.u, d_vec, d_prod);
   gpuErrChk(cudaGetLastError());
-
-  prod.MarkDeviceDataModified();
 }
 template void CSysMatrix<su2mixedfloat>::HtDTransfer(bool trigger) const;
 template void CSysMatrix<su2mixedfloat>::GPUMatrixVectorProduct(const CSysVector<su2mixedfloat>& vec,

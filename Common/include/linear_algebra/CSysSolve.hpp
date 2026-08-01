@@ -104,6 +104,8 @@ class CSysSolve {
   mutable bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
   mutable bool smooth_ready; /*!< \brief Indicate if memory used by SMOOTHER is allocated. */
 
+  bool useCuda = false; /*!< \brief Whether the system is solved on the device, set by Solve. */
+
   mutable VectorType r;   /*!< \brief Residual in CG and BCGSTAB. */
   mutable VectorType A_x; /*!< \brief Result of matrix-vector product in CG and BCGSTAB. */
   mutable VectorType p;   /*!< \brief Direction in CG and BCGSTAB. */
@@ -241,6 +243,42 @@ class CSysSolve {
   void WriteWarning(ScalarType res_calc, ScalarType res_true, ScalarType tol) const;
 
   /*!
+   * \brief Moves the linear system to the device, if the GPU path is in use.
+   * \note This and DownloadSolution are the only places where b and x cross the bus. The
+   * work vectors of the solvers never do, they are allocated on the device and read back
+   * only through the reductions.
+   */
+  void UploadSystem() const {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      if (!useCuda) return;
+      BEGIN_SU2_DEVICE_REGION {
+        LinSysRes_ptr->HtDTransfer();
+        LinSysSol_ptr->HtDTransfer();
+        VecExpr::SetUseDeviceExpressions(true);
+      }
+      END_SU2_DEVICE_REGION
+    }
+#endif
+  }
+
+  /*!
+   * \brief Brings the solution back from the device and returns to host evaluation.
+   */
+  void DownloadSolution() const {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      if (!useCuda) return;
+      BEGIN_SU2_DEVICE_REGION {
+        LinSysSol_ptr->DtHTransfer();
+        VecExpr::SetUseDeviceExpressions(false);
+      }
+      END_SU2_DEVICE_REGION
+    }
+#endif
+  }
+
+  /*!
    * \brief Used by Solve for compatibility between passive and active CSysVector.
    * \param[in] LinSysRes - Linear system residual
    * \param[in,out] LinSysSol - Linear system solution
@@ -255,6 +293,7 @@ class CSysSolve {
         LinSysSol_ptr = &LinSysSol;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      UploadSystem();
     } else {
       /*--- Copy data, the solution is also copied as it serves as initial condition. ---*/
       LinSysRes_tmp.PassiveCopy(LinSysRes);
@@ -266,6 +305,7 @@ class CSysSolve {
         LinSysSol_ptr = &LinSysSol_tmp;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
+      UploadSystem();
     }
   }
 
@@ -276,6 +316,7 @@ class CSysSolve {
   template <class OtherType>
   void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
     SU2_ZONE_SCOPED
+    DownloadSolution();
     if constexpr (std::is_same_v<ScalarType, OtherType>) {
       /*--- Same type specialization, temporary variables are not required. ---*/
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {

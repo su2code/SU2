@@ -812,9 +812,10 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
   SU2_ZONE_SCOPED
 
   if (useCuda) {
-#ifdef HAVE_CUDA
+#ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
-      BuildJacobiPreconditionerGPU();
+      BEGIN_SU2_DEVICE_REGION { BuildJacobiPreconditionerGPU(); }
+      END_SU2_DEVICE_REGION
       return;
     } else {
       SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
@@ -840,10 +841,11 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
                                                          const CConfig* config) const {
   SU2_ZONE_SCOPED
 
-  if (config->GetCUDA()) {
-#ifdef HAVE_CUDA
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
-      ComputeJacobiPreconditionerGPU(vec, prod, geometry, config);
+      BEGIN_SU2_DEVICE_REGION { ComputeJacobiPreconditionerGPU(vec, prod, geometry, config); }
+      END_SU2_DEVICE_REGION
       return;
     } else {
       SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);

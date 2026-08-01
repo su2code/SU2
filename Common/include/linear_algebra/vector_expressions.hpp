@@ -113,9 +113,6 @@ struct store_type {
 template <class T>
 using store_t = typename store_type<T>::type;
 
-template <class T>
-struct is_device_assignable : std::false_type {};
-
 /*--- Namespace from which the math function implementations come. ---*/
 
 #if defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)

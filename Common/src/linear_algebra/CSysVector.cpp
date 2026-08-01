@@ -52,11 +52,12 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
   if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
 
+  /*--- Device storage mirrors the host allocation; free first so that re-initializing a
+   * vector does not leak it. ---*/
+  GPUMemoryAllocation::gpu_free(d_vec_val);
   d_vec_val = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
 
-#ifdef HAVE_OMP
   dot_scratch.reset(new ScalarType[omp_get_max_threads()]);
-#endif
 
   if (val != nullptr) {
     if (!valIsArray) {
@@ -65,10 +66,6 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
       for (auto i = 0ul; i < nElm; i++) vec_val[i] = val[i];
     }
   }
-
-  host_data_valid = true;
-  device_data_valid = false;
-  device_context_id = 0;
 }
 
 template <class ScalarType>
@@ -82,10 +79,10 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
 
   if (n == 0 || m == 0) return shared;
 
-#ifdef HAVE_CUDA
+#ifdef SU2_ENABLE_CUDA_KERNELS
   if constexpr (su2_gpu_capable_v<ScalarType>) {
-    if (VecExpr::DeviceExpressionsEnabled()) {
-      SU2_OMP_MASTER {
+    if (VecExpr::UseDeviceExpressions()) {
+      BEGIN_SU2_DEVICE_REGION {
         shared.resize(n, m);
         for (size_t i = 0; i < n; ++i) {
           for (size_t j = 0; j < m; ++j) {
@@ -93,9 +90,7 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
           }
         }
       }
-      END_SU2_OMP_MASTER
-
-      SU2_OMP_BARRIER
+      END_SU2_DEVICE_REGION
       return shared;
     }
   }
@@ -157,7 +152,6 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
 
 template <class ScalarType>
 CSysVector<ScalarType>::~CSysVector() {
-  VecExpr::UnregisterDeviceModifiedVector(this);
   if constexpr (!std::is_trivial_v<ScalarType>) {
     for (auto i = 0ul; i < nElm; i++) vec_val[i].~ScalarType();
   }
