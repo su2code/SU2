@@ -1128,6 +1128,7 @@ struct CMGOptions {
   unsigned long MG_Implicit_Lines_MaxLength{20}; /*!< \brief Maximum nodes on a wall-normal implicit line (including wall seed). */
   bool MG_Implicit_Lines_Isotropic{false}; /*!< \brief Use isotropic (vs anisotropic) agglomeration along implicit lines. */
   unsigned long MG_Startup_Iter{100};     /*!< \brief Number of iterations on coarsest mesh during FMG startup phase. */
+  bool TurbMG{false};                     /*!< \brief Run turbulence equations through a FAS MG V-cycle instead of single-grid. */
 };
 
 /*!

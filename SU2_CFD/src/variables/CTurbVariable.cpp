@@ -35,6 +35,18 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
     turb_index.resize(nPoint) = su2double(1.0);
     intermittency.resize(nPoint) = su2double(1.0);
 
+    /*--- Allocate residual structures for multigrid (required for turbulence MG). ---*/
+    Res_TruncError.resize(nPoint, nVar) = su2double(0.0);
+
+    /*--- Allocate smoothing arrays if correction smoothing is enabled at any MG level. ---*/
+    for (unsigned long iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      if (config->GetMGOptions().MG_CorrecSmooth[iMesh] > 0) {
+        Residual_Sum.resize(nPoint, nVar);
+        Residual_Old.resize(nPoint, nVar);
+        break;
+      }
+    }
+
    }
 
 void CTurbVariable::RegisterEddyViscosity(bool input) {

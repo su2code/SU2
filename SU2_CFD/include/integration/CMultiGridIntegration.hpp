@@ -248,6 +248,26 @@ private:
                         passivedouble lastRMS[2], char& exitReason,
                         passivedouble& worstStepRatio, unsigned short& worstStep);
 
+  /*!
+   * \brief Restrict turbulent eddy viscosity from fine to coarser mesh levels.
+   *
+   * After a turbulence FAS V-cycle completes, this function volume-weights restricts
+   * mu_t from the finest mesh down to all coarser levels. The flow solver on the next
+   * outer iteration uses these restricted mu_t values at every coarse level for the
+   * eddy-viscosity coupling. This ensures consistency between flow and turbulence
+   * solutions across the multigrid hierarchy.
+   *
+   * \param[in] geometry - Geometry hierarchy for one zone/instance (all levels).
+   * \param[in] solver - Solver hierarchy for one zone/instance (all levels).
+   * \param[in] config - Problem configuration.
+   * \param[in] FinestMesh - Current finest active mesh index.
+   * \param[in] nMGLevels - Total number of MG levels.
+   */
+  void RestrictTurbEddyViscToCoarseLevels(CGeometry** geometry, CSolver*** solver,
+                                          CConfig* config,
+                                          unsigned short FinestMesh,
+                                          unsigned short nMGLevels);
+
   static constexpr int MAX_MG_LEVELS = 10;
 
   /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/

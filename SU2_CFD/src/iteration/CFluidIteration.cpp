@@ -82,7 +82,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_FLOW_SYS,
                                                                    val_iZone, val_iInst);
 
-  /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
+  /*--- If the flow integration is not fully coupled, run the various single/multi-grid integrations. ---*/
 
   if (config[val_iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE && !frozen_visc) {
 
@@ -95,14 +95,22 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     }
 
     /*--- Solve the turbulence model ---*/
+    /*--- Use multigrid if MG_TURB is enabled, otherwise use single-grid. ---*/
 
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TURB_SYS);
-    integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
-                                                                      RUNTIME_TURB_SYS, val_iZone, val_iInst);
+
+    if (config[val_iZone]->GetMGOptions().TurbMG) {
+      integration[val_iZone][val_iInst][TURB_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config,
+                                                                       RUNTIME_TURB_SYS, val_iZone, val_iInst);
+    } else {
+      integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
+                                                                        RUNTIME_TURB_SYS, val_iZone, val_iInst);
+    }
   }
 
   if (config[val_iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_SPECIES_SYS);
+    /*--- Use multigrid if MG_SPECIES is enabled (future feature), otherwise use single-grid. ---*/
     integration[val_iZone][val_iInst][SPECIES_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                          RUNTIME_SPECIES_SYS, val_iZone, val_iInst);
 
@@ -119,6 +127,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
 
   if (config[val_iZone]->GetWeakly_Coupled_Heat()) {
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_HEAT_SYS);
+    /*--- Use multigrid if MG_HEAT is enabled (future feature), otherwise use single-grid. ---*/
     integration[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                       RUNTIME_HEAT_SYS, val_iZone, val_iInst);
   }
