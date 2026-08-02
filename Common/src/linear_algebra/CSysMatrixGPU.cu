@@ -9,7 +9,7 @@
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -118,34 +118,47 @@ __global__ void InvertDiagonalBlocksKernel(unsigned long nRows, unsigned long nV
 }
 
 /*!
- * \brief Copy the matrix into the storage of the factorization, whose pattern may be larger
- *        (fill-in), entries that the matrix does not have are set to zero.
- * \note Device version of the InitIluRow helper of BuildILUPreconditioner. Rows are
- *       independent, so this is done for the entire matrix before the factorization starts.
- *       Grid: one block per row, blockDim.x == nVar*nVar (one thread per block entry).
+ * \brief Factorize the rows of one color, one sweep of an iterative (colored Gauss-Seidel)
+ *        ILU factorization: same order/pattern as the exact level-scheduled algorithm (this
+ *        does not change L/U membership, so it converges to the exact same fixed point), but
+ *        colors are true independent sets (zero dependency between same-colored rows in either
+ *        direction), so a color can be processed with zero races in far fewer, wider launches
+ *        than the number of levels — at the cost of needing several sweeps (repeated passes
+ *        over all colors) instead of one exact pass, because for a fixed order the level count
+ *        is already the minimum number of race-free single-pass groups (Mirsky's theorem).
+ * \note Every visit of a row (there is one per sweep) resets it from the original matrix first
+ *       (folding in the device version of the InitIluRow helper of BuildILUPreconditioner),
+ *       because the elimination below is a re-evaluation of the row's defining equation using
+ *       the current (possibly stale) values of other rows, not an incremental accumulation.
+ *       Grid: one block per row of the color, blockDim.x == nVar*nVar (one thread per block
+ *       entry, so that the small matrix products are one dot product per thread). Dynamic
+ *       shared memory: 2*nVar*nVar scalars.
  */
 template <class ScalarType>
-__global__ void IluInitKernel(unsigned long nRows, unsigned long nVar, DeviceLDU<ScalarType> A,
-                              DeviceLDU<ScalarType> M) {
-  const unsigned long iRow = blockIdx.x;
-  if (iRow >= nRows) return;
+__global__ void IluFactorColorKernel(const su2uint* __restrict__ color_idx, unsigned long color_begin,
+                                     unsigned long color_size, unsigned long nRows, unsigned long nVar,
+                                     DeviceLDU<ScalarType> A, DeviceLDU<ScalarType> M) {
+  if (blockIdx.x >= color_size) return;
 
+  const unsigned long iRow = color_idx[color_begin + blockIdx.x];
   const auto blockSize = nVar * nVar;
   const unsigned long tid = threadIdx.x;
+  const auto iVar = tid / nVar, jVar = tid % nVar;
 
+  extern __shared__ __align__(sizeof(double)) char smem[];
+  auto* Lij = reinterpret_cast<ScalarType*>(smem);
+  auto* work = Lij + blockSize;
+
+  /*--- Reset this row to the raw matrix entries (device version of InitIluRow, but for one
+   * row instead of the whole matrix, since here it runs once per row per sweep). ---*/
   M.d[iRow * blockSize + tid] = A.d[iRow * blockSize + tid];
-
-  /*--- Merge-scan the row of the matrix onto the row of the factorization, both are sorted
-   * by column index. Every thread walks the scan for its own entry of the blocks. ---*/
   auto scatter = [&](const su2uint* a_row_ptr, const su2uint* a_col_ind, const ScalarType* a_vals,
                      const su2uint* m_row_ptr, const su2uint* m_col_ind, ScalarType* m_vals) {
     auto ka = a_row_ptr[iRow];
     const auto ka_end = a_row_ptr[iRow + 1];
-
     for (auto k = m_row_ptr[iRow]; k < m_row_ptr[iRow + 1]; ++k) {
       const auto jPoint = m_col_ind[k];
       while (ka < ka_end && a_col_ind[ka] < jPoint) ++ka;
-
       if (ka < ka_end && a_col_ind[ka] == jPoint) {
         m_vals[k * blockSize + tid] = a_vals[ka * blockSize + tid];
       } else {
@@ -155,28 +168,7 @@ __global__ void IluInitKernel(unsigned long nRows, unsigned long nVar, DeviceLDU
   };
   scatter(A.row_ptr_l, A.col_ind_l, A.l, M.row_ptr_l, M.col_ind_l, M.l);
   scatter(A.row_ptr_u, A.col_ind_u, A.u, M.row_ptr_u, M.col_ind_u, M.u);
-}
-
-/*!
- * \brief Factorize the rows of one level, device version of the BuildIluRow helper.
- * \note Grid: one block per row of the level, blockDim.x == nVar*nVar (one thread per block
- *       entry, so that the small matrix products are one dot product per thread).
- *       Dynamic shared memory: 2*nVar*nVar scalars.
- */
-template <class ScalarType>
-__global__ void IluFactorLevelKernel(const su2uint* __restrict__ level_idx, unsigned long level_begin,
-                                     unsigned long level_size, unsigned long nRows, unsigned long nVar,
-                                     DeviceLDU<ScalarType> M) {
-  if (blockIdx.x >= level_size) return;
-
-  const unsigned long iRow = level_idx[level_begin + blockIdx.x];
-  const auto blockSize = nVar * nVar;
-  const unsigned long tid = threadIdx.x;
-  const auto iVar = tid / nVar, jVar = tid % nVar;
-
-  extern __shared__ __align__(sizeof(double)) char smem[];
-  auto* Lij = reinterpret_cast<ScalarType*>(smem);
-  auto* work = Lij + blockSize;
+  __syncthreads();
 
   /*--- For this row (unknown), loop over its lower diagonal entries. ---*/
   for (auto kl = M.row_ptr_l[iRow]; kl < M.row_ptr_l[iRow + 1]; ++kl) {
@@ -217,8 +209,8 @@ __global__ void IluFactorLevelKernel(const su2uint* __restrict__ level_idx, unsi
     Block_ij[tid] = Lij[tid];
   }
 
-  /*--- Invert the diagonal entry, Uii, for the next levels. The loop above may have updated
-   * it (when kPoint == iRow), so the whole block has to be done first. ---*/
+  /*--- Invert the diagonal entry, Uii, for the rows that depend on it. The loop above may have
+   * updated it (when kPoint == iRow), so the whole block has to be done first. ---*/
   __syncthreads();
   work[tid] = M.d[iRow * blockSize + tid];
   __syncthreads();
@@ -432,25 +424,26 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
    * change execution order relative to the rest of the (single-stream) solver. ---*/
   if (ilu_stream == nullptr) gpuErrChk(cudaStreamCreate(&ilu_stream));
 
-  /*--- The launch sequence (init + one kernel per level) is identical on every call: the grid
-   * and block sizes only depend on the (fixed) sparsity pattern and the device pointers are
-   * fixed members, allocated once. Capture it into a CUDA graph the first time and replay that
-   * from then on, which removes the per-level host-side launch overhead without touching the
-   * parallelization of any individual kernel (unlike a persistent cooperative-groups kernel,
-   * this does not cap per-level parallelism to an occupancy-resident block count). ---*/
+  /*--- The launch sequence (ILU_GPU_COLOR_SWEEPS passes over all colors) is identical on every
+   * call: the grid and block sizes only depend on the (fixed) sparsity pattern/coloring and the
+   * device pointers are fixed members, allocated once. Capture it into a CUDA graph the first
+   * time and replay that from then on, which removes the per-launch host-side overhead without
+   * touching the parallelization of any individual kernel (unlike a persistent cooperative-
+   * groups kernel, this does not cap per-color parallelism to an occupancy-resident block
+   * count). See IluFactorColorKernel for why several sweeps over the (far fewer, wider) colors
+   * are needed in place of one exact pass over the (many, narrow) levels. ---*/
   if (ilu_build_graph_exec == nullptr) {
     cudaGraph_t graph;
     gpuErrChk(cudaStreamBeginCapture(ilu_stream, cudaStreamCaptureModeThreadLocal));
 
-    IluInitKernel<ScalarType>
-        <<<static_cast<unsigned>(nPointDomain), blockSize, 0, ilu_stream>>>(nPointDomain, nVar, A, M);
-
-    for (auto level = 0ul; level + 1 < ilu_level_ptr.size(); ++level) {
-      const auto begin = ilu_level_ptr[level];
-      const auto size = ilu_level_ptr[level + 1] - begin;
-      if (size == 0) continue;
-      IluFactorLevelKernel<ScalarType>
-          <<<size, blockSize, shared, ilu_stream>>>(d_ilu_level_idx, begin, size, nPointDomain, nVar, M);
+    for (int sweep = 0; sweep < ILU_GPU_COLOR_SWEEPS; ++sweep) {
+      for (auto color = 0ul; color + 1 < ilu_color_ptr.size(); ++color) {
+        const auto begin = ilu_color_ptr[color];
+        const auto size = ilu_color_ptr[color + 1] - begin;
+        if (size == 0) continue;
+        IluFactorColorKernel<ScalarType>
+            <<<size, blockSize, shared, ilu_stream>>>(d_ilu_color_idx, begin, size, nPointDomain, nVar, A, M);
+      }
     }
 
     gpuErrChk(cudaStreamEndCapture(ilu_stream, &graph));

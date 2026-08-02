@@ -140,6 +140,7 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
     GPUMemoryAllocation::gpu_free(gpu_ilu.row_ptr_u);
     GPUMemoryAllocation::gpu_free(gpu_ilu.col_ind_u);
     GPUMemoryAllocation::gpu_free(d_ilu_level_idx);
+    GPUMemoryAllocation::gpu_free(d_ilu_color_idx);
     if (ilu_build_graph_exec != nullptr) cudaGraphExecDestroy(ilu_build_graph_exec);
     if (ilu_apply_graph_exec != nullptr) cudaGraphExecDestroy(ilu_apply_graph_exec);
     if (ilu_stream != nullptr) cudaStreamDestroy(ilu_stream);
@@ -302,6 +303,27 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
       }
       levels_ilu = CCompressedSparsePatternUL(levels);
     }
+
+    /*--- Coloring for the GPU iterative factorization, see IluFactorColorKernel. Colors are
+     * true independent sets of the (domain-only, symmetric) dependency graph, computed the same
+     * way SU2 already colors edges/elements for OMP loops, just applied to the ILU pattern
+     * instead. This does not change the elimination order/pattern (nothing here affects L/U
+     * membership), only how the build is scheduled on the device. ---*/
+    if (useCuda) {
+      std::vector<su2uint> adjPtr(nPointDomain + 1, 0);
+      std::vector<su2uint> adjIdx;
+      adjIdx.reserve(ilu.nnz_l + ilu.nnz_u);
+      for (auto i = 0ul; i < nPointDomain; ++i) {
+        adjPtr[i] = static_cast<su2uint>(adjIdx.size());
+        for (auto k = ilu.row_ptr_l[i]; k < ilu.row_ptr_l[i + 1]; ++k) adjIdx.push_back(ilu.col_ind_l[k]);
+        for (auto k = ilu.row_ptr_u[i]; k < ilu.row_ptr_u[i + 1]; ++k) {
+          const auto j = ilu.col_ind_u[k];
+          if (j < nPointDomain) adjIdx.push_back(static_cast<su2uint>(j));
+        }
+      }
+      adjPtr[nPointDomain] = static_cast<su2uint>(adjIdx.size());
+      color_ilu = colorSparsePattern(CCompressedSparsePatternUL(adjPtr, adjIdx), 1, true, false);
+    }
   }
 
   /*--- Preconditioners. ---*/
@@ -343,6 +365,19 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
       ilu_level_ptr.push_back(static_cast<su2uint>(level_idx.size()));
     }
     d_ilu_level_idx = GPUMemoryAllocation::gpu_alloc_cpy(level_idx.data(), level_idx.size() * sizeof(su2uint));
+
+    /*--- Flatten the coloring the same way. ---*/
+    std::vector<su2uint> color_idx;
+    color_idx.reserve(nPointDomain);
+    ilu_color_ptr.clear();
+    ilu_color_ptr.push_back(0);
+    for (auto color = 0ul; color < color_ilu.getOuterSize(); ++color) {
+      for (auto k = 0ul; k < color_ilu.getNumNonZeros(color); ++k) {
+        color_idx.push_back(static_cast<su2uint>(color_ilu.getInnerIdx(color, k)));
+      }
+      ilu_color_ptr.push_back(static_cast<su2uint>(color_idx.size()));
+    }
+    d_ilu_color_idx = GPUMemoryAllocation::gpu_alloc_cpy(color_idx.data(), color_idx.size() * sizeof(su2uint));
   }
 
   /*--- Thread parallel initialization. ---*/

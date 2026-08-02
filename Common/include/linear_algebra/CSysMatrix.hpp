@@ -296,11 +296,30 @@ class CSysMatrix {
    * sweeps, because the U pattern is the transpose of the L pattern. */
   CCompressedSparsePatternUL levels_ilu;
 
+  /*!< \brief Coloring of the (domain-only) ILU dependency graph, used only by the GPU iterative
+   * factorization (see ilu_color_ptr / d_ilu_color_idx below); the host/OMP path is unaffected
+   * and keeps using levels_ilu exactly as before. */
+  CCompressedSparsePatternUL color_ilu;
+
   /*--- Device copy of levels_ilu. The rows of a level are not contiguous in the matrix, so
    * the kernels have to go through this table to find the rows they work on. The offsets stay
    * on the host because they size the grid of the per-level kernel launches. ---*/
   vector<su2uint> ilu_level_ptr;      /*!< \brief Start of each level in d_ilu_level_idx, size nLevels+1. */
   su2uint* d_ilu_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
+
+  /*!< \brief Number of colored Gauss-Seidel sweeps used to build the ILU factorization on the
+   * device, see IluFactorColorKernel. Fixed (not adaptive) so the result is reproducible. */
+  static constexpr int ILU_GPU_COLOR_SWEEPS = 3;
+
+  /*--- Coloring of the ILU dependency graph: unlike levels_ilu, a color is a true independent
+   * set (no dependency between same-colored rows in either direction), so far fewer, wider
+   * colors are needed than levels, but a color launch is only exact as one step of an iterative
+   * refinement (see BuildILUPreconditionerGPU), not a single pass — this does not change the
+   * elimination order/pattern, so it converges to the exact same factorization levels_ilu does,
+   * just reached by iterating instead of substituting. Device copy mirrors ilu_level_ptr /
+   * d_ilu_level_idx. ---*/
+  vector<su2uint> ilu_color_ptr;      /*!< \brief Start of each color in d_ilu_color_idx, size nColors+1. */
+  su2uint* d_ilu_color_idx = nullptr; /*!< \brief Row indices, grouped by color. */
 
   /*--- The per-level kernel launch sequence (init + one kernel per level for the factorization,
    * one per level for each of the forward/backward sweeps) is identical on every call: same
