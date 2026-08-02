@@ -497,24 +497,17 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
   gpuErrChk(cudaPeekAtLastError());
 }
 
-template void CSysMatrix<su2mixedfloat>::BuildJacobiPreconditionerGPU();
-template void CSysMatrix<su2mixedfloat>::BuildILUPreconditionerGPU();
-template void CSysMatrix<su2mixedfloat>::ComputeILUPreconditionerGPU(const CSysVector<su2mixedfloat>& vec,
-                                                                     CSysVector<su2mixedfloat>& prod) const;
-
-template void CSysMatrix<su2mixedfloat>::ComputeJacobiPreconditionerGPU(const CSysVector<su2mixedfloat>& vec,
-                                                                        CSysVector<su2mixedfloat>& prod,
-                                                                        CGeometry* geometry,
-                                                                        const CConfig* config) const;
+#define INSTANTIATE_MATRIX(TYPE)                                                            \
+template void CSysMatrix<TYPE>::BuildJacobiPreconditionerGPU();                             \
+template void CSysMatrix<TYPE>::BuildILUPreconditionerGPU();                                \
+template void CSysMatrix<TYPE>::ComputeILUPreconditionerGPU(const CSysVector<TYPE>& vec,    \
+                                                            CSysVector<TYPE>& prod) const;  \
+template void CSysMatrix<TYPE>::ComputeJacobiPreconditionerGPU(const CSysVector<TYPE>& vec, \
+                                                               CSysVector<TYPE>& prod,      \
+                                                               CGeometry* geometry,         \
+                                                               const CConfig* config) const;
+INSTANTIATE_MATRIX(su2mixedfloat)
 
 #if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
-template void CSysMatrix<passivedouble>::BuildJacobiPreconditionerGPU();
-template void CSysMatrix<passivedouble>::BuildILUPreconditionerGPU();
-template void CSysMatrix<passivedouble>::ComputeILUPreconditionerGPU(const CSysVector<passivedouble>& vec,
-                                                                     CSysVector<passivedouble>& prod) const;
-
-template void CSysMatrix<passivedouble>::ComputeJacobiPreconditionerGPU(const CSysVector<passivedouble>& vec,
-                                                                        CSysVector<passivedouble>& prod,
-                                                                        CGeometry* geometry,
-                                                                        const CConfig* config) const;
+INSTANTIATE_MATRIX(passivedouble)
 #endif
