@@ -58,6 +58,15 @@ static su2double applyGlobalTrend(su2double factor, passivedouble crossCycleRati
   return max(su2double{CLAMP_MIN}, min(su2double{CLAMP_MAX}, factor));
 }
 
+static su2double GetMGLevelCorrectionScale(unsigned short iMesh) {
+  switch (iMesh) {
+    case 0: return 1.00;
+    case 1: return 0.75;
+    case 2: return 0.50;
+    default: return 0.35;
+  }
+}
+
 inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
   passivedouble result = 0;
   for (unsigned short iVar = 0; iVar < solver->GetnVar(); ++iVar) {
@@ -917,8 +926,9 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
 
   const unsigned short nVar = sol_fine->GetnVar();
   const bool use_conservative_damping = (nVar <= 2);
-  const su2double base_damping = use_conservative_damping ? 0.50 : 1.0;
-  const su2double wall_damping = use_conservative_damping ? 0.25 : 1.0;
+  const su2double levelScale = GetMGLevelCorrectionScale(iMesh);
+  const su2double base_damping = use_conservative_damping ? max(su2double{0.15}, 0.50 * levelScale) : 1.0;
+  const su2double wall_damping = use_conservative_damping ? max(su2double{0.10}, 0.25 * levelScale) : 1.0;
 
   /*--- Use the adaptive damping factor uniformly across all prolongation levels. ---*/
   const su2double factor = config->GetDamp_Correc_Prolong();
@@ -948,10 +958,11 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
     }
 
     su2double correctionScale = 1.0;
+    constexpr su2double maxAllowedRatio = 1.25;
     if (residualMag > 1e-30 && correctionMag > 1e-30) {
       const su2double ratio = correctionMag / residualMag;
-      if (ratio > 2.0) {
-        correctionScale = 2.0 / ratio;
+      if (ratio > maxAllowedRatio) {
+        correctionScale = maxAllowedRatio / ratio;
       }
     }
 
@@ -1008,13 +1019,14 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
           }
         }
         auto ratio = [](su2double w, su2double i) { return (i > 1e-30) ? w/i : 0.0; };
-        cout << "[MG APPL wall/inter] rho=" << ratio(maxWallApply0, maxInterApply0)
+        cout << "[MG APPL L" << iMesh << " wall/inter] rho=" << ratio(maxWallApply0, maxInterApply0)
              << "  mom=" << ratio(maxWallApplyMom, maxInterApplyMom)
              << "  E=" << ratio(maxWallApplyN, maxInterApplyN)
              << "  (raw wall/inter: rho=" << maxWall0 << "/" << maxInter0
              << ", E=" << maxWallN << "/" << maxInterN
              << "; applied wall/inter: rho=" << maxWallApply0 << "/" << maxInterApply0
-             << ", E=" << maxWallApplyN << "/" << maxInterApplyN << ")\n";
+             << ", E=" << maxWallApplyN << "/" << maxInterApplyN
+             << "; levelScale=" << levelScale << ", damp(wall/inter)=" << wall_damping << "/" << base_damping << ")\n";
       } else {
         su2double maxWall = 0.0, maxInter = 0.0;
         su2double maxWallApply = 0.0, maxInterApply = 0.0;
@@ -1031,9 +1043,10 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
             maxInterApply = max(maxInterApply, appliedMag);
           }
         }
-        cout << "[MG TURB APPLY] damp(wall/interior)= " << wall_damping << "/" << base_damping
+        cout << "[MG TURB APPLY L" << iMesh << "] damp(wall/interior)= " << wall_damping << "/" << base_damping
              << "  raw max(wall/interior)= " << maxWall << "/" << maxInter
-             << "  applied max(wall/interior)= " << maxWallApply << "/" << maxInterApply << "\n";
+             << "  applied max(wall/interior)= " << maxWallApply << "/" << maxInterApply
+             << "  levelScale=" << levelScale << "\n";
       }
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
