@@ -250,6 +250,7 @@ class CSysMatrix {
   LDU mat;                      /*!< \brief Host matrix (values owned via aligned_alloc; pattern from geometry). */
   LDU gpu;                      /*!< \brief Device matrix (all pointers to GPU memory). */
   LDU ilu;                      /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
+  LDU gpu_ilu;                  /*!< \brief ILU factorization, device (values and pattern in GPU memory). */
   ScalarType* d_invM = nullptr; /*!< \brief Device inverse diagonal blocks for the Jacobi preconditioner. */
 
   /*--- Quantized off-diagonal storage (used when quantized_mode == true). ---*/
@@ -271,7 +272,12 @@ class CSysMatrix {
                           *          Populated by QuantizeDiagonalBlocks(). */
   QuantType* q_blocks_d; /*!< \brief Same as q_blocks_l for the diagonal entries. */
 
-  bool useCuda = false;         /*!< \brief Whether CUDA is enabled. */
+  bool useCuda = false; /*!< \brief Whether CUDA is enabled. */
+
+  /*!< \brief Whether the inverse diagonal blocks are only needed on the device. False for the
+   * Linelet preconditioner, which builds the Jacobi one but reads invM on the host. */
+  bool jacobi_on_device = false;
+
   const su2uint* l_to_u_transp; /*!< \brief L-entry index -> U-entry index of its transpose. */
   const su2uint* u_to_l_transp; /*!< \brief U-entry index -> L-entry index of its transpose. */
 
@@ -284,8 +290,38 @@ class CSysMatrix {
 
   unsigned short ilu_fill_in; /*!< \brief Fill level for the ILU preconditioner. */
 
-  /*!< \brief Level structure for alternative shared memory parallelization of ILU. */
+  /*!< \brief Level structure for alternative shared memory parallelization of ILU.
+   * Rows within a level are independent, rows in level k only depend on rows in levels < k.
+   * The same table drives the forward (increasing level) and backward (decreasing level)
+   * sweeps, because the U pattern is the transpose of the L pattern. */
   CCompressedSparsePatternUL levels_ilu;
+
+  /*--- Device copy of levels_ilu. The rows of a level are not contiguous in the matrix, so
+   * the kernels have to go through this table to find the rows they work on. The offsets stay
+   * on the host because they size the grid of the per-level kernel launches. ---*/
+  vector<su2uint> ilu_level_ptr;      /*!< \brief Start of each level in d_ilu_level_idx, size nLevels+1. */
+  su2uint* d_ilu_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
+
+  /*--- The per-level kernel launch sequence (init + one kernel per level for the factorization,
+   * one per level for each of the forward/backward sweeps) is identical on every call: same
+   * grid/block sizes, same device pointers (all fixed members, allocated once). It is captured
+   * once into a CUDA graph and replayed, which removes host-side launch overhead without
+   * changing the parallelization (unlike a persistent cooperative-groups kernel, this does not
+   * cap per-level parallelism to the occupancy-resident block count). ---*/
+  /*--- Types are forward-declared as opaque structs (matching the real cudaGraphExec_t /
+   * cudaStream_t typedefs) so this header does not need to include the CUDA runtime. ---*/
+  mutable struct CUgraphExec_st* ilu_build_graph_exec = nullptr;
+  mutable struct CUgraphExec_st* ilu_apply_graph_exec = nullptr;
+  mutable const ScalarType* ilu_apply_graph_vec = nullptr; /*!< \brief Pointers the apply graph
+                                                            * was captured with, to detect when
+                                                            * it must be recaptured. */
+  mutable ScalarType* ilu_apply_graph_prod = nullptr;
+  /*--- The legacy default stream cannot be captured into a graph, so the ILU graphs are
+   * captured and replayed on this dedicated stream instead; every launch on it is followed by
+   * a sync back to the host before control returns to the rest of the (single-stream) solver,
+   * so this does not change execution order relative to everything else, which stays on the
+   * default stream. ---*/
+  mutable struct CUstream_st* ilu_stream = nullptr;
 
   ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */
 
@@ -505,6 +541,31 @@ class CSysMatrix {
   /*! \brief Gauss elimination on the quantized diagonal block: decodes q_blocks_d into a local
    *         ScalarType buffer and delegates to the scalar GaussElimination overload. */
   inline void QuantizedGaussElimination(unsigned long block_i, ScalarType* rhs) const;
+
+  /*--- Hooks for GPU versions of the preconditioners (implemented is in CSysMatrixGPU.cu). ---*/
+
+  /*!
+   * \brief Build the Jacobi preconditioner on the device, from the device copy of the matrix.
+   * \note Requires the device matrix to be up to date, see HtDTransfer.
+   */
+  void BuildJacobiPreconditionerGPU();
+
+  /*!
+   * \brief Apply the Jacobi preconditioner on the GPU/device side.
+   */
+  void ComputeJacobiPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
+                                      CGeometry* geometry, const CConfig* config) const;
+
+  /*!
+   * \brief Build the ILU preconditioner on the device, from the device copy of the matrix.
+   * \note Requires the device matrix to be up to date, see HtDTransfer.
+   */
+  void BuildILUPreconditionerGPU();
+
+  /*!
+   * \brief Apply the ILU preconditioner on the device.
+   */
+  void ComputeILUPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
 
  public:
   /*!
@@ -1054,23 +1115,6 @@ class CSysMatrix {
                               const CConfig* config) const;
 
   /*!
-   * \brief Performs first step of the LU_SGS Preconditioner building
-   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] prod - Result of the product.
-   */
-  void GPUFirstSymmetricIteration(ScalarType& vec, ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
-
-  /*!
-   * \brief Performs second step of the LU_SGS Preconditioner building
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] prod - Result of the product.
-   */
-  void GPUSecondSymmetricIteration(ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
-
-  /*!
    * \brief Performs Gaussian Elimination between diagional blocks of the matrix and the prod vector
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -1100,14 +1144,6 @@ class CSysMatrix {
    */
   void ComputeJacobiPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                                    const CConfig* config) const;
-
-  /*!
-   * \brief Apply the Jacobi preconditioner on the GPU/device side.
-   * \note This helper is intended as the implementation hook for GPU-resident Krylov solvers.
-   *       The actual implementation belongs in CSysMatrixGPU.cu.
-   */
-  void ComputeJacobiPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
-                                      CGeometry* geometry, const CConfig* config) const;
 
   /*!
    * \brief Build the ILU preconditioner.

@@ -131,6 +131,17 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
     GPUMemoryAllocation::gpu_free(gpu.row_ptr_u);
     GPUMemoryAllocation::gpu_free(gpu.col_ind_u);
     GPUMemoryAllocation::gpu_free(d_invM);
+    GPUMemoryAllocation::gpu_free(gpu_ilu.d);
+    GPUMemoryAllocation::gpu_free(gpu_ilu.l);
+    GPUMemoryAllocation::gpu_free(gpu_ilu.u);
+    GPUMemoryAllocation::gpu_free(gpu_ilu.row_ptr_l);
+    GPUMemoryAllocation::gpu_free(gpu_ilu.col_ind_l);
+    GPUMemoryAllocation::gpu_free(gpu_ilu.row_ptr_u);
+    GPUMemoryAllocation::gpu_free(gpu_ilu.col_ind_u);
+    GPUMemoryAllocation::gpu_free(d_ilu_level_idx);
+    if (ilu_build_graph_exec != nullptr) cudaGraphExecDestroy(ilu_build_graph_exec);
+    if (ilu_apply_graph_exec != nullptr) cudaGraphExecDestroy(ilu_apply_graph_exec);
+    if (ilu_stream != nullptr) cudaStreamDestroy(ilu_stream);
   }
 
 #ifdef USE_MKL
@@ -182,6 +193,10 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   const bool ilu_needed = (prec == ILU);
   const bool diag_needed = (prec == JACOBI) || (prec == LINELET);
+
+  /*--- Linelet also builds the Jacobi preconditioner but reads the inverse diagonal blocks on
+   * the host, so only plain Jacobi can keep them exclusively on the device. ---*/
+  jacobi_on_device = useCuda && (prec == JACOBI);
 #ifndef CODI_REVERSE_TYPE
   const bool q_lus_needed = allow_quant && !useCuda && (prec == Q_LU_SGS);
 #else
@@ -269,8 +284,22 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     ilu.col_ind_u = pat_ilu.u.innerIdx();
     ilu.nnz_u = pat_ilu.u.getNumNonZeros();
 
-    if (omp_get_max_threads() > 1 && config->GetLinear_Solver_ILU_levels()) {
-      levels_ilu = computeLevels(pat_ilu.l);
+    /*--- The GPU implementation is only level-scheduled, so the levels are not optional there. ---*/
+    if (useCuda || (omp_get_max_threads() > 1 && config->GetLinear_Solver_ILU_levels())) {
+      /*--- The pattern spans all points but only the domain rows are factorized, so drop the
+       * halo rows. This cannot change the levels of the domain rows: a row can only depend on
+       * rows with a lower index, and every halo row has a higher index than every domain row. ---*/
+      const auto all_levels = computeLevels(pat_ilu.l);
+      std::vector<std::vector<unsigned long>> levels;
+      for (auto level = 0ul; level < all_levels.getOuterSize(); ++level) {
+        std::vector<unsigned long> rows;
+        for (auto k = 0ul; k < all_levels.getNumNonZeros(level); ++k) {
+          const auto iPoint = all_levels.getInnerIdx(level, k);
+          if (iPoint < nPointDomain) rows.push_back(iPoint);
+        }
+        if (!rows.empty()) levels.push_back(std::move(rows));
+      }
+      levels_ilu = CCompressedSparsePatternUL(levels);
     }
   }
 
@@ -284,8 +313,35 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   if (diag_needed) allocAndInit(invM, nPointDomain * nVar * nEqn);
 
-  if (useCuda && diag_needed) {
+  if (jacobi_on_device) {
     d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
+  }
+
+  if (useCuda && ilu_needed) {
+    /*--- The factors are built and used on the device, only the pattern and the level table
+     * are uploaded (once, here) because they do not change. ---*/
+    gpu_ilu.nnz_l = ilu.nnz_l;
+    gpu_ilu.nnz_u = ilu.nnz_u;
+    gpu_ilu.d = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
+    gpu_ilu.l = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(ilu.nnz_l * nVar * nEqn * sizeof(ScalarType));
+    gpu_ilu.u = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(ilu.nnz_u * nVar * nEqn * sizeof(ScalarType));
+    gpu_ilu.row_ptr_l = GPUMemoryAllocation::gpu_alloc_cpy(ilu.row_ptr_l, (nPointDomain + 1) * sizeof(su2uint));
+    gpu_ilu.col_ind_l = GPUMemoryAllocation::gpu_alloc_cpy(ilu.col_ind_l, ilu.nnz_l * sizeof(su2uint));
+    gpu_ilu.row_ptr_u = GPUMemoryAllocation::gpu_alloc_cpy(ilu.row_ptr_u, (nPointDomain + 1) * sizeof(su2uint));
+    gpu_ilu.col_ind_u = GPUMemoryAllocation::gpu_alloc_cpy(ilu.col_ind_u, ilu.nnz_u * sizeof(su2uint));
+
+    /*--- Flatten the level structure, the index type differs from the one of the pattern. ---*/
+    std::vector<su2uint> level_idx;
+    level_idx.reserve(nPointDomain);
+    ilu_level_ptr.clear();
+    ilu_level_ptr.push_back(0);
+    for (auto level = 0ul; level < levels_ilu.getOuterSize(); ++level) {
+      for (auto k = 0ul; k < levels_ilu.getNumNonZeros(level); ++k) {
+        level_idx.push_back(static_cast<su2uint>(levels_ilu.getInnerIdx(level, k)));
+      }
+      ilu_level_ptr.push_back(static_cast<su2uint>(level_idx.size()));
+    }
+    d_ilu_level_idx = GPUMemoryAllocation::gpu_alloc_cpy(level_idx.data(), level_idx.size() * sizeof(su2uint));
   }
 
   /*--- Thread parallel initialization. ---*/
@@ -811,18 +867,11 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
   SU2_ZONE_SCOPED
 
-  /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
-  SU2_OMP_FOR_DYN(omp_heavy_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
-    InverseDiagonalBlock(iPoint, &(invM[iPoint * nVar * nVar]));
-  END_SU2_OMP_FOR
-
-  if (useCuda) {
+  if (jacobi_on_device) {
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
-      BEGIN_SU2_DEVICE_REGION
-      gpuErrChk(cudaMemcpy(d_invM, invM, nPointDomain * nVar * nVar * sizeof(ScalarType), cudaMemcpyHostToDevice));
-      END_SU2_DEVICE_REGION
+      SU2_DEVICE_REGION(BuildJacobiPreconditionerGPU();)
+      return;
     } else {
       SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
     }
@@ -833,6 +882,12 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
         CURRENT_FUNCTION);
 #endif
   }
+
+  /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
+  SU2_OMP_FOR_DYN(omp_heavy_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+    InverseDiagonalBlock(iPoint, &(invM[iPoint * nVar * nVar]));
+  END_SU2_OMP_FOR
 }
 
 template <class ScalarType>
@@ -872,6 +927,23 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
   SU2_ZONE_SCOPED
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      SU2_DEVICE_REGION(BuildILUPreconditionerGPU();)
+      return;
+    } else {
+      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+    }
+#else
+    SU2_MPI::Error(
+        "\nError in building ILU preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
+        "enabled in Meson to access GPU Functions",
+        CURRENT_FUNCTION);
+#endif
+  }
+
   const auto blockSize = nVar * nVar;
   ScalarType Lij[MAXNVAR * MAXNVAR], Lij_Ujk[MAXNVAR * MAXNVAR];
 
@@ -1002,6 +1074,23 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                       CGeometry* geometry, const CConfig* config) const {
   SU2_ZONE_SCOPED
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      SU2_DEVICE_REGION(ComputeILUPreconditionerGPU(vec, prod);)
+      return;
+    } else {
+      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+    }
+#else
+    SU2_MPI::Error(
+        "\nError in applying ILU preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
+        "enabled in Meson to access GPU Functions",
+        CURRENT_FUNCTION);
+#endif
+  }
+
   /*--- Coherent view of vectors. ---*/
   SU2_OMP_BARRIER
 
