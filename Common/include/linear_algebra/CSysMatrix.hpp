@@ -1115,22 +1115,6 @@ class CSysMatrix {
                               const CConfig* config) const;
 
   /*!
-   * \brief Performs Gaussian Elimination between diagional blocks of the matrix and the prod vector
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] prod - Result of the product.
-   */
-  void GPUGaussElimination(ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
-
-  /*!
-   * \brief Multiply CSysVector by the preconditioner all of which are stored on the device
-   * \param[in] vec - CSysVector to be multiplied by the preconditioner.
-   * \param[out] prod - Result of the product A*vec.
-   */
-  void GPUComputeLU_SGSPreconditioner(ScalarType& vec, ScalarType& prod, CGeometry* geometry,
-                                      const CConfig* config) const;
-
-  /*!
    * \brief Build the Jacobi preconditioner.
    */
   void BuildJacobiPreconditioner();
