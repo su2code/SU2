@@ -50,7 +50,7 @@ CFlowVariable::CFlowVariable(unsigned long npoint, unsigned long ndim, unsigned 
 
   Primitive.resize(nPoint, nPrimVar) = su2double(0.0);
 
-  if (config->GetMUSCL_Flow() || config->GetViscous() || config->GetContinuous_Adjoint()) {
+  if (config->GetMUSCL_Flow() || config->GetViscous() || config->GetContinuous_Adjoint() || config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED) {
     Gradient_Primitive.resize(nPoint, nPrimVarGrad, nDim, 0.0);
   }
 
