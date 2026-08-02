@@ -57,7 +57,9 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
   GPUMemoryAllocation::gpu_free(d_vec_val);
   d_vec_val = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
 
+#ifdef HAVE_OMP
   dot_scratch.reset(new ScalarType[omp_get_max_threads()]);
+#endif
 
   if (val != nullptr) {
     if (!valIsArray) {

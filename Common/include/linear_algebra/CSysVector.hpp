@@ -207,11 +207,12 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
 
   ScalarType* d_vec_val = nullptr; /*!< \brief Device Pointer to store the vector values on the GPU. */
 
-  /*! \brief Stores partial sums for ordered reduction over OMP threads, and the result
-   * of a device dot product (one entry without OpenMP). The type deliberately does not
-   * depend on HAVE_OMP, so that the layout of this class cannot differ between
-   * translation units. */
-  mutable std::unique_ptr<ScalarType[]> dot_scratch;
+#ifdef HAVE_OMP
+  mutable std::unique_ptr<ScalarType[]>
+      dot_scratch; /*!< \brief Stores partial sums for ordered reduction over OMP threads. */
+#else
+  mutable std::array<ScalarType, 1> dot_scratch;
+#endif
 
   /*!
    * \brief Generic initialization from a scalar or array.
