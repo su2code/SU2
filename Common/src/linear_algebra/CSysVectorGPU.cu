@@ -27,23 +27,192 @@
 
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
+#include <cublas_v2.h>
+#include <algorithm>
+#include <type_traits>
+#include <vector>
 
-template<class ScalarType>
-void CSysVector<ScalarType>::HtDTransfer(bool trigger) const
-{
-   if(trigger) gpuErrChk(cudaMemcpy((void*)(d_vec_val), (void*)&vec_val[0], (sizeof(ScalarType)*nElm), cudaMemcpyHostToDevice));
+namespace {
+
+/*--- cuBLAS handle for the reductions. Created on first use and kept for the lifetime of
+ * the program, matching the fact that CUDA is either on or off for the whole run. ---*/
+cublasHandle_t solver_blas_handle = nullptr;
+
+cublasHandle_t GetBlasHandle() {
+  if (solver_blas_handle == nullptr) {
+    if (cublasCreate(&solver_blas_handle) != CUBLAS_STATUS_SUCCESS) {
+      SU2_MPI::Error("cuBLAS handle creation failed for the GPU linear algebra.", CURRENT_FUNCTION);
+    }
+  }
+  return solver_blas_handle;
 }
 
-template<class ScalarType>
-void CSysVector<ScalarType>::DtHTransfer(bool trigger) const
-{
-   if(trigger) gpuErrChk(cudaMemcpy((void*)(&vec_val[0]), (void*)d_vec_val, (sizeof(ScalarType)*nElm), cudaMemcpyDeviceToHost));
+}  // namespace
+
+namespace VecExpr {
+
+namespace {
+/*--- Deliberately not thread local: every thread of an OpenMP team has to agree on this,
+ * otherwise the team splits over the worksharing constructs in CSysVector. It is only
+ * written by CSysSolve, outside any parallel region over the linear system. ---*/
+bool use_device_expressions = false;
+}  // namespace
+
+bool UseDeviceExpressions() { return use_device_expressions; }
+
+void SetUseDeviceExpressions(bool use) { use_device_expressions = use; }
+
+}  // namespace VecExpr
+
+template <class ScalarType>
+void CSysVector<ScalarType>::HtDTransfer(bool trigger) const {
+  if (trigger)
+    gpuErrChk(cudaMemcpy((void*)(d_vec_val), (void*)&vec_val[0], (sizeof(ScalarType) * nElm), cudaMemcpyHostToDevice));
 }
 
-template<class ScalarType>
-void CSysVector<ScalarType>::GPUSetVal(ScalarType val, bool trigger) const
-{
-   if(trigger) gpuErrChk(cudaMemset((void*)(d_vec_val), val, (sizeof(ScalarType)*nElm)));
+template <class ScalarType>
+void CSysVector<ScalarType>::DtHTransfer(bool trigger) const {
+  if (trigger)
+    gpuErrChk(cudaMemcpy((void*)(&vec_val[0]), (void*)d_vec_val, (sizeof(ScalarType) * nElm), cudaMemcpyDeviceToHost));
 }
 
-template class CSysVector<su2double>; //This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.
+template <class ScalarType>
+ScalarType CSysVector<ScalarType>::GPUDot(const CSysVector& other) const {
+  /*--- Both operands are already on the device, the caller owns the transfers. This
+   * reduces over MPI, so it must be called by a single thread (see SU2_DEVICE_REGION). ---*/
+  cublasHandle_t handle = GetBlasHandle();
+  cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
+
+  ScalarType local_dot = ScalarType(0);
+
+  if constexpr (std::is_same_v<ScalarType, float>) {
+    status = cublasSdot(handle, static_cast<int>(nElmDomain), GetDevicePointer(), 1, other.GetDevicePointer(), 1,
+                        &local_dot);
+  } else if constexpr (std::is_same_v<ScalarType, double>) {
+    status = cublasDdot(handle, static_cast<int>(nElmDomain), GetDevicePointer(), 1, other.GetDevicePointer(), 1,
+                        &local_dot);
+  } else {
+    SU2_MPI::Error("Unsupported ScalarType in CSysVector::GPUDot.", CURRENT_FUNCTION);
+    return ScalarType(0);
+  }
+
+  if (status != CUBLAS_STATUS_SUCCESS) {
+    SU2_MPI::Error("cuBLAS dot failed in CSysVector::GPUDot.", CURRENT_FUNCTION);
+    return ScalarType(0);
+  }
+
+  ScalarType global_dot = ScalarType(0);
+  const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
+  SelectMPIWrapper<ScalarType>::W::Allreduce(&local_dot, &global_dot, 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
+
+  return global_dot;
+}
+
+template <class ScalarType>
+ScalarType CSysVector<ScalarType>::GPUNorm() const {
+  return sqrt(GPUDot(*this));
+}
+
+/*--- Every expression the solvers assign to a CSysVector needs its assignment kernel
+ * instantiated here; the host compiler cannot emit one. A shape that is missing shows up
+ * as an undefined reference to VecExpr::AssignDeviceExpression at link time, and is fixed
+ * by adding a line to DEVICE_EXPRESSION_SHAPES below. The aliases use CSysVector (not
+ * CVectorView) because that is how the operator overloads name their operands; store_t
+ * turns it into a view when the node is built. ---*/
+namespace {
+
+template <class S>
+using Vec = CSysVector<S>;
+template <class S>
+using Sca = VecExpr::Bcast<S>;
+
+/*--- Leaves and the shapes of the FGMRES/GMRES basis updates. ---*/
+template <class S>
+using DeviceBcast = Sca<S>;
+template <class S>
+using DeviceView = VecExpr::CVectorView<S>;
+template <class S>
+using DeviceNeg = VecExpr::minus_<Vec<S>, S>;
+
+/*--- vector * scalar and scalar * vector are distinct types, both are used. ---*/
+template <class S>
+using DeviceScale = VecExpr::mul_<Vec<S>, Sca<S>, S>;
+template <class S>
+using DeviceLScale = VecExpr::mul_<Sca<S>, Vec<S>, S>;
+template <class S>
+using DeviceDivScale = VecExpr::div_<Vec<S>, Sca<S>, S>;
+
+/*--- Linear combinations, CSysSolve unrolls them up to four terms. ---*/
+template <class S>
+using DeviceScale2 = VecExpr::add_<DeviceScale<S>, DeviceScale<S>, S>;
+template <class S>
+using DeviceScale3 = VecExpr::add_<DeviceScale2<S>, DeviceScale<S>, S>;
+template <class S>
+using DeviceScale4 = VecExpr::add_<DeviceScale3<S>, DeviceScale<S>, S>;
+
+/*--- r = b - A_x, in CG, BCGSTAB, Smoother and FGCRODR. ---*/
+template <class S>
+using DeviceSub = VecExpr::sub_<Vec<S>, Vec<S>, S>;
+
+/*--- p = beta * p + z, in CG. ---*/
+template <class S>
+using DeviceLScalePlus = VecExpr::add_<DeviceLScale<S>, Vec<S>, S>;
+
+/*--- p = beta * (p - omega * v) + r, in BCGSTAB. ---*/
+template <class S>
+using DeviceSubLScale = VecExpr::sub_<Vec<S>, DeviceLScale<S>, S>;
+template <class S>
+using DeviceLScaleSub = VecExpr::mul_<Sca<S>, DeviceSubLScale<S>, S>;
+template <class S>
+using DeviceBcgsDir = VecExpr::add_<DeviceLScaleSub<S>, Vec<S>, S>;
+
+}  // namespace
+
+#define DEVICE_EXPRESSION_SHAPES(SCALAR)                  \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceBcast);    \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceView);     \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceNeg);      \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceScale);    \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceLScale);   \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceDivScale); \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceScale2);   \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceScale3);   \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceScale4);   \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceSub);      \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceLScalePlus); \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceSubLScale);  \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceLScaleSub);  \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceBcgsDir)
+
+#define INSTANTIATE_DEVICE_ASSIGN(SCALAR, OP, EXPR)                                          \
+  template void VecExpr::AssignDeviceExpression<VecExpr::DeviceAssignOp::OP, SCALAR, EXPR<SCALAR>>( \
+      SCALAR*, unsigned long, const VecExpr::CVecExpr<EXPR<SCALAR>, SCALAR>&)
+
+#define INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, EXPR) \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Assign, EXPR);   \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Add, EXPR);      \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Subtract, EXPR); \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Multiply, EXPR); \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Divide, EXPR)
+
+DEVICE_EXPRESSION_SHAPES(su2mixedfloat);
+
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
+DEVICE_EXPRESSION_SHAPES(passivedouble);
+#endif
+
+#undef DEVICE_EXPRESSION_SHAPES
+#undef INSTANTIATE_DEVICE_ASSIGN_EXPR
+#undef INSTANTIATE_DEVICE_ASSIGN
+
+template void CSysVector<su2mixedfloat>::HtDTransfer(bool trigger) const;
+template void CSysVector<su2mixedfloat>::DtHTransfer(bool trigger) const;
+template su2mixedfloat CSysVector<su2mixedfloat>::GPUDot(const CSysVector<su2mixedfloat>& other) const;
+template su2mixedfloat CSysVector<su2mixedfloat>::GPUNorm() const;
+
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
+template void CSysVector<passivedouble>::HtDTransfer(bool trigger) const;
+template void CSysVector<passivedouble>::DtHTransfer(bool trigger) const;
+template passivedouble CSysVector<passivedouble>::GPUDot(const CSysVector<passivedouble>& other) const;
+template passivedouble CSysVector<passivedouble>::GPUNorm() const;
+#endif

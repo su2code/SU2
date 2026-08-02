@@ -34,12 +34,12 @@
  */
 template <class ScalarType>
 __global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
-                                     const unsigned long* __restrict__ row_ptr_l,
-                                     const unsigned long* __restrict__ col_ind_l,
+                                     const su2uint* __restrict__ row_ptr_l,
+                                     const su2uint* __restrict__ col_ind_l,
                                      const ScalarType* __restrict__ mat_l,
                                      const ScalarType* __restrict__ mat_d,
-                                     const unsigned long* __restrict__ row_ptr_u,
-                                     const unsigned long* __restrict__ col_ind_u,
+                                     const su2uint* __restrict__ row_ptr_u,
+                                     const su2uint* __restrict__ col_ind_u,
                                      const ScalarType* __restrict__ mat_u,
                                      const ScalarType* __restrict__ x, ScalarType* __restrict__ y) {
   const unsigned long iRow = blockIdx.x;
@@ -84,7 +84,6 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
 
   ScalarType* d_vec = vec.GetDevicePointer();
   ScalarType* d_prod = prod.GetDevicePointer();
-  vec.HtDTransfer();
 
   dim3 blockDim(static_cast<unsigned>(nVar), 1, 1);
   dim3 gridDim(static_cast<unsigned>(nPointDomain), 1, 1);
@@ -92,8 +91,15 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
       nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, gpu.l, gpu.d,
       gpu.row_ptr_u, gpu.col_ind_u, gpu.u, d_vec, d_prod);
   gpuErrChk(cudaGetLastError());
-
-  prod.DtHTransfer();
 }
+template void CSysMatrix<su2mixedfloat>::HtDTransfer(bool trigger) const;
+template void CSysMatrix<su2mixedfloat>::GPUMatrixVectorProduct(const CSysVector<su2mixedfloat>& vec,
+                                                                CSysVector<su2mixedfloat>& prod, CGeometry* geometry,
+                                                                const CConfig* config) const;
 
-template class CSysMatrix<su2mixedfloat>; //This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
+template void CSysMatrix<passivedouble>::HtDTransfer(bool trigger) const;
+template void CSysMatrix<passivedouble>::GPUMatrixVectorProduct(const CSysVector<passivedouble>& vec,
+                                                                CSysVector<passivedouble>& prod, CGeometry* geometry,
+                                                                const CConfig* config) const;
+#endif
