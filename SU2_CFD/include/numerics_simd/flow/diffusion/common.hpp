@@ -121,7 +121,7 @@ NEVERINLINE void addPerturbedRSM(const PrimitiveType& V,
  * \brief SA-QCR2000 modification of the stress tensor.
  */
 template<class MatrixType, size_t nDim>
-FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau) {
+FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau, Double turb_fraction) {
   constexpr passivedouble c_cr1 = 0.3;
 
   /*--- Denominator, antisymmetric normalized rotation tensor. ---*/
@@ -146,7 +146,7 @@ FORCEINLINE void addQCR(const MatrixType& grad, MatrixDbl<nDim>& tau) {
   }
   for (size_t iDim = 0; iDim < nDim; ++iDim)
     for (size_t jDim = 0; jDim < nDim; ++jDim)
-      tau(iDim,jDim) -= c_cr1 * qcr(iDim,jDim);
+      tau(iDim,jDim) -= turb_fraction * c_cr1 * qcr(iDim,jDim);
 }
 
 /*!

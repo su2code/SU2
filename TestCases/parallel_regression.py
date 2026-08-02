@@ -853,7 +853,7 @@ def main():
     turbmod_sa_qcr_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_qcr_rae2822.cfg_file  = "turb_SA_QCR_RAE2822.cfg"
     turbmod_sa_qcr_rae2822.test_iter = 20
-    turbmod_sa_qcr_rae2822.test_vals = [-2.802573, 0.138895, -0.286064, -5.233541, 0.796617, 0.025734]
+    turbmod_sa_qcr_rae2822.test_vals = [-2.784977, 0.174833, -0.258852, -5.275520, 0.799156, 0.025897]
     test_list.append(turbmod_sa_qcr_rae2822)
 
     ############################
