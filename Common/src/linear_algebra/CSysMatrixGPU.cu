@@ -76,7 +76,7 @@ void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
 }
 
 template <class ScalarType>
-void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
+void CSysMatrix<ScalarType>::MatrixVectorProductGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                     CGeometry* geometry, const CConfig* config) const {
   if (nVar != nEqn) {
     SU2_MPI::Error("CUDA CSysMatrix block-LDU SpMV requires square blocks.", CURRENT_FUNCTION);
@@ -93,13 +93,13 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
   gpuErrChk(cudaGetLastError());
 }
 template void CSysMatrix<su2mixedfloat>::HtDTransfer(bool trigger) const;
-template void CSysMatrix<su2mixedfloat>::GPUMatrixVectorProduct(const CSysVector<su2mixedfloat>& vec,
+template void CSysMatrix<su2mixedfloat>::MatrixVectorProductGPU(const CSysVector<su2mixedfloat>& vec,
                                                                 CSysVector<su2mixedfloat>& prod, CGeometry* geometry,
                                                                 const CConfig* config) const;
 
 #if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
 template void CSysMatrix<passivedouble>::HtDTransfer(bool trigger) const;
-template void CSysMatrix<passivedouble>::GPUMatrixVectorProduct(const CSysVector<passivedouble>& vec,
+template void CSysMatrix<passivedouble>::MatrixVectorProductGPU(const CSysVector<passivedouble>& vec,
                                                                 CSysVector<passivedouble>& prod, CGeometry* geometry,
                                                                 const CConfig* config) const;
 #endif

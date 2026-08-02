@@ -27,6 +27,7 @@
 
 #include <algorithm>
 
+#include "../../include/linear_algebra/CMatrixInverse.hpp"
 #include "../../include/linear_algebra/CSysMatrix.inl"
 #include "../../include/linear_algebra/GPUComms.cuh"
 
@@ -93,51 +94,6 @@ __device__ FORCEINLINE ScalarType* GetBlockILU(const DeviceLDU<ScalarType>& M, u
 }
 
 /*!
- * \brief Device version of the pivot regularization used by the host factorization,
- *        it has to match to give the same factors.
- */
-template <class ScalarType>
-__device__ FORCEINLINE void RegularizePivotDevice(ScalarType& pivot) {
-  const float eps = 1e-12;
-  if (fabs(pivot) < eps) pivot = copysign(ScalarType(eps), pivot);
-}
-
-/*!
- * \brief Invert a small dense matrix, \p A is the (destroyed) input and \p M the inverse.
- * \note Serial port of CSysMatrix::MatrixInverse, run by one thread of the block.
- */
-template <class ScalarType>
-__device__ void MatrixInverseDevice(unsigned long nVar, ScalarType* A, ScalarType* M) {
-  for (auto iVar = 0ul; iVar < nVar; ++iVar)
-    for (auto jVar = 0ul; jVar < nVar; ++jVar) M[iVar * nVar + jVar] = ScalarType(iVar == jVar);
-
-  /*--- Transform system in Upper Matrix. ---*/
-  for (auto iVar = 1ul; iVar < nVar; ++iVar) {
-    for (auto jVar = 0ul; jVar < iVar; ++jVar) {
-      RegularizePivotDevice(A[jVar * nVar + jVar]);
-
-      const ScalarType weight = A[iVar * nVar + jVar] / A[jVar * nVar + jVar];
-
-      for (auto kVar = jVar; kVar < nVar; ++kVar) A[iVar * nVar + kVar] -= weight * A[jVar * nVar + kVar];
-
-      /*--- At this stage M is lower triangular so not all cols need updating. ---*/
-      for (auto kVar = 0ul; kVar <= jVar; ++kVar) M[iVar * nVar + kVar] -= weight * M[jVar * nVar + kVar];
-    }
-  }
-
-  /*--- Backwards substitution. ---*/
-  for (auto iVar = nVar; iVar > 0ul;) {
-    --iVar;  // unsigned type
-    for (auto jVar = iVar + 1; jVar < nVar; ++jVar)
-      for (auto kVar = 0ul; kVar < nVar; ++kVar) M[iVar * nVar + kVar] -= A[iVar * nVar + jVar] * M[jVar * nVar + kVar];
-
-    RegularizePivotDevice(A[iVar * nVar + iVar]);
-
-    for (auto kVar = 0ul; kVar < nVar; ++kVar) M[iVar * nVar + kVar] /= A[iVar * nVar + iVar];
-  }
-}
-
-/*!
  * \brief Invert the diagonal blocks of the matrix, device version of InverseDiagonalBlock.
  * \note Grid: one block per row, blockDim.x == nVar*nVar (one thread per block entry, they
  *       stage the input in shared memory). Dynamic shared memory: nVar*nVar scalars.
@@ -158,7 +114,7 @@ __global__ void InvertDiagonalBlocksKernel(unsigned long nRows, unsigned long nV
   work[tid] = mat_d[iRow * blockSize + tid];
   __syncthreads();
 
-  if (tid == 0) MatrixInverseDevice(nVar, work, invM + iRow * blockSize);
+  if (tid == 0) SU2_LinAlg::MatrixInverse(nVar, work, invM + iRow * blockSize);
 }
 
 /*!
@@ -266,7 +222,7 @@ __global__ void IluFactorLevelKernel(const su2uint* __restrict__ level_idx, unsi
   __syncthreads();
   work[tid] = M.d[iRow * blockSize + tid];
   __syncthreads();
-  if (tid == 0) MatrixInverseDevice(nVar, work, M.d + iRow * blockSize);
+  if (tid == 0) SU2_LinAlg::MatrixInverse(nVar, work, M.d + iRow * blockSize);
 }
 
 /*!

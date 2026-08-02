@@ -542,7 +542,13 @@ class CSysMatrix {
    *         ScalarType buffer and delegates to the scalar GaussElimination overload. */
   inline void QuantizedGaussElimination(unsigned long block_i, ScalarType* rhs) const;
 
-  /*--- Hooks for GPU versions of the preconditioners (implemented is in CSysMatrixGPU.cu). ---*/
+  /*--- Hooks for GPU versions (implemented is in CSysMatrixGPU.cu). ---*/
+
+  /*!
+   * \brief Performs the product of a sparse matrix by a CSysVector on the device.
+   */
+  void MatrixVectorProductGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                              const CConfig* config) const;
 
   /*!
    * \brief Build the Jacobi preconditioner on the device, from the device copy of the matrix.
@@ -1103,16 +1109,6 @@ class CSysMatrix {
    */
   void MatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                            const CConfig* config) const;
-
-  /*!
-   * \brief Performs the product of a sparse matrix by a CSysVector.
-   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] prod - Result of the product.
-   */
-  void GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
-                              const CConfig* config) const;
 
   /*!
    * \brief Build the Jacobi preconditioner.

@@ -28,6 +28,7 @@
 #include "../../include/linear_algebra/CSysMatrix.inl"
 
 #include "../../include/geometry/CGeometry.hpp"
+#include "../../include/linear_algebra/CMatrixInverse.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
 #include <cmath>
@@ -744,15 +745,16 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 
   assert((matrix != inverse) && "Output cannot be the same as the input.");
 
-#define M(I, J) inverse[(I)*nVar + (J)]
-
-  /*--- Initialize the inverse with the identity. ---*/
-  for (auto iVar = 0ul; iVar < nVar; iVar++)
-    for (auto jVar = 0ul; jVar < nVar; jVar++) M(iVar, jVar) = ScalarType(iVar == jVar);
-
-      /*--- Inversion ---*/
+  /*--- Inversion ---*/
 #ifdef USE_MKL_LAPACK
   // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+#define M(I, J) inverse[(I)*nVar + (J)]
+
+  /*--- Initialize the inverse with the identity, LAPACKE_?getrs solves for it as the rhs. ---*/
+  for (auto iVar = 0ul; iVar < nVar; iVar++)
+    for (auto jVar = 0ul; jVar < nVar; jVar++) M(iVar, jVar) = ScalarType(iVar == jVar);
+#undef M
+
   lapack_int ipiv[MAXNVAR];
   if constexpr (std::is_same_v<ScalarType, double>) {
     LAPACKE_dgetrf(LAPACK_ROW_MAJOR, nVar, nVar, matrix, nVar, ipiv);
@@ -763,38 +765,9 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
     LAPACKE_sgetrs(LAPACK_ROW_MAJOR, 'N', nVar, nVar, matrix, nVar, ipiv, inverse, nVar);
   }
 #else
-#define A(I, J) matrix[(I)*nVar + (J)]
-
-  /*--- Transform system in Upper Matrix ---*/
-  for (auto iVar = 1ul; iVar < nVar; iVar++) {
-    for (auto jVar = 0ul; jVar < iVar; jVar++) {
-      /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
-      RegularizePivot(A(jVar, jVar), jVar, jVar, "MatrixInverse");
-
-      ScalarType weight = A(iVar, jVar) / A(jVar, jVar);
-      for (auto kVar = jVar; kVar < nVar; kVar++) A(iVar, kVar) -= weight * A(jVar, kVar);
-
-      /*--- at this stage M is lower triangular so not all cols need updating ---*/
-      for (auto kVar = 0ul; kVar <= jVar; kVar++) M(iVar, kVar) -= weight * M(jVar, kVar);
-    }
-  }
-
-  /*--- Backwards substitution ---*/
-  for (auto iVar = nVar; iVar > 0ul;) {
-    iVar--;  // unsigned type
-    for (auto jVar = iVar + 1; jVar < nVar; jVar++)
-      for (auto kVar = 0ul; kVar < nVar; kVar++) M(iVar, kVar) -= A(iVar, jVar) * M(jVar, kVar);
-
-    /*--- Regularize diagonal if too small ---*/
-    RegularizePivot(A(iVar, iVar), iVar, iVar, "DEBUG MatrixInverse backsubst");
-
-    for (auto kVar = 0ul; kVar < nVar; kVar++) {
-      M(iVar, kVar) /= A(iVar, iVar);
-    }
-  }
-#undef A
+  /*--- Shared with the device implementation, see CMatrixInverse.hpp. ---*/
+  SU2_LinAlg::MatrixInverse(nVar, matrix, inverse);
 #endif
-#undef M
 }
 
 template <class ScalarType>
@@ -827,6 +800,25 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                  CGeometry* geometry, const CConfig* config) const {
   SU2_ZONE_SCOPED
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      BEGIN_SU2_DEVICE_REGION
+      MatrixVectorProductGPU(vec, prod, geometry, config);
+      END_SU2_DEVICE_REGION
+      return;
+    } else {
+      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+    }
+#else
+    SU2_MPI::Error(
+        "\nError in launching Matrix-Vector Product Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
+        "options enabled in Meson to access GPU Functions",
+        CURRENT_FUNCTION);
+#endif
+  }
+
   /*--- Some checks for consistency between CSysMatrix and the CSysVector<ScalarType>s ---*/
 #ifndef NDEBUG
   if ((nEqn != vec.GetNVar()) || (nVar != prod.GetNVar())) {
