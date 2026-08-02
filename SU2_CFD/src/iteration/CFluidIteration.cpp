@@ -139,11 +139,11 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
                                                                      RUNTIME_RADIATION_SYS, val_iZone, val_iInst);
   }
 
-  /*--- Adapt the CFL number using an exponential progression with under-relaxation approach.
-        During Full-MG warmup (FinestMesh > MESH_0), skip adaptation entirely until the finest
-        mesh is active. ---*/
+    /*--- Adapt the CFL number using an exponential progression with under-relaxation approach.
+      For Full-MG, allow adaptation during warmup as well so CFL can evolve on coarse active
+      levels before reaching the finest mesh. ---*/
   SU2_OMP_PARALLEL
-  if (!disc_adj && config[val_iZone]->GetFinestMesh() == MESH_0) {
+    if (!disc_adj) {
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->AdaptCFLNumber(geometry[val_iZone][val_iInst],
                                                                    solver[val_iZone][val_iInst], config[val_iZone]);
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->IdentifySolutionOutliers(config[val_iZone], InnerIter);
@@ -176,7 +176,6 @@ void CFluidIteration::Update(COutput* output, CIntegration**** integration, CGeo
   if ((config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
       (config[val_iZone]->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND)) {
     /*--- Update dual time solver on all mesh levels ---*/
-
     for (unsigned short iMesh = 0; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
       integration[val_iZone][val_iInst][FLOW_SOL]->SetDualTime_Solver(geometry[val_iZone][val_iInst][iMesh],
                                                                       solver[val_iZone][val_iInst][iMesh][FLOW_SOL],

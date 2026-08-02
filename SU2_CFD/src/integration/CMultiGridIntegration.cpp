@@ -31,6 +31,7 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
+#include <limits>
 
 using namespace std;
 
@@ -73,6 +74,96 @@ inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
     result += pow(SU2_TYPE::GetValue(solver->GetRes_RMS(iVar)), 2);
   }
   return sqrt(result);
+}
+
+static void ApplyLineImplicitResidualSmoothing(CSolver* solver, CGeometry* geometry, unsigned short iMesh) {
+  if (iMesh == 0) return;
+
+  const auto nPoint = geometry->GetnPointDomain();
+  if (nPoint < 3) return;
+
+  const unsigned short nVar = solver->GetnVar();
+  const unsigned short nDim = geometry->GetnDim();
+  const su2double damping = 0.25;
+  std::vector<bool> visited(nPoint, false);
+  unsigned long nLines = 0;
+  unsigned long totalLineLength = 0;
+  su2double totalLineResidual = 0.0;
+
+  for (auto iSeed = 0ul; iSeed < nPoint; ++iSeed) {
+    if (visited[iSeed]) continue;
+
+    std::vector<unsigned long> line;
+    line.reserve(16);
+    line.push_back(iSeed);
+    visited[iSeed] = true;
+
+    unsigned long current = iSeed;
+    for (int step = 0; step < 8; ++step) {
+      unsigned long next = std::numeric_limits<unsigned long>::max();
+      const auto* coordCurrent = geometry->nodes->GetCoord(current);
+      const unsigned short nNeigh = geometry->nodes->GetnPoint(current);
+      su2double bestScore = -1e30;
+
+      for (unsigned short iNeigh = 0; iNeigh < nNeigh; ++iNeigh) {
+        const auto candidate = geometry->nodes->GetPoint(current, iNeigh);
+        if (candidate >= nPoint || candidate == current || visited[candidate]) continue;
+
+        const auto* coordCandidate = geometry->nodes->GetCoord(candidate);
+        su2double score = 0.0;
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+          const su2double delta = fabs(coordCandidate[iDim] - coordCurrent[iDim]);
+          score += delta;
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          next = candidate;
+        }
+      }
+
+      if (next == std::numeric_limits<unsigned long>::max()) break;
+      line.push_back(next);
+      visited[next] = true;
+      current = next;
+    }
+
+    const auto nLine = static_cast<unsigned long>(line.size());
+    if (nLine < 2) continue;
+
+    ++nLines;
+    totalLineLength += nLine;
+
+    std::vector<su2double> lineAverage(nVar, 0.0);
+    for (auto i = 0ul; i < nLine; ++i) {
+      const auto* residual = solver->GetNodes()->GetResidual_Old(line[i]);
+      if (residual == nullptr) continue;
+      for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+        lineAverage[iVar] += residual[iVar];
+        totalLineResidual += fabs(residual[iVar]);
+      }
+    }
+
+    for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+      lineAverage[iVar] /= static_cast<su2double>(nLine);
+    }
+
+    for (auto i = 0ul; i < nLine; ++i) {
+      const auto* oldResidual = solver->GetNodes()->GetResidual_Old(line[i]);
+      std::vector<su2double> block(nVar, 0.0);
+      for (unsigned short iVar = 0; iVar < nVar; ++iVar) {
+        block[iVar] = oldResidual[iVar] + damping * (lineAverage[iVar] - oldResidual[iVar]);
+      }
+      solver->LinSysRes.SetBlock(line[i], block.data());
+    }
+  }
+
+  if (SU2_MPI::GetRank() == MASTER_NODE) {
+    const su2double avgLineLength = (nLines > 0) ? static_cast<su2double>(totalLineLength) / static_cast<su2double>(nLines) : 0.0;
+    const su2double avgLineResidual = (nLines > 0) ? totalLineResidual / static_cast<su2double>(nLines) : 0.0;
+    cout << "[MG LINE] level=" << iMesh << " activated=" << (nLines > 0 ? "yes" : "no")
+         << " lines=" << nLines << " avgLen=" << avgLineLength
+         << " avgResidual=" << avgLineResidual << std::endl;
+  }
 }
 
 }  // anonymous namespace
@@ -248,6 +339,46 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                        config[iZone]->GetnMGLevels());
   }
 
+  /*--- Rebuild coarse-grid CFL before the cycle so the currently active FMG
+   *    level uses the intended CFL in this iteration. ---*/
+  const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    /*--- Use the level-0 flow CFL as the base reference and derive all coarse
+     *    levels from it via MG_CFL_SCALING[i] = CFL(i+1)/CFL(i). Fall back to
+     *    config scalar when local level-0 CFL is unavailable. ---*/
+    passivedouble cfl_base = SU2_TYPE::GetValue(
+      solver_container[iZone][iInst][MESH_0][Solver_Position]->GetAvg_CFL_Local());
+    if (cfl_base < EPS)
+      cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(MESH_0));
+
+    const auto& cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
+
+    passivedouble CFL_local = cfl_base;
+    for (unsigned short lvl = 1; lvl <= nMGLevels; ++lvl) {
+      /*--- Index into cflScaling is (lvl-1): transition lvl-1 -> lvl. ---*/
+      const unsigned short iScale = lvl - 1;
+      const passivedouble scale = (iScale < cflScaling.size())
+          ? max(passivedouble{1e-6}, SU2_TYPE::GetValue(cflScaling[iScale]))
+          : passivedouble{0.25};
+      CFL_local *= scale;
+      config[iZone]->SetCFL(lvl, CFL_local);
+    }
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  /*--- Propagate updated CFL to all coarse-grid points before the cycle. ---*/
+  for (unsigned short iMesh = 1; iMesh <= nMGLevels; ++iMesh) {
+    const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh));
+    CGeometry* geo_c = geometry[iZone][iInst][iMesh];
+    CSolver* sol_c = solver_container[iZone][iInst][iMesh][Solver_Position];
+    SU2_OMP_SAFE_GLOBAL_ACCESS(sol_c->SetCFL_Local_Stats(CFL_coarse_new);)
+    SU2_OMP_FOR_STAT(roundUpDiv(geo_c->GetnPoint(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geo_c->GetnPoint(); iPoint++)
+      sol_c->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
+    END_SU2_OMP_FOR
+  }
+
   /*--- Perform the Full Approximation Scheme multigrid ---*/
 
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
@@ -268,45 +399,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                        solver_container[iZone][iInst],
                                        config[iZone], FinestMesh,
                                        config[iZone]->GetnMGLevels());
-  }
-
-  /*--- Adapt coarse-grid CFL once per cycle using smoothing residuals gathered during the cycle. ---*/
-  const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  {
-    /*--- Use the current finest-grid CFL as the base for deterministic
-     *    coarse-level scaling. Fall back to config scalar when local CFL
-     *    adaptation is disabled. ---*/
-    passivedouble cfl_base = SU2_TYPE::GetValue(
-      solver_container[iZone][iInst][FinestMesh][Solver_Position]->GetAvg_CFL_Local());
-    if (cfl_base < EPS)
-      cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh));
-
-    const auto& cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
-
-    passivedouble CFL_local = cfl_base;
-    for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
-      const unsigned short lvl = iMesh + 1;
-      /*--- Use per-level scaling factor to increase coarse CFL (allows values > 1.0).
-       *    Index into cflScaling is iMesh (0-based transition). ---*/
-      const passivedouble scale = (iMesh < cflScaling.size())
-          ? max(passivedouble{1e-6}, SU2_TYPE::GetValue(cflScaling[iMesh]))
-          : passivedouble{0.25};
-      CFL_local *= scale;
-      config[iZone]->SetCFL(lvl, CFL_local);
-    }
-  }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
-  /*--- Propagate the updated coarse-grid CFL to every coarse-grid point (all threads). ---*/
-  for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
-    const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh+1));
-    CGeometry* geo_c = geometry[iZone][iInst][iMesh+1];
-    CSolver* sol_c = solver_container[iZone][iInst][iMesh+1][Solver_Position];
-    SU2_OMP_FOR_STAT(roundUpDiv(geo_c->GetnPoint(), omp_get_num_threads()))
-    for (auto iPoint = 0ul; iPoint < geo_c->GetnPoint(); iPoint++)
-      sol_c->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
-    END_SU2_OMP_FOR
   }
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
@@ -413,8 +505,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       for (unsigned short i = 0; i <= nMGLevels; ++i) {
         std::ostringstream ss;
         ss << std::fixed << std::setprecision(4);
-        if (i == MESH_0) {
-          ss << SU2_TYPE::GetValue(solver_container[iZone][iInst][MESH_0][Solver_Position]->GetAvg_CFL_Local());
+        if (i == FinestMesh) {
+          ss << SU2_TYPE::GetValue(solver_container[iZone][iInst][FinestMesh][Solver_Position]->GetAvg_CFL_Local());
         } else {
           ss << SU2_TYPE::GetValue(config[iZone]->GetCFL(i));
         }
@@ -888,6 +980,10 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
       }
     }
     END_SU2_OMP_FOR
+
+    if (iMesh > 0 && RunTime_EqSystem == RUNTIME_FLOW_SYS) {
+      ApplyLineImplicitResidualSmoothing(solver, geometry, iMesh);
+    }
 
     /*--- Restore original residuals (without average) at boundary points. ---*/
 

@@ -389,6 +389,16 @@ public:
    */
   inline su2double GetAvg_CFL_Local(void) const { return Avg_CFL_Local; }
 
+  /*!\
+   * \brief Set min/max/avg local CFL summary statistics.
+   * \param[in] val_cfl - Uniform CFL value to report.
+   */
+  inline void SetCFL_Local_Stats(su2double val_cfl) {
+    Min_CFL_Local = val_cfl;
+    Max_CFL_Local = val_cfl;
+    Avg_CFL_Local = val_cfl;
+  }
+
   /*!
    * \brief Get the number of variables of the problem.
    */
