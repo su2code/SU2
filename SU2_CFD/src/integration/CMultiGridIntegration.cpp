@@ -460,7 +460,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   PreSmoothing(RunTime_EqSystem, geometry, solver_container, config_container, solver_fine, numerics_fine,
                geometry_fine, solver_container_fine, config, iMesh, iZone, iRKLimit);
 
-  /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
+  /*--- Assemble the coarse-grid FAS defect term by restricting the fine-grid residual defect,
+   *    solving the coarse-grid state, and prolongating only the state correction back to the fine grid. ---*/
 
   if ( iMesh < config->GetnMGLevels() ) {
 
@@ -483,15 +484,16 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, NO_RK_ITER, RunTime_EqSystem);
 
-    /*--- LinSysRes = R(u_N) here, before tau is added by SetResidual_Term. ---*/
+    /*--- LinSysRes = R(u_N) here, before the fine-grid defect term is assembled. ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       lastPreSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver_fine);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
+    /*--- Assemble the fine-grid defect term that will be restricted to the coarse-grid FAS problem. ---*/
     SetResidual_Term(geometry_fine, solver_fine);
 
-    /*--- Compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$ ---*/
+    /*--- Restrict the fine-grid state to the coarse grid and initialize the coarse-grid state. ---*/
 
     SetRestricted_Solution(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
@@ -508,9 +510,12 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     Space_Integration(geometry_coarse, solver_container_coarse, numerics_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem);
 
-    /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
-
-    SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
+    /*--- Restrict the fine-grid residual defect to the coarse-grid FAS forcing term. ---*/
+    if (RunTime_EqSystem == RUNTIME_FLOW_SYS) {
+      RestrictResidualToCoarseGrid(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
+    } else {
+      SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
+    }
 
     /*--- Restore the time integration settings. ---*/
 
@@ -532,9 +537,12 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
                       iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst);
     }
 
-    /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
-
-    GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
+    /*--- Compute the coarse-grid state correction and prolongate it back to the fine grid. ---*/
+    if (RunTime_EqSystem == RUNTIME_FLOW_SYS) {
+      ProlongateCorrectionToFineGrid(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh);
+    } else {
+      GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
+    }
 
     const auto& mgOpts = config->GetMGOptions();
     SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, mgOpts.MG_CorrecSmooth[iMesh], mgOpts.MG_Smooth_Coeff, config, iMesh);
@@ -823,6 +831,8 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   if (val_nSmooth == 0) return;
 
   const unsigned short nVar = solver->GetnVar();
+  const bool use_conservative_damping = (nVar <= 2);
+  const su2double turbulence_base_damping = 0.50;
 
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -862,8 +872,11 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
       const auto* Residual_Sum = solver->GetNodes()->GetResidual_Sum(iPoint);
       const auto* Residual_Old = solver->GetNodes()->GetResidual_Old(iPoint);
 
-      for (auto iVar = 0u; iVar < nVar; iVar++)
-        solver->LinSysRes(iPoint,iVar) = (Residual_Old[iVar] + val_smooth_coeff*Residual_Sum[iVar])*factor;
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        su2double smoothed = (Residual_Old[iVar] + val_smooth_coeff*Residual_Sum[iVar])*factor;
+        if (use_conservative_damping) smoothed *= turbulence_base_damping;
+        solver->LinSysRes(iPoint,iVar) = smoothed;
+      }
     }
     END_SU2_OMP_FOR
 
@@ -890,6 +903,11 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   if (config->GetMGOptions().MG_Smooth_Output) {
     const su2double res = sqrt(solver->LinSysRes.squaredNorm() / (nVar * geometry->GetGlobal_nPointDomain()));
     SU2_OMP_SAFE_GLOBAL_ACCESS(lastCorrecSmoothRMS[iMesh][1] = SU2_TYPE::GetValue(res);)
+
+    if (SU2_MPI::GetRank() == MASTER_NODE && use_conservative_damping) {
+      cout << "[MG CORR-SMOOTH] turbulence nSmooth=" << val_nSmooth
+           << " norm=" << res << "\n";
+    }
   }
 }
 
@@ -898,24 +916,128 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   SU2_ZONE_SCOPED
 
   const unsigned short nVar = sol_fine->GetnVar();
+  const bool use_conservative_damping = (nVar <= 2);
+  const su2double base_damping = use_conservative_damping ? 0.50 : 1.0;
+  const su2double wall_damping = use_conservative_damping ? 0.25 : 1.0;
 
   /*--- Use the adaptive damping factor uniformly across all prolongation levels. ---*/
   const su2double factor = config->GetDamp_Correc_Prolong();
+
+  vector<bool> isWall(geo_fine->GetnPoint(), false);
+  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++)
+    if (config->GetViscous_Wall(iMarker))
+      for (auto iVertex = 0ul; iVertex < geo_fine->nVertex[iMarker]; iVertex++)
+        isWall[geo_fine->vertex[iMarker][iVertex]->GetNode()] = true;
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Fine = 0ul; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
     auto* Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
     auto* Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
+
+    su2double residualMag = 0.0;
+    su2double correctionMag = 0.0;
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
-      if (Residual_Fine[iVar] != Residual_Fine[iVar])
+      if (Residual_Fine[iVar] != Residual_Fine[iVar]) {
         Residual_Fine[iVar] = 0.0;
+      }
 
+      const su2double corr = factor * Residual_Fine[iVar];
+      residualMag = max(residualMag, fabs(Residual_Fine[iVar]));
+      correctionMag = max(correctionMag, fabs(corr));
+    }
+
+    su2double correctionScale = 1.0;
+    if (residualMag > 1e-30 && correctionMag > 1e-30) {
+      const su2double ratio = correctionMag / residualMag;
+      if (ratio > 2.0) {
+        correctionScale = 2.0 / ratio;
+      }
+    }
+
+    const su2double localDamping = use_conservative_damping ? (isWall[Point_Fine] ? wall_damping : base_damping) : 1.0;
+    for (auto iVar = 0u; iVar < nVar; iVar++) {
       su2double correction = factor * Residual_Fine[iVar];
+      correction *= localDamping;
+      correction *= correctionScale;
+
+      if (!std::isfinite(correction)) {
+        correction = 0.0;
+      }
+
       Solution_Fine[iVar] += correction;
     }
   }
   END_SU2_OMP_FOR
+
+  /*--- DIAGNOSTIC: log the max applied correction (factor * LinSysRes) at fine-grid wall points
+   *    vs interior. ---*/
+  if (config->GetMGOptions().MG_Smooth_Output && SU2_MPI::GetRank() == MASTER_NODE) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      if (nVar > 2) {
+        su2double maxWall0 = 0.0, maxWallN = 0.0, maxWallMom = 0.0;
+        su2double maxInter0 = 0.0, maxInterN = 0.0, maxInterMom = 0.0;
+        su2double maxWallApply0 = 0.0, maxWallApplyN = 0.0, maxWallApplyMom = 0.0;
+        su2double maxInterApply0 = 0.0, maxInterApplyN = 0.0, maxInterApplyMom = 0.0;
+
+        for (auto iPoint = 0ul; iPoint < geo_fine->GetnPointDomain(); iPoint++) {
+          const auto* corr = sol_fine->LinSysRes.GetBlock(iPoint);
+          const su2double localDamping = isWall[iPoint] ? wall_damping : base_damping;
+          const su2double applied0 = fabs(localDamping * factor * corr[0]);
+          const su2double appliedN = fabs(localDamping * factor * corr[nVar-1]);
+          su2double appliedMom = 0.0;
+          for (auto iVar = 1u; iVar < static_cast<unsigned short>(nVar-1); iVar++) {
+            appliedMom = max(appliedMom, fabs(localDamping * factor * corr[iVar]));
+          }
+
+          if (isWall[iPoint]) {
+            maxWall0 = max(maxWall0, fabs(factor * corr[0]));
+            maxWallN = max(maxWallN, fabs(factor * corr[nVar-1]));
+            maxWallMom = max(maxWallMom, fabs(factor * corr[0]));
+            maxWallApply0 = max(maxWallApply0, applied0);
+            maxWallApplyN = max(maxWallApplyN, appliedN);
+            maxWallApplyMom = max(maxWallApplyMom, appliedMom);
+          } else {
+            maxInter0 = max(maxInter0, fabs(factor * corr[0]));
+            maxInterN = max(maxInterN, fabs(factor * corr[nVar-1]));
+            maxInterMom = max(maxInterMom, fabs(factor * corr[0]));
+            maxInterApply0 = max(maxInterApply0, applied0);
+            maxInterApplyN = max(maxInterApplyN, appliedN);
+            maxInterApplyMom = max(maxInterApplyMom, appliedMom);
+          }
+        }
+        auto ratio = [](su2double w, su2double i) { return (i > 1e-30) ? w/i : 0.0; };
+        cout << "[MG APPL wall/inter] rho=" << ratio(maxWallApply0, maxInterApply0)
+             << "  mom=" << ratio(maxWallApplyMom, maxInterApplyMom)
+             << "  E=" << ratio(maxWallApplyN, maxInterApplyN)
+             << "  (raw wall/inter: rho=" << maxWall0 << "/" << maxInter0
+             << ", E=" << maxWallN << "/" << maxInterN
+             << "; applied wall/inter: rho=" << maxWallApply0 << "/" << maxInterApply0
+             << ", E=" << maxWallApplyN << "/" << maxInterApplyN << ")\n";
+      } else {
+        su2double maxWall = 0.0, maxInter = 0.0;
+        su2double maxWallApply = 0.0, maxInterApply = 0.0;
+        for (auto iPoint = 0ul; iPoint < geo_fine->GetnPointDomain(); iPoint++) {
+          const auto* corr = sol_fine->LinSysRes.GetBlock(iPoint);
+          const su2double localDamping = isWall[iPoint] ? wall_damping : base_damping;
+          const su2double mag = fabs(factor * corr[0]);
+          const su2double appliedMag = fabs(localDamping * factor * corr[0]);
+          if (isWall[iPoint]) {
+            maxWall = max(maxWall, mag);
+            maxWallApply = max(maxWallApply, appliedMag);
+          } else {
+            maxInter = max(maxInter, mag);
+            maxInterApply = max(maxInterApply, appliedMag);
+          }
+        }
+        cout << "[MG TURB APPLY] damp(wall/interior)= " << wall_damping << "/" << base_damping
+             << "  raw max(wall/interior)= " << maxWall << "/" << maxInter
+             << "  applied max(wall/interior)= " << maxWallApply << "/" << maxInterApply << "\n";
+      }
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  }
 
   /*--- MPI the new interpolated solution ---*/
 
@@ -947,21 +1069,21 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
   const unsigned short nVar = sol_coarse->GetnVar();
   const su2double factor = config->GetDamp_Res_Restric();
 
-  su2activevector Residual(nVar);
+  su2activevector RestrictedDefect(nVar);
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
 
     sol_coarse->GetNodes()->SetRes_TruncErrorZero(Point_Coarse);
 
-    Residual = su2double(0);
+    RestrictedDefect = su2double(0);
     for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
       auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
       Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
       for (auto iVar = 0u; iVar < nVar; iVar++)
-        Residual[iVar] += factor * Residual_Fine[iVar];
+        RestrictedDefect[iVar] += factor * Residual_Fine[iVar];
     }
-    sol_coarse->GetNodes()->AddRes_TruncError(Point_Coarse, Residual.data());
+    sol_coarse->GetNodes()->AddRes_TruncError(Point_Coarse, RestrictedDefect.data());
   }
   END_SU2_OMP_FOR
 
@@ -994,6 +1116,32 @@ void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solve
   END_SU2_OMP_FOR
   AD::EndNoSharedReading();
 
+}
+
+void CMultiGridIntegration::RestrictResidualToCoarseGrid(CSolver *sol_fine, CSolver *sol_coarse,
+                                                        CGeometry *geo_fine, CGeometry *geo_coarse,
+                                                        CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
+
+  /*--- This is the standard FAS restriction step: the fine-grid defect is passed to the
+   *    coarse-grid problem as a forcing term. The existing SetForcing_Term routine already
+   *    implements the conservative volume-weighted transfer and the damping factor in the
+   *    same way the original MG cycle expects. ---*/
+  SetForcing_Term(sol_fine, sol_coarse, geo_fine, geo_coarse, config, iMesh);
+}
+
+void CMultiGridIntegration::ProlongateCorrectionToFineGrid(unsigned short RunTime_EqSystem, CSolver *sol_fine,
+                                                           CSolver *sol_coarse, CGeometry *geo_fine,
+                                                           CGeometry *geo_coarse, CConfig *config,
+                                                           unsigned short iMesh) {
+  SU2_ZONE_SCOPED
+
+  /*--- This is the standard FAS prolongation step: build the coarse-grid state correction,
+   *    then transfer that correction to the fine-grid residual correction. The original
+   *    GetProlongated_Correction routine already performs this transfer in the correct form;
+   *    the additional scaling here would be equivalent to changing the correction operator.
+   *    Keep the transfer operator unchanged and let the existing damping path control the size. ---*/
+  GetProlongated_Correction(RunTime_EqSystem, sol_fine, sol_coarse, geo_fine, geo_coarse, config);
 }
 
 void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,

@@ -82,6 +82,18 @@ private:
                        CGeometry *geo_coarse, CConfig *config, unsigned short iMesh);
 
   /*!
+   * \brief Restrict the fine-grid residual defect to the coarse-grid FAS forcing term.
+   * \param[in] sol_fine - Pointer to the solution on the fine grid.
+   * \param[in] sol_coarse - Pointer to the solution on the coarse grid.
+   * \param[in] geo_fine - Geometrical definition of the fine grid.
+   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void RestrictResidualToCoarseGrid(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
+                                    CGeometry *geo_coarse, CConfig *config, unsigned short iMesh);
+
+  /*!
    * \brief Add the truncation error to the residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] flow - Flow solution.
@@ -179,6 +191,20 @@ private:
    */
   void GetProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                  CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
+
+  /*!
+   * \brief Prolongate the coarse-grid state correction back to the fine-grid residual correction.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] sol_fine - Pointer to the solution on the fine grid.
+   * \param[in] sol_coarse - Pointer to the solution on the coarse grid.
+   * \param[in] geo_fine - Geometrical definition of the fine grid.
+   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void ProlongateCorrectionToFineGrid(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+                                      CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config,
+                                      unsigned short iMesh);
 
   /*!
    * \brief Do an implicit smoothing of the prolongated correction.
