@@ -1092,13 +1092,6 @@ class CSysMatrix {
   void BuildJacobiPreconditioner();
 
   /*!
-   * \brief Build the Jacobi preconditioner on the GPU/device side.
-   * \note This helper is intended as the implementation hook for GPU-resident Krylov solvers.
-   *       The actual implementation belongs in CSysMatrixGPU.cu.
-   */
-  void BuildJacobiPreconditionerGPU();
-
-  /*!
    * \brief Multiply CSysVector by the preconditioner
    * \param[in] vec - CSysVector to be multiplied by the preconditioner.
    * \param[out] prod - Result of the product A*vec.

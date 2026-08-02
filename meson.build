@@ -37,8 +37,6 @@ endif
 
 su2_cpp_args = []
 su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')] + cuda_deps
-codi_rev_args = []
-codi_for_args = []
 
 default_warning_flags = []
 if build_machine.system() != 'windows'

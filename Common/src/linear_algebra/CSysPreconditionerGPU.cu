@@ -41,7 +41,7 @@ __global__ void ApplyJacobiPreconditionerKernel(const ScalarType* invM, const Sc
   auto out = &prod[iPoint * nVar];
 
   for (auto iVar = 0ul; iVar < nVar; ++iVar) {
-    ScalarType sum = ScalarType(0);
+    auto sum = ScalarType(0);
     for (auto jVar = 0ul; jVar < nVar; ++jVar) {
       sum += block[iVar * nVar + jVar] * rhs[jVar];
     }
@@ -50,29 +50,6 @@ __global__ void ApplyJacobiPreconditionerKernel(const ScalarType* invM, const Sc
 }
 
 }  // namespace
-
-template <class ScalarType>
-void CSysMatrix<ScalarType>::BuildJacobiPreconditionerGPU() {
-  SU2_ZONE_SCOPED
-
-  if (nVar != nEqn) {
-    SU2_MPI::Error("CUDA Jacobi preconditioner requires square blocks.", CURRENT_FUNCTION);
-  }
-
-  if (invM == nullptr) {
-    SU2_MPI::Error("CUDA Jacobi preconditioner was requested without host inverse block storage.", CURRENT_FUNCTION);
-  }
-
-  if (d_invM == nullptr) {
-    d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
-  }
-
-  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-    InverseDiagonalBlock(iPoint, &(invM[iPoint * nVar * nVar]));
-  }
-
-  gpuErrChk(cudaMemcpy(d_invM, invM, nPointDomain * nVar * nVar * sizeof(ScalarType), cudaMemcpyHostToDevice));
-}
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeJacobiPreconditionerGPU(const CSysVector<ScalarType>& vec,
@@ -94,14 +71,12 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditionerGPU(const CSysVector<Sca
   gpuErrChk(cudaPeekAtLastError());
 }
 
-template void CSysMatrix<su2mixedfloat>::BuildJacobiPreconditionerGPU();
 template void CSysMatrix<su2mixedfloat>::ComputeJacobiPreconditionerGPU(const CSysVector<su2mixedfloat>& vec,
                                                                         CSysVector<su2mixedfloat>& prod,
                                                                         CGeometry* geometry,
                                                                         const CConfig* config) const;
 
 #if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
-template void CSysMatrix<passivedouble>::BuildJacobiPreconditionerGPU();
 template void CSysMatrix<passivedouble>::ComputeJacobiPreconditionerGPU(const CSysVector<passivedouble>& vec,
                                                                         CSysVector<passivedouble>& prod,
                                                                         CGeometry* geometry,

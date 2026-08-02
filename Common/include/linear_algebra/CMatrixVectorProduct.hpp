@@ -88,8 +88,7 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
       if (config->GetCUDA()) {
-        BEGIN_SU2_DEVICE_REGION { matrix.HtDTransfer(); }
-        END_SU2_DEVICE_REGION
+        SU2_DEVICE_REGION(matrix.HtDTransfer();)
       }
     }
 #endif
@@ -109,7 +108,8 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
     if (config->GetCUDA()) {
 #ifdef SU2_ENABLE_CUDA_KERNELS
       if constexpr (su2_gpu_capable_v<ScalarType>) {
-        BEGIN_SU2_DEVICE_REGION { matrix.GPUMatrixVectorProduct(u, v, geometry, config); }
+        BEGIN_SU2_DEVICE_REGION
+        matrix.GPUMatrixVectorProduct(u, v, geometry, config);
         END_SU2_DEVICE_REGION
       } else {
         SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);

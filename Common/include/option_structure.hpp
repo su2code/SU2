@@ -2523,6 +2523,7 @@ static const MapType<std::string, ENUM_SENS_SMOOTHING> Sens_Smoothing_Map = {
  * \brief Types of preconditioners for the linear solver
  */
 enum ENUM_LINEAR_SOLVER_PREC {
+  IDENTITY,       /*!< \brief No preconditioner. */
   JACOBI,         /*!< \brief Jacobi preconditioner. */
   LU_SGS,         /*!< \brief LU SGS preconditioner. */
   LINELET,        /*!< \brief Line implicit preconditioner. */
@@ -2531,9 +2532,9 @@ enum ENUM_LINEAR_SOLVER_PREC {
   PASTIX_ILU=10,  /*!< \brief PaStiX ILU(k) preconditioner. */
   PASTIX_LU_P,    /*!< \brief PaStiX LU as preconditioner. */
   PASTIX_LDLT_P,  /*!< \brief PaStiX LDLT as preconditioner. */
-  NO_PRECONDITIONER=20, /*!< \brief No preconditioner. */
 };
 static const MapType<std::string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = {
+  MakePair("NONE", IDENTITY)
   MakePair("JACOBI", JACOBI)
   MakePair("LU_SGS", LU_SGS)
   MakePair("LINELET", LINELET)
@@ -2542,7 +2543,6 @@ static const MapType<std::string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Ma
   MakePair("PASTIX_ILU", PASTIX_ILU)
   MakePair("PASTIX_LU", PASTIX_LU_P)
   MakePair("PASTIX_LDLT", PASTIX_LDLT_P)
-  MakePair("NONE", NO_PRECONDITIONER)
 };
 
 /*!

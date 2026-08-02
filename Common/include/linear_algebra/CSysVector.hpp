@@ -99,6 +99,7 @@ inline constexpr bool su2_gpu_capable_v = false;
  * regions must not be nested; they are used by the operations of this class and by the
  * matrix-vector product and preconditioner wrappers, and by nothing above those.
  */
+#define SU2_DEVICE_REGION(...) SU2_OMP_SAFE_GLOBAL_ACCESS(__VA_ARGS__)
 #define BEGIN_SU2_DEVICE_REGION BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
 #define END_SU2_DEVICE_REGION END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -260,7 +261,8 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   CSysVector& AssignDevice(ScalarType val) {
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
-      BEGIN_SU2_DEVICE_REGION { VecExpr::AssignDeviceExpression<Op>(d_vec_val, nElm, VecExpr::Bcast<ScalarType>(val)); }
+      BEGIN_SU2_DEVICE_REGION
+      VecExpr::AssignDeviceExpression<Op>(d_vec_val, nElm, VecExpr::Bcast<ScalarType>(val));
       END_SU2_DEVICE_REGION
     }
 #endif
@@ -536,8 +538,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
       if (VecExpr::UseDeviceExpressions()) {
         /*--- GPUDot reduces over MPI, which has to happen once for the team, so the result
          * is published through the same scratch slot the host reduction below uses. ---*/
-        BEGIN_SU2_DEVICE_REGION { dot_scratch[0] = GPUDot(expr.derived()); }
-        END_SU2_DEVICE_REGION
+        SU2_DEVICE_REGION(dot_scratch[0] = GPUDot(expr.derived());)
         return dot_scratch[0];
       }
     }

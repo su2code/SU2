@@ -104,8 +104,6 @@ class CSysSolve {
   mutable bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
   mutable bool smooth_ready; /*!< \brief Indicate if memory used by SMOOTHER is allocated. */
 
-  bool useCuda = false; /*!< \brief Whether the system is solved on the device, set by Solve. */
-
   mutable VectorType r;   /*!< \brief Residual in CG and BCGSTAB. */
   mutable VectorType A_x; /*!< \brief Result of matrix-vector product in CG and BCGSTAB. */
   mutable VectorType p;   /*!< \brief Direction in CG and BCGSTAB. */
@@ -248,7 +246,7 @@ class CSysSolve {
    * work vectors of the solvers never do, they are allocated on the device and read back
    * only through the reductions.
    */
-  void UploadSystem() const {
+  void UploadSystem(bool useCuda) const {
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
       if (!useCuda) return;
@@ -265,7 +263,7 @@ class CSysSolve {
   /*!
    * \brief Brings the solution back from the device and returns to host evaluation.
    */
-  void DownloadSolution() const {
+  void DownloadSolution(bool useCuda) const {
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
       if (!useCuda) return;
@@ -282,9 +280,10 @@ class CSysSolve {
    * \brief Used by Solve for compatibility between passive and active CSysVector.
    * \param[in] LinSysRes - Linear system residual
    * \param[in,out] LinSysSol - Linear system solution
+   * \param[in] useCuda - Whether to move the system to the device for the solve.
    */
   template <class OtherType>
-  void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol) {
+  void HandleTemporariesIn(const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol, bool useCuda) {
     SU2_ZONE_SCOPED
     if constexpr (std::is_same_v<ScalarType, OtherType>) {
       /*--- Same type specialization, temporary variables are not required. ---*/
@@ -293,7 +292,7 @@ class CSysSolve {
         LinSysSol_ptr = &LinSysSol;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
-      UploadSystem();
+      UploadSystem(useCuda);
     } else {
       /*--- Copy data, the solution is also copied as it serves as initial condition. ---*/
       LinSysRes_tmp.PassiveCopy(LinSysRes);
@@ -305,18 +304,19 @@ class CSysSolve {
         LinSysSol_ptr = &LinSysSol_tmp;
       }
       END_SU2_OMP_SAFE_GLOBAL_ACCESS
-      UploadSystem();
+      UploadSystem(useCuda);
     }
   }
 
   /*!
    * \brief Used by Solve for compatibility between passive and active CSysVector.
    * \param[out] LinSysSol - Linear system solution
+   * \param[in] useCuda - Whether the system was solved on the device.
    */
   template <class OtherType>
-  void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol) {
+  void HandleTemporariesOut(CSysVector<OtherType>& LinSysSol, bool useCuda) {
     SU2_ZONE_SCOPED
-    DownloadSolution();
+    DownloadSolution(useCuda);
     if constexpr (std::is_same_v<ScalarType, OtherType>) {
       /*--- Same type specialization, temporary variables are not required. ---*/
       BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -473,9 +473,9 @@ class CSysSolve {
   template <class OtherType, su2enable_if<!std::is_same_v<ScalarType, OtherType>> = 0>
   unsigned long Solve_b(MatrixType& Jacobian, const CSysVector<OtherType>& LinSysRes, CSysVector<OtherType>& LinSysSol,
                         CGeometry* geometry, const CConfig* config, bool directCall = true) {
-    HandleTemporariesIn(LinSysRes, LinSysSol);
+    HandleTemporariesIn(LinSysRes, LinSysSol, false);
     auto iter = Solve_b(Jacobian, *LinSysRes_ptr, *LinSysSol_ptr, geometry, config, directCall);
-    HandleTemporariesOut(LinSysSol);
+    HandleTemporariesOut(LinSysSol, false);
     return iter;
   }
 

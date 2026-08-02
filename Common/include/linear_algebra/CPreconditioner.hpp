@@ -49,16 +49,14 @@ inline void ApplyPreconditionerOnHost(const CSysVector<ScalarType>& u, CSysVecto
 #ifdef SU2_ENABLE_CUDA_KERNELS
   if constexpr (su2_gpu_capable_v<ScalarType>) {
     if (VecExpr::UseDeviceExpressions()) {
-      BEGIN_SU2_DEVICE_REGION { u.DtHTransfer(); }
-      END_SU2_DEVICE_REGION
+      /*--- The host code must not see the device pointers of any expression it builds, so
+       * the switch is flipped for the duration of the apply. It is written inside the
+       * regions, by one thread, and published to the team by the trailing barrier. ---*/
+      SU2_DEVICE_REGION(u.DtHTransfer(); VecExpr::SetUseDeviceExpressions(false);)
 
-      /*--- The host code must not see the device pointers of any expression it builds. ---*/
-      VecExpr::SetUseDeviceExpressions(false);
       apply();
-      VecExpr::SetUseDeviceExpressions(true);
 
-      BEGIN_SU2_DEVICE_REGION { v.HtDTransfer(); }
-      END_SU2_DEVICE_REGION
+      SU2_DEVICE_REGION(VecExpr::SetUseDeviceExpressions(true); v.HtDTransfer();)
       return;
     }
   }
@@ -404,7 +402,7 @@ CPreconditioner<ScalarType>* CPreconditioner<ScalarType>::Create(ENUM_LINEAR_SOL
   CPreconditioner<ScalarType>* prec = nullptr;
 
   switch (kind) {
-    case NO_PRECONDITIONER:
+    case IDENTITY:
       prec = new CIdentityPreconditioner<ScalarType>();
       break;
     case JACOBI:
