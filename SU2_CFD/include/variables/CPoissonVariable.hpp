@@ -38,8 +38,6 @@
 class CPoissonVariable final : public CScalarVariable {
 protected:
   VectorType MomCoeff; /*!< \brief Momentum coefficients vol/a_p used as the diffusion coefficients in the poisson solver.  */
-  using BoolVectorType = C2DContainer<unsigned long, bool, StorageType::ColumnMajor, 64, DynamicSize, 1>;
-  BoolVectorType strongBC; /*!< \brief Flag for boundary conditions to indicate if a strong BC has been applied, currently only used to keep track of farfield.  */
 public:
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
 
@@ -68,21 +66,5 @@ public:
    * \brief Add something to the momentum coefficient of the point.
    */
   inline void AddMomCoeff(unsigned long iPoint, su2double val_coeff) { MomCoeff(iPoint) += val_coeff;}
-  
-  /*!
-   * \brief Set the BC flag to true of the point.
-   */
-  inline void SetStrongBC(unsigned long iPoint) { strongBC(iPoint) = true; }
-  
-  /*!
-   * \brief Get the BC flag of the point
-   * \return The boolean flag of the strong boundary condition.
-   */
-  inline bool GetStrongBC(unsigned long iPoint) { return strongBC(iPoint); }
-  
-  /*!
-   * \brief Set the BC flag to false of the point.
-   */
-  inline void ResetStrongBC(unsigned long iPoint) { strongBC(iPoint) = false; }
 
 };

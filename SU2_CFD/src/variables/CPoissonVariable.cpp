@@ -51,6 +51,5 @@ CPoissonVariable::CPoissonVariable(su2double value, unsigned long npoint, unsign
 
   /*--- Initialize momentum coefficient and boolean flag for BC ---*/
   MomCoeff.resize(nPoint) = su2double(0.0);
-  strongBC.resize(nPoint) = false;
   
 }

@@ -1,7 +1,7 @@
 /*!
  * \file CPBIncEulerSolver.hpp
  * \brief Headers of the CPBIncEulerSolver class
- * \author F. Palacios, T. Economon, T. Albring
+ * \author T. Aalbers
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -36,6 +36,29 @@ protected:
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
   StreamwisePeriodicValues SPvals, SPvalsUpdated;
 
+  su2activematrix EdgeVelocity; /*!< \brief The edge velocity used in the solver and updated by through Rhie-Chow and pressure correction. */
+
+  /*!
+   * \brief Get the velocities across the edges (currently only relevant for pressure-based solver).
+   */
+  inline const su2activematrix* GetEdgeVelocity() const final { return &EdgeVelocity; }
+
+  /*!
+   * \brief Set the velocity across an edge (currently only relevant for pressure-based solver).
+   * \param[in] iEdge - The edge of interest
+   * \param[in] iDim - The dimension
+   * \param[in] val_velocity - The velocity at the edge
+   */
+  inline void SetEdgeVelocity(unsigned short iEdge, unsigned short iDim, su2double val_velocity) { EdgeVelocity[iEdge][iDim] = val_velocity; }
+
+  /*!
+   * \brief Add a velocity across an edge (currently only relevant for pressure-based solver).
+   * \param[in] iEdge - The edge of interest
+   * \param[in] iDim - The dimension
+   * \param[in] val_velocity - The velocity at the edge
+   */
+  inline void AddEdgeVelocity(unsigned short iEdge, unsigned short iDim, su2double val_velocity) { EdgeVelocity[iEdge][iDim] += val_velocity; }
+
 public:
     
   CPBIncEulerSolver() = delete;
@@ -53,6 +76,21 @@ public:
    * \brief Destructor of the class.
    */
   ~CPBIncEulerSolver(void) override;
+
+  /*!
+   * \brief Compute the spatial integration using a centered scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   */
+  void ComputeRhieChowVelocities(CGeometry *geometry, CSolver **solver_container) final;
+
+  /*!
+   * \brief Compute the spatial integration using a centered scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ApplyPressureVelocityCorrection(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
 
   /*!
    * \brief Get the fluid model.

@@ -765,6 +765,21 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
+   */
+  inline virtual void ComputeRhieChowVelocities(CGeometry *geometry, CSolver **solver_container) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  inline virtual void ApplyPressureVelocityCorrection(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
   inline virtual void Set_Heatflux_Areas(CGeometry *geometry, CConfig *config) { }
@@ -3038,6 +3053,11 @@ public:
    * \return Value of the eddy viscosity.
    */
   inline virtual su2double GetEddyViscWall(unsigned short val_marker, unsigned long val_vertex) const { return 0; }
+
+  /*!
+   * \brief Get the velocities across the edges (currently only relevant for pressure-based solver).
+   */
+  inline virtual const su2activematrix* GetEdgeVelocity() const { return nullptr; }
 
   /*!
    * \brief A virtual member

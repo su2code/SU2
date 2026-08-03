@@ -63,6 +63,9 @@ public:
     inline IndexType Temperature_ve() const { return std::numeric_limits<IndexType>::max(); }
   };
 
+  using BoolVectorType = C2DContainer<unsigned long, bool, StorageType::ColumnMajor, 64, DynamicSize, 1>;
+  BoolVectorType strongBC; /*!< \brief Flag for boundary conditions to indicate if a strong BC has been applied, currently only used to keep track of farfield.  */
+
 protected:
   const CIndices<unsigned long> indices;
 
@@ -268,5 +271,21 @@ public:
   inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim) = Primitive(iPoint,indices.Density())*val_vector[iDim];
   }
+
+   /*!
+   * \brief Set the BC flag to true of the point.
+   */
+  inline void SetStrongBC(unsigned long iPoint) { strongBC(iPoint) = true; }
+  
+  /*!
+   * \brief Get the BC flag of the point
+   * \return The boolean flag of the strong boundary condition.
+   */
+  inline bool GetStrongBC(unsigned long iPoint) { return strongBC(iPoint); }
+  
+  /*!
+   * \brief Set the BC flag to false of the point.
+   */
+  inline void ResetStrongBC(unsigned long iPoint) { strongBC(iPoint) = false; }
 
 };

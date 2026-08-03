@@ -47,7 +47,8 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
   const bool periodic = (config[val_iZone]->GetnMarker_Periodic() > 0);
 
-  const unsigned short nCorrections = config[val_iZone]->GetPISO_corrections();
+  /*--- number of correstions must at least be 1, as the edge velocities are only updated in the pressure correction loop. ---*/
+  const unsigned short nCorrections = (config[val_iZone]->GetPISO_corrections() < 1) ? 1 : config[val_iZone]->GetPISO_corrections();
 
   /*--- Setting up iteration values depending on if this is a
    steady or an unsteady simulation */
@@ -60,19 +61,19 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   const auto main_solver = config[val_iZone]->GetKind_Solver();
   config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_FLOW_SYS);
   
-  /*--- Solve the momentum equations (prediction). ---*/
+  /*--- Solve the momentum equations (to find the predicted velocity u*). ---*/
 
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_FLOW_SYS,
                                                                    val_iZone, val_iInst);
 
   /*--- Solve the pressure poisson (correction) equation ---*/
-  /* The poisson correction is repeated nCorrections number of times to account for the PISO algorithm.
-  Note that the pressure- and velocity corrections resulting from the poisson equation 
-  are handled in the postprocessing step of the poissonsolver. */
 
   config[val_iZone]->SetGlobalParam(MAIN_SOLVER::POISSON_EQUATION, RUNTIME_POISSON_SYS);
 
-  /*--- The momentum coefficients (resulting from the flow solution) are set only once at the start of the corrections ---*/
+  /*--- The momentum coefficients (resulting from the flow solution) are set only once 
+  at the start of the corrections. These coefficients make up the entirety of the coefficient
+  matrix (Jacobian) used by the Poisson solver. Currently the matrix is redefined each correction 
+  but as the coefficients are frozen this doesnt/shouldnt change the matrix at all. ---*/
   solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->SetMomCoeff(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], periodic, MESH_0);
 
   /* TODO: The current piso style iteration works although it has no effect on the stable time step sizes as expected
@@ -81,8 +82,23 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
    * limitation here is that SU2 as of today does not allow multigrid for different solvers and has multigrid 
    * only as an option for the flow solver. */
   for (unsigned short i = 0; i < nCorrections; ++i) {
+
+    /*--- Compute the velocities at the cell edges based on Rhie-Chow interpolation ---*/
+
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeRhieChowVelocities(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0]);
+
+    /*--- Solve the pressure Poisson equation to find p' i.e. div(1/ap * p') = sum_f m_f ---*/
+
     integration[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, RUNTIME_POISSON_SYS,
                                                                    val_iZone, val_iInst);
+
+    /*--- The velocity and pressure are corrected based on the solution to the Poisson problem i.e. p* = p + p' and u** = u* - 1/Ap * p' ---*/
+
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ApplyPressureVelocityCorrection(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
+
+    /*--- Postprocessing is applied once again as the flow solution is altered by correcting the velocities and pressure. */
+
+    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
   }
 
   /*--- Pressure-based algorithm finished, now run auxiliary solvers ---*/

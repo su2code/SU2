@@ -56,6 +56,8 @@ protected:
   su2double Gas_Constant;     /*!< \brief Gas constant. */
   su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl's number. */
   su2double MassFlux;         /*!< \brief Mass flux across edge. */
+  const su2double
+  *EdgeVelocity;      /*!< \brief Velocity across edge. */
   su2double
   *Proj_Flux_Tensor;  /*!< \brief Flux tensor projected in a direction. */
   su2double **tau;    /*!< \brief Viscous stress tensor. */
@@ -1848,6 +1850,12 @@ public:
    * \param[in] val_MassFlux: Mass flux across the edge
    */
   inline void SetMassFlux(const su2double val_MassFlux) { MassFlux = val_MassFlux; }
+
+  /*!
+   * \brief SetEdgeVelocity
+   * \param[in] val_EdgeVelocity: Velocity across the edge
+   */
+  inline void SetEdgeVelocity(const su2double* val_EdgeVelocity) { EdgeVelocity = val_EdgeVelocity; }
 
   /*!
    * \brief Obtain information on bounded scalar problem

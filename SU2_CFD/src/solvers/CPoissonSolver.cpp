@@ -98,6 +98,8 @@ CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   SolverName = "POISSON";
 
+  // PseudoTimeCorr.resize(geometry->GetnEdge(),nDim) = su2double(0.0);
+
 }
 
 
@@ -122,10 +124,6 @@ void CPoissonSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   /*--- Compute the gradients only after the solution has been reset to zero ---*/  
   CommonPreprocessing(geometry, config, Output);
 
-  /*--- Reset flag for strong BCs. ---*/
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
-    nodes->ResetStrongBC(iPoint);
-
   /*--- Need to clear EdgeFluxes and Jacobian. ---*/
   if (!Output) {
     if (ReducerStrategy) EdgeFluxes.SetValZero();
@@ -141,172 +139,12 @@ void CPoissonSolver::Postprocessing(CGeometry *geometry,
                                     unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
-  /*--- The postprocessing function is responsible for applying the pressure and 
-  velocity corrections based on the solution of the poisson equation. ---*/
-
   /*--- Compute gradients of the pressure correction p' so we can use it to find the velocity corrections ---*/
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) 
     SetSolution_Gradient_GG(geometry, config,false);
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) 
     SetSolution_Gradient_LS(geometry, config,false);
-
-  /*--- Start of computing the corrections ---*/
-  unsigned long iEdge, iPoint, jPoint, iMarker, iVertex;
-  unsigned short iDim, iVar, KindBC;
-  su2double Vel, Current_Pressure, factor, PCorr_Ref, Vol, delT, Density;
-  string Marker_Tag;
-  su2activevector Pressure_Correc, alpha_p;
-  su2activematrix vel_corr;
-  long Pref_local;
-  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool piso = (config->GetPISO_corrections() > 1);
-
-  CSolver* flow_solution = solver_container[FLOW_SOL];
-  CVariable* flow_nodes = flow_solution->GetNodes();
-
-  /*--- Allocate corrections and relaxation ---*/
-  Pressure_Correc.resize(nPointDomain);
-  vel_corr.resize(nPointDomain,nDim);
-  alpha_p.resize(nPointDomain);
-
-  /*--- Combine all pressure corrections into a vector for easy access ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
-    Pressure_Correc[iPoint] = nodes->GetSolution(iPoint,0);
-
-  /*--- Define a reference pressure ---*/
-  // TODO: look at this, currently copied (but working?) logic from old solver.
-  unsigned long PRef_Point = 1;
-  Pref_local = geometry->GetGlobal_to_Local_Point(PRef_Point);
-  PCorr_Ref = 0.0;
-  if (Pref_local >= 0)
-    if(geometry->nodes->GetDomain(Pref_local))
-      PCorr_Ref = 0.0;//Pressure_Correc[Pref_local];
-
-  /*--- Compute Velocity Corrections and under relaxation factor for the pressure. ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    factor = 0.0;
-    Vol = geometry->nodes->GetVolume(iPoint);
-    delT = flow_nodes->GetDelta_Time(iPoint);
-    const auto view = flow_solution->Jacobian.GetBlockView(iPoint, iPoint);
-    for (iDim = 0; iDim < nDim; iDim++) {
-      vel_corr[iPoint][iDim] = nodes->GetMomCoeff(iPoint)*(nodes->GetGradient(iPoint,0,iDim));
-      if (implicit) factor += view(iDim, iDim);
-    }
-
-    /*--- The PISO algorithm should not underrelax pressure, for explicit iterations we simply do not have the necessary jacobian information to compute this ---*/
-    alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow();
-    if (implicit && !piso)
-      alpha_p[iPoint] *= (Vol/delT) / (factor+(Vol/delT));      
-  }
-
-  /*--- Reassign strong boundary conditions ---*/
-  /*--- For now I only have velocity inlet and fully developed outlet. Will need to add other types of inlet/outlet conditions
-   *  where different treatment of pressure might be needed. Symmetry and Euler wall are weak BCs. ---*/
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    KindBC = config->GetMarker_All_KindBC(iMarker);
-    Marker_Tag  = config->GetMarker_All_TagBound(iMarker);
-    switch (KindBC) {
-      case EULER_WALL: case SYMMETRY_PLANE:
-        break;
-
-      /*--- Nothing at MPI boundaries ---*/
-      case SEND_RECEIVE:
-        break;
-
-      /*--- Only a fully developed outlet is implemented. For pressure, a dirichlet
-            BC has to be applied and no correction is necessary. Velocity has a neumann BC. ---*/
-      case OUTLET_FLOW:{
-        auto Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
-        switch (Kind_Outlet) {
-          case INC_OUTLET_TYPE::PRESSURE_OUTLET:{
-            for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-              iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-              if (geometry->nodes->GetDomain(iPoint))
-                Pressure_Correc[iPoint] = PCorr_Ref;
-            }
-            break;
-          }
-          //TODO: other outlet types
-          default: 
-            SU2_MPI::Error("The requested outflow boundary condition has not yet been implemented for the pressure based poisson solver", CURRENT_FUNCTION);
-            break;
-        }
-        break;
-      }
-
-      /*--- Only a fixed velocity inlet is implemented now. Along with the wall boundaries,
-        * the velocity is known and thus no correction is necessary.---*/
-      case ISOTHERMAL: case HEAT_FLUX: case INLET_FLOW: {
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (geometry->nodes->GetDomain(iPoint)) {
-            for (iDim = 0; iDim < nDim; iDim++)
-              vel_corr[iPoint][iDim] = 0.0;
-            alpha_p[iPoint] = 1.0;
-            }
-        }
-        break;
-      }
-
-      /*--- Farfield is treated as a fully developed flow for pressure and a fixed pressure is
-      * used, thus no correction is necessary. The treatment for velocity depends on whether the
-      * flow is into the domain or out. If flow is in, a dirichlet bc is applied and no correction
-      * is made, otherwise a Neumann BC is used and velocity is adjusted. ---*/
-
-      case FAR_FIELD:
-        for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (geometry->nodes->GetDomain(iPoint)) {
-            // Check if the boundary condition is an inlet or not
-            if (nodes->GetStrongBC(iPoint)) {
-              for (iDim = 0; iDim < nDim; iDim++)
-                vel_corr[iPoint][iDim] = 0.0;
-            }
-            Pressure_Correc[iPoint] = PCorr_Ref;
-          }
-        }
-        
-        break;
-
-      default: 
-        SU2_MPI::Error("The requested boundary condition has not yet been implemented for the pressure based poisson solver", CURRENT_FUNCTION);
-        break;
-    }
-  }
-  
-
-  /*--- Apply corrections for new solution ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    /*--- Velocity corrections ---*/
-    for (iVar = 0; iVar < nDim; iVar++) {
-      Vel = flow_nodes->GetVelocity(iPoint,iVar);
-      Vel -= vel_corr[iPoint][iVar];
-      Density = flow_nodes->GetDensity(iPoint);
-      flow_nodes->SetSolution(iPoint,iVar,Density*Vel);
-    }
-    flow_nodes->SetVelocity(iPoint);
-    /*--- Pressure corrections ---*/
-    Current_Pressure = flow_nodes->GetPressure(iPoint);
-    Current_Pressure += alpha_p[iPoint]*(Pressure_Correc[iPoint] - PCorr_Ref);
-    flow_nodes->SetPrimitive(iPoint,0,Current_Pressure);
-  }
-
-  /*--- periodic communication for both the momentum and the poisson equations as both are now updated ---*/
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    solver_container[FLOW_SOL]->InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    solver_container[FLOW_SOL]->CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-
-    solver_container[FLOW_SOL]->InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRESSURE);
-    solver_container[FLOW_SOL]->CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRESSURE);
-  }
-
-  /*--- Communicate updated velocities and pressure ---*/
-  solver_container[FLOW_SOL]->InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
-  solver_container[FLOW_SOL]->CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
-
-  solver_container[FLOW_SOL]->InitiateComms(geometry, config, MPI_QUANTITIES::PRESSURE_VAR);
-  solver_container[FLOW_SOL]->CompleteComms(geometry, config, MPI_QUANTITIES::PRESSURE_VAR);
 
 }
 
@@ -401,21 +239,15 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
                                   CConfig *config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
-  unsigned short iVar, iDim, KindBC;
-  unsigned long iPoint, jPoint, iEdge, iMarker, iVertex;
-  su2double Edge_Vector[MAXNDIM], dist_ij_2;
-  su2double *Coord_i, *Coord_j;
-  su2double MassFlux_Part, MassFlux_Avg, Mom_Coeff[MAXNDIM], *Normal,Vel_Avg, Grad_Avg;
-  su2double Area, MeanDensity, Vol , TimeStep;
-  su2double GradP_f[MAXNDIM], GradP_in[MAXNDIM], GradP_proj, RhieChowInterp, Coeff_Mom, PsCorr[MAXNDIM], PsCorrFace;
-  su2double *Flow_Dir, Flow_Dir_Mag,*GridVel_i,*GridVel_j;
+  unsigned short iDim, KindBC;
+  unsigned long iPoint, jPoint, iMarker, iVertex;
+  su2double Normal[MAXNDIM], MeanDensity, MassFlux_Part, *GridVel_i;
   string Marker_Tag;
-  Normal = new su2double [MAXNDIM];
 
-  bool unsteady = (config->GetTime_Marching() != TIME_MARCHING::STEADY);
+  const CSolver* flow_solver = solver_container[FLOW_SOL];
+  const CVariable* flow_nodes = flow_solver->GetNodes();
 
-  const CSolver* flow_solution = solver_container[FLOW_SOL];
-  const CVariable* flow_nodes = flow_solution->GetNodes();
+  const auto& edgeVelocities = *(flow_solver->GetEdgeVelocity());
 
   /*--- Mass flux is computed over all edges ---*/
   for (auto color : EdgeColoring) {
@@ -426,82 +258,13 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
       geometry->edges->GetNormal(iEdge, Normal);
 
-      Area = GeometryToolbox::Norm(nDim, Normal);
-
       MeanDensity = 0.5*(flow_nodes->GetDensity(iPoint) + flow_nodes->GetDensity(jPoint));
-      
-      if (dynamic_grid) {
-        GridVel_i = geometry->nodes->GetGridVel(iPoint);
-        GridVel_j = geometry->nodes->GetGridVel(jPoint);
-      }
 
-      /*--- Face average mass flux. ---*/
-      MassFlux_Avg = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vel_Avg = 0.5*(flow_nodes->GetVelocity(iPoint,iDim) + flow_nodes->GetVelocity(jPoint,iDim));
-        MassFlux_Avg += MeanDensity*Vel_Avg*Normal[iDim];
-      }
-      
-      if (dynamic_grid)
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Vel_Avg = 0.5*(GridVel_i[iDim]+GridVel_j[iDim]);
-          MassFlux_Avg -= MeanDensity*Vel_Avg*Normal[iDim];
-        }
+      MassFlux_Part = 0.0;
+      for (iDim = 0; iDim < nDim; ++iDim) 
+        MassFlux_Part += edgeVelocities[iEdge][iDim] * Normal[iDim] * MeanDensity;
 
-      /*--- Rhie Chow interpolation ---*/
-      Coord_i = geometry->nodes->GetCoord(iPoint);
-      Coord_j = geometry->nodes->GetCoord(jPoint);
-      dist_ij_2 = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-        dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-      }
-      /*--- 1. Interpolate the pressure gradient based on node values ---*/
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Grad_Avg = 0.5*(flow_nodes->GetGradient_Primitive(iPoint,0,iDim) + flow_nodes->GetGradient_Primitive(jPoint,0,iDim));
-        GradP_in[iDim] = Grad_Avg;
-      }
-
-      /*--- 2. Compute pressure gradient at the face ---*
-          Eq 15.62 F Moukalled, L Mangani M. Darwish OpenFOAM and uFVM book. ---*/
-      GradP_proj = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        GradP_proj += GradP_in[iDim]*Edge_Vector[iDim];
-      }
-      if (dist_ij_2 != 0.0) {
-        for (iDim = 0; iDim < nDim; iDim++) {
-          GradP_f[iDim] = GradP_in[iDim] - (GradP_proj - (flow_nodes->GetPressure(jPoint) - flow_nodes->GetPressure(iPoint)))*Edge_Vector[iDim]/ dist_ij_2;
-        }
-      }
-
-      /*--- Correct the massflux by adding the pressure terms.
-      * --- GradP_f is the gradient computed directly at the face and GradP_in is the
-      * --- gradient linearly interpolated based on node values. This effectively adds a third
-      * --- order derivative of pressure to remove odd-even decoupling of pressure and velocities.
-      * --- GradP_f = (p_F^n - p_P^n)/ds , GradP_in = 0.5*(GradP_P^n + GradP_F^n)---*/
-      RhieChowInterp = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-
-        /*--- Linearly interpolated coefficient. ---*/
-
-        Coeff_Mom = 0.5*(nodes->GetMomCoeff(iPoint) + nodes->GetMomCoeff(jPoint));
-
-        /*--- Difference of pressure gradients. ---*/
-
-        RhieChowInterp += Coeff_Mom*(GradP_f[iDim] - GradP_in[iDim])*Normal[iDim]*MeanDensity;
-
-        /*--- Save the pressure gradient contribution for the correction term used in the next iteration. ---*/
-        PsCorr[iDim] = -Coeff_Mom*(GradP_f[iDim] - GradP_in[iDim]);
-      }
-
-      /*--- Rhie Chow correction for time step must go here ---*/
-      // It is currently not included.
-
-      /*--- Calculate the mass flux at the face including the linearly interpolated velocities, pressure 
-      *    gradient difference contribution. The correction for time stepping (both pseudo and dual time) is currently not 
-      *    included as testing has shown it to have either no effect or worsen convergence. ---*/ 
-      MassFlux_Part = MassFlux_Avg - RhieChowInterp;
-      
+      /*--- Add the mass flux to the source term for the poisson equation ---*/
       auto residual = CNumerics::ResidualType<>(&MassFlux_Part, nullptr, nullptr);
 
       if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
@@ -723,7 +486,6 @@ void CPoissonSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
     nodes->SetSolution(iPoint, &pressureDeviation);
     nodes->SetSolution_Old(iPoint,&pressureDeviation);
-    nodes->SetStrongBC(iPoint);
     Jacobian.DeleteValsRowi(iPoint, 0);
   }
 }
@@ -749,7 +511,6 @@ void CPoissonSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, 
 
     nodes->SetSolution(iPoint, &pressureDeviation);
     nodes->SetSolution_Old(iPoint,&pressureDeviation);
-    // nodes->SetStrongBC(iPoint);
     Jacobian.DeleteValsRowi(iPoint, 0);
   }
 }
