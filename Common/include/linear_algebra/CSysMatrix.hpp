@@ -308,8 +308,9 @@ class CSysMatrix {
   su2uint* d_ilu_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
 
   /*!< \brief Number of colored Gauss-Seidel sweeps used to build the ILU factorization on the
-   * device, see IluFactorColorKernel. Fixed (not adaptive) so the result is reproducible. */
-  static constexpr int ILU_GPU_COLOR_SWEEPS = 3;
+   * device, see IluFactorColorKernel. Fixed per solve (not adaptive) so the result is
+   * reproducible; set from config in Initialize(). */
+  unsigned short ilu_gpu_color_sweeps = 3;
 
   /*--- Coloring of the ILU dependency graph: unlike levels_ilu, a color is a true independent
    * set (no dependency between same-colored rows in either direction), so far fewer, wider

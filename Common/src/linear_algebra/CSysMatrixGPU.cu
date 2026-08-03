@@ -424,19 +424,22 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
    * change execution order relative to the rest of the (single-stream) solver. ---*/
   if (ilu_stream == nullptr) gpuErrChk(cudaStreamCreate(&ilu_stream));
 
-  /*--- The launch sequence (ILU_GPU_COLOR_SWEEPS passes over all colors) is identical on every
+  /*--- The launch sequence (ilu_gpu_color_sweeps passes over all colors) is identical on every
    * call: the grid and block sizes only depend on the (fixed) sparsity pattern/coloring and the
    * device pointers are fixed members, allocated once. Capture it into a CUDA graph the first
    * time and replay that from then on, which removes the per-launch host-side overhead without
    * touching the parallelization of any individual kernel (unlike a persistent cooperative-
    * groups kernel, this does not cap per-color parallelism to an occupancy-resident block
-   * count). See IluFactorColorKernel for why several sweeps over the (far fewer, wider) colors
-   * are needed in place of one exact pass over the (many, narrow) levels. ---*/
+   * count). See IluFactorColorKernel for why several sweeps over the colors are needed.
+   * Note that factors are not reset between calls to BuildILUPreconditionerGPU, so with
+   * LINEAR_SOLVER_ILU_GPU_SWEEPS set low (even 1), each call refines the previous one's
+   * result rather than reconverging from scratch, relying on the matrix changing little
+   * between outer/pseudo-time iterations. ---*/
   if (ilu_build_graph_exec == nullptr) {
     cudaGraph_t graph;
     gpuErrChk(cudaStreamBeginCapture(ilu_stream, cudaStreamCaptureModeThreadLocal));
 
-    for (int sweep = 0; sweep < ILU_GPU_COLOR_SWEEPS; ++sweep) {
+    for (unsigned short sweep = 0; sweep < ilu_gpu_color_sweeps; ++sweep) {
       for (auto color = 0ul; color + 1 < ilu_color_ptr.size(); ++color) {
         const auto begin = ilu_color_ptr[color];
         const auto size = ilu_color_ptr[color + 1] - begin;

@@ -277,6 +277,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   if (ilu_needed) {
     ilu_fill_in = config->GetLinear_Solver_ILU_n();
+    ilu_gpu_color_sweeps = config->GetLinear_Solver_ILU_GPU_Sweeps();
 
     const auto& pat_ilu = geometry->GetSparsePattern(type, ilu_fill_in);
     ilu.row_ptr_l = pat_ilu.l.outerPtr();
