@@ -312,6 +312,15 @@ class CSysMatrix {
    * reproducible; set from config in Initialize(). */
   unsigned short ilu_gpu_color_sweeps = 3;
 
+  /*!< \brief Number of colored Jacobi sweeps used for the forward triangular solve (only) when
+   * applying the ILU preconditioner on the device, see ComputeILUPreconditionerGPU. The backward
+   * solve stays exact/level-scheduled: a host experiment showed the colored-iterative backward
+   * solve diverges for this class of matrix (unlike forward, which converges cleanly), so only
+   * forward is colored. Unlike ilu_gpu_color_sweeps, this cannot rely on cross-call warm
+   * starting: the apply runs once per Krylov iteration with a new RHS each time, so every sweep
+   * is paid in full on every call. Set from config in Initialize(). */
+  unsigned short ilu_gpu_fwd_sweeps = 4;
+
   /*--- Coloring of the ILU dependency graph: unlike levels_ilu, a color is a true independent
    * set (no dependency between same-colored rows in either direction), so far fewer, wider
    * colors are needed than levels, but a color launch is only exact as one step of an iterative

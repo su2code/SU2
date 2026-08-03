@@ -1974,6 +1974,8 @@ void CConfig::SetConfig_Options() {
   addBoolOption("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING", Linear_Solver_ILU_levels, false);
   /* DESCRIPTION: Colored Gauss-Seidel sweeps used to build the ILU preconditioner on the GPU */
   addUnsignedShortOption("LINEAR_SOLVER_ILU_GPU_SWEEPS", Linear_Solver_ILU_GPU_Sweeps, 1);
+  /* DESCRIPTION: Colored Jacobi sweeps used for the GPU ILU forward triangular solve */
+  addUnsignedShortOption("LINEAR_SOLVER_ILU_GPU_FWD_SWEEPS", Linear_Solver_ILU_GPU_Fwd_Sweeps, 3);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
   /* DESCRIPTION: Number of vectors used for deflated restarts */
@@ -4144,6 +4146,12 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
   if (Linear_Solver_ILU_GPU_Sweeps == 0) {
     SU2_MPI::Error("LINEAR_SOLVER_ILU_GPU_SWEEPS must be at least 1, 0 sweeps never factorizes the matrix.",
                    CURRENT_FUNCTION);
+  }
+
+  if (Linear_Solver_ILU_GPU_Fwd_Sweeps == 0) {
+    SU2_MPI::Error(
+        "LINEAR_SOLVER_ILU_GPU_FWD_SWEEPS must be at least 1, 0 sweeps never solves the forward triangular system.",
+        CURRENT_FUNCTION);
   }
 
   Radiation = (Kind_Radiation != RADIATION_MODEL::NONE);
