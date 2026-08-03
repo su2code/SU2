@@ -247,9 +247,10 @@ class CSysMatrix {
     unsigned long nnz_u = 0;            /*!< \brief Number of U nonzeros. */
   };
 
-  LDU mat; /*!< \brief Host matrix (values owned via aligned_alloc; pattern from geometry). */
-  LDU gpu; /*!< \brief Device matrix (all pointers to GPU memory). */
-  LDU ilu; /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
+  LDU mat;                      /*!< \brief Host matrix (values owned via aligned_alloc; pattern from geometry). */
+  LDU gpu;                      /*!< \brief Device matrix (all pointers to GPU memory). */
+  LDU ilu;                      /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
+  ScalarType* d_invM = nullptr; /*!< \brief Device inverse diagonal blocks for the Jacobi preconditioner. */
 
   /*--- Quantized off-diagonal storage (used when quantized_mode == true). ---*/
   using QuantType = int8_t;
@@ -1099,6 +1100,14 @@ class CSysMatrix {
    */
   void ComputeJacobiPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                                    const CConfig* config) const;
+
+  /*!
+   * \brief Apply the Jacobi preconditioner on the GPU/device side.
+   * \note This helper is intended as the implementation hook for GPU-resident Krylov solvers.
+   *       The actual implementation belongs in CSysMatrixGPU.cu.
+   */
+  void ComputeJacobiPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
+                                      CGeometry* geometry, const CConfig* config) const;
 
   /*!
    * \brief Build the ILU preconditioner.
