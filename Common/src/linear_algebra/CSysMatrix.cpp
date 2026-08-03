@@ -289,23 +289,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     ilu.col_ind_u = pat_ilu.u.innerIdx();
     ilu.nnz_u = pat_ilu.u.getNumNonZeros();
 
-    /*--- Only the host/OMP path uses levels; the GPU path is colored-iterative and never
-     * touches levels_ilu (see color_ilu below). ---*/
     if (omp_get_max_threads() > 1 && config->GetLinear_Solver_ILU_levels()) {
-      /*--- The pattern spans all points but only the domain rows are factorized, so drop the
-       * halo rows. This cannot change the levels of the domain rows: a row can only depend on
-       * rows with a lower index, and every halo row has a higher index than every domain row. ---*/
-      const auto all_levels = computeLevels(pat_ilu.l);
-      std::vector<std::vector<unsigned long>> levels;
-      for (auto level = 0ul; level < all_levels.getOuterSize(); ++level) {
-        std::vector<unsigned long> rows;
-        for (auto k = 0ul; k < all_levels.getNumNonZeros(level); ++k) {
-          const auto iPoint = all_levels.getInnerIdx(level, k);
-          if (iPoint < nPointDomain) rows.push_back(iPoint);
-        }
-        if (!rows.empty()) levels.push_back(std::move(rows));
-      }
-      levels_ilu = CCompressedSparsePatternUL(levels);
+      levels_ilu = computeLevels(pat_ilu.l);
     }
 
     /*--- Coloring for the GPU iterative factorization, see IluFactorColorKernel. Colors are
