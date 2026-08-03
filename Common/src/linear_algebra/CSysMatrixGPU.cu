@@ -367,7 +367,9 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditionerGPU(const CSysVector<Sca
   const auto blocks = static_cast<unsigned>((nPointDomain + threadsPerBlock - 1) / threadsPerBlock);
   ApplyJacobiPreconditionerKernel<<<blocks, threadsPerBlock>>>(d_invM, vec.GetDevicePointer(), prod.GetDevicePointer(),
                                                                nPointDomain, nVar);
-  gpuErrChk(cudaPeekAtLastError());
+  /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
+  gpuErrChk(cudaStreamSynchronize(nullptr));
+  gpuErrChk(cudaGetLastError());
 }
 
 template <class ScalarType>
@@ -391,7 +393,9 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditionerGPU() {
   InvertDiagonalBlocksKernel<ScalarType>
       <<<static_cast<unsigned>(nPointDomain), blockSize, blockSize * sizeof(ScalarType)>>>(nPointDomain, nVar, gpu.d,
                                                                                            d_invM);
-  gpuErrChk(cudaPeekAtLastError());
+  /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
+  gpuErrChk(cudaStreamSynchronize(nullptr));
+  gpuErrChk(cudaGetLastError());
 }
 
 template <class ScalarType>
@@ -456,7 +460,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
 
   gpuErrChk(cudaGraphLaunch(ilu_build_graph_exec, ilu_stream));
   gpuErrChk(cudaStreamSynchronize(ilu_stream));
-  gpuErrChk(cudaPeekAtLastError());
+  gpuErrChk(cudaGetLastError());
 }
 
 template <class ScalarType>
@@ -529,11 +533,12 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
 
   gpuErrChk(cudaGraphLaunch(ilu_apply_graph_exec, ilu_stream));
   gpuErrChk(cudaStreamSynchronize(ilu_stream));
-  gpuErrChk(cudaPeekAtLastError());
+  gpuErrChk(cudaGetLastError());
 }
 
 template <class ScalarType>
 void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
+  SU2_ZONE_SCOPED
   if (!trigger) return;
   gpuErrChk(cudaMemcpy(gpu.d, mat.d, sizeof(ScalarType) * nPoint * nVar * nEqn, cudaMemcpyHostToDevice));
   gpuErrChk(cudaMemcpy(gpu.l, mat.l, sizeof(ScalarType) * mat.nnz_l * nVar * nEqn, cudaMemcpyHostToDevice));
@@ -543,6 +548,7 @@ void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
 template <class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProductGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                     CGeometry* geometry, const CConfig* config) const {
+  SU2_ZONE_SCOPED
   if (nVar != nEqn) {
     SU2_MPI::Error("CUDA CSysMatrix block-LDU SpMV requires square blocks.", CURRENT_FUNCTION);
   }
@@ -555,6 +561,8 @@ void CSysMatrix<ScalarType>::MatrixVectorProductGPU(const CSysVector<ScalarType>
   BlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
       nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, gpu.l, gpu.d,
       gpu.row_ptr_u, gpu.col_ind_u, gpu.u, d_vec, d_prod);
+  /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
+  gpuErrChk(cudaStreamSynchronize(nullptr));
   gpuErrChk(cudaGetLastError());
 }
 

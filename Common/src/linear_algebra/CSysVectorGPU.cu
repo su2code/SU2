@@ -66,18 +66,21 @@ void SetUseDeviceExpressions(bool use) { use_device_expressions = use; }
 
 template <class ScalarType>
 void CSysVector<ScalarType>::HtDTransfer(bool trigger) const {
+  SU2_ZONE_SCOPED
   if (trigger)
     gpuErrChk(cudaMemcpy((void*)(d_vec_val), (void*)&vec_val[0], (sizeof(ScalarType) * nElm), cudaMemcpyHostToDevice));
 }
 
 template <class ScalarType>
 void CSysVector<ScalarType>::DtHTransfer(bool trigger) const {
+  SU2_ZONE_SCOPED
   if (trigger)
     gpuErrChk(cudaMemcpy((void*)(&vec_val[0]), (void*)d_vec_val, (sizeof(ScalarType) * nElm), cudaMemcpyDeviceToHost));
 }
 
 template <class ScalarType>
 ScalarType CSysVector<ScalarType>::GPUDot(const CSysVector& other) const {
+  SU2_ZONE_SCOPED
   /*--- Both operands are already on the device, the caller owns the transfers. This
    * reduces over MPI, so it must be called by a single thread (see SU2_DEVICE_REGION). ---*/
   cublasHandle_t handle = GetBlasHandle();
@@ -110,6 +113,7 @@ ScalarType CSysVector<ScalarType>::GPUDot(const CSysVector& other) const {
 
 template <class ScalarType>
 ScalarType CSysVector<ScalarType>::GPUNorm() const {
+  SU2_ZONE_SCOPED
   return sqrt(GPUDot(*this));
 }
 
