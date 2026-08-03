@@ -19,11 +19,24 @@ python = pymod.find_installation()
 
 if get_option('enable-cuda')
   add_languages('cuda')
-  add_global_arguments('-arch=sm_86', language : 'cuda')
+  add_global_arguments('-arch=sm_89', language : 'cuda')
+  # nvcc's frontend does not recognize the AMX-tile builtins pulled in by
+  # newer glibc/gcc <immintrin.h>; SU2 does not use AMX, so skip the header.
+  add_global_arguments('-D_AMXTILEINTRIN_H_INCLUDED', language : 'cuda')
+  # Any target linking CUDA object code is linked via nvcc instead of the C++
+  # linker, which otherwise defaults to a plain host gcc and silently drops
+  # the MPI link flags that -Dcustom-mpi=true relies on mpicxx to provide.
+  add_global_arguments('-ccbin=' + meson.get_compiler('cpp').cmd_array()[0], language : 'cuda')
+  add_global_link_arguments('-ccbin=' + meson.get_compiler('cpp').cmd_array()[0], language : 'cuda')
+  cuda_deps = [
+    meson.get_compiler('cuda').find_library('cublas', required : true),
+  ]
+else
+  cuda_deps = []
 endif
 
 su2_cpp_args = []
-su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
+su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')] + cuda_deps
 
 default_warning_flags = []
 if build_machine.system() != 'windows'
@@ -153,8 +166,11 @@ if get_option('enable-cgns')
 endif
 
 # check for mixed precision floating point arithmetic
-if get_option('enable-mixedprec')
+if get_option('enable-mixedprec') or get_option('enable-singleprec')
   su2_cpp_args += '-DUSE_MIXED_PRECISION'
+endif
+if get_option('enable-singleprec')
+  su2_cpp_args += '-DUSE_SINGLE_PRECISION'
 endif
 
 # check if MPI dependencies are found and add them
@@ -228,8 +244,7 @@ endif
 # CUDA dependencies
 if get_option('enable-cuda')
   su2_cpp_args += '-DHAVE_CUDA'
-  gpu_dep = dependency('cuda', version : '>=10', modules : ['cudart'])
-  su2_deps += gpu_dep
+  su2_deps += meson.get_compiler('cuda').find_library('cudart', required : true)
 endif
 
 # blas-type dependencies

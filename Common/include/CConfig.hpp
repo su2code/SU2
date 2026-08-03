@@ -810,11 +810,13 @@ private:
   su2double *nBlades;                 /*!< \brief number of blades for turbomachinery computation. */
   unsigned short Geo_Description;     /*!< \brief Description of the geometry. */
   unsigned short Mesh_FileFormat;     /*!< \brief Mesh input format. */
+  unsigned short Mesh_Out_FileFormat; /*!< \brief Mesh output format. */
   TAB_OUTPUT Tab_FileFormat;          /*!< \brief Format of the output files. */
   unsigned short output_precision;    /*!< \brief <ofstream>.precision(value) for SU2_DOT and HISTORY output */
   unsigned short ActDisk_Jump;        /*!< \brief Format of the output files. */
   unsigned long StartWindowIteration; /*!< \brief Starting Iteration for long time Windowing apporach . */
   unsigned short nCFL_AdaptParam;     /*!< \brief Number of CFL parameters provided in config. */
+  unsigned long outlierMitigationParam[4]; /*!< \brief Parameters of outlier mitigation strategy. */
   bool CFL_Adapt;        /*!< \brief Use adaptive CFL number. */
   bool HB_Precondition;  /*!< \brief Flag to turn on harmonic balance source term preconditioning */
   su2double RefArea,     /*!< \brief Reference area for coefficient computation. */
@@ -1147,6 +1149,8 @@ private:
   /*--- Multigrid options  ---*/
   unsigned short nMG_PreSmooth_p{0}, nMG_PostSmooth_p{0}, nMG_CorrecSmooth_p{0};
   unsigned short *MG_PreSmooth_p{nullptr}, *MG_PostSmooth_p{nullptr}, *MG_CorrecSmooth_p{nullptr};
+  unsigned short nMG_CflScaling_p{0};
+  su2double *MG_CflScaling_p{nullptr};
 
   ENUM_STREAMWISE_PERIODIC Kind_Streamwise_Periodic; /*!< \brief Kind of Streamwise periodic flow (pressure drop or massflow) */
   bool Streamwise_Periodic_Temperature;              /*!< \brief Use real periodicity for Energy equation or otherwise outlet source term. */
@@ -1528,6 +1532,14 @@ public:
   void SetMPICommunicator(SU2_MPI::Comm Communicator);
 
   /*!
+   * \brief Helper function, which checks and opens a binary SU2 file.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] readnDim = Whether or not nDim must be read. If false nZone is read.
+   * \return Number of dimensions or number of zones in the grid.
+   */
+  static unsigned short CheckOpenSU2BinFile(const string& val_mesh_filename, bool readnDim);
+
+  /*!
    * \brief Gets the number of zones in the mesh file.
    * \param[in] val_mesh_filename - Name of the file with the grid information.
    * \param[in] val_format - Format of the file with the grid information.
@@ -1711,6 +1723,11 @@ public:
    * \return <code>TRUE</code> if CFL adaption is active; otherwise <code>FALSE</code>.
    */
   bool GetCFL_Adapt(void) const { return CFL_Adapt; }
+
+  /*!
+   * \brief Get the outlier mitigation parameters.
+   */
+  const unsigned long* GetOutlierMitigationParam() const { return outlierMitigationParam; }
 
   /*!
    * \brief Get the value of the limits for the sections.
@@ -5703,17 +5720,21 @@ public:
     /*--- we keep the original Mesh_FileName  ---*/
     string meshFilename = Mesh_FileName;
 
-    /*--- strip the extension, only if it is .su2 or .cgns ---*/
+    /*--- strip the extension, only if it is .su2, .su2b or .cgns ---*/
     PrintingToolbox::TrimExtension(".su2",meshFilename);
+    PrintingToolbox::TrimExtension(".su2b",meshFilename);
     PrintingToolbox::TrimExtension(".cgns",meshFilename);
 
     switch (GetMesh_FileFormat()) {
-      case SU2:
-      case RECTANGLE:
-      case BOX:
+      case ENUM_GRID::SU2:
+      case ENUM_GRID::RECTANGLE:
+      case ENUM_GRID::BOX:
         meshFilename += ".su2";
         break;
-      case CGNS_GRID:
+      case ENUM_GRID::SU2_BIN:
+        meshFilename += ".su2b";
+        break;
+      case ENUM_GRID::CGNS_GRID:
         meshFilename += ".cgns";
         break;
       default:
@@ -5727,6 +5748,9 @@ public:
   /*!
    * \brief Get name of the output grid, this parameter is important for grid
    *        adaptation and deformation.
+   * \note The returned name does not include the extension, it is the
+   *       responsibility of the caller (usually a CFileWriter) to append it,
+   *       consistent with GetMesh_Out_FileExtension().
    * \return File name of the output grid.
    */
   string GetMesh_Out_FileName(void) const {
@@ -5734,11 +5758,29 @@ public:
     /*--- we keep the original Mesh_Out_FileName  ---*/
     string meshFilename = Mesh_Out_FileName;
 
-    /*--- strip the extension, only if it is .su2 or .cgns ---*/
+    /*--- strip the extension, only if it is .su2, .su2b or .cgns ---*/
     PrintingToolbox::TrimExtension(".su2",meshFilename);
+    PrintingToolbox::TrimExtension(".su2b",meshFilename);
     PrintingToolbox::TrimExtension(".cgns",meshFilename);
 
     return meshFilename;
+  }
+
+  /*!
+   * \brief Get the extension (including the leading dot) associated with the
+   *        current mesh output format.
+   * \return Extension of the output grid file.
+   */
+  string GetMesh_Out_FileExtension(void) const {
+    switch (GetMesh_Out_FileFormat()) {
+      case ENUM_GRID::SU2:
+        return ".su2";
+      case ENUM_GRID::SU2_BIN:
+        return ".su2b";
+      default:
+        SU2_MPI::Error("Unrecognized mesh_out format specified!", CURRENT_FUNCTION);
+        return "";
+    }
   }
 
   /*!
@@ -5776,10 +5818,16 @@ public:
   }
 
   /*!
-   * \brief Get the format of the input/output grid.
-   * \return Format of the input/output grid.
+   * \brief Get the format of the input grid.
+   * \return Format of the input grid.
    */
   unsigned short GetMesh_FileFormat(void) const { return Mesh_FileFormat; }
+
+  /*!
+   * \brief Get the format of the output grid.
+   * \return Format of the output grid.
+   */
+  unsigned short GetMesh_Out_FileFormat(void) const { return Mesh_Out_FileFormat; }
 
   /*!
    * \brief Get the format of the output solution.
@@ -10264,5 +10312,13 @@ public:
    * \return option data structure for the flamelet fluid model.
    */
   const FluidFlamelet_ParsedOptions& GetFlameletParsedOptions() const { return flamelet_ParsedOptions; }
+
+  /*!
+   * \brief Get the enthalpy BC mode for the flamelet solver.
+   * FLOW_MARKERS: derive enthalpy BCs from MARKER_ISOTHERMAL/MARKER_HEATFLUX/MARKER_INLET (temperature-based).
+   * SPECIES_MARKERS: take enthalpy BCs directly from MARKER_WALL_SPECIES/MARKER_INLET_SPECIES.
+   * \return FLAMELET_ENTHALPY_BC enum value.
+   */
+  FLAMELET_ENTHALPY_BC GetFlamelet_Enthalpy_BC() const { return flamelet_ParsedOptions.enthalpy_bc; }
 
 };

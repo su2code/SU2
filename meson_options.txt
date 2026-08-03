@@ -16,6 +16,7 @@ option('enable-pastix', type : 'boolean', value : false, description: 'enable Pa
 option('custom-mpi',  type : 'boolean', value : false, description: 'enable MPI assuming the compiler and/or env vars give the correct include dirs and linker args.')
 option('enable-tests',  type : 'boolean', value : false, description: 'compile Unit Tests')
 option('enable-mixedprec', type : 'boolean', value : false, description: 'use single precision floating point arithmetic for sparse algebra')
+option('enable-singleprec', type : 'boolean', value : false, description: 'use single precision floating point arithmetic for everything')
 option('extra-deps', type : 'string', value : '', description: 'comma-separated list of extra (custom) dependencies to add for compilation')
 option('enable-mpp', type : 'boolean', value : false, description: 'enable Mutation++ support')
 option('install-mpp', type : 'boolean', value : false, description: 'install Mutation++ in the directory defined with --prefix')

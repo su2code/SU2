@@ -26,7 +26,9 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <type_traits>
+#include <cmath>
 
 #if defined(_MSC_VER)
 #define PRAGMIZE(X) __pragma(X)
@@ -94,6 +96,45 @@ FORCEINLINE Out su2staticcast_p(In ptr) {
 #define HAVE_OMP
 #endif
 
+/*--- Detect whether the CUDA kernels are part of this build. The .cu translation units
+ * cannot be compiled with the CoDiPack defines (nvcc's device pass cannot parse the tape
+ * machinery), and an object compiled with a different definition of su2double must not be
+ * linked into an AD library. They are therefore only built into the primal libraries, and
+ * all device dispatch has to be compiled out of the AD builds, which HAVE_CUDA alone does
+ * not do because su2mixedfloat is a passive type there as well. ---*/
+#if defined(HAVE_CUDA) && !defined(CODI_REVERSE_TYPE) && !defined(CODI_FORWARD_TYPE)
+#define SU2_ENABLE_CUDA_KERNELS
+#endif
+
+/*--- No full single precision for AD builds. ---*/
+#if (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)) && defined(USE_SINGLE_PRECISION)
+#undef USE_SINGLE_PRECISION
+#endif
+
+/*--- Default integer types. Currently used for rank-local sparse patterns. ---*/
+using su2uint = uint32_t;
+using su2int = int32_t;
+
+/*--- This type can be used for (rare) compatibility cases or for
+ * computations that are intended to be (always) passive. ---*/
+#ifdef USE_SINGLE_PRECISION
+using passivedouble = float;
+#else
+using passivedouble = double;
+#endif
+
+/*--- std::min/max do not compile if the arguments have inconsistent types, which
+ * happens in single precision due to floating point literals (double by default).
+ * These overloads delegate to fmin/fmax which do not have that problem. ---*/
+#ifdef USE_SINGLE_PRECISION
+namespace std {
+FORCEINLINE float min(const float& a, const double& b) { return fmin(a, static_cast<float>(b)); }
+FORCEINLINE float min(const double& b, const float& a) { return fmin(a, static_cast<float>(b)); }
+FORCEINLINE float max(const float& a, const double& b) { return fmax(a, static_cast<float>(b)); }
+FORCEINLINE float max(const double& b, const float& a) { return fmax(a, static_cast<float>(b)); }
+}  // namespace std
+#endif
+
 /*--- Depending on the datatype defined during the configuration,
  * include the correct definition, and create the main typedef. ---*/
 
@@ -131,12 +172,8 @@ using su2double = codi::RealReverseTag;
 #include "codi.hpp"
 using su2double = codi::RealForward;
 #else  // primal / direct / no AD
-using su2double = double;
+using su2double = passivedouble;
 #endif
-
-/*--- This type can be used for (rare) compatibility cases or for
- * computations that are intended to be (always) passive. ---*/
-using passivedouble = double;
 
 /*--- Define a type for potentially lower precision operations. ---*/
 #ifndef CODI_FORWARD_TYPE

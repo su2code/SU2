@@ -180,13 +180,11 @@ void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Need to clear EdgeFluxes and Jacobian when only the viscous part is called for solid heat transfer,
    * for the weakly coupled energy equation the convection part does this by setting instead of incrementing. ---*/
-  if (!Output && !flow && ReducerStrategy) {
-    EdgeFluxes.SetValZero();
-    if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
-      Jacobian.SetValZero();
-    } else {
-      SU2_OMP_BARRIER
-    }
+  if (!Output && !flow) {
+    if (ReducerStrategy) EdgeFluxes.SetValZero();
+    if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) Jacobian.SetValZero();
+
+    SU2_OMP_BARRIER
   }
 }
 
@@ -257,6 +255,7 @@ void CHeatSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   solver[MESH_0][HEAT_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
   solver[MESH_0][HEAT_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
 
+  SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(MAIN_SOLVER::HEAT_EQUATION, RUNTIME_HEAT_SYS);)
   solver[MESH_0][HEAT_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/

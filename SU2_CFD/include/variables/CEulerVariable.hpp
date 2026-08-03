@@ -345,4 +345,14 @@ class CEulerVariable : public CFlowVariable {
    */
   inline unsigned long GetNewtonSolverIterations(unsigned long iPoint) const final { return NIterNewtonsolver[iPoint]; }
 
+  /*!
+   * \brief Maximum value that OutlierMitigation can have.
+   */
+  static constexpr auto MAX_OUTLIER_MITIGATION = std::numeric_limits<uint8_t>::max();
+
+  /*!
+   * \brief Marks outliers (0 ok, MAX_OUTLIER_MITIGATION maximum mitigation).
+   */
+  su2vector<uint8_t> OutlierMitigation;
+
 };

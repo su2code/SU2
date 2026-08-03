@@ -28,61 +28,78 @@
 #include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
 
-template<typename matrixType, typename vectorType>
-__global__ void GPUMatrixVectorProductAdd(matrixType* matrix, vectorType* vec, vectorType* prod, const unsigned long* d_row_ptr, const unsigned long* d_col_ind, unsigned long nPointDomain, unsigned long nVar, unsigned long nEqn)
-{
-   int row = (blockIdx.x * blockDim.x + threadIdx.x)/32;
-   int threadNo = threadIdx.x%32;
-   int activeThreads = nVar * (32/nVar);
+/*!
+ * \brief Block-LDU SpMV kernel: y[iRow] = (L + D + U) * x per block-row.
+ *        One CUDA block per block-row; threadIdx.x indexes output variable (0..nVar-1).
+ */
+template <class ScalarType>
+__global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
+                                     const su2uint* __restrict__ row_ptr_l,
+                                     const su2uint* __restrict__ col_ind_l,
+                                     const ScalarType* __restrict__ mat_l,
+                                     const ScalarType* __restrict__ mat_d,
+                                     const su2uint* __restrict__ row_ptr_u,
+                                     const su2uint* __restrict__ col_ind_u,
+                                     const ScalarType* __restrict__ mat_u,
+                                     const ScalarType* __restrict__ x, ScalarType* __restrict__ y) {
+  const unsigned long iRow = blockIdx.x;
+  const unsigned long iVar = threadIdx.x;
+  if (iRow >= nRows || iVar >= nVar) return;
 
-   int blockRow = (threadNo/nVar)%nVar;
-
-   if(row<nPointDomain && threadNo<activeThreads) prod[row * nVar + blockRow] = 0.0;
-
-   __syncthreads();
-
-   if(row<nPointDomain && threadNo<activeThreads)
-   {
-      vectorType res = 0.0;
-
-      for(int index = d_row_ptr[row] * nVar * nEqn + threadNo; index < d_row_ptr[row+1] * nVar * nEqn; index+=activeThreads)
-      {
-         int blockCol = index%nEqn;
-         int blockNo = index/(nVar * nEqn);
-         res += matrix[index] * vec[(d_col_ind[blockNo])*nVar + blockCol];
-      }
-
-      atomicAdd(&prod[row * nVar + blockRow], res);
-   }
+  ScalarType sum = 0;
+  /* Lower */
+  for (auto k = row_ptr_l[iRow]; k < row_ptr_l[iRow + 1]; ++k) {
+    const auto col = col_ind_l[k];
+    const ScalarType* blk = mat_l + k * nVar * nVar + iVar * nVar;
+    for (unsigned long jVar = 0; jVar < nVar; ++jVar) sum += blk[jVar] * x[col * nVar + jVar];
+  }
+  /* Diagonal */
+  {
+    const ScalarType* blk = mat_d + iRow * nVar * nVar + iVar * nVar;
+    for (unsigned long jVar = 0; jVar < nVar; ++jVar) sum += blk[jVar] * x[iRow * nVar + jVar];
+  }
+  /* Upper */
+  for (auto k = row_ptr_u[iRow]; k < row_ptr_u[iRow + 1]; ++k) {
+    const auto col = col_ind_u[k];
+    const ScalarType* blk = mat_u + k * nVar * nVar + iVar * nVar;
+    for (unsigned long jVar = 0; jVar < nVar; ++jVar) sum += blk[jVar] * x[col * nVar + jVar];
+  }
+  y[iRow * nVar + iVar] = sum;
 }
 
-template<class ScalarType>
-void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const
-{
-   if(trigger) gpuErrChk(cudaMemcpy((void*)(d_matrix), (void*)&matrix[0], (sizeof(ScalarType)*nnz*nVar*nEqn), cudaMemcpyHostToDevice));
+template <class ScalarType>
+void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
+  if (!trigger) return;
+  gpuErrChk(cudaMemcpy(gpu.d, mat.d, sizeof(ScalarType) * nPoint * nVar * nEqn, cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(gpu.l, mat.l, sizeof(ScalarType) * mat.nnz_l * nVar * nEqn, cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(gpu.u, mat.u, sizeof(ScalarType) * mat.nnz_u * nVar * nEqn, cudaMemcpyHostToDevice));
 }
 
-template<class ScalarType>
+template <class ScalarType>
 void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
-                                                 CGeometry* geometry, const CConfig* config) const
-                                                 {
+                                                    CGeometry* geometry, const CConfig* config) const {
+  if (nVar != nEqn) {
+    SU2_MPI::Error("CUDA CSysMatrix block-LDU SpMV requires square blocks.", CURRENT_FUNCTION);
+  }
 
-   ScalarType* d_vec = vec.GetDevicePointer();
-   ScalarType* d_prod = prod.GetDevicePointer();
+  ScalarType* d_vec = vec.GetDevicePointer();
+  ScalarType* d_prod = prod.GetDevicePointer();
 
-   HtDTransfer();
-   vec.HtDTransfer();
-   prod.GPUSetVal(0.0);
-
-  dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE,1,1);
-  int gridx = KernelParameters::round_up_division(KernelParameters::MVP_WARP_SIZE, nPointDomain);
-  dim3 gridDim(gridx, 1, 1);
-
-  GPUMatrixVectorProductAdd<<<gridDim, blockDim>>>(d_matrix, d_vec, d_prod, d_row_ptr, d_col_ind, nPointDomain, nVar, nEqn);
-  gpuErrChk( cudaPeekAtLastError() );
-
-  prod.DtHTransfer();
-
+  dim3 blockDim(static_cast<unsigned>(nVar), 1, 1);
+  dim3 gridDim(static_cast<unsigned>(nPointDomain), 1, 1);
+  BlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
+      nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, gpu.l, gpu.d,
+      gpu.row_ptr_u, gpu.col_ind_u, gpu.u, d_vec, d_prod);
+  gpuErrChk(cudaGetLastError());
 }
+template void CSysMatrix<su2mixedfloat>::HtDTransfer(bool trigger) const;
+template void CSysMatrix<su2mixedfloat>::GPUMatrixVectorProduct(const CSysVector<su2mixedfloat>& vec,
+                                                                CSysVector<su2mixedfloat>& prod, CGeometry* geometry,
+                                                                const CConfig* config) const;
 
-template class CSysMatrix<su2mixedfloat>; //This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
+template void CSysMatrix<passivedouble>::HtDTransfer(bool trigger) const;
+template void CSysMatrix<passivedouble>::GPUMatrixVectorProduct(const CSysVector<passivedouble>& vec,
+                                                                CSysVector<passivedouble>& prod, CGeometry* geometry,
+                                                                const CConfig* config) const;
+#endif

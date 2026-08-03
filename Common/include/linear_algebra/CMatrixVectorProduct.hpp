@@ -82,7 +82,17 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    */
   inline CSysMatrixVectorProduct(const CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref,
                                  const CConfig* config_ref)
-      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {}
+      : matrix(matrix_ref), geometry(geometry_ref), config(config_ref) {
+    /*--- The matrix does not change while this object lives, so it crosses the bus once,
+     * here. The vectors are uploaded by CSysSolve, see HandleTemporariesIn. ---*/
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      if (config->GetCUDA()) {
+        SU2_DEVICE_REGION(matrix.HtDTransfer();)
+      }
+    }
+#endif
+  }
 
   /*!
    * \note This class cannot be default constructed as that would leave us with invalid pointers.
@@ -96,8 +106,19 @@ class CSysMatrixVectorProduct final : public CMatrixVectorProduct<ScalarType> {
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
     if (config->GetCUDA()) {
-#ifdef HAVE_CUDA
-      matrix.GPUMatrixVectorProduct(u, v, geometry, config);
+#ifdef SU2_ENABLE_CUDA_KERNELS
+      if constexpr (su2_gpu_capable_v<ScalarType>) {
+        BEGIN_SU2_DEVICE_REGION
+        matrix.GPUMatrixVectorProduct(u, v, geometry, config);
+        END_SU2_DEVICE_REGION
+      } else {
+        SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+      }
+#elif defined(HAVE_CUDA)
+      SU2_MPI::Error(
+          "\nError in launching Matrix-Vector Product Function\nENABLE_CUDA is set to YES\nThe GPU kernels are not "
+          "part of the AD libraries, use the primal build for GPU acceleration",
+          CURRENT_FUNCTION);
 #else
       SU2_MPI::Error(
           "\nError in launching Matrix-Vector Product Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
