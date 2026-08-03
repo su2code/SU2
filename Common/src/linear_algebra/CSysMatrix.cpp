@@ -141,9 +141,11 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
     GPUMemoryAllocation::gpu_free(gpu_ilu.col_ind_u);
     GPUMemoryAllocation::gpu_free(d_ilu_color_idx);
     GPUMemoryAllocation::gpu_free(d_ilu_backward_rhs);
+#ifdef SU2_ENABLE_CUDA_KERNELS
     if (ilu_build_graph_exec != nullptr) cudaGraphExecDestroy(ilu_build_graph_exec);
     if (ilu_apply_graph_exec != nullptr) cudaGraphExecDestroy(ilu_apply_graph_exec);
     if (ilu_stream != nullptr) cudaStreamDestroy(ilu_stream);
+#endif
   }
 
 #ifdef USE_MKL
@@ -287,8 +289,9 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     ilu.col_ind_u = pat_ilu.u.innerIdx();
     ilu.nnz_u = pat_ilu.u.getNumNonZeros();
 
-    /*--- The GPU implementation is only level-scheduled, so the levels are not optional there. ---*/
-    if (useCuda || (omp_get_max_threads() > 1 && config->GetLinear_Solver_ILU_levels())) {
+    /*--- Only the host/OMP path uses levels; the GPU path is colored-iterative and never
+     * touches levels_ilu (see color_ilu below). ---*/
+    if (omp_get_max_threads() > 1 && config->GetLinear_Solver_ILU_levels()) {
       /*--- The pattern spans all points but only the domain rows are factorized, so drop the
        * halo rows. This cannot change the levels of the domain rows: a row can only depend on
        * rows with a lower index, and every halo row has a higher index than every domain row. ---*/
