@@ -76,16 +76,16 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   but as the coefficients are frozen this doesnt/shouldnt change the matrix at all. ---*/
   solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->SetMomCoeff(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], periodic, MESH_0);
 
+  /*--- Compute the velocities at the cell edges based on Rhie-Chow interpolation ---*/
+
+  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeRhieChowVelocities(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0]);
+
   /* TODO: The current piso style iteration works although it has no effect on the stable time step sizes as expected
    * it is thus likely not yet optimal and should be looked at. Additionally, the Poisson solve is very difficult
    * to solve at large Reynolds number cases and would therefore massively benefit from Multigrid. The current 
    * limitation here is that SU2 as of today does not allow multigrid for different solvers and has multigrid 
    * only as an option for the flow solver. */
   for (unsigned short i = 0; i < nCorrections; ++i) {
-
-    /*--- Compute the velocities at the cell edges based on Rhie-Chow interpolation ---*/
-
-    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeRhieChowVelocities(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0]);
 
     /*--- Solve the pressure Poisson equation to find p' i.e. div(1/ap * p') = sum_f m_f ---*/
 

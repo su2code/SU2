@@ -172,7 +172,7 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
       if (simplec) {
         for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
           jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
-          Mom_Coeff_nb += flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(0,0);
+          Mom_Coeff_nb += flow_solution->Jacobian.GetBlockView(iPoint, jPoint)(0,0);
         }
       }
 

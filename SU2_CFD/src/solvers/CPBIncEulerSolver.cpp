@@ -1001,6 +1001,7 @@ void CPBIncEulerSolver::Centered_Residual(CGeometry *geometry,
 
   unsigned long iPoint, jPoint;
 
+  const bool bounded_scalar = config->GetBounded_Scalar();
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   /*--- Loop over edge colors. ---*/
@@ -1033,6 +1034,17 @@ void CPBIncEulerSolver::Centered_Residual(CGeometry *geometry,
     /*--- Compute residuals, and Jacobians ---*/
 
     auto conv_residual = numerics->ComputeResidual(config);
+
+    if (bounded_scalar) {
+      su2double MeanDensity = 0.5*(nodes->GetPrimitive(iPoint)[nDim+2] + nodes->GetPrimitive(jPoint)[nDim+2]);
+      auto Normal = geometry->edges->GetNormal(iEdge);
+
+      /*--- Find mass flux (note that edgevelocity itself already included grid movement) ---*/
+
+      EdgeMassFluxes[iEdge] = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        EdgeMassFluxes[iEdge] += MeanDensity * EdgeVelocity[iEdge][iDim] * Normal[iDim];
+    }
 
     /*--- Update residual value ---*/
 
@@ -1166,7 +1178,16 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
 
     auto conv_residual = numerics->ComputeResidual(config);
 
-    if (bounded_scalar) EdgeMassFluxes[iEdge] = conv_residual[0];
+    if (bounded_scalar) {
+      su2double MeanDensity = 0.5*(V_i[nDim+2] + V_j[nDim+2]);
+      auto Normal = geometry->edges->GetNormal(iEdge);
+
+      /*--- Find mass flux (note that edgevelocity itself already included grid movement) ---*/
+
+      EdgeMassFluxes[iEdge] = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        EdgeMassFluxes[iEdge] += MeanDensity * EdgeVelocity[iEdge][iDim] * Normal[iDim];
+    }
 
     /*--- Update residual value ---*/
 
