@@ -2,7 +2,7 @@
  * \file graph_toolbox.hpp
  * \brief Functions and classes to build/represent sparse graphs or sparse patterns.
  * \author P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "../code_config.hpp"
 #include "../containers/C2DContainer.hpp"
 #include "../parallelization/omp_structure.hpp"
 
@@ -333,9 +334,9 @@ class CCompressedSparsePattern {
 template <typename Index_t>
 using CEdgeToNonZeroMap = C2DContainer<unsigned long, Index_t, StorageType::RowMajor, 64, DynamicSize, 2>;
 
-using CCompressedSparsePatternUL = CCompressedSparsePattern<unsigned long>;
-using CCompressedSparsePatternL = CCompressedSparsePattern<long>;
-using CEdgeToNonZeroMapUL = CEdgeToNonZeroMap<unsigned long>;
+using CCompressedSparsePatternUL = CCompressedSparsePattern<su2uint>;
+using CCompressedSparsePatternL = CCompressedSparsePattern<su2int>;
+using CEdgeToNonZeroMapUL = CEdgeToNonZeroMap<su2uint>;
 
 /*!
  * \brief Build a sparse pattern from geometry information, of type FVM or FEM,
@@ -417,30 +418,86 @@ CCompressedSparsePattern<Index_t> buildCSRPattern(Geometry_t& geometry, Connecti
 }
 
 /*!
- * \brief Build a lookup table of the absolute positions of the non zero entries
- *        of a compressed sparse pattern, accessed when visiting the FVM edges
- *        of a grid. The table can then be used for fast access (avoids searches)
- *        to the non zero entries of a sparse matrix associated with the pattern.
- * \param[in] geometry - Definition of the grid.
- * \param[in] pattern - Sparse pattern.
- * \return nEdge by 2 matrix.
+ * \brief Extract the strictly-lower part of a symmetric compressed sparse pattern.
+ *        For each row i, the lower entries are those at positions [outerPtr[i], diagPtr[i]).
+ * \param[in] csr - Full symmetric pattern with diagonal pointer already built.
+ * \return Strictly-lower CSR pattern.
  */
-template <class Geometry_t, typename Index_t>
-CEdgeToNonZeroMap<Index_t> mapEdgesToSparsePattern(Geometry_t& geometry,
-                                                   const CCompressedSparsePattern<Index_t>& pattern) {
-  assert(!pattern.empty());
+template <typename Index_t>
+CCompressedSparsePattern<Index_t> buildLowerPattern(const CCompressedSparsePattern<Index_t>& csr) {
+  assert(!csr.empty());
+  const auto nPoint = csr.getOuterSize();
+  const auto* outerPtr = csr.outerPtr();
+  const auto* innerIdx = csr.innerIdx();
+  const auto* diagPtr = csr.diagPtr();
 
-  CEdgeToNonZeroMap<Index_t> edgeMap(geometry.GetnEdge(), 2);
+  su2vector<Index_t> outerPtrL(nPoint + 1);
+  outerPtrL(0) = 0;
+  for (auto i = 0ul; i < nPoint; ++i) outerPtrL(i + 1) = outerPtrL(i) + static_cast<Index_t>(diagPtr[i] - outerPtr[i]);
 
-  for (Index_t iEdge = 0; iEdge < geometry.GetnEdge(); ++iEdge) {
-    Index_t iPoint = geometry.edges->GetNode(iEdge, 0);
-    Index_t jPoint = geometry.edges->GetNode(iEdge, 1);
+  su2vector<Index_t> innerIdxL(outerPtrL(nPoint));
+  Index_t k = 0;
+  for (auto i = 0ul; i < nPoint; ++i)
+    for (auto p = outerPtr[i]; p < diagPtr[i]; ++p) innerIdxL(k++) = innerIdx[p];
 
-    edgeMap(iEdge, 0) = pattern.quickFindInnerIdx(iPoint, jPoint);
-    edgeMap(iEdge, 1) = pattern.quickFindInnerIdx(jPoint, iPoint);
+  return CCompressedSparsePattern<Index_t>(std::move(outerPtrL), std::move(innerIdxL));
+}
+
+/*!
+ * \brief Extract the strictly-upper part of a symmetric compressed sparse pattern.
+ *        For each row i, the upper entries are those at positions (diagPtr[i], outerPtr[i+1]).
+ * \param[in] csr - Full symmetric pattern with diagonal pointer already built.
+ * \return Strictly-upper CSR pattern.
+ */
+template <typename Index_t>
+CCompressedSparsePattern<Index_t> buildUpperPattern(const CCompressedSparsePattern<Index_t>& csr) {
+  assert(!csr.empty());
+  const auto nPoint = csr.getOuterSize();
+  const auto* outerPtr = csr.outerPtr();
+  const auto* innerIdx = csr.innerIdx();
+  const auto* diagPtr = csr.diagPtr();
+
+  su2vector<Index_t> outerPtrU(nPoint + 1);
+  outerPtrU(0) = 0;
+  for (auto i = 0ul; i < nPoint; ++i)
+    outerPtrU(i + 1) = outerPtrU(i) + static_cast<Index_t>(outerPtr[i + 1] - diagPtr[i] - 1);
+
+  su2vector<Index_t> innerIdxU(outerPtrU(nPoint));
+  Index_t k = 0;
+  for (auto i = 0ul; i < nPoint; ++i)
+    for (auto p = diagPtr[i] + 1; p < outerPtr[i + 1]; ++p) innerIdxU(k++) = innerIdx[p];
+
+  return CCompressedSparsePattern<Index_t>(std::move(outerPtrU), std::move(innerIdxU));
+}
+
+/*!
+ * \brief Build bijective maps between strictly-lower (L) and strictly-upper (U) non-zero entries
+ *        that are each other's transposes. Requires a symmetric pattern.
+ *        l_to_u[k_l] = k_u such that U-entry k_u is the transpose of L-entry k_l, and vice-versa.
+ * \param[in] pattern_l - Strictly-lower CSR pattern.
+ * \param[in] pattern_u - Strictly-upper CSR pattern.
+ * \param[out] l_to_u - For each L-entry index, the U-entry index of its transpose.
+ * \param[out] u_to_l - For each U-entry index, the L-entry index of its transpose.
+ */
+template <typename Index_t>
+void buildLUTransposeMaps(const CCompressedSparsePattern<Index_t>& pattern_l,
+                          const CCompressedSparsePattern<Index_t>& pattern_u, su2vector<Index_t>& l_to_u,
+                          su2vector<Index_t>& u_to_l) {
+  const auto nnz_l = pattern_l.getNumNonZeros();
+  const auto nnz_u = pattern_u.getNumNonZeros();
+  assert(nnz_l == nnz_u && "L and U must have the same NNZ (symmetric pattern).");
+
+  l_to_u.resize(nnz_l);
+  u_to_l.resize(nnz_u);
+
+  for (Index_t i = 0; i < pattern_l.getOuterSize(); ++i) {
+    for (Index_t k_l = pattern_l.outerPtr()[i]; k_l < pattern_l.outerPtr()[i + 1]; ++k_l) {
+      const Index_t j = pattern_l.innerIdx()[k_l];            // j < i (strictly lower)
+      const Index_t k_u = pattern_u.quickFindInnerIdx(j, i);  // (j,i) is in U since j<i
+      l_to_u(k_l) = k_u;
+      u_to_l(k_u) = k_l;
+    }
   }
-
-  return edgeMap;
 }
 
 /*!
@@ -516,7 +573,7 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool includeOuterId
 
   {
     /*--- For each color keep track of the inner indices that are in it. ---*/
-    std::vector<std::vector<bool> > innerInColor;
+    std::vector<std::vector<bool>> innerInColor;
     innerInColor.emplace_back(nInner, false);
 
     /*--- Order in which we look for space in the colors to insert a new group. ---*/
@@ -605,7 +662,7 @@ T colorSparsePattern(const T& pattern, size_t groupSize = 1, bool includeOuterId
 /*!
  * \brief A way to represent one grid color that allows range-for syntax.
  */
-template <typename T = unsigned long>
+template <typename T = su2uint>
 struct GridColor {
   static_assert(std::is_integral<T>::value);
 
@@ -623,7 +680,7 @@ struct GridColor {
  * \brief A way to represent natural coloring {0,1,2,...,size-1} with zero
  * overhead (behaves like looping with an integer index, after optimization...).
  */
-template <typename T = unsigned long>
+template <typename T = su2uint>
 struct DummyGridColor {
   static_assert(std::is_integral<T>::value);
 
@@ -670,6 +727,33 @@ su2double coloringEfficiency(const SparsePattern& coloring, int numThreads, int 
     real += chunkSize * roundUpDiv(roundUpDiv(coloring.getNumNonZeros(color), chunkSize), numThreads);
 
   return ideal / real;
+}
+
+/*!
+ * \brief Compute the levels for the lower part of a sparse pattern.
+ * For example, corresponding to the dependencies of forward substitution.
+ */
+template <class T>
+T computeLevels(const T& pattern) {
+  using Index = typename T::IndexType;
+
+  std::vector<std::vector<Index>> levels;
+  {
+    const auto n = pattern.getOuterSize();
+    su2vector<int> level(n);
+    for (Index i = 0; i < n; ++i) {
+      level(i) = 0;
+      for (const auto j : pattern.getInnerIter(i)) {
+        if (j >= i) continue;
+        level(i) = std::max(level(i), level(j) + 1);
+      }
+      if (static_cast<std::size_t>(level(i) + 1) > levels.size()) {
+        levels.emplace_back();
+      }
+      levels[level(i)].push_back(i);
+    }
+  }
+  return T(levels);
 }
 
 /// @}

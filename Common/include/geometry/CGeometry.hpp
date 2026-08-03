@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the geometrical structure.
  *        The subroutines and functions are in the <i>CGeometry.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -73,6 +73,19 @@ using namespace std;
  * \author F. Palacios
  */
 class CGeometry {
+ public:
+  /*!
+   * \brief Aggregates the full symmetric CSR and its LDU split (L strictly-lower, U strictly-upper).
+   *        Built together lazily via GetSparsePattern; all three are always valid once non-empty.
+   */
+  struct LDUSparsePattern {
+    CCompressedSparsePatternUL csr; /*!< Full symmetric pattern (with diagonal pointer). */
+    CCompressedSparsePatternUL l;   /*!< Strictly-lower part. */
+    CCompressedSparsePatternUL u;   /*!< Strictly-upper part. */
+
+    bool empty() const { return csr.empty(); }
+  };
+
  protected:
   enum : size_t { OMP_MIN_SIZE = 32 }; /*!< \brief Chunk size for small loops. */
   enum : size_t { MAXNDIM = 3 };
@@ -187,12 +200,15 @@ class CGeometry {
 
   /*--- Sparsity patterns associated with the geometry. ---*/
 
-  CCompressedSparsePatternUL finiteVolumeCSRFill0, /*!< \brief 0-fill FVM sparsity. */
-      finiteVolumeCSRFillN,                        /*!< \brief N-fill FVM sparsity (e.g. for ILUn preconditioner). */
-      finiteElementCSRFill0,                       /*!< \brief 0-fill FEM sparsity. */
-      finiteElementCSRFillN;                       /*!< \brief N-fill FEM sparsity (e.g. for ILUn preconditioner). */
+  LDUSparsePattern finiteVolumePatternFill0;  /*!< \brief FVM sparsity with 0-fill (structural pattern). */
+  LDUSparsePattern finiteVolumePatternFillN;  /*!< \brief FVM sparsity with N-fill (e.g. for ILU-N). */
+  LDUSparsePattern finiteElementPatternFill0; /*!< \brief FEM sparsity with 0-fill (structural pattern). */
+  LDUSparsePattern finiteElementPatternFillN; /*!< \brief FEM sparsity with N-fill (e.g. for ILU-N). */
 
-  CEdgeToNonZeroMapUL edgeToCSRMap; /*!< \brief Map edges to CSR entries referenced by them (i,j) and (j,i). */
+  su2vector<su2uint> finiteVolumeLToUTranspMap;  /*!< \brief FVM L-entry -> U-entry of its transpose. */
+  su2vector<su2uint> finiteVolumeUToLTranspMap;  /*!< \brief FVM U-entry -> L-entry of its transpose. */
+  su2vector<su2uint> finiteElementLToUTranspMap; /*!< \brief FEM L-entry -> U-entry of its transpose. */
+  su2vector<su2uint> finiteElementUToLTranspMap; /*!< \brief FEM U-entry -> L-entry of its transpose. */
 
   /*--- Edge and element colorings. ---*/
 
@@ -1868,21 +1884,23 @@ class CGeometry {
    * \param[in] fillLvl - Level of fill of the pattern.
    * \return Reference to the sparse pattern.
    */
-  const CCompressedSparsePatternUL& GetSparsePattern(ConnectivityType type, unsigned long fillLvl = 0);
+  const LDUSparsePattern& GetSparsePattern(ConnectivityType type, unsigned long fillLvl = 0);
 
   /*!
-   * \brief Get the edge to sparse pattern map.
-   * \note This method builds the map and required pattern (0-fill FVM) if that has not been done yet.
-   * \return Reference to the map.
-   */
-  const CEdgeToNonZeroMapUL& GetEdgeToSparsePatternMap();
-
-  /*!
-   * \brief Get the transpose of the (main, i.e 0 fill) sparse pattern (e.g. CSR becomes CSC).
+   * \brief Get the bijective map from L-entry indices to U-entry indices of their transposes.
+   * \note Requires symmetric pattern. Builds both LU transpose maps if not already built.
    * \param[in] type - Finite volume or finite element.
-   * \return Reference to the map.
+   * \return Reference to the l_to_u map.
    */
-  const su2vector<unsigned long>& GetTransposeSparsePatternMap(ConnectivityType type);
+  const su2vector<su2uint>& GetLToUTransposeSparsePatternMap(ConnectivityType type);
+
+  /*!
+   * \brief Get the bijective map from U-entry indices to L-entry indices of their transposes.
+   * \note Requires symmetric pattern. Builds both LU transpose maps if not already built.
+   * \param[in] type - Finite volume or finite element.
+   * \return Reference to the u_to_l map.
+   */
+  const su2vector<su2uint>& GetUToLTransposeSparsePatternMap(ConnectivityType type);
 
   /*!
    * \brief Get the edge coloring.

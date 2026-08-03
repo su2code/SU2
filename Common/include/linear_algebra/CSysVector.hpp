@@ -3,7 +3,7 @@
  * \brief Declararion and inlines of the vector class used in the
  * solution of large, distributed, sparse linear systems.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,6 +37,35 @@
 #include "vector_expressions.hpp"
 #include "../../include/CConfig.hpp"
 
+#ifdef __CUDACC__
+#include "GPUComms.cuh"
+#define SU2_CUDA_HOST_DEVICE __host__ __device__
+#else
+#define SU2_CUDA_HOST_DEVICE
+#endif
+
+template <class ScalarType>
+class CSysVector;
+
+/*!
+ * \brief True for the plain floating-point scalar types the GPU vector kernels
+ *        (CSysVectorGPU.cu) are instantiated for, in builds where those kernels
+ *        exist at all. AD active types are never dispatched to the device: the
+ *        tape/expression machinery those types pull in is not compatible with
+ *        nvcc's device-code compilation, and device-resident autodiff is not
+ *        supported by this GPU path.
+ * \note In an AD build this is false even for su2mixedfloat, because the .cu
+ *       translation units are not linked into the AD libraries (see
+ *       SU2_ENABLE_CUDA_KERNELS in code_config.hpp).
+ */
+#ifdef SU2_ENABLE_CUDA_KERNELS
+template <class ScalarType>
+inline constexpr bool su2_gpu_capable_v = std::is_floating_point_v<ScalarType>;
+#else
+template <class ScalarType>
+inline constexpr bool su2_gpu_capable_v = false;
+#endif
+
 /*!
  * \brief OpenMP worksharing construct used in CSysVector for loops.
  * \note The loop will only run in parallel if methods are called from a
@@ -58,6 +87,106 @@
 #define CSYSVEC_PARFOR SU2_OMP_SIMD
 #define END_CSYSVEC_PARFOR
 #endif
+
+/*!
+ * \brief Brackets device work so that it is issued by a single thread with the whole team
+ * synchronized before and after.
+ * \note The GPU is one shared resource and the device path does not use OpenMP worksharing.
+ * Issuing from one thread keeps kernel launches ordered on the default stream and, above
+ * all, stops part of a team from entering a worksharing construct that the rest skipped.
+ * Correctness relies on all threads reaching the same vector operations in the same order,
+ * which is the assumption the "nowait" clause on CSYSVEC_PARFOR already makes. These
+ * regions must not be nested; they are used by the operations of this class and by the
+ * matrix-vector product and preconditioner wrappers, and by nothing above those.
+ */
+#define SU2_DEVICE_REGION(...) SU2_OMP_SAFE_GLOBAL_ACCESS(__VA_ARGS__)
+#define BEGIN_SU2_DEVICE_REGION BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+#define END_SU2_DEVICE_REGION END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+namespace VecExpr {
+
+enum class DeviceAssignOp { Assign, Add, Subtract, Multiply, Divide };
+
+/*!
+ * \brief Whether vector expressions are currently evaluated on the device.
+ * \note Defined in CSysVectorGPU.cu. This is a plain global, not per thread: every thread
+ * of a team has to agree on it or they would split over the worksharing constructs below.
+ * It is switched by CSysSolve at the same boundary that uploads and downloads the vectors
+ * (HandleTemporariesIn/Out), and nowhere else, so it does not change while a solve runs.
+ */
+#ifdef SU2_ENABLE_CUDA_KERNELS
+bool UseDeviceExpressions();
+void SetUseDeviceExpressions(bool use);
+#else
+inline bool UseDeviceExpressions() { return false; }
+inline void SetUseDeviceExpressions(bool) {}
+#endif
+
+/*!
+ * \brief How a CSysVector is captured inside an expression: a bare pointer to whichever
+ * storage the expression is going to be evaluated from.
+ * \note Capturing by value (rather than a reference to the vector) is what makes an
+ * arbitrary expression tree trivially copyable, and therefore passable by value to the
+ * assignment kernel. The choice of storage is fixed when the expression is built, which is
+ * sound because there is no fallback: while UseDeviceExpressions() holds, every expression
+ * is evaluated by a kernel.
+ */
+template <class Scalar>
+class CVectorView : public CVecExpr<CVectorView<Scalar>, Scalar> {
+ private:
+  const Scalar* data = nullptr;
+
+ public:
+  static constexpr bool StoreAsRef = false;
+
+  CVectorView(const CSysVector<Scalar>& vector);
+
+  SU2_CUDA_HOST_DEVICE FORCEINLINE const Scalar& operator[](size_t i) const { return data[i]; }
+};
+
+template <class Scalar>
+struct store_type<CSysVector<Scalar>> {
+  using type = CVectorView<Scalar>;
+};
+
+template <class Scalar>
+struct store_type<const CSysVector<Scalar>> {
+  using type = CVectorView<Scalar>;
+};
+
+template <DeviceAssignOp Op, class Scalar, class T>
+void AssignDeviceExpression(Scalar* data, unsigned long size, const CVecExpr<T, Scalar>& expr);
+
+#ifdef __CUDACC__
+template <DeviceAssignOp Op, class Scalar, class T>
+__global__ void DeviceAssignKernel(Scalar* data, unsigned long size, T expr) {
+  const unsigned long i = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x;
+  if (i >= size) return;
+
+  if constexpr (Op == DeviceAssignOp::Assign) {
+    data[i] = expr[i];
+  } else if constexpr (Op == DeviceAssignOp::Add) {
+    data[i] += expr[i];
+  } else if constexpr (Op == DeviceAssignOp::Subtract) {
+    data[i] -= expr[i];
+  } else if constexpr (Op == DeviceAssignOp::Multiply) {
+    data[i] *= expr[i];
+  } else {
+    data[i] /= expr[i];
+  }
+}
+
+template <DeviceAssignOp Op, class Scalar, class T>
+inline void AssignDeviceExpression(Scalar* data, unsigned long size, const CVecExpr<T, Scalar>& expr) {
+  if (size == 0) return;
+  constexpr unsigned block_size = 256;
+  const auto grid_size = static_cast<unsigned>((size + block_size - 1) / block_size);
+  DeviceAssignKernel<Op><<<grid_size, block_size>>>(data, size, expr.derived());
+  gpuErrChk(cudaPeekAtLastError());
+}
+#endif
+
+}  // namespace VecExpr
 
 /*!
  * \class CSysVector
@@ -108,6 +237,37 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
       SU2_OMP_SIMD_IF_NOT_AD
       for (size_t k = 0; k < N; ++k) out[k][i] = mask[k] * in[i][k];
     }
+  }
+
+  /*!
+   * \brief Evaluates an expression into the device storage of this vector.
+   * \note The kernel has to be instantiated for the expression type in CSysVectorGPU.cu,
+   * a shape that is not in that list is an undefined symbol at link time.
+   */
+  template <VecExpr::DeviceAssignOp Op, class T>
+  CSysVector& AssignDevice(const VecExpr::CVecExpr<T, ScalarType>& expr) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      BEGIN_SU2_DEVICE_REGION {
+        VecExpr::store_t<const T> stored_expr(expr.derived());
+        VecExpr::AssignDeviceExpression<Op>(d_vec_val, nElm, stored_expr);
+      }
+      END_SU2_DEVICE_REGION
+    }
+#endif
+    return *this;
+  }
+
+  template <VecExpr::DeviceAssignOp Op>
+  CSysVector& AssignDevice(ScalarType val) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      BEGIN_SU2_DEVICE_REGION
+      VecExpr::AssignDeviceExpression<Op>(d_vec_val, nElm, VecExpr::Bcast<ScalarType>(val));
+      END_SU2_DEVICE_REGION
+    }
+#endif
+    return *this;
   }
 
  public:
@@ -235,15 +395,30 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   void DtHTransfer(bool trigger = true) const;
 
   /*!
-   * \brief Sets all the elements of the GPU vector to a certain value
-   * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
+   * \brief Dot product between this vector and another vector on the device.
+   * \note Explicit GPU helper for solver-side reductions.
+   * \param[in] other - Input vector.
+   * \return Dot product result.
    */
-  void GPUSetVal(ScalarType val, bool trigger = true) const;
+  ScalarType GPUDot(const CSysVector& other) const;
+
+  /*!
+   * \brief L2 norm of this vector on the device.
+   * \note Explicit GPU helper for solver-side reductions.
+   * \return L2 norm result.
+   */
+  ScalarType GPUNorm() const;
 
   /*!
    * \brief return device pointer that points to the CSysVector values in GPU memory
    */
   inline ScalarType* GetDevicePointer() const { return d_vec_val; }
+
+  /*!
+   * \brief return host pointer that points to the CSysVector values, counterpart of
+   * GetDevicePointer
+   */
+  inline const ScalarType* GetHostPointer() const { return vec_val; }
 
   /*!
    * \brief return the number of local elements in the CSysVector
@@ -301,6 +476,11 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] other - Another vector.
    */
   CSysVector& operator=(const CSysVector& other) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      if (VecExpr::UseDeviceExpressions()) return AssignDevice<VecExpr::DeviceAssignOp::Assign>(other);
+    }
+#endif
     CSYSVEC_PARFOR
     for (auto i = 0ul; i < nElm; ++i) vec_val[i] = other.vec_val[i];
     END_CSYSVEC_PARFOR
@@ -311,25 +491,31 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \brief Compound assignement operations with scalars and expressions.
    * \param[in] val/expr - Scalar value or expression.
    */
-#define MAKE_COMPOUND(OP)                                                 \
-  CSysVector& operator OP(ScalarType val) {                               \
-    CSYSVEC_PARFOR                                                        \
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;                  \
-    END_CSYSVEC_PARFOR                                                    \
-    return *this;                                                         \
-  }                                                                       \
-  template <class T>                                                      \
-  CSysVector& operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) { \
-    CSYSVEC_PARFOR                                                        \
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr.derived()[i];    \
-    END_CSYSVEC_PARFOR                                                    \
-    return *this;                                                         \
+#define MAKE_COMPOUND(OP, ASSIGN_OP)                                             \
+  CSysVector& operator OP(ScalarType val) {                                      \
+    if constexpr (su2_gpu_capable_v<ScalarType>) {                               \
+      if (VecExpr::UseDeviceExpressions()) return AssignDevice<ASSIGN_OP>(val);  \
+    }                                                                            \
+    CSYSVEC_PARFOR                                                               \
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;                         \
+    END_CSYSVEC_PARFOR                                                           \
+    return *this;                                                                \
+  }                                                                              \
+  template <class T>                                                             \
+  CSysVector& operator OP(const VecExpr::CVecExpr<T, ScalarType>& expr) {        \
+    if constexpr (su2_gpu_capable_v<ScalarType>) {                               \
+      if (VecExpr::UseDeviceExpressions()) return AssignDevice<ASSIGN_OP>(expr); \
+    }                                                                            \
+    CSYSVEC_PARFOR                                                               \
+    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr.derived()[i];           \
+    END_CSYSVEC_PARFOR                                                           \
+    return *this;                                                                \
   }
-  MAKE_COMPOUND(=)
-  MAKE_COMPOUND(+=)
-  MAKE_COMPOUND(-=)
-  MAKE_COMPOUND(*=)
-  MAKE_COMPOUND(/=)
+  MAKE_COMPOUND(=, VecExpr::DeviceAssignOp::Assign)
+  MAKE_COMPOUND(+=, VecExpr::DeviceAssignOp::Add)
+  MAKE_COMPOUND(-=, VecExpr::DeviceAssignOp::Subtract)
+  MAKE_COMPOUND(*=, VecExpr::DeviceAssignOp::Multiply)
+  MAKE_COMPOUND(/=, VecExpr::DeviceAssignOp::Divide)
 #undef MAKE_COMPOUND
 
   /*!
@@ -344,6 +530,21 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    */
   template <class T>
   ScalarType dot(const VecExpr::CVecExpr<T, ScalarType>& expr) const {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      using DeviceExpr = std::remove_cv_t<VecExpr::remove_reference_t<T>>;
+      static_assert(std::is_same_v<DeviceExpr, CSysVector>,
+                    "On the device the dot product is a cuBLAS call, so it only takes vectors. "
+                    "Assign the expression to a vector first.");
+      if (VecExpr::UseDeviceExpressions()) {
+        /*--- GPUDot reduces over MPI, which has to happen once for the team, so the result
+         * is published through the same scratch slot the host reduction below uses. ---*/
+        SU2_DEVICE_REGION(dot_scratch[0] = GPUDot(expr.derived());)
+        return dot_scratch[0];
+      }
+    }
+#endif
+
     /*--- All threads get the same "view" of the vectors. ---*/
     SU2_OMP_BARRIER
 
@@ -502,5 +703,14 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   }
 };
 
+namespace VecExpr {
+
+template <class Scalar>
+CVectorView<Scalar>::CVectorView(const CSysVector<Scalar>& vector)
+    : data(UseDeviceExpressions() ? vector.GetDevicePointer() : vector.GetHostPointer()) {}
+
+}  // namespace VecExpr
+
 #undef CSYSVEC_PARFOR
 #undef END_CSYSVEC_PARFOR
+#undef SU2_CUDA_HOST_DEVICE

@@ -2,7 +2,7 @@
  * \file CEulerSolver.hpp
  * \brief Headers of the CEulerSolver class
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -115,6 +115,9 @@ protected:
   unsigned long BCThrust_Counter;
 
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
+
+  /*!< \brief Variables for outlier detection. */
+  su2double MeanTemperature, StdDevTemperature;
 
   /*--- Turbomachinery Solver Variables ---*/
 
@@ -782,11 +785,17 @@ public:
   void PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
 
   /*!
-   * \brief Complete an implicit iteration.
-   * \param[in] geometry - Geometrical definition of the problem.
+   * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
+   * a nonlinear iteration for stability.
    * \param[in] config - Definition of the particular problem.
    */
-  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
+  void ComputeUnderRelaxationFactor(const CConfig *config) final;
+
+  /*!
+   * \brief Identify points where the static temperature is an outlier to treat them
+   *        as non-physical, e.g. force the reconstruction to be 1st order.
+   */
+  void IdentifySolutionOutliers(const CConfig *config, unsigned long iter) final;
 
   /*!
    * \brief Provide the mass flow rate.
@@ -1127,20 +1136,21 @@ public:
                                    unsigned short marker_flag,
                                    TURBOMACHINERY_TYPE kind_turb){
 
-    if ((kind_turb == TURBOMACHINERY_TYPE::AXIAL && nDim == 3) || (kind_turb == TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL && marker_flag == INFLOW) ){
-      turboVelocity[2] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
-      turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
+    if ((kind_turb == TURBOMACHINERY_TYPE::AXIAL && nDim == 3) ||
+        (kind_turb == TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) ||
+        (kind_turb == TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL && marker_flag == INFLOW)) {
+      turboVelocity[2] = turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
+      turboVelocity[1] = turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
       turboVelocity[0] = cartesianVelocity[2];
-    }
-    else{
-      turboVelocity[0] =  turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
-      turboVelocity[1] =  turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
-      if (marker_flag == INFLOW){
+    } else {
+      turboVelocity[0] = turboNormal[0]*cartesianVelocity[0] + cartesianVelocity[1]*turboNormal[1];
+      turboVelocity[1] = turboNormal[0]*cartesianVelocity[1] - turboNormal[1]*cartesianVelocity[0];
+
+      if (marker_flag == INFLOW) {
         turboVelocity[0] *= -1.0;
         turboVelocity[1] *= -1.0;
       }
-      if(nDim == 3)
-        turboVelocity[2] = cartesianVelocity[2];
+      if (nDim == 3) turboVelocity[2] = cartesianVelocity[2];
     }
   }
 
@@ -1156,22 +1166,21 @@ public:
                                   unsigned short marker_flag,
                                   TURBOMACHINERY_TYPE kind_turb){
 
-    if ((kind_turb == TURBOMACHINERY_TYPE::AXIAL && nDim == 3) || (kind_turb == TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) || (kind_turb == TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL && marker_flag == INFLOW)){
+    if ((kind_turb == TURBOMACHINERY_TYPE::AXIAL && nDim == 3) ||
+        (kind_turb == TURBOMACHINERY_TYPE::CENTRIPETAL_AXIAL && marker_flag == OUTFLOW) ||
+        (kind_turb == TURBOMACHINERY_TYPE::AXIAL_CENTRIFUGAL && marker_flag == INFLOW)) {
       cartesianVelocity[0] = turboVelocity[2]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
       cartesianVelocity[1] = turboVelocity[2]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
       cartesianVelocity[2] = turboVelocity[0];
-    }
-    else{
-      cartesianVelocity[0] =  turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
-      cartesianVelocity[1] =  turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
+    } else {
+      cartesianVelocity[0] = turboVelocity[0]*turboNormal[0] - turboVelocity[1]*turboNormal[1];
+      cartesianVelocity[1] = turboVelocity[0]*turboNormal[1] + turboVelocity[1]*turboNormal[0];
 
-      if (marker_flag == INFLOW){
+      if (marker_flag == INFLOW) {
         cartesianVelocity[0] *= -1.0;
         cartesianVelocity[1] *= -1.0;
       }
-
-      if(nDim == 3)
-        cartesianVelocity[2] = turboVelocity[2];
+      if (nDim == 3) cartesianVelocity[2] = turboVelocity[2];
     }
   }
 

@@ -3,7 +3,7 @@
  * \brief Declaration of the base numerics class, the
  *        implementation is in the CNumerics.cpp file.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -192,9 +192,8 @@ protected:
   su2double
   lesMode_i = 0.0, /*!< \brief LES sensor at point i for hybrid RANS-LES methods. */
   lesMode_j = 0.0; /*!< \brief LES sensor at point j for hybrid RANS-LES methods. */
-  unsigned short
-  sbsInBox_i = 0, /*!< \brief Sensor to assess if point i lies inside the box where the Stochastic Backscatter Model is active. */
-  sbsInBox_j = 0; /*!< \brief Sensor to assess if point j lies inside the box where the Stochastic Backscatter Model is active. */
+  int8_t
+  sbsInBox_i = 0; /*!< \brief Sensor to assess if point i lies inside the box where the Stochastic Backscatter Model is active. */
   SST_ParsedOptions sstParsedOptions; /*!< \brief additional options for the SST turbulence model */
   unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
   su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
@@ -520,12 +519,20 @@ public:
    * See: Spalart, P. R., "Strategies for Turbulence Modelling and Simulation",
    * International Journal of Heat and Fluid Flow, Vol. 21, 2000, pp. 252-263
    *
+   * The QCR correction applies to the turbulent (Boussinesq) stresses only.
+   * When tau is the total (laminar + turbulent) stress tensor, which is
+   * proportional to the total viscosity, the turbulent part is recovered by
+   * scaling the correction with turb_fraction = mu_t / (mu_l + mu_t); at a
+   * no-slip wall (mu_t = 0) the correction vanishes. Pass 1 only if tau is
+   * already the turbulent stress tensor.
+   *
    * \param[in] nDim: 2D or 3D.
    * \param[in] gradvel: Velocity gradients.
    * \param[in,out] tau: Shear stress tensor.
+   * \param[in] turb_fraction: Turbulent share of the viscosity in tau.
    */
-  template <class Mat1, class Mat2>
-  FORCEINLINE static void AddQCR(size_t nDim, const Mat1& gradvel, Mat2& tau) {
+  template <class Mat1, class Mat2, class Scalar2>
+  FORCEINLINE static void AddQCR(size_t nDim, const Mat1& gradvel, Mat2& tau, Scalar2 turb_fraction) {
     using Scalar = typename std::decay<decltype(gradvel[0][0])>::type;
 
     const Scalar c_cr1 = 0.3;
@@ -554,7 +561,7 @@ public:
 
     for (size_t iDim = 0; iDim < nDim; iDim++)
       for (size_t jDim = 0; jDim < nDim; jDim++)
-        tau[iDim][jDim] -= c_cr1 * tauQCR[iDim][jDim];
+        tau[iDim][jDim] -= turb_fraction * c_cr1 * tauQCR[iDim][jDim];
   }
 
   /*!
@@ -651,7 +658,7 @@ public:
       }
     }
   }
-  
+
   /*!
    * \brief Compute a random contribution to the Reynolds stress tensor (Stochastic Backscatter Model).
    * \details See: Kok, Johan C. "A stochastic backscatter model for grey-area mitigation in detached
@@ -664,12 +671,12 @@ public:
    * \param[out] stochReynStress - Stochastic tensor (to be added to the Reynolds stress tensor).
    */
   template<class Vec, class Mat>
-  inline void ComputeStochReynStress(su2double density, su2double tke, const Vec& rndVec, 
+  inline void ComputeStochReynStress(su2double density, su2double tke, const Vec& rndVec,
                                      su2double Cmag, Mat& stochReynStress) {
 
     /* --- Calculate stochastic tensor --- */
 
-    su2double stochLim = 3.0; 
+    su2double stochLim = 3.0;
 
     stochReynStress[0][0] =   0.0;
     stochReynStress[1][1] =   0.0;
@@ -918,11 +925,9 @@ public:
   /*!
    * \brief Set the sensor to locate the box where the Stochastic Backscatter Model is active.
    * \param[in] val_sbsInBox_i - 1 if point i lies inside the box where the model is active.
-   * \param[in] val_sbsInBox_j - 1 if point j lies inside the box where the model is active.
    */
-  inline void SetSbsInBoxSensor(unsigned short val_sbsInBox_i, unsigned short val_sbsInBox_j) {
+  inline void SetSbsInBoxSensor(int8_t val_sbsInBox_i) {
     sbsInBox_i = val_sbsInBox_i;
-    sbsInBox_j = val_sbsInBox_j;
   }
 
   /*!

@@ -2,7 +2,7 @@
  * \file CDiscAdjFEASolver.cpp
  * \brief Main subroutines for solving adjoint FEM elasticity problems.
  * \author R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -126,16 +126,31 @@ CDiscAdjFEASolver::~CDiscAdjFEASolver() { delete nodes; }
 void CDiscAdjFEASolver::SetRecording(CGeometry* geometry, CConfig *config){
   SU2_ZONE_SCOPED
 
-  /*--- Reset the solution to the initial (converged) solution ---*/
+  /*--- Under some conditions, linear elasticity problems converge in one iteration.
+   * This means that the "clear indices" step of the discrete adjoint solver produces a
+   * converged solution regardless of the primal solution given to the adjoint solver.
+   * We can take advantage of this for optimization to skip the primal solver. ---*/
+
+  const bool linear = config->GetGeometricConditions() == STRUCT_DEFORMATION::SMALL;
+  const bool heat = config->GetWeakly_Coupled_Heat();
+  const bool time_domain = config->GetTime_Domain();
+  const bool keep_solution = linear && !heat && !time_domain && !std::is_same_v<su2mixedfloat, float>;
+
+  /*--- Restore the solution to the initial (converged) solution or reset AD indices. ---*/
 
   for (auto iPoint = 0ul; iPoint < nPoint; iPoint++) {
-    for (auto iVar = 0u; iVar < nVar; iVar++)
-      direct_solver->GetNodes()->SetSolution(iPoint, iVar, nodes->GetSolution_Direct(iPoint)[iVar]);
+    if (keep_solution) {
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        AD::ResetInput(direct_solver->GetNodes()->GetSolution(iPoint)[iVar]);
+    } else {
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        direct_solver->GetNodes()->SetSolution(iPoint, iVar, nodes->GetSolution_Direct(iPoint)[iVar]);
+    }
   }
 
   /*--- Reset the input for time n ---*/
 
-  if (config->GetTime_Domain()) {
+  if (time_domain) {
     for (auto iPoint = 0ul; iPoint < nPoint; iPoint++)
       for (auto iVar = 0u; iVar < nVar; iVar++)
         AD::ResetInput(direct_solver->GetNodes()->GetSolution_time_n(iPoint)[iVar]);

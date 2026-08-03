@@ -2,7 +2,7 @@
  * \file CAdjEulerSolver.cpp
  * \brief Main subroutines for solving Euler adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -2094,7 +2094,7 @@ void CAdjEulerSolver::Smooth_Sensitivity(CGeometry *geometry, CSolver **solver_c
       A[iVertex][iVertex+1] = 0.0;
       A[iVertex][iVertex-1] = 0.0;
 
-      Gauss_Elimination(A, b, (unsigned short)nVertex);
+      GaussElimination(A, b, (unsigned short)nVertex);
 
       /*--- Set the new value of the sensitiviy ---*/
 

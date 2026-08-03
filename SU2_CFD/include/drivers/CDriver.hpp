@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -352,6 +352,7 @@ class CDriver : public CDriverBase {
    */
   void PrintDirectResidual(RECORDING kind_recording);
 
+ public:
   /*!
    * \brief Set the solution of all solvers (adjoint or primal) in a zone.
    * \param[in] iZone - Index of the zone.
@@ -364,7 +365,7 @@ class CDriver : public CDriverBase {
     const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
     for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
       auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
+      if (!solver || solver->GetAdjoint() != adjoint) continue;
       for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
         for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
           if (!Old) {
@@ -395,7 +396,7 @@ class CDriver : public CDriverBase {
     const auto nPoint = geometry_container[iZone][INST_0][MESH_0]->GetnPoint();
     for (auto iSol = 0u, offset = 0u; iSol < MAX_SOLS; ++iSol) {
       auto solver = solver_container[iZone][INST_0][MESH_0][iSol];
-      if (!(solver && (solver->GetAdjoint() == adjoint))) continue;
+      if (!solver || solver->GetAdjoint() != adjoint) continue;
       const auto& sol = solver->GetNodes()->GetSolution();
       for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint)
         for (auto iVar = 0ul; iVar < solver->GetnVar(); ++iVar)
@@ -419,7 +420,6 @@ class CDriver : public CDriverBase {
     return nVar;
   }
 
- public:
   /*!
    * \brief Launch the computation for all zones and all physics.
    */

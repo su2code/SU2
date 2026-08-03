@@ -2,7 +2,7 @@
  * \file CEulerVariable.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -105,6 +105,8 @@ CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2
     NIterNewtonsolver.resize(nPoint) = 0;
     FluidEntropy.resize(nPoint) = su2double(0.0);
   }
+
+  OutlierMitigation.resize(nPoint) = 0;
 }
 
 bool CEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {

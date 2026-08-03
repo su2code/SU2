@@ -2,7 +2,7 @@
  * \file CTurbSASolver.cpp
  * \brief Main subroutines of CTurbSASolver class
  * \author F. Palacios, A. Bueno
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -142,6 +142,10 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   Ji_3 = Ji*Ji*Ji;
   fv1 = Ji_3/(Ji_3+cv1_3);
   muT_Inf = Density_Inf*fv1*nu_tilde_Inf;
+
+  if (config->GetSAParsedOptions().version != SA_OPTIONS::NEG) {
+    lowerlimit[0] = EPS;
+  }
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
@@ -336,7 +340,6 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
 
 void CTurbSASolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
-  SU2_ZONE_SCOPED
 
   /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
@@ -427,7 +430,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
         for (unsigned short iDim = 0; iDim < nDim; iDim++)
           numerics->SetStochSource(nodes->GetLangevinSourceTerms(iPoint, iDim), iDim);
         numerics->SetLES_Mode(nodes->GetLES_Mode(iPoint), 0.0);
-        numerics->SetSbsInBoxSensor(nodes->GetSbsInBox(iPoint), 0);
+        numerics->SetSbsInBoxSensor(nodes->GetSbsInBox(iPoint));
       }
 
     }
@@ -453,7 +456,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     if (transition_BC || config->GetKind_Trans_Model() != TURB_TRANS_MODEL::NONE) {
       nodes->SetIntermittency(iPoint,numerics->GetIntermittencyEff());
     }
-    
+
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, residual);
@@ -506,12 +509,11 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
   }
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-  bool rough_wall = false;
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   WALL_TYPE WallType;
   su2double Roughness_Height;
   tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-  if (WallType == WALL_TYPE::ROUGH) rough_wall = true;
+  Roughness_Height = max(Roughness_Height, EPS);
 
   /*--- The dirichlet condition is used only without wall function, otherwise the
    convergence is compromised as we are providing nu tilde values for the
@@ -524,47 +526,46 @@ void CTurbSASolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_conta
 
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-    if (geometry->nodes->GetDomain(iPoint)) {
-      if (!rough_wall) {
-        for (auto iVar = 0u; iVar < nVar; iVar++)
-          nodes->SetSolution_Old(iPoint,iVar,0.0);
+    if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-        LinSysRes.SetBlock_Zero(iPoint);
+    if (WallType == WALL_TYPE::SMOOTH) {
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        nodes->SetSolution_Old(iPoint,iVar,0.0);
 
-        /*--- Includes 1 in the diagonal ---*/
+      LinSysRes.SetBlock_Zero(iPoint);
 
-        if (implicit) Jacobian.DeleteValsRowi(iPoint, 0);
-       } else {
-         /*--- For rough walls, the boundary condition is given by
-          * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
-          * where \nu is the solution variable, $n$ is the wall normal direction
-          * and k_s is the equivalent sand grain roughness specified. ---*/
+      /*--- Includes 1 in the diagonal ---*/
 
-         /*--- Compute dual-grid area and boundary normal ---*/
-         su2double Normal[MAXNDIM] = {0.0};
-         for (auto iDim = 0u; iDim < nDim; iDim++)
-           Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
-
-         su2double Area = GeometryToolbox::Norm(nDim, Normal);
-
-         /*--- Get laminar_viscosity and density ---*/
-         su2double sigma = 2.0/3.0;
-         su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
-         su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
-
-         su2double nu_total = (laminar_viscosity/density + nodes->GetSolution(iPoint,0));
-
-         su2double coeff = (nu_total/sigma);
-         su2double RoughWallBC = nodes->GetSolution(iPoint,0)/(0.03*Roughness_Height);
-
-         su2double Res_Wall = coeff*RoughWallBC*Area;
-         LinSysRes(iPoint, 0) -= Res_Wall;
-
-         Jacobian_i[0][0] = (laminar_viscosity /density *Area)/(0.03*Roughness_Height*sigma);
-         Jacobian_i[0][0] += 2.0*RoughWallBC*Area/sigma;
-         if (implicit) Jacobian.AddVal2Diag(iPoint, 0, -Jacobian_i[0][0]);
-      }
+      if (implicit) Jacobian.DeleteValsRowi(iPoint, 0);
+      continue;
     }
+
+    /*--- For rough walls, the boundary condition is given by
+    * (\frac{\partial \nu}{\partial n})_wall = \frac{\nu}{0.03*k_s}
+    * where \nu is the solution variable, $n$ is the wall normal direction
+    * and k_s is the equivalent sand grain roughness specified. ---*/
+
+    /*--- Compute dual-grid area and boundary normal ---*/
+    su2double Normal[MAXNDIM] = {0.0};
+    for (auto iDim = 0u; iDim < nDim; iDim++)
+      Normal[iDim] = -geometry->vertex[val_marker][iVertex]->GetNormal(iDim);
+
+    su2double Area = GeometryToolbox::Norm(nDim, Normal);
+
+    /*--- Get laminar_viscosity and density ---*/
+    su2double sigma = 2.0/3.0;
+    su2double laminar_viscosity = solver_container[FLOW_SOL]->GetNodes()->GetLaminarViscosity(iPoint);
+    su2double density = solver_container[FLOW_SOL]->GetNodes()->GetDensity(iPoint);
+    su2double nu_lam = laminar_viscosity / density;
+
+    su2double denom = sigma * 0.03 * Roughness_Height;
+    su2double coeff = (nu_lam + nodes->GetSolution(iPoint,0)) / denom;
+
+    su2double Res_Wall = Area * coeff * nodes->GetSolution(iPoint,0);
+    LinSysRes(iPoint, 0) -= Res_Wall;
+
+    su2double Jac_Wall = Area * (coeff + nodes->GetSolution(iPoint,0) / denom);
+    if (implicit) Jacobian.AddVal2Diag(iPoint, 0, -Jac_Wall);
   }
   END_SU2_OMP_FOR
 }
@@ -1636,7 +1637,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
 }
 
 void CTurbSASolver::SetBackscatterInBox(CConfig *config, CGeometry *geometry) {
-  
+  SU2_ZONE_SCOPED
+
   auto sbsBoxBounds = config->GetSBSParam().StochBackscatterBoxBounds;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -1653,6 +1655,7 @@ void CTurbSASolver::SetBackscatterInBox(CConfig *config, CGeometry *geometry) {
 }
 
 void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry) {
+  SU2_ZONE_SCOPED
 
   const su2double threshold = config->GetSBSParam().stochFdThreshold;
   const su2double dummySource = 1e3;
@@ -1677,8 +1680,8 @@ void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry)
   }
   END_SU2_OMP_FOR
 
-  SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
     for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE) {
@@ -1688,8 +1691,8 @@ void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry)
         }
       }
     }
+    END_SU2_OMP_FOR
   }
-  END_SU2_OMP_FOR
 
   InitiateComms(geometry, config, MPI_QUANTITIES::STOCH_SOURCE_LANG);
   CompleteComms(geometry, config, MPI_QUANTITIES::STOCH_SOURCE_LANG);
@@ -1697,6 +1700,11 @@ void CTurbSASolver::SetLangevinSourceTerms(CConfig *config, CGeometry* geometry)
 }
 
 void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geometry) {
+  SU2_ZONE_SCOPED
+
+  static su2double globalResNorm;
+  static unsigned long global_nPointLES;
+  static std::array<su2double, 6> globalChecks;
 
   const su2double LES_FilterWidth = config->GetLES_FilterWidth();
   const su2double cDelta = config->GetSBSParam().SBS_Cdelta;
@@ -1710,9 +1718,9 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
   /*--- Start SOR algorithm for the Laplacian smoothing. ---*/
 
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-  
+
     for (unsigned short iter = 0; iter < maxIter; iter++) {
-      
+
       /*--- MPI communication. ---*/
 
       InitiateComms(geometry, config, MPI_QUANTITIES::STOCH_SOURCE_LANG);
@@ -1721,16 +1729,15 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
       su2double localResNorm = 0.0;
       unsigned long local_nPointLES = 0;
 
-      SU2_OMP_FOR_DYN(omp_chunk_size)
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         su2double source_i_old = nodes->GetLangevinSourceTermsOld(iPoint, iDim);
         if (source_i_old > 3.0*sourceLim) continue;
         local_nPointLES += 1;
         su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
         if (LES_FilterWidth > 0.0) maxDelta = LES_FilterWidth;
-        su2double b = sqrt(cDelta) * maxDelta;
-        su2double b2 = b * b;
-        su2double volume_iPoint = geometry->nodes->GetVolume(iPoint);
+        su2double b2 = cDelta * pow(maxDelta, 2);
+        su2double volume_iPoint = geometry->nodes->GetVolume(iPoint) + geometry->nodes->GetPeriodicVolume(iPoint);
         su2double source_i = nodes->GetLangevinSourceTerms(iPoint, iDim);
         auto coord_i = geometry->nodes->GetCoord(iPoint);
 
@@ -1759,92 +1766,89 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
         nodes->SetLangevinSourceTerms(iPoint, iDim, source_i);
 
       }
-      END_SU2_OMP_FOR
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
       /*--- Stop integration if residual drops below tolerance. ---*/
 
-      su2double globalResNorm = 0.0;
-      unsigned long global_nPointLES = 0;
-      SU2_MPI::Allreduce(&local_nPointLES, &global_nPointLES, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
-      SU2_MPI::Allreduce(&localResNorm, &globalResNorm, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      globalResNorm = (global_nPointLES==0) ? su2double(0.0) : sqrt(globalResNorm / global_nPointLES);
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        SU2_MPI::Allreduce(&local_nPointLES, &global_nPointLES, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+        SU2_MPI::Allreduce(&localResNorm, &globalResNorm, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        globalResNorm = (global_nPointLES==0) ? su2double(0.0) : sqrt(globalResNorm / global_nPointLES);
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
+      SU2_OMP_MASTER
       if (rank == MASTER_NODE) {
         if (iter == 0) {
-          cout << endl
-               << "Residual of Laplacian smoothing along dimension " << iDim+1 << "." << endl
-               << "---------------------------------" << endl
-               << "   Iter       RMS Residual" << endl
-               << "---------------------------------" << endl;
+          cout << "\nResidual of Laplacian smoothing along dimension " << iDim+1
+               << "\n---------------------------------"
+               << "\n   Iter       RMS Residual"
+               << "\n---------------------------------" << endl;
         }
         if (iter%10 == 0) {
-          cout << "  " 
+          cout << "  "
                << std::setw(5) << iter
                << "       "
                << std::setw(12) << std::fixed << std::setprecision(6) << log10(globalResNorm)
                << endl;
         }
       }
+      END_SU2_OMP_MASTER
 
       if (log10(globalResNorm) < tol || iter == maxIter-1) {
 
+        SU2_OMP_MASTER
         if (rank == MASTER_NODE) {
-          cout << "  " 
+          cout << "  "
                << std::setw(5) << iter
                << "       "
                << std::setw(12) << std::fixed << ::setprecision(6) << log10(globalResNorm)
                << endl;
           cout << "---------------------------------" << endl;
         }
-        
+        END_SU2_OMP_MASTER
+
         /*--- Scale source terms for variance preservation. ---*/
 
-        su2double var_check_old = 0.0;
-        su2double mean_check_old = 0.0;
-        su2double var_check_new = 0.0;
-        su2double mean_check_new = 0.0;
-        su2double var_check_notSmoothed = 0.0;
-        su2double mean_check_notSmoothed = 0.0;
+        su2double mean_check_old = 0.0, var_check_old = 0.0;
+        su2double mean_check_new = 0.0, var_check_new = 0.0;
+        su2double mean_check_notSmoothed = 0.0, var_check_notSmoothed = 0.0;
+
+        SU2_OMP_FOR_(schedule(static, omp_chunk_size) SU2_NOWAIT)
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
           su2double source_notSmoothed = nodes->GetLangevinSourceTermsOld(iPoint, iDim);
           if (source_notSmoothed > 3.0*sourceLim) continue;
           su2double source = nodes->GetLangevinSourceTerms(iPoint, iDim);
           mean_check_old += source;
-          var_check_old += source * source;
+          var_check_old += pow(source, 2);
           mean_check_notSmoothed += source_notSmoothed;
-          var_check_notSmoothed += source_notSmoothed * source_notSmoothed;
+          var_check_notSmoothed += pow(source_notSmoothed, 2);
           su2double integral = 0.0;
           if (timeIter==restartIter) {
             su2double maxDelta = geometry->nodes->GetMaxLength(iPoint);
             if (LES_FilterWidth > 0.0) maxDelta = LES_FilterWidth;
-            su2double b = sqrt(cDelta) * maxDelta;
-            su2double b2 = b * b;
+            su2double b2 = cDelta * pow(maxDelta, 2);
             auto coord_i = geometry->nodes->GetCoord(iPoint);
-            su2double maxDelta_vec[3] = {0.0};
-            su2double maxDelta_tmp = 0.0;
-            unsigned short nNeigh = geometry->nodes->GetnPoint(iPoint);
-            for (unsigned short iNode = 0; iNode < nNeigh; iNode++) {
-              auto jPoint = geometry->nodes->GetPoint(iPoint, iNode);
+            su2double maxDelta_vec[MAXNDIM] = {0.0};
+            su2double maxDelta2_tmp = 0.0;
+            for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
               auto coord_j = geometry->nodes->GetCoord(jPoint);
-              su2double dist_ij = GeometryToolbox::Distance(nDim, coord_j, coord_i);
-              if (dist_ij > maxDelta_tmp) {
-                maxDelta_tmp = dist_ij;
+              su2double dist2_ij = GeometryToolbox::SquaredDistance(nDim, coord_j, coord_i);
+              if (dist2_ij > maxDelta2_tmp) {
+                maxDelta2_tmp = dist2_ij;
                 GeometryToolbox::Distance(nDim, coord_j, coord_i, maxDelta_vec);
               }
             }
             su2double max_dist_ij_normal = 0.0;
-            for (unsigned short iNode = 0; iNode < nNeigh; iNode++) {
-              auto jPoint = geometry->nodes->GetPoint(iPoint, iNode);
+            for (const auto jPoint : geometry->nodes->GetPoints(iPoint)) {
               auto coord_j = geometry->nodes->GetCoord(jPoint);
-              su2double dist_ij2 = GeometryToolbox::SquaredDistance(nDim, coord_j, coord_i);
-              su2double dist_ij_vec[3] = {0.0};
+              su2double dist_ij_vec[MAXNDIM] = {0.0};
               GeometryToolbox::Distance(nDim, coord_j, coord_i, dist_ij_vec);
+              su2double dist2_ij = GeometryToolbox::SquaredNorm(nDim, dist_ij_vec);
               su2double dist_ij_parallel = GeometryToolbox::DotProduct(nDim, dist_ij_vec, maxDelta_vec);
               dist_ij_parallel /= maxDelta;
-              su2double dist_ij_normal = sqrt(max(dist_ij2 - dist_ij_parallel*dist_ij_parallel, 0.0));
-              if (dist_ij_normal > max_dist_ij_normal) {
-                max_dist_ij_normal = dist_ij_normal;
-              }
+              su2double dist_ij_normal = sqrt(max(dist2_ij - pow(dist_ij_parallel, 2), 0.0));
+              max_dist_ij_normal = max(max_dist_ij_normal, dist_ij_normal);
             }
             su2double dI = maxDelta;
             su2double dJ = max_dist_ij_normal;
@@ -1864,53 +1868,59 @@ void CTurbSASolver::SmoothLangevinSourceTerms(CConfig* config, CGeometry* geomet
           source *= scaleFactor;
           if (source < -sourceLim || source > sourceLim) source = 0.0;
           mean_check_new += source;
-          var_check_new += source * source;
+          var_check_new += pow(source, 2);
           nodes->SetLangevinSourceTerms(iPoint, iDim, source);
         }
-        su2double mean_check_new_G = 0.0;
-        SU2_MPI::Allreduce(&mean_check_new, &mean_check_new_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-        mean_check_new_G /= global_nPointLES;
+        END_SU2_OMP_FOR
+
+        SU2_OMP_SAFE_GLOBAL_ACCESS(globalChecks = {0, 0, 0, 0, 0, 0};)
+
+        atomicAdd(mean_check_old, globalChecks[0]);
+        atomicAdd(var_check_old, globalChecks[1]);
+        atomicAdd(mean_check_notSmoothed, globalChecks[2]);
+        atomicAdd(var_check_notSmoothed, globalChecks[3]);
+        atomicAdd(mean_check_new, globalChecks[4]);
+        atomicAdd(var_check_new, globalChecks[5]);
+
+        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+          auto tmp = globalChecks;
+          SU2_MPI::Allreduce(tmp.data(), globalChecks.data(), tmp.size(), MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+        }
+        END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+        const auto invDenom = 1.0 / max(global_nPointLES, 1ul);
+        mean_check_new = globalChecks[4] * invDenom;
+
+        SU2_OMP_FOR_STAT(omp_chunk_size)
         for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
           su2double source_notSmoothed = nodes->GetLangevinSourceTermsOld(iPoint, iDim);
           su2double source = nodes->GetLangevinSourceTerms(iPoint, iDim);
           if (source_notSmoothed > 3.0*sourceLim) continue;
-          source -= mean_check_new_G;
-          nodes->SetLangevinSourceTerms(iPoint, iDim, source);
+          nodes->SetLangevinSourceTerms(iPoint, iDim, source - mean_check_new);
         }
-        if (config->GetSBSParam().stochSourceDiagnostics) {
-          su2double mean_check_old_G = 0.0;
-          su2double mean_check_notSmoothed_G = 0.0;
-          su2double var_check_old_G = 0.0;
-          su2double var_check_new_G = 0.0;
-          su2double var_check_notSmoothed_G = 0.0;
-          SU2_MPI::Allreduce(&mean_check_old, &mean_check_old_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-          SU2_MPI::Allreduce(&mean_check_notSmoothed, &mean_check_notSmoothed_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-          SU2_MPI::Allreduce(&var_check_old, &var_check_old_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-          SU2_MPI::Allreduce(&var_check_new, &var_check_new_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-          SU2_MPI::Allreduce(&var_check_notSmoothed, &var_check_notSmoothed_G, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-          mean_check_old_G /= global_nPointLES;
-          var_check_old_G /= global_nPointLES;
-          var_check_old_G -= mean_check_old_G * mean_check_old_G;
-          var_check_new_G /= global_nPointLES;
-          var_check_new_G -= mean_check_new_G * mean_check_new_G;
-          mean_check_notSmoothed_G /= global_nPointLES;
-          var_check_notSmoothed_G /= global_nPointLES;
-          var_check_notSmoothed_G -= mean_check_notSmoothed_G * mean_check_notSmoothed_G;
-          if (rank == MASTER_NODE) {
-            cout << "Mean of stochastic source term in Langevin equations: " << endl;
-            cout << "   Uncorrelated            --> " << mean_check_notSmoothed_G << endl;
-            cout << "   Smoothed before scaling --> " << mean_check_old_G << endl;
-            cout << "   Smoothed after scaling  --> " << mean_check_new_G << " (subtracted from stochastic field to guarantee zero mean)" << endl;
-            cout << "Variance of stochastic source term in Langevin equations: " << endl;
-            cout << "   Uncorrelated            --> " << var_check_notSmoothed_G << endl;
-            cout << "   Smoothed before scaling --> " << var_check_old_G << endl;
-            cout << "   Smoothed after scaling  --> " << var_check_new_G << endl;
-            cout << endl;
-          }
+        END_SU2_OMP_FOR
+
+        SU2_OMP_MASTER
+        if (rank == MASTER_NODE && config->GetSBSParam().stochSourceDiagnostics) {
+          mean_check_old = globalChecks[0] * invDenom;
+          var_check_old = globalChecks[1] * invDenom - pow(mean_check_old, 2);
+          mean_check_notSmoothed = globalChecks[2] * invDenom;
+          var_check_notSmoothed = globalChecks[3] * invDenom - pow(mean_check_notSmoothed, 2);
+          var_check_new = globalChecks[5] * invDenom - pow(mean_check_new, 2);
+
+          cout << "Mean of stochastic source term in Langevin equations:";
+          cout << "\n   Uncorrelated            --> " << mean_check_notSmoothed;
+          cout << "\n   Smoothed before scaling --> " << mean_check_old;
+          cout << "\n   Smoothed after scaling  --> " << mean_check_new << " (subtracted from stochastic field to guarantee zero mean)";
+          cout << "\nVariance of stochastic source term in Langevin equations:";
+          cout << "\n   Uncorrelated            --> " << var_check_notSmoothed;
+          cout << "\n   Smoothed before scaling --> " << var_check_old;
+          cout << "\n   Smoothed after scaling  --> " << var_check_new << '\n' << endl;
         }
+        END_SU2_OMP_MASTER
+
         /*--- Converged or maximum number of iterations reached. ---*/
         break;
-
       }
     }
   }

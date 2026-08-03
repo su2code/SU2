@@ -2,7 +2,7 @@
  * \file CEulerVariable.hpp
  * \brief Class for defining the variables of the compressible Euler solver.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -344,5 +344,15 @@ class CEulerVariable : public CFlowVariable {
    * \return Number of iterations evaluated by the Newton solver
    */
   inline unsigned long GetNewtonSolverIterations(unsigned long iPoint) const final { return NIterNewtonsolver[iPoint]; }
+
+  /*!
+   * \brief Maximum value that OutlierMitigation can have.
+   */
+  static constexpr auto MAX_OUTLIER_MITIGATION = std::numeric_limits<uint8_t>::max();
+
+  /*!
+   * \brief Marks outliers (0 ok, MAX_OUTLIER_MITIGATION maximum mitigation).
+   */
+  su2vector<uint8_t> OutlierMitigation;
 
 };

@@ -2,7 +2,7 @@
  * \file CFEM_DG_EulerSolver.cpp
  * \brief Main subroutines for solving finite element Euler flow problems
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1081,10 +1081,10 @@ void CFEM_DG_EulerSolver::SetNondimensionalization(CConfig        *config,
   Tke_FreeStreamND  = 3.0/2.0*(ModVel_FreeStreamND*ModVel_FreeStreamND*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
   config->SetTke_FreeStreamND(Tke_FreeStreamND);
 
-  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max((Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream()), 1.e-25);
+  Omega_FreeStream = Density_FreeStream*Tke_FreeStream/max(Viscosity_FreeStream*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   config->SetOmega_FreeStream(Omega_FreeStream);
 
-  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max((Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream()), 1.e-25);
+  Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/max(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream(), EPS);
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
@@ -3665,6 +3665,14 @@ void CFEM_DG_EulerSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver *
 
   /* Write the actual matrix elements. */
   fwrite(Jacobian.data(), Jacobian.size(), sizeof(passivedouble), fJac);
+
+  /* Write the number of elements. */
+  fwrite(&nVolElemOwned, 1, sizeof(unsigned long), fJac);
+
+  /* Write the number of DOFs per element. */
+  std::vector<unsigned short> nDOFsElem(nVolElemOwned);
+  for(unsigned long i=0; i<nVolElemOwned; ++i) nDOFsElem[i] += volElem[i].nDOFsSol;
+  fwrite(nDOFsElem.data(), nDOFsElem.size(), sizeof(unsigned short), fJac);
 
   /* Close the file again. */
   fclose(fJac);

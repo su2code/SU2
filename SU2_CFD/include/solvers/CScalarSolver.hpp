@@ -1,7 +1,7 @@
 /*!
  * \file CScalarSolver.hpp
  * \brief Headers of the CScalarSolver class
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -492,6 +492,22 @@ class CScalarSolver : public CSolver {
                             CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) final {
     /*--- Convective fluxes across euler wall are equal to zero. ---*/
   }
+
+  /*!
+   * \brief Impose the boundary condition using characteristic recostruction.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Riemann(CGeometry *geometry,
+                  CSolver **solver_container,
+                  CNumerics *conv_numerics,
+                  CNumerics *visc_numerics,
+                  CConfig *config,
+                  unsigned short val_marker) final;
+
 
   /*!
    * \brief Impose the supersonic inlet boundary condition (same as inlet, see BC_Inlet).

@@ -2,7 +2,7 @@
  * \file CTransLMSolver.cpp
  * \brief Main subroutines for Langtry-Menter Transition model solver.
  * \author A. Aranake, S. Kang.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -268,7 +268,6 @@ void CTransLMSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 
 void CTransLMSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                      CNumerics* numerics, const CConfig* config) {
-  SU2_ZONE_SCOPED
 
   /*--- Define an object to set solver specific numerics contribution. ---*/
 
@@ -584,7 +583,7 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
   /*--- For turbulent+species simulations the solver Pre-/Postprocessing is done by the species solver. ---*/
   if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
     solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
-                                            RUNTIME_FLOW_SYS, false);
+                                            RUNTIME_FLOW_SYS, true);
     solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
     solver[MESH_0][TRANS_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
   }
@@ -600,7 +599,7 @@ void CTransLMSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
     if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
-                                            false);
+                                             true);
       solver[iMesh][TRANS_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
     }
   }

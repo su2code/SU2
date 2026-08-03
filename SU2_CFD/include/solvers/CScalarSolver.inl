@@ -1,7 +1,7 @@
 /*!
  * \file CScalarSolver.inl
  * \brief Main subroutines of CScalarSolver class
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -63,7 +63,7 @@ CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config,
   if (ReducerStrategy && (coloring.getOuterSize() > 1)) geometry->SetNaturalEdgeColoring();
 
   if (!coloring.empty()) {
-    auto groupSize = ReducerStrategy ? 1ul : geometry->GetEdgeColorGroupSize();
+    auto groupSize = static_cast<su2uint>(ReducerStrategy ? 1ul : geometry->GetEdgeColorGroupSize());
     auto nColor = coloring.getOuterSize();
     EdgeColoring.reserve(nColor);
 
@@ -105,7 +105,7 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
   if (!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
     if (implicit) {
-      Jacobian.SetValZero();
+      Jacobian.SetValDiagonalZero();
     } else {
       SU2_OMP_BARRIER
     }
@@ -291,7 +291,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       } else {
         LinSysRes.AddBlock(iPoint, residual);
         LinSysRes.SubtractBlock(jPoint, residual);
-        if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+        if (implicit) Jacobian.UpdateBlocks<true>(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
 
       /*--- Apply convective flux correction to negate the effects of flow divergence in case of incompressible flow.
@@ -369,6 +369,23 @@ void CScalarSolver<VariableType>::SumEdgeFluxes(CGeometry* geometry) {
     }
   }
   END_SU2_OMP_FOR
+}
+
+template<class VariableType>
+void CScalarSolver<VariableType>::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
+
+  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
+
+  switch(config->GetKind_Data_Riemann(Marker_Tag))
+  {
+  case TOTAL_CONDITIONS_PT: case STATIC_SUPERSONIC_INFLOW_PT: case STATIC_SUPERSONIC_INFLOW_PD: case DENSITY_VELOCITY:
+    BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    break;
+  case STATIC_PRESSURE:
+    BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    break;
+  }
 }
 
 template <class VariableType>

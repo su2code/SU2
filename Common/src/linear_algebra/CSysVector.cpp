@@ -2,7 +2,7 @@
  * \file CSysVector.cpp
  * \brief Implementation and explicit instantiations of CSysVector.
  * \author P. Gomes, F. Palacios, J. Hicken, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -52,6 +52,9 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
   if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
 
+  /*--- Device storage mirrors the host allocation; free first so that re-initializing a
+   * vector does not leak it. ---*/
+  GPUMemoryAllocation::gpu_free(d_vec_val);
   d_vec_val = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
 
 #ifdef HAVE_OMP
@@ -77,6 +80,23 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
   static su2matrix<ScalarType> shared;
 
   if (n == 0 || m == 0) return shared;
+
+#ifdef SU2_ENABLE_CUDA_KERNELS
+  if constexpr (su2_gpu_capable_v<ScalarType>) {
+    if (VecExpr::UseDeviceExpressions()) {
+      BEGIN_SU2_DEVICE_REGION {
+        shared.resize(n, m);
+        for (size_t i = 0; i < n; ++i) {
+          for (size_t j = 0; j < m; ++j) {
+            shared(i, j) = V[i0 + i].GPUDot(W[j]);
+          }
+        }
+      }
+      END_SU2_DEVICE_REGION
+      return shared;
+    }
+  }
+#endif
 
   SU2_OMP_BARRIER
   const size_t size = V[0].nElmDomain;
@@ -144,7 +164,7 @@ CSysVector<ScalarType>::~CSysVector() {
 
 /*--- Explicit instantiations ---*/
 template class CSysVector<su2mixedfloat>;
-#ifdef USE_MIXED_PRECISION
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
 template class CSysVector<passivedouble>;
 #endif
 #ifdef CODI_REVERSE_TYPE

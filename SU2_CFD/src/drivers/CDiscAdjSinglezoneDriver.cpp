@@ -2,7 +2,7 @@
  * \file driver_adjoint_singlezone.cpp
  * \brief The main subroutines for driving adjoint single-zone problems.
  * \author R. Sanchez
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -156,6 +156,12 @@ void CDiscAdjSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 void CDiscAdjSinglezoneDriver::Run() {
   SU2_ZONE_SCOPED
 
+  /*--- No need to solve anything, the tape for the main recording is empty. ---*/
+  if (TrivialFunction()) {
+    SetAllSolutions(ZONE_0, true, [](auto, auto) { return 0; });
+    return;
+  }
+
   CQuasiNewtonInvLeastSquares<passivedouble> fixPtCorrector;
   if (config->GetnQuasiNewtonSamples() > 1) {
     fixPtCorrector.resize(config->GetnQuasiNewtonSamples(),
@@ -273,7 +279,7 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
     case RECORDING::CLEAR_INDICES: cout << "Clearing the computational graph." << endl; break;
     case RECORDING::MESH_COORDS:   cout << "Storing computational graph wrt MESH COORDINATES." << endl; break;
     case RECORDING::SOLUTION_VARIABLES:
-      cout << "Direct iteration to store the primal computational graph." << endl;
+      cout << "Direct iteration to store the primal computational graph.\n";
       cout << "Computing residuals to check the convergence of the direct problem." << endl; break;
     default: break;
     }
@@ -308,6 +314,12 @@ void CDiscAdjSinglezoneDriver::SetRecording(RECORDING kind_recording){
   /*--- Extract the objective function and store it --- */
 
   SetObjFunction();
+
+  if (rank == MASTER_NODE &&
+      (kind_recording == RECORDING::SOLUTION_VARIABLES || (TrivialFunction() && kind_recording == RECORDING::MESH_COORDS))) {
+    cout << "\nObjective function value: " << std::setprecision(config_container[ZONE_0]->GetOutput_Precision()) << ObjFunc;
+    cout << "\n-------------------------------------------------------------------------\n" << endl;
+  }
 
   if (kind_recording != RECORDING::CLEAR_INDICES && config_container[ZONE_0]->GetWrt_AD_Statistics()) {
     AD::PrintStatistics(SU2_MPI::GetComm(), rank == MASTER_NODE);
@@ -410,6 +422,16 @@ void CDiscAdjSinglezoneDriver::DirectRun(RECORDING kind_recording){
 
 void CDiscAdjSinglezoneDriver::MainRecording(){
   SU2_ZONE_SCOPED
+
+  /*--- We know this function only depends on the secondary variables, hence skip the main recording. ---*/
+
+  if (TrivialFunction()) {
+    if (rank == MASTER_NODE) {
+      cout << "Trivial objective function, skipping the solution of the adjoint equations." << endl;
+    }
+    return;
+  }
+
   /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with
    *    RECORDING::CLEAR_INDICES as argument ensures that all information from a previous recording is removed. ---*/
 

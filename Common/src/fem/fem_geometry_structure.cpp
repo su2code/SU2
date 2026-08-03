@@ -2,7 +2,7 @@
  * \file fem_geometry_structure.cpp
  * \brief Functions for creating the primal grid for the FEM solver.
  * \author E. van der Weide
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -37,8 +37,15 @@
 
 /* Prototypes for Lapack functions, if MKL or LAPACK is used. */
 #if defined(HAVE_MKL) || defined(HAVE_LAPACK)
-extern "C" void dpotrf_(char*, int*, passivedouble*, int*, int*);
-extern "C" void dpotri_(char*, int*, passivedouble*, int*, int*);
+#ifdef USE_SINGLE_PRECISION
+#define POTRF_IMPL spotrf_
+#define POTRI_IMPL spotri_
+#else
+#define POTRF_IMPL dpotrf_
+#define POTRI_IMPL dpotri_
+#endif
+extern "C" void POTRF_IMPL(char*, int*, passivedouble*, int*, int*);
+extern "C" void POTRI_IMPL(char*, int*, passivedouble*, int*, int*);
 #endif
 
 bool CPointFEM::operator<(const CPointFEM& other) const {
@@ -5361,7 +5368,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig* config) {
          than a standard inverse. */
       char uplo = 'L';
       int NN = nDOFs, errorCode;
-      dpotrf_(&uplo, &NN, massMat.data(), &NN, &errorCode);
+      POTRF_IMPL(&uplo, &NN, massMat.data(), &NN, &errorCode);
       if (errorCode != 0) {
         ostringstream message;
         if (errorCode < 0) {
@@ -5376,7 +5383,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig* config) {
         SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
 
-      dpotri_(&uplo, &NN, massMat.data(), &NN, &errorCode);
+      POTRI_IMPL(&uplo, &NN, massMat.data(), &NN, &errorCode);
       if (errorCode != 0) {
         ostringstream message;
         if (errorCode < 0) {

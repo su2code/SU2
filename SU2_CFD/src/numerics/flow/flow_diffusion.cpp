@@ -3,7 +3,7 @@
  * \brief Implementation of numerics classes for discretization
  *        of viscous fluxes in fluid flow problems.
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -477,8 +477,12 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,config);
-  if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
+  if (config->GetSAParsedOptions().qcr2000) {
+    const su2double total_viscosity = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
+    const su2double turb_fraction = Mean_Eddy_Viscosity / fmax(total_viscosity, EPS);
+    AddQCR(nDim, &Mean_GradPrimVar[1], tau, turb_fraction);
+  }
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);
@@ -655,8 +659,12 @@ CNumerics::ResidualType<> CAvgGradInc_Flow::ComputeResidual(const CConfig* confi
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,config);
-  if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
+  if (config->GetSAParsedOptions().qcr2000) {
+    const su2double total_viscosity = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
+    const su2double turb_fraction = Mean_Eddy_Viscosity / fmax(total_viscosity, EPS);
+    AddQCR(nDim, &Mean_GradPrimVar[1], tau, turb_fraction);
+  }
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
@@ -985,8 +993,12 @@ CNumerics::ResidualType<> CGeneralAvgGrad_Flow::ComputeResidual(const CConfig* c
   /*--- Get projected flux tensor (viscous residual) ---*/
 
   SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,config);
-  if (config->GetSAParsedOptions().qcr2000) AddQCR(nDim, &Mean_GradPrimVar[1], tau);
+                  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, config);
+  if (config->GetSAParsedOptions().qcr2000) {
+    const su2double total_viscosity = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
+    const su2double turb_fraction = Mean_Eddy_Viscosity / fmax(total_viscosity, EPS);
+    AddQCR(nDim, &Mean_GradPrimVar[1], tau, turb_fraction);
+  }
   if (Mean_TauWall > 0) AddTauWall(UnitNormal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);

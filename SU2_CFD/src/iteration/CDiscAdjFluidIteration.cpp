@@ -2,7 +2,7 @@
  * \file CDiscAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -307,7 +307,7 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
     for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
       solvers[iMesh][FLOW_SOL]->SetFreeStream_Solution(config[iZone]);
       solvers[iMesh][FLOW_SOL]->Preprocessing(geometries[iMesh], solvers[iMesh], config[iZone], iMesh,
-                                              DirectIter, RUNTIME_FLOW_SYS, false);
+                                              DirectIter, RUNTIME_FLOW_SYS, true);
       if (turbulent) {
         solvers[iMesh][TURB_SOL]->SetFreeStream_Solution(config[iZone]);
         solvers[iMesh][TURB_SOL]->Postprocessing(geometries[iMesh], solvers[iMesh], config[iZone], iMesh);

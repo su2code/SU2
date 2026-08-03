@@ -2,7 +2,7 @@
  * \file CSysSolve.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon, P. Gomes
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -211,12 +211,14 @@ bool CSysSolve<ScalarType>::ModGramSchmidt(bool shared_hsbg, int i, su2matrix<Sc
   const auto h_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
   LinearCombination(
       shared_hsbg, i + 1, w, [&h_i](int k) { return -h_i(0, k); }, w[i + 1], true);
-
-  const auto& dh_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
-  LinearCombination(
-      shared_hsbg, i + 1, w, [&dh_i](int k) { return -dh_i(0, k); }, w[i + 1], true);
-
-  for (int k = 0; k < i + 1; k++) SetHsbg(k, i, h_i(0, k) + dh_i(0, k));
+  if (i < 5) {
+    for (int k = 0; k < i + 1; k++) SetHsbg(k, i, h_i(0, k));
+  } else {
+    const auto& dh_i = CSysVector<ScalarType>::multiDot(w, i + 1, 1, w, i + 1);
+    LinearCombination(
+        shared_hsbg, i + 1, w, [&dh_i](int k) { return -dh_i(0, k); }, w[i + 1], true);
+    for (int k = 0; k < i + 1; k++) SetHsbg(k, i, h_i(0, k) + dh_i(0, k));
+  }
 
   /*--- The norm of w[i+1] is 0 or NaN: the input vector from mat_vec is
    * zero or contains NaN. Cannot proceed with orthogonalization. ---*/
@@ -425,7 +427,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   const bool flexible = !precond.IsIdentity();
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
    * we still want to parallelize some of the expensive operations. ---*/
-  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
+  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1 && !VecExpr::UseDeviceExpressions();
 
   /*---  Check the subspace size ---*/
 
@@ -662,7 +664,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
   const bool masterRank = SU2_MPI::GetRank() == MASTER_NODE;
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
    * we still want to parallelize some of the expensive operations. ---*/
-  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
+  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1 && !VecExpr::UseDeviceExpressions();
 
   /*--- Check the subspace size. ---*/
 
@@ -1462,7 +1464,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
   auto externalFunction = [&]() {
     /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
 
-    HandleTemporariesIn(LinSysRes, LinSysSol);
+    HandleTemporariesIn(LinSysRes, LinSysSol, config->GetCUDA());
 
     auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
@@ -1537,7 +1539,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
     }
     END_SU2_OMP_MASTER
 
-    HandleTemporariesOut(LinSysSol);
+    HandleTemporariesOut(LinSysSol, config->GetCUDA());
 
     delete normal_prec;
     delete nested_prec;
@@ -1567,7 +1569,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
           if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
           break;
         case LU_SGS:
-          /*--- Nothing to build. ---*/
+        case Q_LU_SGS:
+          /*--- Nothing to build (transpose path not supported for Q_LU_SGS, see CSysMatrix::Initialize). ---*/
           break;
         case PASTIX_ILU:
         case PASTIX_LU_P:
@@ -1728,6 +1731,6 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType>& Jacobian, c
 /*--- Explicit instantiations ---*/
 
 template class CSysSolve<su2mixedfloat>;
-#ifdef USE_MIXED_PRECISION
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
 template class CSysSolve<passivedouble>;
 #endif
