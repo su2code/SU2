@@ -304,382 +304,381 @@ class CSysMatrix {
   /*!< \brief Number of colored Gauss-Seidel sweeps used to build and apply the ILU factorization
    * on the device, see IluFactorColorKernel. Fixed per solve (not adaptive) so the result is
    * reproducible; set from config in Initialize(). */
-  array<unsigned short, 3> ilu_gpu_sweeps {(1, 2, 2
-  }
-};
+  array<unsigned short, 3> ilu_gpu_sweeps{{1, 2, 2}};
 
-/*--- Coloring of the ILU dependency graph: unlike levels_ilu, a color is a true independent
- * set (no dependency between same-colored rows in either direction), so far fewer, wider
- * colors are needed than levels, but a color launch is only exact as one step of an iterative
- * refinement (see BuildILUPreconditionerGPU and ComputeILUPreconditionerGPU), not a single
- * pass — this does not change the elimination order/pattern, so the factorization and both
- * triangular solves converge to the exact same result levels_ilu would give, just reached by
- * iterating instead of substituting. ---*/
-vector<su2uint> ilu_color_ptr;      /*!< \brief Start of each color in d_ilu_color_idx, size nColors+1. */
-su2uint* d_ilu_color_idx = nullptr; /*!< \brief Row indices, grouped by color. */
+  /*--- Coloring of the ILU dependency graph: unlike levels_ilu, a color is a true independent
+   * set (no dependency between same-colored rows in either direction), so far fewer, wider
+   * colors are needed than levels, but a color launch is only exact as one step of an iterative
+   * refinement (see BuildILUPreconditionerGPU and ComputeILUPreconditionerGPU), not a single
+   * pass — this does not change the elimination order/pattern, so the factorization and both
+   * triangular solves converge to the exact same result levels_ilu would give, just reached by
+   * iterating instead of substituting. ---*/
+  vector<su2uint> ilu_color_ptr;      /*!< \brief Start of each color in d_ilu_color_idx, size nColors+1. */
+  su2uint* d_ilu_color_idx = nullptr; /*!< \brief Row indices, grouped by color. */
 
-/*!< \brief Fixed right-hand side of the backward triangular solve (the forward-solve result),
- * kept separate from the evolving prod buffer. A color visits every row once per sweep, so
- * after the first sweep prod[iRow] holds a solution *estimate*, not the right-hand side
- * anymore; reading the right-hand side back out of prod past the first sweep would silently
- * solve the wrong equation. Size nPointDomain*nVar, allocated once in Initialize(). */
-ScalarType* d_ilu_backward_rhs = nullptr;
+  /*!< \brief Fixed right-hand side of the backward triangular solve (the forward-solve result),
+   * kept separate from the evolving prod buffer. A color visits every row once per sweep, so
+   * after the first sweep prod[iRow] holds a solution *estimate*, not the right-hand side
+   * anymore; reading the right-hand side back out of prod past the first sweep would silently
+   * solve the wrong equation. Size nPointDomain*nVar, allocated once in Initialize(). */
+  ScalarType* d_ilu_backward_rhs = nullptr;
 
-/*--- The per-color kernel launch sequence (ilu_gpu_sweeps[0] passes for the factorization,
- * ilu_gpu_sweeps[1] / ilu_gpu_sweeps[2] passes for the forward/backward triangular solves)
- * is identical on every call: same grid/block sizes, same device pointers (all fixed members,
- * allocated once). It is captured once into a CUDA graph and replayed, which removes
- * host-side launch overhead without changing the parallelization (unlike a persistent
- * cooperative-groups kernel, this does not cap per-color parallelism to the occupancy-resident
- * block count). ---*/
-/*--- Types are forward-declared as opaque structs (matching the real cudaGraphExec_t /
- * cudaStream_t typedefs) so this header does not need to include the CUDA runtime. ---*/
-mutable struct CUgraphExec_st* ilu_build_graph_exec = nullptr;
-mutable struct CUgraphExec_st* ilu_apply_graph_exec = nullptr;
-mutable const ScalarType* ilu_apply_graph_vec = nullptr; /*!< \brief Pointers the apply graph
-                                                          * was captured with, to detect when
-                                                          * it must be recaptured. */
-mutable ScalarType* ilu_apply_graph_prod = nullptr;
-/*--- The legacy default stream cannot be captured into a graph, so the ILU graphs are
- * captured and replayed on this dedicated stream instead; every launch on it is followed by
- * a sync back to the host before control returns to the rest of the (single-stream) solver,
- * so this does not change execution order relative to everything else, which stays on the
- * default stream. ---*/
-mutable struct CUstream_st* ilu_stream = nullptr;
+  /*--- The per-color kernel launch sequence (ilu_gpu_sweeps[0] passes for the factorization,
+   * ilu_gpu_sweeps[1] / ilu_gpu_sweeps[2] passes for the forward/backward triangular solves)
+   * is identical on every call: same grid/block sizes, same device pointers (all fixed members,
+   * allocated once). It is captured once into a CUDA graph and replayed, which removes
+   * host-side launch overhead without changing the parallelization (unlike a persistent
+   * cooperative-groups kernel, this does not cap per-color parallelism to the occupancy-resident
+   * block count). ---*/
+  /*--- Types are forward-declared as opaque structs (matching the real cudaGraphExec_t /
+   * cudaStream_t typedefs) so this header does not need to include the CUDA runtime. ---*/
+  mutable struct CUgraphExec_st* ilu_build_graph_exec = nullptr;
+  mutable struct CUgraphExec_st* ilu_apply_graph_exec = nullptr;
+  mutable const ScalarType* ilu_apply_graph_vec = nullptr; /*!< \brief Pointers the apply graph
+                                                            * was captured with, to detect when
+                                                            * it must be recaptured. */
+  mutable ScalarType* ilu_apply_graph_prod = nullptr;
+  /*--- The legacy default stream cannot be captured into a graph, so the ILU graphs are
+   * captured and replayed on this dedicated stream instead; every launch on it is followed by
+   * a sync back to the host before control returns to the rest of the (single-stream) solver,
+   * so this does not change execution order relative to everything else, which stays on the
+   * default stream. ---*/
+  mutable struct CUstream_st* ilu_stream = nullptr;
 
-ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */
+  ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */
 
-/*--- Temporary (hence mutable) working memory used in the Linelet preconditioner, outer vector is for threads ---*/
-mutable vector<vector<const ScalarType*>>
-    LineletUpper; /*!< \brief Pointers to the upper blocks of the tri-diag system (working memory). */
-mutable vector<vector<ScalarType>>
-    LineletInvDiag; /*!< \brief Inverse of the diagonal blocks of the tri-diag system (working memory). */
-mutable vector<vector<ScalarType>>
-    LineletVector; /*!< \brief Solution and RHS of the tri-diag system (working memory). */
+  /*--- Temporary (hence mutable) working memory used in the Linelet preconditioner, outer vector is for threads ---*/
+  mutable vector<vector<const ScalarType*>>
+      LineletUpper; /*!< \brief Pointers to the upper blocks of the tri-diag system (working memory). */
+  mutable vector<vector<ScalarType>>
+      LineletInvDiag; /*!< \brief Inverse of the diagonal blocks of the tri-diag system (working memory). */
+  mutable vector<vector<ScalarType>>
+      LineletVector; /*!< \brief Solution and RHS of the tri-diag system (working memory). */
 
 #ifdef USE_MKL
-using gemm_t = typename mkl_jit_wrapper<ScalarType>::gemm_t;
-void* MatrixMatrixProductJitter;               /*!< \brief Jitter handle for MKL JIT based GEMM. */
-gemm_t MatrixMatrixProductKernel;              /*!< \brief MKL JIT based GEMM kernel. */
-void* MatrixVectorProductJitterBetaZero;       /*!< \brief Jitter handle for MKL JIT based GEMV. */
-gemm_t MatrixVectorProductKernelBetaZero;      /*!< \brief MKL JIT based GEMV kernel. */
-void* MatrixVectorProductJitterBetaOne;        /*!< \brief Jitter handle for MKL JIT based GEMV with BETA=1.0. */
-gemm_t MatrixVectorProductKernelBetaOne;       /*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
-void* MatrixVectorProductJitterAlphaMinusOne;  /*!< \brief Jitter handle for MKL JIT based GEMV with ALPHA=-1.0 and
-                                                  BETA=1.0. */
-gemm_t MatrixVectorProductKernelAlphaMinusOne; /*!< \brief MKL JIT based GEMV kernel with ALPHA=-1.0 and BETA=1.0. */
+  using gemm_t = typename mkl_jit_wrapper<ScalarType>::gemm_t;
+  void* MatrixMatrixProductJitter;               /*!< \brief Jitter handle for MKL JIT based GEMM. */
+  gemm_t MatrixMatrixProductKernel;              /*!< \brief MKL JIT based GEMM kernel. */
+  void* MatrixVectorProductJitterBetaZero;       /*!< \brief Jitter handle for MKL JIT based GEMV. */
+  gemm_t MatrixVectorProductKernelBetaZero;      /*!< \brief MKL JIT based GEMV kernel. */
+  void* MatrixVectorProductJitterBetaOne;        /*!< \brief Jitter handle for MKL JIT based GEMV with BETA=1.0. */
+  gemm_t MatrixVectorProductKernelBetaOne;       /*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
+  void* MatrixVectorProductJitterAlphaMinusOne;  /*!< \brief Jitter handle for MKL JIT based GEMV with ALPHA=-1.0 and
+                                                    BETA=1.0. */
+  gemm_t MatrixVectorProductKernelAlphaMinusOne; /*!< \brief MKL JIT based GEMV kernel with ALPHA=-1.0 and BETA=1.0. */
 #endif
 
 #ifdef HAVE_PASTIX
-mutable CPastixWrapper<ScalarType> pastix_wrapper;
+  mutable CPastixWrapper<ScalarType> pastix_wrapper;
 #endif
 
-/*!
- * \brief Handle type conversion for when we Set, Add, etc. blocks, preserving derivative information (if supported by
- * types).
- */
-template <class DstType, class SrcType, su2enable_if<std::is_arithmetic<DstType>::value> = 0>
-FORCEINLINE static DstType ActiveAssign(const SrcType& val) {
-  return SU2_TYPE::GetValue(val);
-}
+  /*!
+   * \brief Handle type conversion for when we Set, Add, etc. blocks, preserving derivative information (if supported by
+   * types).
+   */
+  template <class DstType, class SrcType, su2enable_if<std::is_arithmetic<DstType>::value> = 0>
+  FORCEINLINE static DstType ActiveAssign(const SrcType& val) {
+    return SU2_TYPE::GetValue(val);
+  }
 
-template <class DstType, class SrcType, su2enable_if<!std::is_arithmetic<DstType>::value> = 0>
-FORCEINLINE static DstType ActiveAssign(const SrcType& val) {
-  return val;
-}
+  template <class DstType, class SrcType, su2enable_if<!std::is_arithmetic<DstType>::value> = 0>
+  FORCEINLINE static DstType ActiveAssign(const SrcType& val) {
+    return val;
+  }
 
-/*!
- * \brief Handle type conversion for when we Set, Add, etc. blocks, discarding derivative information.
- */
-template <class SrcType>
-FORCEINLINE static ScalarType PassiveAssign(const SrcType& val) {
-  return SU2_TYPE::GetValue(val);
-}
+  /*!
+   * \brief Handle type conversion for when we Set, Add, etc. blocks, discarding derivative information.
+   */
+  template <class SrcType>
+  FORCEINLINE static ScalarType PassiveAssign(const SrcType& val) {
+    return SU2_TYPE::GetValue(val);
+  }
 
-/*!
- * \brief Calculates the matrix-vector product: product = matrix*vector
- * \param[in] matrix
- * \param[in] vector
- * \param[out] product
- */
-void MatrixVectorProduct(const ScalarType* matrix, const ScalarType* vector, ScalarType* product) const;
+  /*!
+   * \brief Calculates the matrix-vector product: product = matrix*vector
+   * \param[in] matrix
+   * \param[in] vector
+   * \param[out] product
+   */
+  void MatrixVectorProduct(const ScalarType* matrix, const ScalarType* vector, ScalarType* product) const;
 
-/*!
- * \brief Calculates the matrix-vector product: product += matrix*vector
- * \param[in] matrix
- * \param[in] vector
- * \param[in,out] product
- */
-void MatrixVectorProductAdd(const ScalarType* matrix, const ScalarType* vector, ScalarType* product) const;
+  /*!
+   * \brief Calculates the matrix-vector product: product += matrix*vector
+   * \param[in] matrix
+   * \param[in] vector
+   * \param[in,out] product
+   */
+  void MatrixVectorProductAdd(const ScalarType* matrix, const ScalarType* vector, ScalarType* product) const;
 
-/*!
- * \brief Calculates the matrix-vector product: product -= matrix*vector
- * \param[in] matrix
- * \param[in] vector
- * \param[in,out] product
- */
-void MatrixVectorProductSub(const ScalarType* matrix, const ScalarType* vector, ScalarType* product) const;
+  /*!
+   * \brief Calculates the matrix-vector product: product -= matrix*vector
+   * \param[in] matrix
+   * \param[in] vector
+   * \param[in,out] product
+   */
+  void MatrixVectorProductSub(const ScalarType* matrix, const ScalarType* vector, ScalarType* product) const;
 
-/*!
- * \brief Calculates the matrix-matrix product
- */
-void MatrixMatrixProduct(const ScalarType* matrix_a, const ScalarType* matrix_b, ScalarType* product) const;
+  /*!
+   * \brief Calculates the matrix-matrix product
+   */
+  void MatrixMatrixProduct(const ScalarType* matrix_a, const ScalarType* matrix_b, ScalarType* product) const;
 
-/*!
- * \brief Subtract b from a and store the result in c.
- */
-FORCEINLINE void VectorSubtraction(const ScalarType* a, const ScalarType* b, ScalarType* c) const {
-  for (unsigned long iVar = 0; iVar < nVar; iVar++) c[iVar] = a[iVar] - b[iVar];
-}
+  /*!
+   * \brief Subtract b from a and store the result in c.
+   */
+  FORCEINLINE void VectorSubtraction(const ScalarType* a, const ScalarType* b, ScalarType* c) const {
+    for (unsigned long iVar = 0; iVar < nVar; iVar++) c[iVar] = a[iVar] - b[iVar];
+  }
 
-/*!
- * \brief Subtract b from a and store the result in c.
- */
-FORCEINLINE void MatrixSubtraction(const ScalarType* a, const ScalarType* b, ScalarType* c) const {
-  SU2_OMP_SIMD
-  for (unsigned long iVar = 0; iVar < nVar * nEqn; iVar++) c[iVar] = a[iVar] - b[iVar];
-}
+  /*!
+   * \brief Subtract b from a and store the result in c.
+   */
+  FORCEINLINE void MatrixSubtraction(const ScalarType* a, const ScalarType* b, ScalarType* c) const {
+    SU2_OMP_SIMD
+    for (unsigned long iVar = 0; iVar < nVar * nEqn; iVar++) c[iVar] = a[iVar] - b[iVar];
+  }
 
-/*!
- * \brief Copy matrix src into dst, transpose if required.
- */
-FORCEINLINE void MatrixCopy(const ScalarType* src, ScalarType* dst) const {
-  SU2_OMP_SIMD
-  for (auto iVar = 0ul; iVar < nVar * nEqn; ++iVar) dst[iVar] = src[iVar];
-}
+  /*!
+   * \brief Copy matrix src into dst, transpose if required.
+   */
+  FORCEINLINE void MatrixCopy(const ScalarType* src, ScalarType* dst) const {
+    SU2_OMP_SIMD
+    for (auto iVar = 0ul; iVar < nVar * nEqn; ++iVar) dst[iVar] = src[iVar];
+  }
 
-/*!
- * \brief Zero a matrix.
- */
-FORCEINLINE void ZeroMatrix(ScalarType* mat) const {
-  SU2_OMP_SIMD
-  for (auto iVar = 0ul; iVar < nVar * nEqn; ++iVar) mat[iVar] = 0;
-}
+  /*!
+   * \brief Zero a matrix.
+   */
+  FORCEINLINE void ZeroMatrix(ScalarType* mat) const {
+    SU2_OMP_SIMD
+    for (auto iVar = 0ul; iVar < nVar * nEqn; ++iVar) mat[iVar] = 0;
+  }
 
-/*!
- * \brief Solve a small (nVar x nVar) linear system using Gaussian elimination.
- * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
- * \param[in,out] vec - On entry the rhs, on exit the solution.
- */
-void GaussElimination(ScalarType* matrix, ScalarType* vec) const;
+  /*!
+   * \brief Solve a small (nVar x nVar) linear system using Gaussian elimination.
+   * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
+   * \param[in,out] vec - On entry the rhs, on exit the solution.
+   */
+  void GaussElimination(ScalarType* matrix, ScalarType* vec) const;
 
-/*!
- * \brief Invert a small dense matrix.
- * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
- * \param[out] inverse - the matrix inverse.
- */
-void MatrixInverse(ScalarType* matrix, ScalarType* inverse) const;
+  /*!
+   * \brief Invert a small dense matrix.
+   * \param[in,out] matrix - On entry the system matrix, on exit the factorized matrix.
+   * \param[out] inverse - the matrix inverse.
+   */
+  void MatrixInverse(ScalarType* matrix, ScalarType* inverse) const;
 
-/*!
- * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
- * \param[in] block_i - Index of the (i,i) diagonal block.
- * \param[in] rhs - Right-hand-side of the linear system.
- * \return Solution of the linear system (overwritten on rhs).
- */
-inline void GaussElimination(unsigned long block_i, ScalarType* rhs) const;
+  /*!
+   * \brief Performs the Gauss Elimination algorithm to solve the linear subsystem of the (i,i) subblock and rhs.
+   * \param[in] block_i - Index of the (i,i) diagonal block.
+   * \param[in] rhs - Right-hand-side of the linear system.
+   * \return Solution of the linear system (overwritten on rhs).
+   */
+  inline void GaussElimination(unsigned long block_i, ScalarType* rhs) const;
 
-/*!
- * \brief Inverse diagonal block.
- * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
- * \param[out] invBlock - Inverse block.
- */
-inline void InverseDiagonalBlock(unsigned long block_i, ScalarType* invBlock) const;
+  /*!
+   * \brief Inverse diagonal block.
+   * \param[in] block_i - Indexes of the block in the matrix-by-blocks structure.
+   * \param[out] invBlock - Inverse block.
+   */
+  inline void InverseDiagonalBlock(unsigned long block_i, ScalarType* invBlock) const;
 
-/*!
- * \brief Invert diagonal block (Uii) of the ILU matrix in place.
- * \param[in] block_i - Index of the block to invert.
- * \return Inverted block.
- */
-inline const ScalarType* InvertDiagonalBlockILUMatrix(unsigned long block_i);
+  /*!
+   * \brief Invert diagonal block (Uii) of the ILU matrix in place.
+   * \param[in] block_i - Index of the block to invert.
+   * \return Inverted block.
+   */
+  inline const ScalarType* InvertDiagonalBlockILUMatrix(unsigned long block_i);
 
-/*!
- * \brief Returns the start of the ILU block or nullptr if (i,j) is not a nonzero.
- * \param[in] block_i/j - Indexes of the block in the matrix-by-blocks structure.
- */
-inline ScalarType* GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j);
+  /*!
+   * \brief Returns the start of the ILU block or nullptr if (i,j) is not a nonzero.
+   * \param[in] block_i/j - Indexes of the block in the matrix-by-blocks structure.
+   */
+  inline ScalarType* GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j);
 
-/*!
- * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
- * \param[in] vec - Vector to be multiplied by the upper part of the sparse matrix A.
- * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
- * \param[in] col_ub - Exclusive upper bound for column indices considered in multiplication.
- * \param[out] prod - Result of the product U(A)*vec.
- */
-inline void UpperProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, unsigned long col_ub,
-                         ScalarType* prod) const;
+  /*!
+   * \brief Performs the product of i-th row of the upper part of a sparse matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the upper part of the sparse matrix A.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \param[in] col_ub - Exclusive upper bound for column indices considered in multiplication.
+   * \param[out] prod - Result of the product U(A)*vec.
+   */
+  inline void UpperProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, unsigned long col_ub,
+                           ScalarType* prod) const;
 
-/*!
- * \brief Performs the product of i-th row of the lower part of a sparse matrix by a vector.
- * \param[in] vec - Vector to be multiplied by the lower part of the sparse matrix A.
- * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
- * \param[in] col_lb - Inclusive lower bound for column indices considered in multiplication.
- * \param[out] prod - Result of the product L(A)*vec.
- */
-inline void LowerProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, unsigned long col_lb,
-                         ScalarType* prod) const;
+  /*!
+   * \brief Performs the product of i-th row of the lower part of a sparse matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the lower part of the sparse matrix A.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \param[in] col_lb - Inclusive lower bound for column indices considered in multiplication.
+   * \param[out] prod - Result of the product L(A)*vec.
+   */
+  inline void LowerProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, unsigned long col_lb,
+                           ScalarType* prod) const;
 
-/*!
- * \brief Performs the product of i-th row of the diagonal part of a sparse matrix by a vector.
- * \param[in] vec - Vector to be multiplied by the diagonal part of the sparse matrix A.
- * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
- * \return prod Result of the product D(A)*vec (stored at *prod_row_vector).
- */
-inline void DiagonalProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
+  /*!
+   * \brief Performs the product of i-th row of the diagonal part of a sparse matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the diagonal part of the sparse matrix A.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \return prod Result of the product D(A)*vec (stored at *prod_row_vector).
+   */
+  inline void DiagonalProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
 
-/*!
- * \brief Performs the product of i-th row of a sparse matrix by a vector.
- * \param[in] vec - Vector to be multiplied by the row of the sparse matrix A.
- * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
- * \return Result of the product (stored at *prod_row_vector).
- */
-void RowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
+  /*!
+   * \brief Performs the product of i-th row of a sparse matrix by a vector.
+   * \param[in] vec - Vector to be multiplied by the row of the sparse matrix A.
+   * \param[in] row_i - Row of the matrix to be multiplied by vector vec.
+   * \return Result of the product (stored at *prod_row_vector).
+   */
+  void RowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
 
-/*!
- * \brief Computes product += A_k * vec using the quantized representation of block k.
- * \note Only valid after QuantizeDiagonalBlocks() has been called.
- * \param[in] k - Block index in the CSR flat storage.
- * \param[in] vec - Input vector (nEqn entries).
- * \param[in,out] prod - Accumulation output (nVar entries).
- */
-inline void QuantizedMatVecAdd(const QuantType* qs, const QuantType* qv, const ScalarType* vec, ScalarType* prod) const;
+  /*!
+   * \brief Computes product += A_k * vec using the quantized representation of block k.
+   * \note Only valid after QuantizeDiagonalBlocks() has been called.
+   * \param[in] k - Block index in the CSR flat storage.
+   * \param[in] vec - Input vector (nEqn entries).
+   * \param[in,out] prod - Accumulation output (nVar entries).
+   */
+  inline void QuantizedMatVecAdd(const QuantType* qs, const QuantType* qv, const ScalarType* vec,
+                                 ScalarType* prod) const;
 
-/*! \brief Quantize one nVar×nVar block (row-major) into the int8 scale+value arrays.
- *         Called on the hot assembly path (SetBlocks/UpdateBlocks in Q_LU_SGS mode). */
-void QuantizeBlock(const ScalarType* blk, QuantType* qs, QuantType* qv) const;
+  /*! \brief Quantize one nVar×nVar block (row-major) into the int8 scale+value arrays.
+   *         Called on the hot assembly path (SetBlocks/UpdateBlocks in Q_LU_SGS mode). */
+  void QuantizeBlock(const ScalarType* blk, QuantType* qs, QuantType* qv) const;
 
-/*! \brief Full-row product using quantized L/D/U (Q_LU_SGS SpMV path). */
-inline void QuantizedRowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
+  /*! \brief Full-row product using quantized L/D/U (Q_LU_SGS SpMV path). */
+  inline void QuantizedRowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
 
-/*! \brief Upper-triangle product using quantized U (Q_LU_SGS backward sweep). */
-inline void QuantizedUpperProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, unsigned long col_ub,
-                                  ScalarType* prod) const;
+  /*! \brief Upper-triangle product using quantized U (Q_LU_SGS backward sweep). */
+  inline void QuantizedUpperProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, unsigned long col_ub,
+                                    ScalarType* prod) const;
 
-/*! \brief Lower-triangle product using quantized L (Q_LU_SGS forward sweep). */
-inline void QuantizedLowerProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, unsigned long col_lb,
-                                  ScalarType* prod) const;
+  /*! \brief Lower-triangle product using quantized L (Q_LU_SGS forward sweep). */
+  inline void QuantizedLowerProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, unsigned long col_lb,
+                                    ScalarType* prod) const;
 
-/*! \brief Diagonal product using quantized D (Q_LU_SGS backward sweep). */
-inline void QuantizedDiagonalProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
+  /*! \brief Diagonal product using quantized D (Q_LU_SGS backward sweep). */
+  inline void QuantizedDiagonalProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
 
-/*! \brief Gauss elimination on the quantized diagonal block: decodes q_blocks_d into a local
- *         ScalarType buffer and delegates to the scalar GaussElimination overload. */
-inline void QuantizedGaussElimination(unsigned long block_i, ScalarType* rhs) const;
+  /*! \brief Gauss elimination on the quantized diagonal block: decodes q_blocks_d into a local
+   *         ScalarType buffer and delegates to the scalar GaussElimination overload. */
+  inline void QuantizedGaussElimination(unsigned long block_i, ScalarType* rhs) const;
 
-/*--- Hooks for GPU versions (implemented is in CSysMatrixGPU.cu). ---*/
+  /*--- Hooks for GPU versions (implemented is in CSysMatrixGPU.cu). ---*/
 
-/*!
- * \brief Performs the product of a sparse matrix by a CSysVector on the device.
- */
-void MatrixVectorProductGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
-                            const CConfig* config) const;
+  /*!
+   * \brief Performs the product of a sparse matrix by a CSysVector on the device.
+   */
+  void MatrixVectorProductGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                              const CConfig* config) const;
 
-/*!
- * \brief Build the Jacobi preconditioner on the device, from the device copy of the matrix.
- * \note Requires the device matrix to be up to date, see HtDTransfer.
- */
-void BuildJacobiPreconditionerGPU();
+  /*!
+   * \brief Build the Jacobi preconditioner on the device, from the device copy of the matrix.
+   * \note Requires the device matrix to be up to date, see HtDTransfer.
+   */
+  void BuildJacobiPreconditionerGPU();
 
-/*!
- * \brief Apply the Jacobi preconditioner on the GPU/device side.
- */
-void ComputeJacobiPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
-                                    CGeometry* geometry, const CConfig* config) const;
+  /*!
+   * \brief Apply the Jacobi preconditioner on the GPU/device side.
+   */
+  void ComputeJacobiPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
+                                      CGeometry* geometry, const CConfig* config) const;
 
-/*!
- * \brief Build the ILU preconditioner on the device, from the device copy of the matrix.
- * \note Requires the device matrix to be up to date, see HtDTransfer.
- */
-void BuildILUPreconditionerGPU();
+  /*!
+   * \brief Build the ILU preconditioner on the device, from the device copy of the matrix.
+   * \note Requires the device matrix to be up to date, see HtDTransfer.
+   */
+  void BuildILUPreconditionerGPU();
 
-/*!
- * \brief Apply the ILU preconditioner on the device.
- */
-void ComputeILUPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
+  /*!
+   * \brief Apply the ILU preconditioner on the device.
+   */
+  void ComputeILUPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
 
-public:
-/*!
- * \brief Constructor of the class.
- */
-CSysMatrix();
+ public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CSysMatrix();
 
-/*!
- * \brief Destructor of the class.
- */
-~CSysMatrix();
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSysMatrix();
 
-/*!
- * \brief Initializes the sparse matrix.
- * \note The preconditioners require nVar == nEqn (square blocks).
- * \param[in] npoint - Number of points including halos.
- * \param[in] npointdomain - Number of points excluding halos.
- * \param[in] nvar - Number of variables (and rows of the blocks).
- * \param[in] neqn - Number of equations (and columns of the blocks).
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] needTranspPtr - If the L/U transpose maps should be built, used for "SetDiagonalAsColumnSum".
- * \param[in] grad_mode - Gradient smoothing mode, only used to detect the right preconditioner type.
- * \param[in] allow_quant - Quantization is only possible with solvers that "set and forget" the off-diagonal
- *            blocks of the matrix. Solvers that perform multiple updates would lose too much information, so
- *            that pattern is not supported with quantization (the code will hit null pointers). It is up to
- *            the solver to declare whether it will "set and forget".
- */
-void Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar, unsigned short neqn,
-                bool EdgeConnect, CGeometry* geometry, const CConfig* config, bool needTranspPtr = false,
-                bool grad_mode = false, bool allow_quant = false);
+  /*!
+   * \brief Initializes the sparse matrix.
+   * \note The preconditioners require nVar == nEqn (square blocks).
+   * \param[in] npoint - Number of points including halos.
+   * \param[in] npointdomain - Number of points excluding halos.
+   * \param[in] nvar - Number of variables (and rows of the blocks).
+   * \param[in] neqn - Number of equations (and columns of the blocks).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] needTranspPtr - If the L/U transpose maps should be built, used for "SetDiagonalAsColumnSum".
+   * \param[in] grad_mode - Gradient smoothing mode, only used to detect the right preconditioner type.
+   * \param[in] allow_quant - Quantization is only possible with solvers that "set and forget" the off-diagonal
+   *            blocks of the matrix. Solvers that perform multiple updates would lose too much information, so
+   *            that pattern is not supported with quantization (the code will hit null pointers). It is up to
+   *            the solver to declare whether it will "set and forget".
+   */
+  void Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar, unsigned short neqn,
+                  bool EdgeConnect, CGeometry* geometry, const CConfig* config, bool needTranspPtr = false,
+                  bool grad_mode = false, bool allow_quant = false);
 
-/*!
- * \brief Compresses off-diagonal blocks into quantized form for use with USE_QUANTIZATION.
- */
-void QuantizeDiagonalBlocks();
+  /*!
+   * \brief Compresses off-diagonal blocks into quantized form for use with USE_QUANTIZATION.
+   */
+  void QuantizeDiagonalBlocks();
 
-/*!
- * \brief Sets to zero all the entries of the sparse matrix.
- */
-void SetValZero();
+  /*!
+   * \brief Sets to zero all the entries of the sparse matrix.
+   */
+  void SetValZero();
 
-/*!
- * \brief Sets to zero all the block diagonal entries of the sparse matrix.
- */
-void SetValDiagonalZero();
+  /*!
+   * \brief Sets to zero all the block diagonal entries of the sparse matrix.
+   */
+  void SetValDiagonalZero();
 
-/*!
- * \brief Performs the memory copy from host to device.
- * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
- */
-void HtDTransfer(bool trigger = true) const;
+  /*!
+   * \brief Performs the memory copy from host to device.
+   * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
+   */
+  void HtDTransfer(bool trigger = true) const;
 
-/*!
- * \brief Get a pointer to the start of block "ij"
- * \param[in] block_i - Row index.
- * \param[in] block_j - Column index.
- * \return Pointer to location in memory where the block starts.
- */
-FORCEINLINE const ScalarType* GetBlock(unsigned long block_i, unsigned long block_j) const {
-  if (block_i == block_j) return &mat.d[block_i * nVar * nEqn];
-  if (block_j < block_i) {
-    for (auto index = mat.row_ptr_l[block_i]; index < mat.row_ptr_l[block_i + 1]; ++index)
-      if (mat.col_ind_l[index] == block_j) return &mat.l[index * nVar * nEqn];
+  /*!
+   * \brief Get a pointer to the start of block "ij"
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \return Pointer to location in memory where the block starts.
+   */
+  FORCEINLINE const ScalarType* GetBlock(unsigned long block_i, unsigned long block_j) const {
+    if (block_i == block_j) return &mat.d[block_i * nVar * nEqn];
+    if (block_j < block_i) {
+      for (auto index = mat.row_ptr_l[block_i]; index < mat.row_ptr_l[block_i + 1]; ++index)
+        if (mat.col_ind_l[index] == block_j) return &mat.l[index * nVar * nEqn];
+      return nullptr;
+    }
+    for (auto index = mat.row_ptr_u[block_i]; index < mat.row_ptr_u[block_i + 1]; ++index)
+      if (mat.col_ind_u[index] == block_j) return &mat.u[index * nVar * nEqn];
     return nullptr;
   }
-  for (auto index = mat.row_ptr_u[block_i]; index < mat.row_ptr_u[block_i + 1]; ++index)
-    if (mat.col_ind_u[index] == block_j) return &mat.u[index * nVar * nEqn];
-  return nullptr;
-}
 
-/*!
- * \brief Get a pointer to the start of block "ij", non-const version.
- */
-FORCEINLINE ScalarType* GetBlock(unsigned long block_i, unsigned long block_j) {
-  const CSysMatrix& const_this = *this;
-  return const_cast<ScalarType*>(const_this.GetBlock(block_i, block_j));
-}
+  /*!
+   * \brief Get a pointer to the start of block "ij", non-const version.
+   */
+  FORCEINLINE ScalarType* GetBlock(unsigned long block_i, unsigned long block_j) {
+    const CSysMatrix& const_this = *this;
+    return const_cast<ScalarType*>(const_this.GetBlock(block_i, block_j));
+  }
 
-/*!
- * \brief Read-only view of block (block_i, block_j). In Q_LU_SGS mode values are decoded
- *        on access inside CBlockView::operator()(i,j); no temporary copy is made.
- * \return A CBlockView<const ScalarType> that evaluates to false if the block is absent.
- */
-FORCEINLINE CBlockView<const ScalarType> GetBlockView(unsigned long block_i, unsigned long block_j) const {
+  /*!
+   * \brief Read-only view of block (block_i, block_j). In Q_LU_SGS mode values are decoded
+   *        on access inside CBlockView::operator()(i,j); no temporary copy is made.
+   * \return A CBlockView<const ScalarType> that evaluates to false if the block is absent.
+   */
+  FORCEINLINE CBlockView<const ScalarType> GetBlockView(unsigned long block_i, unsigned long block_j) const {
 #define GET_BLOCK_VIEW_IMPL                                                                                        \
   if (!quantized_mode || block_i == block_j) {                                                                     \
     return {GetBlock(block_i, block_j), nullptr, nullptr, nVar};                                                   \
@@ -692,524 +691,524 @@ FORCEINLINE CBlockView<const ScalarType> GetBlockView(unsigned long block_i, uns
       if (mat.col_ind_u[k] == block_j) return {nullptr, &q_scale_u[k * nVar], &q_blocks_u[k * nVar * nVar], nVar}; \
   }                                                                                                                \
   return {}
-  GET_BLOCK_VIEW_IMPL;
-}
+    GET_BLOCK_VIEW_IMPL;
+  }
 
-/*!
- * \overload Non const version of GetBlockView.
- */
-FORCEINLINE CBlockView<ScalarType> GetBlockView(unsigned long block_i, unsigned long block_j) {
-  GET_BLOCK_VIEW_IMPL;
+  /*!
+   * \overload Non const version of GetBlockView.
+   */
+  FORCEINLINE CBlockView<ScalarType> GetBlockView(unsigned long block_i, unsigned long block_j) {
+    GET_BLOCK_VIEW_IMPL;
 #undef GET_BLOCK_VIEW_IMPL
-}
+  }
 
-/*!
- * \brief Set the value of a scaled block in the sparse matrix.
- * \note This is an templated overload for C2Dcontainer specialization su2matrix.
- *       It assumes that MatrixType supports a member type Scalar and access operator(i, j).
- *       If the template param Overwrite is false we add to the block (bij += alpha*b).
- * \param[in] block_i - Row index.
- * \param[in] block_j - Column index.
- * \param[in] val_block - Block to set to A(i, j).
- * \param[in] alpha - Scale factor.
- */
-template <bool Overwrite = true, class MatrixType>
-inline void SetBlock(unsigned long block_i, unsigned long block_j, MatrixType& val_block,
-                     std::decay_t<typename MatrixType::Scalar> alpha = 1.0) {
-  auto view = GetBlockView(block_i, block_j);
-  if (!view) return;
-  view.template apply<Overwrite>(
-      [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block(i, j)); });
-}
+  /*!
+   * \brief Set the value of a scaled block in the sparse matrix.
+   * \note This is an templated overload for C2Dcontainer specialization su2matrix.
+   *       It assumes that MatrixType supports a member type Scalar and access operator(i, j).
+   *       If the template param Overwrite is false we add to the block (bij += alpha*b).
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \param[in] val_block - Block to set to A(i, j).
+   * \param[in] alpha - Scale factor.
+   */
+  template <bool Overwrite = true, class MatrixType>
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, MatrixType& val_block,
+                       std::decay_t<typename MatrixType::Scalar> alpha = 1.0) {
+    auto view = GetBlockView(block_i, block_j);
+    if (!view) return;
+    view.template apply<Overwrite>(
+        [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block(i, j)); });
+  }
 
-/*!
- * \overload val_block is a pointer instead of a matrix type.
- */
-template <bool Overwrite = true, class OtherType, su2enable_if<!is_pointer<OtherType>::value> = 0>
-inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* val_block,
-                     std::decay_t<OtherType> alpha = 1.0) {
-  auto view = GetBlockView(block_i, block_j);
-  if (!view) return;
-  view.template apply<Overwrite>(
-      [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block[i * nEqn + j]); });
-}
+  /*!
+   * \overload val_block is a pointer instead of a matrix type.
+   */
+  template <bool Overwrite = true, class OtherType, su2enable_if<!is_pointer<OtherType>::value> = 0>
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* val_block,
+                       std::decay_t<OtherType> alpha = 1.0) {
+    auto view = GetBlockView(block_i, block_j);
+    if (!view) return;
+    view.template apply<Overwrite>(
+        [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block[i * nEqn + j]); });
+  }
 
-/*!
- * \overload val_block is a double pointer instead of matrix type.
- */
-template <bool Overwrite = true, class OtherType>
-inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block,
-                     std::decay_t<OtherType> alpha = 1.0) {
-  auto view = GetBlockView(block_i, block_j);
-  if (!view) return;
-  view.template apply<Overwrite>(
-      [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block[i][j]); });
-}
+  /*!
+   * \overload val_block is a double pointer instead of matrix type.
+   */
+  template <bool Overwrite = true, class OtherType>
+  inline void SetBlock(unsigned long block_i, unsigned long block_j, const OtherType* const* val_block,
+                       std::decay_t<OtherType> alpha = 1.0) {
+    auto view = GetBlockView(block_i, block_j);
+    if (!view) return;
+    view.template apply<Overwrite>(
+        [&](unsigned long i, unsigned long j) { return PassiveAssign(alpha * val_block[i][j]); });
+  }
 
-/*!
- * \brief Add a scaled block (in flat format) to the sparse matrix (see SetBlock).
- * \param[in] block_i - Row index.
- * \param[in] block_j - Column index.
- * \param[in] val_block - Block to set to A(i, j).
- * \param[in] alpha - Scale factor.
- */
-template <class T, class OtherType = ScalarType>
-inline void AddBlock(unsigned long block_i, unsigned long block_j, const T& val_block, OtherType alpha = 1.0) {
-  SetBlock<false>(block_i, block_j, val_block, alpha);
-}
+  /*!
+   * \brief Add a scaled block (in flat format) to the sparse matrix (see SetBlock).
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \param[in] val_block - Block to set to A(i, j).
+   * \param[in] alpha - Scale factor.
+   */
+  template <class T, class OtherType = ScalarType>
+  inline void AddBlock(unsigned long block_i, unsigned long block_j, const T& val_block, OtherType alpha = 1.0) {
+    SetBlock<false>(block_i, block_j, val_block, alpha);
+  }
 
-/*!
- * \brief Subtracts the specified block to the sparse matrix (see AddBlock).
- * \param[in] block_i - Row index.
- * \param[in] block_j - Column index.
- * \param[in] val_block - Block to subtract to A(i, j).
- */
-template <class T>
-inline void SubtractBlock(unsigned long block_i, unsigned long block_j, const T& val_block) {
-  AddBlock(block_i, block_j, val_block, -1);
-}
+  /*!
+   * \brief Subtracts the specified block to the sparse matrix (see AddBlock).
+   * \param[in] block_i - Row index.
+   * \param[in] block_j - Column index.
+   * \param[in] val_block - Block to subtract to A(i, j).
+   */
+  template <class T>
+  inline void SubtractBlock(unsigned long block_i, unsigned long block_j, const T& val_block) {
+    AddBlock(block_i, block_j, val_block, -1);
+  }
 
-/*!
- * \brief Returns the 4 blocks ii, ij, ji, jj used by "UpdateBlocks".
- * \note This method assumes an FVM-type sparse pattern.
- * \param[in] edge - Index of edge that connects iPoint and jPoint.
- * \param[in] iPoint - Row to which we add the blocks.
- * \param[in] jPoint - Row from which we subtract the blocks.
- * \param[out] bii, bij, bji, bjj - Blocks of the matrix.
- */
-inline void GetBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, ScalarType*& bii,
-                      ScalarType*& bij, ScalarType*& bji, ScalarType*& bjj) {
-  const auto blkSz = nVar * nEqn;
-  bii = &mat.d[iPoint * blkSz];
-  bjj = &mat.d[jPoint * blkSz];
-  bij = &mat.u[iEdge * blkSz];
-  bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
-}
+  /*!
+   * \brief Returns the 4 blocks ii, ij, ji, jj used by "UpdateBlocks".
+   * \note This method assumes an FVM-type sparse pattern.
+   * \param[in] edge - Index of edge that connects iPoint and jPoint.
+   * \param[in] iPoint - Row to which we add the blocks.
+   * \param[in] jPoint - Row from which we subtract the blocks.
+   * \param[out] bii, bij, bji, bjj - Blocks of the matrix.
+   */
+  inline void GetBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, ScalarType*& bii,
+                        ScalarType*& bij, ScalarType*& bji, ScalarType*& bjj) {
+    const auto blkSz = nVar * nEqn;
+    bii = &mat.d[iPoint * blkSz];
+    bjj = &mat.d[jPoint * blkSz];
+    bij = &mat.u[iEdge * blkSz];
+    bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
+  }
 
-/*!
- * \brief Update 4 blocks ii, ij, ji, jj (add to i* sub from j*).
- * \note This method assumes an FVM-type sparse pattern.
- * \param[in] edge - Index of edge that connects iPoint and jPoint.
- * \param[in] iPoint - Row to which we add the blocks.
- * \param[in] jPoint - Row from which we subtract the blocks.
- * \param[in] block_i - Adds to ii, subs from ji.
- * \param[in] block_j - Adds to ij, subs from jj.
- * \param[in] scale - Scale blocks during update (axpy type op).
- */
-template <bool OverwriteOffDiag = false, class MatrixType, class OtherType = ScalarType>
-inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, const MatrixType& block_i,
-                         const MatrixType& block_j, OtherType scale = 1) {
-  const auto blkSz = nVar * nEqn;
-  auto* bii = &mat.d[iPoint * blkSz];
-  auto* bjj = &mat.d[jPoint * blkSz];
+  /*!
+   * \brief Update 4 blocks ii, ij, ji, jj (add to i* sub from j*).
+   * \note This method assumes an FVM-type sparse pattern.
+   * \param[in] edge - Index of edge that connects iPoint and jPoint.
+   * \param[in] iPoint - Row to which we add the blocks.
+   * \param[in] jPoint - Row from which we subtract the blocks.
+   * \param[in] block_i - Adds to ii, subs from ji.
+   * \param[in] block_j - Adds to ij, subs from jj.
+   * \param[in] scale - Scale blocks during update (axpy type op).
+   */
+  template <bool OverwriteOffDiag = false, class MatrixType, class OtherType = ScalarType>
+  inline void UpdateBlocks(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, const MatrixType& block_i,
+                           const MatrixType& block_j, OtherType scale = 1) {
+    const auto blkSz = nVar * nEqn;
+    auto* bii = &mat.d[iPoint * blkSz];
+    auto* bjj = &mat.d[jPoint * blkSz];
 
-  unsigned long iVar, jVar, offset = 0;
+    unsigned long iVar, jVar, offset = 0;
 
-  if (quantized_mode) {
-    assert(OverwriteOffDiag);
-    /*--- Diagonal: full-precision accumulation. Off-diagonal: quantize on the fly. ---*/
-    ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
+    if (quantized_mode) {
+      assert(OverwriteOffDiag);
+      /*--- Diagonal: full-precision accumulation. Off-diagonal: quantize on the fly. ---*/
+      ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
+          bii[offset] += PassiveAssign(block_i[iVar][jVar] * scale);
+          bjj[offset] -= PassiveAssign(block_j[iVar][jVar] * scale);
+          bij_buf[offset] = PassiveAssign(block_j[iVar][jVar] * scale);
+          bji_buf[offset] = -PassiveAssign(block_i[iVar][jVar] * scale);
+        }
+      QuantizeBlock(bij_buf, &q_scale_u[iEdge * nVar], &q_blocks_u[iEdge * blkSz]);
+      const auto k_l = edge_ptr_l[iEdge];
+      QuantizeBlock(bji_buf, &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
+      return;
+    }
+
+    auto* bij = &mat.u[iEdge * blkSz];
+    auto* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nEqn; jVar++) {
         bii[offset] += PassiveAssign(block_i[iVar][jVar] * scale);
         bjj[offset] -= PassiveAssign(block_j[iVar][jVar] * scale);
-        bij_buf[offset] = PassiveAssign(block_j[iVar][jVar] * scale);
-        bji_buf[offset] = -PassiveAssign(block_i[iVar][jVar] * scale);
+        if constexpr (OverwriteOffDiag) {
+          bij[offset] = PassiveAssign(block_j[iVar][jVar] * scale);
+          bji[offset] = -PassiveAssign(block_i[iVar][jVar] * scale);
+        } else {
+          bij[offset] += PassiveAssign(block_j[iVar][jVar] * scale);
+          bji[offset] -= PassiveAssign(block_i[iVar][jVar] * scale);
+        }
+        ++offset;
       }
-    QuantizeBlock(bij_buf, &q_scale_u[iEdge * nVar], &q_blocks_u[iEdge * blkSz]);
-    const auto k_l = edge_ptr_l[iEdge];
-    QuantizeBlock(bji_buf, &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
-    return;
+    }
   }
 
-  auto* bij = &mat.u[iEdge * blkSz];
-  auto* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nEqn; jVar++) {
-      bii[offset] += PassiveAssign(block_i[iVar][jVar] * scale);
-      bjj[offset] -= PassiveAssign(block_j[iVar][jVar] * scale);
-      if constexpr (OverwriteOffDiag) {
-        bij[offset] = PassiveAssign(block_j[iVar][jVar] * scale);
-        bji[offset] = -PassiveAssign(block_i[iVar][jVar] * scale);
+  /*!
+   * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of UpdateBlocks.
+   */
+  template <class MatrixType>
+  inline void UpdateBlocksSub(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint,
+                              const MatrixType& block_i, const MatrixType& block_j) {
+    UpdateBlocks<false, MatrixType, ScalarType>(iEdge, iPoint, jPoint, block_i, block_j, -1);
+  }
+
+  /*!
+   * \brief SIMD version, does the update for multiple edges and points.
+   * \note Nothing is updated if the mask is 0.
+   */
+  template <class MatTypeSIMD, size_t N, class I, class F = ScalarType>
+  FORCEINLINE void SetBlocks(simd::Array<I, N> iEdge, simd::Array<I, N> iPoint, simd::Array<I, N> jPoint,
+                             const MatTypeSIMD& block_i, const MatTypeSIMD& block_j, simd::Array<F, N> mask = 1) {
+    static_assert(MatTypeSIMD::StaticSize, "This method requires static size blocks.");
+    static_assert(MatTypeSIMD::IsRowMajor, "Block storage is not compatible with matrix.");
+    constexpr size_t blkSz = MatTypeSIMD::StaticSize;
+    assert(blkSz == nVar * nEqn);
+
+    /*--- "Transpose" the blocks, scale, and possibly convert types,
+     * giving the compiler the chance to vectorize all of these. ---*/
+    ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
+
+    for (size_t i = 0; i < blkSz; ++i) {
+      SU2_OMP_SIMD_IF_NOT_AD
+      for (size_t k = 0; k < N; ++k) {
+        blk_i[k][i] = PassiveAssign(-mask[k] * block_i.data()[i][k]);
+        blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
+      }
+    }
+
+    /*--- Update one by one skipping if mask is 0. ---*/
+    for (size_t k = 0; k < N; ++k) {
+      if (mask[k] == 0) continue;
+
+      auto bii = &mat.d[iPoint[k] * blkSz];
+      auto bjj = &mat.d[jPoint[k] * blkSz];
+
+      if (quantized_mode) {
+        SU2_OMP_SIMD
+        for (size_t i = 0; i < blkSz; ++i) {
+          bii[i] -= blk_i[k][i];
+          bjj[i] -= blk_j[k][i];
+        }
+        QuantizeBlock(blk_j[k], &q_scale_u[iEdge[k] * nVar], &q_blocks_u[iEdge[k] * blkSz]);
+        const auto k_l = edge_ptr_l[iEdge[k]];
+        QuantizeBlock(blk_i[k], &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
       } else {
-        bij[offset] += PassiveAssign(block_j[iVar][jVar] * scale);
-        bji[offset] -= PassiveAssign(block_i[iVar][jVar] * scale);
+        auto bij = &mat.u[iEdge[k] * blkSz];
+        auto bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
+        /*--- Update, block i was negated during transpose in the
+         * hope the assignments below become non-temporal stores. ---*/
+        SU2_OMP_SIMD
+        for (size_t i = 0; i < blkSz; ++i) {
+          bii[i] -= blk_i[k][i];
+          bjj[i] -= blk_j[k][i];
+          bij[i] = blk_j[k][i];
+          bji[i] = blk_i[k][i];
+        }
       }
-      ++offset;
-    }
-  }
-}
-
-/*!
- * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of UpdateBlocks.
- */
-template <class MatrixType>
-inline void UpdateBlocksSub(unsigned long iEdge, unsigned long iPoint, unsigned long jPoint, const MatrixType& block_i,
-                            const MatrixType& block_j) {
-  UpdateBlocks<false, MatrixType, ScalarType>(iEdge, iPoint, jPoint, block_i, block_j, -1);
-}
-
-/*!
- * \brief SIMD version, does the update for multiple edges and points.
- * \note Nothing is updated if the mask is 0.
- */
-template <class MatTypeSIMD, size_t N, class I, class F = ScalarType>
-FORCEINLINE void SetBlocks(simd::Array<I, N> iEdge, simd::Array<I, N> iPoint, simd::Array<I, N> jPoint,
-                           const MatTypeSIMD& block_i, const MatTypeSIMD& block_j, simd::Array<F, N> mask = 1) {
-  static_assert(MatTypeSIMD::StaticSize, "This method requires static size blocks.");
-  static_assert(MatTypeSIMD::IsRowMajor, "Block storage is not compatible with matrix.");
-  constexpr size_t blkSz = MatTypeSIMD::StaticSize;
-  assert(blkSz == nVar * nEqn);
-
-  /*--- "Transpose" the blocks, scale, and possibly convert types,
-   * giving the compiler the chance to vectorize all of these. ---*/
-  ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
-
-  for (size_t i = 0; i < blkSz; ++i) {
-    SU2_OMP_SIMD_IF_NOT_AD
-    for (size_t k = 0; k < N; ++k) {
-      blk_i[k][i] = PassiveAssign(-mask[k] * block_i.data()[i][k]);
-      blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
     }
   }
 
-  /*--- Update one by one skipping if mask is 0. ---*/
-  for (size_t k = 0; k < N; ++k) {
-    if (mask[k] == 0) continue;
-
-    auto bii = &mat.d[iPoint[k] * blkSz];
-    auto bjj = &mat.d[jPoint[k] * blkSz];
+  /*!
+   * \brief Sets 2 blocks ij and ji (add to i* sub from j*) associated with
+   *        one edge of an FVM-type sparse pattern.
+   * \note The parameter Overwrite allows completely writing over the
+   *       current values held by the matrix (true), or updating them (false).
+   * \param[in] edge - Index of edge that connects iPoint and jPoint.
+   * \param[in] block_i - Subs from ji.
+   * \param[in] block_j - Adds to ij.
+   * \param[in] scale - Scale blocks during update (axpy type op).
+   */
+  template <class MatrixType, class OtherType = ScalarType, bool Overwrite = true>
+  inline void SetBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j,
+                        OtherType scale = 1) {
+    const auto blkSz = nVar * nEqn;
+    unsigned long iVar, jVar, offset = 0;
 
     if (quantized_mode) {
-      SU2_OMP_SIMD
-      for (size_t i = 0; i < blkSz; ++i) {
-        bii[i] -= blk_i[k][i];
-        bjj[i] -= blk_j[k][i];
-      }
-      QuantizeBlock(blk_j[k], &q_scale_u[iEdge[k] * nVar], &q_blocks_u[iEdge[k] * blkSz]);
-      const auto k_l = edge_ptr_l[iEdge[k]];
-      QuantizeBlock(blk_i[k], &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
-    } else {
-      auto bij = &mat.u[iEdge[k] * blkSz];
-      auto bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
-      /*--- Update, block i was negated during transpose in the
-       * hope the assignments below become non-temporal stores. ---*/
-      SU2_OMP_SIMD
-      for (size_t i = 0; i < blkSz; ++i) {
-        bii[i] -= blk_i[k][i];
-        bjj[i] -= blk_j[k][i];
-        bij[i] = blk_j[k][i];
-        bji[i] = blk_i[k][i];
+      assert(Overwrite);
+      ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
+          bij_buf[offset] = PassiveAssign(block_j[iVar][jVar] * scale);
+          bji_buf[offset] = -PassiveAssign(block_i[iVar][jVar] * scale);
+        }
+      QuantizeBlock(bij_buf, &q_scale_u[iEdge * nVar], &q_blocks_u[iEdge * blkSz]);
+      const auto k_l = edge_ptr_l[iEdge];
+      QuantizeBlock(bji_buf, &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
+      return;
+    }
+
+    ScalarType* bij = &mat.u[iEdge * blkSz];
+    ScalarType* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nEqn; jVar++) {
+        bij[offset] = (Overwrite ? ScalarType(0) : bij[offset]) + PassiveAssign(block_j[iVar][jVar] * scale);
+        bji[offset] = (Overwrite ? ScalarType(0) : bji[offset]) - PassiveAssign(block_i[iVar][jVar] * scale);
+        ++offset;
       }
     }
   }
-}
 
-/*!
- * \brief Sets 2 blocks ij and ji (add to i* sub from j*) associated with
- *        one edge of an FVM-type sparse pattern.
- * \note The parameter Overwrite allows completely writing over the
- *       current values held by the matrix (true), or updating them (false).
- * \param[in] edge - Index of edge that connects iPoint and jPoint.
- * \param[in] block_i - Subs from ji.
- * \param[in] block_j - Adds to ij.
- * \param[in] scale - Scale blocks during update (axpy type op).
- */
-template <class MatrixType, class OtherType = ScalarType, bool Overwrite = true>
-inline void SetBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j, OtherType scale = 1) {
-  const auto blkSz = nVar * nEqn;
-  unsigned long iVar, jVar, offset = 0;
+  /*!
+   * \brief Short-hand for the "additive overwrite" version of SetBlocks.
+   */
+  template <class MatrixType, class OtherType = ScalarType>
+  inline void UpdateBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j,
+                           OtherType scale = 1) {
+    SetBlocks<MatrixType, OtherType, false>(iEdge, block_i, block_j, scale);
+  }
 
-  if (quantized_mode) {
-    assert(Overwrite);
-    ScalarType bij_buf[MAXNVAR * MAXNVAR], bji_buf[MAXNVAR * MAXNVAR];
-    for (iVar = 0; iVar < nVar; iVar++)
-      for (jVar = 0; jVar < nEqn; jVar++, ++offset) {
-        bij_buf[offset] = PassiveAssign(block_j[iVar][jVar] * scale);
-        bji_buf[offset] = -PassiveAssign(block_i[iVar][jVar] * scale);
+  /*!
+   * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of SetBlocks.
+   */
+  template <class MatrixType>
+  inline void UpdateBlocksSub(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j) {
+    SetBlocks<MatrixType, ScalarType, false>(iEdge, block_i, block_j, -1);
+  }
+
+  /*!
+   * \brief SIMD version, does the update for multiple edges.
+   * \note Nothing is updated if the mask is 0.
+   */
+  template <class MatTypeSIMD, size_t N, class I, class F = ScalarType>
+  FORCEINLINE void SetBlocks(simd::Array<I, N> iEdge, const MatTypeSIMD& block_i, const MatTypeSIMD& block_j,
+                             simd::Array<F, N> mask = 1) {
+    static_assert(MatTypeSIMD::StaticSize, "This method requires static size blocks.");
+    static_assert(MatTypeSIMD::IsRowMajor, "Block storage is not compatible with matrix.");
+    constexpr size_t blkSz = MatTypeSIMD::StaticSize;
+    assert(blkSz == nVar * nEqn);
+
+    /*--- "Transpose" the blocks, scale, and possibly convert types,
+     * giving the compiler the chance to vectorize all of these. ---*/
+    ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
+
+    for (size_t i = 0; i < blkSz; ++i) {
+      SU2_OMP_SIMD_IF_NOT_AD
+      for (size_t k = 0; k < N; ++k) {
+        blk_i[k][i] = PassiveAssign(-mask[k] * block_i.data()[i][k]);
+        blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
       }
-    QuantizeBlock(bij_buf, &q_scale_u[iEdge * nVar], &q_blocks_u[iEdge * blkSz]);
-    const auto k_l = edge_ptr_l[iEdge];
-    QuantizeBlock(bji_buf, &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
-    return;
-  }
-
-  ScalarType* bij = &mat.u[iEdge * blkSz];
-  ScalarType* bji = &mat.l[edge_ptr_l[iEdge] * blkSz];
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (jVar = 0; jVar < nEqn; jVar++) {
-      bij[offset] = (Overwrite ? ScalarType(0) : bij[offset]) + PassiveAssign(block_j[iVar][jVar] * scale);
-      bji[offset] = (Overwrite ? ScalarType(0) : bji[offset]) - PassiveAssign(block_i[iVar][jVar] * scale);
-      ++offset;
     }
-  }
-}
 
-/*!
- * \brief Short-hand for the "additive overwrite" version of SetBlocks.
- */
-template <class MatrixType, class OtherType = ScalarType>
-inline void UpdateBlocks(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j,
-                         OtherType scale = 1) {
-  SetBlocks<MatrixType, OtherType, false>(iEdge, block_i, block_j, scale);
-}
-
-/*!
- * \brief Short-hand for the "subtractive" version (sub from i* add to j*) of SetBlocks.
- */
-template <class MatrixType>
-inline void UpdateBlocksSub(unsigned long iEdge, const MatrixType& block_i, const MatrixType& block_j) {
-  SetBlocks<MatrixType, ScalarType, false>(iEdge, block_i, block_j, -1);
-}
-
-/*!
- * \brief SIMD version, does the update for multiple edges.
- * \note Nothing is updated if the mask is 0.
- */
-template <class MatTypeSIMD, size_t N, class I, class F = ScalarType>
-FORCEINLINE void SetBlocks(simd::Array<I, N> iEdge, const MatTypeSIMD& block_i, const MatTypeSIMD& block_j,
-                           simd::Array<F, N> mask = 1) {
-  static_assert(MatTypeSIMD::StaticSize, "This method requires static size blocks.");
-  static_assert(MatTypeSIMD::IsRowMajor, "Block storage is not compatible with matrix.");
-  constexpr size_t blkSz = MatTypeSIMD::StaticSize;
-  assert(blkSz == nVar * nEqn);
-
-  /*--- "Transpose" the blocks, scale, and possibly convert types,
-   * giving the compiler the chance to vectorize all of these. ---*/
-  ScalarType blk_i[N][blkSz], blk_j[N][blkSz];
-
-  for (size_t i = 0; i < blkSz; ++i) {
-    SU2_OMP_SIMD_IF_NOT_AD
+    /*--- Update one by one skipping if mask is 0. ---*/
     for (size_t k = 0; k < N; ++k) {
-      blk_i[k][i] = PassiveAssign(-mask[k] * block_i.data()[i][k]);
-      blk_j[k][i] = PassiveAssign(mask[k] * block_j.data()[i][k]);
-    }
-  }
+      if (mask[k] == 0) continue;
 
-  /*--- Update one by one skipping if mask is 0. ---*/
-  for (size_t k = 0; k < N; ++k) {
-    if (mask[k] == 0) continue;
-
-    if (quantized_mode) {
-      QuantizeBlock(blk_j[k], &q_scale_u[iEdge[k] * nVar], &q_blocks_u[iEdge[k] * blkSz]);
-      const auto k_l = edge_ptr_l[iEdge[k]];
-      QuantizeBlock(blk_i[k], &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
-    } else {
-      ScalarType* bij = &mat.u[iEdge[k] * blkSz];
-      ScalarType* bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
-      /*--- Update, block i was negated during transpose in the
-       * hope the assignments below become non-temporal stores. ---*/
-      SU2_OMP_SIMD
-      for (size_t i = 0; i < blkSz; ++i) {
-        bij[i] = blk_j[k][i];
-        bji[i] = blk_i[k][i];
+      if (quantized_mode) {
+        QuantizeBlock(blk_j[k], &q_scale_u[iEdge[k] * nVar], &q_blocks_u[iEdge[k] * blkSz]);
+        const auto k_l = edge_ptr_l[iEdge[k]];
+        QuantizeBlock(blk_i[k], &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
+      } else {
+        ScalarType* bij = &mat.u[iEdge[k] * blkSz];
+        ScalarType* bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
+        /*--- Update, block i was negated during transpose in the
+         * hope the assignments below become non-temporal stores. ---*/
+        SU2_OMP_SIMD
+        for (size_t i = 0; i < blkSz; ++i) {
+          bij[i] = blk_j[k][i];
+          bji[i] = blk_i[k][i];
+        }
       }
     }
   }
-}
 
-/*!
- * \brief Sets the specified block to the (i, i) subblock of the sparse matrix.
- *        Scales the input block by factor alpha. If the Overwrite parameter is
- *        false we update instead (bii += alpha*b).
- * \param[in] block_i - Diagonal index.
- * \param[in] val_block - Block to add to the diagonal of the matrix.
- * \param[in] alpha - Scale factor.
- */
-template <class OtherType, bool Overwrite = true, class T = ScalarType>
-inline void SetBlock2Diag(unsigned long block_i, const OtherType& val_block, T alpha = 1.0) {
-  auto mat_ii = &mat.d[block_i * nVar * nEqn];
+  /*!
+   * \brief Sets the specified block to the (i, i) subblock of the sparse matrix.
+   *        Scales the input block by factor alpha. If the Overwrite parameter is
+   *        false we update instead (bii += alpha*b).
+   * \param[in] block_i - Diagonal index.
+   * \param[in] val_block - Block to add to the diagonal of the matrix.
+   * \param[in] alpha - Scale factor.
+   */
+  template <class OtherType, bool Overwrite = true, class T = ScalarType>
+  inline void SetBlock2Diag(unsigned long block_i, const OtherType& val_block, T alpha = 1.0) {
+    auto mat_ii = &mat.d[block_i * nVar * nEqn];
 
-  for (auto iVar = 0ul; iVar < nVar; iVar++)
-    for (auto jVar = 0ul; jVar < nEqn; jVar++) {
-      *mat_ii = (Overwrite ? ScalarType(0) : *mat_ii) + PassiveAssign(alpha * val_block[iVar][jVar]);
-      ++mat_ii;
-    }
-}
+    for (auto iVar = 0ul; iVar < nVar; iVar++)
+      for (auto jVar = 0ul; jVar < nEqn; jVar++) {
+        *mat_ii = (Overwrite ? ScalarType(0) : *mat_ii) + PassiveAssign(alpha * val_block[iVar][jVar]);
+        ++mat_ii;
+      }
+  }
 
-/*!
- * \brief Non overwrite version of SetBlock2Diag, also with scaling.
- */
-template <class OtherType, class T = ScalarType>
-inline void AddBlock2Diag(unsigned long block_i, const OtherType& val_block, T alpha = 1.0) {
-  SetBlock2Diag<OtherType, false>(block_i, val_block, alpha);
-}
+  /*!
+   * \brief Non overwrite version of SetBlock2Diag, also with scaling.
+   */
+  template <class OtherType, class T = ScalarType>
+  inline void AddBlock2Diag(unsigned long block_i, const OtherType& val_block, T alpha = 1.0) {
+    SetBlock2Diag<OtherType, false>(block_i, val_block, alpha);
+  }
 
-/*!
- * \brief Short-hand to AddBlock2Diag with alpha = -1, i.e. subtracts from the current diagonal.
- */
-template <class OtherType>
-inline void SubtractBlock2Diag(unsigned long block_i, const OtherType& val_block) {
-  AddBlock2Diag(block_i, val_block, -1.0);
-}
+  /*!
+   * \brief Short-hand to AddBlock2Diag with alpha = -1, i.e. subtracts from the current diagonal.
+   */
+  template <class OtherType>
+  inline void SubtractBlock2Diag(unsigned long block_i, const OtherType& val_block) {
+    AddBlock2Diag(block_i, val_block, -1.0);
+  }
 
-/*!
- * \brief Adds the specified value to the diagonal of the (i, i) subblock
- *        of the matrix-by-blocks structure.
- * \param[in] block_i - Diagonal index.
- * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
- */
-template <class OtherType>
-inline void AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
-  auto d = &mat.d[block_i * nVar * nVar];
-  for (auto iVar = 0ul; iVar < nVar; iVar++) d[iVar * (nVar + 1)] += PassiveAssign(val_matrix);
-}
+  /*!
+   * \brief Adds the specified value to the diagonal of the (i, i) subblock
+   *        of the matrix-by-blocks structure.
+   * \param[in] block_i - Diagonal index.
+   * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
+   */
+  template <class OtherType>
+  inline void AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
+    auto d = &mat.d[block_i * nVar * nVar];
+    for (auto iVar = 0ul; iVar < nVar; iVar++) d[iVar * (nVar + 1)] += PassiveAssign(val_matrix);
+  }
 
-/*!
- * \brief Adds the specified value to the diagonal of the (i, i) subblock
- *        of the matrix-by-blocks structure.
- * \param[in] block_i - Diagonal index.
- * \param[in] iVar - Variable index.
- * \param[in] val - Value to add to the diagonal elements of A(i, i).
- */
-template <class OtherType>
-inline void AddVal2Diag(unsigned long block_i, unsigned long iVar, OtherType val) {
-  mat.d[block_i * nVar * nVar + iVar * (nVar + 1)] += PassiveAssign(val);
-}
+  /*!
+   * \brief Adds the specified value to the diagonal of the (i, i) subblock
+   *        of the matrix-by-blocks structure.
+   * \param[in] block_i - Diagonal index.
+   * \param[in] iVar - Variable index.
+   * \param[in] val - Value to add to the diagonal elements of A(i, i).
+   */
+  template <class OtherType>
+  inline void AddVal2Diag(unsigned long block_i, unsigned long iVar, OtherType val) {
+    mat.d[block_i * nVar * nVar + iVar * (nVar + 1)] += PassiveAssign(val);
+  }
 
-/*!
- * \brief Sets the specified value to the diagonal of the (i, i) subblock
- *        of the matrix-by-blocks structure.
- * \param[in] block_i - Diagonal index.
- * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
- */
-template <class OtherType>
-inline void SetVal2Diag(unsigned long block_i, OtherType val_matrix) {
-  /*--- Clear entire block before setting its diagonal. ---*/
-  SU2_OMP_SIMD
-  for (auto iVar = 0ul; iVar < nVar * nVar; iVar++) mat.d[block_i * nVar * nVar + iVar] = 0.0;
+  /*!
+   * \brief Sets the specified value to the diagonal of the (i, i) subblock
+   *        of the matrix-by-blocks structure.
+   * \param[in] block_i - Diagonal index.
+   * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
+   */
+  template <class OtherType>
+  inline void SetVal2Diag(unsigned long block_i, OtherType val_matrix) {
+    /*--- Clear entire block before setting its diagonal. ---*/
+    SU2_OMP_SIMD
+    for (auto iVar = 0ul; iVar < nVar * nVar; iVar++) mat.d[block_i * nVar * nVar + iVar] = 0.0;
 
-  AddVal2Diag(block_i, val_matrix);
-}
+    AddVal2Diag(block_i, val_matrix);
+  }
 
-/*!
- * \brief Deletes the values of a row of the sparse matrix.
- * \param[in] block_i - Index of the block.
- * \param[in] row - Row within the block.
- */
-void DeleteValsRowi(unsigned long block_i, unsigned long row);
+  /*!
+   * \brief Deletes the values of a row of the sparse matrix.
+   * \param[in] block_i - Index of the block.
+   * \param[in] row - Row within the block.
+   */
+  void DeleteValsRowi(unsigned long block_i, unsigned long row);
 
-/*!
- * \brief Modifies this matrix (A) and a rhs vector (b) such that (A^-1 * b)_i = x_i.
- * \param[in] node_i - Index of the node for which to enforce the solution of all DOF's.
- * \param[in] x_i - Values to enforce (nVar sized).
- * \param[in,out] b - The rhs vector (b := b - A_{*,i} * x_i;  b_i = x_i).
- */
-template <class OtherType>
-void EnforceSolutionAtNode(unsigned long node_i, const OtherType* x_i, CSysVector<OtherType>& b);
+  /*!
+   * \brief Modifies this matrix (A) and a rhs vector (b) such that (A^-1 * b)_i = x_i.
+   * \param[in] node_i - Index of the node for which to enforce the solution of all DOF's.
+   * \param[in] x_i - Values to enforce (nVar sized).
+   * \param[in,out] b - The rhs vector (b := b - A_{*,i} * x_i;  b_i = x_i).
+   */
+  template <class OtherType>
+  void EnforceSolutionAtNode(unsigned long node_i, const OtherType* x_i, CSysVector<OtherType>& b);
 
-/*!
- * \brief Similar to EnforceSolutionAtNode, but for 0 projection in a given direction.
- */
-template <class OtherType>
-void EnforceZeroProjection(unsigned long node_i, const OtherType* n, CSysVector<OtherType>& b);
+  /*!
+   * \brief Similar to EnforceSolutionAtNode, but for 0 projection in a given direction.
+   */
+  template <class OtherType>
+  void EnforceZeroProjection(unsigned long node_i, const OtherType* n, CSysVector<OtherType>& b);
 
-/*!
- * \brief Sets the diagonal entries of the matrix as the sum of the blocks in the corresponding column.
- */
-void SetDiagonalAsColumnSum();
+  /*!
+   * \brief Sets the diagonal entries of the matrix as the sum of the blocks in the corresponding column.
+   */
+  void SetDiagonalAsColumnSum();
 
-/*!
- * \brief Transposes the matrix, any preconditioner that was computed may be invalid.
- */
-void TransposeInPlace();
+  /*!
+   * \brief Transposes the matrix, any preconditioner that was computed may be invalid.
+   */
+  void TransposeInPlace();
 
-/*!
- * \brief Add a scaled sparse matrix to "this" (axpy-type operation, A = A+alpha*B).
- * \note Matrices must have the same sparse pattern.
- * \param[in] alpha - The scaling constant.
- * \param[in] B - Matrix being.
- */
-void MatrixMatrixAddition(ScalarType alpha, const CSysMatrix& B);
+  /*!
+   * \brief Add a scaled sparse matrix to "this" (axpy-type operation, A = A+alpha*B).
+   * \note Matrices must have the same sparse pattern.
+   * \param[in] alpha - The scaling constant.
+   * \param[in] B - Matrix being.
+   */
+  void MatrixMatrixAddition(ScalarType alpha, const CSysMatrix& B);
 
-/*!
- * \brief Performs the product of a sparse matrix by a CSysVector.
- * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[out] prod - Result of the product.
- */
-void MatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
-                         const CConfig* config) const;
+  /*!
+   * \brief Performs the product of a sparse matrix by a CSysVector.
+   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] prod - Result of the product.
+   */
+  void MatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                           const CConfig* config) const;
 
-/*!
- * \brief Build the Jacobi preconditioner.
- */
-void BuildJacobiPreconditioner();
+  /*!
+   * \brief Build the Jacobi preconditioner.
+   */
+  void BuildJacobiPreconditioner();
 
-/*!
- * \brief Multiply CSysVector by the preconditioner
- * \param[in] vec - CSysVector to be multiplied by the preconditioner.
- * \param[out] prod - Result of the product A*vec.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- */
-void ComputeJacobiPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
-                                 const CConfig* config) const;
+  /*!
+   * \brief Multiply CSysVector by the preconditioner
+   * \param[in] vec - CSysVector to be multiplied by the preconditioner.
+   * \param[out] prod - Result of the product A*vec.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeJacobiPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                                   const CConfig* config) const;
 
-/*!
- * \brief Build the ILU preconditioner.
- */
-void BuildILUPreconditioner();
+  /*!
+   * \brief Build the ILU preconditioner.
+   */
+  void BuildILUPreconditioner();
 
-/*!
- * \brief Multiply CSysVector by the preconditioner
- * \param[in] vec - CSysVector to be multiplied by the preconditioner.
- * \param[out] prod - Result of the product A*vec.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- */
-void ComputeILUPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
-                              const CConfig* config) const;
+  /*!
+   * \brief Multiply CSysVector by the preconditioner
+   * \param[in] vec - CSysVector to be multiplied by the preconditioner.
+   * \param[out] prod - Result of the product A*vec.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeILUPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                                const CConfig* config) const;
 
-/*!
- * \brief Multiply CSysVector by the preconditioner
- * \param[in] vec - CSysVector to be multiplied by the preconditioner.
- * \param[out] prod - Result of the product A*vec.
- */
-void ComputeLU_SGSPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
-                                 const CConfig* config) const;
+  /*!
+   * \brief Multiply CSysVector by the preconditioner
+   * \param[in] vec - CSysVector to be multiplied by the preconditioner.
+   * \param[out] prod - Result of the product A*vec.
+   */
+  void ComputeLU_SGSPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                                   const CConfig* config) const;
 
-/*!
- * \brief Build the Linelet preconditioner.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- */
-void BuildLineletPreconditioner(const CGeometry* geometry, const CConfig* config);
+  /*!
+   * \brief Build the Linelet preconditioner.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void BuildLineletPreconditioner(const CGeometry* geometry, const CConfig* config);
 
-/*!
- * \brief Multiply CSysVector by the preconditioner
- * \param[in] vec - CSysVector to be multiplied by the preconditioner.
- * \param[out] prod - Result of the product A*vec.
- */
-void ComputeLineletPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
-                                  const CConfig* config) const;
+  /*!
+   * \brief Multiply CSysVector by the preconditioner
+   * \param[in] vec - CSysVector to be multiplied by the preconditioner.
+   * \param[out] prod - Result of the product A*vec.
+   */
+  void ComputeLineletPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
+                                    CGeometry* geometry, const CConfig* config) const;
 
-/*!
- * \brief Compute the linear residual.
- * \param[in] sol - Solution (x).
- * \param[in] f - Right hand side (b).
- * \param[out] res - Residual (Ax-b).
- */
-void ComputeResidual(const CSysVector<ScalarType>& sol, const CSysVector<ScalarType>& f,
-                     CSysVector<ScalarType>& res) const;
+  /*!
+   * \brief Compute the linear residual.
+   * \param[in] sol - Solution (x).
+   * \param[in] f - Right hand side (b).
+   * \param[out] res - Residual (Ax-b).
+   */
+  void ComputeResidual(const CSysVector<ScalarType>& sol, const CSysVector<ScalarType>& f,
+                       CSysVector<ScalarType>& res) const;
 
-/*!
- * \brief Factorize matrix using PaStiX.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- * \param[in] kind_fact - Type of factorization.
- */
-void BuildPastixPreconditioner(CGeometry* geometry, const CConfig* config, unsigned short kind_fact);
+  /*!
+   * \brief Factorize matrix using PaStiX.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] kind_fact - Type of factorization.
+   */
+  void BuildPastixPreconditioner(CGeometry* geometry, const CConfig* config, unsigned short kind_fact);
 
-/*!
- * \brief Apply the PaStiX factorization to CSysVec.
- * \param[in] vec - CSysVector to be multiplied by the preconditioner.
- * \param[out] prod - Result of the product M*vec.
- * \param[in] geometry - Geometrical definition of the problem.
- * \param[in] config - Definition of the particular problem.
- */
-void ComputePastixPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
-                                 const CConfig* config) const;
-}
-;
+  /*!
+   * \brief Apply the PaStiX factorization to CSysVec.
+   * \param[in] vec - CSysVector to be multiplied by the preconditioner.
+   * \param[out] prod - Result of the product M*vec.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputePastixPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                                   const CConfig* config) const;
+};

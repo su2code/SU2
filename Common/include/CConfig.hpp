@@ -648,7 +648,7 @@ private:
   bool Linear_Solver_ILU_levels;                 /*!< \brief Use level scheduling for OMP parallelization of ILU. */
   /*!< \brief Colored-iterative sweep counts for the GPU ILU preconditioner: [0] builds the
    * factorization (Gauss-Seidel), [1]/[2] apply it (Jacobi, forward/backward triangular solve). */
-  array<unsigned short, 3> Linear_Solver_ILU_GPU_Sweeps{(1, 2, 2}};
+  array<unsigned short, 3> Linear_Solver_ILU_GPU_Sweeps{{1, 2, 2}};
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
   su2double MSW_Alpha;                  /*!< \brief Coefficient for blending states in the MSW scheme. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
