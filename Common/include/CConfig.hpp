@@ -646,8 +646,9 @@ private:
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
   unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
   bool Linear_Solver_ILU_levels;                 /*!< \brief Use level scheduling for OMP parallelization of ILU. */
-  unsigned short Linear_Solver_ILU_GPU_Sweeps;   /*!< \brief Colored Gauss-Seidel sweeps used to build the ILU on the GPU. */
-  unsigned short Linear_Solver_ILU_GPU_Fwd_Sweeps; /*!< \brief Colored Jacobi sweeps for the GPU ILU forward triangular solve. */
+  /*!< \brief Colored-iterative sweep counts for the GPU ILU preconditioner: [0] builds the
+   * factorization (Gauss-Seidel), [1]/[2] apply it (Jacobi, forward/backward triangular solve). */
+  array<unsigned short, 3> Linear_Solver_ILU_GPU_Sweeps{(1, 2, 2}};
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
   su2double MSW_Alpha;                  /*!< \brief Coefficient for blending states in the MSW scheme. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
@@ -4403,14 +4404,10 @@ public:
   bool GetLinear_Solver_ILU_levels(void) const { return Linear_Solver_ILU_levels; }
 
   /*!
-   * \brief Get the number of colored Gauss-Seidel sweeps used to build the ILU factorization on the GPU.
+   * \brief Get the [build, forward, backward] colored-iterative sweep counts for the GPU ILU
+   *        preconditioner, see Linear_Solver_ILU_GPU_Sweeps.
    */
-  unsigned short GetLinear_Solver_ILU_GPU_Sweeps(void) const { return Linear_Solver_ILU_GPU_Sweeps; }
-
-  /*!
-   * \brief Get the number of colored Jacobi sweeps used for the GPU ILU forward triangular solve.
-   */
-  unsigned short GetLinear_Solver_ILU_GPU_Fwd_Sweeps(void) const { return Linear_Solver_ILU_GPU_Fwd_Sweeps; }
+  array<unsigned short, 3> GetLinear_Solver_ILU_GPU_Sweeps(void) const { return Linear_Solver_ILU_GPU_Sweeps; }
 
   /*!
    * \brief Get restart frequency of the linear solver for the implicit formulation.

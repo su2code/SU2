@@ -1972,10 +1972,9 @@ void CConfig::SetConfig_Options() {
   addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
   /* DESCRIPTION: Use level scheduling for OMP parallelization of the ILU preconditioner */
   addBoolOption("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING", Linear_Solver_ILU_levels, false);
-  /* DESCRIPTION: Colored Gauss-Seidel sweeps used to build the ILU preconditioner on the GPU */
-  addUnsignedShortOption("LINEAR_SOLVER_ILU_GPU_SWEEPS", Linear_Solver_ILU_GPU_Sweeps, 1);
-  /* DESCRIPTION: Colored Jacobi sweeps used for the GPU ILU forward triangular solve */
-  addUnsignedShortOption("LINEAR_SOLVER_ILU_GPU_FWD_SWEEPS", Linear_Solver_ILU_GPU_Fwd_Sweeps, 3);
+  /* DESCRIPTION: Colored-iterative sweep counts for the GPU ILU preconditioner: (build, forward, backward) */
+  addUShortArrayOption("LINEAR_SOLVER_ILU_GPU_SWEEPS", Linear_Solver_ILU_GPU_Sweeps.size(), false,
+                       Linear_Solver_ILU_GPU_Sweeps.data());
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
   /* DESCRIPTION: Number of vectors used for deflated restarts */
@@ -4143,15 +4142,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     }
   }
 
-  if (Linear_Solver_ILU_GPU_Sweeps == 0) {
-    SU2_MPI::Error("LINEAR_SOLVER_ILU_GPU_SWEEPS must be at least 1, 0 sweeps never factorizes the matrix.",
-                   CURRENT_FUNCTION);
-  }
-
-  if (Linear_Solver_ILU_GPU_Fwd_Sweeps == 0) {
-    SU2_MPI::Error(
-        "LINEAR_SOLVER_ILU_GPU_FWD_SWEEPS must be at least 1, 0 sweeps never solves the forward triangular system.",
-        CURRENT_FUNCTION);
+  for (auto n : Linear_Solver_ILU_GPU_Sweeps) {
+    if (n == 0) {
+      SU2_MPI::Error(
+          "LINEAR_SOLVER_ILU_GPU_SWEEPS entries must all be at least 1 (build, forward, backward); "
+          "0 sweeps never factorizes/solves.",
+          CURRENT_FUNCTION);
+    }
   }
 
   Radiation = (Kind_Radiation != RADIATION_MODEL::NONE);

@@ -139,8 +139,8 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
     GPUMemoryAllocation::gpu_free(gpu_ilu.col_ind_l);
     GPUMemoryAllocation::gpu_free(gpu_ilu.row_ptr_u);
     GPUMemoryAllocation::gpu_free(gpu_ilu.col_ind_u);
-    GPUMemoryAllocation::gpu_free(d_ilu_level_idx);
     GPUMemoryAllocation::gpu_free(d_ilu_color_idx);
+    GPUMemoryAllocation::gpu_free(d_ilu_backward_rhs);
     if (ilu_build_graph_exec != nullptr) cudaGraphExecDestroy(ilu_build_graph_exec);
     if (ilu_apply_graph_exec != nullptr) cudaGraphExecDestroy(ilu_apply_graph_exec);
     if (ilu_stream != nullptr) cudaStreamDestroy(ilu_stream);
@@ -277,8 +277,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   if (ilu_needed) {
     ilu_fill_in = config->GetLinear_Solver_ILU_n();
-    ilu_gpu_color_sweeps = config->GetLinear_Solver_ILU_GPU_Sweeps();
-    ilu_gpu_fwd_sweeps = config->GetLinear_Solver_ILU_GPU_Fwd_Sweeps();
+    ilu_gpu_sweeps = config->GetLinear_Solver_ILU_GPU_Sweeps();
 
     const auto& pat_ilu = geometry->GetSparsePattern(type, ilu_fill_in);
     ilu.row_ptr_l = pat_ilu.l.outerPtr();
@@ -355,20 +354,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     gpu_ilu.row_ptr_u = GPUMemoryAllocation::gpu_alloc_cpy(ilu.row_ptr_u, (nPointDomain + 1) * sizeof(su2uint));
     gpu_ilu.col_ind_u = GPUMemoryAllocation::gpu_alloc_cpy(ilu.col_ind_u, ilu.nnz_u * sizeof(su2uint));
 
-    /*--- Flatten the level structure, the index type differs from the one of the pattern. ---*/
-    std::vector<su2uint> level_idx;
-    level_idx.reserve(nPointDomain);
-    ilu_level_ptr.clear();
-    ilu_level_ptr.push_back(0);
-    for (auto level = 0ul; level < levels_ilu.getOuterSize(); ++level) {
-      for (auto k = 0ul; k < levels_ilu.getNumNonZeros(level); ++k) {
-        level_idx.push_back(static_cast<su2uint>(levels_ilu.getInnerIdx(level, k)));
-      }
-      ilu_level_ptr.push_back(static_cast<su2uint>(level_idx.size()));
-    }
-    d_ilu_level_idx = GPUMemoryAllocation::gpu_alloc_cpy(level_idx.data(), level_idx.size() * sizeof(su2uint));
-
-    /*--- Flatten the coloring the same way. ---*/
+    /*--- Flatten the coloring, the index type differs from the one of the pattern. It drives
+     * the factorization and both triangular solves on the device. ---*/
     std::vector<su2uint> color_idx;
     color_idx.reserve(nPointDomain);
     ilu_color_ptr.clear();
@@ -380,6 +367,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
       ilu_color_ptr.push_back(static_cast<su2uint>(color_idx.size()));
     }
     d_ilu_color_idx = GPUMemoryAllocation::gpu_alloc_cpy(color_idx.data(), color_idx.size() * sizeof(su2uint));
+
+    d_ilu_backward_rhs = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * sizeof(ScalarType));
   }
 
   /*--- Thread parallel initialization. ---*/

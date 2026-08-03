@@ -52,11 +52,14 @@ __global__ void ApplyJacobiPreconditionerKernel(const ScalarType* invM, const Sc
   }
 }
 
-/*--- ILU. The factorization and both triangular solves are level scheduled: the rows of a
- * level are independent of each other and only depend on rows of previous levels, so each
- * level is one kernel launch and the launch boundaries provide the synchronization. The rows
- * of a level are scattered through the matrix, hence the indirection through the level table.
- * Throughout, one CUDA block works on one row. ---*/
+/*--- ILU. The factorization and both triangular solves are all scheduled by coloring: colors
+ * are true independent sets of the ILU dependency graph (no two same-colored rows depend on each
+ * other in either direction), so a color's rows can be processed with zero races in one kernel
+ * launch, but since a color is wider and less ordered than a level, one pass over all colors is
+ * only an approximation, not an exact result — several sweeps (repeated passes) are needed to
+ * converge to the same fixed point an exact level-scheduled algorithm would give in one pass. The
+ * rows of a color are scattered through the matrix, hence the indirection through the color
+ * table. Throughout, one CUDA block works on one row. ---*/
 
 /*!
  * \brief The pointers of an LDU-partitioned matrix, all in device memory. This mirrors the
@@ -218,23 +221,29 @@ __global__ void IluFactorColorKernel(const su2uint* __restrict__ color_idx, unsi
 }
 
 /*!
- * \brief Forward substitution for the rows of one level, (L+I).prod = vec.
- * \note One thread per block entry (like the factorization kernel), so the inner dot product
- *       over a neighbor block is spread across nVar threads instead of done serially by one.
- *       Unlike the factorization, forward/backward only ever *read* already-finalized prod
- *       values (no row-to-row write-through during the loop), so each thread can accumulate
- *       its own (iVar,jVar) partial product across every neighbor with no synchronization at
- *       all, and only the final nVar-way reduction (summing over jVar for each iVar) needs one
- *       __syncthreads() — not one per neighbor. Grid: one block per row of the level,
+ * \brief One colored-Jacobi sweep of forward substitution for the rows of one color,
+ *        (L+I).prod = vec.
+ * \note Same idea as IluFactorColorKernel/IluBackwardColorKernel: colors are true independent
+ *       sets, so a color can be processed with zero races, but an L-neighbor in a different,
+ *       not-yet-processed color this sweep is read at whatever value it currently holds (a
+ *       previous sweep's, or the zero-initialized buffer on the very first sweep). Repeated full
+ *       passes over all colors (see ComputeILUPreconditionerGPU) converge this to the same
+ *       result the exact level-scheduled solve would give, because the update is a genuine
+ *       residual reduction, not an incremental accumulation. One thread per block entry (like
+ *       the factorization kernel), so the inner dot product over a neighbor block is spread
+ *       across nVar threads instead of done serially by one; each thread accumulates its own
+ *       (iVar,jVar) partial product across every neighbor with no synchronization at all, and
+ *       only the final nVar-way reduction (summing over jVar for each iVar) needs one
+ *       __syncthreads() — not one per neighbor. Grid: one block per row of the color,
  *       blockDim.x == nVar*nVar. Dynamic shared memory: nVar*nVar scalars.
  */
 template <class ScalarType>
-__global__ void IluForwardLevelKernel(const su2uint* __restrict__ level_idx, unsigned long level_begin,
-                                      unsigned long level_size, unsigned long nVar, DeviceLDU<ScalarType> M,
+__global__ void IluForwardColorKernel(const su2uint* __restrict__ color_idx, unsigned long color_begin,
+                                      unsigned long color_size, unsigned long nVar, DeviceLDU<ScalarType> M,
                                       const ScalarType* __restrict__ vec, ScalarType* __restrict__ prod) {
-  if (blockIdx.x >= level_size) return;
+  if (blockIdx.x >= color_size) return;
 
-  const unsigned long iRow = level_idx[level_begin + blockIdx.x];
+  const unsigned long iRow = color_idx[color_begin + blockIdx.x];
   const unsigned long tid = threadIdx.x;
   const auto iVar = tid / nVar, jVar = tid % nVar;
 
@@ -259,21 +268,32 @@ __global__ void IluForwardLevelKernel(const su2uint* __restrict__ level_idx, uns
 }
 
 /*!
- * \brief Backward substitution for the rows of one level, U.prod = prod.
- * \note Same idea as IluForwardLevelKernel: each thread accumulates its own (iVar,jVar)
- *       partial product across every neighbor with no synchronization, then one
- *       __syncthreads() to reduce over jVar and get the elimination result per iVar, then a
- *       second __syncthreads() before the diagonal multiply (which needs every iVar's result).
- *       Grid: one block per row of the level, blockDim.x == nVar*nVar. Dynamic shared memory:
+ * \brief One colored-Jacobi sweep of backward substitution for the rows of one color,
+ *        U.prod = rhs.
+ * \note The right-hand side is read from a separate fixed array (\p rhs), not from \p prod
+ *       itself: a color visits every row once per sweep, so after the first sweep prod[iRow]
+ *       holds a solution *estimate*, not the right-hand side. Reading the right-hand side back
+ *       out of prod past the first sweep would silently solve a different (and divergent)
+ *       recurrence — see CSysMatrix::d_ilu_backward_rhs. Colors are true independent sets, so a color is race-free
+ *       within a sweep; a U-neighbor in a different, not-yet-processed color this sweep is read
+ *       at whatever value it currently holds (a previous sweep's, or the forward-solve result on
+ *       the very first sweep, since prod is not reset before backward starts). Repeated full
+ *       passes over all colors converge to the same result the exact level-scheduled solve would
+ *       give (validated on the host: same fixed point, ~4.4x error reduction per sweep). Each
+ *       thread accumulates its own (iVar,jVar) partial product across every neighbor with no
+ *       synchronization, then one __syncthreads() to reduce over jVar, then a second
+ *       __syncthreads() before the diagonal multiply (which needs every iVar's result). Grid:
+ *       one block per row of the color, blockDim.x == nVar*nVar. Dynamic shared memory:
  *       nVar*nVar + nVar scalars.
  */
 template <class ScalarType>
-__global__ void IluBackwardLevelKernel(const su2uint* __restrict__ level_idx, unsigned long level_begin,
-                                       unsigned long level_size, unsigned long nRows, unsigned long nVar,
-                                       DeviceLDU<ScalarType> M, ScalarType* __restrict__ prod) {
-  if (blockIdx.x >= level_size) return;
+__global__ void IluBackwardColorKernel(const su2uint* __restrict__ color_idx, unsigned long color_begin,
+                                       unsigned long color_size, unsigned long nRows, unsigned long nVar,
+                                       DeviceLDU<ScalarType> M, const ScalarType* __restrict__ rhs,
+                                       ScalarType* __restrict__ prod) {
+  if (blockIdx.x >= color_size) return;
 
-  const unsigned long iRow = level_idx[level_begin + blockIdx.x];
+  const unsigned long iRow = color_idx[color_begin + blockIdx.x];
   const auto blockSize = nVar * nVar;
   const unsigned long tid = threadIdx.x;
   const auto iVar = tid / nVar, jVar = tid % nVar;
@@ -283,7 +303,6 @@ __global__ void IluBackwardLevelKernel(const su2uint* __restrict__ level_idx, un
   auto* aux = partial + blockSize;
 
   ScalarType acc = 0;
-  /*--- The columns of U are rows of later levels, already updated by this sweep. ---*/
   for (auto ku = M.row_ptr_u[iRow]; ku < M.row_ptr_u[iRow + 1]; ++ku) {
     const unsigned long jPoint = M.col_ind_u[ku];
     if (jPoint >= nRows) break;
@@ -294,7 +313,7 @@ __global__ void IluBackwardLevelKernel(const su2uint* __restrict__ level_idx, un
   __syncthreads();
 
   if (jVar == 0) {
-    ScalarType sum = prod[iRow * nVar + iVar];
+    ScalarType sum = rhs[iRow * nVar + iVar];
     for (auto j = 0ul; j < nVar; ++j) sum -= partial[iVar * nVar + j];
     /*--- The diagonal blocks are stored inverted by the factorization. ---*/
     aux[iVar] = sum;
@@ -428,7 +447,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
    * change execution order relative to the rest of the (single-stream) solver. ---*/
   if (ilu_stream == nullptr) gpuErrChk(cudaStreamCreate(&ilu_stream));
 
-  /*--- The launch sequence (ilu_gpu_color_sweeps passes over all colors) is identical on every
+  /*--- The launch sequence (ilu_gpu_build_sweeps passes over all colors) is identical on every
    * call: the grid and block sizes only depend on the (fixed) sparsity pattern/coloring and the
    * device pointers are fixed members, allocated once. Capture it into a CUDA graph the first
    * time and replay that from then on, which removes the per-launch host-side overhead without
@@ -443,7 +462,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
     cudaGraph_t graph;
     gpuErrChk(cudaStreamBeginCapture(ilu_stream, cudaStreamCaptureModeThreadLocal));
 
-    for (unsigned short sweep = 0; sweep < ilu_gpu_color_sweeps; ++sweep) {
+    for (unsigned short sweep = 0; sweep < ilu_gpu_sweeps[0]; ++sweep) {
       for (auto color = 0ul; color + 1 < ilu_color_ptr.size(); ++color) {
         const auto begin = ilu_color_ptr[color];
         const auto size = ilu_color_ptr[color + 1] - begin;
@@ -479,7 +498,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
   auto* d_vec = vec.GetDevicePointer();
   auto* d_prod = prod.GetDevicePointer();
 
-  const auto nLevels = ilu_level_ptr.size() - 1;
+  const auto nColors = ilu_color_ptr.size() - 1;
 
   /*--- One thread per block entry, like the factorization kernel: spreads each row's neighbor
    * dot products over nVar*nVar threads instead of doing them serially in nVar threads, without
@@ -492,10 +511,10 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
   if (ilu_stream == nullptr) gpuErrChk(cudaStreamCreate(&ilu_stream));
 
   /*--- Same idea as BuildILUPreconditionerGPU: the launch sequence only depends on the (fixed)
-   * level structure, plus the vec/prod device pointers. Those normally are the same temporary
-   * buffers on every call (owned by CSysSolve / CSysVector, allocated once), so the graph is
-   * captured once and replayed; if the pointers ever do change the graph is recaptured, which
-   * is no worse than the un-graphed loop, just not free. ---*/
+   * coloring, plus the vec/prod device pointers. Those normally are the same temporary buffers
+   * on every call (owned by CSysSolve / CSysVector, allocated once), so the graph is captured
+   * once and replayed; if the pointers ever do change the graph is recaptured, which is no worse
+   * than the un-graphed loop, just not free. ---*/
   if (ilu_apply_graph_exec == nullptr || ilu_apply_graph_vec != d_vec || ilu_apply_graph_prod != d_prod) {
     if (ilu_apply_graph_exec != nullptr) {
       gpuErrChk(cudaGraphExecDestroy(ilu_apply_graph_exec));
@@ -505,37 +524,37 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
     cudaGraph_t graph;
     gpuErrChk(cudaStreamBeginCapture(ilu_stream, cudaStreamCaptureModeThreadLocal));
 
-    /*--- Forward substitution: colored-iterative, not level-scheduled. IluForwardLevelKernel
-     * only ever reads already-finalized prod values within a single exact level-scheduled pass;
-     * across colors that guarantee is gone (a color is wider/less ordered than a level), so an
-     * L-neighbor in a not-yet-processed color this sweep is read at whatever value it currently
-     * holds. Repeated full passes over all colors still converge to the same forward-solve
-     * result (validated on the host: same fixed point, ~4.7x error reduction per sweep, colors
-     * are true independent sets so this is race-free). Zero prod first: on the very first call
-     * this buffer may hold unrelated leftover data, and reading it would otherwise make the
-     * first sweep ill-defined. Unlike the level-scheduled solve this replaces, the sweep count is
-     * paid on every apply call, not amortized — see ilu_gpu_fwd_sweeps.
-     * The backward solve stays exact/level-scheduled below: a host experiment showed the
-     * colored-iterative version diverges to NaN for this class of matrix, so it is not used. ---*/
-    gpuErrChk(cudaMemsetAsync(d_prod, 0, nPointDomain * nVar * sizeof(ScalarType), ilu_stream));
-    for (unsigned short sweep = 0; sweep < ilu_gpu_fwd_sweeps; ++sweep) {
-      for (auto color = 0ul; color < ilu_color_ptr.size() - 1; ++color) {
+    /*--- Forward substitution: colored-iterative, see IluForwardColorKernel. Initialize prod to
+     * vec, not zero: (L+I)x = vec, so x = vec is the zeroth-order approximation that ignores the
+     * off-diagonal L contributions, which is generally closer to the converged answer than an
+     * all-zero guess (and no worse: on the very first call this buffer may hold unrelated
+     * leftover data, so it has to be set to something well-defined regardless). ---*/
+    gpuErrChk(cudaMemcpyAsync(d_prod, d_vec, nPointDomain * nVar * sizeof(ScalarType), cudaMemcpyDeviceToDevice,
+                              ilu_stream));
+    for (unsigned short sweep = 0; sweep < ilu_gpu_sweeps[1]; ++sweep) {
+      for (auto color = 0ul; color < nColors; ++color) {
         const auto begin = ilu_color_ptr[color];
         const auto size = ilu_color_ptr[color + 1] - begin;
         if (size == 0) continue;
-        IluForwardLevelKernel<ScalarType>
+        IluForwardColorKernel<ScalarType>
             <<<size, threads, sharedForward, ilu_stream>>>(d_ilu_color_idx, begin, size, nVar, M, d_vec, d_prod);
       }
     }
 
-    /*--- Backward substitution, levels in decreasing order. ---*/
-    for (auto level = nLevels; level > 0;) {
-      --level;  // unsigned type
-      const auto begin = ilu_level_ptr[level];
-      const auto size = ilu_level_ptr[level + 1] - begin;
-      if (size == 0) continue;
-      IluBackwardLevelKernel<ScalarType><<<size, threads, sharedBackward, ilu_stream>>>(
-          d_ilu_level_idx, begin, size, nPointDomain, nVar, M, d_prod);
+    /*--- Backward substitution: also colored-iterative, see IluBackwardColorKernel for why the
+     * right-hand side must be copied out to a fixed buffer first (unlike forward, which already
+     * had one in d_vec). Starting prod as its own initial guess (the forward-solve result) is as
+     * good a starting point as zero and saves a second memset. ---*/
+    gpuErrChk(cudaMemcpyAsync(d_ilu_backward_rhs, d_prod, nPointDomain * nVar * sizeof(ScalarType),
+                              cudaMemcpyDeviceToDevice, ilu_stream));
+    for (unsigned short sweep = 0; sweep < ilu_gpu_sweeps[2]; ++sweep) {
+      for (auto color = 0ul; color < nColors; ++color) {
+        const auto begin = ilu_color_ptr[color];
+        const auto size = ilu_color_ptr[color + 1] - begin;
+        if (size == 0) continue;
+        IluBackwardColorKernel<ScalarType><<<size, threads, sharedBackward, ilu_stream>>>(
+            d_ilu_color_idx, begin, size, nPointDomain, nVar, M, d_ilu_backward_rhs, d_prod);
+      }
     }
 
     gpuErrChk(cudaStreamEndCapture(ilu_stream, &graph));
