@@ -642,6 +642,7 @@ void CSpeciesFlameletSolver::BC_ConjugateHeat_Interface(CGeometry* geometry, CSo
 
 unsigned long CSpeciesFlameletSolver::SetScalarSources(const CConfig* config, CFluidModel* fluid_model_local,
                                                        unsigned long iPoint, const vector<su2double>& scalars, const su2double F) {
+  SU2_ZONE_SCOPED
   /*--- Compute total source terms from the production and consumption. ---*/
 
   vector<su2double> table_sources(flamelet_config_options.n_control_vars + 2 * flamelet_config_options.n_user_scalars);
@@ -955,9 +956,20 @@ su2double CSpeciesFlameletSolver::ThickenedFlameCorrection(const CGeometry* geom
 }
 
 su2double CSpeciesFlameletSolver::GetOverallFlameThickness(CGeometry* geometry, CSolver** solver_container) const {
+  SU2_ZONE_SCOPED
+
   const CFlowVariable* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
-  su2double pvmax_local{-1e3}, pvmin_local{1e3}, pvmax_global{0.0},pvmin_global{1e3}, gradpv_local{0.0}, gradpv_global{0.0}, Tmax_local{-1e6},Tmax_global{0.0};
-  
+  su2double pvmax_local{-1e3}, pvmin_local{1e3}, gradpv_local{0.0}, Tmax_local{-1e6};
+
+  static su2double pvmax_global,pvmin_global,gradpv_global,Tmax_global;
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    pvmax_global = -1e3;
+    pvmin_global = 1e3;
+    gradpv_global = 0.0;
+    Tmax_global = 0.0;
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
   SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
   for (auto iPoint = 0u; iPoint < nPointDomain; iPoint++) {
       su2double pv_local = nodes->GetSolution(iPoint, I_PROGVAR);
@@ -979,8 +991,7 @@ su2double CSpeciesFlameletSolver::GetOverallFlameThickness(CGeometry* geometry, 
       su2double proj_grad_T_u = GeometryToolbox::DotProduct(nDim, gradT, proj_grad_pv_u);
       su2double mag_gradT = GeometryToolbox::Norm(nDim, gradT);
       
-      proj_grad_T_u /= (pow(mag_gradT,2) +  EPS);
-      proj_grad_T_u *= mag_gradT;
+      proj_grad_T_u /= max(mag_gradT,  EPS);
 
       /* Update minimum and maximum values. */
       gradpv_local = max(gradpv_local, proj_grad_T_u);
@@ -989,21 +1000,27 @@ su2double CSpeciesFlameletSolver::GetOverallFlameThickness(CGeometry* geometry, 
       Tmax_local = max(Tmax_local, T_local);
   }
   END_SU2_OMP_FOR
-  su2double* MyFlameThickness = new su2double[3];
-  su2double* TotalFlameThickness = new su2double[3]; 
+
+  atomicMax(pvmax_local, pvmax_global);
+  atomicMax(Tmax_local, Tmax_global);
+  atomicMin(pvmin_local, pvmin_global);
+  
+  su2double MyFlameThickness[3]={}, TotalFlameThickness[3]={}; 
   MyFlameThickness[0] = gradpv_local;
   MyFlameThickness[1] = pvmax_local;
   MyFlameThickness[2] = Tmax_local;
   
   SU2_MPI::Allreduce(MyFlameThickness, TotalFlameThickness, 3, MPI_DOUBLE, MPI_MAX, SU2_MPI::GetComm());
   SU2_MPI::Allreduce(&pvmin_local, &pvmin_global, 1, MPI_DOUBLE, MPI_MIN, SU2_MPI::GetComm());
-  gradpv_global = TotalFlameThickness[0];
-  pvmax_global = TotalFlameThickness[1];
-  Tmax_global = TotalFlameThickness[2];
 
-  delete [] MyFlameThickness;
-  delete [] TotalFlameThickness;
-  
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    gradpv_global = TotalFlameThickness[0];
+    pvmax_global = TotalFlameThickness[1];
+    Tmax_global = TotalFlameThickness[2];
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+
   /* Update flame thickness value. */
   su2double flame_thickness{default_flame_thickness};
   if (Tmax_global > flamelet_config_options.Flame_T_ignition) flame_thickness = (pvmax_global - pvmin_global) / (gradpv_global+EPS);
