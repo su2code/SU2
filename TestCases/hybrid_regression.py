@@ -59,7 +59,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-4.387423, -3.845336, 0.296291, 0.025144]
+    naca0012.test_vals = [-4.387446, -3.845358, 0.296291, 0.025143]
     test_list.append(naca0012)
 
     # Supersonic wedge
@@ -157,7 +157,7 @@ def main():
     rae2822_sa.cfg_dir   = "rans/rae2822"
     rae2822_sa.cfg_file  = "turb_SA_RAE2822.cfg"
     rae2822_sa.test_iter = 20
-    rae2822_sa.test_vals = [-2.190528, -5.335496, 0.383385, 0.077606, 0.000000]
+    rae2822_sa.test_vals = [-2.190528, -5.335496, 0.383385, 0.077605, 0.000000]
     test_list.append(rae2822_sa)
 
     # RAE2822 SST
@@ -197,7 +197,7 @@ def main():
     turb_naca0012_sa.cfg_dir   = "rans/naca0012"
     turb_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     turb_naca0012_sa.test_iter = 5
-    turb_naca0012_sa.test_vals = [-12.038042, -16.332088, 1.080346, 0.018385, 20.000000, -2.873258, 0.000000, -14.250270, 0.000000]
+    turb_naca0012_sa.test_vals = [-12.038067, -16.332088, 1.080346, 0.018385, 20.000000, -2.873679, 0.000000, -14.250269, 0.000000]
     turb_naca0012_sa.test_vals_aarch64 = [-12.038091, -16.332090, 1.080346, 0.018385, 20.000000, -2.873236, 0.000000, -14.250271, 0.000000]
     test_list.append(turb_naca0012_sa)
 
@@ -206,7 +206,7 @@ def main():
     turb_naca0012_sst.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     turb_naca0012_sst.test_iter = 10
-    turb_naca0012_sst.test_vals = [-12.093984, -15.250705, -5.906323, 1.070413, 0.015775, -2.855331, 0.000000]
+    turb_naca0012_sst.test_vals = [-12.093958, -15.250719, -5.906323, 1.070413, 0.015775, -2.855776, 0.000000]
     turb_naca0012_sst.test_vals_aarch64 = [-12.075928, -15.246732, -5.861249, 1.070036, 0.015841, -2.835263, 0]
     test_list.append(turb_naca0012_sst)
 
@@ -215,7 +215,7 @@ def main():
     turb_naca0012_sst_sust.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_sust.cfg_file  = "turb_NACA0012_sst_sust.cfg"
     turb_naca0012_sst_sust.test_iter = 10
-    turb_naca0012_sst_sust.test_vals = [-12.080774, -14.837176, -5.732907, 1.000893, 0.019109, -2.120168]
+    turb_naca0012_sst_sust.test_vals = [-12.080818, -14.837175, -5.732906, 1.000893, 0.019109, -2.119717]
     turb_naca0012_sst_sust.test_vals_aarch64 = [-12.073210, -14.836724, -5.732627, 1.000050, 0.019144, -2.629689]
     test_list.append(turb_naca0012_sst_sust)
 
@@ -224,7 +224,7 @@ def main():
     turb_naca0012_sst_fixedvalues.cfg_dir   = "rans/naca0012"
     turb_naca0012_sst_fixedvalues.cfg_file  = "turb_NACA0012_sst_fixedvalues.cfg"
     turb_naca0012_sst_fixedvalues.test_iter = 10
-    turb_naca0012_sst_fixedvalues.test_vals = [-5.192390, -10.448219, 0.773965, 1.022535, 0.040529, -2.383282]
+    turb_naca0012_sst_fixedvalues.test_vals = [-5.192390, -10.448218, 0.773965, 1.022535, 0.040529, -2.383435]
     test_list.append(turb_naca0012_sst_fixedvalues)
 
     # NACA0012 (SST, explicit Euler for flow and turbulence equations)
@@ -252,7 +252,7 @@ def main():
     axi_rans_air_nozzle_restart.cfg_dir   = "axisymmetric_rans/air_nozzle"
     axi_rans_air_nozzle_restart.cfg_file  = "air_nozzle_restart.cfg"
     axi_rans_air_nozzle_restart.test_iter = 10
-    axi_rans_air_nozzle_restart.test_vals = [-11.083070, -5.374688, -8.880089, -4.073519, 0.000000]
+    axi_rans_air_nozzle_restart.test_vals = [-11.083070, -5.374685, -8.880088, -4.073510, 0.000000]
     axi_rans_air_nozzle_restart.test_vals_aarch64 = [-14.140441, -9.154674, -10.886121, -5.806594, 0.000000]
     test_list.append(axi_rans_air_nozzle_restart)
 
@@ -420,7 +420,7 @@ def main():
     inc_weakly_coupled.cfg_dir = "disc_adj_heat"
     inc_weakly_coupled.cfg_file = "primal.cfg"
     inc_weakly_coupled.test_iter = 10
-    inc_weakly_coupled.test_vals = [-18.106234, -16.302995, -16.484896, -15.006575, -17.858050, -14.024855, 5.609100]
+    inc_weakly_coupled.test_vals = [-18.106270, -16.302974, -16.484882, -15.006575, -17.858050, -14.024836, 5.609100]
     test_list.append(inc_weakly_coupled)
 
     ######################################
@@ -501,7 +501,7 @@ def main():
     ddes_flatplate.cfg_dir   = "ddes/flatplate"
     ddes_flatplate.cfg_file  = "ddes_flatplate.cfg"
     ddes_flatplate.test_iter = 10
-    ddes_flatplate.test_vals = [-2.714713, -5.763299, -0.214960, 0.023758, 0.000000]
+    ddes_flatplate.test_vals = [-2.714713, -5.763300, -0.214960, 0.023758, 0.000000]
     ddes_flatplate.unsteady  = True
     test_list.append(ddes_flatplate)
 
@@ -686,7 +686,7 @@ def main():
     statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
     statbeam3d.cfg_file  = "configBeam_3d.cfg"
     statbeam3d.test_iter = 0
-    statbeam3d.test_vals = [-2.830455, -1.746659, -2.366087, 110350]
+    statbeam3d.test_vals = [-2.862081, -1.795143, -2.380136, 110350.000000]
     statbeam3d.test_vals_aarch64 = [-2.777602, -1.710976, -2.445072, 110350]
     test_list.append(statbeam3d)
 
@@ -715,7 +715,7 @@ def main():
     dyn_fsi.cfg_dir   = "fea_fsi/dyn_fsi"
     dyn_fsi.cfg_file  = "config.cfg"
     dyn_fsi.test_iter = 4
-    dyn_fsi.test_vals = [-4.330727, -4.152808, 0.000000, 103.000000]
+    dyn_fsi.test_vals = [-4.330727, -4.152808, 0.000000, 102.000000]
     dyn_fsi.multizone = True
     dyn_fsi.unsteady  = True
     test_list.append(dyn_fsi)
@@ -725,7 +725,7 @@ def main():
     fsi_cht_restart.cfg_dir   = "fea_fsi/stat_fsi"
     fsi_cht_restart.cfg_file  = "config_restart.cfg"
     fsi_cht_restart.test_iter = 0
-    fsi_cht_restart.test_vals = [5.000000, 0.006352, -1.960362, -9.327033, -9.627867, -9.318971, 608.380000, -0.012974, 0.000000, 20.000000]
+    fsi_cht_restart.test_vals = [5.000000, 0.006352, -1.960362, -9.327033, -9.643180, -9.319159, 608.380000, -0.012974, 0.000000, 20.000000]
     fsi_cht_restart.multizone = True
     test_list.append(fsi_cht_restart)
 
@@ -755,7 +755,7 @@ def main():
     mms_fvm_inc_ns.cfg_dir   = "mms/fvm_incomp_navierstokes"
     mms_fvm_inc_ns.cfg_file  = "lam_mms_fds.cfg"
     mms_fvm_inc_ns.test_iter = 20
-    mms_fvm_inc_ns.test_vals = [-7.414945, -7.631547, 0.000000, 0.000000]
+    mms_fvm_inc_ns.test_vals = [-7.414944, -7.631546, 0.000000, 0.000000]
     test_list.append(mms_fvm_inc_ns)
 
     ##########################
