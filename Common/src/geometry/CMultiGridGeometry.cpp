@@ -437,11 +437,16 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     unsigned long n_corrupted_implicit_CVs = 0;
     for (auto iCV = Index_CoarseCV_before_implicit_lines; iCV < Index_CoarseCV_after_implicit_lines; iCV++) {
       const auto nChildren = nodes->GetnChildren_CV(iCV);
-      if (nChildren == 1) nCVs_1child++;
-      else if (nChildren == 2) nCVs_2child++;
-      else if (nChildren == 3) nCVs_3child++;
-      else if (nChildren == 4) nCVs_4child++;
-      else nCVs_other++;
+      if (nChildren == 1)
+        nCVs_1child++;
+      else if (nChildren == 2)
+        nCVs_2child++;
+      else if (nChildren == 3)
+        nCVs_3child++;
+      else if (nChildren == 4)
+        nCVs_4child++;
+      else
+        nCVs_other++;
 
       if (nChildren != 2 && !config->GetMGOptions().MG_Implicit_Lines_Isotropic) {
         n_corrupted_implicit_CVs++;
@@ -459,9 +464,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     if (n_corrupted_implicit_CVs > 0) {
       cout << "  AFTER DOMAIN AGGLOMERATION: " << n_corrupted_implicit_CVs
            << " implicit line CVs were corrupted (child count != 2)" << endl;
-      cout << "    Distribution in implicit line CVs: 1-child=" << nCVs_1child
-           << ", 2-child=" << nCVs_2child << ", 3-child=" << nCVs_3child
-           << ", 4-child=" << nCVs_4child;
+      cout << "    Distribution in implicit line CVs: 1-child=" << nCVs_1child << ", 2-child=" << nCVs_2child
+           << ", 3-child=" << nCVs_3child << ", 4-child=" << nCVs_4child;
       if (nCVs_other > 0) cout << ", other=" << nCVs_other;
       cout << endl;
     }
@@ -546,11 +550,16 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     unsigned long n_corrupted_after_hanging = 0;
     for (auto iCV = Index_CoarseCV_before_implicit_lines; iCV < Index_CoarseCV_after_implicit_lines; iCV++) {
       const auto nChildren = nodes->GetnChildren_CV(iCV);
-      if (nChildren == 1) nCVs_1child++;
-      else if (nChildren == 2) nCVs_2child++;
-      else if (nChildren == 3) nCVs_3child++;
-      else if (nChildren == 4) nCVs_4child++;
-      else nCVs_other++;
+      if (nChildren == 1)
+        nCVs_1child++;
+      else if (nChildren == 2)
+        nCVs_2child++;
+      else if (nChildren == 3)
+        nCVs_3child++;
+      else if (nChildren == 4)
+        nCVs_4child++;
+      else
+        nCVs_other++;
 
       if (nChildren != 2 && !config->GetMGOptions().MG_Implicit_Lines_Isotropic) {
         n_corrupted_after_hanging++;
@@ -559,9 +568,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     if (n_corrupted_after_hanging > 0) {
       cout << "  AFTER HANGING NODE CORRECTION: " << n_corrupted_after_hanging
            << " implicit line CVs corrupted (child count != 2)" << endl;
-      cout << "    Distribution in implicit line CVs: 1-child=" << nCVs_1child
-           << ", 2-child=" << nCVs_2child << ", 3-child=" << nCVs_3child
-           << ", 4-child=" << nCVs_4child;
+      cout << "    Distribution in implicit line CVs: 1-child=" << nCVs_1child << ", 2-child=" << nCVs_2child
+           << ", 3-child=" << nCVs_3child << ", 4-child=" << nCVs_4child;
       if (nCVs_other > 0) cout << ", other=" << nCVs_other;
       cout << endl;
     }
@@ -575,20 +583,25 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     unsigned long nCVs_1child = 0, nCVs_2child = 0, nCVs_3child = 0, nCVs_4child = 0, nCVs_other = 0;
     for (auto iCV = 0ul; iCV < nPointDomain; iCV++) {
       const auto nChildren = nodes->GetnChildren_CV(iCV);
-      if (nChildren == 1) nCVs_1child++;
-      else if (nChildren == 2) nCVs_2child++;
-      else if (nChildren == 3) nCVs_3child++;
-      else if (nChildren == 4) nCVs_4child++;
-      else nCVs_other++;
+      if (nChildren == 1)
+        nCVs_1child++;
+      else if (nChildren == 2)
+        nCVs_2child++;
+      else if (nChildren == 3)
+        nCVs_3child++;
+      else if (nChildren == 4)
+        nCVs_4child++;
+      else
+        nCVs_other++;
     }
-    cout << "  CV distribution: 1-child=" << nCVs_1child << ", 2-child=" << nCVs_2child
-         << ", 3-child=" << nCVs_3child << ", 4-child=" << nCVs_4child;
+    cout << "  CV distribution: 1-child=" << nCVs_1child << ", 2-child=" << nCVs_2child << ", 3-child=" << nCVs_3child
+         << ", 4-child=" << nCVs_4child;
     if (nCVs_other > 0) cout << ", other=" << nCVs_other;
     cout << endl;
 
     if (nCVs_3child > 0 || (!config->GetMGOptions().MG_Implicit_Lines_Isotropic && nCVs_4child > 0)) {
-      cout << "  WARNING: Detected unexpected CV child counts (3-child=" << nCVs_3child
-           << ", 4-child=" << nCVs_4child << " in ANISO mode)" << endl;
+      cout << "  WARNING: Detected unexpected CV child counts (3-child=" << nCVs_3child << ", 4-child=" << nCVs_4child
+           << " in ANISO mode)" << endl;
     }
   }
 
@@ -1378,9 +1391,9 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
   const bool ISOTROPIC = config->GetMGOptions().MG_Implicit_Lines_Isotropic;
 
   const unsigned long nPointFine = fine_grid->GetnPoint();
-  const unsigned long starting_Index_CoarseCV = Index_CoarseCV;  /*--- Track how many CVs we create ---*/
-  const bool DEBUG_OUTPUT = (rank == MASTER_NODE);  /*--- Enable detailed diagnostic output ---*/
-  const unsigned long DEBUG_CV_LIMIT = 20;  /*--- Show details for first N CVs ---*/
+  const unsigned long starting_Index_CoarseCV = Index_CoarseCV; /*--- Track how many CVs we create ---*/
+  const bool DEBUG_OUTPUT = (rank == MASTER_NODE);              /*--- Enable detailed diagnostic output ---*/
+  const unsigned long DEBUG_CV_LIMIT = 20;                      /*--- Show details for first N CVs ---*/
 
   /*--- Collect implicit lines starting at viscous (no-slip) wall vertices only.
    *    Seeding from non-wall boundaries (farfield, inlet, outlet, symmetry) would
@@ -1484,7 +1497,8 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
       avg_len += L.size();
     }
     if (!lines.empty()) avg_len /= lines.size();
-    cout << "  Line lengths: min=" << min_len << ", max=" << max_len << ", avg=" << std::setprecision(1) << std::fixed << avg_len << endl;
+    cout << "  Line lengths: min=" << min_len << ", max=" << max_len << ", avg=" << std::setprecision(1) << std::fixed
+         << avg_len << endl;
 
     /*--- Show first few lines for debugging ---*/
     cout << "  First 5 lines (showing first 4 nodes):" << endl;
@@ -1597,8 +1611,8 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
         if (DEBUG_OUTPUT && Index_CoarseCV < starting_Index_CoarseCV + DEBUG_CV_LIMIT) {
           const auto* coord_a = fine_grid->nodes->GetCoord(a);
           const auto* coord_b = fine_grid->nodes->GetCoord(b);
-          cout << "  CV " << Index_CoarseCV << " (ISO): nodes " << a << "+" << b << "+" << c << "+" << d
-               << " | lines[" << li1 << "][" << idx1 << "," << idx2 << "]+lines[" << li2_best << "][" << idx1 << "," << idx2 << "]"
+          cout << "  CV " << Index_CoarseCV << " (ISO): nodes " << a << "+" << b << "+" << c << "+" << d << " | lines["
+               << li1 << "][" << idx1 << "," << idx2 << "]+lines[" << li2_best << "][" << idx1 << "," << idx2 << "]"
                << " | coord_a=(" << coord_a[0] << "," << coord_a[1] << ")"
                << " coord_b=(" << coord_b[0] << "," << coord_b[1] << ")" << endl;
         }
@@ -1670,17 +1684,20 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
           const auto wall_b = lines[li2_best][0];
           const auto* coord_wall_a = fine_grid->nodes->GetCoord(wall_a);
           const auto* coord_wall_b = fine_grid->nodes->GetCoord(wall_b);
-          su2double wall_dist = sqrt(pow(coord_wall_a[0] - coord_wall_b[0], 2) +
-                                      pow(coord_wall_a[1] - coord_wall_b[1], 2));
+          su2double wall_dist =
+              sqrt(pow(coord_wall_a[0] - coord_wall_b[0], 2) + pow(coord_wall_a[1] - coord_wall_b[1], 2));
 
           /*--- Check if wall vertices are neighbors ---*/
           bool walls_are_neighbors = false;
           for (auto neighbor : fine_grid->nodes->GetPoints(wall_a)) {
-            if (neighbor == wall_b) { walls_are_neighbors = true; break; }
+            if (neighbor == wall_b) {
+              walls_are_neighbors = true;
+              break;
+            }
           }
 
-          cout << "  Pairing lines " << li1 << " + " << li2_best << " at pos=" << pos
-               << " | wall_dist=" << wall_dist << " | walls_neighbors=" << (walls_are_neighbors ? "YES" : "NO") << endl;
+          cout << "  Pairing lines " << li1 << " + " << li2_best << " at pos=" << pos << " | wall_dist=" << wall_dist
+               << " | walls_neighbors=" << (walls_are_neighbors ? "YES" : "NO") << endl;
         }
 
         /*--- Create 2-child coarse CV (anisotropic: same position, different lines) ---*/
@@ -1697,12 +1714,15 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
           su2double dist = sqrt(pow(coord_a[0] - coord_b[0], 2) + pow(coord_a[1] - coord_b[1], 2));
           bool are_neighbors = false;
           for (auto neighbor : fine_grid->nodes->GetPoints(a)) {
-            if (neighbor == b) { are_neighbors = true; break; }
+            if (neighbor == b) {
+              are_neighbors = true;
+              break;
+            }
           }
-          cout << "  CV " << Index_CoarseCV << " (ANISO): nodes " << a << "+" << b
-               << " | lines[" << li1 << "][" << pos << "]+lines[" << li2_best << "][" << pos << "]"
-               << " | dist=" << dist << " | neighbors=" << (are_neighbors ? "YES" : "NO")
-               << " | coords A=(" << coord_a[0] << "," << coord_a[1] << ")"
+          cout << "  CV " << Index_CoarseCV << " (ANISO): nodes " << a << "+" << b << " | lines[" << li1 << "][" << pos
+               << "]+lines[" << li2_best << "][" << pos << "]"
+               << " | dist=" << dist << " | neighbors=" << (are_neighbors ? "YES" : "NO") << " | coords A=("
+               << coord_a[0] << "," << coord_a[1] << ")"
                << " B=(" << coord_b[0] << "," << coord_b[1] << ")" << endl;
         }
 
