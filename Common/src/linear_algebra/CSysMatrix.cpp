@@ -93,6 +93,7 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
   q_blocks_d = nullptr;
 
   invM = nullptr;
+  d_invM = nullptr;
 
 #ifdef USE_MKL
   MatrixMatrixProductJitter = nullptr;
@@ -129,6 +130,7 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
     GPUMemoryAllocation::gpu_free(gpu.col_ind_l);
     GPUMemoryAllocation::gpu_free(gpu.row_ptr_u);
     GPUMemoryAllocation::gpu_free(gpu.col_ind_u);
+    GPUMemoryAllocation::gpu_free(d_invM);
   }
 
 #ifdef USE_MKL
@@ -281,6 +283,10 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   }
 
   if (diag_needed) allocAndInit(invM, nPointDomain * nVar * nEqn);
+
+  if (useCuda && diag_needed) {
+    d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
+  }
 
   /*--- Thread parallel initialization. ---*/
 
@@ -804,11 +810,29 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>& v
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
   SU2_ZONE_SCOPED
+
   /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     InverseDiagonalBlock(iPoint, &(invM[iPoint * nVar * nVar]));
   END_SU2_OMP_FOR
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      BEGIN_SU2_DEVICE_REGION
+      gpuErrChk(cudaMemcpy(d_invM, invM, nPointDomain * nVar * nVar * sizeof(ScalarType), cudaMemcpyHostToDevice));
+      END_SU2_DEVICE_REGION
+    } else {
+      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+    }
+#else
+    SU2_MPI::Error(
+        "\nError in building Jacobi preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
+        "enabled in Meson to access GPU Functions",
+        CURRENT_FUNCTION);
+#endif
+  }
 }
 
 template <class ScalarType>
@@ -816,6 +840,23 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
                                                          CSysVector<ScalarType>& prod, CGeometry* geometry,
                                                          const CConfig* config) const {
   SU2_ZONE_SCOPED
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      SU2_DEVICE_REGION(ComputeJacobiPreconditionerGPU(vec, prod, geometry, config);)
+      return;
+    } else {
+      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+    }
+#else
+    SU2_MPI::Error(
+        "\nError in applying Jacobi preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
+        "enabled in Meson to access GPU Functions",
+        CURRENT_FUNCTION);
+#endif
+  }
+
   /*--- Apply Jacobi preconditioner, y = D^{-1} * x, the inverse of the diagonal is already known. ---*/
   SU2_OMP_BARRIER
   SU2_OMP_FOR_DYN(omp_heavy_size)
