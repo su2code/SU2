@@ -395,7 +395,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   PreSmoothing(RunTime_EqSystem, geometry, solver_container, config_container, solver_fine, numerics_fine,
                geometry_fine, solver_container_fine, config, iMesh, iZone, iRKLimit);
 
-/*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
+  /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
 
   if ( iMesh < config->GetnMGLevels() ) {
 
@@ -418,16 +418,15 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, NO_RK_ITER, RunTime_EqSystem);
 
-    /*--- LinSysRes = R(u_N) here, before the fine-grid defect term is assembled. ---*/
+    /*--- LinSysRes = R(u_N) here, before tau is added by SetResidual_Term. ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
       lastPreSmoothRMS[iMesh][1] = ComputeLinSysResRMS(solver_fine);
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-    /*--- Assemble the fine-grid defect term that will be restricted to the coarse-grid FAS problem. ---*/
     SetResidual_Term(geometry_fine, solver_fine);
 
-    /*--- Restrict the fine-grid state to the coarse grid and initialize the coarse-grid state. ---*/
+    /*--- Compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$ ---*/
 
     SetRestricted_Solution(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
@@ -435,6 +434,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
 
     Space_Integration(geometry_coarse, solver_container_coarse, numerics_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem);
+    
+    /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
 
     SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
 
@@ -882,77 +883,6 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
     }
   }
   END_SU2_OMP_FOR
-
-  /*--- DIAGNOSTIC: log the max applied correction (factor * LinSysRes) at fine-grid wall points
-   *    vs interior. ---*/
-  if (config->GetMGOptions().MG_Smooth_Output && SU2_MPI::GetRank() == MASTER_NODE) {
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
-      if (nVar > 2) {
-        su2double maxWall0 = 0.0, maxWallN = 0.0, maxWallMom = 0.0;
-        su2double maxInter0 = 0.0, maxInterN = 0.0, maxInterMom = 0.0;
-        su2double maxWallApply0 = 0.0, maxWallApplyN = 0.0, maxWallApplyMom = 0.0;
-        su2double maxInterApply0 = 0.0, maxInterApplyN = 0.0, maxInterApplyMom = 0.0;
-
-        for (auto iPoint = 0ul; iPoint < geo_fine->GetnPointDomain(); iPoint++) {
-          const auto* corr = sol_fine->LinSysRes.GetBlock(iPoint);
-          const su2double localDamping = isWall[iPoint] ? wall_damping : base_damping;
-          const su2double applied0 = fabs(localDamping * factor * corr[0]);
-          const su2double appliedN = fabs(localDamping * factor * corr[nVar-1]);
-          su2double appliedMom = 0.0;
-          for (auto iVar = 1u; iVar < static_cast<unsigned short>(nVar-1); iVar++) {
-            appliedMom = max(appliedMom, fabs(localDamping * factor * corr[iVar]));
-          }
-
-          if (isWall[iPoint]) {
-            maxWall0 = max(maxWall0, fabs(factor * corr[0]));
-            maxWallN = max(maxWallN, fabs(factor * corr[nVar-1]));
-            maxWallMom = max(maxWallMom, fabs(factor * corr[0]));
-            maxWallApply0 = max(maxWallApply0, applied0);
-            maxWallApplyN = max(maxWallApplyN, appliedN);
-            maxWallApplyMom = max(maxWallApplyMom, appliedMom);
-          } else {
-            maxInter0 = max(maxInter0, fabs(factor * corr[0]));
-            maxInterN = max(maxInterN, fabs(factor * corr[nVar-1]));
-            maxInterMom = max(maxInterMom, fabs(factor * corr[0]));
-            maxInterApply0 = max(maxInterApply0, applied0);
-            maxInterApplyN = max(maxInterApplyN, appliedN);
-            maxInterApplyMom = max(maxInterApplyMom, appliedMom);
-          }
-        }
-        auto ratio = [](su2double w, su2double i) { return (i > 1e-30) ? w/i : 0.0; };
-        cout << "[MG APPL L" << iMesh << " wall/inter] rho=" << ratio(maxWallApply0, maxInterApply0)
-             << "  mom=" << ratio(maxWallApplyMom, maxInterApplyMom)
-             << "  E=" << ratio(maxWallApplyN, maxInterApplyN)
-             << "  (raw wall/inter: rho=" << maxWall0 << "/" << maxInter0
-             << ", E=" << maxWallN << "/" << maxInterN
-             << "; applied wall/inter: rho=" << maxWallApply0 << "/" << maxInterApply0
-             << ", E=" << maxWallApplyN << "/" << maxInterApplyN
-             << "; levelScale=" << levelScale << ", damp(wall/inter)=" << wall_damping << "/" << base_damping << ")\n";
-      } else {
-        su2double maxWall = 0.0, maxInter = 0.0;
-        su2double maxWallApply = 0.0, maxInterApply = 0.0;
-        for (auto iPoint = 0ul; iPoint < geo_fine->GetnPointDomain(); iPoint++) {
-          const auto* corr = sol_fine->LinSysRes.GetBlock(iPoint);
-          const su2double localDamping = isWall[iPoint] ? wall_damping : base_damping;
-          const su2double mag = fabs(factor * corr[0]);
-          const su2double appliedMag = fabs(localDamping * factor * corr[0]);
-          if (isWall[iPoint]) {
-            maxWall = max(maxWall, mag);
-            maxWallApply = max(maxWallApply, appliedMag);
-          } else {
-            maxInter = max(maxInter, mag);
-            maxInterApply = max(maxInterApply, appliedMag);
-          }
-        }
-        cout << "[MG TURB APPLY L" << iMesh << "] damp(wall/interior)= " << wall_damping << "/" << base_damping
-             << "  raw max(wall/interior)= " << maxWall << "/" << maxInter
-             << "  applied max(wall/interior)= " << maxWallApply << "/" << maxInterApply
-             << "  levelScale=" << levelScale << "\n";
-      }
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-  }
 
   /*--- MPI the new interpolated solution ---*/
 

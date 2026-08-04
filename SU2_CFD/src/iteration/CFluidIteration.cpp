@@ -82,7 +82,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_FLOW_SYS,
                                                                    val_iZone, val_iInst);
 
-  /*--- If the flow integration is not fully coupled, run the various single-grid integrations. ---*/
+  /*--- If the flow integration is not fully coupled, run the various single grid integrations. ---*/
 
   if (config[val_iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE && !frozen_visc) {
 
@@ -97,7 +97,7 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     /*--- Solve the turbulence model ---*/
 
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TURB_SYS);
-      integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
+    integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                         RUNTIME_TURB_SYS, val_iZone, val_iInst);
     }
   }
