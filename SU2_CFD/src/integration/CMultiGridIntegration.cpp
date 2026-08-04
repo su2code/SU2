@@ -827,49 +827,16 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   /*--- Use the adaptive damping factor uniformly across all prolongation levels. ---*/
   const su2double factor = config->GetDamp_Correc_Prolong();
 
-  vector<bool> isWall(geo_fine->GetnPoint(), false);
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++)
-    if (config->GetViscous_Wall(iMarker))
-      for (auto iVertex = 0ul; iVertex < geo_fine->nVertex[iMarker]; iVertex++)
-        isWall[geo_fine->vertex[iMarker][iVertex]->GetNode()] = true;
-
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Fine = 0ul; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
     auto* Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
     auto* Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
-
-    su2double residualMag = 0.0;
-    su2double correctionMag = 0.0;
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
-      if (Residual_Fine[iVar] != Residual_Fine[iVar]) {
-        Residual_Fine[iVar] = 0.0;
-      }
+      if (Residual_Fine[iVar] != Residual_Fine[iVar])
+Residual_Fine[iVar] = 0.0;
 
-      const su2double corr = factor * Residual_Fine[iVar];
-      residualMag = max(residualMag, fabs(Residual_Fine[iVar]));
-      correctionMag = max(correctionMag, fabs(corr));
-    }
-
-    su2double correctionScale = 1.0;
-    constexpr su2double maxAllowedRatio = 1.25;
-    if (residualMag > 1e-30 && correctionMag > 1e-30) {
-      const su2double ratio = correctionMag / residualMag;
-      if (ratio > maxAllowedRatio) {
-        correctionScale = maxAllowedRatio / ratio;
-      }
-    }
-
-    const su2double localDamping = use_conservative_damping ? (isWall[Point_Fine] ? wall_damping : base_damping) : 1.0;
-    for (auto iVar = 0u; iVar < nVar; iVar++) {
       su2double correction = factor * Residual_Fine[iVar];
-      correction *= localDamping;
-      correction *= correctionScale;
-
-      if (!std::isfinite(correction)) {
-        correction = 0.0;
-      }
-
       Solution_Fine[iVar] += correction;
     }
   }
