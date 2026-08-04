@@ -748,8 +748,6 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   if (val_nSmooth == 0) return;
 
   const unsigned short nVar = solver->GetnVar();
-  const bool use_conservative_damping = (nVar <= 2);
-  const su2double turbulence_base_damping = 0.50;
 
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
@@ -789,11 +787,8 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
       const auto* Residual_Sum = solver->GetNodes()->GetResidual_Sum(iPoint);
       const auto* Residual_Old = solver->GetNodes()->GetResidual_Old(iPoint);
 
-      for (auto iVar = 0u; iVar < nVar; iVar++) {
-        su2double smoothed = (Residual_Old[iVar] + val_smooth_coeff*Residual_Sum[iVar])*factor;
-        if (use_conservative_damping) smoothed *= turbulence_base_damping;
-        solver->LinSysRes(iPoint,iVar) = smoothed;
-      }
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        solver->LinSysRes(iPoint,iVar) = (Residual_Old[iVar] + val_smooth_coeff*Residual_Sum[iVar])*factor;
     }
     END_SU2_OMP_FOR
 
@@ -828,10 +823,6 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   SU2_ZONE_SCOPED
 
   const unsigned short nVar = sol_fine->GetnVar();
-  const bool use_conservative_damping = (nVar <= 2);
-  const su2double levelScale = GetMGLevelCorrectionScale(iMesh);
-  const su2double base_damping = use_conservative_damping ? max(su2double{0.15}, 0.50 * levelScale) : 1.0;
-  const su2double wall_damping = use_conservative_damping ? max(su2double{0.10}, 0.25 * levelScale) : 1.0;
 
   /*--- Use the adaptive damping factor uniformly across all prolongation levels. ---*/
   const su2double factor = config->GetDamp_Correc_Prolong();
