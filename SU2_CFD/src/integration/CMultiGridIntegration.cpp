@@ -28,6 +28,7 @@
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../include/variables/CTurbVariable.hpp"
 #include <cmath>
 #include <iostream>
 #include <algorithm>
@@ -594,9 +595,20 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Assemble the fine-grid defect term that will be restricted to the coarse-grid FAS problem. ---*/
     SetResidual_Term(geometry_fine, solver_fine);
 
+    /*--- Communicate frozen sources on finest level to halo cells before restriction aggregates from fine children. ---*/
+    if (iMesh == MESH_0 && RunTime_EqSystem == RUNTIME_TURB_SYS && config->GetMGOptions().MG_Turb_Freeze_Source) {
+      solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION_EDDY);
+      solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION_EDDY);
+    }
+
     /*--- Restrict the fine-grid state to the coarse grid and initialize the coarse-grid state. ---*/
 
     SetRestricted_Solution(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
+
+    /*--- Restrict frozen source terms for turbulence multigrid if feature is enabled. ---*/
+    if (RunTime_EqSystem == RUNTIME_TURB_SYS && config->GetMGOptions().MG_Turb_Freeze_Source) {
+      SetRestricted_FrozenSource(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
+    }
 
     solver_coarse->Preprocessing(geometry_coarse, solver_container_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem, false);
 
@@ -887,7 +899,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   /*--- Enforce Euler wall BC on corrections by projecting to tangent plane ---*/
   sol_coarse->MultigridProjectEulerWall(geo_coarse, config, true);
 
-  /*--- Remove any contributions from no-slip walls. ---*/
+  /*--- Remove any contributions from no-slip walls (Dirichlet BC enforcement). ---*/
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetViscous_Wall(iMarker)) {
@@ -896,11 +908,19 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
       for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- For dirichlet boundary conditions, set the correction to zero.
-         Note that Solution_Old stores the correction not the actual value ---*/
+        /*--- For Dirichlet boundary conditions, set the correction to zero.
+         *    Note that Solution_Old stores the correction, not the actual value. ---*/
 
-        su2double zero[3] = {0.0};
-        sol_coarse->GetNodes()->SetVelocity_Old(Point_Coarse, zero);
+        if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
+          /*--- Turbulence: explicitly zero all variables (scalar equations). ---*/
+          for (auto iVar = 0u; iVar < sol_coarse->GetnVar(); iVar++) {
+            sol_coarse->GetNodes()->SetSolution_Old(Point_Coarse, iVar, 0.0);
+          }
+        } else {
+          /*--- Flow: zero velocity components only (momentum equations). ---*/
+          su2double zero[3] = {0.0};
+          sol_coarse->GetNodes()->SetVelocity_Old(Point_Coarse, zero);
+        }
 
       }
       END_SU2_OMP_FOR
@@ -975,7 +995,13 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
       for (auto iVar = 0u; iVar < nVar; iVar++) {
         su2double smoothed = (Residual_Old[iVar] + val_smooth_coeff*Residual_Sum[iVar])*factor;
-        if (use_conservative_damping) smoothed *= turbulence_base_damping;
+        /*--- FIX 2: Do NOT apply turbulence_base_damping (0.50) to turbulence corrections.
+         *    use_conservative_damping is true for nVar<=2 which includes SA (nVar=1), but the
+         *    0.50 factor was designed for compressible flow density-velocity-pressure coupling
+         *    near walls. Applying it to a scalar equation halves all corrections unnecessarily.
+         *    Combined with SetProlongated_Correction's damping (~0.375 at Level 1) and the config
+         *    damping factor (0.9), only 17% of the coarse correction was reaching the fine grid. ---*/
+        if (use_conservative_damping && RunTime_EqSystem == RUNTIME_FLOW_SYS) smoothed *= turbulence_base_damping;
         solver->LinSysRes(iPoint,iVar) = smoothed;
       }
     }
@@ -1021,7 +1047,12 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   SU2_ZONE_SCOPED
 
   const unsigned short nVar = sol_fine->GetnVar();
-  const bool use_conservative_damping = (nVar <= 2);
+  /*--- Conservative damping prevents oscillations from density-velocity-pressure coupling
+   *    in compressible flow (nVar > 2 equations). Scalar/turbulence equations (nVar <= 2)
+   *    are single-variable and have no such coupling; applying flow-level damping (base ~0.375)
+   *    reduces turbulence corrections to only 34% of their computed value, preventing the
+   *    coarse-grid MG cycle from being effective. ---*/
+  const bool use_conservative_damping = (nVar > 2);
   const su2double levelScale = GetMGLevelCorrectionScale(iMesh);
   const su2double base_damping = use_conservative_damping ? max(su2double{0.15}, 0.50 * levelScale) : 1.0;
   const su2double wall_damping = use_conservative_damping ? max(su2double{0.10}, 0.25 * levelScale) : 1.0;
@@ -1201,7 +1232,18 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
       SU2_OMP_FOR_STAT(32)
       for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-        sol_coarse->GetNodes()->SetVel_ResTruncError_Zero(Point_Coarse);
+        /*--- FIX 1: For turbulence (Dirichlet BC nu_tilde=0 at walls), zero the FULL truncation error.
+         *    SetVel_ResTruncError_Zero is a no-op for CTurbVariable (only zeros velocity components
+         *    in flow variables). Without this, the FAS forcing term injects spurious residuals at
+         *    wall nodes where the coarse grid should simply enforce nu_tilde=0. For flow solvers,
+         *    only the velocity components need zeroing (pressure and energy BCs are flux-based). ---*/
+        if (sol_coarse->GetnVar() <= 2) {
+          /*--- Turbulence/scalar: zero ALL truncation error components at the Dirichlet wall. ---*/
+          sol_coarse->GetNodes()->SetRes_TruncErrorZero(Point_Coarse);
+        } else {
+          /*--- Flow: zero only velocity components (pressure/energy BCs are flux-based). ---*/
+          sol_coarse->GetNodes()->SetVel_ResTruncError_Zero(Point_Coarse);
+        }
       }
       END_SU2_OMP_FOR
     }
@@ -1295,6 +1337,17 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
           sol_coarse->GetNodes()->SetVelSolutionDVector(Point_Coarse);
         }
 
+        if (Solver_Position == TURB_SOL) {
+          /*--- CRITICAL FIX: Enforce Dirichlet BC for turbulence at walls.
+           *    SA model requires nu_tilde = 0 at smooth walls. After restriction,
+           *    wall values are averaged from fine grid children, violating the BC.
+           *    This causes coarse grid solves with incorrect boundary conditions,
+           *    producing corrupted corrections that stall convergence. ---*/
+          for (auto iVar = 0u; iVar < sol_coarse->GetnVar(); iVar++) {
+            sol_coarse->GetNodes()->SetSolution(Point_Coarse, iVar, 0.0);
+          }
+        }
+
       }
       END_SU2_OMP_FOR
     }
@@ -1307,6 +1360,54 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
 
   sol_coarse->InitiateComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION);
   sol_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION);
+
+}
+
+void CMultiGridIntegration::SetRestricted_FrozenSource(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+                                                        CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+  SU2_ZONE_SCOPED
+
+  /*--- Only applicable for turbulence equations ---*/
+  if (RunTime_EqSystem != RUNTIME_TURB_SYS) return;
+
+  auto* turbNodes_fine = su2staticcast_p<CTurbVariable*>(sol_fine->GetNodes());
+  auto* turbNodes_coarse = su2staticcast_p<CTurbVariable*>(sol_coarse->GetNodes());
+
+  /*--- Compute coarse frozen source density from fine grid using volume-weighted averaging.
+   *    This is analogous to eddy viscosity restriction - both are intensive properties. ---*/
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+
+    su2double Volume_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
+    su2double SourceDensity_Coarse = 0.0;
+    su2double SourceJacobian_Coarse = 0.0;
+
+    /*--- Volume-weighted average of source density and Jacobian from fine grid children ---*/
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+      su2double Volume_Child = geo_fine->nodes->GetVolume(Point_Fine);
+      su2double weight = Volume_Child / Volume_Parent;
+
+      su2double SourceDensity_Fine = turbNodes_fine->GetFrozenSource(Point_Fine);
+      SourceDensity_Coarse += SourceDensity_Fine * weight;
+
+      /*--- Restrict Jacobian (intensive property, volume-weighted averaging) ---*/
+      su2double SourceJac_Fine = turbNodes_fine->GetFrozenSourceJacobian(Point_Fine);
+      SourceJacobian_Coarse += SourceJac_Fine * weight;
+    }
+
+    turbNodes_coarse->SetFrozenSource(Point_Coarse, SourceDensity_Coarse);
+    turbNodes_coarse->SetFrozenSourceJacobian(Point_Coarse, SourceJacobian_Coarse);
+  }
+  END_SU2_OMP_FOR
+
+  /*--- MPI communication of restricted frozen source to halo cells.
+   *    Although frozen_source is not part of the solution vector, halo cells need correct values
+   *    for proper parallel execution, especially when coarse points near partition boundaries
+   *    aggregate from fine grid children. We reuse SOLUTION_EDDY communication infrastructure. ---*/
+
+  sol_coarse->InitiateComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_EDDY);
+  sol_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_EDDY);
 
 }
 

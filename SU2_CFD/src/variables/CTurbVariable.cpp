@@ -34,6 +34,8 @@ CTurbVariable::CTurbVariable(unsigned long npoint, unsigned long ndim, unsigned 
 
     turb_index.resize(nPoint) = su2double(1.0);
     intermittency.resize(nPoint) = su2double(1.0);
+    frozen_source.resize(nPoint) = su2double(0.0);
+    frozen_source_jacobian.resize(nPoint) = su2double(0.0);
 
     /*--- Allocate residual structures for multigrid (required for turbulence MG). ---*/
     Res_TruncError.resize(nPoint, nVar) = su2double(0.0);

@@ -1779,6 +1779,18 @@ public:
   inline virtual su2double GetTurbIndex(unsigned long iPoint) const {return 0.0;}
 
   /*!
+   * \brief Get the frozen turbulence source term density for multigrid.
+   * \return Frozen source density (source per unit volume).
+   */
+  inline virtual su2double GetFrozenSource(unsigned long iPoint) const { return 0.0; }
+
+  /*!
+   * \brief Set the frozen turbulence source term density for multigrid.
+   * \param[in] val_source - Frozen source density value.
+   */
+  inline virtual void SetFrozenSource(unsigned long iPoint, su2double val_source) {}
+
+  /*!
    * \brief A virtual member.
    * \param[in] iVar - Index of the variable.
    * \param[in] val_source - Value of the harmonic balance source.

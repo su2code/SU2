@@ -38,6 +38,8 @@
 class CTurbVariable : public CScalarVariable {
 protected:
   VectorType muT; /*!< \brief Eddy viscosity. */
+  VectorType frozen_source; /*!< \brief Frozen source term from fine grid for multigrid coarse levels. */
+  VectorType frozen_source_jacobian; /*!< \brief Frozen source Jacobian diagonal for implicit coupling on coarse grids. */
 
 public:
   static constexpr size_t MAXNVAR = 4;
@@ -105,6 +107,34 @@ public:
    * \param[in] iPoint - Point index.
    * \param[in] val_DC_kw - diffusion coefficient value
    */
+
+  /*!
+   * \brief Get the frozen source term for multigrid coarse levels.
+   * \param[in] iPoint - Point index.
+   * \return Frozen source term.
+   */
+  inline su2double GetFrozenSource(unsigned long iPoint) const { return frozen_source(iPoint); }
+
+  /*!
+   * \brief Set the frozen source term for multigrid coarse levels.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_source - Frozen source term value.
+   */
+  inline void SetFrozenSource(unsigned long iPoint, su2double val_source) { frozen_source(iPoint) = val_source; }
+
+  /*!
+   * \brief Get the frozen source Jacobian diagonal for multigrid coarse levels.
+   * \param[in] iPoint - Point index.
+   * \return Frozen source Jacobian diagonal.
+   */
+  inline su2double GetFrozenSourceJacobian(unsigned long iPoint) const { return frozen_source_jacobian(iPoint); }
+
+  /*!
+   * \brief Set the frozen source Jacobian diagonal for multigrid coarse levels.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_jac - Frozen source Jacobian diagonal value.
+   */
+  inline void SetFrozenSourceJacobian(unsigned long iPoint, su2double val_jac) { frozen_source_jacobian(iPoint) = val_jac; }
 
   /*!
    * \brief Register eddy viscosity (muT) as Input or Output of an AD recording.

@@ -26,6 +26,7 @@
  */
 
 #include "../../include/integration/CSingleGridIntegration.hpp"
+#include "../../include/variables/CTurbVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
 
@@ -100,6 +101,16 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
                              geometry[iZone][iInst][iMesh],
                              geometry[iZone][iInst][iMesh+1],
                              config[iZone]);
+
+      /*--- Restrict frozen source terms if feature is enabled ---*/
+      if (config[iZone]->GetMGOptions().MG_Turb_Freeze_Source) {
+        SetRestricted_FrozenSource(RunTime_EqSystem,
+                                  solver_container[iZone][iInst][iMesh][Solver_Position],
+                                  solver_container[iZone][iInst][iMesh+1][Solver_Position],
+                                  geometry[iZone][iInst][iMesh],
+                                  geometry[iZone][iInst][iMesh+1],
+                                  config[iZone]);
+      }
     }
 
   }
@@ -163,6 +174,44 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
   }
 
   /*--- MPI the new interpolated solution (this also includes the eddy viscosity) ---*/
+
+  sol_coarse->InitiateComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_EDDY);
+  sol_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_EDDY);
+
+}
+
+void CSingleGridIntegration::SetRestricted_FrozenSource(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
+                                                        CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+  SU2_ZONE_SCOPED
+
+  /*--- Cast to turbulence variable type to access frozen source methods ---*/
+  auto* turbNodes_fine = su2staticcast_p<CTurbVariable*>(sol_fine->GetNodes());
+  auto* turbNodes_coarse = su2staticcast_p<CTurbVariable*>(sol_coarse->GetNodes());
+
+  /*--- Compute coarse frozen source density from fine grid using volume-weighted averaging.
+   *    This is analogous to eddy viscosity restriction - both are intensive properties. ---*/
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+
+    su2double Volume_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
+    su2double SourceDensity_Coarse = 0.0;
+
+    /*--- Volume-weighted average of source density from fine grid children ---*/
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+      su2double Volume_Child = geo_fine->nodes->GetVolume(Point_Fine);
+      su2double SourceDensity_Fine = turbNodes_fine->GetFrozenSource(Point_Fine);
+      SourceDensity_Coarse += SourceDensity_Fine * Volume_Child / Volume_Parent;
+    }
+
+    turbNodes_coarse->SetFrozenSource(Point_Coarse, SourceDensity_Coarse);
+  }
+  END_SU2_OMP_FOR
+
+  /*--- MPI communication of restricted frozen source to halo cells.
+   *    Although frozen_source is not part of the solution vector, halo cells need correct values
+   *    for proper parallel execution, especially when coarse points near partition boundaries
+   *    aggregate from fine grid children. We reuse SOLUTION_EDDY communication infrastructure. ---*/
 
   sol_coarse->InitiateComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_EDDY);
   sol_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_EDDY);

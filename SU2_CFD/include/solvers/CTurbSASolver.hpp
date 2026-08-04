@@ -44,6 +44,25 @@ private:
   su2double nu_tilde_ActDisk[4] = {0.0};
 
   /*!
+   * \brief Override SetTime_Step to include source term stiffness in the turbulence time step.
+   * \details The base CScalarSolver implementation scales the flow time step by the CFL ratio,
+   *          which only captures convective physics. For the SA model the source term destruction
+   *          dS/d(nu_tilde) ~ c_w*nu_tilde/d^2 dominates near walls (d->0), adding large negative
+   *          diagonal contributions. The frozen source Jacobian (cached each fine-grid iteration)
+   *          captures this stiffness. Limiting dt so that the diagonal is source-dominated rather
+   *          than time-dominated prevents the implicit update from being O(R*dt/V->0), which
+   *          produces r=1.000 (no residual reduction) in the multigrid pre-smoother.
+   *
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - External iteration number.
+   */
+  void SetTime_Step(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                    unsigned short iMesh, unsigned long Iteration) override;
+
+  /*!
    * \brief A virtual member.
    * \param[in] solver - Solver container
    * \param[in] geometry - Geometrical definition.

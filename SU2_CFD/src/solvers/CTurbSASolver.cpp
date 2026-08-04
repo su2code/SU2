@@ -199,6 +199,24 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
 
 }
 
+void CTurbSASolver::SetTime_Step(CGeometry* geometry, CSolver** solver_container, CConfig* config,
+                                 unsigned short iMesh, unsigned long Iteration) {
+  SU2_ZONE_SCOPED
+
+  const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    /*--- Scale flow time step by the turbulence CFL ratio (convective physics).
+     *    The SA source Jacobian near walls is negative (destruction-dominated), which means
+     *    SubtractBlock2Diag ADDS a positive contribution to the implicit diagonal — the source
+     *    term improves conditioning near walls. No additional time step limiting is needed. ---*/
+    const su2double dt = nodes->GetLocalCFL(iPoint) / flowNodes->GetLocalCFL(iPoint) * flowNodes->GetDelta_Time(iPoint);
+    nodes->SetDelta_Time(iPoint, dt);
+  }
+  END_SU2_OMP_FOR
+}
+
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
         unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   SU2_ZONE_SCOPED
@@ -362,6 +380,12 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   const bool harmonic_balance = (config->GetTime_Marching() == TIME_MARCHING::HARMONIC_BALANCE);
   const bool transition_BC = config->GetSAParsedOptions().bc;
 
+  /*--- Check if we should use frozen source terms on coarse grids. ---*/
+  const bool use_frozen_source = (iMesh > 0) && config->GetMGOptions().MG_Turb_Freeze_Source;
+
+  /*--- Diagnostic counters for frozen vs computed source terms. ---*/
+  unsigned long n_frozen = 0, n_computed = 0;
+
   auto* flowNodes = su2staticcast_p<CFlowVariable*>(solver_container[FLOW_SOL]->GetNodes());
 
   /*--- Pick one numerics object per thread. ---*/
@@ -373,6 +397,32 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
   SU2_OMP_FOR_DYN(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Check if we should use frozen source or compute it. ---*/
+    if (use_frozen_source) {
+      /*--- Use frozen source density from fine grid (cached during restriction). ---*/
+      su2double SourceDensity = nodes->GetFrozenSource(iPoint);
+      su2double Volume = geometry->nodes->GetVolume(iPoint);
+
+      /*--- Add source contribution: LinSysRes += Source * Volume. ---*/
+      LinSysRes(iPoint, 0) += SourceDensity * Volume;
+
+      /*--- Add frozen source Jacobian to maintain implicit coupling.
+       *    This is critical for convergence: without the Jacobian, the coarse grid
+       *    linear system produces identical corrections every iteration, causing stalling.
+       *    The Jacobian was cached on the fine grid and restricted here. ---*/
+      if (implicit) {
+        su2double SourceJac = nodes->GetFrozenSourceJacobian(iPoint);
+        su2double jac_block[1][1];
+        jac_block[0][0] = SourceJac * Volume;
+        Jacobian.SubtractBlock2Diag(iPoint, jac_block);
+      }
+
+      SU2_OMP_ATOMIC
+      n_frozen++;
+
+    } else {
+      /*--- Compute source term normally (fine grid or freezing disabled). ---*/
 
     /*--- Conservative variables w/o reconstruction ---*/
 
@@ -463,6 +513,27 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
 
     if (implicit) Jacobian.SubtractBlock2Diag(iPoint, residual.jacobian_i);
 
+      /*--- Cache source density on fine grid when MG_TURB_FREEZE_SOURCE is enabled.
+       *    The cached values will be restricted to coarse grids and used there instead
+       *    of recomputing sources with stale flow data. ---*/
+      if ((iMesh == 0) && config->GetMGOptions().MG_Turb_Freeze_Source) {
+        /*--- Store source density S (intensive property) for volume-weighted restriction.
+         *    residual = -S*V from numerics, so S = -residual/V.
+         *    This is analogous to storing eddy viscosity (also an intensive property). ---*/
+        su2double Volume = geometry->nodes->GetVolume(iPoint);
+        nodes->SetFrozenSource(iPoint, -residual[0] / Volume);
+
+        /*--- Cache source Jacobian diagonal for implicit coupling on coarse grids.
+         *    Store as jacobian per unit volume (intensive property) for restriction.
+         *    This preserves implicit coupling when using frozen sources. ---*/
+        nodes->SetFrozenSourceJacobian(iPoint, residual.jacobian_i[0][0] / Volume);
+      }
+
+      SU2_OMP_ATOMIC
+      n_computed++;
+
+    } /* end of if-else use_frozen_source */
+
   }
   END_SU2_OMP_FOR
 
@@ -488,6 +559,21 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   /*--- Custom user defined source term (from the python wrapper) ---*/
   if (config->GetPyCustomSource()) {
     CustomSourceResidual(geometry, solver_container, numerics_container, config, iMesh);
+  }
+
+  /*--- Diagnostic output for frozen source terms. ---*/
+  if (config->GetMGOptions().MG_Turb_Freeze_Source) {
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+      unsigned long n_frozen_global = 0, n_computed_global = 0;
+      SU2_MPI::Allreduce(&n_frozen, &n_frozen_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+      SU2_MPI::Allreduce(&n_computed, &n_computed_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+
+      if (SU2_MPI::GetRank() == MASTER_NODE && (config->GetInnerIter() % 100 == 0 || config->GetInnerIter() < 5)) {
+        cout << "[TURB_FREEZE] Mesh " << iMesh << ": Frozen=" << n_frozen_global
+             << " Computed=" << n_computed_global << endl;
+      }
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
 }

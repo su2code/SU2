@@ -1365,7 +1365,7 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::SOLUTION_EDDY:
-      COUNT_PER_POINT  = nVar+1;
+      COUNT_PER_POINT  = nVar+2;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
     case MPI_QUANTITIES::STOCH_SOURCE_LANG:
@@ -1503,6 +1503,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = base_nodes->GetSolution(iPoint, iVar);
             bufDSend[buf_offset+nVar]   = base_nodes->GetmuT(iPoint);
+            bufDSend[buf_offset+nVar+1] = base_nodes->GetFrozenSource(iPoint);
             break;
           case MPI_QUANTITIES::STOCH_SOURCE_LANG:
             for (iDim = 0; iDim < nDim; iDim++)
@@ -1659,6 +1660,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
             for (iVar = 0; iVar < nVar; iVar++)
               base_nodes->SetSolution(iPoint, iVar, bufDRecv[buf_offset+iVar]);
             base_nodes->SetmuT(iPoint,bufDRecv[buf_offset+nVar]);
+            base_nodes->SetFrozenSource(iPoint, bufDRecv[buf_offset+nVar+1]);
             break;
           case MPI_QUANTITIES::STOCH_SOURCE_LANG:
             for (iDim = 0; iDim < nDim; iDim++)

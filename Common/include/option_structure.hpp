@@ -1129,6 +1129,7 @@ struct CMGOptions {
   bool MG_Implicit_Lines_Isotropic{false}; /*!< \brief Use isotropic (vs anisotropic) agglomeration along implicit lines. */
   unsigned long MG_Startup_Iter{100};     /*!< \brief Number of iterations on coarsest mesh during FMG startup phase. */
   bool TurbMG{false};                     /*!< \brief Run turbulence equations through a FAS MG V-cycle instead of single-grid. */
+  bool MG_Turb_Freeze_Source{false};      /*!< \brief Freeze turbulence source terms on coarse multigrid levels. */
 };
 
 /*!

@@ -100,8 +100,50 @@ void CFluidIteration::Iterate(COutput* output, CIntegration**** integration, CGe
     config[val_iZone]->SetGlobalParam(main_solver, RUNTIME_TURB_SYS);
 
     if (config[val_iZone]->GetMGOptions().TurbMG) {
+      /*--- Before turbulence multigrid: restrict updated FLOW solution from MESH_0 to all coarse grids.
+       *    After flow MG completes, coarse grids have stale flow data (only MESH_0 is updated via prolongation).
+       *    Turbulence MG needs current flow primitives (density, laminar viscosity) on coarse grids for source terms.
+       *    Without this restriction, coarse-grid FLOW Preprocessing uses stale conservative variables, producing
+       *    incorrect primitives that corrupt eddy viscosity computation and cause oscillations. ---*/
+      for (auto iMesh = 1u; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+        CSolver::MultigridRestriction(*geometry[val_iZone][val_iInst][iMesh - 1],
+                                       solver[val_iZone][val_iInst][iMesh - 1][FLOW_SOL]->GetNodes()->GetSolution(),
+                                      *geometry[val_iZone][val_iInst][iMesh],
+                                       solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetNodes()->GetSolution());
+        /*--- Synchronize halo cells across MPI ranks before preprocessing (critical for parallel runs) ---*/
+        solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->InitiateComms(geometry[val_iZone][val_iInst][iMesh],
+                                                                      config[val_iZone], MPI_QUANTITIES::SOLUTION);
+        solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->CompleteComms(geometry[val_iZone][val_iInst][iMesh],
+                                                                      config[val_iZone], MPI_QUANTITIES::SOLUTION);
+        /*--- Update flow primitives on coarse grid from newly restricted conservative variables ---*/
+        solver[val_iZone][val_iInst][iMesh][FLOW_SOL]->Preprocessing(geometry[val_iZone][val_iInst][iMesh],
+                                                                      solver[val_iZone][val_iInst][iMesh],
+                                                                      config[val_iZone], iMesh, NO_RK_ITER,
+                                                                      RUNTIME_FLOW_SYS, false);
+      }
+
       integration[val_iZone][val_iInst][TURB_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config,
                                                                        RUNTIME_TURB_SYS, val_iZone, val_iInst);
+
+      /*--- After turbulence multigrid: restrict updated TURBULENCE solution from MESH_0 to all coarse grids.
+       *    This ensures coarse grids have current turbulence values for the next iteration's FLOW MG.
+       *    Without this, coarse-grid flow equations use stale eddy viscosity, creating a feedback loop
+       *    that eventually causes oscillations after accumulated error builds up over many iterations. ---*/
+      for (auto iMesh = 1u; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++) {
+        CSolver::MultigridRestriction(*geometry[val_iZone][val_iInst][iMesh - 1],
+                                       solver[val_iZone][val_iInst][iMesh - 1][TURB_SOL]->GetNodes()->GetSolution(),
+                                      *geometry[val_iZone][val_iInst][iMesh],
+                                       solver[val_iZone][val_iInst][iMesh][TURB_SOL]->GetNodes()->GetSolution());
+        /*--- Synchronize halo cells across MPI ranks before postprocessing (critical for parallel runs) ---*/
+        solver[val_iZone][val_iInst][iMesh][TURB_SOL]->InitiateComms(geometry[val_iZone][val_iInst][iMesh],
+                                                                      config[val_iZone], MPI_QUANTITIES::SOLUTION);
+        solver[val_iZone][val_iInst][iMesh][TURB_SOL]->CompleteComms(geometry[val_iZone][val_iInst][iMesh],
+                                                                      config[val_iZone], MPI_QUANTITIES::SOLUTION);
+        /*--- Update turbulence postprocessing (eddy viscosity) on coarse grid ---*/
+        solver[val_iZone][val_iInst][iMesh][TURB_SOL]->Postprocessing(geometry[val_iZone][val_iInst][iMesh],
+                                                                       solver[val_iZone][val_iInst][iMesh],
+                                                                       config[val_iZone], iMesh);
+      }
     } else {
       integration[val_iZone][val_iInst][TURB_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config,
                                                                         RUNTIME_TURB_SYS, val_iZone, val_iInst);

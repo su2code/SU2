@@ -2075,6 +2075,8 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
   /*!\brief MG_TURB\n DESCRIPTION: Run turbulence equations through a FAS Multigrid V-cycle instead of single-grid. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_TURB", MGOptions.TurbMG, false);
+  /*!\brief MG_TURB_FREEZE_SOURCE\n DESCRIPTION: Freeze turbulence source terms on coarse multigrid levels using values from the fine grid. Reduces stiffness on coarse grids. DEFAULT: NO \ingroup Config*/
+  addBoolOption("MG_TURB_FREEZE_SOURCE", MGOptions.MG_Turb_Freeze_Source, false);
   /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i). If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
   addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
 
