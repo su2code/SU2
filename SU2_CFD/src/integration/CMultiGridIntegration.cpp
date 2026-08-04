@@ -184,46 +184,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                             geometry[iZone][iInst][FinestMesh],
                             config[iZone]);
 
-    /*--- Prolongate scalar solutions to the new finest mesh.
-     *    All scalar solvers (turb, species, transition) run via SingleGrid_Iteration on
-     *    GetFinestMesh().  Only turbulence additionally restricts its field downward to
-     *    coarser meshes; no scalar ever propagates upward to finer meshes.  Consequently
-     *    meshes finer than FinestMesh hold their iter-0 startup values for the entire
-     *    warmup phase.  When FinestMesh is decremented these stale fields cause a large
-     *    transient (e.g. +3 decade regression in rms[nu]).  Prolongating here mirrors
-     *    what SetProlongated_Solution does for the flow and eliminates the regression. ---*/
-    if (config[iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE) {
-      SetProlongated_Solution(RUNTIME_TURB_SYS,
-                              solver_container[iZone][iInst][FinestMesh-1][TURB_SOL],
-                              solver_container[iZone][iInst][FinestMesh][TURB_SOL],
-                              geometry[iZone][iInst][FinestMesh-1],
-                              geometry[iZone][iInst][FinestMesh],
-                              config[iZone]);
-      /*--- Recompute mu_t on the new finest mesh from the prolongated nu_tilde/k/omega. ---*/
-      solver_container[iZone][iInst][FinestMesh-1][TURB_SOL]->Postprocessing(
-          geometry[iZone][iInst][FinestMesh-1],
-          solver_container[iZone][iInst][FinestMesh-1],
-          config[iZone], FinestMesh-1);
-    }
-
-    if (config[iZone]->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
-      SetProlongated_Solution(RUNTIME_TRANS_SYS,
-                              solver_container[iZone][iInst][FinestMesh-1][TRANS_SOL],
-                              solver_container[iZone][iInst][FinestMesh][TRANS_SOL],
-                              geometry[iZone][iInst][FinestMesh-1],
-                              geometry[iZone][iInst][FinestMesh],
-                              config[iZone]);
-    }
-
-    if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
-      SetProlongated_Solution(RUNTIME_SPECIES_SYS,
-                              solver_container[iZone][iInst][FinestMesh-1][SPECIES_SOL],
-                              solver_container[iZone][iInst][FinestMesh][SPECIES_SOL],
-                              geometry[iZone][iInst][FinestMesh-1],
-                              geometry[iZone][iInst][FinestMesh],
-                              config[iZone]);
-    }
-
     SU2_OMP_SAFE_GLOBAL_ACCESS(config[iZone]->SubtractFinestMesh();)
   }
 
@@ -231,44 +191,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   FinestMesh = config[iZone]->GetFinestMesh();
 
-  /*--- For turbulence MG: before descending to coarse levels, ensure mu_t is computed
-   *    at the finest level and restricted to all coarser levels. This prevents inf
-   *    residuals from coarse-level turbulence solves using stale/uninitialized mu_t. ---*/
-  if (RunTime_EqSystem == RUNTIME_TURB_SYS &&
-      config[iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE) {
-
-    solver_container[iZone][iInst][FinestMesh][TURB_SOL]->Postprocessing(
-        geometry[iZone][iInst][FinestMesh],
-        solver_container[iZone][iInst][FinestMesh],
-        config[iZone], FinestMesh);
-
-    RestrictTurbEddyViscToCoarseLevels(geometry[iZone][iInst],
-                                       solver_container[iZone][iInst],
-                                       config[iZone], FinestMesh,
-                                       config[iZone]->GetnMGLevels());
-  }
-
   /*--- Perform the Full Approximation Scheme multigrid ---*/
 
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
-
-  /*--- After a turb FAS V-cycle: recompute mu_t at the finest active level from the updated
-   *    nu_hat/k/omega and restrict it to all coarser levels.  The flow FAS on the NEXT outer
-   *    iteration uses these mu_t values at every coarse level for the eddy-viscosity coupling.
-   *    (Postprocessing was already called on FinestMesh inside the last PreSmoothing step of
-   *    MultiGrid_Cycle; we call it once more to be safe after the V-cycle correction is applied.) ---*/
-  if (RunTime_EqSystem == RUNTIME_TURB_SYS &&
-      config[iZone]->GetKind_Turb_Model() != TURB_MODEL::NONE) {
-    solver_container[iZone][iInst][FinestMesh][TURB_SOL]->Postprocessing(
-        geometry[iZone][iInst][FinestMesh],
-        solver_container[iZone][iInst][FinestMesh],
-        config[iZone], FinestMesh);
-    RestrictTurbEddyViscToCoarseLevels(geometry[iZone][iInst],
-                                       solver_container[iZone][iInst],
-                                       config[iZone], FinestMesh,
-                                       config[iZone]->GetnMGLevels());
-  }
 
   /*--- Adapt coarse-grid CFL once per cycle using smoothing residuals gathered during the cycle. ---*/
   const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
@@ -469,8 +395,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   PreSmoothing(RunTime_EqSystem, geometry, solver_container, config_container, solver_fine, numerics_fine,
                geometry_fine, solver_container_fine, config, iMesh, iZone, iRKLimit);
 
-  /*--- Assemble the coarse-grid FAS defect term by restricting the fine-grid residual defect,
-   *    solving the coarse-grid state, and prolongating only the state correction back to the fine grid. ---*/
+/*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
 
   if ( iMesh < config->GetnMGLevels() ) {
 
@@ -508,23 +433,10 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     solver_coarse->Preprocessing(geometry_coarse, solver_container_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem, false);
 
-    /*--- For turbulence: ensure flow primitives (density, laminar viscosity) are updated on the
-     *    coarse level from the restricted conservative variables, THEN compute mu_t from the
-     *    newly restricted turbulence variables. This ensures turbulence Postprocessing reads
-     *    valid flow data and Space_Integration uses correct eddy viscosity. ---*/
-    if (RunTime_EqSystem == RUNTIME_TURB_SYS && config->GetKind_Turb_Model() != TURB_MODEL::NONE) {
-      solver_container_coarse[FLOW_SOL]->Preprocessing(geometry_coarse, solver_container_coarse, config, iMesh+1, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-      solver_coarse->Postprocessing(geometry_coarse, solver_container_coarse, config, iMesh+1);
-    }
 
     Space_Integration(geometry_coarse, solver_container_coarse, numerics_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem);
 
-    /*--- Restrict the fine-grid residual defect to the coarse-grid FAS forcing term. ---*/
-    if (RunTime_EqSystem == RUNTIME_FLOW_SYS) {
-      RestrictResidualToCoarseGrid(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
-    } else {
-      SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
-    }
+    SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
 
     /*--- Restore the time integration settings. ---*/
 
@@ -546,12 +458,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
                       iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst);
     }
 
-    /*--- Compute the coarse-grid state correction and prolongate it back to the fine grid. ---*/
-    if (RunTime_EqSystem == RUNTIME_FLOW_SYS) {
-      ProlongateCorrectionToFineGrid(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh);
-    } else {
-      GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
-    }
+    GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
     const auto& mgOpts = config->GetMGOptions();
     SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, mgOpts.MG_CorrecSmooth[iMesh], mgOpts.MG_Smooth_Coeff, config, iMesh);
@@ -912,11 +819,6 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   if (config->GetMGOptions().MG_Smooth_Output) {
     const su2double res = sqrt(solver->LinSysRes.squaredNorm() / (nVar * geometry->GetGlobal_nPointDomain()));
     SU2_OMP_SAFE_GLOBAL_ACCESS(lastCorrecSmoothRMS[iMesh][1] = SU2_TYPE::GetValue(res);)
-
-    if (SU2_MPI::GetRank() == MASTER_NODE && use_conservative_damping) {
-      cout << "[MG CORR-SMOOTH] turbulence nSmooth=" << val_nSmooth
-           << " norm=" << res << "\n";
-    }
   }
 }
 
@@ -1131,32 +1033,6 @@ void CMultiGridIntegration::SetResidual_Term(CGeometry *geometry, CSolver *solve
 
 }
 
-void CMultiGridIntegration::RestrictResidualToCoarseGrid(CSolver *sol_fine, CSolver *sol_coarse,
-                                                        CGeometry *geo_fine, CGeometry *geo_coarse,
-                                                        CConfig *config, unsigned short iMesh) {
-  SU2_ZONE_SCOPED
-
-  /*--- This is the standard FAS restriction step: the fine-grid defect is passed to the
-   *    coarse-grid problem as a forcing term. The existing SetForcing_Term routine already
-   *    implements the conservative volume-weighted transfer and the damping factor in the
-   *    same way the original MG cycle expects. ---*/
-  SetForcing_Term(sol_fine, sol_coarse, geo_fine, geo_coarse, config, iMesh);
-}
-
-void CMultiGridIntegration::ProlongateCorrectionToFineGrid(unsigned short RunTime_EqSystem, CSolver *sol_fine,
-                                                           CSolver *sol_coarse, CGeometry *geo_fine,
-                                                           CGeometry *geo_coarse, CConfig *config,
-                                                           unsigned short iMesh) {
-  SU2_ZONE_SCOPED
-
-  /*--- This is the standard FAS prolongation step: build the coarse-grid state correction,
-   *    then transfer that correction to the fine-grid residual correction. The original
-   *    GetProlongated_Correction routine already performs this transfer in the correct form;
-   *    the additional scaling here would be equivalent to changing the correction operator.
-   *    Keep the transfer operator unchanged and let the existing damping path control the size. ---*/
-  GetProlongated_Correction(RunTime_EqSystem, sol_fine, sol_coarse, geo_fine, geo_coarse, config);
-}
-
 void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
                                                    CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   SU2_ZONE_SCOPED
@@ -1349,37 +1225,4 @@ void CMultiGridIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****s
 
   }
 
-}
-
-void CMultiGridIntegration::RestrictTurbEddyViscToCoarseLevels(CGeometry** geometry, CSolver*** solver,
-                                                               CConfig* config,
-                                                               unsigned short FinestMesh,
-                                                               unsigned short nMGLevels) {
-  SU2_ZONE_SCOPED
-
-  for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; iMesh++) {
-
-    CGeometry* geo_fine   = geometry[iMesh];
-    CGeometry* geo_coarse = geometry[iMesh + 1];
-    CSolver*  sol_fine    = solver[iMesh][TURB_SOL];
-    CSolver*  sol_coarse  = solver[iMesh + 1][TURB_SOL];
-
-    /*--- Volume-weighted restriction of mu_t from fine to coarse. ---*/
-    SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
-    for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
-
-      const su2double Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
-      su2double EddyVisc = 0.0;
-
-      for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-        auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-        su2double Area_Children = geo_fine->nodes->GetVolume(Point_Fine);
-        su2double mu_t = sol_fine->GetNodes()->GetmuT(Point_Fine);
-        EddyVisc += mu_t * Area_Children / Area_Parent;
-      }
-
-      sol_coarse->GetNodes()->SetmuT(Point_Coarse, EddyVisc);
-    }
-    END_SU2_OMP_FOR
-  }
 }

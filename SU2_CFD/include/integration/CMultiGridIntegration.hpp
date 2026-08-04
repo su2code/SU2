@@ -82,18 +82,6 @@ private:
                        CGeometry *geo_coarse, CConfig *config, unsigned short iMesh);
 
   /*!
-   * \brief Restrict the fine-grid residual defect to the coarse-grid FAS forcing term.
-   * \param[in] sol_fine - Pointer to the solution on the fine grid.
-   * \param[in] sol_coarse - Pointer to the solution on the coarse grid.
-   * \param[in] geo_fine - Geometrical definition of the fine grid.
-   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void RestrictResidualToCoarseGrid(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
-                                    CGeometry *geo_coarse, CConfig *config, unsigned short iMesh);
-
-  /*!
    * \brief Add the truncation error to the residual.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] flow - Flow solution.
@@ -193,20 +181,6 @@ private:
                                  CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
   /*!
-   * \brief Prolongate the coarse-grid state correction back to the fine-grid residual correction.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] sol_fine - Pointer to the solution on the fine grid.
-   * \param[in] sol_coarse - Pointer to the solution on the coarse grid.
-   * \param[in] geo_fine - Geometrical definition of the fine grid.
-   * \param[in] geo_coarse - Geometrical definition of the coarse grid.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void ProlongateCorrectionToFineGrid(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
-                                      CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config,
-                                      unsigned short iMesh);
-
-  /*!
    * \brief Do an implicit smoothing of the prolongated correction.
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] solution - Container vector with all the solutions on the finest grid.
@@ -273,26 +247,6 @@ private:
                         passivedouble stag_tol, bool early_exit,
                         passivedouble lastRMS[2], char& exitReason,
                         passivedouble& worstStepRatio, unsigned short& worstStep);
-
-  /*!
-   * \brief Restrict turbulent eddy viscosity from fine to coarser mesh levels.
-   *
-   * After a turbulence FAS V-cycle completes, this function volume-weights restricts
-   * mu_t from the finest mesh down to all coarser levels. The flow solver on the next
-   * outer iteration uses these restricted mu_t values at every coarse level for the
-   * eddy-viscosity coupling. This ensures consistency between flow and turbulence
-   * solutions across the multigrid hierarchy.
-   *
-   * \param[in] geometry - Geometry hierarchy for one zone/instance (all levels).
-   * \param[in] solver - Solver hierarchy for one zone/instance (all levels).
-   * \param[in] config - Problem configuration.
-   * \param[in] FinestMesh - Current finest active mesh index.
-   * \param[in] nMGLevels - Total number of MG levels.
-   */
-  void RestrictTurbEddyViscToCoarseLevels(CGeometry** geometry, CSolver*** solver,
-                                          CConfig* config,
-                                          unsigned short FinestMesh,
-                                          unsigned short nMGLevels);
 
   static constexpr int MAX_MG_LEVELS = 10;
 
