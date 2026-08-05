@@ -59,33 +59,6 @@ static su2double applyGlobalTrend(su2double factor, passivedouble crossCycleRati
   return max(su2double{CLAMP_MIN}, min(su2double{CLAMP_MAX}, factor));
 }
 
-static su2double GetMGLevelCorrectionScale(unsigned short iMesh) {
-  switch (iMesh) {
-    case 0: return 1.00;
-    case 1: return 0.75;
-    case 2: return 0.50;
-    default: return 0.35;
-  }
-}
-
-static passivedouble GetWarmupCFLScale(const std::vector<su2double>& cflScaling,
-                                       unsigned long innerIter,
-                                       unsigned long startupIter) {
-  if (startupIter == 0 || cflScaling.empty()) return 1.0;
-
-  const passivedouble firstScale = max(passivedouble{1e-6}, SU2_TYPE::GetValue(cflScaling.front()));
-  if (innerIter < startupIter) {
-    if (cflScaling.size() > 1) {
-      const passivedouble secondScale = max(passivedouble{1e-6}, SU2_TYPE::GetValue(cflScaling[1]));
-      return firstScale * secondScale;
-    }
-    return firstScale;
-  }
-
-  if (innerIter < 2 * startupIter) return firstScale;
-  return 1.0;
-}
-
 inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
   passivedouble result = 0;
   for (unsigned short iVar = 0; iVar < solver->GetnVar(); ++iVar) {
