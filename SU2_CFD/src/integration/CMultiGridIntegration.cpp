@@ -243,6 +243,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh));
     CGeometry* geo_c = geometry[iZone][iInst][iMesh];
     CSolver* sol_c = solver_container[iZone][iInst][iMesh][Solver_Position];
+    SU2_OMP_SAFE_GLOBAL_ACCESS(sol_c->SetCFL_Local_Stats(CFL_coarse_new);)
     SU2_OMP_FOR_STAT(roundUpDiv(geo_c->GetnPoint(), omp_get_num_threads()))
     for (auto iPoint = 0ul; iPoint < geo_c->GetnPoint(); iPoint++)
       sol_c->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
