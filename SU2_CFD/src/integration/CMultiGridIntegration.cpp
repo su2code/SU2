@@ -185,6 +185,23 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                             config[iZone]);
 
     SU2_OMP_SAFE_GLOBAL_ACCESS(config[iZone]->SubtractFinestMesh();)
+
+    auto nMG = config[iZone]->GetnMGLevels();
+    auto cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh));
+    auto cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
+    cout << "level =" << nMG - FinestMesh << endl;
+    cout <<"finestmesh = " << FinestMesh << endl;
+    cout << "CFL = " << cfl_base << ", scaling factor = " << cflScaling[FinestMesh-1] << endl;
+    // now scale the cfl using the scaling factors by multiplying from the first factor up to the factor for the current level
+    for (unsigned short iMesh = 0; iMesh < FinestMesh-1; ++iMesh) {
+      cout << "scale = " << cflScaling[iMesh] << endl;
+      cfl_base *= cflScaling[iMesh];
+    }
+    cout << "new CFL = " << cfl_base << endl;
+    // set the new base cfl for MESH_0 to the scaled value:
+    SU2_OMP_SAFE_GLOBAL_ACCESS(config[iZone]->SetCFL(MESH_0, cfl_base);)
+
+
   }
 
   /*--- Set the current finest grid (full multigrid strategy) ---*/
@@ -434,7 +451,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
 
     Space_Integration(geometry_coarse, solver_container_coarse, numerics_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem);
-    
+
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
 
     SetForcing_Term(solver_fine, solver_coarse, geometry_fine, geometry_coarse, config, iMesh+1);
