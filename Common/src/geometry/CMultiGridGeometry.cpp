@@ -1474,7 +1474,7 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
       }
 
       /*--- Create the coarse CV from the combined blocks. ---*/
-      for (unsigned short c = 0; c < group.size(); ++c) {
+      for (size_t c = 0; c < group.size(); ++c) {
         fine_grid->nodes->SetParent_CV(group[c], Index_CoarseCV);
         nodes->SetChildren_CV(Index_CoarseCV, c, group[c]);
         reserved[group[c]] = 1;
