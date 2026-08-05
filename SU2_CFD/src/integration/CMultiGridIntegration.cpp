@@ -829,7 +829,7 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
     for (auto iVar = 0u; iVar < nVar; iVar++) {
       /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
       if (Residual_Fine[iVar] != Residual_Fine[iVar])
-Residual_Fine[iVar] = 0.0;
+        Residual_Fine[iVar] = 0.0;
 
       su2double correction = factor * Residual_Fine[iVar];
       Solution_Fine[iVar] += correction;
