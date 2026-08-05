@@ -312,11 +312,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
 
   /*--- Agglomerate high-aspect-ratio interior nodes along implicit lines from walls. ---*/
-  unsigned long Index_CoarseCV_before_implicit_lines = Index_CoarseCV;
-  unsigned long Index_CoarseCV_after_implicit_lines = Index_CoarseCV;
   if (config->GetMGOptions().MG_Implicit_Lines) {
     AgglomerateImplicitLines(Index_CoarseCV, fine_grid, config, MGQueue_InnerCV);
-    Index_CoarseCV_after_implicit_lines = Index_CoarseCV;
   }
 
   /*--- STEP 2: Agglomerate the domain points. ---*/
