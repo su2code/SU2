@@ -223,21 +223,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     if (cfl_base < EPS)
       cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(MESH_0));
 
-    /*--- FMG warmup: all warmup phases (FinestMesh > 0) solve a full problem from
-     *    initial conditions on their active level; coarse-correction levels also
-     *    use non-restricted ICs at first activation. Reduce the base CFL by
-     *    0.5^nMGLevels uniformly across all levels during warmup. This exactly
-     *    replicates running with a reduced CFL_NUMBER during warmup and then
-     *    recovering the full CFL when FinestMesh = 0 (V-cycle phase).
-     *    Example (nMGLevels=2, CFL_NUMBER=100, MG_CFL_SCALING=0.3):
-     *      Warmup phases 1 & 2: base=25, CFL[1]=7.5, CFL[2]=2.25
-     *      V-cycle phase:        base=100, CFL[1]=30,  CFL[2]=9   ---*/
-    if (FinestMesh > 0) {
-      passivedouble warmup_factor = 1.0;
-      for (unsigned short k = 0; k < nMGLevels; ++k) warmup_factor *= 0.01;
-      cfl_base *= warmup_factor;
-    }
-
     const auto& cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
 
     passivedouble CFL_local = cfl_base;

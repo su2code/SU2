@@ -1485,34 +1485,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
 
   if (lines.empty()) return;
 
-  if (rank == MASTER_NODE) {
-    cout << "Implicit line agglomeration: detected " << lines.size() << " lines." << endl;
-    cout << "  Mode: " << (ISOTROPIC ? "ISOTROPIC" : "ANISOTROPIC") << endl;
-    /*--- Show line length distribution ---*/
-    size_t min_len = ULONG_MAX, max_len = 0;
-    su2double avg_len = 0.0;
-    for (const auto& L : lines) {
-      min_len = min(min_len, L.size());
-      max_len = max(max_len, L.size());
-      avg_len += L.size();
-    }
-    if (!lines.empty()) avg_len /= lines.size();
-    cout << "  Line lengths: min=" << min_len << ", max=" << max_len << ", avg=" << std::setprecision(1) << std::fixed
-         << avg_len << endl;
-
-    /*--- Show first few lines for debugging ---*/
-    cout << "  First 5 lines (showing first 4 nodes):" << endl;
-    for (size_t i = 0; i < min(size_t(5), lines.size()); ++i) {
-      cout << "    Line " << i << " (len=" << lines[i].size() << "): [";
-      for (size_t j = 0; j < min(size_t(4), lines[i].size()); ++j) {
-        if (j > 0) cout << ", ";
-        cout << lines[i][j];
-      }
-      if (lines[i].size() > 4) cout << ", ...";
-      cout << "]" << endl;
-    }
-  }
-
   /*--- Agglomeration strategy:
    *    ANISOTROPIC (default): Pair nodes at the SAME distance from wall on DIFFERENT lines.
    *      Each coarse CV has 2 fine children (from adjacent lines).
@@ -1607,16 +1579,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
         nodes->SetChildren_CV(Index_CoarseCV, 3, d);
         nodes->SetnChildren_CV(Index_CoarseCV, 4);
 
-        /*--- Debug output: show CV creation details ---*/
-        if (DEBUG_OUTPUT && Index_CoarseCV < starting_Index_CoarseCV + DEBUG_CV_LIMIT) {
-          const auto* coord_a = fine_grid->nodes->GetCoord(a);
-          const auto* coord_b = fine_grid->nodes->GetCoord(b);
-          cout << "  CV " << Index_CoarseCV << " (ISO): nodes " << a << "+" << b << "+" << c << "+" << d << " | lines["
-               << li1 << "][" << idx1 << "," << idx2 << "]+lines[" << li2_best << "][" << idx1 << "," << idx2 << "]"
-               << " | coord_a=(" << coord_a[0] << "," << coord_a[1] << ")"
-               << " coord_b=(" << coord_b[0] << "," << coord_b[1] << ")" << endl;
-        }
-
         reserved[a] = reserved[b] = reserved[c] = reserved[d] = 1;
         MGQueue_InnerCV.RemoveCV(a);
         MGQueue_InnerCV.RemoveCV(b);
@@ -1677,54 +1639,12 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
         /*--- Geometrical quality check ---*/
         if (!GeometricalCheck(b, fine_grid, config)) continue;
 
-        /*--- Debug: Check line distance and neighbor relationships ---*/
-        if (DEBUG_OUTPUT && Index_CoarseCV < starting_Index_CoarseCV + DEBUG_CV_LIMIT) {
-          /*--- Measure distance between wall vertices of the two lines ---*/
-          const auto wall_a = lines[li1][0];
-          const auto wall_b = lines[li2_best][0];
-          const auto* coord_wall_a = fine_grid->nodes->GetCoord(wall_a);
-          const auto* coord_wall_b = fine_grid->nodes->GetCoord(wall_b);
-          su2double wall_dist =
-              sqrt(pow(coord_wall_a[0] - coord_wall_b[0], 2) + pow(coord_wall_a[1] - coord_wall_b[1], 2));
-
-          /*--- Check if wall vertices are neighbors ---*/
-          bool walls_are_neighbors = false;
-          for (auto neighbor : fine_grid->nodes->GetPoints(wall_a)) {
-            if (neighbor == wall_b) {
-              walls_are_neighbors = true;
-              break;
-            }
-          }
-
-          cout << "  Pairing lines " << li1 << " + " << li2_best << " at pos=" << pos << " | wall_dist=" << wall_dist
-               << " | walls_neighbors=" << (walls_are_neighbors ? "YES" : "NO") << endl;
-        }
-
         /*--- Create 2-child coarse CV (anisotropic: same position, different lines) ---*/
         fine_grid->nodes->SetParent_CV(a, Index_CoarseCV);
         nodes->SetChildren_CV(Index_CoarseCV, 0, a);
         fine_grid->nodes->SetParent_CV(b, Index_CoarseCV);
         nodes->SetChildren_CV(Index_CoarseCV, 1, b);
         nodes->SetnChildren_CV(Index_CoarseCV, 2);
-
-        /*--- Debug output: show CV creation details ---*/
-        if (DEBUG_OUTPUT && Index_CoarseCV < starting_Index_CoarseCV + DEBUG_CV_LIMIT) {
-          const auto* coord_a = fine_grid->nodes->GetCoord(a);
-          const auto* coord_b = fine_grid->nodes->GetCoord(b);
-          su2double dist = sqrt(pow(coord_a[0] - coord_b[0], 2) + pow(coord_a[1] - coord_b[1], 2));
-          bool are_neighbors = false;
-          for (auto neighbor : fine_grid->nodes->GetPoints(a)) {
-            if (neighbor == b) {
-              are_neighbors = true;
-              break;
-            }
-          }
-          cout << "  CV " << Index_CoarseCV << " (ANISO): nodes " << a << "+" << b << " | lines[" << li1 << "][" << pos
-               << "]+lines[" << li2_best << "][" << pos << "]"
-               << " | dist=" << dist << " | neighbors=" << (are_neighbors ? "YES" : "NO") << " | coords A=("
-               << coord_a[0] << "," << coord_a[1] << ")"
-               << " B=(" << coord_b[0] << "," << coord_b[1] << ")" << endl;
-        }
 
         reserved[a] = reserved[b] = 1;
         MGQueue_InnerCV.RemoveCV(a);
@@ -1784,25 +1704,6 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
     if (nNodes_unpaired > 0) {
       cout << "  WARNING: " << nNodes_unpaired << " nodes on implicit lines were left unpaired!" << endl;
       cout << "           These will be processed by domain agglomeration (may create wrong orientation)." << endl;
-
-      /*--- Show first few unpaired nodes ---*/
-      unsigned long count = 0;
-      for (size_t li = 0; li < lines.size() && count < 10; ++li) {
-        const auto& L = lines[li];
-        for (size_t i = 1; i < L.size() && count < 10; ++i) {
-          if (!reserved[L[i]]) {
-            cout << "    Unpaired: line " << li << " node " << L[i] << " at position " << i << endl;
-            count++;
-          }
-        }
-      }
-    }
-    if (ISOTROPIC) {
-      cout << "  Expected ratio: ~4 nodes per CV (actual: " << std::setprecision(2) << std::fixed
-           << (nCVs_created > 0 ? su2double(nNodes_claimed) / su2double(nCVs_created) : 0.0) << ")" << endl;
-    } else {
-      cout << "  Expected ratio: ~2 nodes per CV (actual: " << std::setprecision(2) << std::fixed
-           << (nCVs_created > 0 ? su2double(nNodes_claimed) / su2double(nCVs_created) : 0.0) << ")" << endl;
     }
   }
 

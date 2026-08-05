@@ -49,6 +49,23 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   CGeometry* geometry_fine = geometry[iZone][iInst][FinestMesh];
   CSolver** solvers_fine = solver_container[iZone][iInst][FinestMesh];
 
+  if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
+    /*--- config[iZone]->GetCFL(FinestMesh) is already scaled for the active MG level
+     *    by CMultiGridIntegration's per-level CFL rebuild (chain of MG_CFL_SCALING
+     *    factors down to FinestMesh), including during FMG warmup. Do not re-apply
+     *    that scaling here or it gets squared during warmup. ---*/
+    const su2double turbReduction = SU2_TYPE::GetValue(config[iZone]->GetCFLRedCoeff_Turb());
+    const su2double turbCFL = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh)) * turbReduction;
+    auto* turbSolver = solvers_fine[Solver_Position];
+
+    SU2_OMP_SAFE_GLOBAL_ACCESS(turbSolver->SetCFL_Local_Stats(turbCFL);)
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry_fine->GetnPoint(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geometry_fine->GetnPoint(); ++iPoint) {
+      turbSolver->GetNodes()->SetLocalCFL(iPoint, turbCFL);
+    }
+    END_SU2_OMP_FOR
+  }
+
   /*--- Preprocessing ---*/
 
   solvers_fine[Solver_Position]->Preprocessing(geometry_fine, solvers_fine, config[iZone],
