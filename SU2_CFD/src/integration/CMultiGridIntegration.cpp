@@ -31,6 +31,7 @@
 #include <cmath>
 #include <iostream>
 #include <algorithm>
+#include <map>
 
 using namespace std;
 
@@ -65,6 +66,24 @@ static su2double GetMGLevelCorrectionScale(unsigned short iMesh) {
     case 2: return 0.50;
     default: return 0.35;
   }
+}
+
+static passivedouble GetWarmupCFLScale(const std::vector<su2double>& cflScaling,
+                                       unsigned long innerIter,
+                                       unsigned long startupIter) {
+  if (startupIter == 0 || cflScaling.empty()) return 1.0;
+
+  const passivedouble firstScale = max(passivedouble{1e-6}, SU2_TYPE::GetValue(cflScaling.front()));
+  if (innerIter < startupIter) {
+    if (cflScaling.size() > 1) {
+      const passivedouble secondScale = max(passivedouble{1e-6}, SU2_TYPE::GetValue(cflScaling[1]));
+      return firstScale * secondScale;
+    }
+    return firstScale;
+  }
+
+  if (innerIter < 2 * startupIter) return firstScale;
+  return 1.0;
 }
 
 inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
@@ -186,20 +205,29 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
     SU2_OMP_SAFE_GLOBAL_ACCESS(config[iZone]->SubtractFinestMesh();)
 
-    auto nMG = config[iZone]->GetnMGLevels();
-    auto cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh));
-    auto cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
-    cout << "level =" << nMG - FinestMesh << endl;
-    cout <<"finestmesh = " << FinestMesh << endl;
-    cout << "CFL = " << cfl_base << ", scaling factor = " << cflScaling[FinestMesh-1] << endl;
-    // now scale the cfl using the scaling factors by multiplying from the first factor up to the factor for the current level
-    for (unsigned short iMesh = 0; iMesh < FinestMesh-1; ++iMesh) {
-      cout << "scale = " << cflScaling[iMesh] << endl;
-      cfl_base *= cflScaling[iMesh];
+    /*--- Full-MG warmup: seed the history CFL with the base CFL scaled by the
+     *    current warmup phase, so Avg_CFL_Local matches what the solver uses. ---*/
+    static std::map<unsigned short, passivedouble> base_cfl_by_zone;
+    if (base_cfl_by_zone.find(iZone) == base_cfl_by_zone.end()) {
+      base_cfl_by_zone[iZone] = SU2_TYPE::GetValue(config[iZone]->GetCFL(MESH_0));
     }
-    cout << "new CFL = " << cfl_base << endl;
-    // set the new base cfl for MESH_0 to the scaled value:
-    SU2_OMP_SAFE_GLOBAL_ACCESS(config[iZone]->SetCFL(MESH_0, cfl_base);)
+
+    const auto& cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
+    const unsigned long innerIter = config[iZone]->GetInnerIter();
+    const passivedouble cfl_base = base_cfl_by_zone[iZone];
+    const passivedouble warmupScale = GetWarmupCFLScale(cflScaling, innerIter, startup_iter);
+    const passivedouble warmupCFL = cfl_base * warmupScale;
+
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+    {
+      config[iZone]->SetCFL(MESH_0, warmupCFL);
+      CGeometry* geo_c = geometry[iZone][iInst][MESH_0];
+      CSolver* sol_c = solver_container[iZone][iInst][MESH_0][Solver_Position];
+      sol_c->SetAvg_CFL_Local(warmupCFL);
+      for (auto iPoint = 0ul; iPoint < geo_c->GetnPoint(); iPoint++)
+        sol_c->GetNodes()->SetLocalCFL(iPoint, warmupCFL);
+    }
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
 
   }
