@@ -50,10 +50,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   CSolver** solvers_fine = solver_container[iZone][iInst][FinestMesh];
 
   if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
-    /*--- config[iZone]->GetCFL(FinestMesh) is already scaled for the active MG level
-     *    by CMultiGridIntegration's per-level CFL rebuild (chain of MG_CFL_SCALING
-     *    factors down to FinestMesh), including during FMG warmup. Do not re-apply
-     *    that scaling here or it gets squared during warmup. ---*/
+    /*--- CFL scaling of turbulence during the warmup phase if FMG. ---*/
     const su2double turbReduction = SU2_TYPE::GetValue(config[iZone]->GetCFLRedCoeff_Turb());
     const su2double turbCFL = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh)) * turbReduction;
     auto* turbSolver = solvers_fine[Solver_Position];

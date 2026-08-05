@@ -425,7 +425,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     solver_coarse->Preprocessing(geometry_coarse, solver_container_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem, false);
 
-
     Space_Integration(geometry_coarse, solver_container_coarse, numerics_coarse, config, iMesh+1, NO_RK_ITER, RunTime_EqSystem);
 
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
@@ -451,6 +450,9 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       MultiGrid_Cycle(geometry, solver_container, numerics_container, config_container,
                       iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst);
     }
+
+    /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +
+          Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
 
     GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 

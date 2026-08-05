@@ -431,46 +431,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   nPointDomain = Index_CoarseCV;
   nPoint = nPointDomain;
 
-  /*--- DIAGNOSTIC: Check CV child counts after domain agglomeration ---*/
-  if (config->GetMGOptions().MG_Implicit_Lines && (rank == MASTER_NODE)) {
-    unsigned long nCVs_1child = 0, nCVs_2child = 0, nCVs_3child = 0, nCVs_4child = 0, nCVs_other = 0;
-    unsigned long n_corrupted_implicit_CVs = 0;
-    for (auto iCV = Index_CoarseCV_before_implicit_lines; iCV < Index_CoarseCV_after_implicit_lines; iCV++) {
-      const auto nChildren = nodes->GetnChildren_CV(iCV);
-      if (nChildren == 1)
-        nCVs_1child++;
-      else if (nChildren == 2)
-        nCVs_2child++;
-      else if (nChildren == 3)
-        nCVs_3child++;
-      else if (nChildren == 4)
-        nCVs_4child++;
-      else
-        nCVs_other++;
-
-      if (nChildren != 2 && !config->GetMGOptions().MG_Implicit_Lines_Isotropic) {
-        n_corrupted_implicit_CVs++;
-        if (n_corrupted_implicit_CVs <= 5) {
-          cout << "  CORRUPTION DETECTED in CV " << iCV << ": has " << nChildren << " children (expected 2)" << endl;
-          cout << "    Children nodes: ";
-          for (unsigned short iChild = 0; iChild < nChildren; iChild++) {
-            cout << nodes->GetChildren_CV(iCV, iChild);
-            if (iChild < nChildren - 1) cout << ", ";
-          }
-          cout << endl;
-        }
-      }
-    }
-    if (n_corrupted_implicit_CVs > 0) {
-      cout << "  AFTER DOMAIN AGGLOMERATION: " << n_corrupted_implicit_CVs
-           << " implicit line CVs were corrupted (child count != 2)" << endl;
-      cout << "    Distribution in implicit line CVs: 1-child=" << nCVs_1child << ", 2-child=" << nCVs_2child
-           << ", 3-child=" << nCVs_3child << ", 4-child=" << nCVs_4child;
-      if (nCVs_other > 0) cout << ", other=" << nCVs_other;
-      cout << endl;
-    }
-  }
-
   /*--- Check that there are no hanging nodes. Detect isolated points
    (only 1 neighbor), and merge their children CV's with the neighbor. ---*/
 
@@ -541,67 +501,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
       nodes->SetnChildren_CV(iCoarsePoint_Complete, nChildren);
       nodes->SetnChildren_CV(iCoarsePoint, 0);
-    }
-  }
-
-  /*--- Diagnostic: Check if implicit line CVs were corrupted by hanging node correction ---*/
-  if (config->GetMGOptions().MG_Implicit_Lines && (rank == MASTER_NODE)) {
-    unsigned long nCVs_1child = 0, nCVs_2child = 0, nCVs_3child = 0, nCVs_4child = 0, nCVs_other = 0;
-    unsigned long n_corrupted_after_hanging = 0;
-    for (auto iCV = Index_CoarseCV_before_implicit_lines; iCV < Index_CoarseCV_after_implicit_lines; iCV++) {
-      const auto nChildren = nodes->GetnChildren_CV(iCV);
-      if (nChildren == 1)
-        nCVs_1child++;
-      else if (nChildren == 2)
-        nCVs_2child++;
-      else if (nChildren == 3)
-        nCVs_3child++;
-      else if (nChildren == 4)
-        nCVs_4child++;
-      else
-        nCVs_other++;
-
-      if (nChildren != 2 && !config->GetMGOptions().MG_Implicit_Lines_Isotropic) {
-        n_corrupted_after_hanging++;
-      }
-    }
-    if (n_corrupted_after_hanging > 0) {
-      cout << "  AFTER HANGING NODE CORRECTION: " << n_corrupted_after_hanging
-           << " implicit line CVs corrupted (child count != 2)" << endl;
-      cout << "    Distribution in implicit line CVs: 1-child=" << nCVs_1child << ", 2-child=" << nCVs_2child
-           << ", 3-child=" << nCVs_3child << ", 4-child=" << nCVs_4child;
-      if (nCVs_other > 0) cout << ", other=" << nCVs_other;
-      cout << endl;
-    }
-  }
-
-  /*--- Final summary of all CVs ---*/
-  if (config->GetMGOptions().MG_Implicit_Lines && (rank == MASTER_NODE)) {
-    cout << "  Expected ratio: ~2 nodes per CV (actual: " << fixed << setprecision(2)
-         << (double)fine_grid->GetnPoint() / (double)nPointDomain << ")" << endl;
-
-    unsigned long nCVs_1child = 0, nCVs_2child = 0, nCVs_3child = 0, nCVs_4child = 0, nCVs_other = 0;
-    for (auto iCV = 0ul; iCV < nPointDomain; iCV++) {
-      const auto nChildren = nodes->GetnChildren_CV(iCV);
-      if (nChildren == 1)
-        nCVs_1child++;
-      else if (nChildren == 2)
-        nCVs_2child++;
-      else if (nChildren == 3)
-        nCVs_3child++;
-      else if (nChildren == 4)
-        nCVs_4child++;
-      else
-        nCVs_other++;
-    }
-    cout << "  CV distribution: 1-child=" << nCVs_1child << ", 2-child=" << nCVs_2child << ", 3-child=" << nCVs_3child
-         << ", 4-child=" << nCVs_4child;
-    if (nCVs_other > 0) cout << ", other=" << nCVs_other;
-    cout << endl;
-
-    if (nCVs_3child > 0 || (!config->GetMGOptions().MG_Implicit_Lines_Isotropic && nCVs_4child > 0)) {
-      cout << "  WARNING: Detected unexpected CV child counts (3-child=" << nCVs_3child << ", 4-child=" << nCVs_4child
-           << " in ANISO mode)" << endl;
     }
   }
 
@@ -1431,10 +1330,7 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
       norm_prev = sqrt(norm_prev);
       for (unsigned short d = 0; d < nDim; ++d) prev_dir[d] /= norm_prev;
 
-      /*--- Build the implicit line by following the best-aligned interior neighbor.
-       *    Nodes already on this line are excluded from candidacy so the walk
-       *    cannot fold back on itself (the angle threshold alone would only make
-       *    that unlikely, not impossible, on distorted meshes). ---*/
+      /*--- Build the implicit line by following the best-aligned interior neighbor. ---*/
       vector<unsigned long> L;
       L.push_back(iPoint);
       auto current = iPoint;
