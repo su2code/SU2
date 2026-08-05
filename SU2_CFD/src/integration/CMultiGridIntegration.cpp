@@ -204,64 +204,33 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                             config[iZone]);
 
     SU2_OMP_SAFE_GLOBAL_ACCESS(config[iZone]->SubtractFinestMesh();)
-
-    /*--- Full-MG warmup: seed the history CFL with the base CFL scaled by the
-     *    current warmup phase, so Avg_CFL_Local matches what the solver uses. ---*/
-    static std::map<unsigned short, passivedouble> base_cfl_by_zone;
-    if (base_cfl_by_zone.find(iZone) == base_cfl_by_zone.end()) {
-      base_cfl_by_zone[iZone] = SU2_TYPE::GetValue(config[iZone]->GetCFL(MESH_0));
-    }
-
-    const auto& cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
-    const unsigned long innerIter = config[iZone]->GetInnerIter();
-    const passivedouble cfl_base = base_cfl_by_zone[iZone];
-    const passivedouble warmupScale = GetWarmupCFLScale(cflScaling, innerIter, startup_iter);
-    const passivedouble warmupCFL = cfl_base * warmupScale;
-
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
-      config[iZone]->SetCFL(MESH_0, warmupCFL);
-      CGeometry* geo_c = geometry[iZone][iInst][MESH_0];
-      CSolver* sol_c = solver_container[iZone][iInst][MESH_0][Solver_Position];
-      sol_c->SetAvg_CFL_Local(warmupCFL);
-      for (auto iPoint = 0ul; iPoint < geo_c->GetnPoint(); iPoint++)
-        sol_c->GetNodes()->SetLocalCFL(iPoint, warmupCFL);
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-
-
   }
 
   /*--- Set the current finest grid (full multigrid strategy) ---*/
 
   FinestMesh = config[iZone]->GetFinestMesh();
 
-  /*--- Perform the Full Approximation Scheme multigrid ---*/
-
-  MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
-                  FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
-
-  /*--- Adapt coarse-grid CFL once per cycle using smoothing residuals gathered during the cycle. ---*/
+  /*--- Rebuild coarse-grid CFL before the cycle so the currently active FMG
+   *    level uses the intended CFL in this iteration. ---*/
   const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   {
-    /*--- Use the current finest-grid CFL as the base for deterministic
-     *    coarse-level scaling. Fall back to config scalar when local CFL
-     *    adaptation is disabled. ---*/
+    /*--- Use the level-0 flow CFL as the base reference and derive all coarse
+     *    levels from it via MG_CFL_SCALING[i] = CFL(i+1)/CFL(i). Fall back to
+     *    config scalar when local level-0 CFL is unavailable. ---*/
     passivedouble cfl_base = SU2_TYPE::GetValue(
-      solver_container[iZone][iInst][FinestMesh][Solver_Position]->GetAvg_CFL_Local());
+      solver_container[iZone][iInst][MESH_0][Solver_Position]->GetAvg_CFL_Local());
     if (cfl_base < EPS)
-      cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh));
+      cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(MESH_0));
 
     const auto& cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
 
     passivedouble CFL_local = cfl_base;
-    for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
-      const unsigned short lvl = iMesh + 1;
-      /*--- Use per-level scaling factor to increase coarse CFL (allows values > 1.0).
-       *    Index into cflScaling is iMesh (0-based transition). ---*/
-      const passivedouble scale = (iMesh < cflScaling.size())
-          ? max(passivedouble{1e-6}, SU2_TYPE::GetValue(cflScaling[iMesh]))
+    for (unsigned short lvl = 1; lvl <= nMGLevels; ++lvl) {
+      /*--- Index into cflScaling is (lvl-1): transition lvl-1 -> lvl. ---*/
+      const unsigned short iScale = lvl - 1;
+      const passivedouble scale = (iScale < cflScaling.size())
+          ? max(passivedouble{1e-6}, SU2_TYPE::GetValue(cflScaling[iScale]))
           : passivedouble{0.25};
       CFL_local *= scale;
       config[iZone]->SetCFL(lvl, CFL_local);
@@ -269,16 +238,21 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  /*--- Propagate the updated coarse-grid CFL to every coarse-grid point (all threads). ---*/
-  for (unsigned short iMesh = FinestMesh; iMesh < nMGLevels; ++iMesh) {
-    const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh+1));
-    CGeometry* geo_c = geometry[iZone][iInst][iMesh+1];
-    CSolver* sol_c = solver_container[iZone][iInst][iMesh+1][Solver_Position];
+  /*--- Propagate updated CFL to all coarse-grid points before the cycle. ---*/
+  for (unsigned short iMesh = 1; iMesh <= nMGLevels; ++iMesh) {
+    const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh));
+    CGeometry* geo_c = geometry[iZone][iInst][iMesh];
+    CSolver* sol_c = solver_container[iZone][iInst][iMesh][Solver_Position];
     SU2_OMP_FOR_STAT(roundUpDiv(geo_c->GetnPoint(), omp_get_num_threads()))
     for (auto iPoint = 0ul; iPoint < geo_c->GetnPoint(); iPoint++)
       sol_c->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
     END_SU2_OMP_FOR
   }
+
+  /*--- Perform the Full Approximation Scheme multigrid ---*/
+
+  MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
+                  FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
 
