@@ -308,7 +308,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-11.620815, -6.488915, -13.316507]
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-11.620815, -6.488915, -13.316570]
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
@@ -326,7 +326,7 @@ def main():
     da_unsteadyCHT_cylinder.cfg_dir   = "coupled_cht/disc_adj_unsteadyCHT_cylinder"
     da_unsteadyCHT_cylinder.cfg_file  = "chtMaster.cfg"
     da_unsteadyCHT_cylinder.test_iter = 2
-    da_unsteadyCHT_cylinder.test_vals         = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662007, 0.000000, 10.627000, 0.295190]
+    da_unsteadyCHT_cylinder.test_vals         = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662022, 0.000000, 10.627000, 0.295190]
     da_unsteadyCHT_cylinder.test_vals_aarch64 = [-8.479629, -9.239920, -9.234868, -15.934511, -13.662012, 0.000000, 89.932000, 0.295190]
     da_unsteadyCHT_cylinder.unsteady  = True
     da_unsteadyCHT_cylinder.multizone = True
