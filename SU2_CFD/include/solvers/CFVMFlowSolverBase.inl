@@ -317,7 +317,7 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
   if (!coloring.empty()) {
     /*--- If the reducer strategy is used we are not constrained by group
      *    size as we have no other edge loops in the Euler/NS solvers. ---*/
-    auto groupSize = ReducerStrategy ? 1ul : geometry.GetEdgeColorGroupSize();
+    auto groupSize = static_cast<su2uint>(ReducerStrategy ? 1ul : geometry.GetEdgeColorGroupSize());
     auto nColor = coloring.getOuterSize();
     EdgeColoring.reserve(nColor);
 
@@ -445,11 +445,11 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Limiter(CGeometry* geometry, const C
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry, CSolver **solver_container,
-                                                     CNumerics *numerics, CConfig *config) {
+CNumerics::ResidualType<> CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeometry *geometry,
+                                                                          CSolver **solver_container,
+                                                                          CNumerics *numerics, CConfig *config) {
   SU2_ZONE_SCOPED
 
-  const bool implicit  = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool tkeNeeded = (config->GetKind_Turb_Model() == TURB_MODEL::SST);
   const bool backscatter = config->GetSBSParam().StochasticBackscatter;
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
@@ -518,17 +518,14 @@ void CFVMFlowSolverBase<V, R>::Viscous_Residual_impl(unsigned long iEdge, CGeome
 
   if (ReducerStrategy) {
     EdgeFluxes.SubtractBlock(iEdge, residual);
-    if (implicit)
-      Jacobian.UpdateBlocksSub(iEdge, residual.jacobian_i, residual.jacobian_j);
   }
   else {
     LinSysRes.SubtractBlock(iPoint, residual);
     LinSysRes.AddBlock(jPoint, residual);
-
-    if (implicit)
-      Jacobian.UpdateBlocksSub(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
   }
 
+  /*--- The Jacobians are applied by the caller, fused with the convective contribution. ---*/
+  return residual;
 }
 
 template <class V, ENUM_REGIME R>
@@ -596,42 +593,33 @@ void CFVMFlowSolverBase<V, R>::ComputeVerificationError(CGeometry* geometry, CCo
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::ComputeUnderRelaxationFactor(const CConfig* config) {
+void CFVMFlowSolverBase<V, R>::CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) {
   SU2_ZONE_SCOPED
 
-  /* Loop over the solution update given by relaxing the linear
-   system for this nonlinear iteration. */
+  if constexpr (R == ENUM_REGIME::COMPRESSIBLE) ComputeUnderRelaxationFactor(config);
 
-  const su2double allowableRatio = config->GetMaxUpdateFractionFlow();
+  /*--- Update solution with under-relaxation and communicate it. ---*/
 
-  SU2_OMP_FOR_STAT(omp_chunk_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    su2double localUnderRelaxation = 1.0;
-
-    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      /* We impose a limit on the maximum percentage that the
-       density and energy can change over a nonlinear iteration. */
-
-      if ((iVar == 0) || (iVar == nVar - 1)) {
-        const unsigned long index = iPoint * nVar + iVar;
-        su2double ratio = fabs(LinSysSol[index]) / (fabs(nodes->GetSolution(iPoint, iVar)) + EPS);
-        if (ratio > allowableRatio) {
-          localUnderRelaxation = min(allowableRatio / ratio, localUnderRelaxation);
-        }
+  if (!config->GetContinuous_Adjoint()) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+        nodes->AddSolution(iPoint, iVar, nodes->GetUnderRelaxation(iPoint) * LinSysSol(iPoint, iVar));
       }
     }
-
-    /* Threshold the relaxation factor in the event that there is
-     a very small value. This helps avoid catastrophic crashes due
-     to non-realizable states by canceling the update. */
-
-    if (localUnderRelaxation < 1e-10) localUnderRelaxation = 0.0;
-
-    /* Store the under-relaxation factor for this point. */
-
-    nodes->SetUnderRelaxation(iPoint, localUnderRelaxation);
+    END_SU2_OMP_FOR
   }
-  END_SU2_OMP_FOR
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  }
+
+  InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
+
+  /*--- For verification cases, compute the global error metrics. ---*/
+  ComputeVerificationError(geometry, config);
 }
 
 template <class V, ENUM_REGIME R>
@@ -1022,7 +1010,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
    *    species solver does all the Pre-/Postprocessing. ---*/
   if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
       config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
-    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
   }
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -1035,7 +1023,7 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
     if (config->GetKind_Turb_Model() == TURB_MODEL::NONE &&
         config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
-      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     }
   }
 
@@ -1305,13 +1293,14 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
 
       auto ModifyJacobian = [&](const unsigned long jPoint) {
         su2double jac[MAXNVAR * MAXNVAR], newJac[MAXNVAR * MAXNVAR];
-        auto* block = Jacobian.GetBlock(iPoint, jPoint);
-        for (auto iVar = 0u; iVar < nVar * nVar; iVar++) jac[iVar] = block[iVar];
+        const auto view = Jacobian.GetBlockView(iPoint, jPoint);
+        if (!view) return;
+        for (auto iVar = 0u; iVar < nVar; iVar++)
+          for (auto jVar = 0u; jVar < nVar; jVar++) jac[iVar * nVar + jVar] = view(iVar, jVar);
 
         CBlasStructure().gemm(nVar, nVar, nVar, mat, jac, newJac, config);
 
-        for (auto iVar = 0u; iVar < nVar * nVar; iVar++)
-          block[iVar] = SU2_TYPE::GetValue(newJac[iVar]);
+        Jacobian.SetBlock(iPoint, jPoint, newJac);
       };
       ModifyJacobian(iPoint);
       for (size_t iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
@@ -1604,6 +1593,8 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
   ErrorCounter = 0;
   END_SU2_OMP_MASTER
 
+  su2activevector* massFluxes = config->GetBounded_Scalar() ? &EdgeMassFluxes : nullptr;
+
   /*--- For hybrid parallel AD, pause preaccumulation if there is shared reading of
   * variables, otherwise switch to the faster adjoint evaluation mode. ---*/
   bool pausePreacc = false;
@@ -1624,9 +1615,9 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
       }
 
       if (ReducerStrategy) {
-        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::REDUCTION, mask, EdgeFluxes, Jacobian);
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::REDUCTION, mask, EdgeFluxes, Jacobian, massFluxes);
       } else {
-        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian);
+        edgeNumerics->ComputeFlux(iEdge, *config, *geometry, *nodes, UpdateType::COLORING, mask, LinSysRes, Jacobian, massFluxes);
       }
       if (MGLevel == MESH_0) {
         for (auto j = 0ul; j < Double::Size; ++j)
@@ -2544,11 +2535,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       }
 
       Viscosity = nodes->GetLaminarViscosity(iPoint);
+      su2double EddyViscosity = 0.0;
       if (roughwall) {
         WALL_TYPE WallType;
         su2double Roughness_Height;
         tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-        if (WallType == WALL_TYPE::ROUGH) Viscosity += nodes->GetEddyViscosity(iPoint);
+        if (WallType == WALL_TYPE::ROUGH) {
+          EddyViscosity = nodes->GetEddyViscosity(iPoint);
+          Viscosity += EddyViscosity;
+        }
       }
       Density = nodes->GetDensity(iPoint);
 
@@ -2562,7 +2557,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       /*--- If necessary evaluate the QCR contribution to Tau ---*/
 
-      if (QCR) CNumerics::AddQCR(nDim, Grad_Vel, Tau);
+      if (QCR) CNumerics::AddQCR(nDim, Grad_Vel, Tau, EddyViscosity / Viscosity);
 
       /*--- Project Tau in each surface element ---*/
 

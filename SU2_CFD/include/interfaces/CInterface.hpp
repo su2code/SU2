@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../../Common/include/option_structure.hpp"
 
 #include <cmath>
 #include <string>
@@ -77,7 +78,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CInterface(void);
+  CInterface();
 
   /*!
    * \overload
@@ -89,7 +90,7 @@ public:
   /*!
    * \brief Destructor of the class.
    */
-  virtual ~CInterface(void);
+  virtual ~CInterface();
 
   /*!
    * \brief Interpolate data and broadcast it into all processors, for nonmatching meshes.
@@ -224,4 +225,11 @@ public:
    * \param[in] val_contact_resistance - Contact resistance value in m^2/W
    */
   inline virtual void SetContactResistance(su2double val_contact_resistance) {};
+
+  /*!
+   * \brief These can be used to chain interfaces between the same zones but for other variables,
+   * without having to mix physics in the interface classes. Currently this is used for FSI+CHT.
+   */
+  ENUM_TRANSFER NextInterfaceType = ENUM_TRANSFER::NO_TRANSFER;
+  CInterface* NextInterface = nullptr;
 };
