@@ -147,6 +147,8 @@ int main(int argc, char *argv[]) {
 
   driver->Finalize();
 
+  /* INITIALIZE MACHINE LEARNING FROM HERE */
+  
   delete driver;
 
   /*--- Finalize AD. ---*/
