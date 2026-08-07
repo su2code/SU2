@@ -25,6 +25,11 @@
 * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#pragma once
+
+#ifndef SU2_COMMON_LINEAR_ALGEBRA_GPUCOMMS_CUH
+#define SU2_COMMON_LINEAR_ALGEBRA_GPUCOMMS_CUH
+
 #include<cuda_runtime.h>
 #include<iostream>
 
@@ -52,15 +57,4 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
 
 #define gpuErrChk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 
-/*!
- * \brief Prefetch a CUDA Unified Memory array to a device asynchronously
- * \param[in] ptr, pointer to the memory we want to prefetch.
- * \param[in] size in bytes.
- * \tparam ZeroInit, initialize memory to 0.
- */
-template <class T>
-inline void gpu_um_prefetch(T* ptr, size_t size, int device) noexcept {
-#ifdef HAVE_CUDA
-  gpuErrChk(cudaMemPrefetchAsync((void*)ptr, size, device));
-#endif
-}
+#endif  // SU2_COMMON_LINEAR_ALGEBRA_GPUCOMMS_CUH

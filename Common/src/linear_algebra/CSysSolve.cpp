@@ -108,13 +108,19 @@ void LinearCombinationImpl(const unsigned long n, const Vectors& vs, const Weigh
 template <class ScalarType, class Weights>
 void LinearCombinationImpl(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs, const Weights& ws,
                            CSysVector<ScalarType>& v, bool inc = false) {
-#ifdef HAVE_CUDA
-  std::vector<ScalarType> ws_host(n);  // collect weights into simple host array
-  for (unsigned long i = 0; i < n; ++i) {
-    ws_host[i] = static_cast<ScalarType>(ws(i));
+#ifdef SU2_ENABLE_CUDA_KERNELS
+  if constexpr (su2_gpu_capable_v<ScalarType>) {
+    std::vector<ScalarType> ws_host(n);  // collect weights into simple host array
+    for (unsigned long i = 0; i < n; ++i) {
+      ws_host[i] = static_cast<ScalarType>(ws(i));
+    }
+    BEGIN_SU2_DEVICE_REGION
+    CSysVector<ScalarType>::LinearCombinationGPU(n, vs, ws_host.data(), v, inc);
+    END_SU2_DEVICE_REGION
+    return;
+  } else {
+    SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
   }
-  CSysVector<ScalarType>::LinearCombinationGPU(n, vs, ws_host.data(), v, inc);
-  return;
 #endif
 
   LinearCombinationImpl(
@@ -437,7 +443,7 @@ unsigned long CSysSolve<ScalarType>::FGMRES_LinSolver(const CSysVector<ScalarTyp
   const bool flexible = !precond.IsIdentity();
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
    * we still want to parallelize some of the expensive operations. ---*/
-  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
+  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1 && !VecExpr::UseDeviceExpressions();
 
   /*---  Check the subspace size ---*/
 
@@ -674,7 +680,7 @@ unsigned long CSysSolve<ScalarType>::FGCRODR_LinSolverImpl(const CSysVector<Scal
   const bool masterRank = SU2_MPI::GetRank() == MASTER_NODE;
   /*--- If we call the solver outside of a parallel region, but the number of threads allows,
    * we still want to parallelize some of the expensive operations. ---*/
-  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1;
+  const bool nestedParallel = !omp_in_parallel() && omp_get_max_threads() > 1 && !VecExpr::UseDeviceExpressions();
 
   /*--- Check the subspace size. ---*/
 
@@ -1474,7 +1480,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
   auto externalFunction = [&]() {
     /*--- Create matrix-vector product, preconditioner, and solve the linear system ---*/
 
-    HandleTemporariesIn(LinSysRes, LinSysSol);
+    HandleTemporariesIn(LinSysRes, LinSysSol, config->GetCUDA());
 
     auto mat_vec = CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
 
@@ -1549,7 +1555,7 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
     }
     END_SU2_OMP_MASTER
 
-    HandleTemporariesOut(LinSysSol);
+    HandleTemporariesOut(LinSysSol, config->GetCUDA());
 
     delete normal_prec;
     delete nested_prec;
@@ -1579,7 +1585,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
           if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
           break;
         case LU_SGS:
-          /*--- Nothing to build. ---*/
+        case Q_LU_SGS:
+          /*--- Nothing to build (transpose path not supported for Q_LU_SGS, see CSysMatrix::Initialize). ---*/
           break;
         case PASTIX_ILU:
         case PASTIX_LU_P:

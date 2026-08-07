@@ -52,15 +52,10 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
   if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
 
-#ifdef HAVE_CUDA
-  useCuda = true;
-#endif
-  if (useCuda) {
-    if (d_vec_val == nullptr) {
-      d_vec_val = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
-    }
-    MarkHostDirty();
-  }
+  /*--- Device storage mirrors the host allocation; free first so that re-initializing a
+   * vector does not leak it. ---*/
+  GPUMemoryAllocation::gpu_free(d_vec_val);
+  d_vec_val = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
 
 #ifdef HAVE_OMP
   dot_scratch.reset(new ScalarType[omp_get_max_threads()]);
@@ -82,14 +77,20 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
                                                               const size_t m) {
   SU2_ZONE_SCOPED
 
-#ifdef HAVE_CUDA
-  return multiDotGPU(V, i0, n, W, m);
-#endif
-
-  static constexpr size_t BLOCK_SIZE = 1024;
   static su2matrix<ScalarType> shared;
 
   if (n == 0 || m == 0) return shared;
+
+#ifdef SU2_ENABLE_CUDA_KERNELS
+  if constexpr (su2_gpu_capable_v<ScalarType>) {
+    BEGIN_SU2_DEVICE_REGION
+    shared = multiDotGPU(V, i0, n, W, m);
+    END_SU2_DEVICE_REGION
+  } else {
+    SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+  }
+#else
+  static constexpr size_t BLOCK_SIZE = 1024;
 
   SU2_OMP_BARRIER
   const size_t size = V[0].nElmDomain;
@@ -141,7 +142,7 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
 
   /*--- All threads have the same view of the result. ---*/
   SU2_OMP_BARRIER
-
+#endif
   return shared;
 }
 
@@ -152,9 +153,7 @@ CSysVector<ScalarType>::~CSysVector() {
   }
   MemoryAllocation::aligned_free(vec_val);
 
-  if (useCuda) {
-    GPUMemoryAllocation::gpu_free(d_vec_val);
-  }
+  GPUMemoryAllocation::gpu_free(d_vec_val);
 }
 
 /*--- Explicit instantiations ---*/

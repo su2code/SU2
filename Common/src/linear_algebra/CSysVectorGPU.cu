@@ -27,198 +27,90 @@
 
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
-#include "../../include/linear_algebra/gpu_ast.hpp"
-#include <execinfo.h> // Needed for backtrace and backtrace_symbols
-#include <cstdlib>
+#include <cublas_v2.h>
+#include <algorithm>
+#include <type_traits>
+#include <vector>
 
-/*!
- * \brief evaluates the abstract syntax tree iteratively.
- * The tree is unrolled to prevent recursion and undefinite memory mapping.
- */
-template <typename ScalarType>
-__device__ __forceinline__ ScalarType EvaluateASTIterative(const GPUASTPayload<ScalarType>& payload,
-                                                            unsigned long elem_idx) {
-  ScalarType values[MAX_AST_NODES];
+namespace {
 
-#pragma unroll
-  for (int idx = 0; idx < payload.node_count; ++idx) {
-    const GPUASTNode<ScalarType>& node = payload.nodes[idx];
-    switch (node.op) {
-      case GPUOpType::VEC:    values[idx] = node.d_ptr[elem_idx]; break;
-      case GPUOpType::SCALAR: values[idx] = node.val; break;
-      case GPUOpType::ADD:    values[idx] = values[node.left] + values[node.right]; break;
-      case GPUOpType::SUB:    values[idx] = values[node.left] - values[node.right]; break;
-      case GPUOpType::MUL:    values[idx] = values[node.left] * values[node.right]; break;
-      case GPUOpType::DIV:    values[idx] = values[node.left] / values[node.right]; break;
-      case GPUOpType::NEG:    values[idx] = -values[node.left]; break;
+/*--- cuBLAS handle for the reductions. Created on first use and kept for the lifetime of
+ * the program, matching the fact that CUDA is either on or off for the whole run. ---*/
+cublasHandle_t solver_blas_handle = nullptr;
+
+cublasHandle_t GetBlasHandle() {
+  if (solver_blas_handle == nullptr) {
+    if (cublasCreate(&solver_blas_handle) != CUBLAS_STATUS_SUCCESS) {
+      SU2_MPI::Error("cuBLAS handle creation failed for the GPU linear algebra.", CURRENT_FUNCTION);
     }
   }
-  return values[payload.root_idx];
+  return solver_blas_handle;
 }
 
-/*!
- * \brief kernel evaluating the abstract syntax tree for each thread
- */
-template <typename ScalarType>
-__global__ void GPUASTInterpreterKernel(ScalarType* __restrict__ d_out, GPUASTPayload<ScalarType> payload, unsigned long n) {
-  unsigned long idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < n) {
-    d_out[idx] = EvaluateASTIterative(payload, idx);
-  }
-}
-
-/*!
- * \brief method to configure and launch the kernel executing the abstract syntax tree for a given vector operators
- */
-template <class ScalarType>
-void CSysVector<ScalarType>::LaunchGPUAST(const GPUASTPayload<ScalarType>& payload, unsigned long nElm) {
-
-  dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE, 1, 1);
-  int numBlocks = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, nElm);
-  dim3 gridDim(numBlocks, 1, 1);
-
-  this->SyncToDevice();
-
-  GPUASTInterpreterKernel<<<gridDim, blockDim>>>(this->d_vec_val, payload, nElm);
-  gpuErrChk(cudaPeekAtLastError());
-
-  this->MarkDeviceDirty();
-}
-
-/*!
- * \brief namespace defining the scalar operators for GPU
- */
-namespace {
-template <class T> struct OpSetScalar { T val; __device__ __forceinline__ T operator()(T x) const { return val; } };
-template <class T> struct OpAddScalar { T val; __device__ __forceinline__ T operator()(T x) const { return x + val; } };
-template <class T> struct OpSubScalar { T val; __device__ __forceinline__ T operator()(T x) const { return x - val; } };
-template <class T> struct OpMulScalar { T val; __device__ __forceinline__ T operator()(T x) const { return x * val; } };
-template <class T> struct OpDivScalar { T val; __device__ __forceinline__ T operator()(T x) const { return x / val; } };
 }  // namespace
 
-/*!
- * \brief generic Unary Operation Kernel to apply given functors on GPU
- */
-template <class ScalarType, class Operator>
-__global__ void GPUUnaryOperationKernel(ScalarType* __restrict__ vec, unsigned long n, Operator op) {
-  const unsigned long idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < n) vec[idx] = op(vec[idx]);
-}
+namespace VecExpr {
 
-/*!
- * \brief dispatching method for the GPU unary operations
- */
+namespace {
+/*--- Deliberately not thread local: every thread of an OpenMP team has to agree on this,
+ * otherwise the team splits over the worksharing constructs in CSysVector. It is only
+ * written by CSysSolve, outside any parallel region over the linear system. ---*/
+bool use_device_expressions = false;
+}  // namespace
+
+bool UseDeviceExpressions() { return use_device_expressions; }
+
+void SetUseDeviceExpressions(bool use) { use_device_expressions = use; }
+
+}  // namespace VecExpr
+
 template <class ScalarType>
-void CSysVector<ScalarType>::GPUUnaryOperation(GPUScalarOp op, ScalarType val) {
-
-  dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE, 1, 1);
-  int numBlocks = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, this->nElm);
-  dim3 gridDim(numBlocks, 1, 1);
-
-  this->SyncToDevice();
-
-  switch (op) {
-    case GPUScalarOp::SET:
-      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElm, OpSetScalar<ScalarType>{val});
-      break;
-    case GPUScalarOp::ADD:
-      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElm, OpAddScalar<ScalarType>{val});
-      break;
-    case GPUScalarOp::SUB:
-      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElm, OpSubScalar<ScalarType>{val});
-      break;
-    case GPUScalarOp::MUL:
-      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElm, OpMulScalar<ScalarType>{val});
-      break;
-    case GPUScalarOp::DIV:
-      GPUUnaryOperationKernel<<<gridDim, blockDim>>>(this->d_vec_val, this->nElm, OpDivScalar<ScalarType>{val});
-      break;
-  }
-  gpuErrChk(cudaPeekAtLastError());
-
-  this->MarkDeviceDirty();
+void CSysVector<ScalarType>::HtDTransfer(bool trigger) const {
+  if (trigger)
+    gpuErrChk(cudaMemcpy((void*)(d_vec_val), (void*)&vec_val[0], (sizeof(ScalarType) * nElm), cudaMemcpyHostToDevice));
 }
 
-
-/*!
- * \brief GPU dot prodcut kernel
- * \brief block-level reduction of elementwise products, accumulated into a single device scalar.
- */
 template <class ScalarType>
-__global__ void GPUDotKernel(const ScalarType* __restrict__ a, const ScalarType* __restrict__ b,
-                             unsigned long n, ScalarType* __restrict__ result) {
-  //shared memory
-  extern __shared__ unsigned char smem_raw[];
-  ScalarType* sdata = reinterpret_cast<ScalarType*>(smem_raw);
-
-  //local and global thread indexes for access and block reduction
-  const unsigned long tid = threadIdx.x;
-  unsigned long idx = blockIdx.x * blockDim.x + tid;
-  const unsigned long stride = blockDim.x * gridDim.x;
-
-  //thread reduction
-  ScalarType local = ScalarType(0);
-  for (; idx < n; idx += stride) local += a[idx] * b[idx];
-
-  sdata[tid] = local;
-  __syncthreads();
-
-  //block reduction
-  for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1) {
-      if (tid < s) sdata[tid] += sdata[tid + s];
-      __syncthreads();
-  }
-
-  //final atomic add per block
-  if (tid == 0) atomicAdd(result, sdata[0]);
+void CSysVector<ScalarType>::DtHTransfer(bool trigger) const {
+  if (trigger)
+    gpuErrChk(cudaMemcpy((void*)(&vec_val[0]), (void*)d_vec_val, (sizeof(ScalarType) * nElm), cudaMemcpyDeviceToHost));
 }
 
-/*!
- * \brief GPU dot product method between this and other CSysVector
- * \note this is a vectors read-only kernel returning a scalar on host
- */
 template <class ScalarType>
 ScalarType CSysVector<ScalarType>::GPUDot(const CSysVector& other) const {
+  /*--- Both operands are already on the device, the caller owns the transfers. This
+   * reduces over MPI, so it must be called by a single thread (see SU2_DEVICE_REGION). ---*/
+  cublasHandle_t handle = GetBlasHandle();
+  cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
 
-  dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE, 1, 1);
-  int numBlocks = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, this->nElmDomain);
-  dim3 gridDim(numBlocks, 1, 1);
+  ScalarType local_dot = ScalarType(0);
 
-  SyncToDevice();
-  other.SyncToDevice();
+  if constexpr (std::is_same_v<ScalarType, float>) {
+    status = cublasSdot(handle, static_cast<int>(nElmDomain), GetDevicePointer(), 1, other.GetDevicePointer(), 1,
+                        &local_dot);
+  } else if constexpr (std::is_same_v<ScalarType, double>) {
+    status = cublasDdot(handle, static_cast<int>(nElmDomain), GetDevicePointer(), 1, other.GetDevicePointer(), 1,
+                        &local_dot);
+  } else {
+    SU2_MPI::Error("Unsupported ScalarType in CSysVector::GPUDot.", CURRENT_FUNCTION);
+    return ScalarType(0);
+  }
 
-  // allocate and zero the result scalar
-  ScalarType* d_dot_result;
-  gpuErrChk(cudaMalloc(&d_dot_result, sizeof(ScalarType)));
-  gpuErrChk(cudaMemset(d_dot_result, 0, sizeof(ScalarType)));
+  if (status != CUBLAS_STATUS_SUCCESS) {
+    SU2_MPI::Error("cuBLAS dot failed in CSysVector::GPUDot.", CURRENT_FUNCTION);
+    return ScalarType(0);
+  }
 
-  const size_t sharedBytes = KernelParameters::MVP_BLOCK_SIZE * sizeof(ScalarType);
-  GPUDotKernel<<<gridDim, blockDim, sharedBytes>>>(this->d_vec_val, other.d_vec_val, this->nElmDomain, d_dot_result);
-  gpuErrChk(cudaPeekAtLastError());
+  ScalarType global_dot = ScalarType(0);
+  const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
+  SelectMPIWrapper<ScalarType>::W::Allreduce(&local_dot, &global_dot, 1, mpi_type, MPI_SUM, SU2_MPI::GetComm());
 
-  ScalarType result;
-  gpuErrChk(cudaMemcpy(&result, d_dot_result, sizeof(ScalarType), cudaMemcpyDeviceToHost));
-  gpuErrChk(cudaFree(d_dot_result));
-
-  return result;
+  return global_dot;
 }
 
-template<class ScalarType>
-void CSysVector<ScalarType>::HtDTransfer(bool trigger) const
-{
-   if(trigger) gpuErrChk(cudaMemcpy((void*)(d_vec_val), (void*)&vec_val[0], (sizeof(ScalarType)*nElm), cudaMemcpyHostToDevice));
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::DtHTransfer(bool trigger) const
-{
-   if(trigger) gpuErrChk(cudaMemcpy((void*)(&vec_val[0]), (void*)d_vec_val, (sizeof(ScalarType)*nElm), cudaMemcpyDeviceToHost));
-}
-
-template<class ScalarType>
-void CSysVector<ScalarType>::GPUSetVal(ScalarType val, bool trigger) const
-{
-   if(trigger) gpuErrChk(cudaMemset((void*)(d_vec_val), val, (sizeof(ScalarType)*nElm)));
+template <class ScalarType>
+ScalarType CSysVector<ScalarType>::GPUNorm() const {
+  return sqrt(GPUDot(*this));
 }
 
 /*!
@@ -284,42 +176,55 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vect
                                                                  const size_t i0, const size_t n,
                                                                  const std::vector<CSysVector<ScalarType>>& W,
                                                                  const size_t m) {
-  SU2_ZONE_SCOPED
 
   static su2matrix<ScalarType> shared;
   if (n == 0 || m == 0) return shared;
 
   const size_t size = V[0].nElmDomain;
 
-  // get all the device pointers
-  std::vector<const ScalarType*> h_V_ptrs(n), h_W_ptrs(m);
+  // get all the device pointers for V and W in one array, resize if needed
+  static std::vector<const ScalarType*> h_V_W_ptrs;
+  h_V_W_ptrs.resize(n + m);
+
   for (size_t i = 0; i < n; ++i){
-    V[i0 + i].SyncToDevice();
-    h_V_ptrs[i] = V[i0 + i].GetDevicePointer();
+    h_V_W_ptrs[i] = V[i0 + i].GetDevicePointer();
   }
   for (size_t j = 0; j < m; ++j){
-    W[j].SyncToDevice();
-    h_W_ptrs[j] = W[j].GetDevicePointer();
+    h_V_W_ptrs[j + n] = W[j].GetDevicePointer();
   }
 
-  // copy the pointers to the device arrays of pointers
-  const ScalarType** d_V_ptrs;
-  const ScalarType** d_W_ptrs;
-  gpuErrChk(cudaMalloc(&d_V_ptrs, n * sizeof(ScalarType*)));
-  gpuErrChk(cudaMalloc(&d_W_ptrs, m * sizeof(ScalarType*)));
-  gpuErrChk(cudaMemcpy(d_V_ptrs, h_V_ptrs.data(), n * sizeof(ScalarType*), cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemcpy(d_W_ptrs, h_W_ptrs.data(), m * sizeof(ScalarType*), cudaMemcpyHostToDevice));
+  // persistent device pointer storing all vectors, resizes when needed
+  static const ScalarType** d_V_W_ptrs = nullptr;
+  static size_t ptrs_capacity = 0; // current capacity
+  const size_t ptrs_needed = n + m; // needed capacity for both V and W
 
-  // allocate result buffer, zero it
-  ScalarType* d_local;
-  gpuErrChk(cudaMalloc(&d_local, n * m * sizeof(ScalarType)));
-  gpuErrChk(cudaMemset(d_local, 0, n * m * sizeof(ScalarType)));
+  if (ptrs_needed > ptrs_capacity) { // if not enough capacity, enlarge by re-allocation on device
+    if (d_V_W_ptrs) gpuErrChk(cudaFree(d_V_W_ptrs));
+    gpuErrChk(cudaMalloc(&d_V_W_ptrs, ptrs_needed * sizeof(ScalarType*)));
+    ptrs_capacity = ptrs_needed; // update current capacity
+  }
+  // copy pointers to device
+  gpuErrChk(cudaMemcpy(d_V_W_ptrs, h_V_W_ptrs.data(), ptrs_needed * sizeof(ScalarType*), cudaMemcpyHostToDevice));
+
+  // allocate persisten result buffer that grows if needed
+  static ScalarType* d_local = nullptr;
+  static size_t local_capacity = 0;
+  const size_t local_needed = n * m;
+
+  if (local_needed > local_capacity) { // if not enough capacity, enlarge by re-allocation on device
+    if (d_local) gpuErrChk(cudaFree(d_local));
+    gpuErrChk(cudaMalloc(&d_local, local_needed * sizeof(ScalarType)));
+    local_capacity = local_needed;
+  }
+  // zero out the result buffer
+  gpuErrChk(cudaMemset(d_local, 0, local_needed * sizeof(ScalarType)));
+
 
   dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE,1,1);
   int numBlocksPerPair = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, size);
   dim3 gridDim(numBlocksPerPair, n * m, 1);
 
-  GPUmultiDot<<<gridDim, blockDim, KernelParameters::MVP_BLOCK_SIZE * sizeof(ScalarType)>>>(d_V_ptrs, n, d_W_ptrs, m, size, d_local);
+  GPUmultiDot<<<gridDim, blockDim, KernelParameters::MVP_BLOCK_SIZE * sizeof(ScalarType)>>>(&d_V_W_ptrs[0], n, &d_V_W_ptrs[n], m, size, d_local);
   gpuErrChk(cudaGetLastError());
 
   // copy result to host for MPI reduce
@@ -327,6 +232,7 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vect
   gpuErrChk(cudaMemcpy(local.data(), d_local, n * m * sizeof(ScalarType), cudaMemcpyDeviceToHost));
 
   /*--- Single AllReduce of the result, only the master thread communicates. ---*/
+  // this is a duplicate. Ideally the cuda section should return local but that depends on the intended OpenMP/CUDA combined usage
   SU2_OMP_MASTER {
     shared.resize(n, m);
 
@@ -338,12 +244,6 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vect
 
   /*--- All threads have the same view of the result. ---*/
   SU2_OMP_BARRIER
-
-
-  // clean allocations
-  gpuErrChk(cudaFree(d_local));
-  gpuErrChk(cudaFree(d_V_ptrs));
-  gpuErrChk(cudaFree(d_W_ptrs));
 
   return shared;
 }
@@ -385,7 +285,6 @@ void CSysVector<ScalarType>::LinearCombinationGPU(const unsigned long n, const s
   int numBlocks = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, nElm);
   dim3 gridDim(numBlocks, 1, 1);
 
-  v.SyncToDevice();
   ScalarType* d_v = v.GetDevicePointer();
 
   for (unsigned long i = 0; i < n; i += 4) {
@@ -393,7 +292,6 @@ void CSysVector<ScalarType>::LinearCombinationGPU(const unsigned long n, const s
     //prepare vectors pointers and corresponding weights, passing them by value
     WeightedVecs<ScalarType, 4> vs_ws = {};
     for (int j = 0; j < rem; ++j) {
-      vs[i + j].SyncToDevice();                       //ensure is on GPU, was copied in multiDot
       vs_ws.ptrs[j] = vs[i + j].GetDevicePointer();  // get the pointer
       vs_ws.weights[j] = ws[i + j];                  // plain array indexing, not ws(k)
     }
@@ -402,8 +300,111 @@ void CSysVector<ScalarType>::LinearCombinationGPU(const unsigned long n, const s
     gpuErrChk(cudaPeekAtLastError());
   }
 
-  v.MarkDeviceDirty();
-
 }
 
 template class CSysVector<su2double>; //This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.
+/*--- Every expression the solvers assign to a CSysVector needs its assignment kernel
+ * instantiated here; the host compiler cannot emit one. A shape that is missing shows up
+ * as an undefined reference to VecExpr::AssignDeviceExpression at link time, and is fixed
+ * by adding a line to DEVICE_EXPRESSION_SHAPES below. The aliases use CSysVector (not
+ * CVectorView) because that is how the operator overloads name their operands; store_t
+ * turns it into a view when the node is built. ---*/
+namespace {
+
+template <class S>
+using Vec = CSysVector<S>;
+template <class S>
+using Sca = VecExpr::Bcast<S>;
+
+/*--- Leaves and the shapes of the FGMRES/GMRES basis updates. ---*/
+template <class S>
+using DeviceBcast = Sca<S>;
+template <class S>
+using DeviceView = VecExpr::CVectorView<S>;
+template <class S>
+using DeviceNeg = VecExpr::minus_<Vec<S>, S>;
+
+/*--- vector * scalar and scalar * vector are distinct types, both are used. ---*/
+template <class S>
+using DeviceScale = VecExpr::mul_<Vec<S>, Sca<S>, S>;
+template <class S>
+using DeviceLScale = VecExpr::mul_<Sca<S>, Vec<S>, S>;
+template <class S>
+using DeviceDivScale = VecExpr::div_<Vec<S>, Sca<S>, S>;
+
+/*--- Linear combinations, CSysSolve unrolls them up to four terms. ---*/
+template <class S>
+using DeviceScale2 = VecExpr::add_<DeviceScale<S>, DeviceScale<S>, S>;
+template <class S>
+using DeviceScale3 = VecExpr::add_<DeviceScale2<S>, DeviceScale<S>, S>;
+template <class S>
+using DeviceScale4 = VecExpr::add_<DeviceScale3<S>, DeviceScale<S>, S>;
+
+/*--- r = b - A_x, in CG, BCGSTAB, Smoother and FGCRODR. ---*/
+template <class S>
+using DeviceSub = VecExpr::sub_<Vec<S>, Vec<S>, S>;
+
+/*--- p = beta * p + z, in CG. ---*/
+template <class S>
+using DeviceLScalePlus = VecExpr::add_<DeviceLScale<S>, Vec<S>, S>;
+
+/*--- p = beta * (p - omega * v) + r, in BCGSTAB. ---*/
+template <class S>
+using DeviceSubLScale = VecExpr::sub_<Vec<S>, DeviceLScale<S>, S>;
+template <class S>
+using DeviceLScaleSub = VecExpr::mul_<Sca<S>, DeviceSubLScale<S>, S>;
+template <class S>
+using DeviceBcgsDir = VecExpr::add_<DeviceLScaleSub<S>, Vec<S>, S>;
+
+}  // namespace
+
+#define DEVICE_EXPRESSION_SHAPES(SCALAR)                  \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceBcast);    \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceView);     \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceNeg);      \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceScale);    \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceLScale);   \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceDivScale); \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceScale2);   \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceScale3);   \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceScale4);   \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceSub);      \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceLScalePlus); \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceSubLScale);  \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceLScaleSub);  \
+  INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, DeviceBcgsDir)
+
+#define INSTANTIATE_DEVICE_ASSIGN(SCALAR, OP, EXPR)                                          \
+  template void VecExpr::AssignDeviceExpression<VecExpr::DeviceAssignOp::OP, SCALAR, EXPR<SCALAR>>( \
+      SCALAR*, unsigned long, const VecExpr::CVecExpr<EXPR<SCALAR>, SCALAR>&)
+
+#define INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, EXPR) \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Assign, EXPR);   \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Add, EXPR);      \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Subtract, EXPR); \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Multiply, EXPR); \
+  INSTANTIATE_DEVICE_ASSIGN(SCALAR, Divide, EXPR)
+
+DEVICE_EXPRESSION_SHAPES(su2mixedfloat);
+
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
+DEVICE_EXPRESSION_SHAPES(passivedouble);
+#endif
+
+#undef DEVICE_EXPRESSION_SHAPES
+#undef INSTANTIATE_DEVICE_ASSIGN_EXPR
+#undef INSTANTIATE_DEVICE_ASSIGN
+
+#if defined(USE_MIXED_PRECISION)
+template void CSysVector<su2mixedfloat>::HtDTransfer(bool trigger) const;
+template void CSysVector<su2mixedfloat>::DtHTransfer(bool trigger) const;
+template su2mixedfloat CSysVector<su2mixedfloat>::GPUDot(const CSysVector<su2mixedfloat>& other) const;
+template su2mixedfloat CSysVector<su2mixedfloat>::GPUNorm() const;
+#endif
+
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
+template void CSysVector<passivedouble>::HtDTransfer(bool trigger) const;
+template void CSysVector<passivedouble>::DtHTransfer(bool trigger) const;
+template passivedouble CSysVector<passivedouble>::GPUDot(const CSysVector<passivedouble>& other) const;
+template passivedouble CSysVector<passivedouble>::GPUNorm() const;
+#endif

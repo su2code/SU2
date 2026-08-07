@@ -1,7 +1,7 @@
 /*!
  * \file CSysMatrixGPU.cu
  * \brief Implementations of Kernels and Functions for Matrix Operations on the GPU
- * \author A. Raj, Jesse Li, D. Di Giusto
+ * \author A. Raj
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -26,32 +26,7 @@
  */
 
 #include "../../include/linear_algebra/CSysMatrix.hpp"
-#include "../../include/linear_algebra/CSysMatrix.inl"
 #include "../../include/linear_algebra/GPUComms.cuh"
-#include "../../include/linear_algebra/CSysVector.hpp"
-
-/*!
- * \brief Matrix-vector product kernel.
- */
-template<typename matrixType, typename vectorType>
-__global__ void GPUMatrixVectorProductKernel(matrixType *invM, vectorType* vec, vectorType* prod, unsigned long nPointDomain, unsigned long nVar)
-{
-
-  const unsigned long iPoint = blockIdx.x * blockDim.x + threadIdx.x;
-  if (iPoint >= nPointDomain) return;
-
-  const auto block = &invM[iPoint * nVar * nVar];
-  const auto rhs = &vec[iPoint * nVar];
-  auto out = &prod[iPoint * nVar];
-
-  for (auto iVar = 0; iVar < nVar; ++iVar) {
-    vectorType sum = vectorType(0);
-    for (auto jVar = 0; jVar < nVar; ++jVar) {
-      sum += block[iVar * nVar + jVar] * rhs[jVar];
-    }
-    out[iVar] = sum;
-  }
-}
 
 /*!
  * \brief Block-LDU SpMV kernel: y[iRow] = (L + D + U) * x per block-row.
@@ -59,12 +34,12 @@ __global__ void GPUMatrixVectorProductKernel(matrixType *invM, vectorType* vec, 
  */
 template <class ScalarType>
 __global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
-                                     const unsigned long* __restrict__ row_ptr_l,
-                                     const unsigned long* __restrict__ col_ind_l,
+                                     const su2uint* __restrict__ row_ptr_l,
+                                     const su2uint* __restrict__ col_ind_l,
                                      const ScalarType* __restrict__ mat_l,
                                      const ScalarType* __restrict__ mat_d,
-                                     const unsigned long* __restrict__ row_ptr_u,
-                                     const unsigned long* __restrict__ col_ind_u,
+                                     const su2uint* __restrict__ row_ptr_u,
+                                     const su2uint* __restrict__ col_ind_u,
                                      const ScalarType* __restrict__ mat_u,
                                      const ScalarType* __restrict__ x, ScalarType* __restrict__ y) {
   const unsigned long iRow = blockIdx.x;
@@ -107,7 +82,6 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
     SU2_MPI::Error("CUDA CSysMatrix block-LDU SpMV requires square blocks.", CURRENT_FUNCTION);
   }
 
-  vec.SyncToDevice();
   ScalarType* d_vec = vec.GetDevicePointer();
   ScalarType* d_prod = prod.GetDevicePointer();
 
@@ -117,55 +91,15 @@ void CSysMatrix<ScalarType>::GPUMatrixVectorProduct(const CSysVector<ScalarType>
       nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, gpu.l, gpu.d,
       gpu.row_ptr_u, gpu.col_ind_u, gpu.u, d_vec, d_prod);
   gpuErrChk(cudaGetLastError());
-
-  prod.MarkDeviceDirty();
 }
+template void CSysMatrix<su2mixedfloat>::HtDTransfer(bool trigger) const;
+template void CSysMatrix<su2mixedfloat>::GPUMatrixVectorProduct(const CSysVector<su2mixedfloat>& vec,
+                                                                CSysVector<su2mixedfloat>& prod, CGeometry* geometry,
+                                                                const CConfig* config) const;
 
-template <class ScalarType>
-void CSysMatrix<ScalarType>::GPUComputeJacobiPreconditioner(const CSysVector<ScalarType>& vec,
-                                                            CSysVector<ScalarType>& prod, CGeometry* geometry,
-                                                            const CConfig* config) const {
-  SU2_ZONE_SCOPED
-  /*--- Apply Jacobi preconditioner, y = D^{-1} * x, the inverse of the diagonal is already known and synced to device ---*/
-
-  vec.SyncToDevice();
-  ScalarType* d_vec = vec.GetDevicePointer();
-  ScalarType* d_prod = prod.GetDevicePointer();
-
-  prod.GPUSetVal(0.0);
-
-  dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE,1,1);
-  int gridx = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, nPointDomain);
-  dim3 gridDim(gridx, 1, 1);
-
-  GPUMatrixVectorProductKernel<<<gridDim, blockDim>>>(d_invM, d_vec, d_prod, nPointDomain, nVar);
-  gpuErrChk( cudaPeekAtLastError() );
-
-  prod.MarkDeviceDirty(); // this triggers () operators to sync data from device when preparing mpi buffers
-
-  /*--- MPI Parallelization ---*/
-  CSysMatrixComms::Initiate(prod, geometry, config);
-  CSysMatrixComms::Complete(prod, geometry, config);
-
-  prod.SyncToDevice(); // this will trigger migration if mpi comms updated the host data
-
-}
-
-template <class ScalarType>
-void CSysMatrix<ScalarType>::GPUBuildJacobiPreconditioner() {
-  SU2_ZONE_SCOPED
-  /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
-  SU2_OMP_FOR_DYN(omp_heavy_size)
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
-    InverseDiagonalBlock(iPoint, &(invM[iPoint * nVar * nVar]));
-  END_SU2_OMP_FOR
-
-  //copy to device or prefetch
-  if (invM_is_managed) {
-    gpu_um_prefetch(d_invM, nPointDomain * nVar * nVar * sizeof(ScalarType), GPUMemoryAllocation::GetCurrentDevice());
-  } else {
-    gpuErrChk(cudaMemcpy(d_invM, invM, nPointDomain * nVar * nVar * sizeof(ScalarType), cudaMemcpyHostToDevice));
-  }
-}
-
-template class CSysMatrix<su2mixedfloat>; //This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.
+#if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
+template void CSysMatrix<passivedouble>::HtDTransfer(bool trigger) const;
+template void CSysMatrix<passivedouble>::GPUMatrixVectorProduct(const CSysVector<passivedouble>& vec,
+                                                                CSysVector<passivedouble>& prod, CGeometry* geometry,
+                                                                const CConfig* config) const;
+#endif

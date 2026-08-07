@@ -31,6 +31,8 @@
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
 #include <cmath>
+#include <limits>
+#include <type_traits>
 #include <vector>
 
 namespace {
@@ -83,7 +85,15 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
   ilu.d = nullptr;
   ilu.u = nullptr;
 
+  q_scale_l = nullptr;
+  q_blocks_l = nullptr;
+  q_scale_u = nullptr;
+  q_blocks_u = nullptr;
+  q_scale_d = nullptr;
+  q_blocks_d = nullptr;
+
   invM = nullptr;
+  d_invM = nullptr;
 
 #ifdef USE_MKL
   MatrixMatrixProductJitter = nullptr;
@@ -104,6 +114,13 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   MemoryAllocation::aligned_free(mat.d);
   MemoryAllocation::aligned_free(mat.l);
   MemoryAllocation::aligned_free(mat.u);
+  MemoryAllocation::aligned_free(invM);
+  MemoryAllocation::aligned_free(q_scale_l);
+  MemoryAllocation::aligned_free(q_blocks_l);
+  MemoryAllocation::aligned_free(q_scale_u);
+  MemoryAllocation::aligned_free(q_blocks_u);
+  MemoryAllocation::aligned_free(q_scale_d);
+  MemoryAllocation::aligned_free(q_blocks_d);
 
   if (useCuda) {
     GPUMemoryAllocation::gpu_free(gpu.d);
@@ -113,15 +130,7 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
     GPUMemoryAllocation::gpu_free(gpu.col_ind_l);
     GPUMemoryAllocation::gpu_free(gpu.row_ptr_u);
     GPUMemoryAllocation::gpu_free(gpu.col_ind_u);
-  }
-
-  if (invM_is_managed) {
-    GPUMemoryAllocation::gpu_free(invM);
-  } else {
-    MemoryAllocation::aligned_free(invM);
-    if (useCuda) {
-      GPUMemoryAllocation::gpu_free(d_invM);
-    }
+    GPUMemoryAllocation::gpu_free(d_invM);
   }
 
 #ifdef USE_MKL
@@ -135,7 +144,7 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
 template <class ScalarType>
 void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npointdomain, unsigned short nvar,
                                         unsigned short neqn, bool EdgeConnect, CGeometry* geometry,
-                                        const CConfig* config, bool needTranspPtr, bool grad_mode) {
+                                        const CConfig* config, bool needTranspPtr, bool grad_mode, bool allow_quant) {
   SU2_ZONE_SCOPED
   assert(omp_get_thread_num() == 0 && "Only the master thread is allowed to initialize the matrix.");
 
@@ -169,8 +178,16 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     prec = config->GetKind_Grad_Linear_Solver_Prec();
   }
 
+  useCuda = config->GetCUDA();
+
   const bool ilu_needed = (prec == ILU);
   const bool diag_needed = (prec == JACOBI) || (prec == LINELET);
+#ifndef CODI_REVERSE_TYPE
+  const bool q_lus_needed = allow_quant && !useCuda && (prec == Q_LU_SGS);
+#else
+  /*--- No quantization in adjoint mode for now because TransposeInPlace would get complicated. ---*/
+  const bool q_lus_needed = false;
+#endif
 
   /*--- Basic dimensions. ---*/
   nVar = nvar;
@@ -183,8 +200,6 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     ptr = MemoryAllocation::aligned_alloc<ScalarType, true>(64, num * sizeof(ScalarType));
   };
 
-  useCuda = config->GetCUDA();
-
   /*--- L/D/U index structures and value arrays. ---*/
   {
     const auto& pat = geometry->GetSparsePattern(type, 0);
@@ -196,15 +211,33 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     mat.nnz_u = pat.u.getNumNonZeros();
   }
   allocAndInit(mat.d, nPoint * nVar * nEqn);
-  allocAndInit(mat.l, mat.nnz_l * nVar * nEqn);
-  allocAndInit(mat.u, mat.nnz_u * nVar * nEqn);
+
+  if (q_lus_needed) {
+    /*--- Q_LU_SGS: no full-precision L/U; off-diagonal blocks live in quantized storage.
+     *    L/U are quantized on-the-fly during assembly; diagonal is quantized in Build step. ---*/
+#ifndef CODI_REVERSE_TYPE
+    quantized_mode = true;
+#endif
+    auto allocQ = [](QuantType*& ptr, unsigned long n) {
+      ptr = MemoryAllocation::aligned_alloc<QuantType, true>(64, n * sizeof(QuantType));
+    };
+    allocQ(q_scale_l, mat.nnz_l * nVar);
+    allocQ(q_blocks_l, mat.nnz_l * nVar * nEqn);
+    allocQ(q_scale_u, mat.nnz_u * nVar);
+    allocQ(q_blocks_u, mat.nnz_u * nVar * nEqn);
+    allocQ(q_scale_d, nPoint * nVar);
+    allocQ(q_blocks_d, nPoint * nVar * nEqn);
+  } else {
+    allocAndInit(mat.l, mat.nnz_l * nVar * nEqn);
+    allocAndInit(mat.u, mat.nnz_u * nVar * nEqn);
+  }
 
   if (useCuda) {
     auto GPUAllocAndInit = [](ScalarType*& ptr, unsigned long num) {
       ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
     };
-    auto GPUAllocAndCopy = [](const unsigned long*& ptr, const unsigned long* src_ptr, unsigned long num) {
-      ptr = GPUMemoryAllocation::gpu_alloc_cpy<unsigned long>(src_ptr, num * sizeof(unsigned long));
+    auto GPUAllocAndCopy = [](const su2uint*& ptr, const su2uint* src_ptr, unsigned long num) {
+      ptr = GPUMemoryAllocation::gpu_alloc_cpy<su2uint>(src_ptr, num * sizeof(su2uint));
     };
     GPUAllocAndInit(gpu.d, nPoint * nVar * nEqn);
     GPUAllocAndInit(gpu.l, mat.nnz_l * nVar * nEqn);
@@ -249,17 +282,10 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     allocAndInit(ilu.u, ilu.nnz_u * nVar * nEqn);
   }
 
-  if (diag_needed) {
-    if (useCuda && GPUMemoryAllocation::UMSupported()) {
-      invM = GPUMemoryAllocation::gpu_um_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
-      d_invM = invM;  // temporary alias for testing
-      invM_is_managed = true;
-    } else {
-      allocAndInit(invM, nPointDomain * nVar * nEqn);
-      if (useCuda) {
-        d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
-      }
-    }
+  if (diag_needed) allocAndInit(invM, nPointDomain * nVar * nEqn);
+
+  if (useCuda && diag_needed) {
+    d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
   }
 
   /*--- Thread parallel initialization. ---*/
@@ -268,7 +294,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   /*--- Set suitable chunk sizes for light static for loops, and heavy
    dynamic ones, such that threads are approximately evenly loaded. ---*/
-  omp_light_size = computeStaticChunkSize((mat.nnz_l + mat.nnz_u + nPoint) * nVar * nEqn, num_threads, OMP_MAX_SIZE_L);
+  omp_light_size = computeStaticChunkSize(nPoint * nVar * nEqn, num_threads, OMP_MAX_SIZE_L);
   omp_heavy_size = computeStaticChunkSize(nPointDomain, num_threads, OMP_MAX_SIZE_H);
 
   omp_num_parts = config->GetLinear_Solver_Prec_Threads();
@@ -558,20 +584,46 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
 }
 
 template <class ScalarType>
+void CSysMatrix<ScalarType>::QuantizeBlock(const ScalarType* blk, QuantType* qs, QuantType* qv) const {
+  EncodeQuantBlock([&](unsigned long r, unsigned long c) { return blk[r * nVar + c]; }, qs, qv, nVar);
+}
+
+template <class ScalarType>
+void CSysMatrix<ScalarType>::QuantizeDiagonalBlocks() {
+  SU2_ZONE_SCOPED
+
+  if (quantized_mode) {
+    /*--- Q_LU_SGS: L/U were quantized during assembly; only the diagonal needs quantization now. ---*/
+    SU2_OMP_FOR_DYN(omp_heavy_size)
+    for (auto i = 0ul; i < nPointDomain; ++i)
+      QuantizeBlock(&mat.d[i * nVar * nVar], &q_scale_d[i * nVar], &q_blocks_d[i * nVar * nVar]);
+    END_SU2_OMP_FOR
+  }
+}
+
+template <class ScalarType>
 void CSysMatrix<ScalarType>::SetValZero() {
   SU2_ZONE_SCOPED
   const auto nThreads = static_cast<unsigned long>(omp_get_num_threads());
   const auto iThread = static_cast<unsigned long>(omp_get_thread_num());
-  auto zeroChunk = [&](ScalarType* arr, unsigned long n) {
+
+  auto zeroChunk = [&](auto* arr, unsigned long n) {
     if (n == 0) return;
     const auto chunk = roundUpDiv(n, nThreads);
-    const auto begin = min(chunk * iThread, n);
-    const auto mySize = min(chunk, n - begin) * sizeof(ScalarType);
+    const auto begin = min<size_t>(chunk * iThread, n);
+    const auto mySize = min<size_t>(chunk, n - begin) * sizeof(std::remove_pointer_t<decltype(arr)>);
     if (mySize) memset(&arr[begin], 0, mySize);
   };
   zeroChunk(mat.d, nPoint * nVar * nEqn);
-  zeroChunk(mat.l, mat.nnz_l * nVar * nEqn);
-  zeroChunk(mat.u, mat.nnz_u * nVar * nEqn);
+  if (!quantized_mode) {
+    zeroChunk(mat.l, mat.nnz_l * nVar * nEqn);
+    zeroChunk(mat.u, mat.nnz_u * nVar * nEqn);
+  } else {
+    zeroChunk(q_scale_l, mat.nnz_l * nVar);
+    zeroChunk(q_scale_u, mat.nnz_l * nVar);
+    zeroChunk(q_blocks_l, mat.nnz_l * nVar * nEqn);
+    zeroChunk(q_blocks_u, mat.nnz_u * nVar * nEqn);
+  }
   SU2_OMP_BARRIER
 }
 
@@ -584,7 +636,7 @@ void CSysMatrix<ScalarType>::SetValDiagonalZero() {
 }
 
 template <class ScalarType>
-void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* vec) const {
+void CSysMatrix<ScalarType>::GaussElimination(ScalarType* matrix, ScalarType* vec) const {
 #ifdef USE_MKL_LAPACK
   // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
   lapack_int ipiv[MAXNVAR];
@@ -604,7 +656,7 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
   for (auto iVar = 1ul; iVar < nVar; iVar++) {
     for (auto jVar = 0ul; jVar < iVar; jVar++) {
       /*--- Regularize pivot if too small to prevent divide-by-zero ---*/
-      RegularizePivot(A(jVar, jVar), jVar, jVar, "DEBUG Gauss_Elimination");
+      RegularizePivot(A(jVar, jVar), jVar, jVar, "DEBUG GaussElimination");
 
       ScalarType weight = A(iVar, jVar) / A(jVar, jVar);
 
@@ -619,7 +671,7 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
     for (auto jVar = iVar + 1; jVar < nVar; jVar++) vec[iVar] -= A(iVar, jVar) * vec[jVar];
 
     /*--- Regularize diagonal if too small ---*/
-    RegularizePivot(A(iVar, iVar), iVar, iVar, "DEBUG Gauss_Elimination backsubst");
+    RegularizePivot(A(iVar, iVar), iVar, iVar, "DEBUG GaussElimination backsubst");
 
     vec[iVar] /= A(iVar, iVar);
   }
@@ -630,7 +682,7 @@ void CSysMatrix<ScalarType>::Gauss_Elimination(ScalarType* matrix, ScalarType* v
 template <class ScalarType>
 void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inverse) const {
   /*--- This is a generalization of Gaussian elimination for multiple rhs' (the basis vectors).
-   We could call "Gauss_Elimination" multiple times or fully generalize it for multiple rhs,
+   We could call "GaussElimination" multiple times or fully generalize it for multiple rhs,
    the performance of both routines would suffer in both cases without the use of exotic templating.
    And so it feels reasonable to have some duplication here. ---*/
 
@@ -692,13 +744,27 @@ void CSysMatrix<ScalarType>::MatrixInverse(ScalarType* matrix, ScalarType* inver
 template <class ScalarType>
 void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long block_i, unsigned long row) {
   SU2_ZONE_SCOPED
-  for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k)
-    for (auto iVar = 0u; iVar < nVar; iVar++) mat.l[k * nVar * nEqn + row * nEqn + iVar] = 0.0;
-  auto* d = &mat.d[block_i * nVar * nEqn];
-  for (auto iVar = 0u; iVar < nVar; iVar++) d[row * nEqn + iVar] = 0.0;
+  const auto blkSz = nVar * nEqn;
+
+  auto* d = &mat.d[block_i * blkSz];
+  for (auto iVar = 0u; iVar < nEqn; iVar++) d[row * nEqn + iVar] = 0.0;
   d[row * nEqn + row] = 1.0;
-  for (auto k = mat.row_ptr_u[block_i]; k < mat.row_ptr_u[block_i + 1]; ++k)
-    for (auto iVar = 0u; iVar < nVar; iVar++) mat.u[k * nVar * nEqn + row * nEqn + iVar] = 0.0;
+
+  if (quantized_mode) {
+    for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k) {
+      for (auto iVar = 0u; iVar < nEqn; iVar++) q_blocks_l[k * blkSz + row * nEqn + iVar] = 0;
+    }
+    for (auto k = mat.row_ptr_u[block_i]; k < mat.row_ptr_u[block_i + 1]; ++k) {
+      for (auto iVar = 0u; iVar < nEqn; iVar++) q_blocks_u[k * blkSz + row * nEqn + iVar] = 0;
+    }
+  } else {
+    for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k) {
+      for (auto iVar = 0u; iVar < nEqn; iVar++) mat.l[k * blkSz + row * nEqn + iVar] = 0;
+    }
+    for (auto k = mat.row_ptr_u[block_i]; k < mat.row_ptr_u[block_i + 1]; ++k) {
+      for (auto iVar = 0u; iVar < nEqn; iVar++) mat.u[k * blkSz + row * nEqn + iVar] = 0;
+    }
+  }
 }
 
 template <class ScalarType>
@@ -721,11 +787,19 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>& v
 
   SU2_OMP_BARRIER
 
-  SU2_OMP_FOR_DYN(omp_heavy_size)
-  for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
-    RowProduct(vec, row_i, &prod[row_i * nVar]);
+  if (quantized_mode) {
+    SU2_OMP_FOR_DYN(omp_heavy_size)
+    for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
+      QuantizedRowProduct(vec, row_i, &prod[row_i * nVar]);
+    }
+    END_SU2_OMP_FOR
+  } else {
+    SU2_OMP_FOR_DYN(omp_heavy_size)
+    for (auto row_i = 0ul; row_i < nPointDomain; row_i++) {
+      RowProduct(vec, row_i, &prod[row_i * nVar]);
+    }
+    END_SU2_OMP_FOR
   }
-  END_SU2_OMP_FOR
 
   /*--- MPI Parallelization. ---*/
 
@@ -736,11 +810,29 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>& v
 template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
   SU2_ZONE_SCOPED
+
   /*--- Build Jacobi preconditioner (M = D), compute and store the inverses of the diagonal blocks. ---*/
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
     InverseDiagonalBlock(iPoint, &(invM[iPoint * nVar * nVar]));
   END_SU2_OMP_FOR
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      BEGIN_SU2_DEVICE_REGION
+      gpuErrChk(cudaMemcpy(d_invM, invM, nPointDomain * nVar * nVar * sizeof(ScalarType), cudaMemcpyHostToDevice));
+      END_SU2_DEVICE_REGION
+    } else {
+      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+    }
+#else
+    SU2_MPI::Error(
+        "\nError in building Jacobi preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
+        "enabled in Meson to access GPU Functions",
+        CURRENT_FUNCTION);
+#endif
+  }
 }
 
 template <class ScalarType>
@@ -748,6 +840,23 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
                                                          CSysVector<ScalarType>& prod, CGeometry* geometry,
                                                          const CConfig* config) const {
   SU2_ZONE_SCOPED
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      SU2_DEVICE_REGION(ComputeJacobiPreconditionerGPU(vec, prod, geometry, config);)
+      return;
+    } else {
+      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+    }
+#else
+    SU2_MPI::Error(
+        "\nError in applying Jacobi preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
+        "enabled in Meson to access GPU Functions",
+        CURRENT_FUNCTION);
+#endif
+  }
+
   /*--- Apply Jacobi preconditioner, y = D^{-1} * x, the inverse of the diagonal is already known. ---*/
   SU2_OMP_BARRIER
   SU2_OMP_FOR_DYN(omp_heavy_size)
@@ -772,7 +881,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
 
     if (ilu_fill_in == 0) {
       /*--- ILU0: Same sparse pattern, copy L and U blocks directly. ---*/
-      auto copy = [&](const unsigned long* row_ptr, const ScalarType* mat, ScalarType* ilu) {
+      auto copy = [&](const su2uint* row_ptr, const ScalarType* mat, ScalarType* ilu) {
         const unsigned long begin = row_ptr[iPoint] * blockSize;
         const unsigned long end = row_ptr[iPoint + 1] * blockSize;
         SU2_OMP_SIMD
@@ -783,9 +892,8 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
       return;
     }
     /*--- ILUn: Merge-scan L and U via shared lambda. ---*/
-    auto scatterPart = [&](const unsigned long* mat_row_ptr, const unsigned long* mat_col_ind,
-                           const ScalarType* mat_vals, const unsigned long* ilu_row_ptr,
-                           const unsigned long* ilu_col_ind, ScalarType* ilu_vals) {
+    auto scatterPart = [&](const su2uint* mat_row_ptr, const su2uint* mat_col_ind, const ScalarType* mat_vals,
+                           const su2uint* ilu_row_ptr, const su2uint* ilu_col_ind, ScalarType* ilu_vals) {
       auto km = mat_row_ptr[iPoint], km_end = mat_row_ptr[iPoint + 1];
       for (auto k = ilu_row_ptr[iPoint]; k < ilu_row_ptr[iPoint + 1]; ++k) {
         const auto jPoint = ilu_col_ind[k];
@@ -995,11 +1103,20 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 
     ScalarType low_prod[MAXNVAR];
 
-    for (auto iPoint = begin; iPoint < end; ++iPoint) {
-      auto idx = iPoint * nVar;
-      LowerProduct(prod, iPoint, begin, low_prod);         // Compute L.x*
-      VectorSubtraction(&vec[idx], low_prod, &prod[idx]);  // Compute y = b - L.x*
-      Gauss_Elimination(iPoint, &prod[idx]);               // Solve D.x* = y
+    if (quantized_mode) {
+      for (auto iPoint = begin; iPoint < end; ++iPoint) {
+        auto idx = iPoint * nVar;
+        QuantizedLowerProduct(prod, iPoint, begin, low_prod);
+        VectorSubtraction(&vec[idx], low_prod, &prod[idx]);
+        QuantizedGaussElimination(iPoint, &prod[idx]);
+      }
+    } else {
+      for (auto iPoint = begin; iPoint < end; ++iPoint) {
+        auto idx = iPoint * nVar;
+        LowerProduct(prod, iPoint, begin, low_prod);         // Compute L.x*
+        VectorSubtraction(&vec[idx], low_prod, &prod[idx]);  // Compute y = b - L.x*
+        GaussElimination(iPoint, &prod[idx]);                // Solve D.x* = y
+      }
     }
   }
   END_SU2_OMP_FOR
@@ -1020,13 +1137,24 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
 
     ScalarType up_prod[MAXNVAR], dia_prod[MAXNVAR];
 
-    for (auto iPoint = row_end; iPoint > begin;) {
-      iPoint--;  // because of unsigned type
-      auto idx = iPoint * nVar;
-      DiagonalProduct(prod, iPoint, dia_prod);           // Compute D.x*
-      UpperProduct(prod, iPoint, row_end, up_prod);      // Compute U.x_(n+1)
-      VectorSubtraction(dia_prod, up_prod, &prod[idx]);  // Compute y = D.x*-U.x_(n+1)
-      Gauss_Elimination(iPoint, &prod[idx]);             // Solve D.x* = y
+    if (quantized_mode) {
+      for (auto iPoint = row_end; iPoint > begin;) {
+        iPoint--;
+        auto idx = iPoint * nVar;
+        QuantizedDiagonalProduct(prod, iPoint, dia_prod);
+        QuantizedUpperProduct(prod, iPoint, row_end, up_prod);
+        VectorSubtraction(dia_prod, up_prod, &prod[idx]);
+        QuantizedGaussElimination(iPoint, &prod[idx]);
+      }
+    } else {
+      for (auto iPoint = row_end; iPoint > begin;) {
+        iPoint--;  // because of unsigned type
+        auto idx = iPoint * nVar;
+        DiagonalProduct(prod, iPoint, dia_prod);           // Compute D.x*
+        UpperProduct(prod, iPoint, row_end, up_prod);      // Compute U.x_(n+1)
+        VectorSubtraction(dia_prod, up_prod, &prod[idx]);  // Compute y = D.x*-U.x_(n+1)
+        GaussElimination(iPoint, &prod[idx]);              // Solve D.x* = y
+      }
     }
   }
   END_SU2_OMP_FOR
@@ -1148,7 +1276,7 @@ void CSysMatrix<ScalarType>::ComputeLineletPreconditioner(const CSysVector<Scala
     /*--- Backwards substitution, LineletVector becomes the solution ---*/
 
     /*--- x_n = d_n^{-1} * b_n ---*/
-    Gauss_Elimination(&lineletInvDiag[(nElem - 1) * nVar * nVar], &lineletVector[(nElem - 1) * nVar]);
+    GaussElimination(&lineletInvDiag[(nElem - 1) * nVar * nVar], &lineletVector[(nElem - 1) * nVar]);
 
     /*--- x_i = d_i^{-1}*(b_i - u_i*x_{i+1}) ---*/
     for (auto iElem = nElem - 1; iElem > 0; --iElem) {
@@ -1263,19 +1391,32 @@ void CSysMatrix<ScalarType>::EnforceZeroProjection(unsigned long node_i, const O
 template <class ScalarType>
 void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
   SU2_ZONE_SCOPED
+  const auto blkSz = nVar * nEqn;
 
   SU2_OMP_FOR_DYN(omp_heavy_size)
   for (auto iPoint = 0ul; iPoint < nPoint; ++iPoint) {
-    auto* d_i = &mat.d[iPoint * nVar * nEqn];
-    for (auto k = 0ul; k < nVar * nEqn; ++k) d_i[k] = 0.0;
+    auto* d_i = &mat.d[iPoint * blkSz];
+    for (auto k = 0ul; k < blkSz; ++k) d_i[k] = 0.0;
 
-    /*--- For each L entry (iPoint, j): subtract its U-transpose (j, iPoint). ---*/
-    for (auto k_l = mat.row_ptr_l[iPoint]; k_l < mat.row_ptr_l[iPoint + 1]; ++k_l)
-      MatrixSubtraction(d_i, &mat.u[l_to_u_transp[k_l] * nVar * nEqn], d_i);
+    if (!quantized_mode) {
+      /*--- For each L entry (iPoint, j): subtract its U-transpose (j, iPoint). ---*/
+      for (auto k_l = mat.row_ptr_l[iPoint]; k_l < mat.row_ptr_l[iPoint + 1]; ++k_l)
+        MatrixSubtraction(d_i, &mat.u[l_to_u_transp[k_l] * blkSz], d_i);
 
-    /*--- For each U entry (iPoint, j): subtract its L-transpose (j, iPoint). ---*/
-    for (auto k_u = mat.row_ptr_u[iPoint]; k_u < mat.row_ptr_u[iPoint + 1]; ++k_u)
-      MatrixSubtraction(d_i, &mat.l[u_to_l_transp[k_u] * nVar * nEqn], d_i);
+      /*--- For each U entry (iPoint, j): subtract its L-transpose (j, iPoint). ---*/
+      for (auto k_u = mat.row_ptr_u[iPoint]; k_u < mat.row_ptr_u[iPoint + 1]; ++k_u)
+        MatrixSubtraction(d_i, &mat.l[u_to_l_transp[k_u] * blkSz], d_i);
+    } else {
+      auto subtractTransp = [&](su2uint k_transp, const QuantType* qs, const QuantType* qv) {
+        const CBlockView<const ScalarType> view{nullptr, &qs[k_transp * nVar], &qv[k_transp * blkSz], nVar};
+        for (auto i = 0ul; i < nVar; ++i)
+          for (auto j = 0ul; j < nEqn; ++j) d_i[i * nEqn + j] -= view(i, j);
+      };
+      for (auto k_l = mat.row_ptr_l[iPoint]; k_l < mat.row_ptr_l[iPoint + 1]; ++k_l)
+        subtractTransp(l_to_u_transp[k_l], q_scale_u, q_blocks_u);
+      for (auto k_u = mat.row_ptr_u[iPoint]; k_u < mat.row_ptr_u[iPoint + 1]; ++k_u)
+        subtractTransp(u_to_l_transp[k_u], q_scale_l, q_blocks_l);
+    }
   }
   END_SU2_OMP_FOR
 }

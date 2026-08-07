@@ -35,13 +35,15 @@
 #include <cmath>
 #include <cstdint>
 
-#ifdef HAVE_CUDA
-#include "gpu_ast.hpp"
-#endif
-
 namespace VecExpr {
 /// \addtogroup VecExpr
 /// @{
+
+#ifdef __CUDACC__
+#define SU2_CUDA_HOST_DEVICE __host__ __device__
+#else
+#define SU2_CUDA_HOST_DEVICE
+#endif
 
 /*!
  * \brief Base vector expression class.
@@ -63,7 +65,7 @@ class CVecExpr {
   /*!
    * \brief Cast the expression to Derived, usually to allow evaluation via operator[].
    */
-  FORCEINLINE const Derived& derived() const { return static_cast<const Derived&>(*this); }
+  SU2_CUDA_HOST_DEVICE FORCEINLINE const Derived& derived() const { return static_cast<const Derived&>(*this); }
 
   // Allowed from C++14, allows nested expression propagation without
   // manually calling derived() on the expression being evaluated.
@@ -80,20 +82,8 @@ class Bcast : public CVecExpr<Bcast<Scalar>, Scalar> {
 
  public:
   static constexpr bool StoreAsRef = false;
-  FORCEINLINE Bcast(const Scalar& x_) : x(x_) {}
-  FORCEINLINE const Scalar& operator[](size_t) const { return x; }
-
-/*!
- * \brief appends a new scalar node to the abstract expression tree of a given payload
- */
-#ifdef HAVE_CUDA
-  int BuildAST(GPUASTPayload<Scalar>& payload) const {
-    int idx = payload.NewNode();
-    payload.nodes[idx].op = GPUOpType::SCALAR;
-    payload.nodes[idx].val = x;
-    return idx;
-  }
-#endif
+  SU2_CUDA_HOST_DEVICE FORCEINLINE Bcast(const Scalar& x_) : x(x_) {}
+  SU2_CUDA_HOST_DEVICE FORCEINLINE const Scalar& operator[](size_t) const { return x; }
 };
 
 /*!
@@ -117,7 +107,11 @@ struct add_lref_if<T, true> {
   using type = remove_reference_t<T>&;
 };
 template <class T>
-using store_t = typename add_lref_if<T, T::StoreAsRef>::type;
+struct store_type {
+  using type = typename add_lref_if<T, T::StoreAsRef>::type;
+};
+template <class T>
+using store_t = typename store_type<T>::type;
 
 /*--- Namespace from which the math function implementations come. ---*/
 
@@ -133,78 +127,38 @@ namespace math = ::std;
 #define RETURNS(...) \
   ->decltype(__VA_ARGS__) { return __VA_ARGS__; }
 
-/*--- Macro to inject GPU abstract syntax trees into unary functions
- * The corresponding NONE macro is for operators not yet existing ---*/
-
-#ifdef HAVE_CUDA
-#define GPU_UNARY_AST(OPTYPE)                          \
-  int BuildAST(GPUASTPayload<Scalar>& payload) const { \
-    int child = u.BuildAST(payload);                   \
-    int idx = payload.NewNode();                       \
-    payload.nodes[idx].op = GPUOpType::OPTYPE;         \
-    payload.nodes[idx].left = child;                   \
-    return idx;                                        \
-  }
-#define GPU_UNARY_AST_NONE()
-#else
-#define GPU_UNARY_AST(OPTYPE)
-#define GPU_UNARY_AST_NONE()
-#endif
-
 /*--- Macro to create expression classes (EXPR) and overloads (FUN) for unary
  * functions, based on their coefficient-wise implementation (IMPL). ---*/
 
-#define MAKE_UNARY_FUN(FUN, EXPR, IMPL, GPU_AST)                            \
-  /*!--- Expression class. ---*/                                            \
-  template <class U, class Scalar>                                          \
-  class EXPR : public CVecExpr<EXPR<U, Scalar>, Scalar> {                   \
-    store_t<const U> u;                                                     \
-                                                                            \
-   public:                                                                  \
-    static constexpr bool StoreAsRef = false;                               \
-    FORCEINLINE EXPR(const U& u_) : u(u_) {}                                \
-    FORCEINLINE auto operator[](size_t i) const RETURNS(IMPL(u[i])) GPU_AST \
-  };                                                                        \
-  /*!--- Function overload, returns an expression object. ---*/             \
-  template <class U, class S>                                               \
+#define MAKE_UNARY_FUN(FUN, EXPR, IMPL)                                                  \
+  /*!--- Expression class. ---*/                                                         \
+  template <class U, class Scalar>                                                       \
+  class EXPR : public CVecExpr<EXPR<U, Scalar>, Scalar> {                                \
+    store_t<const U> u;                                                                  \
+                                                                                         \
+   public:                                                                               \
+    static constexpr bool StoreAsRef = false;                                            \
+    FORCEINLINE EXPR(const U& u_) : u(u_) {}                                             \
+    SU2_CUDA_HOST_DEVICE FORCEINLINE auto operator[](size_t i) const RETURNS(IMPL(u[i])) \
+  };                                                                                     \
+  /*!--- Function overload, returns an expression object. ---*/                          \
+  template <class U, class S>                                                            \
   FORCEINLINE auto FUN(const CVecExpr<U, S>& u) RETURNS(EXPR<U, S>(u.derived()))
 
 #define sign_impl(x) Scalar(1 - 2 * (x < 0))
-MAKE_UNARY_FUN(operator-, minus_, -, GPU_UNARY_AST(NEG))
-MAKE_UNARY_FUN(abs, abs_, math::abs, GPU_UNARY_AST_NONE())
-MAKE_UNARY_FUN(exp, exp_, math::exp, GPU_UNARY_AST_NONE())
-MAKE_UNARY_FUN(sqrt, sqrt_, math::sqrt, GPU_UNARY_AST_NONE())
-MAKE_UNARY_FUN(sign, sign_, sign_impl, GPU_UNARY_AST_NONE())
+MAKE_UNARY_FUN(operator-, minus_, -)
+MAKE_UNARY_FUN(abs, abs_, math::abs)
+MAKE_UNARY_FUN(exp, exp_, math::exp)
+MAKE_UNARY_FUN(sqrt, sqrt_, math::sqrt)
+MAKE_UNARY_FUN(sign, sign_, sign_impl)
 #undef sign_impl
 
 #undef MAKE_UNARY_FUN
-#undef GPU_UNARY_AST
-#undef GPU_UNARY_AST_NONE
-
-/*--- Macro to inject GPU abstract syntax trees into binary functions
- * The corresponding NONE macro is for operators not yet existing ---*/
-
-#ifdef HAVE_CUDA
-#define GPU_BINARY_AST(OPTYPE)                         \
-  int BuildAST(GPUASTPayload<Scalar>& payload) const { \
-    int l = u.BuildAST(payload);                       \
-    int r = v.BuildAST(payload);                       \
-    int idx = payload.NewNode();                       \
-    payload.nodes[idx].op = GPUOpType::OPTYPE;         \
-    payload.nodes[idx].left = l;                       \
-    payload.nodes[idx].right = r;                      \
-    return idx;                                        \
-  }
-#define GPU_BINARY_AST_NONE()
-#else
-#define GPU_BINARY_AST(OPTYPE)
-#define GPU_BINARY_AST_NONE()
-#endif
 
 /*--- Macro to create expressions and overloads for binary functions. ---*/
 
 // clang-format off
-#define MAKE_BINARY_FUN(FUN, EXPR, IMPL, GPU_AST)                                                                     \
+#define MAKE_BINARY_FUN(FUN, EXPR, IMPL)                                                                              \
   /*!--- Expression class. ---*/                                                                                      \
   template <class U, class V, class Scalar>                                                                           \
   class EXPR : public CVecExpr<EXPR<U, V, Scalar>, Scalar> {                                                          \
@@ -214,8 +168,7 @@ MAKE_UNARY_FUN(sign, sign_, sign_impl, GPU_UNARY_AST_NONE())
    public:                                                                                                            \
     static constexpr bool StoreAsRef = false;                                                                         \
     FORCEINLINE EXPR(const U& u_, const V& v_) : u(u_), v(v_) {}                                                      \
-    FORCEINLINE auto operator[](size_t i) const RETURNS(IMPL(u[i], v[i]))                                             \
-    GPU_AST                                                                                                           \
+    SU2_CUDA_HOST_DEVICE FORCEINLINE auto operator[](size_t i) const RETURNS(IMPL(u[i], v[i]))                       \
   };                                                                                                                  \
   /*!--- Vector with vector function overload. ---*/                                                                  \
   template <class U, class V, class S>                                                                                \
@@ -248,9 +201,9 @@ using std::fmax;
 using std::fmin;
 #undef MAKE_FMINMAX_OVERLOADS
 
-MAKE_BINARY_FUN(fmax, max_, fmax, GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(fmin, min_, fmin, GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(pow, pow_, math::pow, GPU_BINARY_AST_NONE())
+MAKE_BINARY_FUN(fmax, max_, fmax)
+MAKE_BINARY_FUN(fmin, min_, fmin)
+MAKE_BINARY_FUN(pow, pow_, math::pow)
 
 /*--- sts::plus and co. were tried, the code was horrendous (due to the forced
  * conversion between different types) and creating functions for these ops
@@ -260,10 +213,10 @@ MAKE_BINARY_FUN(pow, pow_, math::pow, GPU_BINARY_AST_NONE())
 #define sub_impl(a, b) a - b
 #define mul_impl(a, b) a* b
 #define div_impl(a, b) a / b
-MAKE_BINARY_FUN(operator+, add_, add_impl, GPU_BINARY_AST(ADD))
-MAKE_BINARY_FUN(operator-, sub_, sub_impl, GPU_BINARY_AST(SUB))
-MAKE_BINARY_FUN(operator*, mul_, mul_impl, GPU_BINARY_AST(MUL))
-MAKE_BINARY_FUN(operator/, div_, div_impl, GPU_BINARY_AST(DIV))
+MAKE_BINARY_FUN(operator+, add_, add_impl)
+MAKE_BINARY_FUN(operator-, sub_, sub_impl)
+MAKE_BINARY_FUN(operator*, mul_, mul_impl)
+MAKE_BINARY_FUN(operator/, div_, div_impl)
 #undef add_impl
 #undef sub_impl
 #undef mul_impl
@@ -281,12 +234,12 @@ MAKE_BINARY_FUN(operator/, div_, div_impl, GPU_BINARY_AST(DIV))
 #define ne_impl(a, b) TO_PASSIVE(a != b)
 #define lt_impl(a, b) TO_PASSIVE(a < b)
 #define gt_impl(a, b) TO_PASSIVE(a > b)
-MAKE_BINARY_FUN(operator<=, le_, le_impl, GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(operator>=, ge_, ge_impl, GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(operator==, eq_, eq_impl, GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(operator!=, ne_, ne_impl, GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(operator<, lt_, lt_impl, GPU_BINARY_AST_NONE())
-MAKE_BINARY_FUN(operator>, gt_, gt_impl, GPU_BINARY_AST_NONE())
+MAKE_BINARY_FUN(operator<=, le_, le_impl)
+MAKE_BINARY_FUN(operator>=, ge_, ge_impl)
+MAKE_BINARY_FUN(operator==, eq_, eq_impl)
+MAKE_BINARY_FUN(operator!=, ne_, ne_impl)
+MAKE_BINARY_FUN(operator<, lt_, lt_impl)
+MAKE_BINARY_FUN(operator>, gt_, gt_impl)
 #undef TO_PASSIVE
 #undef le_impl
 #undef ge_impl
@@ -296,8 +249,7 @@ MAKE_BINARY_FUN(operator>, gt_, gt_impl, GPU_BINARY_AST_NONE())
 #undef gt_impl
 
 #undef MAKE_BINARY_FUN
-#undef GPU_BINARY_AST
-#undef GPU_BINARY_AST_NONE
 
 /// @}
+#undef SU2_CUDA_HOST_DEVICE
 }  // namespace VecExpr

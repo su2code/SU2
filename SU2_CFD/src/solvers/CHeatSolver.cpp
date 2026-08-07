@@ -180,13 +180,11 @@ void CHeatSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container,
 
   /*--- Need to clear EdgeFluxes and Jacobian when only the viscous part is called for solid heat transfer,
    * for the weakly coupled energy equation the convection part does this by setting instead of incrementing. ---*/
-  if (!Output && !flow && ReducerStrategy) {
-    EdgeFluxes.SetValZero();
-    if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) {
-      Jacobian.SetValZero();
-    } else {
-      SU2_OMP_BARRIER
-    }
+  if (!Output && !flow) {
+    if (ReducerStrategy) EdgeFluxes.SetValZero();
+    if (config->GetKind_TimeIntScheme() == EULER_IMPLICIT) Jacobian.SetValZero();
+
+    SU2_OMP_BARRIER
   }
 }
 

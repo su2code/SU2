@@ -3492,7 +3492,7 @@ public:
    * \param[in] rhs - Right hand side.
    * \param[in] nVar - Number of variables.
    */
-  void Gauss_Elimination(su2double** A,
+  void GaussElimination(su2double** A,
                          su2double* rhs,
                          unsigned short nVar);
 
