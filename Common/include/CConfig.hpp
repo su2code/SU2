@@ -644,11 +644,14 @@ private:
   unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Restart_Deflation; /*!< \brief Number of vectors used for deflated restarts. */
   unsigned long Linear_Solver_Prec_Threads;      /*!< \brief Number of threads per rank for ILU and LU_SGS preconditioners. */
-  unsigned short Linear_Solver_ILU_n;            /*!< \brief ILU fill=in level. */
-  bool Linear_Solver_ILU_levels;                 /*!< \brief Use level scheduling for OMP parallelization of ILU. */
-  /*!< \brief Number of colored Gauss-Seidel sweeps used to build the GPU ILU factorization; the
-   * triangular solves are level-scheduled and exact (no sweep count). */
-  unsigned short Linear_Solver_ILU_GPU_Sweeps = 1;
+
+  struct CIluOptions {
+    unsigned short FillIn = 0;        /*!< \brief ILU fill-in level. */
+    bool LevelScheduling = false;     /*!< \brief Use level scheduling for OMP parallelization of ILU. */
+    /*!< \brief Number of colored Gauss-Seidel sweeps used to build the GPU ILU factorization;
+     * the triangular solves are level-scheduled and exact (no sweep count). */
+    unsigned short GPUSweeps = 2;
+  } IluOptions;
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
   su2double MSW_Alpha;                  /*!< \brief Coefficient for blending states in the MSW scheme. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
@@ -4393,21 +4396,10 @@ public:
   unsigned long GetDeform_Linear_Solver_Iter(void) const { return Deform_Linear_Solver_Iter; }
 
   /*!
-   * \brief Get the ILU fill-in level for the linear solver.
-   * \return Fill in level of the ILU preconditioner for the linear solver.
+   * \brief Get the ILU preconditioner options (fill-in level, OMP level scheduling, GPU build
+   *        sweeps), see CIluOptions.
    */
-  unsigned short GetLinear_Solver_ILU_n(void) const { return Linear_Solver_ILU_n; }
-
-  /*!
-   * \brief Get whether to use level scheduling for OMP parallelization of ILU.
-   */
-  bool GetLinear_Solver_ILU_levels(void) const { return Linear_Solver_ILU_levels; }
-
-  /*!
-   * \brief Get the number of colored Gauss-Seidel sweeps used to build the GPU ILU
-   *        factorization, see Linear_Solver_ILU_GPU_Sweeps.
-   */
-  unsigned short GetLinear_Solver_ILU_GPU_Sweeps(void) const { return Linear_Solver_ILU_GPU_Sweeps; }
+  const CIluOptions& GetIluOptions(void) const { return IluOptions; }
 
   /*!
    * \brief Get restart frequency of the linear solver for the implicit formulation.

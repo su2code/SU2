@@ -278,8 +278,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Get ILU sparse pattern, if fill is 0 no new data is allocated. --*/
 
   if (ilu_needed) {
-    ilu_fill_in = config->GetLinear_Solver_ILU_n();
-    ilu_gpu_sweeps = config->GetLinear_Solver_ILU_GPU_Sweeps();
+    ilu_fill_in = config->GetIluOptions().FillIn;
+    ilu_gpu_sweeps = config->GetIluOptions().GPUSweeps;
 
     const auto& pat_ilu = geometry->GetSparsePattern(type, ilu_fill_in);
     ilu.row_ptr_l = pat_ilu.l.outerPtr();
@@ -292,7 +292,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     /*--- The GPU triangular solves are level-scheduled (exact, one pass per level), so they need
      * levels_ilu unconditionally; the host/OMP path only needs it when both multi-threaded and
      * requested via config. ---*/
-    if (useCuda || (omp_get_max_threads() > 1 && config->GetLinear_Solver_ILU_levels())) {
+    if (useCuda || (omp_get_max_threads() > 1 && config->GetIluOptions().LevelScheduling)) {
       levels_ilu = computeLevels(pat_ilu.l);
     }
 
