@@ -48,6 +48,19 @@ FORCEINLINE void RegularizePivot(ScalarType& pivot, unsigned long row, unsigned 
 #endif
   }
 }
+
+/*--- Common failure path for a device dispatch that is not available in this build/scalar type
+ * combination, called with CURRENT_FUNCTION so the error names the right caller. ---*/
+void GPUNotAvailable(const char* caller) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+  SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", caller);
+#else
+  SU2_MPI::Error(
+      "ENABLE_CUDA is set to YES but SU2 was not compiled with CUDA support; "
+      "recompile with CUDA enabled in Meson to use GPU functions.",
+      caller);
+#endif
+}
 }  // namespace
 
 template <class ScalarType>
@@ -124,21 +137,18 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   MemoryAllocation::aligned_free(q_blocks_d);
 
   if (useCuda) {
-    GPUMemoryAllocation::gpu_free(gpu.d);
-    GPUMemoryAllocation::gpu_free(gpu.l);
-    GPUMemoryAllocation::gpu_free(gpu.u);
-    GPUMemoryAllocation::gpu_free(gpu.row_ptr_l);
-    GPUMemoryAllocation::gpu_free(gpu.col_ind_l);
-    GPUMemoryAllocation::gpu_free(gpu.row_ptr_u);
-    GPUMemoryAllocation::gpu_free(gpu.col_ind_u);
+    auto freeLDU = [](LDU& m) {
+      GPUMemoryAllocation::gpu_free(m.d);
+      GPUMemoryAllocation::gpu_free(m.l);
+      GPUMemoryAllocation::gpu_free(m.u);
+      GPUMemoryAllocation::gpu_free(m.row_ptr_l);
+      GPUMemoryAllocation::gpu_free(m.col_ind_l);
+      GPUMemoryAllocation::gpu_free(m.row_ptr_u);
+      GPUMemoryAllocation::gpu_free(m.col_ind_u);
+    };
+    freeLDU(gpu);
+    freeLDU(gpu_ilu);
     GPUMemoryAllocation::gpu_free(d_invM);
-    GPUMemoryAllocation::gpu_free(gpu_ilu.d);
-    GPUMemoryAllocation::gpu_free(gpu_ilu.l);
-    GPUMemoryAllocation::gpu_free(gpu_ilu.u);
-    GPUMemoryAllocation::gpu_free(gpu_ilu.row_ptr_l);
-    GPUMemoryAllocation::gpu_free(gpu_ilu.col_ind_l);
-    GPUMemoryAllocation::gpu_free(gpu_ilu.row_ptr_u);
-    GPUMemoryAllocation::gpu_free(gpu_ilu.col_ind_u);
     GPUMemoryAllocation::gpu_free(d_ilu_color_idx);
     GPUMemoryAllocation::gpu_free(d_ilu_level_idx);
 #ifdef SU2_ENABLE_CUDA_KERNELS
@@ -251,13 +261,17 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     allocAndInit(mat.u, mat.nnz_u * nVar * nEqn);
   }
 
+  auto GPUAllocAndInit = [](ScalarType*& ptr, unsigned long num) {
+    ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
+  };
+  auto GPUAllocAndCopy = [](const su2uint*& ptr, const su2uint* src_ptr, unsigned long num) {
+    ptr = GPUMemoryAllocation::gpu_alloc_cpy<su2uint>(src_ptr, num * sizeof(su2uint));
+  };
+
   if (useCuda) {
-    auto GPUAllocAndInit = [](ScalarType*& ptr, unsigned long num) {
-      ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
-    };
-    auto GPUAllocAndCopy = [](const su2uint*& ptr, const su2uint* src_ptr, unsigned long num) {
-      ptr = GPUMemoryAllocation::gpu_alloc_cpy<su2uint>(src_ptr, num * sizeof(su2uint));
-    };
+    if (nVar != nEqn) {
+      SU2_MPI::Error("CUDA CSysMatrix block-LDU SpMV requires square blocks.", CURRENT_FUNCTION);
+    }
     GPUAllocAndInit(gpu.d, nPoint * nVar * nEqn);
     GPUAllocAndInit(gpu.l, mat.nnz_l * nVar * nEqn);
     GPUAllocAndInit(gpu.u, mat.nnz_u * nVar * nEqn);
@@ -329,21 +343,34 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   if (diag_needed) allocAndInit(invM, nPointDomain * nVar * nEqn);
 
   if (jacobi_on_device) {
+    if (nVar != nEqn) {
+      SU2_MPI::Error("CUDA Jacobi preconditioner requires square blocks.", CURRENT_FUNCTION);
+    }
+    if (nVar * nVar > 1024) {
+      SU2_MPI::Error("CUDA Jacobi preconditioner uses one thread per block entry, nVar is too large.",
+                     CURRENT_FUNCTION);
+    }
     d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
   }
 
   if (useCuda && ilu_needed) {
+    if (nVar != nEqn) {
+      SU2_MPI::Error("CUDA ILU factorization requires square blocks.", CURRENT_FUNCTION);
+    }
+    if (nVar * nVar > 1024) {
+      SU2_MPI::Error("CUDA ILU factorization uses one thread per block entry, nVar is too large.", CURRENT_FUNCTION);
+    }
     /*--- The factors are built and used on the device, only the pattern and the level table
      * are uploaded (once, here) because they do not change. ---*/
     gpu_ilu.nnz_l = ilu.nnz_l;
     gpu_ilu.nnz_u = ilu.nnz_u;
-    gpu_ilu.d = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
-    gpu_ilu.l = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(ilu.nnz_l * nVar * nEqn * sizeof(ScalarType));
-    gpu_ilu.u = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(ilu.nnz_u * nVar * nEqn * sizeof(ScalarType));
-    gpu_ilu.row_ptr_l = GPUMemoryAllocation::gpu_alloc_cpy(ilu.row_ptr_l, (nPointDomain + 1) * sizeof(su2uint));
-    gpu_ilu.col_ind_l = GPUMemoryAllocation::gpu_alloc_cpy(ilu.col_ind_l, ilu.nnz_l * sizeof(su2uint));
-    gpu_ilu.row_ptr_u = GPUMemoryAllocation::gpu_alloc_cpy(ilu.row_ptr_u, (nPointDomain + 1) * sizeof(su2uint));
-    gpu_ilu.col_ind_u = GPUMemoryAllocation::gpu_alloc_cpy(ilu.col_ind_u, ilu.nnz_u * sizeof(su2uint));
+    GPUAllocAndInit(gpu_ilu.d, nPointDomain * nVar * nEqn);
+    GPUAllocAndInit(gpu_ilu.l, ilu.nnz_l * nVar * nEqn);
+    GPUAllocAndInit(gpu_ilu.u, ilu.nnz_u * nVar * nEqn);
+    GPUAllocAndCopy(gpu_ilu.row_ptr_l, ilu.row_ptr_l, nPointDomain + 1);
+    GPUAllocAndCopy(gpu_ilu.col_ind_l, ilu.col_ind_l, ilu.nnz_l);
+    GPUAllocAndCopy(gpu_ilu.row_ptr_u, ilu.row_ptr_u, nPointDomain + 1);
+    GPUAllocAndCopy(gpu_ilu.col_ind_u, ilu.col_ind_u, ilu.nnz_u);
 
     /*--- Flatten the coloring, the index type differs from the one of the pattern. It drives
      * the factorization on the device. ---*/
@@ -837,13 +864,10 @@ void CSysMatrix<ScalarType>::MatrixVectorProduct(const CSysVector<ScalarType>& v
       END_SU2_DEVICE_REGION
       return;
     } else {
-      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+      GPUNotAvailable(CURRENT_FUNCTION);
     }
 #else
-    SU2_MPI::Error(
-        "\nError in launching Matrix-Vector Product Function\nENABLE_CUDA is set to YES\nPlease compile with CUDA "
-        "options enabled in Meson to access GPU Functions",
-        CURRENT_FUNCTION);
+    GPUNotAvailable(CURRENT_FUNCTION);
 #endif
   }
 
@@ -893,13 +917,10 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
       SU2_DEVICE_REGION(BuildJacobiPreconditionerGPU();)
       return;
     } else {
-      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+      GPUNotAvailable(CURRENT_FUNCTION);
     }
 #else
-    SU2_MPI::Error(
-        "\nError in building Jacobi preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
-        "enabled in Meson to access GPU Functions",
-        CURRENT_FUNCTION);
+    GPUNotAvailable(CURRENT_FUNCTION);
 #endif
   }
 
@@ -922,13 +943,10 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditioner(const CSysVector<Scalar
       SU2_DEVICE_REGION(ComputeJacobiPreconditionerGPU(vec, prod, geometry, config);)
       return;
     } else {
-      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+      GPUNotAvailable(CURRENT_FUNCTION);
     }
 #else
-    SU2_MPI::Error(
-        "\nError in applying Jacobi preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
-        "enabled in Meson to access GPU Functions",
-        CURRENT_FUNCTION);
+    GPUNotAvailable(CURRENT_FUNCTION);
 #endif
   }
 
@@ -954,13 +972,10 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
       SU2_DEVICE_REGION(BuildILUPreconditionerGPU();)
       return;
     } else {
-      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+      GPUNotAvailable(CURRENT_FUNCTION);
     }
 #else
-    SU2_MPI::Error(
-        "\nError in building ILU preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
-        "enabled in Meson to access GPU Functions",
-        CURRENT_FUNCTION);
+    GPUNotAvailable(CURRENT_FUNCTION);
 #endif
   }
 
@@ -1101,13 +1116,10 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
       SU2_DEVICE_REGION(ComputeILUPreconditionerGPU(vec, prod);)
       return;
     } else {
-      SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
+      GPUNotAvailable(CURRENT_FUNCTION);
     }
 #else
-    SU2_MPI::Error(
-        "\nError in applying ILU preconditioner\nENABLE_CUDA is set to YES\nPlease compile with CUDA options "
-        "enabled in Meson to access GPU Functions",
-        CURRENT_FUNCTION);
+    GPUNotAvailable(CURRENT_FUNCTION);
 #endif
   }
 

@@ -308,41 +308,23 @@ class CSysMatrix {
    * exact, one pass per level (see IluForwardKernel / IluBackwardKernel). */
   unsigned short ilu_gpu_sweeps = 1;
 
-  /*--- A color is a true independent set (no dependency between same-colored rows in either
-   * direction), so far fewer, wider colors are needed than levels, but a color launch is only
-   * exact as one step of an iterative refinement (see BuildILUPreconditionerGPU), not a single
-   * pass — this does not change the elimination order/pattern, so the factorization converges to
-   * the exact same factors an exact (non-iterative) elimination would give, just reached by
-   * iterating instead of substituting. ---*/
   vector<su2uint> ilu_color_ptr;      /*!< \brief Start of each color in d_ilu_color_idx, size nColors+1. */
   su2uint* d_ilu_color_idx = nullptr; /*!< \brief Row indices, grouped by color. */
 
-  /*--- Flattened levels_ilu, drives the GPU triangular solves (see IluForwardKernel /
-   * IluBackwardKernel). Every row in a level only depends on rows in earlier levels, already
-   * finalized, so one pass over the levels is exact and no sweeping is needed here (unlike the
-   * factorization above). ---*/
   vector<su2uint> ilu_level_ptr;      /*!< \brief Start of each level in d_ilu_level_idx, size nLevels+1. */
   su2uint* d_ilu_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
 
   /*--- The per-color (factorization) and per-level (triangular solves) kernel launch sequences
    * are identical on every call: same grid/block sizes, same device pointers (all fixed members,
-   * allocated once). Each is captured once into a CUDA graph and replayed, which removes
-   * host-side launch overhead without changing the parallelization (unlike a persistent
-   * cooperative-groups kernel, this does not cap per-color/per-level parallelism to the
-   * occupancy-resident block count). ---*/
-  /*--- Types are forward-declared as opaque structs (matching the real cudaGraphExec_t /
-   * cudaStream_t typedefs) so this header does not need to include the CUDA runtime. ---*/
+   * allocated once). Each is captured once into a CUDA graph and replayed to remove
+   * host-side launch overhead without changing the parallelization. ---*/
   mutable struct CUgraphExec_st* ilu_build_graph_exec = nullptr;
   mutable struct CUgraphExec_st* ilu_apply_graph_exec = nullptr;
   mutable const ScalarType* ilu_apply_graph_vec = nullptr; /*!< \brief Pointers the apply graph
                                                             * was captured with, to detect when
                                                             * it must be recaptured. */
   mutable ScalarType* ilu_apply_graph_prod = nullptr;
-  /*--- The legacy default stream cannot be captured into a graph, so the ILU graphs are
-   * captured and replayed on this dedicated stream instead; every launch on it is followed by
-   * a sync back to the host before control returns to the rest of the (single-stream) solver,
-   * so this does not change execution order relative to everything else, which stays on the
-   * default stream. ---*/
+  /*--- The legacy default stream cannot be captured into a graph. ---*/
   mutable struct CUstream_st* ilu_stream = nullptr;
 
   ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */

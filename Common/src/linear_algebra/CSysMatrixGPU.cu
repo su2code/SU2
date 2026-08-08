@@ -384,12 +384,6 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditionerGPU() {
   if (d_invM == nullptr) {
     SU2_MPI::Error("CUDA Jacobi preconditioner used without device storage.", CURRENT_FUNCTION);
   }
-  if (nVar != nEqn) {
-    SU2_MPI::Error("CUDA Jacobi preconditioner requires square blocks.", CURRENT_FUNCTION);
-  }
-  if (nVar * nVar > 1024) {
-    SU2_MPI::Error("CUDA Jacobi preconditioner uses one thread per block entry, nVar is too large.", CURRENT_FUNCTION);
-  }
   if (nPointDomain == 0) return;
 
   /*--- The matrix is expected to be on the device already, it is uploaded once per solve by
@@ -409,12 +403,6 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
 
   if (gpu_ilu.d == nullptr) {
     SU2_MPI::Error("CUDA ILU preconditioner used without device storage.", CURRENT_FUNCTION);
-  }
-  if (nVar != nEqn) {
-    SU2_MPI::Error("CUDA ILU factorization requires square blocks.", CURRENT_FUNCTION);
-  }
-  if (nVar * nVar > 1024) {
-    SU2_MPI::Error("CUDA ILU factorization uses one thread per block entry, nVar is too large.", CURRENT_FUNCTION);
   }
   if (nPointDomain == 0) return;
 
@@ -555,9 +543,6 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::MatrixVectorProductGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
                                                     CGeometry* geometry, const CConfig* config) const {
   SU2_ZONE_SCOPED
-  if (nVar != nEqn) {
-    SU2_MPI::Error("CUDA CSysMatrix block-LDU SpMV requires square blocks.", CURRENT_FUNCTION);
-  }
 
   ScalarType* d_vec = vec.GetDevicePointer();
   ScalarType* d_prod = prod.GetDevicePointer();
