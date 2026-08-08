@@ -126,6 +126,7 @@ void CPoissonSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
 
   /*--- Need to clear EdgeFluxes and Jacobian. ---*/
   if (!Output) {
+    LinSysRes.SetValZero();
     if (ReducerStrategy) EdgeFluxes.SetValZero();
     Jacobian.SetValZero();
   }
@@ -204,6 +205,40 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
 }
 
 
+void CPoissonSolver::ComputeHbyA(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
+
+  unsigned short iVar, jVar, iDim, jDim;
+  unsigned long iPoint, jPoint, iNeigh;
+  su2double Mom_Coeff, Mom_Coeff_nb, Vol, delT;
+  bool simplec = (config->GetKind_PBIter() == ENUM_PBITER::SIMPLEC);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  const CSolver* flow_solution = solver_container[FLOW_SOL];
+  const CVariable* flow_nodes = flow_solution->GetNodes();
+  
+  if (implicit) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      for (iDim = 0; iDim < nDim; ++iDim) {
+        su2double H = 0.0;
+        su2double A_P = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(0,0);
+        for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+          jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+          H -= flow_solution->Jacobian.GetBlockView(iPoint, jPoint)(0,0) * nodes->GetMomCorrection(jPoint, iDim);
+        }
+        nodes->SetHbyACorrection(iPoint, iDim, H/A_P);
+      }
+    }
+  }
+  else {
+    SU2_MPI::Error("HbyA is currently not supported for an explicit momentum solver.", CURRENT_FUNCTION);
+  }
+
+  /*--- Insert MPI call here. ---*/
+  // TODO: have to MPI move around the HbyA values.
+  // InitiateComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
+  // CompleteComms(geometry, config, MPI_QUANTITIES::MOM_COEFF); 
+}
+
 void CPoissonSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   SU2_ZONE_SCOPED
@@ -270,6 +305,17 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
       if (geometry->nodes->GetDomain(jPoint)) LinSysRes.SubtractBlock(jPoint, residual);
 
+
+      /*--- Only for the second pressure correction in the case PISO is used, we need the additional HbyA(u') term ---*/
+      // TODO: currently its just set to zero and does not contribute for the first piso correctin but would be nice if this entire block would be skipped otherwise.
+      su2double MeanHbyA = 0.0;
+      for (iDim = 0; iDim < nDim; ++iDim)
+        MeanHbyA += 0.5 * (nodes->GetHbyACorrection(iPoint, iDim) + nodes->GetHbyACorrection(jPoint, iDim)) * Normal[iDim]; 
+
+      auto residualHbyA = CNumerics::ResidualType<>(&MeanHbyA, nullptr, nullptr);
+      if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residualHbyA);
+      if (geometry->nodes->GetDomain(jPoint)) LinSysRes.SubtractBlock(jPoint, residualHbyA);
+
     }
     END_SU2_OMP_FOR
   }
@@ -329,10 +375,10 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
             MassFlux_Part = 0.0;
             if (dynamic_grid)
               for (iDim = 0; iDim < nDim; iDim++)
-                MassFlux_Part -= nodes->GetDensity(iPoint)*(nodes->GetVelocity(iPoint, iDim)-GridVel_i[iDim])*Normal[iDim];
+                MassFlux_Part -= flow_nodes->GetDensity(iPoint)*(flow_nodes->GetVelocity(iPoint, iDim)-GridVel_i[iDim])*Normal[iDim];
             else
              for (iDim = 0; iDim < nDim; iDim++)
-              MassFlux_Part -= nodes->GetDensity(iPoint)*(nodes->GetVelocity(iPoint, iDim))*Normal[iDim];
+              MassFlux_Part -= flow_nodes->GetDensity(iPoint)*(flow_nodes->GetVelocity(iPoint, iDim))*Normal[iDim];
   
             auto residual = CNumerics::ResidualType<>(&MassFlux_Part, nullptr, nullptr);
             LinSysRes.AddBlock(iPoint, residual);    

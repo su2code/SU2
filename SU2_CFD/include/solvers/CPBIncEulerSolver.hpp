@@ -39,12 +39,12 @@ protected:
   su2activematrix EdgeVelocity; /*!< \brief The edge velocity used in the solver and updated by through Rhie-Chow and pressure correction. */
 
   /*!
-   * \brief Get the velocities across the edges (currently only relevant for pressure-based solver).
+   * \brief Get the velocities across the edges.
    */
   inline const su2activematrix* GetEdgeVelocity() const final { return &EdgeVelocity; }
 
   /*!
-   * \brief Set the velocity across an edge (currently only relevant for pressure-based solver).
+   * \brief Set the velocity across an edge.
    * \param[in] iEdge - The edge of interest
    * \param[in] iDim - The dimension
    * \param[in] val_velocity - The velocity at the edge
@@ -235,13 +235,6 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void SetNondimensionalization(CConfig *config, unsigned short iMesh);
-
-  // /*!
-  //  * \brief Generic implementation of explicit iterations with preconditioner.
-  //  */
-  // template<ENUM_TIME_INT IntegrationType>
-  // void Explicit_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iRKStep);
-
 
   /*!
    * \brief Set reference values for pressure, forces, etc.

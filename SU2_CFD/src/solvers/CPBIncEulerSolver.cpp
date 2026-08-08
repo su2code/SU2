@@ -234,6 +234,11 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
     END_SU2_OMP_FOR
   } // end color loop
 
+  /*--- Sizing of correction arrays ---*/
+  // MomentumCorrection.resize(nPoint, nDim) = su2double(0.0);
+  // MomentumEdgeCorrection.resize(geometry->GetnEdge(), nDim) = su2double(0.0);
+  // PressureCorrection.resize(nPoint) = su2double(0.0);
+
   /*--- Add the solver name. ---*/
   SolverName = "INC.FLOW";
 
@@ -1307,6 +1312,7 @@ void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 
 
 void CPBIncEulerSolver::ComputeRhieChowVelocities(CGeometry *geometry, CSolver **solver_container) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim;
   unsigned long iPoint, jPoint;
@@ -1388,6 +1394,8 @@ void CPBIncEulerSolver::ComputeRhieChowVelocities(CGeometry *geometry, CSolver *
 
 
 void CPBIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+  SU2_ZONE_SCOPED
+
   /*--- Start of computing the corrections ---*/
   unsigned long iEdge, iPoint, jPoint, iMarker, iVertex;
   unsigned short iDim, iVar, KindBC;
@@ -1434,7 +1442,7 @@ void CPBIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSo
     delT = nodes->GetDelta_Time(iPoint);
     const auto view = Jacobian.GetBlockView(iPoint, iPoint);
     for (iDim = 0; iDim < nDim; iDim++) {
-      velocityCorrection[iPoint][iDim] = poisson_nodes->GetMomCoeff(iPoint)*(poisson_nodes->GetGradient(iPoint,0,iDim));
+      velocityCorrection[iPoint][iDim] = -poisson_nodes->GetMomCoeff(iPoint)*(poisson_nodes->GetGradient(iPoint,0,iDim));
       if (implicit && !piso) factor += view(iDim, iDim);
     }
 
@@ -1442,21 +1450,85 @@ void CPBIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSo
     if (piso) alpha_p[iPoint] = 1.0;
     else {
       alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow();
-      if (implicit) alpha_p[iPoint] *= (Vol/delT) / (factor+(Vol/delT));     
+      // if (implicit) alpha_p[iPoint] *= (Vol/delT) / (factor+(Vol/delT));     
     } 
   }
 
+  // TODO: optional addition of HbyA 
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      velocityCorrection[iPoint][iDim] += poisson_nodes->GetHbyACorrection(iPoint, iDim);
+    }
+  }
+
   /*--- Compute the edge corrections based on the average of the momentum coefficients and the average of the p' gradient. ---*/
+  su2double* Coord_i,* Coord_j;
+  su2double GradP_f[MAXNDIM], GradP_in[MAXNDIM];
   for (auto color : EdgeColoring) {
     SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
     for (auto k = 0ul; k < color.size; ++k) {
       auto iEdge = color.indices[k];
 
       iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
+
+      Coord_i = geometry->nodes->GetCoord(iPoint);
+      Coord_j = geometry->nodes->GetCoord(jPoint);
+      su2double dist_ij_2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        su2double dist = Coord_j[iDim]-Coord_i[iDim];
+        dist_ij_2 += dist*dist;
+      }
+      /*--- 1. Interpolate the pressure gradient based on node values ---*/
+      for (iDim = 0; iDim < nDim; iDim++) {
+        su2double Grad_Avg = 0.5*(poisson_nodes->GetGradient(iPoint,0,iDim) + poisson_nodes->GetGradient(jPoint,0,iDim));
+        GradP_in[iDim] = Grad_Avg;
+      }
+
+      /*--- 2. Compute pressure gradient at the face ---*/
+      /*--- Eq 15.62 F Moukalled, L Mangani M. Darwish OpenFOAM and uFVM book. ---*/
+      su2double GradP_proj = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        GradP_proj += GradP_in[iDim]*(Coord_j[iDim]-Coord_i[iDim]);
+      }
+      if (dist_ij_2 != 0.0) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          GradP_f[iDim] = GradP_in[iDim] - (GradP_proj - (pressureCorrection[jPoint] - pressureCorrection[iPoint]))*(Coord_j[iDim]-Coord_i[iDim])/ dist_ij_2;
+        }
+      }
+
+      // pressure-correction face gradient  == the Poisson stencil
+      // su2double edgeVec[MAXNDIM], gradAvg[MAXNDIM];
+      // GeometryToolbox::Distance(nDim, Coord_j, Coord_i, edgeVec);
+      // const su2double dist2 = GeometryToolbox::SquaredNorm(nDim, edgeVec);
+
+      // su2double proj = 0.0;
+      // for (iDim = 0; iDim < nDim; iDim++) {
+      //   gradAvg[iDim] = 0.5*(poisson_nodes->GetGradient(iPoint,0,iDim) +
+      //                       poisson_nodes->GetGradient(jPoint,0,iDim));
+      //   proj += gradAvg[iDim]*edgeVec[iDim];
+      // }
+
+      // const su2double dp   = pressureCorrection[jPoint] - pressureCorrection[iPoint];
+      // const su2double d_f  = 0.5*(poisson_nodes->GetMomCoeff(iPoint) +
+      //                             poisson_nodes->GetMomCoeff(jPoint));
+
+      // for (iDim = 0; iDim < nDim; iDim++) {
+      //   const su2double gradFace = gradAvg[iDim] + (dp - proj)*edgeVec[iDim]/dist2;
+      //   velocityEdgeCorrection[iEdge][iDim] = -d_f*gradFace;
+      //                                      // + 0.5*(HbyA_i[iDim] + HbyA_j[iDim]);
+      // }
       
-      for (iDim = 0; iDim < nDim; iDim++)
-        velocityEdgeCorrection[iEdge][iDim] = 0.25 * (poisson_nodes->GetMomCoeff(iPoint)+poisson_nodes->GetMomCoeff(jPoint))
-                                                   * (poisson_nodes->GetGradient(iPoint,0,iDim)+poisson_nodes->GetGradient(jPoint,0,iDim));
+      for (iDim = 0; iDim < nDim; iDim++) {
+
+        velocityEdgeCorrection[iEdge][iDim] = -0.5 * (poisson_nodes->GetMomCoeff(iPoint)+poisson_nodes->GetMomCoeff(jPoint))
+                                                   * GradP_f[iDim];
+        // velocityEdgeCorrection[iEdge][iDim] = -0.25 * (poisson_nodes->GetMomCoeff(iPoint)+poisson_nodes->GetMomCoeff(jPoint))
+        //                                            * (poisson_nodes->GetGradient(iPoint,0,iDim)+poisson_nodes->GetGradient(jPoint,0,iDim));
+
+
+        // // 2nd piso correction term.
+        // velocityEdgeCorrection[iEdge][iDim] += 0.5*(poisson_nodes->GetHbyACorrection(iPoint, iDim)+poisson_nodes->GetHbyACorrection(jPoint, iDim));
+      }
     }
     END_SU2_OMP_FOR
   }
@@ -1544,9 +1616,10 @@ void CPBIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSo
 
     for (iVar = 0; iVar < nDim; iVar++) {
       Vel = nodes->GetVelocity(iPoint,iVar);
-      Vel -= velocityCorrection[iPoint][iVar];
+      Vel += velocityCorrection[iPoint][iVar];
       Density = nodes->GetDensity(iPoint);
       nodes->SetSolution(iPoint,iVar,Density*Vel);
+      poisson_nodes->SetMomCorrection(iPoint,iVar,velocityCorrection[iPoint][iVar]); // TODO: TEMPORARY JUST A TEST
     }
     nodes->SetVelocity(iPoint);
 
@@ -1565,9 +1638,15 @@ void CPBIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSo
       auto iEdge = color.indices[k];
 
       for (iDim = 0; iDim < nDim; iDim++) 
-        AddEdgeVelocity(iEdge, iDim, -velocityEdgeCorrection[iEdge][iDim]);
+        AddEdgeVelocity(iEdge, iDim, velocityEdgeCorrection[iEdge][iDim]);
     }
     END_SU2_OMP_FOR
+  }
+
+  /*--- Reset HbyA for next iteration ---*/
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      poisson_nodes->SetHbyACorrection(iPoint, iDim, 0.0);
   }
 
 

@@ -49,7 +49,9 @@ CPoissonVariable::CPoissonVariable(su2double value, unsigned long npoint, unsign
     }       
   } 
 
-  /*--- Initialize momentum coefficient and boolean flag for BC ---*/
+  /*--- Initialize momentum coefficient and HbyA ---*/
   MomCoeff.resize(nPoint) = su2double(0.0);
+  MomentumCorrection.resize(nPoint, nDim) = su2double(0.0);
+  HbyACorrection.resize(nPoint, nDim) = su2double(0.0);
   
 }

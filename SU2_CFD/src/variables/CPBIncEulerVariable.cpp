@@ -56,7 +56,7 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double density, su2double pressure, 
     Solution_time_n1 = Solution;
   }
 
-  /*--- Initialize momentum coefficient and boolean flag for BC ---*/
+  /*--- Initialize boolean flag for BC ---*/
   strongBC.resize(nPoint) = false;
 
 }

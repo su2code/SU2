@@ -47,8 +47,7 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   const bool disc_adj = (config[val_iZone]->GetDiscrete_Adjoint());
   const bool periodic = (config[val_iZone]->GetnMarker_Periodic() > 0);
 
-  /*--- number of correstions must at least be 1, as the edge velocities are only updated in the pressure correction loop. ---*/
-  const unsigned short nCorrections = (config[val_iZone]->GetPISO_corrections() < 1) ? 1 : config[val_iZone]->GetPISO_corrections();
+  const unsigned short nCorrections = config[val_iZone]->GetPISO_corrections();
 
   /*--- Setting up iteration values depending on if this is a
    steady or an unsteady simulation */
@@ -85,15 +84,17 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
    * to solve at large Reynolds number cases and would therefore massively benefit from Multigrid. The current 
    * limitation here is that SU2 as of today does not allow multigrid for different solvers and has multigrid 
    * only as an option for the flow solver. */
-  for (unsigned short i = 0; i < nCorrections; ++i) {
+  for (unsigned short iCorrection = 0; iCorrection < nCorrections; ++iCorrection) {
 
-    /*--- Solve the pressure Poisson equation to find p' i.e. div(1/ap * p') = sum_f m_f ---*/
+    /*--- For later corrections (PISO) the pressure equation has an additional div(H(u')/A_p) term on the right side, u' is computed in the last correction routine. ---*/
+    if (iCorrection > 0) solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->ComputeHbyA(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
+
+    /*--- Solve the pressure Poisson equation to find p' i.e. div(1/A_p * grad(p')) = div \dot{m} ---*/
 
     integration[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, RUNTIME_POISSON_SYS,
                                                                    val_iZone, val_iInst);
 
     /*--- The velocity and pressure are corrected based on the solution to the Poisson problem i.e. p* = p + p' and u** = u* - 1/Ap * p' ---*/
-
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ApplyPressureVelocityCorrection(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
     /*--- Postprocessing is applied once again as the flow solution is altered by correcting the velocities and pressure. */

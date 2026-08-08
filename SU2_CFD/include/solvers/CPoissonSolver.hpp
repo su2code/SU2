@@ -215,6 +215,17 @@ public:
    */
   void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh) final;
 
+
+  /*!
+   * \brief Compute the HbyA based on the momentum correction to be used in second PISO 
+   *        correction equation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void ComputeHbyA(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) final;
+
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
    * \param[in] geometry - Geometrical definition of the problem.

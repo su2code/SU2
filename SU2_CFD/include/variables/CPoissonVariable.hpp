@@ -37,7 +37,9 @@
  */
 class CPoissonVariable final : public CScalarVariable {
 protected:
-  VectorType MomCoeff; /*!< \brief Momentum coefficients vol/a_p used as the diffusion coefficients in the poisson solver.  */
+  VectorType MomCoeff;            /*!< \brief Momentum coefficients vol/A_p used as the diffusion coefficients in the poisson solver.  */
+  MatrixType MomentumCorrection;  /*!< \brief (rho*u)' in the context of: (rho*u)** = (rho*u)* + (rho*u)'. */
+  MatrixType HbyACorrection;      /*!< \brief H(rhou')/A = (sum_nb A_nb (rhou)'_nb) / A; used by the second pressure correction in the PISO algorithm. */
 public:
   static constexpr size_t MAXNVAR = 1; /*!< \brief Max number of variables, for static arrays. */
 
@@ -63,8 +65,35 @@ public:
   inline void SetMomCoeff(unsigned long iPoint, su2double val_Mom_Coeff) final { MomCoeff(iPoint) = val_Mom_Coeff; }
 
   /*!
-   * \brief Add something to the momentum coefficient of the point.
+   * \brief Set H(u')/A for the point
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_HbyA - HbyA correction.
    */
-  inline void AddMomCoeff(unsigned long iPoint, su2double val_coeff) { MomCoeff(iPoint) += val_coeff;}
+  inline void SetHbyACorrection(unsigned long iPoint, unsigned short iDim, su2double val_HbyA) final { HbyACorrection(iPoint, iDim) = val_HbyA; }
+  
+  /*!
+   * \brief Get H(u')/A for the point
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \return The H(u')/A for the point.
+   */
+  inline su2double GetHbyACorrection(unsigned long iPoint, unsigned short iDim) final { return HbyACorrection(iPoint, iDim); }
+
+  /*!
+   * \brief Set (rho*u)' for the point
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \param[in] val_mom - Momentum correction (rho*u)' value.
+   */
+  inline void SetMomCorrection(unsigned long iPoint, unsigned short iDim, su2double val_mom) final { MomentumCorrection(iPoint, iDim) = val_mom; }
+  
+  /*!
+   * \brief Get (rho*u)' for the point
+   * \param[in] iPoint - Point index.
+   * \param[in] iDim - Dimension index.
+   * \return The (rho*u)' for the point.
+   */
+  inline su2double GetMomCorrection(unsigned long iPoint, unsigned short iDim) final { return MomentumCorrection(iPoint, iDim); }
 
 };

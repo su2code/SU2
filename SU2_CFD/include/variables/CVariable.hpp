@@ -2425,4 +2425,12 @@ public:
   inline virtual su2double GetMomCoeff(unsigned long iPoint) { return 0.0; }
 
   inline virtual void SetMomCoeff(unsigned long iPoint, su2double val_Mom_Coeff) { }
+
+  inline virtual su2double GetMomCorrection(unsigned long iPoint, unsigned short iDim) { return 0.0; }
+
+  inline virtual void SetMomCorrection(unsigned long iPoint, unsigned short iDim, su2double val_mom) { }
+
+  inline virtual su2double GetHbyACorrection(unsigned long iPoint, unsigned short iDim) { return 0.0; }
+
+  inline virtual void SetHbyACorrection(unsigned long iPoint, unsigned short iDim, su2double val_HbyAcorrection) { }
 };

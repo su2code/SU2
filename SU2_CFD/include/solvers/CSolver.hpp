@@ -4353,9 +4353,22 @@ public:
 
   /*!
    * \brief A virtual member
-   * Set coefficients for pressure correction equation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] periodic - Flag for periodic boundary conditions.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   inline virtual void SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh) { }
+
+  /*!
+   * \brief A virtual member
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  inline virtual void ComputeHbyA(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) { }
   
   /*!
    * \brief Save snapshot or POD data using libROM
