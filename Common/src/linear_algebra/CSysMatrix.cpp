@@ -122,12 +122,13 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   SU2_ZONE_SCOPED
 
   delete[] omp_partitions;
-  MemoryAllocation::aligned_free(ilu.l);
-  MemoryAllocation::aligned_free(ilu.d);
-  MemoryAllocation::aligned_free(ilu.u);
-  MemoryAllocation::aligned_free(mat.d);
-  MemoryAllocation::aligned_free(mat.l);
-  MemoryAllocation::aligned_free(mat.u);
+  auto freeHostLDU = [](LDU& m) {
+    MemoryAllocation::aligned_free(m.d);
+    MemoryAllocation::aligned_free(m.l);
+    MemoryAllocation::aligned_free(m.u);
+  };
+  freeHostLDU(mat);
+  freeHostLDU(ilu);
   MemoryAllocation::aligned_free(invM);
   MemoryAllocation::aligned_free(q_scale_l);
   MemoryAllocation::aligned_free(q_blocks_l);
