@@ -290,46 +290,46 @@ class CSysMatrix {
 
   unsigned short ilu_fill_in; /*!< \brief Fill level for the ILU preconditioner. */
 
-  /*!< \brief Level structure for alternative shared memory parallelization of ILU.
-   * Rows within a level are independent, rows in level k only depend on rows in levels < k.
-   * The same table drives the forward (increasing level) and backward (decreasing level)
-   * sweeps, because the U pattern is the transpose of the L pattern. */
+  /*!< \brief Level structure of the ILU dependency graph: rows within a level are independent,
+   * rows in level k only depend on rows in levels < k. The same table drives the forward
+   * (increasing level) and backward (decreasing level) substitution, because the U pattern is
+   * the transpose of the L pattern. Used directly by the host/OMP substitution, and flattened
+   * into ilu_level_ptr / d_ilu_level_idx below for the GPU triangular solves. */
   CCompressedSparsePatternUL levels_ilu;
 
   /*!< \brief Coloring of the (domain-only) ILU dependency graph, used only by the GPU iterative
-   * factorization and triangular solves (see ilu_color_ptr / d_ilu_color_idx below); the
-   * host/OMP path is unaffected and keeps using levels_ilu exactly as before. */
+   * factorization (see IluFactorColorKernel and ilu_color_ptr / d_ilu_color_idx below). The
+   * host/OMP path and the GPU triangular solves use levels_ilu instead. */
   CCompressedSparsePatternUL color_ilu;
 
-  /*!< \brief Number of colored Gauss-Seidel sweeps used to build and apply the ILU factorization
-   * on the device, see IluFactorColorKernel. Fixed per solve (not adaptive) so the result is
-   * reproducible; set from config in Initialize(). */
-  array<unsigned short, 3> ilu_gpu_sweeps{{1, 2, 2}};
+  /*!< \brief Number of colored Gauss-Seidel sweeps used to build the ILU factorization on the
+   * device, see IluFactorColorKernel. Fixed (not adaptive) so the result is reproducible; set
+   * from config in Initialize(). The triangular solves have no equivalent sweep count: they are
+   * exact, one pass per level (see IluForwardKernel / IluBackwardKernel). */
+  unsigned short ilu_gpu_sweeps = 1;
 
-  /*--- Coloring of the ILU dependency graph: unlike levels_ilu, a color is a true independent
-   * set (no dependency between same-colored rows in either direction), so far fewer, wider
-   * colors are needed than levels, but a color launch is only exact as one step of an iterative
-   * refinement (see BuildILUPreconditionerGPU and ComputeILUPreconditionerGPU), not a single
-   * pass — this does not change the elimination order/pattern, so the factorization and both
-   * triangular solves converge to the exact same result levels_ilu would give, just reached by
+  /*--- A color is a true independent set (no dependency between same-colored rows in either
+   * direction), so far fewer, wider colors are needed than levels, but a color launch is only
+   * exact as one step of an iterative refinement (see BuildILUPreconditionerGPU), not a single
+   * pass — this does not change the elimination order/pattern, so the factorization converges to
+   * the exact same factors an exact (non-iterative) elimination would give, just reached by
    * iterating instead of substituting. ---*/
   vector<su2uint> ilu_color_ptr;      /*!< \brief Start of each color in d_ilu_color_idx, size nColors+1. */
   su2uint* d_ilu_color_idx = nullptr; /*!< \brief Row indices, grouped by color. */
 
-  /*!< \brief Fixed right-hand side of the backward triangular solve (the forward-solve result),
-   * kept separate from the evolving prod buffer. A color visits every row once per sweep, so
-   * after the first sweep prod[iRow] holds a solution *estimate*, not the right-hand side
-   * anymore; reading the right-hand side back out of prod past the first sweep would silently
-   * solve the wrong equation. Size nPointDomain*nVar, allocated once in Initialize(). */
-  ScalarType* d_ilu_backward_rhs = nullptr;
+  /*--- Flattened levels_ilu, drives the GPU triangular solves (see IluForwardKernel /
+   * IluBackwardKernel). Every row in a level only depends on rows in earlier levels, already
+   * finalized, so one pass over the levels is exact and no sweeping is needed here (unlike the
+   * factorization above). ---*/
+  vector<su2uint> ilu_level_ptr;      /*!< \brief Start of each level in d_ilu_level_idx, size nLevels+1. */
+  su2uint* d_ilu_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
 
-  /*--- The per-color kernel launch sequence (ilu_gpu_sweeps[0] passes for the factorization,
-   * ilu_gpu_sweeps[1] / ilu_gpu_sweeps[2] passes for the forward/backward triangular solves)
-   * is identical on every call: same grid/block sizes, same device pointers (all fixed members,
-   * allocated once). It is captured once into a CUDA graph and replayed, which removes
+  /*--- The per-color (factorization) and per-level (triangular solves) kernel launch sequences
+   * are identical on every call: same grid/block sizes, same device pointers (all fixed members,
+   * allocated once). Each is captured once into a CUDA graph and replayed, which removes
    * host-side launch overhead without changing the parallelization (unlike a persistent
-   * cooperative-groups kernel, this does not cap per-color parallelism to the occupancy-resident
-   * block count). ---*/
+   * cooperative-groups kernel, this does not cap per-color/per-level parallelism to the
+   * occupancy-resident block count). ---*/
   /*--- Types are forward-declared as opaque structs (matching the real cudaGraphExec_t /
    * cudaStream_t typedefs) so this header does not need to include the CUDA runtime. ---*/
   mutable struct CUgraphExec_st* ilu_build_graph_exec = nullptr;

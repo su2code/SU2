@@ -140,7 +140,7 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
     GPUMemoryAllocation::gpu_free(gpu_ilu.row_ptr_u);
     GPUMemoryAllocation::gpu_free(gpu_ilu.col_ind_u);
     GPUMemoryAllocation::gpu_free(d_ilu_color_idx);
-    GPUMemoryAllocation::gpu_free(d_ilu_backward_rhs);
+    GPUMemoryAllocation::gpu_free(d_ilu_level_idx);
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if (ilu_build_graph_exec != nullptr) cudaGraphExecDestroy(ilu_build_graph_exec);
     if (ilu_apply_graph_exec != nullptr) cudaGraphExecDestroy(ilu_apply_graph_exec);
@@ -289,7 +289,10 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     ilu.col_ind_u = pat_ilu.u.innerIdx();
     ilu.nnz_u = pat_ilu.u.getNumNonZeros();
 
-    if (omp_get_max_threads() > 1 && config->GetLinear_Solver_ILU_levels()) {
+    /*--- The GPU triangular solves are level-scheduled (exact, one pass per level), so they need
+     * levels_ilu unconditionally; the host/OMP path only needs it when both multi-threaded and
+     * requested via config. ---*/
+    if (useCuda || (omp_get_max_threads() > 1 && config->GetLinear_Solver_ILU_levels())) {
       levels_ilu = computeLevels(pat_ilu.l);
     }
 
@@ -343,7 +346,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     gpu_ilu.col_ind_u = GPUMemoryAllocation::gpu_alloc_cpy(ilu.col_ind_u, ilu.nnz_u * sizeof(su2uint));
 
     /*--- Flatten the coloring, the index type differs from the one of the pattern. It drives
-     * the factorization and both triangular solves on the device. ---*/
+     * the factorization on the device. ---*/
     std::vector<su2uint> color_idx;
     color_idx.reserve(nPointDomain);
     ilu_color_ptr.clear();
@@ -356,7 +359,18 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     }
     d_ilu_color_idx = GPUMemoryAllocation::gpu_alloc_cpy(color_idx.data(), color_idx.size() * sizeof(su2uint));
 
-    d_ilu_backward_rhs = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * sizeof(ScalarType));
+    /*--- Flatten levels_ilu the same way. It drives both triangular solves on the device. ---*/
+    std::vector<su2uint> level_idx;
+    level_idx.reserve(nPointDomain);
+    ilu_level_ptr.clear();
+    ilu_level_ptr.push_back(0);
+    for (auto level = 0ul; level < levels_ilu.getOuterSize(); ++level) {
+      for (auto k = 0ul; k < levels_ilu.getNumNonZeros(level); ++k) {
+        level_idx.push_back(static_cast<su2uint>(levels_ilu.getInnerIdx(level, k)));
+      }
+      ilu_level_ptr.push_back(static_cast<su2uint>(level_idx.size()));
+    }
+    d_ilu_level_idx = GPUMemoryAllocation::gpu_alloc_cpy(level_idx.data(), level_idx.size() * sizeof(su2uint));
   }
 
   /*--- Thread parallel initialization. ---*/
