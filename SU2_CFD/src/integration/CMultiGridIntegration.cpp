@@ -400,8 +400,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
 
-  /*--- Print compact smoothing summary when MG_SMOOTH_OUTPUT= YES. ---*/
-  if (mgOptsZone.MG_Smooth_Output) {
+  /*--- Print compact smoothing summary when MG_SMOOTH_OUTPUT= YES and MGLEVEL > 0. ---*/
+  if ((mgOptsZone.MG_Smooth_Output) && (nMGLevels > 0)) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     if (SU2_MPI::GetRank() == MASTER_NODE) {
 
