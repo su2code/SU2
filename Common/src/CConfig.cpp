@@ -3186,6 +3186,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Allow fallback to smaller edge color group sizes for the discrete adjoint and allow more colors. */
   addBoolOption("EDGE_COLORING_RELAX_DISC_ADJ", edgeColoringRelaxDiscAdj, true);
 
+  /* DESCRIPTION: Number of concurrent BFS fronts used to build the RCM reordering (1 is standard single-seed RCM). */
+  addUnsignedShortOption("RCM_NUM_SEEDS", rcmNumSeeds, 1);
+
   /*--- options that are used for libROM ---*/
   /*!\par CONFIG_CATEGORY:libROM options \ingroup Config*/
 

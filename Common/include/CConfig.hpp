@@ -1277,6 +1277,8 @@ private:
   unsigned long edgeColorGroupSize; /*!< \brief Size of the edge groups colored for OpenMP parallelization of edge loops. */
   bool edgeColoringRelaxDiscAdj;    /*!< \brief Allow fallback to smaller edge color group sizes and use more colors for the discrete adjoint. */
 
+  unsigned short rcmNumSeeds; /*!< \brief Number of concurrent BFS fronts used to build the RCM reordering. */
+
   INLET_SPANWISE_INTERP Kind_InletInterpolationFunction; /*!brief type of spanwise interpolation function to use for the inlet face. */
   INLET_INTERP_TYPE Kind_Inlet_InterpolationType;    /*!brief type of spanwise interpolation data to use for the inlet face. */
   bool PrintInlet_InterpolatedData;               /*!brief option for printing the interpolated data file. */
@@ -10154,6 +10156,11 @@ public:
    * \brief Check if the discrete adjoint is allowed to relax the coloring, that is, allow smaller edge color group sizes and allow more colors.
    */
   bool GetEdgeColoringRelaxDiscAdj() const { return edgeColoringRelaxDiscAdj; }
+
+  /*!
+   * \brief Get the number of concurrent BFS fronts used to build the RCM reordering, see SetRCM_Ordering.
+   */
+  unsigned short GetRCM_NumSeeds(void) const { return rcmNumSeeds; }
 
   /*!
    * \brief Get the ParMETIS load balancing tolerance.
