@@ -330,6 +330,30 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
       }
       adjPtr[nPointDomain] = static_cast<su2uint>(adjIdx.size());
       color_ilu = colorSparsePattern(CCompressedSparsePatternUL(adjPtr, adjIdx), 1, true, false);
+
+      /*--- Report, across ranks, how many colors/levels the GPU ILU ends up scheduled over and how
+       * wide those groups are on average. Few, wide colors/levels use the GPU efficiently; many
+       * narrow ones (small average size) serialize into many small kernel launches instead. ---*/
+      const auto nColorsLocal = static_cast<unsigned long>(color_ilu.getOuterSize());
+      const auto nLevelsLocal = static_cast<unsigned long>(levels_ilu.getOuterSize());
+      unsigned long nColorsMax = 0, nLevelsMax = 0;
+      SU2_MPI::Reduce(&nColorsLocal, &nColorsMax, 1, MPI_UNSIGNED_LONG, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
+      SU2_MPI::Reduce(&nLevelsLocal, &nLevelsMax, 1, MPI_UNSIGNED_LONG, MPI_MAX, MASTER_NODE, SU2_MPI::GetComm());
+
+      const auto avgColorSizeLocal = static_cast<unsigned long>(std::lround(double(nPointDomain) / nColorsLocal));
+      const auto avgLevelSizeLocal = static_cast<unsigned long>(std::lround(double(nPointDomain) / nLevelsLocal));
+      unsigned long minAvgColorSize = 0, minAvgLevelSize = 0;
+      SU2_MPI::Reduce(&avgColorSizeLocal, &minAvgColorSize, 1, MPI_UNSIGNED_LONG, MPI_MIN, MASTER_NODE,
+                      SU2_MPI::GetComm());
+      SU2_MPI::Reduce(&avgLevelSizeLocal, &minAvgLevelSize, 1, MPI_UNSIGNED_LONG, MPI_MIN, MASTER_NODE,
+                      SU2_MPI::GetComm());
+
+      if (rank == MASTER_NODE) {
+        cout << "GPU ILU scheduling (worst rank): " << nColorsMax << " colors for the factorization (~"
+             << minAvgColorSize << " points/color on average), " << nLevelsMax << " levels for the triangular solves\n"
+             << "         (~" << minAvgLevelSize << " points/level on average); many narrow levels indicate poor GPU\n"
+             << "         occupancy in the triangular solves, consider increasing config option RCM_NUM_SEEDS." << endl;
+      }
     }
   }
 
