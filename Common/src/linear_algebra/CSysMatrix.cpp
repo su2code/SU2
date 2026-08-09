@@ -348,11 +348,13 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
       SU2_MPI::Reduce(&avgLevelSizeLocal, &minAvgLevelSize, 1, MPI_UNSIGNED_LONG, MPI_MIN, MASTER_NODE,
                       SU2_MPI::GetComm());
 
-      if (rank == MASTER_NODE) {
+      static bool printed = false;
+      if (rank == MASTER_NODE && !printed) {
         cout << "GPU ILU scheduling (worst rank): " << nColorsMax << " colors for the factorization (~"
-             << minAvgColorSize << " points/color on average), " << nLevelsMax << " levels for the triangular solves\n"
-             << "         (~" << minAvgLevelSize << " points/level on average); many narrow levels indicate poor GPU\n"
-             << "         occupancy in the triangular solves, consider increasing config option RCM_NUM_SEEDS." << endl;
+             << minAvgColorSize << " points/color on average),\n"
+             << "           " << nLevelsMax << " levels for the triangular solves (~" << minAvgLevelSize
+             << " points/level on average)." << endl;
+        printed = true;
       }
     }
   }
