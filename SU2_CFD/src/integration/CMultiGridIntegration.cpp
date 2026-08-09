@@ -26,7 +26,6 @@
  */
 
 #include "../../include/integration/CMultiGridIntegration.hpp"
-#include "../../include/gradients/computeGradientsGreenGauss.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
 #include <cmath>
@@ -69,33 +68,6 @@ inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
 }
 
 /*!\cond PRIVATE
- *  Resolve the RMS residual named by CONV_FIELD (its first entry) for a given MG level, so the
- *  FMG startup early-exit criterion tracks the same quantity the user already monitors for
- *  overall convergence. Covers the RMS_* residual fields of the compressible and incompressible
- *  flow solvers, mirroring the field->variable mapping in CFlowCompOutput,
- *  CFlowIncOutput and CFlowOutput. CONV_FIELD entries that are not a residual (e.g. a force or
- *  Cauchy field) fall back to the primary flow residual (index 0), the same default those output
- *  classes use for RMS_DENSITY / RMS_PRESSURE.
- \endcond */
-inline passivedouble ResolveConvFieldRMS(const CConfig* config, CSolver* const* solver_lvl, unsigned short nDim) {
-  const string field = (config->GetnConv_Field() > 0) ? config->GetConv_Field(0) : string("RMS_DENSITY");
-  const CSolver* flow = solver_lvl[FLOW_SOL];
-
-  if (field == "RMS_DENSITY" || field == "RMS_PRESSURE")
-    return SU2_TYPE::GetValue(flow->GetRes_RMS(0));
-  if (field == "RMS_MOMENTUM-X" || field == "RMS_VELOCITY-X")
-    return SU2_TYPE::GetValue(flow->GetRes_RMS(1));
-  if (field == "RMS_MOMENTUM-Y" || field == "RMS_VELOCITY-Y")
-    return SU2_TYPE::GetValue(flow->GetRes_RMS(2));
-  if (nDim == 3 && (field == "RMS_MOMENTUM-Z" || field == "RMS_VELOCITY-Z"))
-    return SU2_TYPE::GetValue(flow->GetRes_RMS(3));
-  if (field == "RMS_ENERGY")
-    return SU2_TYPE::GetValue(flow->GetRes_RMS(nDim + 1));
-
-  return SU2_TYPE::GetValue(flow->GetRes_RMS(0));
-}
-
-/*!\cond PRIVATE
  *  Prolongate a coarse-grid field onto the fine grid via constant injection: every fine
  *  child gets its parent's value. \c getCoarse returns the coarse-grid block of a point
  *  and \c setFine writes it to a fine-grid point, so the same loop serves both the FAS
@@ -114,6 +86,7 @@ void ProlongateField(CGeometry* geo_coarse, GetCoarse getCoarse, SetFine setFine
     }
   }
   END_SU2_OMP_FOR
+}
 
 }  // anonymous namespace
 
@@ -370,16 +343,17 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
 
-  /*--- FMG startup convergence-based early exit: track the active level's CONV_FIELD
-   *    residual and flag promotion once it has dropped two orders of magnitude, so a
-   *    level that converges well inside its MG_Startup_Iter budget is not held back.
-   *    Reuses this same cycle's fresh residual, so the very first iteration of a window
-   *    only seeds the baseline (nothing to compare against yet). ---*/
+  /*--- FMG startup convergence-based early exit: track the active level's aggregate flow
+   *    residual (RMS across all solution variables, the same solver-agnostic metric this
+   *    class already uses for the smoothing early-exit diagnostics) and flag promotion once
+   *    it has dropped two orders of magnitude, so a level that converges well inside its
+   *    MG_Startup_Iter budget is not held back. Reuses this same cycle's fresh residual, so
+   *    the very first iteration of a window only seeds the baseline (nothing to compare
+   *    against yet). ---*/
   if (FullMG && direct && (FinestMesh != MESH_0) && RunTime_EqSystem == RUNTIME_FLOW_SYS) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
-      const unsigned short nDim = geometry[iZone][iInst][FinestMesh]->GetnDim();
-      const passivedouble conv_now = ResolveConvFieldRMS(config[iZone], solver_container[iZone][iInst][FinestMesh], nDim);
+      const passivedouble conv_now = ComputeLinSysResRMS(solver_container[iZone][iInst][FinestMesh][Solver_Position]);
 
       if (mg_conv_field_start_rms < 0.0) {
         mg_conv_field_start_rms = max(conv_now, passivedouble(EPS));

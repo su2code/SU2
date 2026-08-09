@@ -26,7 +26,6 @@
  */
 
 #include "CIntegration.hpp"
-#include "../../../Common/include/containers/container_decorators.hpp"
 
 /*!
  * \class CMultiGridIntegration
