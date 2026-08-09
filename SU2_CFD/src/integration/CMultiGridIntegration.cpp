@@ -73,13 +73,19 @@ inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
  *  and \c setFine writes it to a fine-grid point, so the same loop serves both the FAS
  *  correction and the Full-MG solution handoff.
  *
- *  Only domain points are written; halo synchronization is the caller's responsibility.
+ *  The loop covers all coarse points, halos included. Halo coarse CVs own the fine halo points as
+ *  children (CMultiGridGeometry sets Children_CV for received CVs), so injecting from them is what
+ *  fills the fine-grid halo entries of the prolongated field. Restricting the loop to domain points
+ *  leaves those entries at whatever the last solver update left there (zero, for LinSysRes), which
+ *  is wrong for any operator that reads the prolongated field at neighbours across a partition
+ *  boundary - the Jacobi smoother in SmoothProlongated_Correction does exactly that. The caller
+ *  must therefore have synchronized the coarse-grid field being read before calling this.
  \endcond */
 template <class GetCoarse, class SetFine>
 void ProlongateField(CGeometry* geo_coarse, GetCoarse getCoarse, SetFine setFine) {
 
-  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
-  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPoint(), omp_get_num_threads()))
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPoint(); Point_Coarse++) {
     for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
       auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
       setFine(Point_Fine, getCoarse(Point_Coarse));
@@ -573,6 +579,19 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetKind_TimeIntScheme(EULER_IMPLICIT);)
     }
 
+    /*--- NOTE: the coarse-grid residual computed just above is evaluated at the restricted
+     *    solution, i.e. at exactly the state the first pre-smoothing sweep of the recursive call
+     *    below re-evaluates it at, so it looks like that sweep could reuse LinSysRes (and, if the
+     *    Jacobian were assembled here, the Jacobian too) and skip its own Preprocessing and
+     *    Space_Integration. It cannot, as things stand: Space_Integration is not a pure producer of
+     *    LinSysRes/Jacobian. BC_Sym_Plane (which serves both SYMMETRY_PLANE and EULER_WALL) also
+     *    projects Res_TruncError and Solution_Old onto the wall tangent plane, and in the current
+     *    ordering that projection is what makes the FAS forcing term written by SetForcing_Term
+     *    below, and the Solution_Old written by Set_OldSolution, wall-consistent before their first
+     *    use. Reusing the residual moves both projections to the wrong side of the writes.
+     *    Factoring those side effects out of Space_Integration would make the reuse safe and save
+     *    one full residual evaluation per coarse level per cycle. ---*/
+
     /*--- Recursive call to MultiGrid_Cycle (this routine). ---*/
     /*--- Execute multigrid cycles sequentially to ensure deterministic recursion order ---*/
     /*--- This prevents accumulation of floating-point variations across recursive calls ---*/
@@ -800,14 +819,13 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   SU2_ZONE_SCOPED
 
   const unsigned short nVar = sol_coarse->GetnVar();
-  su2activevector Solution(nVar);
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
 
-    su2double Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
+    su2double Solution[MAXNVAR] = {0.0};
 
-    Solution = su2double(0);
+    su2double Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
 
     /*--- Accumulate children contributions with stable ordering ---*/
     /*--- Process all children in sequential order to ensure deterministic FP summation ---*/
@@ -826,8 +844,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
     for (auto iVar = 0u; iVar < nVar; iVar++)
       Solution[iVar] += Solution_Coarse[iVar];
 
-    for (auto iVar = 0u; iVar < nVar; iVar++)
-      sol_coarse->GetNodes()->SetSolution_Old(Point_Coarse, Solution.data());
+    sol_coarse->GetNodes()->SetSolution_Old(Point_Coarse, Solution);
   }
   END_SU2_OMP_FOR
 
@@ -854,7 +871,9 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
     }
   }
 
-  /*--- MPI the set solution old ---*/
+  /*--- MPI the set solution old. Required: the loop above only writes domain points, and
+   *    ProlongateField below injects from every coarse point including halos in order to fill the
+   *    fine-grid halo entries of the correction. ---*/
 
   sol_coarse->InitiateComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_OLD);
   sol_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_OLD);
@@ -924,7 +943,15 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
     }
     END_SU2_OMP_FOR
 
-    /*--- Restore original residuals (without average) at boundary points. ---*/
+    /*--- Restore original residuals (without average) at boundary points.
+     *
+     *    FIXME (MPI): SEND_RECEIVE is not excluded here, so every point on a partition interface
+     *    has its smoothed correction reverted after each sweep. That is why this smoother gives a
+     *    different convergence history on 1 and on N ranks. Excluding SEND_RECEIVE is only half the
+     *    fix: the sweeps also read LinSysRes at halo points, which ProlongateField fills once but
+     *    nothing refreshes between sweeps, so a halo exchange of LinSysRes is needed inside the
+     *    loop (there is no MPI_QUANTITIES entry for it yet). Until both are done this smoother is
+     *    only parallel-consistent for MG_CORRECTION_SMOOTH= 0, which is the default. ---*/
 
     for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
@@ -1056,26 +1083,23 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
                                             CGeometry *geo_coarse, CConfig *config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
-  const su2double *Residual_Fine;
-
   const unsigned short nVar = sol_coarse->GetnVar();
   const su2double factor = config->GetDamp_Res_Restric();
-
-  su2activevector RestrictedDefect(nVar);
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
 
     sol_coarse->GetNodes()->SetRes_TruncErrorZero(Point_Coarse);
 
-    RestrictedDefect = su2double(0);
+    su2double RestrictedDefect[MAXNVAR] = {0.0};
+
     for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
       auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-      Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
+      const su2double* Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
       for (auto iVar = 0u; iVar < nVar; iVar++)
         RestrictedDefect[iVar] += factor * Residual_Fine[iVar];
     }
-    sol_coarse->GetNodes()->AddRes_TruncError(Point_Coarse, RestrictedDefect.data());
+    sol_coarse->GetNodes()->AddRes_TruncError(Point_Coarse, RestrictedDefect);
   }
   END_SU2_OMP_FOR
 
@@ -1174,17 +1198,15 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
   const unsigned short nDim = geo_coarse->GetnDim();
   const unsigned short nVar = sol_coarse->GetnVar();
 
-  auto **Gradient = new su2double* [nVar];
-  for (auto iVar = 0u; iVar < nVar; iVar++)
-    Gradient[iVar] = new su2double [nDim];
-
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPoint(), omp_get_num_threads()))
   for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPoint(); Point_Coarse++) {
-    su2double Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
 
-    for (auto iVar = 0u; iVar < nVar; iVar++)
-      for (auto iDim = 0u; iDim < nDim; iDim++)
-        Gradient[iVar][iDim] = 0.0;
+    /*--- Row-major scratch plus the row pointers SetGradient expects. ---*/
+    su2double GradientData[MAXNVAR][MAXNDIM] = {{0.0}};
+    su2double* Gradient[MAXNVAR];
+    for (auto iVar = 0u; iVar < nVar; iVar++) Gradient[iVar] = GradientData[iVar];
+
+    su2double Area_Parent = geo_coarse->nodes->GetVolume(Point_Coarse);
 
     for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
       unsigned long Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
@@ -1198,10 +1220,6 @@ void CMultiGridIntegration::SetRestricted_Gradient(unsigned short RunTime_EqSyst
     sol_coarse->GetNodes()->SetGradient(Point_Coarse,Gradient);
   }
   END_SU2_OMP_FOR
-
-  for (auto iVar = 0u; iVar < nVar; iVar++)
-    delete [] Gradient[iVar];
-  delete [] Gradient;
 
 }
 

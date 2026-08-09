@@ -250,6 +250,13 @@ private:
 
   static constexpr int MAX_MG_LEVELS = 10;
 
+  /*--- Upper bound on nVar for the small per-point scratch arrays used by the restriction and
+   *    prolongation loops, so they can live on the stack instead of being heap-allocated on every
+   *    call. Must be >= the largest MAXNVAR of any variable class integrated by this class,
+   *    currently CNEMOEulerVariable::MAXNVAR = 25. ---*/
+  static constexpr unsigned short MAXNVAR = 25;
+  static constexpr unsigned short MAXNDIM = 3;
+
   /*--- Early-exit smoothing state (shared across OMP threads via master write + barrier). ---*/
   bool mg_early_exit_flag = false;              /*!< \brief Shared flag for early exit across OMP threads. */
   passivedouble mg_initial_smooth_rms = 0.0; /*!< \brief Initial RMS residual before current smoothing phase (FAS). */
