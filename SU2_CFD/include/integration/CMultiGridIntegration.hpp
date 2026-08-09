@@ -26,6 +26,7 @@
  */
 
 #include "CIntegration.hpp"
+#include "../../../Common/include/containers/container_decorators.hpp"
 
 /*!
  * \class CMultiGridIntegration
@@ -276,5 +277,25 @@ private:
   passivedouble lastPostSmoothWorstStepRatio[MAX_MG_LEVELS+1] = {};
   unsigned short lastPreSmoothWorstStep[MAX_MG_LEVELS+1] = {};
   unsigned short lastPostSmoothWorstStep[MAX_MG_LEVELS+1] = {};
+
+  /*--- FMG startup CFL ramp bookkeeping: tracks the currently active FMG level
+   *    and the InnerIter at which it became active, so its CFL can be ramped
+   *    linearly towards the next (finer) level's target over MG_Startup_Iter
+   *    iterations instead of jumping discontinuously at promotion. ---*/
+  unsigned short mg_ramp_last_FinestMesh = MAX_MG_LEVELS + 1; /*!< \brief FinestMesh observed on the previous call; sentinel forces a reset on the first call. */
+  unsigned long mg_ramp_level_start_iter = 0;                 /*!< \brief InnerIter at which the currently active FMG level became active. */
+
+  /*--- User-configured damping factors, captured before any adaptation so they can be
+   *    restored whenever the active FMG level changes (the cross-cycle EMA that drives
+   *    the adaptation is only meaningful within a single level). ---*/
+  bool mg_damp_initial_captured = false;  /*!< \brief Whether the configured damping factors have been stored yet. */
+  su2double mg_damp_restric_initial = 0.0;  /*!< \brief MG_DAMP_RESTRICTION as configured. */
+  su2double mg_damp_prolong_initial = 0.0;  /*!< \brief MG_DAMP_PROLONGATION as configured. */
+
+  /*--- FMG startup convergence-based early exit: promote the active level as soon as its
+   *    CONV_FIELD residual has dropped two orders of magnitude, instead of always waiting
+   *    out the full MG_Startup_Iter budget. Reset whenever the active level changes. ---*/
+  passivedouble mg_conv_field_start_rms = -1.0; /*!< \brief CONV_FIELD RMS at the start of the active level's window; <0 = not yet captured. */
+  bool mg_conv_field_early_exit = false;        /*!< \brief Set once the active level has converged two orders of magnitude; consumed at the next promotion check. */
 
 };
