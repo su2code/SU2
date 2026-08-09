@@ -4506,9 +4506,10 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
   }
 
   const auto numSeeds = std::max<unsigned short>(1, config->GetRCM_NumSeeds());
-  vector<unsigned long> dist(nPoint);
-  vector<unsigned long> bfsQueue;
-  bfsQueue.reserve(nPoint);
+  constexpr auto unreached = std::numeric_limits<unsigned long>::max();
+  vector<unsigned long> dist;
+  if (numSeeds > 1) dist.assign(nPoint, unreached);
+  vector<unsigned long> component, bfsQueue;
 
   /*--- Repeat as many times as necessary to handle disconnected graphs. ---*/
   while (Result.size() < nPointDomain) {
@@ -4531,30 +4532,40 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig* config) {
      * seed picked so far. Starting the RCM growth from several spread-out fronts instead of
      * one bounds the number of levels by the covering radius of the seed set rather than the
      * full component diameter, while keeping the RCM ordering local (and hence bandwidth and
-     * ILU quality) around each front. ---*/
+     * ILU quality) around each front.
+     * The distance from each point to its nearest seed is maintained incrementally: the first
+     * seed does a full BFS of the component, each later seed only relaxes the points it is
+     * strictly closer to than all previous seeds, keeping the total work close to a single
+     * BFS instead of one BFS per seed. ---*/
     vector<unsigned long> Seeds(1, AddPoint);
-    for (auto iSeed = 1u; iSeed < numSeeds; ++iSeed) {
-      std::fill(dist.begin(), dist.end(), std::numeric_limits<unsigned long>::max());
-      bfsQueue.clear();
-      for (auto seed : Seeds) {
+    if (numSeeds > 1) {
+      auto relaxFrom = [&](unsigned long seed) {
         dist[seed] = 0;
+        bfsQueue.clear();
         bfsQueue.push_back(seed);
-      }
-      auto farthest = Seeds[0];
-      for (auto iBfs = 0ul; iBfs < bfsQueue.size(); ++iBfs) {
-        const auto iPoint = bfsQueue[iBfs];
-        if (dist[iPoint] > dist[farthest]) farthest = iPoint;
-        for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
-          const auto jPoint = nodes->GetPoint(iPoint, iNode);
-          if (!InQueue[jPoint] && dist[jPoint] == std::numeric_limits<unsigned long>::max()) {
-            dist[jPoint] = dist[iPoint] + 1;
-            bfsQueue.push_back(jPoint);
+        for (auto iBfs = 0ul; iBfs < bfsQueue.size(); ++iBfs) {
+          const auto iPoint = bfsQueue[iBfs];
+          for (auto iNode = 0u; iNode < nodes->GetnPoint(iPoint); iNode++) {
+            const auto jPoint = nodes->GetPoint(iPoint, iNode);
+            if (!InQueue[jPoint] && dist[iPoint] + 1 < dist[jPoint]) {
+              dist[jPoint] = dist[iPoint] + 1;
+              bfsQueue.push_back(jPoint);
+            }
           }
         }
+      };
+      relaxFrom(AddPoint);
+      /*--- The first BFS reaches exactly the connected component of the seed. ---*/
+      component = bfsQueue;
+      for (auto iSeed = 1u; iSeed < numSeeds; ++iSeed) {
+        auto farthest = AddPoint;
+        for (const auto iPoint : component)
+          if (dist[iPoint] > dist[farthest]) farthest = iPoint;
+        /*--- The component is already fully covered by the existing seeds. ---*/
+        if (dist[farthest] == 0) break;
+        Seeds.push_back(farthest);
+        relaxFrom(farthest);
       }
-      /*--- The component is already fully covered by the existing seeds. ---*/
-      if (dist[farthest] == 0) break;
-      Seeds.push_back(farthest);
     }
 
     /*--- Seed the queue with all selected fronts. ---*/
