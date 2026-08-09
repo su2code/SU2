@@ -117,7 +117,7 @@ def main():
     biparabolic.cfg_dir   = "euler/biparabolic"
     biparabolic.cfg_file  = "BIPARABOLIC.cfg"
     biparabolic.test_iter = 25
-    biparabolic.test_vals = [-2.361982, 0.302507, 0.106995, 3.211885]
+    biparabolic.test_vals = [-2.348749, 0.298540, 0.112150, 3.213351]
     test_list.append(biparabolic)
 
     # ONERA M6 Wing
