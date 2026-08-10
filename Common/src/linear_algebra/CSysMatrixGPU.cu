@@ -26,6 +26,8 @@
  */
 
 #include <algorithm>
+#include <limits>
+#include <string>
 
 #include "../../include/linear_algebra/CMatrixInverse.hpp"
 #include "../../include/linear_algebra/CSysMatrix.inl"
@@ -353,6 +355,29 @@ __global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
   y[iRow * nVar + iVar] = sum;
 }
 
+su2_index_t CheckedMul(su2_index_t lhs, su2_index_t rhs, const char* what) {
+  if (lhs != 0 && rhs > std::numeric_limits<su2_index_t>::max() / lhs) {
+    SU2_MPI::Error(std::string("Overflow while computing ") + what + ".", CURRENT_FUNCTION);
+  }
+  return lhs * rhs;
+}
+
+template <class T>
+size_t CheckedBytes(su2_index_t count, const char* what) {
+  const auto bytes = CheckedMul(count, sizeof(T), what);
+  if (bytes > std::numeric_limits<size_t>::max()) {
+    SU2_MPI::Error(std::string("Overflow while computing ") + what + " byte size.", CURRENT_FUNCTION);
+  }
+  return static_cast<size_t>(bytes);
+}
+
+unsigned CheckedCudaDim(su2_index_t value, const char* what) {
+  if (value > static_cast<su2_index_t>(std::numeric_limits<unsigned>::max())) {
+    SU2_MPI::Error(std::string(what) + " exceeds the CUDA grid/block dimension range.", CURRENT_FUNCTION);
+  }
+  return static_cast<unsigned>(value);
+}
+
 }  // namespace
 
 template <class ScalarType>
@@ -369,7 +394,7 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditionerGPU(const CSysVector<Sca
   }
 
   constexpr unsigned threadsPerBlock = 128;
-  const auto blocks = static_cast<unsigned>((nPointDomain + threadsPerBlock - 1) / threadsPerBlock);
+  const auto blocks = CheckedCudaDim(roundUpDiv(nPointDomain, threadsPerBlock), "CUDA Jacobi preconditioner grid");
   ApplyJacobiPreconditionerKernel<<<blocks, threadsPerBlock>>>(d_invM, vec.GetDevicePointer(), prod.GetDevicePointer(),
                                                                nPointDomain, nVar);
   /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
@@ -388,10 +413,12 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditionerGPU() {
 
   /*--- The matrix is expected to be on the device already, it is uploaded once per solve by
    * CSysMatrixVectorProduct, which is created before the preconditioner is built. ---*/
-  const auto blockSize = static_cast<unsigned>(nVar * nVar);
+  const auto blockSize = CheckedCudaDim(CheckedMul(nVar, nVar, "CUDA Jacobi preconditioner block size"),
+                                       "CUDA Jacobi preconditioner block");
   InvertDiagonalBlocksKernel<ScalarType>
-      <<<static_cast<unsigned>(nPointDomain), blockSize, blockSize * sizeof(ScalarType)>>>(nPointDomain, nVar, gpu.d,
-                                                                                           d_invM);
+      <<<CheckedCudaDim(nPointDomain, "CUDA Jacobi preconditioner grid"), blockSize,
+         CheckedBytes<ScalarType>(blockSize, "CUDA Jacobi preconditioner shared memory")>>>(nPointDomain, nVar, gpu.d,
+                                                                                            d_invM);
   /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
   gpuErrChk(cudaStreamSynchronize(nullptr));
   gpuErrChk(cudaGetLastError());
@@ -413,8 +440,9 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
   const DeviceLDU<ScalarType> M{gpu_ilu.d,         gpu_ilu.l,         gpu_ilu.u,        gpu_ilu.row_ptr_l,
                                 gpu_ilu.col_ind_l, gpu_ilu.row_ptr_u, gpu_ilu.col_ind_u};
 
-  const auto blockSize = static_cast<unsigned>(nVar * nVar);
-  const auto shared = 2 * blockSize * sizeof(ScalarType);
+  const auto blockSize =
+      CheckedCudaDim(CheckedMul(nVar, nVar, "CUDA ILU factorization block size"), "CUDA ILU factorization block");
+  const auto shared = CheckedBytes<ScalarType>(2 * blockSize, "CUDA ILU factorization shared memory");
 
   /*--- The legacy default stream cannot be captured, so the graph lives on its own stream,
    * created once. Every launch below is followed by a sync back to the host, so this does not
@@ -477,9 +505,11 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
    * dot products over nVar*nVar threads instead of doing them serially in nVar threads, without
    * changing the number of blocks (still one per row), so this does not trade away SM coverage
    * the way batching several rows into a block did. ---*/
-  const auto threads = static_cast<unsigned>(nVar * nVar);
-  const auto sharedForward = threads * sizeof(ScalarType);
-  const auto sharedBackward = (threads + nVar) * sizeof(ScalarType);
+  const auto threads =
+      CheckedCudaDim(CheckedMul(nVar, nVar, "CUDA ILU solve block size"), "CUDA ILU solve block");
+  const auto sharedForward = CheckedBytes<ScalarType>(threads, "CUDA ILU forward shared memory");
+  const auto sharedBackward =
+      CheckedBytes<ScalarType>(threads + nVar, "CUDA ILU backward shared memory");
 
   if (ilu_stream == nullptr) gpuErrChk(cudaStreamCreate(&ilu_stream));
 
@@ -534,9 +564,19 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
   SU2_ZONE_SCOPED
   if (!trigger) return;
-  gpuErrChk(cudaMemcpy(gpu.d, mat.d, sizeof(ScalarType) * nPoint * nVar * nEqn, cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemcpy(gpu.l, mat.l, sizeof(ScalarType) * mat.nnz_l * nVar * nEqn, cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemcpy(gpu.u, mat.u, sizeof(ScalarType) * mat.nnz_u * nVar * nEqn, cudaMemcpyHostToDevice));
+  const auto block_entries = CheckedMul(nVar, nEqn, "CSysMatrix GPU transfer block size");
+  gpuErrChk(cudaMemcpy(gpu.d, mat.d,
+                       CheckedBytes<ScalarType>(CheckedMul(nPoint, block_entries, "CSysMatrix GPU diagonal copy"),
+                                                "CSysMatrix GPU diagonal copy"),
+                       cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(gpu.l, mat.l,
+                       CheckedBytes<ScalarType>(CheckedMul(mat.nnz_l, block_entries, "CSysMatrix GPU L copy"),
+                                                "CSysMatrix GPU L copy"),
+                       cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(gpu.u, mat.u,
+                       CheckedBytes<ScalarType>(CheckedMul(mat.nnz_u, block_entries, "CSysMatrix GPU U copy"),
+                                                "CSysMatrix GPU U copy"),
+                       cudaMemcpyHostToDevice));
 }
 
 template <class ScalarType>
@@ -547,8 +587,8 @@ void CSysMatrix<ScalarType>::MatrixVectorProductGPU(const CSysVector<ScalarType>
   ScalarType* d_vec = vec.GetDevicePointer();
   ScalarType* d_prod = prod.GetDevicePointer();
 
-  dim3 blockDim(static_cast<unsigned>(nVar), 1, 1);
-  dim3 gridDim(static_cast<unsigned>(nPointDomain), 1, 1);
+  dim3 blockDim(CheckedCudaDim(nVar, "CUDA matrix-vector block"), 1, 1);
+  dim3 gridDim(CheckedCudaDim(nPointDomain, "CUDA matrix-vector grid"), 1, 1);
   BlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
       nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, gpu.l, gpu.d,
       gpu.row_ptr_u, gpu.col_ind_u, gpu.u, d_vec, d_prod);

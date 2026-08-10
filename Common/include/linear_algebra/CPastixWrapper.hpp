@@ -38,6 +38,8 @@
 
 #include <pastix.h>
 #include <spm.h>
+#include <limits>
+#include <string>
 #include <vector>
 
 using namespace std;
@@ -64,25 +66,30 @@ class CPastixWrapper {
   vector<pastix_int_t> perm;     /*!< \brief Ordering computed by PaStiX. */
   vector<su2mixedfloat> workvec; /*!< \brief RHS vector which then becomes the solution. */
 
-  vector<unsigned long> csr_row_ptr; /*!< \brief Owned CSR row pointers (built from LDU). */
-  vector<unsigned long> csr_col_ind; /*!< \brief Owned CSR column indices (built from LDU). */
+  vector<su2_index_t> csr_row_ptr; /*!< \brief Owned CSR row pointers (built from LDU). */
+  vector<su2_index_t> csr_col_ind; /*!< \brief Owned CSR column indices (built from LDU). */
 
   pastix_int_t iparm[IPARM_SIZE]; /*!< \brief Integer parameters for PaStiX. */
   double dparm[DPARM_SIZE];       /*!< \brief Floating point parameters for PaStiX. */
 
   struct {
-    unsigned long nVar = 0;
-    unsigned long nPoint = 0;
-    unsigned long nPointDomain = 0;
-    unsigned long blkSz = 0; /*!< \brief Block size (nVar * nVar) for value assembly. */
+    su2_index_t nVar = 0;
+    su2_index_t nPoint = 0;
+    su2_index_t nPointDomain = 0;
+    su2_index_t blkSz = 0; /*!< \brief Block size (nVar * nVar) for value assembly. */
 
-    const su2uint* row_ptr_l = nullptr; /*!< \brief LDU lower row pointers (geometry-owned). */
-    const su2uint* row_ptr_u = nullptr; /*!< \brief LDU upper row pointers (geometry-owned). */
-    const ScalarType* d = nullptr;      /*!< \brief Diagonal blocks (matrix-owned). */
-    const ScalarType* l = nullptr;      /*!< \brief Lower blocks (matrix-owned). */
-    const ScalarType* u = nullptr;      /*!< \brief Upper blocks (matrix-owned). */
+    const su2_index_t* row_ptr_l = nullptr; /*!< \brief LDU lower row pointers (geometry-owned). */
+    const su2_index_t* row_ptr_u = nullptr; /*!< \brief LDU upper row pointers (geometry-owned). */
+    const ScalarType* d = nullptr;          /*!< \brief Diagonal blocks (matrix-owned). */
+    const ScalarType* l = nullptr;          /*!< \brief Lower blocks (matrix-owned). */
+    const ScalarType* u = nullptr;          /*!< \brief Upper blocks (matrix-owned). */
 
-    unsigned long size_rhs() const { return nPointDomain * nVar; }
+    su2_index_t size_rhs() const {
+      if (nPointDomain != 0 && nVar > std::numeric_limits<su2_index_t>::max() / nPointDomain) {
+        SU2_MPI::Error("Overflow while computing PaStiX rhs size.", CURRENT_FUNCTION);
+      }
+      return nPointDomain * nVar;
+    }
   } matrix; /*!< \brief Dimensions and LDU pointers captured from the owning CSysMatrix. */
 
   bool issetup{};        /*!< \brief Signals that the structure has been provided. */
@@ -94,8 +101,30 @@ class CPastixWrapper {
   const int mpi_size = SU2_MPI::GetSize();
   const int mpi_rank = SU2_MPI::GetRank();
 
-  vector<unsigned long> sort_rows;          /*!< \brief List of rows with halo points. */
-  vector<vector<unsigned long>> sort_order; /*!< \brief How each of those rows needs to be sorted. */
+  vector<su2_index_t> sort_rows;          /*!< \brief List of rows with halo points. */
+  vector<vector<su2_index_t>> sort_order; /*!< \brief How each of those rows needs to be sorted. */
+
+  static su2_index_t CheckedMul(su2_index_t lhs, su2_index_t rhs, const char* what) {
+    if (lhs != 0 && rhs > std::numeric_limits<su2_index_t>::max() / lhs) {
+      SU2_MPI::Error(std::string("Overflow while computing ") + what + ".", CURRENT_FUNCTION);
+    }
+    return lhs * rhs;
+  }
+
+  static su2_index_t CheckedAdd(su2_index_t lhs, su2_index_t rhs, const char* what) {
+    if (rhs > std::numeric_limits<su2_index_t>::max() - lhs) {
+      SU2_MPI::Error(std::string("Overflow while computing ") + what + ".", CURRENT_FUNCTION);
+    }
+    return lhs + rhs;
+  }
+
+  template <class TargetType>
+  static TargetType CheckedCast(su2_index_t value, const char* what) {
+    if (value > static_cast<su2_index_t>(std::numeric_limits<TargetType>::max())) {
+      SU2_MPI::Error(std::string("Overflow while converting ") + what + ".", CURRENT_FUNCTION);
+    }
+    return static_cast<TargetType>(value);
+  }
 
   /*!
    * \brief Run the "clean" task, releases all memory, leaves object in unusable state.
@@ -152,9 +181,9 @@ class CPastixWrapper {
    * \param[in] col_ind_l/u - LDU lower/upper column indices (geometry-owned).
    * \param[in] d/l/u - LDU value blocks (matrix-owned, must outlive wrapper).
    */
-  void SetLDU(unsigned long nVar, unsigned long nPoint, unsigned long nPointDomain, const su2uint* row_ptr_l,
-              const su2uint* col_ind_l, const su2uint* row_ptr_u, const su2uint* col_ind_u, const ScalarType* d,
-              const ScalarType* l, const ScalarType* u) {
+  void SetLDU(su2_index_t nVar, su2_index_t nPoint, su2_index_t nPointDomain, const su2_index_t* row_ptr_l,
+              const su2_index_t* col_ind_l, const su2_index_t* row_ptr_u, const su2_index_t* col_ind_u,
+              const ScalarType* d, const ScalarType* l, const ScalarType* u) {
     if (issetup) return;
     matrix.nVar = nVar;
     matrix.nPoint = nPoint;
@@ -164,18 +193,20 @@ class CPastixWrapper {
     matrix.d = d;
     matrix.l = l;
     matrix.u = u;
-    matrix.blkSz = nVar * nVar;
+    matrix.blkSz = CheckedMul(nVar, nVar, "PaStiX block size");
 
-    const unsigned long nnz_domain = row_ptr_l[nPointDomain] + nPointDomain + row_ptr_u[nPointDomain];
-    csr_row_ptr.resize(nPointDomain + 1);
-    csr_col_ind.reserve(nnz_domain);
-    for (auto i = 0ul; i < nPointDomain; ++i) {
-      csr_row_ptr[i] = static_cast<unsigned long>(csr_col_ind.size());
+    const auto nnz_domain = CheckedAdd(CheckedAdd(row_ptr_l[nPointDomain], nPointDomain, "PaStiX CSR index size"),
+                                       row_ptr_u[nPointDomain], "PaStiX CSR index size");
+    csr_row_ptr.resize(
+        CheckedCast<size_t>(CheckedAdd(nPointDomain, 1, "PaStiX CSR row pointer size"), "PaStiX CSR row pointer size"));
+    csr_col_ind.reserve(CheckedCast<size_t>(nnz_domain, "PaStiX CSR column index size"));
+    for (su2_index_t i = 0; i < nPointDomain; ++i) {
+      csr_row_ptr[i] = static_cast<su2_index_t>(csr_col_ind.size());
       for (auto k = row_ptr_l[i]; k < row_ptr_l[i + 1]; ++k) csr_col_ind.push_back(col_ind_l[k]);
       csr_col_ind.push_back(i);
       for (auto k = row_ptr_u[i]; k < row_ptr_u[i + 1]; ++k) csr_col_ind.push_back(col_ind_u[k]);
     }
-    csr_row_ptr[nPointDomain] = static_cast<unsigned long>(csr_col_ind.size());
+    csr_row_ptr[nPointDomain] = static_cast<su2_index_t>(csr_col_ind.size());
     issetup = true;
   }
 
@@ -210,11 +241,14 @@ class CPastixWrapper {
     }
     iparm[IPARM_VERBOSE] = PastixVerboseNot;
 
-    for (auto i = 0ul; i < matrix.size_rhs(); ++i) workvec[i] = rhs[i];
-    if (pastix_task_solve(state, matrix.size_rhs(), 1, workvec.data(), matrix.size_rhs()) != PASTIX_SUCCESS) {
+    const auto rhs_size = matrix.size_rhs();
+    const auto pastix_rhs_size = CheckedCast<pastix_int_t>(rhs_size, "PaStiX rhs size");
+
+    for (su2_index_t i = 0; i < rhs_size; ++i) workvec[i] = rhs[i];
+    if (pastix_task_solve(state, pastix_rhs_size, 1, workvec.data(), pastix_rhs_size) != PASTIX_SUCCESS) {
       SU2_MPI::Error("Error solving linear system.", CURRENT_FUNCTION);
     }
-    for (auto i = 0ul; i < matrix.size_rhs(); ++i) sol[i] = workvec[i];
+    for (su2_index_t i = 0; i < rhs_size; ++i) sol[i] = workvec[i];
   }
 };
 #endif

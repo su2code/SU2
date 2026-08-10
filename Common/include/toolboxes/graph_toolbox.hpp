@@ -334,9 +334,9 @@ class CCompressedSparsePattern {
 template <typename Index_t>
 using CEdgeToNonZeroMap = C2DContainer<unsigned long, Index_t, StorageType::RowMajor, 64, DynamicSize, 2>;
 
-using CCompressedSparsePatternUL = CCompressedSparsePattern<su2uint>;
+using CCompressedSparsePatternUL = CCompressedSparsePattern<su2_index_t>;
 using CCompressedSparsePatternL = CCompressedSparsePattern<su2int>;
-using CEdgeToNonZeroMapUL = CEdgeToNonZeroMap<su2uint>;
+using CEdgeToNonZeroMapUL = CEdgeToNonZeroMap<su2_index_t>;
 
 /*!
  * \brief Build a sparse pattern from geometry information, of type FVM or FEM,

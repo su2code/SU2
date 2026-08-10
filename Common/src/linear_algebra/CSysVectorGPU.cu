@@ -29,6 +29,8 @@
 #include "../../include/linear_algebra/GPUComms.cuh"
 #include <cublas_v2.h>
 #include <algorithm>
+#include <limits>
+#include <string>
 #include <type_traits>
 #include <vector>
 
@@ -45,6 +47,29 @@ cublasHandle_t GetBlasHandle() {
     }
   }
   return solver_blas_handle;
+}
+
+su2_index_t CheckedMul(su2_index_t lhs, su2_index_t rhs, const char* what) {
+  if (lhs != 0 && rhs > std::numeric_limits<su2_index_t>::max() / lhs) {
+    SU2_MPI::Error(std::string("Overflow while computing ") + what + ".", CURRENT_FUNCTION);
+  }
+  return lhs * rhs;
+}
+
+template <class T>
+size_t CheckedBytes(su2_index_t count, const char* what) {
+  const auto bytes = CheckedMul(count, sizeof(T), what);
+  if (bytes > std::numeric_limits<size_t>::max()) {
+    SU2_MPI::Error(std::string("Overflow while computing ") + what + " byte size.", CURRENT_FUNCTION);
+  }
+  return static_cast<size_t>(bytes);
+}
+
+int CheckedCublasSize(su2_index_t size, const char* what) {
+  if (size > static_cast<su2_index_t>(std::numeric_limits<int>::max())) {
+    SU2_MPI::Error(std::string(what) + " exceeds the cuBLAS int vector-length range.", CURRENT_FUNCTION);
+  }
+  return static_cast<int>(size);
 }
 
 }  // namespace
@@ -68,14 +93,16 @@ template <class ScalarType>
 void CSysVector<ScalarType>::HtDTransfer(bool trigger) const {
   SU2_ZONE_SCOPED
   if (trigger)
-    gpuErrChk(cudaMemcpy((void*)(d_vec_val), (void*)&vec_val[0], (sizeof(ScalarType) * nElm), cudaMemcpyHostToDevice));
+    gpuErrChk(cudaMemcpy((void*)(d_vec_val), (void*)&vec_val[0],
+                         CheckedBytes<ScalarType>(nElm, "CSysVector host-to-device copy"), cudaMemcpyHostToDevice));
 }
 
 template <class ScalarType>
 void CSysVector<ScalarType>::DtHTransfer(bool trigger) const {
   SU2_ZONE_SCOPED
   if (trigger)
-    gpuErrChk(cudaMemcpy((void*)(&vec_val[0]), (void*)d_vec_val, (sizeof(ScalarType) * nElm), cudaMemcpyDeviceToHost));
+    gpuErrChk(cudaMemcpy((void*)(&vec_val[0]), (void*)d_vec_val,
+                         CheckedBytes<ScalarType>(nElm, "CSysVector device-to-host copy"), cudaMemcpyDeviceToHost));
 }
 
 template <class ScalarType>
@@ -89,10 +116,12 @@ ScalarType CSysVector<ScalarType>::GPUDot(const CSysVector& other) const {
   ScalarType local_dot = ScalarType(0);
 
   if constexpr (std::is_same_v<ScalarType, float>) {
-    status = cublasSdot(handle, static_cast<int>(nElmDomain), GetDevicePointer(), 1, other.GetDevicePointer(), 1,
+    status = cublasSdot(handle, CheckedCublasSize(nElmDomain, "CSysVector::GPUDot size"), GetDevicePointer(), 1,
+                        other.GetDevicePointer(), 1,
                         &local_dot);
   } else if constexpr (std::is_same_v<ScalarType, double>) {
-    status = cublasDdot(handle, static_cast<int>(nElmDomain), GetDevicePointer(), 1, other.GetDevicePointer(), 1,
+    status = cublasDdot(handle, CheckedCublasSize(nElmDomain, "CSysVector::GPUDot size"), GetDevicePointer(), 1,
+                        other.GetDevicePointer(), 1,
                         &local_dot);
   } else {
     SU2_MPI::Error("Unsupported ScalarType in CSysVector::GPUDot.", CURRENT_FUNCTION);
@@ -190,7 +219,7 @@ using DeviceBcgsDir = VecExpr::add_<DeviceLScaleSub<S>, Vec<S>, S>;
 
 #define INSTANTIATE_DEVICE_ASSIGN(SCALAR, OP, EXPR)                                          \
   template void VecExpr::AssignDeviceExpression<VecExpr::DeviceAssignOp::OP, SCALAR, EXPR<SCALAR>>( \
-      SCALAR*, unsigned long, const VecExpr::CVecExpr<EXPR<SCALAR>, SCALAR>&)
+      SCALAR*, su2_index_t, const VecExpr::CVecExpr<EXPR<SCALAR>, SCALAR>&)
 
 #define INSTANTIATE_DEVICE_ASSIGN_EXPR(SCALAR, EXPR) \
   INSTANTIATE_DEVICE_ASSIGN(SCALAR, Assign, EXPR);   \

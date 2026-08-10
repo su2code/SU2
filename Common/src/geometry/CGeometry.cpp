@@ -4128,7 +4128,7 @@ const CGeometry::LDUSparsePattern& CGeometry::GetSparsePattern(ConnectivityType 
   auto& grp = fillLvl == 0 ? (fvm ? finiteVolumePatternFill0 : finiteElementPatternFill0)
                            : (fvm ? finiteVolumePatternFillN : finiteElementPatternFillN);
   if (grp.empty()) {
-    grp.csr = buildCSRPattern(*this, type, static_cast<su2uint>(fillLvl));
+    grp.csr = buildCSRPattern(*this, type, static_cast<su2_index_t>(fillLvl));
     grp.csr.buildDiagPtr();
     grp.l = buildLowerPattern(grp.csr);
     grp.u = buildUpperPattern(grp.csr);
@@ -4136,7 +4136,7 @@ const CGeometry::LDUSparsePattern& CGeometry::GetSparsePattern(ConnectivityType 
   return grp;
 }
 
-const su2vector<su2uint>& CGeometry::GetLToUTransposeSparsePatternMap(ConnectivityType type) {
+const su2vector<su2_index_t>& CGeometry::GetLToUTransposeSparsePatternMap(ConnectivityType type) {
   bool fvm = (type == ConnectivityType::FiniteVolume);
   auto& l_to_u = fvm ? finiteVolumeLToUTranspMap : finiteElementLToUTranspMap;
   if (l_to_u.empty()) {
@@ -4147,7 +4147,7 @@ const su2vector<su2uint>& CGeometry::GetLToUTransposeSparsePatternMap(Connectivi
   return l_to_u;
 }
 
-const su2vector<su2uint>& CGeometry::GetUToLTransposeSparsePatternMap(ConnectivityType type) {
+const su2vector<su2_index_t>& CGeometry::GetUToLTransposeSparsePatternMap(ConnectivityType type) {
   bool fvm = (type == ConnectivityType::FiniteVolume);
   auto& u_to_l = fvm ? finiteVolumeUToLTranspMap : finiteElementUToLTranspMap;
   if (u_to_l.empty()) {

@@ -205,10 +205,10 @@ class CGeometry {
   LDUSparsePattern finiteElementPatternFill0; /*!< \brief FEM sparsity with 0-fill (structural pattern). */
   LDUSparsePattern finiteElementPatternFillN; /*!< \brief FEM sparsity with N-fill (e.g. for ILU-N). */
 
-  su2vector<su2uint> finiteVolumeLToUTranspMap;  /*!< \brief FVM L-entry -> U-entry of its transpose. */
-  su2vector<su2uint> finiteVolumeUToLTranspMap;  /*!< \brief FVM U-entry -> L-entry of its transpose. */
-  su2vector<su2uint> finiteElementLToUTranspMap; /*!< \brief FEM L-entry -> U-entry of its transpose. */
-  su2vector<su2uint> finiteElementUToLTranspMap; /*!< \brief FEM U-entry -> L-entry of its transpose. */
+  su2vector<su2_index_t> finiteVolumeLToUTranspMap;  /*!< \brief FVM L-entry -> U-entry of its transpose. */
+  su2vector<su2_index_t> finiteVolumeUToLTranspMap;  /*!< \brief FVM U-entry -> L-entry of its transpose. */
+  su2vector<su2_index_t> finiteElementLToUTranspMap; /*!< \brief FEM L-entry -> U-entry of its transpose. */
+  su2vector<su2_index_t> finiteElementUToLTranspMap; /*!< \brief FEM U-entry -> L-entry of its transpose. */
 
   /*--- Edge and element colorings. ---*/
 
@@ -1892,7 +1892,7 @@ class CGeometry {
    * \param[in] type - Finite volume or finite element.
    * \return Reference to the l_to_u map.
    */
-  const su2vector<su2uint>& GetLToUTransposeSparsePatternMap(ConnectivityType type);
+  const su2vector<su2_index_t>& GetLToUTransposeSparsePatternMap(ConnectivityType type);
 
   /*!
    * \brief Get the bijective map from U-entry indices to L-entry indices of their transposes.
@@ -1900,7 +1900,7 @@ class CGeometry {
    * \param[in] type - Finite volume or finite element.
    * \return Reference to the u_to_l map.
    */
-  const su2vector<su2uint>& GetUToLTransposeSparsePatternMap(ConnectivityType type);
+  const su2vector<su2_index_t>& GetUToLTransposeSparsePatternMap(ConnectivityType type);
 
   /*!
    * \brief Get the edge coloring.

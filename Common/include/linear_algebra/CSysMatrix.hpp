@@ -235,22 +235,23 @@ class CSysMatrix {
    *        and the ILU factorization (ilu). Ownership of the value arrays (d/l/u) and whether
    *        the pointers address host or device memory is managed by CSysMatrix.
    */
+  template <typename IndexType>
   struct LDU {
-    ScalarType* d = nullptr;            /*!< \brief Diagonal block values. */
-    ScalarType* l = nullptr;            /*!< \brief Strictly-lower block values. */
-    ScalarType* u = nullptr;            /*!< \brief Strictly-upper block values. */
-    const su2uint* row_ptr_l = nullptr; /*!< \brief Row pointers for L (geometry-owned or GPU copy). */
-    const su2uint* col_ind_l = nullptr; /*!< \brief Column indices for L. */
-    const su2uint* row_ptr_u = nullptr; /*!< \brief Row pointers for U. */
-    const su2uint* col_ind_u = nullptr; /*!< \brief Column indices for U. */
-    unsigned long nnz_l = 0;            /*!< \brief Number of L nonzeros. */
-    unsigned long nnz_u = 0;            /*!< \brief Number of U nonzeros. */
+    ScalarType* d = nullptr;              /*!< \brief Diagonal block values. */
+    ScalarType* l = nullptr;              /*!< \brief Strictly-lower block values. */
+    ScalarType* u = nullptr;              /*!< \brief Strictly-upper block values. */
+    const IndexType* row_ptr_l = nullptr; /*!< \brief Row pointers for L (geometry-owned or GPU copy). */
+    const IndexType* col_ind_l = nullptr; /*!< \brief Column indices for L. */
+    const IndexType* row_ptr_u = nullptr; /*!< \brief Row pointers for U. */
+    const IndexType* col_ind_u = nullptr; /*!< \brief Column indices for U. */
+    su2_index_t nnz_l = 0;                /*!< \brief Number of L nonzeros. */
+    su2_index_t nnz_u = 0;                /*!< \brief Number of U nonzeros. */
   };
 
-  LDU mat;                      /*!< \brief Host matrix (values owned via aligned_alloc; pattern from geometry). */
-  LDU gpu;                      /*!< \brief Device matrix (all pointers to GPU memory). */
-  LDU ilu;                      /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
-  LDU gpu_ilu;                  /*!< \brief ILU factorization, device (values and pattern in GPU memory). */
+  LDU<su2_index_t> mat;         /*!< \brief Host matrix (values owned via aligned_alloc; pattern from geometry). */
+  LDU<su2uint> gpu;             /*!< \brief Device matrix (all pointers to GPU memory). */
+  LDU<su2_index_t> ilu;         /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
+  LDU<su2uint> gpu_ilu;         /*!< \brief ILU factorization, device (values and pattern in GPU memory). */
   ScalarType* d_invM = nullptr; /*!< \brief Device inverse diagonal blocks for the Jacobi preconditioner. */
 
   /*--- Quantized off-diagonal storage (used when quantized_mode == true). ---*/
@@ -278,15 +279,15 @@ class CSysMatrix {
    * Linelet preconditioner, which builds the Jacobi one but reads invM on the host. */
   bool jacobi_on_device = false;
 
-  const su2uint* l_to_u_transp; /*!< \brief L-entry index -> U-entry index of its transpose. */
-  const su2uint* u_to_l_transp; /*!< \brief U-entry index -> L-entry index of its transpose. */
+  const su2_index_t* l_to_u_transp; /*!< \brief L-entry index -> U-entry index of its transpose. */
+  const su2_index_t* u_to_l_transp; /*!< \brief U-entry index -> L-entry index of its transpose. */
 
   /*!
    * \brief Lookup table from edges to the L-index in the LDU split.
    * U-index == edge index by construction (edges are ordered 1:1 with the U pattern).
    * Therefore, edge_ptr_l == u_to_l_transp, but we keep a separate member for clarity.
    */
-  const su2uint* edge_ptr_l;
+  const su2_index_t* edge_ptr_l;
 
   unsigned short ilu_fill_in; /*!< \brief Fill level for the ILU preconditioner. */
 

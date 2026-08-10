@@ -28,8 +28,31 @@
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/toolboxes/allocation_toolbox.hpp"
 
+#include <limits>
+#include <string>
+
+namespace {
+
+su2_index_t CheckedMul(su2_index_t lhs, su2_index_t rhs, const char* what) {
+  if (lhs != 0 && rhs > std::numeric_limits<su2_index_t>::max() / lhs) {
+    SU2_MPI::Error(std::string("Overflow while computing ") + what + ".", CURRENT_FUNCTION);
+  }
+  return lhs * rhs;
+}
+
+template <class T>
+size_t CheckedBytes(su2_index_t count, const char* what) {
+  const auto bytes = CheckedMul(count, sizeof(T), what);
+  if (bytes > std::numeric_limits<size_t>::max()) {
+    SU2_MPI::Error(std::string("Overflow while computing ") + what + " byte size.", CURRENT_FUNCTION);
+  }
+  return static_cast<size_t>(bytes);
+}
+
+}  // namespace
+
 template <class ScalarType>
-void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar,
+void CSysVector<ScalarType>::Initialize(su2_index_t numBlk, su2_index_t numBlkDomain, su2_index_t numVar,
                                         const ScalarType* val, bool valIsArray, bool errorIfParallel) {
   if (errorIfParallel && omp_in_parallel()) {
     assert(false);
@@ -39,23 +62,29 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
   if (omp_get_thread_num())
     SU2_MPI::Error("Only the master thread is allowed to initialize the vector.", CURRENT_FUNCTION);
 
-  if (nElm != numBlk * numVar) {
+  const auto new_nElm = CheckedMul(numBlk, numVar, "CSysVector storage size");
+  const auto new_nElmDomain = CheckedMul(numBlkDomain, numVar, "CSysVector domain storage size");
+
+  if (nElm != new_nElm) {
     MemoryAllocation::aligned_free(vec_val);
     vec_val = nullptr;
   }
 
-  nElm = numBlk * numVar;
-  nElmDomain = numBlkDomain * numVar;
+  nElm = new_nElm;
+  nElmDomain = new_nElmDomain;
   nVar = numVar;
 
   omp_chunk_size = computeStaticChunkSize(nElm, omp_get_max_threads(), OMP_MAX_SIZE);
 
-  if (vec_val == nullptr) vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(64, nElm * sizeof(ScalarType));
+  if (vec_val == nullptr)
+    vec_val = MemoryAllocation::aligned_alloc<ScalarType, true>(
+        64, CheckedBytes<ScalarType>(nElm, "CSysVector host allocation"));
 
   /*--- Device storage mirrors the host allocation; free first so that re-initializing a
    * vector does not leak it. ---*/
   GPUMemoryAllocation::gpu_free(d_vec_val);
-  d_vec_val = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nElm * sizeof(ScalarType));
+  d_vec_val =
+      GPUMemoryAllocation::gpu_alloc<ScalarType, true>(CheckedBytes<ScalarType>(nElm, "CSysVector device allocation"));
 
 #ifdef HAVE_OMP
   dot_scratch.reset(new ScalarType[omp_get_max_threads()]);
@@ -63,9 +92,9 @@ void CSysVector<ScalarType>::Initialize(unsigned long numBlk, unsigned long numB
 
   if (val != nullptr) {
     if (!valIsArray) {
-      for (auto i = 0ul; i < nElm; i++) vec_val[i] = *val;
+      for (su2_index_t i = 0; i < nElm; i++) vec_val[i] = *val;
     } else {
-      for (auto i = 0ul; i < nElm; i++) vec_val[i] = val[i];
+      for (su2_index_t i = 0; i < nElm; i++) vec_val[i] = val[i];
     }
   }
 }
@@ -155,7 +184,7 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDot(const std::vector<
 template <class ScalarType>
 CSysVector<ScalarType>::~CSysVector() {
   if constexpr (!std::is_trivial_v<ScalarType>) {
-    for (auto i = 0ul; i < nElm; i++) vec_val[i].~ScalarType();
+    for (su2_index_t i = 0; i < nElm; i++) vec_val[i].~ScalarType();
   }
   MemoryAllocation::aligned_free(vec_val);
 
