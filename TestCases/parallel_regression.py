@@ -1073,7 +1073,7 @@ def main():
     # Aeroacoustics postprocessing of a converged square-cylinder pressure history
     aeroacoustics_square_cylinder = TestCase('aeroacoustics_square_cylinder')
     aeroacoustics_square_cylinder.cfg_dir = "unsteady/square_cylinder"
-    aeroacoustics_square_cylinder.cfg_file = "history_aeroacoustics.csv"
+    aeroacoustics_square_cylinder.cfg_file = "aeroacoustics.cfg"
     aeroacoustics_square_cylinder.test_iter = 0
     aeroacoustics_square_cylinder.test_vals = [103.1512634765, 1.9531250000]
     aeroacoustics_square_cylinder.command = TestCase.Command(

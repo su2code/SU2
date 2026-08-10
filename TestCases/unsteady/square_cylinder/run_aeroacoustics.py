@@ -42,20 +42,37 @@ from aeroacoustics import analyze  # noqa: E402
 SEGMENT_LENGTH = 2048
 
 
+def read_config(config_filename):
+    config = {}
+    with open(config_filename, "r") as config_file:
+        for line in config_file:
+            line = line.split("%", 1)[0].strip()
+            if not line or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            config[key.strip().upper()] = value.strip()
+    return config
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Run the square-cylinder aeroacoustics regression analysis."
     )
-    parser.add_argument("history", help="SU2 pressure-history CSV")
+    parser.add_argument("config", help="Aeroacoustics regression config")
     args = parser.parse_args()
+
+    config = read_config(args.config)
+    history_filename = config.get("HISTORY_FILE", "history_aeroacoustics.csv")
+    pressure_column = config.get("PRESSURE_COLUMN", "mic1")
+    time_column = config.get("TIME_COLUMN", "Cur_Time")
 
     with tempfile.TemporaryDirectory() as directory:
         summary = analyze(
             SimpleNamespace(
-                input=Path(args.history),
-                pressure=["mic1"],
+                input=Path(history_filename),
+                pressure=[pressure_column],
                 sample_rate=None,
-                time="Cur_Time",
+                time=time_column,
                 pressure_scale=1.0,
                 reference_pressure=20.0e-6,
                 skip_samples=0,
@@ -68,8 +85,10 @@ def main():
             )
         )
 
-    metrics = summary["signals"]["mic1"]
-    print("\n------------------------------ Begin Solver -----------------------------\n")
+    metrics = summary["signals"][pressure_column]
+    print(
+        "\n------------------------------ Begin Solver -----------------------------\n"
+    )
     print(
         "| 0 | {:.10f} | {:.10f} |".format(
             metrics["oaspl_db"], metrics["dominant_frequency_hz"]
