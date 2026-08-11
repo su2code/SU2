@@ -5,14 +5,14 @@
  *       of the .cpp file and so they are hidden to avoid triggering
  *       recompilation of other units when changes are made here.
  * \author F. Palacios, A. Bueno, T. Economon, P. Gomes
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,19 +34,14 @@
 
 template <class ScalarType>
 FORCEINLINE ScalarType* CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
-  /*--- The position of the diagonal block is known which allows halving the search space. ---*/
-  const auto end = (block_j < block_i) ? dia_ptr_ilu[block_i] : row_ptr_ilu[block_i + 1];
-  for (auto index = (block_j < block_i) ? row_ptr_ilu[block_i] : dia_ptr_ilu[block_i]; index < end; ++index)
-    if (col_ind_ilu[index] == block_j) return &ILU_matrix[index * nVar * nVar];
+  if (block_i == block_j) return &ilu.d[block_i * nVar * nVar];
+  const auto* __restrict row_ptr = block_j < block_i ? ilu.row_ptr_l : ilu.row_ptr_u;
+  const auto* __restrict col_ind = block_j < block_i ? ilu.col_ind_l : ilu.col_ind_u;
+  auto* __restrict vals = block_j < block_i ? ilu.l : ilu.u;
+  for (auto k = row_ptr[block_i]; k < row_ptr[block_i + 1]; ++k) {
+    if (col_ind[k] == block_j) return vals + k * nVar * nVar;
+  }
   return nullptr;
-}
-
-template <class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::SetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j,
-                                                            ScalarType* val_block) {
-  auto ilu_ij = GetBlock_ILUMatrix(block_i, block_j);
-  if (!ilu_ij) return;
-  MatrixCopy(val_block, ilu_ij);
 }
 
 namespace {
@@ -142,31 +137,55 @@ FORCEINLINE void CSysMatrix<ScalarType>::MatrixMatrixProduct(const ScalarType* m
 #undef __MATVECPROD_SIGNATURE__
 
 template <class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::Gauss_Elimination(unsigned long block_i, ScalarType* rhs) const {
+FORCEINLINE void CSysMatrix<ScalarType>::GaussElimination(unsigned long block_i, ScalarType* rhs) const {
   /*--- Copy block, as the algorithm modifies the matrix ---*/
   ScalarType block[MAXNVAR * MAXNVAR];
-  MatrixCopy(&matrix[dia_ptr[block_i] * nVar * nVar], block);
+  MatrixCopy(&mat.d[block_i * nVar * nVar], block);
+  GaussElimination(block, rhs);
+}
 
-  Gauss_Elimination(block, rhs);
+template <class ScalarType>
+FORCEINLINE void CSysMatrix<ScalarType>::QuantizedGaussElimination(unsigned long block_i, ScalarType* rhs) const {
+  ScalarType block[MAXNVAR * MAXNVAR];
+  const QuantType* __restrict qs = &q_scale_d[block_i * nVar];
+  const QuantType* __restrict qv = &q_blocks_d[block_i * nVar * nVar];
+  for (auto r = 0ul; r < nVar; ++r) {
+    const float row_scale = DecodeQuantScale(qs[r]);
+    for (auto c = 0ul; c < nVar; ++c) block[r * nVar + c] = static_cast<ScalarType>(qv[r * nVar + c] * row_scale);
+  }
+  GaussElimination(block, rhs);
 }
 
 template <class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock(unsigned long block_i, ScalarType* invBlock) const {
   /*--- Copy block, as the algorithm modifies the matrix ---*/
   ScalarType block[MAXNVAR * MAXNVAR];
-  MatrixCopy(&matrix[dia_ptr[block_i] * nVar * nVar], block);
+  MatrixCopy(&mat.d[block_i * nVar * nVar], block);
 
   MatrixInverse(block, invBlock);
 }
 
 template <class ScalarType>
-FORCEINLINE void CSysMatrix<ScalarType>::InverseDiagonalBlock_ILUMatrix(unsigned long block_i,
-                                                                        ScalarType* invBlock) const {
+FORCEINLINE const ScalarType* CSysMatrix<ScalarType>::InvertDiagonalBlockILUMatrix(unsigned long block_i) {
   /*--- Copy block, as the algorithm modifies the matrix ---*/
+  auto* Uii = &ilu.d[block_i * nVar * nVar];
   ScalarType block[MAXNVAR * MAXNVAR];
-  MatrixCopy(&ILU_matrix[dia_ptr_ilu[block_i] * nVar * nVar], block);
+  MatrixCopy(Uii, block);
+  MatrixInverse(block, Uii);
+  return Uii;
+}
 
-  MatrixInverse(block, invBlock);
+template <class ScalarType>
+FORCEINLINE void CSysMatrix<ScalarType>::QuantizedMatVecAdd(const QuantType* __restrict qs,
+                                                            const QuantType* __restrict qv,
+                                                            const ScalarType* __restrict vec,
+                                                            ScalarType* __restrict prod) const {
+  for (auto r = 0ul; r < nVar; ++r) {
+    const float row_scale = DecodeQuantScale(qs[r]);
+    auto sum = ScalarType(0);
+    for (auto c = 0ul; c < nVar; ++c) sum += qv[r * nVar + c] * vec[c];
+    prod[r] += row_scale * sum;
+  }
 }
 
 template <class ScalarType>
@@ -174,9 +193,13 @@ FORCEINLINE void CSysMatrix<ScalarType>::RowProduct(const CSysVector<ScalarType>
                                                     ScalarType* prod) const {
   for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
 
-  for (auto index = row_ptr[row_i]; index < row_ptr[row_i + 1]; index++) {
-    auto col_j = col_ind[index];
-    MatrixVectorProductAdd(&matrix[index * nVar * nEqn], &vec[col_j * nEqn], prod);
+  for (auto k = mat.row_ptr_l[row_i]; k < mat.row_ptr_l[row_i + 1]; k++) {
+    MatrixVectorProductAdd(&mat.l[k * nVar * nEqn], &vec[mat.col_ind_l[k] * nEqn], prod);
+  }
+  MatrixVectorProductAdd(&mat.d[row_i * nVar * nEqn], &vec[row_i * nEqn], prod);
+
+  for (auto k = mat.row_ptr_u[row_i]; k < mat.row_ptr_u[row_i + 1]; k++) {
+    MatrixVectorProductAdd(&mat.u[k * nVar * nEqn], &vec[mat.col_ind_u[k] * nEqn], prod);
   }
 }
 
@@ -185,11 +208,12 @@ FORCEINLINE void CSysMatrix<ScalarType>::UpperProduct(const CSysVector<ScalarTyp
                                                       unsigned long col_ub, ScalarType* prod) const {
   for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
 
-  for (auto index = dia_ptr[row_i] + 1; index < row_ptr[row_i + 1]; index++) {
-    auto col_j = col_ind[index];
-    /*--- Always include halos. ---*/
-    if (col_j < col_ub || col_j >= nPointDomain)
-      MatrixVectorProductAdd(&matrix[index * nVar * nEqn], &vec[col_j * nEqn], prod);
+  for (auto index = mat.row_ptr_u[row_i]; index < mat.row_ptr_u[row_i + 1]; index++) {
+    auto col_j = mat.col_ind_u[index];
+
+    if (col_j < col_ub || col_j >= nPointDomain) {
+      MatrixVectorProductAdd(&mat.u[index * nVar * nEqn], &vec[col_j * nEqn], prod);
+    }
   }
 }
 
@@ -198,14 +222,64 @@ FORCEINLINE void CSysMatrix<ScalarType>::LowerProduct(const CSysVector<ScalarTyp
                                                       unsigned long col_lb, ScalarType* prod) const {
   for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
 
-  for (auto index = row_ptr[row_i]; index < dia_ptr[row_i]; index++) {
-    auto col_j = col_ind[index];
-    if (col_j >= col_lb) MatrixVectorProductAdd(&matrix[index * nVar * nEqn], &vec[col_j * nEqn], prod);
+  for (auto index = mat.row_ptr_l[row_i]; index < mat.row_ptr_l[row_i + 1]; index++) {
+    auto col_j = mat.col_ind_l[index];
+    if (col_j >= col_lb) {
+      MatrixVectorProductAdd(&mat.l[index * nVar * nEqn], &vec[col_j * nEqn], prod);
+    }
   }
 }
 
 template <class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::DiagonalProduct(const CSysVector<ScalarType>& vec, unsigned long row_i,
                                                          ScalarType* prod) const {
-  MatrixVectorProduct(&matrix[dia_ptr[row_i] * nVar * nEqn], &vec[row_i * nEqn], prod);
+  MatrixVectorProduct(&mat.d[row_i * nVar * nEqn], &vec[row_i * nEqn], prod);
+}
+
+template <class ScalarType>
+FORCEINLINE void CSysMatrix<ScalarType>::QuantizedRowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i,
+                                                             ScalarType* prod) const {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
+
+  for (auto k = mat.row_ptr_l[row_i]; k < mat.row_ptr_l[row_i + 1]; k++) {
+    QuantizedMatVecAdd(&q_scale_l[k * nVar], &q_blocks_l[k * nVar * nEqn], &vec[mat.col_ind_l[k] * nEqn], prod);
+  }
+  QuantizedMatVecAdd(&q_scale_d[row_i * nVar], &q_blocks_d[row_i * nVar * nEqn], &vec[row_i * nEqn], prod);
+
+  for (auto k = mat.row_ptr_u[row_i]; k < mat.row_ptr_u[row_i + 1]; k++) {
+    QuantizedMatVecAdd(&q_scale_u[k * nVar], &q_blocks_u[k * nVar * nEqn], &vec[mat.col_ind_u[k] * nEqn], prod);
+  }
+}
+
+template <class ScalarType>
+FORCEINLINE void CSysMatrix<ScalarType>::QuantizedUpperProduct(const CSysVector<ScalarType>& vec, unsigned long row_i,
+                                                               unsigned long col_ub, ScalarType* prod) const {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
+
+  for (auto index = mat.row_ptr_u[row_i]; index < mat.row_ptr_u[row_i + 1]; index++) {
+    auto col_j = mat.col_ind_u[index];
+    if (col_j < col_ub || col_j >= nPointDomain) {
+      QuantizedMatVecAdd(&q_scale_u[index * nVar], &q_blocks_u[index * nVar * nEqn], &vec[col_j * nEqn], prod);
+    }
+  }
+}
+
+template <class ScalarType>
+FORCEINLINE void CSysMatrix<ScalarType>::QuantizedLowerProduct(const CSysVector<ScalarType>& vec, unsigned long row_i,
+                                                               unsigned long col_lb, ScalarType* prod) const {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
+
+  for (auto index = mat.row_ptr_l[row_i]; index < mat.row_ptr_l[row_i + 1]; index++) {
+    auto col_j = mat.col_ind_l[index];
+    if (col_j >= col_lb) {
+      QuantizedMatVecAdd(&q_scale_l[index * nVar], &q_blocks_l[index * nVar * nEqn], &vec[col_j * nEqn], prod);
+    }
+  }
+}
+
+template <class ScalarType>
+FORCEINLINE void CSysMatrix<ScalarType>::QuantizedDiagonalProduct(const CSysVector<ScalarType>& vec,
+                                                                  unsigned long row_i, ScalarType* prod) const {
+  for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
+  QuantizedMatVecAdd(&q_scale_d[row_i * nVar], &q_blocks_d[row_i * nVar * nEqn], &vec[row_i * nEqn], prod);
 }

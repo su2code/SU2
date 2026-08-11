@@ -1,14 +1,14 @@
 /*!
  * \file CScalarSolver.inl
  * \brief Main subroutines of CScalarSolver class
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,8 @@ CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config,
     : CSolver(), Conservative(conservative),
       prim_idx(config->GetKind_Regime() == ENUM_REGIME::INCOMPRESSIBLE,
                config->GetNEMOProblem(), geometry->GetnDim(), config->GetnSpecies()) {
+  SU2_ZONE_SCOPED
+
   nMarker = config->GetnMarker_All();
 
   /*--- Store the number of vertices on each marker for deallocation later ---*/
@@ -61,7 +63,7 @@ CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config,
   if (ReducerStrategy && (coloring.getOuterSize() > 1)) geometry->SetNaturalEdgeColoring();
 
   if (!coloring.empty()) {
-    auto groupSize = ReducerStrategy ? 1ul : geometry->GetEdgeColorGroupSize();
+    auto groupSize = static_cast<su2uint>(ReducerStrategy ? 1ul : geometry->GetEdgeColorGroupSize());
     auto nColor = coloring.getOuterSize();
     EdgeColoring.reserve(nColor);
 
@@ -89,6 +91,8 @@ CScalarSolver<VariableType>::~CScalarSolver() {
 
 template <class VariableType>
 void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const CConfig *config, const bool Output) {
+  SU2_ZONE_SCOPED
+
   /*--- Define booleans that are solver specific through CConfig's GlobalParams which have to be set in CFluidIteration
    * before calling these solver functions. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -101,7 +105,7 @@ void CScalarSolver<VariableType>::CommonPreprocessing(CGeometry *geometry, const
   if (!ReducerStrategy && !Output) {
     LinSysRes.SetValZero();
     if (implicit) {
-      Jacobian.SetValZero();
+      Jacobian.SetValDiagonalZero();
     } else {
       SU2_OMP_BARRIER
     }
@@ -129,6 +133,8 @@ template <class VariableType>
 void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver** solver_container,
                                                   CNumerics** numerics_container, CConfig* config,
                                                   unsigned short iMesh) {
+  SU2_ZONE_SCOPED
+
   /*--- Define booleans that are solver specific through CConfig's GlobalParams which have to be set in CFluidIteration
    * before calling these solver functions. ---*/
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
@@ -285,7 +291,7 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
       } else {
         LinSysRes.AddBlock(iPoint, residual);
         LinSysRes.SubtractBlock(jPoint, residual);
-        if (implicit) Jacobian.UpdateBlocks(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
+        if (implicit) Jacobian.UpdateBlocks<true>(iEdge, iPoint, jPoint, residual.jacobian_i, residual.jacobian_j);
       }
 
       /*--- Apply convective flux correction to negate the effects of flow divergence in case of incompressible flow.
@@ -343,6 +349,8 @@ void CScalarSolver<VariableType>::Upwind_Residual(CGeometry* geometry, CSolver**
 
 template <class VariableType>
 void CScalarSolver<VariableType>::SumEdgeFluxes(CGeometry* geometry) {
+  SU2_ZONE_SCOPED
+
   const bool nonConservative = EdgeFluxesDiff.GetLocSize() > 0;
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -363,9 +371,27 @@ void CScalarSolver<VariableType>::SumEdgeFluxes(CGeometry* geometry) {
   END_SU2_OMP_FOR
 }
 
+template<class VariableType>
+void CScalarSolver<VariableType>::BC_Riemann(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
+
+  string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
+
+  switch(config->GetKind_Data_Riemann(Marker_Tag))
+  {
+  case TOTAL_CONDITIONS_PT: case STATIC_SUPERSONIC_INFLOW_PT: case STATIC_SUPERSONIC_INFLOW_PD: case DENSITY_VELOCITY:
+    BC_Inlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    break;
+  case STATIC_PRESSURE:
+    BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
+    break;
+  }
+}
+
 template <class VariableType>
 void CScalarSolver<VariableType>::BC_Periodic(CGeometry* geometry, CSolver** solver_container, CNumerics* numerics,
                                               CConfig* config) {
+  SU2_ZONE_SCOPED
   /*--- Complete residuals for periodic boundary conditions. We loop over
    the periodic BCs in matching pairs so that, in the event that there are
    adjacent periodic markers, the repeated points will have their residuals
@@ -382,7 +408,7 @@ template <class VariableType>
 void CScalarSolver<VariableType>::BC_Far_Field(CGeometry* geometry, CSolver** solver_container,
                                                CNumerics* conv_numerics, CNumerics*, CConfig *config,
                                                unsigned short val_marker) {
-
+  SU2_ZONE_SCOPED
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
@@ -442,6 +468,8 @@ void CScalarSolver<VariableType>::BC_Far_Field(CGeometry* geometry, CSolver** so
 template <class VariableType>
 void CScalarSolver<VariableType>::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                                unsigned short iMesh, unsigned long Iteration) {
+  SU2_ZONE_SCOPED
+
   const auto flowNodes = solver_container[FLOW_SOL]->GetNodes();
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -455,6 +483,8 @@ void CScalarSolver<VariableType>::SetTime_Step(CGeometry *geometry, CSolver **so
 template <class VariableType>
 void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, CSolver** solver_container,
                                                            CConfig* config) {
+  SU2_ZONE_SCOPED
+
   /*--- Set shared residual variables to 0 and declare
    *    local ones for current thread to work on. ---*/
 
@@ -481,12 +511,11 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      unsigned long total_index = iPoint * nVar + iVar;
-      LinSysRes[total_index] = -LinSysRes[total_index];
-      LinSysSol[total_index] = 0.0;
+      LinSysRes(iPoint, iVar) = -LinSysRes(iPoint, iVar);
+      LinSysSol(iPoint, iVar) = 0.0;
 
       /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
-      ResidualReductions_PerThread(iPoint, iVar, LinSysRes[total_index], resRMS, resMax, idxMax);
+      ResidualReductions_PerThread(iPoint, iVar, LinSysRes(iPoint, iVar), resRMS, resMax, idxMax);
     }
   }
   END_SU2_OMP_FOR
@@ -498,7 +527,9 @@ void CScalarSolver<VariableType>::PrepareImplicitIteration(CGeometry* geometry, 
 template <class VariableType>
 void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry, CSolver** solver_container,
                                                             CConfig* config) {
-  ComputeUnderRelaxationFactor(config);
+  SU2_ZONE_SCOPED
+
+  ComputeUnderRelaxationFactor(solver_container, config);
 
   /*--- Update solution (system written in terms of increments) ---*/
 
@@ -545,6 +576,8 @@ void CScalarSolver<VariableType>::CompleteImplicitIteration(CGeometry* geometry,
 template <class VariableType>
 void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
                                                           CConfig* config) {
+  SU2_ZONE_SCOPED
+
   PrepareImplicitIteration(geometry, solver_container, config);
 
   /*--- Solve or smooth the linear system. ---*/
@@ -570,6 +603,8 @@ void CScalarSolver<VariableType>::ImplicitEuler_Iteration(CGeometry* geometry, C
 template <class VariableType>
 void CScalarSolver<VariableType>::ExplicitEuler_Iteration(CGeometry* geometry, CSolver** solver_container,
                                                           CConfig* config) {
+  SU2_ZONE_SCOPED
+
   /*--- Local residual variables for current thread ---*/
   su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
   unsigned long idxMax[MAXNVAR] = {0};
@@ -599,6 +634,8 @@ template <class VariableType>
 void CScalarSolver<VariableType>::SetResidual_DualTime(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                                        unsigned short iRKStep, unsigned short iMesh,
                                                        unsigned short RunTime_EqSystem) {
+  SU2_ZONE_SCOPED
+
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool first_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST);
   const bool second_order = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
@@ -840,6 +877,7 @@ template <class VariableType>
 void CScalarSolver<VariableType>::PushSolutionBackInTime(unsigned long TimeIter, bool
                                                          restart,CSolver*** solver_container,
                                                          CGeometry** geometry, CConfig* config) {
+  SU2_ZONE_SCOPED
   const bool dual_time = config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST ||
                          config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND;
   const bool isRestartIter = restart && TimeIter == config->GetRestart_Iter();

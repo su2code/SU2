@@ -2,14 +2,14 @@
  * \file COutput.hpp
  * \brief Headers of the output class.
  * \author T.Albring
- * \version 8.3.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
  * The SU2 Project is maintained by the SU2 Foundation
  * (http://su2foundation.org)
  *
- * Copyright 2012-2025, SU2 Contributors (cf. AUTHORS.md)
+ * Copyright 2012-2026, SU2 Contributors (cf. AUTHORS.md)
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,6 +56,7 @@ class CFileWriter;
 class CParallelDataSorter;
 class CConfig;
 class CHeatOutput;
+class CAdjHeatOutput;
 
 using namespace std;
 
@@ -67,6 +68,7 @@ using namespace std;
 class COutput {
 protected:
   friend class CHeatOutput;
+  friend class CAdjHeatOutput;
 
   /*----------------------------- General ----------------------------*/
 
@@ -91,10 +93,13 @@ protected:
   curOuterIter,                   /*!< \brief Current value of the outer iteration index */
   curInnerIter;                   /*!< \brief Current value of the inner iteration index */
 
+  su2double PrevStopTime;         /*!< \brief Previous stop time for iteration timing. */
+
   string historyFilename;   /*!< \brief The history filename*/
   ofstream histFile;        /*!< \brief Output file stream for the history */
 
   bool cauchyTimeConverged; /*! \brief: Flag indicating that solver is already converged. Needed for writing restart files. */
+  bool maxTimeDelayActive;  /*! \brief: Flag for delaying stop at max_time with 2nd order time stepping. */
 
   /** \brief Enum to identify the screen output format. */
   enum class ScreenOutputFormat {
