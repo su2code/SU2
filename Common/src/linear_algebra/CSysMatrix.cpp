@@ -350,9 +350,9 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
       static bool printed = false;
       if (rank == MASTER_NODE && !printed) {
-        cout << "GPU ILU scheduling (worst rank): " << nColorsMax << " colors for the factorization (~"
+        cout << "GPU ILU scheduling (worst rank):\n      " << nColorsMax << " colors for the factorization (~"
              << minAvgColorSize << " points/color on average),\n"
-             << "           " << nLevelsMax << " levels for the triangular solves (~" << minAvgLevelSize
+             << "      " << nLevelsMax << " levels for the triangular solves (~" << minAvgLevelSize
              << " points/level on average)." << endl;
         printed = true;
       }
