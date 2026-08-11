@@ -268,7 +268,7 @@ inline void BuildTrapezoidalMap(const Matrix2i& edge_pts, const VectorReal& x, c
     for (IntT j = std::min(band_0, band_1); j <= std::max(band_0, band_1); ++j) {
       edge_id[pos[j]] = i_edge;
       const RealT x_mid = (x_bands[j] + x_bands[j + 1]) / 2;
-      edge_y[pos[j]] = vertical ? (y_0 + y_1) / 2 : y_0 + dy_dx * (x_mid - x_0);
+      edge_y[pos[j]] = vertical ? RealT((y_0 + y_1) / 2) : RealT(y_0 + dy_dx * (x_mid - x_0));
       ++pos[j];
     }
   }
