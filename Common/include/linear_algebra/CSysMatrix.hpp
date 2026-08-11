@@ -247,9 +247,11 @@ class CSysMatrix {
     unsigned long nnz_u = 0;            /*!< \brief Number of U nonzeros. */
   };
 
-  LDU mat; /*!< \brief Host matrix (values owned via aligned_alloc; pattern from geometry). */
-  LDU gpu; /*!< \brief Device matrix (all pointers to GPU memory). */
-  LDU ilu; /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
+  LDU mat;                      /*!< \brief Host matrix (values owned via aligned_alloc; pattern from geometry). */
+  LDU gpu;                      /*!< \brief Device matrix (all pointers to GPU memory). */
+  LDU ilu;                      /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
+  LDU gpu_ilu;                  /*!< \brief ILU factorization, device (values and pattern in GPU memory). */
+  ScalarType* d_invM = nullptr; /*!< \brief Device inverse diagonal blocks for the Jacobi preconditioner. */
 
   /*--- Quantized off-diagonal storage (used when quantized_mode == true). ---*/
   using QuantType = int8_t;
@@ -270,7 +272,12 @@ class CSysMatrix {
                           *          Populated by QuantizeDiagonalBlocks(). */
   QuantType* q_blocks_d; /*!< \brief Same as q_blocks_l for the diagonal entries. */
 
-  bool useCuda = false;         /*!< \brief Whether CUDA is enabled. */
+  bool useCuda = false; /*!< \brief Whether CUDA is enabled. */
+
+  /*!< \brief Whether the inverse diagonal blocks are only needed on the device. False for the
+   * Linelet preconditioner, which builds the Jacobi one but reads invM on the host. */
+  bool jacobi_on_device = false;
+
   const su2uint* l_to_u_transp; /*!< \brief L-entry index -> U-entry index of its transpose. */
   const su2uint* u_to_l_transp; /*!< \brief U-entry index -> L-entry index of its transpose. */
 
@@ -283,8 +290,42 @@ class CSysMatrix {
 
   unsigned short ilu_fill_in; /*!< \brief Fill level for the ILU preconditioner. */
 
-  /*!< \brief Level structure for alternative shared memory parallelization of ILU. */
+  /*!< \brief Level structure of the ILU dependency graph: rows within a level are independent,
+   * rows in level k only depend on rows in levels < k. The same table drives the forward
+   * (increasing level) and backward (decreasing level) substitution, because the U pattern is
+   * the transpose of the L pattern. Used directly by the host/OMP substitution, and flattened
+   * into ilu_level_ptr / d_ilu_level_idx below for the GPU triangular solves. */
   CCompressedSparsePatternUL levels_ilu;
+
+  /*!< \brief Coloring of the (domain-only) ILU dependency graph, used only by the GPU iterative
+   * factorization (see IluFactorColorKernel and ilu_color_ptr / d_ilu_color_idx below). The
+   * host/OMP path and the GPU triangular solves use levels_ilu instead. */
+  CCompressedSparsePatternUL color_ilu;
+
+  /*!< \brief Number of colored Gauss-Seidel sweeps used to build the ILU factorization on the
+   * device, see IluFactorColorKernel. Fixed (not adaptive) so the result is reproducible; set
+   * from config in Initialize(). The triangular solves have no equivalent sweep count: they are
+   * exact, one pass per level (see IluForwardKernel / IluBackwardKernel). */
+  unsigned short ilu_gpu_sweeps = 1;
+
+  vector<su2uint> ilu_color_ptr;      /*!< \brief Start of each color in d_ilu_color_idx, size nColors+1. */
+  su2uint* d_ilu_color_idx = nullptr; /*!< \brief Row indices, grouped by color. */
+
+  vector<su2uint> ilu_level_ptr;      /*!< \brief Start of each level in d_ilu_level_idx, size nLevels+1. */
+  su2uint* d_ilu_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
+
+  /*--- The per-color (factorization) and per-level (triangular solves) kernel launch sequences
+   * are identical on every call: same grid/block sizes, same device pointers (all fixed members,
+   * allocated once). Each is captured once into a CUDA graph and replayed to remove
+   * host-side launch overhead without changing the parallelization. ---*/
+  mutable struct CUgraphExec_st* ilu_build_graph_exec = nullptr;
+  mutable struct CUgraphExec_st* ilu_apply_graph_exec = nullptr;
+  mutable const ScalarType* ilu_apply_graph_vec = nullptr; /*!< \brief Pointers the apply graph
+                                                            * was captured with, to detect when
+                                                            * it must be recaptured. */
+  mutable ScalarType* ilu_apply_graph_prod = nullptr;
+  /*--- The legacy default stream cannot be captured into a graph. ---*/
+  mutable struct CUstream_st* ilu_stream = nullptr;
 
   ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */
 
@@ -504,6 +545,37 @@ class CSysMatrix {
   /*! \brief Gauss elimination on the quantized diagonal block: decodes q_blocks_d into a local
    *         ScalarType buffer and delegates to the scalar GaussElimination overload. */
   inline void QuantizedGaussElimination(unsigned long block_i, ScalarType* rhs) const;
+
+  /*--- Hooks for GPU versions (implemented is in CSysMatrixGPU.cu). ---*/
+
+  /*!
+   * \brief Performs the product of a sparse matrix by a CSysVector on the device.
+   */
+  void MatrixVectorProductGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
+                              const CConfig* config) const;
+
+  /*!
+   * \brief Build the Jacobi preconditioner on the device, from the device copy of the matrix.
+   * \note Requires the device matrix to be up to date, see HtDTransfer.
+   */
+  void BuildJacobiPreconditionerGPU();
+
+  /*!
+   * \brief Apply the Jacobi preconditioner on the GPU/device side.
+   */
+  void ComputeJacobiPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
+                                      CGeometry* geometry, const CConfig* config) const;
+
+  /*!
+   * \brief Build the ILU preconditioner on the device, from the device copy of the matrix.
+   * \note Requires the device matrix to be up to date, see HtDTransfer.
+   */
+  void BuildILUPreconditionerGPU();
+
+  /*!
+   * \brief Apply the ILU preconditioner on the device.
+   */
+  void ComputeILUPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
 
  public:
   /*!
@@ -1042,49 +1114,6 @@ class CSysMatrix {
    */
   void MatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                            const CConfig* config) const;
-
-  /*!
-   * \brief Performs the product of a sparse matrix by a CSysVector.
-   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] prod - Result of the product.
-   */
-  void GPUMatrixVectorProduct(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
-                              const CConfig* config) const;
-
-  /*!
-   * \brief Performs first step of the LU_SGS Preconditioner building
-   * \param[in] vec - CSysVector to be multiplied by the sparse matrix A.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] prod - Result of the product.
-   */
-  void GPUFirstSymmetricIteration(ScalarType& vec, ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
-
-  /*!
-   * \brief Performs second step of the LU_SGS Preconditioner building
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] prod - Result of the product.
-   */
-  void GPUSecondSymmetricIteration(ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
-
-  /*!
-   * \brief Performs Gaussian Elimination between diagional blocks of the matrix and the prod vector
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[out] prod - Result of the product.
-   */
-  void GPUGaussElimination(ScalarType& prod, CGeometry* geometry, const CConfig* config) const;
-
-  /*!
-   * \brief Multiply CSysVector by the preconditioner all of which are stored on the device
-   * \param[in] vec - CSysVector to be multiplied by the preconditioner.
-   * \param[out] prod - Result of the product A*vec.
-   */
-  void GPUComputeLU_SGSPreconditioner(ScalarType& vec, ScalarType& prod, CGeometry* geometry,
-                                      const CConfig* config) const;
 
   /*!
    * \brief Build the Jacobi preconditioner.

@@ -2558,11 +2558,15 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       }
 
       Viscosity = nodes->GetLaminarViscosity(iPoint);
+      su2double EddyViscosity = 0.0;
       if (roughwall) {
         WALL_TYPE WallType;
         su2double Roughness_Height;
         tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-        if (WallType == WALL_TYPE::ROUGH) Viscosity += nodes->GetEddyViscosity(iPoint);
+        if (WallType == WALL_TYPE::ROUGH) {
+          EddyViscosity = nodes->GetEddyViscosity(iPoint);
+          Viscosity += EddyViscosity;
+        }
       }
       Density = nodes->GetDensity(iPoint);
 
@@ -2576,7 +2580,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       /*--- If necessary evaluate the QCR contribution to Tau ---*/
 
-      if (QCR) CNumerics::AddQCR(nDim, Grad_Vel, Tau);
+      if (QCR) CNumerics::AddQCR(nDim, Grad_Vel, Tau, EddyViscosity / Viscosity);
 
       /*--- Project Tau in each surface element ---*/
 
