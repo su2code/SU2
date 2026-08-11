@@ -2063,6 +2063,10 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("MG_SMOOTH_STAGNATION_TOL", MGOptions.MG_Smooth_StagnationTol, 0.99);
   /*!\brief MG_SMOOTH_COEFF\n DESCRIPTION: Smoothing coefficient for the correction prolongation Jacobi smoother. DEFAULT: 1.25 \ingroup Config*/
   addDoubleOption("MG_SMOOTH_COEFF", MGOptions.MG_Smooth_Coeff, 1.25);
+  /*!\brief MG_COARSE_PREC_FREEZE\n DESCRIPTION: On multigrid levels above MESH_0, reuse the linear-solver preconditioner
+   * (e.g. the ILU factorization) for this many consecutive linear solves instead of rebuilding it every time.
+   * 1 reproduces the previous behaviour exactly. DEFAULT: 1 \ingroup Config*/
+  addUnsignedLongOption("MG_COARSE_PREC_FREEZE", MGOptions.MG_Coarse_Prec_Freeze, 1);
   /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level. Levels that would produce fewer CVs are not created. DEFAULT: 50 \ingroup Config*/
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/

@@ -1128,6 +1128,7 @@ struct CMGOptions {
   unsigned long MG_Implicit_Lines_MaxLength{20}; /*!< \brief Maximum nodes on a wall-normal implicit line (including wall seed). */
   bool MG_Implicit_Lines_Isotropic{false}; /*!< \brief Use isotropic (vs anisotropic) agglomeration along implicit lines. */
   unsigned long MG_Startup_Iter{100};     /*!< \brief Number of iterations on coarsest mesh during FMG startup phase. */
+  unsigned long MG_Coarse_Prec_Freeze{1}; /*!< \brief On MG levels > 0, reuse the linear-solver preconditioner for this many consecutive solves. 1 = rebuild every solve. */
 };
 
 /*!
