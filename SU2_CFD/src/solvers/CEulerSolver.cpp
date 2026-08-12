@@ -365,9 +365,6 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config,
 }
 
 CEulerSolver::~CEulerSolver() {
-  for (auto& vec : MixingState) {
-    for (auto ptr : vec) delete [] ptr;
-  }
   for(auto& model : FluidModel) delete model;
 }
 
@@ -470,13 +467,11 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig **config_con
   for (auto iDim = 0u; iDim < nDim; iDim++) ExtAverageTurboVelocity[iDim] = su2double(0.0);
 
   MixingState.resize(nMarker);
-  MixingStateNodes.resize(nMarker);
 
   for (auto iMarkerInt = 1; iMarkerInt < config->GetnMarker_MixingPlaneInterface()/2 + 1; iMarkerInt++) {
     auto iMarkerMP = config->FindMixingPlaneInterfaceMarker(geometry->GetnMarker(), iMarkerInt);
     if (iMarkerMP != -1) {
-      MixingState[iMarkerMP].resize(nSpanWiseSections+1);
-      MixingStateNodes[iMarkerMP].resize(nSpanWiseSections+1);
+      MixingState[iMarkerMP].resize(nSpanWiseSections+1, nMixingStateVars) = su2double(0.0);
     }
   }
 

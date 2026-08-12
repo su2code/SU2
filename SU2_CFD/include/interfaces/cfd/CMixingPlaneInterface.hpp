@@ -78,9 +78,6 @@ public:
   void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, const CConfig *donor_config,
                          unsigned long Marker_Donor, unsigned long val_Span, unsigned long Point_Donor) override;
 
-  void InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
-                          unsigned long Span_Target, unsigned short nDonorPoints) override;
-
   /*!
    * \brief Set the variable that has been received from the target mesh into the target mesh.
    * \param[in] target_solution - Solution from the target mesh.
@@ -93,7 +90,7 @@ public:
   void SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry, const CConfig *target_config,
                           unsigned long Marker_Target, unsigned long val_Span, unsigned long Point_Target) override;
 
-  inline void RecoverTarget_Span_Endwall(const su2activevector &bcastVariable, unsigned long iSpan) override {
+  inline void RecoverTarget_SpanEndwall(const su2activevector &bcastVariable, unsigned long iSpan) override {
     for (auto iVar = 0u; iVar < nMixingVars; iVar++) {
       Target_Variable[iVar] = bcastVariable[iSpan * nMixingVars + iVar];
     }

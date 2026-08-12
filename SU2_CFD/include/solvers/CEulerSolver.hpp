@@ -159,10 +159,10 @@ protected:
 
   vector<su2matrix<complex<su2double> > > CkInflow, CkOutflow1, CkOutflow2;
 
-  /*--- End of Turbomachinery Solver Variables ---*/
+  static constexpr unsigned short nMixingStateVars = 8; /*!< \brief Number of averaged variables transferred across mixing plane interfaces. */
+  vector<su2activematrix> MixingState; /*<! \brief Donor-side averaged state recieved at each mixing plane interface */
 
-  vector<vector<su2double*>> MixingState; // vector of vector of pointers... inner dim alloc'd elsewhere (welcome, to the night zone)
-  vector<vector<int>> MixingStateNodes;
+  /*--- End of Turbomachinery Solver Variables ---*/
 
   inline su2double GetTangGridVelIn(unsigned short val_blade, unsigned long val_span) {
     return TurboVelocityIn[val_blade][val_span][1] - RelTangVelocityIn[val_blade][val_span];
@@ -173,11 +173,10 @@ protected:
   }
 
   /*!
-  * \brief Get the outer state for mixing plane interface nodes.
+  * \brief Get a component of the donor-side averaged state at a mixing plane interface
   * \param[in] val_marker - marker index
-  * \param[in] val_span - vertex index
+  * \param[in] val_span - span index
   * \param[in] val_state  - requested state component
-  // * \param[in] donor_index- index of the donor node to get
   */
   inline su2double GetMixingState(unsigned short val_marker,
                                    unsigned long val_span,
@@ -188,25 +187,11 @@ protected:
   }
 
   /*!
-   * \brief Allocates the final pointer of MixingState depending on how many donor spans donate to it. That number is stored in MixingStateSpans[val_marker][val_Span].
+   * \brief Set a component of the donor-side averaged state at a mixing plane interface nodes.
    * \param[in] val_marker   - marker index
-   * \param[in] val_span   - vertex index
-   */
-  inline void SetMixingStateStructure(unsigned short val_marker, unsigned long val_span) final {
-    assert(val_marker < MixingState.size());
-    assert(val_span < MixingState[val_marker].size());
-    if( MixingState[val_marker][val_span] != nullptr ) delete [] MixingState[val_marker][val_span];
-
-    MixingState[val_marker][val_span] = new su2double[8];
-  }
-
-  /*!
-   * \brief Set the outer state for mixing plane interface nodes.
-   * \param[in] val_marker   - marker index
-   * \param[in] val_span   - vertex index
-   * \param[in] val_state    - requested state component
-  //  * \param[in] donor_index  - index of the donor node to set
-   * \param[in] component    - set value
+   * \param[in] val_span   - span index
+   * \param[in] val_state    - state component to set
+   * \param[in] component    - value to set
    */
   inline void SetMixingState(unsigned short val_marker,
                               unsigned long val_span,
@@ -214,25 +199,6 @@ protected:
                               // unsigned long donor_index,
                               su2double component) final {
     MixingState[val_marker][val_span][val_state] = component;
-  }
-
-  /*!
-   * \brief Set the number of outer state for mixing plane interface nodes.
-   * \param[in] val_marker - marker index
-   * \param[in] val_span - vertex index
-   * \param[in] value - number of outer states
-   */
-  inline void SetnMixingStates(unsigned short val_marker,
-                                unsigned long val_span,
-                                int value) final { MixingStateNodes[val_marker][val_span] = value; }
-
-  /*!
-   * \brief Get the number of outer state for mixing plane interface nodes.
-   * \param[in] val_marker - marker index
-   * \param[in] val_vertex - vertex index
-   */
-  inline int GetnMixingStates(unsigned short val_marker, unsigned long val_span) const final {
-    return MixingStateNodes[val_marker][val_span];
   }
 
   /*!

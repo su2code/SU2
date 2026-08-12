@@ -130,11 +130,9 @@ void CMixingPlaneInterface::BroadcastData_MixingPlane(const CInterpolator& inter
       /*--- Get the global index of the donor span. ---*/
       const auto donorSpan = targetSpan.donorSpan;
 
-      InitializeTarget_Variable(target_solution, markTarget, iTargetSpan, nSpanDonor);
-
       if ((iTargetSpan == 0) || (iTargetSpan == nTargetSpan) || (iTargetSpan == nTargetSpan - 1)) {
         /*--- Transfer values at hub, shroud and 1D values ---*/
-        RecoverTarget_Span_Endwall(sendDonorVar, donorSpan);
+        RecoverTarget_SpanEndwall(sendDonorVar, donorSpan);
 
         SetTarget_Variable(target_solution, target_geometry, target_config, markTarget, iTargetSpan, 0);
       }
@@ -179,25 +177,11 @@ void CMixingPlaneInterface::GetDonor_Variable(CSolver *donor_solution, CGeometry
   }
 }
 
-void CMixingPlaneInterface::InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
-                                                  unsigned long Span_Target, unsigned short nSpanDonor) {
-
-  target_solution->SetnMixingStates(Marker_Target, Span_Target, nSpanDonor); // This is to allocate
-  target_solution->SetMixingStateStructure(Marker_Target, Span_Target);
-  target_solution->SetnMixingStates(Marker_Target, Span_Target, 0); // Reset counter to 0
-
-}
-
 void CMixingPlaneInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
                                            const CConfig *target_config, unsigned long Marker_Target,
                                            unsigned long Span_Target, unsigned long Point_Target) {
   /*--- Set the mixing plane solution with the value of the Target Variable ---*/
-
-  unsigned short iDonorSpan = target_solution->GetnMixingStates(Marker_Target, Span_Target);
-
   for (unsigned short iVar = 0; iVar < nMixingVars; iVar++) {
     target_solution->SetMixingState(Marker_Target, Span_Target, iVar, Target_Variable[iVar]);
   }
-
-  target_solution->SetnMixingStates( Marker_Target, Span_Target, iDonorSpan + 1 );
 }

@@ -1294,53 +1294,27 @@ public:
   virtual void Impose_Fixed_Values(const CGeometry *geometry, const CConfig *config) { }
 
   /*!
-  * \brief Get the outer state for mixing plane interface nodes.
+  * \brief Get a component of the donor-side averaged state at a mixing plane interface
   * \param[in] val_marker - marker index
-  * \param[in] val_span - vertex index
+  * \param[in] val_span - span index
   * \param[in] val_state  - requested state component
-  * \param[in] donor_span - index of the donor span to get
   */
   inline virtual su2double GetMixingState(unsigned short val_marker,
                                    unsigned long val_span,
                                    unsigned short val_state) const { return 0; }
 
   /*!
-   * \brief Allocates the final pointer of MixingState depending on how many donor vertex donate to it. That number is stored in MixingStateNodes[val_marker][val_vertex].
+   * \brief Set a component of the donor-side averaged state at a mixing plane interface nodes.
    * \param[in] val_marker   - marker index
-   * \param[in] val_span     - span index
-   */
-  inline virtual void SetMixingStateStructure(unsigned short val_marker, unsigned long val_vertex) { }
-
-  /*!
-   * \brief Set the outer state for mixing plane interface nodes.
-   * \param[in] val_marker   - marker index
-   * \param[in] val_span     - vertex index
-   * \param[in] val_state    - requested state component
-   * \param[in] donor_index  - index of the donor node to set
-   * \param[in] component    - set value
+   * \param[in] val_span   - span index
+   * \param[in] val_state    - state component to set
+   * \param[in] component    - value to set
    */
   inline virtual void SetMixingState(unsigned short val_marker,
                               unsigned long val_span,
                               unsigned short val_state,
                               // unsigned long donor_span, // Do I care about where it comes from?
                               su2double component) { }
-
-  /*!
-   * \brief Set the number of outer state for mixing plane interface nodes.
-   * \param[in] val_marker - marker index
-   * \param[in] val_span   - span index
-   * \param[in] value - number of outer states
-   */
-  inline virtual void SetnMixingStates(unsigned short val_marker,
-                                unsigned long val_span,
-                                int value) { }
-
-  /*!
-   * \brief Get the number of outer state for mixing plane interface nodes.
-   * \param[in] val_marker - marker index
-   * \param[in] val_span - vertex index
-   */
-  inline virtual int GetnMixingStates(unsigned short val_marker, unsigned long val_span) const  { return 0; }
 
  /*!
    * \brief Get the outer state for fluid interface nodes.

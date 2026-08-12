@@ -151,11 +151,20 @@ protected:
     for (auto iVar = 0u; iVar < nVar; iVar++) Target_Variable[iVar] += donorCoeff * bcastVariable[iVar];
   }
 
-  inline virtual void RecoverTarget_Span_Endwall(const su2activevector &bcastVariable, unsigned long idx) { }
+  /*!
+   * \brief Recovers the target variable at the endwall from the buffer of su2doubles that was broadcast for mixing plane interfaces.
+   * \param[in] bcastVariable - Broadcast variable.
+   * \param[in] idx - Index of the target point.
+   */
+  inline virtual void RecoverTarget_SpanEndwall(const su2activevector &bcastVariable, unsigned long idx) { }
 
+  /*!
+   * \brief Recovers the target variable at the span from the buffer of su2doubles that was broadcast for mixing plane interfaces.
+   * \param[in] bcastVariable - Broadcast variable.
+   * \param[in] idx - Index of the target point.
+   * \param[in] donorCoeff - value of the donor coefficient.
+   */
   inline virtual void RecoverTarget_Span(const su2activevector &bcastVariable, unsigned long idx, su2double donorCoeff) { }
-
-
 
   /*!
    * \brief A virtual member.
