@@ -256,9 +256,13 @@ class CSysMatrix {
   /*--- Quantized off-diagonal storage (used when quantized_mode == true). ---*/
   using QuantType = int8_t;
 
-  /*! \brief Set by Initialize() when preconditioner == Q_LU_SGS.
+  /*! \brief Set by Initialize() when preconditioner == Q_LU_SGS, Q_JACOBI or Q_IDENTITY.
    *         mat.l and mat.u are NOT allocated; off-diagonal blocks live in the
-   *         q_* arrays below. */
+   *         q_* arrays below. Only the matrix-vector product (used by the Krylov
+   *         solver and, for Q_LU_SGS, by the sweeps) reads the quantized blocks;
+   *         the Jacobi preconditioner never touches them since it only applies the
+   *         (full precision) inverse diagonal, and the identity preconditioner does
+   *         not touch the matrix at all. */
 #ifndef CODI_REVERSE_TYPE
   bool quantized_mode = false;
 #else

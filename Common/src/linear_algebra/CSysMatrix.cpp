@@ -207,16 +207,17 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   useCuda = config->GetCUDA();
 
   const bool ilu_needed = (prec == ILU);
-  const bool diag_needed = (prec == JACOBI) || (prec == LINELET);
+  const bool diag_needed = (prec == JACOBI) || (prec == Q_JACOBI) || (prec == LINELET);
 
   /*--- Linelet also builds the Jacobi preconditioner but reads the inverse diagonal blocks on
-   * the host, so only plain Jacobi can keep them exclusively on the device. ---*/
-  jacobi_on_device = useCuda && (prec == JACOBI);
+   * the host, so only plain (or quantized) Jacobi can keep them exclusively on the device. ---*/
+  jacobi_on_device = useCuda && (prec == JACOBI || prec == Q_JACOBI);
 #ifndef CODI_REVERSE_TYPE
-  const bool q_lus_needed = allow_quant && !useCuda && (prec == Q_LU_SGS);
+  const bool quantized_offdiag_needed =
+      allow_quant && !useCuda && (prec == Q_LU_SGS || prec == Q_JACOBI || prec == Q_IDENTITY);
 #else
   /*--- No quantization in adjoint mode for now because TransposeInPlace would get complicated. ---*/
-  const bool q_lus_needed = false;
+  const bool quantized_offdiag_needed = false;
 #endif
 
   /*--- Basic dimensions. ---*/
@@ -242,9 +243,9 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   }
   allocAndInit(mat.d, nPoint * nVar * nEqn);
 
-  if (q_lus_needed) {
-    /*--- Q_LU_SGS: no full-precision L/U; off-diagonal blocks live in quantized storage.
-     *    L/U are quantized on-the-fly during assembly; diagonal is quantized in Build step. ---*/
+  if (quantized_offdiag_needed) {
+    /*--- Q_LU_SGS / Q_JACOBI / Q_IDENTITY: no full-precision L/U; off-diagonal blocks live in quantized storage.
+     *    L/U are quantized on-the-fly during assembly; diagonal is quantized in the Build step. ---*/
 #ifndef CODI_REVERSE_TYPE
     quantized_mode = true;
 #endif
@@ -732,7 +733,8 @@ void CSysMatrix<ScalarType>::QuantizeDiagonalBlocks() {
   SU2_ZONE_SCOPED
 
   if (quantized_mode) {
-    /*--- Q_LU_SGS: L/U were quantized during assembly; only the diagonal needs quantization now. ---*/
+    /*--- Q_LU_SGS / Q_JACOBI / Q_IDENTITY: L/U were quantized during assembly; only the diagonal needs quantization
+     * now. ---*/
     SU2_OMP_FOR_DYN(omp_heavy_size)
     for (auto i = 0ul; i < nPointDomain; ++i)
       QuantizeBlock(&mat.d[i * nVar * nVar], &q_scale_d[i * nVar], &q_blocks_d[i * nVar * nVar]);

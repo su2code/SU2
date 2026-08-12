@@ -117,6 +117,30 @@ class CIdentityPreconditioner final : public CPreconditioner<ScalarType> {
 };
 
 /*!
+ * \class CQuantizedIdentityPreconditioner
+ * \brief No-op preconditioner, same as CIdentityPreconditioner, but requests quantized (int8)
+ * off-diagonal storage for the matrix-vector product shared with the Krylov solver, as Q_LU_SGS/Q_JACOBI.
+ */
+template <class ScalarType>
+class CQuantizedIdentityPreconditioner final : public CPreconditioner<ScalarType> {
+ private:
+  CSysMatrix<ScalarType>& sparse_matrix;
+
+ public:
+  inline explicit CQuantizedIdentityPreconditioner(CSysMatrix<ScalarType>& matrix_ref) : sparse_matrix(matrix_ref) {}
+
+  CQuantizedIdentityPreconditioner() = delete;
+
+  inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override { v = u; }
+
+  inline bool IsIdentity() const override { return true; }
+
+  /*! \brief Quantize the diagonal blocks (off diagonals are quantized on the fly), needed by the
+   *         quantized matrix-vector product even though this preconditioner itself is a no-op. */
+  inline void Build() override { sparse_matrix.QuantizeDiagonalBlocks(); }
+};
+
+/*!
  * \class CJacobiPreconditioner
  * \brief Specialization of preconditioner that uses CSysMatrix class.
  */
@@ -160,6 +184,44 @@ class CJacobiPreconditioner final : public CPreconditioner<ScalarType> {
    * \note Request the associated matrix to build the preconditioner.
    */
   inline void Build() override { sparse_matrix.BuildJacobiPreconditioner(); }
+};
+
+/*!
+ * \class CQuantizedJacobiPreconditioner
+ * \brief Specialization of preconditioner that uses CSysMatrix class.
+ * \note The preconditioner operation itself is identical to CJacobiPreconditioner (it only ever
+ * applies the full precision inverse diagonal); quantization here only affects the off-diagonal
+ * blocks used by the matrix-vector product shared with the Krylov solver, exactly as Q_LU_SGS.
+ */
+template <class ScalarType>
+class CQuantizedJacobiPreconditioner final : public CPreconditioner<ScalarType> {
+ private:
+  CSysMatrix<ScalarType>& sparse_matrix;
+  CGeometry* geometry;
+  const CConfig* config;
+
+ public:
+  inline CQuantizedJacobiPreconditioner(CSysMatrix<ScalarType>& matrix_ref, CGeometry* geometry_ref,
+                                        const CConfig* config_ref)
+      : sparse_matrix(matrix_ref) {
+    if ((geometry_ref == nullptr) || (config_ref == nullptr))
+      SU2_MPI::Error("Preconditioner needs to be built with valid references.", CURRENT_FUNCTION);
+    geometry = geometry_ref;
+    config = config_ref;
+  }
+
+  CQuantizedJacobiPreconditioner() = delete;
+
+  inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
+    sparse_matrix.ComputeJacobiPreconditioner(u, v, geometry, config);
+  }
+
+  /*! \brief Build the (full precision) inverse diagonal, then quantize the diagonal blocks so the
+   *         quantized matrix-vector product (off diagonals are quantized on the fly) is consistent. */
+  inline void Build() override {
+    sparse_matrix.BuildJacobiPreconditioner();
+    sparse_matrix.QuantizeDiagonalBlocks();
+  }
 };
 
 /*!
@@ -406,8 +468,14 @@ CPreconditioner<ScalarType>* CPreconditioner<ScalarType>::Create(ENUM_LINEAR_SOL
     case IDENTITY:
       prec = new CIdentityPreconditioner<ScalarType>();
       break;
+    case Q_IDENTITY:
+      prec = new CQuantizedIdentityPreconditioner<ScalarType>(jacobian);
+      break;
     case JACOBI:
       prec = new CJacobiPreconditioner<ScalarType>(jacobian, geometry, config);
+      break;
+    case Q_JACOBI:
+      prec = new CQuantizedJacobiPreconditioner<ScalarType>(jacobian, geometry, config);
       break;
     case LINELET:
       prec = new CLineletPreconditioner<ScalarType>(jacobian, geometry, config);

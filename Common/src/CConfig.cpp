@@ -7473,6 +7473,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 case LU_SGS:  cout << "Using LU-SGS preconditioning."<< endl; break;
                 case Q_LU_SGS:  cout << "Using LU-SGS preconditioning with matrix quantization."<< endl; break;
                 case JACOBI:  cout << "Using Jacobi preconditioning."<< endl; break;
+                case Q_JACOBI:  cout << "Using Jacobi preconditioning with matrix quantization."<< endl; break;
               }
               break;
             case SMOOTHER:
@@ -7482,6 +7483,7 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 case LU_SGS:  cout << "A LU-SGS"; break;
                 case Q_LU_SGS:  cout << "A quantized LU-SGS"; break;
                 case JACOBI:  cout << "A Jacobi"; break;
+                case Q_JACOBI:  cout << "A quantized Jacobi"; break;
               }
               cout << " method is used for smoothing the linear system." << endl;
               break;
