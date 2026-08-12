@@ -152,6 +152,12 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
     GPUMemoryAllocation::gpu_free(d_invM);
     GPUMemoryAllocation::gpu_free(d_ilu_color_idx);
     GPUMemoryAllocation::gpu_free(d_ilu_level_idx);
+    GPUMemoryAllocation::gpu_free(d_q_scale_l);
+    GPUMemoryAllocation::gpu_free(d_q_blocks_l);
+    GPUMemoryAllocation::gpu_free(d_q_scale_u);
+    GPUMemoryAllocation::gpu_free(d_q_blocks_u);
+    GPUMemoryAllocation::gpu_free(d_q_scale_d);
+    GPUMemoryAllocation::gpu_free(d_q_blocks_d);
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if (ilu_build_graph_exec != nullptr) cudaGraphExecDestroy(ilu_build_graph_exec);
     if (ilu_apply_graph_exec != nullptr) cudaGraphExecDestroy(ilu_apply_graph_exec);
@@ -213,8 +219,12 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
    * the host, so only plain (or quantized) Jacobi can keep them exclusively on the device. ---*/
   jacobi_on_device = useCuda && (prec == JACOBI || prec == Q_JACOBI);
 #ifndef CODI_REVERSE_TYPE
+  /*--- Q_LU_SGS stays host-only: its forward/backward sweeps are inherently sequential and
+   * already bracketed to the host via ApplyPreconditionerOnHost, so there is nothing to gain
+   * from a device SpMV there. Q_JACOBI and Q_IDENTITY have no such sequential preconditioner
+   * step, so their (shared) quantized matrix-vector product is allowed on the device too. ---*/
   const bool quantized_offdiag_needed =
-      allow_quant && !useCuda && (prec == Q_LU_SGS || prec == Q_JACOBI || prec == Q_IDENTITY);
+      allow_quant && (prec == Q_JACOBI || prec == Q_IDENTITY || (prec == Q_LU_SGS && !useCuda));
 #else
   /*--- No quantization in adjoint mode for now because TransposeInPlace would get complicated. ---*/
   const bool quantized_offdiag_needed = false;
@@ -275,12 +285,29 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
       SU2_MPI::Error("CUDA CSysMatrix block-LDU SpMV requires square blocks.", CURRENT_FUNCTION);
     }
     GPUAllocAndInit(gpu.d, nPoint * nVar * nEqn);
-    GPUAllocAndInit(gpu.l, mat.nnz_l * nVar * nEqn);
-    GPUAllocAndInit(gpu.u, mat.nnz_u * nVar * nEqn);
     GPUAllocAndCopy(gpu.row_ptr_l, mat.row_ptr_l, nPointDomain + 1);
     GPUAllocAndCopy(gpu.col_ind_l, mat.col_ind_l, mat.nnz_l);
     GPUAllocAndCopy(gpu.row_ptr_u, mat.row_ptr_u, nPointDomain + 1);
     GPUAllocAndCopy(gpu.col_ind_u, mat.col_ind_u, mat.nnz_u);
+
+    if (quantized_mode) {
+      /*--- Device mirrors of the host quantized off-diagonal storage; gpu.l/gpu.u are not
+       * allocated (nothing would ever read them). The diagonal is quantized straight from
+       * gpu.d by QuantizeDiagonalBlocksGPU(), so there is no d_q_scale_d/d_q_blocks_d transfer
+       * to arrange, only the allocation here. ---*/
+      auto GPUAllocQ = [](QuantType*& ptr, unsigned long n) {
+        ptr = GPUMemoryAllocation::gpu_alloc<QuantType, true>(n * sizeof(QuantType));
+      };
+      GPUAllocQ(d_q_scale_l, mat.nnz_l * nVar);
+      GPUAllocQ(d_q_blocks_l, mat.nnz_l * nVar * nEqn);
+      GPUAllocQ(d_q_scale_u, mat.nnz_u * nVar);
+      GPUAllocQ(d_q_blocks_u, mat.nnz_u * nVar * nEqn);
+      GPUAllocQ(d_q_scale_d, nPoint * nVar);
+      GPUAllocQ(d_q_blocks_d, nPoint * nVar * nEqn);
+    } else {
+      GPUAllocAndInit(gpu.l, mat.nnz_l * nVar * nEqn);
+      GPUAllocAndInit(gpu.u, mat.nnz_u * nVar * nEqn);
+    }
   }
 
   if (type == ConnectivityType::FiniteVolume) {
@@ -732,14 +759,29 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::QuantizeDiagonalBlocks() {
   SU2_ZONE_SCOPED
 
-  if (quantized_mode) {
-    /*--- Q_LU_SGS / Q_JACOBI / Q_IDENTITY: L/U were quantized during assembly; only the diagonal needs quantization
-     * now. ---*/
-    SU2_OMP_FOR_DYN(omp_heavy_size)
-    for (auto i = 0ul; i < nPointDomain; ++i)
-      QuantizeBlock(&mat.d[i * nVar * nVar], &q_scale_d[i * nVar], &q_blocks_d[i * nVar * nVar]);
-    END_SU2_OMP_FOR
+  if (!quantized_mode) return;
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      /*--- Quantize straight from gpu.d, see the d_q_scale_d/d_q_blocks_d comment in
+       * CSysMatrix.hpp for why this does not go through the host q_scale_d/q_blocks_d. ---*/
+      SU2_DEVICE_REGION(QuantizeDiagonalBlocksGPU();)
+      return;
+    } else {
+      GPUNotAvailable(CURRENT_FUNCTION);
+    }
+#else
+    GPUNotAvailable(CURRENT_FUNCTION);
+#endif
   }
+
+  /*--- Q_LU_SGS / Q_JACOBI / Q_IDENTITY: L/U were quantized during assembly; only the diagonal needs quantization
+   * now. ---*/
+  SU2_OMP_FOR_DYN(omp_heavy_size)
+  for (auto i = 0ul; i < nPointDomain; ++i)
+    QuantizeBlock(&mat.d[i * nVar * nVar], &q_scale_d[i * nVar], &q_blocks_d[i * nVar * nVar]);
+  END_SU2_OMP_FOR
 }
 
 template <class ScalarType>

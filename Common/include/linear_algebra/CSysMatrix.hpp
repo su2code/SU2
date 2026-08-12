@@ -273,8 +273,24 @@ class CSysMatrix {
   QuantType* q_scale_u;  /*!< \brief Same as q_scale_l for the upper entries. */
   QuantType* q_blocks_u; /*!< \brief Same as q_blocks_l for the upper entries. */
   QuantType* q_scale_d;  /*!< \brief Same as q_scale_l for the diagonal entries, [nPoint * nVar].
-                          *          Populated by QuantizeDiagonalBlocks(). */
+                          *          Populated by QuantizeDiagonalBlocks() (host only, see below). */
   QuantType* q_blocks_d; /*!< \brief Same as q_blocks_l for the diagonal entries. */
+
+  /*--- Device mirrors of the quantized off-diagonal storage, only allocated when
+   * quantized_mode && useCuda (currently only reachable for Q_JACOBI/Q_IDENTITY, Q_LU_SGS stays
+   * host-only). d_q_scale_l/d_q_blocks_l/d_q_scale_u/d_q_blocks_u are plain device-side copies of
+   * q_scale_l/q_blocks_l/q_scale_u/q_blocks_u, refreshed by HtDTransfer(). The diagonal mirrors
+   * d_q_scale_d/d_q_blocks_d are populated directly on the device from gpu.d by
+   * QuantizeDiagonalBlocksGPU() instead: q_scale_d/q_blocks_d (host) are only ever quantized from
+   * mat.d inside QuantizeDiagonalBlocks() itself, which for Q_JACOBI/Q_IDENTITY runs after
+   * HtDTransfer() has already copied the (unquantized) diagonal, so transferring the host
+   * quantized diagonal would race the one point in the solve where it is actually computed. ---*/
+  QuantType* d_q_scale_l = nullptr;
+  QuantType* d_q_blocks_l = nullptr;
+  QuantType* d_q_scale_u = nullptr;
+  QuantType* d_q_blocks_u = nullptr;
+  QuantType* d_q_scale_d = nullptr;
+  QuantType* d_q_blocks_d = nullptr;
 
   bool useCuda = false; /*!< \brief Whether CUDA is enabled. */
 
@@ -557,6 +573,14 @@ class CSysMatrix {
    */
   void MatrixVectorProductGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                               const CConfig* config) const;
+
+  /*!
+   * \brief Quantize the diagonal blocks directly on the device, from gpu.d into
+   *        d_q_scale_d/d_q_blocks_d. Device counterpart of the host branch of
+   *        QuantizeDiagonalBlocks(), only reachable when quantized_mode && useCuda.
+   * \note Requires the device matrix to be up to date, see HtDTransfer.
+   */
+  void QuantizeDiagonalBlocksGPU();
 
   /*!
    * \brief Build the Jacobi preconditioner on the device, from the device copy of the matrix.
