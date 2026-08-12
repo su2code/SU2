@@ -135,12 +135,10 @@ template <>
 struct Passive<su2double> {
   FORCEINLINE static passivedouble Value(const su2double& val) { return GetValue(val); }
 };
-#ifndef SWIG
 template <class T>
 FORCEINLINE auto PassiveValue(const T& val) {
   return Passive<T>::Value(val);
 }
-#endif
 
 /*!
  * \brief Casts the primitive value to int (uses GetValue, already implemented for each type).

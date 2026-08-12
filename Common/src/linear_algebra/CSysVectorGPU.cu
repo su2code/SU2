@@ -114,195 +114,98 @@ ScalarType CSysVector<ScalarType>::GPUNorm() const {
 }
 
 /*!
- * \brief multi vector product CUDA kernel one line of blocks per pair V[i0+i],W[j];
- *        Configurable multiple blocks reducing over the size of the vectors
- */
-template <class ScalarType>
-__global__ void GPUmultiDot(const ScalarType* const* __restrict__ d_V, const size_t n,
-                            const ScalarType* const* __restrict__ d_W, const size_t m, const size_t size,
-                            ScalarType* __restrict__ d_local)
-{
-  // Map each x,y block to the specific (i,j) dot product
-  const size_t pair_idx = blockIdx.y;
-  if (pair_idx >= n * m) return;
-
-  const size_t i = pair_idx / m;
-  const size_t j = pair_idx % m;
-
-  //get the corresponding vectors
-  const ScalarType* __restrict__ vi = d_V[i];
-  const ScalarType* __restrict__ wj = d_W[j];
-
-  // grid strided loop over the vector elements
-  ScalarType local_sum = 0.0;
-  const size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
-  const size_t stride = gridDim.x * blockDim.x;
-
-  for (size_t k = tid; k < size; k += stride)
-  {
-      local_sum += vi[k] * wj[k];
-  }
-
-  // shared memory reduction within the block
-  extern __shared__ char shared_mem[];
-  ScalarType* sdata = reinterpret_cast<ScalarType*>(shared_mem);
-
-  sdata[threadIdx.x] = local_sum;
-  __syncthreads();
-
-  // parallel reduction on the block
-  for (unsigned int s = blockDim.x / 2; s > 0; s >>= 1)
-  {
-      if (threadIdx.x < s)
-      {
-        sdata[threadIdx.x] += sdata[threadIdx.x + s];
-      }
-      __syncthreads();
-  }
-
-  // atomic add of each block partial sum to the output matrix, operated by thread 0 of each block
-  if (threadIdx.x == 0)
-  {
-      atomicAdd(&d_local[i * m + j], sdata[0]);
-  }
-}
-
-/*!
- * \brief multi vector dot produt method for GPU
- * \note this is a vectors-read only method that returns an array of scalars
+ * \brief multi vector product with cublas<t>gemmBatched
  */
 template <class ScalarType>
 const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vector<CSysVector<ScalarType>>& V,
                                                                  const size_t i0, const size_t n,
                                                                  const std::vector<CSysVector<ScalarType>>& W,
                                                                  const size_t m) {
-
-  static su2matrix<ScalarType> shared;
-  if (n == 0 || m == 0) return shared;
+  /*--- The multiDot product between n V[size] and m W[size] vectors is performed as
+   * a General Matrix Multiplication between two tall-skinny matrices:
+   * C = \alpha * A^T * B + \beta * C
+   * being A = V[ size * n ] and B = W[ size * m ] the batched vectors ---*/
+  cublasHandle_t handle = GetBlasHandle();
+  cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
 
   const size_t size = V[0].nElmDomain;
+  const size_t batch = n * m;
 
-  // get all the device pointers for V and W in one array, resize if needed
-  static std::vector<const ScalarType*> h_V_W_ptrs;
-  h_V_W_ptrs.resize(n + m);
-
-  for (size_t i = 0; i < n; ++i){
-    h_V_W_ptrs[i] = V[i0 + i].GetDevicePointer();
-  }
-  for (size_t j = 0; j < m; ++j){
-    h_V_W_ptrs[j + n] = W[j].GetDevicePointer();
-  }
-
-  // persistent device pointer storing all vectors, resizes when needed
-  static const ScalarType** d_V_W_ptrs = nullptr;
-  static size_t ptrs_capacity = 0; // current capacity
-  const size_t ptrs_needed = n + m; // needed capacity for both V and W
-
-  if (ptrs_needed > ptrs_capacity) { // if not enough capacity, enlarge by re-allocation on device
-    if (d_V_W_ptrs) gpuErrChk(cudaFree(d_V_W_ptrs));
-    gpuErrChk(cudaMalloc(&d_V_W_ptrs, ptrs_needed * sizeof(ScalarType*)));
-    ptrs_capacity = ptrs_needed; // update current capacity
-  }
-  // copy pointers to device
-  gpuErrChk(cudaMemcpy(d_V_W_ptrs, h_V_W_ptrs.data(), ptrs_needed * sizeof(ScalarType*), cudaMemcpyHostToDevice));
-
-  // allocate persisten result buffer that grows if needed
+  // allocate persisten result buffer local on host and device, is resized if needed
+  static su2matrix<ScalarType> local;
+  local.resize(n,m);
   static ScalarType* d_local = nullptr;
   static size_t local_capacity = 0;
-  const size_t local_needed = n * m;
 
-  if (local_needed > local_capacity) { // if not enough capacity, enlarge by re-allocation on device
+  if (batch > local_capacity) { // if not enough capacity, enlarge by re-allocation on device
     if (d_local) gpuErrChk(cudaFree(d_local));
-    gpuErrChk(cudaMalloc(&d_local, local_needed * sizeof(ScalarType)));
-    local_capacity = local_needed;
+    gpuErrChk(cudaMalloc(&d_local, batch * sizeof(ScalarType)));
+    local_capacity = batch;
   }
   // zero out the result buffer
-  gpuErrChk(cudaMemset(d_local, 0, local_needed * sizeof(ScalarType)));
+  gpuErrChk(cudaMemset(d_local, 0, batch * sizeof(ScalarType)));
 
+  // prepare the arrays A,B,C on host
+  static std::vector<const ScalarType*> h_A, h_B;
+  static std::vector<ScalarType*> h_C;
+  h_A.resize(batch); h_B.resize(batch); h_C.resize(batch);
 
-  dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE,1,1);
-  int numBlocksPerPair = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, size);
-  dim3 gridDim(numBlocksPerPair, n * m, 1);
+  for (size_t i = 0; i < n; ++i) {
+    for (size_t j =0; j < m; ++j) {
+      const size_t idx = i * m + j;
+      h_A[idx] = V[i0 + i].GetDevicePointer();
+      h_B[idx] = W[j].GetDevicePointer();
+      h_C[idx] = d_local + idx; // C maps to d_local to store the coefficients in the 2D array
+    }
+  }
 
-  GPUmultiDot<<<gridDim, blockDim, KernelParameters::MVP_BLOCK_SIZE * sizeof(ScalarType)>>>(&d_V_W_ptrs[0], n, &d_V_W_ptrs[n], m, size, d_local);
-  gpuErrChk(cudaGetLastError());
+  // prepare device arrays for A,B,C. Re-allocate if batch size has grown
+  static const ScalarType** d_A = nullptr;
+  static const ScalarType** d_B = nullptr;
+  static ScalarType** d_C = nullptr;
+  static size_t ptrs_capacity = 0; // current capacity
+
+  if (batch > ptrs_capacity) { // if not enough capacity, enlarge by re-allocation on device
+    if (d_A) gpuErrChk(cudaFree(d_A));
+    if (d_B) gpuErrChk(cudaFree(d_B));
+    if (d_C) gpuErrChk(cudaFree(d_C));
+    gpuErrChk(cudaMalloc(&d_A, batch * sizeof(ScalarType*)));
+    gpuErrChk(cudaMalloc(&d_B, batch * sizeof(ScalarType*)));
+    gpuErrChk(cudaMalloc(&d_C, batch * sizeof(ScalarType*)));
+    ptrs_capacity = batch; // update current capacity
+  }
+  // copy pointers to device
+  gpuErrChk(cudaMemcpy(d_A, h_A.data(), batch * sizeof(ScalarType*), cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(d_B, h_B.data(), batch * sizeof(ScalarType*), cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(d_C, h_C.data(), batch * sizeof(ScalarType*), cudaMemcpyHostToDevice));
+
+  // define alpha = 1.0 and beta = 0.0
+  const ScalarType alpha = ScalarType(1.0);
+  const ScalarType beta = ScalarType(1.0);
+
+  if constexpr (std::is_same_v<ScalarType, float>) {
+    status = cublasSgemmBatched(handle, CUBLAS_OP_T, CUBLAS_OP_N, 1, 1, size, &alpha, d_A, static_cast<int>(size),
+                                d_B, static_cast<int>(size), &beta, d_C, 1, static_cast<int>(batch));
+  } else if constexpr (std::is_same_v<ScalarType, double>) {
+    status = cublasDgemmBatched(handle, CUBLAS_OP_T, CUBLAS_OP_N, 1, 1, size, &alpha, d_A, static_cast<int>(size),
+                                d_B, static_cast<int>(size), &beta, d_C, 1, static_cast<int>(batch));
+  } else {
+    SU2_MPI::Error("Unsupported ScalarType in CSysVector::multiDotGPU.", CURRENT_FUNCTION);
+    return local;
+  }
+
+  if (status != CUBLAS_STATUS_SUCCESS) {
+    SU2_MPI::Error("cuBLAS cublas<t>gemmBatched failed in CSysVector::multiDotGPU.", CURRENT_FUNCTION);
+    return local;
+  }
 
   // copy result to host for MPI reduce
-  su2matrix<ScalarType> local(n,m);
-  gpuErrChk(cudaMemcpy(local.data(), d_local, n * m * sizeof(ScalarType), cudaMemcpyDeviceToHost));
+  gpuErrChk(cudaMemcpy(local.data(), d_local, batch * sizeof(ScalarType), cudaMemcpyDeviceToHost));
 
-  /*--- Single AllReduce of the result, only the master thread communicates. ---*/
-  // this is a duplicate. Ideally the cuda section should return local but that depends on the intended OpenMP/CUDA combined usage
-  SU2_OMP_MASTER {
-    shared.resize(n, m);
-
-    const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
-    SelectMPIWrapper<ScalarType>::W::Allreduce(local.data(), shared.data(), n * m, mpi_type, MPI_SUM,
-                                               SU2_MPI::GetComm());
-  }
-  END_SU2_OMP_MASTER
-
-  /*--- All threads have the same view of the result. ---*/
-  SU2_OMP_BARRIER
-
-  return shared;
-}
-
-template<class ScalarType, int N>
-struct WeightedVecs {
-  const ScalarType* ptrs[N];
-  ScalarType weights[N];
-};
-
-/*!
- * \brief linear combination kernel to calculate the next vector v from weights and vectors
- */
-template<class ScalarType, int N>
-__global__ void LinearCombinationKernel(ScalarType* __restrict__ v, WeightedVecs<ScalarType, N> wv,
-                                        int n, unsigned long nElm, bool inc)
-{
-  const unsigned long k = blockIdx.x * blockDim.x + threadIdx.x;
-  if (k >= nElm) return;
-
-  //handle overwriting or combination with existing
-  ScalarType result = inc ? v[k] : ScalarType(0);
-
-  #pragma unroll
-  for (int i = 0; i < N; ++i) // N is known at compile time (4), this unrolls to: if (i < n) result += weight[i] * vector[i][k]; i<4
-    if (i < n) result += wv.weights[i] * wv.ptrs[i][k];
-  v[k] = result;
-}
-
-/*!
- * \brief dispatcher for the linear combination kernel on GPU
- */
-template<class ScalarType>
-void CSysVector<ScalarType>::LinearCombinationGPU(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs, const ScalarType* ws,
-                                                  CSysVector<ScalarType>& v, bool inc)
-{
-  const unsigned long nElm = v.nElmDomain;
-  dim3 blockDim(KernelParameters::MVP_BLOCK_SIZE,1,1);
-  int numBlocks = KernelParameters::round_up_division(KernelParameters::MVP_BLOCK_SIZE, nElm);
-  dim3 gridDim(numBlocks, 1, 1);
-
-  ScalarType* d_v = v.GetDevicePointer();
-
-  for (unsigned long i = 0; i < n; i += 4) {
-    const int rem = static_cast<int>(std::min(n - i, 4ul));
-    //prepare vectors pointers and corresponding weights, passing them by value
-    WeightedVecs<ScalarType, 4> vs_ws = {};
-    for (int j = 0; j < rem; ++j) {
-      vs_ws.ptrs[j] = vs[i + j].GetDevicePointer();  // get the pointer
-      vs_ws.weights[j] = ws[i + j];                  // plain array indexing, not ws(k)
-    }
-    //calculate the linear combination on GPU, handle more than 4 vectors through inc || i > 0
-    LinearCombinationKernel<ScalarType, 4><<<gridDim, blockDim>>>(d_v, vs_ws, rem, nElm, inc || i > 0);
-    gpuErrChk(cudaPeekAtLastError());
-  }
+  return local;
 
 }
 
-template class CSysVector<su2double>; //This is a temporary fix for invalid instantiations due to separating the member function from the header file the class is defined in. Will try to rectify it in coming commits.
 /*--- Every expression the solvers assign to a CSysVector needs its assignment kernel
  * instantiated here; the host compiler cannot emit one. A shape that is missing shows up
  * as an undefined reference to VecExpr::AssignDeviceExpression at link time, and is fixed
@@ -395,16 +298,21 @@ DEVICE_EXPRESSION_SHAPES(passivedouble);
 #undef INSTANTIATE_DEVICE_ASSIGN_EXPR
 #undef INSTANTIATE_DEVICE_ASSIGN
 
-#if defined(USE_MIXED_PRECISION)
+
 template void CSysVector<su2mixedfloat>::HtDTransfer(bool trigger) const;
 template void CSysVector<su2mixedfloat>::DtHTransfer(bool trigger) const;
 template su2mixedfloat CSysVector<su2mixedfloat>::GPUDot(const CSysVector<su2mixedfloat>& other) const;
 template su2mixedfloat CSysVector<su2mixedfloat>::GPUNorm() const;
-#endif
+template const su2matrix<su2mixedfloat>& CSysVector<su2mixedfloat>::multiDotGPU(
+    const std::vector<CSysVector<su2mixedfloat>>& V, const size_t i0, const size_t n,
+    const std::vector<CSysVector<su2mixedfloat>>& W, const size_t m);
 
 #if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
 template void CSysVector<passivedouble>::HtDTransfer(bool trigger) const;
 template void CSysVector<passivedouble>::DtHTransfer(bool trigger) const;
 template passivedouble CSysVector<passivedouble>::GPUDot(const CSysVector<passivedouble>& other) const;
 template passivedouble CSysVector<passivedouble>::GPUNorm() const;
+template const su2matrix<passivedouble>& CSysVector<passivedouble>::multiDotGPU(
+    const std::vector<CSysVector<passivedouble>>& V, const size_t i0, const size_t n,
+    const std::vector<CSysVector<passivedouble>>& W, const size_t m);
 #endif

@@ -108,21 +108,6 @@ void LinearCombinationImpl(const unsigned long n, const Vectors& vs, const Weigh
 template <class ScalarType, class Weights>
 void LinearCombinationImpl(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs, const Weights& ws,
                            CSysVector<ScalarType>& v, bool inc = false) {
-#ifdef SU2_ENABLE_CUDA_KERNELS
-  if constexpr (su2_gpu_capable_v<ScalarType>) {
-    std::vector<ScalarType> ws_host(n);  // collect weights into simple host array
-    for (unsigned long i = 0; i < n; ++i) {
-      ws_host[i] = static_cast<ScalarType>(ws(i));
-    }
-    BEGIN_SU2_DEVICE_REGION
-    CSysVector<ScalarType>::LinearCombinationGPU(n, vs, ws_host.data(), v, inc);
-    END_SU2_DEVICE_REGION
-    return;
-  } else {
-    SU2_MPI::Error("GPU acceleration is not supported for AD scalar types.", CURRENT_FUNCTION);
-  }
-#endif
-
   LinearCombinationImpl(
       n, [&vs](auto i) -> auto& { return vs[i]; }, ws, v, inc);
 }
