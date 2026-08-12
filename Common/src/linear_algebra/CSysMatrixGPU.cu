@@ -448,20 +448,6 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditionerGPU() {
 }
 
 template <class ScalarType>
-void CSysMatrix<ScalarType>::QuantizeDiagonalBlocksGPU() {
-  SU2_ZONE_SCOPED
-
-  if (nPointDomain == 0) return;
-
-  /*--- The diagonal is quantized on the host, in QuantizeDiagonalBlocks(), right before this is
-   * called; this just uploads the result. Doing it on the host lets it run while the (larger)
-   * async L/U transfer kicked off earlier by HtDTransfer() is still in flight on the device. ---*/
-  gpuErrChk(cudaMemcpy(d_q_scale.d, q_scale.d, sizeof(QuantType) * nPointDomain * nVar, cudaMemcpyHostToDevice));
-  gpuErrChk(
-      cudaMemcpy(d_q_blocks.d, q_blocks.d, sizeof(QuantType) * nPointDomain * nVar * nVar, cudaMemcpyHostToDevice));
-}
-
-template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
   SU2_ZONE_SCOPED
 
@@ -607,7 +593,7 @@ void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
      * launched on the device again. Any later kernel that reads d_q_scale/d_q_blocks (also issued
      * on the default stream) still waits for these correctly, by stream ordering, without an
      * explicit sync here; the diagonal mirrors (d_q_scale.d/d_q_blocks.d) are uploaded once that
-     * host quantization is done, by QuantizeDiagonalBlocksGPU(). ---*/
+     * host quantization is done, by a plain cudaMemcpy at the end of QuantizeDiagonalBlocks(). ---*/
     gpuErrChk(cudaMemcpyAsync(d_q_scale.l, q_scale.l, sizeof(QuantType) * mat.nnz_l * nVar, cudaMemcpyHostToDevice));
     gpuErrChk(cudaMemcpyAsync(d_q_blocks.l, q_blocks.l, sizeof(QuantType) * mat.nnz_l * nVar * nEqn,
                               cudaMemcpyHostToDevice));
@@ -650,7 +636,6 @@ template void CSysMatrix<TYPE>::MatrixVectorProductGPU(const CSysVector<TYPE>& v
                                                        CSysVector<TYPE>& prod,              \
                                                        CGeometry* geometry,                 \
                                                        const CConfig* config) const;        \
-template void CSysMatrix<TYPE>::QuantizeDiagonalBlocksGPU();                                \
 template void CSysMatrix<TYPE>::BuildJacobiPreconditionerGPU();                             \
 template void CSysMatrix<TYPE>::BuildILUPreconditionerGPU();                                \
 template void CSysMatrix<TYPE>::ComputeILUPreconditionerGPU(const CSysVector<TYPE>& vec,    \

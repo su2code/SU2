@@ -760,8 +760,14 @@ void CSysMatrix<ScalarType>::QuantizeDiagonalBlocks() {
   if (useCuda) {
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
-      /*--- Upload the host result just computed above. ---*/
-      SU2_DEVICE_REGION(QuantizeDiagonalBlocksGPU();)
+      /*--- Just an upload of the host result above, no computation, so a plain CUDA runtime call
+       * (available here via GPUComms.cuh, transitively included through allocation_toolbox.hpp)
+       * rather than a kernel dispatched through a CSysMatrixGPU.cu hook. ---*/
+      BEGIN_SU2_DEVICE_REGION
+      gpuErrChk(cudaMemcpy(d_q_scale.d, q_scale.d, sizeof(QuantType) * nPointDomain * nVar, cudaMemcpyHostToDevice));
+      gpuErrChk(
+          cudaMemcpy(d_q_blocks.d, q_blocks.d, sizeof(QuantType) * nPointDomain * nVar * nVar, cudaMemcpyHostToDevice));
+      END_SU2_DEVICE_REGION
     } else {
       GPUNotAvailable(CURRENT_FUNCTION);
     }

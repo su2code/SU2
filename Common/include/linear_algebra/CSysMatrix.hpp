@@ -282,8 +282,8 @@ class CSysMatrix {
    * useCuda (currently only reachable for Q_JACOBI/Q_IDENTITY, Q_LU_SGS stays host-only).
    * d_q_scale.l/.u and d_q_blocks.l/.u are plain device-side copies of q_scale.l/.u and
    * q_blocks.l/.u, uploaded *asynchronously* by HtDTransfer() so that transfer can overlap with
-   * the host quantizing the diagonal (see QuantizeDiagonalBlocks()); d_q_scale.d/d_q_blocks.d are
-   * that host result, uploaded once ready by QuantizeDiagonalBlocksGPU(). */
+   * the host quantizing the diagonal; d_q_scale.d/d_q_blocks.d are that host result, uploaded (a
+   * plain cudaMemcpy, not a kernel) once ready, at the end of QuantizeDiagonalBlocks(). */
   LDU<QuantType> d_q_scale;
   LDU<QuantType> d_q_blocks;
 
@@ -568,13 +568,6 @@ class CSysMatrix {
    */
   void MatrixVectorProductGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                               const CConfig* config) const;
-
-  /*!
-   * \brief Upload the already host-quantized diagonal (q_scale.d/q_blocks.d, computed by
-   *        QuantizeDiagonalBlocks() just before calling this) into d_q_scale.d/d_q_blocks.d.
-   *        Only reachable when quantized_mode && useCuda.
-   */
-  void QuantizeDiagonalBlocksGPU();
 
   /*!
    * \brief Build the Jacobi preconditioner on the device, from the device copy of the matrix.
