@@ -363,46 +363,6 @@ __device__ FORCEINLINE float DecodeQuantScaleDevice(int8_t e) {
 }
 
 /*!
- * \brief Device counterpart of EncodeQuantBlock (CSysMatrix.hpp), bit-identical: quantizes one
- *        nVar x nVar block (row-major, pointed to by \p blk) into per-row int8 storage. One
- *        thread handles one whole block (i.e. one matrix row).
- */
-template <class ScalarType>
-__device__ void EncodeQuantBlockDevice(const ScalarType* __restrict__ blk, int8_t* __restrict__ qs,
-                                       int8_t* __restrict__ qv, unsigned long nVar) {
-  for (auto r = 0ul; r < nVar; ++r) {
-    constexpr uint32_t eps_bits = 0x34000000u;
-    uint32_t max_abs_bits = eps_bits;
-    for (auto c = 0ul; c < nVar; ++c) {
-      const float fv = static_cast<float>(blk[r * nVar + c]);
-      max_abs_bits = max(max_abs_bits, __float_as_uint(fv) & 0x7FFFFFFFu);
-    }
-    const int e = min(127, max(-128, static_cast<int>(max_abs_bits >> 23) - 133));
-    qs[r] = static_cast<int8_t>(e);
-    const float inv_rscale = __uint_as_float(static_cast<uint32_t>(127 - e) << 23);
-    for (auto c = 0ul; c < nVar; ++c) {
-      qv[r * nVar + c] =
-          static_cast<int8_t>(max(-128.f, min(127.f, roundf(static_cast<float>(blk[r * nVar + c]) * inv_rscale))));
-    }
-  }
-}
-
-/*!
- * \brief Quantize the diagonal blocks straight from the device diagonal (gpu.d), device version
- *        of CSysMatrix::QuantizeBlock applied row-by-row (host QuantizeDiagonalBlocks).
- *        One thread per row.
- */
-template <class ScalarType>
-__global__ void QuantizeDiagonalBlocksKernel(unsigned long nRows, unsigned long nVar,
-                                             const ScalarType* __restrict__ mat_d, int8_t* __restrict__ q_scale_d,
-                                             int8_t* __restrict__ q_blocks_d) {
-  const auto iRow = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x;
-  if (iRow >= nRows) return;
-
-  EncodeQuantBlockDevice(mat_d + iRow * nVar * nVar, q_scale_d + iRow * nVar, q_blocks_d + iRow * nVar * nVar, nVar);
-}
-
-/*!
  * \brief Quantized block-LDU SpMV kernel: y[iRow] = (L + D + U) * x per block-row, reading int8
  *        row-scaled quantized blocks instead of full precision ones. Device version of
  *        QuantizedRowProduct/QuantizedMatVecAdd (CSysMatrix.inl). Same launch/thread layout as
@@ -493,15 +453,12 @@ void CSysMatrix<ScalarType>::QuantizeDiagonalBlocksGPU() {
 
   if (nPointDomain == 0) return;
 
-  /*--- The matrix is expected to be on the device already, it is uploaded once per solve by
-   * CSysMatrixVectorProduct, which is created before the preconditioner is built. ---*/
-  constexpr unsigned threadsPerBlock = 128;
-  const auto blocks = static_cast<unsigned>((nPointDomain + threadsPerBlock - 1) / threadsPerBlock);
-  QuantizeDiagonalBlocksKernel<ScalarType>
-      <<<blocks, threadsPerBlock>>>(nPointDomain, nVar, gpu.d, d_q_scale_d, d_q_blocks_d);
-  /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
-  gpuErrChk(cudaStreamSynchronize(nullptr));
-  gpuErrChk(cudaGetLastError());
+  /*--- The diagonal is quantized on the host, in QuantizeDiagonalBlocks(), right before this is
+   * called; this just uploads the result. Doing it on the host lets it run while the (larger)
+   * async L/U transfer kicked off earlier by HtDTransfer() is still in flight on the device. ---*/
+  gpuErrChk(cudaMemcpy(d_q_scale.d, q_scale.d, sizeof(QuantType) * nPointDomain * nVar, cudaMemcpyHostToDevice));
+  gpuErrChk(
+      cudaMemcpy(d_q_blocks.d, q_blocks.d, sizeof(QuantType) * nPointDomain * nVar * nVar, cudaMemcpyHostToDevice));
 }
 
 template <class ScalarType>
@@ -644,15 +601,19 @@ void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
   gpuErrChk(cudaMemcpy(gpu.d, mat.d, sizeof(ScalarType) * nPoint * nVar * nEqn, cudaMemcpyHostToDevice));
   if (quantized_mode) {
     /*--- No gpu.l/gpu.u to transfer (never allocated); mirror the host quantized off-diagonal
-     * storage instead. The diagonal mirrors (d_q_scale_d/d_q_blocks_d) are NOT transferred here,
-     * they are populated straight from gpu.d by QuantizeDiagonalBlocksGPU(), see the comment on
-     * those members in CSysMatrix.hpp for why. ---*/
-    gpuErrChk(cudaMemcpy(d_q_scale_l, q_scale_l, sizeof(QuantType) * mat.nnz_l * nVar, cudaMemcpyHostToDevice));
-    gpuErrChk(
-        cudaMemcpy(d_q_blocks_l, q_blocks_l, sizeof(QuantType) * mat.nnz_l * nVar * nEqn, cudaMemcpyHostToDevice));
-    gpuErrChk(cudaMemcpy(d_q_scale_u, q_scale_u, sizeof(QuantType) * mat.nnz_u * nVar, cudaMemcpyHostToDevice));
-    gpuErrChk(
-        cudaMemcpy(d_q_blocks_u, q_blocks_u, sizeof(QuantType) * mat.nnz_u * nVar * nEqn, cudaMemcpyHostToDevice));
+     * storage instead. Issued as async copies on the default stream, then left in flight: the
+     * caller (CSysMatrixVectorProduct's constructor) returns right after this, and QuantizeDiag-
+     * onalBlocks() -> Build() quantizes the diagonal on the host next, before anything is
+     * launched on the device again. Any later kernel that reads d_q_scale/d_q_blocks (also issued
+     * on the default stream) still waits for these correctly, by stream ordering, without an
+     * explicit sync here; the diagonal mirrors (d_q_scale.d/d_q_blocks.d) are uploaded once that
+     * host quantization is done, by QuantizeDiagonalBlocksGPU(). ---*/
+    gpuErrChk(cudaMemcpyAsync(d_q_scale.l, q_scale.l, sizeof(QuantType) * mat.nnz_l * nVar, cudaMemcpyHostToDevice));
+    gpuErrChk(cudaMemcpyAsync(d_q_blocks.l, q_blocks.l, sizeof(QuantType) * mat.nnz_l * nVar * nEqn,
+                              cudaMemcpyHostToDevice));
+    gpuErrChk(cudaMemcpyAsync(d_q_scale.u, q_scale.u, sizeof(QuantType) * mat.nnz_u * nVar, cudaMemcpyHostToDevice));
+    gpuErrChk(cudaMemcpyAsync(d_q_blocks.u, q_blocks.u, sizeof(QuantType) * mat.nnz_u * nVar * nEqn,
+                              cudaMemcpyHostToDevice));
   } else {
     gpuErrChk(cudaMemcpy(gpu.l, mat.l, sizeof(ScalarType) * mat.nnz_l * nVar * nEqn, cudaMemcpyHostToDevice));
     gpuErrChk(cudaMemcpy(gpu.u, mat.u, sizeof(ScalarType) * mat.nnz_u * nVar * nEqn, cudaMemcpyHostToDevice));
@@ -671,8 +632,8 @@ void CSysMatrix<ScalarType>::MatrixVectorProductGPU(const CSysVector<ScalarType>
   dim3 gridDim(static_cast<unsigned>(nPointDomain), 1, 1);
   if (quantized_mode) {
     QuantizedBlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
-        nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, d_q_scale_l, d_q_blocks_l, d_q_scale_d, d_q_blocks_d,
-        gpu.row_ptr_u, gpu.col_ind_u, d_q_scale_u, d_q_blocks_u, d_vec, d_prod);
+        nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, d_q_scale.l, d_q_blocks.l, d_q_scale.d, d_q_blocks.d,
+        gpu.row_ptr_u, gpu.col_ind_u, d_q_scale.u, d_q_blocks.u, d_vec, d_prod);
   } else {
     BlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
         nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, gpu.l, gpu.d,

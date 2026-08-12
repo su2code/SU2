@@ -99,12 +99,8 @@ CSysMatrix<ScalarType>::CSysMatrix() : rank(SU2_MPI::GetRank()), size(SU2_MPI::G
   ilu.d = nullptr;
   ilu.u = nullptr;
 
-  q_scale_l = nullptr;
-  q_blocks_l = nullptr;
-  q_scale_u = nullptr;
-  q_blocks_u = nullptr;
-  q_scale_d = nullptr;
-  q_blocks_d = nullptr;
+  q_scale = {};
+  q_blocks = {};
 
   invM = nullptr;
   d_invM = nullptr;
@@ -122,23 +118,19 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   SU2_ZONE_SCOPED
 
   delete[] omp_partitions;
-  auto freeHostLDU = [](LDU& m) {
+  auto freeHostLDU = [](auto& m) {
     MemoryAllocation::aligned_free(m.d);
     MemoryAllocation::aligned_free(m.l);
     MemoryAllocation::aligned_free(m.u);
   };
   freeHostLDU(mat);
   freeHostLDU(ilu);
+  freeHostLDU(q_scale);
+  freeHostLDU(q_blocks);
   MemoryAllocation::aligned_free(invM);
-  MemoryAllocation::aligned_free(q_scale_l);
-  MemoryAllocation::aligned_free(q_blocks_l);
-  MemoryAllocation::aligned_free(q_scale_u);
-  MemoryAllocation::aligned_free(q_blocks_u);
-  MemoryAllocation::aligned_free(q_scale_d);
-  MemoryAllocation::aligned_free(q_blocks_d);
 
   if (useCuda) {
-    auto freeLDU = [](LDU& m) {
+    auto freeLDU = [](auto& m) {
       GPUMemoryAllocation::gpu_free(m.d);
       GPUMemoryAllocation::gpu_free(m.l);
       GPUMemoryAllocation::gpu_free(m.u);
@@ -149,15 +141,11 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
     };
     freeLDU(gpu);
     freeLDU(gpu_ilu);
+    freeLDU(d_q_scale);
+    freeLDU(d_q_blocks);
     GPUMemoryAllocation::gpu_free(d_invM);
     GPUMemoryAllocation::gpu_free(d_ilu_color_idx);
     GPUMemoryAllocation::gpu_free(d_ilu_level_idx);
-    GPUMemoryAllocation::gpu_free(d_q_scale_l);
-    GPUMemoryAllocation::gpu_free(d_q_blocks_l);
-    GPUMemoryAllocation::gpu_free(d_q_scale_u);
-    GPUMemoryAllocation::gpu_free(d_q_blocks_u);
-    GPUMemoryAllocation::gpu_free(d_q_scale_d);
-    GPUMemoryAllocation::gpu_free(d_q_blocks_d);
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if (ilu_build_graph_exec != nullptr) cudaGraphExecDestroy(ilu_build_graph_exec);
     if (ilu_apply_graph_exec != nullptr) cudaGraphExecDestroy(ilu_apply_graph_exec);
@@ -262,12 +250,12 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     auto allocQ = [](QuantType*& ptr, unsigned long n) {
       ptr = MemoryAllocation::aligned_alloc<QuantType, true>(64, n * sizeof(QuantType));
     };
-    allocQ(q_scale_l, mat.nnz_l * nVar);
-    allocQ(q_blocks_l, mat.nnz_l * nVar * nEqn);
-    allocQ(q_scale_u, mat.nnz_u * nVar);
-    allocQ(q_blocks_u, mat.nnz_u * nVar * nEqn);
-    allocQ(q_scale_d, nPoint * nVar);
-    allocQ(q_blocks_d, nPoint * nVar * nEqn);
+    allocQ(q_scale.l, mat.nnz_l * nVar);
+    allocQ(q_blocks.l, mat.nnz_l * nVar * nEqn);
+    allocQ(q_scale.u, mat.nnz_u * nVar);
+    allocQ(q_blocks.u, mat.nnz_u * nVar * nEqn);
+    allocQ(q_scale.d, nPoint * nVar);
+    allocQ(q_blocks.d, nPoint * nVar * nEqn);
   } else {
     allocAndInit(mat.l, mat.nnz_l * nVar * nEqn);
     allocAndInit(mat.u, mat.nnz_u * nVar * nEqn);
@@ -291,19 +279,18 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     GPUAllocAndCopy(gpu.col_ind_u, mat.col_ind_u, mat.nnz_u);
 
     if (quantized_mode) {
-      /*--- Device mirrors of the host quantized off-diagonal storage; gpu.l/gpu.u are not
-       * allocated (nothing would ever read them). The diagonal is quantized straight from
-       * gpu.d by QuantizeDiagonalBlocksGPU(), so there is no d_q_scale_d/d_q_blocks_d transfer
-       * to arrange, only the allocation here. ---*/
+      /*--- Device mirrors of the host quantized storage; gpu.l/gpu.u are not allocated (nothing
+       * would ever read them). d_q_scale.d/d_q_blocks.d are uploaded from the host result once
+       * QuantizeDiagonalBlocks() has computed it, see the comment on those members. ---*/
       auto GPUAllocQ = [](QuantType*& ptr, unsigned long n) {
         ptr = GPUMemoryAllocation::gpu_alloc<QuantType, true>(n * sizeof(QuantType));
       };
-      GPUAllocQ(d_q_scale_l, mat.nnz_l * nVar);
-      GPUAllocQ(d_q_blocks_l, mat.nnz_l * nVar * nEqn);
-      GPUAllocQ(d_q_scale_u, mat.nnz_u * nVar);
-      GPUAllocQ(d_q_blocks_u, mat.nnz_u * nVar * nEqn);
-      GPUAllocQ(d_q_scale_d, nPoint * nVar);
-      GPUAllocQ(d_q_blocks_d, nPoint * nVar * nEqn);
+      GPUAllocQ(d_q_scale.l, mat.nnz_l * nVar);
+      GPUAllocQ(d_q_blocks.l, mat.nnz_l * nVar * nEqn);
+      GPUAllocQ(d_q_scale.u, mat.nnz_u * nVar);
+      GPUAllocQ(d_q_blocks.u, mat.nnz_u * nVar * nEqn);
+      GPUAllocQ(d_q_scale.d, nPoint * nVar);
+      GPUAllocQ(d_q_blocks.d, nPoint * nVar * nEqn);
     } else {
       GPUAllocAndInit(gpu.l, mat.nnz_l * nVar * nEqn);
       GPUAllocAndInit(gpu.u, mat.nnz_u * nVar * nEqn);
@@ -761,13 +748,20 @@ void CSysMatrix<ScalarType>::QuantizeDiagonalBlocks() {
 
   if (!quantized_mode) return;
 
+  /*--- Q_LU_SGS / Q_JACOBI / Q_IDENTITY: L/U were quantized during assembly; only the diagonal needs quantization
+   * now. Always done on the host, even under CUDA: HtDTransfer() already kicked off the (larger)
+   * L/U quantized transfer asynchronously before Build() reached this point, so quantizing the
+   * diagonal here on the CPU overlaps with that transfer instead of waiting on it first. ---*/
+  SU2_OMP_FOR_DYN(omp_heavy_size)
+  for (auto i = 0ul; i < nPointDomain; ++i)
+    QuantizeBlock(&mat.d[i * nVar * nVar], &q_scale.d[i * nVar], &q_blocks.d[i * nVar * nVar]);
+  END_SU2_OMP_FOR
+
   if (useCuda) {
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
-      /*--- Quantize straight from gpu.d, see the d_q_scale_d/d_q_blocks_d comment in
-       * CSysMatrix.hpp for why this does not go through the host q_scale_d/q_blocks_d. ---*/
+      /*--- Upload the host result just computed above. ---*/
       SU2_DEVICE_REGION(QuantizeDiagonalBlocksGPU();)
-      return;
     } else {
       GPUNotAvailable(CURRENT_FUNCTION);
     }
@@ -775,13 +769,6 @@ void CSysMatrix<ScalarType>::QuantizeDiagonalBlocks() {
     GPUNotAvailable(CURRENT_FUNCTION);
 #endif
   }
-
-  /*--- Q_LU_SGS / Q_JACOBI / Q_IDENTITY: L/U were quantized during assembly; only the diagonal needs quantization
-   * now. ---*/
-  SU2_OMP_FOR_DYN(omp_heavy_size)
-  for (auto i = 0ul; i < nPointDomain; ++i)
-    QuantizeBlock(&mat.d[i * nVar * nVar], &q_scale_d[i * nVar], &q_blocks_d[i * nVar * nVar]);
-  END_SU2_OMP_FOR
 }
 
 template <class ScalarType>
@@ -802,10 +789,10 @@ void CSysMatrix<ScalarType>::SetValZero() {
     zeroChunk(mat.l, mat.nnz_l * nVar * nEqn);
     zeroChunk(mat.u, mat.nnz_u * nVar * nEqn);
   } else {
-    zeroChunk(q_scale_l, mat.nnz_l * nVar);
-    zeroChunk(q_scale_u, mat.nnz_l * nVar);
-    zeroChunk(q_blocks_l, mat.nnz_l * nVar * nEqn);
-    zeroChunk(q_blocks_u, mat.nnz_u * nVar * nEqn);
+    zeroChunk(q_scale.l, mat.nnz_l * nVar);
+    zeroChunk(q_scale.u, mat.nnz_l * nVar);
+    zeroChunk(q_blocks.l, mat.nnz_l * nVar * nEqn);
+    zeroChunk(q_blocks.u, mat.nnz_u * nVar * nEqn);
   }
   SU2_OMP_BARRIER
 }
@@ -907,10 +894,10 @@ void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long block_i, unsigned long
 
   if (quantized_mode) {
     for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k) {
-      for (auto iVar = 0u; iVar < nEqn; iVar++) q_blocks_l[k * blkSz + row * nEqn + iVar] = 0;
+      for (auto iVar = 0u; iVar < nEqn; iVar++) q_blocks.l[k * blkSz + row * nEqn + iVar] = 0;
     }
     for (auto k = mat.row_ptr_u[block_i]; k < mat.row_ptr_u[block_i + 1]; ++k) {
-      for (auto iVar = 0u; iVar < nEqn; iVar++) q_blocks_u[k * blkSz + row * nEqn + iVar] = 0;
+      for (auto iVar = 0u; iVar < nEqn; iVar++) q_blocks.u[k * blkSz + row * nEqn + iVar] = 0;
     }
   } else {
     for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k) {
@@ -1605,9 +1592,9 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
           for (auto j = 0ul; j < nEqn; ++j) d_i[i * nEqn + j] -= view(i, j);
       };
       for (auto k_l = mat.row_ptr_l[iPoint]; k_l < mat.row_ptr_l[iPoint + 1]; ++k_l)
-        subtractTransp(l_to_u_transp[k_l], q_scale_u, q_blocks_u);
+        subtractTransp(l_to_u_transp[k_l], q_scale.u, q_blocks.u);
       for (auto k_u = mat.row_ptr_u[iPoint]; k_u < mat.row_ptr_u[iPoint + 1]; ++k_u)
-        subtractTransp(u_to_l_transp[k_u], q_scale_l, q_blocks_l);
+        subtractTransp(u_to_l_transp[k_u], q_scale.l, q_blocks.l);
     }
   }
   END_SU2_OMP_FOR
