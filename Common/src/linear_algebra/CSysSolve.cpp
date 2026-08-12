@@ -1566,14 +1566,9 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType>& Jacobian, con
           break;
         case JACOBI:
         case LINELET:
-          if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
-          break;
         case Q_JACOBI:
-          /*--- Rebuild the full-precision inverse diagonal and re-quantize it, mirroring Build(). ---*/
-          if (RequiresTranspose) {
-            Jacobian.BuildJacobiPreconditioner();
-            Jacobian.QuantizeDiagonalBlocks();
-          }
+          /*--- BuildJacobiPreconditioner() quantizes the diagonal itself when needed. ---*/
+          if (RequiresTranspose) Jacobian.BuildJacobiPreconditioner();
           break;
         case LU_SGS:
         case Q_LU_SGS:

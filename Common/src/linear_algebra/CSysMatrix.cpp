@@ -969,6 +969,11 @@ template <class ScalarType>
 void CSysMatrix<ScalarType>::BuildJacobiPreconditioner() {
   SU2_ZONE_SCOPED
 
+  /*--- Independent of invM (reads/quantizes mat.d, a no-op unless quantized_mode); done first,
+   * unconditionally, so it runs whichever branch below builds invM (in particular the
+   * jacobi_on_device one, which returns early). ---*/
+  QuantizeDiagonalBlocks();
+
   if (jacobi_on_device) {
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
