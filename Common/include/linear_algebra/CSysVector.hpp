@@ -599,17 +599,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
                                                   const size_t m);
 
   /*!
-   * \brief Computes v = vs * ws or v += vs * ws with unrolling of up to 4 iterations on the GPU
-   * \param[in] n - number of vectors to consider
-   * \param[in] ws - array of scalar weights corresponding to the device pointers to vectors
-   * \param[in] vs_ptrs - array of device pointers
-   * \param[in] v - target vector
-   * \param[in] inc - If true, adds results to target vector. If false, overwrites
-   */
-  static void LinearCombinationGPU(const unsigned long n, const std::vector<CSysVector<ScalarType>>& vs,
-                                   const ScalarType* ws, CSysVector<ScalarType>& v, bool inc = false);
-
-  /*!
    * \brief Squared L2 norm of the vector (via dot with self).
    * \return Squared L2 norm.
    */

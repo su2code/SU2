@@ -33,7 +33,6 @@
 #include "../../include/linear_algebra/CSysMatrix.hpp"
 #include "../../include/linear_algebra/CMatrixVectorProduct.hpp"
 #include "../../include/linear_algebra/CPreconditioner.hpp"
-#include "../../include/linear_algebra/CSysVector.hpp"
 
 SU2_IGNORE_WARNING("-Wmaybe-uninitialized")
 #include "Eigen/Eigenvalues"

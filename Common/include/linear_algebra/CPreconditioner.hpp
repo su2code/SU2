@@ -40,7 +40,7 @@
 /*!
  * \brief Applies a preconditioner that only has a host implementation to vectors that live
  * on the device: bring the input down, apply, put the result back.
- * \note This is what keeps ILU, LU-SGS, Linelet and PaStiX usable on the GPU path. The
+ * \note This is what keeps LU-SGS, Linelet and PaStiX usable on the GPU path. The
  * transfers are issued by one thread with the team synchronized around them, the apply
  * itself is the normal OpenMP parallel host code.
  */
@@ -199,7 +199,8 @@ class CILUPreconditioner final : public CPreconditioner<ScalarType> {
    * \param[out] v - CSysVector that is the result of the preconditioning.
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-    ApplyPreconditionerOnHost(u, v, [&] { sparse_matrix.ComputeILUPreconditioner(u, v, geometry, config); });
+    /*--- No host bracket, ILU has a device implementation and ComputeILUPreconditioner dispatches to it. ---*/
+    sparse_matrix.ComputeILUPreconditioner(u, v, geometry, config);
   }
 
   /*!
