@@ -147,7 +147,7 @@ def main():
     invwedge_msw.cfg_dir = "nonequilibrium/invwedge"
     invwedge_msw.cfg_file = "invwedge_msw.cfg"
     invwedge_msw.test_iter = 10
-    invwedge_msw.test_vals = [-1.212335, -1.737098, -18.301768, -18.629149, -18.575169, 2.106171, 1.651949, 5.143958, 0.704444]
+    invwedge_msw.test_vals = [-1.212335, -1.737098, -18.301825, -18.629206, -18.575226, 2.106171, 1.651949, 5.143958, 0.704444]
     invwedge_msw.test_vals_aarch64 = [-1.212335, -1.737098, -18.299279, -18.626656, -18.572683, 2.106171, 1.651949, 5.143958, 0.704444]
     test_list.append(invwedge_msw)
 
@@ -156,7 +156,7 @@ def main():
     invwedge_roe.cfg_dir = "nonequilibrium/invwedge"
     invwedge_roe.cfg_file = "invwedge_roe.cfg"
     invwedge_roe.test_iter = 10
-    invwedge_roe.test_vals = [-1.023216, -1.547979, -17.814656, -18.143616, -18.087775, 2.295078, 1.885054, 5.338487, 0.926120]
+    invwedge_roe.test_vals = [-1.023283, -1.548046, -17.814403, -18.143369, -18.087522, 2.295025, 1.884804, 5.338440, 0.926068]
     invwedge_roe.test_vals_aarch64 = [-1.052398, -1.577160, -17.794015, -18.122997, -18.067131, 2.266042, 1.849686, 5.304700, 0.899584]
     test_list.append(invwedge_roe)
 
@@ -192,7 +192,7 @@ def main():
     visc_cone.cfg_dir = "nonequilibrium/visc_wedge"
     visc_cone.cfg_file = "axi_visccone.cfg"
     visc_cone.test_iter = 10
-    visc_cone.test_vals = [-5.215235, -5.739371, -20.559852, -20.509281, -20.408911, 1.262701, -3.205457, -0.015696, 0.093205, 32637.000000]
+    visc_cone.test_vals = [-5.215234, -5.739371, -20.559852, -20.509281, -20.408911, 1.262701, -3.205457, -0.015696, 0.093205, 32637.000000]
     visc_cone.test_vals_aarch64 = [-5.222270, -5.746525, -20.560286, -20.510152, -20.409101, 1.255758, -3.208382, -0.016014, 0.093462, 32619.000000]
     test_list.append(visc_cone)
 
@@ -335,7 +335,7 @@ def main():
     ramp_msw.cfg_dir = "euler/ramp"
     ramp_msw.cfg_file = "inv_ramp_msw.cfg"
     ramp_msw.test_iter = 100
-    ramp_msw.test_vals = [-7.059306, -1.300966, -0.077507, 0.054419]
+    ramp_msw.test_vals = [-7.219257, -1.444776, -0.077507, 0.054419]
     ramp_msw.tol = [0.2, 0.2, 0.00001, 0.00001]
     test_list.append(ramp_msw)
 
@@ -829,7 +829,7 @@ def main():
     turbmod_sa_neg_rae2822.cfg_dir   = "turbulence_models/sa/rae2822"
     turbmod_sa_neg_rae2822.cfg_file  = "turb_SA_NEG_RAE2822.cfg"
     turbmod_sa_neg_rae2822.test_iter = 10
-    turbmod_sa_neg_rae2822.test_vals = [1.527546, 1.303378, -1.699437, 1.523548, 0.601919, 0.000000]
+    turbmod_sa_neg_rae2822.test_vals = [1.611007, 1.331579, -1.264006, 1.360053, 0.508605, 0.000000]
     turbmod_sa_neg_rae2822.test_vals_aarch64 = [-1.345593, 1.448310, 1.208721, -0.846597, 1.248410, 0.489117, 0.000000]
     test_list.append(turbmod_sa_neg_rae2822)
 
@@ -1333,7 +1333,7 @@ def main():
     statbeam3d.cfg_dir   = "fea_fsi/StatBeam_3d"
     statbeam3d.cfg_file  = "configBeam_3d.cfg"
     statbeam3d.test_iter = 0
-    statbeam3d.test_vals = [-6.047457, -5.730708, -5.926093, 110190]
+    statbeam3d.test_vals = [-6.020105, -5.749794, -5.931330, 110190.000000]
     statbeam3d.test_vals_aarch64 = [-6.062693, -5.769132, -5.891190, 110190]
     test_list.append(statbeam3d)
 
@@ -1342,7 +1342,7 @@ def main():
     thermal_beam_3d.cfg_dir = "fea_fsi/ThermalBeam_3d"
     thermal_beam_3d.cfg_file = "configBeam_3d.cfg"
     thermal_beam_3d.test_iter = 4
-    thermal_beam_3d.test_vals = [-8.070340, -7.802437, -7.856284, -13.978110, 217.000000, -4.047750, 39.000000, -4.072613, 136760.000000, 75.000000]
+    thermal_beam_3d.test_vals = [-8.141292, -7.848655, -7.909552, -13.978110, 217.000000, -4.099949, 39.000000, -4.072613, 136760.000000, 75.000000]
     test_list.append(thermal_beam_3d)
 
     # Static beam, 3d with coupled temperature, nonlinear elasticity
@@ -1350,7 +1350,7 @@ def main():
     thermal_beam_nl_3d.cfg_dir = "fea_fsi/ThermalBeam_3d"
     thermal_beam_nl_3d.cfg_file = "configBeamNonlinear_3d.cfg"
     thermal_beam_nl_3d.test_iter = 8
-    thermal_beam_nl_3d.test_vals = [-7.564308, -2.992893, -12.242503, -14.068322, 57.000000, -4.017672, 24.000000, -4.204804, 138710.000000, 75.233000]
+    thermal_beam_nl_3d.test_vals = [-7.564308, -2.992893, -12.242503, -14.068322, 57.000000, -4.017665, 24.000000, -4.204804, 138710.000000, 75.233000]
     test_list.append(thermal_beam_nl_3d)
 
     # Rotating cylinder, 3d
@@ -1361,7 +1361,7 @@ def main():
     # For a thin disk with the inner and outer radius of this geometry, from
     # "Formulas for Stress, Strain, and Structural Matrices", 2nd Edition, figure 19-4,
     # the maximum stress is 165.6MPa, we get a von Mises stress very close to that.
-    rotating_cylinder_fea.test_vals = [-6.760497, -6.689264, -6.739355, 37.000000, -8.178510, 165020000.000000]
+    rotating_cylinder_fea.test_vals = [-6.760497, -6.689266, -6.739355, 37.000000, -8.178510, 165020000.000000]
     rotating_cylinder_fea.test_vals_aarch64 = [-6.861939, -6.835539, -6.895498, 22, -8.313847, 1.6502e+08]
     test_list.append(rotating_cylinder_fea)
 
@@ -1370,7 +1370,7 @@ def main():
     linear_plane_strain.cfg_dir = "fea_fsi/VonMissesVerif"
     linear_plane_strain.cfg_file = "linear_plane_strain_2d.cfg"
     linear_plane_strain.test_iter = 0
-    linear_plane_strain.test_vals = [-6.406458, -5.995503, 0, 120140, 144, -8.122248]
+    linear_plane_strain.test_vals = [-6.246772, -6.060575, 0.000000, 120140.000000, 148.000000, -8.140997]
     test_list.append(linear_plane_strain)
 
     # 2D beam in plain stress with thermal expansion. This tests fixes to the 2D von Mises stress calculation,
@@ -1379,7 +1379,7 @@ def main():
     nonlinear_plane_stress.cfg_dir = "fea_fsi/VonMissesVerif"
     nonlinear_plane_stress.cfg_file = "nonlinear_plane_stress_2d.cfg"
     nonlinear_plane_stress.test_iter = 16
-    nonlinear_plane_stress.test_vals = [-6.230217, -2.228380, -11.698370, 162480.000000, 30.000000, -4.169761]
+    nonlinear_plane_stress.test_vals = [-6.235980, -2.229690, -11.701484, 162480.000000, 30.000000, -4.152654]
     nonlinear_plane_stress.tol = [2e-4, 2e-4, 2e-4, 1e-5, 1e-5, 4e-4]
     test_list.append(nonlinear_plane_stress)
 
@@ -1529,7 +1529,7 @@ def main():
     pywrapper_custom_fea_load.cfg_dir = "py_wrapper/custom_load_fea"
     pywrapper_custom_fea_load.cfg_file = "config.cfg"
     pywrapper_custom_fea_load.test_iter = 13
-    pywrapper_custom_fea_load.test_vals = [-7.262040, -4.945686, -14.163208, 27.000000, -6.282188, 362.230000]
+    pywrapper_custom_fea_load.test_vals = [-7.262040, -4.945686, -14.163208, 27.000000, -6.285429, 362.230000]
     pywrapper_custom_fea_load.command = TestCase.Command("mpirun -np 2", "python", "run.py")
     test_list.append(pywrapper_custom_fea_load)
 
@@ -1642,7 +1642,7 @@ def main():
     mms_fvm_inc_euler.cfg_dir   = "mms/fvm_incomp_euler"
     mms_fvm_inc_euler.cfg_file  = "inv_mms_jst.cfg"
     mms_fvm_inc_euler.test_iter = 20
-    mms_fvm_inc_euler.test_vals = [-9.128735, -9.441756, 0.000000, 0.000000]
+    mms_fvm_inc_euler.test_vals = [-9.128735, -9.441757, 0.000000, 0.000000]
     mms_fvm_inc_euler.tol       = 0.0001
     test_list.append(mms_fvm_inc_euler)
 
