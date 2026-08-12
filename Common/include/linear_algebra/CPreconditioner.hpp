@@ -38,6 +38,33 @@
 /// @{
 
 /*!
+ * \brief Applies a preconditioner that only has a host implementation to vectors that live
+ * on the device: bring the input down, apply, put the result back.
+ * \note This is what keeps LU-SGS, Linelet and PaStiX usable on the GPU path. The
+ * transfers are issued by one thread with the team synchronized around them, the apply
+ * itself is the normal OpenMP parallel host code.
+ */
+template <class ScalarType, class Apply>
+inline void ApplyPreconditionerOnHost(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v, Apply&& apply) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+  if constexpr (su2_gpu_capable_v<ScalarType>) {
+    if (VecExpr::UseDeviceExpressions()) {
+      /*--- The host code must not see the device pointers of any expression it builds, so
+       * the switch is flipped for the duration of the apply. It is written inside the
+       * regions, by one thread, and published to the team by the trailing barrier. ---*/
+      SU2_DEVICE_REGION(u.DtHTransfer(); VecExpr::SetUseDeviceExpressions(false);)
+
+      apply();
+
+      SU2_DEVICE_REGION(VecExpr::SetUseDeviceExpressions(true); v.HtDTransfer();)
+      return;
+    }
+  }
+#endif
+  apply();
+}
+
+/*!
  * \class CPreconditioner
  * \brief Abstract base class for defining a preconditioning operation.
  * \author J. Hicken.
@@ -76,6 +103,18 @@ class CPreconditioner {
 };
 template <class ScalarType>
 CPreconditioner<ScalarType>::~CPreconditioner() {}
+
+/*!
+ * \class CIdentityPreconditioner
+ * \brief No-op preconditioner used when Krylov solvers run without preconditioning.
+ */
+template <class ScalarType>
+class CIdentityPreconditioner final : public CPreconditioner<ScalarType> {
+ public:
+  inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override { v = u; }
+
+  inline bool IsIdentity() const override { return true; }
+};
 
 /*!
  * \class CJacobiPreconditioner
@@ -160,6 +199,7 @@ class CILUPreconditioner final : public CPreconditioner<ScalarType> {
    * \param[out] v - CSysVector that is the result of the preconditioning.
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
+    /*--- No host bracket, ILU has a device implementation and ComputeILUPreconditioner dispatches to it. ---*/
     sparse_matrix.ComputeILUPreconditioner(u, v, geometry, config);
   }
 
@@ -206,7 +246,7 @@ class CLU_SGSPreconditioner final : public CPreconditioner<ScalarType> {
    * \param[out] v - CSysVector that is the result of the preconditioning.
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-    sparse_matrix.ComputeLU_SGSPreconditioner(u, v, geometry, config);
+    ApplyPreconditionerOnHost(u, v, [&] { sparse_matrix.ComputeLU_SGSPreconditioner(u, v, geometry, config); });
   }
 };
 
@@ -234,7 +274,7 @@ class CQuantizedLUSGSPreconditioner final : public CPreconditioner<ScalarType> {
   CQuantizedLUSGSPreconditioner() = delete;
 
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-    sparse_matrix.ComputeLU_SGSPreconditioner(u, v, geometry, config);
+    ApplyPreconditionerOnHost(u, v, [&] { sparse_matrix.ComputeLU_SGSPreconditioner(u, v, geometry, config); });
   }
 
   /*! \brief Quantize the diagonal blocks (off diagonals are quantized on the fly). */
@@ -278,7 +318,7 @@ class CLineletPreconditioner final : public CPreconditioner<ScalarType> {
    * \param[out] v - CSysVector that is the result of the preconditioning.
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-    sparse_matrix.ComputeLineletPreconditioner(u, v, geometry, config);
+    ApplyPreconditionerOnHost(u, v, [&] { sparse_matrix.ComputeLineletPreconditioner(u, v, geometry, config); });
   }
 
   /*!
@@ -328,7 +368,7 @@ class CPastixPreconditioner final : public CPreconditioner<ScalarType> {
    * \param[out] v - CSysVector that is the result of the preconditioning.
    */
   inline void operator()(const CSysVector<ScalarType>& u, CSysVector<ScalarType>& v) const override {
-    sparse_matrix.ComputePastixPreconditioner(u, v, geometry, config);
+    ApplyPreconditionerOnHost(u, v, [&] { sparse_matrix.ComputePastixPreconditioner(u, v, geometry, config); });
   }
 
   /*!
@@ -363,6 +403,9 @@ CPreconditioner<ScalarType>* CPreconditioner<ScalarType>::Create(ENUM_LINEAR_SOL
   CPreconditioner<ScalarType>* prec = nullptr;
 
   switch (kind) {
+    case IDENTITY:
+      prec = new CIdentityPreconditioner<ScalarType>();
+      break;
     case JACOBI:
       prec = new CJacobiPreconditioner<ScalarType>(jacobian, geometry, config);
       break;
