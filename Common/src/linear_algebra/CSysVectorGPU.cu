@@ -185,7 +185,7 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vect
 
   // define alpha = 1.0 and beta = 0.0
   const ScalarType alpha = ScalarType(1.0);
-  const ScalarType beta = ScalarType(1.0);
+  const ScalarType beta = ScalarType(0.0);
 
   if constexpr (std::is_same_v<ScalarType, float>) {
     status = cublasSgemmBatched(handle, CUBLAS_OP_T, CUBLAS_OP_N, 1, 1, size, &alpha, d_A, static_cast<int>(size),
