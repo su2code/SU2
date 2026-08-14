@@ -168,11 +168,13 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   /*--- Register quantities that are no solver variables but further inputs/outputs of the (outer) iteration. ---*/
   direct_solver->RegisterSolutionExtra(true, config);
 
-  if (time_n_needed)
+  if (time_n_needed) {
     direct_solver->GetNodes()->RegisterSolution_time_n();
+  }
 
-  if (time_n1_needed)
+  if (time_n1_needed) {
     direct_solver->GetNodes()->RegisterSolution_time_n1();
+  }
 }
 
 void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
