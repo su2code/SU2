@@ -639,7 +639,8 @@ private:
   su2double Linear_Solver_Error;   /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;          /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Smoother_Relaxation;   /*!< \brief Relaxation factor for iterative linear smoothers. */
-  unsigned long Linear_Solver_Iter;              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
+  unsigned long Linear_Solver_Iter;
+  unsigned long Linear_Solver_Prec_Freeze;  /*!< \brief Reuse the finest-grid preconditioner for this many solves. */              /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Deform_Linear_Solver_Iter;       /*!< \brief Max iterations of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Restart_Frequency; /*!< \brief Restart frequency of the linear solver for the implicit formulation. */
   unsigned long Linear_Solver_Restart_Deflation; /*!< \brief Number of vectors used for deflated restarts. */
@@ -4382,6 +4383,12 @@ public:
    * \return Max number of iterations of the linear solver for the implicit formulation.
    */
   unsigned long GetLinear_Solver_Iter(void) const { return Linear_Solver_Iter; }
+
+  /*!
+   * \brief Number of consecutive linear solves that reuse one finest-grid preconditioner.
+   * \return Freeze period, 1 meaning rebuild on every solve.
+   */
+  unsigned long GetLinear_Solver_Prec_Freeze(void) const { return Linear_Solver_Prec_Freeze; }
 
   /*!
    * \brief Get max number of iterations of the linear solver for the implicit formulation.

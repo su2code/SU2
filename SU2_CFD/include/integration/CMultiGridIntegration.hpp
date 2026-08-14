@@ -304,4 +304,10 @@ private:
   passivedouble mg_conv_field_start_rms = -1.0; /*!< \brief CONV_FIELD RMS at the start of the active level's window; <0 = not yet captured. */
   bool mg_conv_field_early_exit = false;        /*!< \brief Set once the active level has converged two orders of magnitude; consumed at the next promotion check. */
 
+  /*--- FMG stagnation promotion: a coarse level is only worth iterating while it still reduces the
+   *    error, which happens well before a fixed iteration budget expires on fine meshes. ---*/
+  passivedouble mg_fmg_prev_rms = -1.0;         /*!< \brief Active level's residual on the previous iteration; <0 = not yet captured. */
+  unsigned long mg_fmg_stall_count = 0;         /*!< \brief Consecutive iterations without useful reduction on the active level. */
+  bool mg_fmg_promoted_on_stall = false;        /*!< \brief Whether the pending promotion was triggered by stagnation (for reporting). */
+
 };

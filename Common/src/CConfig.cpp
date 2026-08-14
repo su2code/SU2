@@ -2067,6 +2067,15 @@ void CConfig::SetConfig_Options() {
    * (e.g. the ILU factorization) for this many consecutive linear solves instead of rebuilding it every time.
    * 1 reproduces the previous behaviour exactly. DEFAULT: 1 \ingroup Config*/
   addUnsignedLongOption("MG_COARSE_PREC_FREEZE", MGOptions.MG_Coarse_Prec_Freeze, 1);
+  /*!\brief LINEAR_SOLVER_PREC_FREEZE\n DESCRIPTION: Reuse the linear-solver preconditioner (e.g. the ILU factorization)
+   * for this many consecutive solves on the finest grid, instead of rebuilding it every time. Applies to MESH_0 and to
+   * single-grid runs; MG_COARSE_PREC_FREEZE covers the coarse levels. The fine-grid preconditioner drives the outer
+   * nonlinear convergence, so raise this one with more care. 1 rebuilds every solve. DEFAULT: 1 \ingroup Config*/
+  addUnsignedLongOption("LINEAR_SOLVER_PREC_FREEZE", Linear_Solver_Prec_Freeze, 1);
+  /*!\brief MG_CORRECTION_LIMIT\n DESCRIPTION: Largest relative change any solution component may undergo from a single
+   * prolongated multigrid correction, e.g. 0.1 caps it at 10%. The whole correction vector at a point is scaled by one
+   * factor so its direction is preserved. 0 disables the limiter (previous behaviour). DEFAULT: 0 \ingroup Config*/
+  addDoubleOption("MG_CORRECTION_LIMIT", MGOptions.MG_Correction_Limit, 0.0);
   /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level. Levels that would produce fewer CVs are not created. DEFAULT: 50 \ingroup Config*/
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
@@ -2077,6 +2086,14 @@ void CConfig::SetConfig_Options() {
   addBoolOption("MG_IMPLICIT_LINES_ISOTROPIC", MGOptions.MG_Implicit_Lines_Isotropic, false);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Number of iterations on the coarsest mesh during Full Multigrid (FMG) startup phase before advancing to finer meshes. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
+  /*!\brief MG_STARTUP_STAGNATION\n DESCRIPTION: Full-MG promotion on stagnation. If the active level's residual ratio
+   * between successive iterations exceeds this value for MG_STARTUP_STAGNATION_ITER consecutive iterations, promote to
+   * the next finer level without waiting out MG_STARTUP_ITER. A coarse level is only worth iterating while it still
+   * reduces the error. 0 disables it. DEFAULT: 0.99 \ingroup Config*/
+  addDoubleOption("MG_STARTUP_STAGNATION", MGOptions.MG_Startup_Stagnation, 0.99);
+  /*!\brief MG_STARTUP_STAGNATION_ITER\n DESCRIPTION: Consecutive stalled iterations required before Full-MG promotes
+   * on stagnation. DEFAULT: 5 \ingroup Config*/
+  addUnsignedLongOption("MG_STARTUP_STAGNATION_ITER", MGOptions.MG_Startup_Stagnation_Iter, 5);
   /*!\brief MG_CFL_SCALING\n DESCRIPTION: Per-level CFL scaling factors for coarse MG levels. Entry i is the ratio CFL(i+1)/CFL(i). If fewer values than nMGLevels are given, the last value is repeated. DEFAULT: 0.25 (i.e., 1/4 per level) \ingroup Config*/
   addDoubleListOption("MG_CFL_SCALING", nMG_CflScaling_p, MG_CflScaling_p);
 

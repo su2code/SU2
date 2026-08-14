@@ -222,7 +222,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
     if (SU2_MPI::GetRank() == MASTER_NODE) {
       cout << "Full-MG: mesh level " << FinestMesh << " -> " << FinestMesh - 1 << " after "
            << (iters_on_level + 1) << " iteration(s) (";
-      if (mg_conv_field_early_exit) {
+      if (mg_fmg_promoted_on_stall) {
+        cout << "residual stalled for " << config[iZone]->GetMGOptions().MG_Startup_Stagnation_Iter
+             << " iteration(s)";
+      } else if (mg_conv_field_early_exit) {
         const string convField = (config[iZone]->GetnConv_Field() > 0) ? config[iZone]->GetConv_Field(0) : string("RMS_DENSITY");
         cout << convField << " dropped 2 orders of magnitude";
       } else
@@ -272,6 +275,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
        *    below, after this iteration's cycle has produced a fresh residual on the level. ---*/
       mg_conv_field_start_rms = -1.0;
       mg_conv_field_early_exit = false;
+      mg_fmg_prev_rms = -1.0;
+      mg_fmg_stall_count = 0;
+      mg_fmg_promoted_on_stall = false;
     }
 
     /*--- Use the level-0 flow CFL as the base reference and derive the steady-state
@@ -366,6 +372,30 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       } else if (conv_now <= 1e-2 * mg_conv_field_start_rms) {
         mg_conv_field_early_exit = true;
       }
+
+      /*--- Stagnation promotion. The two criteria above are a fixed iteration budget and a fixed
+       *    residual drop, and neither scales with the mesh: MG_Startup_Iter that is well matched on
+       *    a medium grid leaves a fine grid grinding through a warmup that stopped paying off long
+       *    before the budget ran out. What actually matters in FMG is when the coarse level stops
+       *    reducing the error usefully - past that point only the finer level can make progress, so
+       *    promote as soon as the per-iteration reduction stalls.
+       *
+       *    A single slow iteration is not stagnation, so a run of them is required. Both the ratio
+       *    and the run length are configurable, and MG_Startup_Iter still caps the window. ---*/
+      const auto& mgOptsFMG = config[iZone]->GetMGOptions();
+      const passivedouble stall_tol = SU2_TYPE::GetValue(mgOptsFMG.MG_Startup_Stagnation);
+      if (stall_tol > 0.0 && mg_fmg_prev_rms > 0.0) {
+        if (conv_now >= stall_tol * mg_fmg_prev_rms)
+          mg_fmg_stall_count++;
+        else
+          mg_fmg_stall_count = 0;
+
+        if (mg_fmg_stall_count >= mgOptsFMG.MG_Startup_Stagnation_Iter) {
+          mg_conv_field_early_exit = true;
+          mg_fmg_promoted_on_stall = true;
+        }
+      }
+      mg_fmg_prev_rms = conv_now;
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
   }
@@ -986,18 +1016,48 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   /*--- Use the adaptive damping factor uniformly across all prolongation levels. ---*/
   const su2double factor = config->GetDamp_Correc_Prolong();
 
+  /*--- Optional cap on how much one coarse-grid correction may move the solution at a point.
+   *    Without it the only guard below is the NaN check, and a correction can drive a cell
+   *    non-physical in a single application - measured on the turbulent flat plate, a W-cycle
+   *    correction cuts wall-adjacent density by 25%, from which the energy equation never
+   *    recovers. The cap is relative and per point, and the whole correction vector is scaled by
+   *    one factor so its direction is preserved (scaling components independently would rotate
+   *    the correction and break the coupling between the equations).
+   *
+   *    Components that are negligible against the largest one at that point (transverse momentum
+   *    in a freestream cell, say) carry no meaningful relative bound and are skipped, otherwise
+   *    they would veto every correction. ---*/
+  const su2double limit = config->GetMGOptions().MG_Correction_Limit;
+  const bool limiting = (limit > 0.0);
+
   SU2_OMP_FOR_STAT(roundUpDiv(geo_fine->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Fine = 0ul; Point_Fine < geo_fine->GetnPointDomain(); Point_Fine++) {
     auto* Residual_Fine = sol_fine->LinSysRes.GetBlock(Point_Fine);
     auto* Solution_Fine = sol_fine->GetNodes()->GetSolution(Point_Fine);
+
+    /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
     for (auto iVar = 0u; iVar < nVar; iVar++) {
-      /*--- Prevent a fine grid divergence due to a coarse grid divergence ---*/
       if (Residual_Fine[iVar] != Residual_Fine[iVar])
         Residual_Fine[iVar] = 0.0;
-
-      su2double correction = factor * Residual_Fine[iVar];
-      Solution_Fine[iVar] += correction;
     }
+
+    su2double omega = 1.0;
+    if (limiting) {
+      su2double ref = 0.0;
+      for (auto iVar = 0u; iVar < nVar; iVar++)
+        ref = max(ref, fabs(Solution_Fine[iVar]));
+
+      for (auto iVar = 0u; iVar < nVar; iVar++) {
+        const su2double scale = fabs(Solution_Fine[iVar]);
+        if (scale < 1e-6 * ref) continue;
+        const su2double correction = fabs(factor * Residual_Fine[iVar]);
+        if (correction > limit * scale)
+          omega = min(omega, limit * scale / correction);
+      }
+    }
+
+    for (auto iVar = 0u; iVar < nVar; iVar++)
+      Solution_Fine[iVar] += omega * factor * Residual_Fine[iVar];
   }
   END_SU2_OMP_FOR
 
