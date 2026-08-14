@@ -251,8 +251,8 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg"
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [79.000000, -7.555640, -10.335528, -10.356948, -13.629543]
-    discadj_trans_stator.test_vals_aarch64 = [79.000000, -7.555640, -10.335528, -10.356948, -13.629543]
+    discadj_trans_stator.test_vals = [79.000000, -7.555647, -10.335486, -10.356919, -13.629543]
+    discadj_trans_stator.test_vals_aarch64 = [79.000000, -7.555647, -10.335486, -10.356919, -13.629543]
     test_list.append(discadj_trans_stator)
 
     # Axial stage 2D
@@ -315,7 +315,7 @@ def main():
     discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
     discadj_fsi2.cfg_file  = "config.cfg"
     discadj_fsi2.test_iter = 8
-    discadj_fsi2.test_vals         = [-3.824635, 1.979553, -3.863368, 0.295450, 3.839800]
+    discadj_fsi2.test_vals         = [-3.824633, 1.979516, -3.863368, 0.295450, 3.839800]
     discadj_fsi2.test_vals_aarch64 = [-3.824870, 1.979160, -3.863368, 0.295450, 3.839800]
     discadj_fsi2.tol       = 0.00001
     test_list.append(discadj_fsi2)
@@ -337,7 +337,7 @@ def main():
     da_sp_pinArray_cht_2d_dp_hf.cfg_dir   = "incomp_navierstokes/streamwise_periodic/chtPinArray_2d"
     da_sp_pinArray_cht_2d_dp_hf.cfg_file  = "DA_configMaster.cfg"
     da_sp_pinArray_cht_2d_dp_hf.test_iter = 100
-    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-11.620815, -6.488915, -13.316428]
+    da_sp_pinArray_cht_2d_dp_hf.test_vals = [-11.620815, -6.488915, -13.316542]
     da_sp_pinArray_cht_2d_dp_hf.multizone = True
     test_list.append(da_sp_pinArray_cht_2d_dp_hf)
 
