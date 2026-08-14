@@ -34,7 +34,7 @@
 template class CScalarSolver<CPoissonVariable>;
 
 CPoissonSolver::CPoissonSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
-  : CScalarSolver<CPoissonVariable>(geometry, config, false, LINEAR_SOLVER_MODE::POISSON) {
+  : CScalarSolver<CPoissonVariable>(geometry, config, false, false, LINEAR_SOLVER_MODE::POISSON) {
   SU2_ZONE_SCOPED
 
   /*--- Dimension of the problem --> pressure deviation is the only conservative variable ---*/

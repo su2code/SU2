@@ -54,6 +54,11 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double density, su2double pressure, 
   if (dual_time) {
     Solution_time_n = Solution;
     Solution_time_n1 = Solution;
+
+    if (config->GetKind_DensityModel() != INC_DENSITYMODEL::CONSTANT) {
+      Density_time_n.resize(nPoint) = su2double(0.0);
+      Density_time_n1.resize(nPoint) = su2double(0.0);
+    }
   }
 
   /*--- Initialize boolean flag for BC ---*/
