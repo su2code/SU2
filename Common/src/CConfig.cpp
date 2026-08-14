@@ -5785,6 +5785,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         Kind_Solver != MAIN_SOLVER::MULTIPHYSICS)
       SU2_MPI::Error("Species transport currently only available for compressible and incompressible flow.", CURRENT_FUNCTION);
 
+    /*--- The dual-time density history is recomputed via the fluid model, which needs the species
+          solution; the species solver only exists on the finest grid. ---*/
+    if ((Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) && (Kind_DensityModel != INC_DENSITYMODEL::CONSTANT) &&
+        (TimeMarching == TIME_MARCHING::DT_STEPPING_1ST || TimeMarching == TIME_MARCHING::DT_STEPPING_2ND) &&
+        (nMGLevels > 0))
+      SU2_MPI::Error("Dual-time stepping with species-dependent variable density does not support MGLEVEL > 0.",
+                     CURRENT_FUNCTION);
+
     /*--- Species specific OF currently can only handle one entry in Marker_Analyze. ---*/
     for (unsigned short iObj = 0; iObj < nObj; iObj++) {
       if ((Kind_ObjFunc[iObj] == SURFACE_SPECIES_0 ||
