@@ -1461,6 +1461,10 @@ void CConfig::SetConfig_Options() {
   addDoubleOption("INC_INLET_DAMPING", Inc_Inlet_Damping, 0.1);
   /*!\brief INC_OUTLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow (0.1 by default). \ingroup Config*/
   addDoubleOption("INC_OUTLET_DAMPING", Inc_Outlet_Damping, 0.1);
+  /*!\brief INC_OUTLET_BACKFLOW_PREVENTION \n DESCRIPTION: Remove the reversed normal velocity component from the outlet ghost state when backflow is detected, preventing spurious inflow through the outlet. \ingroup Config*/
+  addBoolOption("INC_OUTLET_BACKFLOW_PREVENTION", Inc_Outlet_BackflowPrevention, false);
+  /*!\brief INC_OUTLET_BACKFLOW_PREVENTION_ITER \n DESCRIPTION: Number of outer iterations for which backflow prevention is active. After this iteration count the outlet BC reverts to pure Neumann, allowing physically real backflow to develop. Defaults to ULONG_MAX (always active). \ingroup Config*/
+  addUnsignedLongOption("INC_OUTLET_BACKFLOW_PREVENTION_ITER", Inc_Outlet_BackflowPrevention_Iter, numeric_limits<unsigned long>::max());
 
   /*--- Options related to the species solver. ---*/
 
