@@ -27,7 +27,6 @@
 
 #include <algorithm>
 #include <cstring>
-#include <numeric>
 
 #include "../../include/linear_algebra/CMatrixInverse.hpp"
 #include "../../include/linear_algebra/CSysMatrix.inl"
@@ -110,39 +109,26 @@ __device__ FORCEINLINE ScalarType* GetBlockILU(const DeviceLDU<ScalarType>& M, u
 
 /*!
  * \brief Invert the diagonal blocks of the matrix, device version of InverseDiagonalBlock.
- *        Rows (points) are batched into blocks whose thread count is a whole multiple of the
- *        warp size (see BuildJacobiPreconditionerGPU), unlike the previous batched attempt
- *        (reverted: e65bfa8eb8) which just floor-divided a ~128 thread target by nVar*nVar - for
- *        nVar not dividing 32 evenly (e.g. nVar=5, blockSize=25 -> 125 threads) that left the
- *        block's last warp partly empty. The inversion itself (SU2_LinAlg::MatrixInverse, shared
- *        __host__ __device__ code) still runs serially on one thread per row - it is a row-
- *        oriented Gauss-Jordan with a genuine sequential dependency chain across ~nVar^2/2
- *        elimination substeps, so spreading it across threads would trade cheap serial FLOPs
- *        (~nVar^3, tiny at this size) for that many __syncthreads() barriers. Warp-alignment does
- *        not change that: it only avoids wasting the last warp's tail lanes on the (fully
- *        parallel) load into shared memory, the inversion itself still runs one point at a time
- *        per warp regardless of alignment. threadIdx.x maps to (row-within-block, block entry)
- *        via divmod by nVar*nVar. Dynamic shared memory: blockDim.x scalars, one nVar*nVar work
- *        buffer per row in the block.
+ * \note Grid: one block per row, blockDim.x == nVar*nVar (one thread per block entry, they
+ *       stage the input in shared memory). Dynamic shared memory: nVar*nVar scalars.
  */
 template <class ScalarType>
 __global__ void InvertDiagonalBlocksKernel(unsigned long nRows, unsigned long nVar,
                                            const ScalarType* __restrict__ mat_d, ScalarType* __restrict__ invM) {
-  const unsigned long blockSize = nVar * nVar;
-  const unsigned long rowsPerBlock = blockDim.x / blockSize;
-  const unsigned long rowInBlock = threadIdx.x / blockSize;
-  const unsigned long localTid = threadIdx.x % blockSize;
-  const unsigned long iRow = static_cast<unsigned long>(blockIdx.x) * rowsPerBlock + rowInBlock;
+  const unsigned long iRow = blockIdx.x;
+  if (iRow >= nRows) return;
 
-  /*--- The inversion destroys its input, so it cannot work on the matrix itself; each row in the
-   * batch gets its own blockSize-sized slice of shared memory. ---*/
+  const auto blockSize = nVar * nVar;
+  const unsigned long tid = threadIdx.x;
+
+  /*--- The inversion destroys its input, so it cannot work on the matrix itself. ---*/
   extern __shared__ __align__(sizeof(double)) char smem[];
-  auto* work = reinterpret_cast<ScalarType*>(smem) + rowInBlock * blockSize;
+  auto* work = reinterpret_cast<ScalarType*>(smem);
 
-  if (iRow < nRows) work[localTid] = mat_d[iRow * blockSize + localTid];
+  work[tid] = mat_d[iRow * blockSize + tid];
   __syncthreads();
 
-  if (iRow < nRows && localTid == 0) SU2_LinAlg::MatrixInverse(nVar, work, invM + iRow * blockSize);
+  if (tid == 0) SU2_LinAlg::MatrixInverse(nVar, work, invM + iRow * blockSize);
 }
 
 /*!
@@ -512,21 +498,11 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditionerGPU() {
   if (nPointDomain == 0) return;
 
   /*--- The matrix is expected to be on the device already, it is uploaded once per solve by
-   * CSysMatrixVectorProduct, which is created before the preconditioner is built. Round the
-   * number of rows batched per block up to the smallest multiple that makes blockDim.x itself a
-   * multiple of the warp size (32), so the block's last warp is never partly idle; then pick the
-   * smallest such multiple at or above the ~128 thread target instead of always taking the very
-   * first one, so nVar values that need a huge single step to reach alignment (e.g. nVar=5,
-   * blockSize=25 -> step of 32 rows/800 threads) don't blow the block far past the target. ---*/
-  constexpr unsigned long targetThreadsPerBlock = 128;
-  const unsigned long blockSize = nVar * nVar;
-  const unsigned long warpAlignStep = 32 / std::gcd(32ul, blockSize);
-  auto rowsPerBlock = std::max<unsigned long>(warpAlignStep, targetThreadsPerBlock / blockSize);
-  rowsPerBlock = ((rowsPerBlock + warpAlignStep - 1) / warpAlignStep) * warpAlignStep;
-  const auto threadsPerBlock = static_cast<unsigned>(rowsPerBlock * blockSize);
-  const auto blocks = static_cast<unsigned>((nPointDomain + rowsPerBlock - 1) / rowsPerBlock);
+   * CSysMatrixVectorProduct, which is created before the preconditioner is built. ---*/
+  const auto blockSize = static_cast<unsigned>(nVar * nVar);
   InvertDiagonalBlocksKernel<ScalarType>
-      <<<blocks, threadsPerBlock, threadsPerBlock * sizeof(ScalarType)>>>(nPointDomain, nVar, gpu.d, d_invM);
+      <<<static_cast<unsigned>(nPointDomain), blockSize, blockSize * sizeof(ScalarType)>>>(nPointDomain, nVar, gpu.d,
+                                                                                           d_invM);
   /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
   gpuErrChk(cudaStreamSynchronize(nullptr));
   gpuErrChk(cudaGetLastError());
