@@ -108,17 +108,57 @@ __device__ FORCEINLINE ScalarType* GetBlockILU(const DeviceLDU<ScalarType>& M, u
 }
 
 /*!
- * \brief Invert the diagonal blocks of the matrix, parallel-Gauss-Jordan device version of
- *        InverseDiagonalBlock. Unlike SU2_LinAlg::MatrixInverse (host, and still used by
- *        IluFactorColorKernel below) - which does forward elimination on one thread followed by
- *        a serial back-substitution, an inherently sequential ~nVar^3 chain - this eliminates
- *        each pivot column from every OTHER row simultaneously (both above and below the pivot,
- *        no back-substitution needed), so every entry update within one pivot step is independent
- *        of every other entry in that step: nVar serial steps (each with a couple of barriers),
- *        instead of one thread serially doing all the work. One thread per block entry (i,j);
- *        __syncthreads() (not __syncwarp()) is used so this stays correct even when nVar*nVar
- *        exceeds one warp (nVar > ~5), at the cost of a full block-wide barrier even for the
- *        common case where the whole block already fits in one warp.
+ * \brief Parallel Gauss-Jordan matrix inversion, shared by InvertDiagonalBlocksKernel and
+ *        IluFactorColorKernel's diagonal-inversion step below - both already have nVar*nVar
+ *        threads and two blockSize-sized shared buffers on hand at the point they need a diagonal
+ *        block inverted. Unlike SU2_LinAlg::MatrixInverse (host, and the one still used to invert
+ *        Linelet's tridiagonal blocks) - which does forward elimination on one thread followed by
+ *        a serial back-substitution, an inherently sequential ~nVar^3 chain - this eliminates each
+ *        pivot column from every OTHER row simultaneously (both above and below the pivot, no
+ *        back-substitution needed), so every entry update within one pivot step is independent of
+ *        every other entry in that step: nVar serial steps (each with a couple of barriers),
+ *        instead of one thread serially doing all the work.
+ * \param i,j Row/column of the block entry this thread owns, in 0..nVar-1 (i.e. threadIdx.x's
+ *            divmod by nVar, same mapping the caller already uses for everything else).
+ * \param A Destroyed. \param Inv Must be pre-loaded with the identity, must not alias \p A;
+ *          holds the inverse on return.
+ * \note __syncthreads() (not __syncwarp()) is used so this stays correct even when nVar*nVar
+ *       exceeds one warp (nVar > ~5), at the cost of a full block-wide barrier even for the
+ *       common case where the whole block already fits in one warp. Every thread of the block
+ *       must call this (no divergent early return before it), since every __syncthreads() here
+ *       is a whole-block barrier.
+ */
+template <class ScalarType>
+__device__ FORCEINLINE void ParallelMatrixInverse(unsigned long nVar, unsigned long i, unsigned long j,
+                                                   ScalarType* __restrict__ A, ScalarType* __restrict__ Inv) {
+  for (auto k = 0ul; k < nVar; ++k) {
+    /*--- Regularize the pivot (shared with the host path, same clamp value). ---*/
+    if (i == k && j == k) SU2_LinAlg::RegularizePivot(A[k * nVar + k]);
+    __syncthreads();
+
+    /*--- Normalize the pivot row. ---*/
+    const ScalarType pivot = A[k * nVar + k];
+    if (i == k) {
+      A[i * nVar + j] /= pivot;
+      Inv[i * nVar + j] /= pivot;
+    }
+    __syncthreads();
+
+    /*--- Eliminate column k from every other row; A(k,*) and Inv(k,*) are already finalized for
+     * this step (previous barrier), and each thread only ever writes its own (i,j), so this
+     * needs no further synchronization until the next pivot's regularization reads A(k+1,k+1). ---*/
+    if (i != k) {
+      const ScalarType factor = A[i * nVar + k];
+      A[i * nVar + j] -= factor * A[k * nVar + j];
+      Inv[i * nVar + j] -= factor * Inv[k * nVar + j];
+    }
+    __syncthreads();
+  }
+}
+
+/*!
+ * \brief Invert the diagonal blocks of the matrix, device version of InverseDiagonalBlock, via
+ *        ParallelMatrixInverse (see its comment for why this beats a single serial thread).
  * \note Grid: one block per row, blockDim.x == nVar*nVar. Dynamic shared memory: 2*nVar*nVar
  *       scalars (the working copy of the block, and the inverse being accumulated in place of
  *       the old identity-then-eliminate scheme).
@@ -143,29 +183,7 @@ __global__ void InvertDiagonalBlocksKernel(unsigned long nRows, unsigned long nV
   Inv[tid] = ScalarType(i == j);
   __syncthreads();
 
-  for (auto k = 0ul; k < nVar; ++k) {
-    /*--- Regularize the pivot (shared with the host path, same clamp value). ---*/
-    if (i == k && j == k) SU2_LinAlg::RegularizePivot(A[k * nVar + k]);
-    __syncthreads();
-
-    /*--- Normalize the pivot row. ---*/
-    const ScalarType pivot = A[k * nVar + k];
-    if (i == k) {
-      A[tid] /= pivot;
-      Inv[tid] /= pivot;
-    }
-    __syncthreads();
-
-    /*--- Eliminate column k from every other row; A(k,*) and Inv(k,*) are already finalized for
-     * this step (previous barrier), and each thread only ever writes its own (i,j), so this
-     * needs no further synchronization until the next pivot's regularization reads A(k+1,k+1). ---*/
-    if (i != k) {
-      const ScalarType factor = A[i * nVar + k];
-      A[tid] -= factor * A[k * nVar + j];
-      Inv[tid] -= factor * Inv[k * nVar + j];
-    }
-    __syncthreads();
-  }
+  ParallelMatrixInverse(nVar, i, j, A, Inv);
 
   invM[iRow * blockSize + tid] = Inv[tid];
 }
@@ -290,11 +308,17 @@ __global__ void IluFactorColorKernel(const su2uint* __restrict__ color_idx, unsi
   }
 
   /*--- Invert the diagonal entry, Uii, for the rows that depend on it. The loop above may have
-   * updated it (when kPoint == iRow), so the whole block has to be done first. ---*/
+   * updated it (when kPoint == iRow), so the whole block has to be done first. Lij is free again
+   * here (its last use, storing it into Block_ij, is done) - reuse it as the identity/inverse
+   * buffer ParallelMatrixInverse needs, instead of a separate shared allocation. ---*/
   __syncthreads();
   work[tid] = M.d[iRow * blockSize + tid];
+  Lij[tid] = ScalarType(iVar == jVar);
   __syncthreads();
-  if (tid == 0) SU2_LinAlg::MatrixInverse(nVar, work, M.d + iRow * blockSize);
+
+  ParallelMatrixInverse(nVar, iVar, jVar, work, Lij);
+
+  M.d[iRow * blockSize + tid] = Lij[tid];
 }
 
 /*!
