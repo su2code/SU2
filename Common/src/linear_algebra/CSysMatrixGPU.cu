@@ -26,6 +26,7 @@
  */
 
 #include <algorithm>
+#include <cstring>
 
 #include "../../include/linear_algebra/CMatrixInverse.hpp"
 #include "../../include/linear_algebra/CSysMatrix.inl"
@@ -315,8 +316,12 @@ __global__ void IluBackwardKernel(const su2uint* __restrict__ level_idx, unsigne
 }
 
 /*!
- * \brief Block-LDU SpMV kernel: y[iRow] = (L + D + U) * x per block-row.
- *        One CUDA block per block-row; threadIdx.x indexes output variable (0..nVar-1).
+ * \brief Block-LDU SpMV kernel: y[iRow] = (L + D + U) * x per block-row. Several rows are
+ *        batched into one CUDA block (blockDim.x / nVar of them, see MatrixVectorProductGPU)
+ *        instead of one row per block: nVar is typically ~4-6, so one-row-per-block leaves most
+ *        of a warp's lanes permanently idle and caps occupancy at a few resident (mostly-empty)
+ *        warps per SM, well before DRAM bandwidth is the limit. threadIdx.x indexes
+ *        (row-within-block, output variable) as (threadIdx.x / nVar, threadIdx.x % nVar).
  */
 template <class ScalarType>
 __global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
@@ -328,9 +333,10 @@ __global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
                                      const su2uint* __restrict__ col_ind_u,
                                      const ScalarType* __restrict__ mat_u,
                                      const ScalarType* __restrict__ x, ScalarType* __restrict__ y) {
-  const unsigned long iRow = blockIdx.x;
-  const unsigned long iVar = threadIdx.x;
-  if (iRow >= nRows || iVar >= nVar) return;
+  const unsigned long rowsPerBlock = blockDim.x / nVar;
+  const unsigned long iVar = threadIdx.x % nVar;
+  const unsigned long iRow = static_cast<unsigned long>(blockIdx.x) * rowsPerBlock + threadIdx.x / nVar;
+  if (iRow >= nRows) return;
 
   ScalarType sum = 0;
   /* Lower */
@@ -365,8 +371,12 @@ __device__ FORCEINLINE float DecodeQuantScaleDevice(int8_t e) {
 /*!
  * \brief Quantized block-LDU SpMV kernel: y[iRow] = (L + D + U) * x per block-row, reading int8
  *        row-scaled quantized blocks instead of full precision ones. Device version of
- *        QuantizedRowProduct/QuantizedMatVecAdd (CSysMatrix.inl). Same launch/thread layout as
- *        BlockLDU_SpMV_kernel: one CUDA block per block-row, threadIdx.x indexes output variable.
+ *        QuantizedRowProduct/QuantizedMatVecAdd (CSysMatrix.inl). Rows are batched per block the
+ *        same way as BlockLDU_SpMV_kernel (see its comment). Each row of quantized mantissas is
+ *        also read 4 bytes at a time (one 32-bit load instead of four 8-bit ones): dp4a does not
+ *        apply here since only the matrix is quantized, not x, so the accumulation itself is
+ *        still one scalar FMA per element in the exact same order as the scalar loop (bit-
+ *        identical result) - the win is fewer, wider load instructions, not fewer FMAs.
  */
 template <class ScalarType>
 __global__ void QuantizedBlockLDU_SpMV_kernel(
@@ -376,14 +386,27 @@ __global__ void QuantizedBlockLDU_SpMV_kernel(
     const int8_t* __restrict__ q_blocks_d, const su2uint* __restrict__ row_ptr_u,
     const su2uint* __restrict__ col_ind_u, const int8_t* __restrict__ q_scale_u,
     const int8_t* __restrict__ q_blocks_u, const ScalarType* __restrict__ x, ScalarType* __restrict__ y) {
-  const unsigned long iRow = blockIdx.x;
-  const unsigned long iVar = threadIdx.x;
-  if (iRow >= nRows || iVar >= nVar) return;
+  const unsigned long rowsPerBlock = blockDim.x / nVar;
+  const unsigned long iVar = threadIdx.x % nVar;
+  const unsigned long iRow = static_cast<unsigned long>(blockIdx.x) * rowsPerBlock + threadIdx.x / nVar;
+  if (iRow >= nRows) return;
 
   auto addBlock = [&](const int8_t* __restrict__ qs, const int8_t* __restrict__ qv, const ScalarType* __restrict__ xk) {
     const float row_scale = DecodeQuantScaleDevice(qs[iVar]);
+    const int8_t* __restrict__ row = qv + iVar * nVar;
     ScalarType partial = 0;
-    for (unsigned long jVar = 0; jVar < nVar; ++jVar) partial += qv[iVar * nVar + jVar] * xk[jVar];
+    unsigned long jVar = 0;
+    for (; jVar + 4 <= nVar; jVar += 4) {
+      /*--- Row bytes are not generally 4-byte aligned (nVar*nVar need not be a multiple of 4),
+       * so this must go through memcpy rather than a reinterpret_cast<const uint32_t*> deref. ---*/
+      uint32_t packed;
+      memcpy(&packed, row + jVar, sizeof(packed));
+      partial += static_cast<int8_t>(packed) * xk[jVar];
+      partial += static_cast<int8_t>(packed >> 8) * xk[jVar + 1];
+      partial += static_cast<int8_t>(packed >> 16) * xk[jVar + 2];
+      partial += static_cast<int8_t>(packed >> 24) * xk[jVar + 3];
+    }
+    for (; jVar < nVar; ++jVar) partial += row[jVar] * xk[jVar];
     return static_cast<ScalarType>(row_scale) * partial;
   };
 
@@ -619,8 +642,13 @@ void CSysMatrix<ScalarType>::MatrixVectorProductGPU(const CSysVector<ScalarType>
   ScalarType* d_vec = vec.GetDevicePointer();
   ScalarType* d_prod = prod.GetDevicePointer();
 
-  dim3 blockDim(static_cast<unsigned>(nVar), 1, 1);
-  dim3 gridDim(static_cast<unsigned>(nPointDomain), 1, 1);
+  /*--- Batch several rows per block (see BlockLDU_SpMV_kernel's comment): nVar is small
+   * (typically ~4-6), so one row per block would leave most of a warp idle. Aim for ~128
+   * threads/block, the largest whole number of rows that fits. ---*/
+  constexpr unsigned long targetThreadsPerBlock = 128;
+  const auto rowsPerBlock = std::max<unsigned long>(1, targetThreadsPerBlock / nVar);
+  dim3 blockDim(static_cast<unsigned>(rowsPerBlock * nVar), 1, 1);
+  dim3 gridDim(static_cast<unsigned>((nPointDomain + rowsPerBlock - 1) / rowsPerBlock), 1, 1);
   if (quantized_mode) {
     QuantizedBlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
         nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, d_q_scale.l, d_q_blocks.l, d_q_scale.d, d_q_blocks.d,
