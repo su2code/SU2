@@ -109,8 +109,11 @@ void CPoissonSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
                                
   /*--- Reset pressure corrections to zero for next iteration. ---*/
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++)
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
     nodes->SetSolution(iPoint,0,0.0);
+  }
+  END_SU2_OMP_FOR
 
   /*--- Communicate updated Poisson solution (which should now be zero everywhere) ---*/
   solver_container[POISSON_SOL]->InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
@@ -152,9 +155,6 @@ void CPoissonSolver::Postprocessing(CGeometry *geometry,
 
 void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container, CConfig *config, bool periodic, unsigned short iMesh) {
 
-  unsigned short iVar, jVar, iDim, jDim;
-  unsigned long iPoint, jPoint, iNeigh;
-  su2double Mom_Coeff, Mom_Coeff_nb, Vol, delT;
   bool simplec = (config->GetKind_PBIter() == ENUM_PBITER::SIMPLEC);
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
@@ -163,21 +163,23 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
   
   if (implicit) {
     /* First sum up the momentum coefficient using the jacobian from given point and it's neighbors. ---*/
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Self contribution of the coefficient a_p. Note that this coefficient should be the same for all variable directions. therefore just the x-momentum coefficient is taken. ---*/
-      Mom_Coeff = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(0,0);
+      su2double Mom_Coeff = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(0,0);
     
-      Mom_Coeff_nb = 0.0;
+      su2double Mom_Coeff_nb = 0.0;
 
       if (simplec) {
-        for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
-          jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
+        for (unsigned long iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
+          auto jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
           Mom_Coeff_nb += flow_solution->Jacobian.GetBlockView(iPoint, jPoint)(0,0);
         }
       }
 
-      Vol = geometry->nodes->GetVolume(iPoint); delT = flow_nodes->GetDelta_Time(iPoint);
+      su2double Vol = geometry->nodes->GetVolume(iPoint); 
+      su2double delT = flow_nodes->GetDelta_Time(iPoint);
 
       /*--- Add simplec neighbour contributions and optional time dependent term. ---*/
       Mom_Coeff = Mom_Coeff - Mom_Coeff_nb - config->GetRCFactor()*(Vol/delT);
@@ -187,16 +189,19 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
 
       nodes->SetMomCoeff(iPoint, Mom_Coeff);
     }
+    END_SU2_OMP_FOR
   }
   else {
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
+    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      Vol = geometry->nodes->GetVolume(iPoint); delT = flow_nodes->GetDelta_Time(iPoint);
+      su2double delT = flow_nodes->GetDelta_Time(iPoint);
 
-      Mom_Coeff = delT;
+      su2double Mom_Coeff = delT;
 
       nodes->SetMomCoeff(iPoint, Mom_Coeff);
     }
+    END_SU2_OMP_FOR
   }
 
   /*--- Insert MPI call here. ---*/
@@ -221,6 +226,7 @@ void CPoissonSolver::ComputeHbyA(CGeometry *geometry, CSolver **solver_container
   CompleteComms(geometry, config, MPI_QUANTITIES::MOM_CORRECTION); 
   
   if (implicit) {
+    SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iDim = 0; iDim < nDim; ++iDim) {
         su2double H = 0.0;
@@ -232,6 +238,7 @@ void CPoissonSolver::ComputeHbyA(CGeometry *geometry, CSolver **solver_container
         nodes->SetHbyACorrection(iPoint, iDim, H/A_P);
       }
     }
+    END_SU2_OMP_FOR
   }
   else {
     SU2_MPI::Error("HbyA is currently not supported for an explicit momentum solver.", CURRENT_FUNCTION);
@@ -277,11 +284,8 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
                                   CConfig *config, unsigned short iMesh) {
   SU2_ZONE_SCOPED
 
-  unsigned short iDim, KindBC;
-  unsigned long iPoint, jPoint, iMarker, iVertex;
-  su2double Normal[MAXNDIM], MeanDensity, MassFlux_Part, *GridVel_i;
-  string Marker_Tag;
-
+  su2double *GridVel_i;
+  
   const CSolver* flow_solver = solver_container[FLOW_SOL];
   const CVariable* flow_nodes = flow_solver->GetNodes();
 
@@ -293,13 +297,14 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     for (auto k = 0ul; k < color.size; ++k) {
       auto iEdge = color.indices[k];
 
-      iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
+      auto iPoint = geometry->edges->GetNode(iEdge,0); auto jPoint = geometry->edges->GetNode(iEdge,1);
+      su2double Normal[MAXNDIM] = {0.0};
       geometry->edges->GetNormal(iEdge, Normal);
 
-      MeanDensity = 0.5*(flow_nodes->GetDensity(iPoint) + flow_nodes->GetDensity(jPoint));
+      su2double MeanDensity = 0.5*(flow_nodes->GetDensity(iPoint) + flow_nodes->GetDensity(jPoint));
 
-      MassFlux_Part = 0.0;
-      for (iDim = 0; iDim < nDim; ++iDim) 
+      su2double MassFlux_Part = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; ++iDim) 
         MassFlux_Part += edgeVelocities[iEdge][iDim] * Normal[iDim] * MeanDensity;
 
       /*--- Add the mass flux to the source term for the poisson equation ---*/
@@ -308,11 +313,10 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
       if (geometry->nodes->GetDomain(jPoint)) LinSysRes.SubtractBlock(jPoint, residual);
 
-
       /*--- Only for the second pressure correction in the case PISO is used, we need the additional HbyA(u') term ---*/
       // TODO: currently its just set to zero and does not contribute for the first piso correctin but would be nice if this entire block would be skipped otherwise.
       su2double MeanHbyA = 0.0;
-      for (iDim = 0; iDim < nDim; ++iDim)
+      for (unsigned short iDim = 0; iDim < nDim; ++iDim)
         MeanHbyA += 0.5 * (nodes->GetHbyACorrection(iPoint, iDim) + nodes->GetHbyACorrection(jPoint, iDim)) * Normal[iDim]; 
 
       auto residualHbyA = CNumerics::ResidualType<>(&MeanHbyA, nullptr, nullptr);
@@ -324,6 +328,10 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   }
 
   /*--- Now add corrections to the previously computed mass fluxes for boundary conditions which alter the mass flux ---*/
+  unsigned short iDim, KindBC;
+  unsigned long  iMarker, iVertex, iPoint, jPoint;
+  string Marker_Tag;
+  su2double MassFlux_Part = 0.0, Normal[MAXNDIM];
 
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -447,66 +455,61 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
    * consistent with the rest of the code. The time step is set to zero and no under-relaxation is applied to the
    * jacobian matrix. ---*/
   
-  unsigned long iPoint, total_index, IterLinSol = 0;;
-  unsigned short iVar;
-  su2double *local_Residual, *local_Res_TruncError, Vol, Delta, Res;
+  unsigned long total_index;
+
+  /*--- Local residual variables for current thread ---*/
+  su2double resMax[MAXNVAR] = {0.0}, resRMS[MAXNVAR] = {0.0};
+  unsigned long idxMax[MAXNVAR] = {0};
 
   SetResToZero();
 
-  /*--- Initialize residual and solution at the ghost points ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+  /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
+  SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-    /*--- Read the residual ---*/
-    local_Res_TruncError = nodes->GetResTruncError(iPoint);
+    /*--- Multigrid contribution to residual. ---*/
+    su2double *local_Res_TruncError = nodes->GetResTruncError(iPoint);
 
-    /*--- Read the volume ---*/
-    Vol = geometry->nodes->GetVolume(iPoint);
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      LinSysRes(iPoint, iVar) = - (LinSysRes(iPoint, iVar) + local_Res_TruncError[iVar] );
+      LinSysSol(iPoint, iVar) = 0.0;
 
-    /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar] );
-      LinSysSol[total_index] = 0.0;
-      Residual_RMS[iVar] += LinSysRes[total_index]*LinSysRes[total_index];
-      AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->nodes->GetGlobalIndex(iPoint), geometry->nodes->GetCoord(iPoint));
+      /*--- "Add" residual at (iPoint,iVar) to local residual variables. ---*/
+      ResidualReductions_PerThread(iPoint, iVar, LinSysRes(iPoint, iVar), resRMS, resMax, idxMax);
     }
   }
+  END_SU2_OMP_FOR
 
-  /*--- Initialize residual and solution at the ghost points ---*/
-  for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      total_index = iPoint*nVar + iVar;
-      LinSysRes[total_index] = 0.0;
-      LinSysSol[total_index] = 0.0;
-    }
+  /*--- "Add" residuals from all threads to global residual variables. ---*/
+  ResidualReductions_FromAllThreads(geometry, config, resRMS, resMax, idxMax);
+
+  /*--- Solve or smooth the linear system. ---*/
+
+  SU2_OMP_FOR_(schedule(static,OMP_MIN_SIZE) SU2_NOWAIT)
+  for (unsigned long iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
+    LinSysRes.SetBlock_Zero(iPoint);
+    LinSysSol.SetBlock_Zero(iPoint);
   }
+  END_SU2_OMP_FOR
 
-  /*--- Solve or smooth the linear system ---*/
-  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
-  /*--- Store the value of the residual. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    SetIterLinSolver(IterLinSol);
+    SetIterLinSolver(iter);
     SetResLinSolver(System.GetResidual());
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      nodes->AddSolution(iPoint, iVar, LinSysSol[iPoint*nVar+iVar]);
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      nodes->AddSolution(iPoint, iVar, LinSysSol(iPoint,iVar));
      }
   }
-
-  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic() / 2; iPeriodic++) {
-    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
-  }
+  END_SU2_OMP_FOR
 
   InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
   CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
-
-  /*--- Compute the root mean square residual ---*/
-  SetResidual_RMS(geometry, config);
 
 }
 

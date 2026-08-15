@@ -1576,22 +1576,21 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
   AD::StartNoSharedReading();
 
+  // TODO: ideas on how this could be implemented nicer would be appreciated.
   if (pressure_based) {
 
     /*--- Add pressure source term ---*/
-
-    unsigned long iPoint;
-    unsigned short iVar;
     
-    // TODO: ideas on how this could be implemented nicer would be appreciated.
+    /*--- Loop over all points ---*/
+
     SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
       su2double Vdpdx[MAXNDIM];
 
       /*--- Compute the residual based on the pressure gradient. ---*/
-      for (iVar = 0; iVar < nVar; iVar++)
-        Vdpdx[iVar] = geometry->nodes->GetVolume(iPoint)*nodes->GetGradient_Primitive(iPoint,0,iVar);
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Vdpdx[iDim] = geometry->nodes->GetVolume(iPoint)*nodes->GetGradient_Primitive(iPoint,0,iDim);
 
       auto residual = CNumerics::ResidualType<>(Vdpdx, nullptr, nullptr);
 
@@ -3744,8 +3743,11 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   alpha_p.resize(nPointDomain);
 
   /*--- Combine all pressure corrections into a vector for easy access ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+  SU2_OMP_FOR_STAT(omp_chunk_size)
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     pressureCorrection[iPoint] = poisson_nodes->GetSolution(iPoint,0);
+  }
+  END_SU2_OMP_FOR
 
   /*--- Define a reference pressure ---*/
   // TODO: look at this, currently copied (but working?) logic from old solver.
@@ -3757,6 +3759,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
       PCorr_Ref = 0.0;//Pressure_Correc[Pref_local];
 
   /*--- Compute Velocity Corrections and under relaxation factor for the pressure. ---*/
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     factor = 0.0;
     Vol = geometry->nodes->GetVolume(iPoint);
@@ -3774,13 +3777,16 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
       // if (implicit) alpha_p[iPoint] *= (Vol/delT) / (factor+(Vol/delT));     
     } 
   }
+  END_SU2_OMP_FOR
 
   // TODO: optional addition of HbyA, i.e. this term is ZERO anyway during the firt correction.
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       velocityCorrection[iPoint][iDim] += poisson_nodes->GetHbyACorrection(iPoint, iDim);
     }
   }
+  END_SU2_OMP_FOR
   
   /*--- Compute the edge corrections based on the average of the momentum coefficients and the average of the p' gradient. ---*/
   su2double* Coord_i,* Coord_j;
@@ -3869,6 +3875,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
       /*--- Only a fixed velocity inlet is implemented now. Along with the wall boundaries,
         * the velocity is known and thus no correction is necessary.---*/
       case ISOTHERMAL: case HEAT_FLUX: case INLET_FLOW: {
+        SU2_OMP_FOR_DYN(OMP_MIN_SIZE)
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->nodes->GetDomain(iPoint)) {
@@ -3877,6 +3884,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
             alpha_p[iPoint] = 1.0;
             }
         }
+        END_SU2_OMP_FOR
         break;
       }
 
@@ -3907,7 +3915,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   }
 
   /*--- Apply corrections to the nodal solution ---*/
-
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Velocity corrections ---*/
@@ -3927,6 +3935,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
     Current_Pressure += alpha_p[iPoint] * (pressureCorrection[iPoint] - PCorr_Ref);
     nodes->SetPrimitive(iPoint,0,Current_Pressure);
   }
+  END_SU2_OMP_FOR
 
   /*--- Add corrections to the edge velocities ---*/
 
@@ -3942,10 +3951,13 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   }
 
   /*--- Reset HbyA for next iteration ---*/
+
+  SU2_OMP_FOR_STAT(omp_chunk_size)
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       poisson_nodes->SetHbyACorrection(iPoint, iDim, 0.0);
   }
+  END_SU2_OMP_FOR
 
 
   /*--- periodic communication for both the momentum and the poisson equations as both are now updated ---*/
