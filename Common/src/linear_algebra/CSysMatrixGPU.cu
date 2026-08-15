@@ -109,26 +109,37 @@ __device__ FORCEINLINE ScalarType* GetBlockILU(const DeviceLDU<ScalarType>& M, u
 
 /*!
  * \brief Invert the diagonal blocks of the matrix, device version of InverseDiagonalBlock.
- * \note Grid: one block per row, blockDim.x == nVar*nVar (one thread per block entry, they
- *       stage the input in shared memory). Dynamic shared memory: nVar*nVar scalars.
+ *        Rows (points) are batched into blocks of ~128 threads (see
+ *        BuildJacobiPreconditionerGPU), same reasoning as the SpMV/Jacobi-apply kernels: for
+ *        small nVar a block of just nVar*nVar threads (16-36 for nVar=4-6) is less than a full
+ *        warp, so one-row-per-block wastes lanes. The inversion itself (SU2_LinAlg::MatrixInverse,
+ *        shared __host__ __device__ code) stays serial per row - it is a row-oriented Gauss-
+ *        Jordan with a genuine sequential dependency chain across ~nVar^2/2 elimination
+ *        substeps, so parallelizing it across threads would trade cheap serial FLOPs (~nVar^3,
+ *        tiny for nVar<=~6) for that many __syncthreads() barriers, likely a net loss at this
+ *        size - see the loader threads below, which only cooperate on the (fully parallel) load,
+ *        not the inversion. threadIdx.x maps to (row-within-block, block entry) via divmod by
+ *        nVar*nVar. Dynamic shared memory: blockDim.x scalars, one nVar*nVar work buffer per row
+ *        in the block.
  */
 template <class ScalarType>
 __global__ void InvertDiagonalBlocksKernel(unsigned long nRows, unsigned long nVar,
                                            const ScalarType* __restrict__ mat_d, ScalarType* __restrict__ invM) {
-  const unsigned long iRow = blockIdx.x;
-  if (iRow >= nRows) return;
+  const unsigned long blockSize = nVar * nVar;
+  const unsigned long rowsPerBlock = blockDim.x / blockSize;
+  const unsigned long rowInBlock = threadIdx.x / blockSize;
+  const unsigned long localTid = threadIdx.x % blockSize;
+  const unsigned long iRow = static_cast<unsigned long>(blockIdx.x) * rowsPerBlock + rowInBlock;
 
-  const auto blockSize = nVar * nVar;
-  const unsigned long tid = threadIdx.x;
-
-  /*--- The inversion destroys its input, so it cannot work on the matrix itself. ---*/
+  /*--- The inversion destroys its input, so it cannot work on the matrix itself; each row in the
+   * batch gets its own blockSize-sized slice of shared memory. ---*/
   extern __shared__ __align__(sizeof(double)) char smem[];
-  auto* work = reinterpret_cast<ScalarType*>(smem);
+  auto* work = reinterpret_cast<ScalarType*>(smem) + rowInBlock * blockSize;
 
-  work[tid] = mat_d[iRow * blockSize + tid];
+  if (iRow < nRows) work[localTid] = mat_d[iRow * blockSize + localTid];
   __syncthreads();
 
-  if (tid == 0) SU2_LinAlg::MatrixInverse(nVar, work, invM + iRow * blockSize);
+  if (iRow < nRows && localTid == 0) SU2_LinAlg::MatrixInverse(nVar, work, invM + iRow * blockSize);
 }
 
 /*!
@@ -472,10 +483,13 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditionerGPU() {
 
   /*--- The matrix is expected to be on the device already, it is uploaded once per solve by
    * CSysMatrixVectorProduct, which is created before the preconditioner is built. ---*/
-  const auto blockSize = static_cast<unsigned>(nVar * nVar);
+  constexpr unsigned long targetThreadsPerBlock = 128;
+  const unsigned long blockSize = nVar * nVar;
+  const auto rowsPerBlock = std::max<unsigned long>(1, targetThreadsPerBlock / blockSize);
+  const auto threadsPerBlock = static_cast<unsigned>(rowsPerBlock * blockSize);
+  const auto blocks = static_cast<unsigned>((nPointDomain + rowsPerBlock - 1) / rowsPerBlock);
   InvertDiagonalBlocksKernel<ScalarType>
-      <<<static_cast<unsigned>(nPointDomain), blockSize, blockSize * sizeof(ScalarType)>>>(nPointDomain, nVar, gpu.d,
-                                                                                           d_invM);
+      <<<blocks, threadsPerBlock, threadsPerBlock * sizeof(ScalarType)>>>(nPointDomain, nVar, gpu.d, d_invM);
   /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
   gpuErrChk(cudaStreamSynchronize(nullptr));
   gpuErrChk(cudaGetLastError());
