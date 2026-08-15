@@ -101,7 +101,7 @@ public:
    * \brief Set the value of the density for the incompressible flows.
    * \param[in] iPoint - Point index.
    */
-  inline bool SetDensity(unsigned long iPoint, su2double val_density) override {
+  inline bool SetDensity(unsigned long iPoint, su2double val_density) final {
     Primitive(iPoint, indices.Density()) = val_density;
     return val_density <= 0.0;
   }
@@ -127,32 +127,32 @@ public:
    * \brief Get the flow pressure.
    * \return Value of the flow pressure.
    */
-  inline su2double GetPressure(unsigned long iPoint) const override { return Primitive(iPoint, indices.Pressure()); }
+  inline su2double GetPressure(unsigned long iPoint) const final { return Primitive(iPoint, indices.Pressure()); }
 
   /*!
    * \brief Get the density of the flow.
    * \return Value of the density of the flow.
    */
-  inline su2double GetDensity(unsigned long iPoint) const override { return Primitive(iPoint, indices.Density()); }
+  inline su2double GetDensity(unsigned long iPoint) const final { return Primitive(iPoint, indices.Density()); }
 
   /*!
    * \brief Get the temperature of the flow.
    * \return Value of the temperature of the flow.
    */
-  inline su2double GetTemperature(unsigned long iPoint) const override { return Primitive(iPoint, indices.Temperature()); }
+  inline su2double GetTemperature(unsigned long iPoint) const final { return Primitive(iPoint, indices.Temperature()); }
 
   /*!
    * \brief Get the enthalpy of the flow.
    * \return Value of the enthalpy of the flow.
    */
-  inline su2double GetEnthalpy(unsigned long iPoint) const override { return Primitive(iPoint, indices.Enthalpy()); }
+  inline su2double GetEnthalpy(unsigned long iPoint) const final { return Primitive(iPoint, indices.Enthalpy()); }
 
   /*!
    * \brief Get the velocity of the flow.
    * \param[in] iDim - Index of the dimension.
    * \return Value of the velocity for the dimension <i>iDim</i>.
    */
-  inline su2double GetVelocity(unsigned long iPoint, unsigned long iDim) const override {
+  inline su2double GetVelocity(unsigned long iPoint, unsigned long iDim) const final {
     return Primitive(iPoint, iDim+indices.Velocity());
   }
 
@@ -160,7 +160,7 @@ public:
    * \brief Get the velocity gradient.
    * \return Value of the velocity gradient.
    */
-  inline CMatrixView<const su2double> GetVelocityGradient(unsigned long iPoint) const override {
+  inline CMatrixView<const su2double> GetVelocityGradient(unsigned long iPoint) const final {
     return Gradient_Primitive(iPoint, indices.Velocity());
   }
 
@@ -169,7 +169,7 @@ public:
    * \param[in] val_vector - Direction of projection.
    * \return Value of the projected velocity.
    */
-  inline su2double GetProjVel(unsigned long iPoint, const su2double *val_vector) const override {
+  inline su2double GetProjVel(unsigned long iPoint, const su2double *val_vector) const final {
     su2double ProjVel = 0.0;
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
       ProjVel += Primitive(iPoint, iDim+indices.Velocity())*val_vector[iDim];
@@ -179,14 +179,14 @@ public:
   /*!
    * \brief Set the specific heat Cp.
    */
-  inline void SetSpecificHeatCp(unsigned long iPoint, su2double val_Cp) override {
+  inline void SetSpecificHeatCp(unsigned long iPoint, su2double val_Cp) final {
     Primitive(iPoint, indices.CpTotal()) = val_Cp;
   }
 
   /*!
    * \brief Set the specific heat Cv.
    */
-  inline void SetSpecificHeatCv(unsigned long iPoint, su2double val_Cv) override {
+  inline void SetSpecificHeatCv(unsigned long iPoint, su2double val_Cv) final {
     Primitive(iPoint, indices.CvTotal()) = val_Cv;
   }
 
@@ -194,20 +194,20 @@ public:
    * \brief Get the specific heat at constant P of the flow.
    * \return Value of the specific heat at constant P of the flow.
    */
-  inline su2double GetSpecificHeatCp(unsigned long iPoint) const override { return Primitive(iPoint, indices.CpTotal()); }
+  inline su2double GetSpecificHeatCp(unsigned long iPoint) const final { return Primitive(iPoint, indices.CpTotal()); }
 
   /*!
    * \brief Get the specific heat at constant V of the flow.
    * \return Value of the specific heat at constant V of the flow.
    */
-  inline su2double GetSpecificHeatCv(unsigned long iPoint) const override { return Primitive(iPoint, indices.CvTotal()); }
+  inline su2double GetSpecificHeatCv(unsigned long iPoint) const final { return Primitive(iPoint, indices.CvTotal()); }
 
   /*!
    * \brief Set the recovered pressure for streamwise periodic flow.
    * \param[in] iPoint - Point index.
    * \param[in] val_pressure - pressure value.
    */
-  inline void SetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint, su2double val_pressure) override {
+  inline void SetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint, su2double val_pressure) final {
     Streamwise_Periodic_RecoveredPressure(iPoint) = val_pressure;
   }
 
@@ -216,7 +216,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return Recovered/Physical pressure for streamwise periodic flow.
    */
-  inline su2double GetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint) const override {
+  inline su2double GetStreamwise_Periodic_RecoveredPressure(unsigned long iPoint) const final {
     return Streamwise_Periodic_RecoveredPressure(iPoint);
   }
 
@@ -225,7 +225,7 @@ public:
    * \param[in] iPoint - Point index.
    * \param[in] val_temperature - temperature value.
    */
-  inline void SetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint, su2double val_temperature) override {
+  inline void SetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint, su2double val_temperature) final {
     Streamwise_Periodic_RecoveredTemperature(iPoint) = val_temperature;
   }
 
@@ -234,7 +234,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return Recovered/Physical temperature for streamwise periodic flow.
    */
-  inline su2double GetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint) const override {
+  inline su2double GetStreamwise_Periodic_RecoveredTemperature(unsigned long iPoint) const final {
     return Streamwise_Periodic_RecoveredTemperature(iPoint);
   }
 
@@ -243,7 +243,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return Density at time level n.
    */
-  inline su2double GetDensity_time_n(unsigned long iPoint) const override {
+  inline su2double GetDensity_time_n(unsigned long iPoint) const final {
     return Density_time_n.size() > 0 ? Density_time_n(iPoint) : GetDensity(iPoint);
   }
 
@@ -252,7 +252,7 @@ public:
    * \param[in] iPoint - Point index.
    * \return Density at time level n-1.
    */
-  inline su2double GetDensity_time_n1(unsigned long iPoint) const override {
+  inline su2double GetDensity_time_n1(unsigned long iPoint) const final {
     return Density_time_n1.size() > 0 ? Density_time_n1(iPoint) : GetDensity(iPoint);
   }
 
@@ -319,13 +319,13 @@ public:
    * \brief Set the value of the pressure.
    * \param[in] iPoint - Point index.
    */
-  inline void SetPressure(unsigned long iPoint) override { Primitive(iPoint, indices.Pressure()) = Solution(iPoint,0); }
+  inline void SetPressure(unsigned long iPoint) final { Primitive(iPoint, indices.Pressure()) = Solution(iPoint,0); }
 
   /*!
    * \brief Set the value of the density for the incompressible flows.
    * \param[in] iPoint - Point index.
    */
-  inline void SetVelocity(unsigned long iPoint) override {
+  inline void SetVelocity(unsigned long iPoint) final {
     Velocity2(iPoint) = 0.0;
     for (unsigned long iDim = 0; iDim < nDim; iDim++) {
       Primitive(iPoint, iDim+indices.Velocity()) = Solution(iPoint,iDim+1);
@@ -337,7 +337,7 @@ public:
    * \brief Set the value of the beta coeffient for incompressible flows.
    * \param[in] iPoint - Point index.
    */
-  inline void SetBetaInc2(unsigned long iPoint, su2double betainc2) override {
+  inline void SetBetaInc2(unsigned long iPoint, su2double betainc2) final {
     Primitive(iPoint, indices.Beta()) = betainc2;
   }
 
@@ -345,13 +345,13 @@ public:
    * \brief Get the value of beta squared for the incompressible flow
    * \return Value of beta squared.
    */
-  inline su2double GetBetaInc2(unsigned long iPoint) const override { return Primitive(iPoint, indices.Beta()); }
+  inline su2double GetBetaInc2(unsigned long iPoint) const final { return Primitive(iPoint, indices.Beta()); }
 
   /*!
    * \brief Set the velocity vector from the old solution.
    * \param[in] val_velocity - Pointer to the velocity.
    */
-  inline void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) override {
+  inline void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++)
       Solution_Old(iPoint,iDim+1) = val_velocity[iDim];
   }
@@ -360,21 +360,21 @@ public:
    * \brief Set the momentum part of the truncation error to zero.
    * \param[in] iPoint - Point index.
    */
-  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) override {
+  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
   }
 
   /*!
    * \brief Set all the primitive variables for incompressible flows.
    */
-  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) override;
+  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
 
   /*!
    * \brief Specify a vector to set the velocity components of the solution.
    * \param[in] iPoint - Point index.
    * \param[in] val_vector - Pointer to the vector.
    */
-  inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) override {
+  inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
     for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = val_vector[iDim];
   }
 

@@ -33,7 +33,7 @@ CIncEulerVariableBase::CIncEulerVariableBase(su2double pressure, const su2double
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) 
                     : CFlowVariable(npoint, ndim, nvar, ndim + 10,
                       ndim + (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ? 2 : 4), config),
-                      indices(nDim, 0) {
+                      indices(ndim, 0) {
 
   TemperatureLimits[0]= config->GetTemperatureLimits(0);
   TemperatureLimits[1]= config->GetTemperatureLimits(1);

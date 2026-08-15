@@ -2081,14 +2081,8 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
   if (turbulent) {
     if (incompressible)
-      //TODO: might be able to use CIncEulerVariableBase?
-      if (!pressure_based)
-        InstantiateTurbulentNumerics<CDBIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
+      InstantiateTurbulentNumerics<CIncEulerVariableBase::CIndices<unsigned short> >(nVar_Turb, offset, config,
                                                                                    solver[MESH_0][TURB_SOL], numerics);
-      else
-        InstantiateTurbulentNumerics<CPBIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
-                                                                                     solver[MESH_0][TURB_SOL], numerics);
-
     else if (NEMO_ns)
       InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
                                                                                   solver[MESH_0][TURB_SOL], numerics);
