@@ -35,31 +35,45 @@
 namespace {
 
 /*!
- * \brief Apply the Jacobi preconditioner: prod = invM * vec (block-diagonal). Points are batched
- *        into blocks of ~128 threads (see ComputeJacobiPreconditionerGPU), threadIdx.x mapping
- *        to (point-within-block, output variable) via divmod by nVar - the same layout as
- *        BlockLDU_SpMV_kernel. Occupancy was already fine here (one thread per point, full
- *        warps), but consecutive threads used to land nVar^2 elements apart in invM (one point's
- *        whole dense block per thread); with this mapping they land nVar elements apart instead,
- *        a real (if partial, since it is still not stride-1) coalescing win that needs no shared
- *        memory or synchronization, unlike a fully-coalesced one-thread-per-block-entry version
- *        would.
+ * \brief Apply the Jacobi preconditioner: prod = invM * vec (block-diagonal). One thread per
+ *        block *entry* rather than per output row: threadIdx.x maps to (point-within-block,
+ *        iVar, jVar) via divmod by nVar*nVar then nVar, so consecutive threads land at
+ *        consecutive elements of invM (stride 1, fully coalesced - contiguous even across a
+ *        point boundary, since points are stored back to back). Each thread computes one
+ *        product and stages it in shared memory; the nVar threads of a row (fixed point, iVar)
+ *        then get reduced by the jVar==0 thread, in the same j=0..nVar-1 order as the scalar
+ *        loop this replaces, so the result is bit-identical. Points are still batched per block
+ *        (see ComputeJacobiPreconditionerGPU) for occupancy, same as the row-per-thread version
+ *        this replaces, but here the added shared-memory write/read and one __syncthreads() per
+ *        call are the price paid for going from partial to full coalescing.
  */
 template <class ScalarType>
 __global__ void ApplyJacobiPreconditionerKernel(const ScalarType* __restrict__ invM,
                                                 const ScalarType* __restrict__ vec, ScalarType* __restrict__ prod,
                                                 unsigned long nPointDomain, unsigned long nVar) {
-  const unsigned long rowsPerBlock = blockDim.x / nVar;
-  const unsigned long iVar = threadIdx.x % nVar;
-  const unsigned long iPoint = static_cast<unsigned long>(blockIdx.x) * rowsPerBlock + threadIdx.x / nVar;
-  if (iPoint >= nPointDomain) return;
+  const unsigned long blockSize = nVar * nVar;
+  const unsigned long pointsPerBlock = blockDim.x / blockSize;
+  const unsigned long pointInBlock = threadIdx.x / blockSize;
+  const unsigned long localTid = threadIdx.x % blockSize;
+  const unsigned long iVar = localTid / nVar;
+  const unsigned long jVar = localTid % nVar;
+  const unsigned long iPoint = static_cast<unsigned long>(blockIdx.x) * pointsPerBlock + pointInBlock;
 
-  const auto* block = &invM[iPoint * nVar * nVar + iVar * nVar];
-  const auto* rhs = &vec[iPoint * nVar];
+  extern __shared__ __align__(sizeof(double)) char smem[];
+  auto* partial = reinterpret_cast<ScalarType*>(smem);
 
-  auto sum = ScalarType(0);
-  for (unsigned long jVar = 0; jVar < nVar; ++jVar) sum += block[jVar] * rhs[jVar];
-  prod[iPoint * nVar + iVar] = sum;
+  ScalarType contribution = 0;
+  if (iPoint < nPointDomain) {
+    contribution = invM[iPoint * blockSize + localTid] * vec[iPoint * nVar + jVar];
+  }
+  partial[threadIdx.x] = contribution;
+  __syncthreads();
+
+  if (iPoint < nPointDomain && jVar == 0) {
+    ScalarType sum = 0;
+    for (unsigned long j = 0; j < nVar; ++j) sum += partial[pointInBlock * blockSize + iVar * nVar + j];
+    prod[iPoint * nVar + iVar] = sum;
+  }
 }
 
 /*--- ILU. The factorization is scheduled by coloring: colors are true independent sets of the
@@ -451,11 +465,12 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditionerGPU(const CSysVector<Sca
   }
 
   constexpr unsigned long targetThreadsPerBlock = 128;
-  const auto rowsPerBlock = std::max<unsigned long>(1, targetThreadsPerBlock / nVar);
-  const auto threadsPerBlock = static_cast<unsigned>(rowsPerBlock * nVar);
-  const auto blocks = static_cast<unsigned>((nPointDomain + rowsPerBlock - 1) / rowsPerBlock);
-  ApplyJacobiPreconditionerKernel<<<blocks, threadsPerBlock>>>(d_invM, vec.GetDevicePointer(), prod.GetDevicePointer(),
-                                                               nPointDomain, nVar);
+  const unsigned long blockSize = nVar * nVar;
+  const auto pointsPerBlock = std::max<unsigned long>(1, targetThreadsPerBlock / blockSize);
+  const auto threadsPerBlock = static_cast<unsigned>(pointsPerBlock * blockSize);
+  const auto blocks = static_cast<unsigned>((nPointDomain + pointsPerBlock - 1) / pointsPerBlock);
+  ApplyJacobiPreconditionerKernel<<<blocks, threadsPerBlock, threadsPerBlock * sizeof(ScalarType)>>>(
+      d_invM, vec.GetDevicePointer(), prod.GetDevicePointer(), nPointDomain, nVar);
   /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
   gpuErrChk(cudaStreamSynchronize(nullptr));
   gpuErrChk(cudaGetLastError());
