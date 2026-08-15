@@ -125,9 +125,23 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   };
   freeHostLDU(mat);
   freeHostLDU(ilu);
-  freeHostLDU(q_scale);
-  freeHostLDU(q_blocks);
   MemoryAllocation::aligned_free(invM);
+
+  /*--- q_scale/q_blocks are pinned (cudaMallocHost) rather than aligned_alloc when useCuda, see
+   * the comment in Initialize(); free with the matching deallocator either way. ---*/
+  auto freeQuantLDU = [this](auto& m) {
+    if (useCuda) {
+      GPUMemoryAllocation::pinned_free(m.d);
+      GPUMemoryAllocation::pinned_free(m.l);
+      GPUMemoryAllocation::pinned_free(m.u);
+    } else {
+      MemoryAllocation::aligned_free(m.d);
+      MemoryAllocation::aligned_free(m.l);
+      MemoryAllocation::aligned_free(m.u);
+    }
+  };
+  freeQuantLDU(q_scale);
+  freeQuantLDU(q_blocks);
 
   if (useCuda) {
     auto freeLDU = [](auto& m) {
@@ -247,8 +261,16 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 #ifndef CODI_REVERSE_TYPE
     quantized_mode = true;
 #endif
-    auto allocQ = [](QuantType*& ptr, unsigned long n) {
-      ptr = MemoryAllocation::aligned_alloc<QuantType, true>(64, n * sizeof(QuantType));
+    /*--- Pinned (page-locked) when useCuda: HtDTransfer()/QuantizeDiagonalBlocks() upload these
+     * with cudaMemcpyAsync, which is only genuinely asynchronous from pinned host memory (see
+     * GPUMemoryAllocation::pinned_alloc); from regular pageable memory it silently degrades to a
+     * blocking copy, defeating the overlap with host-side diagonal quantization. ---*/
+    auto allocQ = [useCuda = this->useCuda](QuantType*& ptr, unsigned long n) {
+      if (useCuda) {
+        ptr = GPUMemoryAllocation::pinned_alloc<QuantType, true>(n * sizeof(QuantType));
+      } else {
+        ptr = MemoryAllocation::aligned_alloc<QuantType, true>(64, n * sizeof(QuantType));
+      }
     };
     allocQ(q_scale.l, mat.nnz_l * nVar);
     allocQ(q_blocks.l, mat.nnz_l * nVar * nEqn);
@@ -762,11 +784,19 @@ void CSysMatrix<ScalarType>::QuantizeDiagonalBlocks() {
     if constexpr (su2_gpu_capable_v<ScalarType>) {
       /*--- Just an upload of the host result above, no computation, so a plain CUDA runtime call
        * (available here via GPUComms.cuh, transitively included through allocation_toolbox.hpp)
-       * rather than a kernel dispatched through a CSysMatrixGPU.cu hook. ---*/
+       * rather than a kernel dispatched through a CSysMatrixGPU.cu hook. Async (q_scale.d/
+       * q_blocks.d are pinned, see Initialize()) so issuing it does not block the host; the sync
+       * right after does not undo that overlap; by this point the host has already spent the
+       * whole diagonal-quantization loop above letting the earlier (larger) L/U transfer, kicked
+       * off by HtDTransfer(), drain in the background; it only makes sure that transfer and this
+       * one are actually finished before Build() returns, matching every other GPU-touching
+       * function in this file (they all sync at the end, see the comment on those calls). ---*/
       BEGIN_SU2_DEVICE_REGION
-      gpuErrChk(cudaMemcpy(d_q_scale.d, q_scale.d, sizeof(QuantType) * nPointDomain * nVar, cudaMemcpyHostToDevice));
       gpuErrChk(
-          cudaMemcpy(d_q_blocks.d, q_blocks.d, sizeof(QuantType) * nPointDomain * nVar * nVar, cudaMemcpyHostToDevice));
+          cudaMemcpyAsync(d_q_scale.d, q_scale.d, sizeof(QuantType) * nPointDomain * nVar, cudaMemcpyHostToDevice));
+      gpuErrChk(cudaMemcpyAsync(d_q_blocks.d, q_blocks.d, sizeof(QuantType) * nPointDomain * nVar * nVar,
+                                cudaMemcpyHostToDevice));
+      gpuErrChk(cudaStreamSynchronize(nullptr));
       END_SU2_DEVICE_REGION
     } else {
       GPUNotAvailable(CURRENT_FUNCTION);

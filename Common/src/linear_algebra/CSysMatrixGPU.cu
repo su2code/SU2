@@ -590,10 +590,15 @@ void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
      * storage instead. Issued as async copies on the default stream, then left in flight: the
      * caller (CSysMatrixVectorProduct's constructor) returns right after this, and QuantizeDiag-
      * onalBlocks() -> Build() quantizes the diagonal on the host next, before anything is
-     * launched on the device again. Any later kernel that reads d_q_scale/d_q_blocks (also issued
-     * on the default stream) still waits for these correctly, by stream ordering, without an
-     * explicit sync here; the diagonal mirrors (d_q_scale.d/d_q_blocks.d) are uploaded once that
-     * host quantization is done, by a plain cudaMemcpy at the end of QuantizeDiagonalBlocks(). ---*/
+     * launched on the device again. This is only genuinely asynchronous (i.e. the host thread
+     * does not block here waiting for the copy) because q_scale.l/q_blocks.l/q_scale.u/
+     * q_blocks.u are pinned host memory, see the comment on those members / Initialize() -
+     * cudaMemcpyAsync silently degrades to a blocking copy from regular pageable memory. Any
+     * later kernel that reads d_q_scale/d_q_blocks is issued on the same default stream too, so
+     * strictly it would not need to wait for these explicitly; QuantizeDiagonalBlocks() still
+     * syncs right after uploading the diagonal mirrors (d_q_scale.d/d_q_blocks.d, the same way,
+     * async from pinned memory) to be safe and consistent with every other GPU-touching function
+     * in this file, all of which sync before returning. ---*/
     gpuErrChk(cudaMemcpyAsync(d_q_scale.l, q_scale.l, sizeof(QuantType) * mat.nnz_l * nVar, cudaMemcpyHostToDevice));
     gpuErrChk(cudaMemcpyAsync(d_q_blocks.l, q_blocks.l, sizeof(QuantType) * mat.nnz_l * nVar * nEqn,
                               cudaMemcpyHostToDevice));

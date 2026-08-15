@@ -273,7 +273,10 @@ class CSysMatrix {
   static constexpr bool quantized_mode = false;
 #endif
   /*!< \brief Per-row exponents; .l/.u sized [nnz_l/u * nVar], .d [nPoint * nVar]
-   *          (populated by QuantizeDiagonalBlocks(), always on the host, see below). */
+   *          (populated by QuantizeDiagonalBlocks(), always on the host, see below).
+   *          Pinned (cudaMallocHost) rather than aligned_alloc when useCuda, see Initialize(),
+   *          so the async uploads below are genuinely asynchronous instead of silently
+   *          blocking (cudaMemcpyAsync only overlaps with the host from pinned memory). */
   LDU<QuantType> q_scale;
   /*!< \brief Quantized block entries; .l/.u sized [nnz_l/u * nVar * nEqn], .d [nPoint * nVar * nEqn]. */
   LDU<QuantType> q_blocks;
@@ -282,8 +285,9 @@ class CSysMatrix {
    * useCuda (currently only reachable for Q_JACOBI/Q_IDENTITY, Q_LU_SGS stays host-only).
    * d_q_scale.l/.u and d_q_blocks.l/.u are plain device-side copies of q_scale.l/.u and
    * q_blocks.l/.u, uploaded *asynchronously* by HtDTransfer() so that transfer can overlap with
-   * the host quantizing the diagonal; d_q_scale.d/d_q_blocks.d are that host result, uploaded (a
-   * plain cudaMemcpy, not a kernel) once ready, at the end of QuantizeDiagonalBlocks(). */
+   * the host quantizing the diagonal; d_q_scale.d/d_q_blocks.d are that host result, likewise
+   * uploaded asynchronously (a plain cudaMemcpyAsync, not a kernel), at the end of
+   * QuantizeDiagonalBlocks(). */
   LDU<QuantType> d_q_scale;
   LDU<QuantType> d_q_blocks;
 
