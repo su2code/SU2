@@ -282,7 +282,7 @@ void CFEASolver::HybridParallelInitialization(CGeometry* geometry) {
 
   omp_chunk_size = computeStaticChunkSize(nPointDomain, omp_get_max_threads(), OMP_MAX_SIZE);
 #else
-  ElemColoring[0] = DummyGridColor<>(nElement);
+  ElemColoring[0] = DummyGridColor<su2_index_t>(nElement);
 #endif
 }
 

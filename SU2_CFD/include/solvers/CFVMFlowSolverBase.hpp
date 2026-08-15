@@ -197,10 +197,10 @@ class CFVMFlowSolverBase : public CSolver {
   /*--- Shallow copy of grid coloring for OpenMP parallelization. ---*/
 
 #ifdef HAVE_OMP
-  vector<GridColor<> > EdgeColoring; /*!< \brief Edge colors. */
+  vector<GridColor<su2_index_t> > EdgeColoring; /*!< \brief Edge colors. */
   bool ReducerStrategy = false;      /*!< \brief If the reducer strategy is in use. */
 #else
-  array<DummyGridColor<>, 1> EdgeColoring;
+  array<DummyGridColor<su2_index_t>, 1> EdgeColoring;
   /*--- Never use the reducer strategy if compiling for MPI-only. ---*/
   static constexpr bool ReducerStrategy = false;
 #endif

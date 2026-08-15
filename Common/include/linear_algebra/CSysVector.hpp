@@ -28,7 +28,9 @@
 
 #pragma once
 
+#include <limits>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "../parallelization/mpi_structure.hpp"
@@ -155,12 +157,12 @@ struct store_type<const CSysVector<Scalar>> {
 };
 
 template <DeviceAssignOp Op, class Scalar, class T>
-void AssignDeviceExpression(Scalar* data, unsigned long size, const CVecExpr<T, Scalar>& expr);
+void AssignDeviceExpression(Scalar* data, su2_index_t size, const CVecExpr<T, Scalar>& expr);
 
 #ifdef __CUDACC__
 template <DeviceAssignOp Op, class Scalar, class T>
-__global__ void DeviceAssignKernel(Scalar* data, unsigned long size, T expr) {
-  const unsigned long i = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x;
+__global__ void DeviceAssignKernel(Scalar* data, su2_index_t size, T expr) {
+  const su2_index_t i = static_cast<su2_index_t>(blockIdx.x) * blockDim.x + threadIdx.x;
   if (i >= size) return;
 
   if constexpr (Op == DeviceAssignOp::Assign) {
@@ -177,10 +179,14 @@ __global__ void DeviceAssignKernel(Scalar* data, unsigned long size, T expr) {
 }
 
 template <DeviceAssignOp Op, class Scalar, class T>
-inline void AssignDeviceExpression(Scalar* data, unsigned long size, const CVecExpr<T, Scalar>& expr) {
+inline void AssignDeviceExpression(Scalar* data, su2_index_t size, const CVecExpr<T, Scalar>& expr) {
   if (size == 0) return;
   constexpr unsigned block_size = 256;
-  const auto grid_size = static_cast<unsigned>((size + block_size - 1) / block_size);
+  const auto blocks = roundUpDiv(size, block_size);
+  if (blocks > static_cast<su2_index_t>(std::numeric_limits<unsigned>::max())) {
+    SU2_MPI::Error("CSysVector device assignment exceeds the CUDA grid dimension range.", CURRENT_FUNCTION);
+  }
+  const auto grid_size = static_cast<unsigned>(blocks);
   DeviceAssignKernel<Op><<<grid_size, block_size>>>(data, size, expr.derived());
   gpuErrChk(cudaPeekAtLastError());
 }
@@ -201,9 +207,9 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   /// NOTE: Update swap() if you add member variables.
   unsigned long omp_chunk_size = OMP_MAX_SIZE; /*!< \brief Static chunk size used in loops. */
   ScalarType* vec_val = nullptr;               /*!< \brief Storage, 64 byte aligned (do not use normal new/delete). */
-  unsigned long nElm = 0;       /*!< \brief Total number of elements (or number elements on this processor). */
-  unsigned long nElmDomain = 0; /*!< \brief Total number of elements without Ghost cells. */
-  unsigned long nVar = 1;       /*!< \brief Number of elements in a block. */
+  su2_index_t nElm = 0;       /*!< \brief Total number of elements (or number elements on this processor). */
+  su2_index_t nElmDomain = 0; /*!< \brief Total number of elements without Ghost cells. */
+  su2_index_t nVar = 1;       /*!< \brief Number of elements in a block. */
 
   ScalarType* d_vec_val = nullptr; /*!< \brief Device Pointer to store the vector values on the GPU. */
 
@@ -224,7 +230,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] valIsArray - If true val is treated as array.
    * \param[in] errorIfParallel - Throw error if within parallel region (all ctors except the default one do this).
    */
-  void Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, const ScalarType* val,
+  void Initialize(su2_index_t numBlk, su2_index_t numBlkDomain, su2_index_t numVar, const ScalarType* val,
                   bool valIsArray, bool errorIfParallel = true);
 
   /*!
@@ -299,7 +305,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] size - Number of elements locally.
    * \param[in] val - Default value for elements.
    */
-  explicit CSysVector(unsigned long size, ScalarType val = 0.0) { Initialize(size, size, 1, &val, false); }
+  explicit CSysVector(su2_index_t size, ScalarType val = 0.0) { Initialize(size, size, 1, &val, false); }
 
   /*!
    * \brief Construct from size and value (block version).
@@ -308,7 +314,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] numVar - Number of variables in each block.
    * \param[in] val - Default value for elements.
    */
-  CSysVector(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, ScalarType val = 0.0) {
+  CSysVector(su2_index_t numBlk, su2_index_t numBlkDomain, su2_index_t numVar, ScalarType val = 0.0) {
     Initialize(numBlk, numBlkDomain, numVar, &val, false);
   }
 
@@ -317,7 +323,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] size - Number of elements locally.
    * \param[in] u_array - Vector stored as array being copied.
    */
-  CSysVector(unsigned long size, const ScalarType* u_array) { Initialize(size, size, 1, u_array, true); }
+  CSysVector(su2_index_t size, const ScalarType* u_array) { Initialize(size, size, 1, u_array, true); }
 
   /*!
    * \brief Constructor from array (block version).
@@ -326,7 +332,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] numVar - number of variables in each block
    * \param[in] u_array - vector stored as array being copied
    */
-  CSysVector(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, const ScalarType* u_array) {
+  CSysVector(su2_index_t numBlk, su2_index_t numBlkDomain, su2_index_t numVar, const ScalarType* u_array) {
     Initialize(numBlk, numBlkDomain, numVar, u_array, true);
   }
 
@@ -357,7 +363,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] numVar - number of variables in each block
    * \param[in] val - default value for elements
    */
-  void Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, ScalarType val = 0.0) {
+  void Initialize(su2_index_t numBlk, su2_index_t numBlkDomain, su2_index_t numVar, ScalarType val = 0.0) {
     Initialize(numBlk, numBlkDomain, numVar, &val, false, false);
   }
 
@@ -369,7 +375,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] numVar - number of variables in each block
    * \param[in] ptr - pointer to data with which to initialize the vector
    */
-  void Initialize(unsigned long numBlk, unsigned long numBlkDomain, unsigned long numVar, const ScalarType* ptr) {
+  void Initialize(su2_index_t numBlk, su2_index_t numBlkDomain, su2_index_t numVar, const ScalarType* ptr) {
     Initialize(numBlk, numBlkDomain, numVar, ptr, true, false);
   }
 
@@ -389,7 +395,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
         Initialize(other.GetNBlk(), other.GetNBlkDomain(), other.GetNVar(), nullptr, true, false);)
 
     CSYSVEC_PARFOR
-    for (auto i = 0ul; i < nElm; i++) vec_val[i] = SU2_TYPE::GetValue(other[i]);
+    for (su2_index_t i = 0; i < nElm; i++) vec_val[i] = SU2_TYPE::GetValue(other[i]);
     END_CSYSVEC_PARFOR
   }
 
@@ -419,35 +425,35 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
   /*!
    * \brief return the number of local elements in the CSysVector
    */
-  inline unsigned long GetLocSize() const { return nElm; }
+  inline su2_index_t GetLocSize() const { return nElm; }
 
   /*!
    * \brief return the number of local elements in the CSysVector without ghost cells
    */
-  inline unsigned long GetNElmDomain() const { return nElmDomain; }
+  inline su2_index_t GetNElmDomain() const { return nElmDomain; }
 
   /*!
    * \brief return the number of variables at each block (typically number per node)
    */
-  inline unsigned long GetNVar() const { return nVar; }
+  inline su2_index_t GetNVar() const { return nVar; }
 
   /*!
    * \brief return the number of blocks (typically number of nodes locally)
    */
-  inline unsigned long GetNBlk() const { return nElm / nVar; }
+  inline su2_index_t GetNBlk() const { return nElm / nVar; }
 
   /*!
    * \brief return the number of blocks (typically number of nodes locally)
    */
-  inline unsigned long GetNBlkDomain() const { return nElmDomain / nVar; }
+  inline su2_index_t GetNBlkDomain() const { return nElmDomain / nVar; }
 
   /*!
    * \brief Access operator with assignment permitted.
    * \param[in] i - Local index to access.
    * \return Value at position i.
    */
-  inline ScalarType& operator[](unsigned long i) { return vec_val[i]; }
-  inline const ScalarType& operator[](unsigned long i) const { return vec_val[i]; }
+  inline ScalarType& operator[](su2_index_t i) { return vec_val[i]; }
+  inline const ScalarType& operator[](su2_index_t i) const { return vec_val[i]; }
 
   /*!
    * \brief Iterators for range for loops.
@@ -461,8 +467,8 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] iVar - Index of variable.
    * \return Value at position (i,j).
    */
-  inline ScalarType& operator()(unsigned long iPoint, unsigned long iVar) { return vec_val[iPoint * nVar + iVar]; }
-  inline const ScalarType& operator()(unsigned long iPoint, unsigned long iVar) const {
+  inline ScalarType& operator()(su2_index_t iPoint, su2_index_t iVar) { return vec_val[iPoint * nVar + iVar]; }
+  inline const ScalarType& operator()(su2_index_t iPoint, su2_index_t iVar) const {
     return vec_val[iPoint * nVar + iVar];
   }
 
@@ -478,7 +484,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     }
 #endif
     CSYSVEC_PARFOR
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] = other.vec_val[i];
+    for (su2_index_t i = 0; i < nElm; ++i) vec_val[i] = other.vec_val[i];
     END_CSYSVEC_PARFOR
     return *this;
   }
@@ -493,7 +499,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
       if (VecExpr::UseDeviceExpressions()) return AssignDevice<ASSIGN_OP>(val);  \
     }                                                                            \
     CSYSVEC_PARFOR                                                               \
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP val;                         \
+    for (su2_index_t i = 0; i < nElm; ++i) vec_val[i] OP val;                    \
     END_CSYSVEC_PARFOR                                                           \
     return *this;                                                                \
   }                                                                              \
@@ -503,7 +509,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
       if (VecExpr::UseDeviceExpressions()) return AssignDevice<ASSIGN_OP>(expr); \
     }                                                                            \
     CSYSVEC_PARFOR                                                               \
-    for (auto i = 0ul; i < nElm; ++i) vec_val[i] OP expr.derived()[i];           \
+    for (su2_index_t i = 0; i < nElm; ++i) vec_val[i] OP expr.derived()[i];      \
     END_CSYSVEC_PARFOR                                                           \
     return *this;                                                                \
   }
@@ -548,7 +554,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     ScalarType sum = 0.0;
 
     CSYSVEC_PARFOR
-    for (auto i = 0ul; i < nElmDomain; ++i) {
+    for (su2_index_t i = 0; i < nElmDomain; ++i) {
       sum += vec_val[i] * expr.derived()[i];
     }
     END_CSYSVEC_PARFOR
@@ -598,15 +604,15 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] iPoint - Index of block.
    * \return Pointer to start of block.
    */
-  inline ScalarType* GetBlock(unsigned long iPoint) { return &vec_val[iPoint * nVar]; }
-  inline const ScalarType* GetBlock(unsigned long iPoint) const { return &vec_val[iPoint * nVar]; }
+  inline ScalarType* GetBlock(su2_index_t iPoint) { return &vec_val[iPoint * nVar]; }
+  inline const ScalarType* GetBlock(su2_index_t iPoint) const { return &vec_val[iPoint * nVar]; }
 
   /*!
    * \brief Set the values to zero for one block.
    * \param[in] iPoint - Index of the block being set to zero.
    */
-  inline void SetBlock_Zero(unsigned long iPoint) {
-    for (auto iVar = 0ul; iVar < nVar; iVar++) vec_val[iPoint * nVar + iVar] = 0.0;
+  inline void SetBlock_Zero(su2_index_t iPoint) {
+    for (su2_index_t iVar = 0; iVar < nVar; iVar++) vec_val[iPoint * nVar + iVar] = 0.0;
   }
 
   /*!
@@ -617,11 +623,11 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] alpha - Scale factor (axpy-type operation).
    */
   template <class VectorType, bool Overwrite = true>
-  FORCEINLINE void SetBlock(unsigned long iPoint, const VectorType& block, ScalarType alpha = 1) {
+  FORCEINLINE void SetBlock(su2_index_t iPoint, const VectorType& block, ScalarType alpha = 1) {
     if (Overwrite) {
-      for (auto i = 0ul; i < nVar; ++i) vec_val[iPoint * nVar + i] = alpha * block[i];
+      for (su2_index_t i = 0; i < nVar; ++i) vec_val[iPoint * nVar + i] = alpha * block[i];
     } else {
-      for (auto i = 0ul; i < nVar; ++i) vec_val[iPoint * nVar + i] += alpha * block[i];
+      for (su2_index_t i = 0; i < nVar; ++i) vec_val[iPoint * nVar + i] += alpha * block[i];
     }
   }
 
@@ -629,7 +635,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \brief Add "block" to the vector, see SetBlock.
    */
   template <class VectorType>
-  FORCEINLINE void AddBlock(unsigned long iPoint, const VectorType& block, ScalarType alpha = 1) {
+  FORCEINLINE void AddBlock(su2_index_t iPoint, const VectorType& block, ScalarType alpha = 1) {
     SetBlock<VectorType, false>(iPoint, block, alpha);
   }
 
@@ -637,7 +643,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \brief Subtract "block" from the vector, see AddBlock.
    */
   template <class VectorType>
-  FORCEINLINE void SubtractBlock(unsigned long iPoint, const VectorType& block) {
+  FORCEINLINE void SubtractBlock(su2_index_t iPoint, const VectorType& block) {
     AddBlock(iPoint, block, -1);
   }
 
@@ -645,8 +651,7 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \brief Add to iPoint, subtract from jPoint.
    */
   template <class VectorType>
-  FORCEINLINE void UpdateBlocks(unsigned long iPoint, unsigned long jPoint, const VectorType& block,
-                                ScalarType alpha = 1) {
+  FORCEINLINE void UpdateBlocks(su2_index_t iPoint, su2_index_t jPoint, const VectorType& block, ScalarType alpha = 1) {
     AddBlock(iPoint, block, alpha);
     AddBlock(jPoint, block, -alpha);
   }

@@ -33,10 +33,50 @@
 
 #include <cmath>
 #include <limits>
+#include <string>
 #include <type_traits>
 #include <vector>
 
 namespace {
+su2_index_t CheckedMul(su2_index_t lhs, su2_index_t rhs, const char* what) {
+  if (lhs != 0 && rhs > std::numeric_limits<su2_index_t>::max() / lhs) {
+    SU2_MPI::Error(std::string("Overflow while computing ") + what + ".", CURRENT_FUNCTION);
+  }
+  return lhs * rhs;
+}
+
+su2_index_t CheckedAdd(su2_index_t lhs, su2_index_t rhs, const char* what) {
+  if (rhs > std::numeric_limits<su2_index_t>::max() - lhs) {
+    SU2_MPI::Error(std::string("Overflow while computing ") + what + ".", CURRENT_FUNCTION);
+  }
+  return lhs + rhs;
+}
+
+template <class T>
+size_t CheckedBytes(su2_index_t count, const char* what) {
+  const auto bytes = CheckedMul(count, sizeof(T), what);
+  if (bytes > std::numeric_limits<size_t>::max()) {
+    SU2_MPI::Error(std::string("Overflow while computing ") + what + " byte size.", CURRENT_FUNCTION);
+  }
+  return static_cast<size_t>(bytes);
+}
+
+template <class TargetType>
+TargetType CheckedCast(su2_index_t value, const char* what) {
+  if (value > static_cast<su2_index_t>(std::numeric_limits<TargetType>::max())) {
+    SU2_MPI::Error(std::string("Overflow while converting ") + what + ".", CURRENT_FUNCTION);
+  }
+  return static_cast<TargetType>(value);
+}
+
+std::vector<su2uint> ConvertSparseIndicesForDevice(const su2_index_t* src, su2_index_t count, const char* name) {
+  std::vector<su2uint> dst(CheckedCast<size_t>(count, name));
+  for (su2_index_t i = 0; i < count; ++i) {
+    dst[static_cast<size_t>(i)] = CheckedCast<su2uint>(src[i], name);
+  }
+  return dst;
+}
+
 /*--- Helper function to regularize small pivots ---*/
 template <class ScalarType>
 FORCEINLINE void RegularizePivot(ScalarType& pivot, unsigned long row, unsigned long col, const char* context) {
@@ -122,7 +162,7 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   SU2_ZONE_SCOPED
 
   delete[] omp_partitions;
-  auto freeHostLDU = [](LDU& m) {
+  auto freeHostLDU = [](auto& m) {
     MemoryAllocation::aligned_free(m.d);
     MemoryAllocation::aligned_free(m.l);
     MemoryAllocation::aligned_free(m.u);
@@ -138,7 +178,7 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   MemoryAllocation::aligned_free(q_blocks_d);
 
   if (useCuda) {
-    auto freeLDU = [](LDU& m) {
+    auto freeLDU = [](auto& m) {
       GPUMemoryAllocation::gpu_free(m.d);
       GPUMemoryAllocation::gpu_free(m.l);
       GPUMemoryAllocation::gpu_free(m.u);
@@ -226,9 +266,16 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   nPointDomain = npointdomain;
 
   /*--- Allocate host data. ---*/
-  auto allocAndInit = [](ScalarType*& ptr, unsigned long num) {
-    ptr = MemoryAllocation::aligned_alloc<ScalarType, true>(64, num * sizeof(ScalarType));
+  auto allocAndInit = [](ScalarType*& ptr, su2_index_t num, const char* what) {
+    ptr = MemoryAllocation::aligned_alloc<ScalarType, true>(64, CheckedBytes<ScalarType>(num, what));
   };
+  auto allocQ = [](QuantType*& ptr, su2_index_t num, const char* what) {
+    ptr = MemoryAllocation::aligned_alloc<QuantType, true>(64, CheckedBytes<QuantType>(num, what));
+  };
+
+  const auto block_entries = CheckedMul(nVar, nEqn, "CSysMatrix block size");
+  const auto diag_entries = CheckedMul(nPoint, block_entries, "CSysMatrix diagonal storage size");
+  const auto domain_diag_entries = CheckedMul(nPointDomain, block_entries, "CSysMatrix domain diagonal storage size");
 
   /*--- L/D/U index structures and value arrays. ---*/
   {
@@ -240,7 +287,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     mat.col_ind_u = pat.u.innerIdx();
     mat.nnz_u = pat.u.getNumNonZeros();
   }
-  allocAndInit(mat.d, nPoint * nVar * nEqn);
+  allocAndInit(mat.d, diag_entries, "CSysMatrix diagonal host allocation");
 
   if (q_lus_needed) {
     /*--- Q_LU_SGS: no full-precision L/U; off-diagonal blocks live in quantized storage.
@@ -248,38 +295,47 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 #ifndef CODI_REVERSE_TYPE
     quantized_mode = true;
 #endif
-    auto allocQ = [](QuantType*& ptr, unsigned long n) {
-      ptr = MemoryAllocation::aligned_alloc<QuantType, true>(64, n * sizeof(QuantType));
-    };
-    allocQ(q_scale_l, mat.nnz_l * nVar);
-    allocQ(q_blocks_l, mat.nnz_l * nVar * nEqn);
-    allocQ(q_scale_u, mat.nnz_u * nVar);
-    allocQ(q_blocks_u, mat.nnz_u * nVar * nEqn);
-    allocQ(q_scale_d, nPoint * nVar);
-    allocQ(q_blocks_d, nPoint * nVar * nEqn);
+    allocQ(q_scale_l, CheckedMul(mat.nnz_l, nVar, "CSysMatrix quantized L scale size"),
+           "CSysMatrix quantized L scale host allocation");
+    allocQ(q_blocks_l, CheckedMul(mat.nnz_l, block_entries, "CSysMatrix quantized L block size"),
+           "CSysMatrix quantized L block host allocation");
+    allocQ(q_scale_u, CheckedMul(mat.nnz_u, nVar, "CSysMatrix quantized U scale size"),
+           "CSysMatrix quantized U scale host allocation");
+    allocQ(q_blocks_u, CheckedMul(mat.nnz_u, block_entries, "CSysMatrix quantized U block size"),
+           "CSysMatrix quantized U block host allocation");
+    allocQ(q_scale_d, CheckedMul(nPoint, nVar, "CSysMatrix quantized diagonal scale size"),
+           "CSysMatrix quantized diagonal scale host allocation");
+    allocQ(q_blocks_d, diag_entries, "CSysMatrix quantized diagonal block host allocation");
   } else {
-    allocAndInit(mat.l, mat.nnz_l * nVar * nEqn);
-    allocAndInit(mat.u, mat.nnz_u * nVar * nEqn);
+    allocAndInit(mat.l, CheckedMul(mat.nnz_l, block_entries, "CSysMatrix L storage size"),
+                 "CSysMatrix L host allocation");
+    allocAndInit(mat.u, CheckedMul(mat.nnz_u, block_entries, "CSysMatrix U storage size"),
+                 "CSysMatrix U host allocation");
   }
 
-  auto GPUAllocAndInit = [](ScalarType*& ptr, unsigned long num) {
-    ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(num * sizeof(ScalarType));
+  auto GPUAllocAndInit = [](ScalarType*& ptr, su2_index_t num, const char* what) {
+    ptr = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(CheckedBytes<ScalarType>(num, what));
   };
-  auto GPUAllocAndCopy = [](const su2uint*& ptr, const su2uint* src_ptr, unsigned long num) {
-    ptr = GPUMemoryAllocation::gpu_alloc_cpy<su2uint>(src_ptr, num * sizeof(su2uint));
+  auto GPUAllocAndCopy = [](const su2uint*& ptr, const su2_index_t* src_ptr, su2_index_t num, const char* what) {
+    const auto host = ConvertSparseIndicesForDevice(src_ptr, num, what);
+    ptr = GPUMemoryAllocation::gpu_alloc_cpy<su2uint>(host.data(), CheckedBytes<su2uint>(num, what));
   };
 
   if (useCuda) {
     if (nVar != nEqn) {
       SU2_MPI::Error("CUDA CSysMatrix block-LDU SpMV requires square blocks.", CURRENT_FUNCTION);
     }
-    GPUAllocAndInit(gpu.d, nPoint * nVar * nEqn);
-    GPUAllocAndInit(gpu.l, mat.nnz_l * nVar * nEqn);
-    GPUAllocAndInit(gpu.u, mat.nnz_u * nVar * nEqn);
-    GPUAllocAndCopy(gpu.row_ptr_l, mat.row_ptr_l, nPointDomain + 1);
-    GPUAllocAndCopy(gpu.col_ind_l, mat.col_ind_l, mat.nnz_l);
-    GPUAllocAndCopy(gpu.row_ptr_u, mat.row_ptr_u, nPointDomain + 1);
-    GPUAllocAndCopy(gpu.col_ind_u, mat.col_ind_u, mat.nnz_u);
+    GPUAllocAndInit(gpu.d, diag_entries, "CSysMatrix diagonal device allocation");
+    GPUAllocAndInit(gpu.l, CheckedMul(mat.nnz_l, block_entries, "CSysMatrix L device storage size"),
+                    "CSysMatrix L device allocation");
+    GPUAllocAndInit(gpu.u, CheckedMul(mat.nnz_u, block_entries, "CSysMatrix U device storage size"),
+                    "CSysMatrix U device allocation");
+    GPUAllocAndCopy(gpu.row_ptr_l, mat.row_ptr_l, CheckedAdd(nPointDomain, 1, "CSysMatrix L row_ptr"),
+                    "CSysMatrix L row_ptr");
+    GPUAllocAndCopy(gpu.col_ind_l, mat.col_ind_l, mat.nnz_l, "CSysMatrix L col_ind");
+    GPUAllocAndCopy(gpu.row_ptr_u, mat.row_ptr_u, CheckedAdd(nPointDomain, 1, "CSysMatrix U row_ptr"),
+                    "CSysMatrix U row_ptr");
+    GPUAllocAndCopy(gpu.col_ind_u, mat.col_ind_u, mat.nnz_u, "CSysMatrix U col_ind");
   }
 
   if (type == ConnectivityType::FiniteVolume) {
@@ -317,18 +373,18 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
      * instead. This does not change the elimination order/pattern (nothing here affects L/U
      * membership), only how the build is scheduled on the device. ---*/
     if (useCuda) {
-      std::vector<su2uint> adjPtr(nPointDomain + 1, 0);
-      std::vector<su2uint> adjIdx;
+      std::vector<su2_index_t> adjPtr(nPointDomain + 1, 0);
+      std::vector<su2_index_t> adjIdx;
       adjIdx.reserve(ilu.nnz_l + ilu.nnz_u);
       for (auto i = 0ul; i < nPointDomain; ++i) {
-        adjPtr[i] = static_cast<su2uint>(adjIdx.size());
+        adjPtr[i] = static_cast<su2_index_t>(adjIdx.size());
         for (auto k = ilu.row_ptr_l[i]; k < ilu.row_ptr_l[i + 1]; ++k) adjIdx.push_back(ilu.col_ind_l[k]);
         for (auto k = ilu.row_ptr_u[i]; k < ilu.row_ptr_u[i + 1]; ++k) {
           const auto j = ilu.col_ind_u[k];
-          if (j < nPointDomain) adjIdx.push_back(static_cast<su2uint>(j));
+          if (j < nPointDomain) adjIdx.push_back(j);
         }
       }
-      adjPtr[nPointDomain] = static_cast<su2uint>(adjIdx.size());
+      adjPtr[nPointDomain] = static_cast<su2_index_t>(adjIdx.size());
       color_ilu = colorSparsePattern(CCompressedSparsePatternUL(adjPtr, adjIdx), 1, true, false);
 
       /*--- Report, across ranks, how many colors/levels the GPU ILU ends up scheduled over and how
@@ -362,12 +418,14 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
   /*--- Preconditioners. ---*/
 
   if (ilu_needed) {
-    allocAndInit(ilu.l, ilu.nnz_l * nVar * nEqn);
-    allocAndInit(ilu.d, nPointDomain * nVar * nEqn);
-    allocAndInit(ilu.u, ilu.nnz_u * nVar * nEqn);
+    allocAndInit(ilu.l, CheckedMul(ilu.nnz_l, block_entries, "CSysMatrix ILU L storage size"),
+                 "CSysMatrix ILU L host allocation");
+    allocAndInit(ilu.d, domain_diag_entries, "CSysMatrix ILU diagonal host allocation");
+    allocAndInit(ilu.u, CheckedMul(ilu.nnz_u, block_entries, "CSysMatrix ILU U storage size"),
+                 "CSysMatrix ILU U host allocation");
   }
 
-  if (diag_needed) allocAndInit(invM, nPointDomain * nVar * nEqn);
+  if (diag_needed) allocAndInit(invM, domain_diag_entries, "CSysMatrix inverse diagonal host allocation");
 
   if (jacobi_on_device) {
     if (nVar != nEqn) {
@@ -377,7 +435,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
       SU2_MPI::Error("CUDA Jacobi preconditioner uses one thread per block entry, nVar is too large.",
                      CURRENT_FUNCTION);
     }
-    d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
+    d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(
+        CheckedBytes<ScalarType>(domain_diag_entries, "CSysMatrix inverse diagonal device allocation"));
   }
 
   if (useCuda && ilu_needed) {
@@ -391,13 +450,17 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
      * are uploaded (once, here) because they do not change. ---*/
     gpu_ilu.nnz_l = ilu.nnz_l;
     gpu_ilu.nnz_u = ilu.nnz_u;
-    GPUAllocAndInit(gpu_ilu.d, nPointDomain * nVar * nEqn);
-    GPUAllocAndInit(gpu_ilu.l, ilu.nnz_l * nVar * nEqn);
-    GPUAllocAndInit(gpu_ilu.u, ilu.nnz_u * nVar * nEqn);
-    GPUAllocAndCopy(gpu_ilu.row_ptr_l, ilu.row_ptr_l, nPointDomain + 1);
-    GPUAllocAndCopy(gpu_ilu.col_ind_l, ilu.col_ind_l, ilu.nnz_l);
-    GPUAllocAndCopy(gpu_ilu.row_ptr_u, ilu.row_ptr_u, nPointDomain + 1);
-    GPUAllocAndCopy(gpu_ilu.col_ind_u, ilu.col_ind_u, ilu.nnz_u);
+    GPUAllocAndInit(gpu_ilu.d, domain_diag_entries, "CSysMatrix ILU diagonal device allocation");
+    GPUAllocAndInit(gpu_ilu.l, CheckedMul(ilu.nnz_l, block_entries, "CSysMatrix ILU L device storage size"),
+                    "CSysMatrix ILU L device allocation");
+    GPUAllocAndInit(gpu_ilu.u, CheckedMul(ilu.nnz_u, block_entries, "CSysMatrix ILU U device storage size"),
+                    "CSysMatrix ILU U device allocation");
+    GPUAllocAndCopy(gpu_ilu.row_ptr_l, ilu.row_ptr_l, CheckedAdd(nPointDomain, 1, "CSysMatrix ILU L row_ptr"),
+                    "CSysMatrix ILU L row_ptr");
+    GPUAllocAndCopy(gpu_ilu.col_ind_l, ilu.col_ind_l, ilu.nnz_l, "CSysMatrix ILU L col_ind");
+    GPUAllocAndCopy(gpu_ilu.row_ptr_u, ilu.row_ptr_u, CheckedAdd(nPointDomain, 1, "CSysMatrix ILU U row_ptr"),
+                    "CSysMatrix ILU U row_ptr");
+    GPUAllocAndCopy(gpu_ilu.col_ind_u, ilu.col_ind_u, ilu.nnz_u, "CSysMatrix ILU U col_ind");
 
     /*--- Flatten the coloring, the index type differs from the one of the pattern. It drives
      * the factorization on the device. ---*/
@@ -407,11 +470,12 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     ilu_color_ptr.push_back(0);
     for (auto color = 0ul; color < color_ilu.getOuterSize(); ++color) {
       for (auto k = 0ul; k < color_ilu.getNumNonZeros(color); ++k) {
-        color_idx.push_back(static_cast<su2uint>(color_ilu.getInnerIdx(color, k)));
+        color_idx.push_back(CheckedCast<su2uint>(color_ilu.getInnerIdx(color, k), "CSysMatrix ILU color index"));
       }
-      ilu_color_ptr.push_back(static_cast<su2uint>(color_idx.size()));
+      ilu_color_ptr.push_back(CheckedCast<su2uint>(color_idx.size(), "CSysMatrix ILU color pointer"));
     }
-    d_ilu_color_idx = GPUMemoryAllocation::gpu_alloc_cpy(color_idx.data(), color_idx.size() * sizeof(su2uint));
+    d_ilu_color_idx = GPUMemoryAllocation::gpu_alloc_cpy(
+        color_idx.data(), CheckedBytes<su2uint>(color_idx.size(), "CSysMatrix ILU color device copy"));
 
     /*--- Flatten levels_ilu the same way. It drives both triangular solves on the device. ---*/
     std::vector<su2uint> level_idx;
@@ -420,11 +484,12 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
     ilu_level_ptr.push_back(0);
     for (auto level = 0ul; level < levels_ilu.getOuterSize(); ++level) {
       for (auto k = 0ul; k < levels_ilu.getNumNonZeros(level); ++k) {
-        level_idx.push_back(static_cast<su2uint>(levels_ilu.getInnerIdx(level, k)));
+        level_idx.push_back(CheckedCast<su2uint>(levels_ilu.getInnerIdx(level, k), "CSysMatrix ILU level index"));
       }
-      ilu_level_ptr.push_back(static_cast<su2uint>(level_idx.size()));
+      ilu_level_ptr.push_back(CheckedCast<su2uint>(level_idx.size(), "CSysMatrix ILU level pointer"));
     }
-    d_ilu_level_idx = GPUMemoryAllocation::gpu_alloc_cpy(level_idx.data(), level_idx.size() * sizeof(su2uint));
+    d_ilu_level_idx = GPUMemoryAllocation::gpu_alloc_cpy(
+        level_idx.data(), CheckedBytes<su2uint>(level_idx.size(), "CSysMatrix ILU level device copy"));
   }
 
   /*--- Thread parallel initialization. ---*/
@@ -433,7 +498,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   /*--- Set suitable chunk sizes for light static for loops, and heavy
    dynamic ones, such that threads are approximately evenly loaded. ---*/
-  omp_light_size = computeStaticChunkSize(nPoint * nVar * nEqn, num_threads, OMP_MAX_SIZE_L);
+  omp_light_size = computeStaticChunkSize(diag_entries, num_threads, OMP_MAX_SIZE_L);
   omp_heavy_size = computeStaticChunkSize(nPointDomain, num_threads, OMP_MAX_SIZE_H);
 
   omp_num_parts = config->GetLinear_Solver_Prec_Threads();
@@ -746,22 +811,23 @@ void CSysMatrix<ScalarType>::SetValZero() {
   const auto nThreads = static_cast<unsigned long>(omp_get_num_threads());
   const auto iThread = static_cast<unsigned long>(omp_get_thread_num());
 
-  auto zeroChunk = [&](auto* arr, unsigned long n) {
+  auto zeroChunk = [&](auto* arr, su2_index_t n) {
     if (n == 0) return;
     const auto chunk = roundUpDiv(n, nThreads);
     const auto begin = min<size_t>(chunk * iThread, n);
     const auto mySize = min<size_t>(chunk, n - begin) * sizeof(std::remove_pointer_t<decltype(arr)>);
     if (mySize) memset(&arr[begin], 0, mySize);
   };
-  zeroChunk(mat.d, nPoint * nVar * nEqn);
+  const auto block_entries = CheckedMul(nVar, nEqn, "CSysMatrix zero-fill block size");
+  zeroChunk(mat.d, CheckedMul(nPoint, block_entries, "CSysMatrix zero-fill diagonal size"));
   if (!quantized_mode) {
-    zeroChunk(mat.l, mat.nnz_l * nVar * nEqn);
-    zeroChunk(mat.u, mat.nnz_u * nVar * nEqn);
+    zeroChunk(mat.l, CheckedMul(mat.nnz_l, block_entries, "CSysMatrix zero-fill L size"));
+    zeroChunk(mat.u, CheckedMul(mat.nnz_u, block_entries, "CSysMatrix zero-fill U size"));
   } else {
-    zeroChunk(q_scale_l, mat.nnz_l * nVar);
-    zeroChunk(q_scale_u, mat.nnz_l * nVar);
-    zeroChunk(q_blocks_l, mat.nnz_l * nVar * nEqn);
-    zeroChunk(q_blocks_u, mat.nnz_u * nVar * nEqn);
+    zeroChunk(q_scale_l, CheckedMul(mat.nnz_l, nVar, "CSysMatrix zero-fill quantized L scale size"));
+    zeroChunk(q_scale_u, CheckedMul(mat.nnz_u, nVar, "CSysMatrix zero-fill quantized U scale size"));
+    zeroChunk(q_blocks_l, CheckedMul(mat.nnz_l, block_entries, "CSysMatrix zero-fill quantized L block size"));
+    zeroChunk(q_blocks_u, CheckedMul(mat.nnz_u, block_entries, "CSysMatrix zero-fill quantized U block size"));
   }
   SU2_OMP_BARRIER
 }
@@ -769,8 +835,10 @@ void CSysMatrix<ScalarType>::SetValZero() {
 template <class ScalarType>
 void CSysMatrix<ScalarType>::SetValDiagonalZero() {
   SU2_ZONE_SCOPED
+  const auto nEntries = CheckedMul(CheckedMul(nPointDomain, nVar, "CSysMatrix diagonal zero-fill size"), nEqn,
+                                   "CSysMatrix diagonal zero-fill size");
   SU2_OMP_FOR_STAT(omp_heavy_size)
-  for (auto iVar = 0ul; iVar < nPointDomain * nVar * nEqn; ++iVar) mat.d[iVar] = 0;
+  for (su2_index_t iVar = 0; iVar < nEntries; ++iVar) mat.d[iVar] = 0;
   END_SU2_OMP_FOR
 }
 
@@ -1015,9 +1083,9 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
 
     if (ilu_fill_in == 0) {
       /*--- ILU0: Same sparse pattern, copy L and U blocks directly. ---*/
-      auto copy = [&](const su2uint* row_ptr, const ScalarType* mat, ScalarType* ilu) {
-        const unsigned long begin = row_ptr[iPoint] * blockSize;
-        const unsigned long end = row_ptr[iPoint + 1] * blockSize;
+      auto copy = [&](const su2_index_t* row_ptr, const ScalarType* mat, ScalarType* ilu) {
+        const su2_index_t begin = row_ptr[iPoint] * blockSize;
+        const su2_index_t end = row_ptr[iPoint + 1] * blockSize;
         SU2_OMP_SIMD
         for (auto k = begin; k < end; ++k) ilu[k] = mat[k];
       };
@@ -1026,8 +1094,8 @@ void CSysMatrix<ScalarType>::BuildILUPreconditioner() {
       return;
     }
     /*--- ILUn: Merge-scan L and U via shared lambda. ---*/
-    auto scatterPart = [&](const su2uint* mat_row_ptr, const su2uint* mat_col_ind, const ScalarType* mat_vals,
-                           const su2uint* ilu_row_ptr, const su2uint* ilu_col_ind, ScalarType* ilu_vals) {
+    auto scatterPart = [&](const su2_index_t* mat_row_ptr, const su2_index_t* mat_col_ind, const ScalarType* mat_vals,
+                           const su2_index_t* ilu_row_ptr, const su2_index_t* ilu_col_ind, ScalarType* ilu_vals) {
       auto km = mat_row_ptr[iPoint], km_end = mat_row_ptr[iPoint + 1];
       for (auto k = ilu_row_ptr[iPoint]; k < ilu_row_ptr[iPoint + 1]; ++k) {
         const auto jPoint = ilu_col_ind[k];
@@ -1593,7 +1661,7 @@ void CSysMatrix<ScalarType>::TransposeInPlace() {
   if (edge_ptr_l) {
     /*--- FV path: each edge maps to one U and one L block. ---*/
     SU2_OMP_FOR_DYN(omp_heavy_size * 2)
-    for (auto iEdge = 0ul; iEdge < mat.nnz_l; ++iEdge) {
+    for (su2_index_t iEdge = 0; iEdge < mat.nnz_l; ++iEdge) {
       auto* bij_u = &mat.u[iEdge * nVar * nVar];
       auto* bji_l = &mat.l[edge_ptr_l[iEdge] * nVar * nVar];
       swapAndTransp(nVar, bij_u, bji_l);
@@ -1650,14 +1718,18 @@ void CSysMatrix<ScalarType>::MatrixMatrixAddition(ScalarType alpha, const CSysMa
                   (nEqn == B.nEqn) && (nPoint == B.nPoint) && (mat.nnz_l == B.mat.nnz_l) && (mat.nnz_u == B.mat.nnz_u);
   if (!ok) SU2_MPI::Error("Matrices do not have compatible sparsity.", CURRENT_FUNCTION);
 
+  const auto block_entries = CheckedMul(nVar, nEqn, "CSysMatrix matrix sum block size");
+  const auto diag_entries = CheckedMul(nPoint, block_entries, "CSysMatrix matrix sum diagonal size");
+  const auto l_entries = CheckedMul(mat.nnz_l, block_entries, "CSysMatrix matrix sum L size");
+  const auto u_entries = CheckedMul(mat.nnz_u, block_entries, "CSysMatrix matrix sum U size");
   SU2_OMP_FOR_STAT(omp_light_size)
-  for (auto i = 0ul; i < nPoint * nVar * nEqn; ++i) mat.d[i] += alpha * B.mat.d[i];
+  for (su2_index_t i = 0; i < diag_entries; ++i) mat.d[i] += alpha * B.mat.d[i];
   END_SU2_OMP_FOR
   SU2_OMP_FOR_STAT(omp_light_size)
-  for (auto i = 0ul; i < mat.nnz_l * nVar * nEqn; ++i) mat.l[i] += alpha * B.mat.l[i];
+  for (su2_index_t i = 0; i < l_entries; ++i) mat.l[i] += alpha * B.mat.l[i];
   END_SU2_OMP_FOR
   SU2_OMP_FOR_STAT(omp_light_size)
-  for (auto i = 0ul; i < mat.nnz_u * nVar * nEqn; ++i) mat.u[i] += alpha * B.mat.u[i];
+  for (su2_index_t i = 0; i < u_entries; ++i) mat.u[i] += alpha * B.mat.u[i];
   END_SU2_OMP_FOR
 }
 

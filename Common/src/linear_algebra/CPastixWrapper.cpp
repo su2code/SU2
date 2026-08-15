@@ -34,26 +34,29 @@
 #include "../../include/geometry/CGeometry.hpp"
 #include "../../include/linear_algebra/CPastixWrapper.hpp"
 
+#include <limits>
 #include <numeric>
 
 template <class ScalarType>
 void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* config) {
   if (isinitialized) return;  // only need to do this once
 
-  const unsigned long nVar = matrix.nVar, nPoint = matrix.nPoint, nPointDomain = matrix.nPointDomain;
-  const unsigned long *row_ptr = csr_row_ptr.data(), *col_ind = csr_col_ind.data();
-  const unsigned long nNonZero = row_ptr[nPointDomain];
+  const auto nVar = matrix.nVar, nPoint = matrix.nPoint, nPointDomain = matrix.nPointDomain;
+  const auto *row_ptr = csr_row_ptr.data(), *col_ind = csr_col_ind.data();
+  const auto nNonZero = row_ptr[nPointDomain];
 
   /*--- Allocate ---*/
 
-  nCols = static_cast<pastix_int_t>(nPointDomain);
-  colptr.resize(nPointDomain + 1);
+  nCols = CheckedCast<pastix_int_t>(nPointDomain, "PaStiX local column count");
+  colptr.resize(CheckedCast<size_t>(nPointDomain + 1, "PaStiX colptr size"));
   rowidx.clear();
-  rowidx.reserve(nNonZero);
-  values.resize(nNonZero * nVar * nVar);
-  loc2glb.resize(nPointDomain);
-  perm.resize(nPointDomain);
-  workvec.resize(nPointDomain * nVar);
+  rowidx.reserve(CheckedCast<size_t>(nNonZero, "PaStiX rowidx size"));
+  values.resize(CheckedCast<size_t>(CheckedMul(nNonZero, matrix.blkSz, "PaStiX value storage size"),
+                                    "PaStiX value storage size"));
+  loc2glb.resize(CheckedCast<size_t>(nPointDomain, "PaStiX loc2glb size"));
+  perm.resize(CheckedCast<size_t>(nPointDomain, "PaStiX permutation size"));
+  workvec.resize(
+      CheckedCast<size_t>(CheckedMul(nPointDomain, nVar, "PaStiX work vector size"), "PaStiX work vector size"));
 
   /*--- Set default parameter values ---*/
 
@@ -90,19 +93,22 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
 
   /*--- 1 - Determine position in the linear partitioning ---*/
 
-  unsigned long offset = 0;
+  su2_index_t offset = 0;
 #ifdef HAVE_MPI
-  vector<unsigned long> domain_sizes(mpi_size);
-  MPI_Allgather(&nPointDomain, 1, MPI_UNSIGNED_LONG, domain_sizes.data(), 1, MPI_UNSIGNED_LONG, SU2_MPI::GetComm());
-  for (int i = 0; i < mpi_rank; ++i) offset += domain_sizes[i];
+  vector<su2_index_t> domain_sizes(mpi_size);
+  MPI_Allgather(&nPointDomain, 1, MPI_UINT64_T, domain_sizes.data(), 1, MPI_UINT64_T, SU2_MPI::GetComm());
+  for (int i = 0; i < mpi_rank; ++i) offset = CheckedAdd(offset, domain_sizes[i], "PaStiX global offset");
 #endif
 
-  iota(loc2glb.begin(), loc2glb.end(), offset + 1);
+  for (su2_index_t i = 0; i < nPointDomain; ++i) {
+    loc2glb[static_cast<size_t>(i)] = CheckedCast<pastix_int_t>(CheckedAdd(offset, i + 1, "PaStiX global mapped index"),
+                                                                "PaStiX global mapped index");
+  }
 
   /*--- 2 - Communicate global indices of halo points to then renumber
    column indices from local to global when unpacking halos. ---*/
 
-  vector<pastix_int_t> map(nPoint - nPointDomain, 0);
+  vector<su2_index_t> map(CheckedCast<size_t>(nPoint - nPointDomain, "PaStiX halo map size"), 0);
 
 #ifdef HAVE_MPI
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -116,15 +122,16 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
       unsigned long nVertexR = geometry->nVertex[MarkerR];
 
       /*--- Allocate Send/Receive buffers ---*/
-      vector<unsigned long> Buffer_Recv(nVertexR), Buffer_Send(nVertexS);
+      vector<su2_index_t> Buffer_Recv(nVertexR), Buffer_Send(nVertexS);
 
       /*--- Prepare data to send ---*/
       for (unsigned long iVertex = 0; iVertex < nVertexS; iVertex++)
-        Buffer_Send[iVertex] = geometry->vertex[MarkerS][iVertex]->GetNode() + offset;
+        Buffer_Send[iVertex] =
+            CheckedAdd(geometry->vertex[MarkerS][iVertex]->GetNode(), offset, "PaStiX halo send index");
 
       /*--- Send and Receive data ---*/
-      MPI_Sendrecv(Buffer_Send.data(), nVertexS, MPI_UNSIGNED_LONG, sender, 0, Buffer_Recv.data(), nVertexR,
-                   MPI_UNSIGNED_LONG, recver, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
+      MPI_Sendrecv(Buffer_Send.data(), nVertexS, MPI_UINT64_T, sender, 0, Buffer_Recv.data(), nVertexR, MPI_UINT64_T,
+                   recver, 0, SU2_MPI::GetComm(), MPI_STATUS_IGNORE);
 
       /*--- Store received data---*/
       for (unsigned long iVertex = 0; iVertex < nVertexR; iVertex++)
@@ -135,45 +142,51 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
 
   /*--- 3 - Copy, map the sparsity, and put it in Fortran numbering ---*/
 
-  for (auto iPoint = 0ul; iPoint < nPointDomain; ++iPoint) {
-    colptr[iPoint] = static_cast<pastix_int_t>(row_ptr[iPoint] + 1);
+  for (su2_index_t iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+    colptr[static_cast<size_t>(iPoint)] = CheckedCast<pastix_int_t>(
+        CheckedAdd(row_ptr[iPoint], 1, "PaStiX row pointer entry"), "PaStiX row pointer entry");
 
-    const unsigned long begin = row_ptr[iPoint], end = row_ptr[iPoint + 1];
+    const su2_index_t begin = row_ptr[iPoint], end = row_ptr[iPoint + 1];
 
     /*--- If last point of row is halo ---*/
     const bool sort_required = (col_ind[end - 1] >= nPointDomain);
 
     if (sort_required) {
-      const unsigned long nnz_row = end - begin;
+      const su2_index_t nnz_row = end - begin;
 
       sort_rows.push_back(iPoint);
-      sort_order.emplace_back(nnz_row);
+      sort_order.emplace_back(CheckedCast<size_t>(nnz_row, "PaStiX row sort order size"));
 
       /*--- Sort mapped indices ("first") and keep track of source ("second")
             for when we later need to swap blocks for these rows. ---*/
 
-      vector<pair<pastix_int_t, unsigned long> > aux(nnz_row);
+      vector<pair<pastix_int_t, su2_index_t> > aux(CheckedCast<size_t>(nnz_row, "PaStiX row sort auxiliary size"));
 
       for (auto j = begin; j < end; ++j) {
         if (col_ind[j] < nPointDomain) {
-          aux[j - begin].first = static_cast<pastix_int_t>(offset + col_ind[j] + 1);
+          aux[j - begin].first = CheckedCast<pastix_int_t>(CheckedAdd(offset, col_ind[j] + 1, "PaStiX column index"),
+                                                           "PaStiX column index");
         } else {
-          aux[j - begin].first = static_cast<pastix_int_t>(map[col_ind[j] - nPointDomain] + 1);
+          aux[j - begin].first = CheckedCast<pastix_int_t>(
+              CheckedAdd(map[col_ind[j] - nPointDomain], 1, "PaStiX halo column index"), "PaStiX halo column index");
         }
         aux[j - begin].second = j;
       }
       sort(aux.begin(), aux.end());
 
-      for (auto j = 0ul; j < nnz_row; ++j) {
+      for (su2_index_t j = 0; j < nnz_row; ++j) {
         rowidx.push_back(aux[j].first);
         sort_order.back()[j] = aux[j].second;
       }
     } else {
       /*--- These are all internal, no need to go through map. ---*/
-      for (auto j = begin; j < end; ++j) rowidx.push_back(static_cast<pastix_int_t>(offset + col_ind[j] + 1));
+      for (auto j = begin; j < end; ++j)
+        rowidx.push_back(CheckedCast<pastix_int_t>(CheckedAdd(offset, col_ind[j] + 1, "PaStiX column index"),
+                                                   "PaStiX column index"));
     }
   }
-  colptr[nPointDomain] = static_cast<pastix_int_t>(nNonZero + 1);
+  colptr[static_cast<size_t>(nPointDomain)] =
+      CheckedCast<pastix_int_t>(CheckedAdd(nNonZero, 1, "PaStiX final colptr entry"), "PaStiX final colptr entry");
 
   if (rowidx.size() != nNonZero) SU2_MPI::Error("Error during preparation of PaStiX data", CURRENT_FUNCTION);
 
@@ -187,8 +200,8 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
   spm.baseval = 1;
 
   spm.n = nCols;
-  spm.nnz = nNonZero;
-  spm.dof = nVar;
+  spm.nnz = CheckedCast<pastix_int_t>(nNonZero, "PaStiX nonzero count");
+  spm.dof = CheckedCast<pastix_int_t>(nVar, "PaStiX block degree of freedom");
 
   spm.colptr = colptr.data();
   spm.rowptr = rowidx.data();
@@ -214,7 +227,7 @@ void CPastixWrapper<ScalarType>::AssembleValues() {
   const auto nDomain = matrix.nPointDomain;
   const auto blkSz = matrix.blkSz;
   const auto *d = matrix.d, *l = matrix.l, *u = matrix.u;
-  for (auto iPoint = 0ul; iPoint < nDomain; ++iPoint) {
+  for (su2_index_t iPoint = 0; iPoint < nDomain; ++iPoint) {
     auto* dst = values.data() + csr_row_ptr[iPoint] * blkSz;
     for (auto k = matrix.row_ptr_l[iPoint]; k < matrix.row_ptr_l[iPoint + 1]; ++k, dst += blkSz)
       for (auto b = 0ul; b < blkSz; ++b) dst[b] = SU2_TYPE::GetValue(l[k * blkSz + b]);
@@ -276,14 +289,14 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
         AssembleValues wrote them in LDU order; copy to tmp then write back sorted. ---*/
 
   vector<su2mixedfloat> tmp;
-  for (auto i = 0ul; i < sort_rows.size(); ++i) {
+  for (size_t i = 0; i < sort_rows.size(); ++i) {
     const auto iRow = sort_rows[i];
     /*--- colptr is 1-based Fortran numbering: row start = colptr[iRow] - 1. ---*/
-    const auto begin = static_cast<unsigned long>(colptr[iRow] - 1);
+    const auto begin = static_cast<su2_index_t>(colptr[iRow] - 1);
     const auto nnz_row = sort_order[i].size();
 
     tmp.assign(values.begin() + begin * blkSz, values.begin() + (begin + nnz_row) * blkSz);
-    for (auto j = 0ul; j < nnz_row; ++j) {
+    for (size_t j = 0; j < nnz_row; ++j) {
       const auto src_pos = sort_order[i][j] - begin;
       for (auto k = 0ul; k < blkSz; ++k) values[(begin + j) * blkSz + k] = tmp[src_pos * blkSz + k];
     }

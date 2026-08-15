@@ -111,7 +111,10 @@ FORCEINLINE Out su2staticcast_p(In ptr) {
 #undef USE_SINGLE_PRECISION
 #endif
 
-/*--- Default integer types. Currently used for rank-local sparse patterns. ---*/
+/*--- Default integer types. Host sparse metadata is explicit 64-bit so rank-local
+ * sparse patterns and allocation-size arithmetic do not depend on the platform
+ * width of unsigned long. Device sparse metadata keeps the compact su2uint type. ---*/
+using su2_index_t = uint64_t;
 using su2uint = uint32_t;
 using su2int = int32_t;
 

@@ -74,7 +74,7 @@ CScalarSolver<VariableType>::CScalarSolver(CGeometry* geometry, CConfig* config,
   nPoint = geometry->GetnPoint();
   omp_chunk_size = computeStaticChunkSize(nPoint, omp_get_max_threads(), OMP_MAX_SIZE);
 #else
-  EdgeColoring[0] = DummyGridColor<>(geometry->GetnEdge());
+  EdgeColoring[0] = DummyGridColor<su2_index_t>(geometry->GetnEdge());
 #endif
 
   /*--- Initialize lower and upper limits for solution clipping. Solvers might overwrite these values. ---*/

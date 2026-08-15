@@ -86,11 +86,11 @@ protected:
   CProperty** element_properties = nullptr; /*!< \brief Vector which stores the properties of each element */
 
 #ifdef HAVE_OMP
-  vector<GridColor<> > ElemColoring;   /*!< \brief Element colors. */
+  vector<GridColor<su2_index_t> > ElemColoring;   /*!< \brief Element colors. */
   bool LockStrategy = false;           /*!< \brief Whether to use an OpenMP lock to guard updates of the Jacobian. */
   vector<omp_lock_t> UpdateLocks;      /*!< \brief Locks that may be used to protect accesses to CSysMatrix/Vector in element loops. */
 #else
-  array<DummyGridColor<>,1> ElemColoring;      /*--- Behaves like a normal integer type. ---*/
+  array<DummyGridColor<su2_index_t>,1> ElemColoring;      /*--- Behaves like a normal integer type. ---*/
   static constexpr bool LockStrategy = false;  /*--- Lock strategy is never needed for MPI-only. ---*/
   DummyVectorOfLocks UpdateLocks;
 #endif
