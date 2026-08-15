@@ -28,15 +28,24 @@
 
 #include "../../include/variables/CTransLMVariable.hpp"
 
-CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, su2double gammaSep, su2double gammaEff, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
+CTransLMVariable::CTransLMVariable(su2double Intermittency, su2double ReThetaT, su2double gammaSep, su2double gammaEff, su2double A_r, unsigned long npoint, unsigned long ndim, unsigned long nvar, CConfig *config)
   : CTurbVariable(npoint, ndim, nvar, config) {
 
+  LM_ParsedOptions options = config->GetLMParsedOptions();
+  if (options.LMROUGH) {
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
   {
     Solution(iPoint,0) = Intermittency;
     Solution(iPoint,1) = ReThetaT;
+    Solution(iPoint, 2) = A_r;
   }
-
+  } else {
+    for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
+    {
+      Solution(iPoint,0) = Intermittency;
+      Solution(iPoint,1) = ReThetaT;
+    }
+  }
   Solution_Old = Solution;
 
   /*--- Setting CTransLMVariable of intermittency_Eff---*/
