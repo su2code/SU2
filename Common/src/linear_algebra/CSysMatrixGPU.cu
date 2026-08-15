@@ -108,9 +108,20 @@ __device__ FORCEINLINE ScalarType* GetBlockILU(const DeviceLDU<ScalarType>& M, u
 }
 
 /*!
- * \brief Invert the diagonal blocks of the matrix, device version of InverseDiagonalBlock.
- * \note Grid: one block per row, blockDim.x == nVar*nVar (one thread per block entry, they
- *       stage the input in shared memory). Dynamic shared memory: nVar*nVar scalars.
+ * \brief Invert the diagonal blocks of the matrix, parallel-Gauss-Jordan device version of
+ *        InverseDiagonalBlock. Unlike SU2_LinAlg::MatrixInverse (host, and still used by
+ *        IluFactorColorKernel below) - which does forward elimination on one thread followed by
+ *        a serial back-substitution, an inherently sequential ~nVar^3 chain - this eliminates
+ *        each pivot column from every OTHER row simultaneously (both above and below the pivot,
+ *        no back-substitution needed), so every entry update within one pivot step is independent
+ *        of every other entry in that step: nVar serial steps (each with a couple of barriers),
+ *        instead of one thread serially doing all the work. One thread per block entry (i,j);
+ *        __syncthreads() (not __syncwarp()) is used so this stays correct even when nVar*nVar
+ *        exceeds one warp (nVar > ~5), at the cost of a full block-wide barrier even for the
+ *        common case where the whole block already fits in one warp.
+ * \note Grid: one block per row, blockDim.x == nVar*nVar. Dynamic shared memory: 2*nVar*nVar
+ *       scalars (the working copy of the block, and the inverse being accumulated in place of
+ *       the old identity-then-eliminate scheme).
  */
 template <class ScalarType>
 __global__ void InvertDiagonalBlocksKernel(unsigned long nRows, unsigned long nVar,
@@ -120,15 +131,43 @@ __global__ void InvertDiagonalBlocksKernel(unsigned long nRows, unsigned long nV
 
   const auto blockSize = nVar * nVar;
   const unsigned long tid = threadIdx.x;
+  const unsigned long i = tid / nVar;
+  const unsigned long j = tid % nVar;
 
   /*--- The inversion destroys its input, so it cannot work on the matrix itself. ---*/
   extern __shared__ __align__(sizeof(double)) char smem[];
-  auto* work = reinterpret_cast<ScalarType*>(smem);
+  auto* A = reinterpret_cast<ScalarType*>(smem);
+  auto* Inv = A + blockSize;
 
-  work[tid] = mat_d[iRow * blockSize + tid];
+  A[tid] = mat_d[iRow * blockSize + tid];
+  Inv[tid] = ScalarType(i == j);
   __syncthreads();
 
-  if (tid == 0) SU2_LinAlg::MatrixInverse(nVar, work, invM + iRow * blockSize);
+  for (auto k = 0ul; k < nVar; ++k) {
+    /*--- Regularize the pivot (shared with the host path, same clamp value). ---*/
+    if (i == k && j == k) SU2_LinAlg::RegularizePivot(A[k * nVar + k]);
+    __syncthreads();
+
+    /*--- Normalize the pivot row. ---*/
+    const ScalarType pivot = A[k * nVar + k];
+    if (i == k) {
+      A[tid] /= pivot;
+      Inv[tid] /= pivot;
+    }
+    __syncthreads();
+
+    /*--- Eliminate column k from every other row; A(k,*) and Inv(k,*) are already finalized for
+     * this step (previous barrier), and each thread only ever writes its own (i,j), so this
+     * needs no further synchronization until the next pivot's regularization reads A(k+1,k+1). ---*/
+    if (i != k) {
+      const ScalarType factor = A[i * nVar + k];
+      A[tid] -= factor * A[k * nVar + j];
+      Inv[tid] -= factor * Inv[k * nVar + j];
+    }
+    __syncthreads();
+  }
+
+  invM[iRow * blockSize + tid] = Inv[tid];
 }
 
 /*!
@@ -500,9 +539,8 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditionerGPU() {
   /*--- The matrix is expected to be on the device already, it is uploaded once per solve by
    * CSysMatrixVectorProduct, which is created before the preconditioner is built. ---*/
   const auto blockSize = static_cast<unsigned>(nVar * nVar);
-  InvertDiagonalBlocksKernel<ScalarType>
-      <<<static_cast<unsigned>(nPointDomain), blockSize, blockSize * sizeof(ScalarType)>>>(nPointDomain, nVar, gpu.d,
-                                                                                           d_invM);
+  InvertDiagonalBlocksKernel<ScalarType><<<static_cast<unsigned>(nPointDomain), blockSize,
+                                           2 * blockSize * sizeof(ScalarType)>>>(nPointDomain, nVar, gpu.d, d_invM);
   /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
   gpuErrChk(cudaStreamSynchronize(nullptr));
   gpuErrChk(cudaGetLastError());
