@@ -270,6 +270,17 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     return *this;
   }
 
+  /*!
+   * \brief GPU helper for `dot`.
+   */
+  ScalarType dotGPU(const CSysVector& other) const;
+
+  /*!
+   * \brief GPU helper for multiDot.
+   */
+  static su2matrix<ScalarType> multiDotGPU(const std::vector<CSysVector<ScalarType>>& V, size_t i0, size_t n,
+                                           const std::vector<CSysVector<ScalarType>>& W, size_t m);
+
  public:
   static constexpr bool StoreAsRef = true; /*! \brief Required by CVecExpr. */
 
@@ -393,21 +404,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    * \param[in] trigger - boolean value that decides whether to conduct the transfer or not. True by default.
    */
   void DtHTransfer(bool trigger = true) const;
-
-  /*!
-   * \brief Dot product between this vector and another vector on the device.
-   * \note Explicit GPU helper for solver-side reductions.
-   * \param[in] other - Input vector.
-   * \return Dot product result.
-   */
-  ScalarType GPUDot(const CSysVector& other) const;
-
-  /*!
-   * \brief L2 norm of this vector on the device.
-   * \note Explicit GPU helper for solver-side reductions.
-   * \return L2 norm result.
-   */
-  ScalarType GPUNorm() const;
 
   /*!
    * \brief return device pointer that points to the CSysVector values in GPU memory
@@ -537,9 +533,9 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
                     "On the device the dot product is a cuBLAS call, so it only takes vectors. "
                     "Assign the expression to a vector first.");
       if (VecExpr::UseDeviceExpressions()) {
-        /*--- GPUDot reduces over MPI, which has to happen once for the team, so the result
+        /*--- dotGPU reduces over MPI, which has to happen once for the team, so the result
          * is published through the same scratch slot the host reduction below uses. ---*/
-        SU2_DEVICE_REGION(dot_scratch[0] = GPUDot(expr.derived());)
+        SU2_DEVICE_REGION(dot_scratch[0] = dotGPU(expr.derived());)
         return dot_scratch[0];
       }
     }
@@ -584,19 +580,6 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
    */
   static const su2matrix<ScalarType>& multiDot(const std::vector<CSysVector>& V, size_t i0, size_t n,
                                                const std::vector<CSysVector>& W, size_t m);
-
-  /*!
-   * \brief Computes the product of V^T W on the GPU, where V and W are tall matrices stored as vectors of CSysVector.
-   * \param[in] V - Tall matrix.
-   * \param[in] i0 - First column of V to consider.
-   * \param[in] n - Number of columns to consider from V starting at i0.
-   * \param[in] W - Tall matrix.
-   * \param[in] m - Number of columns to consider from W.
-   * \return n by m matrix with the result of the product.
-   */
-  static const su2matrix<ScalarType>& multiDotGPU(const std::vector<CSysVector<ScalarType>>& V, const size_t i0,
-                                                  const size_t n, const std::vector<CSysVector<ScalarType>>& W,
-                                                  const size_t m);
 
   /*!
    * \brief Squared L2 norm of the vector (via dot with self).

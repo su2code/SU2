@@ -79,7 +79,7 @@ void CSysVector<ScalarType>::DtHTransfer(bool trigger) const {
 }
 
 template <class ScalarType>
-ScalarType CSysVector<ScalarType>::GPUDot(const CSysVector& other) const {
+ScalarType CSysVector<ScalarType>::dotGPU(const CSysVector& other) const {
   SU2_ZONE_SCOPED
   /*--- Both operands are already on the device, the caller owns the transfers. This
    * reduces over MPI, so it must be called by a single thread (see SU2_DEVICE_REGION). ---*/
@@ -95,12 +95,12 @@ ScalarType CSysVector<ScalarType>::GPUDot(const CSysVector& other) const {
     status = cublasDdot(handle, static_cast<int>(nElmDomain), GetDevicePointer(), 1, other.GetDevicePointer(), 1,
                         &local_dot);
   } else {
-    SU2_MPI::Error("Unsupported ScalarType in CSysVector::GPUDot.", CURRENT_FUNCTION);
+    SU2_MPI::Error("Unsupported ScalarType in CSysVector::dotGPU.", CURRENT_FUNCTION);
     return ScalarType(0);
   }
 
   if (status != CUBLAS_STATUS_SUCCESS) {
-    SU2_MPI::Error("cuBLAS dot failed in CSysVector::GPUDot.", CURRENT_FUNCTION);
+    SU2_MPI::Error("cuBLAS dot failed in CSysVector::dotGPU.", CURRENT_FUNCTION);
     return ScalarType(0);
   }
 
@@ -111,20 +111,13 @@ ScalarType CSysVector<ScalarType>::GPUDot(const CSysVector& other) const {
   return global_dot;
 }
 
-template <class ScalarType>
-ScalarType CSysVector<ScalarType>::GPUNorm() const {
-  SU2_ZONE_SCOPED
-  return sqrt(GPUDot(*this));
-}
-
 /*!
  * \brief multi vector product with cublas<t>gemmBatched
  */
 template <class ScalarType>
-const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vector<CSysVector<ScalarType>>& V,
-                                                                 const size_t i0, const size_t n,
-                                                                 const std::vector<CSysVector<ScalarType>>& W,
-                                                                 const size_t m) {
+su2matrix<ScalarType> CSysVector<ScalarType>::multiDotGPU(const std::vector<CSysVector<ScalarType>>& V, const size_t i0,
+                                                          const size_t n, const std::vector<CSysVector<ScalarType>>& W,
+                                                          const size_t m) {
   /*--- The multiDot product between n V[size] and m W[size] vectors is performed as
    * a General Matrix Multiplication between two tall-skinny matrices:
    * C = \alpha * A^T * B + \beta * C
@@ -135,19 +128,44 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vect
   const size_t size = V[0].nElmDomain;
   const size_t batch = n * m;
 
-  // allocate persisten result buffer local on host and device, is resized if needed
-  static su2matrix<ScalarType> local;
-  local.resize(n,m);
-  static ScalarType* d_local = nullptr;
-  static size_t local_capacity = 0;
+  /*--- Persistent device workspace, cached across calls and freed automatically
+   * when the program exits (static local destruction), instead of leaking. ---*/
+  struct Workspace {
+    ScalarType* d_local = nullptr;
+    const ScalarType** d_A = nullptr;
+    const ScalarType** d_B = nullptr;
+    ScalarType** d_C = nullptr;
+    size_t capacity = 0;
 
-  if (batch > local_capacity) { // if not enough capacity, enlarge by re-allocation on device
-    if (d_local) gpuErrChk(cudaFree(d_local));
-    gpuErrChk(cudaMalloc(&d_local, batch * sizeof(ScalarType)));
-    local_capacity = batch;
-  }
+    void EnsureCapacity(size_t batch) {
+      if (batch <= capacity) return;
+      cudaFree(d_local);
+      cudaFree(d_A);
+      cudaFree(d_B);
+      cudaFree(d_C);
+      gpuErrChk(cudaMalloc(&d_local, batch * sizeof(ScalarType)));
+      gpuErrChk(cudaMalloc(&d_A, batch * sizeof(ScalarType*)));
+      gpuErrChk(cudaMalloc(&d_B, batch * sizeof(ScalarType*)));
+      gpuErrChk(cudaMalloc(&d_C, batch * sizeof(ScalarType*)));
+      capacity = batch;
+    }
+
+    ~Workspace() {
+      cudaFree(d_local);
+      cudaFree(d_A);
+      cudaFree(d_B);
+      cudaFree(d_C);
+    }
+  };
+  static Workspace ws;
+
+  // allocate persistent result buffer local on host and device, is resized if needed
+  su2matrix<ScalarType> local;
+  local.resize(n, m);
+  ws.EnsureCapacity(batch);
+
   // zero out the result buffer
-  gpuErrChk(cudaMemset(d_local, 0, batch * sizeof(ScalarType)));
+  gpuErrChk(cudaMemset(ws.d_local, 0, batch * sizeof(ScalarType)));
 
   // prepare the arrays A,B,C on host
   static std::vector<const ScalarType*> h_A, h_B;
@@ -159,40 +177,25 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vect
       const size_t idx = i * m + j;
       h_A[idx] = V[i0 + i].GetDevicePointer();
       h_B[idx] = W[j].GetDevicePointer();
-      h_C[idx] = d_local + idx; // C maps to d_local to store the coefficients in the 2D array
+      h_C[idx] = ws.d_local + idx; // C maps to d_local to store the coefficients in the 2D array
     }
   }
 
-  // prepare device arrays for A,B,C. Re-allocate if batch size has grown
-  static const ScalarType** d_A = nullptr;
-  static const ScalarType** d_B = nullptr;
-  static ScalarType** d_C = nullptr;
-  static size_t ptrs_capacity = 0; // current capacity
-
-  if (batch > ptrs_capacity) { // if not enough capacity, enlarge by re-allocation on device
-    if (d_A) gpuErrChk(cudaFree(d_A));
-    if (d_B) gpuErrChk(cudaFree(d_B));
-    if (d_C) gpuErrChk(cudaFree(d_C));
-    gpuErrChk(cudaMalloc(&d_A, batch * sizeof(ScalarType*)));
-    gpuErrChk(cudaMalloc(&d_B, batch * sizeof(ScalarType*)));
-    gpuErrChk(cudaMalloc(&d_C, batch * sizeof(ScalarType*)));
-    ptrs_capacity = batch; // update current capacity
-  }
   // copy pointers to device
-  gpuErrChk(cudaMemcpy(d_A, h_A.data(), batch * sizeof(ScalarType*), cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemcpy(d_B, h_B.data(), batch * sizeof(ScalarType*), cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemcpy(d_C, h_C.data(), batch * sizeof(ScalarType*), cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(ws.d_A, h_A.data(), batch * sizeof(ScalarType*), cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(ws.d_B, h_B.data(), batch * sizeof(ScalarType*), cudaMemcpyHostToDevice));
+  gpuErrChk(cudaMemcpy(ws.d_C, h_C.data(), batch * sizeof(ScalarType*), cudaMemcpyHostToDevice));
 
   // define alpha = 1.0 and beta = 0.0
-  const ScalarType alpha = ScalarType(1.0);
-  const ScalarType beta = ScalarType(0.0);
+  const auto alpha = ScalarType(1.0);
+  const auto beta = ScalarType(0.0);
 
   if constexpr (std::is_same_v<ScalarType, float>) {
-    status = cublasSgemmBatched(handle, CUBLAS_OP_T, CUBLAS_OP_N, 1, 1, size, &alpha, d_A, static_cast<int>(size),
-                                d_B, static_cast<int>(size), &beta, d_C, 1, static_cast<int>(batch));
+    status = cublasSgemmBatched(handle, CUBLAS_OP_T, CUBLAS_OP_N, 1, 1, size, &alpha, ws.d_A, static_cast<int>(size),
+                                ws.d_B, static_cast<int>(size), &beta, ws.d_C, 1, static_cast<int>(batch));
   } else if constexpr (std::is_same_v<ScalarType, double>) {
-    status = cublasDgemmBatched(handle, CUBLAS_OP_T, CUBLAS_OP_N, 1, 1, size, &alpha, d_A, static_cast<int>(size),
-                                d_B, static_cast<int>(size), &beta, d_C, 1, static_cast<int>(batch));
+    status = cublasDgemmBatched(handle, CUBLAS_OP_T, CUBLAS_OP_N, 1, 1, size, &alpha, ws.d_A, static_cast<int>(size),
+                                ws.d_B, static_cast<int>(size), &beta, ws.d_C, 1, static_cast<int>(batch));
   } else {
     SU2_MPI::Error("Unsupported ScalarType in CSysVector::multiDotGPU.", CURRENT_FUNCTION);
     return local;
@@ -204,10 +207,9 @@ const su2matrix<ScalarType>& CSysVector<ScalarType>::multiDotGPU(const std::vect
   }
 
   // copy result to host for MPI reduce
-  gpuErrChk(cudaMemcpy(local.data(), d_local, batch * sizeof(ScalarType), cudaMemcpyDeviceToHost));
+  gpuErrChk(cudaMemcpy(local.data(), ws.d_local, batch * sizeof(ScalarType), cudaMemcpyDeviceToHost));
 
   return local;
-
 }
 
 /*--- Every expression the solvers assign to a CSysVector needs its assignment kernel
@@ -305,18 +307,16 @@ DEVICE_EXPRESSION_SHAPES(passivedouble);
 
 template void CSysVector<su2mixedfloat>::HtDTransfer(bool trigger) const;
 template void CSysVector<su2mixedfloat>::DtHTransfer(bool trigger) const;
-template su2mixedfloat CSysVector<su2mixedfloat>::GPUDot(const CSysVector<su2mixedfloat>& other) const;
-template su2mixedfloat CSysVector<su2mixedfloat>::GPUNorm() const;
-template const su2matrix<su2mixedfloat>& CSysVector<su2mixedfloat>::multiDotGPU(
-    const std::vector<CSysVector<su2mixedfloat>>& V, const size_t i0, const size_t n,
-    const std::vector<CSysVector<su2mixedfloat>>& W, const size_t m);
+template su2mixedfloat CSysVector<su2mixedfloat>::dotGPU(const CSysVector<su2mixedfloat>& other) const;
+template su2matrix<su2mixedfloat> CSysVector<su2mixedfloat>::multiDotGPU(
+    const std::vector<CSysVector<su2mixedfloat>>& V, size_t i0, size_t n,
+    const std::vector<CSysVector<su2mixedfloat>>& W, size_t m);
 
 #if defined(USE_MIXED_PRECISION) && !defined(USE_SINGLE_PRECISION)
 template void CSysVector<passivedouble>::HtDTransfer(bool trigger) const;
 template void CSysVector<passivedouble>::DtHTransfer(bool trigger) const;
-template passivedouble CSysVector<passivedouble>::GPUDot(const CSysVector<passivedouble>& other) const;
-template passivedouble CSysVector<passivedouble>::GPUNorm() const;
-template const su2matrix<passivedouble>& CSysVector<passivedouble>::multiDotGPU(
-    const std::vector<CSysVector<passivedouble>>& V, const size_t i0, const size_t n,
-    const std::vector<CSysVector<passivedouble>>& W, const size_t m);
+template passivedouble CSysVector<passivedouble>::dotGPU(const CSysVector<passivedouble>& other) const;
+template su2matrix<passivedouble> CSysVector<passivedouble>::multiDotGPU(
+    const std::vector<CSysVector<passivedouble>>& V, size_t i0, size_t n,
+    const std::vector<CSysVector<passivedouble>>& W, size_t m);
 #endif
