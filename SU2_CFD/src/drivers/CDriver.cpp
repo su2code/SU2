@@ -51,7 +51,6 @@
 
 #include "../../include/variables/CEulerVariable.hpp"
 #include "../../include/variables/CIncEulerVariable.hpp"
-#include "../../include/variables/CPBIncEulerVariable.hpp"
 #include "../../include/variables/CNEMOEulerVariable.hpp"
 
 #include "../../include/numerics/template.hpp"
@@ -1301,7 +1300,7 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
 template void CDriver::InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
-template void CDriver::InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short>>(
+template void CDriver::InstantiateTurbulentNumerics<CIncEulerVariableBase::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template void CDriver::InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
@@ -1366,7 +1365,7 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
 template void CDriver::InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
-template void CDriver::InstantiateTransitionNumerics<CIncEulerVariable::CIndices<unsigned short>>(
+template void CDriver::InstantiateTransitionNumerics<CIncEulerVariableBase::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template void CDriver::InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
@@ -1424,7 +1423,7 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
 template void CDriver::InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
-template void CDriver::InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short>>(
+template void CDriver::InstantiateSpeciesNumerics<CIncEulerVariableBase::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template void CDriver::InstantiateSpeciesNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
@@ -2082,8 +2081,9 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
   if (turbulent) {
     if (incompressible)
+      //TODO: might be able to use CIncEulerVariableBase?
       if (!pressure_based)
-        InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
+        InstantiateTurbulentNumerics<CDBIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
                                                                                    solver[MESH_0][TURB_SOL], numerics);
       else
         InstantiateTurbulentNumerics<CPBIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
@@ -2100,7 +2100,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
     if (incompressible)
-      InstantiateTransitionNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
+      InstantiateTransitionNumerics<CIncEulerVariableBase::CIndices<unsigned short> >(nVar_Trans, offset, config,
                                                                                  solver[MESH_0][TRANS_SOL], numerics);
     else if (NEMO_ns)
       InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
@@ -2114,7 +2114,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
   if (species) {
     if (incompressible)
-      InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Species, offset, config,
+      InstantiateSpeciesNumerics<CIncEulerVariableBase::CIndices<unsigned short> >(nVar_Species, offset, config,
                                                                                solver[MESH_0][SPECIES_SOL], numerics);
     else if (compressible)
       InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Species, offset, config,

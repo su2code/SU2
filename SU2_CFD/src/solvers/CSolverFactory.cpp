@@ -29,10 +29,8 @@
 #include "../../include/solvers/CSolverFactory.hpp"
 #include "../../include/solvers/CEulerSolver.hpp"
 #include "../../include/solvers/CIncEulerSolver.hpp"
-#include "../../include/solvers/CPBIncEulerSolver.hpp"
 #include "../../include/solvers/CNSSolver.hpp"
 #include "../../include/solvers/CIncNSSolver.hpp"
-#include "../../include/solvers/CPBIncNSSolver.hpp"
 #include "../../include/solvers/CPoissonSolver.hpp"
 #include "../../include/solvers/CNEMOEulerSolver.hpp"
 #include "../../include/solvers/CNEMONSSolver.hpp"
@@ -505,31 +503,11 @@ CSolver* CSolverFactory::CreateFlowSolver(SUB_SOLVER_TYPE kindFlowSolver, CSolve
       flowSolver = new CNSSolver(geometry, config, iMGLevel);
       break;
     case SUB_SOLVER_TYPE::INC_EULER:
-      switch (config->GetKind_Incomp_System()) {
-        case ENUM_INCOMP_SYSTEM::DENSITY_BASED:
-          flowSolver = new CIncEulerSolver(geometry, config, iMGLevel);
-          break;
-        case ENUM_INCOMP_SYSTEM::PRESSURE_BASED:
-          flowSolver = new CPBIncEulerSolver(geometry, config, iMGLevel);
-          break;
-        default:
-          SU2_MPI::Error("Flow solver not found due to invalid incompressible method", CURRENT_FUNCTION);
-          break;  
-      }
+      flowSolver = new CIncEulerSolver(geometry, config, iMGLevel);
       flowSolver->Preprocessing(geometry, solver, config, iMGLevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       break;
     case SUB_SOLVER_TYPE::INC_NAVIER_STOKES:
-      switch (config->GetKind_Incomp_System()) {
-        case ENUM_INCOMP_SYSTEM::DENSITY_BASED:
-          flowSolver = new CIncNSSolver(geometry, config, iMGLevel);
-          break;
-        case ENUM_INCOMP_SYSTEM::PRESSURE_BASED:
-          flowSolver = new CPBIncNSSolver(geometry, config, iMGLevel);
-          break;
-        default:
-          SU2_MPI::Error("Flow solver not found due to invalid incompressible method", CURRENT_FUNCTION);
-          break;  
-      }
+      flowSolver = new CIncNSSolver(geometry, config, iMGLevel);
       break;
     case SUB_SOLVER_TYPE::NEMO_EULER:
       flowSolver = new CNEMOEulerSolver(geometry, config, iMGLevel);

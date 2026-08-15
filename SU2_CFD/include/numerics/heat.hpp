@@ -38,7 +38,7 @@
  * \author O. Burghardt.
  * \version 8.5.0 "Harrier"
  */
-class CUpwSca_Heat final : public CUpwScalar<typename CIncEulerVariable::template CIndices<unsigned short>> {
+class CUpwSca_Heat final : public CUpwScalar<typename CIncEulerVariableBase::template CIndices<unsigned short>> {
  public:
   /*!
    * \brief Constructor of the class.
@@ -46,7 +46,7 @@ class CUpwSca_Heat final : public CUpwScalar<typename CIncEulerVariable::templat
    * \param[in] config - Definition of the particular problem.
    */
   CUpwSca_Heat(unsigned short val_nDim, const CConfig *config)
-    : CUpwScalar<typename CIncEulerVariable::template CIndices<unsigned short>>(val_nDim, 1, config) {}
+    : CUpwScalar<typename CIncEulerVariableBase::template CIndices<unsigned short>>(val_nDim, 1, config) {}
 
  private:
   /*!

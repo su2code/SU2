@@ -26,43 +26,46 @@
  */
 
 #include "../../include/variables/CIncNSVariable.hpp"
+#include <type_traits>
 #include "../../include/fluid/CFluidModel.hpp"
 
-CIncNSVariable::CIncNSVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
+/*--- Template instantiations of PB and DB versions ---*/
+template class CIncNSVariable<CPBIncEulerVariable>;
+template class CIncNSVariable<CDBIncEulerVariable>;
+
+template<class CIncEulerVariable>
+CIncNSVariable<CIncEulerVariable>::CIncNSVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
                                unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) :
                                CIncEulerVariable(pressure, velocity, enthalpy, npoint, ndim, nvar, config),
                                Energy(config->GetEnergy_Equation()) {
 
-  Vorticity.resize(nPoint,3);
-  StrainMag.resize(nPoint);
-  Tau_Wall.resize(nPoint) = su2double(-1.0);
-  DES_LengthScale.resize(nPoint) = su2double(0.0);
-  lesMode.resize(nPoint) = su2double(0.0);
-  Max_Lambda_Visc.resize(nPoint);
+  this->Vorticity.resize(this->nPoint,3);
+  this->StrainMag.resize(this->nPoint);
+  Tau_Wall.resize(this->nPoint) = su2double(-1.0);
+  DES_LengthScale.resize(this->nPoint) = su2double(0.0);
+  lesMode.resize(this->nPoint) = su2double(0.0);
+  this->Max_Lambda_Visc.resize(this->nPoint);
   /*--- Allocate memory for the AuxVar and its gradient. See e.g. CIncEulerSolver::Source_Residual:
    * Axisymmetric: total-viscosity * y-vel / y-coord
    * Streamwise Periodic: eddy viscosity (mu_t) ---*/
   if (config->GetAxisymmetric() ||
       (config->GetStreamwise_Periodic_Temperature() && (config->GetKind_Turb_Model() != TURB_MODEL::NONE))) {
-    nAuxVar = 1;
-    AuxVar.resize(nPoint,nAuxVar) = su2double(0.0);
-    Grad_AuxVar.resize(nPoint,nAuxVar,nDim);
+    this->nAuxVar = 1;
+    this->AuxVar.resize(this->nPoint,this->nAuxVar) = su2double(0.0);
+    this->Grad_AuxVar.resize(this->nPoint,this->nAuxVar,this->nDim);
   }
+
+  /*--- Check what kind of solver is instantiated ---*/
+
+  pressure_based = std::is_same_v<CIncEulerVariable, CPBIncEulerVariable>;
+
 }
 
-bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
+template<class CIncEulerVariable>
+bool CIncNSVariable<CIncEulerVariable>::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
 
   bool physical = true;
-
-  /*--- Set the value of the pressure ---*/
-
-  SetPressure(iPoint);
-
-  su2double Enthalpy = Solution(iPoint, nDim + 1);
-  FluidModel->SetTDState_h(Enthalpy, scalar);
-  su2double Temperature = FluidModel->GetTemperature();
-
-  auto check_temp = SetTemperature(iPoint, Temperature, TemperatureLimits);
+  su2double Enthalpy;
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
@@ -70,33 +73,50 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   /*--- Set the value of the density ---*/
 
-  const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
+  const auto check_dens = this->SetDensity(iPoint, FluidModel->GetDensity());
+
+  if (!pressure_based) {
+
+    /*--- Set the value of the pressure ---*/
+
+    this->SetPressure(iPoint);
+
+    /*--- Set the value of the temperature ---*/
+
+    Enthalpy = this->Solution(iPoint, this->nDim + 1);
+    FluidModel->SetTDState_h(Enthalpy, scalar);
+    su2double Temperature = FluidModel->GetTemperature();
+
+    auto check_temp = this->SetTemperature(iPoint, Temperature, this->TemperatureLimits);
+
+    physical = !(check_dens || check_temp);
+  } else {
+    physical = !check_dens;
+  }
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
-  if (check_dens || check_temp) {
+  if (!physical) {
 
     /*--- Copy the old solution ---*/
 
-    for (auto iVar = 0ul; iVar < nVar; iVar++)
-      Solution(iPoint,iVar) = Solution_Old(iPoint,iVar);
+    for (auto iVar = 0ul; iVar < this->nVar; iVar++)
+      this->Solution(iPoint,iVar) = this->Solution_Old(iPoint,iVar);
 
     /*--- Recompute the primitive variables ---*/
 
-    Enthalpy = Solution(iPoint, nDim + 1);
-    FluidModel->SetTDState_h(Enthalpy, scalar);
-    SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
-    SetDensity(iPoint, FluidModel->GetDensity());
-
-    /*--- Flag this point as non-physical. ---*/
-
-    physical = false;
+    if (!pressure_based) {
+      Enthalpy = this->Solution(iPoint,this->nDim + 1);
+      FluidModel->SetTDState_h(Enthalpy, scalar);
+      this->SetTemperature(iPoint, FluidModel->GetTemperature(), this->TemperatureLimits);
+    }
+    this->SetDensity(iPoint, FluidModel->GetDensity());
 
   }
 
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
 
-  SetVelocity(iPoint);
+  this->SetVelocity(iPoint);
 
   /*--- Set laminar viscosity ---*/
 
@@ -113,12 +133,12 @@ bool CIncNSVariable::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2do
 
   /*--- Set specific heats ---*/
 
-  SetSpecificHeatCp(iPoint, FluidModel->GetCp());
-  SetSpecificHeatCv(iPoint, FluidModel->GetCv());
+  this->SetSpecificHeatCp(iPoint, FluidModel->GetCp());
+  this->SetSpecificHeatCv(iPoint, FluidModel->GetCv());
 
   /*--- Set enthalpy ---*/
 
-  SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
+  this->SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
 
   return physical;
 

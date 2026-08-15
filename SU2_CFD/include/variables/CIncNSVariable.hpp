@@ -34,14 +34,20 @@
  * \class CIncNSVariable
  * \brief Class for defining the variables of the incompressible Navier-Stokes solver.
  * \ingroup Navier_Stokes_Equations
- * \author F. Palacios, T. Economon, T. Albring
+ * \author F. Palacios, T. Economon, T. Albring, T. Aalbers
  */
-class CIncNSVariable final : public CIncEulerVariable {
+template<class CIncEulerVariable>
+class CIncNSVariable : public CIncEulerVariable {
 private:
+  using VectorType = typename CIncEulerVariable::VectorType;
+  using CIncEulerVariable::indices;
+  using CIncEulerVariable::Primitive;
+
   VectorType Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   VectorType DES_LengthScale; /*!< \brief DES Length Scale. */
-  VectorType lesMode;        /*!< \brief Sensor for local simulation mode (0=RANS, 1=LES).*/
+  VectorType lesMode;         /*!< \brief Sensor for local simulation mode (0=RANS, 1=LES).*/
   const bool Energy;          /*!< \brief Flag for Energy equation in incompressible flows. */
+  bool pressure_based;        /*!< \brief Flag for if the Euler solver is the pressure-based one or not. */
 
 public:
   /*!

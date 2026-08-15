@@ -77,16 +77,12 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
 
   /*--- Compute the velocities at the cell edges based on Rhie-Chow interpolation ---*/
 
-  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeRhieChowVelocities(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0]);
+  solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeRhieChowVelocities(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
-  /* TODO: The current piso style iteration works although it has no effect on the stable time step sizes as expected
-   * it is thus likely not yet optimal and should be looked at. Additionally, the Poisson solve is very difficult
-   * to solve at large Reynolds number cases and would therefore massively benefit from Multigrid. The current 
-   * limitation here is that SU2 as of today does not allow multigrid for different solvers and has multigrid 
-   * only as an option for the flow solver. */
   for (unsigned short iCorrection = 0; iCorrection < nCorrections; ++iCorrection) {
 
     /*--- For later corrections (PISO) the pressure equation has an additional div(H(u')/A_p) term on the right side, u' is computed in the last correction routine. ---*/
+    
     if (iCorrection > 0) solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->ComputeHbyA(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
 
     /*--- Solve the pressure Poisson equation to find p' i.e. div(1/A_p * grad(p')) = div \dot{m} ---*/
@@ -95,6 +91,7 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
                                                                    val_iZone, val_iInst);
 
     /*--- The velocity and pressure are corrected based on the solution to the Poisson problem i.e. p* = p + p' and u** = u* - 1/Ap * p' ---*/
+    
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ApplyPressureVelocityCorrection(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
     /*--- Postprocessing is applied once again as the flow solution is altered by correcting the velocities and pressure. */

@@ -137,5 +137,5 @@ CNumerics::ResidualType<> CSourceAxisymmetric_Species<T>::ComputeResidual(const 
 
 /*--- Explicit instantiations until we don't move this to the hpp. ---*/
 template class CSourceAxisymmetric_Species<CEulerVariable::CIndices<unsigned short> >;
-template class CSourceAxisymmetric_Species<CIncEulerVariable::CIndices<unsigned short> >;
+template class CSourceAxisymmetric_Species<CIncEulerVariableBase::CIndices<unsigned short> >;
 template class CSourceAxisymmetric_Species<CNEMOEulerVariable::CIndices<unsigned short> >;

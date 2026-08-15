@@ -32,7 +32,7 @@
 
 /*--- Explicit instantiation of the parent class of CIncEulerSolver,
  *    to spread the compilation over two cpp files. ---*/
-template class CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE>;
+template class CFVMFlowSolverBase<CIncEulerVariableBase, ENUM_REGIME::INCOMPRESSIBLE>;
 
 
 CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) :
@@ -87,15 +87,6 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
         SetPrimitive_Gradient_LS(geometry, config, true); break;
       default: break;
     }
-  }
-
-  /*--- Compute gradient of the primitive variables ---*/
-
-  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-    SetPrimitive_Gradient_GG(geometry, config);
-  }
-  else if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-    SetPrimitive_Gradient_LS(geometry, config);
   }
 
   /*--- Compute the limiters ---*/
@@ -278,13 +269,16 @@ void CIncNSSolver::Compute_Streamwise_Periodic_Recovered_Values(CConfig *config,
 CNumerics::ResidualType<> CIncNSSolver::Viscous_Residual(unsigned long iEdge, CGeometry *geometry,
                                                          CSolver **solver_container, CNumerics *numerics,
                                                          CConfig *config) {
-  const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
 
-  /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
-  if (energy_multicomponent) {
-    const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
-    const int n_species = config->GetnSpecies();
-    Compute_Enthalpy_Diffusion(iEdge, geometry, solver_container, numerics, n_species, implicit);
+  if (!pressure_based) {
+    const bool energy_multicomponent = config->GetKind_FluidModel() == FLUID_MIXTURE && config->GetEnergy_Equation();
+
+    /*--- Contribution to heat flux due to enthalpy diffusion for multicomponent and reacting flows ---*/
+    if (energy_multicomponent) {
+      const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
+      const int n_species = config->GetnSpecies();
+      Compute_Enthalpy_Diffusion(iEdge, geometry, solver_container, numerics, n_species, implicit);
+    }
   }
 
   return Viscous_Residual_impl(iEdge, geometry, solver_container, numerics, config);
@@ -395,8 +389,9 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, c
     }
 
     /*--- Incompressible flow, primitive variables --- */
-
-    bool physical = static_cast<CIncNSVariable*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel(), scalar);
+    bool physical;
+    if (pressure_based) physical = static_cast<CIncNSVariable<CPBIncEulerVariable>*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel(), scalar);
+    else physical = static_cast<CIncNSVariable<CDBIncEulerVariable>*>(nodes)->SetPrimVar(iPoint,eddy_visc, turb_ke, GetFluidModel(), scalar);
 
     /* Check for non-realizable states for reporting. */
 
@@ -439,24 +434,28 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
 
   su2double Wall_HeatFlux = 0.0, Twall = 0.0, Tinfinity = 0.0, Transfer_Coefficient = 0.0;
 
-  switch (kind_boundary) {
-    case HEAT_FLUX:
-      Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
-      if (config->GetIntegrated_HeatFlux()) {
-        Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
-      }
-      break;
-    case ISOTHERMAL:
-      Twall = config->GetIsothermal_Temperature(Marker_Tag) / config->GetTemperature_Ref();
-      break;
-    case HEAT_TRANSFER:
-      Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref() /
-                             config->GetHeat_Flux_Ref();
-      Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag) / config->GetTemperature_Ref();
-      break;
-    default:
-      SU2_MPI::Error("Unknown type of boundary condition.", CURRENT_FUNCTION);
-      break;
+  if (!pressure_based) {
+
+    switch (kind_boundary) {
+      case HEAT_FLUX:
+        Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag) / config->GetHeat_Flux_Ref();
+        if (config->GetIntegrated_HeatFlux()) {
+          Wall_HeatFlux /= geometry->GetSurfaceArea(config, val_marker);
+        }
+        break;
+      case ISOTHERMAL:
+        Twall = config->GetIsothermal_Temperature(Marker_Tag) / config->GetTemperature_Ref();
+        break;
+      case HEAT_TRANSFER:
+        Transfer_Coefficient = config->GetWall_HeatTransfer_Coefficient(Marker_Tag) * config->GetTemperature_Ref() /
+                              config->GetHeat_Flux_Ref();
+        Tinfinity = config->GetWall_HeatTransfer_Temperature(Marker_Tag) / config->GetTemperature_Ref();
+        break;
+      default:
+        SU2_MPI::Error("Unknown type of boundary condition.", CURRENT_FUNCTION);
+        break;
+    }
+
   }
 
   /*--- Get wall function treatment from config. ---*/
@@ -495,18 +494,24 @@ void CIncNSSolver::BC_Wall_Generic(const CGeometry *geometry, const CConfig *con
     }
 
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      LinSysRes(iPoint, iDim+1) = 0.0;
+      if (pressure_based) LinSysRes(iPoint, iDim) = 0.0;
+      else LinSysRes(iPoint, iDim+1) = 0.0;
     nodes->SetVel_ResTruncError_Zero(iPoint);
 
     /*--- Enforce the no-slip boundary condition in a strong way by
      modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
 
     if (implicit) {
-      for (unsigned short iVar = 1; iVar <= nDim; iVar++)
-        Jacobian.DeleteValsRowi(iPoint, iVar);
+      if (pressure_based) {
+        for (unsigned short iVar = 0; iVar < nDim; iVar++)
+          Jacobian.DeleteValsRowi(iPoint, iVar);
+      } else {
+        for (unsigned short iVar = 1; iVar <= nDim; iVar++)
+          Jacobian.DeleteValsRowi(iPoint, iVar);
+      }
     }
 
-    if (!energy) continue;
+    if (!energy || pressure_based) continue;
 
     switch(kind_boundary) {
     case HEAT_FLUX:
