@@ -34,7 +34,7 @@
 template class CScalarSolver<CTurbVariable>;
 
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative)
-  : CScalarSolver<CTurbVariable>(geometry, config, conservative) {
+  : CScalarSolver<CTurbVariable>(geometry, config, conservative, config->GetBounded_Turb()) {
   SU2_ZONE_SCOPED
   /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
   SetImplicitPeriodic(config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
@@ -184,6 +184,7 @@ void CTurbSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* 
     solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
 
     if (config->GetKind_Species_Model() == SPECIES_MODEL::NONE) {
+    /*--- The following is done by the species solver if active ---*/
       solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
                                              true);
       solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
