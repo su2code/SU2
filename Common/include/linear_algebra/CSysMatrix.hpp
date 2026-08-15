@@ -160,46 +160,58 @@ SU2_CUDA_HOST_DEVICE inline float DecodeQuantScale(int8_t e) noexcept {
 }
 
 /*!
- * \brief Encode one nVar×nVar block into per-row int8 quantized storage.
+ * \brief Encode one row of an nVar×nVar block into int8 quantized storage: \p qs receives the
+ *        row's scale exponent, \p qv (nVar entries) the clamped int8 values for row \p r.
  *        \p f(r,c) is called twice per entry (max-abs scan then encoding); it should be cheap.
- *        Stores a per-row scale exponent in \p qs and clamped int8 values in \p qv.
  * \note Shared verbatim with the device (CSysMatrixGPU.cu's diagonal-quantization kernel encodes
  *       through this same function, not a separate copy), see SU2_CUDA_HOST_DEVICE. \p f must
  *       already return a passive (non-AD) value: every caller does, since quantization is
  *       compile-time disabled whenever ScalarType could be AD-active (see quantized_mode), so
  *       there is no SU2_TYPE::PassiveValue call here to keep this device-callable. The bit
  *       reinterpretations branch on __CUDA_ARCH__ the same way DecodeQuantScale does, see there.
+ *       Split out from EncodeQuantBlock (which just calls this once per row) so a device kernel
+ *       can assign one thread per row instead of one thread per whole block - each row's scale
+ *       and quantization are already fully independent of every other row.
+ */
+template <class F>
+SU2_CUDA_HOST_DEVICE inline void EncodeQuantRow(const F& f, int8_t& qs, int8_t* __restrict qv, unsigned long nVar,
+                                                unsigned long r) noexcept {
+  constexpr uint32_t eps_bits = 0x34000000u;
+  uint32_t max_abs_bits = eps_bits;
+  for (auto c = 0ul; c < nVar; ++c) {
+    const float fv = static_cast<float>(f(r, c));
+#ifdef __CUDA_ARCH__
+    const uint32_t fb = __float_as_uint(fv);
+#else
+    uint32_t fb;
+    memcpy(&fb, &fv, sizeof(fb));
+#endif
+    max_abs_bits = QuantMax(max_abs_bits, fb & 0x7FFFFFFFu);
+  }
+  const int e = QuantMin(127, QuantMax(-128, static_cast<int>(max_abs_bits >> 23) - 133));
+  qs = static_cast<int8_t>(e);
+  const uint32_t inv_bits = static_cast<uint32_t>(127 - e) << 23;
+#ifdef __CUDA_ARCH__
+  const float inv_rscale = __uint_as_float(inv_bits);
+#else
+  float inv_rscale;
+  memcpy(&inv_rscale, &inv_bits, sizeof(inv_rscale));
+#endif
+  for (auto c = 0ul; c < nVar; ++c) {
+    qv[c] = static_cast<int8_t>(QuantMax(-128.f, QuantMin(127.f, roundf(static_cast<float>(f(r, c)) * inv_rscale))));
+  }
+}
+
+/*!
+ * \brief Encode one nVar×nVar block into per-row int8 quantized storage, see EncodeQuantRow (each
+ *        row's scale/quantization is independent, this just loops over all of them serially for
+ *        the host path).
+ * \note Shared verbatim with the device, see SU2_CUDA_HOST_DEVICE and EncodeQuantRow.
  */
 template <class F>
 SU2_CUDA_HOST_DEVICE inline void EncodeQuantBlock(const F& f, int8_t* __restrict qs, int8_t* __restrict qv,
                                                   unsigned long nVar) noexcept {
-  for (auto r = 0ul; r < nVar; ++r) {
-    constexpr uint32_t eps_bits = 0x34000000u;
-    uint32_t max_abs_bits = eps_bits;
-    for (auto c = 0ul; c < nVar; ++c) {
-      const float fv = static_cast<float>(f(r, c));
-#ifdef __CUDA_ARCH__
-      const uint32_t fb = __float_as_uint(fv);
-#else
-      uint32_t fb;
-      memcpy(&fb, &fv, sizeof(fb));
-#endif
-      max_abs_bits = QuantMax(max_abs_bits, fb & 0x7FFFFFFFu);
-    }
-    const int e = QuantMin(127, QuantMax(-128, static_cast<int>(max_abs_bits >> 23) - 133));
-    qs[r] = static_cast<int8_t>(e);
-    const uint32_t inv_bits = static_cast<uint32_t>(127 - e) << 23;
-#ifdef __CUDA_ARCH__
-    const float inv_rscale = __uint_as_float(inv_bits);
-#else
-    float inv_rscale;
-    memcpy(&inv_rscale, &inv_bits, sizeof(inv_rscale));
-#endif
-    for (auto c = 0ul; c < nVar; ++c) {
-      qv[r * nVar + c] =
-          static_cast<int8_t>(QuantMax(-128.f, QuantMin(127.f, roundf(static_cast<float>(f(r, c)) * inv_rscale))));
-    }
-  }
+  for (auto r = 0ul; r < nVar; ++r) EncodeQuantRow(f, qs[r], qv + r * nVar, nVar, r);
 }
 
 /*!

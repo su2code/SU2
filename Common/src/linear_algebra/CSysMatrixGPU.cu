@@ -172,21 +172,29 @@ __global__ void InvertDiagonalBlocksKernel(unsigned long nRows, unsigned long nV
 
 /*!
  * \brief Quantize the diagonal blocks straight from the device diagonal (gpu.d), device
- *        counterpart of CSysMatrix::QuantizeBlock (CSysMatrix.cpp), applied row by row. Calls the
- *        exact same EncodeQuantBlock encoding routine (CSysMatrix.hpp, SU2_CUDA_HOST_DEVICE) that
- *        the host path uses, rather than a separate device copy of the encoding logic. One
- *        thread per row.
+ *        counterpart of CSysMatrix::QuantizeBlock (CSysMatrix.cpp). Calls the exact same
+ *        EncodeQuantRow encoding routine (CSysMatrix.hpp, SU2_CUDA_HOST_DEVICE) that the host
+ *        path's EncodeQuantBlock loops over, rather than a separate device copy of the encoding
+ *        logic. One thread per (point, row) - each block-row's scale and quantization are
+ *        already independent of every other row (see EncodeQuantRow), so this is nVar times
+ *        more parallel than one-thread-per-point, and consecutive threads land nVar elements
+ *        apart in mat_d instead of nVar*nVar apart, a partial coalescing win the same way
+ *        ApplyJacobiPreconditionerKernel's row-major thread mapping is. Points are batched into
+ *        blocks of ~128 threads the same way (threadIdx.x -> (point-within-block, row) via
+ *        divmod by nVar).
  */
 template <class ScalarType>
 __global__ void QuantizeDiagonalBlocksKernel(unsigned long nRows, unsigned long nVar,
                                              const ScalarType* __restrict__ mat_d, int8_t* __restrict__ q_scale_d,
                                              int8_t* __restrict__ q_blocks_d) {
-  const auto iRow = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x;
-  if (iRow >= nRows) return;
+  const unsigned long rowsPerBlock = blockDim.x / nVar;
+  const unsigned long iVar = threadIdx.x % nVar;
+  const unsigned long iPoint = static_cast<unsigned long>(blockIdx.x) * rowsPerBlock + threadIdx.x / nVar;
+  if (iPoint >= nRows) return;
 
-  const auto* blk = mat_d + iRow * nVar * nVar;
-  EncodeQuantBlock([&](unsigned long r, unsigned long c) { return blk[r * nVar + c]; }, q_scale_d + iRow * nVar,
-                   q_blocks_d + iRow * nVar * nVar, nVar);
+  const auto* blk = mat_d + iPoint * nVar * nVar;
+  EncodeQuantRow([&](unsigned long r, unsigned long c) { return blk[r * nVar + c]; }, q_scale_d[iPoint * nVar + iVar],
+                q_blocks_d + iPoint * nVar * nVar + iVar * nVar, nVar, iVar);
 }
 
 /*!
@@ -518,8 +526,10 @@ void CSysMatrix<ScalarType>::QuantizeDiagonalBlocksGPU() {
 
   /*--- The matrix is expected to be on the device already, it is uploaded once per solve by
    * CSysMatrixVectorProduct, which is created before the preconditioner is built. ---*/
-  constexpr unsigned threadsPerBlock = 128;
-  const auto blocks = static_cast<unsigned>((nPointDomain + threadsPerBlock - 1) / threadsPerBlock);
+  constexpr unsigned long targetThreadsPerBlock = 128;
+  const auto rowsPerBlock = std::max<unsigned long>(1, targetThreadsPerBlock / nVar);
+  const auto threadsPerBlock = static_cast<unsigned>(rowsPerBlock * nVar);
+  const auto blocks = static_cast<unsigned>((nPointDomain + rowsPerBlock - 1) / rowsPerBlock);
   QuantizeDiagonalBlocksKernel<ScalarType>
       <<<blocks, threadsPerBlock>>>(nPointDomain, nVar, gpu.d, d_q_scale.d, d_q_blocks.d);
   /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
