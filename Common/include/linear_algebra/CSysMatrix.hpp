@@ -414,6 +414,14 @@ class CSysMatrix {
   /*--- The legacy default stream cannot be captured into a graph. ---*/
   mutable struct CUstream_st* ilu_stream = nullptr;
 
+  /*--- Dedicated stream for the async H2D transfer of the quantized L/U blocks (HtDTransfer),
+   * so that transfer can run concurrently (copy engine) with kernels issued on the default
+   * stream (e.g. QuantizeDiagonalBlocksGPU, on the SM), instead of queueing behind them on the
+   * same stream. htd_event marks the end of that transfer so the default-stream kernel that
+   * first reads the result (the quantized SpMV) can wait on it without a host-side block. ---*/
+  mutable struct CUstream_st* htd_stream = nullptr;
+  mutable struct CUevent_st* htd_event = nullptr;
+
   ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */
 
   /*--- Temporary (hence mutable) working memory used in the Linelet preconditioner, outer vector is for threads ---*/

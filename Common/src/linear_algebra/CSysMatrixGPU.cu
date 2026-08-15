@@ -698,21 +698,29 @@ void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
     /*--- No gpu.l/gpu.u to transfer (never allocated); mirror the host quantized off-diagonal
      * storage instead (the diagonal mirrors, d_q_scale.d/d_q_blocks.d, are not touched here at
      * all - QuantizeDiagonalBlocksGPU() populates them straight from gpu.d, just uploaded above,
-     * with no host round trip). Issued as async copies on the default stream, then left in
-     * flight: the caller (CSysMatrixVectorProduct's constructor) returns right after this, and
-     * whatever the preconditioner's Build() does next runs concurrently with the transfer still
-     * draining. This is only genuinely asynchronous (i.e. the host thread does not block here
-     * waiting for the copy) because q_scale.l/q_blocks.l/q_scale.u/q_blocks.u are pinned host
-     * memory, see the comment on those members / Initialize() - cudaMemcpyAsync silently
-     * degrades to a blocking copy from regular pageable memory. Any later kernel that reads
-     * d_q_scale.l/.u/d_q_blocks.l/.u is issued on the same default stream too, so it correctly
-     * waits for these by stream ordering without an explicit sync here. ---*/
-    gpuErrChk(cudaMemcpyAsync(d_q_scale.l, q_scale.l, sizeof(QuantType) * mat.nnz_l * nVar, cudaMemcpyHostToDevice));
+     * with no host round trip). Issued as async copies on a dedicated stream (not the default
+     * one), so this transfer (the copy engine) can actually run concurrently with whatever the
+     * preconditioner's Build() launches next on the default stream (the SMs), e.g.
+     * QuantizeDiagonalBlocksGPU - on the default stream they would just queue behind these
+     * copies instead of overlapping, since a single stream is strictly ordered. This is only
+     * genuinely asynchronous (i.e. the host thread does not block here waiting for the copy)
+     * because q_scale.l/q_blocks.l/q_scale.u/q_blocks.u are pinned host memory, see the comment
+     * on those members / Initialize() - cudaMemcpyAsync silently degrades to a blocking copy
+     * from regular pageable memory. htd_event marks the end of this transfer: the first
+     * default-stream kernel to actually read d_q_scale.l/.u/d_q_blocks.l/.u (the quantized SpMV,
+     * MatrixVectorProductGPU) waits on it there, since cross-stream dependencies are not
+     * implied by stream ordering the way same-stream ones are. ---*/
+    if (htd_stream == nullptr) gpuErrChk(cudaStreamCreate(&htd_stream));
+    if (htd_event == nullptr) gpuErrChk(cudaEventCreateWithFlags(&htd_event, cudaEventDisableTiming));
+    gpuErrChk(cudaMemcpyAsync(d_q_scale.l, q_scale.l, sizeof(QuantType) * mat.nnz_l * nVar, cudaMemcpyHostToDevice,
+                              htd_stream));
     gpuErrChk(cudaMemcpyAsync(d_q_blocks.l, q_blocks.l, sizeof(QuantType) * mat.nnz_l * nVar * nEqn,
-                              cudaMemcpyHostToDevice));
-    gpuErrChk(cudaMemcpyAsync(d_q_scale.u, q_scale.u, sizeof(QuantType) * mat.nnz_u * nVar, cudaMemcpyHostToDevice));
+                              cudaMemcpyHostToDevice, htd_stream));
+    gpuErrChk(cudaMemcpyAsync(d_q_scale.u, q_scale.u, sizeof(QuantType) * mat.nnz_u * nVar, cudaMemcpyHostToDevice,
+                              htd_stream));
     gpuErrChk(cudaMemcpyAsync(d_q_blocks.u, q_blocks.u, sizeof(QuantType) * mat.nnz_u * nVar * nEqn,
-                              cudaMemcpyHostToDevice));
+                              cudaMemcpyHostToDevice, htd_stream));
+    gpuErrChk(cudaEventRecord(htd_event, htd_stream));
   } else {
     gpuErrChk(cudaMemcpy(gpu.l, mat.l, sizeof(ScalarType) * mat.nnz_l * nVar * nEqn, cudaMemcpyHostToDevice));
     gpuErrChk(cudaMemcpy(gpu.u, mat.u, sizeof(ScalarType) * mat.nnz_u * nVar * nEqn, cudaMemcpyHostToDevice));
@@ -735,6 +743,12 @@ void CSysMatrix<ScalarType>::MatrixVectorProductGPU(const CSysVector<ScalarType>
   dim3 blockDim(static_cast<unsigned>(rowsPerBlock * nVar), 1, 1);
   dim3 gridDim(static_cast<unsigned>((nPointDomain + rowsPerBlock - 1) / rowsPerBlock), 1, 1);
   if (quantized_mode) {
+    /*--- Wait (on the device, no host block) for HtDTransfer's async L/U copy on its own stream
+     * to finish before this default-stream kernel reads d_q_scale.l/.u/d_q_blocks.l/.u - a
+     * cross-stream dependency, so it is not implied by ordering the way same-stream launches are.
+     * htd_event is always valid here: HtDTransfer runs once per solve before the first call to
+     * this function (see its comment), so it has already recorded the event at least once. ---*/
+    gpuErrChk(cudaStreamWaitEvent(nullptr, htd_event, 0));
     QuantizedBlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
         nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, d_q_scale.l, d_q_blocks.l, d_q_scale.d, d_q_blocks.d,
         gpu.row_ptr_u, gpu.col_ind_u, d_q_scale.u, d_q_blocks.u, d_vec, d_prod);
