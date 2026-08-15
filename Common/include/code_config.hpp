@@ -50,6 +50,16 @@
 #define NEVERINLINE inline
 #endif
 
+/*--- Marks a function callable from both host and device code (e.g. a small numerical kernel
+ * shared between a CSysMatrix host routine and its CSysMatrixGPU.cu counterpart), a no-op outside
+ * nvcc. Centralized here (rather than defined locally, as e.g. CMatrixInverse.hpp used to) so
+ * every shared routine uses the exact same macro instead of independent copies drifting apart. ---*/
+#ifdef __CUDACC__
+#define SU2_CUDA_HOST_DEVICE __host__ __device__
+#else
+#define SU2_CUDA_HOST_DEVICE
+#endif
+
 #if defined(__INTEL_COMPILER)
 /*--- Disable warnings related to inline attributes. ---*/
 #pragma warning disable 2196

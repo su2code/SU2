@@ -127,15 +127,15 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
   freeHostLDU(ilu);
   MemoryAllocation::aligned_free(invM);
 
-  /*--- q_scale/q_blocks are pinned (cudaMallocHost) rather than aligned_alloc when useCuda, see
-   * the comment in Initialize(); free with the matching deallocator either way. ---*/
+  /*--- q_scale/q_blocks' .l/.u are pinned (cudaMallocHost) rather than aligned_alloc when
+   * useCuda, .d never is; see the comment in Initialize(). Free each with its matching
+   * deallocator. ---*/
   auto freeQuantLDU = [this](auto& m) {
+    MemoryAllocation::aligned_free(m.d);
     if (useCuda) {
-      GPUMemoryAllocation::pinned_free(m.d);
       GPUMemoryAllocation::pinned_free(m.l);
       GPUMemoryAllocation::pinned_free(m.u);
     } else {
-      MemoryAllocation::aligned_free(m.d);
       MemoryAllocation::aligned_free(m.l);
       MemoryAllocation::aligned_free(m.u);
     }
@@ -261,21 +261,26 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 #ifndef CODI_REVERSE_TYPE
     quantized_mode = true;
 #endif
-    /*--- Pinned (page-locked) when useCuda: HtDTransfer()/QuantizeDiagonalBlocks() upload these
-     * with cudaMemcpyAsync, which is only genuinely asynchronous from pinned host memory (see
+    /*--- .l/.u are pinned (page-locked) when useCuda: HtDTransfer() uploads them with
+     * cudaMemcpyAsync, which is only genuinely asynchronous from pinned host memory (see
      * GPUMemoryAllocation::pinned_alloc); from regular pageable memory it silently degrades to a
-     * blocking copy, defeating the overlap with host-side diagonal quantization. ---*/
-    auto allocQ = [useCuda = this->useCuda](QuantType*& ptr, unsigned long n) {
+     * blocking copy. The diagonal (.d) is never uploaded - under CUDA it is quantized straight
+     * from gpu.d on the device instead (QuantizeDiagonalBlocksGPU()) - so it stays plain
+     * aligned_alloc regardless of useCuda. ---*/
+    auto allocQ = [](QuantType*& ptr, unsigned long n) {
+      ptr = MemoryAllocation::aligned_alloc<QuantType, true>(64, n * sizeof(QuantType));
+    };
+    auto allocPinnedIfCuda = [useCuda = this->useCuda](QuantType*& ptr, unsigned long n) {
       if (useCuda) {
         ptr = GPUMemoryAllocation::pinned_alloc<QuantType, true>(n * sizeof(QuantType));
       } else {
         ptr = MemoryAllocation::aligned_alloc<QuantType, true>(64, n * sizeof(QuantType));
       }
     };
-    allocQ(q_scale.l, mat.nnz_l * nVar);
-    allocQ(q_blocks.l, mat.nnz_l * nVar * nEqn);
-    allocQ(q_scale.u, mat.nnz_u * nVar);
-    allocQ(q_blocks.u, mat.nnz_u * nVar * nEqn);
+    allocPinnedIfCuda(q_scale.l, mat.nnz_l * nVar);
+    allocPinnedIfCuda(q_blocks.l, mat.nnz_l * nVar * nEqn);
+    allocPinnedIfCuda(q_scale.u, mat.nnz_u * nVar);
+    allocPinnedIfCuda(q_blocks.u, mat.nnz_u * nVar * nEqn);
     allocQ(q_scale.d, nPoint * nVar);
     allocQ(q_blocks.d, nPoint * nVar * nEqn);
   } else {
@@ -770,34 +775,19 @@ void CSysMatrix<ScalarType>::QuantizeDiagonalBlocks() {
 
   if (!quantized_mode) return;
 
-  /*--- Q_LU_SGS / Q_JACOBI / Q_IDENTITY: L/U were quantized during assembly; only the diagonal needs quantization
-   * now. Always done on the host, even under CUDA: HtDTransfer() already kicked off the (larger)
-   * L/U quantized transfer asynchronously before Build() reached this point, so quantizing the
-   * diagonal here on the CPU overlaps with that transfer instead of waiting on it first. ---*/
-  SU2_OMP_FOR_DYN(omp_heavy_size)
-  for (auto i = 0ul; i < nPointDomain; ++i)
-    QuantizeBlock(&mat.d[i * nVar * nVar], &q_scale.d[i * nVar], &q_blocks.d[i * nVar * nVar]);
-  END_SU2_OMP_FOR
-
   if (useCuda) {
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
-      /*--- Just an upload of the host result above, no computation, so a plain CUDA runtime call
-       * (available here via GPUComms.cuh, transitively included through allocation_toolbox.hpp)
-       * rather than a kernel dispatched through a CSysMatrixGPU.cu hook. Async (q_scale.d/
-       * q_blocks.d are pinned, see Initialize()) so issuing it does not block the host; the sync
-       * right after does not undo that overlap; by this point the host has already spent the
-       * whole diagonal-quantization loop above letting the earlier (larger) L/U transfer, kicked
-       * off by HtDTransfer(), drain in the background; it only makes sure that transfer and this
-       * one are actually finished before Build() returns, matching every other GPU-touching
-       * function in this file (they all sync at the end, see the comment on those calls). ---*/
-      BEGIN_SU2_DEVICE_REGION
-      gpuErrChk(
-          cudaMemcpyAsync(d_q_scale.d, q_scale.d, sizeof(QuantType) * nPointDomain * nVar, cudaMemcpyHostToDevice));
-      gpuErrChk(cudaMemcpyAsync(d_q_blocks.d, q_blocks.d, sizeof(QuantType) * nPointDomain * nVar * nVar,
-                                cudaMemcpyHostToDevice));
-      gpuErrChk(cudaStreamSynchronize(nullptr));
-      END_SU2_DEVICE_REGION
+      /*--- gpu.d is already on the device - HtDTransfer() uploads it unconditionally, since
+       * Jacobi's own build needs the full precision diagonal regardless of quantization - so
+       * quantize straight from it here instead of quantizing on the host and uploading the
+       * result: one less host/device round trip for the diagonal specifically (L/U still have
+       * to be quantized on the host, during assembly, since only the host ever touches the
+       * matrix as it is being built). This calls the exact same EncodeQuantBlock routine the
+       * host path below uses (CSysMatrix.hpp, SU2_CUDA_HOST_DEVICE), not a separate device copy.
+       * ---*/
+      SU2_DEVICE_REGION(QuantizeDiagonalBlocksGPU();)
+      return;
     } else {
       GPUNotAvailable(CURRENT_FUNCTION);
     }
@@ -805,6 +795,13 @@ void CSysMatrix<ScalarType>::QuantizeDiagonalBlocks() {
     GPUNotAvailable(CURRENT_FUNCTION);
 #endif
   }
+
+  /*--- Q_LU_SGS / Q_JACOBI / Q_IDENTITY: L/U were quantized during assembly; only the diagonal needs quantization
+   * now. ---*/
+  SU2_OMP_FOR_DYN(omp_heavy_size)
+  for (auto i = 0ul; i < nPointDomain; ++i)
+    QuantizeBlock(&mat.d[i * nVar * nVar], &q_scale.d[i * nVar], &q_blocks.d[i * nVar * nVar]);
+  END_SU2_OMP_FOR
 }
 
 template <class ScalarType>

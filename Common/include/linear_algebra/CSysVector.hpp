@@ -31,6 +31,7 @@
 #include <memory>
 #include <vector>
 
+#include "../code_config.hpp"
 #include "../parallelization/mpi_structure.hpp"
 #include "../parallelization/omp_structure.hpp"
 #include "../parallelization/vectorization.hpp"
@@ -39,9 +40,6 @@
 
 #ifdef __CUDACC__
 #include "GPUComms.cuh"
-#define SU2_CUDA_HOST_DEVICE __host__ __device__
-#else
-#define SU2_CUDA_HOST_DEVICE
 #endif
 
 template <class ScalarType>
@@ -709,4 +707,3 @@ CVectorView<Scalar>::CVectorView(const CSysVector<Scalar>& vector)
 
 #undef CSYSVEC_PARFOR
 #undef END_CSYSVEC_PARFOR
-#undef SU2_CUDA_HOST_DEVICE

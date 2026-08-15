@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../CConfig.hpp"
+#include "../code_config.hpp"
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
@@ -110,43 +111,93 @@ struct CSysMatrixComms {
 };
 
 /*!
+ * \brief std::max/std::min, usable from both host and device code. Calling std::max/std::min
+ *        directly from a SU2_CUDA_HOST_DEVICE function compiles without error but is not
+ *        actually valid without --expt-relaxed-constexpr (not used in this build) - nvcc only
+ *        warns ("calling a constexpr __host__ function ... is not allowed"), then silently
+ *        emits device code that does not do what it looks like it does. CUDA's device compiler
+ *        provides its own (unqualified) max/min built-ins instead, which these two forward to;
+ *        on the host they just forward to std::max/std::min.
+ */
+template <class T>
+SU2_CUDA_HOST_DEVICE inline T QuantMax(T a, T b) noexcept {
+#ifdef __CUDA_ARCH__
+  return max(a, b);
+#else
+  return std::max(a, b);
+#endif
+}
+template <class T>
+SU2_CUDA_HOST_DEVICE inline T QuantMin(T a, T b) noexcept {
+#ifdef __CUDA_ARCH__
+  return min(a, b);
+#else
+  return std::min(a, b);
+#endif
+}
+
+/*!
  * \brief Reconstruct the float row-scale from a stored int8 binary exponent.
  *        The exponent \p e was packed as (e + 127) into the IEEE 754 biased-exponent field
  *        with a zero mantissa, giving an exact power of two: 2^e.
  *        This is the inverse of the encoding in EncodeQuantBlock.
+ * \note Shared verbatim with the device (the quantized SpMV kernel in CSysMatrixGPU.cu decodes
+ *       through this same function, not a separate copy), see SU2_CUDA_HOST_DEVICE. The bit
+ *       reinterpretation itself branches on __CUDA_ARCH__ (mirroring RegularizePivot in
+ *       CMatrixInverse.hpp): __uint_as_float on device, memcpy on host - plain memcpy compiles
+ *       for the device too, but was observed to silently misinterpret the bits there rather than
+ *       reinterpreting them.
  */
-FORCEINLINE float DecodeQuantScale(int8_t e) noexcept {
-  const uint32_t bits = static_cast<uint32_t>(std::max(0, static_cast<int>(e) + 127)) << 23;
+SU2_CUDA_HOST_DEVICE inline float DecodeQuantScale(int8_t e) noexcept {
+  const uint32_t bits = static_cast<uint32_t>(QuantMax(0, static_cast<int>(e) + 127)) << 23;
+#ifdef __CUDA_ARCH__
+  return __uint_as_float(bits);
+#else
   float scale;
   memcpy(&scale, &bits, sizeof(bits));
   return scale;
+#endif
 }
 
 /*!
  * \brief Encode one nVar×nVar block into per-row int8 quantized storage.
  *        \p f(r,c) is called twice per entry (max-abs scan then encoding); it should be cheap.
  *        Stores a per-row scale exponent in \p qs and clamped int8 values in \p qv.
+ * \note Shared verbatim with the device (CSysMatrixGPU.cu's diagonal-quantization kernel encodes
+ *       through this same function, not a separate copy), see SU2_CUDA_HOST_DEVICE. \p f must
+ *       already return a passive (non-AD) value: every caller does, since quantization is
+ *       compile-time disabled whenever ScalarType could be AD-active (see quantized_mode), so
+ *       there is no SU2_TYPE::PassiveValue call here to keep this device-callable. The bit
+ *       reinterpretations branch on __CUDA_ARCH__ the same way DecodeQuantScale does, see there.
  */
 template <class F>
-FORCEINLINE void EncodeQuantBlock(const F& f, int8_t* __restrict qs, int8_t* __restrict qv,
-                                  unsigned long nVar) noexcept {
+SU2_CUDA_HOST_DEVICE inline void EncodeQuantBlock(const F& f, int8_t* __restrict qs, int8_t* __restrict qv,
+                                                  unsigned long nVar) noexcept {
   for (auto r = 0ul; r < nVar; ++r) {
     constexpr uint32_t eps_bits = 0x34000000u;
     uint32_t max_abs_bits = eps_bits;
     for (auto c = 0ul; c < nVar; ++c) {
-      const float fv = SU2_TYPE::PassiveValue(f(r, c));
+      const float fv = static_cast<float>(f(r, c));
+#ifdef __CUDA_ARCH__
+      const uint32_t fb = __float_as_uint(fv);
+#else
       uint32_t fb;
       memcpy(&fb, &fv, sizeof(fb));
-      max_abs_bits = std::max(max_abs_bits, fb & 0x7FFFFFFFu);
+#endif
+      max_abs_bits = QuantMax(max_abs_bits, fb & 0x7FFFFFFFu);
     }
-    const int e = std::min(127, std::max(-128, static_cast<int>(max_abs_bits >> 23) - 133));
+    const int e = QuantMin(127, QuantMax(-128, static_cast<int>(max_abs_bits >> 23) - 133));
     qs[r] = static_cast<int8_t>(e);
     const uint32_t inv_bits = static_cast<uint32_t>(127 - e) << 23;
+#ifdef __CUDA_ARCH__
+    const float inv_rscale = __uint_as_float(inv_bits);
+#else
     float inv_rscale;
     memcpy(&inv_rscale, &inv_bits, sizeof(inv_rscale));
+#endif
     for (auto c = 0ul; c < nVar; ++c) {
       qv[r * nVar + c] =
-          static_cast<int8_t>(std::max(-128.f, std::min(127.f, roundf(SU2_TYPE::PassiveValue(f(r, c)) * inv_rscale))));
+          static_cast<int8_t>(QuantMax(-128.f, QuantMin(127.f, roundf(static_cast<float>(f(r, c)) * inv_rscale))));
     }
   }
 }
@@ -272,22 +323,27 @@ class CSysMatrix {
 #else
   static constexpr bool quantized_mode = false;
 #endif
-  /*!< \brief Per-row exponents; .l/.u sized [nnz_l/u * nVar], .d [nPoint * nVar]
-   *          (populated by QuantizeDiagonalBlocks(), always on the host, see below).
-   *          Pinned (cudaMallocHost) rather than aligned_alloc when useCuda, see Initialize(),
-   *          so the async uploads below are genuinely asynchronous instead of silently
-   *          blocking (cudaMemcpyAsync only overlaps with the host from pinned memory). */
+  /*!< \brief Per-row exponents; .l/.u sized [nnz_l/u * nVar], .d [nPoint * nVar]. .l/.u are
+   *          populated during assembly (quantized on the fly); .d is populated by
+   *          QuantizeDiagonalBlocks() on the host, but only when !useCuda - under CUDA the
+   *          diagonal is quantized straight from gpu.d instead (QuantizeDiagonalBlocksGPU()),
+   *          so q_scale.d/q_blocks.d are simply unused there. .l/.u are pinned (cudaMallocHost)
+   *          rather than aligned_alloc when useCuda, see Initialize(), so HtDTransfer()'s async
+   *          uploads of them are genuinely asynchronous instead of silently blocking
+   *          (cudaMemcpyAsync only overlaps with the host from pinned memory); .d is never
+   *          uploaded, so it is always plain aligned_alloc regardless of useCuda. */
   LDU<QuantType> q_scale;
   /*!< \brief Quantized block entries; .l/.u sized [nnz_l/u * nVar * nEqn], .d [nPoint * nVar * nEqn]. */
   LDU<QuantType> q_blocks;
 
   /*!< \brief Device mirrors of the quantized storage, only allocated when quantized_mode &&
    * useCuda (currently only reachable for Q_JACOBI/Q_IDENTITY, Q_LU_SGS stays host-only).
-   * d_q_scale.l/.u and d_q_blocks.l/.u are plain device-side copies of q_scale.l/.u and
-   * q_blocks.l/.u, uploaded *asynchronously* by HtDTransfer() so that transfer can overlap with
-   * the host quantizing the diagonal; d_q_scale.d/d_q_blocks.d are that host result, likewise
-   * uploaded asynchronously (a plain cudaMemcpyAsync, not a kernel), at the end of
-   * QuantizeDiagonalBlocks(). */
+   * d_q_scale.l/.u and d_q_blocks.l/.u are device-side copies of q_scale.l/.u and q_blocks.l/.u,
+   * uploaded *asynchronously* by HtDTransfer(). d_q_scale.d/d_q_blocks.d are populated directly
+   * on the device from gpu.d by QuantizeDiagonalBlocksGPU() instead - gpu.d is uploaded
+   * unconditionally by HtDTransfer() anyway (Jacobi's own build needs the full precision
+   * diagonal regardless of quantization), so quantizing it there avoids a host quantize +
+   * upload round trip for the diagonal specifically. */
   LDU<QuantType> d_q_scale;
   LDU<QuantType> d_q_blocks;
 
@@ -572,6 +628,13 @@ class CSysMatrix {
    */
   void MatrixVectorProductGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                               const CConfig* config) const;
+
+  /*!
+   * \brief Quantize the diagonal blocks directly on the device, from gpu.d into
+   *        d_q_scale.d/d_q_blocks.d (EncodeQuantBlock, shared with the host path).
+   * \note Requires the device matrix to be up to date, see HtDTransfer.
+   */
+  void QuantizeDiagonalBlocksGPU();
 
   /*!
    * \brief Build the Jacobi preconditioner on the device, from the device copy of the matrix.

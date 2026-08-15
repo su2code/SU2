@@ -132,6 +132,25 @@ __global__ void InvertDiagonalBlocksKernel(unsigned long nRows, unsigned long nV
 }
 
 /*!
+ * \brief Quantize the diagonal blocks straight from the device diagonal (gpu.d), device
+ *        counterpart of CSysMatrix::QuantizeBlock (CSysMatrix.cpp), applied row by row. Calls the
+ *        exact same EncodeQuantBlock encoding routine (CSysMatrix.hpp, SU2_CUDA_HOST_DEVICE) that
+ *        the host path uses, rather than a separate device copy of the encoding logic. One
+ *        thread per row.
+ */
+template <class ScalarType>
+__global__ void QuantizeDiagonalBlocksKernel(unsigned long nRows, unsigned long nVar,
+                                             const ScalarType* __restrict__ mat_d, int8_t* __restrict__ q_scale_d,
+                                             int8_t* __restrict__ q_blocks_d) {
+  const auto iRow = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x;
+  if (iRow >= nRows) return;
+
+  const auto* blk = mat_d + iRow * nVar * nVar;
+  EncodeQuantBlock([&](unsigned long r, unsigned long c) { return blk[r * nVar + c]; }, q_scale_d + iRow * nVar,
+                   q_blocks_d + iRow * nVar * nVar, nVar);
+}
+
+/*!
  * \brief Factorize the rows of one color, one sweep of an iterative (colored Gauss-Seidel)
  *        ILU factorization: same order/pattern as the exact level-scheduled algorithm (this
  *        does not change L/U membership, so it converges to the exact same fixed point), but
@@ -369,15 +388,6 @@ __global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
 }
 
 /*!
- * \brief Device counterpart of DecodeQuantScale (CSysMatrix.hpp), bit-identical: reconstructs
- *        the float row-scale 2^e from its packed int8 binary exponent.
- */
-__device__ FORCEINLINE float DecodeQuantScaleDevice(int8_t e) {
-  const uint32_t bits = static_cast<uint32_t>(max(0, static_cast<int>(e) + 127)) << 23;
-  return __uint_as_float(bits);
-}
-
-/*!
  * \brief Quantized block-LDU SpMV kernel: y[iRow] = (L + D + U) * x per block-row, reading int8
  *        row-scaled quantized blocks instead of full precision ones. Device version of
  *        QuantizedRowProduct/QuantizedMatVecAdd (CSysMatrix.inl). Rows are batched per block the
@@ -401,7 +411,7 @@ __global__ void QuantizedBlockLDU_SpMV_kernel(
   if (iRow >= nRows) return;
 
   auto addBlock = [&](const int8_t* __restrict__ qs, const int8_t* __restrict__ qv, const ScalarType* __restrict__ xk) {
-    const float row_scale = DecodeQuantScaleDevice(qs[iVar]);
+    const float row_scale = DecodeQuantScale(qs[iVar]);
     const int8_t* __restrict__ row = qv + iVar * nVar;
     ScalarType partial = 0;
     unsigned long jVar = 0;
@@ -456,6 +466,23 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditionerGPU(const CSysVector<Sca
   const auto blocks = static_cast<unsigned>((nPointDomain + rowsPerBlock - 1) / rowsPerBlock);
   ApplyJacobiPreconditionerKernel<<<blocks, threadsPerBlock>>>(d_invM, vec.GetDevicePointer(), prod.GetDevicePointer(),
                                                                nPointDomain, nVar);
+  /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
+  gpuErrChk(cudaStreamSynchronize(nullptr));
+  gpuErrChk(cudaGetLastError());
+}
+
+template <class ScalarType>
+void CSysMatrix<ScalarType>::QuantizeDiagonalBlocksGPU() {
+  SU2_ZONE_SCOPED
+
+  if (nPointDomain == 0) return;
+
+  /*--- The matrix is expected to be on the device already, it is uploaded once per solve by
+   * CSysMatrixVectorProduct, which is created before the preconditioner is built. ---*/
+  constexpr unsigned threadsPerBlock = 128;
+  const auto blocks = static_cast<unsigned>((nPointDomain + threadsPerBlock - 1) / threadsPerBlock);
+  QuantizeDiagonalBlocksKernel<ScalarType>
+      <<<blocks, threadsPerBlock>>>(nPointDomain, nVar, gpu.d, d_q_scale.d, d_q_blocks.d);
   /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
   gpuErrChk(cudaStreamSynchronize(nullptr));
   gpuErrChk(cudaGetLastError());
@@ -621,18 +648,17 @@ void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
   gpuErrChk(cudaMemcpy(gpu.d, mat.d, sizeof(ScalarType) * nPoint * nVar * nEqn, cudaMemcpyHostToDevice));
   if (quantized_mode) {
     /*--- No gpu.l/gpu.u to transfer (never allocated); mirror the host quantized off-diagonal
-     * storage instead. Issued as async copies on the default stream, then left in flight: the
-     * caller (CSysMatrixVectorProduct's constructor) returns right after this, and QuantizeDiag-
-     * onalBlocks() -> Build() quantizes the diagonal on the host next, before anything is
-     * launched on the device again. This is only genuinely asynchronous (i.e. the host thread
-     * does not block here waiting for the copy) because q_scale.l/q_blocks.l/q_scale.u/
-     * q_blocks.u are pinned host memory, see the comment on those members / Initialize() -
-     * cudaMemcpyAsync silently degrades to a blocking copy from regular pageable memory. Any
-     * later kernel that reads d_q_scale/d_q_blocks is issued on the same default stream too, so
-     * strictly it would not need to wait for these explicitly; QuantizeDiagonalBlocks() still
-     * syncs right after uploading the diagonal mirrors (d_q_scale.d/d_q_blocks.d, the same way,
-     * async from pinned memory) to be safe and consistent with every other GPU-touching function
-     * in this file, all of which sync before returning. ---*/
+     * storage instead (the diagonal mirrors, d_q_scale.d/d_q_blocks.d, are not touched here at
+     * all - QuantizeDiagonalBlocksGPU() populates them straight from gpu.d, just uploaded above,
+     * with no host round trip). Issued as async copies on the default stream, then left in
+     * flight: the caller (CSysMatrixVectorProduct's constructor) returns right after this, and
+     * whatever the preconditioner's Build() does next runs concurrently with the transfer still
+     * draining. This is only genuinely asynchronous (i.e. the host thread does not block here
+     * waiting for the copy) because q_scale.l/q_blocks.l/q_scale.u/q_blocks.u are pinned host
+     * memory, see the comment on those members / Initialize() - cudaMemcpyAsync silently
+     * degrades to a blocking copy from regular pageable memory. Any later kernel that reads
+     * d_q_scale.l/.u/d_q_blocks.l/.u is issued on the same default stream too, so it correctly
+     * waits for these by stream ordering without an explicit sync here. ---*/
     gpuErrChk(cudaMemcpyAsync(d_q_scale.l, q_scale.l, sizeof(QuantType) * mat.nnz_l * nVar, cudaMemcpyHostToDevice));
     gpuErrChk(cudaMemcpyAsync(d_q_blocks.l, q_blocks.l, sizeof(QuantType) * mat.nnz_l * nVar * nEqn,
                               cudaMemcpyHostToDevice));
@@ -680,6 +706,7 @@ template void CSysMatrix<TYPE>::MatrixVectorProductGPU(const CSysVector<TYPE>& v
                                                        CSysVector<TYPE>& prod,              \
                                                        CGeometry* geometry,                 \
                                                        const CConfig* config) const;        \
+template void CSysMatrix<TYPE>::QuantizeDiagonalBlocksGPU();                                \
 template void CSysMatrix<TYPE>::BuildJacobiPreconditionerGPU();                             \
 template void CSysMatrix<TYPE>::BuildILUPreconditionerGPU();                                \
 template void CSysMatrix<TYPE>::ComputeILUPreconditionerGPU(const CSysVector<TYPE>& vec,    \
