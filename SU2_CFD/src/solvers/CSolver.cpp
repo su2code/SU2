@@ -1429,6 +1429,14 @@ void CSolver::GetCommCountAndType(const CConfig* config,
       COUNT_PER_POINT  = 1;
       MPI_TYPE         = COMM_TYPE::DOUBLE;
       break;
+    case MPI_QUANTITIES::MOM_CORRECTION:
+      COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
+      break;
+    case MPI_QUANTITIES::HBYA_CORRECTION:
+      COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE::DOUBLE;
+      break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                      CURRENT_FUNCTION);
@@ -1592,6 +1600,14 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case MPI_QUANTITIES::PRESSURE_VAR:
             bufDSend[buf_offset] = base_nodes->GetPrimitive(iPoint, 0);
             break; 
+          case MPI_QUANTITIES::MOM_CORRECTION:
+            for (iDim = 0; iDim < nDim; iDim++)
+              bufDSend[buf_offset+iDim] = base_nodes->GetMomCorrection(iPoint, iDim);
+            break; 
+          case MPI_QUANTITIES::HBYA_CORRECTION:
+            for (iDim = 0; iDim < nDim; iDim++)
+              bufDSend[buf_offset+iDim] = base_nodes->GetHbyACorrection(iPoint, iDim);
+            break; 
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
                            CURRENT_FUNCTION);
@@ -1753,6 +1769,14 @@ void CSolver::CompleteComms(CGeometry *geometry,
             break;
           case MPI_QUANTITIES::PRESSURE_VAR:
             base_nodes->SetPrimitive(iPoint, 0, bufDRecv[buf_offset]);
+            break;
+          case MPI_QUANTITIES::MOM_CORRECTION:
+            for (iDim = 0; iDim < nDim; iDim++)
+              base_nodes->SetMomCorrection(iPoint, iDim, bufDRecv[buf_offset+iDim]);
+            break;
+          case MPI_QUANTITIES::HBYA_CORRECTION:
+            for (iDim = 0; iDim < nDim; iDim++)
+              base_nodes->SetHbyACorrection(iPoint, iDim, bufDRecv[buf_offset+iDim]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",

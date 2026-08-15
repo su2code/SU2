@@ -215,6 +215,10 @@ void CPoissonSolver::ComputeHbyA(CGeometry *geometry, CSolver **solver_container
 
   const CSolver* flow_solution = solver_container[FLOW_SOL];
   const CVariable* flow_nodes = flow_solution->GetNodes();
+
+  /*--- First exchange momentum correction which is required to compute H. ---*/
+  InitiateComms(geometry, config, MPI_QUANTITIES::MOM_CORRECTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::MOM_CORRECTION); 
   
   if (implicit) {
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -233,10 +237,9 @@ void CPoissonSolver::ComputeHbyA(CGeometry *geometry, CSolver **solver_container
     SU2_MPI::Error("HbyA is currently not supported for an explicit momentum solver.", CURRENT_FUNCTION);
   }
 
-  /*--- Insert MPI call here. ---*/
-  // TODO: have to MPI move around the HbyA values.
-  // InitiateComms(geometry, config, MPI_QUANTITIES::MOM_COEFF);
-  // CompleteComms(geometry, config, MPI_QUANTITIES::MOM_COEFF); 
+  /*--- Exchange HbyA with MPI call. ---*/
+  InitiateComms(geometry, config, MPI_QUANTITIES::HBYA_CORRECTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::HBYA_CORRECTION); 
 }
 
 void CPoissonSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,

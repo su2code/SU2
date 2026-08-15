@@ -3626,8 +3626,6 @@ void CIncEulerSolver::ExtractAdjoint_SolutionExtra(su2activevector& adj_sol, con
 void CIncEulerSolver::ComputeRhieChowVelocities(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   SU2_ZONE_SCOPED
 
-  // ErrorCounter = SetPrimitive_Variables(solver_container, config); //TODO: temporary test
-
   /*--- Compute gradients to be used in Rhie Chow interpolation ---*/
 
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -3636,7 +3634,6 @@ void CIncEulerSolver::ComputeRhieChowVelocities(CGeometry *geometry, CSolver **s
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
     SetPrimitive_Gradient_LS(geometry, config);
   }
-
 
   unsigned short iDim;
   unsigned long iPoint, jPoint;
@@ -3778,13 +3775,13 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
     } 
   }
 
-  // TODO: optional addition of HbyA 
+  // TODO: optional addition of HbyA, i.e. this term is ZERO anyway during the firt correction.
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       velocityCorrection[iPoint][iDim] += poisson_nodes->GetHbyACorrection(iPoint, iDim);
     }
   }
-
+  
   /*--- Compute the edge corrections based on the average of the momentum coefficients and the average of the p' gradient. ---*/
   su2double* Coord_i,* Coord_j;
   su2double GradP_f[MAXNDIM], GradP_in[MAXNDIM];
@@ -3816,42 +3813,19 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
       }
       if (dist_ij_2 != 0.0) {
         for (iDim = 0; iDim < nDim; iDim++) {
-          GradP_f[iDim] = GradP_in[iDim] - (GradP_proj - (pressureCorrection[jPoint] - pressureCorrection[iPoint]))*(Coord_j[iDim]-Coord_i[iDim])/ dist_ij_2;
+          GradP_f[iDim] = GradP_in[iDim] - (GradP_proj - (poisson_nodes->GetSolution(jPoint,0) - poisson_nodes->GetSolution(iPoint,0)))*(Coord_j[iDim]-Coord_i[iDim])/ dist_ij_2;
         }
       }
-
-      // pressure-correction face gradient  == the Poisson stencil
-      // su2double edgeVec[MAXNDIM], gradAvg[MAXNDIM];
-      // GeometryToolbox::Distance(nDim, Coord_j, Coord_i, edgeVec);
-      // const su2double dist2 = GeometryToolbox::SquaredNorm(nDim, edgeVec);
-
-      // su2double proj = 0.0;
-      // for (iDim = 0; iDim < nDim; iDim++) {
-      //   gradAvg[iDim] = 0.5*(poisson_nodes->GetGradient(iPoint,0,iDim) +
-      //                       poisson_nodes->GetGradient(jPoint,0,iDim));
-      //   proj += gradAvg[iDim]*edgeVec[iDim];
-      // }
-
-      // const su2double dp   = pressureCorrection[jPoint] - pressureCorrection[iPoint];
-      // const su2double d_f  = 0.5*(poisson_nodes->GetMomCoeff(iPoint) +
-      //                             poisson_nodes->GetMomCoeff(jPoint));
-
-      // for (iDim = 0; iDim < nDim; iDim++) {
-      //   const su2double gradFace = gradAvg[iDim] + (dp - proj)*edgeVec[iDim]/dist2;
-      //   velocityEdgeCorrection[iEdge][iDim] = -d_f*gradFace;
-      //                                      // + 0.5*(HbyA_i[iDim] + HbyA_j[iDim]);
-      // }
       
       for (iDim = 0; iDim < nDim; iDim++) {
 
         velocityEdgeCorrection[iEdge][iDim] = -0.5 * (poisson_nodes->GetMomCoeff(iPoint)+poisson_nodes->GetMomCoeff(jPoint))
                                                    * GradP_f[iDim];
-        // velocityEdgeCorrection[iEdge][iDim] = -0.25 * (poisson_nodes->GetMomCoeff(iPoint)+poisson_nodes->GetMomCoeff(jPoint))
-        //                                            * (poisson_nodes->GetGradient(iPoint,0,iDim)+poisson_nodes->GetGradient(jPoint,0,iDim));
 
+        /*--- 2nd piso correction term (HbyA') --- (this should be zero for the first correction) ---*/
 
-        // // 2nd piso correction term.
-        // velocityEdgeCorrection[iEdge][iDim] += 0.5*(poisson_nodes->GetHbyACorrection(iPoint, iDim)+poisson_nodes->GetHbyACorrection(jPoint, iDim));
+        velocityEdgeCorrection[iEdge][iDim] += 0.5*(poisson_nodes->GetHbyACorrection(iPoint, iDim)
+                                                   +poisson_nodes->GetHbyACorrection(jPoint, iDim));
       }
     }
     END_SU2_OMP_FOR

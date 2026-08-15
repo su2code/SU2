@@ -2797,6 +2797,8 @@ enum class MPI_QUANTITIES {
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
   PRESSURE_VAR         ,  /*!< \brief Primitive variable (pressure) communication (used by pressure based solver). */
   MOM_COEFF            ,  /*!< \brief Momentum coefficient for the pressure-based poisson solver. */
+  MOM_CORRECTION       ,  /*!< \brief Momentum correction for the pressure-based poisson solver (HbyA). */
+  HBYA_CORRECTION      ,  /*!< \brief HbyA correction for the pressure-based poisson solver. */
 };
 
 /*!
