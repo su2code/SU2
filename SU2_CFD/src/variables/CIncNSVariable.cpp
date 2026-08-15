@@ -65,15 +65,12 @@ template<class CIncEulerVariable>
 bool CIncNSVariable<CIncEulerVariable>::SetPrimVar(unsigned long iPoint, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel, const su2double *scalar) {
 
   bool physical = true;
+  bool check_temp;
   su2double Enthalpy;
 
   /*--- Use the fluid model to compute the new value of density.
   Note that the thermodynamic pressure is constant and decoupled
   from the dynamic pressure being iterated. ---*/
-
-  /*--- Set the value of the density ---*/
-
-  const auto check_dens = this->SetDensity(iPoint, FluidModel->GetDensity());
 
   if (!pressure_based) {
 
@@ -87,12 +84,16 @@ bool CIncNSVariable<CIncEulerVariable>::SetPrimVar(unsigned long iPoint, su2doub
     FluidModel->SetTDState_h(Enthalpy, scalar);
     su2double Temperature = FluidModel->GetTemperature();
 
-    auto check_temp = this->SetTemperature(iPoint, Temperature, this->TemperatureLimits);
+    check_temp = this->SetTemperature(iPoint, Temperature, this->TemperatureLimits);
 
-    physical = !(check_dens || check_temp);
-  } else {
-    physical = !check_dens;
   }
+
+  /*--- Set the value of the density ---*/
+
+  const auto check_dens = this->SetDensity(iPoint, FluidModel->GetDensity());
+
+  if (pressure_based) physical = !check_dens;
+  else physical = !(check_dens || check_temp);
 
   /*--- Non-physical solution found. Revert to old values. ---*/
 
