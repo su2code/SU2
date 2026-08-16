@@ -602,7 +602,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
   /*--- The legacy default stream cannot be captured, so the graph lives on its own stream,
    * created once. Every launch below is followed by a sync back to the host, so this does not
    * change execution order relative to the rest of the (single-stream) solver. ---*/
-  if (ilu_stream == nullptr) gpuErrChk(cudaStreamCreate(&ilu_stream));
+  if (aux_stream == nullptr) gpuErrChk(cudaStreamCreate(&aux_stream));
 
   /*--- The launch sequence (ilu_gpu_sweeps passes over all colors) is identical on every call:
    * the grid and block sizes only depend on the (fixed) sparsity pattern/coloring and the device
@@ -616,7 +616,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
    * scratch, relying on the matrix changing little between outer/pseudo-time iterations. ---*/
   if (ilu_build_graph_exec == nullptr) {
     cudaGraph_t graph;
-    gpuErrChk(cudaStreamBeginCapture(ilu_stream, cudaStreamCaptureModeThreadLocal));
+    gpuErrChk(cudaStreamBeginCapture(aux_stream, cudaStreamCaptureModeThreadLocal));
 
     for (unsigned short sweep = 0; sweep < ilu_gpu_sweeps; ++sweep) {
       for (auto color = 0ul; color + 1 < ilu_color_ptr.size(); ++color) {
@@ -624,17 +624,17 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
         const auto size = ilu_color_ptr[color + 1] - begin;
         if (size == 0) continue;
         IluFactorColorKernel<ScalarType>
-            <<<size, blockSize, shared, ilu_stream>>>(d_ilu_color_idx, begin, size, nPointDomain, nVar, A, M);
+            <<<size, blockSize, shared, aux_stream>>>(d_ilu_color_idx, begin, size, nPointDomain, nVar, A, M);
       }
     }
 
-    gpuErrChk(cudaStreamEndCapture(ilu_stream, &graph));
+    gpuErrChk(cudaStreamEndCapture(aux_stream, &graph));
     gpuErrChk(cudaGraphInstantiate(&ilu_build_graph_exec, graph, nullptr, nullptr, 0));
     gpuErrChk(cudaGraphDestroy(graph));
   }
 
-  gpuErrChk(cudaGraphLaunch(ilu_build_graph_exec, ilu_stream));
-  gpuErrChk(cudaStreamSynchronize(ilu_stream));
+  gpuErrChk(cudaGraphLaunch(ilu_build_graph_exec, aux_stream));
+  gpuErrChk(cudaStreamSynchronize(aux_stream));
   gpuErrChk(cudaGetLastError());
 }
 
@@ -664,7 +664,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
   const auto sharedForward = threads * sizeof(ScalarType);
   const auto sharedBackward = (threads + nVar) * sizeof(ScalarType);
 
-  if (ilu_stream == nullptr) gpuErrChk(cudaStreamCreate(&ilu_stream));
+  if (aux_stream == nullptr) gpuErrChk(cudaStreamCreate(&aux_stream));
 
   /*--- Same idea as BuildILUPreconditionerGPU: the launch sequence only depends on the (fixed)
    * level structure, plus the vec/prod device pointers. Those normally are the same temporary
@@ -678,7 +678,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
     }
 
     cudaGraph_t graph;
-    gpuErrChk(cudaStreamBeginCapture(ilu_stream, cudaStreamCaptureModeThreadLocal));
+    gpuErrChk(cudaStreamBeginCapture(aux_stream, cudaStreamCaptureModeThreadLocal));
 
     /*--- Forward substitution: one exact pass over the levels in increasing order,
      * (L+I).prod = vec, see IluForwardKernel. ---*/
@@ -687,7 +687,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
       const auto size = ilu_level_ptr[level + 1] - begin;
       if (size == 0) continue;
       IluForwardKernel<ScalarType>
-          <<<size, threads, sharedForward, ilu_stream>>>(d_ilu_level_idx, begin, size, nVar, M, d_vec, d_prod);
+          <<<size, threads, sharedForward, aux_stream>>>(d_ilu_level_idx, begin, size, nVar, M, d_vec, d_prod);
     }
 
     /*--- Backward substitution: one exact pass over the levels in decreasing order,
@@ -698,18 +698,18 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
       const auto size = ilu_level_ptr[level + 1] - begin;
       if (size == 0) continue;
       IluBackwardKernel<ScalarType>
-          <<<size, threads, sharedBackward, ilu_stream>>>(d_ilu_level_idx, begin, size, nPointDomain, nVar, M, d_prod);
+          <<<size, threads, sharedBackward, aux_stream>>>(d_ilu_level_idx, begin, size, nPointDomain, nVar, M, d_prod);
     }
 
-    gpuErrChk(cudaStreamEndCapture(ilu_stream, &graph));
+    gpuErrChk(cudaStreamEndCapture(aux_stream, &graph));
     gpuErrChk(cudaGraphInstantiate(&ilu_apply_graph_exec, graph, nullptr, nullptr, 0));
     gpuErrChk(cudaGraphDestroy(graph));
     ilu_apply_graph_vec = d_vec;
     ilu_apply_graph_prod = d_prod;
   }
 
-  gpuErrChk(cudaGraphLaunch(ilu_apply_graph_exec, ilu_stream));
-  gpuErrChk(cudaStreamSynchronize(ilu_stream));
+  gpuErrChk(cudaGraphLaunch(ilu_apply_graph_exec, aux_stream));
+  gpuErrChk(cudaStreamSynchronize(aux_stream));
   gpuErrChk(cudaGetLastError());
 }
 
@@ -722,29 +722,31 @@ void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
     /*--- No gpu.l/gpu.u to transfer (never allocated); mirror the host quantized off-diagonal
      * storage instead (the diagonal mirrors, d_q_scale.d/d_q_blocks.d, are not touched here at
      * all - QuantizeDiagonalBlocksGPU() populates them straight from gpu.d, just uploaded above,
-     * with no host round trip). Issued as async copies on a dedicated stream (not the default
-     * one), so this transfer (the copy engine) can actually run concurrently with whatever the
+     * with no host round trip). Issued as async copies on aux_stream (not the default one), so
+     * this transfer (the copy engine) can actually run concurrently with whatever the
      * preconditioner's Build() launches next on the default stream (the SMs), e.g.
      * QuantizeDiagonalBlocksGPU - on the default stream they would just queue behind these
-     * copies instead of overlapping, since a single stream is strictly ordered. This is only
-     * genuinely asynchronous (i.e. the host thread does not block here waiting for the copy)
-     * because q_scale.l/q_blocks.l/q_scale.u/q_blocks.u are pinned host memory, see the comment
-     * on those members / Initialize() - cudaMemcpyAsync silently degrades to a blocking copy
-     * from regular pageable memory. htd_event marks the end of this transfer: the first
-     * default-stream kernel to actually read d_q_scale.l/.u/d_q_blocks.l/.u (the quantized SpMV,
-     * MatrixVectorProductGPU) waits on it there, since cross-stream dependencies are not
-     * implied by stream ordering the way same-stream ones are. ---*/
-    if (htd_stream == nullptr) gpuErrChk(cudaStreamCreate(&htd_stream));
+     * copies instead of overlapping, since a single stream is strictly ordered. aux_stream is
+     * shared with the (mutually exclusive, see its declaration) ILU build/apply graphs rather
+     * than using a separate dedicated stream. This is only genuinely asynchronous (i.e. the host
+     * thread does not block here waiting for the copy) because q_scale.l/q_blocks.l/q_scale.u/
+     * q_blocks.u are pinned host memory, see the comment on those members / Initialize() -
+     * cudaMemcpyAsync silently degrades to a blocking copy from regular pageable memory.
+     * htd_event marks the end of this transfer: the first default-stream kernel to actually read
+     * d_q_scale.l/.u/d_q_blocks.l/.u (the quantized SpMV, MatrixVectorProductGPU) waits on it
+     * there, since cross-stream dependencies are not implied by stream ordering the way
+     * same-stream ones are. ---*/
+    if (aux_stream == nullptr) gpuErrChk(cudaStreamCreate(&aux_stream));
     if (htd_event == nullptr) gpuErrChk(cudaEventCreateWithFlags(&htd_event, cudaEventDisableTiming));
     gpuErrChk(cudaMemcpyAsync(d_q_scale.l, q_scale.l, sizeof(QuantType) * mat.nnz_l * nVar, cudaMemcpyHostToDevice,
-                              htd_stream));
+                              aux_stream));
     gpuErrChk(cudaMemcpyAsync(d_q_blocks.l, q_blocks.l, sizeof(QuantType) * mat.nnz_l * nVar * nEqn,
-                              cudaMemcpyHostToDevice, htd_stream));
+                              cudaMemcpyHostToDevice, aux_stream));
     gpuErrChk(cudaMemcpyAsync(d_q_scale.u, q_scale.u, sizeof(QuantType) * mat.nnz_u * nVar, cudaMemcpyHostToDevice,
-                              htd_stream));
+                              aux_stream));
     gpuErrChk(cudaMemcpyAsync(d_q_blocks.u, q_blocks.u, sizeof(QuantType) * mat.nnz_u * nVar * nEqn,
-                              cudaMemcpyHostToDevice, htd_stream));
-    gpuErrChk(cudaEventRecord(htd_event, htd_stream));
+                              cudaMemcpyHostToDevice, aux_stream));
+    gpuErrChk(cudaEventRecord(htd_event, aux_stream));
   } else {
     gpuErrChk(cudaMemcpy(gpu.l, mat.l, sizeof(ScalarType) * mat.nnz_l * nVar * nEqn, cudaMemcpyHostToDevice));
     gpuErrChk(cudaMemcpy(gpu.u, mat.u, sizeof(ScalarType) * mat.nnz_u * nVar * nEqn, cudaMemcpyHostToDevice));

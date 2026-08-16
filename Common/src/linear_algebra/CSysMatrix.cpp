@@ -163,8 +163,7 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if (ilu_build_graph_exec != nullptr) cudaGraphExecDestroy(ilu_build_graph_exec);
     if (ilu_apply_graph_exec != nullptr) cudaGraphExecDestroy(ilu_apply_graph_exec);
-    if (ilu_stream != nullptr) cudaStreamDestroy(ilu_stream);
-    if (htd_stream != nullptr) cudaStreamDestroy(htd_stream);
+    if (aux_stream != nullptr) cudaStreamDestroy(aux_stream);
     if (htd_event != nullptr) cudaEventDestroy(htd_event);
 #endif
   }

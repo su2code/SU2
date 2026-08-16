@@ -411,15 +411,17 @@ class CSysMatrix {
                                                             * was captured with, to detect when
                                                             * it must be recaptured. */
   mutable ScalarType* ilu_apply_graph_prod = nullptr;
-  /*--- The legacy default stream cannot be captured into a graph. ---*/
-  mutable struct CUstream_st* ilu_stream = nullptr;
-
-  /*--- Dedicated stream for the async H2D transfer of the quantized L/U blocks (HtDTransfer),
-   * so that transfer can run concurrently (copy engine) with kernels issued on the default
-   * stream (e.g. QuantizeDiagonalBlocksGPU, on the SM), instead of queueing behind them on the
-   * same stream. htd_event marks the end of that transfer so the default-stream kernel that
-   * first reads the result (the quantized SpMV) can wait on it without a host-side block. ---*/
-  mutable struct CUstream_st* htd_stream = nullptr;
+  /*--- Non-default stream, needed for two mutually exclusive uses that never overlap on a given
+   * matrix (quantized_mode and ILU are alternative preconditioner choices, decided once in
+   * Initialize()): (1) the ILU build/apply CUDA graphs below, since the legacy default stream
+   * cannot be captured into a graph; (2) HtDTransfer's async H2D transfer of the quantized L/U
+   * blocks, so that transfer can run concurrently (copy engine) with kernels issued on the
+   * default stream (e.g. QuantizeDiagonalBlocksGPU, on the SM) instead of queueing behind them on
+   * the same stream. Because the two uses are mutually exclusive, sharing one stream (rather than
+   * a dedicated one per use) needs no extra synchronization between them. htd_event marks the end
+   * of the H2D transfer specifically, so the default-stream kernel that first reads the result
+   * (the quantized SpMV) can wait on it without a host-side block. ---*/
+  mutable struct CUstream_st* aux_stream = nullptr;
   mutable struct CUevent_st* htd_event = nullptr;
 
   ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */
