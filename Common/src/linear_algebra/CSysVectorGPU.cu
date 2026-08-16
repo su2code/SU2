@@ -76,40 +76,35 @@ __global__ void DotKernel(const ScalarType* __restrict__ x, const ScalarType* __
 }
 
 /*!
- * \brief Cap on n*m (the number of dot products one MultiDotKernel launch computes). Bounds the
- *        per-thread accumulator array below (necessarily a compile-time size - CUDA has no
- *        runtime-sized register/local arrays) and the block's shared-memory reduction buffer.
- *        FGCRODR's Ritz-value path (CSysSolve.cpp) calls this with n = m+1 where m is
+ * \brief Cap on n*m (the number of dot products one MultiDotKernel launch computes), sizing the
+ *        per-thread accumulator array below and the block's shared-memory reduction buffer -
+ *        both compile-time sized, since CUDA has no runtime-sized register/local arrays.
+ *        FGCRODR's Ritz-value path (CSysSolve.cpp) can reach n = m+1 with m =
  *        LINEAR_SOLVER_RESTART_DEFLATION (user-configurable, default 4 but not uncommon to raise
  *        into the tens), so n*m grows quadratically with that setting - e.g. m=10 already needs
- *        110. Sized generously above that; raise it further if a caller ever needs more (a clear
- *        SU2_MPI::Error fires instead of silently producing a wrong/truncated result). This is a
- *        different, unrelated constraint from MULTIDOT_MAX_VEC_LARGE/SMALL below - it is a
- *        genuine per-thread storage cost (every thread pays for the compile-time-sized array
- *        below regardless of the runtime n*m), unlike those two, which only bound a launch
- *        parameter's marshaling size, so it must stay independently modest rather than grow to
- *        cover MULTIDOT_MAX_VEC_LARGE * MULTIDOT_MAX_VEC_SMALL (which would be impractically
- *        large per thread).
+ *        110. Sized generously above realistic usage; multiDotGPU raises a clear SU2_MPI::Error
+ *        rather than silently truncating if a caller ever needs more.
  */
 constexpr unsigned int MULTIDOT_MAX_NM = 1024;
 
 /*!
- * \brief Caps on the individual vector counts n and m, asymmetric because the two call sites in
- *        this codebase produce genuinely asymmetric shapes: ModGramSchmidt (CSysSolve.cpp) grows
- *        m up to the Krylov restart length with n=1 (a row vector, not really a rectangle), while
- *        FGCRODR's Ritz-value path grows n up to the restart length with m bounded by the
- *        (usually much smaller) LINEAR_SOLVER_RESTART_DEFLATION - a genuine, independently-sized
- *        rectangle. The host wrapper always puts whichever of n, m is larger into the "large"
- *        kernel argument (swapping V/W and transposing the result back if needed, see
- *        multiDotGPU), so one axis only needs to cover the deflation-count case while the other
- *        covers the restart-length case, instead of both needing the same generous bound (as a
- *        single symmetric MULTIDOT_MAX_VEC used to). Bounds the fixed-size pointer arrays passed
- *        into MultiDotKernel by value as ordinary launch parameters, rather than as a device-side
- *        array of pointers uploaded via a separate cudaMemcpy - CUDA already marshals launch
- *        parameters for you as part of the launch itself, regardless of host memory pinning,
- *        which sidesteps needing pinned host buffers here the way HtDTransfer's L/U copy does
- *        (see aux_stream/htd_event in CSysMatrix, CUDA silently downgrades cudaMemcpyAsync to a
- *        blocking copy from ordinary pageable host memory).
+ * \brief Caps on the individual vector counts n and m, bounding the fixed-size pointer arrays
+ *        passed into MultiDotKernel by value as ordinary launch parameters (see
+ *        MultiDotPointers) - CUDA marshals those for you as part of the launch itself, regardless
+ *        of host memory pinning.
+ *        Asymmetric because the two call sites in this codebase produce genuinely asymmetric
+ *        shapes: ModGramSchmidt (CSysSolve.cpp) grows m up to the Krylov restart length with n=1
+ *        (a row vector, not really a rectangle), while FGCRODR's Ritz-value path grows n up to
+ *        the restart length with m bounded by the usually much smaller
+ *        LINEAR_SOLVER_RESTART_DEFLATION - a genuine, independently-sized rectangle. multiDotGPU
+ *        always puts whichever of n, m is larger into the "large" kernel argument (swapping V/W
+ *        and transposing the result back if needed), so one axis only needs to cover the
+ *        deflation-count case while the other covers the restart-length case.
+ * \note Unrelated to MULTIDOT_MAX_NM above: n and m can each independently reach this cap without
+ *       n*m approaching MULTIDOT_MAX_VEC_LARGE * MULTIDOT_MAX_VEC_SMALL, since multiDotGPU checks
+ *       n*m against MULTIDOT_MAX_NM separately (that one is a genuine per-thread storage cost
+ *       paid regardless of the runtime n*m; these two only bound a launch parameter's marshaling
+ *       size).
  */
 constexpr unsigned int MULTIDOT_MAX_VEC_LARGE = 256;
 constexpr unsigned int MULTIDOT_MAX_VEC_SMALL = 64;
@@ -125,21 +120,16 @@ struct MultiDotPointers {
 
 /*!
  * \brief Compute the aCount*bCount matrix of dot products D(a,b) = <A[a], B[b]> in a single pass
- *        over the data, replacing a previous cublas<t>gemmBatched implementation that treated
- *        each pair as its own independent (M=1, N=1, K=size) GEMM. That was a poor fit twice
- *        over: (a) it re-read every input vector once per pair instead of once total (aCount*
- *        bCount reads of length size instead of aCount+bCount), and (b) GEMM kernels parallelize
- *        across output (M,N) tiles and iterate the reduction (K) dimension within one thread
- *        block's kernel invocation - for an M=N=1 tile with K in the tens of millions, that
- *        leaves most of the GPU idle, unlike a dedicated reduction primitive (cublas<t>dot, or
- *        this kernel's grid-stride loop across many blocks) which parallelizes across all of K.
+ *        over the data: every thread reads each of the aCount+bCount vectors once per k and
+ *        forms all aCount*bCount products from that same read, so the vectors are only ever read
+ *        once total (aCount+bCount reads of length size, not aCount*bCount), and the reduction
+ *        stays memory-bound.
  * \note Each thread accumulates its own private running aCount*bCount sums while striding over k
  *       (kept in thread-local storage, capped at MULTIDOT_MAX_NM - small enough that it should
  *       stay resident in registers or L1 for realistic shapes, cheap either way next to the
- *       K-length main loop's DRAM traffic), so the single pass over A/B stays memory-bound. Only
- *       after that loop do threads combine: a warp-shuffle reduction, then one shared-memory
- *       combine and one atomicAdd per (a,b) per block, so total atomics are
- *       O(aCount*bCount * numBlocks), not O(aCount*bCount * size).
+ *       K-length main loop's DRAM traffic). Only after that loop do threads combine: a
+ *       warp-shuffle reduction, then one shared-memory combine and one atomicAdd per (a,b) per
+ *       block, so total atomics are O(aCount*bCount * numBlocks), not O(aCount*bCount * size).
  * \note A is the "large" argument (up to MULTIDOT_MAX_VEC_LARGE), B the "small" one (up to
  *       MULTIDOT_MAX_VEC_SMALL) - the caller (multiDotGPU) is responsible for putting the larger
  *       of its two vector counts into A, and transposing the result back if it had to swap.
@@ -225,13 +215,14 @@ void CSysVector<ScalarType>::DtHTransfer(bool trigger) const {
 template <class ScalarType>
 ScalarType CSysVector<ScalarType>::dotGPU(const CSysVector& other) const {
   SU2_ZONE_SCOPED
-  /*--- Both operands are already on the device, the caller owns the transfers. This
-   * reduces over MPI, so it must be called by a single thread (see SU2_DEVICE_REGION).
-   * Deliberately the default stream, not a dedicated one - same reasoning as multiDotGPU: x/y
-   * may have just been written by VecExpr::AssignDeviceExpression, which launches on the default
-   * stream with no synchronization of its own, so a separate stream here would have no
-   * guaranteed ordering against that write. This function always syncs before returning anyway
-   * (it needs a real value for the MPI reduction), so there is no async benefit being given up. ---*/
+  /*--- Both operands are already on the device, the caller owns the transfers. This reduces over
+   * MPI, so it must be called by a single thread (see SU2_DEVICE_REGION).
+   * \note Runs on the default stream: x/y may have just been written by
+   *       VecExpr::AssignDeviceExpression, which launches on the default stream with no
+   *       synchronization of its own, so a dedicated stream here would have no guaranteed
+   *       ordering against that write - CUDA only orders operations within the same stream. This
+   *       function also always synchronizes before returning (it needs a real value for the MPI
+   *       reduction), so a dedicated stream would not buy any overlap either. ---*/
   static ScalarType* d_result = nullptr;
   if (d_result == nullptr) gpuErrChk(cudaMalloc(&d_result, sizeof(ScalarType)));
 
@@ -255,8 +246,7 @@ ScalarType CSysVector<ScalarType>::dotGPU(const CSysVector& other) const {
 }
 
 /*!
- * \brief Multi vector dot product, local(i,j) = <V[i0+i], W[j]>, via MultiDotKernel (see its
- *        comment for why that beats the batched-GEMM approach this replaced).
+ * \brief Multi vector dot product, local(i,j) = <V[i0+i], W[j]>, via MultiDotKernel.
  * \note Whichever of n, m is larger is passed as MultiDotKernel's "A" (large-capacity) argument
  *       and the other as "B" (small-capacity) - see MULTIDOT_MAX_VEC_LARGE/SMALL for why - so if
  *       m > n, V and W (and their counts) are swapped for the call, and the resulting m*n matrix
@@ -292,18 +282,11 @@ su2matrix<ScalarType> CSysVector<ScalarType>::multiDotGPU(const std::vector<CSys
   /*--- Persistent device workspace for the output only, cached across calls and freed
    * automatically when the program exits (static local destruction), instead of leaking. The
    * V/W pointers themselves need no device buffer at all: they go to MultiDotKernel as ordinary
-   * by-value launch parameters (see MultiDotPointers/MULTIDOT_MAX_VEC_LARGE/SMALL), which CUDA
-   * marshals itself as part of the launch - unlike a separate cudaMemcpy, that needs no pinned
-   * host buffer to actually be asynchronous.
-   * \note Deliberately the default stream, not a dedicated one: V/W are written by
-   *       VecExpr::AssignDeviceExpression (e.g. LinearCombination building w[i+1] right before
-   *       ModGramSchmidt's multiDot call on it), which launches on the default stream with no
-   *       synchronization of its own. A separate stream here would have no guaranteed ordering
-   *       against that write - a real cross-stream race, not just redundant synchronization -
-   *       since CUDA only orders operations within the same stream. The default stream also
-   *       means there is nothing to gain from async transfers anyway (this function always syncs
-   *       before returning, and its result buffer is not pinned), so there is no async benefit
-   *       being given up by not having a dedicated stream. ---*/
+   * by-value launch parameters (see MultiDotPointers/MULTIDOT_MAX_VEC_LARGE/SMALL).
+   * \note Runs on the default stream, same reasoning as dotGPU (see its comment): V/W may have
+   *       just been written by VecExpr::AssignDeviceExpression (e.g. LinearCombination building
+   *       w[i+1] right before ModGramSchmidt's multiDot call on it), which also runs on the
+   *       default stream with no synchronization of its own. ---*/
   struct Workspace {
     ScalarType* d_D = nullptr;
     size_t capacity = 0;
