@@ -210,15 +210,15 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   if (pressure_based) {
     if (navier_stokes) {
-      nodes = new CIncNSVariable<CPBIncEulerVariable>(Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
+      nodes = new CIncNSVariable<CPBIncEulerVariable>(Density_Inf, Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
     } else {
-      nodes = new CPBIncEulerVariable(Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
+      nodes = new CPBIncEulerVariable(Density_Inf, Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
     }
   } else {
     if (navier_stokes) {
-      nodes = new CIncNSVariable<CDBIncEulerVariable>(Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
+      nodes = new CIncNSVariable<CDBIncEulerVariable>(Density_Inf, Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
     } else {
-      nodes = new CDBIncEulerVariable(Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
+      nodes = new CDBIncEulerVariable(Density_Inf, Pressure_Inf, Velocity_Inf, Enthalpy_Inf, nPoint, nDim, nVar, config);
     }
   }
   SetBaseClassPointerToNodes();
@@ -3722,8 +3722,8 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   su2double Vel, Current_Pressure, factor, PCorr_Ref, Vol, delT, Density;
   string Marker_Tag;
   su2activevector pressureCorrection, alpha_p;
-  su2activematrix velocityCorrection;
-  su2activematrix velocityEdgeCorrection;
+  su2activematrix momentumCorrection;
+  su2activematrix momentumEdgeCorrection;
   long Pref_local;
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -3738,8 +3738,8 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   /*--- Allocate corrections and relaxation ---*/
   // TODO: can be moved into constructor for performance.
   pressureCorrection.resize(nPointDomain);
-  velocityCorrection.resize(nPointDomain,nDim);
-  velocityEdgeCorrection.resize(geometry->GetnEdge(),nDim);
+  momentumCorrection.resize(nPointDomain,nDim);
+  momentumEdgeCorrection.resize(geometry->GetnEdge(),nDim);
   alpha_p.resize(nPointDomain);
 
   /*--- Combine all pressure corrections into a vector for easy access ---*/
@@ -3766,7 +3766,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
     delT = nodes->GetDelta_Time(iPoint);
     const auto view = Jacobian.GetBlockView(iPoint, iPoint);
     for (iDim = 0; iDim < nDim; iDim++) {
-      velocityCorrection[iPoint][iDim] = -poisson_nodes->GetMomCoeff(iPoint)*(poisson_nodes->GetGradient(iPoint,0,iDim));
+      momentumCorrection[iPoint][iDim] = -poisson_nodes->GetMomCoeff(iPoint)*(poisson_nodes->GetGradient(iPoint,0,iDim));
       if (implicit && !piso) factor += view(iDim, iDim);
     }
 
@@ -3783,7 +3783,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
-      velocityCorrection[iPoint][iDim] += poisson_nodes->GetHbyACorrection(iPoint, iDim);
+      momentumCorrection[iPoint][iDim] += poisson_nodes->GetHbyACorrection(iPoint, iDim);
     }
   }
   END_SU2_OMP_FOR
@@ -3825,12 +3825,12 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
       
       for (iDim = 0; iDim < nDim; iDim++) {
 
-        velocityEdgeCorrection[iEdge][iDim] = -0.5 * (poisson_nodes->GetMomCoeff(iPoint)+poisson_nodes->GetMomCoeff(jPoint))
+        momentumEdgeCorrection[iEdge][iDim] = -0.5 * (poisson_nodes->GetMomCoeff(iPoint)+poisson_nodes->GetMomCoeff(jPoint))
                                                    * GradP_f[iDim];
 
         /*--- 2nd piso correction term (HbyA') --- (this should be zero for the first correction) ---*/
 
-        velocityEdgeCorrection[iEdge][iDim] += 0.5*(poisson_nodes->GetHbyACorrection(iPoint, iDim)
+        momentumEdgeCorrection[iEdge][iDim] += 0.5*(poisson_nodes->GetHbyACorrection(iPoint, iDim)
                                                    +poisson_nodes->GetHbyACorrection(jPoint, iDim));
       }
     }
@@ -3880,7 +3880,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->nodes->GetDomain(iPoint)) {
             for (iDim = 0; iDim < nDim; iDim++)
-              velocityCorrection[iPoint][iDim] = 0.0;
+              momentumCorrection[iPoint][iDim] = 0.0;
             alpha_p[iPoint] = 1.0;
             }
         }
@@ -3900,7 +3900,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
             // Check if the boundary condition is an inlet or not
             if (nodes->GetStrongBC(iPoint)) {
               for (iDim = 0; iDim < nDim; iDim++)
-                velocityCorrection[iPoint][iDim] = 0.0;
+                momentumCorrection[iPoint][iDim] = 0.0;
             }
             pressureCorrection[iPoint] = PCorr_Ref;
           }
@@ -3920,13 +3920,13 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
 
     /*--- Velocity corrections ---*/
 
+    nodes->AddSolution(iPoint, momentumCorrection[iPoint]);
+
+    //TODO: this should have been set as the mom correction to begin with
     for (iVar = 0; iVar < nDim; iVar++) {
-      Vel = nodes->GetVelocity(iPoint,iVar);
-      Vel += velocityCorrection[iPoint][iVar];
-      Density = nodes->GetDensity(iPoint);
-      nodes->SetSolution(iPoint,iVar,Density*Vel);
-      poisson_nodes->SetMomCorrection(iPoint,iVar,velocityCorrection[iPoint][iVar]); // TODO: TEMPORARY JUST A TEST
+      poisson_nodes->SetMomCorrection(iPoint,iVar,momentumCorrection[iPoint][iVar]); // TODO: TEMPORARY JUST A TEST
     }
+
     nodes->SetVelocity(iPoint);
 
     /*--- Pressure corrections ---*/
@@ -3934,6 +3934,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
     Current_Pressure = nodes->GetPressure(iPoint);
     Current_Pressure += alpha_p[iPoint] * (pressureCorrection[iPoint] - PCorr_Ref);
     nodes->SetPrimitive(iPoint,0,Current_Pressure);
+
   }
   END_SU2_OMP_FOR
 
@@ -3943,9 +3944,10 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
     SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
     for (auto k = 0ul; k < color.size; ++k) {
       auto iEdge = color.indices[k];
-
+      iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
+      su2double meanDensity = 0.5*(nodes->GetDensity(iPoint) + nodes->GetDensity(jPoint));
       for (iDim = 0; iDim < nDim; iDim++) 
-        AddEdgeVelocity(iEdge, iDim, velocityEdgeCorrection[iEdge][iDim]);
+        AddEdgeVelocity(iEdge, iDim, momentumEdgeCorrection[iEdge][iDim] / meanDensity);
     }
     END_SU2_OMP_FOR
   }

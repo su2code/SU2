@@ -34,9 +34,9 @@ template class CIncNSVariable<CPBIncEulerVariable>;
 template class CIncNSVariable<CDBIncEulerVariable>;
 
 template<class CIncEulerVariable>
-CIncNSVariable<CIncEulerVariable>::CIncNSVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
+CIncNSVariable<CIncEulerVariable>::CIncNSVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
                                unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) :
-                               CIncEulerVariable(pressure, velocity, enthalpy, npoint, ndim, nvar, config),
+                               CIncEulerVariable(density, pressure, velocity, enthalpy, npoint, ndim, nvar, config),
                                Energy(config->GetEnergy_Equation()) {
 
   this->Vorticity.resize(this->nPoint,3);

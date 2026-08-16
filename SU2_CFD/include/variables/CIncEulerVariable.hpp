@@ -88,7 +88,7 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CIncEulerVariableBase(su2double pressure, const su2double *velocity, su2double enthalpy,
+  CIncEulerVariableBase(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
@@ -312,7 +312,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
 
-  CDBIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
+  CDBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
@@ -389,7 +389,7 @@ public:
 class CPBIncEulerVariable : public CIncEulerVariableBase {
 public:
 
-  CPBIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
+  CPBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
                                      unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!

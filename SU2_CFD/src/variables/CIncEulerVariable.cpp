@@ -29,7 +29,7 @@
 #include "../../include/fluid/CFluidModel.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
-CIncEulerVariableBase::CIncEulerVariableBase(su2double pressure, const su2double *velocity, su2double enthalpy,
+CIncEulerVariableBase::CIncEulerVariableBase(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) 
                     : CFlowVariable(npoint, ndim, nvar, ndim + 10,
                       ndim + (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ? 2 : 4), config),
@@ -73,9 +73,9 @@ void CIncEulerVariableBase::CommonInitialization(const CConfig *config, const su
   }
 }
 
-CDBIncEulerVariable::CDBIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
+CDBIncEulerVariable::CDBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
                                      unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
-  : CIncEulerVariableBase(pressure, velocity, enthalpy,
+  : CIncEulerVariableBase(density, pressure, velocity, enthalpy,
                                      npoint, ndim, nvar, config) {
 
   /*--- Solution initialization ---*/
@@ -151,12 +151,10 @@ bool CDBIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMod
 }
 
 
-CPBIncEulerVariable::CPBIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
+CPBIncEulerVariable::CPBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
                                      unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
-  : CIncEulerVariableBase(pressure, velocity, enthalpy,
+  : CIncEulerVariableBase(density, pressure, velocity, enthalpy,
                                      npoint, ndim, nvar, config) {
-
-  su2double density = 1.0;// temporary
 
   su2double val_solution[3] = {density*velocity[0], density*velocity[1], 0.0};
   if(nDim==3) val_solution[2] = density*velocity[2];
