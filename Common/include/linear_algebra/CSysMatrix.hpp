@@ -154,15 +154,25 @@ SU2_CUDA_HOST_DEVICE inline float DecodeQuantScale(int8_t e) noexcept {
  * \brief Encode one row of an nVar×nVar block into int8 quantized storage: \p qs receives the
  *        row's scale exponent, \p qv (nVar entries) the clamped int8 values for row \p r.
  *        \p f(r,c) is called twice per entry (max-abs scan then encoding); it should be cheap.
- * \note Shared with the device and thus same __CUDA_ARCH__ branches as DecodeQuantScale.
+ * \note Shared with the device and thus same __CUDA_ARCH__ branches as DecodeQuantScale. \p f's
+ *       return type is cast to float directly on device (only ever instantiated there for plain
+ *       ScalarType, never AD-active); on host it goes through SU2_TYPE::PassiveValue first, since
+ *       ScalarType can be AD-active there (quantized_mode is only compiled out for reverse-mode
+ *       AD, not forward-mode, see quantized_offdiag_needed in CSysMatrix.cpp) and PassiveValue is
+ *       host-only (not SU2_CUDA_HOST_DEVICE).
  */
 template <class F>
 SU2_CUDA_HOST_DEVICE inline void EncodeQuantRow(const F& f, int8_t& qs, int8_t* __restrict qv, unsigned long nVar,
                                                 unsigned long r) noexcept {
+#ifdef __CUDA_ARCH__
+  auto passive = [&](unsigned long row, unsigned long col) { return f(row, col); };
+#else
+  auto passive = [&](unsigned long row, unsigned long col) { return SU2_TYPE::PassiveValue(f(row, col)); };
+#endif
   constexpr uint32_t eps_bits = 0x34000000u;
   uint32_t max_abs_bits = eps_bits;
   for (auto c = 0ul; c < nVar; ++c) {
-    const float fv = static_cast<float>(f(r, c));
+    const float fv = static_cast<float>(passive(r, c));
 #ifdef __CUDA_ARCH__
     const uint32_t fb = __float_as_uint(fv);
 #else
@@ -181,7 +191,8 @@ SU2_CUDA_HOST_DEVICE inline void EncodeQuantRow(const F& f, int8_t& qs, int8_t* 
   memcpy(&inv_rscale, &inv_bits, sizeof(inv_rscale));
 #endif
   for (auto c = 0ul; c < nVar; ++c) {
-    qv[c] = static_cast<int8_t>(QuantMax(-128.f, QuantMin(127.f, roundf(static_cast<float>(f(r, c)) * inv_rscale))));
+    qv[c] =
+        static_cast<int8_t>(QuantMax(-128.f, QuantMin(127.f, roundf(static_cast<float>(passive(r, c)) * inv_rscale))));
   }
 }
 
