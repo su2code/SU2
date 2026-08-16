@@ -267,14 +267,21 @@ su2matrix<ScalarType> CSysVector<ScalarType>::multiDotGPU(const std::vector<CSys
    * V/W pointers themselves need no device buffer at all: they go to MultiDotKernel as ordinary
    * by-value launch parameters (see MultiDotPointers/MULTIDOT_MAX_VEC_LARGE/SMALL), which CUDA
    * marshals itself as part of the launch - unlike a separate cudaMemcpy, that needs no pinned
-   * host buffer to actually be asynchronous. ---*/
+   * host buffer to actually be asynchronous.
+   * \note Deliberately the default stream, not a dedicated one: V/W are written by
+   *       VecExpr::AssignDeviceExpression (e.g. LinearCombination building w[i+1] right before
+   *       ModGramSchmidt's multiDot call on it), which launches on the default stream with no
+   *       synchronization of its own. A separate stream here would have no guaranteed ordering
+   *       against that write - a real cross-stream race, not just redundant synchronization -
+   *       since CUDA only orders operations within the same stream. The default stream also
+   *       means there is nothing to gain from async transfers anyway (this function always syncs
+   *       before returning, and its result buffer is not pinned), so there is no async benefit
+   *       being given up by not having a dedicated stream. ---*/
   struct Workspace {
     ScalarType* d_D = nullptr;
-    cudaStream_t stream = nullptr;
     size_t capacity = 0;
 
     void EnsureCapacity(size_t nm) {
-      if (stream == nullptr) gpuErrChk(cudaStreamCreate(&stream));
       if (nm > capacity) {
         cudaFree(d_D);
         gpuErrChk(cudaMalloc(&d_D, nm * sizeof(ScalarType)));
@@ -282,10 +289,7 @@ su2matrix<ScalarType> CSysVector<ScalarType>::multiDotGPU(const std::vector<CSys
       }
     }
 
-    ~Workspace() {
-      cudaFree(d_D);
-      if (stream != nullptr) cudaStreamDestroy(stream);
-    }
+    ~Workspace() { cudaFree(d_D); }
   };
   static Workspace ws;
   ws.EnsureCapacity(nm);
@@ -300,7 +304,7 @@ su2matrix<ScalarType> CSysVector<ScalarType>::multiDotGPU(const std::vector<CSys
     for (size_t j = 0; j < n; ++j) bPtrs.ptr[j] = V[i0 + j].GetDevicePointer();
   }
 
-  gpuErrChk(cudaMemsetAsync(ws.d_D, 0, nm * sizeof(ScalarType), ws.stream));
+  gpuErrChk(cudaMemsetAsync(ws.d_D, 0, nm * sizeof(ScalarType)));
 
   constexpr unsigned int threadsPerBlock = 256;
   const auto blocks = static_cast<unsigned int>(std::min<size_t>((size + threadsPerBlock - 1) / threadsPerBlock, 1024));
@@ -317,19 +321,19 @@ su2matrix<ScalarType> CSysVector<ScalarType>::multiDotGPU(const std::vector<CSys
     optedInSharedBytes = sharedBytes;
   }
 
-  MultiDotKernel<ScalarType><<<blocks, threadsPerBlock, sharedBytes, ws.stream>>>(
+  MultiDotKernel<ScalarType><<<blocks, threadsPerBlock, sharedBytes>>>(
       aPtrs, static_cast<unsigned int>(aCount), bPtrs, static_cast<unsigned int>(bCount), size, ws.d_D);
 
   if (!swap) {
-    gpuErrChk(cudaMemcpyAsync(local.data(), ws.d_D, nm * sizeof(ScalarType), cudaMemcpyDeviceToHost, ws.stream));
-    gpuErrChk(cudaStreamSynchronize(ws.stream));
+    gpuErrChk(cudaMemcpyAsync(local.data(), ws.d_D, nm * sizeof(ScalarType), cudaMemcpyDeviceToHost));
+    gpuErrChk(cudaStreamSynchronize(nullptr));
   } else {
     /*--- D is aCount*bCount = m*n row-major (D(a,b) = <W[a],V[b]>); local is n*m with
      * local(i,j) = <V[i],W[j]> = D(j,i), i.e. local is D transposed. ---*/
     static std::vector<ScalarType> D;
     D.resize(nm);
-    gpuErrChk(cudaMemcpyAsync(D.data(), ws.d_D, nm * sizeof(ScalarType), cudaMemcpyDeviceToHost, ws.stream));
-    gpuErrChk(cudaStreamSynchronize(ws.stream));
+    gpuErrChk(cudaMemcpyAsync(D.data(), ws.d_D, nm * sizeof(ScalarType), cudaMemcpyDeviceToHost));
+    gpuErrChk(cudaStreamSynchronize(nullptr));
     for (size_t i = 0; i < n; ++i)
       for (size_t j = 0; j < m; ++j) local(i, j) = D[j * n + i];
   }
