@@ -27,24 +27,146 @@
 
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
-#include <cublas_v2.h>
 #include <algorithm>
-#include <type_traits>
 #include <vector>
 
 namespace {
 
-/*--- cuBLAS handle for the reductions. Created on first use and kept for the lifetime of
- * the program, matching the fact that CUDA is either on or off for the whole run. ---*/
-cublasHandle_t solver_blas_handle = nullptr;
+/*!
+ * \brief Fixed launch shape for DotKernel, so the number of warps per block (and thus the static
+ *        shared-memory reduction buffer's size) is a compile-time constant - no dynamic shared
+ *        memory needed for a single running sum, unlike MultiDotKernel's per-(i,j) buffer.
+ */
+constexpr unsigned int DOT_THREADS_PER_BLOCK = 256;
+constexpr unsigned int DOT_WARPS_PER_BLOCK = DOT_THREADS_PER_BLOCK / 32u;
 
-cublasHandle_t GetBlasHandle() {
-  if (solver_blas_handle == nullptr) {
-    if (cublasCreate(&solver_blas_handle) != CUBLAS_STATUS_SUCCESS) {
-      SU2_MPI::Error("cuBLAS handle creation failed for the GPU linear algebra.", CURRENT_FUNCTION);
+/*!
+ * \brief Single dot product result[0] = <x, y>, same single-pass grid-stride + warp-shuffle +
+ *        block-combine + atomicAdd reduction as MultiDotKernel (see its comment), specialized for
+ *        the one-running-sum case: no per-thread array, no dynamic shared memory, just a plain
+ *        register accumulator and a small static warpSums buffer.
+ */
+template <class ScalarType>
+__global__ void DotKernel(const ScalarType* __restrict__ x, const ScalarType* __restrict__ y, unsigned long size,
+                          ScalarType* __restrict__ result) {
+  ScalarType sum = 0;
+  const auto stride = static_cast<unsigned long>(blockDim.x) * gridDim.x;
+  for (auto k = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x; k < size; k += stride) {
+    sum += x[k] * y[k];
+  }
+
+  /*--- Warp-level reduction: after this, lane 0 of every warp holds that warp's true sum. ---*/
+  for (int offset = 16; offset > 0; offset >>= 1) sum += __shfl_down_sync(0xFFFFFFFFu, sum, offset);
+
+  /*--- Block-level combine: warp leaders stage their partials in static shared memory, thread 0
+   * sums them and issues the one atomicAdd this block contributes to the global result
+   * (pre-zeroed by the caller). ---*/
+  __shared__ ScalarType warpSums[DOT_WARPS_PER_BLOCK];
+  const unsigned int lane = threadIdx.x % 32u;
+  const unsigned int warpId = threadIdx.x / 32u;
+
+  if (lane == 0) warpSums[warpId] = sum;
+  __syncthreads();
+
+  if (threadIdx.x == 0) {
+    ScalarType blockSum = 0;
+    for (unsigned int w = 0; w < DOT_WARPS_PER_BLOCK; ++w) blockSum += warpSums[w];
+    atomicAdd(result, blockSum);
+  }
+}
+
+/*!
+ * \brief Cap on n*m (the number of dot products one MultiDotKernel launch computes), sizing the
+ *        per-thread accumulator array below and the block's shared-memory reduction buffer -
+ *        both compile-time sized, since CUDA has no runtime-sized register/local arrays.
+ *        FGCRODR's Ritz-value path (CSysSolve.cpp) can reach n = m+1 with m =
+ *        LINEAR_SOLVER_RESTART_DEFLATION (user-configurable, default 4 but not uncommon to raise
+ *        into the tens), so n*m grows quadratically with that setting - e.g. m=10 already needs
+ *        110. Sized generously above realistic usage; multiDotGPU raises a clear SU2_MPI::Error
+ *        rather than silently truncating if a caller ever needs more.
+ */
+constexpr unsigned int MULTIDOT_MAX_NM = 1024;
+
+/*!
+ * \brief Caps on the individual vector counts n and m, bounding the fixed-size pointer arrays
+ *        passed into MultiDotKernel by value as ordinary launch parameters.
+ *        Asymmetric because the two call sites in this codebase produce genuinely asymmetric
+ *        shapes. multiDotGPU always puts whichever of n, m is larger into the "large" kernel
+ *        argument (transposing the result back if needed).
+ */
+constexpr unsigned int MULTIDOT_MAX_VEC_LARGE = 256;
+constexpr unsigned int MULTIDOT_MAX_VEC_SMALL = 64;
+
+/*!
+ * \brief Fixed-size array of device pointers, passed to MultiDotKernel by value (see
+ *        MULTIDOT_MAX_VEC_LARGE/SMALL for why).
+ */
+template <class ScalarType, unsigned int MaxCount>
+struct MultiDotPointers {
+  const ScalarType* ptr[MaxCount];
+};
+
+/*!
+ * \brief Compute the aCount*bCount matrix of dot products D(a,b) = <A[a], B[b]> in a single pass
+ *        over the data: every thread reads each of the aCount+bCount vectors once per k and
+ *        forms all aCount*bCount products from that same read, so the vectors are only ever read
+ *        once total (aCount+bCount reads of length size, not aCount*bCount), and the reduction
+ *        stays memory-bound.
+ * \note Each thread accumulates its own private running aCount*bCount sums while striding over k
+ *       (kept in thread-local storage, capped at MULTIDOT_MAX_NM - small enough that it should
+ *       stay resident in registers or L1 for realistic shapes, cheap either way next to the
+ *       K-length main loop's DRAM traffic). Only after that loop do threads combine: a
+ *       warp-shuffle reduction, then one shared-memory combine and one atomicAdd per (a,b) per
+ *       block, so total atomics are O(aCount*bCount * numBlocks), not O(aCount*bCount * size).
+ * \note A is the "large" argument (up to MULTIDOT_MAX_VEC_LARGE), B the "small" one (up to
+ *       MULTIDOT_MAX_VEC_SMALL) - the caller (multiDotGPU) is responsible for putting the larger
+ *       of its two vector counts into A, and transposing the result back if it had to swap.
+ */
+template <class ScalarType>
+__global__ void MultiDotKernel(MultiDotPointers<ScalarType, MULTIDOT_MAX_VEC_LARGE> A, unsigned int aCount,
+                               MultiDotPointers<ScalarType, MULTIDOT_MAX_VEC_SMALL> B, unsigned int bCount,
+                               unsigned long size, ScalarType* __restrict__ D) {
+  const unsigned int nm = aCount * bCount;
+
+  ScalarType local[MULTIDOT_MAX_NM];
+  for (unsigned int t = 0; t < nm; ++t) local[t] = ScalarType(0);
+
+  const auto stride = static_cast<unsigned long>(blockDim.x) * gridDim.x;
+  for (auto k = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x; k < size; k += stride) {
+    for (unsigned int a = 0; a < aCount; ++a) {
+      const ScalarType v = A.ptr[a][k];
+      for (unsigned int b = 0; b < bCount; ++b) local[a * bCount + b] += v * B.ptr[b][k];
     }
   }
-  return solver_blas_handle;
+
+  /*--- Warp-level reduction: after this, lane 0 of every warp holds that warp's true sum. ---*/
+  for (unsigned int t = 0; t < nm; ++t) {
+    ScalarType val = local[t];
+    for (int offset = 16; offset > 0; offset >>= 1) val += __shfl_down_sync(0xFFFFFFFFu, val, offset);
+    local[t] = val;
+  }
+
+  /*--- Block-level combine: warp leaders stage their partials in shared memory, thread 0 sums
+   * them and issues the one atomicAdd per (i,j) this block contributes to the global result
+   * (pre-zeroed by the caller). ---*/
+  extern __shared__ __align__(sizeof(double)) char smem[];
+  auto* warpPartials = reinterpret_cast<ScalarType*>(smem);
+  const unsigned int lane = threadIdx.x % 32u;
+  const unsigned int warpId = threadIdx.x / 32u;
+  const unsigned int warpsPerBlock = blockDim.x / 32u;
+
+  if (lane == 0) {
+    for (unsigned int t = 0; t < nm; ++t) warpPartials[warpId * nm + t] = local[t];
+  }
+  __syncthreads();
+
+  if (threadIdx.x == 0) {
+    for (unsigned int t = 0; t < nm; ++t) {
+      ScalarType sum = 0;
+      for (unsigned int w = 0; w < warpsPerBlock; ++w) sum += warpPartials[w * nm + t];
+      atomicAdd(&D[t], sum);
+    }
+  }
 }
 
 }  // namespace
@@ -81,28 +203,22 @@ void CSysVector<ScalarType>::DtHTransfer(bool trigger) const {
 template <class ScalarType>
 ScalarType CSysVector<ScalarType>::dotGPU(const CSysVector& other) const {
   SU2_ZONE_SCOPED
-  /*--- Both operands are already on the device, the caller owns the transfers. This
-   * reduces over MPI, so it must be called by a single thread (see SU2_DEVICE_REGION). ---*/
-  cublasHandle_t handle = GetBlasHandle();
-  cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
+  /*--- Both operands are already on the device, the caller owns the transfers. This reduces over
+   * MPI, so it must be called by a single thread (see SU2_DEVICE_REGION). ---*/
+  static ScalarType* d_result = nullptr;
+  if (d_result == nullptr) gpuErrChk(cudaMalloc(&d_result, sizeof(ScalarType)));
+
+  gpuErrChk(cudaMemsetAsync(d_result, 0, sizeof(ScalarType)));
+
+  const auto blocks = static_cast<unsigned int>(
+      std::min<unsigned long>((nElmDomain + DOT_THREADS_PER_BLOCK - 1) / DOT_THREADS_PER_BLOCK, 1024));
+  DotKernel<ScalarType><<<blocks, DOT_THREADS_PER_BLOCK>>>(GetDevicePointer(), other.GetDevicePointer(), nElmDomain,
+                                                           d_result);
 
   ScalarType local_dot = ScalarType(0);
-
-  if constexpr (std::is_same_v<ScalarType, float>) {
-    status = cublasSdot(handle, static_cast<int>(nElmDomain), GetDevicePointer(), 1, other.GetDevicePointer(), 1,
-                        &local_dot);
-  } else if constexpr (std::is_same_v<ScalarType, double>) {
-    status = cublasDdot(handle, static_cast<int>(nElmDomain), GetDevicePointer(), 1, other.GetDevicePointer(), 1,
-                        &local_dot);
-  } else {
-    SU2_MPI::Error("Unsupported ScalarType in CSysVector::dotGPU.", CURRENT_FUNCTION);
-    return ScalarType(0);
-  }
-
-  if (status != CUBLAS_STATUS_SUCCESS) {
-    SU2_MPI::Error("cuBLAS dot failed in CSysVector::dotGPU.", CURRENT_FUNCTION);
-    return ScalarType(0);
-  }
+  gpuErrChk(cudaMemcpyAsync(&local_dot, d_result, sizeof(ScalarType), cudaMemcpyDeviceToHost));
+  gpuErrChk(cudaStreamSynchronize(nullptr));
+  gpuErrChk(cudaGetLastError());
 
   ScalarType global_dot = ScalarType(0);
   const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;
@@ -112,102 +228,104 @@ ScalarType CSysVector<ScalarType>::dotGPU(const CSysVector& other) const {
 }
 
 /*!
- * \brief multi vector product with cublas<t>gemmBatched
+ * \brief Multi vector dot product, local(i,j) = <V[i0+i], W[j]>, via MultiDotKernel.
+ * \note Whichever of n, m is larger is passed as MultiDotKernel's "A" (large-capacity) argument
+ *       and the other as "B" (small-capacity) - see MULTIDOT_MAX_VEC_LARGE/SMALL for why - so if
+ *       m > n, V and W (and their counts) are swapped for the call, and the resulting m*n matrix
+ *       is transposed back into the n*m shape the caller expects (cheap: this matrix is at most
+ *       MULTIDOT_MAX_NM elements, nowhere near the size of the reduction itself).
  */
 template <class ScalarType>
 su2matrix<ScalarType> CSysVector<ScalarType>::multiDotGPU(const std::vector<CSysVector<ScalarType>>& V, const size_t i0,
                                                           const size_t n, const std::vector<CSysVector<ScalarType>>& W,
                                                           const size_t m) {
-  /*--- The multiDot product between n V[size] and m W[size] vectors is performed as
-   * a General Matrix Multiplication between two tall-skinny matrices:
-   * C = \alpha * A^T * B + \beta * C
-   * being A = V[ size * n ] and B = W[ size * m ] the batched vectors ---*/
-  cublasHandle_t handle = GetBlasHandle();
-  cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
+  const size_t nm = n * m;
+  if (nm > MULTIDOT_MAX_NM) {
+    SU2_MPI::Error("CSysVector::multiDotGPU: n*m exceeds MULTIDOT_MAX_NM, raise that constant in "
+                   "CSysVectorGPU.cu.",
+                   CURRENT_FUNCTION);
+  }
 
-  const size_t size = V[0].nElmDomain;
-  const size_t batch = n * m;
-
-  /*--- Persistent device workspace, cached across calls and freed automatically
-   * when the program exits (static local destruction), instead of leaking. ---*/
-  struct Workspace {
-    ScalarType* d_local = nullptr;
-    const ScalarType** d_A = nullptr;
-    const ScalarType** d_B = nullptr;
-    ScalarType** d_C = nullptr;
-    size_t capacity = 0;
-
-    void EnsureCapacity(size_t batch) {
-      if (batch <= capacity) return;
-      cudaFree(d_local);
-      cudaFree(d_A);
-      cudaFree(d_B);
-      cudaFree(d_C);
-      gpuErrChk(cudaMalloc(&d_local, batch * sizeof(ScalarType)));
-      gpuErrChk(cudaMalloc(&d_A, batch * sizeof(ScalarType*)));
-      gpuErrChk(cudaMalloc(&d_B, batch * sizeof(ScalarType*)));
-      gpuErrChk(cudaMalloc(&d_C, batch * sizeof(ScalarType*)));
-      capacity = batch;
-    }
-
-    ~Workspace() {
-      cudaFree(d_local);
-      cudaFree(d_A);
-      cudaFree(d_B);
-      cudaFree(d_C);
-    }
-  };
-  static Workspace ws;
-
-  // allocate persistent result buffer local on host and device, is resized if needed
   su2matrix<ScalarType> local;
   local.resize(n, m);
-  ws.EnsureCapacity(batch);
+  if (nm == 0) return local;
 
-  // zero out the result buffer
-  gpuErrChk(cudaMemset(ws.d_local, 0, batch * sizeof(ScalarType)));
+  const bool swap = m > n;
+  const size_t aCount = swap ? m : n;
+  const size_t bCount = swap ? n : m;
+  if (aCount > MULTIDOT_MAX_VEC_LARGE || bCount > MULTIDOT_MAX_VEC_SMALL) {
+    SU2_MPI::Error("CSysVector::multiDotGPU: n or m exceeds MULTIDOT_MAX_VEC_LARGE/SMALL, raise "
+                   "those constants in CSysVectorGPU.cu.",
+                   CURRENT_FUNCTION);
+  }
 
-  // prepare the arrays A,B,C on host
-  static std::vector<const ScalarType*> h_A, h_B;
-  static std::vector<ScalarType*> h_C;
-  h_A.resize(batch); h_B.resize(batch); h_C.resize(batch);
+  const size_t size = V[0].nElmDomain;
 
-  for (size_t i = 0; i < n; ++i) {
-    for (size_t j =0; j < m; ++j) {
-      const size_t idx = i * m + j;
-      h_A[idx] = V[i0 + i].GetDevicePointer();
-      h_B[idx] = W[j].GetDevicePointer();
-      h_C[idx] = ws.d_local + idx; // C maps to d_local to store the coefficients in the 2D array
+  /*--- Persistent device workspace for the output only, cached across calls and freed
+   * automatically when the program exits (static local destruction), instead of leaking. The
+   * V/W pointers themselves need no device buffer at all: they go to MultiDotKernel as ordinary
+   * by-value launch parameters (see MultiDotPointers/MULTIDOT_MAX_VEC_LARGE/SMALL). ---*/
+  struct Workspace {
+    ScalarType* d_D = nullptr;
+    size_t capacity = 0;
+
+    void EnsureCapacity(size_t nm) {
+      if (nm > capacity) {
+        cudaFree(d_D);
+        gpuErrChk(cudaMalloc(&d_D, nm * sizeof(ScalarType)));
+        capacity = nm;
+      }
     }
-  }
 
-  // copy pointers to device
-  gpuErrChk(cudaMemcpy(ws.d_A, h_A.data(), batch * sizeof(ScalarType*), cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemcpy(ws.d_B, h_B.data(), batch * sizeof(ScalarType*), cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemcpy(ws.d_C, h_C.data(), batch * sizeof(ScalarType*), cudaMemcpyHostToDevice));
+    ~Workspace() { cudaFree(d_D); }
+  };
+  static Workspace ws;
+  ws.EnsureCapacity(nm);
 
-  // define alpha = 1.0 and beta = 0.0
-  const auto alpha = ScalarType(1.0);
-  const auto beta = ScalarType(0.0);
-
-  if constexpr (std::is_same_v<ScalarType, float>) {
-    status = cublasSgemmBatched(handle, CUBLAS_OP_T, CUBLAS_OP_N, 1, 1, size, &alpha, ws.d_A, static_cast<int>(size),
-                                ws.d_B, static_cast<int>(size), &beta, ws.d_C, 1, static_cast<int>(batch));
-  } else if constexpr (std::is_same_v<ScalarType, double>) {
-    status = cublasDgemmBatched(handle, CUBLAS_OP_T, CUBLAS_OP_N, 1, 1, size, &alpha, ws.d_A, static_cast<int>(size),
-                                ws.d_B, static_cast<int>(size), &beta, ws.d_C, 1, static_cast<int>(batch));
+  MultiDotPointers<ScalarType, MULTIDOT_MAX_VEC_LARGE> aPtrs{};
+  MultiDotPointers<ScalarType, MULTIDOT_MAX_VEC_SMALL> bPtrs{};
+  if (!swap) {
+    for (size_t i = 0; i < n; ++i) aPtrs.ptr[i] = V[i0 + i].GetDevicePointer();
+    for (size_t j = 0; j < m; ++j) bPtrs.ptr[j] = W[j].GetDevicePointer();
   } else {
-    SU2_MPI::Error("Unsupported ScalarType in CSysVector::multiDotGPU.", CURRENT_FUNCTION);
-    return local;
+    for (size_t i = 0; i < m; ++i) aPtrs.ptr[i] = W[i].GetDevicePointer();
+    for (size_t j = 0; j < n; ++j) bPtrs.ptr[j] = V[i0 + j].GetDevicePointer();
   }
 
-  if (status != CUBLAS_STATUS_SUCCESS) {
-    SU2_MPI::Error("cuBLAS cublas<t>gemmBatched failed in CSysVector::multiDotGPU.", CURRENT_FUNCTION);
-    return local;
+  gpuErrChk(cudaMemsetAsync(ws.d_D, 0, nm * sizeof(ScalarType)));
+
+  constexpr unsigned int threadsPerBlock = 256;
+  const auto blocks = static_cast<unsigned int>(std::min<size_t>((size + threadsPerBlock - 1) / threadsPerBlock, 1024));
+  const auto sharedBytes = static_cast<size_t>(threadsPerBlock / 32u) * nm * sizeof(ScalarType);
+
+  /*--- sharedBytes can exceed the default 48KB static shared-memory limit for large nm (the
+   * FGCRODR deflation matrix in particular, see MULTIDOT_MAX_NM); opt in to the device's larger
+   * "dynamic" limit once, the first time it is actually needed, rather than always paying for
+   * the query. ---*/
+  static size_t optedInSharedBytes = 0;
+  if (sharedBytes > optedInSharedBytes) {
+    gpuErrChk(cudaFuncSetAttribute(MultiDotKernel<ScalarType>, cudaFuncAttributeMaxDynamicSharedMemorySize,
+                                   static_cast<int>(sharedBytes)));
+    optedInSharedBytes = sharedBytes;
   }
 
-  // copy result to host for MPI reduce
-  gpuErrChk(cudaMemcpy(local.data(), ws.d_local, batch * sizeof(ScalarType), cudaMemcpyDeviceToHost));
+  MultiDotKernel<ScalarType><<<blocks, threadsPerBlock, sharedBytes>>>(
+      aPtrs, static_cast<unsigned int>(aCount), bPtrs, static_cast<unsigned int>(bCount), size, ws.d_D);
+
+  if (!swap) {
+    gpuErrChk(cudaMemcpyAsync(local.data(), ws.d_D, nm * sizeof(ScalarType), cudaMemcpyDeviceToHost));
+    gpuErrChk(cudaStreamSynchronize(nullptr));
+  } else {
+    /*--- D is aCount*bCount = m*n row-major (D(a,b) = <W[a],V[b]>); local is n*m with
+     * local(i,j) = <V[i],W[j]> = D(j,i), i.e. local is D transposed. ---*/
+    static std::vector<ScalarType> D;
+    D.resize(nm);
+    gpuErrChk(cudaMemcpyAsync(D.data(), ws.d_D, nm * sizeof(ScalarType), cudaMemcpyDeviceToHost));
+    gpuErrChk(cudaStreamSynchronize(nullptr));
+    for (size_t i = 0; i < n; ++i)
+      for (size_t j = 0; j < m; ++j) local(i, j) = D[j * n + i];
+  }
+  gpuErrChk(cudaGetLastError());
 
   return local;
 }

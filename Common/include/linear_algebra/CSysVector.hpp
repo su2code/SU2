@@ -31,6 +31,7 @@
 #include <memory>
 #include <vector>
 
+#include "../code_config.hpp"
 #include "../parallelization/mpi_structure.hpp"
 #include "../parallelization/omp_structure.hpp"
 #include "../parallelization/vectorization.hpp"
@@ -39,9 +40,6 @@
 
 #ifdef __CUDACC__
 #include "GPUComms.cuh"
-#define SU2_CUDA_HOST_DEVICE __host__ __device__
-#else
-#define SU2_CUDA_HOST_DEVICE
 #endif
 
 template <class ScalarType>
@@ -530,7 +528,8 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     if constexpr (su2_gpu_capable_v<ScalarType>) {
       using DeviceExpr = std::remove_cv_t<VecExpr::remove_reference_t<T>>;
       static_assert(std::is_same_v<DeviceExpr, CSysVector>,
-                    "On the device the dot product is a cuBLAS call, so it only takes vectors. "
+                    "On the device the dot product needs a real device pointer (dotGPU takes a "
+                    "materialized vector, not an expression template), so it only takes vectors. "
                     "Assign the expression to a vector first.");
       if (VecExpr::UseDeviceExpressions()) {
         /*--- dotGPU reduces over MPI, which has to happen once for the team, so the result
@@ -709,4 +708,3 @@ CVectorView<Scalar>::CVectorView(const CSysVector<Scalar>& vector)
 
 #undef CSYSVEC_PARFOR
 #undef END_CSYSVEC_PARFOR
-#undef SU2_CUDA_HOST_DEVICE

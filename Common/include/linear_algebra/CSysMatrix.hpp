@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../CConfig.hpp"
+#include "../code_config.hpp"
 #include "CSysVector.hpp"
 #include "CPastixWrapper.hpp"
 #include "../toolboxes/graph_toolbox.hpp"
@@ -110,45 +111,100 @@ struct CSysMatrixComms {
 };
 
 /*!
+ * \brief std::max/std::min, usable from both host and device code. Calling std::max/std::min
+ *        directly from a SU2_CUDA_HOST_DEVICE function compiles without error but is not
+ *        actually valid without --expt-relaxed-constexpr which is not used in this build.
+ */
+template <class T>
+SU2_CUDA_HOST_DEVICE inline T QuantMax(T a, T b) noexcept {
+#ifdef __CUDA_ARCH__
+  return max(a, b);
+#else
+  return std::max(a, b);
+#endif
+}
+template <class T>
+SU2_CUDA_HOST_DEVICE inline T QuantMin(T a, T b) noexcept {
+#ifdef __CUDA_ARCH__
+  return min(a, b);
+#else
+  return std::min(a, b);
+#endif
+}
+
+/*!
  * \brief Reconstruct the float row-scale from a stored int8 binary exponent.
  *        The exponent \p e was packed as (e + 127) into the IEEE 754 biased-exponent field
  *        with a zero mantissa, giving an exact power of two: 2^e.
  *        This is the inverse of the encoding in EncodeQuantBlock.
+ * \note Branches on __CUDA_ARCH__, plain memcpy compiles for the device but does not work!
  */
-FORCEINLINE float DecodeQuantScale(int8_t e) noexcept {
-  const uint32_t bits = static_cast<uint32_t>(std::max(0, static_cast<int>(e) + 127)) << 23;
+SU2_CUDA_HOST_DEVICE inline float DecodeQuantScale(int8_t e) noexcept {
+  const uint32_t bits = static_cast<uint32_t>(QuantMax(0, static_cast<int>(e) + 127)) << 23;
+#ifdef __CUDA_ARCH__
+  return __uint_as_float(bits);
+#else
   float scale;
   memcpy(&scale, &bits, sizeof(bits));
   return scale;
+#endif
 }
 
 /*!
- * \brief Encode one nVar×nVar block into per-row int8 quantized storage.
+ * \brief Encode one row of an nVar×nVar block into int8 quantized storage: \p qs receives the
+ *        row's scale exponent, \p qv (nVar entries) the clamped int8 values for row \p r.
  *        \p f(r,c) is called twice per entry (max-abs scan then encoding); it should be cheap.
- *        Stores a per-row scale exponent in \p qs and clamped int8 values in \p qv.
+ * \note Shared with the device and thus same __CUDA_ARCH__ branches as DecodeQuantScale. \p f's
+ *       return type is cast to float directly on device (only ever instantiated there for plain
+ *       ScalarType, never AD-active); on host it goes through SU2_TYPE::PassiveValue first, since
+ *       ScalarType can be AD-active there (quantized_mode is only compiled out for reverse-mode
+ *       AD, not forward-mode, see quantized_offdiag_needed in CSysMatrix.cpp) and PassiveValue is
+ *       host-only (not SU2_CUDA_HOST_DEVICE).
  */
 template <class F>
-FORCEINLINE void EncodeQuantBlock(const F& f, int8_t* __restrict qs, int8_t* __restrict qv,
-                                  unsigned long nVar) noexcept {
-  for (auto r = 0ul; r < nVar; ++r) {
-    constexpr uint32_t eps_bits = 0x34000000u;
-    uint32_t max_abs_bits = eps_bits;
-    for (auto c = 0ul; c < nVar; ++c) {
-      const float fv = SU2_TYPE::PassiveValue(f(r, c));
-      uint32_t fb;
-      memcpy(&fb, &fv, sizeof(fb));
-      max_abs_bits = std::max(max_abs_bits, fb & 0x7FFFFFFFu);
-    }
-    const int e = std::min(127, std::max(-128, static_cast<int>(max_abs_bits >> 23) - 133));
-    qs[r] = static_cast<int8_t>(e);
-    const uint32_t inv_bits = static_cast<uint32_t>(127 - e) << 23;
-    float inv_rscale;
-    memcpy(&inv_rscale, &inv_bits, sizeof(inv_rscale));
-    for (auto c = 0ul; c < nVar; ++c) {
-      qv[r * nVar + c] =
-          static_cast<int8_t>(std::max(-128.f, std::min(127.f, roundf(SU2_TYPE::PassiveValue(f(r, c)) * inv_rscale))));
-    }
+SU2_CUDA_HOST_DEVICE inline void EncodeQuantRow(const F& f, int8_t& qs, int8_t* __restrict qv, unsigned long nVar,
+                                                unsigned long r) noexcept {
+#ifdef __CUDA_ARCH__
+  auto passive = [&](unsigned long row, unsigned long col) { return f(row, col); };
+#else
+  auto passive = [&](unsigned long row, unsigned long col) { return SU2_TYPE::PassiveValue(f(row, col)); };
+#endif
+  constexpr uint32_t eps_bits = 0x34000000u;
+  uint32_t max_abs_bits = eps_bits;
+  for (auto c = 0ul; c < nVar; ++c) {
+    const float fv = static_cast<float>(passive(r, c));
+#ifdef __CUDA_ARCH__
+    const uint32_t fb = __float_as_uint(fv);
+#else
+    uint32_t fb;
+    memcpy(&fb, &fv, sizeof(fb));
+#endif
+    max_abs_bits = QuantMax(max_abs_bits, fb & 0x7FFFFFFFu);
   }
+  const int e = QuantMin(127, QuantMax(-128, static_cast<int>(max_abs_bits >> 23) - 133));
+  qs = static_cast<int8_t>(e);
+  const uint32_t inv_bits = static_cast<uint32_t>(127 - e) << 23;
+#ifdef __CUDA_ARCH__
+  const float inv_rscale = __uint_as_float(inv_bits);
+#else
+  float inv_rscale;
+  memcpy(&inv_rscale, &inv_bits, sizeof(inv_rscale));
+#endif
+  for (auto c = 0ul; c < nVar; ++c) {
+    qv[c] =
+        static_cast<int8_t>(QuantMax(-128.f, QuantMin(127.f, roundf(static_cast<float>(passive(r, c)) * inv_rscale))));
+  }
+}
+
+/*!
+ * \brief Encode one nVar×nVar block into per-row int8 quantized storage, see EncodeQuantRow (each
+ *        row's scale/quantization is independent, this just loops over all of them serially for
+ *        the host path).
+ */
+template <class F>
+SU2_CUDA_HOST_DEVICE inline void EncodeQuantBlock(const F& f, int8_t* __restrict qs, int8_t* __restrict qv,
+                                                  unsigned long nVar) noexcept {
+  for (auto r = 0ul; r < nVar; ++r) EncodeQuantRow(f, qs[r], qv + r * nVar, nVar, r);
 }
 
 /*!
@@ -231,14 +287,19 @@ class CSysMatrix {
 
   /*!
    * \brief Aggregates value arrays and sparse-structure pointers for an LDU-partitioned matrix.
-   *        Each CSysMatrix holds three LDU instances: the host matrix (mat), its device copy (gpu),
-   *        and the ILU factorization (ilu). Ownership of the value arrays (d/l/u) and whether
-   *        the pointers address host or device memory is managed by CSysMatrix.
+   *        Each CSysMatrix holds three LDU<ScalarType> instances: the host matrix (mat), its
+   *        device copy (gpu), and the ILU factorization (ilu). Ownership of the value arrays
+   *        (d/l/u) and whether the pointers address host or device memory is managed by
+   *        CSysMatrix. Also reused with T = QuantType to group the quantized scale/blocks
+   *        storage (q_scale, q_blocks, d_q_scale, d_q_blocks) the same way; for those the pattern
+   *        fields (row_ptr_l, col_ind_l, row_ptr_u, col_ind_u, nnz_l, nnz_u) are simply left
+   *        unused, since the sparsity pattern is already available from mat/gpu.
    */
+  template <class T>
   struct LDU {
-    ScalarType* d = nullptr;            /*!< \brief Diagonal block values. */
-    ScalarType* l = nullptr;            /*!< \brief Strictly-lower block values. */
-    ScalarType* u = nullptr;            /*!< \brief Strictly-upper block values. */
+    T* d = nullptr;                     /*!< \brief Diagonal block values. */
+    T* l = nullptr;                     /*!< \brief Strictly-lower block values. */
+    T* u = nullptr;                     /*!< \brief Strictly-upper block values. */
     const su2uint* row_ptr_l = nullptr; /*!< \brief Row pointers for L (geometry-owned or GPU copy). */
     const su2uint* col_ind_l = nullptr; /*!< \brief Column indices for L. */
     const su2uint* row_ptr_u = nullptr; /*!< \brief Row pointers for U. */
@@ -247,30 +308,37 @@ class CSysMatrix {
     unsigned long nnz_u = 0;            /*!< \brief Number of U nonzeros. */
   };
 
-  LDU mat;                      /*!< \brief Host matrix (values owned via aligned_alloc; pattern from geometry). */
-  LDU gpu;                      /*!< \brief Device matrix (all pointers to GPU memory). */
-  LDU ilu;                      /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
-  LDU gpu_ilu;                  /*!< \brief ILU factorization, device (values and pattern in GPU memory). */
+  LDU<ScalarType> mat;          /*!< \brief Host matrix (values owned via aligned_alloc; pattern from geometry). */
+  LDU<ScalarType> gpu;          /*!< \brief Device matrix (all pointers to GPU memory). */
+  LDU<ScalarType> ilu;          /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
+  LDU<ScalarType> gpu_ilu;      /*!< \brief ILU factorization, device (values and pattern in GPU memory). */
   ScalarType* d_invM = nullptr; /*!< \brief Device inverse diagonal blocks for the Jacobi preconditioner. */
 
   /*--- Quantized off-diagonal storage (used when quantized_mode == true). ---*/
   using QuantType = int8_t;
 
-  /*! \brief Set by Initialize() when preconditioner == Q_LU_SGS.
-   *         mat.l and mat.u are NOT allocated; off-diagonal blocks live in the
-   *         q_* arrays below. */
+  /*! \brief Set by Initialize() when preconditioner == Q_LU_SGS, Q_JACOBI or Q_IDENTITY.
+   *         mat.l and mat.u are NOT allocated; off-diagonal blocks live in q_scale/q_blocks
+   *         below. Only the matrix-vector product (used by the Krylov solver and, for Q_LU_SGS,
+   *         by the sweeps) reads the quantized blocks; the Jacobi preconditioner never touches
+   *         them since it only applies the (full precision) inverse diagonal, and the identity
+   *         preconditioner does not touch the matrix at all. */
 #ifndef CODI_REVERSE_TYPE
   bool quantized_mode = false;
 #else
   static constexpr bool quantized_mode = false;
 #endif
-  QuantType* q_scale_l;  /*!< \brief Per-row exponent for L blocks, [nnz_l * nVar]. */
-  QuantType* q_blocks_l; /*!< \brief Quantized L block entries, [nnz_l * nVar * nEqn]. */
-  QuantType* q_scale_u;  /*!< \brief Same as q_scale_l for the upper entries. */
-  QuantType* q_blocks_u; /*!< \brief Same as q_blocks_l for the upper entries. */
-  QuantType* q_scale_d;  /*!< \brief Same as q_scale_l for the diagonal entries, [nPoint * nVar].
-                          *          Populated by QuantizeDiagonalBlocks(). */
-  QuantType* q_blocks_d; /*!< \brief Same as q_blocks_l for the diagonal entries. */
+  /*!< \brief Per-row exponents; .l/.u sized [nnz_l/u * nVar], .d [nPoint * nVar]. .l/.u are
+   *          populated during assembly (quantized on the fly); .d is populated by
+   *          QuantizeDiagonalBlocks(). .l/.u are pinned (cudaMallocHost) rather than
+   *          aligned_alloc when useCuda, so HtDTransfer()'s async uploads them. */
+  LDU<QuantType> q_scale;
+  /*!< \brief Quantized block entries; .l/.u sized [nnz_l/u * nVar * nEqn], .d [nPoint * nVar * nEqn]. */
+  LDU<QuantType> q_blocks;
+
+  /*!< \brief Device mirrors of the quantized storage, only allocated when quantized_mode. */
+  LDU<QuantType> d_q_scale;
+  LDU<QuantType> d_q_blocks;
 
   bool useCuda = false; /*!< \brief Whether CUDA is enabled. */
 
@@ -324,8 +392,18 @@ class CSysMatrix {
                                                             * was captured with, to detect when
                                                             * it must be recaptured. */
   mutable ScalarType* ilu_apply_graph_prod = nullptr;
-  /*--- The legacy default stream cannot be captured into a graph. ---*/
-  mutable struct CUstream_st* ilu_stream = nullptr;
+  /*--- Non-default stream, needed for two mutually exclusive uses that never overlap on a given
+   * matrix (quantized_mode and ILU are alternative preconditioner choices, decided once in
+   * Initialize()): (1) the ILU build/apply CUDA graphs below, since the legacy default stream
+   * cannot be captured into a graph; (2) HtDTransfer's async H2D transfer of the quantized L/U
+   * blocks, so that transfer can run concurrently (copy engine) with kernels issued on the
+   * default stream (e.g. QuantizeDiagonalBlocksGPU, on the SM) instead of queueing behind them on
+   * the same stream. Because the two uses are mutually exclusive, sharing one stream (rather than
+   * a dedicated one per use) needs no extra synchronization between them. htd_event marks the end
+   * of the H2D transfer specifically, so the default-stream kernel that first reads the result
+   * (the quantized SpMV) can wait on it without a host-side block. ---*/
+  mutable struct CUstream_st* aux_stream = nullptr;
+  mutable struct CUevent_st* htd_event = nullptr;
 
   ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */
 
@@ -542,7 +620,7 @@ class CSysMatrix {
   /*! \brief Diagonal product using quantized D (Q_LU_SGS backward sweep). */
   inline void QuantizedDiagonalProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
 
-  /*! \brief Gauss elimination on the quantized diagonal block: decodes q_blocks_d into a local
+  /*! \brief Gauss elimination on the quantized diagonal block: decodes q_blocks.d into a local
    *         ScalarType buffer and delegates to the scalar GaussElimination overload. */
   inline void QuantizedGaussElimination(unsigned long block_i, ScalarType* rhs) const;
 
@@ -553,6 +631,12 @@ class CSysMatrix {
    */
   void MatrixVectorProductGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                               const CConfig* config) const;
+
+  /*!
+   * \brief Quantize the diagonal blocks directly on the device.
+   * \note Requires the device matrix to be up to date, see HtDTransfer.
+   */
+  void QuantizeDiagonalBlocksGPU();
 
   /*!
    * \brief Build the Jacobi preconditioner on the device, from the device copy of the matrix.
@@ -667,10 +751,10 @@ class CSysMatrix {
   }                                                                                                                \
   if (block_j < block_i) {                                                                                         \
     for (auto k = mat.row_ptr_l[block_i]; k < mat.row_ptr_l[block_i + 1]; ++k)                                     \
-      if (mat.col_ind_l[k] == block_j) return {nullptr, &q_scale_l[k * nVar], &q_blocks_l[k * nVar * nVar], nVar}; \
+      if (mat.col_ind_l[k] == block_j) return {nullptr, &q_scale.l[k * nVar], &q_blocks.l[k * nVar * nVar], nVar}; \
   } else {                                                                                                         \
     for (auto k = mat.row_ptr_u[block_i]; k < mat.row_ptr_u[block_i + 1]; ++k)                                     \
-      if (mat.col_ind_u[k] == block_j) return {nullptr, &q_scale_u[k * nVar], &q_blocks_u[k * nVar * nVar], nVar}; \
+      if (mat.col_ind_u[k] == block_j) return {nullptr, &q_scale.u[k * nVar], &q_blocks.u[k * nVar * nVar], nVar}; \
   }                                                                                                                \
   return {}
     GET_BLOCK_VIEW_IMPL;
@@ -797,9 +881,9 @@ class CSysMatrix {
           bij_buf[offset] = PassiveAssign(block_j[iVar][jVar] * scale);
           bji_buf[offset] = -PassiveAssign(block_i[iVar][jVar] * scale);
         }
-      QuantizeBlock(bij_buf, &q_scale_u[iEdge * nVar], &q_blocks_u[iEdge * blkSz]);
+      QuantizeBlock(bij_buf, &q_scale.u[iEdge * nVar], &q_blocks.u[iEdge * blkSz]);
       const auto k_l = edge_ptr_l[iEdge];
-      QuantizeBlock(bji_buf, &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
+      QuantizeBlock(bji_buf, &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
       return;
     }
 
@@ -867,9 +951,9 @@ class CSysMatrix {
           bii[i] -= blk_i[k][i];
           bjj[i] -= blk_j[k][i];
         }
-        QuantizeBlock(blk_j[k], &q_scale_u[iEdge[k] * nVar], &q_blocks_u[iEdge[k] * blkSz]);
+        QuantizeBlock(blk_j[k], &q_scale.u[iEdge[k] * nVar], &q_blocks.u[iEdge[k] * blkSz]);
         const auto k_l = edge_ptr_l[iEdge[k]];
-        QuantizeBlock(blk_i[k], &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
+        QuantizeBlock(blk_i[k], &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
       } else {
         auto bij = &mat.u[iEdge[k] * blkSz];
         auto bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
@@ -910,9 +994,9 @@ class CSysMatrix {
           bij_buf[offset] = PassiveAssign(block_j[iVar][jVar] * scale);
           bji_buf[offset] = -PassiveAssign(block_i[iVar][jVar] * scale);
         }
-      QuantizeBlock(bij_buf, &q_scale_u[iEdge * nVar], &q_blocks_u[iEdge * blkSz]);
+      QuantizeBlock(bij_buf, &q_scale.u[iEdge * nVar], &q_blocks.u[iEdge * blkSz]);
       const auto k_l = edge_ptr_l[iEdge];
-      QuantizeBlock(bji_buf, &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
+      QuantizeBlock(bji_buf, &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
       return;
     }
 
@@ -973,9 +1057,9 @@ class CSysMatrix {
       if (mask[k] == 0) continue;
 
       if (quantized_mode) {
-        QuantizeBlock(blk_j[k], &q_scale_u[iEdge[k] * nVar], &q_blocks_u[iEdge[k] * blkSz]);
+        QuantizeBlock(blk_j[k], &q_scale.u[iEdge[k] * nVar], &q_blocks.u[iEdge[k] * blkSz]);
         const auto k_l = edge_ptr_l[iEdge[k]];
-        QuantizeBlock(blk_i[k], &q_scale_l[k_l * nVar], &q_blocks_l[k_l * blkSz]);
+        QuantizeBlock(blk_i[k], &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
       } else {
         ScalarType* bij = &mat.u[iEdge[k] * blkSz];
         ScalarType* bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
