@@ -27,24 +27,52 @@
 
 #include "../../include/linear_algebra/CSysVector.hpp"
 #include "../../include/linear_algebra/GPUComms.cuh"
-#include <cublas_v2.h>
 #include <algorithm>
-#include <type_traits>
 #include <vector>
 
 namespace {
 
-/*--- cuBLAS handle for the reductions. Created on first use and kept for the lifetime of
- * the program, matching the fact that CUDA is either on or off for the whole run. ---*/
-cublasHandle_t solver_blas_handle = nullptr;
+/*!
+ * \brief Fixed launch shape for DotKernel, so the number of warps per block (and thus the static
+ *        shared-memory reduction buffer's size) is a compile-time constant - no dynamic shared
+ *        memory needed for a single running sum, unlike MultiDotKernel's per-(i,j) buffer.
+ */
+constexpr unsigned int DOT_THREADS_PER_BLOCK = 256;
+constexpr unsigned int DOT_WARPS_PER_BLOCK = DOT_THREADS_PER_BLOCK / 32u;
 
-cublasHandle_t GetBlasHandle() {
-  if (solver_blas_handle == nullptr) {
-    if (cublasCreate(&solver_blas_handle) != CUBLAS_STATUS_SUCCESS) {
-      SU2_MPI::Error("cuBLAS handle creation failed for the GPU linear algebra.", CURRENT_FUNCTION);
-    }
+/*!
+ * \brief Single dot product result[0] = <x, y>, same single-pass grid-stride + warp-shuffle +
+ *        block-combine + atomicAdd reduction as MultiDotKernel (see its comment), specialized for
+ *        the one-running-sum case: no per-thread array, no dynamic shared memory, just a plain
+ *        register accumulator and a small static warpSums buffer.
+ */
+template <class ScalarType>
+__global__ void DotKernel(const ScalarType* __restrict__ x, const ScalarType* __restrict__ y, unsigned long size,
+                          ScalarType* __restrict__ result) {
+  ScalarType sum = 0;
+  const auto stride = static_cast<unsigned long>(blockDim.x) * gridDim.x;
+  for (auto k = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x; k < size; k += stride) {
+    sum += x[k] * y[k];
   }
-  return solver_blas_handle;
+
+  /*--- Warp-level reduction: after this, lane 0 of every warp holds that warp's true sum. ---*/
+  for (int offset = 16; offset > 0; offset >>= 1) sum += __shfl_down_sync(0xFFFFFFFFu, sum, offset);
+
+  /*--- Block-level combine: warp leaders stage their partials in static shared memory, thread 0
+   * sums them and issues the one atomicAdd this block contributes to the global result
+   * (pre-zeroed by the caller). ---*/
+  __shared__ ScalarType warpSums[DOT_WARPS_PER_BLOCK];
+  const unsigned int lane = threadIdx.x % 32u;
+  const unsigned int warpId = threadIdx.x / 32u;
+
+  if (lane == 0) warpSums[warpId] = sum;
+  __syncthreads();
+
+  if (threadIdx.x == 0) {
+    ScalarType blockSum = 0;
+    for (unsigned int w = 0; w < DOT_WARPS_PER_BLOCK; ++w) blockSum += warpSums[w];
+    atomicAdd(result, blockSum);
+  }
 }
 
 /*!
@@ -198,27 +226,26 @@ template <class ScalarType>
 ScalarType CSysVector<ScalarType>::dotGPU(const CSysVector& other) const {
   SU2_ZONE_SCOPED
   /*--- Both operands are already on the device, the caller owns the transfers. This
-   * reduces over MPI, so it must be called by a single thread (see SU2_DEVICE_REGION). ---*/
-  cublasHandle_t handle = GetBlasHandle();
-  cublasStatus_t status = CUBLAS_STATUS_SUCCESS;
+   * reduces over MPI, so it must be called by a single thread (see SU2_DEVICE_REGION).
+   * Deliberately the default stream, not a dedicated one - same reasoning as multiDotGPU: x/y
+   * may have just been written by VecExpr::AssignDeviceExpression, which launches on the default
+   * stream with no synchronization of its own, so a separate stream here would have no
+   * guaranteed ordering against that write. This function always syncs before returning anyway
+   * (it needs a real value for the MPI reduction), so there is no async benefit being given up. ---*/
+  static ScalarType* d_result = nullptr;
+  if (d_result == nullptr) gpuErrChk(cudaMalloc(&d_result, sizeof(ScalarType)));
+
+  gpuErrChk(cudaMemsetAsync(d_result, 0, sizeof(ScalarType)));
+
+  const auto blocks = static_cast<unsigned int>(
+      std::min<unsigned long>((nElmDomain + DOT_THREADS_PER_BLOCK - 1) / DOT_THREADS_PER_BLOCK, 1024));
+  DotKernel<ScalarType><<<blocks, DOT_THREADS_PER_BLOCK>>>(GetDevicePointer(), other.GetDevicePointer(), nElmDomain,
+                                                           d_result);
 
   ScalarType local_dot = ScalarType(0);
-
-  if constexpr (std::is_same_v<ScalarType, float>) {
-    status = cublasSdot(handle, static_cast<int>(nElmDomain), GetDevicePointer(), 1, other.GetDevicePointer(), 1,
-                        &local_dot);
-  } else if constexpr (std::is_same_v<ScalarType, double>) {
-    status = cublasDdot(handle, static_cast<int>(nElmDomain), GetDevicePointer(), 1, other.GetDevicePointer(), 1,
-                        &local_dot);
-  } else {
-    SU2_MPI::Error("Unsupported ScalarType in CSysVector::dotGPU.", CURRENT_FUNCTION);
-    return ScalarType(0);
-  }
-
-  if (status != CUBLAS_STATUS_SUCCESS) {
-    SU2_MPI::Error("cuBLAS dot failed in CSysVector::dotGPU.", CURRENT_FUNCTION);
-    return ScalarType(0);
-  }
+  gpuErrChk(cudaMemcpyAsync(&local_dot, d_result, sizeof(ScalarType), cudaMemcpyDeviceToHost));
+  gpuErrChk(cudaStreamSynchronize(nullptr));
+  gpuErrChk(cudaGetLastError());
 
   ScalarType global_dot = ScalarType(0);
   const auto mpi_type = (sizeof(ScalarType) < sizeof(double)) ? MPI_FLOAT : MPI_DOUBLE;

@@ -528,7 +528,8 @@ class CSysVector : public VecExpr::CVecExpr<CSysVector<ScalarType>, ScalarType> 
     if constexpr (su2_gpu_capable_v<ScalarType>) {
       using DeviceExpr = std::remove_cv_t<VecExpr::remove_reference_t<T>>;
       static_assert(std::is_same_v<DeviceExpr, CSysVector>,
-                    "On the device the dot product is a cuBLAS call, so it only takes vectors. "
+                    "On the device the dot product needs a real device pointer (dotGPU takes a "
+                    "materialized vector, not an expression template), so it only takes vectors. "
                     "Assign the expression to a vector first.");
       if (VecExpr::UseDeviceExpressions()) {
         /*--- dotGPU reduces over MPI, which has to happen once for the team, so the result
