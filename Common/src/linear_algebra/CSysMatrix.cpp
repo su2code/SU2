@@ -223,10 +223,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
    * the host, so only plain (or quantized) Jacobi can keep them exclusively on the device. ---*/
   jacobi_on_device = useCuda && (prec == JACOBI || prec == Q_JACOBI);
 #ifndef CODI_REVERSE_TYPE
-  /*--- Q_LU_SGS stays host-only: its forward/backward sweeps are inherently sequential and
-   * already bracketed to the host via ApplyPreconditionerOnHost, so there is nothing to gain
-   * from a device SpMV there. Q_JACOBI and Q_IDENTITY have no such sequential preconditioner
-   * step, so their (shared) quantized matrix-vector product is allowed on the device too. ---*/
+  /*--- Q_LU_SGS is still host-only. ---*/
   const bool quantized_offdiag_needed =
       allow_quant && (prec == Q_JACOBI || prec == Q_IDENTITY || (prec == Q_LU_SGS && !useCuda));
 #else
@@ -263,12 +260,8 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 #ifndef CODI_REVERSE_TYPE
     quantized_mode = true;
 #endif
-    /*--- .l/.u are pinned (page-locked) when useCuda: HtDTransfer() uploads them with
-     * cudaMemcpyAsync, which is only genuinely asynchronous from pinned host memory (see
-     * GPUMemoryAllocation::pinned_alloc); from regular pageable memory it silently degrades to a
-     * blocking copy. The diagonal (.d) is never uploaded - under CUDA it is quantized straight
-     * from gpu.d on the device instead (QuantizeDiagonalBlocksGPU()) - so it stays plain
-     * aligned_alloc regardless of useCuda. ---*/
+    /*--- .l/.u are pinned (page-locked) when useCuda because HtDTransfer() uploads them with
+     * cudaMemcpyAsync, which is only genuinely asynchronous from pinned host memory. ---*/
     auto allocQ = [](QuantType*& ptr, unsigned long n) {
       ptr = MemoryAllocation::aligned_alloc<QuantType, true>(64, n * sizeof(QuantType));
     };
@@ -783,11 +776,7 @@ void CSysMatrix<ScalarType>::QuantizeDiagonalBlocks() {
       /*--- gpu.d is already on the device - HtDTransfer() uploads it unconditionally, since
        * Jacobi's own build needs the full precision diagonal regardless of quantization - so
        * quantize straight from it here instead of quantizing on the host and uploading the
-       * result: one less host/device round trip for the diagonal specifically (L/U still have
-       * to be quantized on the host, during assembly, since only the host ever touches the
-       * matrix as it is being built). This calls the exact same EncodeQuantBlock routine the
-       * host path below uses (CSysMatrix.hpp, SU2_CUDA_HOST_DEVICE), not a separate device copy.
-       * ---*/
+       * result. ---*/
       SU2_DEVICE_REGION(QuantizeDiagonalBlocksGPU();)
       return;
     } else {

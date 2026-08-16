@@ -111,13 +111,7 @@ __device__ FORCEINLINE ScalarType* GetBlockILU(const DeviceLDU<ScalarType>& M, u
  * \brief Parallel Gauss-Jordan matrix inversion, shared by InvertDiagonalBlocksKernel and
  *        IluFactorColorKernel's diagonal-inversion step below - both already have nVar*nVar
  *        threads and two blockSize-sized shared buffers on hand at the point they need a diagonal
- *        block inverted. Unlike SU2_LinAlg::MatrixInverse (host, and the one still used to invert
- *        Linelet's tridiagonal blocks) - which does forward elimination on one thread followed by
- *        a serial back-substitution, an inherently sequential ~nVar^3 chain - this eliminates each
- *        pivot column from every OTHER row simultaneously (both above and below the pivot, no
- *        back-substitution needed), so every entry update within one pivot step is independent of
- *        every other entry in that step: nVar serial steps (each with a couple of barriers),
- *        instead of one thread serially doing all the work.
+ *        block inverted. SU2_LinAlg::MatrixInverse would have to run on a single thread.
  * \param i,j Row/column of the block entry this thread owns, in 0..nVar-1 (i.e. threadIdx.x's
  *            divmod by nVar, same mapping the caller already uses for everything else).
  * \param A Destroyed. \param Inv Must be pre-loaded with the identity, must not alias \p A;
@@ -191,15 +185,8 @@ __global__ void InvertDiagonalBlocksKernel(unsigned long nRows, unsigned long nV
 /*!
  * \brief Quantize the diagonal blocks straight from the device diagonal (gpu.d), device
  *        counterpart of CSysMatrix::QuantizeBlock (CSysMatrix.cpp). Calls the exact same
- *        EncodeQuantRow encoding routine (CSysMatrix.hpp, SU2_CUDA_HOST_DEVICE) that the host
- *        path's EncodeQuantBlock loops over, rather than a separate device copy of the encoding
- *        logic. One thread per (point, row) - each block-row's scale and quantization are
- *        already independent of every other row (see EncodeQuantRow), so this is nVar times
- *        more parallel than one-thread-per-point, and consecutive threads land nVar elements
- *        apart in mat_d instead of nVar*nVar apart, a partial coalescing win the same way
- *        ApplyJacobiPreconditionerKernel's row-major thread mapping is. Points are batched into
- *        blocks of ~128 threads the same way (threadIdx.x -> (point-within-block, row) via
- *        divmod by nVar).
+ *        EncodeQuantRow encoding function. One thread per (point, row) - each block-row's
+ *        scale and quantization are independent of every other row.
  */
 template <class ScalarType>
 __global__ void QuantizeDiagonalBlocksKernel(unsigned long nRows, unsigned long nVar,
@@ -459,14 +446,8 @@ __global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
 }
 
 /*!
- * \brief Quantized block-LDU SpMV kernel: y[iRow] = (L + D + U) * x per block-row, reading int8
- *        row-scaled quantized blocks instead of full precision ones. Device version of
- *        QuantizedRowProduct/QuantizedMatVecAdd (CSysMatrix.inl). Rows are batched per block the
- *        same way as BlockLDU_SpMV_kernel (see its comment). Each row of quantized mantissas is
- *        also read 4 bytes at a time (one 32-bit load instead of four 8-bit ones): dp4a does not
- *        apply here since only the matrix is quantized, not x, so the accumulation itself is
- *        still one scalar FMA per element in the exact same order as the scalar loop (bit-
- *        identical result) - the win is fewer, wider load instructions, not fewer FMAs.
+ * \brief Device version of QuantizedRowProduct/QuantizedMatVecAdd (CSysMatrix.inl). Rows are
+ * batched per block the same way as BlockLDU_SpMV_kernel.
  */
 template <class ScalarType>
 __global__ void QuantizedBlockLDU_SpMV_kernel(
@@ -722,18 +703,9 @@ void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
     /*--- No gpu.l/gpu.u to transfer (never allocated); mirror the host quantized off-diagonal
      * storage instead (the diagonal mirrors, d_q_scale.d/d_q_blocks.d, are not touched here at
      * all - QuantizeDiagonalBlocksGPU() populates them straight from gpu.d, just uploaded above,
-     * with no host round trip). Issued as async copies on a dedicated stream (not the default
-     * one), so this transfer (the copy engine) can actually run concurrently with whatever the
-     * preconditioner's Build() launches next on the default stream (the SMs), e.g.
-     * QuantizeDiagonalBlocksGPU - on the default stream they would just queue behind these
-     * copies instead of overlapping, since a single stream is strictly ordered. This is only
-     * genuinely asynchronous (i.e. the host thread does not block here waiting for the copy)
-     * because q_scale.l/q_blocks.l/q_scale.u/q_blocks.u are pinned host memory, see the comment
-     * on those members / Initialize() - cudaMemcpyAsync silently degrades to a blocking copy
-     * from regular pageable memory. htd_event marks the end of this transfer: the first
-     * default-stream kernel to actually read d_q_scale.l/.u/d_q_blocks.l/.u (the quantized SpMV,
-     * MatrixVectorProductGPU) waits on it there, since cross-stream dependencies are not
-     * implied by stream ordering the way same-stream ones are. ---*/
+     * with no host round trip). Issued as async copies on a dedicated stream so this transfer can
+     * run concurrently with whatever the preconditioner's Build() launches next on the default
+     * stream. ---*/
     if (htd_stream == nullptr) gpuErrChk(cudaStreamCreate(&htd_stream));
     if (htd_event == nullptr) gpuErrChk(cudaEventCreateWithFlags(&htd_event, cudaEventDisableTiming));
     gpuErrChk(cudaMemcpyAsync(d_q_scale.l, q_scale.l, sizeof(QuantType) * mat.nnz_l * nVar, cudaMemcpyHostToDevice,
@@ -768,10 +740,7 @@ void CSysMatrix<ScalarType>::MatrixVectorProductGPU(const CSysVector<ScalarType>
   dim3 gridDim(static_cast<unsigned>((nPointDomain + rowsPerBlock - 1) / rowsPerBlock), 1, 1);
   if (quantized_mode) {
     /*--- Wait (on the device, no host block) for HtDTransfer's async L/U copy on its own stream
-     * to finish before this default-stream kernel reads d_q_scale.l/.u/d_q_blocks.l/.u - a
-     * cross-stream dependency, so it is not implied by ordering the way same-stream launches are.
-     * htd_event is always valid here: HtDTransfer runs once per solve before the first call to
-     * this function (see its comment), so it has already recorded the event at least once. ---*/
+     * to finish before this default-stream kernel reads d_q_scale.l/.u/d_q_blocks.l/.u. ---*/
     gpuErrChk(cudaStreamWaitEvent(nullptr, htd_event, 0));
     QuantizedBlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
         nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, d_q_scale.l, d_q_blocks.l, d_q_scale.d, d_q_blocks.d,

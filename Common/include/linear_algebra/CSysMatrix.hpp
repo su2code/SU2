@@ -113,11 +113,7 @@ struct CSysMatrixComms {
 /*!
  * \brief std::max/std::min, usable from both host and device code. Calling std::max/std::min
  *        directly from a SU2_CUDA_HOST_DEVICE function compiles without error but is not
- *        actually valid without --expt-relaxed-constexpr (not used in this build) - nvcc only
- *        warns ("calling a constexpr __host__ function ... is not allowed"), then silently
- *        emits device code that does not do what it looks like it does. CUDA's device compiler
- *        provides its own (unqualified) max/min built-ins instead, which these two forward to;
- *        on the host they just forward to std::max/std::min.
+ *        actually valid without --expt-relaxed-constexpr which is not used in this build.
  */
 template <class T>
 SU2_CUDA_HOST_DEVICE inline T QuantMax(T a, T b) noexcept {
@@ -141,12 +137,7 @@ SU2_CUDA_HOST_DEVICE inline T QuantMin(T a, T b) noexcept {
  *        The exponent \p e was packed as (e + 127) into the IEEE 754 biased-exponent field
  *        with a zero mantissa, giving an exact power of two: 2^e.
  *        This is the inverse of the encoding in EncodeQuantBlock.
- * \note Shared verbatim with the device (the quantized SpMV kernel in CSysMatrixGPU.cu decodes
- *       through this same function, not a separate copy), see SU2_CUDA_HOST_DEVICE. The bit
- *       reinterpretation itself branches on __CUDA_ARCH__ (mirroring RegularizePivot in
- *       CMatrixInverse.hpp): __uint_as_float on device, memcpy on host - plain memcpy compiles
- *       for the device too, but was observed to silently misinterpret the bits there rather than
- *       reinterpreting them.
+ * \note Branches on __CUDA_ARCH__, plain memcpy compiles for the device but does not work!
  */
 SU2_CUDA_HOST_DEVICE inline float DecodeQuantScale(int8_t e) noexcept {
   const uint32_t bits = static_cast<uint32_t>(QuantMax(0, static_cast<int>(e) + 127)) << 23;
@@ -163,15 +154,7 @@ SU2_CUDA_HOST_DEVICE inline float DecodeQuantScale(int8_t e) noexcept {
  * \brief Encode one row of an nVar×nVar block into int8 quantized storage: \p qs receives the
  *        row's scale exponent, \p qv (nVar entries) the clamped int8 values for row \p r.
  *        \p f(r,c) is called twice per entry (max-abs scan then encoding); it should be cheap.
- * \note Shared verbatim with the device (CSysMatrixGPU.cu's diagonal-quantization kernel encodes
- *       through this same function, not a separate copy), see SU2_CUDA_HOST_DEVICE. \p f must
- *       already return a passive (non-AD) value: every caller does, since quantization is
- *       compile-time disabled whenever ScalarType could be AD-active (see quantized_mode), so
- *       there is no SU2_TYPE::PassiveValue call here to keep this device-callable. The bit
- *       reinterpretations branch on __CUDA_ARCH__ the same way DecodeQuantScale does, see there.
- *       Split out from EncodeQuantBlock (which just calls this once per row) so a device kernel
- *       can assign one thread per row instead of one thread per whole block - each row's scale
- *       and quantization are already fully independent of every other row.
+ * \note Shared with the device and thus same __CUDA_ARCH__ branches as DecodeQuantScale.
  */
 template <class F>
 SU2_CUDA_HOST_DEVICE inline void EncodeQuantRow(const F& f, int8_t& qs, int8_t* __restrict qv, unsigned long nVar,
@@ -206,7 +189,6 @@ SU2_CUDA_HOST_DEVICE inline void EncodeQuantRow(const F& f, int8_t& qs, int8_t* 
  * \brief Encode one nVar×nVar block into per-row int8 quantized storage, see EncodeQuantRow (each
  *        row's scale/quantization is independent, this just loops over all of them serially for
  *        the host path).
- * \note Shared verbatim with the device, see SU2_CUDA_HOST_DEVICE and EncodeQuantRow.
  */
 template <class F>
 SU2_CUDA_HOST_DEVICE inline void EncodeQuantBlock(const F& f, int8_t* __restrict qs, int8_t* __restrict qv,
@@ -337,25 +319,13 @@ class CSysMatrix {
 #endif
   /*!< \brief Per-row exponents; .l/.u sized [nnz_l/u * nVar], .d [nPoint * nVar]. .l/.u are
    *          populated during assembly (quantized on the fly); .d is populated by
-   *          QuantizeDiagonalBlocks() on the host, but only when !useCuda - under CUDA the
-   *          diagonal is quantized straight from gpu.d instead (QuantizeDiagonalBlocksGPU()),
-   *          so q_scale.d/q_blocks.d are simply unused there. .l/.u are pinned (cudaMallocHost)
-   *          rather than aligned_alloc when useCuda, see Initialize(), so HtDTransfer()'s async
-   *          uploads of them are genuinely asynchronous instead of silently blocking
-   *          (cudaMemcpyAsync only overlaps with the host from pinned memory); .d is never
-   *          uploaded, so it is always plain aligned_alloc regardless of useCuda. */
+   *          QuantizeDiagonalBlocks(). .l/.u are pinned (cudaMallocHost) rather than
+   *          aligned_alloc when useCuda, so HtDTransfer()'s async uploads them. */
   LDU<QuantType> q_scale;
   /*!< \brief Quantized block entries; .l/.u sized [nnz_l/u * nVar * nEqn], .d [nPoint * nVar * nEqn]. */
   LDU<QuantType> q_blocks;
 
-  /*!< \brief Device mirrors of the quantized storage, only allocated when quantized_mode &&
-   * useCuda (currently only reachable for Q_JACOBI/Q_IDENTITY, Q_LU_SGS stays host-only).
-   * d_q_scale.l/.u and d_q_blocks.l/.u are device-side copies of q_scale.l/.u and q_blocks.l/.u,
-   * uploaded *asynchronously* by HtDTransfer(). d_q_scale.d/d_q_blocks.d are populated directly
-   * on the device from gpu.d by QuantizeDiagonalBlocksGPU() instead - gpu.d is uploaded
-   * unconditionally by HtDTransfer() anyway (Jacobi's own build needs the full precision
-   * diagonal regardless of quantization), so quantizing it there avoids a host quantize +
-   * upload round trip for the diagonal specifically. */
+  /*!< \brief Device mirrors of the quantized storage, only allocated when quantized_mode. */
   LDU<QuantType> d_q_scale;
   LDU<QuantType> d_q_blocks;
 
@@ -650,8 +620,7 @@ class CSysMatrix {
                               const CConfig* config) const;
 
   /*!
-   * \brief Quantize the diagonal blocks directly on the device, from gpu.d into
-   *        d_q_scale.d/d_q_blocks.d (EncodeQuantBlock, shared with the host path).
+   * \brief Quantize the diagonal blocks directly on the device.
    * \note Requires the device matrix to be up to date, see HtDTransfer.
    */
   void QuantizeDiagonalBlocksGPU();
