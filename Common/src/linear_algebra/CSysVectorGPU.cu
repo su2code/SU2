@@ -55,9 +55,38 @@ cublasHandle_t GetBlasHandle() {
  *        LINEAR_SOLVER_RESTART_DEFLATION (user-configurable, default 4 but not uncommon to raise
  *        into the tens), so n*m grows quadratically with that setting - e.g. m=10 already needs
  *        110. Sized generously above that; raise it further if a caller ever needs more (a clear
- *        SU2_MPI::Error fires instead of silently producing a wrong/truncated result).
+ *        SU2_MPI::Error fires instead of silently producing a wrong/truncated result). This is a
+ *        different constraint from MULTIDOT_MAX_VEC below (n and m individually can each reach
+ *        that cap, but not both at once - n*m up to MULTIDOT_MAX_VEC^2 would need an
+ *        impractically large per-thread array).
  */
 constexpr unsigned int MULTIDOT_MAX_NM = 1024;
+
+/*!
+ * \brief Cap on the individual vector counts n and m. Bounds the fixed-size pointer arrays
+ *        passed into MultiDotKernel by value as ordinary launch parameters, rather than as a
+ *        device-side array of pointers uploaded via a separate cudaMemcpy - CUDA already
+ *        marshals launch parameters for you as part of the launch itself, regardless of host
+ *        memory pinning, which sidesteps needing pinned host buffers here the way HtDTransfer's
+ *        L/U copy does (see aux_stream/htd_event in CSysMatrix, CUDA silently downgrades
+ *        cudaMemcpyAsync to a blocking copy from ordinary pageable host memory). n or m can
+ *        independently reach the Krylov restart length in this codebase's two call sites
+ *        (ModGramSchmidt in CSysSolve.cpp grows m up to the restart length with n=1; FGCRODR's
+ *        Ritz-value path grows n up to the restart length with m bounded by
+ *        LINEAR_SOLVER_RESTART_DEFLATION), so this has to cover restart length, not just the
+ *        (usually much smaller) deflation count - 128 is generous headroom over realistic
+ *        restart lengths (typically 10-50).
+ */
+constexpr unsigned int MULTIDOT_MAX_VEC = 128;
+
+/*!
+ * \brief Fixed-size array of device pointers, passed to MultiDotKernel by value (see
+ *        MULTIDOT_MAX_VEC for why).
+ */
+template <class ScalarType>
+struct MultiDotPointers {
+  const ScalarType* ptr[MULTIDOT_MAX_VEC];
+};
 
 /*!
  * \brief Compute the n*m matrix of dot products C(i,j) = <V[i], W[j]> in a single pass over the
@@ -78,9 +107,8 @@ constexpr unsigned int MULTIDOT_MAX_NM = 1024;
  *       O(nm * size).
  */
 template <class ScalarType>
-__global__ void MultiDotKernel(const ScalarType* const* __restrict__ V, unsigned int n,
-                               const ScalarType* const* __restrict__ W, unsigned int m, unsigned long size,
-                               ScalarType* __restrict__ C) {
+__global__ void MultiDotKernel(MultiDotPointers<ScalarType> V, unsigned int n, MultiDotPointers<ScalarType> W,
+                               unsigned int m, unsigned long size, ScalarType* __restrict__ C) {
   const unsigned int nm = n * m;
 
   ScalarType local[MULTIDOT_MAX_NM];
@@ -89,8 +117,8 @@ __global__ void MultiDotKernel(const ScalarType* const* __restrict__ V, unsigned
   const auto stride = static_cast<unsigned long>(blockDim.x) * gridDim.x;
   for (auto k = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x; k < size; k += stride) {
     for (unsigned int i = 0; i < n; ++i) {
-      const ScalarType v = V[i][k];
-      for (unsigned int j = 0; j < m; ++j) local[i * m + j] += v * W[j][k];
+      const ScalarType v = V.ptr[i][k];
+      for (unsigned int j = 0; j < m; ++j) local[i * m + j] += v * W.ptr[j][k];
     }
   }
 
@@ -196,6 +224,11 @@ template <class ScalarType>
 su2matrix<ScalarType> CSysVector<ScalarType>::multiDotGPU(const std::vector<CSysVector<ScalarType>>& V, const size_t i0,
                                                           const size_t n, const std::vector<CSysVector<ScalarType>>& W,
                                                           const size_t m) {
+  if (n > MULTIDOT_MAX_VEC || m > MULTIDOT_MAX_VEC) {
+    SU2_MPI::Error("CSysVector::multiDotGPU: n or m exceeds MULTIDOT_MAX_VEC, raise that constant in "
+                   "CSysVectorGPU.cu.",
+                   CURRENT_FUNCTION);
+  }
   const size_t nm = n * m;
   if (nm > MULTIDOT_MAX_NM) {
     SU2_MPI::Error("CSysVector::multiDotGPU: n*m exceeds MULTIDOT_MAX_NM, raise that constant in "
@@ -209,29 +242,19 @@ su2matrix<ScalarType> CSysVector<ScalarType>::multiDotGPU(const std::vector<CSys
   local.resize(n, m);
   if (nm == 0) return local;
 
-  /*--- Persistent device workspace, cached across calls and freed automatically when the
-   * program exits (static local destruction), instead of leaking. Only n+m pointers (not n*m,
-   * as the previous per-pair-GEMM implementation needed) since MultiDotKernel reads each vector
-   * once and reuses it across all pairs internally. ---*/
+  /*--- Persistent device workspace for the output only, cached across calls and freed
+   * automatically when the program exits (static local destruction), instead of leaking. The
+   * V/W pointers themselves need no device buffer at all: they go to MultiDotKernel as ordinary
+   * by-value launch parameters (see MultiDotPointers/MULTIDOT_MAX_VEC), which CUDA marshals
+   * itself as part of the launch - unlike a separate cudaMemcpy, that needs no pinned host
+   * buffer to actually be asynchronous. ---*/
   struct Workspace {
-    const ScalarType** d_V = nullptr;
-    const ScalarType** d_W = nullptr;
     ScalarType* d_C = nullptr;
     cudaStream_t stream = nullptr;
-    size_t vCapacity = 0, wCapacity = 0, cCapacity = 0;
+    size_t cCapacity = 0;
 
-    void EnsureCapacity(size_t n, size_t m, size_t nm) {
+    void EnsureCapacity(size_t nm) {
       if (stream == nullptr) gpuErrChk(cudaStreamCreate(&stream));
-      if (n > vCapacity) {
-        cudaFree(d_V);
-        gpuErrChk(cudaMalloc(&d_V, n * sizeof(ScalarType*)));
-        vCapacity = n;
-      }
-      if (m > wCapacity) {
-        cudaFree(d_W);
-        gpuErrChk(cudaMalloc(&d_W, m * sizeof(ScalarType*)));
-        wCapacity = m;
-      }
       if (nm > cCapacity) {
         cudaFree(d_C);
         gpuErrChk(cudaMalloc(&d_C, nm * sizeof(ScalarType)));
@@ -240,23 +263,17 @@ su2matrix<ScalarType> CSysVector<ScalarType>::multiDotGPU(const std::vector<CSys
     }
 
     ~Workspace() {
-      cudaFree(d_V);
-      cudaFree(d_W);
       cudaFree(d_C);
       if (stream != nullptr) cudaStreamDestroy(stream);
     }
   };
   static Workspace ws;
-  ws.EnsureCapacity(n, m, nm);
+  ws.EnsureCapacity(nm);
 
-  static std::vector<const ScalarType*> h_V, h_W;
-  h_V.resize(n);
-  h_W.resize(m);
-  for (size_t i = 0; i < n; ++i) h_V[i] = V[i0 + i].GetDevicePointer();
-  for (size_t j = 0; j < m; ++j) h_W[j] = W[j].GetDevicePointer();
+  MultiDotPointers<ScalarType> vPtrs{}, wPtrs{};
+  for (size_t i = 0; i < n; ++i) vPtrs.ptr[i] = V[i0 + i].GetDevicePointer();
+  for (size_t j = 0; j < m; ++j) wPtrs.ptr[j] = W[j].GetDevicePointer();
 
-  gpuErrChk(cudaMemcpyAsync(ws.d_V, h_V.data(), n * sizeof(ScalarType*), cudaMemcpyHostToDevice, ws.stream));
-  gpuErrChk(cudaMemcpyAsync(ws.d_W, h_W.data(), m * sizeof(ScalarType*), cudaMemcpyHostToDevice, ws.stream));
   gpuErrChk(cudaMemsetAsync(ws.d_C, 0, nm * sizeof(ScalarType), ws.stream));
 
   constexpr unsigned int threadsPerBlock = 256;
@@ -275,7 +292,7 @@ su2matrix<ScalarType> CSysVector<ScalarType>::multiDotGPU(const std::vector<CSys
   }
 
   MultiDotKernel<ScalarType><<<blocks, threadsPerBlock, sharedBytes, ws.stream>>>(
-      ws.d_V, static_cast<unsigned int>(n), ws.d_W, static_cast<unsigned int>(m), size, ws.d_C);
+      vPtrs, static_cast<unsigned int>(n), wPtrs, static_cast<unsigned int>(m), size, ws.d_C);
 
   gpuErrChk(cudaMemcpyAsync(local.data(), ws.d_C, nm * sizeof(ScalarType), cudaMemcpyDeviceToHost, ws.stream));
   gpuErrChk(cudaStreamSynchronize(ws.stream));
