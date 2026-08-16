@@ -108,10 +108,8 @@ CPreconditioner<ScalarType>::~CPreconditioner() {}
  * \class CIdentityPreconditioner
  * \brief No-op preconditioner used when Krylov solvers run without preconditioning.
  * \note Also serves Q_IDENTITY: Build() requests quantization of the diagonal blocks, needed by
- * the matrix-vector product shared with the Krylov solver (off diagonals are quantized on the
- * fly during assembly), even though this preconditioner's own operation is a no-op either way;
- * CSysMatrix::QuantizeDiagonalBlocks() itself no-ops unless the matrix was actually set up for
- * quantization (Q_IDENTITY/Q_JACOBI/Q_LU_SGS), so this is free for plain IDENTITY.
+ * the matrix-vector product shared with the Krylov solver even though this preconditioner's own
+ * operation is a no-op. CSysMatrix::QuantizeDiagonalBlocks() when quantization is off.
  */
 template <class ScalarType>
 class CIdentityPreconditioner final : public CPreconditioner<ScalarType> {
@@ -173,7 +171,7 @@ class CJacobiPreconditioner final : public CPreconditioner<ScalarType> {
   /*!
    * \note Request the associated matrix to build the preconditioner. Also serves Q_JACOBI:
    *       BuildJacobiPreconditioner() quantizes the diagonal blocks itself when the matrix was
-   *       set up for it, so there is nothing extra to do here for the quantized case.
+   *       set up for it.
    */
   inline void Build() override { sparse_matrix.BuildJacobiPreconditioner(); }
 };
@@ -266,8 +264,7 @@ class CLU_SGSPreconditioner final : public CPreconditioner<ScalarType> {
   }
 
   /*!
-   * \note Also serves Q_LU_SGS: quantizes the diagonal blocks (off diagonals are quantized on
-   *       the fly during assembly); a no-op for plain LU_SGS.
+   * \note Also serves Q_LU_SGS: quantizes the diagonal blocks, no-op for plain LU_SGS.
    */
   inline void Build() override { sparse_matrix.QuantizeDiagonalBlocks(); }
 };
