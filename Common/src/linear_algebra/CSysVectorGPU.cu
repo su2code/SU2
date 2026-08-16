@@ -89,22 +89,10 @@ constexpr unsigned int MULTIDOT_MAX_NM = 1024;
 
 /*!
  * \brief Caps on the individual vector counts n and m, bounding the fixed-size pointer arrays
- *        passed into MultiDotKernel by value as ordinary launch parameters (see
- *        MultiDotPointers) - CUDA marshals those for you as part of the launch itself, regardless
- *        of host memory pinning.
+ *        passed into MultiDotKernel by value as ordinary launch parameters.
  *        Asymmetric because the two call sites in this codebase produce genuinely asymmetric
- *        shapes: ModGramSchmidt (CSysSolve.cpp) grows m up to the Krylov restart length with n=1
- *        (a row vector, not really a rectangle), while FGCRODR's Ritz-value path grows n up to
- *        the restart length with m bounded by the usually much smaller
- *        LINEAR_SOLVER_RESTART_DEFLATION - a genuine, independently-sized rectangle. multiDotGPU
- *        always puts whichever of n, m is larger into the "large" kernel argument (swapping V/W
- *        and transposing the result back if needed), so one axis only needs to cover the
- *        deflation-count case while the other covers the restart-length case.
- * \note Unrelated to MULTIDOT_MAX_NM above: n and m can each independently reach this cap without
- *       n*m approaching MULTIDOT_MAX_VEC_LARGE * MULTIDOT_MAX_VEC_SMALL, since multiDotGPU checks
- *       n*m against MULTIDOT_MAX_NM separately (that one is a genuine per-thread storage cost
- *       paid regardless of the runtime n*m; these two only bound a launch parameter's marshaling
- *       size).
+ *        shapes. multiDotGPU always puts whichever of n, m is larger into the "large" kernel
+ *        argument (transposing the result back if needed).
  */
 constexpr unsigned int MULTIDOT_MAX_VEC_LARGE = 256;
 constexpr unsigned int MULTIDOT_MAX_VEC_SMALL = 64;
@@ -216,13 +204,7 @@ template <class ScalarType>
 ScalarType CSysVector<ScalarType>::dotGPU(const CSysVector& other) const {
   SU2_ZONE_SCOPED
   /*--- Both operands are already on the device, the caller owns the transfers. This reduces over
-   * MPI, so it must be called by a single thread (see SU2_DEVICE_REGION).
-   * \note Runs on the default stream: x/y may have just been written by
-   *       VecExpr::AssignDeviceExpression, which launches on the default stream with no
-   *       synchronization of its own, so a dedicated stream here would have no guaranteed
-   *       ordering against that write - CUDA only orders operations within the same stream. This
-   *       function also always synchronizes before returning (it needs a real value for the MPI
-   *       reduction), so a dedicated stream would not buy any overlap either. ---*/
+   * MPI, so it must be called by a single thread (see SU2_DEVICE_REGION). ---*/
   static ScalarType* d_result = nullptr;
   if (d_result == nullptr) gpuErrChk(cudaMalloc(&d_result, sizeof(ScalarType)));
 
@@ -282,11 +264,7 @@ su2matrix<ScalarType> CSysVector<ScalarType>::multiDotGPU(const std::vector<CSys
   /*--- Persistent device workspace for the output only, cached across calls and freed
    * automatically when the program exits (static local destruction), instead of leaking. The
    * V/W pointers themselves need no device buffer at all: they go to MultiDotKernel as ordinary
-   * by-value launch parameters (see MultiDotPointers/MULTIDOT_MAX_VEC_LARGE/SMALL).
-   * \note Runs on the default stream, same reasoning as dotGPU (see its comment): V/W may have
-   *       just been written by VecExpr::AssignDeviceExpression (e.g. LinearCombination building
-   *       w[i+1] right before ModGramSchmidt's multiDot call on it), which also runs on the
-   *       default stream with no synchronization of its own. ---*/
+   * by-value launch parameters (see MultiDotPointers/MULTIDOT_MAX_VEC_LARGE/SMALL). ---*/
   struct Workspace {
     ScalarType* d_D = nullptr;
     size_t capacity = 0;
