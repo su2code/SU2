@@ -2135,10 +2135,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
     Total_Heat = 0.0;
     Total_MaxHeat = 0.0;
     AllBound_CNearFieldOF_Inv = 0.0;
+    /*--- AllBoundInvCoeff is the scalar AeroCoeffs type (plain assignment), unlike the
+     *    AeroCoeffsArray ones below whose setZero() is itself a worksharing construct
+     *    that all threads must reach collectively, so it is zeroed here instead. ---*/
+    AllBoundInvCoeff.setZero();
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  AllBoundInvCoeff.setZero();
   TotalCoeff.setZero();
   SurfaceInvCoeff.setZero();
   SurfaceCoeff.setZero();
@@ -2322,9 +2325,14 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
 
   const su2double factor = 1.0 / AeroCoeffForceRef;
 
-  /*-- Variables initialization ---*/
+  /*-- Variables initialization. AllBoundMntCoeff is the scalar AeroCoeffs type (plain
+   *   assignment), so it is confined to the master thread with a barrier, unlike the
+   *   AeroCoeffsArray ones below whose setZero() is itself a worksharing construct that
+   *   all threads must reach collectively. ---*/
 
-  AllBoundMntCoeff.setZero();
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS { AllBoundMntCoeff.setZero(); }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
   SurfaceMntCoeff.setZero();
   MntCoeff.setZero();
 
@@ -2480,10 +2488,13 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     AllBound_HF_Visc = 0.0;
     AllBound_MaxHF_Visc = 0.0;
+    /*--- AllBoundViscCoeff is the scalar AeroCoeffs type (plain assignment), unlike
+     *    SurfaceViscCoeff below whose setZero() is itself a worksharing construct that
+     *    all threads must reach collectively, so it is zeroed here instead. ---*/
+    AllBoundViscCoeff.setZero();
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  AllBoundViscCoeff.setZero();
   SurfaceViscCoeff.setZero();
 
   SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
