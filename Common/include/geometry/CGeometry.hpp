@@ -219,9 +219,9 @@ class CGeometry {
 
   /*--- Cached least-squares gradient metric terms (see CACHE_LSQ_METRICS). ---*/
 
-  su2activematrix LSQMetricCache[2];             /*!< \brief Cached LSQ metrics S = inv(A), upper triangle stored
-                                                             row-wise, [0] unweighted, [1] inverse-distance weighted. */
-  bool LSQMetricCacheValid[2] = {false, false};  /*!< \brief Validity of the cached LSQ metrics per weighting. */
+  su2activematrix LSQMetricCache[2];            /*!< \brief Cached LSQ metrics S = inv(A), upper triangle stored
+                                                            row-wise, [0] unweighted, [1] inverse-distance weighted. */
+  bool LSQMetricCacheValid[2] = {false, false}; /*!< \brief Validity of the cached LSQ metrics per weighting. */
 
   ColMajorMatrix<uint8_t> CoarseGridColor_; /*!< \brief Coarse grid levels, colorized. */
 
