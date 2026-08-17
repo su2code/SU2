@@ -47,8 +47,11 @@ unsigned long EulerNPrimVarGrad(const CConfig *config, unsigned long ndim) {
 unsigned long EulerNSecVar(const CConfig *config) {
   const bool ideal_gas = config->GetKind_FluidModel() == STANDARD_AIR ||
                          config->GetKind_FluidModel() == IDEAL_GAS;
+  /*--- The SIMD viscous flux Jacobian (viscousFluxJacobian) reads dmudT_rho
+   * from the secondary variables also for ideal gases. ---*/
+  if (config->GetViscous()) return 8;
   if (ideal_gas) return 0;
-  return config->GetViscous() ? 8 : 2;
+  return 2;
 }
 
 CEulerVariable::CEulerVariable(su2double density, const su2double *velocity, su2double energy, unsigned long npoint,

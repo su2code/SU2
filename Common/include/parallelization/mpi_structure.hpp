@@ -124,10 +124,17 @@ class CBaseMPIWrapper {
     MPI_Comm_rank(currentComm, &Rank);
     MPI_Comm_size(currentComm, &Size);
 
-    if (winMinRankErrorInUse) MPI_Win_free(&winMinRankError);
+    if (winMinRankErrorInUse) {
+      MPI_Win_free(&winMinRankError);
+      winMinRankErrorInUse = false;
+    }
     MinRankError = Size;
-    MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL, currentComm, &winMinRankError);
-    winMinRankErrorInUse = true;
+    /*--- The window is only needed to sync the error rank between processes,
+     * and some MPI implementations cannot create windows on a single process. ---*/
+    if (Size > 1) {
+      MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL, currentComm, &winMinRankError);
+      winMinRankErrorInUse = true;
+    }
   }
 
   static inline Comm GetComm() { return currentComm; }
@@ -138,8 +145,12 @@ class CBaseMPIWrapper {
     MPI_Comm_size(currentComm, &Size);
 
     MinRankError = Size;
-    MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL, currentComm, &winMinRankError);
-    winMinRankErrorInUse = true;
+    /*--- The window is only needed to sync the error rank between processes,
+     * and some MPI implementations cannot create windows on a single process. ---*/
+    if (Size > 1) {
+      MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL, currentComm, &winMinRankError);
+      winMinRankErrorInUse = true;
+    }
   }
 
   static inline void Init_thread(int* argc, char*** argv, int required, int* provided) {
@@ -148,8 +159,12 @@ class CBaseMPIWrapper {
     MPI_Comm_size(currentComm, &Size);
 
     MinRankError = Size;
-    MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL, currentComm, &winMinRankError);
-    winMinRankErrorInUse = true;
+    /*--- The window is only needed to sync the error rank between processes,
+     * and some MPI implementations cannot create windows on a single process. ---*/
+    if (Size > 1) {
+      MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL, currentComm, &winMinRankError);
+      winMinRankErrorInUse = true;
+    }
   }
 
   static inline void Comm_rank(Comm comm, int* rank) { MPI_Comm_rank(comm, rank); }
@@ -282,8 +297,12 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
     AMPI_Comm_size(convertComm(currentComm), &Size);
 
     MinRankError = Size;
-    MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL, currentComm, &winMinRankError);
-    winMinRankErrorInUse = true;
+    /*--- The window is only needed to sync the error rank between processes,
+     * and some MPI implementations cannot create windows on a single process. ---*/
+    if (Size > 1) {
+      MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL, currentComm, &winMinRankError);
+      winMinRankErrorInUse = true;
+    }
   }
 
   static inline void Init_thread(int* argc, char*** argv, int required, int* provided) {
@@ -293,8 +312,12 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
     AMPI_Comm_size(convertComm(currentComm), &Size);
 
     MinRankError = Size;
-    MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL, currentComm, &winMinRankError);
-    winMinRankErrorInUse = true;
+    /*--- The window is only needed to sync the error rank between processes,
+     * and some MPI implementations cannot create windows on a single process. ---*/
+    if (Size > 1) {
+      MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL, currentComm, &winMinRankError);
+      winMinRankErrorInUse = true;
+    }
   }
 
   static inline void Init_AMPI(void) {
@@ -307,10 +330,17 @@ class CMediMPIWrapper : public CBaseMPIWrapper {
     AMPI_Comm_rank(convertComm(currentComm), &Rank);
     AMPI_Comm_size(convertComm(currentComm), &Size);
 
-    if (winMinRankErrorInUse) MPI_Win_free(&winMinRankError);
+    if (winMinRankErrorInUse) {
+      MPI_Win_free(&winMinRankError);
+      winMinRankErrorInUse = false;
+    }
     MinRankError = Size;
-    MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL, currentComm, &winMinRankError);
-    winMinRankErrorInUse = true;
+    /*--- The window is only needed to sync the error rank between processes,
+     * and some MPI implementations cannot create windows on a single process. ---*/
+    if (Size > 1) {
+      MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL, currentComm, &winMinRankError);
+      winMinRankErrorInUse = true;
+    }
   }
 
   static inline AMPI_Comm convertComm(MPI_Comm comm) { return comm; }

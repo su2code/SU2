@@ -922,11 +922,6 @@ class CFVMFlowSolverBase : public CSolver {
     InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
     CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
 
-    if (!adjoint) {
-      /*--- For verification cases, compute the global error metrics. ---*/
-      ComputeVerificationError(geometry, config);
-    }
-
   }
 
   /*!

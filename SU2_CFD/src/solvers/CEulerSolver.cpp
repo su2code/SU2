@@ -5801,6 +5801,11 @@ void CEulerSolver::BC_Far_Field_Residual(CGeometry* geometry, CSolver** solver_c
 
         V_infty[nDim+5] = nodes->GetLaminarViscosity(iPoint);
         V_infty[nDim+6] = nodes->GetEddyViscosity(iPoint);
+        /*--- The compressible viscous numerics read the thermal conductivity
+         *    and Cp from the primitives (V[nDim+7], V[nDim+8]); leaving them
+         *    unset zeroes the heat flux on this boundary. ---*/
+        V_infty[nDim+7] = nodes->GetThermalConductivity(iPoint);
+        V_infty[nDim+8] = nodes->GetSpecificHeatCp(iPoint);
 
         /*--- Set the normal vector and the coordinates ---*/
 

@@ -783,9 +783,6 @@ void CFVMFlowSolverBase<V, R>::CompleteImplicitIteration(CGeometry *geometry, CS
 
   InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
   CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
-
-  /*--- For verification cases, compute the global error metrics. ---*/
-  ComputeVerificationError(geometry, config);
 }
 
 template <class V, ENUM_REGIME R>
@@ -2212,6 +2209,11 @@ void CFVMFlowSolverBase<V, R>::BC_Custom_Weak(CGeometry* geometry, CSolver** sol
 
           V_outlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
           V_outlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
+          /*--- The compressible viscous numerics now read the thermal conductivity
+           *    and Cp from the primitives (V[nDim+7], V[nDim+8]); leaving them
+           *    unset zeroes the heat flux on this boundary. ---*/
+          V_outlet[nDim+7] = nodes->GetThermalConductivity(iPoint);
+          V_outlet[nDim+8] = nodes->GetSpecificHeatCp(iPoint);
 
           /*--- Set the normal vector and the coordinates ---*/
 
@@ -2347,6 +2349,11 @@ void CFVMFlowSolverBase<V, R>::BC_Custom_Weak_Residual(CGeometry* geometry, CSol
 
           V_outlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
           V_outlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
+          /*--- The compressible viscous numerics now read the thermal conductivity
+           *    and Cp from the primitives (V[nDim+7], V[nDim+8]); leaving them
+           *    unset zeroes the heat flux on this boundary. ---*/
+          V_outlet[nDim+7] = nodes->GetThermalConductivity(iPoint);
+          V_outlet[nDim+8] = nodes->GetSpecificHeatCp(iPoint);
 
           /*--- Set the normal vector and the coordinates ---*/
 
@@ -2407,9 +2414,12 @@ void CFVMFlowSolverBase<V, R>::EdgeFluxResidual(const CGeometry *geometry,
     }
     InstantiateEdgeNumerics(solvers, config);
 
-    /*--- The SIMD numerics do not use gradients of density and enthalpy. ---*/
-    if (!config->GetContinuous_Adjoint()) {
-      SU2_OMP_SAFE_GLOBAL_ACCESS(nPrimVarGrad = std::min<unsigned short>(nDim + 2, nPrimVarGrad);)
+    /*--- The SIMD numerics do not use the enthalpy gradient (the density gradient,
+     *    index nDim+2, is needed by the viscous flux Jacobian). With the flux
+     *    correction all gradients are needed: the face states are reconstructed
+     *    linearly in every variable, enthalpy included. ---*/
+    if (!config->GetContinuous_Adjoint() && !config->GetFluxCorrection()) {
+      SU2_OMP_SAFE_GLOBAL_ACCESS(nPrimVarGrad = std::min<unsigned short>(nDim + 3, nPrimVarGrad);)
     }
   }
 

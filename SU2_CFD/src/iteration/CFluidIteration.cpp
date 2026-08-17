@@ -474,6 +474,14 @@ void CFluidIteration::Solve(COutput* output, CIntegration**** integration, CGeom
     if (StopCalc) break;
   }
 
+  /*--- For verification cases, compute and print the global error metrics once,
+   *    on the final solution (converged or max number of inner iterations).
+   *    In a truncation error analysis the solution is the exact solution and
+   *    only the TE report (printed from Monitor) is meaningful. ---*/
+  if ((solver[val_iZone][INST_0][MESH_0][FLOW_SOL] != nullptr) && !config[val_iZone]->GetTrunc_Err_analysis())
+    solver[val_iZone][INST_0][MESH_0][FLOW_SOL]->ComputeVerificationError(geometry[val_iZone][INST_0][MESH_0],
+                                                                          config[val_iZone]);
+
   if (multizone && steady) {
     Output(output, geometry, solver, config, config[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
   }

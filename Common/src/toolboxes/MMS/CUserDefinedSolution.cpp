@@ -160,6 +160,12 @@ CUserDefinedSolution::CUserDefinedSolution(unsigned short val_nDim, unsigned sho
     if (nDim == 2) {
         rz = uz = vz = wz = pz = 0;
         arz = auz = avz = awz = apz = 0;
+        /*--- The source term expressions are generated in 3D and evaluated at
+         * z = 1 in 2D. The xyz cross terms and the w field must vanish entirely,
+         * otherwise the source keeps d/dz and w-transport contributions that the
+         * 2D solution (w = 0) does not have. ---*/
+        rxyz = uxyz = vxyz = wxyz = pxyz = 0;
+        w0 = wx = wy = 0;
     }
 
 

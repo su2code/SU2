@@ -122,10 +122,12 @@ public:
     V1st.i.all = gatherVariables<nPrimVar>(iPoint, solution.GetPrimitive());
     V1st.j.all = gatherVariables<nPrimVar>(jPoint, solution.GetPrimitive());
 
-    /*--- Recompute density and enthalpy instead of reconstructing. ---*/
+    /*--- Recompute density and enthalpy instead of reconstructing,
+     *    unless the flux correction is used (it assumes all variables
+     *    are reconstructed linearly from their gradients). ---*/
     Double nonPhysical;
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umusclKappa, umusclRamp,
+        iEdge, iPoint, jPoint, gamma, gasConst, muscl, correction, umusclKappa, umusclRamp,
         typeLimiter, V1st, vector_ij, solution, nonPhysical);
 
     /*--- Compute conservative variables. ---*/
@@ -531,7 +533,7 @@ class CRoeNewBase : public Base {
 
     Double nonPhysical;
     auto V = reconstructPrimitives<CCompressiblePrimitives<nDim,nPrimVarGrad> >(
-        iEdge, iPoint, jPoint, gamma, gasConst, muscl, umusclKappa, umusclRamp,
+        iEdge, iPoint, jPoint, gamma, gasConst, muscl, correction, umusclKappa, umusclRamp,
         typeLimiter, V1st, vector_ij, solution, nonPhysical);
 
     /*--- Compute conservative variables. ---*/

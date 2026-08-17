@@ -197,6 +197,7 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
                                                       const su2double& gamma,
                                                       const su2double& gasConst,
                                                       const bool muscl,
+                                                      const bool reconstructAll,
                                                       const su2double& kappa,
                                                       const su2double& umusclRamp,
                                                       const LIMITER limiterType,
@@ -217,6 +218,22 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
   }
 
   if (muscl) {
+    if (reconstructAll) {
+      /*--- The flux correction cancels the truncation terms of a scheme whose face
+       * states are linearly reconstructed in every variable, therefore density and
+       * enthalpy must be reconstructed from their own gradients (0 = all vars). ---*/
+      switch (limiterType) {
+      case LIMITER::NONE:
+        musclUnlimited<0>(iPoint, jPoint, vector_ij, gradients, V, kappa, umusclRamp);
+        break;
+      case LIMITER::VAN_ALBADA_EDGE:
+        musclEdgeLimited<0>(iPoint, jPoint, vector_ij, gradients, V, kappa, umusclRamp);
+        break;
+      default:
+        musclPointLimited<0>(iPoint, jPoint, vector_ij, limiters, gradients, V, kappa, umusclRamp);
+        break;
+      }
+    } else {
     /*--- Reconstruct density and enthalpy without using their gradients. ---*/
     constexpr auto nVarGrad = ReconVarType::nVar - 2;
     switch (limiterType) {
@@ -246,6 +263,7 @@ FORCEINLINE CPair<ReconVarType> reconstructPrimitives(const Int& iEdge,
     for (size_t iDim = 0; iDim < nDim; ++iDim) {
       V.i.enthalpy() += 0.5 * (pow(V.i.velocity(iDim), 2) - pow(V1st.i.velocity(iDim), 2));
       V.j.enthalpy() += 0.5 * (pow(V.j.velocity(iDim), 2) - pow(V1st.j.velocity(iDim), 2));
+    }
     }
 
     /*--- Detect a non-physical reconstruction based on negative pressure or density. ---*/
