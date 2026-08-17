@@ -32,6 +32,8 @@
 #include "../../../Common/include/geometry/CPhysicalGeometry.hpp"
 #include "../../../Common/include/geometry/CMultiGridGeometry.hpp"
 
+#include "../../include/gradients/computeGradientsLeastSquares.hpp"
+
 #include "../../include/solvers/CSolverFactory.hpp"
 #include "../../include/solvers/CFEM_DG_EulerSolver.hpp"
 
@@ -667,6 +669,33 @@ void CDriver::InitializeGeometry(CConfig* config, CGeometry **&geometry, bool du
       /*--- Initialize the communication framework for the periodic BCs. ---*/
       geometry[iMesh]->PreprocessPeriodicComms(geometry[iMesh], config);
 
+    }
+  }
+
+  /*--- Precompute the least-squares gradient metric terms (S = inv(A)) required by the
+   *    numerical settings, they depend only on the grid coordinates and the weighting.
+   *    Combinations not covered here (e.g. auxiliary variable gradients) are computed on
+   *    first use, and on moving/deforming grids the terms are recomputed after each mesh
+   *    update. ---*/
+
+  if (!dummy && !fem_solver && config->GetLSQMetricCaching()) {
+
+    const auto kindGrad = config->GetKind_Gradient_Method();
+    const bool lsqGrad = (kindGrad == LEAST_SQUARES) || (kindGrad == WEIGHTED_LEAST_SQUARES);
+
+    const auto kindGradRecon = config->GetKind_Gradient_Method_Recon();
+    const bool lsqGradRecon = config->GetReconstructionGradientRequired() &&
+                              ((kindGradRecon == LEAST_SQUARES) || (kindGradRecon == WEIGHTED_LEAST_SQUARES));
+
+    if (lsqGrad) computeLSQGradientMetrics(*geometry[MESH_0], kindGrad == WEIGHTED_LEAST_SQUARES);
+    if (lsqGradRecon) computeLSQGradientMetrics(*geometry[MESH_0], kindGradRecon == WEIGHTED_LEAST_SQUARES);
+
+    /*--- The coarse multigrid levels only compute gradients for the viscous fluxes. ---*/
+
+    if (lsqGrad && config->GetViscous()) {
+      for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+        computeLSQGradientMetrics(*geometry[iMesh], kindGrad == WEIGHTED_LEAST_SQUARES);
+      }
     }
   }
 

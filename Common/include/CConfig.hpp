@@ -135,8 +135,7 @@ private:
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
   Enable_Cuda,              /*!< \brief Flag for switching GPU computing*/
-  Integrated_HeatFlux,      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
-  Cache_LSQ_Metrics;        /*!< \brief Cache the factorized least-squares metric terms (rebuilt after mesh motion). */
+  Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;   /*!< \brief Damping factor for the engine inlet. */
@@ -9735,9 +9734,12 @@ public:
   bool GetIntegrated_HeatFlux() const { return Integrated_HeatFlux; }
 
   /*!
-   * \brief Reuse the factorized least-squares metric terms across gradient evaluations.
+   * \brief Whether the factorized least-squares gradient metric terms are cached and reused
+   *        across evaluations. This is the default behavior, except for periodic boundaries
+   *        (their metric and RHS accumulations are fused in one exchange) and the discrete
+   *        adjoint (the coordinate dependence of the metrics must remain on the tape).
    */
-  bool GetCache_LSQ_Metrics() const { return Cache_LSQ_Metrics; }
+  bool GetLSQMetricCaching() const { return (nMarker_PerBound == 0) && !DiscreteAdjoint; }
 
   /*!
    * \brief Get Compute Average.

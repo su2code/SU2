@@ -217,7 +217,7 @@ class CGeometry {
   unsigned long edgeColorGroupSize{1};     /*!< \brief Size of the edge groups within each color. */
   unsigned long elemColorGroupSize{1};     /*!< \brief Size of the element groups within each color. */
 
-  /*--- Cached least-squares gradient metric terms (see CACHE_LSQ_METRICS). ---*/
+  /*--- Cached least-squares gradient metric terms (see computeGradientsLeastSquares.hpp). ---*/
 
   su2activematrix LSQMetricCache[2];            /*!< \brief Cached LSQ metrics S = inv(A), upper triangle stored
                                                             row-wise, [0] unweighted, [1] inverse-distance weighted. */

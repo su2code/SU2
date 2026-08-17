@@ -2174,13 +2174,9 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, const CConfig *config) 
   auto& gradient = base_nodes->GetAuxVarGradient();
   auto& rmatrix  = base_nodes->GetRmatrix();
 
-  auto cacheMode = LSQ_METRIC_CACHE::NONE;
-  if (config->GetCache_LSQ_Metrics()) {
-    cacheMode = geometry->LSQMetricCacheIsValid(weighted) ? LSQ_METRIC_CACHE::APPLY : LSQ_METRIC_CACHE::BUILD;
-  }
-
   computeGradientsLeastSquares(this, MPI_QUANTITIES::AUXVAR_GRADIENT, PERIODIC_NONE, *geometry, *config,
-                               weighted, solution, 0, base_nodes->GetnAuxVar(), -1, gradient, rmatrix, cacheMode);
+                               weighted, solution, 0, base_nodes->GetnAuxVar(), -1, gradient, rmatrix,
+                               config->GetLSQMetricCaching());
 }
 
 void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, const CConfig *config, short idxVel, bool reconstruction) {
@@ -2214,14 +2210,8 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, const CConfig *config
   auto& gradient = reconstruction? base_nodes->GetGradient_Reconstruction() : base_nodes->GetGradient();
   const auto comm = reconstruction? MPI_QUANTITIES::SOLUTION_GRAD_REC : MPI_QUANTITIES::SOLUTION_GRADIENT;
 
-  /*--- The cached metrics (stored per-geometry) are shared with all other LSQ gradients. ---*/
-
-  auto cacheMode = LSQ_METRIC_CACHE::NONE;
-  if (config->GetCache_LSQ_Metrics()) {
-    cacheMode = geometry->LSQMetricCacheIsValid(weighted) ? LSQ_METRIC_CACHE::APPLY : LSQ_METRIC_CACHE::BUILD;
-  }
-
-  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, idxVel, gradient, rmatrix, cacheMode);
+  computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted, solution, 0, nVar, idxVel,
+                               gradient, rmatrix, config->GetLSQMetricCaching());
 }
 
 void CSolver::SetUndivided_Laplacian(CGeometry *geometry, const CConfig *config) {

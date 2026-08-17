@@ -30,21 +30,6 @@
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
 #include "correctGradientsSymmetry.hpp"
 
-/*!
- * \brief Caching strategy for the least-squares metric terms (S := inv(A)).
- * \note The metric terms depend only on the grid coordinates and the type of weighting,
- *       they can be computed once (BUILD) and reused (APPLY) while the coordinates do
- *       not change, which reduces the work per evaluation to the right-hand-side sums
- *       and one small matrix-vector product per point. On moving/deforming grids the
- *       cache is invalidated when the dual grid is updated (CGeometry::SetControlVolume)
- *       and rebuilt on the next evaluation.
- */
-enum class LSQ_METRIC_CACHE {
-  NONE,   /*!< \brief Assemble and factorize the metric terms on the fly (no reuse). */
-  BUILD,  /*!< \brief Assemble and factorize, then store S in the geometry cache for reuse. */
-  APPLY,  /*!< \brief Reuse the S matrix stored in the geometry cache. */
-};
-
 namespace detail {
 
 /*!
@@ -90,6 +75,45 @@ FORCEINLINE void computeSmatrix(su2double r11, su2double r12, su2double r13,
 }
 
 /*!
+ * \brief Factorize the accumulated normal matrix A of the least-squares problem
+ *        (Cholesky) and form S = inv(A), the entries r* are the unique entries of A.
+ *        A (nearly) singular matrix results in S = 0, i.e. a zero gradient.
+ * \ingroup FvmAlgos
+ */
+template<size_t nDim>
+FORCEINLINE void invertNormalMatrix(su2double r11, su2double r12, su2double r13,
+                                    su2double r22, su2double r23_a, su2double r23_b,
+                                    su2double r33, su2double Smatrix[][nDim])
+{
+  const auto eps = pow(std::numeric_limits<passivedouble>::epsilon(),2);
+
+  r11 = sqrt(max(r11, eps));
+  r12 /= r11;
+  r22 = sqrt(max(r22 - r12*r12, eps));
+
+  su2double r23 = 0.0;
+  if (nDim == 3) {
+    r13 /= r11;
+    r23 = r23_a/r22 - r23_b*r12/(r11*r22);
+    r33 = sqrt(max(r33 - r23*r23 - r13*r13, eps));
+  }
+  else {
+    r13 = 0.0;
+    r33 = 1.0;
+  }
+
+  /*--- Compute determinant ---*/
+
+  const su2double detR2 = pow(r11*r22*r33, 2);
+
+  /*--- S matrix := inv(R)*traspose(inv(R)), detect singular matrix ---*/
+
+  if (detR2 > eps) {
+    computeSmatrix(r11, r12, r13, r22, r23, r33, detR2, Smatrix);
+  }
+}
+
+/*!
  * \brief Solve the least-squares problem for one point.
  * \ingroup FvmAlgos
  * \note See detail::computeGradientsLeastSquares for the
@@ -100,12 +124,9 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
                                    size_t varBegin,
                                    size_t varEnd,
                                    const RMatrixType& Rmatrix,
-                                   GradientType& gradient,
-                                   su2activematrix* metricCache = nullptr)
+                                   GradientType& gradient)
 {
-  const auto eps = pow(std::numeric_limits<passivedouble>::epsilon(),2);
-
-  /*--- Entries of upper triangular matrix R. ---*/
+  /*--- Entries of the normal matrix A. ---*/
 
   if (periodic) {
     AD::StartPreacc();
@@ -114,14 +135,10 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
     AD::SetPreaccIn(Rmatrix(iPoint,1,1));
   }
 
-  su2double r11 = Rmatrix(iPoint,0,0);
-  su2double r12 = Rmatrix(iPoint,0,1);
-  su2double r22 = Rmatrix(iPoint,1,1);
-  su2double r13 = 0.0, r23 = 0.0, r33 = 1.0;
-
-  r11 = sqrt(max(r11, eps));
-  r12 /= r11;
-  r22 = sqrt(max(r22 - r12*r12, eps));
+  const su2double r11 = Rmatrix(iPoint,0,0);
+  const su2double r12 = Rmatrix(iPoint,0,1);
+  const su2double r22 = Rmatrix(iPoint,1,1);
+  su2double r13 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
 
   if (nDim == 3) {
     if (periodic) {
@@ -133,37 +150,13 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
 
     r13 = Rmatrix(iPoint,0,2);
     r33 = Rmatrix(iPoint,2,2);
-    const auto r23_a = Rmatrix(iPoint,1,2);
-    const auto r23_b = Rmatrix(iPoint,2,1);
-
-    r13 /= r11;
-    r23 = r23_a/r22 - r23_b*r12/(r11*r22);
-    r33 = sqrt(max(r33 - r23*r23 - r13*r13, eps));
+    r23_a = Rmatrix(iPoint,1,2);
+    r23_b = Rmatrix(iPoint,2,1);
   }
-
-  /*--- Compute determinant ---*/
-
-  const su2double detR2 = pow(r11*r22*r33, 2);
-
-  /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
 
   su2double Smatrix[nDim][nDim] = {{0.0}};
 
-  /*--- Detect singular matrix ---*/
-
-  if (detR2 > eps) {
-    computeSmatrix(r11, r12, r13, r22, r23, r33, detR2, Smatrix);
-  }
-
-  /*--- Store the metric terms in the geometry cache for reuse (a singular point stores
-   *    S = 0, i.e. its gradient will be zero, as in the on-the-fly path). Only used in
-   *    primal mode, hence no AD handling. ---*/
-
-  if (metricCache != nullptr) {
-    for (size_t iDim = 0; iDim < nDim; ++iDim)
-      for (size_t jDim = iDim; jDim < nDim; ++jDim)
-        (*metricCache)(iPoint, lsqCacheIdx(nDim, iDim, jDim)) = Smatrix[iDim][jDim];
-  }
+  invertNormalMatrix<nDim>(r11, r12, r13, r22, r23_a, r23_b, r33, Smatrix);
 
   if (periodic) {
     /*--- Stop preacc here as gradient is in/out. ---*/
@@ -197,12 +190,93 @@ FORCEINLINE void solveLeastSquares(size_t iPoint,
 }
 
 /*!
- * \brief Fast least-squares gradient evaluation reusing cached metric terms.
+ * \brief Assemble, factorize, and store the least-squares gradient metric terms
+ *        (S = inv(A), upper triangle row-wise) of a grid in the geometry cache.
  * \ingroup FvmAlgos
- * \note Requires a previous call in BUILD mode with the same weighting, which stores
- *       S = inv(A) in the geometry cache (shared by all solvers, one slot per weighting).
- *       Only the right-hand side b = sum_k w*dist*(u_k - u_i) is accumulated (in an edge
- *       loop, i.e. each edge is visited once since its contribution is identical for both
+ * \note The metric terms depend only on the node coordinates and the weighting. They are
+ *       computed during the geometry preprocessing (see CDriver::InitializeGeometry) and,
+ *       on moving/deforming grids, recomputed on the first gradient evaluation after the
+ *       dual grid update invalidates them (CGeometry::SetControlVolume). The function is
+ *       safe to call from inside or outside an OpenMP parallel region, and returns
+ *       immediately if the cache is already valid.
+ */
+template<size_t nDim>
+void computeLSQMetrics(CGeometry& geometry, bool weighted)
+{
+  if (geometry.LSQMetricCacheIsValid(weighted)) return;
+
+  const size_t nPointDomain = geometry.GetnPointDomain();
+
+#ifdef HAVE_OMP
+  constexpr size_t OMP_MAX_CHUNK = 512;
+
+  const size_t chunkSize = computeStaticChunkSize(nPointDomain,
+                           omp_get_max_threads(), OMP_MAX_CHUNK);
+#endif
+
+  auto& metricCache = geometry.GetLSQMetricCache(weighted);
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    if (metricCache.size() == 0) metricCache.resize(nPointDomain, nDim*(nDim+1)/2);
+  } END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  SU2_OMP_FOR_DYN(chunkSize)
+  for (size_t iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+    const auto coord_i = geometry.nodes->GetCoord(iPoint);
+
+    /*--- Accumulate the unique entries of the normal matrix A. ---*/
+
+    su2double r11 = 0.0, r12 = 0.0, r13 = 0.0, r22 = 0.0, r23_a = 0.0, r23_b = 0.0, r33 = 0.0;
+
+    for (auto jPoint : geometry.nodes->GetPoints(iPoint)) {
+      su2double dist_ij[nDim] = {0.0};
+      GeometryToolbox::Distance(nDim, geometry.nodes->GetCoord(jPoint), coord_i, dist_ij);
+
+      su2double weight = 1.0;
+      if (weighted) {
+        const su2double dist2 = GeometryToolbox::SquaredNorm(nDim, dist_ij);
+        if (dist2 <= 0.0) continue;
+        weight = 1.0 / dist2;
+      }
+
+      r11 += dist_ij[0]*dist_ij[0]*weight;
+      r12 += dist_ij[0]*dist_ij[1]*weight;
+      r22 += dist_ij[1]*dist_ij[1]*weight;
+
+      if (nDim == 3) {
+        r13   += dist_ij[0]*dist_ij[2]*weight;
+        r23_a += dist_ij[1]*dist_ij[2]*weight;
+        r23_b += dist_ij[0]*dist_ij[2]*weight;
+        r33   += dist_ij[2]*dist_ij[2]*weight;
+      }
+    }
+
+    su2double Smatrix[nDim][nDim] = {{0.0}};
+
+    invertNormalMatrix<nDim>(r11, r12, r13, r22, r23_a, r23_b, r33, Smatrix);
+
+    for (size_t iDim = 0; iDim < nDim; ++iDim)
+      for (size_t jDim = iDim; jDim < nDim; ++jDim)
+        metricCache(iPoint, lsqCacheIdx(nDim, iDim, jDim)) = Smatrix[iDim][jDim];
+  }
+  END_SU2_OMP_FOR
+
+  /*--- Declare the cache valid and make sure the edge coloring is available before the
+   *    first cached evaluation, building it here avoids a race on its lazy construction. ---*/
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    geometry.GetEdgeColoring();
+    geometry.SetLSQMetricCacheValid(weighted);
+  } END_SU2_OMP_SAFE_GLOBAL_ACCESS
+}
+
+/*!
+ * \brief Fast least-squares gradient evaluation reusing the cached metric terms.
+ * \ingroup FvmAlgos
+ * \note Requires valid metric terms for this weighting in the geometry cache (see
+ *       computeLSQMetrics, shared by all solvers, one slot per weighting). Only the
+ *       right-hand side b = sum_k w*dist*(u_k - u_i) is accumulated (in an edge loop,
+ *       i.e. each edge is visited once since its contribution is identical for both
  *       end points), followed by the product S*b per point. Not compatible with periodic
  *       boundaries.
  */
@@ -373,33 +447,22 @@ void computeGradientsLeastSquares(CSolver* solver,
                                   const int idxVel,
                                   GradientType& gradient,
                                   RMatrixType& Rmatrix,
-                                  LSQ_METRIC_CACHE cacheMode)
+                                  bool useCaching)
 {
   const bool periodic = (solver != nullptr) && (config.GetnMarker_Periodic() > 0);
 
-  /*--- The metric caching does not support the mid-computation periodic accumulations. ---*/
+  /*--- Use the cached metric terms, rebuilding them if the coordinates changed since the
+   *    geometry preprocessing (or if this combination was not covered by it). The caching
+   *    does not support the mid-computation periodic accumulations. ---*/
 
-  if (periodic) cacheMode = LSQ_METRIC_CACHE::NONE;
-
-  if (cacheMode == LSQ_METRIC_CACHE::APPLY) {
+  if (useCaching && !periodic) {
+    computeLSQMetrics<nDim>(geometry, weighted);
     computeGradientsLeastSquaresCached<nDim>(solver, kindMpiComm, geometry, config, weighted,
                                              field, varBegin, varEnd, idxVel, gradient);
     return;
   }
 
   const size_t nPointDomain = geometry.GetnPointDomain();
-
-  /*--- In BUILD mode, allocate the geometry cache for this weighting (all threads
-   *    synchronize on the master doing the allocation). ---*/
-
-  su2activematrix* metricCache = nullptr;
-
-  if (cacheMode == LSQ_METRIC_CACHE::BUILD) {
-    metricCache = &geometry.GetLSQMetricCache(weighted);
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      if (metricCache->size() == 0) metricCache->resize(nPointDomain, nDim*(nDim+1)/2);
-    } END_SU2_OMP_SAFE_GLOBAL_ACCESS
-  }
 
 #ifdef HAVE_OMP
   constexpr size_t OMP_MAX_CHUNK = 512;
@@ -495,20 +558,10 @@ void computeGradientsLeastSquares(CSolver* solver,
     else {
       /*--- Periodic comms are not needed, solve the LS problem for iPoint. ---*/
 
-      solveLeastSquares<nDim, false>(iPoint, varBegin, varEnd, Rmatrix, gradient, metricCache);
+      solveLeastSquares<nDim, false>(iPoint, varBegin, varEnd, Rmatrix, gradient);
     }
   }
   END_SU2_OMP_FOR
-
-  /*--- Declare the cache valid and make sure the edge coloring is available before the
-   *    first cached evaluation, building it here avoids a race on its lazy construction. ---*/
-
-  if (metricCache != nullptr) {
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-      geometry.GetEdgeColoring();
-      geometry.SetLSQMetricCacheValid(weighted);
-    } END_SU2_OMP_SAFE_GLOBAL_ACCESS
-  }
 
   /*--- Correct the gradient values across any periodic boundaries. ---*/
 
@@ -562,15 +615,34 @@ void computeGradientsLeastSquares(CSolver* solver,
                                   const int idxVel,
                                   GradientType& gradient,
                                   RMatrixType& Rmatrix,
-                                  LSQ_METRIC_CACHE cacheMode = LSQ_METRIC_CACHE::NONE) {
+                                  bool useCaching = false) {
   switch (geometry.GetnDim()) {
   case 2:
     detail::computeGradientsLeastSquares<2>(solver, kindMpiComm, kindPeriodicComm, geometry, config,
-                                            weighted, field, varBegin, varEnd, idxVel, gradient, Rmatrix, cacheMode);
+                                            weighted, field, varBegin, varEnd, idxVel, gradient, Rmatrix, useCaching);
     break;
   case 3:
     detail::computeGradientsLeastSquares<3>(solver, kindMpiComm, kindPeriodicComm, geometry, config,
-                                            weighted, field, varBegin, varEnd, idxVel, gradient, Rmatrix, cacheMode);
+                                            weighted, field, varBegin, varEnd, idxVel, gradient, Rmatrix, useCaching);
+    break;
+  default:
+    SU2_MPI::Error("Too many dimensions to compute gradients.", CURRENT_FUNCTION);
+    break;
+  }
+}
+
+/*!
+ * \brief Compute (if not already valid) the cached least-squares gradient metric terms of
+ *        a grid for one type of weighting, see detail::computeLSQMetrics.
+ * \ingroup FvmAlgos
+ */
+inline void computeLSQGradientMetrics(CGeometry& geometry, bool weighted) {
+  switch (geometry.GetnDim()) {
+  case 2:
+    detail::computeLSQMetrics<2>(geometry, weighted);
+    break;
+  case 3:
+    detail::computeLSQMetrics<3>(geometry, weighted);
     break;
   default:
     SU2_MPI::Error("Too many dimensions to compute gradients.", CURRENT_FUNCTION);

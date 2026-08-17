@@ -1778,9 +1778,6 @@ void CConfig::SetConfig_Options() {
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
   /*!\brief INTEGRATED_HEATFLUX \n DESCRIPTION: Prescribe Heatflux in [W] instead of [W/m^2] \ingroup Config \default false */
   addBoolOption("INTEGRATED_HEATFLUX", Integrated_HeatFlux, false);
-  /*!\brief CACHE_LSQ_METRICS \n DESCRIPTION: Cache the factorized least-squares gradient metrics (S = A^-1) and
-   reuse them across gradient evaluations. Not active for periodic boundaries or the discrete adjoint. \default false */
-  addBoolOption("CACHE_LSQ_METRICS", Cache_LSQ_Metrics, false);
   /*!\brief MARKER_HEATTRANSFER DESCRIPTION: Heat flux with specified heat transfer coefficient boundary marker(s)\n
    * Format: ( Heat transfer marker, heat transfer coefficient, wall temperature (static), ... ) \ingroup Config  */
   addExhaustOption("MARKER_HEATTRANSFER", nMarker_HeatTransfer, Marker_HeatTransfer, HeatTransfer_Coeff, HeatTransfer_WallTemp);
@@ -3887,17 +3884,6 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
       SU2_MPI::Error("Centered schemes do not use MUSCL reconstruction (use MUSCL_FLOW= NO).", CURRENT_FUNCTION);
     } else {
       MUSCL_Flow = false;
-    }
-  }
-
-  /*--- The cached LSQ metrics require an RHS-only periodic exchange that is not implemented, and
-   *    their coordinate dependence must remain on the tape for the discrete adjoint. On moving or
-   *    deforming grids the cache is invalidated and rebuilt whenever the dual grid is updated. ---*/
-  if (Cache_LSQ_Metrics && (nMarker_PerBound > 0 || DiscreteAdjoint)) {
-    Cache_LSQ_Metrics = false;
-    if (rank == MASTER_NODE) {
-      cout << "WARNING: CACHE_LSQ_METRICS is not compatible with periodic boundaries or the\n"
-              "         discrete adjoint. The option was disabled." << endl;
     }
   }
 
