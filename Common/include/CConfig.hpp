@@ -135,7 +135,8 @@ private:
   Hold_GridFixed,           /*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric,             /*!< \brief Flag for axisymmetric calculations */
   Enable_Cuda,              /*!< \brief Flag for switching GPU computing*/
-  Integrated_HeatFlux;      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Integrated_HeatFlux,      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Cache_LSQ_Metrics;        /*!< \brief Cache the factorized least-squares metric terms (rebuilt after mesh motion). */
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;   /*!< \brief Damping factor for the engine inlet. */
@@ -9732,6 +9733,11 @@ public:
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
   bool GetIntegrated_HeatFlux() const { return Integrated_HeatFlux; }
+
+  /*!
+   * \brief Reuse the factorized least-squares metric terms across gradient evaluations.
+   */
+  bool GetCache_LSQ_Metrics() const { return Cache_LSQ_Metrics; }
 
   /*!
    * \brief Get Compute Average.

@@ -424,8 +424,16 @@ void CFVMFlowSolverBase<V, R>::SetPrimitive_Gradient_LS(CGeometry* geometry, con
   auto& gradient = reconstruction ? nodes->GetGradient_Reconstruction() : nodes->GetGradient_Primitive();
   const auto comm = reconstruction? MPI_QUANTITIES::PRIMITIVE_GRAD_REC : MPI_QUANTITIES::PRIMITIVE_GRADIENT;
 
+  /*--- With metric caching, reuse the factorized LSQ terms stored in the geometry (shared by
+   *    all solvers, one slot per weighting) or (re)build them on the first evaluation. ---*/
+
+  auto cacheMode = LSQ_METRIC_CACHE::NONE;
+  if (config->GetCache_LSQ_Metrics()) {
+    cacheMode = geometry->LSQMetricCacheIsValid(weighted) ? LSQ_METRIC_CACHE::APPLY : LSQ_METRIC_CACHE::BUILD;
+  }
+
   computeGradientsLeastSquares(this, comm, commPer, *geometry, *config, weighted,
-                               primitives, 0, nPrimVarGrad, prim_idx.Velocity(), gradient, rmatrix);
+                               primitives, 0, nPrimVarGrad, prim_idx.Velocity(), gradient, rmatrix, cacheMode);
 }
 
 template <class V, ENUM_REGIME R>
