@@ -134,6 +134,11 @@ class CFVMFlowSolverBase : public CSolver {
     AeroCoeffs() { setZero(); }
   };
 
+  /*--- Helpers shared by Pressure_Forces, Momentum_Forces and Friction_Forces (which each
+   *    reduce/accumulate their own AeroCoeffs/AeroCoeffsArray triple the same way) are free
+   *    function templates local to CFVMFlowSolverBase.inl, not members: see AddCoeffContribution,
+   *    ComputeAeroCoeffsFromForceMoment, ReduceCoeffsMPI and AccumulateTotalCoeffs there. ---*/
+
   AeroCoeffsArray InvCoeff;        /*!< \brief Inviscid pressure contributions for each boundary. */
   AeroCoeffsArray SurfaceInvCoeff; /*!< \brief Inviscid pressure contributions for each monitoring boundary. */
   AeroCoeffs AllBoundInvCoeff;     /*!< \brief Total pressure contribution for all the boundaries. */

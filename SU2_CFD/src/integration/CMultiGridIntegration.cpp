@@ -1001,16 +1001,19 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
                                                       unsigned short FinestMesh, unsigned short RunTime_EqSystem,
                                                       su2double *monitor) {
   SU2_ZONE_SCOPED
+
+  if (RunTime_EqSystem == RUNTIME_FLOW_SYS) {
+    /*--- Calculate the inviscid and viscous forces ---*/
+
+    solver_container[FinestMesh][FLOW_SOL]->Pressure_Forces(geometry[FinestMesh], config);
+    solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
+    solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
+  }
+
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
   switch (RunTime_EqSystem) {
 
     case RUNTIME_FLOW_SYS:
-
-      /*--- Calculate the inviscid and viscous forces ---*/
-
-      solver_container[FinestMesh][FLOW_SOL]->Pressure_Forces(geometry[FinestMesh], config);
-      solver_container[FinestMesh][FLOW_SOL]->Momentum_Forces(geometry[FinestMesh], config);
-      solver_container[FinestMesh][FLOW_SOL]->Friction_Forces(geometry[FinestMesh], config);
 
       /*--- Calculate the turbo performance (only on the fine grid; turbo
        *    geometry data is only available on MESH_0). ---*/
