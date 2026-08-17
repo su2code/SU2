@@ -75,14 +75,6 @@ CFVMFlowSolverBase<V, R>::AeroCoeffsArray::~AeroCoeffsArray() {
 }
 
 template <class V, ENUM_REGIME R>
-void CFVMFlowSolverBase<V, R>::AeroCoeffsArray::setZero(int i) {
-  CD[i] = CL[i] = CSF[i] = CEff[i] = 0.0;
-  CFx[i] = CFy[i] = CFz[i] = CMx[i] = 0.0;
-  CMy[i] = CMz[i] = CoPx[i] = CoPy[i] = 0.0;
-  CoPz[i] = CT[i] = CQ[i] = CMerit[i] = 0.0;
-}
-
-template <class V, ENUM_REGIME R>
 void CFVMFlowSolverBase<V, R>::Allocate(const CConfig& config) {
   SU2_ZONE_SCOPED
 
@@ -2121,6 +2113,8 @@ void AccumulateTotalCoeffs(const CConfig* config, const AeroCoeffsT& allBoundCoe
 
 template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
+
   const su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
   const su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
   /*--- Precomputed once here since ComputeAeroCoeffsFromForceMoment is called once per monitored
@@ -2137,26 +2131,22 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     SetReferenceValues(*config);
-
-    TotalCoeff.setZero();
-
     Total_CNearFieldOF = 0.0;
     Total_Heat = 0.0;
     Total_MaxHeat = 0.0;
-
-    AllBoundInvCoeff.setZero();
-
     AllBound_CNearFieldOF_Inv = 0.0;
-
-    SurfaceInvCoeff.setZero();
-    SurfaceCoeff.setZero();
-
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-      InvCoeff.setZero(iMarker);
-      CNearFieldOF_Inv[iMarker] = 0.0;
-    }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  AllBoundInvCoeff.setZero();
+  TotalCoeff.setZero();
+  SurfaceInvCoeff.setZero();
+  SurfaceCoeff.setZero();
+  InvCoeff.setZero();
+
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) CNearFieldOF_Inv[iMarker] = 0.0;
+  END_SU2_OMP_FOR
 
   const su2double factor = 1.0 / AeroCoeffForceRef;
 
@@ -2283,22 +2273,28 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
    *    folding its partial contributions above (guaranteed by the barrier at the start of
    *    the safe-global-access section). ---*/
 
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-      const auto Boundary = config->GetMarker_All_KindBC(iMarker);
-      const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
-      if (Monitoring == YES && Boundary != NEARFIELD_BOUNDARY) {
-        InvCoeff.CEff[iMarker] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
-        InvCoeff.CMerit[iMarker] = InvCoeff.CT[iMarker] / (InvCoeff.CQ[iMarker] + EPS);
-      }
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    const auto Boundary = config->GetMarker_All_KindBC(iMarker);
+    const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    if (Monitoring == YES && Boundary != NEARFIELD_BOUNDARY) {
+      InvCoeff.CEff[iMarker] = InvCoeff.CL[iMarker] / (InvCoeff.CD[iMarker] + EPS);
+      InvCoeff.CMerit[iMarker] = InvCoeff.CT[iMarker] / (InvCoeff.CQ[iMarker] + EPS);
     }
+  }
+  END_SU2_OMP_FOR
+
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring();
+       iMarker_Monitoring++) {
+    SurfaceInvCoeff.CEff[iMarker_Monitoring] =
+        SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
+  }
+  END_SU2_OMP_FOR
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     AllBoundInvCoeff.CEff = AllBoundInvCoeff.CL / (AllBoundInvCoeff.CD + EPS);
     AllBoundInvCoeff.CMerit = AllBoundInvCoeff.CT / (AllBoundInvCoeff.CQ + EPS);
-    for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring();
-         iMarker_Monitoring++) {
-      SurfaceInvCoeff.CEff[iMarker_Monitoring] =
-          SurfaceInvCoeff.CL[iMarker_Monitoring] / (SurfaceInvCoeff.CD[iMarker_Monitoring] + EPS);
-    }
 
     ReduceCoeffsMPI(config, AllBoundInvCoeff, SurfaceInvCoeff);
 
@@ -2315,6 +2311,8 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
 
 template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
+
   const su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
   const su2double Beta = config->GetAoS() * PI_NUMBER / 180.0;
   const su2double CosAlpha = cos(Alpha), SinAlpha = sin(Alpha), CosBeta = cos(Beta), SinBeta = sin(Beta);
@@ -2326,13 +2324,9 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
 
   /*-- Variables initialization ---*/
 
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  {
-    AllBoundMntCoeff.setZero();
-    SurfaceMntCoeff.setZero();
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) MntCoeff.setZero(iMarker);
-  }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  AllBoundMntCoeff.setZero();
+  SurfaceMntCoeff.setZero();
+  MntCoeff.setZero();
 
   /*--- Loop over the Inlet-Outlet Markers (see Pressure_Forces for how the parallel
    *    reduction over threads is organized). ---*/
@@ -2425,30 +2419,31 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
 
   /*--- Derive the ratio coefficients from the fully-reduced totals, once. ---*/
 
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  {
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-      const auto Boundary = config->GetMarker_All_KindBC(iMarker);
-      const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
-      if (Monitoring == YES && ((Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) ||
-          (Boundary == ACTDISK_INLET) || (Boundary == ACTDISK_OUTLET) ||
-          (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST))) {
-        MntCoeff.CEff[iMarker] = MntCoeff.CL[iMarker] / (MntCoeff.CD[iMarker] + EPS);
-        MntCoeff.CMerit[iMarker] = MntCoeff.CT[iMarker] / (MntCoeff.CQ[iMarker] + EPS);
-      }
-    }
-    AllBoundMntCoeff.CEff = AllBoundMntCoeff.CL / (AllBoundMntCoeff.CD + EPS);
-    AllBoundMntCoeff.CMerit = AllBoundMntCoeff.CT / (AllBoundMntCoeff.CQ + EPS);
-    for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring();
-         iMarker_Monitoring++) {
-      SurfaceMntCoeff.CEff[iMarker_Monitoring] =
-          SurfaceMntCoeff.CL[iMarker_Monitoring] / (SurfaceMntCoeff.CD[iMarker_Monitoring] + EPS);
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    const auto Boundary = config->GetMarker_All_KindBC(iMarker);
+    const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    if (Monitoring == YES && ((Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) ||
+        (Boundary == ACTDISK_INLET) || (Boundary == ACTDISK_OUTLET) ||
+        (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST))) {
+      MntCoeff.CEff[iMarker] = MntCoeff.CL[iMarker] / (MntCoeff.CD[iMarker] + EPS);
+      MntCoeff.CMerit[iMarker] = MntCoeff.CT[iMarker] / (MntCoeff.CQ[iMarker] + EPS);
     }
   }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  END_SU2_OMP_FOR
 
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  {
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring();
+       iMarker_Monitoring++) {
+    SurfaceMntCoeff.CEff[iMarker_Monitoring] =
+        SurfaceMntCoeff.CL[iMarker_Monitoring] / (SurfaceMntCoeff.CD[iMarker_Monitoring] + EPS);
+  }
+  END_SU2_OMP_FOR
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+    AllBoundMntCoeff.CEff = AllBoundMntCoeff.CL / (AllBoundMntCoeff.CD + EPS);
+    AllBoundMntCoeff.CMerit = AllBoundMntCoeff.CT / (AllBoundMntCoeff.CQ + EPS);
+
     ReduceCoeffsMPI(config, AllBoundMntCoeff, SurfaceMntCoeff);
     AccumulateTotalCoeffs(config, AllBoundMntCoeff, SurfaceMntCoeff, TotalCoeff, SurfaceCoeff, /*overwrite=*/false);
   }
@@ -2457,9 +2452,10 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
 
 template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometry, const CConfig* config) {
+  SU2_ZONE_SCOPED
   if (!config->GetViscous()) return;
 
-  const su2double MaxNorm = 8.0;
+  constexpr int MaxNorm = 8;
   const su2double minYPlus = config->GetwallModel_MinYPlus();
 
   const su2double Alpha = config->GetAoA() * PI_NUMBER / 180.0;
@@ -2481,28 +2477,31 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
   /*--- Variables initialization ---*/
 
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  {
-    AllBoundViscCoeff.setZero();
-    SurfaceViscCoeff.setZero();
-
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     AllBound_HF_Visc = 0.0;
     AllBound_MaxHF_Visc = 0.0;
-
-    for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring();
-         iMarker_Monitoring++) {
-      Surface_HF_Visc[iMarker_Monitoring] = 0.0;
-      Surface_MaxHF_Visc[iMarker_Monitoring] = 0.0;
-    }
-
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (!config->GetViscous_Wall(iMarker)) continue;
-      ViscCoeff.setZero(iMarker);
-      HF_Visc[iMarker] = 0.0;
-      MaxHF_Visc[iMarker] = 0.0;
-    }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  AllBoundViscCoeff.setZero();
+  SurfaceViscCoeff.setZero();
+
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring();
+       iMarker_Monitoring++) {
+    Surface_HF_Visc[iMarker_Monitoring] = 0.0;
+    Surface_MaxHF_Visc[iMarker_Monitoring] = 0.0;
+  }
+  END_SU2_OMP_FOR
+
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (!config->GetViscous_Wall(iMarker)) continue;
+    ViscCoeff.setZero(iMarker);
+    HF_Visc[iMarker] = 0.0;
+    MaxHF_Visc[iMarker] = 0.0;
+  }
+  END_SU2_OMP_FOR
 
   /*--- Loop over the Navier-Stokes markers (see Pressure_Forces for how the parallel
    *    reduction over threads is organized). The per-vertex loop below is the expensive
@@ -2518,11 +2517,14 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     /*--- Obtain the origin for the moment computation for a particular marker ---*/
 
     const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    unsigned short iMarker_Monitoring = 0;
     if (Monitoring == YES) {
-      for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring();
-           iMarker_Monitoring++) {
+      for (; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
         const auto Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-        if (Marker_Tag == Monitoring_Tag) Origin = config->GetRefOriginMoment(iMarker_Monitoring);
+        if (Marker_Tag == Monitoring_Tag) {
+          Origin = config->GetRefOriginMoment(iMarker_Monitoring);
+          break;
+        }
       }
     }
 
@@ -2533,6 +2535,29 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
     /* --- check if wall functions are used --- */
 
     const bool wallfunctions = (config->GetWallFunction_Treatment(Marker_Tag) != WALL_FUNCTIONS::NONE);
+
+    /*--- Marker-level lookups hoisted out of the per-vertex loop below: GetWallRoughnessProperties,
+     *    GetWall_HeatFlux, GetIsothermal_Temperature and GetCatalytic_Wall all scan over marker
+     *    lists (some by string comparison), so evaluating them once per vertex instead of once per
+     *    marker was a real cost for markers with many vertices. ---*/
+
+    WALL_TYPE WallType = WALL_TYPE::SMOOTH;
+    if (roughwall) {
+      su2double Roughness_Height;
+      tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
+    }
+
+    const auto KindBC = config->GetMarker_All_KindBC(iMarker);
+    su2double Wall_HeatFlux_Value = 0.0, Twall = 0.0;
+    if (!nemo && !py_custom) {
+      if (KindBC == BC_TYPE::HEAT_FLUX) {
+        Wall_HeatFlux_Value = -config->GetWall_HeatFlux(Marker_Tag);
+        if (config->GetIntegrated_HeatFlux()) Wall_HeatFlux_Value /= geometry->GetSurfaceArea(config, iMarker);
+      } else if (KindBC == BC_TYPE::ISOTHERMAL) {
+        Twall = config->GetIsothermal_Temperature(Marker_Tag) / RefTemperature;
+      }
+    }
+    const bool catalytic = nemo && config->GetCatalytic_Wall(iMarker);
 
     /*--- Loop over the vertices to compute the forces (work-shared across threads, see
      *    Pressure_Forces for why the chunk size is computed and the barrier skipped). ---*/
@@ -2546,25 +2571,21 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       const su2double* Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
 
-      su2double Grad_Vel[3][3] = {{0.0}}, Grad_Temp[3] = {0.0}, Grad_Temp_ve[3] = {0.0};
+      /*--- One view covering the whole velocity-gradient block, instead of nDim*nDim separate
+       *    single-element lookups (ComputeStressTensor/AddQCR accept any [][]-indexable type). ---*/
+      const auto Grad_Vel = nodes->GetVelocityGradient(iPoint);
+
+      su2double Grad_Temp[3] = {0.0}, Grad_Temp_ve[3] = {0.0};
       for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-        for (unsigned short jDim = 0; jDim < nDim; jDim++) {
-          Grad_Vel[iDim][jDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Velocity() + iDim, jDim);
-        }
         Grad_Temp[iDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Temperature(), iDim);
         if (nemo) Grad_Temp_ve[iDim] = nodes->GetGradient_Primitive(iPoint, prim_idx.Temperature_ve(), iDim);
       }
 
       su2double Viscosity = nodes->GetLaminarViscosity(iPoint);
       su2double EddyViscosity = 0.0;
-      if (roughwall) {
-        WALL_TYPE WallType;
-        su2double Roughness_Height;
-        tie(WallType, Roughness_Height) = config->GetWallRoughnessProperties(Marker_Tag);
-        if (WallType == WALL_TYPE::ROUGH) {
-          EddyViscosity = nodes->GetEddyViscosity(iPoint);
-          Viscosity += EddyViscosity;
-        }
+      if (WallType == WALL_TYPE::ROUGH) {
+        EddyViscosity = nodes->GetEddyViscosity(iPoint);
+        Viscosity += EddyViscosity;
       }
       const su2double Density = nodes->GetDensity(iPoint);
 
@@ -2622,7 +2643,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
       if (!wallfunctions && MGLevel == MESH_0 && geometry->nodes->GetDomain(iPoint)) {
         // for CMultiGridGeometry and halos, the nearest neighbor distance is not set
         const su2double WallDistMod = geometry->vertex[iMarker][iVertex]->GetNearestNeighborDistance();
-        YPlus[iMarker][iVertex] = WallDistMod * FrictionVel / (Viscosity / Density);
+        YPlus[iMarker][iVertex] = WallDistMod * FrictionVel * Density / Viscosity;
       }
 
       /*--- Compute total and maximum heat flux on the wall ---*/
@@ -2633,27 +2654,17 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
           thermal_conductivity = nodes->GetThermalConductivity(iPoint);
         }
 
-        if (config->GetMarker_All_KindBC(iMarker) == BC_TYPE::HEAT_FLUX) {
-          if (py_custom) {
-            HeatFlux[iMarker][iVertex] = -geometry->GetCustomBoundaryHeatFlux(iMarker, iVertex);
-          } else {
-            HeatFlux[iMarker][iVertex] = -config->GetWall_HeatFlux(Marker_Tag);
-            if (config->GetIntegrated_HeatFlux()) {
-              HeatFlux[iMarker][iVertex] /= geometry->GetSurfaceArea(config, iMarker);
-            }
-          }
-        } else if (config->GetMarker_All_KindBC(iMarker) == BC_TYPE::ISOTHERMAL) {
-          su2double Twall = 0.0;
-          if (py_custom) {
-            Twall = geometry->GetCustomBoundaryTemperature(iMarker, iVertex) / RefTemperature;
-          } else {
-            Twall = config->GetIsothermal_Temperature(Marker_Tag) / RefTemperature;
-          }
+        if (KindBC == BC_TYPE::HEAT_FLUX) {
+          HeatFlux[iMarker][iVertex] =
+              py_custom ? -geometry->GetCustomBoundaryHeatFlux(iMarker, iVertex) : Wall_HeatFlux_Value;
+        } else if (KindBC == BC_TYPE::ISOTHERMAL) {
+          const su2double Twall_local =
+              py_custom ? geometry->GetCustomBoundaryTemperature(iMarker, iVertex) / RefTemperature : Twall;
           const auto iPointNormal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
           const su2double* Coord_Normal = geometry->nodes->GetCoord(iPointNormal);
           const su2double dist_ij = GeometryToolbox::NormalDistance(nDim, UnitNormal, Coord, Coord_Normal);
           const su2double There = nodes->GetTemperature(iPointNormal);
-          HeatFlux[iMarker][iVertex] = thermal_conductivity * (There - Twall) / dist_ij * RefHeatFlux;
+          HeatFlux[iMarker][iVertex] = thermal_conductivity * (There - Twall_local) / dist_ij * RefHeatFlux;
         } else {
           su2double dTdn = GeometryToolbox::DotProduct(nDim, Grad_Temp, UnitNormal);
           if (FlowRegime == ENUM_REGIME::INCOMPRESSIBLE && !energy) dTdn = 0.0;
@@ -2671,8 +2682,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
         HeatFlux[iMarker][iVertex] = -(thermal_conductivity_tr*dTdn + thermal_conductivity_ve*dTvedn);
 
         /*--- Compute enthalpy transport to surface due to mass diffusion ---*/
-        bool catalytic = config->GetCatalytic_Wall(iMarker);
-        if (catalytic){
+        if (catalytic) {
 
           const auto nSpecies = config->GetnSpecies();
           const auto& Grad_PrimVar = nodes->GetGradient_Primitive(iPoint);
@@ -2745,21 +2755,14 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
 
       /*--- Heat flux, not covered by AddCoeffContribution, is folded in its own critical section. ---*/
 
-      SU2_OMP_CRITICAL
-      {
+      SU2_OMP_CRITICAL {
         HF_Visc[iMarker] += HF_Visc_Local;
         AllBound_HF_Visc += HF_Visc_Local;
         MaxHF_Visc[iMarker] += MaxHF_Visc_Local;
         AllBound_MaxHF_Visc += MaxHF_Visc_Local;
 
-        for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring();
-             iMarker_Monitoring++) {
-          const auto Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-          if (Marker_Tag == Monitoring_Tag) {
-            Surface_HF_Visc[iMarker_Monitoring] += HF_Visc_Local;
-            Surface_MaxHF_Visc[iMarker_Monitoring] += MaxHF_Visc_Local;
-          }
-        }
+        Surface_HF_Visc[iMarker_Monitoring] += HF_Visc_Local;
+        Surface_MaxHF_Visc[iMarker_Monitoring] += MaxHF_Visc_Local;
       }
       END_SU2_OMP_CRITICAL
     }
@@ -2769,26 +2772,26 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
    *    from the fully-reduced totals, once. Surface_MaxHF_Visc and AllBound_MaxHF_Visc are
    *    rooted later below, after the MPI reduction. ---*/
 
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  {
-    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
-      if (!config->GetViscous_Wall(iMarker)) continue;
-      if (config->GetMarker_All_Monitoring(iMarker) == YES) {
-        ViscCoeff.CEff[iMarker] = ViscCoeff.CL[iMarker] / (ViscCoeff.CD[iMarker] + EPS);
-        ViscCoeff.CMerit[iMarker] = ViscCoeff.CT[iMarker] / (ViscCoeff.CQ[iMarker] + EPS);
-        MaxHF_Visc[iMarker] = pow(MaxHF_Visc[iMarker], 1.0 / MaxNorm);
-      }
-    }
-    for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring();
-         iMarker_Monitoring++) {
-      SurfaceViscCoeff.CEff[iMarker_Monitoring] =
-          SurfaceViscCoeff.CL[iMarker_Monitoring] / (SurfaceViscCoeff.CD[iMarker_Monitoring] + EPS);
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    if (!config->GetViscous_Wall(iMarker)) continue;
+    if (config->GetMarker_All_Monitoring(iMarker) == YES) {
+      ViscCoeff.CEff[iMarker] = ViscCoeff.CL[iMarker] / (ViscCoeff.CD[iMarker] + EPS);
+      ViscCoeff.CMerit[iMarker] = ViscCoeff.CT[iMarker] / (ViscCoeff.CQ[iMarker] + EPS);
+      MaxHF_Visc[iMarker] = pow(MaxHF_Visc[iMarker], 1.0 / MaxNorm);
     }
   }
-  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+  END_SU2_OMP_FOR
 
-  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-  {
+  SU2_OMP_FOR_STAT(OMP_MIN_SIZE)
+  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring();
+       iMarker_Monitoring++) {
+    SurfaceViscCoeff.CEff[iMarker_Monitoring] =
+        SurfaceViscCoeff.CL[iMarker_Monitoring] / (SurfaceViscCoeff.CD[iMarker_Monitoring] + EPS);
+  }
+  END_SU2_OMP_FOR
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
     ReduceCoeffsMPI(config, AllBoundViscCoeff, SurfaceViscCoeff);
 
     /*--- HF_Visc/MaxHF_Visc, not covered by ReduceCoeffsMPI, are reduced separately. ---*/
