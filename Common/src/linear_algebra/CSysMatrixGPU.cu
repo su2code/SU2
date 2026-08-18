@@ -694,6 +694,228 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
   gpuErrChk(cudaGetLastError());
 }
 
+/*!
+ * \brief Exact forward substitution for the rows of one level, x* = D^{-1}.(b-Lx*)
+ * \note See notes in IluForwardKernel for more details.
+ */
+template <class ScalarType>
+__global__ void LU_SGS_ForwardKernel(const su2uint* __restrict__ level_idx, unsigned long level_begin,
+                                     unsigned long level_size, unsigned long nVar, DeviceLDU<ScalarType> M,
+                                     const ScalarType* __restrict__ invD, const ScalarType* __restrict__ vec,
+                                     ScalarType* __restrict__ prod) {
+  if (blockIdx.x >= level_size) return;
+
+  const unsigned long iRow = level_idx[level_begin + blockIdx.x];
+  const auto blockSize = nVar * nVar;
+  const unsigned long tid = threadIdx.x;
+  const auto iVar = tid / nVar, jVar = tid % nVar;
+
+  extern __shared__ __align__(sizeof(double)) char smem[];
+  auto* partial = reinterpret_cast<ScalarType*>(smem);
+  auto* aux = partial + blockSize;
+
+  // Compute L.x*
+  ScalarType acc = 0;
+  for (auto kl = M.row_ptr_l[iRow]; kl < M.row_ptr_l[iRow + 1]; ++kl) {
+    const unsigned long jPoint = M.col_ind_l[kl];
+    const auto* blk = M.l + kl * blockSize;
+    acc += blk[iVar * nVar + jVar] * prod[jPoint * nVar + jVar];
+  }
+  partial[tid] = acc;
+  __syncthreads();
+
+  // Compute y = b - L.x*
+  if (jVar == 0) {
+    ScalarType sum = vec[iRow * nVar + iVar];
+    for (auto j = 0ul; j < nVar; ++j) sum -= partial[iVar * nVar + j];
+    aux[iVar] = sum;
+  }
+
+  __syncthreads();
+
+  // Compute x* = D^{-1}.y
+  if (jVar == 0) {
+    const auto* invD_blk = invD + iRow * blockSize;
+    ScalarType out = 0;
+    for (auto j = 0ul; j < nVar; ++j) out += invD_blk[iVar * nVar + j] * aux[j];
+    prod[iRow * nVar + iVar] = out;
+  }
+}
+
+/*!
+ * \brief Exact backward substitution for the rows of one level, x* = D^{-1}.(D.x* - U.x) = x* - D^{-1}.U.x
+ * \note See notes in IluBackwardKernel for more details
+ */
+template <class ScalarType>
+__global__ void LU_SGS_BackwardKernel(const su2uint* __restrict__ level_idx, unsigned long level_begin,
+                                     unsigned long level_size, unsigned long nRows, unsigned long nVar,
+                                     DeviceLDU<ScalarType> M, const ScalarType* __restrict__ invD,
+                                     ScalarType* __restrict__ prod) {
+  if (blockIdx.x >= level_size) return;
+
+  const unsigned long iRow = level_idx[level_begin + blockIdx.x];
+  const auto blockSize = nVar * nVar;
+  const unsigned long tid = threadIdx.x;
+  const auto iVar = tid / nVar, jVar = tid % nVar;
+
+  extern __shared__ __align__(sizeof(double)) char smem[];
+  auto* partial = reinterpret_cast<ScalarType*>(smem);
+  auto* aux = partial + blockSize;
+
+  // Compute U.x
+  ScalarType acc = 0;
+  for (auto ku = M.row_ptr_u[iRow]; ku < M.row_ptr_u[iRow + 1]; ++ku) {
+    const unsigned long jPoint = M.col_ind_u[ku];
+    if (jPoint >= nRows) break;
+    const auto* blk = M.u + ku * blockSize;
+    acc += blk[iVar * nVar + jVar] * prod[jPoint * nVar + jVar];
+  }
+  partial[tid] = acc;
+  __syncthreads();
+
+
+  if (jVar == 0) {
+    ScalarType sum = 0;
+    for (auto j = 0ul; j < nVar; ++j) sum += partial[iVar * nVar + j];
+    aux[iVar] = sum;
+  }
+  __syncthreads();
+
+  // Compute D^{-1}.(U.x)
+  const auto* invD_blk = invD + iRow * blockSize;
+  partial[tid] = invD_blk[iVar * nVar + jVar] * aux[jVar];
+  __syncthreads();
+
+  // Compute x* - D^{-1}.(U.x)
+  if (jVar == 0) {
+    ScalarType correction = 0;
+    for (auto j= 0ul; j < nVar; ++j) correction += partial[iVar * nVar + j];
+    prod[iRow * nVar + iVar] -= correction;
+  }
+}
+
+/*!
+ * \brief Pre-calculates the inverse of the diagonal matrix D, same as for the Jacobi preconditioner
+ */
+template <class ScalarType>
+void CSysMatrix<ScalarType>::BuildLU_SGSPreconditionerGPU() {
+  SU2_ZONE_SCOPED
+  if (d_invM == nullptr) {
+    SU2_MPI::Error("CUDA LU-SGS preconditioner used without device storage.", CURRENT_FUNCTION);
+  }
+  if (nPointDomain == 0) return;
+
+  /*--- The matrix is expected to be on the device already, it is uploaded once per solve by
+   * CSysMatrixVectorProduct, which is created before the preconditioner is built. ---*/
+  const auto blockSize = static_cast<unsigned>(nVar * nVar);
+  InvertDiagonalBlocksKernel<ScalarType><<<static_cast<unsigned>(nPointDomain), blockSize,
+                                           2 * blockSize * sizeof(ScalarType)>>>(nPointDomain, nVar, gpu.d, d_invM);
+  /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
+  gpuErrChk(cudaStreamSynchronize(nullptr));
+  gpuErrChk(cudaGetLastError());
+}
+
+/*!
+ * \brief Compute the LU-SGS preconditioner
+ */
+template <class ScalarType>
+void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditionerGPU(const CSysVector<ScalarType>& vec,
+                                                            CSysVector<ScalarType>& prod, CGeometry* geometry,
+                                                            const CConfig* config) const {
+  SU2_ZONE_SCOPED
+
+  if (d_invM == nullptr) {
+    SU2_MPI::Error("CUDA LU-SGS preconditioner used without device storage.", CURRENT_FUNCTION);
+  }
+  if (nPointDomain == 0) return;
+
+  const DeviceLDU<ScalarType> M{gpu.d,         gpu.l,         gpu.u,        gpu.row_ptr_l,
+                                gpu.col_ind_l, gpu.row_ptr_u, gpu.col_ind_u};
+
+  auto* d_vec = vec.GetDevicePointer();
+  auto* d_prod = prod.GetDevicePointer();
+
+  /*--- One thread per block entry, as done in ILU preconditioner ---*/
+  const auto threads = static_cast<unsigned>(nVar * nVar);
+  const auto sharedForward = threads * sizeof(ScalarType);
+  const auto sharedBackward = (threads + nVar) * sizeof(ScalarType);
+
+  if (aux_stream == nullptr) gpuErrChk(cudaStreamCreate(&aux_stream));
+
+  /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
+  if (lusgs_fwd_graph_exec == nullptr || lusgs_fwd_graph_vec != d_vec || lusgs_fwd_graph_prod != d_prod) {
+    if (lusgs_fwd_graph_exec != nullptr) {
+      gpuErrChk(cudaGraphExecDestroy(lusgs_fwd_graph_exec));
+      lusgs_fwd_graph_exec = nullptr;
+    }
+
+    cudaGraph_t graph;
+    gpuErrChk(cudaStreamBeginCapture(aux_stream, cudaStreamCaptureModeThreadLocal));
+
+    const auto nLevels = lusgs_level_ptr.size() - 1;
+    /*--- Forward substitution: compute x* = D^{-1}.(vec - L.x*) ---*/
+    for (auto level = 0ul; level < nLevels; ++level) {
+      const auto begin = lusgs_level_ptr[level];
+      const auto size = lusgs_level_ptr[level + 1] - begin;
+      if (size == 0) continue;
+      LU_SGS_ForwardKernel<ScalarType><<<size, threads, sharedForward, aux_stream>>>(d_lusgs_level_idx, begin, size, nVar, M, d_invM, d_vec, d_prod);
+    }
+
+    gpuErrChk(cudaStreamEndCapture(aux_stream, &graph));
+    gpuErrChk(cudaGraphInstantiate(&lusgs_fwd_graph_exec, graph, nullptr, nullptr, 0));
+    gpuErrChk(cudaGraphDestroy(graph));
+    lusgs_fwd_graph_vec = d_vec;
+    lusgs_fwd_graph_prod = d_prod;
+
+  }
+
+  gpuErrChk(cudaGraphLaunch(lusgs_fwd_graph_exec, aux_stream));
+  gpuErrChk(cudaStreamSynchronize(aux_stream));
+  gpuErrChk(cudaGetLastError());
+
+  /*--- MPI Parallelization ---*/
+  CSysMatrixComms::Initiate(prod, geometry, config);
+  CSysMatrixComms::Complete(prod, geometry, config);
+
+
+  /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
+  if (lusgs_bwd_graph_exec == nullptr || lusgs_bwd_graph_vec != d_vec || lusgs_bwd_graph_prod != d_prod) {
+    if (lusgs_bwd_graph_exec != nullptr) {
+      gpuErrChk(cudaGraphExecDestroy(lusgs_bwd_graph_exec));
+      lusgs_bwd_graph_exec = nullptr;
+    }
+
+    cudaGraph_t graph;
+    gpuErrChk(cudaStreamBeginCapture(aux_stream, cudaStreamCaptureModeThreadLocal));
+
+    const auto nLevels = lusgs_level_ptr.size() - 1;
+    /*--- Backward substitution: compute x* = D^{-1}.(D.x* - U.x) = x* - D^{-1}.U.x ---*/
+    for (auto level = nLevels; level > 0;) {
+      --level;
+      const auto begin = lusgs_level_ptr[level];
+      const auto size = lusgs_level_ptr[level + 1] - begin;
+      if (size == 0) continue;
+      LU_SGS_BackwardKernel<ScalarType><<<size, threads, sharedBackward, aux_stream>>>(d_lusgs_level_idx, begin, size, nPointDomain, nVar, M, d_invM, d_prod);
+    }
+
+    gpuErrChk(cudaStreamEndCapture(aux_stream, &graph));
+    gpuErrChk(cudaGraphInstantiate(&lusgs_bwd_graph_exec, graph, nullptr, nullptr, 0));
+    gpuErrChk(cudaGraphDestroy(graph));
+    lusgs_bwd_graph_vec = d_vec;
+    lusgs_bwd_graph_prod = d_prod;
+
+  }
+
+  gpuErrChk(cudaGraphLaunch(lusgs_bwd_graph_exec, aux_stream));
+  gpuErrChk(cudaStreamSynchronize(aux_stream));
+  gpuErrChk(cudaGetLastError());
+
+  /*--- MPI Parallelization ---*/
+  CSysMatrixComms::Initiate(prod, geometry, config);
+  CSysMatrixComms::Complete(prod, geometry, config);
+
+}
+
 template <class ScalarType>
 void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
   SU2_ZONE_SCOPED
@@ -764,9 +986,14 @@ template void CSysMatrix<TYPE>::MatrixVectorProductGPU(const CSysVector<TYPE>& v
 template void CSysMatrix<TYPE>::QuantizeDiagonalBlocksGPU();                                \
 template void CSysMatrix<TYPE>::BuildJacobiPreconditionerGPU();                             \
 template void CSysMatrix<TYPE>::BuildILUPreconditionerGPU();                                \
+template void CSysMatrix<TYPE>::BuildLU_SGSPreconditionerGPU();                             \
 template void CSysMatrix<TYPE>::ComputeILUPreconditionerGPU(const CSysVector<TYPE>& vec,    \
                                                             CSysVector<TYPE>& prod) const;  \
 template void CSysMatrix<TYPE>::ComputeJacobiPreconditionerGPU(const CSysVector<TYPE>& vec, \
+                                                               CSysVector<TYPE>& prod,      \
+                                                               CGeometry* geometry,         \
+                                                               const CConfig* config) const;\
+template void CSysMatrix<TYPE>::ComputeLU_SGSPreconditionerGPU(const CSysVector<TYPE>& vec, \
                                                                CSysVector<TYPE>& prod,      \
                                                                CGeometry* geometry,         \
                                                                const CConfig* config) const;

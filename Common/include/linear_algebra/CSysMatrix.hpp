@@ -312,7 +312,7 @@ class CSysMatrix {
   LDU<ScalarType> gpu;          /*!< \brief Device matrix (all pointers to GPU memory). */
   LDU<ScalarType> ilu;          /*!< \brief ILU factorization, host (values owned; pattern from geometry). */
   LDU<ScalarType> gpu_ilu;      /*!< \brief ILU factorization, device (values and pattern in GPU memory). */
-  ScalarType* d_invM = nullptr; /*!< \brief Device inverse diagonal blocks for the Jacobi preconditioner. */
+  ScalarType* d_invM = nullptr; /*!< \brief Device inverse diagonal blocks for the Jacobi or LU-SGS preconditioner. */
 
   /*--- Quantized off-diagonal storage (used when quantized_mode == true). ---*/
   using QuantType = int8_t;
@@ -404,6 +404,15 @@ class CSysMatrix {
    * (the quantized SpMV) can wait on it without a host-side block. ---*/
   mutable struct CUstream_st* aux_stream = nullptr;
   mutable struct CUevent_st* htd_event = nullptr;
+
+  vector<su2uint> lusgs_level_ptr;      /*!< \brief Start of each level in d_lusgs_level_idx, size nLevels+1. */
+  su2uint* d_lusgs_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
+  mutable struct CUgraphExec_st* lusgs_fwd_graph_exec = nullptr;
+  mutable struct CUgraphExec_st* lusgs_bwd_graph_exec = nullptr;
+  mutable const ScalarType* lusgs_fwd_graph_vec = nullptr;
+  mutable const ScalarType* lusgs_bwd_graph_vec = nullptr;
+  mutable ScalarType* lusgs_fwd_graph_prod = nullptr;
+  mutable ScalarType* lusgs_bwd_graph_prod = nullptr;
 
   ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */
 
@@ -660,6 +669,17 @@ class CSysMatrix {
    * \brief Apply the ILU preconditioner on the device.
    */
   void ComputeILUPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
+
+  /*!
+   * \brief Build the LU-SGS preconditioner on the device
+   */
+  void BuildLU_SGSPreconditionerGPU();
+
+  /*!
+   * \brief Apply the LU-SGS preconditioner on the device
+   */
+  void ComputeLU_SGSPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
+                                      CGeometry* geometry, const CConfig* config) const;
 
  public:
   /*!
@@ -1227,6 +1247,11 @@ class CSysMatrix {
    */
   void ComputeILUPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                                 const CConfig* config) const;
+
+  /*!
+   * \brief Build the LU-SGS preconditioner.
+   */
+  void BuildLU_SGSPreconditioner();
 
   /*!
    * \brief Multiply CSysVector by the preconditioner

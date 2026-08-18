@@ -160,9 +160,12 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
     GPUMemoryAllocation::gpu_free(d_invM);
     GPUMemoryAllocation::gpu_free(d_ilu_color_idx);
     GPUMemoryAllocation::gpu_free(d_ilu_level_idx);
+    GPUMemoryAllocation::gpu_free(d_lusgs_level_idx);
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if (ilu_build_graph_exec != nullptr) cudaGraphExecDestroy(ilu_build_graph_exec);
     if (ilu_apply_graph_exec != nullptr) cudaGraphExecDestroy(ilu_apply_graph_exec);
+    if (lusgs_fwd_graph_exec != nullptr) cudaGraphExecDestroy(lusgs_fwd_graph_exec);
+    if (lusgs_bwd_graph_exec != nullptr) cudaGraphExecDestroy(lusgs_bwd_graph_exec);
     if (aux_stream != nullptr) cudaStreamDestroy(aux_stream);
     if (htd_event != nullptr) cudaEventDestroy(htd_event);
 #endif
@@ -217,6 +220,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   const bool ilu_needed = (prec == ILU);
   const bool diag_needed = (prec == JACOBI) || (prec == Q_JACOBI) || (prec == LINELET);
+  const bool lu_sgs_on_device = useCuda && (prec == LU_SGS);
 
   /*--- Linelet also builds the Jacobi preconditioner but reads the inverse diagonal blocks on
    * the host, so only plain (or quantized) Jacobi can keep them exclusively on the device. ---*/
@@ -413,6 +417,31 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
       SU2_MPI::Error("CUDA Jacobi preconditioner uses one thread per block entry, nVar is too large.",
                      CURRENT_FUNCTION);
     }
+    d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
+  }
+
+  if (lu_sgs_on_device) {
+    // get the zero-filled sparse pattern for the LU-SGS
+    const auto& pat_lusgs = geometry->GetSparsePattern(type, 0);
+
+    /*--- Compute the levels using the lower pattern for the forward pass and
+     * reverse the levels for the backward pass. This works if L and U are symmetric, to be verified ---*/
+    auto levels_lusgs = computeLevels(pat_lusgs.l);
+
+    /*--- Flatten levels_lusgs the same way. It drives both triangular solves on the device. ---*/
+    std::vector<su2uint> level_idx;
+    level_idx.reserve(nPointDomain);
+    lusgs_level_ptr.clear();
+    lusgs_level_ptr.push_back(0);
+    for (auto level = 0ul; level < levels_lusgs.getOuterSize(); ++level) {
+      for (auto k = 0ul; k < levels_lusgs.getNumNonZeros(level); ++k) {
+        level_idx.push_back(static_cast<su2uint>(levels_lusgs.getInnerIdx(level, k)));
+      }
+      lusgs_level_ptr.push_back(static_cast<su2uint>(level_idx.size()));
+    }
+    d_lusgs_level_idx = GPUMemoryAllocation::gpu_alloc_cpy(level_idx.data(), level_idx.size() * sizeof(su2uint));
+
+    // check if this can be placed under the jacobi_on_device condition
     d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
   }
 
@@ -1287,10 +1316,46 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditioner(const CSysVector<ScalarTyp
 }
 
 template <class ScalarType>
+void CSysMatrix<ScalarType>::BuildLU_SGSPreconditioner() {
+  SU2_ZONE_SCOPED
+
+  /*--- Quantize diagonal blocks if mode is active ---*/
+  QuantizeDiagonalBlocks();
+
+  /*--- if on GPU, precompute the inverse of the diagonal D. Otherwise, this is a no-op ---*/
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      SU2_DEVICE_REGION(BuildLU_SGSPreconditionerGPU();)
+      return;
+    } else {
+      GPUNotAvailable(CURRENT_FUNCTION);
+    }
+#else
+    GPUNotAvailable(CURRENT_FUNCTION);
+#endif
+  }
+}
+
+template <class ScalarType>
 void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<ScalarType>& vec,
                                                          CSysVector<ScalarType>& prod, CGeometry* geometry,
                                                          const CConfig* config) const {
   SU2_ZONE_SCOPED
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      SU2_DEVICE_REGION(ComputeLU_SGSPreconditionerGPU(vec, prod, geometry, config);)
+      return;
+    } else {
+      GPUNotAvailable(CURRENT_FUNCTION);
+    }
+#else
+    GPUNotAvailable(CURRENT_FUNCTION);
+#endif
+  }
+
   /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
 
   /*--- Coherent view of vectors. ---*/
