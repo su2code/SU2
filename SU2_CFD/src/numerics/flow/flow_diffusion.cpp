@@ -41,6 +41,11 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
   unsigned short iVar, iDim;
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  exact_jacobian = config->GetExactViscJacobian();
+
+  /*--- The secondary variables are optional inputs (not set for ideal gases),
+   * the exact Jacobian tests them so they cannot be left uninitialized. ---*/
+  S_i = nullptr; S_j = nullptr;
 
   TauWall_i = 0; TauWall_j = 0;
 
@@ -105,7 +110,9 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
                                     const su2double val_dist_ij_2,
                                     const unsigned short val_nPrimVar) {
 
-  su2double diss[MAXNDIM] = {0.0};
+  /*--- The direction vector is stored in Diss_Vec, the exact viscous Jacobian needs it. ---*/
+
+  for (int iDim = 0; iDim < MAXNDIM; ++iDim) Diss_Vec[iDim] = 0.0;
 
   const su2double eDotN = 1.0 / GeometryToolbox::DotProduct(nDim,val_edge_vector,UnitNormal);
   const su2double alpha = 4.0 / 3.0;
@@ -113,18 +120,18 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
   switch (correct_gradient) {
     case VISCOUS_GRAD_CORR::EDGE_NORMAL:
       for (int iDim = 0; iDim < nDim; ++iDim) {
-        diss[iDim] = val_edge_vector[iDim] / val_dist_ij_2;
+        Diss_Vec[iDim] = val_edge_vector[iDim] / val_dist_ij_2;
       }
 
       break;
     case VISCOUS_GRAD_CORR::FACE_TANGENT:
         for (int iDim = 0; iDim < nDim; ++iDim) {
-            diss[iDim] = UnitNormal[iDim] * eDotN;
+            Diss_Vec[iDim] = UnitNormal[iDim] * eDotN;
         }
       break;
     case VISCOUS_GRAD_CORR::ALPHA_DAMPING:
         for (int iDim = 0; iDim < nDim; ++iDim) {
-            diss[iDim] = UnitNormal[iDim] * alpha * fabs(eDotN);
+            Diss_Vec[iDim] = UnitNormal[iDim] * alpha * fabs(eDotN);
         }
       break;
     default:
@@ -132,7 +139,7 @@ void CAvgGrad_Base::CorrectGradient(su2double** GradPrimVar,
   }
 
   GradientCorrection(GradPrimVar, val_PrimVar_i, val_PrimVar_j, val_edge_vector,
-                               val_dist_ij_2, diss, val_nPrimVar);
+                               val_dist_ij_2, Diss_Vec, val_nPrimVar);
 
 }
 
@@ -535,6 +542,11 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
           Jacobian_j[iVar][jVar] = 0.0;
         }
       }
+    } else if (exact_jacobian) {
+
+      /*--- Exact Jacobian of the corrected-gradient flux (frozen average LSQ gradient). ---*/
+      SetExactViscousProjJacs(Area, UnitNormal);
+
     } else {
       const su2double dist_ij = sqrt(dist_ij_2);
       SetTauJacobian(Mean_PrimVar, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, dist_ij, UnitNormal);
@@ -596,6 +608,114 @@ void CAvgGrad_Flow::SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
     heat_flux_jac_i[3] = conductivity_over_Rd * R_dTdu3;
     heat_flux_jac_i[4] = conductivity_over_Rd * R_dTdu4;
 
+  }
+}
+
+void CAvgGrad_Flow::SetExactViscousProjJacs(const su2double val_area, const su2double* val_unit_normal) {
+
+  /*--- Exact Jacobian of the projected viscous flux for an ideal gas, with the average
+   * LSQ gradient contribution treated as frozen: the state dependence enters through
+   * the corrected-gradient terms Diss_Vec*(V_j - V_i), the averaged velocity in the
+   * viscous work, and (via the averaged secondary variables) mu(T) and kt(T).
+   * The scheme is exact when the LSQ part of the corrected gradient is zero.
+   * This must remain algebraically identical to the SIMD twin (viscousFluxJacobian
+   * in numerics_simd/flow/diffusion/common.hpp). ---*/
+
+  const su2double* n = val_unit_normal;
+  const su2double two_third = 2.0/3.0;
+
+  const su2double mu = Mean_Laminar_Viscosity + Mean_Eddy_Viscosity;
+  const su2double cond = Mean_Thermal_Conductivity + Mean_Cp*Mean_Eddy_Viscosity/Prandtl_Turb;
+
+  /*--- Corrected mean strain tensor S_kl = du_k/dx_l + du_l/dx_k - 2/3 delta_kl div(u),
+   * its normal projection sn, viscous work factor snv (with the averaged velocity),
+   * normal T-gradient, and normal component of the correction direction. ---*/
+
+  su2double trace = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; ++iDim) trace += Mean_GradPrimVar[1+iDim][iDim];
+
+  su2double sn[MAXNDIM] = {0.0}, snv = 0.0, gradT_n = 0.0, dn = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    for (unsigned short jDim = 0; jDim < nDim; ++jDim) {
+      su2double S_ij = Mean_GradPrimVar[1+iDim][jDim] + Mean_GradPrimVar[1+jDim][iDim];
+      if (iDim == jDim) S_ij -= two_third*trace;
+      sn[iDim] += S_ij*n[jDim];
+    }
+    snv += sn[iDim]*Mean_PrimVar[1+iDim];
+    gradT_n += Mean_GradPrimVar[0][iDim]*n[iDim];
+    dn += Diss_Vec[iDim]*n[iDim];
+  }
+
+  /*--- Averaged temperature-derivatives of the transport properties. The secondary
+   * variables are not set by the ideal-gas solver path, in which case constant
+   * properties are assumed (dmu/dT = dkt/dT = 0). ---*/
+
+  su2double dmudT = 0.0, dktdT = 0.0;
+  if ((S_i != nullptr) && (S_j != nullptr)) {
+    dmudT = 0.5*(S_i[5] + S_j[5]);
+    dktdT = 0.5*(S_i[7] + S_j[7]);
+  }
+
+  const su2double* Vs[2] = {PrimVar_i, PrimVar_j};
+  su2double** jacs[2] = {Jacobian_i, Jacobian_j};
+
+  for (int side = 0; side < 2; ++side) {
+
+    const su2double* V = Vs[side];
+    su2double** jac = jacs[side];
+    const su2double sgn = (side == 0) ? -1.0 : 1.0;
+
+    const su2double T = V[0];
+    const su2double* vel = &V[1];
+    const su2double p = V[nDim+1];
+    const su2double rho = V[nDim+2];
+    su2double q2 = 0.0;
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim) q2 += vel[iDim]*vel[iDim];
+
+    /*--- Nodal T = p/(R*rho) exactly for the ideal gas. ---*/
+    const su2double dT_drho = -T/rho;
+    const su2double dT_dp = T/p;
+
+    /*--- The 0.5 accounts for d(mean value)/d(nodal value). ---*/
+    const su2double dmu_dT_side = 0.5*dmudT;
+    const su2double dcond_dT_side = 0.5*dktdT;
+
+    /*--- Jacobian of the projected flux F = [0, mu*sn, mu*snv + cond*gradT_n] with
+     * respect to this side's primitives w = [rho, u_k, p]. ---*/
+
+    su2double dFdw[5][5] = {{0.0}};
+
+    for (unsigned short iDim = 0; iDim < nDim; ++iDim) {
+      dFdw[iDim+1][0] = dmu_dT_side*dT_drho*sn[iDim];
+      for (unsigned short kDim = 0; kDim < nDim; ++kDim) {
+        const su2double delta = (iDim == kDim) ? 1.0 : 0.0;
+        const su2double dsn_du = sgn*(dn*delta + Diss_Vec[iDim]*n[kDim] - two_third*n[iDim]*Diss_Vec[kDim]);
+        dFdw[iDim+1][kDim+1] = mu*dsn_du;
+      }
+      dFdw[iDim+1][nDim+1] = dmu_dT_side*dT_dp*sn[iDim];
+    }
+
+    const su2double dqn_dT = sgn*cond*dn + dcond_dT_side*gradT_n;
+    dFdw[nDim+1][0] = (dmu_dT_side*snv + dqn_dT)*dT_drho;
+    for (unsigned short kDim = 0; kDim < nDim; ++kDim) {
+      dFdw[nDim+1][kDim+1] = 0.5*mu*sn[kDim];
+      for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+        dFdw[nDim+1][kDim+1] += dFdw[iDim+1][kDim+1]*Mean_PrimVar[1+iDim];
+    }
+    dFdw[nDim+1][nDim+1] = (dmu_dT_side*snv + dqn_dT)*dT_dp;
+
+    /*--- Transform to conservative variables using this side's state and scale by the
+     * area. dW/dU rows: rho: (1, 0, 0); u_k: (-u_k/rho, delta/rho, 0);
+     * p: ((g-1)*q2/2, -(g-1)*u, (g-1)). Row 0 of the flux is zero. ---*/
+
+    for (unsigned short r = 0; r < nVar; ++r) {
+      su2double col0 = dFdw[r][0] + dFdw[r][nDim+1]*0.5*Gamma_Minus_One*q2;
+      for (unsigned short kDim = 0; kDim < nDim; ++kDim) col0 -= dFdw[r][kDim+1]*vel[kDim]/rho;
+      jac[r][0] = val_area*col0;
+      for (unsigned short c = 0; c < nDim; ++c)
+        jac[r][c+1] = val_area*(dFdw[r][c+1]/rho - dFdw[r][nDim+1]*Gamma_Minus_One*vel[c]);
+      jac[r][nDim+1] = val_area*dFdw[r][nDim+1]*Gamma_Minus_One;
+    }
   }
 }
 

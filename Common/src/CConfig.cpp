@@ -1782,10 +1782,17 @@ void CConfig::SetConfig_Options() {
   addBoolOption("INTEGRATED_HEATFLUX", Integrated_HeatFlux, false);
   /*!\brief INTEGRATED_HEATFLUX \n DESCRIPTION: Prescribe Heatflux in [W] instead of [W/m^2] \ingroup Config \default false */
   addEnumOption("VISC_GRAD_CORR", Kind_Visc_Corr, Viscous_Grad_Corr_Map, VISCOUS_GRAD_CORR::EDGE_NORMAL);
+  /*!\brief EXACT_VISC_JACOBIAN \n DESCRIPTION: Use the exact viscous flux Jacobian (exact when the LSQ part of the
+   corrected gradient is zero, the average LSQ gradient is treated as frozen) instead of the thin-shear-layer
+   approximation \default false */
+  addBoolOption("EXACT_VISC_JACOBIAN", ExactViscJacobian, false);
   addBoolOption("FLUX_CORRECTION", FluxCorrection, false);
   /*!\brief FLUX_CORRECTION_LIMITER \n DESCRIPTION: Apply the flow slope limiter to the gradients used in the flux correction terms \default false */
   addBoolOption("FLUX_CORRECTION_LIMITER", FluxCorrectionLimiter, false);
   addBoolOption("MOD_CENTROIDS", ModCentroids, false);
+  /*!\brief CACHE_LSQ_METRICS \n DESCRIPTION: Cache the factorized least-squares gradient metrics (S = A^-1) and
+   reuse them across gradient evaluations. Only active for static, non-periodic grids in primal runs. \default false */
+  addBoolOption("CACHE_LSQ_METRICS", Cache_LSQ_Metrics, false);
   /*!\brief MARKER_HEATTRANSFER DESCRIPTION: Heat flux with specified heat transfer coefficient boundary marker(s)\n
    * Format: ( Heat transfer marker, heat transfer coefficient, wall temperature (static), ... ) \ingroup Config  */
   addExhaustOption("MARKER_HEATTRANSFER", nMarker_HeatTransfer, Marker_HeatTransfer, HeatTransfer_Coeff, HeatTransfer_WallTemp);
@@ -3973,6 +3980,17 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     } else if (Kind_SlopeLimit_Flow == LIMITER::NONE || Kind_SlopeLimit_Flow == LIMITER::VAN_ALBADA_EDGE) {
       SU2_MPI::Error("FLUX_CORRECTION_LIMITER requires a point-based flow limiter\n"
                      "(SLOPE_LIMITER_FLOW other than NONE or VAN_ALBADA_EDGE).", CURRENT_FUNCTION);
+    }
+  }
+
+  /*--- The cached LSQ metrics require an RHS-only periodic exchange that is not implemented, and
+   *    their coordinate dependence must remain on the tape for the discrete adjoint. On moving or
+   *    deforming grids the cache is invalidated and rebuilt whenever the dual grid is updated. ---*/
+  if (Cache_LSQ_Metrics && (nMarker_PerBound > 0 || DiscreteAdjoint)) {
+    Cache_LSQ_Metrics = false;
+    if (rank == MASTER_NODE) {
+      cout << "WARNING: CACHE_LSQ_METRICS is not compatible with periodic boundaries or the\n"
+              "         discrete adjoint. The option was disabled." << endl;
     }
   }
 

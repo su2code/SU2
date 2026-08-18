@@ -138,7 +138,9 @@ private:
   Integrated_HeatFlux,      /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
   FluxCorrection,
   FluxCorrectionLimiter,    /*!< \brief Apply the slope limiter to the gradients used in the flux correction. */
-  ModCentroids;
+  ExactViscJacobian,        /*!< \brief Use the exact viscous flux Jacobian instead of the TSL approximation. */
+  ModCentroids,
+  Cache_LSQ_Metrics;        /*!< \brief Cache the factorized least-squares metric terms (rebuilt after mesh motion). */
   su2double Buffet_k;       /*!< \brief Sharpness coefficient for buffet sensor.*/
   su2double Buffet_lambda;  /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;   /*!< \brief Damping factor for the engine inlet. */
@@ -9855,7 +9857,18 @@ public:
 
   bool GetFluxCorrectionLimiter() const { return FluxCorrectionLimiter; }
 
+  /*!
+   * \brief Use the exact viscous flux Jacobian (exact when the LSQ part of the corrected
+   *        gradient is zero) instead of the thin-shear-layer approximation.
+   */
+  bool GetExactViscJacobian() const { return ExactViscJacobian; }
+
   bool GetModifiedCentroids() const { return ModCentroids; }
+
+  /*!
+   * \brief Reuse the factorized least-squares metric terms across gradient evaluations (static grids only).
+   */
+  bool GetCache_LSQ_Metrics() const { return Cache_LSQ_Metrics; }
 
 
   /*!

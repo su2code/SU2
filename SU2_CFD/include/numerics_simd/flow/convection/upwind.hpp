@@ -859,7 +859,7 @@ class CRoeNewBase : public Base {
     auto dws2_ducL = dabs_qn_ducL;
 
     //!  Entropy fix/Eigenvalue limiting
-    fix = ws_orig(0) < dws(0);
+    fix = ws_orig(1) < dws(1);
     for (int iVar = 0; iVar < nVar; ++iVar)
       dws2_ducL(iVar) = fix * (ws_orig(1)/dws(1) * dws2_ducL(iVar) + 0.5 * (-ws_orig(1)*ws_orig(1)/(dws(1)*dws(1)) + 1)*ddws2_ducL(iVar)) +
                         (1-fix) * dws2_ducL(iVar);

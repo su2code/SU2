@@ -46,6 +46,8 @@ protected:
   const unsigned short nPrimVar;          /*!< \brief The size of the primitive variable array used in the numerics class. */
   const VISCOUS_GRAD_CORR correct_gradient;            /*!< \brief Apply a correction to the gradient term */
   bool implicit = false;                  /*!< \brief Implicit calculus. */
+  bool exact_jacobian = false;            /*!< \brief Use the exact viscous Jacobian instead of the TSL approximation. */
+  su2double Diss_Vec[MAXNDIM] = {0.0};    /*!< \brief Direction vector of the gradient correction (zero for NONE). */
   su2double
   heat_flux_vector[MAXNDIM] = {0.0},      /*!< \brief Flux of total energy due to molecular and turbulent diffusion */
   *heat_flux_jac_i = nullptr,             /*!< \brief Jacobian of the molecular + turbulent heat flux vector, projected onto the normal vector. */
@@ -296,6 +298,17 @@ public:
                            su2double val_eddy_viscosity,
                            su2double val_dist_ij,
                            const su2double *val_normal);
+
+  /*!
+   * \brief Exact Jacobian of the viscous flux (ideal gas). Exact when the LSQ part of the
+   *        corrected gradient is zero; the average LSQ gradient contribution is frozen.
+   *        Differentiates the corrected-gradient (Diss_Vec) terms, the averaged velocity in
+   *        the viscous work, and (via the secondary variables, if set) mu(T) and kt(T).
+   *        Writes Jacobian_i/Jacobian_j (d(projected flux)/dU, scaled by the face area).
+   * \param[in] val_area - Face area.
+   * \param[in] val_unit_normal - Unit normal vector.
+   */
+  void SetExactViscousProjJacs(su2double val_area, const su2double* val_unit_normal);
 };
 
 /*!

@@ -1134,6 +1134,12 @@ CNumerics::ResidualType<> CUpwRoeBase_FlowNew::ComputeResidual(const CConfig* co
   Enthalpy_j = V_j[nDim+3];
   Energy_j = Enthalpy_j - Pressure_j/Density_j;
 
+  /*--- Nodal sound speeds, needed by the Jacobian (da/duc terms). They must be
+   *    computed here: no caller sets them via SetSoundSpeed, and the SIMD twin
+   *    of this scheme (CRoeSchemeNew) computes them the same way. ---*/
+
+  SoundSpeed_i = sqrt(Gamma*Pressure_i/Density_i);
+  SoundSpeed_j = sqrt(Gamma*Pressure_j/Density_j);
   /*--- Compute variables that are common to the derived schemes ---*/
 
   /*--- Roe-averaged variables at interface between i & j ---*/
@@ -1479,7 +1485,7 @@ CNumerics::ResidualType<> CUpwRoeBase_FlowNew::ComputeResidual(const CConfig* co
     dws2_ducL[iVar] = dabs_qn_ducL[iVar];
 
   //!  Entropy fix/Eigenvalue limiting
-  fix = ws_orig[0] < dws[0];
+  fix = ws_orig[1] < dws[1];
   for (iVar = 0; iVar < nVar; ++iVar)
     dws2_ducL[iVar] = fix * (ws_orig[1]/dws[1] * dws2_ducL[iVar] + 0.5 * (-ws_orig[1]*ws_orig[1]/(dws[1]*dws[1]) + 1)*ddws2_ducL[iVar]) +
                       (1-fix) * dws2_ducL[iVar];
