@@ -2535,17 +2535,24 @@ enum ENUM_LINEAR_SOLVER_PREC {
   LINELET,        /*!< \brief Line implicit preconditioner. */
   ILU,            /*!< \brief ILU(k) preconditioner. */
   Q_LU_SGS,       /*!< \brief LU-SGS with quantized (int8) off-diagonal storage; L/U are never allocated as ScalarType. */
+  Q_JACOBI,       /*!< \brief Jacobi with quantized (int8) off-diagonal storage; same matvec quantization as Q_LU_SGS,
+                       the diagonal inverse is still computed and applied at full precision. */
+  Q_IDENTITY,     /*!< \brief No preconditioner, but the matrix-vector product still uses quantized (int8)
+                       off-diagonal storage, same matvec quantization as Q_LU_SGS/Q_JACOBI. */
   PASTIX_ILU=10,  /*!< \brief PaStiX ILU(k) preconditioner. */
   PASTIX_LU_P,    /*!< \brief PaStiX LU as preconditioner. */
   PASTIX_LDLT_P,  /*!< \brief PaStiX LDLT as preconditioner. */
 };
 static const MapType<std::string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = {
   MakePair("NONE", IDENTITY)
+  MakePair("IDENTITY", IDENTITY)
   MakePair("JACOBI", JACOBI)
   MakePair("LU_SGS", LU_SGS)
   MakePair("LINELET", LINELET)
   MakePair("ILU", ILU)
   MakePair("Q_LU_SGS", Q_LU_SGS)
+  MakePair("Q_JACOBI", Q_JACOBI)
+  MakePair("Q_IDENTITY", Q_IDENTITY)
   MakePair("PASTIX_ILU", PASTIX_ILU)
   MakePair("PASTIX_LU", PASTIX_LU_P)
   MakePair("PASTIX_LDLT", PASTIX_LDLT_P)
