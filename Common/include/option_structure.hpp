@@ -1116,7 +1116,7 @@ inline SST_ParsedOptions ParseSSTOptions(const SST_OPTIONS *SST_Options, unsigne
 struct CMGOptions {
   su2double MG_Smooth_Res_Threshold{0.0}; /*!< \brief RMS reduction threshold for MG smoothing early exit. */
   su2double MG_Smooth_Coeff{0.0};         /*!< \brief Jacobi smoother coefficient for coarse-grid correction. */
-  unsigned long MG_Min_MeshSize{0};       /*!< \brief Minimum CVs on coarsest MG level. */
+  unsigned long MG_Min_MeshSize{0};       /*!< \brief Minimum CVs on coarsest MG level, per MPI rank. */
   std::vector<unsigned short> MG_PreSmooth;    /*!< \brief Multigrid pre-smoothing iterations per level. */
   std::vector<unsigned short> MG_PostSmooth;   /*!< \brief Multigrid post-smoothing iterations per level. */
   std::vector<unsigned short> MG_CorrecSmooth; /*!< \brief Multigrid Jacobi correction-smoothing per level. */
@@ -1127,6 +1127,9 @@ struct CMGOptions {
   bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
   unsigned long MG_Implicit_Lines_MaxLength{20}; /*!< \brief Maximum nodes on a wall-normal implicit line (including wall seed). */
   bool MG_Implicit_Lines_Isotropic{false}; /*!< \brief Use isotropic (vs anisotropic) agglomeration along implicit lines. */
+  unsigned long MG_Implicit_Lines_Max_Group{0}; /*!< \brief Max number of parallel implicit lines merged into one coarse
+                                                      CV tangential to the wall. 0 = dimension-appropriate default
+                                                      (2 in 2D, 4 in 3D). See CMultiGridGeometry::AgglomerateImplicitLines. */
   unsigned long MG_Startup_Iter{100};     /*!< \brief Number of iterations on coarsest mesh during FMG startup phase. */
   unsigned long MG_Coarse_Prec_Freeze{1}; /*!< \brief On MG levels > 0, reuse the linear-solver preconditioner for this many consecutive solves. 1 = rebuild every solve. */
   su2double MG_Correction_Limit{0.0};     /*!< \brief Max relative change of any solution component from one prolongated FAS correction. 0 = no limit. */

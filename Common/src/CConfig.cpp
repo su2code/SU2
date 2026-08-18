@@ -2076,7 +2076,7 @@ void CConfig::SetConfig_Options() {
    * prolongated multigrid correction, e.g. 0.1 caps it at 10%. The whole correction vector at a point is scaled by one
    * factor so its direction is preserved. 0 disables the limiter (previous behaviour). DEFAULT: 0 \ingroup Config*/
   addDoubleOption("MG_CORRECTION_LIMIT", MGOptions.MG_Correction_Limit, 0.0);
-  /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level. Levels that would produce fewer CVs are not created. DEFAULT: 50 \ingroup Config*/
+  /*!\brief MG_MIN_MESHSIZE\n DESCRIPTION: Minimum number of CVs on the coarsest multigrid level, checked per MPI rank (i.e. on the smallest partition). Levels that would produce fewer CVs on any rank are not created. DEFAULT: 50 \ingroup Config*/
   addUnsignedLongOption("MG_MIN_MESHSIZE", MGOptions.MG_Min_MeshSize, 500);
   /*!\brief MG_IMPLICIT_LINES\n DESCRIPTION: Enable agglomeration along implicit lines from wall seeds. DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES", MGOptions.MG_Implicit_Lines, false);
@@ -2084,6 +2084,10 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
   /*!\brief MG_IMPLICIT_LINES_ISOTROPIC\n DESCRIPTION: Use isotropic agglomeration along implicit lines (4 cells per coarse CV) instead of anisotropic (2 cells per coarse CV). DEFAULT: NO \ingroup Config*/
   addBoolOption("MG_IMPLICIT_LINES_ISOTROPIC", MGOptions.MG_Implicit_Lines_Isotropic, false);
+  /*!\brief MG_IMPLICIT_LINES_MAX_GROUP\n DESCRIPTION: Maximum number of parallel implicit lines merged tangential to
+   * the wall into one coarse CV (2D: always 2; 3D: e.g. 4 for a wall quad/hex corner, 3 for a triangular prism apex).
+   * 0 uses the dimension-appropriate default (2 in 2D, 4 in 3D). DEFAULT: 0 \ingroup Config*/
+  addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_GROUP", MGOptions.MG_Implicit_Lines_Max_Group, 0);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Number of iterations on the coarsest mesh during Full Multigrid (FMG) startup phase before advancing to finer meshes. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
   /*!\brief MG_STARTUP_STAGNATION\n DESCRIPTION: Full-MG promotion on stagnation. If the active level's residual ratio
