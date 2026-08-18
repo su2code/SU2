@@ -111,36 +111,17 @@ struct CSysMatrixComms {
 };
 
 /*!
- * \brief std::max/std::min, usable from both host and device code. Calling std::max/std::min
- *        directly from a SU2_CUDA_HOST_DEVICE function compiles without error but is not
- *        actually valid without --expt-relaxed-constexpr which is not used in this build.
- */
-template <class T>
-SU2_CUDA_HOST_DEVICE inline T QuantMax(T a, T b) noexcept {
-#ifdef __CUDA_ARCH__
-  return max(a, b);
-#else
-  return std::max(a, b);
-#endif
-}
-template <class T>
-SU2_CUDA_HOST_DEVICE inline T QuantMin(T a, T b) noexcept {
-#ifdef __CUDA_ARCH__
-  return min(a, b);
-#else
-  return std::min(a, b);
-#endif
-}
-
-/*!
  * \brief Reconstruct the float row-scale from a stored int8 binary exponent.
  *        The exponent \p e was packed as (e + 127) into the IEEE 754 biased-exponent field
  *        with a zero mantissa, giving an exact power of two: 2^e.
  *        This is the inverse of the encoding in EncodeQuantBlock.
  * \note Branches on __CUDA_ARCH__, plain memcpy compiles for the device but does not work!
  */
-SU2_CUDA_HOST_DEVICE inline float DecodeQuantScale(int8_t e) noexcept {
-  const uint32_t bits = static_cast<uint32_t>(QuantMax(0, static_cast<int>(e) + 127)) << 23;
+SU2_CUDA_HOST_DEVICE FORCEINLINE float DecodeQuantScale(int8_t e) noexcept {
+#ifndef __CUDA_ARCH__
+  using std::max;
+#endif
+  const uint32_t bits = static_cast<uint32_t>(max(0, static_cast<int>(e) + 127)) << 23;
 #ifdef __CUDA_ARCH__
   return __uint_as_float(bits);
 #else
@@ -162,26 +143,28 @@ SU2_CUDA_HOST_DEVICE inline float DecodeQuantScale(int8_t e) noexcept {
  *       host-only (not SU2_CUDA_HOST_DEVICE).
  */
 template <class F>
-SU2_CUDA_HOST_DEVICE inline void EncodeQuantRow(const F& f, int8_t& qs, int8_t* __restrict qv, unsigned long nVar,
-                                                unsigned long r) noexcept {
+SU2_CUDA_HOST_DEVICE FORCEINLINE void EncodeQuantRow(const F& f, int8_t& qs, int8_t* __restrict qv, unsigned long nVar,
+                                                     unsigned long r) noexcept {
 #ifdef __CUDA_ARCH__
-  auto passive = [&](unsigned long row, unsigned long col) { return f(row, col); };
+#define EQR_PASSIVE(ROW, COL) f(ROW, COL)
 #else
-  auto passive = [&](unsigned long row, unsigned long col) { return SU2_TYPE::PassiveValue(f(row, col)); };
+#define EQR_PASSIVE(ROW, COL) SU2_TYPE::PassiveValue(f(ROW, COL))
+  using std::max;
+  using std::min;
 #endif
   constexpr uint32_t eps_bits = 0x34000000u;
   uint32_t max_abs_bits = eps_bits;
   for (auto c = 0ul; c < nVar; ++c) {
-    const float fv = static_cast<float>(passive(r, c));
+    const auto fv = static_cast<float>(EQR_PASSIVE(r, c));
 #ifdef __CUDA_ARCH__
     const uint32_t fb = __float_as_uint(fv);
 #else
     uint32_t fb;
     memcpy(&fb, &fv, sizeof(fb));
 #endif
-    max_abs_bits = QuantMax(max_abs_bits, fb & 0x7FFFFFFFu);
+    max_abs_bits = max(max_abs_bits, fb & 0x7FFFFFFFu);
   }
-  const int e = QuantMin(127, QuantMax(-128, static_cast<int>(max_abs_bits >> 23) - 133));
+  const int e = min(127, max(-128, static_cast<int>(max_abs_bits >> 23) - 133));
   qs = static_cast<int8_t>(e);
   const uint32_t inv_bits = static_cast<uint32_t>(127 - e) << 23;
 #ifdef __CUDA_ARCH__
@@ -191,9 +174,9 @@ SU2_CUDA_HOST_DEVICE inline void EncodeQuantRow(const F& f, int8_t& qs, int8_t* 
   memcpy(&inv_rscale, &inv_bits, sizeof(inv_rscale));
 #endif
   for (auto c = 0ul; c < nVar; ++c) {
-    qv[c] =
-        static_cast<int8_t>(QuantMax(-128.f, QuantMin(127.f, roundf(static_cast<float>(passive(r, c)) * inv_rscale))));
+    qv[c] = static_cast<int8_t>(max(-128.f, min(127.f, roundf(EQR_PASSIVE(r, c) * inv_rscale))));
   }
+#undef EQR_PASSIVE
 }
 
 /*!
@@ -202,8 +185,8 @@ SU2_CUDA_HOST_DEVICE inline void EncodeQuantRow(const F& f, int8_t& qs, int8_t* 
  *        the host path).
  */
 template <class F>
-SU2_CUDA_HOST_DEVICE inline void EncodeQuantBlock(const F& f, int8_t* __restrict qs, int8_t* __restrict qv,
-                                                  unsigned long nVar) noexcept {
+SU2_CUDA_HOST_DEVICE FORCEINLINE void EncodeQuantBlock(const F& f, int8_t* __restrict qs, int8_t* __restrict qv,
+                                                       unsigned long nVar) noexcept {
   for (auto r = 0ul; r < nVar; ++r) EncodeQuantRow(f, qs[r], qv + r * nVar, nVar, r);
 }
 

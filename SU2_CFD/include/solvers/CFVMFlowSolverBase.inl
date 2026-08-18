@@ -1837,6 +1837,17 @@ void CFVMFlowSolverBase<V, FlowRegime>::SetResidual_DualTime(CGeometry *geometry
 namespace {
 
 /*!
+ * \brief Whether a marker's boundary kind is one of the momentum (inlet/outlet/actuator-disk/
+ *        engine) surfaces handled by Momentum_Forces, used both to gate accumulation into
+ *        MntCoeff and to gate the later CEff/CMerit derivation from it.
+ * \param[in] Boundary - Boundary kind of the marker (config->GetMarker_All_KindBC(iMarker)).
+ */
+inline bool IsMomentumBoundary(unsigned short Boundary) {
+  return (Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) || (Boundary == ACTDISK_INLET) ||
+         (Boundary == ACTDISK_OUTLET) || (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST);
+}
+
+/*!
  * \brief Fold one thread's partial force/moment coefficient contribution (accumulated over
  *        its share of a marker's vertices) into the per-marker, AllBound and per-surface
  *        aerodynamic coefficient totals, in a single critical section. Does not touch
@@ -1851,7 +1862,7 @@ namespace {
  * \param[in,out] surfaceCoeff - Per-monitoring-surface totals to update.
  */
 template <class AeroCoeffsT, class AeroCoeffsArrayT>
-void AddCoeffContribution(unsigned short iMarker, const CConfig* config, const string& Marker_Tag,
+void AddCoeffContribution(unsigned long iMarker, const CConfig* config, const string& Marker_Tag,
                            const AeroCoeffsT& partial, AeroCoeffsArrayT& coeffArray, AeroCoeffsT& allBoundCoeff,
                            AeroCoeffsArrayT& surfaceCoeff) {
   /*--- Resolve the matching monitoring surface (if any) once, outside the critical section
@@ -2163,7 +2174,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
    *    per-marker/AllBound/Surface totals via AddCoeffContribution. CEff/CMerit are nonlinear
    *    ratios, so they are derived once after the loop, from the fully-reduced totals. ---*/
 
-  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     const auto Boundary = config->GetMarker_All_KindBC(iMarker);
     const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
@@ -2187,12 +2198,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Pressure_Forces(const CGeometry* geometr
 
       su2double NFPressOF = 0.0;
 
-      /*--- Loop over the vertices to compute the forces (work-shared across threads). Chunk size
-       *    is balanced across threads (bounded by OMP_MAX_SIZE) instead of a fixed small chunk,
-       *    since these loops have no severe load imbalance and benefit from fewer, larger chunks.
-       *    No barrier at the end (SU2_NOWAIT): each thread only needs its own partial sums, which
-       *    are complete as soon as it exits its share of the loop; the safe-global-access section
-       *    below already provides the barrier needed before the fully-reduced totals are used. ---*/
+      /*--- Loop over the vertices to compute the forces ---*/
 
       SU2_OMP_FOR_(schedule(static, computeStaticChunkSize(geometry->GetnVertex(iMarker), omp_get_max_threads(),
                                                             OMP_MAX_SIZE)) SU2_NOWAIT)
@@ -2339,7 +2345,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
   /*--- Loop over the Inlet-Outlet Markers (see Pressure_Forces for how the parallel
    *    reduction over threads is organized). ---*/
 
-  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     const auto Boundary = config->GetMarker_All_KindBC(iMarker);
     const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
@@ -2354,8 +2360,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
       }
     }
 
-    if ((Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) || (Boundary == ACTDISK_INLET) ||
-        (Boundary == ACTDISK_OUTLET) || (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST)) {
+    if (IsMomentumBoundary(Boundary)) {
 
       su2double ForceMomentum[MAXNDIM] = {0.0}, MomentMomentum[MAXNDIM] = {0.0};
       su2double MomentX_Force[3] = {0.0}, MomentY_Force[3] = {0.0}, MomentZ_Force[3] = {0.0};
@@ -2431,9 +2436,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Momentum_Forces(const CGeometry* geometr
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
     const auto Boundary = config->GetMarker_All_KindBC(iMarker);
     const auto Monitoring = config->GetMarker_All_Monitoring(iMarker);
-    if (Monitoring == YES && ((Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) ||
-        (Boundary == ACTDISK_INLET) || (Boundary == ACTDISK_OUTLET) ||
-        (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST))) {
+    if (Monitoring == YES && IsMomentumBoundary(Boundary)) {
       MntCoeff.CEff[iMarker] = MntCoeff.CL[iMarker] / (MntCoeff.CD[iMarker] + EPS);
       MntCoeff.CMerit[iMarker] = MntCoeff.CT[iMarker] / (MntCoeff.CQ[iMarker] + EPS);
     }
@@ -2518,7 +2521,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::Friction_Forces(const CGeometry* geometr
    *    reduction over threads is organized). The per-vertex loop below is the expensive
    *    part (stress-tensor and heat-flux evaluations) and is work-shared across threads. ---*/
 
-  for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
 
     if (!config->GetViscous_Wall(iMarker)) continue;
     const auto Marker_Tag = config->GetMarker_All_TagBound(iMarker);
