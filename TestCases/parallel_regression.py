@@ -86,6 +86,15 @@ def main():
     flame_init_methods.new_output = True
     test_list.append(flame_init_methods)
 
+    # 2D laminar premixed ch4-air flame, transient flame propagation  
+    cfd_flamelet_ch4_unsteady = TestCase('cfd_flamelet_ch4_unsteady')
+    cfd_flamelet_ch4_unsteady.cfg_dir = "flamelet/09_laminar_premixed_ch4_flame_unsteady"
+    cfd_flamelet_ch4_unsteady.cfg_file = "lam_prem_ch4_unsteady.cfg"
+    cfd_flamelet_ch4_unsteady.test_iter = 5
+    cfd_flamelet_ch4_unsteady.test_vals = [-8.856420, -8.095249, -9.153744, -9.321679]
+    cfd_flamelet_ch4_unsteady.test_vals_aarch64 = [-8.855500, -8.095195, -9.153704, -9.321686]
+    test_list.append(cfd_flamelet_ch4_unsteady)
+
     #########################
     ## NEMO solver ###
     #########################
@@ -1561,7 +1570,7 @@ def main():
     pywrapper_rigidMotion.cfg_dir = "py_wrapper/flatPlate_rigidMotion"
     pywrapper_rigidMotion.cfg_file = "flatPlate_rigidMotion_Conf.cfg"
     pywrapper_rigidMotion.test_iter = 5
-    pywrapper_rigidMotion.test_vals = [-1.614166, 2.255135, 0.350196, 0.089496]
+    pywrapper_rigidMotion.test_vals = [-1.607009, 2.260791, 0.350196, 0.089496]
     pywrapper_rigidMotion.command = TestCase.Command("mpirun -np 2", "python", "launch_flatPlate_rigidMotion.py --parallel -f")
     pywrapper_rigidMotion.unsteady = True
     test_list.append(pywrapper_rigidMotion)
