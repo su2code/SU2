@@ -26,6 +26,7 @@
  */
 
 #include <algorithm>
+#include <cstring>
 
 #include "../../include/linear_algebra/CMatrixInverse.hpp"
 #include "../../include/linear_algebra/CSysMatrix.inl"
@@ -33,23 +34,32 @@
 
 namespace {
 
+/*!
+ * \brief Apply the Jacobi preconditioner: prod = invM * vec (block-diagonal). Points are batched
+ *        into blocks of ~128 threads (see ComputeJacobiPreconditionerGPU), threadIdx.x mapping
+ *        to (point-within-block, output variable) via divmod by nVar - the same layout as
+ *        BlockLDU_SpMV_kernel. Occupancy was already fine here (one thread per point, full
+ *        warps), but consecutive threads used to land nVar^2 elements apart in invM (one point's
+ *        whole dense block per thread); with this mapping they land nVar elements apart instead,
+ *        a real (if partial, since it is still not stride-1) coalescing win that needs no shared
+ *        memory or synchronization, unlike a fully-coalesced one-thread-per-block-entry version
+ *        would.
+ */
 template <class ScalarType>
-__global__ void ApplyJacobiPreconditionerKernel(const ScalarType* invM, const ScalarType* vec, ScalarType* prod,
+__global__ void ApplyJacobiPreconditionerKernel(const ScalarType* __restrict__ invM,
+                                                const ScalarType* __restrict__ vec, ScalarType* __restrict__ prod,
                                                 unsigned long nPointDomain, unsigned long nVar) {
-  const auto iPoint = static_cast<unsigned long>(blockIdx.x) * blockDim.x + threadIdx.x;
+  const unsigned long rowsPerBlock = blockDim.x / nVar;
+  const unsigned long iVar = threadIdx.x % nVar;
+  const unsigned long iPoint = static_cast<unsigned long>(blockIdx.x) * rowsPerBlock + threadIdx.x / nVar;
   if (iPoint >= nPointDomain) return;
 
-  const auto block = &invM[iPoint * nVar * nVar];
-  const auto rhs = &vec[iPoint * nVar];
-  auto out = &prod[iPoint * nVar];
+  const auto* block = &invM[iPoint * nVar * nVar + iVar * nVar];
+  const auto* rhs = &vec[iPoint * nVar];
 
-  for (auto iVar = 0ul; iVar < nVar; ++iVar) {
-    auto sum = ScalarType(0);
-    for (auto jVar = 0ul; jVar < nVar; ++jVar) {
-      sum += block[iVar * nVar + jVar] * rhs[jVar];
-    }
-    out[iVar] = sum;
-  }
+  auto sum = ScalarType(0);
+  for (unsigned long jVar = 0; jVar < nVar; ++jVar) sum += block[jVar] * rhs[jVar];
+  prod[iPoint * nVar + iVar] = sum;
 }
 
 /*--- ILU. The factorization is scheduled by coloring: colors are true independent sets of the
@@ -98,9 +108,54 @@ __device__ FORCEINLINE ScalarType* GetBlockILU(const DeviceLDU<ScalarType>& M, u
 }
 
 /*!
- * \brief Invert the diagonal blocks of the matrix, device version of InverseDiagonalBlock.
- * \note Grid: one block per row, blockDim.x == nVar*nVar (one thread per block entry, they
- *       stage the input in shared memory). Dynamic shared memory: nVar*nVar scalars.
+ * \brief Parallel Gauss-Jordan matrix inversion, shared by InvertDiagonalBlocksKernel and
+ *        IluFactorColorKernel's diagonal-inversion step below - both already have nVar*nVar
+ *        threads and two blockSize-sized shared buffers on hand at the point they need a diagonal
+ *        block inverted. SU2_LinAlg::MatrixInverse would have to run on a single thread.
+ * \param i,j Row/column of the block entry this thread owns, in 0..nVar-1 (i.e. threadIdx.x's
+ *            divmod by nVar, same mapping the caller already uses for everything else).
+ * \param A Destroyed. \param Inv Must be pre-loaded with the identity, must not alias \p A;
+ *          holds the inverse on return.
+ * \note __syncthreads() (not __syncwarp()) is used so this stays correct even when nVar*nVar
+ *       exceeds one warp (nVar > ~5), at the cost of a full block-wide barrier even for the
+ *       common case where the whole block already fits in one warp. Every thread of the block
+ *       must call this (no divergent early return before it), since every __syncthreads() here
+ *       is a whole-block barrier.
+ */
+template <class ScalarType>
+__device__ FORCEINLINE void ParallelMatrixInverse(unsigned long nVar, unsigned long i, unsigned long j,
+                                                   ScalarType* __restrict__ A, ScalarType* __restrict__ Inv) {
+  for (auto k = 0ul; k < nVar; ++k) {
+    /*--- Regularize the pivot (shared with the host path, same clamp value). ---*/
+    if (i == k && j == k) SU2_LinAlg::RegularizePivot(A[k * nVar + k]);
+    __syncthreads();
+
+    /*--- Normalize the pivot row. ---*/
+    const ScalarType pivot = A[k * nVar + k];
+    if (i == k) {
+      A[i * nVar + j] /= pivot;
+      Inv[i * nVar + j] /= pivot;
+    }
+    __syncthreads();
+
+    /*--- Eliminate column k from every other row; A(k,*) and Inv(k,*) are already finalized for
+     * this step (previous barrier), and each thread only ever writes its own (i,j), so this
+     * needs no further synchronization until the next pivot's regularization reads A(k+1,k+1). ---*/
+    if (i != k) {
+      const ScalarType factor = A[i * nVar + k];
+      A[i * nVar + j] -= factor * A[k * nVar + j];
+      Inv[i * nVar + j] -= factor * Inv[k * nVar + j];
+    }
+    __syncthreads();
+  }
+}
+
+/*!
+ * \brief Invert the diagonal blocks of the matrix, device version of InverseDiagonalBlock, via
+ *        ParallelMatrixInverse (see its comment for why this beats a single serial thread).
+ * \note Grid: one block per row, blockDim.x == nVar*nVar. Dynamic shared memory: 2*nVar*nVar
+ *       scalars (the working copy of the block, and the inverse being accumulated in place of
+ *       the old identity-then-eliminate scheme).
  */
 template <class ScalarType>
 __global__ void InvertDiagonalBlocksKernel(unsigned long nRows, unsigned long nVar,
@@ -110,15 +165,41 @@ __global__ void InvertDiagonalBlocksKernel(unsigned long nRows, unsigned long nV
 
   const auto blockSize = nVar * nVar;
   const unsigned long tid = threadIdx.x;
+  const unsigned long i = tid / nVar;
+  const unsigned long j = tid % nVar;
 
   /*--- The inversion destroys its input, so it cannot work on the matrix itself. ---*/
   extern __shared__ __align__(sizeof(double)) char smem[];
-  auto* work = reinterpret_cast<ScalarType*>(smem);
+  auto* A = reinterpret_cast<ScalarType*>(smem);
+  auto* Inv = A + blockSize;
 
-  work[tid] = mat_d[iRow * blockSize + tid];
+  A[tid] = mat_d[iRow * blockSize + tid];
+  Inv[tid] = ScalarType(i == j);
   __syncthreads();
 
-  if (tid == 0) SU2_LinAlg::MatrixInverse(nVar, work, invM + iRow * blockSize);
+  ParallelMatrixInverse(nVar, i, j, A, Inv);
+
+  invM[iRow * blockSize + tid] = Inv[tid];
+}
+
+/*!
+ * \brief Quantize the diagonal blocks straight from the device diagonal (gpu.d), device
+ *        counterpart of CSysMatrix::QuantizeBlock (CSysMatrix.cpp). Calls the exact same
+ *        EncodeQuantRow encoding function. One thread per (point, row) - each block-row's
+ *        scale and quantization are independent of every other row.
+ */
+template <class ScalarType>
+__global__ void QuantizeDiagonalBlocksKernel(unsigned long nRows, unsigned long nVar,
+                                             const ScalarType* __restrict__ mat_d, int8_t* __restrict__ q_scale_d,
+                                             int8_t* __restrict__ q_blocks_d) {
+  const unsigned long rowsPerBlock = blockDim.x / nVar;
+  const unsigned long iVar = threadIdx.x % nVar;
+  const unsigned long iPoint = static_cast<unsigned long>(blockIdx.x) * rowsPerBlock + threadIdx.x / nVar;
+  if (iPoint >= nRows) return;
+
+  const auto* blk = mat_d + iPoint * nVar * nVar;
+  EncodeQuantRow([&](unsigned long r, unsigned long c) { return blk[r * nVar + c]; }, q_scale_d[iPoint * nVar + iVar],
+                q_blocks_d + iPoint * nVar * nVar + iVar * nVar, nVar, iVar);
 }
 
 /*!
@@ -214,11 +295,17 @@ __global__ void IluFactorColorKernel(const su2uint* __restrict__ color_idx, unsi
   }
 
   /*--- Invert the diagonal entry, Uii, for the rows that depend on it. The loop above may have
-   * updated it (when kPoint == iRow), so the whole block has to be done first. ---*/
+   * updated it (when kPoint == iRow), so the whole block has to be done first. Lij is free again
+   * here (its last use, storing it into Block_ij, is done) - reuse it as the identity/inverse
+   * buffer ParallelMatrixInverse needs, instead of a separate shared allocation. ---*/
   __syncthreads();
   work[tid] = M.d[iRow * blockSize + tid];
+  Lij[tid] = ScalarType(iVar == jVar);
   __syncthreads();
-  if (tid == 0) SU2_LinAlg::MatrixInverse(nVar, work, M.d + iRow * blockSize);
+
+  ParallelMatrixInverse(nVar, iVar, jVar, work, Lij);
+
+  M.d[iRow * blockSize + tid] = Lij[tid];
 }
 
 /*!
@@ -315,8 +402,12 @@ __global__ void IluBackwardKernel(const su2uint* __restrict__ level_idx, unsigne
 }
 
 /*!
- * \brief Block-LDU SpMV kernel: y[iRow] = (L + D + U) * x per block-row.
- *        One CUDA block per block-row; threadIdx.x indexes output variable (0..nVar-1).
+ * \brief Block-LDU SpMV kernel: y[iRow] = (L + D + U) * x per block-row. Several rows are
+ *        batched into one CUDA block (blockDim.x / nVar of them, see MatrixVectorProductGPU)
+ *        instead of one row per block: nVar is typically ~4-6, so one-row-per-block leaves most
+ *        of a warp's lanes permanently idle and caps occupancy at a few resident (mostly-empty)
+ *        warps per SM, well before DRAM bandwidth is the limit. threadIdx.x indexes
+ *        (row-within-block, output variable) as (threadIdx.x / nVar, threadIdx.x % nVar).
  */
 template <class ScalarType>
 __global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
@@ -328,9 +419,10 @@ __global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
                                      const su2uint* __restrict__ col_ind_u,
                                      const ScalarType* __restrict__ mat_u,
                                      const ScalarType* __restrict__ x, ScalarType* __restrict__ y) {
-  const unsigned long iRow = blockIdx.x;
-  const unsigned long iVar = threadIdx.x;
-  if (iRow >= nRows || iVar >= nVar) return;
+  const unsigned long rowsPerBlock = blockDim.x / nVar;
+  const unsigned long iVar = threadIdx.x % nVar;
+  const unsigned long iRow = static_cast<unsigned long>(blockIdx.x) * rowsPerBlock + threadIdx.x / nVar;
+  if (iRow >= nRows) return;
 
   ScalarType sum = 0;
   /* Lower */
@@ -353,6 +445,58 @@ __global__ void BlockLDU_SpMV_kernel(unsigned long nRows, unsigned long nVar,
   y[iRow * nVar + iVar] = sum;
 }
 
+/*!
+ * \brief Device version of QuantizedRowProduct/QuantizedMatVecAdd (CSysMatrix.inl). Rows are
+ * batched per block the same way as BlockLDU_SpMV_kernel.
+ */
+template <class ScalarType>
+__global__ void QuantizedBlockLDU_SpMV_kernel(
+    unsigned long nRows, unsigned long nVar, const su2uint* __restrict__ row_ptr_l,
+    const su2uint* __restrict__ col_ind_l, const int8_t* __restrict__ q_scale_l,
+    const int8_t* __restrict__ q_blocks_l, const int8_t* __restrict__ q_scale_d,
+    const int8_t* __restrict__ q_blocks_d, const su2uint* __restrict__ row_ptr_u,
+    const su2uint* __restrict__ col_ind_u, const int8_t* __restrict__ q_scale_u,
+    const int8_t* __restrict__ q_blocks_u, const ScalarType* __restrict__ x, ScalarType* __restrict__ y) {
+  const unsigned long rowsPerBlock = blockDim.x / nVar;
+  const unsigned long iVar = threadIdx.x % nVar;
+  const unsigned long iRow = static_cast<unsigned long>(blockIdx.x) * rowsPerBlock + threadIdx.x / nVar;
+  if (iRow >= nRows) return;
+
+  auto addBlock = [&](const int8_t* __restrict__ qs, const int8_t* __restrict__ qv, const ScalarType* __restrict__ xk) {
+    const float row_scale = DecodeQuantScale(qs[iVar]);
+    const int8_t* __restrict__ row = qv + iVar * nVar;
+    ScalarType partial = 0;
+    unsigned long jVar = 0;
+    for (; jVar + 4 <= nVar; jVar += 4) {
+      /*--- Row bytes are not generally 4-byte aligned (nVar*nVar need not be a multiple of 4),
+       * so this must go through memcpy rather than a reinterpret_cast<const uint32_t*> deref. ---*/
+      uint32_t packed;
+      memcpy(&packed, row + jVar, sizeof(packed));
+      partial += static_cast<int8_t>(packed) * xk[jVar];
+      partial += static_cast<int8_t>(packed >> 8) * xk[jVar + 1];
+      partial += static_cast<int8_t>(packed >> 16) * xk[jVar + 2];
+      partial += static_cast<int8_t>(packed >> 24) * xk[jVar + 3];
+    }
+    for (; jVar < nVar; ++jVar) partial += row[jVar] * xk[jVar];
+    return static_cast<ScalarType>(row_scale) * partial;
+  };
+
+  ScalarType sum = 0;
+  /* Lower */
+  for (auto k = row_ptr_l[iRow]; k < row_ptr_l[iRow + 1]; ++k) {
+    const auto col = col_ind_l[k];
+    sum += addBlock(q_scale_l + k * nVar, q_blocks_l + k * nVar * nVar, x + col * nVar);
+  }
+  /* Diagonal */
+  sum += addBlock(q_scale_d + iRow * nVar, q_blocks_d + iRow * nVar * nVar, x + iRow * nVar);
+  /* Upper */
+  for (auto k = row_ptr_u[iRow]; k < row_ptr_u[iRow + 1]; ++k) {
+    const auto col = col_ind_u[k];
+    sum += addBlock(q_scale_u + k * nVar, q_blocks_u + k * nVar * nVar, x + col * nVar);
+  }
+  y[iRow * nVar + iVar] = sum;
+}
+
 }  // namespace
 
 template <class ScalarType>
@@ -368,10 +512,31 @@ void CSysMatrix<ScalarType>::ComputeJacobiPreconditionerGPU(const CSysVector<Sca
     SU2_MPI::Error("CUDA Jacobi preconditioner used before BuildJacobiPreconditionerGPU.", CURRENT_FUNCTION);
   }
 
-  constexpr unsigned threadsPerBlock = 128;
-  const auto blocks = static_cast<unsigned>((nPointDomain + threadsPerBlock - 1) / threadsPerBlock);
+  constexpr unsigned long targetThreadsPerBlock = 128;
+  const auto rowsPerBlock = std::max<unsigned long>(1, targetThreadsPerBlock / nVar);
+  const auto threadsPerBlock = static_cast<unsigned>(rowsPerBlock * nVar);
+  const auto blocks = static_cast<unsigned>((nPointDomain + rowsPerBlock - 1) / rowsPerBlock);
   ApplyJacobiPreconditionerKernel<<<blocks, threadsPerBlock>>>(d_invM, vec.GetDevicePointer(), prod.GetDevicePointer(),
                                                                nPointDomain, nVar);
+  /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
+  gpuErrChk(cudaStreamSynchronize(nullptr));
+  gpuErrChk(cudaGetLastError());
+}
+
+template <class ScalarType>
+void CSysMatrix<ScalarType>::QuantizeDiagonalBlocksGPU() {
+  SU2_ZONE_SCOPED
+
+  if (nPointDomain == 0) return;
+
+  /*--- The matrix is expected to be on the device already, it is uploaded once per solve by
+   * CSysMatrixVectorProduct, which is created before the preconditioner is built. ---*/
+  constexpr unsigned long targetThreadsPerBlock = 128;
+  const auto rowsPerBlock = std::max<unsigned long>(1, targetThreadsPerBlock / nVar);
+  const auto threadsPerBlock = static_cast<unsigned>(rowsPerBlock * nVar);
+  const auto blocks = static_cast<unsigned>((nPointDomain + rowsPerBlock - 1) / rowsPerBlock);
+  QuantizeDiagonalBlocksKernel<ScalarType>
+      <<<blocks, threadsPerBlock>>>(nPointDomain, nVar, gpu.d, d_q_scale.d, d_q_blocks.d);
   /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
   gpuErrChk(cudaStreamSynchronize(nullptr));
   gpuErrChk(cudaGetLastError());
@@ -389,9 +554,8 @@ void CSysMatrix<ScalarType>::BuildJacobiPreconditionerGPU() {
   /*--- The matrix is expected to be on the device already, it is uploaded once per solve by
    * CSysMatrixVectorProduct, which is created before the preconditioner is built. ---*/
   const auto blockSize = static_cast<unsigned>(nVar * nVar);
-  InvertDiagonalBlocksKernel<ScalarType>
-      <<<static_cast<unsigned>(nPointDomain), blockSize, blockSize * sizeof(ScalarType)>>>(nPointDomain, nVar, gpu.d,
-                                                                                           d_invM);
+  InvertDiagonalBlocksKernel<ScalarType><<<static_cast<unsigned>(nPointDomain), blockSize,
+                                           2 * blockSize * sizeof(ScalarType)>>>(nPointDomain, nVar, gpu.d, d_invM);
   /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
   gpuErrChk(cudaStreamSynchronize(nullptr));
   gpuErrChk(cudaGetLastError());
@@ -419,7 +583,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
   /*--- The legacy default stream cannot be captured, so the graph lives on its own stream,
    * created once. Every launch below is followed by a sync back to the host, so this does not
    * change execution order relative to the rest of the (single-stream) solver. ---*/
-  if (ilu_stream == nullptr) gpuErrChk(cudaStreamCreate(&ilu_stream));
+  if (aux_stream == nullptr) gpuErrChk(cudaStreamCreate(&aux_stream));
 
   /*--- The launch sequence (ilu_gpu_sweeps passes over all colors) is identical on every call:
    * the grid and block sizes only depend on the (fixed) sparsity pattern/coloring and the device
@@ -433,7 +597,7 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
    * scratch, relying on the matrix changing little between outer/pseudo-time iterations. ---*/
   if (ilu_build_graph_exec == nullptr) {
     cudaGraph_t graph;
-    gpuErrChk(cudaStreamBeginCapture(ilu_stream, cudaStreamCaptureModeThreadLocal));
+    gpuErrChk(cudaStreamBeginCapture(aux_stream, cudaStreamCaptureModeThreadLocal));
 
     for (unsigned short sweep = 0; sweep < ilu_gpu_sweeps; ++sweep) {
       for (auto color = 0ul; color + 1 < ilu_color_ptr.size(); ++color) {
@@ -441,17 +605,17 @@ void CSysMatrix<ScalarType>::BuildILUPreconditionerGPU() {
         const auto size = ilu_color_ptr[color + 1] - begin;
         if (size == 0) continue;
         IluFactorColorKernel<ScalarType>
-            <<<size, blockSize, shared, ilu_stream>>>(d_ilu_color_idx, begin, size, nPointDomain, nVar, A, M);
+            <<<size, blockSize, shared, aux_stream>>>(d_ilu_color_idx, begin, size, nPointDomain, nVar, A, M);
       }
     }
 
-    gpuErrChk(cudaStreamEndCapture(ilu_stream, &graph));
+    gpuErrChk(cudaStreamEndCapture(aux_stream, &graph));
     gpuErrChk(cudaGraphInstantiate(&ilu_build_graph_exec, graph, nullptr, nullptr, 0));
     gpuErrChk(cudaGraphDestroy(graph));
   }
 
-  gpuErrChk(cudaGraphLaunch(ilu_build_graph_exec, ilu_stream));
-  gpuErrChk(cudaStreamSynchronize(ilu_stream));
+  gpuErrChk(cudaGraphLaunch(ilu_build_graph_exec, aux_stream));
+  gpuErrChk(cudaStreamSynchronize(aux_stream));
   gpuErrChk(cudaGetLastError());
 }
 
@@ -481,7 +645,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
   const auto sharedForward = threads * sizeof(ScalarType);
   const auto sharedBackward = (threads + nVar) * sizeof(ScalarType);
 
-  if (ilu_stream == nullptr) gpuErrChk(cudaStreamCreate(&ilu_stream));
+  if (aux_stream == nullptr) gpuErrChk(cudaStreamCreate(&aux_stream));
 
   /*--- Same idea as BuildILUPreconditionerGPU: the launch sequence only depends on the (fixed)
    * level structure, plus the vec/prod device pointers. Those normally are the same temporary
@@ -495,7 +659,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
     }
 
     cudaGraph_t graph;
-    gpuErrChk(cudaStreamBeginCapture(ilu_stream, cudaStreamCaptureModeThreadLocal));
+    gpuErrChk(cudaStreamBeginCapture(aux_stream, cudaStreamCaptureModeThreadLocal));
 
     /*--- Forward substitution: one exact pass over the levels in increasing order,
      * (L+I).prod = vec, see IluForwardKernel. ---*/
@@ -504,7 +668,7 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
       const auto size = ilu_level_ptr[level + 1] - begin;
       if (size == 0) continue;
       IluForwardKernel<ScalarType>
-          <<<size, threads, sharedForward, ilu_stream>>>(d_ilu_level_idx, begin, size, nVar, M, d_vec, d_prod);
+          <<<size, threads, sharedForward, aux_stream>>>(d_ilu_level_idx, begin, size, nVar, M, d_vec, d_prod);
     }
 
     /*--- Backward substitution: one exact pass over the levels in decreasing order,
@@ -515,18 +679,18 @@ void CSysMatrix<ScalarType>::ComputeILUPreconditionerGPU(const CSysVector<Scalar
       const auto size = ilu_level_ptr[level + 1] - begin;
       if (size == 0) continue;
       IluBackwardKernel<ScalarType>
-          <<<size, threads, sharedBackward, ilu_stream>>>(d_ilu_level_idx, begin, size, nPointDomain, nVar, M, d_prod);
+          <<<size, threads, sharedBackward, aux_stream>>>(d_ilu_level_idx, begin, size, nPointDomain, nVar, M, d_prod);
     }
 
-    gpuErrChk(cudaStreamEndCapture(ilu_stream, &graph));
+    gpuErrChk(cudaStreamEndCapture(aux_stream, &graph));
     gpuErrChk(cudaGraphInstantiate(&ilu_apply_graph_exec, graph, nullptr, nullptr, 0));
     gpuErrChk(cudaGraphDestroy(graph));
     ilu_apply_graph_vec = d_vec;
     ilu_apply_graph_prod = d_prod;
   }
 
-  gpuErrChk(cudaGraphLaunch(ilu_apply_graph_exec, ilu_stream));
-  gpuErrChk(cudaStreamSynchronize(ilu_stream));
+  gpuErrChk(cudaGraphLaunch(ilu_apply_graph_exec, aux_stream));
+  gpuErrChk(cudaStreamSynchronize(aux_stream));
   gpuErrChk(cudaGetLastError());
 }
 
@@ -535,8 +699,28 @@ void CSysMatrix<ScalarType>::HtDTransfer(bool trigger) const {
   SU2_ZONE_SCOPED
   if (!trigger) return;
   gpuErrChk(cudaMemcpy(gpu.d, mat.d, sizeof(ScalarType) * nPoint * nVar * nEqn, cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemcpy(gpu.l, mat.l, sizeof(ScalarType) * mat.nnz_l * nVar * nEqn, cudaMemcpyHostToDevice));
-  gpuErrChk(cudaMemcpy(gpu.u, mat.u, sizeof(ScalarType) * mat.nnz_u * nVar * nEqn, cudaMemcpyHostToDevice));
+  if (quantized_mode) {
+    /*--- No gpu.l/gpu.u to transfer (never allocated); mirror the host quantized off-diagonal
+     * storage instead (the diagonal mirrors, d_q_scale.d/d_q_blocks.d, are not touched here at
+     * all - QuantizeDiagonalBlocksGPU() populates them straight from gpu.d, just uploaded above,
+     * with no host round trip). Issued as async copies on a dedicated stream so this transfer can
+     * run concurrently with whatever the preconditioner's Build() launches next on the default
+     * stream. ---*/
+    if (aux_stream == nullptr) gpuErrChk(cudaStreamCreate(&aux_stream));
+    if (htd_event == nullptr) gpuErrChk(cudaEventCreateWithFlags(&htd_event, cudaEventDisableTiming));
+    gpuErrChk(cudaMemcpyAsync(d_q_scale.l, q_scale.l, sizeof(QuantType) * mat.nnz_l * nVar, cudaMemcpyHostToDevice,
+                              aux_stream));
+    gpuErrChk(cudaMemcpyAsync(d_q_blocks.l, q_blocks.l, sizeof(QuantType) * mat.nnz_l * nVar * nEqn,
+                              cudaMemcpyHostToDevice, aux_stream));
+    gpuErrChk(cudaMemcpyAsync(d_q_scale.u, q_scale.u, sizeof(QuantType) * mat.nnz_u * nVar, cudaMemcpyHostToDevice,
+                              aux_stream));
+    gpuErrChk(cudaMemcpyAsync(d_q_blocks.u, q_blocks.u, sizeof(QuantType) * mat.nnz_u * nVar * nEqn,
+                              cudaMemcpyHostToDevice, aux_stream));
+    gpuErrChk(cudaEventRecord(htd_event, aux_stream));
+  } else {
+    gpuErrChk(cudaMemcpy(gpu.l, mat.l, sizeof(ScalarType) * mat.nnz_l * nVar * nEqn, cudaMemcpyHostToDevice));
+    gpuErrChk(cudaMemcpy(gpu.u, mat.u, sizeof(ScalarType) * mat.nnz_u * nVar * nEqn, cudaMemcpyHostToDevice));
+  }
 }
 
 template <class ScalarType>
@@ -547,11 +731,25 @@ void CSysMatrix<ScalarType>::MatrixVectorProductGPU(const CSysVector<ScalarType>
   ScalarType* d_vec = vec.GetDevicePointer();
   ScalarType* d_prod = prod.GetDevicePointer();
 
-  dim3 blockDim(static_cast<unsigned>(nVar), 1, 1);
-  dim3 gridDim(static_cast<unsigned>(nPointDomain), 1, 1);
-  BlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
-      nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, gpu.l, gpu.d,
-      gpu.row_ptr_u, gpu.col_ind_u, gpu.u, d_vec, d_prod);
+  /*--- Batch several rows per block (see BlockLDU_SpMV_kernel's comment): nVar is small
+   * (typically ~4-6), so one row per block would leave most of a warp idle. Aim for ~128
+   * threads/block, the largest whole number of rows that fits. ---*/
+  constexpr unsigned long targetThreadsPerBlock = 128;
+  const auto rowsPerBlock = std::max<unsigned long>(1, targetThreadsPerBlock / nVar);
+  dim3 blockDim(static_cast<unsigned>(rowsPerBlock * nVar), 1, 1);
+  dim3 gridDim(static_cast<unsigned>((nPointDomain + rowsPerBlock - 1) / rowsPerBlock), 1, 1);
+  if (quantized_mode) {
+    /*--- Wait (on the device, no host block) for HtDTransfer's async L/U copy on its own stream
+     * to finish before this default-stream kernel reads d_q_scale.l/.u/d_q_blocks.l/.u. ---*/
+    gpuErrChk(cudaStreamWaitEvent(nullptr, htd_event, 0));
+    QuantizedBlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
+        nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, d_q_scale.l, d_q_blocks.l, d_q_scale.d, d_q_blocks.d,
+        gpu.row_ptr_u, gpu.col_ind_u, d_q_scale.u, d_q_blocks.u, d_vec, d_prod);
+  } else {
+    BlockLDU_SpMV_kernel<ScalarType><<<gridDim, blockDim>>>(
+        nPointDomain, nVar, gpu.row_ptr_l, gpu.col_ind_l, gpu.l, gpu.d,
+        gpu.row_ptr_u, gpu.col_ind_u, gpu.u, d_vec, d_prod);
+  }
   /*--- Sync so the zone above actually times the kernel, not just the (async) launch call. ---*/
   gpuErrChk(cudaStreamSynchronize(nullptr));
   gpuErrChk(cudaGetLastError());
@@ -563,6 +761,7 @@ template void CSysMatrix<TYPE>::MatrixVectorProductGPU(const CSysVector<TYPE>& v
                                                        CSysVector<TYPE>& prod,              \
                                                        CGeometry* geometry,                 \
                                                        const CConfig* config) const;        \
+template void CSysMatrix<TYPE>::QuantizeDiagonalBlocksGPU();                                \
 template void CSysMatrix<TYPE>::BuildJacobiPreconditionerGPU();                             \
 template void CSysMatrix<TYPE>::BuildILUPreconditionerGPU();                                \
 template void CSysMatrix<TYPE>::ComputeILUPreconditionerGPU(const CSysVector<TYPE>& vec,    \
