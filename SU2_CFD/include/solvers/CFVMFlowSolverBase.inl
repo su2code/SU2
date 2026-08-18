@@ -362,9 +362,9 @@ void CFVMFlowSolverBase<V, R>::HybridParallelInitialization(const CConfig& confi
 
     if (SU2_MPI::GetRank() == MASTER_NODE && numRanksUsingReducer != SU2_MPI::GetSize()) {
       cout << "Among the ranks that use edge coloring,\n"
-           << "         the minimum efficiency is " << minColoredParallelEff << ",\n"
-           << "         the maximum number of colors is " << maxColoredNumColors << ",\n"
-           << "         the minimum edge color group size is " << minColoredEdgeColorGroupSize << "." << endl;
+           << "      the minimum efficiency is " << minColoredParallelEff << ",\n"
+           << "      the maximum number of colors is " << maxColoredNumColors << ",\n"
+           << "      the minimum edge color group size is " << minColoredEdgeColorGroupSize << "." << endl;
     }
   }
 

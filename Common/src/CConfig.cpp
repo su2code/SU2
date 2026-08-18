@@ -1969,9 +1969,11 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_ITER", Linear_Solver_Iter, 10);
   /* DESCRIPTION: Fill in level for the ILU preconditioner */
-  addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", Linear_Solver_ILU_n, 0);
+  addUnsignedShortOption("LINEAR_SOLVER_ILU_FILL_IN", IluOptions.FillIn, 0);
   /* DESCRIPTION: Use level scheduling for OMP parallelization of the ILU preconditioner */
-  addBoolOption("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING", Linear_Solver_ILU_levels, false);
+  addBoolOption("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING", IluOptions.LevelScheduling, false);
+  /* DESCRIPTION: Number of colored Gauss-Seidel sweeps used to build the GPU ILU factorization */
+  addUnsignedShortOption("LINEAR_SOLVER_ILU_GPU_SWEEPS", IluOptions.GPUSweeps, 2);
   /* DESCRIPTION: Maximum number of iterations of the linear solver for the implicit formulation */
   addUnsignedLongOption("LINEAR_SOLVER_RESTART_FREQUENCY", Linear_Solver_Restart_Frequency, 10);
   /* DESCRIPTION: Number of vectors used for deflated restarts */
@@ -3184,6 +3186,9 @@ void CConfig::SetConfig_Options() {
   /* DESCRIPTION: Allow fallback to smaller edge color group sizes for the discrete adjoint and allow more colors. */
   addBoolOption("EDGE_COLORING_RELAX_DISC_ADJ", edgeColoringRelaxDiscAdj, true);
 
+  /* DESCRIPTION: Number of concurrent BFS fronts used to build the RCM reordering (1 is standard single-seed RCM). */
+  addUnsignedShortOption("RCM_NUM_SEEDS", rcmNumSeeds, 1);
+
   /*--- options that are used for libROM ---*/
   /*!\par CONFIG_CATEGORY:libROM options \ingroup Config*/
 
@@ -4135,8 +4140,13 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
     nMGLevels = 0;
     if (!OptionIsSet("LINEAR_SOLVER_ILU_LEVEL_SCHEDULING")) {
       /*--- Different default behavior for this solver type. ---*/
-      Linear_Solver_ILU_levels = true;
+      IluOptions.LevelScheduling = true;
     }
+  }
+
+  if (IluOptions.GPUSweeps == 0) {
+    SU2_MPI::Error("LINEAR_SOLVER_ILU_GPU_SWEEPS must be at least 1; 0 sweeps never factorizes the preconditioner.",
+                   CURRENT_FUNCTION);
   }
 
   Radiation = (Kind_Radiation != RADIATION_MODEL::NONE);
@@ -5753,6 +5763,14 @@ void CConfig::SetPostprocessing(SU2_COMPONENT val_software, unsigned short val_i
         Kind_Solver != MAIN_SOLVER::DISC_ADJ_RANS &&
         Kind_Solver != MAIN_SOLVER::MULTIPHYSICS)
       SU2_MPI::Error("Species transport currently only available for compressible and incompressible flow.", CURRENT_FUNCTION);
+
+    /*--- The dual-time density history is recomputed via the fluid model, which needs the species
+          solution; the species solver only exists on the finest grid. ---*/
+    if ((Kind_Regime == ENUM_REGIME::INCOMPRESSIBLE) && (Kind_DensityModel != INC_DENSITYMODEL::CONSTANT) &&
+        (TimeMarching == TIME_MARCHING::DT_STEPPING_1ST || TimeMarching == TIME_MARCHING::DT_STEPPING_2ND) &&
+        (nMGLevels > 0))
+      SU2_MPI::Error("Dual-time stepping with species-dependent variable density does not support MGLEVEL > 0.",
+                     CURRENT_FUNCTION);
 
     /*--- Species specific OF currently can only handle one entry in Marker_Analyze. ---*/
     for (unsigned short iObj = 0; iObj < nObj; iObj++) {
@@ -7458,20 +7476,22 @@ void CConfig::SetOutput(SU2_COMPONENT val_software, unsigned short val_izone) {
                 }
               }
               switch (Kind_Linear_Solver_Prec) {
-                case ILU: cout << "Using ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
+                case ILU: cout << "Using ILU("<< IluOptions.FillIn <<") preconditioning."<< endl; break;
                 case LINELET: cout << "Using linelet preconditioning."<< endl; break;
                 case LU_SGS:  cout << "Using LU-SGS preconditioning."<< endl; break;
                 case Q_LU_SGS:  cout << "Using LU-SGS preconditioning with matrix quantization."<< endl; break;
                 case JACOBI:  cout << "Using Jacobi preconditioning."<< endl; break;
+                case Q_JACOBI:  cout << "Using Jacobi preconditioning with matrix quantization."<< endl; break;
               }
               break;
             case SMOOTHER:
               switch (Kind_Linear_Solver_Prec) {
-                case ILU:     cout << "A ILU(" << Linear_Solver_ILU_n << ")"; break;
+                case ILU:     cout << "A ILU(" << IluOptions.FillIn << ")"; break;
                 case LINELET: cout << "A Linelet"; break;
                 case LU_SGS:  cout << "A LU-SGS"; break;
                 case Q_LU_SGS:  cout << "A quantized LU-SGS"; break;
                 case JACOBI:  cout << "A Jacobi"; break;
+                case Q_JACOBI:  cout << "A quantized Jacobi"; break;
               }
               cout << " method is used for smoothing the linear system." << endl;
               break;
