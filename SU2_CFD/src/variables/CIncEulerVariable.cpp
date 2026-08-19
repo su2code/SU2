@@ -29,22 +29,22 @@
 #include "../../include/fluid/CFluidModel.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
-CIncEulerVariableBase::CIncEulerVariableBase(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
-                    unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config) 
-                    : CFlowVariable(npoint, ndim, nvar, ndim + 10,
-                      ndim + (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ? 2 : 4), config),
-                      indices(ndim, 0) {
-
-  TemperatureLimits[0]= config->GetTemperatureLimits(0);
-  TemperatureLimits[1]= config->GetTemperatureLimits(1);
-
-}
-
-void CIncEulerVariableBase::CommonInitialization(const CConfig *config, const su2double* val_solution) {
+CIncEulerVariable::CIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
+                                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
+  : CFlowVariable(npoint, ndim, nvar, ndim + 10,
+                  ndim + (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED ? 2 : 4), config),
+    indices(ndim, 0) {
 
   const bool dual_time = (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_1ST) ||
                          (config->GetTime_Marching() == TIME_MARCHING::DT_STEPPING_2ND);
   const bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+  TemperatureLimits[0]= config->GetTemperatureLimits(0);
+  TemperatureLimits[1]= config->GetTemperatureLimits(1);
+
+  /*--- Solution initialization ---*/
+
+  su2double val_solution[5] = {pressure, velocity[0], velocity[1], enthalpy, enthalpy};
+  if(nDim==3) val_solution[3] = velocity[2];
 
   for(unsigned long iPoint=0; iPoint<nPoint; ++iPoint)
     for (unsigned long iVar = 0; iVar < nVar; iVar++)
@@ -71,25 +71,13 @@ void CIncEulerVariableBase::CommonInitialization(const CConfig *config, const su
     if (config->GetStreamwise_Periodic_Temperature())
       Streamwise_Periodic_RecoveredTemperature.resize(nPoint) = su2double(0.0);
   }
+
+  /*--- Allocate strong BC vector for pressure-based solver ---*/
+  
+  strongBC.resize(nPoint);
 }
 
-CDBIncEulerVariable::CDBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
-                                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
-  : CIncEulerVariableBase(density, pressure, velocity, enthalpy,
-                                     npoint, ndim, nvar, config) {
-
-  /*--- Solution initialization ---*/
-
-  su2double val_solution[5] = {pressure, velocity[0], velocity[1], enthalpy, enthalpy};
-  if(nDim==3) val_solution[3] = velocity[2];
-
-  /*--- Allocate remaining common definitions (call this AFTER solution initialization) ---*/
-
-  CommonInitialization(config, val_solution);
-
-}
-
-bool CDBIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
+bool CIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
 
   bool physical = true;
 
@@ -132,55 +120,6 @@ bool CDBIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidMod
     physical = false;
 
   }
-
-  /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
-
-  SetVelocity(iPoint);
-
-  /*--- Set specific heats ---*/
-
-  SetSpecificHeatCp(iPoint, FluidModel->GetCp());
-  SetSpecificHeatCv(iPoint, FluidModel->GetCv());
-
-  /*--- Set enthalpy ---*/
-
-  SetEnthalpy(iPoint, FluidModel->GetEnthalpy());
-
-  return physical;
-
-}
-
-
-CPBIncEulerVariable::CPBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
-                                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config)
-  : CIncEulerVariableBase(density, pressure, velocity, enthalpy,
-                                     npoint, ndim, nvar, config) {
-
-  su2double val_solution[3] = {density*velocity[0], density*velocity[1], 0.0};
-  if(nDim==3) val_solution[2] = density*velocity[2];
-
-  /*--- Allocate remaining common definitions (call this AFTER solution initialization) ---*/
-  
-  CommonInitialization(config, val_solution);
-
-  /*--- Initialize boolean flag for BC ---*/
-  strongBC.resize(nPoint) = false;
-
-}
-
-bool CPBIncEulerVariable::SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) {
-
-  bool physical = true;
-
-  /*--- Set the value of the temperature ---*/
-
-  SetTemperature(iPoint, FluidModel->GetTemperature(), TemperatureLimits);
-
-  /*--- Set the value of the density ---*/
-  
-  const auto check_dens = SetDensity(iPoint, FluidModel->GetDensity());
-
-  if (check_dens) physical = false;
 
   /*--- Set the value of the velocity and velocity^2 (requires density) ---*/
 

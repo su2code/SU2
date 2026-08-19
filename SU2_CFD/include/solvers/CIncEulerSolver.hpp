@@ -36,13 +36,17 @@
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon, T. Albring
  */
-class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariableBase, ENUM_REGIME::INCOMPRESSIBLE> {
+class CIncEulerSolver : public CFVMFlowSolverBase<CIncEulerVariable, ENUM_REGIME::INCOMPRESSIBLE> {
 protected:
   vector<CFluidModel*> FluidModel;   /*!< \brief fluid model used in the solver. */
   StreamwisePeriodicValues SPvals, SPvalsUpdated;
 
   bool pressure_based;
   su2activematrix EdgeVelocity; /*!< \brief The edge velocity used in the solver and updated by through Rhie-Chow and pressure correction. */
+  su2activevector alpha_p, alpha_u;
+  su2activevector pressureCorrection;
+  su2activematrix velocityCorrection;
+  su2activematrix velocityEdgeCorrection;
 
   /*!
    * \brief Get the velocities across the edges.
@@ -490,4 +494,16 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ApplyPressureVelocityCorrection(CGeometry *geometry, CSolver **solver_container, CConfig *config) final;
+
+  /*!
+   * \brief Postprocessing
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Postprocessing(CGeometry *geometry,
+                      CSolver **solver_container,
+                      CConfig *config,
+                      unsigned short iMesh) final;
 };

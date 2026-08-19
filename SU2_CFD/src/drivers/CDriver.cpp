@@ -1300,7 +1300,7 @@ void CDriver::InstantiateTurbulentNumerics(unsigned short nVar_Turb, int offset,
 template void CDriver::InstantiateTurbulentNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
-template void CDriver::InstantiateTurbulentNumerics<CIncEulerVariableBase::CIndices<unsigned short>>(
+template void CDriver::InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template void CDriver::InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
@@ -1365,7 +1365,7 @@ void CDriver::InstantiateTransitionNumerics(unsigned short nVar_Trans, int offse
 template void CDriver::InstantiateTransitionNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
-template void CDriver::InstantiateTransitionNumerics<CIncEulerVariableBase::CIndices<unsigned short>>(
+template void CDriver::InstantiateTransitionNumerics<CIncEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template void CDriver::InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
@@ -1423,7 +1423,7 @@ void CDriver::InstantiateSpeciesNumerics(unsigned short nVar_Species, int offset
 template void CDriver::InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
-template void CDriver::InstantiateSpeciesNumerics<CIncEulerVariableBase::CIndices<unsigned short>>(
+template void CDriver::InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short>>(
     unsigned short, int, const CConfig*, const CSolver*, CNumerics****&) const;
 
 template void CDriver::InstantiateSpeciesNumerics<CNEMOEulerVariable::CIndices<unsigned short>>(
@@ -1857,26 +1857,14 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
       }
     }
     if (incompressible) {
-      if (!pressure_based) {
-        /*--- Incompressible flow, use preconditioning method ---*/
-        numerics[MESH_0][FLOW_SOL][visc_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, true, config);
-        for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, false, config);
+      /*--- Incompressible flow, use preconditioning method ---*/
+      numerics[MESH_0][FLOW_SOL][visc_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, true, config);
+      for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+        numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, false, config);
 
-        /*--- Definition of the boundary condition method ---*/
-        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics[iMGlevel][FLOW_SOL][visc_bound_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, false, config);
-      } else {
-        /*--- Incompressible flow, use pressure based method ---*/
-        numerics[MESH_0][FLOW_SOL][visc_term] = new CAvgGradPBInc_Flow(nDim, nVar_Flow, true, config);
-        for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics[iMGlevel][FLOW_SOL][visc_term] = new CAvgGradPBInc_Flow(nDim, nVar_Flow, false, config);
-
-        /*--- Definition of the boundary condition method ---*/
-        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics[iMGlevel][FLOW_SOL][visc_bound_term] = new CAvgGradPBInc_Flow(nDim, nVar_Flow, false, config);
-
-      }
+      /*--- Definition of the boundary condition method ---*/
+      for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+        numerics[iMGlevel][FLOW_SOL][visc_bound_term] = new CAvgGradInc_Flow(nDim, nVar_Flow, false, config);
     }
 
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -2081,7 +2069,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
   if (turbulent) {
     if (incompressible)
-      InstantiateTurbulentNumerics<CIncEulerVariableBase::CIndices<unsigned short> >(nVar_Turb, offset, config,
+      InstantiateTurbulentNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
                                                                                    solver[MESH_0][TURB_SOL], numerics);
     else if (NEMO_ns)
       InstantiateTurbulentNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Turb, offset, config,
@@ -2094,7 +2082,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
     if (incompressible)
-      InstantiateTransitionNumerics<CIncEulerVariableBase::CIndices<unsigned short> >(nVar_Trans, offset, config,
+      InstantiateTransitionNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
                                                                                  solver[MESH_0][TRANS_SOL], numerics);
     else if (NEMO_ns)
       InstantiateTransitionNumerics<CNEMOEulerVariable::CIndices<unsigned short> >(nVar_Trans, offset, config,
@@ -2108,7 +2096,7 @@ void CDriver::InitializeNumerics(CConfig *config, CGeometry **geometry, CSolver 
 
   if (species) {
     if (incompressible)
-      InstantiateSpeciesNumerics<CIncEulerVariableBase::CIndices<unsigned short> >(nVar_Species, offset, config,
+      InstantiateSpeciesNumerics<CIncEulerVariable::CIndices<unsigned short> >(nVar_Species, offset, config,
                                                                                solver[MESH_0][SPECIES_SOL], numerics);
     else if (compressible)
       InstantiateSpeciesNumerics<CEulerVariable::CIndices<unsigned short> >(nVar_Species, offset, config,

@@ -31,14 +31,14 @@
 #include "CFlowVariable.hpp"
 
 /*!
- * \class CIncEulerVariableBase
+ * \class CIncEulerVariable
  * \brief Class for defining the variables of the incompressible Euler solver.
  * \note Primitive variables (P, vx, vy, vz, T, rho, h, beta, lamMu, EddyMu, Kt_eff, Cp, Cv)
  * \note Gradients of primitives (P, vx, vy, vz, T, rho, h)
  * \ingroup Euler_Equations
- * \author F. Palacios, T. Economon, T. Albring, T. Aalbers
+ * \author F. Palacios, T. Economon, T. Albring
  */
-class CIncEulerVariableBase : public CFlowVariable {
+class CIncEulerVariable : public CFlowVariable {
 public:
   static constexpr size_t MAXNVAR = 13;
 
@@ -74,13 +74,14 @@ public:
   VectorType Density_time_n,                           /*!< \brief Density at time n for dual-time stepping. */
              Density_time_n1;                          /*!< \brief Density at time n-1 for dual-time stepping. */
   su2double TemperatureLimits[2];                      /*!< \brief Temperature limits [K]. */
-
+  
   using BoolVectorType = C2DContainer<unsigned long, bool, StorageType::ColumnMajor, 64, DynamicSize, 1>;
   BoolVectorType strongBC;    /*!< \brief Flag for boundary conditions to indicate if a strong BC has been applied, currently only used to keep track of farfield.  */
+
  public:
   /*!
    * \brief Constructor of the class.
-   * \param[in] pressure - value of the pressure.
+   * \param[in] val_pressure - value of the pressure.
    * \param[in] velocity - Value of the flow velocity (initialization value).
    * \param[in] enthalpy - Value of the enthalpy (initialization value).
    * \param[in] npoint - Number of points/nodes/vertices in the domain.
@@ -88,14 +89,15 @@ public:
    * \param[in] nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CIncEulerVariableBase(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
+
+  CIncEulerVariable(su2double pressure, const su2double *velocity, su2double enthalpy,
                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
 
   /*!
-   * \brief Common initialization of the class, call this after the Solution has been defined.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Set the value of the pressure.
+   * \param[in] iPoint - Point index.
    */
-  void CommonInitialization(const CConfig *config, const su2double* val_solution);
+  inline void SetPressure(unsigned long iPoint) final { Primitive(iPoint, indices.Pressure()) = Solution(iPoint,0); }
 
   /*!
    * \brief Set the value of the density for the incompressible flows.
@@ -104,6 +106,18 @@ public:
   inline bool SetDensity(unsigned long iPoint, su2double val_density) final {
     Primitive(iPoint, indices.Density()) = val_density;
     return val_density <= 0.0;
+  }
+
+  /*!
+   * \brief Set the value of the density for the incompressible flows.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetVelocity(unsigned long iPoint) final {
+    Velocity2(iPoint) = 0.0;
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
+      Primitive(iPoint, iDim+indices.Velocity()) = Solution(iPoint,iDim+1);
+      Velocity2(iPoint) += pow(Primitive(iPoint, iDim+indices.Velocity()), 2);
+    }
   }
 
   /*!
@@ -124,10 +138,24 @@ public:
   }
 
   /*!
+   * \brief Set the value of the beta coeffient for incompressible flows.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetBetaInc2(unsigned long iPoint, su2double betainc2) final {
+    Primitive(iPoint, indices.Beta()) = betainc2;
+  }
+
+  /*!
    * \brief Get the flow pressure.
    * \return Value of the flow pressure.
    */
   inline su2double GetPressure(unsigned long iPoint) const final { return Primitive(iPoint, indices.Pressure()); }
+
+  /*!
+   * \brief Get the value of beta squared for the incompressible flow
+   * \return Value of beta squared.
+   */
+  inline su2double GetBetaInc2(unsigned long iPoint) const final { return Primitive(iPoint, indices.Beta()); }
 
   /*!
    * \brief Get the density of the flow.
@@ -175,6 +203,28 @@ public:
       ProjVel += Primitive(iPoint, iDim+indices.Velocity())*val_vector[iDim];
     return ProjVel;
   }
+
+  /*!
+   * \brief Set the velocity vector from the old solution.
+   * \param[in] val_velocity - Pointer to the velocity.
+   */
+  inline void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++)
+      Solution_Old(iPoint,iDim+1) = val_velocity[iDim];
+  }
+
+  /*!
+   * \brief Set the momentum part of the truncation error to zero.
+   * \param[in] iPoint - Point index.
+   */
+  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
+  }
+
+  /*!
+   * \brief Set all the primitive variables for incompressible flows.
+   */
+  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
 
   /*!
    * \brief Set the specific heat Cp.
@@ -239,6 +289,15 @@ public:
   }
 
   /*!
+   * \brief Specify a vector to set the velocity components of the solution.
+   * \param[in] iPoint - Point index.
+   * \param[in] val_vector - Pointer to the vector.
+   */
+  inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
+    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = val_vector[iDim];
+  }
+
+  /*!
    * \brief Get the density at time level n for dual-time stepping.
    * \param[in] iPoint - Point index.
    * \return Density at time level n.
@@ -288,158 +347,5 @@ public:
    * \param[in] iPoint - Point index.
    */
   inline void ResetStrongBC(unsigned long iPoint) { strongBC(iPoint) = false; }
-
-};
-
-
-/*!
- * \class CDBIncEulerVariable
- * \brief Class for defining the variables of the density-based incompressible Euler solver.
- * \ingroup Euler_Equations
- * \author F. Palacios, T. Economon, T. Albring
- */
-class CDBIncEulerVariable : public CIncEulerVariableBase {
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_pressure - value of the pressure.
-   * \param[in] velocity - Value of the flow velocity (initialization value).
-   * \param[in] enthalpy - Value of the enthalpy (initialization value).
-   * \param[in] npoint - Number of points/nodes/vertices in the domain.
-   * \param[in] ndim - Number of dimensions of the problem.
-   * \param[in] nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-
-  CDBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
-                    unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
-
-  /*!
-   * \brief Set the value of the pressure.
-   * \param[in] iPoint - Point index.
-   */
-  inline void SetPressure(unsigned long iPoint) final { Primitive(iPoint, indices.Pressure()) = Solution(iPoint,0); }
-
-  /*!
-   * \brief Set the value of the density for the incompressible flows.
-   * \param[in] iPoint - Point index.
-   */
-  inline void SetVelocity(unsigned long iPoint) final {
-    Velocity2(iPoint) = 0.0;
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      Primitive(iPoint, iDim+indices.Velocity()) = Solution(iPoint,iDim+1);
-      Velocity2(iPoint) += pow(Primitive(iPoint, iDim+indices.Velocity()), 2);
-    }
-  }
-
-  /*!
-   * \brief Set the value of the beta coeffient for incompressible flows.
-   * \param[in] iPoint - Point index.
-   */
-  inline void SetBetaInc2(unsigned long iPoint, su2double betainc2) final {
-    Primitive(iPoint, indices.Beta()) = betainc2;
-  }
-
-  /*!
-   * \brief Get the value of beta squared for the incompressible flow
-   * \return Value of beta squared.
-   */
-  inline su2double GetBetaInc2(unsigned long iPoint) const final { return Primitive(iPoint, indices.Beta()); }
-
-  /*!
-   * \brief Set the velocity vector from the old solution.
-   * \param[in] val_velocity - Pointer to the velocity.
-   */
-  inline void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) final {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Solution_Old(iPoint,iDim+1) = val_velocity[iDim];
-  }
-
-  /*!
-   * \brief Set the momentum part of the truncation error to zero.
-   * \param[in] iPoint - Point index.
-   */
-  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim+1) = 0.0;
-  }
-
-  /*!
-   * \brief Set all the primitive variables for incompressible flows.
-   */
-  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
-
-  /*!
-   * \brief Specify a vector to set the velocity components of the solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_vector - Pointer to the vector.
-   */
-  inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim+1) = val_vector[iDim];
-  }
-
-};
-
-/*!
- * \class CPBIncEulerVariable
- * \brief Class for defining the variables of the pressure-based incompressible Euler solver.
- * \ingroup Euler_Equations
- * \author T. Aalbers
- */
-class CPBIncEulerVariable : public CIncEulerVariableBase {
-public:
-
-  CPBIncEulerVariable(su2double density, su2double pressure, const su2double *velocity, su2double enthalpy,
-                                     unsigned long npoint, unsigned long ndim, unsigned long nvar, const CConfig *config);
-
-  /*!
-   * \brief Set the value of the pressure.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_pressure - Pressure at point.
-   */
-  inline void SetPressurePB(unsigned long iPoint, su2double val_pressure) final { Primitive(iPoint, indices.Pressure()) = val_pressure; }
-
-  /*!
-   * \brief Set the value of the density for the incompressible flows.
-   * \param[in] iPoint - Point index.
-   */
-  inline void SetVelocity(unsigned long iPoint) final {
-    Velocity2(iPoint) = 0.0;
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) {
-      Primitive(iPoint, iDim+indices.Velocity()) = Solution(iPoint,iDim) / Primitive(iPoint, indices.Density());
-      Velocity2(iPoint) += pow(Primitive(iPoint, iDim+indices.Velocity()), 2);
-    }
-  }
-
-  /*!
-   * \brief Set the velocity vector from the old solution.
-   * \param[in] val_velocity - Pointer to the velocity.
-   */
-  inline void SetVelocity_Old(unsigned long iPoint, const su2double *val_velocity) final {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++)
-      Solution_Old(iPoint,iDim) = Primitive(iPoint,indices.Density())*val_velocity[iDim];
-  }
-
-  /*!
-   * \brief Set the momentum part of the truncation error to zero.
-   * \param[in] iPoint - Point index.
-   */
-  inline void SetVel_ResTruncError_Zero(unsigned long iPoint) final {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) Res_TruncError(iPoint,iDim) = 0.0;
-  }
-
-  /*!
-   * \brief Set all the primitive variables for incompressible flows.
-   */
-  bool SetPrimVar(unsigned long iPoint, CFluidModel *FluidModel) final;
-
-  /*!
-   * \brief Specify a vector to set the velocity components of the solution.
-   * \param[in] iPoint - Point index.
-   * \param[in] val_vector - Pointer to the vector.
-   */
-  inline void SetVelSolutionVector(unsigned long iPoint, const su2double *val_vector) final {
-    for (unsigned long iDim = 0; iDim < nDim; iDim++) Solution(iPoint, iDim) = Primitive(iPoint,indices.Density())*val_vector[iDim];
-  }
-
+  
 };

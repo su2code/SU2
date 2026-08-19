@@ -954,31 +954,41 @@ void CAvgGradPBInc_Flow::GetViscousPBIncProjFlux(const su2double* const *val_gra
                                              const su2double *val_normal,
                                              su2double val_thermal_conductivity) {
 
-  /*--- Gradient of primitive variables -> [mom_x mom_y mom_z] ---*/
+  /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
 
-  su2double Flux_Tensor[3][3];
+  su2double Flux_Tensor[5][3];
 
   if (nDim == 2) {
+    Flux_Tensor[0][0] = 0.0;
+    Flux_Tensor[1][0] = tau[0][0];
+    Flux_Tensor[2][0] = tau[0][1];
+    Flux_Tensor[3][0] = val_thermal_conductivity*val_gradprimvar[nDim+1][0];
 
-    Flux_Tensor[0][0] = tau[0][0];
-    Flux_Tensor[1][0] = tau[0][1];
-
-    Flux_Tensor[0][1] = tau[1][0];
-    Flux_Tensor[1][1] = tau[1][1];
+    Flux_Tensor[0][1] = 0.0;
+    Flux_Tensor[1][1] = tau[1][0];
+    Flux_Tensor[2][1] = tau[1][1];
+    Flux_Tensor[3][1] = val_thermal_conductivity*val_gradprimvar[nDim+1][1];
 
   } else {
 
-    Flux_Tensor[0][0] = tau[0][0];
-    Flux_Tensor[1][0] = tau[0][1];
-    Flux_Tensor[2][0] = tau[0][2];
+    Flux_Tensor[0][0] = 0.0;
+    Flux_Tensor[1][0] = tau[0][0];
+    Flux_Tensor[2][0] = tau[0][1];
+    Flux_Tensor[3][0] = tau[0][2];
+    Flux_Tensor[4][0] = val_thermal_conductivity*val_gradprimvar[nDim+1][0];
 
-    Flux_Tensor[0][1] = tau[1][0];
-    Flux_Tensor[1][1] = tau[1][1];
-    Flux_Tensor[2][1] = tau[1][2];
+    Flux_Tensor[0][1] = 0.0;
+    Flux_Tensor[1][1] = tau[1][0];
+    Flux_Tensor[2][1] = tau[1][1];
+    Flux_Tensor[3][1] = tau[1][2];
+    Flux_Tensor[4][1] = val_thermal_conductivity*val_gradprimvar[nDim+1][1];
 
-    Flux_Tensor[0][2] = tau[2][0];
-    Flux_Tensor[1][2] = tau[2][1];
-    Flux_Tensor[2][2] = tau[2][2];
+    Flux_Tensor[0][2] = 0.0;
+    Flux_Tensor[1][2] = tau[2][0];
+    Flux_Tensor[2][2] = tau[2][1];
+    Flux_Tensor[3][2] = tau[2][2];
+    Flux_Tensor[4][2] = val_thermal_conductivity*val_gradprimvar[nDim+1][2];
+
   }
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
@@ -986,6 +996,39 @@ void CAvgGradPBInc_Flow::GetViscousPBIncProjFlux(const su2double* const *val_gra
     for (unsigned short iDim = 0; iDim < nDim; iDim++)
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
   }
+
+  // /*--- Gradient of primitive variables -> [mom_x mom_y mom_z] ---*/
+
+  // su2double Flux_Tensor[3][3];
+
+  // if (nDim == 2) {
+
+  //   Flux_Tensor[0][0] = tau[0][0];
+  //   Flux_Tensor[1][0] = tau[0][1];
+
+  //   Flux_Tensor[0][1] = tau[1][0];
+  //   Flux_Tensor[1][1] = tau[1][1];
+
+  // } else {
+
+  //   Flux_Tensor[0][0] = tau[0][0];
+  //   Flux_Tensor[1][0] = tau[0][1];
+  //   Flux_Tensor[2][0] = tau[0][2];
+
+  //   Flux_Tensor[0][1] = tau[1][0];
+  //   Flux_Tensor[1][1] = tau[1][1];
+  //   Flux_Tensor[2][1] = tau[1][2];
+
+  //   Flux_Tensor[0][2] = tau[2][0];
+  //   Flux_Tensor[1][2] = tau[2][1];
+  //   Flux_Tensor[2][2] = tau[2][2];
+  // }
+
+  // for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  //   Proj_Flux_Tensor[iVar] = 0.0;
+  //   for (unsigned short iDim = 0; iDim < nDim; iDim++)
+  //     Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
+  // }
 
 }
 
@@ -995,31 +1038,90 @@ void CAvgGradPBInc_Flow::GetViscousPBIncProjJacs(su2double val_dS,
 
   if (nDim == 2) {
 
-    val_Proj_Jac_Tensor_i[0][0] = val_dS*tau_jacobian_i[0][0];
-    val_Proj_Jac_Tensor_i[0][1] = val_dS*tau_jacobian_i[0][1];
+    val_Proj_Jac_Tensor_i[0][0] = 0.0;
+    val_Proj_Jac_Tensor_i[0][1] = 0.0;
+    val_Proj_Jac_Tensor_i[0][2] = 0.0;
+    val_Proj_Jac_Tensor_i[0][3] = 0.0;
 
-    val_Proj_Jac_Tensor_i[1][0] = val_dS*tau_jacobian_i[1][0];
-    val_Proj_Jac_Tensor_i[1][1] = val_dS*tau_jacobian_i[1][1];
+    val_Proj_Jac_Tensor_i[1][0] = val_dS*tau_jacobian_i[0][0];
+    val_Proj_Jac_Tensor_i[1][1] = val_dS*tau_jacobian_i[0][1];
+    val_Proj_Jac_Tensor_i[1][2] = val_dS*tau_jacobian_i[0][2];
+    val_Proj_Jac_Tensor_i[1][3] = val_dS*tau_jacobian_i[0][3];
+
+    val_Proj_Jac_Tensor_i[2][0] = val_dS*tau_jacobian_i[1][0];
+    val_Proj_Jac_Tensor_i[2][1] = val_dS*tau_jacobian_i[1][1];
+    val_Proj_Jac_Tensor_i[2][2] = val_dS*tau_jacobian_i[1][2];
+    val_Proj_Jac_Tensor_i[2][3] = val_dS*tau_jacobian_i[1][3];
+
+    val_Proj_Jac_Tensor_i[3][0] = 0.0;
+    val_Proj_Jac_Tensor_i[3][1] = 0.0;
+    val_Proj_Jac_Tensor_i[3][2] = 0.0;
+    val_Proj_Jac_Tensor_i[3][3] = 0.0;
 
   } else {
 
-    val_Proj_Jac_Tensor_i[0][0] = val_dS*tau_jacobian_i[0][0];
-    val_Proj_Jac_Tensor_i[0][1] = val_dS*tau_jacobian_i[0][1];
-    val_Proj_Jac_Tensor_i[0][2] = val_dS*tau_jacobian_i[0][2];
+    val_Proj_Jac_Tensor_i[0][0] = 0.0;
+    val_Proj_Jac_Tensor_i[0][1] = 0.0;
+    val_Proj_Jac_Tensor_i[0][2] = 0.0;
+    val_Proj_Jac_Tensor_i[0][3] = 0.0;
+    val_Proj_Jac_Tensor_i[0][4] = 0.0;
 
-    val_Proj_Jac_Tensor_i[1][0] = val_dS*tau_jacobian_i[1][0];
-    val_Proj_Jac_Tensor_i[1][1] = val_dS*tau_jacobian_i[1][1];
-    val_Proj_Jac_Tensor_i[1][2] = val_dS*tau_jacobian_i[1][2];
+    val_Proj_Jac_Tensor_i[1][0] = val_dS*tau_jacobian_i[0][0];
+    val_Proj_Jac_Tensor_i[1][1] = val_dS*tau_jacobian_i[0][1];
+    val_Proj_Jac_Tensor_i[1][2] = val_dS*tau_jacobian_i[0][2];
+    val_Proj_Jac_Tensor_i[1][3] = val_dS*tau_jacobian_i[0][3];
+    val_Proj_Jac_Tensor_i[1][4] = val_dS*tau_jacobian_i[0][4];
 
-    val_Proj_Jac_Tensor_i[2][0] = val_dS*tau_jacobian_i[2][0];
-    val_Proj_Jac_Tensor_i[2][1] = val_dS*tau_jacobian_i[2][1];
-    val_Proj_Jac_Tensor_i[2][2] = val_dS*tau_jacobian_i[2][2];
+    val_Proj_Jac_Tensor_i[2][0] = val_dS*tau_jacobian_i[1][0];
+    val_Proj_Jac_Tensor_i[2][1] = val_dS*tau_jacobian_i[1][1];
+    val_Proj_Jac_Tensor_i[2][2] = val_dS*tau_jacobian_i[1][2];
+    val_Proj_Jac_Tensor_i[2][3] = val_dS*tau_jacobian_i[1][3];
+    val_Proj_Jac_Tensor_i[2][4] = val_dS*tau_jacobian_i[1][4];
+
+    val_Proj_Jac_Tensor_i[3][0] = val_dS*tau_jacobian_i[2][0];
+    val_Proj_Jac_Tensor_i[3][1] = val_dS*tau_jacobian_i[2][1];
+    val_Proj_Jac_Tensor_i[3][2] = val_dS*tau_jacobian_i[2][2];
+    val_Proj_Jac_Tensor_i[3][3] = val_dS*tau_jacobian_i[2][3];
+    val_Proj_Jac_Tensor_i[3][4] = val_dS*tau_jacobian_i[2][4];
+
+    val_Proj_Jac_Tensor_i[4][0] = 0.0;
+    val_Proj_Jac_Tensor_i[4][1] = 0.0;
+    val_Proj_Jac_Tensor_i[4][2] = 0.0;
+    val_Proj_Jac_Tensor_i[4][3] = 0.0;
+    val_Proj_Jac_Tensor_i[4][4] = 0.0;
 
   }
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     for (unsigned short jVar = 0; jVar < nVar; jVar++)
       val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
+  // if (nDim == 2) {
+
+  //   val_Proj_Jac_Tensor_i[0][0] = val_dS*tau_jacobian_i[0][0];
+  //   val_Proj_Jac_Tensor_i[0][1] = val_dS*tau_jacobian_i[0][1];
+
+  //   val_Proj_Jac_Tensor_i[1][0] = val_dS*tau_jacobian_i[1][0];
+  //   val_Proj_Jac_Tensor_i[1][1] = val_dS*tau_jacobian_i[1][1];
+
+  // } else {
+
+  //   val_Proj_Jac_Tensor_i[0][0] = val_dS*tau_jacobian_i[0][0];
+  //   val_Proj_Jac_Tensor_i[0][1] = val_dS*tau_jacobian_i[0][1];
+  //   val_Proj_Jac_Tensor_i[0][2] = val_dS*tau_jacobian_i[0][2];
+
+  //   val_Proj_Jac_Tensor_i[1][0] = val_dS*tau_jacobian_i[1][0];
+  //   val_Proj_Jac_Tensor_i[1][1] = val_dS*tau_jacobian_i[1][1];
+  //   val_Proj_Jac_Tensor_i[1][2] = val_dS*tau_jacobian_i[1][2];
+
+  //   val_Proj_Jac_Tensor_i[2][0] = val_dS*tau_jacobian_i[2][0];
+  //   val_Proj_Jac_Tensor_i[2][1] = val_dS*tau_jacobian_i[2][1];
+  //   val_Proj_Jac_Tensor_i[2][2] = val_dS*tau_jacobian_i[2][2];
+
+  // }
+
+  // for (unsigned short iVar = 0; iVar < nVar; iVar++)
+  //   for (unsigned short jVar = 0; jVar < nVar; jVar++)
+  //     val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
 }
 

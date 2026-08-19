@@ -93,9 +93,9 @@ CFlowIncOutput::CFlowIncOutput(CConfig *config, unsigned short nDim) : CFlowOutp
   restartFilename = config->GetRestart_FileName();
 
   /*--- Set the default convergence field --- */
-  /*--- The default field for the pb solver is velocity, as the pressure is only solved
-  as a correction and it is thus possible to run the pb solver without corrections. to 
-  ensure the default residual is always defined we use velocity ---*/
+  /*--- The default field for the pressure-based solver is velocity, as the pressure is only 
+  solved as a correction and it is thus possible to run the pb solver without corrections. to 
+  ensure the default residual is always defined we use velocity instead ---*/
 
   if (convFields.empty() && !pressure_based) convFields.emplace_back("RMS_PRESSURE");
   if (convFields.empty() && pressure_based) convFields.emplace_back("RMS_VELOCITY-X");
@@ -221,30 +221,25 @@ void CFlowIncOutput::LoadHistoryData(CConfig *config, CGeometry *geometry, CSolv
   CSolver* poisson_solver = solver[POISSON_SOL];
 
   if (pressure_based) {
-    SetHistoryOutputValue("RMS_PRESSURE", log10(poisson_solver->GetRes_RMS(0))); 
-    SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(1)));
-    if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(2)));
+    SetHistoryOutputValue("RMS_PRESSURE", log10(poisson_solver->GetRes_RMS(0)));
   } else {
     SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
-    SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
-    if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(3)));
   }
+  SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
+  SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
+  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(3)));
 
   if (config->AddRadiation())
     SetHistoryOutputValue("RMS_RAD_ENERGY", log10(rad_solver->GetRes_RMS(0)));
 
   if (pressure_based) {
-    SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(0)));
-    SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(1)));
-    if (nDim == 3) SetHistoryOutputValue("MAX_VELOCITY-Z", log10(flow_solver->GetRes_Max(2)));
+    SetHistoryOutputValue("MAX_PRESSURE", log10(poisson_solver->GetRes_Max(0)));
   } else {
     SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
-    SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
-    SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
-    if (nDim == 3) SetHistoryOutputValue("MAX_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
   }
+  SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
+  SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
+  if (nDim == 3) SetHistoryOutputValue("MAX_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
 
   if (multiZone){
     SetHistoryOutputValue("BGS_PRESSURE", log10(flow_solver->GetRes_BGS(0)));
@@ -377,21 +372,12 @@ void CFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   //Residuals
-  if (pressure_based) {
-    AddVolumeOutput("RES_VELOCITY-X", "Residual_Velocity_x", "RESIDUAL", "Residual of the x-velocity component");
-    AddVolumeOutput("RES_VELOCITY-Y", "Residual_Velocity_y", "RESIDUAL", "Residual of the y-velocity component");
-    if (nDim == 3)
-      AddVolumeOutput("RES_VELOCITY-Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
-    AddVolumeOutput("RES_PRESSURE", "Residual_Pressure", "RESIDUAL", "Residual of the pressure");
-  }
-  else {
-    AddVolumeOutput("RES_PRESSURE", "Residual_Pressure", "RESIDUAL", "Residual of the pressure");
-    AddVolumeOutput("RES_VELOCITY-X", "Residual_Velocity_x", "RESIDUAL", "Residual of the x-velocity component");
-    AddVolumeOutput("RES_VELOCITY-Y", "Residual_Velocity_y", "RESIDUAL", "Residual of the y-velocity component");
-    if (nDim == 3)
-      AddVolumeOutput("RES_VELOCITY-Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
-    AddVolumeOutput("RES_TEMPERATURE", "Residual_Temperature", "RESIDUAL", "Residual of the temperature");
-  }
+  AddVolumeOutput("RES_PRESSURE", "Residual_Pressure", "RESIDUAL", "Residual of the pressure");
+  AddVolumeOutput("RES_VELOCITY-X", "Residual_Velocity_x", "RESIDUAL", "Residual of the x-velocity component");
+  AddVolumeOutput("RES_VELOCITY-Y", "Residual_Velocity_y", "RESIDUAL", "Residual of the y-velocity component");
+  if (nDim == 3)
+    AddVolumeOutput("RES_VELOCITY-Z", "Residual_Velocity_z", "RESIDUAL", "Residual of the z-velocity component");
+
   if (heat){
     AddVolumeOutput("RES_ENTHALPY", "Residual_Enthalpy", "RESIDUAL", "Residual of the enthalpy");
   }
@@ -448,19 +434,12 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   LoadCoordinates(Node_Geo->GetCoord(iPoint), iPoint);
 
-  if (pressure_based) {
-    SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetPressure(iPoint));
-    SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetVelocity(iPoint, 0));
-    SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetVelocity(iPoint, 1));
-    if (nDim == 3) SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetVelocity(iPoint, 2));
-  }  else {
-    SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
-    SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
-    SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
-    if (nDim == 3)
-      SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
-  }
-  
+  SetVolumeOutputValue("PRESSURE",   iPoint, Node_Flow->GetSolution(iPoint, 0));
+  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Flow->GetSolution(iPoint, 1));
+  SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(iPoint, 2));
+  if (nDim == 3)
+    SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(iPoint, 3));
+
   if (heat) {
     SetVolumeOutputValue("ENTHALPY", iPoint, Node_Flow->GetSolution(iPoint, nDim+1));
   }
@@ -492,19 +471,14 @@ void CFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   }
 
   if (pressure_based) {
-    SetVolumeOutputValue("RES_VELOCITY-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
-    SetVolumeOutputValue("RES_VELOCITY-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
-    if (nDim == 3)
-      SetVolumeOutputValue("RES_VELOCITY-Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
-    SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[POISSON_SOL]->LinSysRes(iPoint, 0)); 
-  }  else {
+    SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[POISSON_SOL]->LinSysRes(iPoint, 0));
+  } else {
     SetVolumeOutputValue("RES_PRESSURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 0));
-    SetVolumeOutputValue("RES_VELOCITY-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
-    SetVolumeOutputValue("RES_VELOCITY-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
-    if (nDim == 3)
-      SetVolumeOutputValue("RES_VELOCITY-Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
-    SetVolumeOutputValue("RES_TEMPERATURE", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nDim+1));
-   }
+  }
+  SetVolumeOutputValue("RES_VELOCITY-X", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 1));
+  SetVolumeOutputValue("RES_VELOCITY-Y", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 2));
+  if (nDim == 3)
+    SetVolumeOutputValue("RES_VELOCITY-Z", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, 3));
 
   if (config->GetEnergy_Equation()) {
     SetVolumeOutputValue("RES_ENTHALPY", iPoint, solver[FLOW_SOL]->LinSysRes(iPoint, nDim+1));

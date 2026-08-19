@@ -2802,9 +2802,8 @@ enum class MPI_QUANTITIES {
   MESH_DISPLACEMENTS   ,  /*!< \brief Mesh displacements at the interface. */
   SOLUTION_TIME_N      ,  /*!< \brief Solution at time n. */
   SOLUTION_TIME_N1     ,  /*!< \brief Solution at time n-1. */
-  PRESSURE_VAR         ,  /*!< \brief Primitive variable (pressure) communication (used by pressure based solver). */
   MOM_COEFF            ,  /*!< \brief Momentum coefficient for the pressure-based poisson solver. */
-  MOM_CORRECTION       ,  /*!< \brief Momentum correction for the pressure-based poisson solver (HbyA). */
+  VEL_CORRECTION       ,  /*!< \brief Velocity correction for the pressure-based poisson solver (HbyA). */
   HBYA_CORRECTION      ,  /*!< \brief HbyA correction for the pressure-based poisson solver. */
 };
 

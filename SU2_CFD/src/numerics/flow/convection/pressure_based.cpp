@@ -88,14 +88,28 @@ CNumerics::ResidualType<> CPBConvection_Base::ComputeResidual(const CConfig *con
 
   /*--- Find (momentum) flux. ---*/
 
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Flux[iVar] = 0.0;
+  }
+
   for (iVar = 0; iVar < nDim; iVar++) {
-    Flux[iVar] = MassFlux * AdvectedVelocity[iVar];
+    Flux[iVar+1] = MassFlux * AdvectedVelocity[iVar];
   }
 
   /*--- Find Jacobian ---*/
 
-  if (implicit)
+  if (implicit) {
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (jVar = 0; jVar < nVar; jVar++) {
+        Jacobian_i[iVar][jVar] = 0.0;
+        Jacobian_j[iVar][jVar] = 0.0;
+      }
+    }
+
     ComputeJacobian();
+
+  }
 
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
 }
@@ -112,10 +126,10 @@ void CPBConvection_Central::ComputeJacobian() {
   for (iVar = 0; iVar < nDim; iVar++) {
     for (jVar = 0; jVar < nDim; jVar++) {
 
-      su2double dFdMomentum= (AdvectedVelocity[iVar] * Normal[jVar] + 0.5 * MassFlux / MeanDensity * delta[iVar][jVar]);
+      su2double dFdMomentum= (AdvectedVelocity[iVar] * Normal[jVar] + 0.5 * MassFlux / MeanDensity * delta[iVar+1][jVar+1]);
 
-      Jacobian_i[iVar][jVar] = 0.5*dFdMomentum;
-      Jacobian_j[iVar][jVar] = 0.5*dFdMomentum;
+      Jacobian_i[iVar+1][jVar+1] = 0.5*dFdMomentum;
+      Jacobian_j[iVar+1][jVar+1] = 0.5*dFdMomentum;
     }
   }
 }
@@ -129,6 +143,10 @@ void CPBConvection_Upwind::ComputeAdvectedVelocity() {
     else
       AdvectedVelocity[iVar] = V_j[iVar+1];
   }
+  for (iVar = nDim; iVar < nVar; iVar++) {
+    AdvectedVelocity[iVar] = 0.0;
+  }
+
 }
 
 void CPBConvection_Upwind::ComputeJacobian() {
@@ -138,10 +156,10 @@ void CPBConvection_Upwind::ComputeJacobian() {
   for (iVar = 0; iVar < nDim; iVar++) {
     for (jVar = 0; jVar < nDim; jVar++) {
 
-      su2double dFdMomentum= (AdvectedVelocity[iVar] * Normal[jVar] + MassFlux / MeanDensity * delta[iVar][jVar]);
+      su2double dFdMomentum= (AdvectedVelocity[iVar] * Normal[jVar] + MassFlux / MeanDensity * delta[iVar+1][jVar+1]);
 
-      Jacobian_i[iVar][jVar] = static_cast<su2double>(Upw_i) * dFdMomentum;
-      Jacobian_j[iVar][jVar] = static_cast<su2double>(!Upw_i) * dFdMomentum;
+      Jacobian_i[iVar+1][jVar+1] = static_cast<su2double>(Upw_i) * dFdMomentum;
+      Jacobian_j[iVar+1][jVar+1] = static_cast<su2double>(!Upw_i) * dFdMomentum;
     }
   }
 }

@@ -167,14 +167,14 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Self contribution of the coefficient a_p. Note that this coefficient should be the same for all variable directions. therefore just the x-momentum coefficient is taken. ---*/
-      su2double Mom_Coeff = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(0,0);
+      su2double Mom_Coeff = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(1,1);
     
       su2double Mom_Coeff_nb = 0.0;
 
       if (simplec) {
         for (unsigned long iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
           auto jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
-          Mom_Coeff_nb += flow_solution->Jacobian.GetBlockView(iPoint, jPoint)(0,0);
+          Mom_Coeff_nb += flow_solution->Jacobian.GetBlockView(iPoint, jPoint)(1,1);
         }
       }
 
@@ -222,18 +222,18 @@ void CPoissonSolver::ComputeHbyA(CGeometry *geometry, CSolver **solver_container
   const CVariable* flow_nodes = flow_solution->GetNodes();
 
   /*--- First exchange momentum correction which is required to compute H. ---*/
-  InitiateComms(geometry, config, MPI_QUANTITIES::MOM_CORRECTION);
-  CompleteComms(geometry, config, MPI_QUANTITIES::MOM_CORRECTION); 
+  InitiateComms(geometry, config, MPI_QUANTITIES::VEL_CORRECTION);
+  CompleteComms(geometry, config, MPI_QUANTITIES::VEL_CORRECTION); 
   
   if (implicit) {
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iDim = 0; iDim < nDim; ++iDim) {
         su2double H = 0.0;
-        su2double A_P = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(0,0);
+        su2double A_P = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(1,1);
         for (iNeigh = 0; iNeigh < geometry->nodes->GetnPoint(iPoint); iNeigh++) {
           jPoint = geometry->nodes->GetPoint(iPoint,iNeigh);
-          H -= flow_solution->Jacobian.GetBlockView(iPoint, jPoint)(0,0) * nodes->GetMomCorrection(jPoint, iDim);
+          H -= flow_solution->Jacobian.GetBlockView(iPoint, jPoint)(1,1) * nodes->GetVelocityCorrection(jPoint, iDim);
         }
         nodes->SetHbyACorrection(iPoint, iDim, H/A_P);
       }

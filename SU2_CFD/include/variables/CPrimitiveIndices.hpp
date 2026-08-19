@@ -47,7 +47,7 @@ struct CPrimitiveIndices {
     /*--- Instantiate the right type of CIndices, without heap allocations. ---*/
     if (incompressible) {
       type_ = 0;
-      Construct<CIncEulerVariableBase::template CIndices<IndexType>>(nDim, nSpecies);
+      Construct<CIncEulerVariable::template CIndices<IndexType>>(nDim, nSpecies);
     } else if (nemo) {
       type_ = 1;
       Construct<CNEMOEulerVariable::template CIndices<IndexType>>(nDim, nSpecies);
@@ -63,7 +63,7 @@ struct CPrimitiveIndices {
   inline IndexType NAME() const {                                                                       \
     switch (type_) {                                                                                    \
      case 0:                                                                                            \
-      return reinterpret_cast<const CIncEulerVariableBase::template CIndices<IndexType>*>(data_)->NAME();   \
+      return reinterpret_cast<const CIncEulerVariable::template CIndices<IndexType>*>(data_)->NAME();   \
      case 1:                                                                                            \
       return reinterpret_cast<const CNEMOEulerVariable::template CIndices<IndexType>*>(data_)->NAME();  \
      default:                                                                                           \

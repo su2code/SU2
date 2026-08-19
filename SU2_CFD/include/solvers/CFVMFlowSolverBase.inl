@@ -868,7 +868,6 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
   string restart_filename = config->GetSolution_FileName();
   const bool static_fsi = ((config->GetTime_Marching() == TIME_MARCHING::STEADY) && config->GetFSI_Simulation());
-  const bool pressure_based = (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED);
 
   /*--- To make this routine safe to call in parallel most of it can only be executed by one thread. ---*/
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
@@ -915,29 +914,15 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
         auto index = counter * Restart_Vars[1] + skipVars;
 
-        if (pressure_based) {
-          nodes->SetPressurePB(iPoint_Local, Restart_Data[index]);
-          if (SolutionRestart == nullptr) {
-            for (auto iVar = 1u; iVar < nVar_Restart+1; iVar++)
-              nodes->SetSolution(iPoint_Local, iVar-1, Restart_Data[index+iVar]);
-          }
-          else {
-            /*--- Used as buffer, allows defaults for nVar > nVar_Restart. ---*/
-            for (auto iVar = 1u; iVar < nVar_Restart+1; iVar++)
-              SolutionRestart[iVar-1] = Restart_Data[index + iVar];
-            nodes->SetSolution(iPoint_Local, SolutionRestart);
-          }
-        } else {
-          if (SolutionRestart == nullptr) {
-            for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
-              nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
-          }
-          else {
-            /*--- Used as buffer, allows defaults for nVar > nVar_Restart. ---*/
-            for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
-              SolutionRestart[iVar] = Restart_Data[index + iVar];
-            nodes->SetSolution(iPoint_Local, SolutionRestart);
-          }
+        if (SolutionRestart == nullptr) {
+          for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
+            nodes->SetSolution(iPoint_Local, iVar, Restart_Data[index+iVar]);
+        }
+        else {
+          /*--- Used as buffer, allows defaults for nVar > nVar_Restart. ---*/
+          for (auto iVar = 0u; iVar < nVar_Restart; iVar++)
+            SolutionRestart[iVar] = Restart_Data[index + iVar];
+          nodes->SetSolution(iPoint_Local, SolutionRestart);
         }
 
         /*--- For dynamic meshes, read in and store the
@@ -1019,10 +1004,6 @@ void CFVMFlowSolverBase<V, R>::LoadRestart_impl(CGeometry **geometry, CSolver **
 
   solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
   solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::SOLUTION);
-  if (pressure_based) {
-    solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, MPI_QUANTITIES::PRESSURE_VAR);
-    solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, MPI_QUANTITIES::PRESSURE_VAR);
-  }
 
   /*--- For turbulent/species simulations the flow preprocessing is done by the turbulence/species solver
    *    after it loads its variables (they are needed to compute flow primitives). In case turbulence and species, the
@@ -1181,11 +1162,7 @@ void CFVMFlowSolverBase<V, FlowRegime>::BC_Sym_Plane(CGeometry* geometry, CSolve
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool ideal_gas = (config->GetKind_FluidModel() == STANDARD_AIR) ||
                          (config->GetKind_FluidModel() == IDEAL_GAS);
-  // TODO: this is a small workaround as the primitive index is used here for the solution indices. The
-  // prim and solution indices happen to coincide for the non pressure based solvers but this does not work for PB.
-  // in the future a separate solution_idx struct would make this much cleaner.                     
-  bool pressure_based = (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED);
-  const auto iVel = (pressure_based) ? 0 : prim_idx.Velocity();
+  const auto iVel = prim_idx.Velocity();
 
   /*--- Blazek chapter 8.:
    * The components of the momentum residual normal to the symmetry plane are zeroed out.
