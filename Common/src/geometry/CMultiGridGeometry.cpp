@@ -103,6 +103,13 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     /*--- Skip periodic boundaries: do not agglomerate on periodic markers. ---*/
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) continue;
 
+    /*--- Skip SEND_RECEIVE markers. Carrying one does not put a point on a boundary, it only
+     *    records that the point is mirrored on another rank. A point whose only markers are
+     *    SEND_RECEIVE is an interior point, and is left to the domain pass (STEP 2) which is
+     *    where a serial run would agglomerate it too. Points that do sit on a physical boundary
+     *    are still reached here through their physical marker. ---*/
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
+
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
 
@@ -128,13 +135,18 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         unsigned short copy_marker[3] = {};
         marker_seed.push_back(iMarker);
 
-        /*--- For a particular point in the fine grid we save all the markers
-         that are in that point ---*/
+        /*--- For a particular point in the fine grid we save all the physical markers that are in
+         that point. SEND_RECEIVE markers are deliberately not counted: including them would make
+         an ordinary wall point look like a ridge, and a wall/symmetry ridge look like a corner
+         (which the counter > 2 rule below then refuses to agglomerate at all), so a point would be
+         classified differently depending only on where the partition happens to cut. ---*/
 
         for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker(); jMarker++) {
-          const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) continue;
           if (fine_grid->nodes->GetVertex(iPoint, jMarker) != -1) {
-            copy_marker[counter] = jMarker;
+            /*--- Count every physical marker, the counter > 2 test needs the true count, but only
+             store the first few, which is all the matching rules ever look at. ---*/
+            if (counter < 3) copy_marker[counter] = jMarker;
             counter++;
 
             if (jMarker != iMarker) {
@@ -173,29 +185,20 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
               euler_wall_agglomerated[marker_seed[0]]++;
             }
           }
-
-          /*--- Note that if the (single) marker is a SEND_RECEIVE, then the node is actually an interior point.
-                In that case it can only be agglomerated with another interior point. ---*/
-          if (config->GetMarker_All_KindBC(marker_seed[0]) == SEND_RECEIVE) {
-            agglomerate_seed = true;
-          }
         }
 
-        /*--- Note that in 2D, this is a corner and we do not agglomerate unless one of the two markers
-              is SEND_RECEIVE, i.e. the point lies on a physical boundary that happens to be split by
-              an MPI partition interface. ---*/
+        /*--- Two physical markers meet here. ---*/
         if (counter == 2) {
-          if (nDim == 2) {
-            agglomerate_seed = ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
-                                (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE));
-          }
+          /*--- In 2D that is a genuine corner in the geometry, which is never agglomerated. A wall
+                point merely split by a partition interface no longer reaches this branch: it counts
+                one physical marker and is handled above as the valley point it is. ---*/
+          if (nDim == 2) agglomerate_seed = false;
           /*--- In 3D, this is a ridge point (an edge feature where two surface markers meet).
                 Always allow it to attempt agglomeration here; SetBoundAgglomeration() enforces
                 the actual ridge-ridge rule downstream: it may only pair with a neighboring ridge
-                point that carries the identical marker pair (or the same physical marker plus a
-                SEND_RECEIVE halo marker). A mismatched marker pair usually indicates a genuine
-                sharp corner in the geometry and is correctly left un-merged (falls through to the
-                singleton leftover loop). ---*/
+                point that carries the identical physical marker pair. A mismatched marker pair
+                usually indicates a genuine sharp corner in the geometry and is correctly left
+                un-merged (falls through to the singleton leftover loop). ---*/
           if (nDim == 3) agglomerate_seed = true;
 
           /*--- Euler walls: check curvature-based agglomeration criterion for both markers ---*/
@@ -298,6 +301,11 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    i.e. make one coarse CV with a single child. ---*/
 
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+    /*--- As in STEP 1, a SEND_RECEIVE marker does not make a point a boundary point. Turning the
+     leftovers of those markers into single-child coarse CVs here would strand every interior point
+     along a partition interface before the domain pass below ever gets to see it. ---*/
+    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
+
     for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
       const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
 
@@ -445,8 +453,30 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
   SetPoint_Connectivity(fine_grid);
 
+  /*--- The connectivity just built only knows about coarse CVs of this rank: the halo CVs do not
+   exist until the MPI relay below runs, and the relay cannot run earlier because it broadcasts the
+   parent indices that the merge here is still free to change. So a CV touching a partition boundary
+   may look isolated while actually having neighbors on the other rank, and merging it would be
+   wrong. Mark those CVs and leave them alone; a genuinely isolated CV in the interior is unaffected.
+   Note this deliberately keeps the conservative outcome the sentinel used to produce by accident,
+   but only for the CVs that really do border another rank rather than for every CV near one. ---*/
+
+  vector<bool> touchesPartition(nPointDomain, false);
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
-    if (nodes->GetnPoint(iCoarsePoint) == 1) {
+    for (auto iChildren = 0u; iChildren < nodes->GetnChildren_CV(iCoarsePoint); iChildren++) {
+      const auto iFinePoint = nodes->GetChildren_CV(iCoarsePoint, iChildren);
+      for (auto iFinePoint_Neighbor : fine_grid->nodes->GetPoints(iFinePoint)) {
+        if (fine_grid->nodes->GetParent_CV(iFinePoint_Neighbor) == std::numeric_limits<unsigned long>::max()) {
+          touchesPartition[iCoarsePoint] = true;
+          break;
+        }
+      }
+      if (touchesPartition[iCoarsePoint]) break;
+    }
+  }
+
+  for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
+    if ((nodes->GetnPoint(iCoarsePoint) == 1) && !touchesPartition[iCoarsePoint]) {
       /*--- Find the neighbor of the isolated point. This neighbor is the right control volume ---*/
 
       const auto iCoarsePoint_Complete = nodes->GetPoint(iCoarsePoint, 0);
@@ -781,18 +811,22 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
     unsigned short copy_marker[3] = {};
 
     if (fine_grid->nodes->GetBoundary(CVPoint)) {
-      /*--- Identify the markers of the vertex that we want to agglomerate ---*/
+      /*--- Identify the physical markers of the vertex that we want to agglomerate. SEND_RECEIVE
+       markers are skipped for the same reason as on the seed side: they say nothing about the
+       boundary condition the candidate carries, only that it is mirrored on another rank. A
+       candidate whose markers are all SEND_RECEIVE therefore ends up with counter == 0 and is
+       rejected below, which is the answer a serial run gives for the interior point it really is. ---*/
 
-      // count number of markers on the agglomeration candidate
-      for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker() && counter < 3; jMarker++) {
+      for (auto jMarker = 0u; jMarker < fine_grid->GetnMarker(); jMarker++) {
+        if (config->GetMarker_All_KindBC(jMarker) == SEND_RECEIVE) continue;
         if (fine_grid->nodes->GetVertex(CVPoint, jMarker) != -1) {
-          copy_marker[counter] = jMarker;
+          if (counter < 3) copy_marker[counter] = jMarker;
           counter++;
         }
       }
 
-      /*--- The basic condition is that the agglomerated vertex must have the same physical marker,
-       but eventually a send-receive condition ---*/
+      /*--- The basic condition is that the agglomerated vertex must have the same physical marker
+       as the seed. ---*/
 
       /*--- Only one marker in the vertex that is going to be agglomerated ---*/
 
@@ -801,17 +835,11 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
         /*--- We agglomerate if there is only one marker and it is the same marker as the seed marker ---*/
         // So this is the case when in 2D we are on an edge, and in 3D we are in the interior of a surface.
         // note that this should be the same marker id, not just the same marker type.
+        /*--- Because neither side counts SEND_RECEIVE any more, this test is symmetric: a wall point
+         on a partition interface is now just as absorbable by an ordinary wall seed as the other way
+         around. Previously only an interface seed could absorb an interface candidate, so whenever an
+         ordinary seed reached the shared neighbours first the interface point was stranded. ---*/
         if ((marker_seed.size() == 1) && (copy_marker[0] == marker_seed[0])) agglomerate_CV = true;
-
-        // we also allow agglomeration if the seed has 2 markers, one of them is the same as the candidate, and the
-        // other is a send-receive marker.
-        if ((marker_seed.size() == 2) && ((copy_marker[0] == marker_seed[0]) || (copy_marker[0] == marker_seed[1]))) {
-          // check that the other marker is a send-receive marker
-          unsigned short other_marker = (copy_marker[0] == marker_seed[0]) ? marker_seed[1] : marker_seed[0];
-          if (config->GetMarker_All_KindBC(other_marker) == SEND_RECEIVE) {
-            agglomerate_CV = true;
-          }
-        }
       }
 
       /*--- If there are two markers in the vertex that is going to be aglomerated ---*/
@@ -821,7 +849,7 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
           agglomerate_CV = false;
         }
         /*--- Both markers have to be the same. ---*/
-        if (marker_seed.size() == 2) {
+        else if (marker_seed.size() == 2) {
           if (((copy_marker[0] == marker_seed[0]) && (copy_marker[1] == marker_seed[1])) ||
               ((copy_marker[0] == marker_seed[1]) && (copy_marker[1] == marker_seed[0]))) {
             agglomerate_CV = true;
@@ -902,6 +930,12 @@ void CMultiGridGeometry::SetPoint_Connectivity(const CGeometry* fine_grid) {
       /*--- loop over the parent CVs (coarse grid) of its (fine) neighbors. ---*/
       for (auto iFinePoint_Neighbor : fine_grid->nodes->GetPoints(iFinePoint)) {
         const auto iParent = fine_grid->nodes->GetParent_CV(iFinePoint_Neighbor);
+        /*--- Skip neighbors whose parent is not known yet. The first call to this function happens
+         during construction, before the MPI relay has assigned parents to the fine grid's halo
+         points, so those still hold the sentinel. Letting it through would add one fake neighbor to
+         every coarse CV along a partition boundary, which both corrupts nNeighbor and hides the CV
+         from the isolated-CV repair. The driver calls this again once the relay has run. ---*/
+        if (iParent == std::numeric_limits<unsigned long>::max()) continue;
         /*--- If it is not the target coarse point, it is a coarse neighbor. ---*/
         if (iParent != iCoarsePoint) {
           /*--- Avoid duplicates. ---*/
@@ -1328,6 +1362,25 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
   vector<su2double> dir;                    /*!< Current marching direction of each line, nDim per line. */
   vector<char> claimed(nPointFine, 0);      /*!< Node already belongs to some line. */
 
+  /*--- Nodes that sit on a boundary with a boundary condition on it. A line must not grow into one,
+   *    because those nodes belong to the boundary agglomeration and a stack that absorbed one would
+   *    straddle two boundaries. CPoint's Boundary flag cannot answer this on its own: it is set for
+   *    every marker a node belongs to, SEND_RECEIVE included, so on a partitioned mesh it is also
+   *    true for the ordinary interior nodes of the send fringe. Testing it directly would stop every
+   *    line that reaches the fringe one layer short of the partition, leaving the top of those
+   *    columns to isotropic agglomeration purely because of where the mesh was cut. ---*/
+  vector<char> onPhysicalBoundary(nPointFine, 0);
+  for (auto iPoint = 0ul; iPoint < nPointFine; ++iPoint) {
+    if (!fine_grid->nodes->GetBoundary(iPoint)) continue;
+    for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) continue;
+      if (fine_grid->nodes->GetVertex(iPoint, iMarker) != -1) {
+        onPhysicalBoundary[iPoint] = 1;
+        break;
+      }
+    }
+  }
+
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
     /*--- Seed only from viscous (no-slip) walls: those are the boundaries with a stretched layer
      *    above them. Seeding from farfield/inlet/outlet/symmetry would claim layer nodes before the
@@ -1370,8 +1423,12 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
       unsigned long best_neighbor = ULONG_MAX;
 
       for (auto jPoint : fine_grid->nodes->GetPoints(current)) {
+        /*--- Halo nodes stay out: their parent is dictated by the rank that owns them and arrives
+         *    through the MPI relay, so a line claiming one here would fight that assignment. A line
+         *    therefore still ends at the partition itself, but now only there, instead of one layer
+         *    earlier at the fringe of owned nodes. ---*/
         if (!fine_grid->nodes->GetDomain(jPoint)) continue;
-        if (fine_grid->nodes->GetBoundary(jPoint)) continue;
+        if (onPhysicalBoundary[jPoint]) continue;
         if (fine_grid->nodes->GetAgglomerate(jPoint)) continue;
         if (claimed[jPoint]) continue;
 
