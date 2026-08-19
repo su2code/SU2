@@ -28,15 +28,10 @@ if get_option('enable-cuda')
   # the MPI link flags that -Dcustom-mpi=true relies on mpicxx to provide.
   add_global_arguments('-ccbin=' + meson.get_compiler('cpp').cmd_array()[0], language : 'cuda')
   add_global_link_arguments('-ccbin=' + meson.get_compiler('cpp').cmd_array()[0], language : 'cuda')
-  cuda_deps = [
-    meson.get_compiler('cuda').find_library('cublas', required : true),
-  ]
-else
-  cuda_deps = []
 endif
 
 su2_cpp_args = []
-su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')] + cuda_deps
+su2_deps     = [declare_dependency(include_directories: 'externals/CLI11')]
 
 default_warning_flags = []
 if build_machine.system() != 'windows'

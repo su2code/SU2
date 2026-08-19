@@ -122,6 +122,20 @@ class CNEMOEulerVariable : public CFlowVariable {
                      unsigned long nvar, unsigned long nvalprim,
                      unsigned long nvarprimgrad, const CConfig *config, CNEMOGas *fluidmodel);
 
+  /*!
+   * \brief Get the density at time level n for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n.
+   */
+  inline su2double GetDensity_time_n(unsigned long iPoint) const final { return GetSolution_time_n(iPoint, 0); }
+
+  /*!
+   * \brief Get the density at time level n-1 for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n-1.
+   */
+  inline su2double GetDensity_time_n1(unsigned long iPoint) const final { return GetSolution_time_n1(iPoint, 0); }
+
   /*---------------------------------------*/
   /*---          U,V,S Routines         ---*/
   /*---------------------------------------*/
