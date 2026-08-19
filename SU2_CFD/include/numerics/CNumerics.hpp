@@ -1816,6 +1816,15 @@ public:
   inline virtual void SetTau_Wall(su2double val_tauwall_i, su2double val_tauwall_j) { }
 
   /*!
+   * \brief Enable the weak-boundary penalty mode of the viscous numerics for the next
+   *        ComputeResidual call (consumed by it). The interface gradient becomes
+   *        grad_i + diss*(V_j - V_i) with V_j the prescribed boundary trace, and the
+   *        Jacobian is the exact (frozen-gradient) one.
+   * \param[in] val_diss - Penalty direction/scale vector, chi_b/h_b * unit normal.
+   */
+  inline virtual void SetBoundaryPenalty(const su2double* val_diss) { }
+
+  /*!
    * \brief - Calculate the central/upwind blending function for a face
    *
    * At its simplest level, this function will calculate the average

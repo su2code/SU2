@@ -47,6 +47,7 @@ protected:
   const VISCOUS_GRAD_CORR correct_gradient;            /*!< \brief Apply a correction to the gradient term */
   bool implicit = false;                  /*!< \brief Implicit calculus. */
   bool exact_jacobian = false;            /*!< \brief Use the exact viscous Jacobian instead of the TSL approximation. */
+  bool boundary_penalty = false;          /*!< \brief Weak-boundary penalty mode, consumed by the next ComputeResidual. */
   su2double Diss_Vec[MAXNDIM] = {0.0};    /*!< \brief Direction vector of the gradient correction (zero for NONE). */
   su2double
   heat_flux_vector[MAXNDIM] = {0.0},      /*!< \brief Flux of total energy due to molecular and turbulent diffusion */
@@ -202,6 +203,16 @@ public:
   inline void SetTau_Wall(su2double val_tauwall_i, su2double val_tauwall_j) override {
     TauWall_i = val_tauwall_i;
     TauWall_j = val_tauwall_j;
+  }
+
+  /*!
+   * \brief Enable the weak-boundary penalty mode for the next ComputeResidual call.
+   *        See CNumerics::SetBoundaryPenalty.
+   */
+  inline void SetBoundaryPenalty(const su2double* val_diss) override {
+    for (unsigned short iDim = 0; iDim < MAXNDIM; ++iDim)
+      Diss_Vec[iDim] = (iDim < nDim) ? val_diss[iDim] : 0.0;
+    boundary_penalty = true;
   }
 
   /*!

@@ -2210,33 +2210,45 @@ void CFVMFlowSolverBase<V, R>::BC_Custom_Weak(CGeometry* geometry, CSolver** sol
 
         if (viscous) {
 
-            su2double MMSGrad[7][3];
-            VerificationSolution->GetGradientPrim(coor, time, MMSGrad);
-
-            CMatrixView<su2double> grad(reinterpret_cast<su2double *>(MMSGrad), 3);
+          /*--- Transport properties of the prescribed trace, taken from the node. ---*/
 
           V_outlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
           V_outlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
-          /*--- The compressible viscous numerics now read the thermal conductivity
-           *    and Cp from the primitives (V[nDim+7], V[nDim+8]); leaving them
-           *    unset zeroes the heat flux on this boundary. ---*/
           V_outlet[nDim+7] = nodes->GetThermalConductivity(iPoint);
           V_outlet[nDim+8] = nodes->GetSpecificHeatCp(iPoint);
 
-          /*--- Set the normal vector and the coordinates ---*/
+          /*--- Weak Dirichlet viscous flux, evaluated with the same interior kernel:
+           * interface state 0.5*(V_i + V_Gamma), interface gradient
+           * grad_i + diss_b*(V_Gamma - V_i), with the full nodal LSQ gradient (the
+           * trace is collocated with the node, so there is no second nodal gradient
+           * to average and no directional-derivative replacement) and the penalty
+           * diss_b = chi_b/h_b * n_hat. All correction variants reduce to
+           * chi_b = n_hat (alpha*n_hat for alpha damping) at the boundary, and the
+           * median-dual penalty length is h_b = V_i/A_i (dual volume over dual
+           * boundary face area). ---*/
 
           visc_numerics->SetNormal(Normal);
-          su2double Coord_Reflected[MAXNDIM];
-          auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-          GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-                                             coor, Coord_Reflected);
           visc_numerics->SetCoord(coor, coor);
+          visc_numerics->SetPrimitive(V_domain, V_outlet);
+          visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                                            nodes->GetGradient_Primitive(iPoint));
 
-          /*--- Primitive variables, and gradient ---*/
-
-          visc_numerics->SetPrimitive(V_outlet, V_outlet);
-          visc_numerics->SetPrimVarGradient(grad,
-                                            grad);
+          su2double diss_b[MAXNDIM] = {0.0};
+          su2double chi_b = 0.0;
+          switch (config->GetKind_ViscousGradCorr()) {
+            case VISCOUS_GRAD_CORR::EDGE_NORMAL:
+            case VISCOUS_GRAD_CORR::FACE_TANGENT:
+              chi_b = 1.0;
+              break;
+            case VISCOUS_GRAD_CORR::ALPHA_DAMPING:
+              chi_b = 4.0 / 3.0;
+              break;
+            default:
+              break;
+          }
+          const su2double h_b = geometry->nodes->GetVolume(iPoint) / Area;
+          for (iDim = 0; iDim < nDim; iDim++) diss_b[iDim] = chi_b * UnitNormal[iDim] / h_b;
+          visc_numerics->SetBoundaryPenalty(diss_b);
 
           /*--- Turbulent kinetic energy ---*/
 
@@ -2350,33 +2362,48 @@ void CFVMFlowSolverBase<V, R>::BC_Custom_Weak_Residual(CGeometry* geometry, CSol
 
         if (viscous) {
 
-            su2double MMSGrad[7][3];
-            VerificationSolution->GetGradientPrim(coor, time, MMSGrad);
-
-            CMatrixView<su2double> grad(reinterpret_cast<su2double *>(MMSGrad), 3);
+          /*--- Transport properties of the prescribed trace, taken from the node. ---*/
 
           V_outlet[nDim+5] = nodes->GetLaminarViscosity(iPoint);
           V_outlet[nDim+6] = nodes->GetEddyViscosity(iPoint);
-          /*--- The compressible viscous numerics now read the thermal conductivity
-           *    and Cp from the primitives (V[nDim+7], V[nDim+8]); leaving them
-           *    unset zeroes the heat flux on this boundary. ---*/
           V_outlet[nDim+7] = nodes->GetThermalConductivity(iPoint);
           V_outlet[nDim+8] = nodes->GetSpecificHeatCp(iPoint);
 
-          /*--- Set the normal vector and the coordinates ---*/
+          /*--- Weak Dirichlet viscous flux, evaluated with the same interior kernel:
+           * interface state 0.5*(V_i + V_Gamma), interface gradient
+           * grad_i + diss_b*(V_Gamma - V_i), with the full nodal LSQ gradient (the
+           * trace is collocated with the node, so there is no second nodal gradient
+           * to average and no directional-derivative replacement) and the penalty
+           * diss_b = chi_b/h_b * n_hat. All correction variants reduce to
+           * chi_b = n_hat (alpha*n_hat for alpha damping) at the boundary. The flux
+           * is evaluated with the boundary-element normal (assembled by the
+           * accuracy-preserving quadrature), while the median-dual penalty length
+           * h_b = V_i/A_i uses the nodal dual boundary-face area. ---*/
 
           visc_numerics->SetNormal(Normal);
-          su2double Coord_Reflected[MAXNDIM];
-          auto Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-          GeometryToolbox::PointPointReflect(nDim, geometry->nodes->GetCoord(Point_Normal),
-                                             coor, Coord_Reflected);
           visc_numerics->SetCoord(coor, coor);
+          visc_numerics->SetPrimitive(V_domain, V_outlet);
+          visc_numerics->SetPrimVarGradient(nodes->GetGradient_Primitive(iPoint),
+                                            nodes->GetGradient_Primitive(iPoint));
 
-          /*--- Primitive variables, and gradient ---*/
-
-          visc_numerics->SetPrimitive(V_outlet, V_outlet);
-          visc_numerics->SetPrimVarGradient(grad,
-                                            grad);
+          su2double diss_b[MAXNDIM] = {0.0};
+          su2double chi_b = 0.0;
+          switch (config->GetKind_ViscousGradCorr()) {
+            case VISCOUS_GRAD_CORR::EDGE_NORMAL:
+            case VISCOUS_GRAD_CORR::FACE_TANGENT:
+              chi_b = 1.0;
+              break;
+            case VISCOUS_GRAD_CORR::ALPHA_DAMPING:
+              chi_b = 4.0 / 3.0;
+              break;
+            default:
+              break;
+          }
+          const su2double* dualNormal = geometry->vertex[val_marker][iVertex]->GetNormal();
+          const su2double dualArea = GeometryToolbox::Norm(nDim, dualNormal);
+          const su2double h_b = geometry->nodes->GetVolume(iPoint) / dualArea;
+          for (iDim = 0; iDim < nDim; iDim++) diss_b[iDim] = chi_b * UnitNormal[iDim] / h_b;
+          visc_numerics->SetBoundaryPenalty(diss_b);
 
           /*--- Turbulent kinetic energy ---*/
 

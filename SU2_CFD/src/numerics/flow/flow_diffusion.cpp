@@ -501,6 +501,16 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
   if (correct_gradient != VISCOUS_GRAD_CORR::NONE && dist_ij_2 != 0.0) {
     CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, Edge_Vector,
                     dist_ij_2, nDim+1);
+  } else if (boundary_penalty) {
+
+    /*--- Weak-boundary mode: interface gradient = grad_i + diss_b*(V_Gamma - V_i),
+     * with the externally supplied penalty vector diss_b = chi_b/h_b * n_hat. The
+     * boundary trace (V_j) is collocated with the node so, unlike the interior
+     * correction, there is no directional-derivative replacement: Edge_Vector is
+     * zero and the projection term inside GradientCorrection vanishes. ---*/
+
+    GradientCorrection(Mean_GradPrimVar, PrimVar_i, PrimVar_j, Edge_Vector,
+                       dist_ij_2, Diss_Vec, nDim+1);
   }
 
   /*--- Wall shear stress values (wall functions) only used if present for one but not both points (xor) ---*/
@@ -535,7 +545,13 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   if (implicit) {
 
-    if (dist_ij_2 == 0.0) {
+    if (boundary_penalty) {
+
+      /*--- Weak-boundary mode: the exact (frozen-gradient) Jacobian is the natural
+       * one, its penalty part carries d(V_Gamma - V_i)/dU_i = -dV/dU. ---*/
+      SetExactViscousProjJacs(Area, UnitNormal);
+
+    } else if (dist_ij_2 == 0.0) {
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
           Jacobian_i[iVar][jVar] = 0.0;
@@ -560,6 +576,9 @@ CNumerics::ResidualType<> CAvgGrad_Flow::ComputeResidual(const CConfig* config) 
 
   AD::SetPreaccOut(Proj_Flux_Tensor, nVar);
   AD::EndPreacc();
+
+  /*--- The boundary-penalty mode is consumed by this call. ---*/
+  boundary_penalty = false;
 
   return ResidualType<>(Proj_Flux_Tensor, Jacobian_i, Jacobian_j);
 
