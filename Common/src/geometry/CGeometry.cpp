@@ -4505,11 +4505,10 @@ const CGeometry::CLineletInfo& CGeometry::GetLineletInfo(const CConfig* config) 
     const auto pct = [&](unsigned long n) { return 100.0 * passivedouble(n) / globalNLineLets; };
     std::cout << "Computed linelet structure on MG level " << MGLevel << ", "
               << static_cast<unsigned long>(passivedouble(globalNPoints) / globalNLineLets)
-              << " points in each line (average), " << globalMaxNPoints << " longest, "
-              << globalNLineLets << " lines.\n"
-              << "  Line ends because: " << pct(globalStop[0]) << "% mesh became isotropic, "
-              << pct(globalStop[1]) << "% no aligned neighbour, "
-              << pct(globalStop[2]) << "% hit the " << CLineletInfo::MAX_LINELET_POINTS
+              << " points in each line (average), " << globalMaxNPoints << " longest, " << globalNLineLets
+              << " lines.\n"
+              << "  Line ends because: " << pct(globalStop[0]) << "% mesh became isotropic, " << pct(globalStop[1])
+              << "% no aligned neighbour, " << pct(globalStop[2]) << "% hit the " << CLineletInfo::MAX_LINELET_POINTS
               << "-point cap.\n"
               << "    of the 'no aligned neighbour': " << pct(globalStop[3])
               << "% all candidates already claimed by another line, " << pct(globalStop[4])

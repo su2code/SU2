@@ -140,8 +140,8 @@ class CSysSolve {
    *    CSysMatrix (not in the short-lived CPreconditioner object built in Solve), so simply
    *    skipping Build() reuses the previous one. This instance belongs to one solver on one
    *    grid level, so the counter is naturally per-level. See MG_COARSE_PREC_FREEZE. ---*/
-  mutable unsigned long precSolveCount = 0;    /*!< \brief Linear solves done by this instance. */
-  mutable bool buildPrecThisSolve = true;      /*!< \brief Decision for the current solve, shared by all threads. */
+  mutable unsigned long precSolveCount = 0; /*!< \brief Linear solves done by this instance. */
+  mutable bool buildPrecThisSolve = true;   /*!< \brief Decision for the current solve, shared by all threads. */
 
   /*!
    * \brief sign transfer function

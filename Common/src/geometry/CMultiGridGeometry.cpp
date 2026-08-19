@@ -1358,9 +1358,9 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
    *  lockstep makes all lines compete for each layer on equal terms, which on an extruded prismatic
    *  layer reproduces the mesh's own structure: every line reaches the same depth.
    *================================================================================================*/
-  vector<vector<unsigned long>> lines;      /*!< lines[i] = [wall_node, interior_1, interior_2, ...] */
-  vector<su2double> dir;                    /*!< Current marching direction of each line, nDim per line. */
-  vector<char> claimed(nPointFine, 0);      /*!< Node already belongs to some line. */
+  vector<vector<unsigned long>> lines; /*!< lines[i] = [wall_node, interior_1, interior_2, ...] */
+  vector<su2double> dir;               /*!< Current marching direction of each line, nDim per line. */
+  vector<char> claimed(nPointFine, 0); /*!< Node already belongs to some line. */
 
   /*--- Nodes that sit on a boundary with a boundary condition on it. A line must not grow into one,
    *    because those nodes belong to the boundary agglomeration and a stack that absorbed one would
@@ -1592,6 +1592,10 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
    *  made the bundles a partition, no two bundles can ever contend for the same node, so a stack is
    *  never interrupted part way up.
    *
+   *  The lines in a bundle need not be equally long. A stack therefore keeps rising for as long as
+   *  enough of its lines have nodes left, narrowing where the shorter ones end, instead of stopping
+   *  where the shortest one does and abandoning everything the taller ones still had.
+   *
    *  The multigrid queue is deliberately not updated here: the sync loop that follows the boundary
    *  agglomeration removes every point already marked agglomerated, so removing them a second time
    *  from this function would be an error.
@@ -1620,16 +1624,60 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
     Index_CoarseCV++;
     nStacks++;
 
-    /*--- The interior layers, in lockstep, to the end of the shortest line in the bundle. ---*/
-    unsigned long shortest = ULONG_MAX;
-    for (auto li : members) shortest = std::min<unsigned long>(shortest, lines[li].size());
+    /*--- The interior layers, in lockstep. A line that runs out simply stops contributing and the
+     *    others carry on without it, so a bundle is no longer cut down to its shortest member: the
+     *    stack narrows as it rises instead of ending. The CVs still form one connected column, which
+     *    is what a line relaxation on the coarse grid needs.
+     *
+     *    Two situations end the stack rather than narrowing it further. Dropping below two lines
+     *    would extrude a column one line wide, thinner than anything the domain pass would build
+     *    there, and a set of lines that is no longer connected on the wall would put two separated
+     *    columns into a single CV. In both cases the nodes above are better left to ordinary domain
+     *    agglomeration. A bundle that only ever had one line is exempt from the first rule: it is
+     *    one line wide by construction, and stopping early would gain nothing. ---*/
 
-    unsigned long placed = 1;
-    for (unsigned long first = 1; first + nBlock <= shortest; first += nBlock) {
-      vector<unsigned long> group;
-      group.reserve(members.size() * nBlock);
-      for (auto li : members)
-        for (unsigned long b = 0; b < nBlock; ++b) group.push_back(lines[li][first + b]);
+    /*--- Are the still-growing lines one connected patch on the wall? Takes positions into members,
+     *    which is at most max_group long, so the quadratic scan over Phase B's adjacency is cheap. ---*/
+    auto isConnected = [&adj, &members](const vector<unsigned long>& act) {
+      if (act.size() <= 1) return true;
+      vector<char> seen(act.size(), 0);
+      vector<unsigned long> stack{0};
+      seen[0] = 1;
+      unsigned long nSeen = 1;
+      while (!stack.empty()) {
+        const auto cur = stack.back();
+        stack.pop_back();
+        const auto& neighbors = adj[members[act[cur]]];
+        for (unsigned long k = 0; k < act.size(); ++k) {
+          if (seen[k]) continue;
+          if (find(neighbors.begin(), neighbors.end(), members[act[k]]) != neighbors.end()) {
+            seen[k] = 1;
+            nSeen++;
+            stack.push_back(k);
+          }
+        }
+      }
+      return nSeen == act.size();
+    };
+
+    const unsigned long minActive = std::min<unsigned long>(2, members.size());
+
+    vector<unsigned long> placed(members.size(), 1); /*!< First node of each line not yet in a CV. */
+    vector<unsigned long> active, group;
+
+    for (unsigned long first = 1;; first += nBlock) {
+      /*--- The lines that still have a whole block left at this height. ---*/
+      active.clear();
+      for (unsigned long m = 0; m < members.size(); ++m)
+        if (first + nBlock <= lines[members[m]].size()) active.push_back(m);
+
+      if (active.size() < minActive) break;
+      if (!isConnected(active)) break;
+
+      group.clear();
+      group.reserve(active.size() * nBlock);
+      for (auto m : active)
+        for (unsigned long b = 0; b < nBlock; ++b) group.push_back(lines[members[m]][first + b]);
 
       valid = true;
       for (auto p : group)
@@ -1642,12 +1690,11 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
       }
       nodes->SetnChildren_CV(Index_CoarseCV, static_cast<unsigned short>(group.size()));
       Index_CoarseCV++;
-      placed = first + nBlock;
+      for (auto m : active) placed[m] = first + nBlock;
     }
 
-    /*--- Nodes above the shortest line, or above a block that did not divide evenly, are left to
-     *    ordinary domain agglomeration. ---*/
-    for (auto li : members) nTruncated += lines[li].size() - placed;
+    /*--- Whatever each line still carries above the last CV it contributed to. ---*/
+    for (unsigned long m = 0; m < members.size(); ++m) nTruncated += lines[members[m]].size() - placed[m];
   }
 
   if (DEBUG_OUTPUT) {
