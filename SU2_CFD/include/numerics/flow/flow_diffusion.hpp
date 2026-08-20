@@ -118,23 +118,6 @@ protected:
                          su2double val_dist_ij,
                          const su2double *val_normal);
 
-  /**
-   * \brief Calculate the Jacobian of the viscous and turbulent stress tensor
-   *
-   * This function is intended only for the pressure based incompressible flow solver.
-   * This Jacobian is projected onto the normal vector, so it is of dimension
-   * [nDim][nVar]
-   *
-   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
-   * \param[in] val_dist_ij - Distance between the points.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   */
-  void SetPBIncTauJacobian(su2double val_laminar_viscosity,
-                         su2double val_eddy_viscosity,
-                         su2double val_dist_ij,
-                         const su2double *val_normal);
-
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction.
    *
@@ -355,64 +338,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGradInc_Flow(unsigned short val_nDim, unsigned short val_nVar,
-                   bool val_correct_grad, const CConfig* config);
-
-  /*!
-   * \brief Compute the viscous flow residual using an average of gradients.
-   * \param[in] config - Definition of the particular problem.
-   * \return A lightweight const-view (read-only) of the residual/flux and Jacobians.
-   */
-  ResidualType<> ComputeResidual(const CConfig* config) override;
-
-};
-
-/*!
- * \class CAvgGradPBInc_Flow
- * \brief Class for computing viscous term using an average of gradients.
- * \ingroup ViscDiscr
- * \author A. Bueno, F. Palacios, T. Economon
- */
-class CAvgGradPBInc_Flow final : public CAvgGrad_Base {
-private:
-
-  /*!
-   * \brief Compute the projection of the viscous fluxes into a direction
-   *
-   * The viscous + turbulent stress tensor must be calculated before calling
-   * this function.
-   *
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_thermal_conductivity - Thermal conductivity.
-   */
-  void GetViscousPBIncProjFlux(const su2double* const *val_gradprimvar,
-                             const su2double *val_normal,
-                             su2double val_thermal_conductivity);
-
-  /*!
-   * \brief Compute the projection of the viscous Jacobian matrices.
-   *
-   * The Jacobian of the stress tensor must be calculated before calling
-   * this function.
-   *
-   * \param[in] val_dS - Area of the face between two nodes.
-   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
-   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
-   */
-  void GetViscousPBIncProjJacs(su2double val_dS,
-                             su2double **val_Proj_Jac_Tensor_i,
-                             su2double **val_Proj_Jac_Tensor_j);
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimension of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] val_correct_grad - Apply a correction to the gradient
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGradPBInc_Flow(unsigned short val_nDim, unsigned short val_nVar,
                    bool val_correct_grad, const CConfig* config);
 
   /*!

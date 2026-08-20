@@ -65,10 +65,6 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
   integration[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry, solver, numerics, config, RUNTIME_FLOW_SYS,
                                                                    val_iZone, val_iInst);
 
-  /*--- Solve the pressure poisson (correction) equation ---*/
-
-  config[val_iZone]->SetGlobalParam(MAIN_SOLVER::POISSON_EQUATION, RUNTIME_POISSON_SYS);
-
   /*--- The momentum coefficients (resulting from the flow solution) are set only once 
   at the start of the corrections. These coefficients make up the entirety of the coefficient
   matrix (Jacobian) used by the Poisson solver. Currently the matrix is redefined each correction 
@@ -79,25 +75,26 @@ void CPBFluidIteration::Iterate(COutput* output, CIntegration**** integration, C
 
   solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ComputeRhieChowVelocities(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
+  /*--- Solve the pressure poisson (correction) equation ---*/
+
+  config[val_iZone]->SetGlobalParam(MAIN_SOLVER::POISSON_EQUATION, RUNTIME_POISSON_SYS);
+
   for (unsigned short iCorrection = 0; iCorrection < nCorrections; ++iCorrection) {
 
     /*--- For later corrections (PISO) the pressure equation has an additional div(H(u')/A_p) term on the right side, u' is computed in the last correction routine. ---*/
     
     if (iCorrection > 0) solver[val_iZone][val_iInst][MESH_0][POISSON_SOL]->ComputeHbyA(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
 
-    /*--- Solve the pressure Poisson equation to find p' i.e. div(1/A_p * grad(p')) = div \dot{m} ---*/
+    /*--- Solve the pressure Poisson equation to find p' i.e. div(V/A_p * grad(p')) = div u*} ---*/
 
     integration[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry, solver, numerics, config, RUNTIME_POISSON_SYS,
                                                                    val_iZone, val_iInst);
 
-    /*--- The velocity and pressure are corrected based on the solution to the Poisson problem i.e. p* = p + p' and u** = u* - 1/Ap * p' ---*/
+    /*--- The velocity and pressure are corrected based on the solution to the Poisson problem i.e. p* = p + p' and u** = u* - V/Ap * p' ---*/
     
     solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->ApplyPressureVelocityCorrection(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone]);
 
-    /*--- Postprocessing is applied once again as the flow solution is altered by correcting the velocities and pressure. */
-
-    solver[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry[val_iZone][val_iInst][MESH_0], solver[val_iZone][val_iInst][MESH_0], config[val_iZone], MESH_0);
-  }
+   }
 
   /*--- Pressure-based algorithm finished, now run auxiliary solvers ---*/
 

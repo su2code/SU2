@@ -1,7 +1,7 @@
 /*!
- * \file centered.cpp
- * \brief Implementations of centered schemes.
- * \author F. Palacios, T. Economon
+ * \file pressure_based.cpp
+ * \brief Implementations of fluxes for pressure-based solvers.
+ * \author T. Aalbers
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -26,17 +26,14 @@
  */
 
 #include "../../../../include/numerics/flow/convection/pressure_based.hpp"
-#include "../../../../../Common/include/toolboxes/geometry_toolbox.hpp"
-
-
-
 
 CPBConvection_Base::CPBConvection_Base(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   dynamic_grid = config->GetDynamic_Grid();
+  energy = config->GetEnergy_Equation();
   
-  AdvectedVelocity = new su2double [nVar];
+  AdvectedVelocity = new su2double [MAXNDIM];
   Flux = new su2double [nVar];
   Jacobian_i = new su2double* [nVar];
   Jacobian_j = new su2double* [nVar];
@@ -69,46 +66,55 @@ CNumerics::ResidualType<> CPBConvection_Base::ComputeResidual(const CConfig *con
   DensityInc_i = V_i[nDim+2];  DensityInc_j = V_j[nDim+2];
   MeanDensity = 0.5*(DensityInc_i + DensityInc_j);
 
-  /*--- Find mass flux (note that edgevelocity itself already included grid movement) ---*/
+  /*--- Find projected velocity (note that edgevelocity itself already includes 
+  grid movement trough the Rhie-Chow interpolation procedure.) ---*/
 
-  MassFlux = 0.0;
+  su2double ProjVelocity = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
-    MassFlux += MeanDensity * EdgeVelocity[iDim] * Normal[iDim];
-
-  // if (dynamic_grid) {
-  //   su2double ProjGridMassFlux = 0.0;
-  //   for (iDim = 0; iDim < nDim; iDim++)
-  //     ProjGridMassFlux += 0.5*(DensityInc_i*GridVel_i[iDim]+DensityInc_j*GridVel_j[iDim])*Normal[iDim];
-  //   MassFlux -= ProjGridMassFlux;
-  // }
+    ProjVelocity += EdgeVelocity[iDim] * Normal[iDim];
+  MassFlux = MeanDensity * ProjVelocity;
 
   /*--- Find the velocity that is advected ---*/
 
   ComputeAdvectedVelocity();
 
-  /*--- Find (momentum) flux. ---*/
+  /*--- Set continuity (pressure) flux, only used by bounded scalar or coupled solver. ---*/
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Flux[iVar] = 0.0;
-  }
+  Flux[0] = MassFlux;
 
-  for (iVar = 0; iVar < nDim; iVar++) {
-    Flux[iVar+1] = MassFlux * AdvectedVelocity[iVar];
+  /*--- Set momentum (pressure) flux. ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Flux[iDim+1] = ProjVelocity * AdvectedVelocity[iDim];
   }
 
   /*--- Find Jacobian ---*/
 
   if (implicit) {
 
-    for (iVar = 0; iVar < nVar; iVar++) {
-      for (jVar = 0; jVar < nVar; jVar++) {
-        Jacobian_i[iVar][jVar] = 0.0;
-        Jacobian_j[iVar][jVar] = 0.0;
-      }
-    }
+    // for (iVar = 0; iVar < nVar; iVar++)
+    //   for (jVar = 0; jVar < nVar; jVar++) {
+    //     Jacobian_i[iVar][jVar] = 0.0;
+    //     Jacobian_j[iVar][jVar] = 0.0;
+    //   }
 
     ComputeJacobian();
 
+  }
+
+  /*--- Remove energy contributions if we aren't solving the energy equation. ---*/
+
+  if (!energy) {
+    Flux[nDim+1] = 0.0;
+    if (implicit) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Jacobian_i[iVar][nDim+1] = 0.0;
+        Jacobian_j[iVar][nDim+1] = 0.0;
+
+        Jacobian_i[nDim+1][iVar] = 0.0;
+        Jacobian_j[nDim+1][iVar] = 0.0;
+      }
+    }
   }
 
   return ResidualType<>(Flux, Jacobian_i, Jacobian_j);
@@ -116,20 +122,20 @@ CNumerics::ResidualType<> CPBConvection_Base::ComputeResidual(const CConfig *con
 
 void CPBConvection_Central::ComputeAdvectedVelocity() {
 
-  for (iVar = 0; iVar < nDim; iVar++) 
-    AdvectedVelocity[iVar] = 0.5 * (V_i[iVar+1] + V_j[iVar+1]);
+  for (iDim = 0; iDim < nDim; iDim++) 
+    AdvectedVelocity[iDim] = 0.5 * (V_i[iDim+1] + V_j[iDim+1]);
   
 }
 
 void CPBConvection_Central::ComputeJacobian() {
   
-  for (iVar = 0; iVar < nDim; iVar++) {
-    for (jVar = 0; jVar < nDim; jVar++) {
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
 
-      su2double dFdMomentum= (AdvectedVelocity[iVar] * Normal[jVar] + 0.5 * MassFlux / MeanDensity * delta[iVar+1][jVar+1]);
+      su2double dFdu = (AdvectedVelocity[iDim] * Normal[jDim] + 0.5 * MassFlux / MeanDensity * delta[iDim][jDim]);
 
-      Jacobian_i[iVar+1][jVar+1] = 0.5*dFdMomentum;
-      Jacobian_j[iVar+1][jVar+1] = 0.5*dFdMomentum;
+      Jacobian_i[iDim+1][jDim+1] = 0.5 * dFdu;
+      Jacobian_j[iDim+1][jDim+1] = 0.5 * dFdu;
     }
   }
 }
@@ -137,14 +143,11 @@ void CPBConvection_Central::ComputeJacobian() {
 void CPBConvection_Upwind::ComputeAdvectedVelocity() {
 
   bool Upw_i = (MassFlux>0);
-  for (iVar = 0; iVar < nDim; iVar++) {
+  for (iDim = 0; iDim < nDim; iDim++) {
     if (Upw_i)
-      AdvectedVelocity[iVar] = V_i[iVar+1];
+      AdvectedVelocity[iDim] = V_i[iDim+1];
     else
-      AdvectedVelocity[iVar] = V_j[iVar+1];
-  }
-  for (iVar = nDim; iVar < nVar; iVar++) {
-    AdvectedVelocity[iVar] = 0.0;
+      AdvectedVelocity[iDim] = V_j[iDim+1];
   }
 
 }
@@ -153,13 +156,13 @@ void CPBConvection_Upwind::ComputeJacobian() {
 
   bool Upw_i = (MassFlux>0);
   
-  for (iVar = 0; iVar < nDim; iVar++) {
-    for (jVar = 0; jVar < nDim; jVar++) {
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
 
-      su2double dFdMomentum= (AdvectedVelocity[iVar] * Normal[jVar] + MassFlux / MeanDensity * delta[iVar+1][jVar+1]);
+      su2double dFdu= (AdvectedVelocity[iDim] * Normal[jDim] + MassFlux / MeanDensity * delta[iDim][jDim]);
 
-      Jacobian_i[iVar+1][jVar+1] = static_cast<su2double>(Upw_i) * dFdMomentum;
-      Jacobian_j[iVar+1][jVar+1] = static_cast<su2double>(!Upw_i) * dFdMomentum;
+      Jacobian_i[iDim+1][jDim+1] = static_cast<su2double>(Upw_i) * dFdu;
+      Jacobian_j[iDim+1][jDim+1] = static_cast<su2double>(!Upw_i) * dFdu;
     }
   }
 }

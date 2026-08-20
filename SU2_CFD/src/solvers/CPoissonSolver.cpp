@@ -167,7 +167,7 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
     for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Self contribution of the coefficient a_p. Note that this coefficient should be the same for all variable directions. therefore just the x-momentum coefficient is taken. ---*/
-      su2double Mom_Coeff = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(1,1);
+      su2double A_p = flow_solution->Jacobian.GetBlockView(iPoint, iPoint)(1,1);
     
       su2double Mom_Coeff_nb = 0.0;
 
@@ -182,26 +182,31 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
       su2double delT = flow_nodes->GetDelta_Time(iPoint);
 
       /*--- Add simplec neighbour contributions and optional time dependent term. ---*/
-      Mom_Coeff = Mom_Coeff - Mom_Coeff_nb - config->GetRCFactor()*(Vol/delT);
+      su2double Mom_Coeff = A_p - Mom_Coeff_nb - config->GetRCFactor()*(Vol/delT);
 
-      /*--- Invert the momentum coefficient to 1/a_p and scale by the volume so it can be used as diffusion coefficient in the poisson eq ---*/
-      Mom_Coeff = Vol/Mom_Coeff;
+      su2double Density = flow_nodes->GetDensity(iPoint);
+
+      /*--- Invert the momentum coefficient to 1/a_p and scale by the volume and density so it can be used as diffusion coefficient in the poisson eq ---*/
+      Mom_Coeff = Vol / (Mom_Coeff*Density);
 
       nodes->SetMomCoeff(iPoint, Mom_Coeff);
     }
     END_SU2_OMP_FOR
   }
   else {
-    SU2_OMP_FOR_STAT(omp_chunk_size)
-    for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      su2double delT = flow_nodes->GetDelta_Time(iPoint);
+    SU2_MPI::Error("The definition of the momentum coefficient for an explicit solution is currently only an approximation and is not yet tested.", CURRENT_FUNCTION);
 
-      su2double Mom_Coeff = delT;
+    // SU2_OMP_FOR_STAT(omp_chunk_size)
+    // for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      nodes->SetMomCoeff(iPoint, Mom_Coeff);
-    }
-    END_SU2_OMP_FOR
+    //   su2double delT = flow_nodes->GetDelta_Time(iPoint);
+
+    //   su2double Mom_Coeff = delT;
+
+    //   nodes->SetMomCoeff(iPoint, Mom_Coeff);
+    // }
+    // END_SU2_OMP_FOR
   }
 
   /*--- Insert MPI call here. ---*/
@@ -291,7 +296,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
   const auto& edgeVelocities = *(flow_solver->GetEdgeVelocity());
 
-  /*--- Mass flux is computed over all edges ---*/
+  /*--- flux is computed over all edges ---*/
   for (auto color : EdgeColoring) {
     SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
     for (auto k = 0ul; k < color.size; ++k) {
@@ -301,14 +306,12 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       su2double Normal[MAXNDIM] = {0.0};
       geometry->edges->GetNormal(iEdge, Normal);
 
-      su2double MeanDensity = 0.5*(flow_nodes->GetDensity(iPoint) + flow_nodes->GetDensity(jPoint));
-
-      su2double MassFlux_Part = 0.0;
+      su2double ProjVelocity = 0.0;
       for (unsigned short iDim = 0; iDim < nDim; ++iDim) 
-        MassFlux_Part += edgeVelocities[iEdge][iDim] * Normal[iDim] * MeanDensity;
+        ProjVelocity += edgeVelocities[iEdge][iDim] * Normal[iDim];
 
       /*--- Add the mass flux to the source term for the poisson equation ---*/
-      auto residual = CNumerics::ResidualType<>(&MassFlux_Part, nullptr, nullptr);
+      auto residual = CNumerics::ResidualType<>(&ProjVelocity, nullptr, nullptr);
 
       if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
       if (geometry->nodes->GetDomain(jPoint)) LinSysRes.SubtractBlock(jPoint, residual);
@@ -331,7 +334,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   unsigned short iDim, KindBC;
   unsigned long  iMarker, iVertex, iPoint, jPoint;
   string Marker_Tag;
-  su2double MassFlux_Part = 0.0, Normal[MAXNDIM];
+  su2double ProjVelocity_corr = 0.0, Normal[MAXNDIM];
 
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
@@ -355,17 +358,17 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 
           geometry->vertex[iMarker][iVertex]->GetNormal(Normal);            
               
-          MassFlux_Part = 0.0;
+          ProjVelocity_corr = 0.0;
           if (dynamic_grid) {
             GridVel_i = geometry->nodes->GetGridVel(iPoint);
             for (iDim = 0; iDim < nDim; iDim++)
-              MassFlux_Part -= flow_nodes->GetDensity(iPoint)*(flow_nodes->GetVelocity(iPoint, iDim)-GridVel_i[iDim])*Normal[iDim];
+              ProjVelocity_corr -= (flow_nodes->GetVelocity(iPoint, iDim)-GridVel_i[iDim])*Normal[iDim];
           } 
           else
             for (iDim = 0; iDim < nDim; iDim++)
-            MassFlux_Part -= flow_nodes->GetDensity(iPoint)*(flow_nodes->GetVelocity(iPoint, iDim))*Normal[iDim];
+            ProjVelocity_corr -= flow_nodes->GetVelocity(iPoint, iDim)*Normal[iDim];
 
-          auto residual = CNumerics::ResidualType<>(&MassFlux_Part, nullptr, nullptr);
+          auto residual = CNumerics::ResidualType<>(&ProjVelocity_corr, nullptr, nullptr);
 
           if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
 
@@ -383,15 +386,15 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
             if (dynamic_grid)
               GridVel_i = geometry->nodes->GetGridVel(iPoint);
                 
-            MassFlux_Part = 0.0;
+            ProjVelocity_corr = 0.0;
             if (dynamic_grid)
               for (iDim = 0; iDim < nDim; iDim++)
-                MassFlux_Part -= flow_nodes->GetDensity(iPoint)*(flow_nodes->GetVelocity(iPoint, iDim)-GridVel_i[iDim])*Normal[iDim];
+                ProjVelocity_corr -= (flow_nodes->GetVelocity(iPoint, iDim)-GridVel_i[iDim])*Normal[iDim];
             else
              for (iDim = 0; iDim < nDim; iDim++)
-              MassFlux_Part -= flow_nodes->GetDensity(iPoint)*(flow_nodes->GetVelocity(iPoint, iDim))*Normal[iDim];
+              ProjVelocity_corr -= flow_nodes->GetVelocity(iPoint, iDim)*Normal[iDim];
   
-            auto residual = CNumerics::ResidualType<>(&MassFlux_Part, nullptr, nullptr);
+            auto residual = CNumerics::ResidualType<>(&ProjVelocity_corr, nullptr, nullptr);
             LinSysRes.AddBlock(iPoint, residual);    
 
           }
@@ -417,15 +420,15 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
                 if (dynamic_grid)
                   GridVel_i = geometry->nodes->GetGridVel(iPoint);
                 
-                MassFlux_Part = 0.0;
+                ProjVelocity_corr = 0.0;
                 if (dynamic_grid)
                   for (iDim = 0; iDim < nDim; iDim++)
-                    MassFlux_Part -= flow_nodes->GetDensity(iPoint)*(flow_nodes->GetVelocity(iPoint, iDim)-GridVel_i[iDim])*Normal[iDim];
+                    ProjVelocity_corr -= (flow_nodes->GetVelocity(iPoint, iDim)-GridVel_i[iDim])*Normal[iDim];
                 else
                   for (iDim = 0; iDim < nDim; iDim++)
-                    MassFlux_Part -= flow_nodes->GetDensity(iPoint)*(flow_nodes->GetVelocity(iPoint, iDim))*Normal[iDim];
+                    ProjVelocity_corr -= (flow_nodes->GetVelocity(iPoint, iDim))*Normal[iDim];
 
-                auto residual = CNumerics::ResidualType<>(&MassFlux_Part, nullptr, nullptr);
+                auto residual = CNumerics::ResidualType<>(&ProjVelocity_corr, nullptr, nullptr);
 
                 if (geometry->nodes->GetDomain(iPoint)) LinSysRes.AddBlock(iPoint, residual);
               }
@@ -439,7 +442,7 @@ void CPoissonSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
       }
 
       default:
-        SU2_MPI::Error("Invalid boundary condition for mass flux correction", CURRENT_FUNCTION);
+        SU2_MPI::Error("Invalid boundary condition for flux correction", CURRENT_FUNCTION);
         break;
         
     }

@@ -40,9 +40,9 @@
 class CPBConvection_Base : public CNumerics {
 protected:
 
-  bool implicit, dynamic_grid;
+  bool implicit, dynamic_grid, energy;
 
-  unsigned short iDim, iVar, jVar;
+  unsigned short iDim, jDim, iVar, jVar;
   
   su2double *AdvectedVelocity = nullptr;
   su2double *Flux = nullptr;

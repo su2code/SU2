@@ -985,6 +985,14 @@ class CFVMFlowSolverBase : public CSolver {
       END_SU2_OMP_FOR
     }
 
+    /*--- Delete pressure rows for segregated solver type. ---*/
+    if (config->GetKind_Incomp_System() == ENUM_INCOMP_SYSTEM::PRESSURE_BASED) {
+      SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)
+      for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        Jacobian.DeleteValsRowi(iPoint, 0);
+      }
+    }
+
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 
     SU2_OMP_FOR_(schedule(static,omp_chunk_size) SU2_NOWAIT)

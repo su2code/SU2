@@ -108,18 +108,11 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   nDim = geometry->GetnDim();
 
-  /*--- Make sure to align the sizes with the constructor of C...IncEulerVariable. ---*/
-  if (pressure_based) {
-    nVar = nDim + 2;
-    nPrimVar = nDim + 10;
-    // TODO: I do not know what size this should be, currently copied from DB solver.
-    nPrimVarGrad = nDim + (centered ? 2 : 4); 
-  } else {
-    nVar = nDim + 2;
-    nPrimVar = nDim + 10;
-    /*--- Centered schemes only need gradients for viscous fluxes (T and v, but we need also to include P). ---*/
-    nPrimVarGrad = nDim + (centered ? 2 : 4);
-  }
+  /*--- Make sure to align the sizes with the constructor of CIncEulerVariable. ---*/
+  nVar = nDim + 2;
+  nPrimVar = nDim + 10;
+  /*--- Centered schemes only need gradients for viscous fluxes (T and v, but we need also to include P). ---*/
+  nPrimVarGrad = nDim + (centered ? 2 : 4);
 
   /*--- Initialize nVarGrad for deallocation ---*/
 
@@ -1593,18 +1586,22 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     SU2_OMP_FOR_STAT(omp_chunk_size)
     for (auto iPoint = 0ul; iPoint < nPointDomain; iPoint++) {
 
-      su2double *Vdpdx = new su2double[nVar];
-      for (unsigned short iVar = 0; iVar < nVar; iVar++)
-        Vdpdx[iVar]=0.0;
+      su2double Density = nodes->GetDensity(iPoint);
 
-      /*--- Compute the residual based on the pressure gradient. ---*/
+      su2double *pressureGradientSource = new su2double[nVar];
+      pressureGradientSource[0] = 0.0;
+      pressureGradientSource[nDim+1]=0.0;
+
+      /*--- Compute the residual (1/rho*V*gradp) based on the pressure gradient. ---*/
       for (unsigned short iDim = 0; iDim < nDim; iDim++)
-        Vdpdx[iDim+1] = geometry->nodes->GetVolume(iPoint)*nodes->GetGradient_Primitive(iPoint,0,iDim);
+        pressureGradientSource[iDim+1] = geometry->nodes->GetVolume(iPoint)*nodes->GetGradient_Primitive(iPoint,0,iDim) / Density;
+      
 
-      auto residual = CNumerics::ResidualType<>(Vdpdx, nullptr, nullptr);
+      auto residual = CNumerics::ResidualType<>(pressureGradientSource, nullptr, nullptr);
 
       /*--- Add Residual to the total ---*/
       LinSysRes.AddBlock(iPoint, residual);
+
     }
     END_SU2_OMP_FOR
   }
@@ -3972,46 +3969,5 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   /*--- Communicate updated velocities and pressure ---*/
   InitiateComms(geometry, config, MPI_QUANTITIES::SOLUTION);
   CompleteComms(geometry, config, MPI_QUANTITIES::SOLUTION);
-
-}
-
-
-void CIncEulerSolver::Postprocessing(CGeometry *geometry,
-                                    CSolver **solver_container,
-                                    CConfig *config,
-                                    unsigned short iMesh) {
-  SU2_ZONE_SCOPED
-
-  if (!pressure_based) return;
-
-  const bool bounded_scalar = config->GetBounded_Scalar();
-
-  if (!bounded_scalar) return;
-
-  /*--- Loop over edge colors. ---*/
-  for (auto color : EdgeColoring)
-  {
-  /*--- Chunk size is at least OMP_MIN_SIZE and a multiple of the color group size. ---*/
-  SU2_OMP_FOR_DYN(nextMultiple(OMP_MIN_SIZE, color.groupSize))
-  for(auto k = 0ul; k < color.size; ++k) {
-
-     auto iEdge = color.indices[k];
-
-    /*--- Points in edge, set normal vectors, and number of neighbors ---*/
-
-    auto iPoint = geometry->edges->GetNode(iEdge,0); auto jPoint = geometry->edges->GetNode(iEdge,1);
-
-    su2double MeanDensity = 0.5*(nodes->GetPrimitive(iPoint)[nDim+2] + nodes->GetPrimitive(jPoint)[nDim+2]);
-    auto Normal = geometry->edges->GetNormal(iEdge);
-
-    /*--- Find mass flux (note that edgevelocity itself already included grid movement) ---*/
-
-    EdgeMassFluxes[iEdge] = 0.0;
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      EdgeMassFluxes[iEdge] += MeanDensity * EdgeVelocity[iEdge][iDim] * Normal[iDim];
-
-  }
-  END_SU2_OMP_FOR
-  } // end color loop
 
 }
