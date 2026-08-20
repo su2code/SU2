@@ -26,6 +26,8 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import print_function, division, absolute_import
+import os
+import subprocess
 import sys
 from TestCase import TestCase
 from TestCase import parse_args
@@ -1256,6 +1258,26 @@ def main():
             test.tol = 0.00001
 
     pass_list = [ test.run_test(args.tsan, args.asan) for test in test_list ]
+
+    # Nastran bulk data parser unit tests
+    nastran_parser = TestCase('pysu2_nastran')
+    # The CI container runs this script from a copied tests/TestCases tree, so
+    # the repo-relative path does not exist there; use the installed copy that
+    # SU2_RUN points to and fall back to the source tree for local runs.
+    nastran_test = os.path.join(
+        os.environ.get('SU2_RUN', ''),
+        'SU2_Nastran',
+        'test_pysu2_nastran.py',
+    )
+    if not os.path.isfile(nastran_test):
+        nastran_test = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'SU2_PY',
+            'SU2_Nastran',
+            'test_pysu2_nastran.py',
+        )
+    pass_list.append(subprocess.call([sys.executable, nastran_test]) == 0)
+    test_list.append(nastran_parser)
 
 
     ######################################
