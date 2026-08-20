@@ -514,11 +514,9 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
         unsigned long col = jPoint;
 
         /*--- Get Jacobian entry here ---*/
-        // su2double value = Jacobian.GetBlockView(iPoint, jPoint)(0,0);
-        su2double value = 1;
-        auto a = solver_container[POISSON_SOL]->Jacobian.GetBlockView(iPoint,jPoint)(0,0);
-        // cout << static_cast<double>(Jacobian.GetBlockView(iPoint, jPoint)(0,0));
-        // su2double a = Jacobian.GetBlockView(iPoint, jPoint)(0,0);
+	auto block = Jacobian.GetBlockView(iPoint, jPoint);
+	if (!block) continue;
+	const su2double a = block(0,0);
 
         if (a != 0.0)
           matrixFile << row << " "
