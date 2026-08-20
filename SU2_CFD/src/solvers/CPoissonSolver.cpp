@@ -492,6 +492,45 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
   }
   END_SU2_OMP_FOR
 
+  {
+    std::ofstream matrixFile("poisson_matrix.txt");
+    std::ofstream rhsFile("poisson_rhs.txt");
+
+    matrixFile << std::setprecision(17);
+    rhsFile << std::setprecision(17);
+
+    /*--- RHS ---*/
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+      rhsFile << mat_vec(iPoint, 0) << "\n";
+    }
+
+    /*--- Matrix ---*/
+    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
+
+      unsigned long row = iPoint;
+
+      for (unsigned long jPoint = 0; jPoint < nPoint; jPoint++) {
+
+        unsigned long col = jPoint;
+
+        /*--- Get Jacobian entry here ---*/
+        // su2double value = Jacobian.GetBlockView(iPoint, jPoint)(0,0);
+        su2double value = 1;
+        auto a = solver_container[POISSON_SOL]->Jacobian.GetBlockView(iPoint,jPoint)(0,0);
+        // cout << static_cast<double>(Jacobian.GetBlockView(iPoint, jPoint)(0,0));
+        // su2double a = Jacobian.GetBlockView(iPoint, jPoint)(0,0);
+
+        if (a != 0.0)
+          matrixFile << row << " "
+                    << col<< " "
+                    << a << "\n";
+      }
+    }
+
+    matrixFile.close();
+    rhsFile.close();
+  }
+
   auto iter = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
