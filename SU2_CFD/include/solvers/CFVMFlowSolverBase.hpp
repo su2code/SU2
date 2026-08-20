@@ -991,6 +991,7 @@ class CFVMFlowSolverBase : public CSolver {
       for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++) {
         Jacobian.DeleteValsRowi(iPoint, 0);
       }
+      END_SU2_OMP_FOR
     }
 
     /*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
