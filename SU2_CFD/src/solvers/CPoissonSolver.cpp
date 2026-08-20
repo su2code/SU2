@@ -501,7 +501,7 @@ void CPoissonSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
     /*--- RHS ---*/
     for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++) {
-      rhsFile << mat_vec(iPoint, 0) << "\n";
+      rhsFile << LinSysRes(iPoint, 0) << "\n";
     }
 
     /*--- Matrix ---*/
