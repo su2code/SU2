@@ -666,8 +666,9 @@ private:
   su2double SemiSpan;                   /*!< \brief Wing Semi span. */
   su2double MSW_Alpha;                  /*!< \brief Coefficient for blending states in the MSW scheme. */
   su2double Roe_Kappa;                  /*!< \brief Relaxation of the Roe scheme. */
-  su2double RCFactor;                   /*!< \brief Relaxation for the Rhie-Chow interpolation contribution. */
-  su2double Relaxation_Factor_PBFlow;   /*!< \brief Relaxation coefficient of the flow corrections in the PB solver. */
+  su2double Transient_Term_Removal_Factor; /*!< \brief Coefficient for removing the transient term from the momentum coefficient. */
+  su2double Relaxation_Factor_Pressure; /*!< \brief Relaxation coefficient of the pressure corrections in the SIMPLE solver. */
+  su2double Relaxation_Factor_Momentum; /*!< \brief Relaxation coefficient of the momentum corrections in the SIMPLE solver. */
   su2double Relaxation_Factor_Adjoint;  /*!< \brief Relaxation coefficient for variable updates of adjoint solvers. */
   su2double Relaxation_Factor_CHT;      /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double EntropyFix_Coeff;           /*!< \brief Entropy fix coefficient. */
@@ -1146,6 +1147,7 @@ private:
   bool RampTranslationFrame;        /*!< \brief option for ramping up or down the outlet values */
   bool RampOutletMassFlow;          /*!< \brief option for ramping up or down the motion Frame values */
   bool RampOutletPressure;          /*!< \brief option for ramping up or down the outlet values */
+  bool AutomaticRelaxationFactors;  /*!< \brief option for automatically computing relaxation factors for flow corrections in SIMPLE. */
   su2double AverageMachLimit;           /*!< \brief option for turbulent mixingplane */
   su2double FinalRotation_Rate_Z;       /*!< \brief Final rotation rate Z if Ramp rotating frame is activated. */
   su2double FinalTranslation_Rate_Y;    /*!< \brief Final translation rate Y if Ramp translation frame is activated. */
@@ -4476,16 +4478,28 @@ public:
   su2double GetLinear_Solver_Smoother_Relaxation(void) const { return Linear_Solver_Smoother_Relaxation; }
 
   /*!
-   * \brief Get the relaxation coefficient of the flow correction for PB solver.
-   * \return relaxation coefficient of the flow correction for PB solver
+   * \brief Get the relaxation coefficient of the pressure correction for SIMPLE solver.
+   * \return relaxation coefficient of the pressure correction for SIMPLE solver
    */
-  su2double GetRelaxation_Factor_PBFlow(void) const { return Relaxation_Factor_PBFlow; }
+  su2double GetRelaxation_Factor_Pressure(void) const { return Relaxation_Factor_Pressure; }
 
   /*!
-   * \brief Get the relaxation coefficient for the Rhie-Chow interpolation in the PB solver.
-   * \return relaxation coefficient of the Rhie-Chow interpolation.
+   * \brief Get the relaxation coefficient of the momentum correction for SIMPLE solver.
+   * \return relaxation coefficient of the momentum correction for SIMPLE solver
    */
-  su2double GetRCFactor(void) const  { return RCFactor; }
+  su2double GetRelaxation_Factor_Momentum(void) const { return Relaxation_Factor_Momentum; }
+
+  /*!
+   * \brief Get the coefficient for the removal of the transient term in the poisson solver coefficients.
+   * \return coefficient for the removal of the transient term in the poisson solver coefficients.
+   */
+  su2double GetTransient_Term_Removal_Factor(void) const  { return Transient_Term_Removal_Factor; }
+
+  /*!
+   * \brief Verify if there is mixing plane interface specified from config file.
+   * \return boolean.
+   */
+  bool GetBoolAutomaticRelaxationFactors(void) const { return AutomaticRelaxationFactors; }
 
   /*!
    * \brief Get the relaxation factor for solution updates of adjoint solvers.

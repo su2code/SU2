@@ -182,7 +182,7 @@ void CPoissonSolver::SetMomCoeff(CGeometry *geometry, CSolver **solver_container
       su2double delT = flow_nodes->GetDelta_Time(iPoint);
 
       /*--- Add simplec neighbour contributions and optional time dependent term. ---*/
-      su2double Mom_Coeff = A_p - Mom_Coeff_nb - config->GetRCFactor()*(Vol/delT);
+      su2double Mom_Coeff = A_p - Mom_Coeff_nb - config->GetTransient_Term_Removal_Factor() * (Vol / delT);
 
       su2double Density = flow_nodes->GetDensity(iPoint);
 

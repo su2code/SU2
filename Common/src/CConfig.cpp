@@ -2001,10 +2001,14 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("LINEAR_SOLVER_PREC_THREADS", Linear_Solver_Prec_Threads, 0);
   /* DESCRIPTION: Use an inner linear solver. */
   addEnumOption("LINEAR_SOLVER_INNER", Kind_Linear_Solver_Inner, Inner_Linear_Solver_Map, LINEAR_SOLVER_INNER::NONE);
-  /* DESCRIPTION: Relaxation of the pressure based flow corrections */
-  addDoubleOption("RELAXATION_FACTOR_PBFLOW", Relaxation_Factor_PBFlow, 1.0);
-  /* DESCRIPTION: Relaxation of the Rhie Chow interpolation contribution in pressure based flow. */
-  addDoubleOption("RELAXATION_FACTOR_RHIECHOW", RCFactor, 0.0);
+  /* DESCRIPTION: Relaxation of the pressure corrections for the SIMPLE algorithm */
+  addDoubleOption("RELAXATION_FACTOR_PRESSURE", Relaxation_Factor_Pressure, 1.0);
+  /* DESCRIPTION: Relaxation of the momentum corrections for the SIMPLE algorithm */
+  addDoubleOption("RELAXATION_FACTOR_MOMENTUM", Relaxation_Factor_Momentum, 1.0);
+  /* DESCRIPTION: Removal factor for the transient term in the momentum coefficients for the poisson solver. */
+  addDoubleOption("TRANSIENT_TERM_REMOVAL_FACTOR", Transient_Term_Removal_Factor, 0.0);
+  /*!\DESCRIPTION: Automatically compute relaxation factors for flow corrections in the SIMPLE algorithm */
+  addBoolOption("USE_AUTOMATIC_RELAXATION_FACTORS", AutomaticRelaxationFactors, false);
   /* DESCRIPTION: Relaxation factor for updates of adjoint variables. */
   addDoubleOption("RELAXATION_FACTOR_ADJOINT", Relaxation_Factor_Adjoint, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */

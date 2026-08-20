@@ -242,7 +242,6 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     velocityCorrection.resize(nPointDomain,nDim);
     velocityEdgeCorrection.resize(geometry->GetnEdge(),nDim);
     alpha_p.resize(nPointDomain);
-    alpha_u.resize(nPointDomain);
 
   }
 
@@ -3726,14 +3725,21 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   /*--- Start of computing the corrections ---*/
   unsigned long iEdge, iPoint, jPoint, iMarker, iVertex;
   unsigned short iDim, iVar, KindBC;
-  su2double Vel, Current_Pressure, factor, PCorr_Ref, Vol, delT, Density;
+  su2double Vel, Current_Pressure, factor, PCorr_Ref, Vol, delT, Density, alpha_u;
   string Marker_Tag;
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool piso = (config->GetPISO_corrections() > 1);
+  bool AutomaticURF = config->GetBoolAutomaticRelaxationFactors();
 
   CSolver* poisson_solver = solver_container[POISSON_SOL];
   CVariable* poisson_nodes = poisson_solver->GetNodes();
+
+  /*--- Define URF for momentum corrections ---*/
+  if (AutomaticURF) {
+    alpha_u = 1.0;
+  } else {
+    alpha_u = config->GetRelaxation_Factor_Momentum();
+  }
 
   /*--- Combine all pressure corrections into a vector for easy access ---*/
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -3755,23 +3761,20 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
   SU2_OMP_FOR_STAT(omp_chunk_size)
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     factor = 0.0;
-    Vol = geometry->nodes->GetVolume(iPoint);
-    delT = nodes->GetDelta_Time(iPoint);
     const auto view = Jacobian.GetBlockView(iPoint, iPoint);
     for (iDim = 0; iDim < nDim; iDim++) {
       velocityCorrection[iPoint][iDim] = -poisson_nodes->GetMomCoeff(iPoint)*(poisson_nodes->GetGradient(iPoint,0,iDim));
-      if (implicit && !piso) factor += view(iDim, iDim);
+      if (AutomaticURF) factor += view(iDim, iDim);
     }
 
-    /*--- The PISO algorithm should not underrelax pressure ---*/
-    if (piso) alpha_p[iPoint] = 1.0;
-    else {
-      alpha_p[iPoint] = config->GetRelaxation_Factor_PBFlow();
-    } 
+    if (AutomaticURF) {
+      Vol = geometry->nodes->GetVolume(iPoint);
+      delT = nodes->GetDelta_Time(iPoint);
+      alpha_p[iPoint] = (Vol / delT) / (factor + (Vol / delT));
+    } else {
+      alpha_p[iPoint] = config->GetRelaxation_Factor_Pressure();
+    }
 
-    /*--- Currently the velocity under relaxation is unused, as it should not be used for the PISO algorithm,
-    when in the future e.g. a regular (steady-state) SIMPLE algorithm is used this should be a user input value ---*/
-    alpha_u[iPoint] = 1.0; 
   }
   END_SU2_OMP_FOR
 
@@ -3922,8 +3925,8 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
 
     /*--- Velocity corrections ---*/
     for (iDim = 0; iDim < nDim; ++iDim) {
-      nodes->SetSolution(iPoint, iDim + 1, nodes->GetSolution(iPoint,iDim + 1) + velocityCorrection[iPoint][iDim]);
-      poisson_nodes->SetVelocityCorrection(iPoint,iDim,velocityCorrection[iPoint][iDim]);
+      nodes->SetSolution(iPoint, iDim + 1, nodes->GetSolution(iPoint,iDim + 1) + alpha_u * velocityCorrection[iPoint][iDim]);
+      poisson_nodes->SetVelocityCorrection(iPoint,iDim,alpha_u * velocityCorrection[iPoint][iDim]);
     }
 
     /*--- Update primitive variables ---*/
@@ -3942,7 +3945,7 @@ void CIncEulerSolver::ApplyPressureVelocityCorrection(CGeometry *geometry, CSolv
       auto iEdge = color.indices[k];
       iPoint = geometry->edges->GetNode(iEdge,0); jPoint = geometry->edges->GetNode(iEdge,1);
       for (iDim = 0; iDim < nDim; iDim++) 
-        AddEdgeVelocity(iEdge, iDim, velocityEdgeCorrection[iEdge][iDim]);
+        AddEdgeVelocity(iEdge, iDim, alpha_u * velocityEdgeCorrection[iEdge][iDim]);
     }
     END_SU2_OMP_FOR
   }

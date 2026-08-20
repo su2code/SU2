@@ -43,7 +43,7 @@ protected:
 
   bool pressure_based;
   su2activematrix EdgeVelocity; /*!< \brief The edge velocity used in the solver and updated by through Rhie-Chow and pressure correction. */
-  su2activevector alpha_p, alpha_u;
+  su2activevector alpha_p;
   su2activevector pressureCorrection;
   su2activematrix velocityCorrection;
   su2activematrix velocityEdgeCorrection;
