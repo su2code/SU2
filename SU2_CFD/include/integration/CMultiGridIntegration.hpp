@@ -230,12 +230,7 @@ private:
   void adaptDampingFactors(CConfig* config, passivedouble crossCycleRatio);
 
   /*!
-   * \brief Set the CFL of every coarse multigrid level from the MESH_0 value and MG_CFL_SCALING,
-   *        applying the Full-MG startup ramp to the active level, and propagate it to the points.
-   *
-   * Called after the cycle in the normal case, which is where the coarse CFL has always been
-   * refreshed, and before the cycle during the Full-MG startup, where the active level's ramped
-   * CFL has to be in place for the cycle that is about to run.
+   * \brief Set the CFL of every coarse multigrid level. level i starts with the final CFL of the coarser level i+1, and then linearly increases to the new final CFL for that level. Final CFL is determined from the CFL_NUMBER and MG_CFL_SCALING.
    *
    * \param[in]     geometry         - Geometrical definition of the problem.
    * \param[in,out] solver_container - Container vector with all the solutions.

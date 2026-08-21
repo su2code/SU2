@@ -2073,18 +2073,12 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Number of iterations on the coarsest mesh during Full Multigrid (FMG) startup phase before advancing to finer meshes. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
-  /*!\brief MG_STARTUP_CONVERGENCE\n DESCRIPTION: Full-MG promotion on convergence. Orders of magnitude (log10) that the
-   * active level's residual must drop, relative to its value when the level became active, before promoting to the next
-   * finer level without waiting out MG_STARTUP_ITER. -2 means a drop of two orders of magnitude, i.e. to 1% of the
-   * starting residual. Iterating a coarse level past the point where it has converged only costs time, since the
-   * remaining error is what the finer level has to resolve. Make it more negative to demand a deeper drop; a large
-   * negative value effectively disables the criterion and leaves MG_STARTUP_ITER and MG_STARTUP_STAGNATION in charge.
+  /*!\brief MG_STARTUP_CONVERGENCE\n DESCRIPTION: during startup phase of FMG, exit the current level when residual has dropped sufficiently.
    * DEFAULT: -2 \ingroup Config*/
   addDoubleOption("MG_STARTUP_CONVERGENCE", MGOptions.MG_Startup_Convergence, -2.0);
   /*!\brief MG_STARTUP_STAGNATION\n DESCRIPTION: Full-MG promotion on stagnation. If the active level's residual ratio
    * between successive iterations exceeds this value for MG_STARTUP_STAGNATION_ITER consecutive iterations, promote to
-   * the next finer level without waiting out MG_STARTUP_ITER. A coarse level is only worth iterating while it still
-   * reduces the error. 0 disables it. DEFAULT: 0.99 \ingroup Config*/
+   * the next finer level without waiting out MG_STARTUP_ITER. 0 disables it. DEFAULT: 0.99 \ingroup Config*/
   addDoubleOption("MG_STARTUP_STAGNATION", MGOptions.MG_Startup_Stagnation, 0.99);
   /*!\brief MG_STARTUP_STAGNATION_ITER\n DESCRIPTION: Consecutive stalled iterations required before Full-MG promotes
    * on stagnation. DEFAULT: 5 \ingroup Config*/

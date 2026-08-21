@@ -1993,9 +1993,7 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
   /*--- On coarse levels the reduction is normally skipped for performance, unless
    *    MG_Smooth_EarlyExit needs it, or a Full-MG cycle needs a globally consistent
    *    residual to decide level promotion (CMultiGridIntegration::SetFullMultigrid_Solver).
-   *    Skipping it there would leave Residual_RMS as each rank's local, un-reduced
-   *    accumulator, letting ranks disagree on when to promote and desynchronizing the
-   *    point-to-point communication pattern between ranks. ---*/
+---*/
   const bool fmg_needs_reduction = geometry->GetMGLevel() != MESH_0 &&
                                     config->GetMGCycle() == MG_CYCLE::FULL &&
                                     config->GetFinestMesh() == geometry->GetMGLevel();

@@ -146,18 +146,7 @@ void CMultiGridIntegration::SetCoarseGridCFL(CGeometry ****geometry, CSolver ***
 
     /*--- During FMG startup, linearly ramp the CFL of the currently active level up
      *    to its own scaled target over MG_Startup_Iter iterations, starting from the
-     *    CFL the previously active (coarser) level was running at. The ramp is
-     *    therefore continuous across a promotion and, crucially, never exceeds the
-     *    level's own target: the sustainable CFL is a property of the mesh, so
-     *    carrying a finer level's target onto a coarser mesh destabilises it. The
-     *    reduced starting value also gives the freshly prolongated solution time to
-     *    relax before the level runs at full CFL. The coarsest level has no coarser
-     *    predecessor, so it extends the scaling one step further to soften the
-     *    initial transient away from the freestream state.
-     *
-     *    All non-active coarse levels keep their steady-state scaled target, and no
-     *    ramp is applied once FMG has reached MESH_0 (the final V-cycle-equivalent
-     *    stage behaves exactly like a plain V-cycle). ---*/
+     *    CFL the previously active (coarser) level was running at.  ---*/
     const bool ramping = FullMG && (FinestMesh > MESH_0) && (FinestMesh <= nMGLevels);
     passivedouble ramp_progress = 1.0;
     if (ramping && startup_iter > 0) {
@@ -268,18 +257,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   /*--- Full MG: advance to the next finer grid after a fixed number of
    *    outer iterations on the current coarsest active level, controlled by
    *    MG_STARTUP_ITER, or as soon as the level's CONV_FIELD residual has already
-   *    dropped by MG_STARTUP_CONVERGENCE orders of magnitude (mg_conv_field_early_exit,
-   *    set below after the cycle runs) - whichever happens first. A level that converges
-   *    quickly should not sit idle for the rest of its budget before being promoted.
-   *
-   *    Iterations spent on the currently active level are counted relative to
-   *    mg_ramp_level_start_iter (the InnerIter at which it became active, reset on
-   *    every promotion below) rather than a global InnerIter modulo. A global modulo
-   *    assumes every level consumes exactly MG_STARTUP_ITER iterations; once a level
-   *    is promoted early via mg_conv_field_early_exit, InnerIter falls out of phase
-   *    with that assumption and every subsequent level's fixed-iteration budget would
-   *    be truncated to whatever remains until the next global phase boundary instead
-   *    of getting its own full MG_STARTUP_ITER window. ---*/
+   *    dropped by MG_STARTUP_CONVERGENCE orders of magnitude,  whichever  happens first.  ---*/
   const unsigned long startup_iter = config[iZone]->GetMGOptions().MG_Startup_Iter;
   const unsigned long iters_on_level = config[iZone]->GetInnerIter() - mg_ramp_level_start_iter;
   const bool Convergence_FullMG =
@@ -365,17 +343,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  /*--- Where the coarse-grid CFL is refreshed relative to the cycle.
-   *
-   *    Outside the Full-MG startup this happens AFTER the cycle, which is where it has always
-   *    been: the values a cycle runs at are the ones computed at the end of the previous
-   *    iteration, and on the very first iteration they are the ones CMultiGridGeometry set up.
-   *    Moving the refresh earlier changes what every V- and W-cycle run does on its first
-   *    iteration, which shifts the whole trajectory, so it is deliberately left alone.
-   *
-   *    During the Full-MG startup it has to happen BEFORE the cycle instead: the active level's
-   *    CFL is ramped as a function of the current InnerIter, and a level that has just been
-   *    promoted would otherwise spend its first iteration at the CFL of the level below. ---*/
+ 
   const bool fmg_warmup = FullMG && (FinestMesh != MESH_0);
 
   if (fmg_warmup)
@@ -389,13 +357,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   if (!fmg_warmup)
     SetCoarseGridCFL(geometry, solver_container, config, RunTime_EqSystem, iZone, iInst, FinestMesh, FullMG);
 
-  /*--- FMG startup convergence-based early exit: track the active level's aggregate flow
-   *    residual (RMS across all solution variables, the same solver-agnostic metric this
-   *    class already uses for the smoothing early-exit diagnostics) and flag promotion once
-   *    it has dropped by MG_STARTUP_CONVERGENCE orders of magnitude, so a level that converges
-   *    well inside its MG_Startup_Iter budget is not held back. Reuses this same cycle's fresh
-   *    residual, so the very first iteration of a window only seeds the baseline (nothing to
-   *    compare against yet). ---*/
+  /*--- FMG startup convergence-based early exit ---*/
   if (FullMG && direct && (FinestMesh != MESH_0) && RunTime_EqSystem == RUNTIME_FLOW_SYS) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
@@ -411,15 +373,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
         mg_conv_field_early_exit = true;
       }
 
-      /*--- Stagnation promotion. The two criteria above are a fixed iteration budget and a fixed
-       *    residual drop, and neither scales with the mesh: MG_Startup_Iter that is well matched on
-       *    a medium grid leaves a fine grid grinding through a warmup that stopped paying off long
-       *    before the budget ran out. What actually matters in FMG is when the coarse level stops
-       *    reducing the error usefully - past that point only the finer level can make progress, so
-       *    promote as soon as the per-iteration reduction stalls.
-       *
-       *    A single slow iteration is not stagnation, so a run of them is required. Both the ratio
-       *    and the run length are configurable, and MG_Startup_Iter still caps the window. ---*/
+      /*--- FMG startup level exit and go to next level when stagnation occurs. ---*/
       const auto& mgOptsFMG = config[iZone]->GetMGOptions();
       const passivedouble stall_tol = SU2_TYPE::GetValue(mgOptsFMG.MG_Startup_Stagnation);
       if (stall_tol > 0.0 && mg_fmg_prev_rms > 0.0) {
