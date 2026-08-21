@@ -2073,8 +2073,12 @@ void CConfig::SetConfig_Options() {
   addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_LENGTH", MGOptions.MG_Implicit_Lines_MaxLength, 20);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Number of iterations on the coarsest mesh during Full Multigrid (FMG) startup phase before advancing to finer meshes. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
-  /*!\brief MG_STARTUP_CONVERGENCE\n DESCRIPTION: during startup phase of FMG, exit the current level when residual has dropped sufficiently.
-   * DEFAULT: -2 \ingroup Config*/
+  /*!\brief MG_STARTUP_CONVERGENCE\n DESCRIPTION: During the startup phase of Full-MG, leave the current level once
+   * CONV_FIELD has dropped by this many orders of magnitude relative to its value when the level became active, without
+   * waiting out MG_STARTUP_ITER. Negative for a drop, on the same log10 scale as CONV_RESIDUAL_MINVAL, so -2 asks for a
+   * fall to 1% of the starting residual. Only residual convergence fields are used; a coefficient such as DRAG carries
+   * no notion of a drop in orders of magnitude and leaves this criterion inactive. A large negative value effectively
+   * disables it and leaves MG_STARTUP_ITER and MG_STARTUP_STAGNATION in charge. DEFAULT: -2 \ingroup Config*/
   addDoubleOption("MG_STARTUP_CONVERGENCE", MGOptions.MG_Startup_Convergence, -2.0);
   /*!\brief MG_STARTUP_STAGNATION\n DESCRIPTION: Full-MG promotion on stagnation. If the active level's residual ratio
    * between successive iterations exceeds this value for MG_STARTUP_STAGNATION_ITER consecutive iterations, promote to

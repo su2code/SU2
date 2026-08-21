@@ -53,6 +53,15 @@ public:
                            CNumerics ******numerics_container, CConfig **config,
                            unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) override;
 
+  /*!
+   * \brief Record CONV_FIELD on the active Full-MG level and decide whether the level is done,
+   *        either because it has converged by MG_STARTUP_CONVERGENCE orders of magnitude or
+   *        because it has stopped reducing the error (MG_STARTUP_STAGNATION).
+   * \param[in] convFieldValue - Value of CONV_FIELD on the active level (log10 of the residual).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void MonitorFullMG_Startup(passivedouble convFieldValue, const CConfig *config) override;
+
 private:
   /*!
    * \brief Perform a Full-Approximation Storage (FAS) Multigrid.
@@ -307,16 +316,18 @@ private:
   su2double mg_damp_restric_initial = 0.0;  /*!< \brief MG_DAMP_RESTRICTION as configured. */
   su2double mg_damp_prolong_initial = 0.0;  /*!< \brief MG_DAMP_PROLONGATION as configured. */
 
-  /*--- FMG startup convergence-based early exit: promote the active level as soon as its
-   *    CONV_FIELD residual has dropped by MG_STARTUP_CONVERGENCE orders of magnitude, instead
-   *    of always waiting out the full MG_Startup_Iter budget. Reset when the active level changes. ---*/
-  passivedouble mg_conv_field_start_rms = -1.0; /*!< \brief CONV_FIELD RMS at the start of the active level's window; <0 = not yet captured. */
-  bool mg_conv_field_early_exit = false;        /*!< \brief Set once the active level has converged by the configured drop; consumed at the next promotion check. */
-
-  /*--- FMG stagnation promotion: a coarse level is only worth iterating while it still reduces the
-   *    error, which happens well before a fixed iteration budget expires on fine meshes. ---*/
-  passivedouble mg_fmg_prev_rms = -1.0;         /*!< \brief Active level's residual on the previous iteration; <0 = not yet captured. */
-  unsigned long mg_fmg_stall_count = 0;         /*!< \brief Consecutive iterations without useful reduction on the active level. */
-  bool mg_fmg_promoted_on_stall = false;        /*!< \brief Whether the pending promotion was triggered by stagnation (for reporting). */
+  /*--- Full-MG startup promotion state, fed by MonitorFullMG_Startup once per iteration and
+   *    consumed by the promotion check at the top of the next one. All of it tracks the currently
+   *    active level and is reset when that level changes.
+   *
+   *    The values are CONV_FIELD as the output module reports it, i.e. log10 of the residual, so a
+   *    drop of N orders of magnitude is a fall of N in these numbers. ---*/
+  bool mg_startup_conv_captured = false;    /*!< \brief Whether the level's starting value has been recorded yet. */
+  passivedouble mg_startup_conv_start = 0.0;/*!< \brief CONV_FIELD when the active level became active. */
+  bool mg_startup_conv_prev_set = false;    /*!< \brief Whether a previous-iteration value is available. */
+  passivedouble mg_startup_conv_prev = 0.0; /*!< \brief CONV_FIELD on the previous iteration. */
+  unsigned long mg_startup_stall_count = 0; /*!< \brief Consecutive iterations without useful reduction. */
+  bool mg_startup_promote = false;          /*!< \brief Set once a promotion criterion is met; consumed at the next promotion check. */
+  bool mg_startup_promoted_on_stall = false;/*!< \brief Whether the pending promotion was triggered by stagnation (for reporting). */
 
 };

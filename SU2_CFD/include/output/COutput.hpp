@@ -486,6 +486,21 @@ public:
     return 0;
   }
 
+  /*!
+   * \brief Value of a history output field, if it exists and is a residual field.
+   *        Residual fields are stored as log10 of the residual, so the value can be compared
+   *        against thresholds expressed in orders of magnitude (as CONV_RESIDUAL_MINVAL is).
+   * \param[in]  name  - Name of the field.
+   * \param[out] value - Value of the field, untouched if the field is not a residual field.
+   * \return True if the field exists and is a residual field.
+   */
+  bool GetResidualFieldValue(const string& name, su2double& value) const {
+    const auto it = historyOutput_Map.find(name);
+    if (it == historyOutput_Map.end() || it->second.fieldType != HistoryFieldType::RESIDUAL) return false;
+    value = it->second.value;
+    return true;
+  }
+
  /*!
   * \brief Get the value of particular surface history output field
   * \param[in] field - Name of the field

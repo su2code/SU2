@@ -260,6 +260,22 @@ bool CFluidIteration::Monitor(COutput* output, CIntegration**** integration, CGe
    *    Never stop before the fine mesh is active. ---*/
   if (finestMesh != MESH_0) StopCalc = false;
 
+  /*--- Feed the Full-MG startup its promotion criterion. The history fields were just written
+   *    from the active (coarse) level, so this is CONV_FIELD on exactly the level being iterated,
+   *    which is the level whose convergence decides when to move up. Reading it here rather than
+   *    inside the integration is what lets the criterion use CONV_FIELD at all: the name-to-field
+   *    mapping only exists in the output module. Fields that are not residuals (a force
+   *    coefficient, say) carry no notion of a drop in orders of magnitude and are ignored. ---*/
+  if (config[val_iZone]->GetMGCycle() == MG_CYCLE::FULL && finestMesh != MESH_0) {
+    const string convField = (config[val_iZone]->GetnConv_Field() > 0) ? config[val_iZone]->GetConv_Field(0)
+                                                                      : string("RMS_DENSITY");
+    su2double convValue = 0.0;
+    if (output->GetResidualFieldValue(convField, convValue)) {
+      integration[val_iZone][val_iInst][FLOW_SOL]->MonitorFullMG_Startup(SU2_TYPE::GetValue(convValue),
+                                                                        config[val_iZone]);
+    }
+  }
+
   /* --- Checking convergence of Fixed CL mode to target CL, and perform finite differencing if needed  --*/
 
   if (config[val_iZone]->GetFixed_CL_Mode()) {

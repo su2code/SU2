@@ -114,6 +114,16 @@ public:
                                    unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst) { };
 
   /*!
+   * \brief Report the value of the convergence field on the currently active mesh level, so that a
+   *        Full-MG startup can decide when the level has done its job. Called once per iteration,
+   *        after the cycle has run, from where the convergence field is evaluated. Does nothing for
+   *        integrations that have no Full-MG startup.
+   * \param[in] convFieldValue - Value of CONV_FIELD on the active level (log10 of the residual).
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void MonitorFullMG_Startup(passivedouble convFieldValue, const CConfig *config) { };
+
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.

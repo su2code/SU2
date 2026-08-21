@@ -1991,9 +1991,10 @@ void CSolver::SetResidual_RMS(const CGeometry *geometry, const CConfig *config) 
   SU2_ZONE_SCOPED
 
   /*--- On coarse levels the reduction is normally skipped for performance, unless
-   *    MG_Smooth_EarlyExit needs it, or a Full-MG cycle needs a globally consistent
-   *    residual to decide level promotion (CMultiGridIntegration::SetFullMultigrid_Solver).
----*/
+   *    MG_Smooth_EarlyExit needs it, or a Full-MG startup needs a globally consistent residual on
+   *    the active level to decide when to promote. In the latter case the value is read back as
+   *    CONV_FIELD in CFluidIteration::Monitor; leaving it un-reduced would let each rank see its
+   *    own local accumulator and disagree with the others about when to move up a level. ---*/
   const bool fmg_needs_reduction = geometry->GetMGLevel() != MESH_0 &&
                                     config->GetMGCycle() == MG_CYCLE::FULL &&
                                     config->GetFinestMesh() == geometry->GetMGLevel();

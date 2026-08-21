@@ -28,12 +28,8 @@
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 #include "../../../Common/include/toolboxes/printing_toolbox.hpp"
-#include <cmath>
-#include <iostream>
 #include <algorithm>
-#include <map>
 
-using namespace std;
 
 namespace {
 
@@ -67,30 +63,6 @@ inline passivedouble ComputeLinSysResRMS(const CSolver* solver) {
   return sqrt(result);
 }
 
-/*!\cond PRIVATE
- *  Prolongate a coarse-grid field onto the fine grid via constant injection: every fine
- *  child gets its parent's value. \c getCoarse returns the coarse-grid block of a point
- *  and \c setFine writes it to a fine-grid point, which keeps the operator independent of
- *  which field is being handed from one level to the next.
- *
- *  The loop covers all coarse points, halos included. Halo coarse CVs own the fine halo points as
- *  children (CMultiGridGeometry sets Children_CV for received CVs), so injecting from them also
- *  fills the fine-grid halo entries of the prolongated field. The caller must therefore have
- *  synchronized the coarse-grid field being read before calling this.
- \endcond */
-template <class GetCoarse, class SetFine>
-void ProlongateField(CGeometry* geo_coarse, GetCoarse getCoarse, SetFine setFine) {
-
-  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPoint(), omp_get_num_threads()))
-  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPoint(); Point_Coarse++) {
-    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
-      auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
-      setFine(Point_Fine, getCoarse(Point_Coarse));
-    }
-  }
-  END_SU2_OMP_FOR
-}
-
 }  // anonymous namespace
 
 void CMultiGridIntegration::adaptDampingFactors(CConfig* config, passivedouble crossCycleRatio) {
@@ -106,6 +78,40 @@ void CMultiGridIntegration::adaptDampingFactors(CConfig* config, passivedouble c
 }
 
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
+
+void CMultiGridIntegration::MonitorFullMG_Startup(passivedouble convFieldValue, const CConfig *config) {
+
+  const auto& mgOpts = config->GetMGOptions();
+
+  /*--- CONV_FIELD is reported as log10 of the residual, the same scale CONV_RESIDUAL_MINVAL is
+   *    written on, so MG_STARTUP_CONVERGENCE (negative for a drop) is simply added to the value
+   *    the level started from. ---*/
+  if (!mg_startup_conv_captured) {
+    mg_startup_conv_start = convFieldValue;
+    mg_startup_conv_captured = true;
+  } else if (convFieldValue <= mg_startup_conv_start + SU2_TYPE::GetValue(mgOpts.MG_Startup_Convergence)) {
+    mg_startup_promote = true;
+  }
+
+  /*--- Stagnation. A coarse level is only worth iterating while it still reduces the error, which
+   *    on a fine mesh happens well before any fixed iteration budget expires. MG_STARTUP_STAGNATION
+   *    is a ratio of successive residuals, so in log10 it is a difference, and a single slow
+   *    iteration is not stagnation - a run of them is required. ---*/
+  const passivedouble stall_tol = SU2_TYPE::GetValue(mgOpts.MG_Startup_Stagnation);
+  if (stall_tol > 0.0 && mg_startup_conv_prev_set) {
+    if (convFieldValue - mg_startup_conv_prev >= log10(stall_tol))
+      mg_startup_stall_count++;
+    else
+      mg_startup_stall_count = 0;
+
+    if (mg_startup_stall_count >= mgOpts.MG_Startup_Stagnation_Iter) {
+      mg_startup_promote = true;
+      mg_startup_promoted_on_stall = true;
+    }
+  }
+  mg_startup_conv_prev = convFieldValue;
+  mg_startup_conv_prev_set = true;
+}
 
 void CMultiGridIntegration::SetCoarseGridCFL(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                                              unsigned short RunTime_EqSystem, unsigned short iZone,
@@ -260,9 +266,10 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
    *    dropped by MG_STARTUP_CONVERGENCE orders of magnitude,  whichever  happens first.  ---*/
   const unsigned long startup_iter = config[iZone]->GetMGOptions().MG_Startup_Iter;
   const unsigned long iters_on_level = config[iZone]->GetInnerIter() - mg_ramp_level_start_iter;
+  /*--- Written as a sum rather than startup_iter - 1, which underflows for MG_STARTUP_ITER= 0. ---*/
   const bool Convergence_FullMG =
       FullMG && (FinestMesh != MESH_0) &&
-      ((iters_on_level >= startup_iter - 1) || mg_conv_field_early_exit);
+      ((iters_on_level + 1 >= startup_iter) || mg_startup_promote);
 
   if (!config[iZone]->GetRestart() && FullMG && direct && ( Convergence_FullMG && (FinestMesh != MESH_0 )) &&
       RunTime_EqSystem == RUNTIME_FLOW_SYS) {
@@ -274,23 +281,24 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                             geometry[iZone][iInst][FinestMesh],
                             config[iZone]);
 
-    /*--- Report the promotion and why it happened now, before mg_ramp_level_start_iter
-     *    and mg_conv_field_early_exit are reset for the newly active level below. ---*/
+    /*--- Report the promotion and why it happened now, before the startup state is reset for
+     *    the newly active level below. ---*/
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     if (SU2_MPI::GetRank() == MASTER_NODE) {
-      cout << "Full-MG: mesh level " << FinestMesh << " -> " << FinestMesh - 1 << " after "
-           << (iters_on_level + 1) << " iteration(s) (";
-      if (mg_fmg_promoted_on_stall) {
-        cout << "residual stalled for " << config[iZone]->GetMGOptions().MG_Startup_Stagnation_Iter
-             << " iteration(s)";
-      } else if (mg_conv_field_early_exit) {
-        const string convField = (config[iZone]->GetnConv_Field() > 0) ? config[iZone]->GetConv_Field(0) : string("RMS_DENSITY");
-        cout << convField << " dropped "
-             << fabs(SU2_TYPE::GetValue(config[iZone]->GetMGOptions().MG_Startup_Convergence))
-             << " order(s) of magnitude";
+      std::cout << "Full-MG: mesh level " << FinestMesh << " -> " << FinestMesh - 1 << " after "
+                << (iters_on_level + 1) << " iteration(s) (";
+      if (mg_startup_promoted_on_stall) {
+        std::cout << "residual stalled for " << config[iZone]->GetMGOptions().MG_Startup_Stagnation_Iter
+                  << " iteration(s)";
+      } else if (mg_startup_promote) {
+        const std::string convField =
+            (config[iZone]->GetnConv_Field() > 0) ? config[iZone]->GetConv_Field(0) : std::string("RMS_DENSITY");
+        std::cout << convField << " dropped "
+                  << fabs(SU2_TYPE::GetValue(config[iZone]->GetMGOptions().MG_Startup_Convergence))
+                  << " order(s) of magnitude";
       } else
-        cout << "MG_STARTUP_ITER= " << startup_iter << " reached";
-      cout << ")." << endl;
+        std::cout << "MG_STARTUP_ITER= " << startup_iter << " reached";
+      std::cout << ")." << std::endl;
     }
     END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
@@ -331,13 +339,14 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       config[iZone]->SetDamp_Res_Restric(mg_damp_restric_initial);
       config[iZone]->SetDamp_Correc_Prolong(mg_damp_prolong_initial);
 
-      /*--- Restart the convergence-based early-exit window: the baseline is (re)captured
-       *    below, after this iteration's cycle has produced a fresh residual on the level. ---*/
-      mg_conv_field_start_rms = -1.0;
-      mg_conv_field_early_exit = false;
-      mg_fmg_prev_rms = -1.0;
-      mg_fmg_stall_count = 0;
-      mg_fmg_promoted_on_stall = false;
+      /*--- Restart the promotion window. The baseline is recaptured by the first
+       *    MonitorFullMG_Startup call that follows, once the newly active level has
+       *    produced a residual of its own. ---*/
+      mg_startup_conv_captured = false;
+      mg_startup_conv_prev_set = false;
+      mg_startup_stall_count = 0;
+      mg_startup_promote = false;
+      mg_startup_promoted_on_stall = false;
     }
 
   }
@@ -356,41 +365,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   if (!fmg_warmup)
     SetCoarseGridCFL(geometry, solver_container, config, RunTime_EqSystem, iZone, iInst, FinestMesh, FullMG);
-
-  /*--- FMG startup convergence-based early exit ---*/
-  if (FullMG && direct && (FinestMesh != MESH_0) && RunTime_EqSystem == RUNTIME_FLOW_SYS) {
-    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
-    {
-      const passivedouble conv_now = ComputeLinSysResRMS(solver_container[iZone][iInst][FinestMesh][Solver_Position]);
-
-      /*--- The option is a log10 drop, so a factor of pow(10, value): -2 gives 1e-2. ---*/
-      const passivedouble conv_drop =
-          pow(passivedouble(10.0), SU2_TYPE::GetValue(config[iZone]->GetMGOptions().MG_Startup_Convergence));
-
-      if (mg_conv_field_start_rms < 0.0) {
-        mg_conv_field_start_rms = max(conv_now, passivedouble(EPS));
-      } else if (conv_now <= conv_drop * mg_conv_field_start_rms) {
-        mg_conv_field_early_exit = true;
-      }
-
-      /*--- FMG startup level exit and go to next level when stagnation occurs. ---*/
-      const auto& mgOptsFMG = config[iZone]->GetMGOptions();
-      const passivedouble stall_tol = SU2_TYPE::GetValue(mgOptsFMG.MG_Startup_Stagnation);
-      if (stall_tol > 0.0 && mg_fmg_prev_rms > 0.0) {
-        if (conv_now >= stall_tol * mg_fmg_prev_rms)
-          mg_fmg_stall_count++;
-        else
-          mg_fmg_stall_count = 0;
-
-        if (mg_fmg_stall_count >= mgOptsFMG.MG_Startup_Stagnation_Iter) {
-          mg_conv_field_early_exit = true;
-          mg_fmg_promoted_on_stall = true;
-        }
-      }
-      mg_fmg_prev_rms = conv_now;
-    }
-    END_SU2_OMP_SAFE_GLOBAL_ACCESS
-  }
 
   /*--- Computes primitive variables and gradients in the finest mesh (useful for the next solver (turbulence) and output ---*/
 
@@ -1011,16 +985,21 @@ void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSys
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
   const bool grid_movement = config->GetGrid_Movement();
 
-  /*--- Interpolate the coarse solution onto the fine grid. This is the initial
-   *    condition the newly activated Full-MG level starts from, so it uses the same
-   *    constant-injection operator as the FAS correction, applied directly to the
-   *    solution rather than to LinSysRes. ---*/
+  /*--- Interpolate the coarse solution onto the fine grid by constant injection: every fine child
+   *    of a coarse CV takes its parent's value. This is the initial condition the newly activated
+   *    Full-MG level starts from. Only owned points are written; the halos are filled by the
+   *    communication at the end of this function, which is needed anyway because the wall
+   *    conditions below modify the solution after the injection. ---*/
 
-  ProlongateField(geo_coarse,
-                  [&](unsigned long iPoint) { return sol_coarse->GetNodes()->GetSolution(iPoint); },
-                  [&](unsigned long Point_Fine, const su2double* value) {
-                    sol_fine->GetNodes()->SetSolution(Point_Fine, value);
-                  });
+  SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
+  for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+    const auto* Solution_Coarse = sol_coarse->GetNodes()->GetSolution(Point_Coarse);
+    for (auto iChildren = 0u; iChildren < geo_coarse->nodes->GetnChildren_CV(Point_Coarse); iChildren++) {
+      const auto Point_Fine = geo_coarse->nodes->GetChildren_CV(Point_Coarse, iChildren);
+      sol_fine->GetNodes()->SetSolution(Point_Fine, Solution_Coarse);
+    }
+  }
+  END_SU2_OMP_FOR
 
   /*--- Update the solution at the no-slip walls, mirroring SetRestricted_Solution.
    *    The prolongated values come from coarse-grid nodes and do not satisfy the

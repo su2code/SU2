@@ -1127,8 +1127,9 @@ struct CMGOptions {
   bool MG_Implicit_Lines{false};          /*!< \brief Enable implicit-lines agglomeration from walls. */
   unsigned long MG_Implicit_Lines_MaxLength{20}; /*!< \brief Maximum nodes on a wall-normal implicit line (including wall seed). */
   unsigned long MG_Startup_Iter{100};     /*!< \brief Number of iterations on coarser meshes during FMG startup phase. */
-  su2double MG_Startup_Convergence{-2.0}; /*!< \brief FMG: orders of magnitude (log10) the active level's residual must
-                                                 drop before promoting to the next finer level. Negative is a drop. */
+  su2double MG_Startup_Convergence{-2.0}; /*!< \brief FMG: orders of magnitude (log10) that CONV_FIELD must drop on the
+                                                 active level before promoting to the next finer one. Negative is a
+                                                 drop, as for CONV_RESIDUAL_MINVAL. */
   su2double MG_Startup_Stagnation{0.0};   /*!< \brief FMG: promote when the residual ratio between successive iterations exceeds this. 0 = disabled. */
   unsigned long MG_Startup_Stagnation_Iter{5}; /*!< \brief FMG: consecutive stalled iterations required before promoting. */
 };
