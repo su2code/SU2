@@ -335,13 +335,11 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
        *    clamp within ~20-30 cycles - towards CLAMP_MIN, crippling the correction,
        *    or towards CLAMP_MAX, making it maximally aggressive on a freshly
        *    prolongated solution. Reseed the EMA and restore the configured factors. ---*/
-      mg_fine_rms_ema = 0.0;
+       *    after a promotion the pre-smoothing RMS is measured on a different grid.
+       *    Reseed the EMA and restore the configured factors. ---*/
       config[iZone]->SetDamp_Res_Restric(mg_damp_restric_initial);
       config[iZone]->SetDamp_Correc_Prolong(mg_damp_prolong_initial);
 
-      /*--- Restart the promotion window. The baseline is recaptured by the first
-       *    MonitorFullMG_Startup call that follows, once the newly active level has
-       *    produced a residual of its own. ---*/
       mg_startup_conv_captured = false;
       mg_startup_conv_prev_set = false;
       mg_startup_stall_count = 0;
