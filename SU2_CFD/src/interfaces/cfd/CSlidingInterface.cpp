@@ -40,6 +40,7 @@ CSlidingInterface::CSlidingInterface(unsigned short val_nVar, unsigned short val
   valAggregated      = false;
 
   nVar = val_nVar;
+  InterfaceType = ENUM_TRANSFER::SLIDING_INTERFACE;
 
 }
 
