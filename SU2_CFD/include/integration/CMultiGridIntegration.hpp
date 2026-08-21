@@ -292,10 +292,10 @@ private:
   su2double mg_damp_prolong_initial = 0.0;  /*!< \brief MG_DAMP_PROLONGATION as configured. */
 
   /*--- FMG startup convergence-based early exit: promote the active level as soon as its
-   *    CONV_FIELD residual has dropped two orders of magnitude, instead of always waiting
-   *    out the full MG_Startup_Iter budget. Reset whenever the active level changes. ---*/
+   *    CONV_FIELD residual has dropped by MG_STARTUP_CONVERGENCE orders of magnitude, instead
+   *    of always waiting out the full MG_Startup_Iter budget. Reset when the active level changes. ---*/
   passivedouble mg_conv_field_start_rms = -1.0; /*!< \brief CONV_FIELD RMS at the start of the active level's window; <0 = not yet captured. */
-  bool mg_conv_field_early_exit = false;        /*!< \brief Set once the active level has converged two orders of magnitude; consumed at the next promotion check. */
+  bool mg_conv_field_early_exit = false;        /*!< \brief Set once the active level has converged by the configured drop; consumed at the next promotion check. */
 
   /*--- FMG stagnation promotion: a coarse level is only worth iterating while it still reduces the
    *    error, which happens well before a fixed iteration budget expires on fine meshes. ---*/

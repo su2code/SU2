@@ -185,9 +185,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   /*--- Full MG: advance to the next finer grid after a fixed number of
    *    outer iterations on the current coarsest active level, controlled by
    *    MG_STARTUP_ITER, or as soon as the level's CONV_FIELD residual has already
-   *    dropped two orders of magnitude (mg_conv_field_early_exit, set below after
-   *    the cycle runs) - whichever happens first. A level that converges quickly
-   *    should not sit idle for the rest of its budget before being promoted.
+   *    dropped by MG_STARTUP_CONVERGENCE orders of magnitude (mg_conv_field_early_exit,
+   *    set below after the cycle runs) - whichever happens first. A level that converges
+   *    quickly should not sit idle for the rest of its budget before being promoted.
    *
    *    Iterations spent on the currently active level are counted relative to
    *    mg_ramp_level_start_iter (the InnerIter at which it became active, reset on
@@ -224,7 +224,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
              << " iteration(s)";
       } else if (mg_conv_field_early_exit) {
         const string convField = (config[iZone]->GetnConv_Field() > 0) ? config[iZone]->GetConv_Field(0) : string("RMS_DENSITY");
-        cout << convField << " dropped 2 orders of magnitude";
+        cout << convField << " dropped "
+             << fabs(SU2_TYPE::GetValue(config[iZone]->GetMGOptions().MG_Startup_Convergence))
+             << " order(s) of magnitude";
       } else
         cout << "MG_STARTUP_ITER= " << startup_iter << " reached";
       cout << ")." << endl;
@@ -355,18 +357,22 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   /*--- FMG startup convergence-based early exit: track the active level's aggregate flow
    *    residual (RMS across all solution variables, the same solver-agnostic metric this
    *    class already uses for the smoothing early-exit diagnostics) and flag promotion once
-   *    it has dropped two orders of magnitude, so a level that converges well inside its
-   *    MG_Startup_Iter budget is not held back. Reuses this same cycle's fresh residual, so
-   *    the very first iteration of a window only seeds the baseline (nothing to compare
-   *    against yet). ---*/
+   *    it has dropped by MG_STARTUP_CONVERGENCE orders of magnitude, so a level that converges
+   *    well inside its MG_Startup_Iter budget is not held back. Reuses this same cycle's fresh
+   *    residual, so the very first iteration of a window only seeds the baseline (nothing to
+   *    compare against yet). ---*/
   if (FullMG && direct && (FinestMesh != MESH_0) && RunTime_EqSystem == RUNTIME_FLOW_SYS) {
     BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
       const passivedouble conv_now = ComputeLinSysResRMS(solver_container[iZone][iInst][FinestMesh][Solver_Position]);
 
+      /*--- The option is a log10 drop, so a factor of pow(10, value): -2 gives 1e-2. ---*/
+      const passivedouble conv_drop =
+          pow(passivedouble(10.0), SU2_TYPE::GetValue(config[iZone]->GetMGOptions().MG_Startup_Convergence));
+
       if (mg_conv_field_start_rms < 0.0) {
         mg_conv_field_start_rms = max(conv_now, passivedouble(EPS));
-      } else if (conv_now <= 1e-2 * mg_conv_field_start_rms) {
+      } else if (conv_now <= conv_drop * mg_conv_field_start_rms) {
         mg_conv_field_early_exit = true;
       }
 
