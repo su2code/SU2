@@ -329,12 +329,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       mg_ramp_last_FinestMesh = FinestMesh;
 
       /*--- The cross-cycle EMA is only meaningful while the active level is fixed:
-       *    after a promotion the pre-smoothing RMS is measured on a different grid,
-       *    so the ratio reflects the change of level rather than the convergence
-       *    trend. Left alone, the lagging EMA drives both damping factors onto a
-       *    clamp within ~20-30 cycles - towards CLAMP_MIN, crippling the correction,
-       *    or towards CLAMP_MAX, making it maximally aggressive on a freshly
-       *    prolongated solution. Reseed the EMA and restore the configured factors. ---*/
        *    after a promotion the pre-smoothing RMS is measured on a different grid.
        *    Reseed the EMA and restore the configured factors. ---*/
       config[iZone]->SetDamp_Res_Restric(mg_damp_restric_initial);
@@ -350,7 +344,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
- 
+
   const bool fmg_warmup = FullMG && (FinestMesh != MESH_0);
 
   if (fmg_warmup)
