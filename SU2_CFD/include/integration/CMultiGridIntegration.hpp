@@ -230,6 +230,27 @@ private:
   void adaptDampingFactors(CConfig* config, passivedouble crossCycleRatio);
 
   /*!
+   * \brief Set the CFL of every coarse multigrid level from the MESH_0 value and MG_CFL_SCALING,
+   *        applying the Full-MG startup ramp to the active level, and propagate it to the points.
+   *
+   * Called after the cycle in the normal case, which is where the coarse CFL has always been
+   * refreshed, and before the cycle during the Full-MG startup, where the active level's ramped
+   * CFL has to be in place for the cycle that is about to run.
+   *
+   * \param[in]     geometry         - Geometrical definition of the problem.
+   * \param[in,out] solver_container - Container vector with all the solutions.
+   * \param[in,out] config           - Definition of the particular problem.
+   * \param[in]     RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in]     iZone            - Zone index.
+   * \param[in]     iInst            - Instance index.
+   * \param[in]     FinestMesh       - Currently active finest mesh level.
+   * \param[in]     FullMG           - Whether the Full-MG cycle is active.
+   */
+  void SetCoarseGridCFL(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+                        unsigned short RunTime_EqSystem, unsigned short iZone, unsigned short iInst,
+                        unsigned short FinestMesh, bool FullMG);
+
+  /*!
    * \brief Helper function for early-exit logic during pre/post-smoothing.
    * \param[in] iSmooth - Current smoothing iteration index.
    * \param[in] iMesh - Index of the mesh in multigrid computations.

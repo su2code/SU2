@@ -107,6 +107,89 @@ void CMultiGridIntegration::adaptDampingFactors(CConfig* config, passivedouble c
 
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
 
+void CMultiGridIntegration::SetCoarseGridCFL(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+                                             unsigned short RunTime_EqSystem, unsigned short iZone,
+                                             unsigned short iInst, unsigned short FinestMesh, bool FullMG) {
+  SU2_ZONE_SCOPED
+
+  const unsigned short Solver_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
+  const unsigned short nMGLevels = config[iZone]->GetnMGLevels();
+  const unsigned long startup_iter = config[iZone]->GetMGOptions().MG_Startup_Iter;
+
+  BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
+  {
+    /*--- Use the level-0 flow CFL as the base reference and derive the steady-state
+     *    scaled target for all coarse levels from it via
+     *    MG_CFL_SCALING[i] = CFL(i+1)/CFL(i). Fall back to config scalar when
+     *    local level-0 CFL is unavailable. ---*/
+    passivedouble cfl_base = SU2_TYPE::GetValue(
+      solver_container[iZone][iInst][MESH_0][Solver_Position]->GetAvg_CFL_Local());
+    if (cfl_base < EPS)
+      cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(MESH_0));
+
+    const auto& cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
+
+    passivedouble CFL_target[MAX_MG_LEVELS+1];
+    passivedouble CFL_scale[MAX_MG_LEVELS+1];
+    CFL_target[0] = cfl_base;
+    CFL_scale[0] = 1.0;
+    for (unsigned short lvl = 1; lvl <= nMGLevels; ++lvl) {
+      /*--- Index into cflScaling is (lvl-1): transition lvl-1 -> lvl. The upper clamp of 1 is
+       *    kept so a coarse level can never run at a higher CFL than the grid above it. ---*/
+      const unsigned short iScale = lvl - 1;
+      const passivedouble scale = (iScale < cflScaling.size())
+          ? max(passivedouble{1e-6}, min(passivedouble{1.0}, SU2_TYPE::GetValue(cflScaling[iScale])))
+          : passivedouble{0.25};
+      CFL_scale[lvl] = scale;
+      CFL_target[lvl] = CFL_target[lvl-1] * scale;
+    }
+
+    /*--- During FMG startup, linearly ramp the CFL of the currently active level up
+     *    to its own scaled target over MG_Startup_Iter iterations, starting from the
+     *    CFL the previously active (coarser) level was running at. The ramp is
+     *    therefore continuous across a promotion and, crucially, never exceeds the
+     *    level's own target: the sustainable CFL is a property of the mesh, so
+     *    carrying a finer level's target onto a coarser mesh destabilises it. The
+     *    reduced starting value also gives the freshly prolongated solution time to
+     *    relax before the level runs at full CFL. The coarsest level has no coarser
+     *    predecessor, so it extends the scaling one step further to soften the
+     *    initial transient away from the freestream state.
+     *
+     *    All non-active coarse levels keep their steady-state scaled target, and no
+     *    ramp is applied once FMG has reached MESH_0 (the final V-cycle-equivalent
+     *    stage behaves exactly like a plain V-cycle). ---*/
+    const bool ramping = FullMG && (FinestMesh > MESH_0) && (FinestMesh <= nMGLevels);
+    passivedouble ramp_progress = 1.0;
+    if (ramping && startup_iter > 0) {
+      const unsigned long iter_in_level = config[iZone]->GetInnerIter() - mg_ramp_level_start_iter;
+      ramp_progress = min(passivedouble{1.0}, passivedouble(iter_in_level) / passivedouble(startup_iter));
+    }
+
+    for (unsigned short lvl = 1; lvl <= nMGLevels; ++lvl) {
+      passivedouble CFL_local = CFL_target[lvl];
+      if (ramping && lvl == FinestMesh) {
+        const passivedouble CFL_start = (lvl < nMGLevels) ? CFL_target[lvl+1]
+                                                          : CFL_target[lvl] * CFL_scale[lvl];
+        CFL_local = (passivedouble(1.0) - ramp_progress) * CFL_start + ramp_progress * CFL_target[lvl];
+      }
+      config[iZone]->SetCFL(lvl, CFL_local);
+    }
+  }
+  END_SU2_OMP_SAFE_GLOBAL_ACCESS
+
+  /*--- Propagate the updated CFL to every coarse-grid point. ---*/
+  for (unsigned short iMesh = 1; iMesh <= nMGLevels; ++iMesh) {
+    const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh));
+    CGeometry* geo_c = geometry[iZone][iInst][iMesh];
+    CSolver* sol_c = solver_container[iZone][iInst][iMesh][Solver_Position];
+    SU2_OMP_SAFE_GLOBAL_ACCESS(sol_c->SetCFL_Local_Stats(CFL_coarse_new);)
+    SU2_OMP_FOR_STAT(roundUpDiv(geo_c->GetnPoint(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geo_c->GetnPoint(); iPoint++)
+      sol_c->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
+    END_SU2_OMP_FOR
+  }
+}
+
 void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                                                 CSolver *****solver_container,
                                                 CNumerics ******numerics_container,
@@ -279,80 +362,32 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       mg_fmg_promoted_on_stall = false;
     }
 
-    /*--- Use the level-0 flow CFL as the base reference and derive the steady-state
-     *    scaled target for all coarse levels from it via
-     *    MG_CFL_SCALING[i] = CFL(i+1)/CFL(i). Fall back to config scalar when
-     *    local level-0 CFL is unavailable. ---*/
-    passivedouble cfl_base = SU2_TYPE::GetValue(
-      solver_container[iZone][iInst][MESH_0][Solver_Position]->GetAvg_CFL_Local());
-    if (cfl_base < EPS)
-      cfl_base = SU2_TYPE::GetValue(config[iZone]->GetCFL(MESH_0));
-
-    const auto& cflScaling = config[iZone]->GetMGOptions().MG_CflScaling;
-
-    passivedouble CFL_target[MAX_MG_LEVELS+1];
-    passivedouble CFL_scale[MAX_MG_LEVELS+1];
-    CFL_target[0] = cfl_base;
-    CFL_scale[0] = 1.0;
-    for (unsigned short lvl = 1; lvl <= nMGLevels; ++lvl) {
-      /*--- Index into cflScaling is (lvl-1): transition lvl-1 -> lvl. ---*/
-      const unsigned short iScale = lvl - 1;
-      const passivedouble scale = (iScale < cflScaling.size())
-          ? max(passivedouble{1e-6}, SU2_TYPE::GetValue(cflScaling[iScale]))
-          : passivedouble{0.25};
-      CFL_scale[lvl] = scale;
-      CFL_target[lvl] = CFL_target[lvl-1] * scale;
-    }
-
-    /*--- During FMG startup, linearly ramp the CFL of the currently active level up
-     *    to its own scaled target over MG_Startup_Iter iterations, starting from the
-     *    CFL the previously active (coarser) level was running at. The ramp is
-     *    therefore continuous across a promotion and, crucially, never exceeds the
-     *    level's own target: the sustainable CFL is a property of the mesh, so
-     *    carrying a finer level's target onto a coarser mesh destabilises it. The
-     *    reduced starting value also gives the freshly prolongated solution time to
-     *    relax before the level runs at full CFL. The coarsest level has no coarser
-     *    predecessor, so it extends the scaling one step further to soften the
-     *    initial transient away from the freestream state.
-     *
-     *    All non-active coarse levels keep their steady-state scaled target, and no
-     *    ramp is applied once FMG has reached MESH_0 (the final V-cycle-equivalent
-     *    stage behaves exactly like a plain V-cycle). ---*/
-    const bool ramping = FullMG && (FinestMesh > MESH_0) && (FinestMesh <= nMGLevels);
-    passivedouble ramp_progress = 1.0;
-    if (ramping && startup_iter > 0) {
-      const unsigned long iter_in_level = config[iZone]->GetInnerIter() - mg_ramp_level_start_iter;
-      ramp_progress = min(passivedouble{1.0}, passivedouble(iter_in_level) / passivedouble(startup_iter));
-    }
-
-    for (unsigned short lvl = 1; lvl <= nMGLevels; ++lvl) {
-      passivedouble CFL_local = CFL_target[lvl];
-      if (ramping && lvl == FinestMesh) {
-        const passivedouble CFL_start = (lvl < nMGLevels) ? CFL_target[lvl+1]
-                                                          : CFL_target[lvl] * CFL_scale[lvl];
-        CFL_local = (passivedouble(1.0) - ramp_progress) * CFL_start + ramp_progress * CFL_target[lvl];
-      }
-      config[iZone]->SetCFL(lvl, CFL_local);
-    }
   }
   END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-  /*--- Propagate updated CFL to all coarse-grid points before the cycle. ---*/
-  for (unsigned short iMesh = 1; iMesh <= nMGLevels; ++iMesh) {
-    const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config[iZone]->GetCFL(iMesh));
-    CGeometry* geo_c = geometry[iZone][iInst][iMesh];
-    CSolver* sol_c = solver_container[iZone][iInst][iMesh][Solver_Position];
-    SU2_OMP_SAFE_GLOBAL_ACCESS(sol_c->SetCFL_Local_Stats(CFL_coarse_new);)
-    SU2_OMP_FOR_STAT(roundUpDiv(geo_c->GetnPoint(), omp_get_num_threads()))
-    for (auto iPoint = 0ul; iPoint < geo_c->GetnPoint(); iPoint++)
-      sol_c->GetNodes()->SetLocalCFL(iPoint, CFL_coarse_new);
-    END_SU2_OMP_FOR
-  }
+  /*--- Where the coarse-grid CFL is refreshed relative to the cycle.
+   *
+   *    Outside the Full-MG startup this happens AFTER the cycle, which is where it has always
+   *    been: the values a cycle runs at are the ones computed at the end of the previous
+   *    iteration, and on the very first iteration they are the ones CMultiGridGeometry set up.
+   *    Moving the refresh earlier changes what every V- and W-cycle run does on its first
+   *    iteration, which shifts the whole trajectory, so it is deliberately left alone.
+   *
+   *    During the Full-MG startup it has to happen BEFORE the cycle instead: the active level's
+   *    CFL is ramped as a function of the current InnerIter, and a level that has just been
+   *    promoted would otherwise spend its first iteration at the CFL of the level below. ---*/
+  const bool fmg_warmup = FullMG && (FinestMesh != MESH_0);
+
+  if (fmg_warmup)
+    SetCoarseGridCFL(geometry, solver_container, config, RunTime_EqSystem, iZone, iInst, FinestMesh, FullMG);
 
   /*--- Perform the Full Approximation Scheme multigrid ---*/
 
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem, iZone, iInst);
+
+  if (!fmg_warmup)
+    SetCoarseGridCFL(geometry, solver_container, config, RunTime_EqSystem, iZone, iInst, FinestMesh, FullMG);
 
   /*--- FMG startup convergence-based early exit: track the active level's aggregate flow
    *    residual (RMS across all solution variables, the same solver-agnostic metric this
