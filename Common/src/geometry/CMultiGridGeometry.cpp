@@ -1347,6 +1347,45 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
   unsigned long max_group = config->GetMGOptions().MG_Implicit_Lines_Max_Group;
   if (max_group == 0) max_group = (nDim == 2) ? 2 : 4;
 
+  /*--- Smallest local cell aspect ratio that still counts as a stretched layer. ---*/
+  const su2double MIN_AR = config->GetMGOptions().MG_Implicit_Lines_Min_AR;
+  const bool USE_AR = (MIN_AR > 1.0);
+
+  /*--- Strength of the coupling across the dual face between a node and one of its neighbours. For a
+   *    cell of streamwise size dx and wall-normal size dy this is 1/dy across the wall-normal face and
+   *    1/dx across the tangential one, so the ratio of the largest weight at a node to the smallest is
+   *    the local cell aspect ratio. That makes the aspect ratio available from the dual grid alone,
+   *    which SetControlVolume builds on every multigrid level, whereas CGeometry::Aspect_Ratio exists
+   *    only on MESH_0. The same quantity already decides where LINELET preconditioner lines stop, in
+   *    CGeometry::GetLineletInfo. ---*/
+  auto edgeWeight = [&](unsigned long iPoint, unsigned short iNeigh) {
+    const auto jPoint = fine_grid->nodes->GetPoint(iPoint, iNeigh);
+    const auto iEdge = fine_grid->nodes->GetEdge(iPoint, iNeigh);
+    const su2double area = GeometryToolbox::Norm(nDim, fine_grid->edges->GetNormal(iEdge));
+    return 0.5 * area * (1.0 / fine_grid->nodes->GetVolume(iPoint) + 1.0 / fine_grid->nodes->GetVolume(jPoint));
+  };
+
+  /*--- Weakest coupling at a node, i.e. the denominator of the local aspect ratio. ---*/
+  auto minEdgeWeight = [&](unsigned long iPoint) {
+    su2double wmin = std::numeric_limits<su2double>::max();
+    for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); iNeigh++)
+      wmin = std::min(wmin, edgeWeight(iPoint, iNeigh));
+    return wmin;
+  };
+
+  /*--- Aspect ratio of the mesh at iPoint measured along the edge to jPoint, and the neighbour the
+   *    stiffest edge leads to. Taking the weight of one specific edge over the weakest edge at the
+   *    node, rather than the largest over the smallest, keeps the measure directional: a mesh graded
+   *    in the streamwise direction reads as stretched to the undirected form even far from any wall,
+   *    which is why GetLineletInfo's min/max test cannot be used to decide where a line ends. ---*/
+  auto aspectRatioAlong = [&](unsigned long iPoint, unsigned long jPoint) {
+    const su2double wmin = minEdgeWeight(iPoint);
+    if (wmin <= 0.0) return su2double(1.0);
+    for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); iNeigh++)
+      if (fine_grid->nodes->GetPoint(iPoint, iNeigh) == jPoint) return edgeWeight(iPoint, iNeigh) / wmin;
+    return su2double(1.0);
+  };
+
   /*==================================================================================================
    *  PHASE A - build the implicit lines.
    *
@@ -1381,10 +1420,28 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
     }
   }
 
+  /*--- Seed a line at iPoint growing away from the boundary along unitNormal. ---*/
+  auto seedLine = [&](unsigned long iPoint, const su2double* unitNormal) {
+    lines.push_back({iPoint});
+    claimed[iPoint] = 1;
+    for (unsigned short d = 0; d < nDim; ++d) dir.push_back(unitNormal[d]);
+  };
+
+  /*--- Unit normal of the boundary at a vertex, false if the marker does not reach iPoint. ---*/
+  auto vertexNormal = [&](unsigned long iPoint, unsigned short iMarker, su2double* unitNormal) {
+    const long ChildVertex = fine_grid->nodes->GetVertex(iPoint, iMarker);
+    if (ChildVertex == -1) return false;
+    fine_grid->vertex[iMarker][ChildVertex]->GetNormal(unitNormal);
+    const su2double nrm = GeometryToolbox::Norm(nDim, unitNormal);
+    if (nrm <= 0.0) return false;
+    for (unsigned short d = 0; d < nDim; ++d) unitNormal[d] /= nrm;
+    return true;
+  };
+
+  /*--- Viscous walls always carry a stretched layer, so they seed unconditionally. Running them
+   *    first also settles the nodes where a wall meets another boundary: the wall claims them, and
+   *    the line there is a wall line. ---*/
   for (auto iMarker = 0u; iMarker < fine_grid->GetnMarker(); iMarker++) {
-    /*--- Seed only from viscous (no-slip) walls: those are the boundaries with a stretched layer
-     *    above them. Seeding from farfield/inlet/outlet/symmetry would claim layer nodes before the
-     *    wall lines could reach them. ---*/
     const auto bc = config->GetMarker_All_KindBC(iMarker);
     if (bc != HEAT_FLUX && bc != ISOTHERMAL && bc != CHT_WALL_INTERFACE && bc != SMOLUCHOWSKI_MAXWELL) continue;
 
@@ -1394,16 +1451,123 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
       if (fine_grid->nodes->GetAgglomerate(iPoint)) continue;
       if (claimed[iPoint]) continue; /*--- A node on two wall markers must seed only one line. ---*/
 
-      const long ChildVertex = fine_grid->nodes->GetVertex(iPoint, iMarker);
-      if (ChildVertex == -1) continue;
       su2double Normal[MAXNDIM] = {0.0};
-      fine_grid->vertex[iMarker][ChildVertex]->GetNormal(Normal);
-      const su2double nrm = GeometryToolbox::Norm(nDim, Normal);
-      if (nrm <= 0.0) continue;
+      if (!vertexNormal(iPoint, iMarker, Normal)) continue;
+      seedLine(iPoint, Normal);
+    }
+  }
 
-      lines.push_back({iPoint});
-      claimed[iPoint] = 1;
-      for (unsigned short d = 0; d < nDim; ++d) dir.push_back(Normal[d] / nrm);
+  /*==================================================================================================
+   *  Boundaries other than viscous walls that nevertheless carry a stretched layer normal to
+   *  themselves. A symmetry plane laid in the same surface as a wall, such as the one ahead of a
+   *  flat plate's leading edge or the flat floor sections either side of a bump, is meshed with the
+   *  very same normal spacing as the wall it continues. Seeding only from walls leaves the mesh
+   *  above it to isotropic agglomeration, so the coarse grid changes character across the line where
+   *  the two meet even though the fine grid does not, and that shows up as a residual there.
+   *
+   *  A node qualifies when its stiffest edge is both stretched and points along the boundary normal,
+   *  which is what distinguishes a layer growing off this boundary from one merely passing by: on
+   *  the side planes of a bump the mesh is just as stretched, but in the wall-normal direction that
+   *  runs ALONG the plane, and those nodes belong to the wall's own lines.
+   *
+   *  The decision is then taken per marker rather than per node. Seeding individual qualifying nodes
+   *  on a marker that mostly does not qualify scatters isolated lines across a face whose neighbours
+   *  seed nothing, and those become one-line bundles, i.e. coarse CVs one fine CV wide that do not
+   *  coarsen tangentially at all. Measured on a flat plate and a 3D bump the two populations are far
+   *  apart - boundaries with a layer normal to them qualify at 100%, while side planes, inlets,
+   *  outlets and far fields come in at 13% and below - so any threshold near a half separates them.
+   *================================================================================================*/
+  if (USE_AR) {
+    const auto nMarkerFine = fine_grid->GetnMarker();
+
+    /*--- Counts are kept per marker of the configuration file, not per local marker. Ranks do not
+     *    agree on either the number of markers or their order, because the SEND_RECEIVE markers of a
+     *    partition are appended to its own list, so the same index means a different boundary on
+     *    another rank and a reduction over it would add unrelated boundaries together. The
+     *    configuration file list is the same everywhere. ---*/
+    const auto nMarkerCfg = config->GetnMarker_CfgFile();
+    vector<unsigned long> nValid(nMarkerCfg, 0), nQualified(nMarkerCfg, 0);
+
+    /*--- True if the mesh at iPoint is stretched along the boundary normal, i.e. this boundary has a
+     *    layer growing off it in the same way a viscous wall does. ---*/
+    auto hasLayerNormalTo = [&](unsigned long iPoint, const su2double* unitNormal) {
+      su2double wmax = 0.0, wmin = std::numeric_limits<su2double>::max();
+      unsigned long jStiffest = ULONG_MAX;
+      for (auto iNeigh = 0u; iNeigh < fine_grid->nodes->GetnPoint(iPoint); iNeigh++) {
+        const su2double w = edgeWeight(iPoint, iNeigh);
+        if (w > wmax) {
+          wmax = w;
+          jStiffest = fine_grid->nodes->GetPoint(iPoint, iNeigh);
+        }
+        wmin = std::min(wmin, w);
+      }
+      if (jStiffest == ULONG_MAX || wmin <= 0.0) return false;
+      if (wmax / wmin < MIN_AR) return false;
+
+      su2double vec[MAXNDIM] = {0.0};
+      GeometryToolbox::Distance(nDim, fine_grid->nodes->GetCoord(jStiffest), fine_grid->nodes->GetCoord(iPoint), vec);
+      const su2double len = GeometryToolbox::Norm(nDim, vec);
+      if (len <= 0.0) return false;
+      for (unsigned short d = 0; d < nDim; ++d) vec[d] /= len;
+      return fabs(GeometryToolbox::DotProduct(nDim, vec, unitNormal)) >= cos_threshold;
+    };
+
+    /*--- Markers that may be tested at all. Periodic boundaries are left out: the two halves are the
+     *    same physical location under a transform and have their own matching, which a line running
+     *    into one would interfere with. ---*/
+    auto canSeed = [&](unsigned short iMarker) {
+      const auto bc = config->GetMarker_All_KindBC(iMarker);
+      if (bc == SEND_RECEIVE || bc == PERIODIC_BOUNDARY) return false;
+      return (bc != HEAT_FLUX && bc != ISOTHERMAL && bc != CHT_WALL_INTERFACE && bc != SMOLUCHOWSKI_MAXWELL);
+    };
+
+    /*--- Position of a local marker in the configuration file list. Only meaningful for the markers
+     *    canSeed accepts: a SEND_RECEIVE marker is named per partition and is not in that list. ---*/
+    vector<unsigned short> cfgOfMarker(nMarkerFine, 0);
+    for (auto iMarker = 0u; iMarker < nMarkerFine; iMarker++)
+      if (canSeed(iMarker))
+        cfgOfMarker[iMarker] = config->GetMarker_CfgFile_TagBound(config->GetMarker_All_TagBound(iMarker));
+
+    for (auto iMarker = 0u; iMarker < nMarkerFine; iMarker++) {
+      if (!canSeed(iMarker)) continue;
+      for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
+        const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
+        if (!fine_grid->nodes->GetDomain(iPoint)) continue;
+        su2double Normal[MAXNDIM] = {0.0};
+        if (!vertexNormal(iPoint, iMarker, Normal)) continue;
+        nValid[cfgOfMarker[iMarker]]++;
+        if (hasLayerNormalTo(iPoint, Normal)) nQualified[cfgOfMarker[iMarker]]++;
+      }
+    }
+
+    /*--- A marker is generally split over several ranks, so the verdict has to be taken on the whole
+     *    of it or two ranks could disagree about the same boundary. ---*/
+    if (nMarkerCfg > 0) {
+      vector<unsigned long> tmp(nMarkerCfg);
+      SU2_MPI::Allreduce(nValid.data(), tmp.data(), nMarkerCfg, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+      nValid.swap(tmp);
+      SU2_MPI::Allreduce(nQualified.data(), tmp.data(), nMarkerCfg, MPI_UNSIGNED_LONG, MPI_SUM, SU2_MPI::GetComm());
+      nQualified.swap(tmp);
+    }
+
+    for (auto iMarker = 0u; iMarker < nMarkerFine; iMarker++) {
+      if (!canSeed(iMarker)) continue;
+      const auto iCfg = cfgOfMarker[iMarker];
+      if (nValid[iCfg] == 0) continue;
+      if (2 * nQualified[iCfg] < nValid[iCfg]) continue; /*--- Fewer than half, not a layer. ---*/
+
+      for (auto iVertex = 0ul; iVertex < fine_grid->GetnVertex(iMarker); iVertex++) {
+        const auto iPoint = fine_grid->vertex[iMarker][iVertex]->GetNode();
+        if (!fine_grid->nodes->GetDomain(iPoint)) continue;
+        if (fine_grid->nodes->GetAgglomerate(iPoint)) continue;
+        if (claimed[iPoint]) continue;
+
+        su2double Normal[MAXNDIM] = {0.0};
+        if (!vertexNormal(iPoint, iMarker, Normal)) continue;
+        /*--- The marker carries a layer, but this node still has to be in it. ---*/
+        if (!hasLayerNormalTo(iPoint, Normal)) continue;
+        seedLine(iPoint, Normal);
+      }
     }
   }
 
@@ -1446,6 +1610,15 @@ void CMultiGridGeometry::AgglomerateImplicitLines(unsigned long& Index_CoarseCV,
       }
 
       if (best_neighbor == ULONG_MAX || best_dot < cos_threshold) {
+        growing[li] = 0;
+        continue;
+      }
+
+      /*--- End the line where the mesh stops being stretched along it. Without this the only limits
+       *    are the direction cone and MAX_LINE_LENGTH, so a line leaves the boundary layer and keeps
+       *    going into the far field, stacking coarse CVs along a direction the fine grid does not
+       *    single out. Ordinary agglomeration handles that region better. ---*/
+      if (USE_AR && aspectRatioAlong(current, best_neighbor) < MIN_AR) {
         growing[li] = 0;
         continue;
       }

@@ -2090,6 +2090,11 @@ void CConfig::SetConfig_Options() {
    * the wall into one coarse CV (2D: always 2; 3D: e.g. 4 for a wall quad/hex corner, 3 for a triangular prism apex).
    * 0 uses the dimension-appropriate default (2 in 2D, 4 in 3D). DEFAULT: 0 \ingroup Config*/
   addUnsignedLongOption("MG_IMPLICIT_LINES_MAX_GROUP", MGOptions.MG_Implicit_Lines_Max_Group, 0);
+  /*!\brief MG_IMPLICIT_LINES_MIN_AR\n DESCRIPTION: Smallest local cell aspect ratio for which a node still counts as part
+   * of a stretched layer, measured from the ratio of dual-grid edge weights. Ends an implicit line where the mesh stops
+   * being stretched along it, instead of letting it run to the far field, and decides which boundaries carry a layer
+   * normal to them and may therefore seed lines. 1.0 disables both tests. DEFAULT: 2.0 \ingroup Config*/
+  addDoubleOption("MG_IMPLICIT_LINES_MIN_AR", MGOptions.MG_Implicit_Lines_Min_AR, 2.0);
   /*!\brief MG_STARTUP_ITER\n DESCRIPTION: Number of iterations on the coarsest mesh during Full Multigrid (FMG) startup phase before advancing to finer meshes. DEFAULT: 100 \ingroup Config*/
   addUnsignedLongOption("MG_STARTUP_ITER", MGOptions.MG_Startup_Iter, 100);
   /*!\brief MG_STARTUP_STAGNATION\n DESCRIPTION: Full-MG promotion on stagnation. If the active level's residual ratio

@@ -1130,6 +1130,10 @@ struct CMGOptions {
   unsigned long MG_Implicit_Lines_Max_Group{0}; /*!< \brief Max number of parallel implicit lines merged into one coarse
                                                       CV tangential to the wall. 0 = dimension-appropriate default
                                                       (2 in 2D, 4 in 3D). See CMultiGridGeometry::AgglomerateImplicitLines. */
+  su2double MG_Implicit_Lines_Min_AR{2.0}; /*!< \brief Smallest local cell aspect ratio for which a node still counts as
+                                                  part of a stretched layer. Ends a line where the mesh stops being
+                                                  stretched along it, and decides which boundaries carry a layer normal
+                                                  to them. See CMultiGridGeometry::AgglomerateImplicitLines. */
   unsigned long MG_Startup_Iter{100};     /*!< \brief Number of iterations on coarsest mesh during FMG startup phase. */
   unsigned long MG_Coarse_Prec_Freeze{1}; /*!< \brief On MG levels > 0, reuse the linear-solver preconditioner for this many consecutive solves. 1 = rebuild every solve. */
   su2double MG_Correction_Limit{0.0};     /*!< \brief Max relative change of any solution component from one prolongated FAS correction. 0 = no limit. */
