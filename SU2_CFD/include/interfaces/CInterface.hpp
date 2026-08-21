@@ -29,6 +29,7 @@
 #pragma once
 
 #include "../../../Common/include/parallelization/mpi_structure.hpp"
+#include "../../../Common/include/containers/C2DContainer.hpp"
 #include "../../../Common/include/option_structure.hpp"
 
 #include <cmath>
@@ -37,6 +38,7 @@
 #include <sstream>
 #include <algorithm>
 #include <iostream>
+#include <vector>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -65,6 +67,8 @@ protected:
   su2double *Donor_Variable = nullptr;
   su2double *Target_Variable = nullptr;
   bool valAggregated = false;
+
+  unsigned short InterfaceType; /*!< \brief The type of interface. */
 
   /*--- Mixing Plane interface variable ---*/
   su2double *SpanValueCoeffTarget = nullptr;
@@ -148,6 +152,21 @@ protected:
   }
 
   /*!
+   * \brief Recovers the target variable at the endwall from the buffer of su2doubles that was broadcast for mixing plane interfaces.
+   * \param[in] bcastVariable - Broadcast variable.
+   * \param[in] idx - Index of the target point.
+   */
+  inline virtual void RecoverTarget_SpanEndwall(const su2activevector &bcastVariable, unsigned long idx) { }
+
+  /*!
+   * \brief Recovers the target variable at the span from the buffer of su2doubles that was broadcast for mixing plane interfaces.
+   * \param[in] bcastVariable - Broadcast variable.
+   * \param[in] idx - Index of the target point.
+   * \param[in] donorCoeff - value of the donor coefficient.
+   */
+  inline virtual void RecoverTarget_Span(const su2activevector &bcastVariable, unsigned long idx, su2double donorCoeff) { }
+
+  /*!
    * \brief A virtual member.
    * \param[in] target_solution - Solution from the target mesh.
    * \param[in] target_geometry - Geometry of the target mesh.
@@ -178,26 +197,8 @@ public:
   inline virtual void SetSpanWiseLevels(const CConfig *donor_config, const CConfig *target_config) { }
 
   /*!
-   * \brief A virtual member.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] donor_zone - Index of the donorZone.
-   */
-  inline virtual void SetAverageValues(CSolver *donor_solution, CSolver *target_solution,
-                                       unsigned short donorZone) { }
-
-  /*!
-   * \brief Transfer pre-processing for the mixing plane inteface.
-   * \param[in] donor_geometry - Geometry of the donor mesh.
-   * \param[in] target_geometry - Geometry of the target mesh.
-   * \param[in] donor_config - Definition of the problem at the donor mesh.
-   * \param[in] target_config - Definition of the problem at the target mesh.
-   */
-  void PreprocessAverage(CGeometry *donor_geometry, CGeometry *target_geometry,
-                         const CConfig *donor_config, const CConfig *target_config, unsigned short iMarkerInt);
-
-  /*!
-   * \brief Interpolate data and scatter it into different processors, for matching meshes.
+   * \brief Interpolate data and broadcast it into all processors, for nonmatching meshes.
+   * \param[in] interpolator - Object defining the interpolation.
    * \param[in] donor_solution - Solution from the donor mesh.
    * \param[in] target_solution - Solution from the target mesh.
    * \param[in] donor_geometry - Geometry of the donor mesh.
@@ -205,26 +206,28 @@ public:
    * \param[in] donor_config - Definition of the problem at the donor mesh.
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
-  void AllgatherAverage(CSolver *donor_solution, CSolver *target_solution,
-                        CGeometry *donor_geometry, CGeometry *target_geometry,
-                        const CConfig *donor_config, const CConfig *target_config, unsigned short iMarkerInt);
+  inline virtual void BroadcastData_MixingPlane(const CInterpolator& interpolator,
+                     CSolver *donor_solution, CSolver *target_solution,
+                     CGeometry *donor_geometry, CGeometry *target_geometry,
+                     const CConfig *donor_config, const CConfig *target_config) { };
 
-  /*!
-   * \brief Interpolate data and scatter it into different processors, for matching meshes.
-   * \param[in] donor_solution - Solution from the donor mesh.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] donor_geometry - Geometry of the donor mesh.
-   * \param[in] target_geometry - Geometry of the target mesh.
-   * \param[in] donor_config - Definition of the problem at the donor mesh.
-   * \param[in] target_config - Definition of the problem at the target mesh.
-   */
-  void GatherAverageValues(CSolver *donor_solution, CSolver *target_solution, unsigned short donorZone);
 
   /*!
    * \brief Set the contact resistance value for the solid-to-solid heat transfer interface.
    * \param[in] val_contact_resistance - Contact resistance value in m^2/W
    */
   inline virtual void SetContactResistance(su2double val_contact_resistance) {};
+
+  /*!
+   * \brief Set the type of an interface
+   * \param[in] interface_type - The type of interface
+   */
+  void SetInterfaceType(unsigned short interface_type) { InterfaceType = interface_type; }
+
+  /*!
+   * \brief Get the type of an interface
+   */
+  unsigned short GetInterfaceType(void) const { return InterfaceType; }
 
   /*!
    * \brief These can be used to chain interfaces between the same zones but for other variables,
