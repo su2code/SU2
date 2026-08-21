@@ -1099,6 +1099,7 @@ private:
   su2double ParMETIS_tolerance;     /*!< \brief Load balancing tolerance for ParMETIS. */
   long ParMETIS_pointWgt;           /*!< \brief Load balancing weight given to points. */
   long ParMETIS_edgeWgt;            /*!< \brief Load balancing weight given to edges. */
+  su2double ParMETIS_anisoWgt;      /*!< \brief Strength of the anisotropy-aware ParMETIS edge weights. 0 disables them. */
   unsigned short DirectDiff;        /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint,                /*!< \brief AD-based discrete adjoint mode. */
   DiscreteAdjointDebug;                /*!< \brief Discrete adjoint debug mode using tags. */
@@ -10183,6 +10184,11 @@ public:
    * \brief Get the ParMETIS load balancing weight for edges
    */
   long GetParMETIS_EdgeWeight() const { return ParMETIS_edgeWgt; }
+
+  /*!
+   * \brief Get the strength of the anisotropy-aware ParMETIS edge weights (0 disables them).
+   */
+  passivedouble GetParMETIS_AnisoWeight() const { return SU2_TYPE::GetValue(ParMETIS_anisoWgt); }
 
   /*!
    * \brief Find the marker index (if any) that is part of a given interface pair.

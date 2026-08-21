@@ -7377,7 +7377,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
 
   /*--- Some recommended defaults for the various ParMETIS options. ---*/
 
-  idx_t wgtflag = 2;
+  idx_t wgtflag = 2; /*--- Weights on the vertices only, raised to 3 below if edge weights are built. ---*/
   idx_t numflag = 0;
   idx_t ncon = 1;
   real_t ubvec = 1.0 + config->GetParMETIS_Tolerance();
@@ -7410,6 +7410,149 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
     vwgt[iPoint] = wp + we * (xadj[iPoint + 1] - xadj[iPoint]);
   }
 
+  /*--- Cost of cutting each edge of the graph.
+   *
+   *    Without these ParMETIS is given no edge weights at all and every edge is equally cheap to
+   *    cut, so nothing stops a partition boundary from running straight through the stretched cells
+   *    of a boundary layer and splitting the wall-normal columns that implicit-line agglomeration
+   *    and line-implicit smoothing are built on.
+   *
+   *    In a stretched cell the wall-normal spacing is the small one, so the short edges are exactly
+   *    the ones that should stay inside a partition. Weighting an edge by the inverse of its length
+   *    therefore makes cutting across the layer expensive and leaves the long tangential edges as
+   *    the cheap place to cut. Length is used rather than the face area over volume ratio that
+   *    measures the same thing elsewhere, because the dual grid does not exist yet at this point of
+   *    the setup: this runs before SetControlVolume, and only the coordinates are available.
+   *
+   *    On a mesh with no stretching every edge is of similar length, so the weights come out
+   *    uniform and minimizing their sum is the same problem as minimizing the number of cut edges.
+   *    Such a mesh is therefore partitioned exactly as it is with no weights at all. ---*/
+
+  vector<idx_t> adjwgt;
+  const su2double anisoWgt = config->GetParMETIS_AnisoWeight();
+
+  if (anisoWgt > 0.0) {
+    const auto firstIdx = pointPartitioner.GetFirstIndexOnRank(rank);
+    const auto lastIdx = pointPartitioner.GetLastIndexOnRank(rank);
+    auto isLocal = [&](unsigned long g) { return g >= firstIdx && g < lastIdx; };
+
+    /*--- The graph is split linearly and its entries are global indices, so an edge near a linear
+     *    partition boundary has one end that is not stored here. Those are few, of the order of a
+     *    percent of the entries, and each is asked for from the rank the linear partitioner says
+     *    owns it. The same request lists are used twice, once for coordinates and once for the
+     *    longest edge at the point, which only its owner can work out. ---*/
+    vector<vector<unsigned long>> wanted(size);
+    for (auto gPoint : adjacency)
+      if (!isLocal(gPoint)) wanted[pointPartitioner.GetRankContainingIndex(gPoint)].push_back(gPoint);
+
+    vector<int> nSend(size, 0), nRecv(size, 0), sDisp(size + 1, 0), rDisp(size + 1, 0);
+    for (int r = 0; r < size; ++r) {
+      auto& w = wanted[r];
+      sort(w.begin(), w.end());
+      w.erase(unique(w.begin(), w.end()), w.end());
+      nSend[r] = static_cast<int>(w.size());
+    }
+    SU2_MPI::Alltoall(nSend.data(), 1, MPI_INT, nRecv.data(), 1, MPI_INT, comm);
+    for (int r = 0; r < size; ++r) {
+      sDisp[r + 1] = sDisp[r] + nSend[r];
+      rDisp[r + 1] = rDisp[r] + nRecv[r];
+    }
+
+    vector<unsigned long> sendIdx(sDisp[size]), recvIdx(rDisp[size]);
+    for (int r = 0; r < size; ++r) copy(wanted[r].begin(), wanted[r].end(), sendIdx.begin() + sDisp[r]);
+    SU2_MPI::Alltoallv(sendIdx.data(), nSend.data(), sDisp.data(), MPI_UNSIGNED_LONG, recvIdx.data(), nRecv.data(),
+                       rDisp.data(), MPI_UNSIGNED_LONG, comm);
+
+    /*--- Round one, the coordinates of the points that were asked for. ---*/
+    map<unsigned long, array<su2double, 3>> remoteCoord;
+    {
+      vector<su2double> sendBuf(static_cast<size_t>(rDisp[size]) * nDim),
+          recvBuf(static_cast<size_t>(sDisp[size]) * nDim);
+      for (size_t i = 0; i < recvIdx.size(); ++i)
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim)
+          sendBuf[i * nDim + iDim] = nodes->GetCoord(recvIdx[i] - firstIdx, iDim);
+
+      vector<int> nS(size), nR(size), sD(size), rD(size);
+      for (int r = 0; r < size; ++r) {
+        nS[r] = nRecv[r] * nDim;
+        nR[r] = nSend[r] * nDim;
+        sD[r] = rDisp[r] * nDim;
+        rD[r] = sDisp[r] * nDim;
+      }
+      SU2_MPI::Alltoallv(sendBuf.data(), nS.data(), sD.data(), MPI_DOUBLE, recvBuf.data(), nR.data(), rD.data(),
+                         MPI_DOUBLE, comm);
+      for (size_t i = 0; i < sendIdx.size(); ++i) {
+        array<su2double, 3> c = {0.0, 0.0, 0.0};
+        for (unsigned short iDim = 0; iDim < nDim; ++iDim) c[iDim] = recvBuf[i * nDim + iDim];
+        remoteCoord[sendIdx[i]] = c;
+      }
+    }
+
+    /*--- Length of every edge of the local part of the graph, and the longest edge at each point
+     *    this rank owns. ---*/
+    vector<su2double> edgeLen(adjacency.size(), 0.0);
+    vector<su2double> maxLen(nPoint, 0.0);
+
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; ++k) {
+        const auto gPoint = adjacency[k];
+        array<su2double, 3> tmp = {0.0, 0.0, 0.0};
+        const su2double* coord_j = nullptr;
+        if (isLocal(gPoint)) {
+          coord_j = nodes->GetCoord(gPoint - firstIdx);
+        } else {
+          const auto it = remoteCoord.find(gPoint);
+          if (it == remoteCoord.end()) continue;
+          tmp = it->second;
+          coord_j = tmp.data();
+        }
+        edgeLen[k] = GeometryToolbox::Distance(nDim, nodes->GetCoord(iPoint), coord_j);
+        maxLen[iPoint] = max(maxLen[iPoint], edgeLen[k]);
+      }
+    }
+
+    /*--- Round two, the longest edge at each of the remote points. ---*/
+    map<unsigned long, su2double> remoteMaxLen;
+    {
+      vector<su2double> sendBuf(rDisp[size]), recvBuf(sDisp[size]);
+      for (size_t i = 0; i < recvIdx.size(); ++i) sendBuf[i] = maxLen[recvIdx[i] - firstIdx];
+      SU2_MPI::Alltoallv(sendBuf.data(), nRecv.data(), rDisp.data(), MPI_DOUBLE, recvBuf.data(), nSend.data(),
+                         sDisp.data(), MPI_DOUBLE, comm);
+      for (size_t i = 0; i < sendIdx.size(); ++i) remoteMaxLen[sendIdx[i]] = recvBuf[i];
+    }
+
+    /*--- An edge is expensive to cut when it is much shorter than the other edges meeting it, which
+     *    is the definition of the local cell aspect ratio and is exactly the situation inside a
+     *    boundary layer, where the short edges are the wall-normal ones. Comparing an edge only
+     *    against its own neighbourhood, rather than against a global length, is what keeps the
+     *    measure a ratio: scaling the whole mesh, or refining one region of it isotropically, leaves
+     *    every weight unchanged. Weighting by absolute length instead would make any small cell
+     *    expensive to cut and would steer the partitioner away from refined regions that are not
+     *    stretched at all. Averaging the two ends keeps the weight of an edge symmetric, which
+     *    ParMETIS requires. ---*/
+    const idx_t MAX_EDGE_WEIGHT = 1000;
+    adjwgt.resize(adjacency.size(), 1);
+
+    for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint) {
+      for (auto k = xadj[iPoint]; k < xadj[iPoint + 1]; ++k) {
+        if (edgeLen[k] <= 0.0) continue;
+        const auto gPoint = adjacency[k];
+        su2double maxLen_j = 0.0;
+        if (isLocal(gPoint)) {
+          maxLen_j = maxLen[gPoint - firstIdx];
+        } else {
+          const auto it = remoteMaxLen.find(gPoint);
+          if (it == remoteMaxLen.end()) continue;
+          maxLen_j = it->second;
+        }
+        const su2double ratio = 0.5 * (maxLen[iPoint] + maxLen_j) / edgeLen[k];
+        const su2double w = 1.0 + anisoWgt * (ratio - 1.0);
+        adjwgt[k] = static_cast<idx_t>(min<su2double>(max<su2double>(w, 1.0), MAX_EDGE_WEIGHT));
+      }
+    }
+    wgtflag = 3; /*--- Weights on both the vertices and the edges. ---*/
+  }
+
   /*--- Create some structures that ParMETIS needs to output the partitioning. ---*/
 
   idx_t edgecut;
@@ -7418,9 +7561,9 @@ void CPhysicalGeometry::SetColorGrid_Parallel(const CConfig* config) {
   /*--- Calling ParMETIS ---*/
 
   if (rank == MASTER_NODE) cout << "Calling ParMETIS...";
-  auto err =
-      ParMETIS_V3_PartKway(vtxdist.data(), xadj.data(), adjacency.data(), vwgt.data(), nullptr, &wgtflag, &numflag,
-                           &ncon, &nparts, tpwgts.data(), &ubvec, options, &edgecut, part.data(), &comm);
+  auto err = ParMETIS_V3_PartKway(vtxdist.data(), xadj.data(), adjacency.data(), vwgt.data(),
+                                  adjwgt.empty() ? nullptr : adjwgt.data(), &wgtflag, &numflag, &ncon, &nparts,
+                                  tpwgts.data(), &ubvec, options, &edgecut, part.data(), &comm);
   if (err != METIS_OK) SU2_MPI::Error("Partitioning failed.", CURRENT_FUNCTION);
   if (rank == MASTER_NODE) {
     cout << " graph partitioning complete (" << edgecut << " edge cuts)." << endl;

@@ -3073,6 +3073,14 @@ void CConfig::SetConfig_Options() {
 
   /* DESCRIPTION: ParMETIS load balancing weight for edges (equiv. to neighbors) */
   addLongOption("PARMETIS_EDGE_WEIGHT", ParMETIS_edgeWgt, 1);
+  /* DESCRIPTION: Strength of the anisotropy-aware ParMETIS edge weights. ParMETIS is otherwise given no edge weights at
+   * all, so every edge is equally cheap to cut and partition boundaries slice straight through the stretched cells of a
+   * boundary layer, splitting the wall-normal columns that implicit-line agglomeration and line-implicit smoothing rely
+   * on. Weighting an edge by the inverse of its length makes the short wall-normal edges expensive to cut and pushes the
+   * cuts into the tangential direction instead. On a mesh without stretching all edges are of similar length, the
+   * weights come out uniform, and the partitioning is the same as with no weights at all. 0 disables the weights.
+   * DEFAULT: 0 */
+  addDoubleOption("PARMETIS_ANISO_WEIGHT", ParMETIS_anisoWgt, 0.0);
 
   /*--- options that are used in the Hybrid RANS/LES Simulations  ---*/
   /*!\par CONFIG_CATEGORY:Hybrid_RANSLES Options\ingroup Config*/
