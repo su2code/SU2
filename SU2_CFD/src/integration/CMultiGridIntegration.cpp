@@ -930,6 +930,10 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
   const unsigned short nVar = solver->GetnVar();
 
+  /*--- Seeded over all points, halos included: the restore loop below reads Residual_Old at the
+   *    vertices of the physical markers, and on a partitioned mesh some of those are halo points
+   *    owned by another rank. ---*/
+
   SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
   for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); iPoint++) {
     const auto* Residual_Old = solver->LinSysRes.GetBlock(iPoint);
@@ -942,10 +946,13 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
 
   for (auto iSmooth = 0u; iSmooth < val_nSmooth; iSmooth++) {
 
-    /*--- Loop over all mesh points (sum the residuals of direct neighbors). ---*/
+    /*--- Loop over the domain points (sum the residuals of direct neighbors).
+     *    Halo points are deliberately not smoothed here: their own neighbor stencil is incomplete
+     *    on this rank, so the average would be meaningless, and the halo exchange at the end of
+     *    each sweep overwrites them with the value their owner computed anyway. ---*/
 
-    SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
-    for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint) {
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPointDomain(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
 
       solver->GetNodes()->SetResidualSumZero(iPoint);
 
@@ -958,10 +965,10 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
     }
     END_SU2_OMP_FOR
 
-    /*--- Loop over all mesh points (update residuals with the neighbor averages). ---*/
+    /*--- Loop over the domain points (update residuals with the neighbor averages). ---*/
 
-    SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
-    for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint) {
+    SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPointDomain(), omp_get_num_threads()))
+    for (auto iPoint = 0ul; iPoint < geometry->GetnPointDomain(); ++iPoint) {
 
       su2double factor = 1.0/(1.0+val_smooth_coeff*su2double(geometry->nodes->GetnPoint(iPoint)));
 
@@ -973,20 +980,23 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
     }
     END_SU2_OMP_FOR
 
-    /*--- Restore original residuals (without average) at boundary points.
+    /*--- Restore original residuals (without average) at physical boundary points.
      *
-     *    FIXME (MPI): SEND_RECEIVE is not excluded here, so every point on a partition interface
-     *    has its smoothed correction reverted after each sweep. That is why this smoother gives a
-     *    different convergence history on 1 and on N ranks. Excluding SEND_RECEIVE is only half the
-     *    fix: the sweeps also read LinSysRes at halo points, which ProlongateField fills once but
-     *    nothing refreshes between sweeps, so a halo exchange of LinSysRes is needed inside the
-     *    loop (there is no MPI_QUANTITIES entry for it yet). Until both are done this smoother is
-     *    only parallel-consistent for MG_CORRECTION_SMOOTH= 0, which is the default. ---*/
+     *    SEND_RECEIVE is excluded: carrying such a marker does not put a point on a boundary, it
+     *    only records that the point is mirrored on another rank. Restoring those points froze the
+     *    correction on the whole send fringe, which is exactly the ring of domain points that have
+     *    a halo neighbour, so the smoothing this function applied depended on where the mesh
+     *    happened to be partitioned rather than on the geometry alone.
+     *
+     *    Note this removes one source of rank-dependence, not all of them: the coarse grids are
+     *    agglomerated per rank, so the multigrid operator itself still differs between partition
+     *    counts and a run on 1 and on N ranks is not expected to match bit for bit. ---*/
 
     for (auto iMarker = 0u; iMarker < geometry->GetnMarker(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
           (config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) &&
-          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE)) {
 
         SU2_OMP_FOR_STAT(32)
         for (auto iVertex = 0ul; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
@@ -997,6 +1007,19 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
         END_SU2_OMP_FOR
       }
     }
+
+    /*--- Refresh the halo entries of the correction with the values their owner ranks just
+     *    computed. The next sweep averages LinSysRes over the neighbours of every domain point,
+     *    and across a partition boundary those neighbours are halo points, so this has to run
+     *    once per sweep rather than once at the end. It comes after the restore so that a halo
+     *    point sitting on a physical boundary mirrors its owner's restored value.
+     *
+     *    The barrier is required: the restore loop above only carries an implicit barrier for the
+     *    markers that pass the test, so if the last marker is skipped there is none. ---*/
+
+    SU2_OMP_BARRIER
+    CSysMatrixComms::Initiate(solver->LinSysRes, geometry, config);
+    CSysMatrixComms::Complete(solver->LinSysRes, geometry, config);
 
   }
 
