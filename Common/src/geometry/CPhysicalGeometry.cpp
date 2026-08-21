@@ -52,6 +52,8 @@
 #include "../../include/geometry/primal_grid/CPrism.hpp"
 #include "../../include/geometry/primal_grid/CVertexMPI.hpp"
 
+#include "../../../Common/include/tracy_structure.hpp"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iterator>
@@ -5745,9 +5747,9 @@ void CPhysicalGeometry::SetTurboVertex(CConfig* config, unsigned short val_iZone
       }
     }
     if (marker_flag == INFLOW) {
-      multizone_filename = "TURBOMACHINERY/spanwise_division_inflow.dat";
+      multizone_filename = "TURBOMACHINERY/spanwise_division_inflow";
     } else {
-      multizone_filename = "TURBOMACHINERY/spanwise_division_outflow.dat";
+      multizone_filename = "TURBOMACHINERY/spanwise_division_outflow";
     }
     char buffer[50];
 
@@ -10365,7 +10367,6 @@ void CPhysicalGeometry::SetWallDistance(CADTElemClass* WallADT, const CConfig* c
   if (!WallADT->IsEmpty()) {
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
-
     SU2_OMP_PARALLEL {
       CPHYSGEO_PARFOR
       for (unsigned long iPoint = 0; iPoint < GetnPoint(); ++iPoint) {
