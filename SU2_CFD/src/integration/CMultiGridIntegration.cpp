@@ -331,6 +331,7 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
       /*--- The cross-cycle EMA is only meaningful while the active level is fixed:
        *    after a promotion the pre-smoothing RMS is measured on a different grid.
        *    Reseed the EMA and restore the configured factors. ---*/
+      mg_fine_rms_ema = 0.0;
       config[iZone]->SetDamp_Res_Restric(mg_damp_restric_initial);
       config[iZone]->SetDamp_Correc_Prolong(mg_damp_prolong_initial);
 

@@ -107,12 +107,12 @@ def main():
     test_list.append(naca0012)
 
     # NACA0012 - FMG test
-    naca0012           = TestCase('naca0012')
-    naca0012.cfg_dir   = "euler/naca0012"
-    naca0012.cfg_file  = "inv_NACA0012.cfg"
-    naca0012.test_iter = 20
-    naca0012.test_vals = [-4.489721, -3.937702, 0.293347, 0.025228]
-    test_list.append(naca0012)
+    naca0012_FMG           = TestCase('naca0012_FMG')
+    naca0012_FMG.cfg_dir   = "euler/naca0012"
+    naca0012_FMG.cfg_file  = "inv_NACA0012.cfg"
+    naca0012_FMG.test_iter = 20
+    naca0012_FMG.test_vals = [-4.489721, -3.937702, 0.293347, 0.025228]
+    test_list.append(naca0012_FMG)
 
     # Supersonic wedge
     wedge           = TestCase('wedge')

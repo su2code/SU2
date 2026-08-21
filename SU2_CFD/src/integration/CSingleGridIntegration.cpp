@@ -49,8 +49,16 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   CGeometry* geometry_fine = geometry[iZone][iInst][FinestMesh];
   CSolver** solvers_fine = solver_container[iZone][iInst][FinestMesh];
 
-  if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
-    /*--- CFL scaling of turbulence during the warmup phase if FMG. ---*/
+  /*--- During the Full-MG startup the flow equations are being solved on a coarse level at that
+   *    level's (ramped) CFL, while the turbulence equations are always solved on the grid the
+   *    flow solver is currently using. Put the turbulence solver on the matching CFL so the two
+   *    advance together instead of the turbulence running at the fine-grid number.
+   *
+   *    Strictly limited to the startup phase: outside it this would overwrite the per-point CFL
+   *    the turbulence solver maintains itself, discarding any CFL adaptation, on every RANS run
+   *    whether or not multigrid is used at all. ---*/
+  if (RunTime_EqSystem == RUNTIME_TURB_SYS && config[iZone]->GetMGCycle() == MG_CYCLE::FULL &&
+      FinestMesh != MESH_0) {
     const su2double turbReduction = SU2_TYPE::GetValue(config[iZone]->GetCFLRedCoeff_Turb());
     const su2double turbCFL = SU2_TYPE::GetValue(config[iZone]->GetCFL(FinestMesh)) * turbReduction;
     auto* turbSolver = solvers_fine[Solver_Position];
