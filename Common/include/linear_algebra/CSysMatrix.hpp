@@ -174,7 +174,9 @@ SU2_CUDA_HOST_DEVICE FORCEINLINE void EncodeQuantRow(const F& f, int8_t& qs, int
   memcpy(&inv_rscale, &inv_bits, sizeof(inv_rscale));
 #endif
   for (auto c = 0ul; c < nVar; ++c) {
-    qv[c] = static_cast<int8_t>(max(-128.f, min(127.f, roundf(EQR_PASSIVE(r, c) * inv_rscale))));
+    /*--- Truncate and add 0.5 away from 0, equivalent to roundf, but inline. ---*/
+    const float t = max(-128.f, min(127.f, static_cast<float>(EQR_PASSIVE(r, c) * inv_rscale)));
+    qv[c] = static_cast<int8_t>(t + copysignf(0.5f, t));
   }
 #undef EQR_PASSIVE
 }
@@ -587,7 +589,9 @@ class CSysMatrix {
 
   /*! \brief Quantize one nVar×nVar block (row-major) into the int8 scale+value arrays.
    *         Called on the hot assembly path (SetBlocks/UpdateBlocks in Q_LU_SGS mode). */
-  void QuantizeBlock(const ScalarType* blk, QuantType* qs, QuantType* qv) const;
+  inline void QuantizeBlock(const ScalarType* blk, QuantType* qs, QuantType* qv) const {
+    EncodeQuantBlock([&](unsigned long r, unsigned long c) { return blk[r * nVar + c]; }, qs, qv, nVar);
+  }
 
   /*! \brief Full-row product using quantized L/D/U (Q_LU_SGS SpMV path). */
   inline void QuantizedRowProduct(const CSysVector<ScalarType>& vec, unsigned long row_i, ScalarType* prod) const;
@@ -908,6 +912,7 @@ class CSysMatrix {
     static_assert(MatTypeSIMD::IsRowMajor, "Block storage is not compatible with matrix.");
     constexpr size_t blkSz = MatTypeSIMD::StaticSize;
     assert(blkSz == nVar * nEqn);
+    constexpr size_t nVar = MatTypeSIMD::StaticNRows;
 
     /*--- "Transpose" the blocks, scale, and possibly convert types,
      * giving the compiler the chance to vectorize all of these. ---*/
@@ -934,9 +939,11 @@ class CSysMatrix {
           bii[i] -= blk_i[k][i];
           bjj[i] -= blk_j[k][i];
         }
-        QuantizeBlock(blk_j[k], &q_scale.u[iEdge[k] * nVar], &q_blocks.u[iEdge[k] * blkSz]);
+        EncodeQuantBlock([&, k](unsigned long r, unsigned long c) { return blk_j[k][r * nVar + c]; },
+                         &q_scale.u[iEdge[k] * nVar], &q_blocks.u[iEdge[k] * blkSz], nVar);
         const auto k_l = edge_ptr_l[iEdge[k]];
-        QuantizeBlock(blk_i[k], &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
+        EncodeQuantBlock([&, k](unsigned long r, unsigned long c) { return blk_i[k][r * nVar + c]; },
+                         &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz], nVar);
       } else {
         auto bij = &mat.u[iEdge[k] * blkSz];
         auto bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];
@@ -1022,6 +1029,7 @@ class CSysMatrix {
     static_assert(MatTypeSIMD::IsRowMajor, "Block storage is not compatible with matrix.");
     constexpr size_t blkSz = MatTypeSIMD::StaticSize;
     assert(blkSz == nVar * nEqn);
+    constexpr size_t nVar = MatTypeSIMD::StaticNRows;
 
     /*--- "Transpose" the blocks, scale, and possibly convert types,
      * giving the compiler the chance to vectorize all of these. ---*/
@@ -1040,9 +1048,11 @@ class CSysMatrix {
       if (mask[k] == 0) continue;
 
       if (quantized_mode) {
-        QuantizeBlock(blk_j[k], &q_scale.u[iEdge[k] * nVar], &q_blocks.u[iEdge[k] * blkSz]);
+        EncodeQuantBlock([&, k](unsigned long r, unsigned long c) { return blk_j[k][r * nVar + c]; },
+                         &q_scale.u[iEdge[k] * nVar], &q_blocks.u[iEdge[k] * blkSz], nVar);
         const auto k_l = edge_ptr_l[iEdge[k]];
-        QuantizeBlock(blk_i[k], &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz]);
+        EncodeQuantBlock([&, k](unsigned long r, unsigned long c) { return blk_i[k][r * nVar + c]; },
+                         &q_scale.l[k_l * nVar], &q_blocks.l[k_l * blkSz], nVar);
       } else {
         ScalarType* bij = &mat.u[iEdge[k] * blkSz];
         ScalarType* bji = &mat.l[edge_ptr_l[iEdge[k]] * blkSz];

@@ -759,11 +759,6 @@ void CSysMatrixComms::Complete(CSysVector<T>& x, CGeometry* geometry, const CCon
 }
 
 template <class ScalarType>
-void CSysMatrix<ScalarType>::QuantizeBlock(const ScalarType* blk, QuantType* qs, QuantType* qv) const {
-  EncodeQuantBlock([&](unsigned long r, unsigned long c) { return blk[r * nVar + c]; }, qs, qv, nVar);
-}
-
-template <class ScalarType>
 void CSysMatrix<ScalarType>::QuantizeDiagonalBlocks() {
   SU2_ZONE_SCOPED
 
