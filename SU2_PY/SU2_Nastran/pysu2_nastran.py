@@ -29,6 +29,8 @@
 #  Imports
 # ----------------------------------------------------------------------
 
+import re
+
 import numpy as np
 import scipy.linalg as linalg
 from math import *
@@ -521,9 +523,9 @@ class Solver:
                     BZ = nastran_float(line[64:72])
                     z_direction = np.array([BX - AX, BY - AY, BZ - AZ])
                     z_direction = z_direction / linalg.norm(z_direction)
-                    line = meshfile.readline()
-                    line = line.strip("\r\n")
-                    line = line[30:]
+                    line = self.__readContinuationLine(
+                        meshfile, "CORD2R {}".format(CID)
+                    )
                     CX = nastran_float(line[8:16])
                     CY = nastran_float(line[16:24])
                     CZ = nastran_float(line[24:32])
@@ -540,32 +542,41 @@ class Solver:
 
                 pos = line.find("SET1")
                 if pos == 30:
-                    line = line.strip("\r\n")
-                    line = line[37:]
-                    line = line.split()
-                    existValue = True
-                    markerTag = line.pop(0)
+                    fields = line.strip("\r\n")[30:].split()
+                    fields.pop(0)
+                    markerTag = fields.pop(0)
                     self.markers[markerTag] = []
-                    while existValue:
-                        if line[0] == "+":
-                            line = meshfile.readline()
-                            line = line.strip("\r\n")
-                            line = line[37:]
-                            line = line.split()
-                        ID = int(line.pop(0))
+
+                    def addPoint(ID):
                         for iPoint in range(self.nPoint):
                             if self.node[iPoint].GetID() == ID:
-                                break
-                        if (iPoint == (self.nPoint - 1)) and (
-                            self.node[iPoint].GetID() != ID
-                        ):
-                            raise Exception(
-                                "Point {} in the set {} was not found in the mesh".format(
-                                    ID, markerTag
-                                )
+                                self.markers[markerTag].append(iPoint)
+                                return
+                        raise Exception(
+                            "Point {} in the set {} was not found in the mesh".format(
+                                ID, markerTag
                             )
-                        self.markers[markerTag].append(iPoint)
-                        existValue = len(line) >= 1
+                        )
+
+                    ID = None
+                    while fields:
+                        entry = fields.pop(0)
+                        if entry[0] in "+*" and not fields:
+                            # continuation marker in field 10, the set goes on
+                            fields = self.__readContinuationLine(
+                                meshfile, "SET1 {}".format(markerTag)
+                            ).split()
+                            fields.pop(0)
+                        elif entry == "THRU":
+                            # ranges may not open or close a line (QRG SET1 remark 4)
+                            last = ID
+                            ID = int(fields.pop(0))
+                            for thruID in range(last + 1, ID):
+                                addPoint(thruID)
+                            addPoint(ID)
+                        else:
+                            ID = int(entry)
+                            addPoint(ID)
                     self.nMarker += 1
                     continue
 
@@ -579,10 +590,36 @@ class Solver:
         print("Number of reference systems: {}".format(self.nRefSys))
         print("Moving marker: {}".format(self.FSI_marker))
         print(
-            "Number of points in the moving marker".format(
+            "Number of points in the moving marker: {}".format(
                 len(self.markers[self.FSI_marker])
             )
         )
+
+    def __readContinuationLine(self, meshfile, entry):
+        """
+        This method returns the card image of the next continuation line, skipping
+        the page titles, carriage control characters and column rulers with which
+        the f06 file paginates the sorted bulk data echo.
+        """
+
+        while True:
+            line = meshfile.readline()
+            if not line:
+                raise Exception(
+                    "Unexpected end of {} while reading a continuation of {}".format(
+                        self.Mesh_file, entry
+                    )
+                )
+            image = line.strip("\r\n")[30:]
+            fields = image.split()
+            if fields and fields[0][0] in "+*":
+                return image
+            if fields and re.match(r" *[0-9]+-", line):
+                raise Exception(
+                    "Expected a continuation of {} but found {}".format(
+                        entry, fields[0]
+                    )
+                )
 
     def __checkBlankField(self, string):
         """
