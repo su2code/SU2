@@ -130,6 +130,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
   cauchySerie = vector<vector<su2double>>(convFields.size(), vector<su2double>(nCauchy_Elems, 0.0));
   cauchyValue = 0.0;
   convergence = false;
+  convergenceInterrupted = false;
 
   /*--- Initialize time convergence monitoring structure ---*/
 
@@ -1014,15 +1015,24 @@ bool COutput::ConvergenceMonitoring(CConfig *config, unsigned long Iteration) {
 
   if (convFields.empty() || Iteration < config->GetStartConv_Iter()) convergence = false;
 
-  /*--- If a SIGTERM signal is sent to one of the processes, we set convergence to true. ---*/
-  if (STOP) convergence = true;
+  /*--- If a SIGTERM signal is sent to one of the processes, we set convergence to true so the
+   *    solver stops and saves the solution, but remember that the exit was forced by the signal
+   *    rather than by the convergence criteria so the exit message stays truthful. ---*/
+  if (STOP) {
+    if (!convergence) convergenceInterrupted = true;
+    convergence = true;
+  }
 
-  /*--- Apply the same convergence criteria to all processors. ---*/
+  /*--- Apply the same convergence criteria to all processors, and propagate an
+   *    interrupt received on any rank. ---*/
 
-  unsigned short local = convergence, global = 0;
+  unsigned short local[2] = {static_cast<unsigned short>(convergence),
+                             static_cast<unsigned short>(convergenceInterrupted)};
+  unsigned short global[2] = {0, 0};
 
-  SU2_MPI::Allreduce(&local, &global, 1, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
-  convergence = global > 0;
+  SU2_MPI::Allreduce(local, global, 2, MPI_UNSIGNED_SHORT, MPI_MAX, SU2_MPI::GetComm());
+  convergence = global[0] > 0;
+  convergenceInterrupted = global[1] > 0;
 
   return convergence;
 }
