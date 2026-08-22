@@ -316,12 +316,9 @@ private:
   su2double mg_damp_restric_initial = 0.0;  /*!< \brief MG_DAMP_RESTRICTION as configured. */
   su2double mg_damp_prolong_initial = 0.0;  /*!< \brief MG_DAMP_PROLONGATION as configured. */
 
-  /*--- Full-MG startup promotion state, fed by MonitorFullMG_Startup once per iteration and
-   *    consumed by the promotion check at the top of the next one. All of it tracks the currently
-   *    active level and is reset when that level changes.
+  /*--- Full-MG startup promotion state, fed by MonitorFullMG_Startup once per iteration.
    *
-   *    The values are CONV_FIELD as the output module reports it, i.e. log10 of the residual, so a
-   *    drop of N orders of magnitude is a fall of N in these numbers. ---*/
+   *    The values are CONV_FIELD (log10 of residual) ---*/
   bool mg_startup_conv_captured = false;    /*!< \brief Whether the level's starting value has been recorded yet. */
   passivedouble mg_startup_conv_start = 0.0;/*!< \brief CONV_FIELD when the active level became active. */
   bool mg_startup_conv_prev_set = false;    /*!< \brief Whether a previous-iteration value is available. */
