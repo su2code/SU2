@@ -362,7 +362,7 @@ class CSysMatrix {
    * rows in level k only depend on rows in levels < k. The same table drives the forward
    * (increasing level) and backward (decreasing level) substitution, because the U pattern is
    * the transpose of the L pattern. Used directly by the host/OMP substitution, and flattened
-   * into ilu_level_ptr / d_ilu_level_idx below for the GPU triangular solves. */
+   * into ilu_level_ptr / d_precond_level_idx below for the GPU triangular solves. */
   CCompressedSparsePatternUL levels_ilu;
 
   /*!< \brief Coloring of the (domain-only) ILU dependency graph, used only by the GPU iterative
@@ -379,19 +379,22 @@ class CSysMatrix {
   vector<su2uint> ilu_color_ptr;      /*!< \brief Start of each color in d_ilu_color_idx, size nColors+1. */
   su2uint* d_ilu_color_idx = nullptr; /*!< \brief Row indices, grouped by color. */
 
-  vector<su2uint> ilu_level_ptr;      /*!< \brief Start of each level in d_ilu_level_idx, size nLevels+1. */
-  su2uint* d_ilu_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
+  vector<su2uint> precond_level_ptr;      /*!< \brief Start of each level in d_precond_level_idx, size nLevels+1. */
+  su2uint* d_precond_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
 
   /*--- The per-color (factorization) and per-level (triangular solves) kernel launch sequences
    * are identical on every call: same grid/block sizes, same device pointers (all fixed members,
    * allocated once). Each is captured once into a CUDA graph and replayed to remove
    * host-side launch overhead without changing the parallelization. ---*/
   mutable struct CUgraphExec_st* ilu_build_graph_exec = nullptr;
-  mutable struct CUgraphExec_st* ilu_apply_graph_exec = nullptr;
-  mutable const ScalarType* ilu_apply_graph_vec = nullptr; /*!< \brief Pointers the apply graph
-                                                            * was captured with, to detect when
-                                                            * it must be recaptured. */
-  mutable ScalarType* ilu_apply_graph_prod = nullptr;
+  mutable struct CUgraphExec_st* precond_fwd_graph_exec = nullptr;  // ILU or LU-SGS forward only
+  mutable struct CUgraphExec_st* precond_bwd_graph_exec = nullptr;  // LU-SGS backward only
+  mutable const ScalarType* precond_fwd_graph_vec = nullptr;        /*!< \brief Pointers the apply graph
+                                                                     * was captured with, to detect when
+                                                                     * it must be recaptured. */
+  mutable ScalarType* precond_fwd_graph_prod = nullptr;
+  mutable ScalarType* precond_bwd_graph_prod = nullptr;
+
   /*--- Non-default stream, needed for two mutually exclusive uses that never overlap on a given
    * matrix (quantized_mode and ILU are alternative preconditioner choices, decided once in
    * Initialize()): (1) the ILU build/apply CUDA graphs below, since the legacy default stream
@@ -404,15 +407,6 @@ class CSysMatrix {
    * (the quantized SpMV) can wait on it without a host-side block. ---*/
   mutable struct CUstream_st* aux_stream = nullptr;
   mutable struct CUevent_st* htd_event = nullptr;
-
-  vector<su2uint> lusgs_level_ptr;      /*!< \brief Start of each level in d_lusgs_level_idx, size nLevels+1. */
-  su2uint* d_lusgs_level_idx = nullptr; /*!< \brief Row indices, grouped by level. */
-  mutable struct CUgraphExec_st* lusgs_fwd_graph_exec = nullptr;
-  mutable struct CUgraphExec_st* lusgs_bwd_graph_exec = nullptr;
-  mutable const ScalarType* lusgs_fwd_graph_vec = nullptr;
-  mutable const ScalarType* lusgs_bwd_graph_vec = nullptr;
-  mutable ScalarType* lusgs_fwd_graph_prod = nullptr;
-  mutable ScalarType* lusgs_bwd_graph_prod = nullptr;
 
   ScalarType* invM; /*!< \brief Inverse of (Jacobi) preconditioner. */
 
@@ -676,10 +670,14 @@ class CSysMatrix {
   void BuildLU_SGSPreconditionerGPU();
 
   /*!
-   * \brief Apply the LU-SGS preconditioner on the device
+   * \brief Apply the LU-SGS preconditioner forward pass on the device
    */
-  void ComputeLU_SGSPreconditionerGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod,
-                                      CGeometry* geometry, const CConfig* config) const;
+  void ComputeLU_SGSForwardGPU(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
+
+  /*!
+   * \brief Apply the LU-SGS preconditioner backward pass on the device
+   */
+  void ComputeLU_SGSBackwardGPU(CSysVector<ScalarType>& prod) const;
 
  public:
   /*!
@@ -1260,6 +1258,16 @@ class CSysMatrix {
    */
   void ComputeLU_SGSPreconditioner(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod, CGeometry* geometry,
                                    const CConfig* config) const;
+
+  /*!
+   * \brief Apply the forward pass of the LU-SGS preconditioner
+   */
+  void ComputeLU_SGSPreconditionerForward(const CSysVector<ScalarType>& vec, CSysVector<ScalarType>& prod) const;
+
+  /*!
+   * \brief Apply the backward pass of the LU-SGS preconditioner
+   */
+  void ComputeLU_SGSPreconditionerBackward(CSysVector<ScalarType>& prod) const;
 
   /*!
    * \brief Build the Linelet preconditioner.

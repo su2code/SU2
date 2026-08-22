@@ -159,13 +159,11 @@ CSysMatrix<ScalarType>::~CSysMatrix() {
     freeLDU(d_q_blocks);
     GPUMemoryAllocation::gpu_free(d_invM);
     GPUMemoryAllocation::gpu_free(d_ilu_color_idx);
-    GPUMemoryAllocation::gpu_free(d_ilu_level_idx);
-    GPUMemoryAllocation::gpu_free(d_lusgs_level_idx);
+    GPUMemoryAllocation::gpu_free(d_precond_level_idx);
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if (ilu_build_graph_exec != nullptr) cudaGraphExecDestroy(ilu_build_graph_exec);
-    if (ilu_apply_graph_exec != nullptr) cudaGraphExecDestroy(ilu_apply_graph_exec);
-    if (lusgs_fwd_graph_exec != nullptr) cudaGraphExecDestroy(lusgs_fwd_graph_exec);
-    if (lusgs_bwd_graph_exec != nullptr) cudaGraphExecDestroy(lusgs_bwd_graph_exec);
+    if (precond_fwd_graph_exec != nullptr) cudaGraphExecDestroy(precond_fwd_graph_exec);
+    if (precond_bwd_graph_exec != nullptr) cudaGraphExecDestroy(precond_bwd_graph_exec);
     if (aux_stream != nullptr) cudaStreamDestroy(aux_stream);
     if (htd_event != nullptr) cudaEventDestroy(htd_event);
 #endif
@@ -220,7 +218,7 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   const bool ilu_needed = (prec == ILU);
   const bool diag_needed = (prec == JACOBI) || (prec == Q_JACOBI) || (prec == LINELET);
-  const bool lu_sgs_on_device = useCuda && (prec == LU_SGS);
+  const bool lu_sgs_on_device = useCuda && (prec == LU_SGS || prec == Q_LU_SGS);
 
   /*--- Linelet also builds the Jacobi preconditioner but reads the inverse diagonal blocks on
    * the host, so only plain (or quantized) Jacobi can keep them exclusively on the device. ---*/
@@ -409,87 +407,72 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 
   if (diag_needed) allocAndInit(invM, nPointDomain * nVar * nEqn);
 
-  if (jacobi_on_device) {
+  const bool any_precond_on_device = useCuda && (jacobi_on_device || lu_sgs_on_device || ilu_needed);
+
+  if (any_precond_on_device) {
     if (nVar != nEqn) {
-      SU2_MPI::Error("CUDA Jacobi preconditioner requires square blocks.", CURRENT_FUNCTION);
+      SU2_MPI::Error("CUDA preconditioners require square blocks.", CURRENT_FUNCTION);
     }
     if (nVar * nVar > 1024) {
-      SU2_MPI::Error("CUDA Jacobi preconditioner uses one thread per block entry, nVar is too large.",
-                     CURRENT_FUNCTION);
+      SU2_MPI::Error("CUDA preconditioners use one thread per block entry, nVar is too large.", CURRENT_FUNCTION);
     }
-    d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
-  }
 
-  if (lu_sgs_on_device) {
-    // get the zero-filled sparse pattern for the LU-SGS
-    const auto& pat_lusgs = geometry->GetSparsePattern(type, 0);
+    if (jacobi_on_device || lu_sgs_on_device) {
+      d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
+    }
 
-    /*--- Compute the levels using the lower pattern for the forward pass and
-     * reverse the levels for the backward pass. This works if L and U are symmetric, to be verified ---*/
-    auto levels_lusgs = computeLevels(pat_lusgs.l);
-
-    /*--- Flatten levels_lusgs the same way. It drives both triangular solves on the device. ---*/
-    std::vector<su2uint> level_idx;
-    level_idx.reserve(nPointDomain);
-    lusgs_level_ptr.clear();
-    lusgs_level_ptr.push_back(0);
-    for (auto level = 0ul; level < levels_lusgs.getOuterSize(); ++level) {
-      for (auto k = 0ul; k < levels_lusgs.getNumNonZeros(level); ++k) {
-        level_idx.push_back(static_cast<su2uint>(levels_lusgs.getInnerIdx(level, k)));
+    /*--- Flattens a grouped sparse pattern (levels, colors) into a host ptr and device index arrays.
+     * Used in ILU levels and colors, and LU-SGS levels---*/
+    auto FlattenGroupToDevice = [](const auto& grouped, std::vector<su2uint>& group_ptr, unsigned long reserveHint,
+                                   unsigned long bound = ~0ul) {
+      std::vector<su2uint> flat_idx;
+      flat_idx.reserve(reserveHint);
+      group_ptr.clear();
+      group_ptr.push_back(0);
+      for (auto group = 0ul; group < grouped.getOuterSize(); ++group) {
+        for (auto k = 0ul; k < grouped.getNumNonZeros(group); ++k) {
+          auto idx = grouped.getInnerIdx(group, k);
+          if (static_cast<unsigned long>(idx) >= bound)
+            continue;  // prevent out of bounds in LU-SGS kernels if more than 1 mpi task
+          flat_idx.push_back(static_cast<su2uint>(idx));
+        }
+        group_ptr.push_back(static_cast<su2uint>(flat_idx.size()));
       }
-      lusgs_level_ptr.push_back(static_cast<su2uint>(level_idx.size()));
-    }
-    d_lusgs_level_idx = GPUMemoryAllocation::gpu_alloc_cpy(level_idx.data(), level_idx.size() * sizeof(su2uint));
+      return GPUMemoryAllocation::gpu_alloc_cpy(flat_idx.data(), flat_idx.size() * sizeof(su2uint));
+    };
 
-    // check if this can be placed under the jacobi_on_device condition
-    d_invM = GPUMemoryAllocation::gpu_alloc<ScalarType, true>(nPointDomain * nVar * nEqn * sizeof(ScalarType));
-  }
+    if (lu_sgs_on_device) {
+      // get the zero-filled sparse pattern for the LU-SGS
+      const auto& pat_lusgs = geometry->GetSparsePattern(type, 0);
 
-  if (useCuda && ilu_needed) {
-    if (nVar != nEqn) {
-      SU2_MPI::Error("CUDA ILU factorization requires square blocks.", CURRENT_FUNCTION);
-    }
-    if (nVar * nVar > 1024) {
-      SU2_MPI::Error("CUDA ILU factorization uses one thread per block entry, nVar is too large.", CURRENT_FUNCTION);
-    }
-    /*--- The factors are built and used on the device, only the pattern and the level table
-     * are uploaded (once, here) because they do not change. ---*/
-    gpu_ilu.nnz_l = ilu.nnz_l;
-    gpu_ilu.nnz_u = ilu.nnz_u;
-    GPUAllocAndInit(gpu_ilu.d, nPointDomain * nVar * nEqn);
-    GPUAllocAndInit(gpu_ilu.l, ilu.nnz_l * nVar * nEqn);
-    GPUAllocAndInit(gpu_ilu.u, ilu.nnz_u * nVar * nEqn);
-    GPUAllocAndCopy(gpu_ilu.row_ptr_l, ilu.row_ptr_l, nPointDomain + 1);
-    GPUAllocAndCopy(gpu_ilu.col_ind_l, ilu.col_ind_l, ilu.nnz_l);
-    GPUAllocAndCopy(gpu_ilu.row_ptr_u, ilu.row_ptr_u, nPointDomain + 1);
-    GPUAllocAndCopy(gpu_ilu.col_ind_u, ilu.col_ind_u, ilu.nnz_u);
+      /*--- Compute the levels using the lower pattern for the forward pass and
+       * reverse the levels for the backward pass. This works if L and U are symmetric, to be verified ---*/
+      auto levels_lusgs = computeLevels(pat_lusgs.l);
 
-    /*--- Flatten the coloring, the index type differs from the one of the pattern. It drives
-     * the factorization on the device. ---*/
-    std::vector<su2uint> color_idx;
-    color_idx.reserve(nPointDomain);
-    ilu_color_ptr.clear();
-    ilu_color_ptr.push_back(0);
-    for (auto color = 0ul; color < color_ilu.getOuterSize(); ++color) {
-      for (auto k = 0ul; k < color_ilu.getNumNonZeros(color); ++k) {
-        color_idx.push_back(static_cast<su2uint>(color_ilu.getInnerIdx(color, k)));
-      }
-      ilu_color_ptr.push_back(static_cast<su2uint>(color_idx.size()));
+      /*--- Flatten levels_lusgs. It drives both triangular solves on the device. ---*/
+      d_precond_level_idx = FlattenGroupToDevice(levels_lusgs, precond_level_ptr, nPointDomain, nPointDomain);
     }
-    d_ilu_color_idx = GPUMemoryAllocation::gpu_alloc_cpy(color_idx.data(), color_idx.size() * sizeof(su2uint));
 
-    /*--- Flatten levels_ilu the same way. It drives both triangular solves on the device. ---*/
-    std::vector<su2uint> level_idx;
-    level_idx.reserve(nPointDomain);
-    ilu_level_ptr.clear();
-    ilu_level_ptr.push_back(0);
-    for (auto level = 0ul; level < levels_ilu.getOuterSize(); ++level) {
-      for (auto k = 0ul; k < levels_ilu.getNumNonZeros(level); ++k) {
-        level_idx.push_back(static_cast<su2uint>(levels_ilu.getInnerIdx(level, k)));
-      }
-      ilu_level_ptr.push_back(static_cast<su2uint>(level_idx.size()));
+    if (ilu_needed) {
+      /*--- The factors are built and used on the device, only the pattern and the level table
+       * are uploaded (once, here) because they do not change. ---*/
+      gpu_ilu.nnz_l = ilu.nnz_l;
+      gpu_ilu.nnz_u = ilu.nnz_u;
+      GPUAllocAndInit(gpu_ilu.d, nPointDomain * nVar * nEqn);
+      GPUAllocAndInit(gpu_ilu.l, ilu.nnz_l * nVar * nEqn);
+      GPUAllocAndInit(gpu_ilu.u, ilu.nnz_u * nVar * nEqn);
+      GPUAllocAndCopy(gpu_ilu.row_ptr_l, ilu.row_ptr_l, nPointDomain + 1);
+      GPUAllocAndCopy(gpu_ilu.col_ind_l, ilu.col_ind_l, ilu.nnz_l);
+      GPUAllocAndCopy(gpu_ilu.row_ptr_u, ilu.row_ptr_u, nPointDomain + 1);
+      GPUAllocAndCopy(gpu_ilu.col_ind_u, ilu.col_ind_u, ilu.nnz_u);
+
+      /*--- Flatten the coloring, the index type differs from the one of the pattern. It drives
+       * the factorization on the device. ---*/
+      d_ilu_color_idx = FlattenGroupToDevice(color_ilu, ilu_color_ptr, nPointDomain);
+
+      /*--- Flatten levels_ilu the same way. It drives both triangular solves on the device. ---*/
+      d_precond_level_idx = FlattenGroupToDevice(levels_ilu, precond_level_ptr, nPointDomain);
     }
-    d_ilu_level_idx = GPUMemoryAllocation::gpu_alloc_cpy(level_idx.data(), level_idx.size() * sizeof(su2uint));
   }
 
   /*--- Thread parallel initialization. ---*/
@@ -1343,10 +1326,32 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
                                                          const CConfig* config) const {
   SU2_ZONE_SCOPED
 
+  /*--- First part of the symmetric iteration: (D+L).x* = b ---*/
+  ComputeLU_SGSPreconditionerForward(vec, prod);
+
+  /*--- MPI Parallelization ---*/
+
+  CSysMatrixComms::Initiate(prod, geometry, config);
+  CSysMatrixComms::Complete(prod, geometry, config);
+
+  /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
+  ComputeLU_SGSPreconditionerBackward(prod);
+
+  /*--- MPI Parallelization ---*/
+
+  CSysMatrixComms::Initiate(prod, geometry, config);
+  CSysMatrixComms::Complete(prod, geometry, config);
+}
+
+template <class ScalarType>
+void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditionerForward(const CSysVector<ScalarType>& vec,
+                                                                CSysVector<ScalarType>& prod) const {
+  SU2_ZONE_SCOPED
+
   if (useCuda) {
 #ifdef SU2_ENABLE_CUDA_KERNELS
     if constexpr (su2_gpu_capable_v<ScalarType>) {
-      SU2_DEVICE_REGION(ComputeLU_SGSPreconditionerGPU(vec, prod, geometry, config);)
+      SU2_DEVICE_REGION(ComputeLU_SGSForwardGPU(vec, prod);)
       return;
     } else {
       GPUNotAvailable(CURRENT_FUNCTION);
@@ -1392,13 +1397,26 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
     }
   }
   END_SU2_OMP_FOR
+}
 
-  /*--- MPI Parallelization ---*/
-
-  CSysMatrixComms::Initiate(prod, geometry, config);
-  CSysMatrixComms::Complete(prod, geometry, config);
+template <class ScalarType>
+void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditionerBackward(CSysVector<ScalarType>& prod) const {
+  SU2_ZONE_SCOPED
 
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
+
+  if (useCuda) {
+#ifdef SU2_ENABLE_CUDA_KERNELS
+    if constexpr (su2_gpu_capable_v<ScalarType>) {
+      SU2_DEVICE_REGION(ComputeLU_SGSBackwardGPU(prod);)
+      return;
+    } else {
+      GPUNotAvailable(CURRENT_FUNCTION);
+    }
+#else
+    GPUNotAvailable(CURRENT_FUNCTION);
+#endif
+  }
 
   /*--- OpenMP Parallelization ---*/
   SU2_OMP_FOR_STAT(1)
@@ -1430,11 +1448,6 @@ void CSysMatrix<ScalarType>::ComputeLU_SGSPreconditioner(const CSysVector<Scalar
     }
   }
   END_SU2_OMP_FOR
-
-  /*--- MPI Parallelization ---*/
-
-  CSysMatrixComms::Initiate(prod, geometry, config);
-  CSysMatrixComms::Complete(prod, geometry, config);
 }
 
 template <class ScalarType>
