@@ -284,25 +284,26 @@ void CDiscAdjMultizoneDriver::TapeTest() {
 
   /*--- This recording will assign the initial (same) tag to each registered variable.
    *    During the recording, each dependent variable will be assigned the same tag. ---*/
+  AD::SetTag(1);
 
   if(driver_config->GetAD_CheckTapeType() == CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
-      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES_AND_MESH_COORDINATES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLVER_AND_MESH, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for MESH_COORDINATES." << endl;
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     }
     else {
-      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLVER_VARIABLES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLVER_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking OBJECTIVE_FUNCTION_TAPE for SOLUTION_VARIABLES." << endl;
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     }
   }
   else {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES) {
-      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLVER_VARIABLES_AND_MESH_COORDINATES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLVER_AND_MESH, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for MESH_COORDINATES." << endl;
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
     else {
-      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLVER_VARIABLES." << endl;
-      SetRecording(RECORDING::TAG_INIT_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      if (rank == MASTER_NODE) cout << "\nChecking FULL_SOLVER_TAPE for SOLUTION_VARIABLES." << endl;
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     }
   }
   total_errors = TapeTestGatherErrors(error_report);
@@ -315,18 +316,19 @@ void CDiscAdjMultizoneDriver::TapeTest() {
    *    from the initial recording and a mismatch with the "check" recording tag will throw an error.
    *    In such a case, a possible reason could be that such a variable is set by a post-processing routine while
    *    for a mathematically correct recording this dependency must be included earlier. ---*/
+  AD::SetTag(2);
 
   if(driver_config->GetAD_CheckTapeType() == CHECK_TAPE_TYPE::OBJECTIVE_FUNCTION) {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES)
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_AND_MESH, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
     else
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::OBJECTIVE_FUNCTION_TAPE, ZONE_0);
   }
   else {
     if(driver_config->GetAD_CheckTapeVariables() == CHECK_TAPE_VARIABLES::MESH_COORDINATES)
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_AND_MESH, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      SetRecording(RECORDING::MESH_COORDS, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
     else
-      SetRecording(RECORDING::TAG_CHECK_SOLVER_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
+      SetRecording(RECORDING::SOLUTION_VARIABLES, Kind_Tape::FULL_SOLVER_TAPE, ZONE_0);
   }
   total_errors += TapeTestGatherErrors(error_report);
 
@@ -887,6 +889,12 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
 
         if (config->GetWeakly_Coupled_Heat()) {
           solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
+        }
+
+        if(config->GetBoolTurbomachinery()){
+          /*--- Gather Inflow and Outflow quantities on the Master Node to compute performance ---*/
+          solvers[FLOW_SOL]->GatherInOutAverageValues(config, geometry);
+          solvers[FLOW_SOL]->ComputeTurboBladePerformance(geometry, config, iZone);
         }
 
         direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
