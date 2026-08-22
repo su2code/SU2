@@ -28,6 +28,7 @@
 #pragma once
 
 #include "../basic_types/datatype_structure.hpp"
+#include "../code_config.hpp"
 #include <type_traits>
 #include <algorithm>
 #include <cassert>
@@ -38,12 +39,6 @@
 namespace VecExpr {
 /// \addtogroup VecExpr
 /// @{
-
-#ifdef __CUDACC__
-#define SU2_CUDA_HOST_DEVICE __host__ __device__
-#else
-#define SU2_CUDA_HOST_DEVICE
-#endif
 
 /*!
  * \brief Base vector expression class.
@@ -251,5 +246,4 @@ MAKE_BINARY_FUN(operator>, gt_, gt_impl)
 #undef MAKE_BINARY_FUN
 
 /// @}
-#undef SU2_CUDA_HOST_DEVICE
 }  // namespace VecExpr

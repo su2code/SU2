@@ -86,6 +86,15 @@ def main():
     flame_init_methods.new_output = True
     test_list.append(flame_init_methods)
 
+    # 2D laminar premixed ch4-air flame, transient flame propagation  
+    cfd_flamelet_ch4_unsteady = TestCase('cfd_flamelet_ch4_unsteady')
+    cfd_flamelet_ch4_unsteady.cfg_dir = "flamelet/09_laminar_premixed_ch4_flame_unsteady"
+    cfd_flamelet_ch4_unsteady.cfg_file = "lam_prem_ch4_unsteady.cfg"
+    cfd_flamelet_ch4_unsteady.test_iter = 5
+    cfd_flamelet_ch4_unsteady.test_vals = [-8.856420, -8.095249, -9.153744, -9.321679]
+    cfd_flamelet_ch4_unsteady.test_vals_aarch64 = [-8.855500, -8.095195, -9.153704, -9.321686]
+    test_list.append(cfd_flamelet_ch4_unsteady)
+
     #########################
     ## NEMO solver ###
     #########################
@@ -1173,7 +1182,7 @@ def main():
     Aachen_3D_restart.cfg_file = "aachen_3D_MP_restart.cfg"
     Aachen_3D_restart.test_iter = 5
     Aachen_3D_restart.tol = 0.00001
-    Aachen_3D_restart.test_vals = [-7.701448, -8.512355, -6.014939, -6.468419, -5.801738, -4.607179, -5.550692, -5.300771, -3.804188, -5.256009, -5.765048, -3.609605, -2.229276, -2.883895, -0.563469]
+    Aachen_3D_restart.test_vals = [-7.701420, -8.504728, -6.014939, -6.468223, -5.801124, -4.607179, -5.550665, -5.300778, -3.804188, -5.255983, -5.763060, -3.609605, -2.229249, -2.880453, -0.563469]
     test_list.append(Aachen_3D_restart)
 
     # Jones APU Turbocharger restart
@@ -1181,7 +1190,7 @@ def main():
     Jones_tc_restart.cfg_dir   = "turbomachinery/APU_turbocharger"
     Jones_tc_restart.cfg_file  = "Jones_restart.cfg"
     Jones_tc_restart.test_iter = 5
-    Jones_tc_restart.test_vals = [-7.645871, -5.849734, -15.337010, -9.825759, -13.216108, -7.752293, 73286.000000, 73286.000000, 0.020055, 82.286000]
+    Jones_tc_restart.test_vals = [-11.942136, -12.212801, -19.255081, -13.545405, -19.091794, -13.455630, 73286.000000, 73286.000000, 0.020056, 82.286000]
     test_list.append(Jones_tc_restart)
 
     # 2D axial stage
@@ -1189,7 +1198,7 @@ def main():
     axial_stage2D.cfg_dir   = "turbomachinery/axial_stage_2D"
     axial_stage2D.cfg_file  = "Axial_stage2D.cfg"
     axial_stage2D.test_iter = 20
-    axial_stage2D.test_vals = [1.167161, 1.598507, -2.928575, 2.573646, -2.527392, 3.016170, 106370.000000, 106370.000000, 5.726800, 64.383000]
+    axial_stage2D.test_vals = [1.167491, 1.598507, -2.928578, 2.573644, -2.527392, 3.016170, 106370.000000, 106370.000000, 5.726800, 64.383000]
     test_list.append(axial_stage2D)
 
     # 2D transonic stator restart
@@ -1206,8 +1215,8 @@ def main():
     multi_interface.cfg_dir            = "turbomachinery/multi_interface"
     multi_interface.cfg_file           = "multi_interface_rst.cfg"
     multi_interface.test_iter          = 5
-    multi_interface.test_vals          = [-8.632229, -8.894737, -9.348730]
-    multi_interface.test_vals_aarch64  = [-8.632229, -8.894737, -9.348730]
+    multi_interface.test_vals          = [-8.632227, -8.894736, -9.348706]
+    multi_interface.test_vals_aarch64  = [-8.632227, -8.894736, -9.348706]
     test_list.append(multi_interface)
 
     ######################################
@@ -1561,7 +1570,7 @@ def main():
     pywrapper_rigidMotion.cfg_dir = "py_wrapper/flatPlate_rigidMotion"
     pywrapper_rigidMotion.cfg_file = "flatPlate_rigidMotion_Conf.cfg"
     pywrapper_rigidMotion.test_iter = 5
-    pywrapper_rigidMotion.test_vals = [-1.614166, 2.255135, 0.350196, 0.089496]
+    pywrapper_rigidMotion.test_vals = [-1.607009, 2.260791, 0.350196, 0.089496]
     pywrapper_rigidMotion.command = TestCase.Command("mpirun -np 2", "python", "launch_flatPlate_rigidMotion.py --parallel -f")
     pywrapper_rigidMotion.unsteady = True
     test_list.append(pywrapper_rigidMotion)
@@ -1797,7 +1806,7 @@ def main():
     species3_multizone_restart.cfg_dir   = "species_transport/multizone"
     species3_multizone_restart.cfg_file  = "configMaster.cfg"
     species3_multizone_restart.test_iter = 5
-    species3_multizone_restart.test_vals = [-4.634484, -4.515504]
+    species3_multizone_restart.test_vals = [-4.634924, -4.516692]
     species3_multizone_restart.multizone = True
     test_list.append(species3_multizone_restart)
 

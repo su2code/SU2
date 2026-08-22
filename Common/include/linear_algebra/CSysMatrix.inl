@@ -147,8 +147,8 @@ FORCEINLINE void CSysMatrix<ScalarType>::GaussElimination(unsigned long block_i,
 template <class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::QuantizedGaussElimination(unsigned long block_i, ScalarType* rhs) const {
   ScalarType block[MAXNVAR * MAXNVAR];
-  const QuantType* __restrict qs = &q_scale_d[block_i * nVar];
-  const QuantType* __restrict qv = &q_blocks_d[block_i * nVar * nVar];
+  const QuantType* __restrict qs = &q_scale.d[block_i * nVar];
+  const QuantType* __restrict qv = &q_blocks.d[block_i * nVar * nVar];
   for (auto r = 0ul; r < nVar; ++r) {
     const float row_scale = DecodeQuantScale(qs[r]);
     for (auto c = 0ul; c < nVar; ++c) block[r * nVar + c] = static_cast<ScalarType>(qv[r * nVar + c] * row_scale);
@@ -242,12 +242,12 @@ FORCEINLINE void CSysMatrix<ScalarType>::QuantizedRowProduct(const CSysVector<Sc
   for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
 
   for (auto k = mat.row_ptr_l[row_i]; k < mat.row_ptr_l[row_i + 1]; k++) {
-    QuantizedMatVecAdd(&q_scale_l[k * nVar], &q_blocks_l[k * nVar * nEqn], &vec[mat.col_ind_l[k] * nEqn], prod);
+    QuantizedMatVecAdd(&q_scale.l[k * nVar], &q_blocks.l[k * nVar * nEqn], &vec[mat.col_ind_l[k] * nEqn], prod);
   }
-  QuantizedMatVecAdd(&q_scale_d[row_i * nVar], &q_blocks_d[row_i * nVar * nEqn], &vec[row_i * nEqn], prod);
+  QuantizedMatVecAdd(&q_scale.d[row_i * nVar], &q_blocks.d[row_i * nVar * nEqn], &vec[row_i * nEqn], prod);
 
   for (auto k = mat.row_ptr_u[row_i]; k < mat.row_ptr_u[row_i + 1]; k++) {
-    QuantizedMatVecAdd(&q_scale_u[k * nVar], &q_blocks_u[k * nVar * nEqn], &vec[mat.col_ind_u[k] * nEqn], prod);
+    QuantizedMatVecAdd(&q_scale.u[k * nVar], &q_blocks.u[k * nVar * nEqn], &vec[mat.col_ind_u[k] * nEqn], prod);
   }
 }
 
@@ -259,7 +259,7 @@ FORCEINLINE void CSysMatrix<ScalarType>::QuantizedUpperProduct(const CSysVector<
   for (auto index = mat.row_ptr_u[row_i]; index < mat.row_ptr_u[row_i + 1]; index++) {
     auto col_j = mat.col_ind_u[index];
     if (col_j < col_ub || col_j >= nPointDomain) {
-      QuantizedMatVecAdd(&q_scale_u[index * nVar], &q_blocks_u[index * nVar * nEqn], &vec[col_j * nEqn], prod);
+      QuantizedMatVecAdd(&q_scale.u[index * nVar], &q_blocks.u[index * nVar * nEqn], &vec[col_j * nEqn], prod);
     }
   }
 }
@@ -272,7 +272,7 @@ FORCEINLINE void CSysMatrix<ScalarType>::QuantizedLowerProduct(const CSysVector<
   for (auto index = mat.row_ptr_l[row_i]; index < mat.row_ptr_l[row_i + 1]; index++) {
     auto col_j = mat.col_ind_l[index];
     if (col_j >= col_lb) {
-      QuantizedMatVecAdd(&q_scale_l[index * nVar], &q_blocks_l[index * nVar * nEqn], &vec[col_j * nEqn], prod);
+      QuantizedMatVecAdd(&q_scale.l[index * nVar], &q_blocks.l[index * nVar * nEqn], &vec[col_j * nEqn], prod);
     }
   }
 }
@@ -281,5 +281,5 @@ template <class ScalarType>
 FORCEINLINE void CSysMatrix<ScalarType>::QuantizedDiagonalProduct(const CSysVector<ScalarType>& vec,
                                                                   unsigned long row_i, ScalarType* prod) const {
   for (auto iVar = 0ul; iVar < nVar; iVar++) prod[iVar] = 0.0;
-  QuantizedMatVecAdd(&q_scale_d[row_i * nVar], &q_blocks_d[row_i * nVar * nEqn], &vec[row_i * nEqn], prod);
+  QuantizedMatVecAdd(&q_scale.d[row_i * nVar], &q_blocks.d[row_i * nVar * nEqn], &vec[row_i * nEqn], prod);
 }
