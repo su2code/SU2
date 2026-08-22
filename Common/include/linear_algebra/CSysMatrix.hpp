@@ -152,7 +152,7 @@ SU2_CUDA_HOST_DEVICE FORCEINLINE void EncodeQuantRow(const F& f, int8_t& qs, int
   using std::max;
   using std::min;
 #endif
-  constexpr uint32_t eps_bits = 0x34000000u;
+  constexpr uint32_t eps_bits = 0x34000000u;  // ~1.2e-7
   uint32_t max_abs_bits = eps_bits;
   for (auto c = 0ul; c < nVar; ++c) {
     const auto fv = static_cast<float>(EQR_PASSIVE(r, c));
@@ -162,8 +162,10 @@ SU2_CUDA_HOST_DEVICE FORCEINLINE void EncodeQuantRow(const F& f, int8_t& qs, int
     uint32_t fb;
     memcpy(&fb, &fv, sizeof(fb));
 #endif
-    max_abs_bits = max(max_abs_bits, fb & 0x7FFFFFFFu);
+    max_abs_bits = max(max_abs_bits, fb & 0x7FFFFFFFu /* masks the sign bit */);
   }
+  /*--- Subtract 127 (the float offset), add 1 (round up the exponent),
+   * subtract 7 (to divide by 128. which is int8 range for "qv") = 133. ---*/
   const int e = min(127, max(-128, static_cast<int>(max_abs_bits >> 23) - 133));
   qs = static_cast<int8_t>(e);
   const uint32_t inv_bits = static_cast<uint32_t>(127 - e) << 23;
