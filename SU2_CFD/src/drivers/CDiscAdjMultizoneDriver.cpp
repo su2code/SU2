@@ -306,7 +306,6 @@ void CDiscAdjMultizoneDriver::TapeTest() {
   /*--- This recording will assign an initial, zone-specific tag to each registered variable.
    *    During the recording, each dependent variable will be assigned the same tag. ---*/
 
-
   out << "-----------------------------------------------------------------------------------------" << std::endl;
   out << "INITIAL recording." << std::endl;
   out << "Errors appearing in this recording are most likely preaccumulation errors (preaccumulation tag: 1337).\n" << std::endl;
@@ -343,7 +342,6 @@ void CDiscAdjMultizoneDriver::TapeTest() {
    *    from the initial recording and a mismatch with the "check" recording tag will throw an error.
    *    In such a case, a possible reason could be that such a variable is set by a post-processing routine while
    *    for a mathematically correct recording this dependency must be included earlier. ---*/
-
 
   out << "-------------------------------------------------------------------------------------------------" << std::endl;
   out << "IZONE = " << iZone << ", SECOND recording." << std::endl;
@@ -949,13 +947,13 @@ void CDiscAdjMultizoneDriver::SetObjFunction(RECORDING kind_recording) {
           solvers[FLOW_SOL]->ComputeTurboBladePerformance(geometry, config, iZone);
         }
 
-        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
+        direct_output[iZone]->SetObjectiveFunctionValues(geometry, solvers, config);
         ObjFunc += solvers[FLOW_SOL]->GetTotal_ComboObj();
         break;
 
       case MAIN_SOLVER::DISC_ADJ_HEAT:
         solvers[HEAT_SOL]->Heat_Fluxes(geometry, solvers, config);
-        direct_output[iZone]->SetHistoryOutput(geometry, solvers, config);
+        direct_output[iZone]->SetObjectiveFunctionValues(geometry, solvers, config);
         ObjFunc += solvers[HEAT_SOL]->GetTotal_ComboObj();
         break;
 
