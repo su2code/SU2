@@ -261,14 +261,16 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
 #endif
     /*--- .l/.u are pinned (page-locked) when useCuda because HtDTransfer() uploads them with
      * cudaMemcpyAsync, which is only genuinely asynchronous from pinned host memory. ---*/
-    auto allocQ = [](QuantType*& ptr, unsigned long n) {
-      ptr = MemoryAllocation::aligned_alloc<QuantType, true>(64, n * sizeof(QuantType));
+    auto allocQ = [](auto*& ptr, unsigned long n) {
+      using T = std::remove_reference_t<decltype(*ptr)>;
+      ptr = MemoryAllocation::aligned_alloc<T, true>(64, n * sizeof(T));
     };
-    auto allocPinnedIfCuda = [useCuda = this->useCuda](QuantType*& ptr, unsigned long n) {
+    auto allocPinnedIfCuda = [useCuda = this->useCuda](auto*& ptr, unsigned long n) {
+      using T = std::remove_reference_t<decltype(*ptr)>;
       if (useCuda) {
-        ptr = GPUMemoryAllocation::pinned_alloc<QuantType, true>(n * sizeof(QuantType));
+        ptr = GPUMemoryAllocation::pinned_alloc<T, true>(n * sizeof(T));
       } else {
-        ptr = MemoryAllocation::aligned_alloc<QuantType, true>(64, n * sizeof(QuantType));
+        ptr = MemoryAllocation::aligned_alloc<T, true>(64, n * sizeof(T));
       }
     };
     allocPinnedIfCuda(q_scale.l, mat.nnz_l * nVar);
@@ -303,8 +305,9 @@ void CSysMatrix<ScalarType>::Initialize(unsigned long npoint, unsigned long npoi
       /*--- Device mirrors of the host quantized storage; gpu.l/gpu.u are not allocated (nothing
        * would ever read them). d_q_scale.d/d_q_blocks.d are uploaded from the host result once
        * QuantizeDiagonalBlocks() has computed it, see the comment on those members. ---*/
-      auto GPUAllocQ = [](QuantType*& ptr, unsigned long n) {
-        ptr = GPUMemoryAllocation::gpu_alloc<QuantType, true>(n * sizeof(QuantType));
+      auto GPUAllocQ = [](auto*& ptr, unsigned long n) {
+        using T = std::remove_reference_t<decltype(*ptr)>;
+        ptr = GPUMemoryAllocation::gpu_alloc<T, true>(n * sizeof(T));
       };
       GPUAllocQ(d_q_scale.l, mat.nnz_l * nVar);
       GPUAllocQ(d_q_blocks.l, mat.nnz_l * nVar * nEqn);
@@ -1609,7 +1612,7 @@ void CSysMatrix<ScalarType>::SetDiagonalAsColumnSum() {
       for (auto k_u = mat.row_ptr_u[iPoint]; k_u < mat.row_ptr_u[iPoint + 1]; ++k_u)
         MatrixSubtraction(d_i, &mat.l[u_to_l_transp[k_u] * blkSz], d_i);
     } else {
-      auto subtractTransp = [&](su2uint k_transp, const QuantType* qs, const QuantType* qv) {
+      auto subtractTransp = [&](su2uint k_transp, const QuantScaleType* qs, const QuantType* qv) {
         const CBlockView<const ScalarType> view{nullptr, &qs[k_transp * nVar], &qv[k_transp * blkSz], nVar};
         for (auto i = 0ul; i < nVar; ++i)
           for (auto j = 0ul; j < nEqn; ++j) d_i[i * nEqn + j] -= view(i, j);
