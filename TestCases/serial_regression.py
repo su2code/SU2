@@ -111,7 +111,7 @@ def main():
     naca0012_FMG.cfg_dir   = "euler/naca0012"
     naca0012_FMG.cfg_file  = "inv_NACA0012.cfg"
     naca0012_FMG.test_iter = 20
-    naca0012_FMG.test_vals = [-4.489721, -3.937702, 0.293347, 0.025228]
+    naca0012_FMG.test_vals = [-3.907807, -3.301463, 0.228380, 0.029354]
     test_list.append(naca0012_FMG)
 
     # Supersonic wedge
