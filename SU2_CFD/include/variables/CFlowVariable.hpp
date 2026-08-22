@@ -1,7 +1,7 @@
 /*!
  * \file CFlowVariable.hpp
  * \brief Class for defining the common variables of flow solvers.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -263,11 +263,25 @@ class CFlowVariable : public CVariable {
    * \param[in] iPoint - Point index.
    * \return Value of magnitude.
    */
-  inline su2double GetStrainMag(unsigned long iPoint) const { return StrainMag(iPoint); }
+  inline su2double GetStrainMag(unsigned long iPoint) const final { return StrainMag(iPoint); }
 
   /*!
    * \brief Get the entire vector of the rate of strain magnitude.
    * \return Vector of magnitudes.
    */
   inline su2activevector& GetStrainMag() { return StrainMag; }
+
+  /*!
+   * \brief Get the density at time level n for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n.
+   */
+  virtual su2double GetDensity_time_n(unsigned long iPoint) const = 0;
+
+  /*!
+   * \brief Get the density at time level n-1 for dual-time stepping.
+   * \param[in] iPoint - Point index.
+   * \return Density at time level n-1.
+   */
+  virtual su2double GetDensity_time_n1(unsigned long iPoint) const = 0;
 };

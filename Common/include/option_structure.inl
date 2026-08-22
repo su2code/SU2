@@ -3,7 +3,7 @@
  * \brief Template derived classes from COption, defined here as we
  *        only include them where needed to reduce compilation time.
  * \author J. Hicken, B. Tracey
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -1101,6 +1101,21 @@ struct CStringValuesListHelper<T*> {
 };
 
 // Class where the option is represented by (string, N * "some type", string, N * "some type", ...)
+/*!
+ * \brief Whether a config token is a numeric value rather than a name.
+ *
+ * Options that interleave marker names with numbers have to tell the two apart. Testing the first
+ * character for a letter is not enough: mesh formats such as CGNS routinely produce boundary names
+ * that begin with a digit (4000_QUAD_4_Bdy6), which such a test reads as a value. Requiring the
+ * whole token to parse as a number is unambiguous for every name that is not purely numeric.
+ */
+inline bool IsNumericToken(const std::string& token) {
+  if (token.empty()) return false;
+  char* end = nullptr;
+  std::strtod(token.c_str(), &end);
+  return (end != token.c_str()) && (*end == '\0');
+}
+
 template <class Type>
 class COptionStringValuesList final : public COptionBase {
   const string name;                     // identifier for the option
@@ -1143,15 +1158,20 @@ class COptionStringValuesList final : public COptionBase {
       return "";
     }
 
-    /*--- Determine the number of strings: A new string is found if the first char in the option is a letter.
-     * This will fail in if a string starts with a number! Additionally, determine the number of values that
-     * are prescribed per string. ---*/
+    /*--- Determine the number of strings: a field that does not parse as a number starts a new string,
+     * anything that does is one of its values. Testing only the first character for a letter would
+     * misread the digit-leading marker names that CGNS meshes produce. Additionally, determine the
+     * number of values that are prescribed per string. ---*/
     vector<unsigned short> num_vals_per_string;
     /*--- Loop through the fields of the option. ---*/
     for (const auto& val : option_value) {
-      if (isalpha(val[0])) {
+      if (!IsNumericToken(val)) {
         num_vals_per_string.push_back(0);
       } else {
+        if (num_vals_per_string.empty())
+          SU2_MPI::Error(name + string(" must begin with a marker name, but starts with the value \"") + val +
+                             string("\". A marker whose name is purely numeric cannot be told apart from a value."),
+                         CURRENT_FUNCTION);
         num_vals_per_string.back()++;
       }
     }
@@ -1360,15 +1380,15 @@ class COptionWallSpecies : public COptionBase {
 
     /*--- Determine the number of markers and species per marker.
      * Format: marker1, TYPE1, value1, TYPE2, value2, ..., marker2, TYPE1, value1, ...
-     * Each marker name starts with a letter, each TYPE is an enum string (starts with letter),
-     * and each value is numeric. Pattern: marker, (TYPE, value) x N ---*/
+     * Marker names and TYPE keywords are non-numeric fields, values are numeric.
+     * Pattern: marker, (TYPE, value) x N ---*/
 
     vector<unsigned short> marker_indices;  // Indices where markers start
     vector<unsigned short> species_counts;  // Number of species per marker
 
     // Find all marker positions (strings starting with a letter that are not TYPE keywords)
     for (unsigned short i = 0; i < totalVals; i++) {
-      if (isalpha(option_value[i][0])) {
+      if (!IsNumericToken(option_value[i])) {
         // Check if this could be a TYPE keyword (i.e., is it in the enum map?)
         if (this->m.find(option_value[i]) != m.end()) {
           continue;  // This is a TYPE keyword, not a marker

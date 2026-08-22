@@ -2,7 +2,7 @@
  * \file CAdjNSSolver.cpp
  * \brief Main subroutines for solving Navier-Stokes adjoint problems.
  * \author F. Palacios, T. Economon, H. Kline
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -33,6 +33,7 @@
 CAdjNSSolver::CAdjNSSolver() : CAdjEulerSolver() { }
 
 CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CAdjEulerSolver() {
+  SU2_ZONE_SCOPED
   unsigned long iPoint, iVertex;
   string text_line, mesh_filename;
   unsigned short iDim, iVar, iMarker;
@@ -291,6 +292,7 @@ CAdjNSSolver::~CAdjNSSolver() = default;
 
 void CAdjNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iMesh, unsigned long Iteration) {
+  SU2_ZONE_SCOPED
 
   /*--- Use the flow solution to update the time step
    *    The time step depends on the characteristic velocity, which is the same
@@ -300,6 +302,7 @@ void CAdjNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 }
 
 void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+  SU2_ZONE_SCOPED
 
   unsigned long iPoint, nonPhysicalPoints = 0;
   su2double SharpEdge_Distance;
@@ -390,6 +393,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
 void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                     CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[VISC_TERM];
 
@@ -440,6 +444,7 @@ void CAdjNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 
 void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container,
                                    CNumerics **numerics_container, CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   CNumerics* numerics = numerics_container[SOURCE_FIRST_TERM];
   CNumerics* second_numerics = numerics_container[SOURCE_SECOND_TERM];
@@ -581,6 +586,7 @@ void CAdjNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config) {
+  SU2_ZONE_SCOPED
 
   unsigned long iVertex, iPoint;
   unsigned short iDim, jDim, iMarker, iPos, jPos;
@@ -1163,9 +1169,10 @@ void CAdjNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_con
 }
 
 void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   unsigned short iDim, iVar, jVar, jDim;
-  unsigned long iVertex, iPoint, total_index, Point_Normal;
+  unsigned long iVertex, iPoint, Point_Normal;
 
   su2double *d, l1psi, vartheta, Sigma_5, phi[3] = {};
   su2double sq_vel, ProjGridVel, Enthalpy = 0.0, *GridVel;
@@ -1501,8 +1508,7 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       if (implicit) {
         Jacobian.SubtractBlock2Diag(iPoint, Jacobian_ii);
         for (iVar = 1; iVar <= nDim; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
+          Jacobian.DeleteValsRowi(iPoint, iVar);
         }
       }
 
@@ -1526,8 +1532,9 @@ void CAdjNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
 
 void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
-  unsigned long iVertex, iPoint, total_index;
+  unsigned long iVertex, iPoint;
   unsigned short iDim, iVar, jVar, jDim;
   su2double *d, q, *U, dVisc_T, rho, pressure, div_phi,
   force_stress, Sigma_5, phi[3] = {0.0,0.0,0.0};
@@ -1632,8 +1639,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         nodes->SetSolution_Old(iPoint,iDim+1, phi[iDim]);
       if (implicit) {
         for (iVar = 1; iVar <= nDim; iVar++) {
-          total_index = iPoint*nVar+iVar;
-          Jacobian.DeleteValsRowi(total_index);
+          Jacobian.DeleteValsRowi(iPoint, iVar);
         }
       }
 
@@ -1673,8 +1679,7 @@ void CAdjNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
       nodes->SetSolution_Old(iPoint,nDim+1, q);
       if (implicit) {
         iVar = nDim+1;
-        total_index = iPoint*nVar+iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
 
       /*--- Additional contributions to adjoint density (weak imposition) ---*/

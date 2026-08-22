@@ -2,7 +2,7 @@
  * \file CDiscAdjFluidIteration.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -32,6 +32,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
                                         CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                         CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                         CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
+  SU2_ZONE_SCOPED
   StartTime = SU2_MPI::Wtime();
 
   const auto TimeIter = config[iZone]->GetTimeIter();
@@ -277,6 +278,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput* output, CIntegration**** integr
 
 void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolver***** solver, CConfig** config,
                                                    unsigned short iZone, unsigned short iInst, int DirectIter) {
+  SU2_ZONE_SCOPED
 
   auto solvers = solver[iZone][iInst];
   auto geometries = geometry[iZone][iInst];
@@ -305,7 +307,7 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
     for (auto iMesh = 0u; iMesh <= config[iZone]->GetnMGLevels(); iMesh++) {
       solvers[iMesh][FLOW_SOL]->SetFreeStream_Solution(config[iZone]);
       solvers[iMesh][FLOW_SOL]->Preprocessing(geometries[iMesh], solvers[iMesh], config[iZone], iMesh,
-                                              DirectIter, RUNTIME_FLOW_SYS, false);
+                                              DirectIter, RUNTIME_FLOW_SYS, true);
       if (turbulent) {
         solvers[iMesh][TURB_SOL]->SetFreeStream_Solution(config[iZone]);
         solvers[iMesh][TURB_SOL]->Postprocessing(geometries[iMesh], solvers[iMesh], config[iZone], iMesh);
@@ -324,6 +326,7 @@ void CDiscAdjFluidIteration::LoadUnsteady_Solution(CGeometry**** geometry, CSolv
 
 void CDiscAdjFluidIteration::IterateDiscAdj(CGeometry**** geometry, CSolver***** solver, CConfig** config,
                                             unsigned short iZone, unsigned short iInst, bool CrossTerm) {
+  SU2_ZONE_SCOPED
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
@@ -357,6 +360,7 @@ void CDiscAdjFluidIteration::IterateDiscAdj(CGeometry**** geometry, CSolver*****
 
 void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                                unsigned short iZone, unsigned short iInst) {
+  SU2_ZONE_SCOPED
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
@@ -399,6 +403,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver***** solver, CGeometry***
 
 void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                            unsigned short iZone, unsigned short iInst, RECORDING kind_recording) {
+  SU2_ZONE_SCOPED
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
@@ -460,6 +465,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver***** solver, CGeometry**** ge
 void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** geometry, CNumerics****** numerics,
                                              CConfig** config, unsigned short iZone, unsigned short iInst,
                                              RECORDING kind_recording) {
+  SU2_ZONE_SCOPED
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
@@ -472,7 +478,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
     CGeometry::UpdateGeometry(geometry[iZone][iInst], config[iZone]);
     END_SU2_OMP_PARALLEL
 
-    CGeometry::ComputeWallDistance(config, geometry);
+    CGeometry::ComputeWallDistance(config, geometry, iZone);
   }
 
   SU2_OMP_PARALLEL_(if(solvers0[ADJFLOW_SOL]->GetHasHybridParallel())) {
@@ -482,15 +488,22 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
   solvers0[FLOW_SOL]->InitiateComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
   solvers0[FLOW_SOL]->CompleteComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
 
-  if (config[iZone]->GetBoolTurbomachinery()) {
-    solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], INFLOW);
-    solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], OUTFLOW);
-  }
   if (turbulent && !config[iZone]->GetFrozen_Visc_Disc()) {
     solvers0[TURB_SOL]->Postprocessing(geometry0, solvers0,
                                                            config[iZone], MESH_0);
     solvers0[TURB_SOL]->InitiateComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
     solvers0[TURB_SOL]->CompleteComms(geometry0, config[iZone], MPI_QUANTITIES::SOLUTION);
+  }
+  if (config[iZone]->GetBoolTurbomachinery()) {
+    solvers0[FLOW_SOL]->PreprocessAverage(solvers0, geometry0, config[iZone], INFLOW);
+    solvers0[FLOW_SOL]->PreprocessAverage(solvers0, geometry0, config[iZone], OUTFLOW);
+    solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], INFLOW);
+    solvers0[FLOW_SOL]->TurboAverageProcess(solvers0, geometry0, config[iZone], OUTFLOW);
+    if (config[iZone]->GetBoolGiles() && config[iZone]->GetSpatialFourier()){
+      auto conv_bound_numerics = numerics[iZone][iInst][MESH_0][FLOW_SOL][CONV_BOUND_TERM + omp_get_thread_num()*MAX_TERMS];
+      solvers0[FLOW_SOL]->PreprocessBC_Giles(geometry0, config[iZone], conv_bound_numerics, INFLOW);
+      solvers0[FLOW_SOL]->PreprocessBC_Giles(geometry0, config[iZone], conv_bound_numerics, OUTFLOW);
+    }
   }
   if (config[iZone]->GetKind_Species_Model() != SPECIES_MODEL::NONE) {
     solvers0[SPECIES_SOL]->Preprocessing(geometry0, solvers0, config[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
@@ -517,6 +530,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver***** solver, CGeometry**** 
 
 void CDiscAdjFluidIteration::RegisterOutput(CSolver***** solver, CGeometry**** geometry, CConfig** config,
                                             unsigned short iZone, unsigned short iInst) {
+  SU2_ZONE_SCOPED
   auto solvers0 = solver[iZone][iInst][MESH_0];
   auto geometry0 = geometry[iZone][iInst][MESH_0];
 
@@ -551,6 +565,7 @@ bool CDiscAdjFluidIteration::Monitor(COutput* output, CIntegration**** integrati
                                      CSolver***** solver, CNumerics****** numerics, CConfig** config,
                                      CSurfaceMovement** surface_movement, CVolumetricMovement*** grid_movement,
                                      CFreeFormDefBox*** FFDBox, unsigned short iZone, unsigned short iInst) {
+  SU2_ZONE_SCOPED
   StopTime = SU2_MPI::Wtime();
 
   UsedTime = StopTime - StartTime;

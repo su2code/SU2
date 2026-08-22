@@ -2,7 +2,7 @@
  * \file CParaviewBinaryFileWriter.hpp
  * \brief Headers fo paraview binary file writer class.
  * \author T. Albring
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -60,16 +60,5 @@ public:
    * \param[in] val_filename - The name of the file
    */
   void WriteData(string val_filename) override ;
-
-private:
-
-  /*!
-   * \brief Change storage of buffer from big endian to little endian
-   * \param buffer - Pointer to the beginning of the buffer
-   * \param nBytes - The size in bytes of an data entry
-   * \param nVar - The number of entries
-   */
-  void SwapBytes(char *buffer, size_t nBytes, unsigned long nVar);
-
 };
 

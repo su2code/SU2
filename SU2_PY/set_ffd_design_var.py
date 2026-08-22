@@ -3,7 +3,7 @@
 ## \file set_ffd_design_var.py
 #  \brief Python script for automatically generating a list of FFD variables.
 #  \author T. Economon, F. Palacios
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -28,11 +28,11 @@
 # make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
 from __future__ import print_function
 
-from optparse import OptionParser
+import argparse
 from numpy import *
 
-parser = OptionParser()
-parser.add_option(
+parser = argparse.ArgumentParser()
+parser.add_argument(
     "-i",
     "--iDegree",
     dest="iDegree",
@@ -40,7 +40,7 @@ parser.add_option(
     help="i degree of the FFD box",
     metavar="IDEGREE",
 )
-parser.add_option(
+parser.add_argument(
     "-j",
     "--jDegree",
     dest="jDegree",
@@ -48,7 +48,7 @@ parser.add_option(
     help="j degree of the FFD box",
     metavar="JDEGREE",
 )
-parser.add_option(
+parser.add_argument(
     "-k",
     "--kDegree",
     dest="kDegree",
@@ -56,7 +56,7 @@ parser.add_option(
     help="k degree of the FFD box",
     metavar="KDEGREE",
 )
-parser.add_option(
+parser.add_argument(
     "-b",
     "--ffdid",
     dest="ffd_id",
@@ -64,21 +64,21 @@ parser.add_option(
     help="ID of the FFD box",
     metavar="FFD_ID",
 )
-parser.add_option(
+parser.add_argument(
     "-m",
     "--marker",
     dest="marker",
     help="marker name of the design surface",
     metavar="MARKER",
 )
-parser.add_option(
+parser.add_argument(
     "-a",
     "--axis",
     dest="axis",
     help="axis to define twist 'x_Orig, y_Orig, z_Orig, x_End, y_End, z_End'",
     metavar="AXIS",
 )
-parser.add_option(
+parser.add_argument(
     "-s",
     "--scale",
     dest="scale",
@@ -86,7 +86,7 @@ parser.add_option(
     help="scale factor for the bump functions",
     metavar="SCALE",
 )
-parser.add_option(
+parser.add_argument(
     "-d",
     "--dimension",
     dest="dimension",
@@ -95,7 +95,7 @@ parser.add_option(
     metavar="DIMENSION",
 )
 
-(options, args) = parser.parse_args()
+options = parser.parse_args()
 
 # Process options
 options.iOrder = int(options.iDegree) + 1

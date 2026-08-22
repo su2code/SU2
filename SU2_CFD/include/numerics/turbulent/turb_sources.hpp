@@ -1,7 +1,7 @@
 /*!
  * \file turb_sources.hpp
  * \brief Numerics classes for integration of source terms in turbulence problems.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -72,8 +72,8 @@ class CSourceBase_TurbSA : public CNumerics {
  protected:
 
   /*--- Residual and Jacobian ---*/
-  su2double Residual, *Jacobian_i;
-  su2double Jacobian_Buffer; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */
+  su2double Residual[4], *Jacobian_i[4]; /*!< \brief Increase the size of residual and Jacobian for Langevin equations (Stochastic Backscatter Model).*/
+  su2double Jacobian_Buffer[16]; /*!< \brief Static storage for the Jacobian (which needs to be pointer for return type). */ 
 
   const FlowIndices idx; /*!< \brief Object to manage the access to the flow primitives. */
   const SA_ParsedOptions options; /*!< \brief Struct with SA options. */
@@ -109,7 +109,79 @@ class CSourceBase_TurbSA : public CNumerics {
     /* Diffusion source term */
     const su2double dv_axi = (1.0/sigma)*nu_e*ScalarVar_Grad_i[0][1];
 
-    Residual += yinv * dv_axi * Volume;
+    Residual[0] += yinv * dv_axi * Volume;
+  }
+
+  /*!
+   * \brief Include source-term residuals for Langevin equations (Stochastic Backscatter Model) 
+   */
+  inline void ResidualStochEquations(su2double timeStep, const su2double ct, 
+                                     su2double lengthScale, su2double DES_const,
+                                     const CSAVariables& var, TIME_MARCHING time_marching,
+                                     su2double threshold) {
+
+    const su2double& nue = ScalarVar_i[0];
+    const su2double nut = max(nue*var.fv1, 1e-10);
+    const su2double delta = lengthScale/DES_const;
+
+    if (delta > 1e-10) {
+
+      su2double tTurb = ct*pow(delta, 2)/nut;
+      su2double tRat = timeStep / tTurb;
+    
+      su2double corrFac = 1.0;
+      if (time_marching == TIME_MARCHING::DT_STEPPING_2ND) {
+        corrFac = sqrt(0.5*(1.0+tRat)*(4.0+tRat)/(2.0+tRat));
+      } else if (time_marching == TIME_MARCHING::DT_STEPPING_1ST) {
+        corrFac = sqrt(1.0+0.5*tRat);
+      }
+    
+      su2double scaleFactor = 0.0;
+      if (lesMode_i > threshold)
+        scaleFactor = 1.0/tTurb * sqrt(2.0/tRat) * corrFac;
+      else
+        tTurb = min(tTurb, 10.0*timeStep);
+
+      for (unsigned short iVar = 1; iVar < nVar; iVar++) {
+        Residual[iVar] = scaleFactor * stochSource[iVar-1] - 1.0/tTurb * ScalarVar_i[iVar];
+        Residual[iVar] *= Volume;
+      }
+
+      for (unsigned short iVar = 1; iVar < nVar; iVar++ )
+        Jacobian_i[iVar][iVar] = -1.0/tTurb * Volume;
+
+    }
+
+  }
+
+  /*!
+   * \brief Include stochastic source term in the Spalart-Allmaras turbulence model equation (Stochastic Backscatter Model).
+   */
+  inline void AddStochSource(const CConfig* config, CSAVariables& var, su2double& prod) {
+
+    su2double Cmag = ComputeStochRelaxFactor(config);
+    su2double threshold = config->GetSBSParam().stochFdThreshold;
+
+    su2double nut = ScalarVar_i[0] * var.fv1;
+    su2double tke = 0.0;
+    const su2double limiter = 5.0;
+    if (lesMode_i > threshold) tke = pow(nut/dist_i, 2);
+
+    su2double R12 = - Cmag * tke * ScalarVar_i[3];
+    su2double R13 = + Cmag * tke * ScalarVar_i[2];
+    su2double R23 = - Cmag * tke * ScalarVar_i[1];
+
+    su2double RGradU = R12*Vorticity_i[2] - R13*Vorticity_i[1] + R23*Vorticity_i[0];
+
+    su2double Ji_3 = pow(var.Ji, 3);
+    su2double Dfv1Dnut = 3.0 * var.fv1 * var.cv1_3 / (var.cv1_3 + Ji_3);
+    su2double fac = 1.0 / (var.fv1 + ScalarVar_i[0]*Dfv1Dnut);
+    su2double stochProdNut = RGradU * dist_i*dist_i/(2.0*ScalarVar_i[0]) * fac;
+    stochProdNut *= sbsInBox_i;
+    stochProdNut = max(-limiter*prod, min(limiter*prod, stochProdNut));
+
+    prod += stochProdNut;
+
   }
 
  public:
@@ -119,16 +191,17 @@ class CSourceBase_TurbSA : public CNumerics {
    * \param[in] config - Definition of the particular problem.
    */
   CSourceBase_TurbSA(unsigned short nDim, const CConfig* config)
-      : CNumerics(nDim, 1, config),
+      : CNumerics(nDim, (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) ? 4 : 1, config),
         idx(nDim, config->GetnSpecies()),
         options(config->GetSAParsedOptions()),
         axisymmetric(config->GetAxisymmetric()),
         transition_LM(config->GetKind_Trans_Model() == TURB_TRANS_MODEL::LM) {
     /*--- Setup the Jacobian pointer, we need to return su2double** but we know
      * the Jacobian is 1x1 so we use this trick to avoid heap allocation. ---*/
-    Jacobian_i = &Jacobian_Buffer;
+    /*--- Setup the Jacobian pointer (size increased for Stochastic Backscatter Model). ---*/
+    for (unsigned short iVar = 0; iVar < 4; iVar++)
+      Jacobian_i[iVar] = Jacobian_Buffer + 4*iVar;
   }
-
 
   /*!
    * \brief Residual for source term integration.
@@ -140,16 +213,22 @@ class CSourceBase_TurbSA : public CNumerics {
     const auto& laminar_viscosity = V_i[idx.LaminarViscosity()];
 
     AD::StartPreacc();
-    AD::SetPreaccIn(density, laminar_viscosity, StrainMag_i, ScalarVar_i[0], Volume, dist_i, roughness_i);
+    AD::SetPreaccIn(density, laminar_viscosity, StrainMag_i, Volume, dist_i, roughness_i);
+    AD::SetPreaccIn(ScalarVar_i, nVar);
     AD::SetPreaccIn(Vorticity_i, 3);
     AD::SetPreaccIn(PrimVar_Grad_i + idx.Velocity(), nDim, nDim);
-    AD::SetPreaccIn(ScalarVar_Grad_i[0], nDim);
+    AD::SetPreaccIn(ScalarVar_Grad_i, nVar, nDim);
+    AD::SetPreaccIn(stochSource, 3);
 
     /*--- Common auxiliary variables and constants of the model. ---*/
     CSAVariables var;
 
-    Residual = 0.0;
-    Jacobian_i[0] = 0.0;
+    for (unsigned short iVar = 0; iVar < 4; iVar++) {
+      Residual[iVar] = 0.0;
+      for (unsigned short jVar = 0; jVar < 4; jVar++) {
+        Jacobian_i[iVar][jVar] = 0.0;
+      }
+    }
 
     if (dist_i > 1e-10) {
 
@@ -167,13 +246,23 @@ class CSourceBase_TurbSA : public CNumerics {
       const su2double Ji_2 = pow(var.Ji, 2);
       const su2double Ji_3 = Ji_2 * var.Ji;
 
-      var.fv1 = Ji_3 / (Ji_3 + var.cv1_3);
-      var.d_fv1 = 3 * Ji_2 * var.cv1_3 / (nu * pow(Ji_3 + var.cv1_3, 2));
+      if (config->GetSBSParam().StochasticBackscatter && lesMode_i > config->GetSBSParam().stochFdThreshold) {
+        var.fv1 = 1.0;
+        var.d_fv1 = 0.0;
+      } else {
+        var.fv1 = Ji_3 / (Ji_3 + var.cv1_3);
+        var.d_fv1 = 3 * Ji_2 * var.cv1_3 / (nu * pow(Ji_3 + var.cv1_3, 2));
+      }
 
       /*--- Using a modified relation so as to not change the Shat that depends on fv2.
        * From NASA turb modeling resource and 2003 paper. ---*/
-      var.fv2 = 1 - ScalarVar_i[0] / (nu + ScalarVar_i[0] * var.fv1);
-      var.d_fv2 = -(1 / nu - Ji_2 * var.d_fv1) / pow(1 + var.Ji * var.fv1, 2);
+      if (config->GetSBSParam().StochasticBackscatter && lesMode_i > config->GetSBSParam().stochFdThreshold) {
+        var.fv2 = 0.0;
+        var.d_fv2 = 0.0;
+      } else {
+        var.fv2 = 1 - ScalarVar_i[0] / (nu + ScalarVar_i[0] * var.fv1);
+        var.d_fv2 = -(1 / nu - Ji_2 * var.d_fv1) / pow(1 + var.Ji * var.fv1, 2);
+      }
 
       /*--- Evaluate Omega with a rotational correction term. ---*/
 
@@ -197,13 +286,17 @@ class CSourceBase_TurbSA : public CNumerics {
       /*--- Compute auxiliary function r ---*/
       rFunc::get(ScalarVar_i[0], var);
 
-      var.g = var.r + var.cw2 * (pow(var.r, 6) - var.r);
-      var.g_6 = pow(var.g, 6);
-      var.glim = pow((1 + var.cw3_6) / (var.g_6 + var.cw3_6), 1.0 / 6.0);
-      var.fw = var.g * var.glim;
-
-      var.d_g = var.d_r * (1 + var.cw2 * (6 * pow(var.r, 5) - 1));
-      var.d_fw = var.d_g * var.glim * (1 - var.g_6 / (var.g_6 + var.cw3_6));
+      if (config->GetSBSParam().StochasticBackscatter && lesMode_i > config->GetSBSParam().stochFdThreshold) {
+        var.fw = 0.0;
+        var.d_fw = 0.0;
+      } else {
+        var.g = var.r + var.cw2 * (pow(var.r, 6) - var.r);
+        var.g_6 = pow(var.g, 6);
+        var.glim = pow((1 + var.cw3_6) / (var.g_6 + var.cw3_6), 1.0 / 6.0);
+        var.fw = var.g * var.glim;
+        var.d_g = var.d_r * (1 + var.cw2 * (6 * pow(var.r, 5) - 1));
+        var.d_fw = var.d_g * var.glim * (1 - var.g_6 / (var.g_6 + var.cw3_6));
+      }
 
       var.norm2_Grad = GeometryToolbox::SquaredNorm(nDim, ScalarVar_Grad_i[0]);
 
@@ -245,19 +338,30 @@ class CSourceBase_TurbSA : public CNumerics {
 
       /*--- Compute production, destruction and jacobian ---*/
       su2double Production = 0.0, Destruction = 0.0;
-      SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, Jacobian_i[0]);
+      SourceTerms::get(ScalarVar_i[0], var, Production, Destruction, Jacobian_i[0][0]);
 
-      Residual = (Production - Destruction) * Volume;
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().stochSourceNu)
+        AddStochSource(config, var, Production);
+
+      Residual[0] = (Production - Destruction) * Volume;
 
       if (axisymmetric) ResidualAxisymmetricDiffusion(var.sigma);
 
-      Jacobian_i[0] *= Volume;
+      Jacobian_i[0][0] *= Volume;
+
+      /*--- Compute residual for Langevin equations (Stochastic Backscatter Model). ---*/
+
+      if (config->GetSBSParam().StochasticBackscatter && config->GetSBSParam().SBS_Ctau > 0.0) {
+        const su2double DES_const = config->GetConst_DES();
+        ResidualStochEquations(config->GetDelta_UnstTime(), config->GetSBSParam().SBS_Ctau, dist_i, DES_const,
+                               var, config->GetTime_Marching(), config->GetSBSParam().stochFdThreshold);
+      }
     }
 
-    AD::SetPreaccOut(Residual);
+    AD::SetPreaccOut(Residual, 4);
     AD::EndPreacc();
 
-    return ResidualType<>(&Residual, &Jacobian_i, nullptr);
+    return ResidualType<>(Residual, Jacobian_i, nullptr);
   }
 };
 
@@ -553,14 +657,14 @@ class CCompressibilityCorrection final : public ParentClass {
       const su2double d_axiCorrection = 2.0 * c5 * nue * pow(v * yinv / sound_speed, 2) * Volume;
       const su2double axiCorrection = 0.5 * nue * d_axiCorrection;
 
-      this->Residual -= axiCorrection;
-      this->Jacobian_i[0] -= d_axiCorrection;
+      this->Residual[0] -= axiCorrection;
+      this->Jacobian_i[0][0] -= d_axiCorrection;
     }
 
-    this->Residual -= CompCorrection;
-    this->Jacobian_i[0] -= d_CompCorrection;
+    this->Residual[0] -= CompCorrection;
+    this->Jacobian_i[0][0] -= d_CompCorrection;
 
-    return ResidualType(&this->Residual, &this->Jacobian_i, nullptr);
+    return ResidualType(this->Residual, this->Jacobian_i, nullptr);
   }
 };
 

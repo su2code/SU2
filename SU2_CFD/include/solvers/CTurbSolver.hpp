@@ -2,7 +2,7 @@
  * \file CTurbSolver.hpp
  * \brief Headers of the CTurbSolver class
  * \author A. Bueno.
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -55,20 +55,6 @@ public:
    */
   CTurbSolver(CGeometry* geometry, CConfig *config, bool conservative);
 
-  /*!
-   * \brief Impose via the residual the Euler wall boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Riemann(CGeometry *geometry,
-                  CSolver **solver_container,
-                  CNumerics *conv_numerics,
-                  CNumerics *visc_numerics,
-                  CConfig *config,
-                  unsigned short val_marker) final;
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -147,7 +133,7 @@ public:
    * \returns The number of extra variables.
    */
   unsigned long RegisterSolutionExtra(bool input, const CConfig* config) final;
-  
+
   /*!
    * \brief Compute a suitable under-relaxation parameter to limit the change in the solution variables over
    * a nonlinear iteration for stability.

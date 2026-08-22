@@ -2,7 +2,7 @@
  * \file CSpeciesSolver.cpp
  * \brief Main subroutines of CSpeciesSolver class
  * \author T. Kattmann
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -36,7 +36,8 @@
 template class CScalarSolver<CSpeciesVariable>;
 
 CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned short iMesh)
-    : CScalarSolver<CSpeciesVariable>(geometry, config, true) {
+    : CScalarSolver<CSpeciesVariable>(geometry, config, true, config->GetBounded_Species()) {
+  SU2_ZONE_SCOPED
 
   /*--- Dimension of the problem. ---*/
 
@@ -92,6 +93,7 @@ CSpeciesSolver::CSpeciesSolver(CGeometry* geometry, CConfig* config, unsigned sh
 
 
 void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned short iMesh, unsigned short nVar) {
+  SU2_ZONE_SCOPED
   /*--- Store if an implicit scheme is used, for use during periodic boundary conditions. ---*/
   SetImplicitPeriodic(config->GetKind_TimeIntScheme_Species() == EULER_IMPLICIT);
 
@@ -113,7 +115,7 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
 
   AllocVectorOfMatrices( nVertex, nVar,CustomBoundaryScalar);
 
-  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
+  if (iMesh == MESH_0 || config->GetMGCycle() == MG_CYCLE::FULL) {
 
     /*--- Define some auxiliary vector related with the residual ---*/
 
@@ -192,6 +194,7 @@ void CSpeciesSolver::Initialize(CGeometry* geometry, CConfig* config, unsigned s
 
 void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfig* config, int val_iter,
                                  bool val_update_geo) {
+  SU2_ZONE_SCOPED
   /*--- Restart the solution from file information ---*/
 
   string restart_filename = config->GetSolution_FileName();
@@ -266,7 +269,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 
   // Flow-Pre computes/sets mixture properties
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
-                                          RUNTIME_FLOW_SYS, false);
+                                          RUNTIME_FLOW_SYS, true);
   // Update eddy-visc which needs correct mixture density and mixture lam-visc. Note that after this, another Flow-Pre
   // at the start of the Iteration sets the updated eddy-visc into the Flow-Solvers Primitives.
   if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
@@ -284,12 +287,12 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
     solver[iMesh][SPECIES_SOL]->CompleteComms(geometry[iMesh], config, MPI_QUANTITIES::SOLUTION);
 
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS,
-                                           false);
+                                           true);
 
     if (config->GetKind_Turb_Model() != TURB_MODEL::NONE)
-      solver[iMesh][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+      solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
 
-    solver[iMesh][SPECIES_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER,
+    solver[iMesh][SPECIES_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER,
                                               RUNTIME_SPECIES_SYS, false);
   }
 
@@ -306,6 +309,7 @@ void CSpeciesSolver::LoadRestart(CGeometry** geometry, CSolver*** solver, CConfi
 void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_container, CConfig* config,
                                    unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem,
                                    bool Output) {
+  SU2_ZONE_SCOPED
   SU2_OMP_SAFE_GLOBAL_ACCESS(config->SetGlobalParam(config->GetKind_Solver(), RunTime_EqSystem);)
 
   SU2_OMP_FOR_STAT(omp_chunk_size)
@@ -330,6 +334,7 @@ void CSpeciesSolver::Preprocessing(CGeometry* geometry, CSolver** solver_contain
 
 void CSpeciesSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry* geometry, CSolver** solver_container,
                                       CNumerics* numerics, const CConfig* config) {
+
   /*--- Define an object to set solver specific numerics contribution. ---*/
   auto SolverSpecificNumerics = [&](unsigned long iPoint, unsigned long jPoint) {
     /*--- Mass diffusivity coefficients. ---*/
@@ -344,6 +349,7 @@ void CSpeciesSolver::Viscous_Residual(const unsigned long iEdge, const CGeometry
 
 void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                               CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
@@ -357,15 +363,14 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 
     if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-    if (config->GetMarker_StrongBC(Marker_Tag)==true) {
+    if (config->GetMarker_StrongBC(Marker_Tag)) {
       nodes->SetSolution_Old(iPoint, Inlet_SpeciesVars[val_marker][iVertex]);
 
       LinSysRes.SetBlock_Zero(iPoint);
 
       /*--- Includes 1 in the diagonal ---*/
       for (auto iVar = 0u; iVar < nVar; iVar++) {
-        auto total_index = iPoint * nVar + iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     } else {  // weak BC
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
@@ -422,17 +427,20 @@ void CSpeciesSolver::BC_Inlet(CGeometry* geometry, CSolver** solver_container, C
 void CSpeciesSolver::BC_Isothermal_Wall(CGeometry* geometry, CSolver** solver_container,
                                                 CNumerics* conv_numerics, CNumerics* visc_numerics,
                                                 CConfig* config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   BC_Wall_Generic(geometry, solver_container, config, val_marker);
 }
 
 void CSpeciesSolver::BC_HeatFlux_Wall(CGeometry* geometry, CSolver** solver_container,
                                                 CNumerics* conv_numerics, CNumerics* visc_numerics,
                                                 CConfig* config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   BC_Wall_Generic(geometry, solver_container, config, val_marker);
 }
 
 void CSpeciesSolver::BC_Wall_Generic(CGeometry* geometry, CSolver** solver_container,
                                                         CConfig* config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
   const bool implicit = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   const bool py_custom = config->GetMarker_All_PyCustom(val_marker);
 
@@ -473,8 +481,7 @@ void CSpeciesSolver::BC_Wall_Generic(CGeometry* geometry, CSolver** solver_conta
           nodes->SetSolution_Old(iPoint, iVar, WallSpecies);
           LinSysRes(iPoint, iVar) = 0.0;
           if (implicit) {
-            unsigned long total_index = iPoint * nVar + iVar;
-            Jacobian.DeleteValsRowi(total_index);
+            Jacobian.DeleteValsRowi(iPoint, iVar);
           }
         break;
       }
@@ -488,6 +495,7 @@ void CSpeciesSolver::BC_Wall_Generic(CGeometry* geometry, CSolver** solver_conta
 void CSpeciesSolver::SetInletAtVertex(const su2double *val_inlet,
                                       unsigned short iMarker,
                                       unsigned long iVertex) {
+  SU2_ZONE_SCOPED
 
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Inlet_SpeciesVars[iMarker][iVertex][iVar] = val_inlet[Inlet_Position+iVar];
@@ -496,6 +504,7 @@ void CSpeciesSolver::SetInletAtVertex(const su2double *val_inlet,
 
 su2double CSpeciesSolver::GetInletAtVertex(unsigned short iMarker, unsigned long iVertex,
                                            const CGeometry* geometry, su2double* val_inlet) const {
+  SU2_ZONE_SCOPED
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     val_inlet[Inlet_Position + iVar] = Inlet_SpeciesVars[iMarker][iVertex][iVar];
 
@@ -507,9 +516,19 @@ su2double CSpeciesSolver::GetInletAtVertex(unsigned short iMarker, unsigned long
 }
 
 void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMarker) {
+  SU2_ZONE_SCOPED
+  bool riemann_inlet = false;
+
+  const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+  if (config->GetMarker_All_KindBC(iMarker) == RIEMANN_BOUNDARY) {
+    switch (config->GetKind_Data_Riemann(Marker_Tag)) {
+      case TOTAL_CONDITIONS_PT: case STATIC_SUPERSONIC_INFLOW_PT: case STATIC_SUPERSONIC_INFLOW_PD: case DENSITY_VELOCITY:
+      riemann_inlet = true;
+      break;
+    }
+  }
   /*--- Find BC string to the numeric-identifier. ---*/
-  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET) {
-    const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW || config->GetMarker_All_KindBC(iMarker) == SUPERSONIC_INLET || riemann_inlet) {
     for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
       for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         Inlet_SpeciesVars[iMarker][iVertex][iVar] = config->GetInlet_SpeciesVal(Marker_Tag)[iVar];
@@ -520,6 +539,7 @@ void CSpeciesSolver::SetUniformInlet(const CConfig* config, unsigned short iMark
 
 void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, CNumerics* conv_numerics,
                                CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
@@ -547,8 +567,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
 
       /*--- Includes 1 on the diagonal ---*/
       for (auto iVar = 0u; iVar < nVar; iVar++) {
-        auto total_index = iPoint * nVar + iVar;
-        Jacobian.DeleteValsRowi(total_index);
+        Jacobian.DeleteValsRowi(iPoint, iVar);
       }
     } else {  // weak BC
 
@@ -600,6 +619,7 @@ void CSpeciesSolver::BC_Outlet(CGeometry* geometry, CSolver** solver_container, 
 
 void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics **numerics_container,
                                       CConfig *config, unsigned short iMesh) {
+  SU2_ZONE_SCOPED
 
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
   const bool axisymmetric = config->GetAxisymmetric();
@@ -656,6 +676,7 @@ void CSpeciesSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CSpeciesSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long TimeIter) {
+  SU2_ZONE_SCOPED
 
   const bool restart = config->GetRestart() || config->GetRestart_Flow();
 

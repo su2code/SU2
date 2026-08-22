@@ -3,7 +3,7 @@
 ## \file Compute_polar.py
 #  \brief Python script for performing polar sweep.
 #  \author E Arad (based on T. Lukaczyk and  F. Palacios script)
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -41,7 +41,7 @@ from __future__ import print_function
 
 # imports
 import os, sys, shutil
-from optparse import OptionParser
+import argparse
 
 sys.path.append(os.environ["SU2_RUN"])
 import SU2
@@ -52,8 +52,8 @@ import numpy as np
 
 def main():
     # Command Line Options
-    parser = OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "-c",
         "--ctrl",
         dest="ctrlFile",
@@ -61,7 +61,7 @@ def main():
         metavar="FILE",
         default="polarCtrl.in",
     )
-    parser.add_option(
+    parser.add_argument(
         "-n",
         "--partitions",
         dest="partitions",
@@ -69,7 +69,7 @@ def main():
         help="number of PARTITIONS",
         metavar="PARTITIONS",
     )
-    parser.add_option(
+    parser.add_argument(
         "-i",
         "--iterations",
         dest="iterations",
@@ -77,7 +77,7 @@ def main():
         help="number of ITERATIONS",
         metavar="ITERATIONS",
     )
-    parser.add_option(
+    parser.add_argument(
         "-d",
         "--dimension",
         dest="geomDim",
@@ -85,7 +85,7 @@ def main():
         help="Geometry dimension (2 or 3)",
         metavar="geomDim",
     )
-    parser.add_option(
+    parser.add_argument(
         "-w",
         "--Wind",
         action="store_true",
@@ -93,7 +93,7 @@ def main():
         default=False,
         help=" Wind system (default is body system)",
     )
-    parser.add_option(
+    parser.add_argument(
         "-v",
         "--Verbose",
         action="store_true",
@@ -102,7 +102,7 @@ def main():
         help=" Verbose printout (if activated)",
     )
 
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     options.partitions = int(options.partitions)
     options.iterations = int(options.iterations)
     options.geomDim = int(options.geomDim)

@@ -3,7 +3,7 @@
 ## \file compute_uncertainty.py
 #  \brief Python script for performing model-form UQ for SST turbulence model
 #  \author J. Mukhopadhaya
-#  \version 8.4.0 "Harrier"
+#  \version 8.5.0 "Harrier"
 #
 # SU2 Project Website: https://su2code.github.io
 #
@@ -26,7 +26,7 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 # imports
 import numpy as np
-from optparse import OptionParser
+import argparse
 import os
 import sys
 import shutil
@@ -39,11 +39,11 @@ import SU2
 
 def main():
     # Command Line Options
-    parser = OptionParser()
-    parser.add_option(
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
         "-f", "--file", dest="filename", help="read config from FILE", metavar="FILE"
     )
-    parser.add_option(
+    parser.add_argument(
         "-n",
         "--partitions",
         dest="partitions",
@@ -51,7 +51,7 @@ def main():
         help="number of PARTITIONS",
         metavar="PARTITIONS",
     )
-    parser.add_option(
+    parser.add_argument(
         "-u",
         "--underRelaxation",
         dest="uq_urlx",
@@ -59,7 +59,7 @@ def main():
         help="under relaxation factor",
         metavar="UQ_URLX",
     )
-    parser.add_option(
+    parser.add_argument(
         "-b",
         "--deltaB",
         dest="uq_delta_b",
@@ -68,7 +68,7 @@ def main():
         metavar="UQ_DELTA_B",
     )
 
-    (options, args) = parser.parse_args()
+    options = parser.parse_args()
     options.partitions = int(options.partitions)
     # check the typecasting
     options.beta_delta = float(options.uq_delta_b)

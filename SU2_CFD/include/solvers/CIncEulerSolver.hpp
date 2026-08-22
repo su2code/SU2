@@ -2,7 +2,7 @@
  * \file CIncEulerSolver.hpp
  * \brief Headers of the CIncEulerSolver class
  * \author F. Palacios, T. Economon, T. Albring
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -85,6 +85,18 @@ protected:
    * \return - The number of non-physical points.
    */
   virtual unsigned long SetPrimitive_Variables(CSolver **solver_container, const CConfig *config);
+
+  /*!
+   * \brief Recompute the dual-time density history (rho_n, rho_n-1) from the stored
+   *        solution histories (Solution_time_n[,1], and the species histories for
+   *        flamelet/variable-density) via the fluid model.
+   * \details Called once per physical time step (InnerIter == 0), after the solution
+   *          push-back. This keeps the density history consistent with the primitive
+   *          state at time n (also after restart).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void RecomputeDensity_time_n(CSolver **solver_container, const CConfig *config);
 
   /*!
    * \brief Update the Beta parameter for the incompressible preconditioner.
@@ -364,13 +376,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void PrepareImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
-
-  /*!
-   * \brief Complete an implicit iteration.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void CompleteImplicitIteration(CGeometry *geometry, CSolver**, CConfig *config) final;
 
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.

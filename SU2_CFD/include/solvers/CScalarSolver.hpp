@@ -1,7 +1,7 @@
 /*!
  * \file CScalarSolver.hpp
  * \brief Headers of the CScalarSolver class
- * \version 8.4.0 "Harrier"
+ * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
  *
@@ -58,6 +58,7 @@ class CScalarSolver : public CSolver {
   su2double Solution_Inf[MAXNVAR]; /*!< \brief Far-field solution. */
 
   const bool Conservative; /*!< \brief Transported Variable is conservative. Solution has to be multiplied with rho. */
+  const bool BoundedScalar; /*!< \brief Whether the derived solver uses the bounded-scalar convective scheme. */
 
   const CPrimitiveIndices<unsigned short> prim_idx; /*!< \brief Indices of the primitive flow variables. */
 
@@ -188,7 +189,7 @@ class CScalarSolver : public CSolver {
     const su2double* normal = geometry->edges->GetNormal(iEdge);
     auto residual_ij = ComputeFlux(iPoint, jPoint, normal);
 
-    JacobianScalarType *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
+    su2mixedfloat *Block_ii = nullptr, *Block_ij = nullptr, *Block_ji = nullptr, *Block_jj = nullptr;
     if (implicit) {
       Jacobian.GetBlocks(iEdge, iPoint, jPoint, Block_ii, Block_ij, Block_ji, Block_jj);
     }
@@ -440,7 +441,7 @@ class CScalarSolver : public CSolver {
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative);
+  CScalarSolver(CGeometry* geometry, CConfig* config, bool conservative, bool bounded_scalar);
 
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
@@ -492,6 +493,22 @@ class CScalarSolver : public CSolver {
                             CNumerics* visc_numerics, CConfig* config, unsigned short val_marker) final {
     /*--- Convective fluxes across euler wall are equal to zero. ---*/
   }
+
+  /*!
+   * \brief Impose the boundary condition using characteristic recostruction.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Riemann(CGeometry *geometry,
+                  CSolver **solver_container,
+                  CNumerics *conv_numerics,
+                  CNumerics *visc_numerics,
+                  CConfig *config,
+                  unsigned short val_marker) final;
+
 
   /*!
    * \brief Impose the supersonic inlet boundary condition (same as inlet, see BC_Inlet).
