@@ -2,7 +2,7 @@
  * \file CTrapezoidalMap.hpp
  * \brief Memory-efficient trapezoidal map for 2D lookup table queries,
  *        based on the LUT implementation of P. Gomes (https://github.com/pcarruscag/LUT).
- * \author T. Kiymaz
+ * \author T. Kiymaz, P. Gomes
  * \version 8.5.0 "Harrier"
  *
  * SU2 Project Website: https://su2code.github.io
@@ -37,26 +37,18 @@
 #include <vector>
 
 #include "../basic_types/datatype_structure.hpp"
+#include "C2DContainer.hpp"
 
 namespace su2_lut {
 
 using IntT = int32_t;
 using RealT = su2double;
 
-/*--- Simple row-major matrix with a fixed number of columns. ---*/
-template <typename T, size_t N>
-struct Matrix {
-  std::vector<T> data;
-
-  void resize(size_t rows, size_t) { data.resize(rows * N); }
-  size_t rows() const { return data.size() / N; }
-
-  const T& operator()(size_t i, size_t j) const { return data[i * N + j]; }
-  T& operator()(size_t i, size_t j) { return data[i * N + j]; }
-};
-
-using Matrix2i = Matrix<IntT, 2>;
-using Matrix3i = Matrix<IntT, 3>;
+/*--- Row-major integer matrices with a compile-time number of columns. ---*/
+template <size_t N>
+using MatrixNi = C2DContainer<unsigned long, IntT, StorageType::RowMajor, 64, DynamicSize, N>;
+using Matrix2i = MatrixNi<2>;
+using Matrix3i = MatrixNi<3>;
 using VectorInt = std::vector<IntT>;
 using VectorReal = std::vector<RealT>;
 
@@ -475,7 +467,7 @@ class CTrapezoidalMap {
 
     triangles.resize(num_triangles, 3);
     for (size_t i = 0; i < 3 * num_triangles; ++i) {
-      triangles.data[i] = static_cast<su2_lut::IntT>(connectivity[i]);
+      triangles.data()[i] = static_cast<su2_lut::IntT>(connectivity[i]);
     }
 
     su2_lut::ReorderPoints(triangles, x_coords, y_coords);
@@ -512,8 +504,7 @@ class CTrapezoidalMap {
    */
   double GetMemoryFootprint() const {
     const size_t bytes =
-        (map.edge_id.size() + map.offsets.size() + edge_pts.data.size() + edge_faces.data.size() +
-         triangles.data.size()) *
+        (map.edge_id.size() + map.offsets.size() + edge_pts.size() + edge_faces.size() + triangles.size()) *
             sizeof(su2_lut::IntT) +
         (map.edge_y.size() + map.x_bands.size() + x_coords.size() + y_coords.size()) * sizeof(su2_lut::RealT);
     return double(bytes) / (1024.0 * 1024.0);
