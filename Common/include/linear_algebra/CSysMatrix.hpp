@@ -159,15 +159,19 @@ SU2_CUDA_HOST_DEVICE FORCEINLINE void EncodeQuantRow(const F& f, uint8_t& qs, in
     uint32_t fb;
     memcpy(&fb, &fv, sizeof(fb));
 #endif
-    max_abs_bits = max(max_abs_bits, fb & 0x7FFFFFFFu /* masks the sign bit */);
+    /*--- Masking the mantissa as well as the sign leaves the exponent alone in place, which is
+     * all the scale needs (the max of the exponents is the exponent of the max). ---*/
+    max_abs_bits = max(max_abs_bits, fb & 0x7F800000u);
   }
   /*--- Add 1 (round up the exponent) and subtract 7 (to divide by 128. which is the int8 range
    * for "qv") = -6. The 127 float offset is NOT removed, so the stored value is the biased
    * exponent of the scale and DecodeQuantScale can use it as exponent bits directly. The
    * eps_bits floor puts the result in [98, 249], so it always fits in uint8 without clamping. ---*/
   qs = static_cast<uint8_t>((max_abs_bits >> 23) - 6);
-  /*--- 1/scale, i.e. the biased exponent of 2^-(qs-127), which is 254 - qs. ---*/
-  const uint32_t inv_bits = static_cast<uint32_t>(254 - qs) << 23;
+  /*--- 1/scale = 2^-(qs-127), whose biased exponent is 254 - qs. Because max_abs_bits holds the
+   * exponent already shifted into place with a zero mantissa, that whole expression collapses to
+   * one subtraction: (254 - ((max_abs_bits >> 23) - 6)) << 23 == (260 << 23) - max_abs_bits. ---*/
+  const uint32_t inv_bits = 0x82000000u /* 260 << 23 */ - max_abs_bits;
 #ifdef __CUDA_ARCH__
   const float inv_rscale = __uint_as_float(inv_bits);
 #else
